@@ -32,8 +32,8 @@ const WEBP_OPTS = {
   quality: 42,
 };
 const MAX_FRAMES = 2; /* 1, 2, 4 */
-const MIN_TIME_BETWEEN_SHOTS = 500; /* 20, 40, 100, 250, 500 */
-const MIN_TIME_BETWEEN_TAIL_SHOTS = 500; /* 40, 100, 250, 500 */
+const MIN_TIME_BETWEEN_SHOTS = 200; /* 20, 40, 100, 250, 500 */
+const MIN_TIME_BETWEEN_TAIL_SHOTS = 100; /* 40, 100, 250, 500 */
 const MAX_TIME_BETWEEN_TAIL_SHOTS = 2000;
 
 let frameId = 1;
@@ -43,12 +43,17 @@ let tailShotTime = MIN_TIME_BETWEEN_TAIL_SHOTS;
 export function makeCamera(connection) {
   let tailShot;
   let nextShot;
+  let lastShot;
 
   return doShot;
 
   async function shot() {
-    connection.isSafari = true;
     if ( DEBUG.noShot ) return;
+    if ( DEBUG.val > DEBUG.low ) {
+      const timeNow = Date.now();
+      console.log("Do shot", timeNow - lastShot);
+      lastShot = timeNow;
+    }
     const targetId = connection.sessions.get(connection.sessionId);
     try {
       let response;
@@ -61,9 +66,8 @@ export function makeCamera(connection) {
       if ( !! data || !! screenshotData ) {
         const img = Buffer.from(data || screenshotData, 'base64');
         const F = {img, frame: frameId, targetId};
-        //const hash = await frameHash(F);
-        F.hash = frameId;
         await forExport({frame:F, connection});
+        F.hash = F.img;
         return F;
       } else {
         DEBUG.val > DEBUG.med && console.log("Sending no frame");
@@ -75,8 +79,7 @@ export function makeCamera(connection) {
     }
   }
 
-  async function saveShot({tail:tail = false, ignoreHash: ignoreHash = false} = {}) {
-    connection.isSafari = true;
+  async function saveShot({tail:tail = false} = {}) {
     const F = await shot();        
     if ( !! F.img ) {
       connection.frameBuffer.push(F);
@@ -85,34 +88,36 @@ export function makeCamera(connection) {
         connection.frameBuffer.shift();
       }
     }
+
     if ( ! tail ) {
       clearTimeout(tailShot);
       tailShot = setTimeout(doTailShot, tailShotTime);
     }
-    DEBUG.val > DEBUG.HIGH && console.log({framesWaiting:connection.frameBuffer.length, now: Date.now()});
+    DEBUG.val > DEBUG.high && console.log({framesWaiting:connection.frameBuffer.length, now: Date.now()});
   }
 
   async function doTailShot() {
     if ( tailShot ) {
       clearTimeout(tailShot);
     }
-    DEBUG.val > DEBUG.med && console.log("Doing tail shot");
+    DEBUG.val > DEBUG.low && console.log("Tail shot");
     await saveShot({tail:true});
-    tailShotTime = 2*tailShotTime;
+    DEBUG.val > DEBUG.med && console.log("Doing tail shot");
     if ( tailShotTime < MAX_TIME_BETWEEN_TAIL_SHOTS) {
       tailShot = setTimeout(doTailShot, tailShotTime);
+      tailShotTime = 1.618*tailShotTime;
     } else {
       tailShotTime = MIN_TIME_BETWEEN_TAIL_SHOTS;
     }
   }
 
   // throttled && debounced with tail 
-  async function doShot({ignoreHash: ignoreHash = false} = {}) {
+  async function doShot() {
     if ( nextShot ) return;
     nextShot = setTimeout(() => { 
       nextShot = false; 
       DEBUG.val > DEBUG.med && !DEBUG.noShot && console.log(`Doing shot ${Date.now()}`);
-      saveShot({ignoreHash});
+      saveShot();
     }, MIN_TIME_BETWEEN_SHOTS);
   }
 }
