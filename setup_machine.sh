@@ -9,6 +9,3 @@ sudo ./font.deps
 sudo ./dlchrome.sh
 cd ..
 npm i
-cd zombie-lord
-sudo ./dlchrome.sh
-cd ..
