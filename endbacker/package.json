@@ -1,0 +1,32 @@
+{
+  "name": "@dosy-private/endbacker",
+  "version": "1.0.0",
+  "description": "generic saas backend",
+  "main": "server.js",
+  "scripts": {
+    "test": "npm run dev",
+    "dev": "nodemon app.js",
+    "start": "node app.js",
+    "prestart": "node -r esm ./views/make_index_html.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/dosycorp/endbacker.git"
+  },
+  "author": "@dosy",
+  "bugs": {
+    "url": "https://gitlab.com/dosycorp/endbacker/issues"
+  },
+  "homepage": "https://gitlab.com/dosycorp/endbacker#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cookie-parser": "^1.4.4",
+    "cors": "^2.8.5",
+    "esm": "^3.2.25",
+    "express": "^4.17.1",
+    "multer": "^1.4.2",
+    "nodemon": "^1.19.3",
+    "pm2": "^3.5.1",
+    "stripe": "^6.36.0"
+  }
+}
