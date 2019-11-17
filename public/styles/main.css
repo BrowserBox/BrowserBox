@@ -1,0 +1,84 @@
+:root, body {
+  height: 100%;
+  margin: 0;
+}
+
+body, input, textarea, select, button {
+  font-family: Verdana;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: Consolas, monospace;
+  color: orange;
+  background: repeating-linear-gradient(to right, black, black 1em, silver 1em, silver 1.518em);
+}
+
+label, dt, legend {
+  color: orange;
+  background: blue;
+  border: 10pt dashed lime;
+  display: inline-block;
+}
+
+h1, h2 {
+  font-size: 200pt;
+}
+
+* h1:first-of-type {
+  margin-top: 0;  
+}
+
+* ol:last-of-type {
+  margin-bottom: 0;
+}
+
+section {
+  padding: 5em 8em 5em 3em;
+  overflow: hidden;
+}
+
+section.intro {
+  background: linear-gradient(38deg, dodgerblue, aquamarine);
+}
+
+section.old-or-new {
+  background: linear-gradient(137deg, darkorange, crimson);
+}
+
+section.features {
+  background: linear-gradient(58deg, mediumvioletred, gold);
+  column-width: 333px;
+}
+
+section.video {
+  background: linear-gradient(92deg, mediumspringgreen, indigo);
+}
+
+section.cta {
+  background: linear-gradient(92deg, cyan, lime);
+}
+
+footer {
+  background: linear-gradient(111deg, chartreuse, teal);
+}
+
+fieldset {
+  border-width: 20vmin;
+  background: linear-gradient(11deg, silver 61.8%, lightslategrey);
+}
+
+@media screen and (max-width: 666px) {
+  h1, h2 {
+    font-size: 34pt;
+  }
+
+  ol {
+    list-style-position: inside;
+    padding: 0;
+  }
+
+  section {
+    padding: 3em 0.5em;
+  }
+}
+

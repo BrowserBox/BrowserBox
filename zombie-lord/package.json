@@ -1,0 +1,32 @@
+{
+  "name": "@dosy-private/zombie-lord",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Controller of zombies",
+  "main": "index.js",
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "chrome-remote-interface": "^0.26.1",
+    "esm": "^3.2.25",
+    "fs": "0.0.1-security",
+    "node-fetch": "^2.6.0",
+    "path": "^0.12.7",
+    "sharp": "^0.23.2",
+    "url": "^0.11.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/dosycorp/zombie-lord.git"
+  },
+  "author": "@dosy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://gitlab.com/dosycorp/zombie-lord/issues"
+  },
+  "homepage": "https://gitlab.com/dosycorp/zombie-lord#readme"
+}

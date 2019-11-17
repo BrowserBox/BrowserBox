@@ -1,0 +1,7 @@
+  /* main story */
+    main section.content > section div.story {
+      max-width: 555px;
+      padding: 2em;
+    }
+
+
