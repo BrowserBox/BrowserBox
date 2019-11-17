@@ -244,7 +244,7 @@
         const modal = {
           sessionId,
           type: 'notice',
-          message: `We are transferring the file to a remote location. Once transfer is complete a tab will open where you can view the file securely after it is converted.`,
+          message: `Please purchase a license to use secure file view in Community-Edition. To purchase a license mail cris@dosycorp.com to speak with someone who will help.`,
           title: "SecureView\u2122",
         };
         subviews.openModal({modal}, state);
