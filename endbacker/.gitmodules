@@ -1,4 +1,0 @@
-[submodule "dosylogo"]
-	path = dosylogo
-	url = git@gitlab.com:dosycorp/dosylogo.git
-	master = master
