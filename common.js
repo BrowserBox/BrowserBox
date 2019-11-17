@@ -15,14 +15,14 @@ export const DEBUG = {
   high: 5
 };
 
+export const GO_SECURE = false;
+
 export const STAGING = branchName() == 'staging';
 export const MASTER = branchName() == 'master';
 export const BRANCH = branchName();
 
-console.log(BRANCH);
-
 export const version = 'v1';
-export const COOKIENAME = `litewait-${version}-userauth`;
+export const COOKIENAME = `litewait-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
 
 export const SECURE_VIEW_SCRIPT = path.join(__dirname, 'zombie-lord', 'scripts', 'get_download_view_url.sh');
 
@@ -36,4 +36,3 @@ export async function sleep(ms) {
 }
 
 export const CONNECTION_ID_URL = "data:text,DoNotDeleteMe";
-export const GO_SECURE = false;
