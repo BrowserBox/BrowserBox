@@ -1,0 +1,6 @@
+{
+  "watch": [
+    "*"
+  ],
+  "exec": "npm run prestart && node app.js"
+}

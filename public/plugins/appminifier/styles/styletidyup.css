@@ -1,0 +1,49 @@
+:root {
+  background: #ddd;
+}
+
+[role="button"] {
+  -webkit-appearance: button;
+  appearance: button;
+  width: fit-content;
+}
+
+[role="button"], [role="button"] * {
+  text-decoration: none !important;
+  color: black;
+}
+
+[role="button"] [role="button"] {
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
+  margin: 0;
+}
+
+[hidden], [aria-hidden="true"] {
+  display: none;
+}
+
+time {
+  font-style: italic;
+  color: grey;
+  margin: 0 0.35rem;
+}
+
+table {
+  min-width: 80%;
+}
+
+body {
+  position: relative;
+  padding: 1rem 1rem 5rem;
+  max-width: 666px; 
+  box-shadow: 0 0 0 1px silver;
+  background: snow;
+  margin: 0 auto;
+}
+
+:focus {
+  outline: medium solid dodgerblue !important;
+}
+

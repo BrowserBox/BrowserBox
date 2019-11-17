@@ -1,0 +1,50 @@
+body {
+  padding: 2rem;
+  margin: auto;
+  max-width: 38rem;
+}
+
+body, input, select, textarea, button {
+  font-size: 18pt;
+  font-family: system-ui, Arial, Helvetica, sans-serif;
+}
+
+form {
+  display: inline-table;
+}
+
+h1, h2, h3, strong, input, select, button, cite {
+  font-weight: 300;
+}
+
+section {
+  margin: 5rem 0;
+}
+
+ul, ol {
+  list-style-type: circle;
+}
+
+dt + dd {
+  margin-top: 0.75rem; 
+}
+
+dd {
+  margin: 0;
+}
+
+li {
+  margin-bottom: 2rem;
+}
+  
+fieldset, input {
+  border: thin solid lightblue;
+}
+
+::selection {
+  background-color: dodgerblue;
+}
+
+.name {
+  text-decoration: underline;
+}
