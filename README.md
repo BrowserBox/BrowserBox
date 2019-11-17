@@ -6,7 +6,7 @@ The Community Edition version of the cloud-based internet isolation solution at 
 
 ## Use
 
-Download the repository and self-host on your own machine.
+Download the repository and self-host on your own machine (at home, or in a VPS, VPC or the public cloud)
 
 Or
 
