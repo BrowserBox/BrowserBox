@@ -5,7 +5,7 @@ username="$2"
 
 mkdir -p /home/$username/chrome-browser/
 
-sudo -g browsers google-chrome-stable --mute-audio --headless --remote-debugging-port=$port --window-size=1280,800 --profile-directory=/home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=/home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
+google-chrome-stable --mute-audio --headless --remote-debugging-port=$port --window-size=1280,800 --profile-directory=/home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=/home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
 BGPID=$!
 
 trap 'kill -1 $BGPID; exit' SIGHUP
