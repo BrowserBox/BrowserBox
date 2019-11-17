@@ -1,0 +1,82 @@
+body {
+  font-family: system-ui, Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+  font-size: 13pt;
+  color: #222;
+  max-width: 40rem;
+  padding: 2rem;
+  margin: auto;
+  background: #fafafa;
+}
+a {
+  color: #2ECC40;
+  text-decoration: none;
+}
+h1, h2, strong {
+  color: #111;
+}
+header ol li,
+header ul li,
+[role="navigation"] ul li,
+[role="navigation"] ol li,
+nav ol li,
+nav ul li {
+  display: inline-block; 
+  margin: 0 0.25rem;
+}
+
+* + a, * + span {
+  margin: 0 0.175rem;
+}
+
+:not(input):not(option):not(textarea):not([contenteditable]):not(br):not(td):not(tr):not(th):empty {
+  display: none;
+}
+
+button, input {
+  margin: 0.175rem;
+}
+
+p {
+  margin: 0.35rem 0;
+}
+
+pre {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-spacing: 2px;
+  border-collapse: separate;
+}
+
+[contenteditable] {
+  background: white;
+  border: 1px solid;
+}
+
+[contenteditable]:focus {
+  outline: thin solid dodgerblue;
+}
+
+input, select, button, textarea, [contenteditable] {
+  display: block;
+}
+
+[contenteditable]:focus-within {
+  outline: thin solid dodgerblue;
+}
+
+[role="button"] {
+  -webkit-appearance: button;
+  appearance: button;
+}
+
+[hidden], [aria-hidden="true"] {
+  display: none;
+}
+time {
+  font-style: italic;
+  color: #ccc;
+}

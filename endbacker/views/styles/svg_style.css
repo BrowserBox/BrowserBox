@@ -1,0 +1,50 @@
+	svg {
+		position: relative;
+		fill: transparent;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		stroke: black;
+		display: inline-block;
+		width: 100px;
+		height: 100px;
+		outline: 0;
+		-webkit-user-select: none;
+	}
+	svg {
+		fill: black;
+		stroke-width: 4px;
+	}
+	/**
+	main.alt.filled svg path:nth-of-type(2n+1) {
+		fill: red;
+		stroke: transparent;
+	}
+	**/
+	main.alt.filled svg path:nth-of-type(2n) {
+		fill: red;
+		stroke: transparent;
+	}
+	svg path:nth-of-type(2) {
+		transform: rotate(120deg);
+		transform-origin: 333px 333px;
+	}
+	svg path:nth-of-type(3) {
+		transform: rotate(240deg);
+		transform-origin: 333px 333px;
+	}
+	svg:hover, 
+	svg:active,
+	svg:focus {
+		stroke: black;		
+		stroke-width: 4px;
+	}
+	svg:hover text, 
+	svg:active text,
+	svg:focus text{
+		opacity: 1.0;
+	}
+	svg:focus,
+	svg:hover,
+	svg:active {
+		fill: black;
+	}
