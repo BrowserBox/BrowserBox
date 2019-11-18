@@ -44,7 +44,7 @@ Or
 
 Try for free at https://free.cloudbrowser.xyz
 
-Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probalby faster)
+Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
 
 Are you unwilling to invest more time in your security? 
 
