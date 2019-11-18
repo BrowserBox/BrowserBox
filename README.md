@@ -1,4 +1,4 @@
-# browsergap.ce
+# BrowserGap Community Edition
 
 Simple remote browser isolation application
 
@@ -43,6 +43,8 @@ $ npm test
 Or
 
 Try for free at https://free.cloudbrowser.xyz
+
+Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probalby faster)
 
 ### Detailed Instructions
 
