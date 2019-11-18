@@ -46,6 +46,10 @@ Try for free at https://free.cloudbrowser.xyz
 
 Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probalby faster)
 
+Are you unwilling to invest more time in your security? 
+
+Please eamil me at cris@dosyago.com or cris@dosycorp.com if you want to spend more time on your security.
+
 ### Detailed Instructions
 
 Below is from an email I sent to a user to help them set up the first time:
