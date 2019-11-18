@@ -35,7 +35,6 @@ Download the repository and self-host on your own machine (at home, or in a VPS,
 ```sh
 $ git clone https://github.com/dosycorp/browsergap.ce.git
 $ cd browsergap.ce
-$ npm i
 $ ./setup_machine.sh
 $ npm test
 ```
