@@ -22,7 +22,7 @@ This is significant because the internet is a cesspool of attacks. Malware, rans
 
 BrowserGap and the RBI methodology acknowledges that not all threats can be detected and neutralized (such as by virus scanners), in order to face that reality, RBI adopts a "isolation" posture towards threats, effectively isolating them in the remote machine and preventing them from reaching your device.
 
-With BrowserGap, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
+With BrowserGap, in order to render the content of a web page, the only thing we send to your device from the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
 
 [Cloud-based internet isolation](https://www.disa.mil/-/media/Files/DISA/Fact-Sheets/Cloud-Based-Internet-Isolation-CBII-Fact-Sheet20190721.ashx?la=en&hash=5DFC2594478284991F4B005AFA41DE26AC73D84A) is another name for this security practice and it is an emerging industry. Symantec recently acquired a company in this space, and Menlo Security [was awarded](https://www.menlosecurity.com/press-releases-blog/disa-cloud-based-internet-isolation-cbii-awarded-to-the-by-light-professional-it-services-llc-and-menlo-security-team) an agreement to build a CBII prototype for DISA, after a June 2018 request for RBI solutions that could eventually serve [60% of DoD's](https://secureview.cloudbrowser.xyz/uploads/fileajqk.kkpgdih.pdf.html)[~ 3 million users](https://en.wikipedia.org/wiki/Browser_isolation).
 
