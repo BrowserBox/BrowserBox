@@ -6,6 +6,8 @@ The Community Edition version of the cloud-based internet isolation solution at 
 
 [We're on HN](https://news.ycombinator.com/item?id=21561613) :tada: 
 
+If you're having service issues, publicly shame us [on Twitter](https://twitter.com/browsergap)
+
 ## What is BrowserGap and Remote Browser isolation?
 
 BrowserGap is a [remote browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) product. RBI means accessing the public internet through a browser that runs in the cloud, rather than through a browser that runs on your device. This helps protect you from attacks on the web.
