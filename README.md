@@ -8,6 +8,8 @@ The Community Edition version of the cloud-based internet isolation solution at 
 
 If you're having service issues, publicly shame us [on Twitter](https://twitter.com/browsergap)
 
+Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools)? Take a look at the ["Zombie Lord" connection](https://github.com/dosycorp/browsergap.ce/blob/master/zombie-lord/connection.js) and ["Translate Voodoo CRDP"](https://github.com/dosycorp/browsergap.ce/blob/master/public/translateVoodooCRDP.js) for the two files with the largest concentrations of CRDTP code.
+
 ## What is BrowserGap and Remote Browser isolation?
 
 BrowserGap is a [remote browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) product. RBI means accessing the public internet through a browser that runs in the cloud, rather than through a browser that runs on your device. This helps protect you from attacks on the web.
