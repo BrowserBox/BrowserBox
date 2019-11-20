@@ -53,7 +53,7 @@ Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
 
 Are you unwilling to invest more time in your security? 
 
-Please eamil me at cris@dosyago.com if you want to spend more time on your security.
+Please email me at cris@dosyago.com if you want to spend more time on your security.
 
 ### Detailed Instructions
 
