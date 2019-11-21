@@ -23,6 +23,7 @@ const KEYS = [
   };
 
 export function makeCamera(connection) {
+  let shooting = false;
   let frameId = 1;
   let lastHash;
   let lastShot = Date.now();
@@ -88,9 +89,11 @@ export function makeCamera(connection) {
   }
 
   async function doShot() {
-    if ( nextShot ) return;
+    if ( nextShot || shooting ) return;
+    shooting = true;
     await saveShot();
     nextShot = setTimeout(() => nextShot = false, MIN_TIME_BETWEEN_SHOTS);
+    shooting = false;
   }
 }
 
