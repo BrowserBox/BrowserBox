@@ -97,6 +97,7 @@
     wss.on('connection', (ws, req) => {
       const cookie = req.headers.cookie;
       zl.act.saveIP(req.connection.remoteAddress);
+      console.log({connectionIp:req.connection.remoteAddress});
       if ( DEBUG.dev || allowed_user_cookie == 'cookie' || 
         (cookie && cookie.includes(`${COOKIENAME}=${allowed_user_cookie}`)) ) {
         zl.life.onDeath(zombie_port, () => {

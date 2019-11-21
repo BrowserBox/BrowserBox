@@ -2,6 +2,12 @@ import {DEBUG} from '../common.js';
 import {R,X} from '../../node_modules/brutalist-web/r.js';
 
   // Auxilliary view functions 
+    const NATIVE_MODALS = new Set([
+      'alert',
+      'confirm',
+      'prompt',
+      'beforeunload'
+    ]);
     const ModalRef = {
       alert: null, confirm: null, prompt: null, beforeunload: null,
       infobox: null, notice: null, auth: null, filechooser: null
@@ -44,7 +50,7 @@ import {R,X} from '../../node_modules/brutalist-web/r.js';
         throw new TypeError(`File chooser modal requires both sessionId and mode`);
       }
 
-      if ( mode == 'multiple' ) {
+      if ( mode == 'selectMultiple' ) {
         multiple = true;
       }
 
@@ -257,7 +263,8 @@ import {R,X} from '../../node_modules/brutalist-web/r.js';
       state.viewState.currentModal = null;
       state.viewState.lastModal.modalResponse = response;
 
-      if ( state.viewState.lastModal != ModalRef.infobox ) {
+      if ( NATIVE_MODALS.has(state.viewState.lastModal.type) ) {
+        console.log(state.viewState);
         state.H({
           synthetic: true,
           type: "respond-to-modal",

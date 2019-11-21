@@ -17,6 +17,7 @@ const BUFFERED_FRAME_COLLECT_DELAY = {
   MAX: 4000, /* 2000, 4000, 8000 */
 };
 const waiting = new Map();
+let connecting;
 let latestReload;
 let latestAlert;
 let lastTestTime;
@@ -208,6 +209,11 @@ class Privates {
   }
 
   async connectSocket(url, events, messageId) {
+    if ( connecting ) {
+      this.publics.queue.unshift(...events);
+      return;
+    };
+    connecting = true;
     if ( !this.publics.state.demoMode && onLine() ) {
       let socket;
       try {
