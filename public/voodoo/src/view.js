@@ -76,6 +76,7 @@ export function component(state) {
           clientY: 0,
           deltaMode: 2,
           deltaX: 0, 
+          contextId: state.viewState.latestScrollContext,
           deltaY: event.shiftKey ? -0.618 : 0.618
         });
       } else if ( event.key == "Tab" ) {
