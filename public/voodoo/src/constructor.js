@@ -221,7 +221,7 @@
           if ( !! state.useViewFrame ) {
             sizeBrowserToBounds(state.viewState.viewFrameEl);
           } else {
-            sizeBrowserToBounds(state.viewState.canvasEl);
+            asyncSizeBrowserToBounds(state.viewState.canvasEl);
             emulateNavigator();
           }
           updateTabs();
@@ -285,6 +285,7 @@
     // bond tasks 
       canvasBondTasks.push(indicateNoOpenTabs);
       canvasBondTasks.push(installZoomListener);
+      canvasBondTasks.push(asyncSizeBrowserToBounds);
 
       bondTasks.push(canKeysInput);
       bondTasks.push(getFavicon);
@@ -557,6 +558,10 @@
 
         const isThrottled = ThrottledEvents.has(event.type);
         const transformedEvent = transformEvent(event);
+
+        if ( mouseWheel ) {
+          transformedEvent.contextId = state.viewState.latestScrollContext;
+        }
         
         if ( isThrottled ) {
           // FIXME: this is not the right way to throttle
@@ -623,6 +628,7 @@
         height = Math.round(height);
         const {innerWidth:iw, outerWidth:ow, innerHeight:ih, outerHeight:oh} = window;
         const {width:w, availWidth:aw, height:h, availHeight:ah} = screen;
+        width = iw;
         if ( DEBUG.val > DEBUG.high ) {
           logit({iw,ow,ih,oh,width,height, w, aw, h, ah});
         }
@@ -633,7 +639,7 @@
         }
         H({ synthetic: true,
           type: "window-bounds-preImplementation",
-          width:width + 17,  /* scrollbar */
+          width:width + (deviceIsMobile() ? 0 : 17),  /* scrollbar */
           height,
           targetId: state.activeTarget
         });
@@ -683,10 +689,10 @@
         if ( ! runListeners('activateTab') ) {
           clearViewport();
         }
+        state.active = activeTab();
         subviews.TabList(state);
         subviews.OmniBox(state);
         subviews.LoadingIndicator(state);
-        state.active = activeTab();
         setTimeout(() => {
           if ( state.active && state.active.url != BLANK ) {
             canKeysInput();
