@@ -62,7 +62,24 @@ function translator(e, handled = {type:'case'}) {
       const deltaMode = e.originalEvent.deltaMode;
       const deltaX = adjustWheelDeltaByMode(e.originalEvent.deltaX, deltaMode);
       const deltaY = adjustWheelDeltaByMode(e.originalEvent.deltaY, deltaMode);
-      const retVal = mouseEvent(e, deltaX, deltaY);
+      const {contextId} = e;
+      const clientX = 0;
+      const clientY = 0
+      const deltas = {deltaX,deltaY,clientX,clientY};
+      const retVal1 = {
+        command: {
+          name: "Runtime.evaluate",
+          params: {
+            expression: `self.ensureScroll(${JSON.stringify(deltas)});`,
+            includeCommandLineAPI: false,
+            userGesture: true,
+            contextId,
+            timeout: SHORT_TIMEOUT
+          }
+        }
+      };
+      const retVal2 = mouseEvent(e, deltaX, deltaY);
+      const retVal = [retVal1,retVal2];
       return retVal;
       break;
     }

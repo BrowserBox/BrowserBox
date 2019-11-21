@@ -1,10 +1,11 @@
 import {DEBUG} from '../common.js';
 import sharp from 'sharp';
+import hasha from 'hasha';
 
 // image formats for capture depend on what the client can accept
   const SAFARI_FORMAT = {
     format: "jpeg",
-    quality: 21 /* 25, 50, 80, 90, 100 */
+    quality: 35 /* 25, 50, 80, 90, 100 */
   };
   const WEBP_FORMAT = {
     format: "png"
@@ -67,7 +68,7 @@ export function makeCamera(connection) {
         const img = Buffer.from(data || screenshotData, 'base64');
         const F = {img, frame: frameId, targetId};
         await forExport({frame:F, connection});
-        F.hash = F.img;
+        F.hash = await hasha(F.img);
         return F;
       } else {
         DEBUG.val > DEBUG.med && console.log("Sending no frame");
