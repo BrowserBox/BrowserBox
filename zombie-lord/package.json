@@ -12,7 +12,7 @@
     "hasha": "^5.1.0",
     "node-fetch": "^2.6.0",
     "path": "^0.12.7",
-    "sharp": "^0.23.2",
+    "sharp": "^0.23.3",
     "url": "^0.11.0"
   },
   "devDependencies": {},
