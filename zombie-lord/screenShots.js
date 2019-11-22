@@ -1,26 +1,42 @@
 import {DEBUG} from '../common.js';
+import sharp from 'sharp';
 
 const MAX_FRAMES = 2; /* 1, 2, 4 */
-const MIN_TIME_BETWEEN_SHOTS = 100; /* 20, 40, 100, 250, 500 */
-const MIN_TIME_BETWEEN_TAIL_SHOTS = 300;
+const MIN_TIME_BETWEEN_SHOTS = 70; /* 20, 40, 100, 250, 500 */
+const MIN_TIME_BETWEEN_TAIL_SHOTS = 150;
 const NOIMAGE = {img: '', frame:0};
 const KEYS = [
   1, 11, 13, 629, 1229, 2046, 17912, 37953, 92194, 151840
 ];
 // image formats for capture depend on what the client can accept
-  const SAFARI_FORMAT = {
-    format: "jpeg",
-    quality: 35 /* 25, 50, 80, 90, 100 */
+  const WEBP_FORMAT = {
+    format: "png"
   };
-  const SAFARI_SHOT = {
-    command: {
-      name: DEBUG.legacyShots ? "Page.captureScreenshot" : "HeadlessExperimental.beginFrame",
-      params: DEBUG.legacyShots ? SAFARI_FORMAT : {
-        interval: MIN_TIME_BETWEEN_SHOTS, /* ms between frames */
-        screenshot : SAFARI_FORMAT
-      }
-    }
-  };
+	const SAFARI_FORMAT = {
+		format: "jpeg",
+		quality: 35 /* 25, 50, 80, 90, 100 */
+	};
+	const SAFARI_SHOT = {
+		command: {
+			name: DEBUG.legacyShots ? "Page.captureScreenshot" : "HeadlessExperimental.beginFrame",
+			params: DEBUG.legacyShots ? SAFARI_FORMAT : {
+				interval: MIN_TIME_BETWEEN_SHOTS, /* ms between frames */
+				screenshot : SAFARI_FORMAT
+			}
+		}
+	};
+	const WEBP_SHOT = {
+		command: {
+			name: DEBUG.legacyShots ? "Page.captureScreenshot" : "HeadlessExperimental.beginFrame",
+			params: DEBUG.legacyShots ? WEBP_FORMAT : {
+				interval: MIN_TIME_BETWEEN_SHOTS, /* ms between frames */
+				screenshot : WEBP_FORMAT
+			}
+		}
+	};
+	const WEBP_OPTS = {
+		quality: 42,
+	};
 
 export function makeCamera(connection) {
   let shooting = false;
@@ -28,6 +44,7 @@ export function makeCamera(connection) {
   let lastHash;
   let lastShot = Date.now();
   let nextShot;
+  let tailShot;
 
   return doShot;
 
@@ -46,7 +63,7 @@ export function makeCamera(connection) {
     }
     const targetId = connection.sessions.get(connection.sessionId);
     let response;
-    const ShotCommand = SAFARI_SHOT.command;
+		const ShotCommand = (connection.isSafari ? SAFARI_SHOT : WEBP_SHOT).command;
     DEBUG.val > DEBUG.med && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
     response = await connection.sessionSend(ShotCommand);
     lastShot = timeNow;
@@ -64,6 +81,7 @@ export function makeCamera(connection) {
         return NOIMAGE;
       } else {
         lastHash = F.hash;
+				await forExport({frame:F, connection});
         return F;
       }
     } else {
@@ -83,6 +101,15 @@ export function makeCamera(connection) {
       while ( connection.frameBuffer.length > MAX_FRAMES ) {
         connection.frameBuffer.shift();
       }
+
+      if ( !! tailShot ) {
+        clearTimeout(tailShot);
+        tailShot = false;
+      }
+      tailShot = setTimeout(() => {
+				DEBUG.shotDebug && console.log("Tail shot");
+				doShot();
+		  }, MIN_TIME_BETWEEN_TAIL_SHOTS);
     }
 
     DEBUG.val > DEBUG.high && console.log({framesWaiting:connection.frameBuffer.length, now: Date.now()});
@@ -95,6 +122,18 @@ export function makeCamera(connection) {
     nextShot = setTimeout(() => nextShot = false, MIN_TIME_BETWEEN_SHOTS);
     shooting = false;
   }
+}
+
+export async function forExport({frame, connection}) {
+  let {img} = frame;
+  // FIXME : CPU issues
+  img = Buffer.from(img, 'base64');
+  if ( ! connection.isSafari ) {
+    img = await sharp(img).webp(WEBP_OPTS).toBuffer();
+  }
+  img = img.toString('base64');
+  frame.img = img;
+  return frame;
 }
 
 
