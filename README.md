@@ -50,17 +50,23 @@ npm test
 Or (using docker build yourself)
 
 ```sh
+sudo apt update && sudo apt -y upgrade
+sudo apt install -y curl git wget
+git clone https://github.com/dosycorp/browsergap.ce.git
 cd browsergap.ce
-docker image build -t browsergapce:1.0 .
-docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json browsergapce:1.0
+./buld_docker.sh
+./run_docker.sh 
 ```
 
 Or (using docker pull from hub)
 
 ```sh
-docker pull browsergapce:1.0
+docker pull dosyago/browsergapce:1.0
 curl -o chrome.json https://raw.githubusercontent.com/dosycorp/browsergap.ce/master/chrome.json
-docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json browsergapce:1.0
+sudo su -c "echo 'kernel.unprivileged_userns_clone=1' > /etc/sysctl.d/00-local-userns.conf"
+sudo su -c "echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/01-network-ipv4.conf"
+sudo sysctl -p
+sudo docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json browsergapce:1.0
 ```
 
 And visit http://<your ip>:8002 to see it up.:
