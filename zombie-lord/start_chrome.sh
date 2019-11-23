@@ -17,7 +17,7 @@ if grep docker /proc/1/cgroup -qa; then
 fi
 
 if [ $is_docker == "yes" ]; then
-  google-chrome-stable --mute-audio --headless --remote-debugging-address=0.0.0.0 --remote-debugging-port=$port --window-size=1280,800 --profile-directory=/home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=/home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
+  google-chrome-stable --no-sandbox --mute-audio --headless --remote-debugging-address=0.0.0.0 --remote-debugging-port=$port --window-size=1280,800 --profile-directory=/home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=/home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
 else 
   google-chrome-stable --mute-audio --headless --remote-debugging-port=$port --window-size=1280,800 --profile-directory=/home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=/home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
 fi
