@@ -2,6 +2,9 @@
 
 trap 'sudo kill $BGPID; exit' SIGINT 
 
+sudo killall pulseaudio
+pulseaudio --start
+
 username=$(whoami)
 cd parec-server
 node index.js &
