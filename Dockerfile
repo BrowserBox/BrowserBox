@@ -9,6 +9,7 @@ RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 RUN sudo chmod -R 777 /usr/src/app
 USER docker
 RUN ./setup_machine.sh
+EXPOSE 5002
 EXPOSE 8002
 
 CMD ["npm", "test"]
