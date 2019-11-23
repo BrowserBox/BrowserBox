@@ -2,10 +2,26 @@
 
 port="$1"
 username="$2"
+is_docker="no"
 
 mkdir -p /home/$username/chrome-browser/
 
-google-chrome-stable --mute-audio --headless --remote-debugging-port=$port --window-size=1280,800 --profile-directory=/home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=/home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
+# Note that we open debugging port on public interface (0.0.0.0) IF we detect we are in docker
+# If we are in docker we are safe since we won't publish that port (5002) outside the container
+# BUT if we are not in docker this is a major security risk, you should only ever listen
+# for debugging on localhost otherwise anyone can connect to your browser and 
+# do whatever they want (full DevTools protocol power) 
+
+if grep docker /proc/1/cgroup -qa; then
+  is_docker="yes"
+fi
+
+if [ $is_docker == "yes" ]; then
+  google-chrome-stable --mute-audio --headless --remote-debugging-address=0.0.0.0 --remote-debugging-port=$port --window-size=1280,800 --profile-directory=/home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=/home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
+else 
+  google-chrome-stable --mute-audio --headless --remote-debugging-port=$port --window-size=1280,800 --profile-directory=/home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=/home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
+fi
+
 BGPID=$!
 
 trap 'kill -1 $BGPID; exit' SIGHUP
