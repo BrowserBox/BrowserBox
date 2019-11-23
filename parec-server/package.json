@@ -1,0 +1,11 @@
+{
+  "name": "parec-server",
+  "version": "0.0.0",
+  "description": "Record pulseaudio monitor and serve http stream",
+  "main": "parec-server.js",
+  "scripts": {
+	"test": "node index.js"
+  },
+  "author": "Jerko Steiner",
+  "license": "ISC"
+}
