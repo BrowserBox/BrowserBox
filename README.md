@@ -47,11 +47,19 @@ cd browsergap.ce
 npm test
 ```
 
-Or (using docker)
+Or (using docker build yourself)
 
 ```sh
 cd browsergap.ce
-sudo docker image build -t browsergapce:1.0 .
+docker image build -t browsergapce:1.0 .
+docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json browsergapce:1.0
+```
+
+Or (using docker pull from hub)
+
+```sh
+docker pull browsergapce:1.0
+curl -o chrome.json https://raw.githubusercontent.com/dosycorp/browsergap.ce/master/chrome.json
 docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json browsergapce:1.0
 ```
 
