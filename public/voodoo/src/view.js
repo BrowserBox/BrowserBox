@@ -12,6 +12,8 @@ const isIOS = navigator.platform && navigator.platform.match("iPhone|iPod|iPad")
 
 export function component(state) {
   const {H,sizeBrowserToBounds, asyncSizeBrowserToBounds, emulateNavigator, bondTasks, installFrameListener, canvasBondTasks} = state;
+  const audio_port = 1 + Number(location.port ? location.port : ( location.protocol == 'https' ? 443 : 80 ) );
+  const audio_url = `${location.protocol}//${location.hostname}:${audio_port}/`;
   const FocusBorrowerSel = '[name="address"], #selectinput, .control';
   const viewState = Object.assign(state.viewState, {
     touchX: 0, touchY: 0,
@@ -190,6 +192,9 @@ export function component(state) {
         </article>
         ${subviews.Modals(state)}
       </main>
+      <audio bond=${el => self.addEventListener('click', () => el.play(), {once:true})} autoplay loop id=audio>
+        <source src="${audio_url}" type=audio/mp3>
+      </audio>
       ${DEBUG.pluginsMenu ? subviews.PluginsMenu(state) : ''}
     `;
   };
