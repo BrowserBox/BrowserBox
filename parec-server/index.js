@@ -2,7 +2,7 @@
 'use strict';
 
 var argv = process.argv;
-var device = argv[2] || 'auto_null.monitor';
+var device = argv[3] || 'auto_null.monitor';
 
 var encoders = {
     mp3: {
@@ -55,7 +55,7 @@ function releaseEncoder() {
     parec = undefined;
 }
 
-var port = 8003;
+var port = argv[2];
 console.log('starting http server on port', port);
 var server = http.createServer(function(request, response) {
     var contentType = encoders[encoderType].contentType;
