@@ -1,6 +1,7 @@
 #!/bin/bash
 
 sudo apt install -y apt-utils
+sudo apt install -y nodejs npm
 sudo npm i -g node-dev
 sudo apt install -y libvips libjpeg-dev
 ./install_bundle_deps.sh
