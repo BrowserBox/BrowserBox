@@ -15,7 +15,7 @@ export const DEBUG = {
   high: 5
 };
 
-export const GO_SECURE = false;
+export const GO_SECURE = true;
 
 export const STAGING = branchName() == 'staging';
 export const MASTER = branchName() == 'master';
