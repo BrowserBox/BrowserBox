@@ -34,6 +34,7 @@ var hooks = 0;
 var parec = undefined;
 var encoder = undefined;
 
+const sslBranch = 'master'
 const SSL_OPTS = {
   cert: fs.readFileSync(`../sslcert/${sslBranch}/fullchain.pem`),
   key: fs.readFileSync(`../sslcert/${sslBranch}/privkey.pem`),
