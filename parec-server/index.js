@@ -26,12 +26,19 @@ var encoders = {
 };
 var encoderType = 'mp3';
 
-var http = require('http'),
-    childProcess = require('child_process');
+var https = require('https'),
+    childProcess = require('child_process'),
+    fs = require('fs');
 
 var hooks = 0;
 var parec = undefined;
 var encoder = undefined;
+
+const SSL_OPTS = {
+  cert: fs.readFileSync(`../sslcert/${sslBranch}/fullchain.pem`),
+  key: fs.readFileSync(`../sslcert/${sslBranch}/privkey.pem`),
+  ca: fs.readFileSync(`../sslcert/${sslBranch}/chain.pem`),
+}
 
 function getEncoder() {
     if (encoder) return encoder;
@@ -57,7 +64,7 @@ function releaseEncoder() {
 
 var port = argv[2];
 console.log('starting http server on port', port);
-var server = http.createServer(function(request, response) {
+var server = https.createServer(SSL_OPTS, function(request, response) {
     var contentType = encoders[encoderType].contentType;
     console.log('  setting Content-Type to', contentType);
 
