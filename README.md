@@ -1,5 +1,9 @@
 # BrowserGap Community Edition
 
+[[Alternate Names]]:
+- Horseman :horse: :skull: :man: :heavy_check_mark:
+- Bogeyhead ???
+
 BrowserGap is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. 
 
 BrowserGap Community Edition can be used as a simple remote browser isolation application.
