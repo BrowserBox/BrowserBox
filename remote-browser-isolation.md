@@ -1,3 +1,15 @@
+## BrowserGap
+
+BrowserGap is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. 
+
+BrowserGap Community Edition can be used as a simple remote browser isolation application.
+
+If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
+
+[We're on HN](https://news.ycombinator.com/item?id=21561613) :tada: 
+
+If you're having service issues, publicly shame us [on Twitter](https://twitter.com/browsergap)
+
 ## What is BrowserGap and Remote Browser isolation?
 
 BrowserGap can be used as a [remote browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) product. RBI means accessing the public internet through a browser that runs in the cloud, rather than through a browser that runs on your device. This helps protect you from attacks on the web.
