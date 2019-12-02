@@ -57,7 +57,7 @@ Try for free at https://free.cloudbrowser.xyz
 
 Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
 
-Would it be impossible for you to more time in your security? 
+Would it be impossible for you to invest more time in your security? 
 
 If the answer is NO, then please email me at cris@dosycorp.com OR cris@dosyago.com to discuss how our RBI/CBII solution may assist you.
 
