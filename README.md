@@ -1,6 +1,7 @@
 # BrowserGap Community Edition
 
 [[Alternate Names]]:
+- Bodyless :tada: :heavy_check_mark:
 - Horseman :horse: :skull: :man: :heavy_check_mark:
 - Bogeyhead ???
 
