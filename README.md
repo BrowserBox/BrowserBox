@@ -8,8 +8,13 @@ This is because the browser runs in headless mode and is controlled by DevTools 
 
 You could extend this project by building a real OBP Extension store (using the more powerful DevTools API instead of the Chrome Extensions API), or you could just build your own extension on top of the work already here.
 
+## One possible use case: Isolated Remote Browsers for security
+
 OBP can be used as a simple remote browser isolation application. 
+
 If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
+
+## Optics
 
 [We're on HN](https://news.ycombinator.com/item?id=21561613) :tada: [...And we're doing it again!](https://news.ycombinator.com/item?id=21681065) :fearful: :see_no_evil:
 
