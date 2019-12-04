@@ -80,6 +80,8 @@ In no particular order:
 
 ### Bonus Section 
 
+Becuase this works by running Chrome in headless mode and giving that headless Chrome a new head back (in the form of a front and back end to interace with the headless chrome to make it look like a normal browser), some clever folk have come up with a variety of quirky, unusual, funny and creative names for this:
+
 [[Alternate Names]]:
 - Bodyless :tada: :heavy_check_mark:
 - Horseman :horse: :skull: :man: :heavy_check_mark:
