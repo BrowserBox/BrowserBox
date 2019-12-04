@@ -1,9 +1,14 @@
-# BrowserGap Community Edition
+# Open Browser Platform - Community Edition
 
-BrowserGap is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. 
+OBP (formerly BrowserGap) is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. 
 
-BrowserGap Community Edition can be used as a simple remote browser isolation application.
+OBP Community Edition can be used to build all sorts of extensions to the normal Browser experience without needing to go through the Chrome WebStore. 
 
+This is because the browser runs in headless mode and is controlled by DevTools (a string-based websocket protocol), interfaced with a simple frontend UI. 
+
+You could extend this project by building a real OBP Extension store (using the more powerful DevTools API instead of the Chrome Extensions API), or you could just build your own extension on top of the work already here.
+
+OBP can be used as a simple remote browser isolation application. 
 If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
 
 [We're on HN](https://news.ycombinator.com/item?id=21561613) :tada: [...And we're doing it again!](https://news.ycombinator.com/item?id=21681065) :fearful: :see_no_evil:
@@ -64,6 +69,14 @@ If the answer is NO, then please email me at cris@dosycorp.com OR cris@dosyago.c
 ### Detailed Instructions
 
 An annotated transcript of an install is available at [this gist](https://gist.github.com/crislin2046/2fcd103234f93376c44d110d6295f32a).
+
+### Development Roadmap
+
+In no particular order:
+
+- Automation, as in recording and replay of any user intent, or sequence of such (already exists in a basic and broken way)
+- Improve the latency and screen performance
+- Extend and publish the API for the front-end and back-end to easily enable people to build plugins on top
 
 ### Bonus Section 
 
