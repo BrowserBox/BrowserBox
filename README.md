@@ -1,8 +1,10 @@
-# Open Browser Platform - Community Edition
+# Robot Head
 
-OBP (formerly BrowserGap) is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. 
+Robot Head (formerly, Open Browser Platform, BrowserGap, etc) is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. More than that you can build atop Chrome in ways that you can't using Chrome Extension APIs or the Chrome DevTools protocol. 
 
-OBP Community Edition can be used to build all sorts of extensions to the normal Browser experience without needing to go through the Chrome WebStore. 
+Things that aren't normally possible, become possible. 
+
+Robot Head can be used to build all sorts of extensions to the normal Browser experience without needing to go through the Chrome WebStore. 
 
 This is because the browser runs in headless mode and is controlled by DevTools (a string-based websocket protocol), interfaced with a simple frontend UI. 
 
