@@ -93,3 +93,6 @@ Becuase this works by running Chrome in headless mode and giving that headless C
 - Bodyless :tada: :heavy_check_mark:
 - Horseman :horse: :skull: :man: :heavy_check_mark:
 - Bogeyhead ???
+- BrowserGap
+- Open Browser Platform
+- Defanged Headful Chrome
