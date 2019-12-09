@@ -1,10 +1,10 @@
-# Robot Head
+# BrowserView
 
 ## Build web apps that have all the power of a Chrome WebView, and deliver them over the public web
 
-Robot Head is an open-source project that lets you deliver experiences over the web that leverage all the power of Chrome headless, Node.JS, the DevTools protocol and Chrome extensions API. You can think of it as a `<webview>` tag for the open web! Webview is a term for a component that provides a capability of a browser tab, such as the Android WebView, or Electron's `<webview>` tag or legacy "Chrome Apps" `<webview>` tag.
+BrowserView is an open-source project that lets you deliver experiences over the web that leverage all the power of Chrome headless, Node.JS, the DevTools protocol and Chrome extensions API. You can think of it as a `<webview>` tag for the open web! Webview is a term for a component that provides a capability of a browser tab, such as the Android WebView, or Electron's `<webview>` tag or legacy "Chrome Apps" `<webview>` tag.
 
-Technically, Robot Head (formerly named Open Browser Platform, BrowserGap, etc) is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. More than that you can build atop Chrome in ways that you can't using Chrome Extension APIs or the Chrome DevTools protocol. 
+Technically, BrowserView (formerly named Open Browser Platform, BrowserGap, etc) is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. Only the UI front-end runs on your device, right in your normal browser (we even support iOS going back to iPhone 4). More than that you can build atop Chrome in ways that you can't using Chrome Extension APIs or the Chrome DevTools protocol. 
 
 Things that aren't normally possible, become possible. 
 
@@ -34,7 +34,7 @@ If you want to, you can connect PPTR to the remote browser that you create with 
 
 ## One possible simple use case out of the box: Isolated Remote Browsers for security
 
-Robot Head can be used as a simple remote browser isolation application. 
+BrowserView can be used as a simple remote browser isolation application. 
 
 If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
 
