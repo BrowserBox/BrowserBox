@@ -18,10 +18,6 @@ If you want a hosted or managed on-prem cloud-based internet isolation solution,
 
 ## Optics
 
-[We're on HN](https://news.ycombinator.com/item?id=21561613) :tada: [...And we're doing it again!](https://news.ycombinator.com/item?id=21681065) :fearful: :see_no_evil:
-
-If you're having service issues, publicly shame us [on Twitter](https://twitter.com/browsergap)
-
 Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools)? Take a look at the ["Zombie Lord" connection](https://github.com/dosycorp/browsergap.ce/blob/master/zombie-lord/connection.js) and ["Translate Voodoo CRDP"](https://github.com/dosycorp/browsergap.ce/blob/master/public/translateVoodooCRDP.js) for the two files with the largest concentrations of CRDTP code.
 
 ## Use
