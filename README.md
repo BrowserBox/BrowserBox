@@ -121,4 +121,4 @@ Becuase this works by running Chrome in headless mode and giving that headless C
 - Bogeyhead ???
 - BrowserGap
 - Open Browser Platform
-- Defanged Headful Chrome
+- [DeFAANGED Headful Chrome](https://github.com/dosycorp/BrowserView/issues/20)
