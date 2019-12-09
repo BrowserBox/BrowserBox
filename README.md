@@ -40,10 +40,10 @@ If you want a hosted or managed on-prem cloud-based internet isolation solution,
 
 ## Other cool use cases this enables:
 
-- Build a plugin for Recording and playback of any sequence of user actions to create fully reproducible "web macros" that people can share
+- Build a plugin for Recording and playback of any sequence of user actions to create fully reproducible "web macros" that people can share. We're building this!
 - A "webview" tag for the open web. The web view tag is connected to a remote browser and provides all fuctionalities of a webview tag (such as in Electron or Android).
 - A "browser" tag for the open web. The browser tag is connected to a remote browser and provides all capabilities of a browser, including multiple tabs, history, an address bar and so on.
-- A service that lets you run electron apps in the cloud, but connect to them on a browser. So a UI for electron apps that you run in the cloud. So take any electron app and convert it into a docker container and server that you run in the cloud and interface with over a front-end on the client. 
+- A service that lets you run electron apps in the cloud, but connect to them on a browser. So a UI for electron apps that you run in the cloud. So take any electron app and convert it into a docker container and server that you run in the cloud and interface with over a front-end on the client. We're building this, it's called [CloudChamber](https://github.com/dosycorp/CloudChamber)!
 
 ## Optics
 
