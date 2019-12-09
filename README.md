@@ -8,7 +8,21 @@ Robot Head can be used to build all sorts of extensions to the normal Browser ex
 
 This is because the browser runs in headless mode and is controlled by DevTools (a string-based websocket protocol), interfaced with a simple frontend UI. 
 
-You could extend this project by building a real OBP Extension store (using the more powerful DevTools API instead of the Chrome Extensions API), or you could just build your own extension on top of the work already here.
+You could extend this project by building a real open browser extension store (using the more powerful DevTools API instead of the Chrome Extensions API), that people could run in their remote browser, or you could just build your own extension on top of the work already here.
+
+## Why this instead of Chrome Extensions?
+
+The Chrome extensions API is very limited. You can't run a server, you can't use UDP, you can't draw atop the UI in any way you like, you can't intercept and handle modal dialogs (like alert, prompt, etc), you can't programmatically respond to permissions requests, or file dialogs. Plus, every Chrome extension needs to be distributed through the extension store.
+
+This platform lets you builds extremely rich extensions to the Chrome experience using the full power of Chrome headless, Node.JS, DevTools protocol and Chrome extensions. It's just more powerful, and it's more open and free because no particular company gate-keeps the access and publishing.
+
+## Why this instead of puppeteer (or selenium, or phantomjs, etc)?
+
+Mainly because it's so much more powerful than just a protocol to automate a browser. PPTR (and the rest) are basically just simple wrappers around the raw DevTools protocol, and they do not have any front end. So you need to build your own front-end if you want to use PPTR to deliver rich browser plugins. Robot Head extends the basic DevTools protocol in many ways.
+
+For instance, PPTR (et al) do not have any easy way to handle multiple tabs, and there are many many things that require having multiple tabs open (interactions between apps, social login, popups). This project handles all that book-keeping and state to make interacting with multiple tabs simple.
+
+Further, PPTR (et al) are designed around a specific use-case (testing and artificial automation) and they do this brilliantly, but outside of these bounds they become limiting factors. This project is an open protocol designed to support more demanding use cases, including building web apps that have the full power of Chrome, and that involve automating the browser as a user would, which removes a lot of edge cases where websites will not automate correctly with PPTR (and the rest). The acid test is that we can ship a front-end (accessible over the web) that nevertheless acts exatly like a browser. Using PPTR alone this is not possible. 
 
 ## One possible use case: Isolated Remote Browsers for security
 
