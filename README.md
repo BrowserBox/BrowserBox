@@ -1,6 +1,10 @@
 # Robot Head
 
-Robot Head (formerly, Open Browser Platform, BrowserGap, etc) is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. More than that you can build atop Chrome in ways that you can't using Chrome Extension APIs or the Chrome DevTools protocol. 
+## Build web apps that have all the power of a Chrome WebView
+
+Robot Head is an open-source project that lets you deliver experiences over the web that leverage all the power of Chrome headless, Node.JS, the DevTools protocol and Chrome extensions API. You can think of it as a `<webview>` tag for the open web! Webview is a term for a component that provides a capability of a browser tab, such as the Android WebView, or Electron's `<webview>` tag or legacy "Chrome Apps" `<webview>` tag.
+
+Technically, Robot Head (formerly named Open Browser Platform, BrowserGap, etc) is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. More than that you can build atop Chrome in ways that you can't using Chrome Extension APIs or the Chrome DevTools protocol. 
 
 Things that aren't normally possible, become possible. 
 
