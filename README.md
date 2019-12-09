@@ -16,6 +16,8 @@ The Chrome extensions API is very limited. You can't run a server, you can't use
 
 This platform lets you builds extremely rich extensions to the Chrome experience using the full power of Chrome headless, Node.JS, DevTools protocol and Chrome extensions. It's just more powerful, and it's more open and free because no particular company gate-keeps the access and publishing.
 
+At the same time, this is not a replacement for Chrome extensions API, it is going further. You can build Chrome extensions and install them in the remote browser. There's no need to not use Chrome extensions. 
+
 ## Why this instead of puppeteer (or selenium, or phantomjs, etc)?
 
 Mainly because it's so much more powerful than just a protocol to automate a browser. PPTR (and the rest) are basically just simple wrappers around the raw DevTools protocol, and they do not have any front end. So you need to build your own front-end if you want to use PPTR to deliver rich browser plugins. Robot Head extends the basic DevTools protocol in many ways.
@@ -24,11 +26,19 @@ For instance, PPTR (et al) do not have any easy way to handle multiple tabs, and
 
 Further, PPTR (et al) are designed around a specific use-case (testing and artificial automation) and they do this brilliantly, but outside of these bounds they become limiting factors. This project is an open protocol designed to support more demanding use cases, including building web apps that have the full power of Chrome, and that involve automating the browser as a user would, which removes a lot of edge cases where websites will not automate correctly with PPTR (and the rest). The acid test is that we can ship a front-end (accessible over the web) that nevertheless acts exatly like a browser. Using PPTR alone this is not possible. 
 
-## One possible use case: Isolated Remote Browsers for security
+If you want to, you can connect PPTR to the remote browser that you create with Robot Head, so you can use the Robot Head protocol and the PPTR protocol at the same time. 
+
+## One possible simple use case out of the box: Isolated Remote Browsers for security
 
 OBP can be used as a simple remote browser isolation application. 
 
 If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
+
+## Other cool use cases this enables:
+
+- Build a plugin for Recording and playback of any sequence of user actions to create fully reproducible "web macros" that people can share
+- A "webview" tag for the open web. The web view tag is connected to a remote browser and provides all fuctionalities of a webview tag (such as in Electron or Android).
+- A "browser" tag for the open web. The browser tag is connected to a remote browser and provides all capabilities of a browser, including multiple tabs, history, an address bar and so on.
 
 ## Optics
 
