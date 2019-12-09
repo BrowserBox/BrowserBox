@@ -1,6 +1,6 @@
 # Robot Head
 
-## Build web apps that have all the power of a Chrome WebView
+## Build web apps that have all the power of a Chrome WebView, and deliver them over the public web
 
 Robot Head is an open-source project that lets you deliver experiences over the web that leverage all the power of Chrome headless, Node.JS, the DevTools protocol and Chrome extensions API. You can think of it as a `<webview>` tag for the open web! Webview is a term for a component that provides a capability of a browser tab, such as the Android WebView, or Electron's `<webview>` tag or legacy "Chrome Apps" `<webview>` tag.
 
