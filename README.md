@@ -43,6 +43,7 @@ If you want a hosted or managed on-prem cloud-based internet isolation solution,
 - Build a plugin for Recording and playback of any sequence of user actions to create fully reproducible "web macros" that people can share
 - A "webview" tag for the open web. The web view tag is connected to a remote browser and provides all fuctionalities of a webview tag (such as in Electron or Android).
 - A "browser" tag for the open web. The browser tag is connected to a remote browser and provides all capabilities of a browser, including multiple tabs, history, an address bar and so on.
+- A service that lets you run electron apps in the cloud, but connect to them on a browser. So a UI for electron apps that you run in the cloud. So take any electron app and convert it into a docker container and server that you run in the cloud and interface with over a front-end on the client. 
 
 ## Optics
 
@@ -106,8 +107,9 @@ An annotated transcript of an install is available at [this gist](https://gist.g
 In no particular order:
 
 - Automation, as in recording and replay of any user intent, or sequence of such (already exists in a basic and broken way)
-- Improve the latency and screen performance
 - Extend and publish the API for the front-end and back-end to easily enable people to build plugins on top
+- Improve the latency and screen performance
+
 
 ### Bonus Section 
 
