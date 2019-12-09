@@ -34,7 +34,7 @@ If you want to, you can connect PPTR to the remote browser that you create with 
 
 ## One possible simple use case out of the box: Isolated Remote Browsers for security
 
-OBP can be used as a simple remote browser isolation application. 
+Robot Head can be used as a simple remote browser isolation application. 
 
 If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
 
