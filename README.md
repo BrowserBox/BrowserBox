@@ -86,7 +86,7 @@ sudo sysctl -p
 sudo docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json browsergapce:1.0
 ```
 
-And visit http://<your ip>:8002 to see it up.
+And visit http://&lt;your ip&gt;:8002 to see it up.
 
 Or
 
