@@ -8,7 +8,7 @@ Technically, BrowserView (formerly named Open Browser Platform, BrowserGap, etc)
 
 Things that aren't normally possible, become possible. 
 
-Robot Head can be used to build all sorts of extensions to the normal Browser experience without needing to go through the Chrome WebStore. 
+BrowserView can be used to build all sorts of extensions to the normal Browser experience without needing to go through the Chrome WebStore. 
 
 This is because the browser runs in headless mode and is controlled by DevTools (a string-based websocket protocol), interfaced with a simple frontend UI. 
 
@@ -31,6 +31,10 @@ For instance, PPTR (et al) do not have any easy way to handle multiple tabs, and
 Further, PPTR (et al) are designed around a specific use-case (testing and artificial automation) and they do this brilliantly, but outside of these bounds they become limiting factors. This project is an open protocol designed to support more demanding use cases, including building web apps that have the full power of Chrome, and that involve automating the browser as a user would, which removes a lot of edge cases where websites will not automate correctly with PPTR (and the rest). The acid test is that we can ship a front-end (accessible over the web) that nevertheless acts exatly like a browser. Using PPTR alone this is not possible. 
 
 If you want to, you can connect PPTR to the remote browser that you create with Robot Head, so you can use the Robot Head protocol and the PPTR protocol at the same time. 
+
+## Why this instead of Electron?
+
+Electron requires you to download a large package. That does provide good native integration, at the same time, people criticize the size of the download and the performance and memory demands of simple Electron apps. If you wanted to use Electron mostly for the webview and Node.JS capabilities, you could definitely build atop BrowserView to deliver the same service through a browser from the cloud. At the same time, if you're attached to a downloadable app, that's not a problem. This is not necessarily a replacement for Electron, but it can complement it. For example, instead of asking people to download your massive Electron app, you could run that app in the cloud, and serve the experience as a front-end using BrowserView. In fact, we're [building this as a service](https://github.com/dosycorp/CloudChamber)!
 
 ## One possible simple use case out of the box: Isolated Remote Browsers for security
 
