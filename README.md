@@ -4,7 +4,7 @@
 
 BrowserView is an open-source project that lets you deliver experiences over the web that leverage all the power of Chrome headless, Node.JS, the DevTools protocol and Chrome extensions API. You can think of it as a `<webview>` tag for the open web! Webview is a term for a component that provides a capability of a browser tab, such as the Android WebView, or Electron's `<webview>` tag or legacy "Chrome Apps" `<webview>` tag.
 
-Technically, BrowserView (formerly named Open Browser Platform, BrowserGap, etc) is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. Only the UI front-end runs on your device, right in your normal browser (we even support iOS Safari going back to iPhone 4). More than that you can build atop Chrome in ways that you can't using Chrome Extension APIs or the Chrome DevTools protocol. 
+Technically, BrowserView (formerly named Robot Head, Open Browser Platform, BrowserGap, etc) is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. Only the UI front-end runs on your device, right in your normal browser (we even support iOS Safari going back to iPhone 4). More than that you can build atop Chrome in ways that you can't using Chrome Extension APIs or the Chrome DevTools protocol. 
 
 Things that aren't normally possible, become possible. 
 
@@ -30,7 +30,7 @@ For instance, PPTR (et al) do not have any easy way to handle multiple tabs, and
 
 Further, PPTR (et al) are designed around a specific use-case (testing and artificial automation) and they do this brilliantly, but outside of these bounds they become limiting factors. This project is an open protocol designed to support more demanding use cases, including building web apps that have the full power of Chrome, and that involve automating the browser as a user would, which removes a lot of edge cases where websites will not automate correctly with PPTR (and the rest). The acid test is that we can ship a front-end (accessible over the web) that nevertheless acts exatly like a browser. Using PPTR alone this is not possible. 
 
-If you want to, you can connect PPTR to the remote browser that you create with Robot Head, so you can use the Robot Head protocol and the PPTR protocol at the same time. 
+If you want to, you can connect PPTR to the remote browser that you create with BrowserView, so you can use the BrowserView protocol and the PPTR protocol at the same time. 
 
 ## Why this instead of Electron?
 
