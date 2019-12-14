@@ -1,8 +1,8 @@
 # BrowserView
 
-## Build web apps that have more power than a Chrome WebView, and deliver them over the public web
+## Build your own custom web browser and deploy it anywhere, even in the cloud!
 
-BrowserView is an open-source project that lets you deliver experiences over the web that leverage all the power of Chrome headless, Node.JS, the DevTools protocol and Chrome extensions API. You can think of it as a `<webview>` tag for the open web! Webview is a term for a component that provides a capability of a browser tab, such as the Android WebView, or Electron's `<webview>` tag or legacy "Chrome Apps" `<webview>` tag.
+BrowserView is an open-source project that lets you build your own when browser where you can customize everything, and deliver as a web app or Electron app. It does this by providing a free and open platform and API to let you build atop headless Chrome, leveraging the full power of the DevTools API, Chrome extensions, Node.JS and a front end to use this headless browser as a regular browser. You can deliver these experiences over the web, as a web app that acts like a real browser, or as a downloadable Electron app. You can think of it as a `<webview>` tag for the open web! Webview is a term for a component that provides a capability of a browser tab, such as the Android WebView, or Electron's `<webview>` tag or legacy "Chrome Apps" `<webview>` tag.
 
 Technically, BrowserView (formerly named Robot Head, Open Browser Platform, BrowserGap, etc) is a UI and backend that turns headless Chrome into a regular browser, except the browser runs in the cloud not on your device. Only the UI front-end runs on your device, right in your normal browser (we even support iOS Safari going back to iPhone 4). More than that you can build atop Chrome in ways that you can't using Chrome Extension APIs or the Chrome DevTools protocol. 
 
