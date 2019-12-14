@@ -36,6 +36,8 @@ If you want to, you can connect PPTR to the remote browser that you create with 
 
 Electron requires you to download a large package. That does provide good native integration, at the same time, people criticize the size of the download and the performance and memory demands of simple Electron apps. If you wanted to use Electron mostly for the webview and Node.JS capabilities, you could definitely build atop BrowserView to deliver the same service through a browser from the cloud. At the same time, if you're attached to a downloadable app, that's not a problem. This is not necessarily a replacement for Electron, but it can complement it. For example, instead of asking people to download your massive Electron app, you could run that app in the cloud, and serve the experience as a front-end using BrowserView. In fact, we're [building this as a service](https://github.com/dosycorp/CloudChamber)!
 
+You can even package this whole app as an Electron app so you can download your own custom browser!
+
 ## One possible simple use case out of the box: Isolated Remote Browsers for security
 
 BrowserView can be used as a simple remote browser isolation application. 
