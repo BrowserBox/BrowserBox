@@ -116,6 +116,14 @@ In no particular order:
 - Extend and publish the API for the front-end and back-end to easily enable people to build plugins on top
 - Improve the latency and screen performance
 
+### Why?
+
+[Why I built my own browser (and you can too)](https://medium.com/@cris_39045/why-i-built-my-own-browser-and-you-can-too-9dda4b4de869)
+
+### How?
+
+[Sign up here to get weekly walkthroughs of the code and the development story of how I built this](
+
 
 ### Bonus Section 
 
