@@ -108,6 +108,7 @@ If the answer is NO, then please email me at cris@dosycorp.com OR cris@dosyago.c
 
 An annotated transcript of an install is available at [this gist](https://gist.github.com/crislin2046/2fcd103234f93376c44d110d6295f32a).
 
+
 ### Development Roadmap
 
 In no particular order:
@@ -120,10 +121,9 @@ In no particular order:
 
 [Why I built my own browser (and you can too)](https://medium.com/@cris_39045/why-i-built-my-own-browser-and-you-can-too-9dda4b4de869)
 
-### How?
+### Connecting puppeteer
 
-[Sign up here to get weekly walkthroughs of the code and the development story of how I built this](
-
+Just run PPTR on the same machine as BV and connect to localhost:5002
 
 ### Bonus Section 
 
