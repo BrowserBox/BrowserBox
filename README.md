@@ -115,6 +115,7 @@ In no particular order:
 
 - Automation, as in recording and replay of any user intent, or sequence of such (already exists in a basic and broken way)
 - Provide UI to install chrome extension
+- build a replacement for the non-existent chromedriver / devtools extension Domain API
 - Extend and publish the API for the front-end and back-end to easily enable people to build plugins on top
 - Improve the latency and screen performance
 
