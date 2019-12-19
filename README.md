@@ -8,6 +8,13 @@ More than that you can build atop the Browser in ways that you can't using WebEx
 
 Things that aren't normally possible, become possible. 
 
+## Why?
+
+- For more control. Do things that can't be done with Extensions. Do things you can't do with DevTools protocol. Totally change the UI.
+- For more powerful apps. You can embed this as a component in a web app, and provide a full and fully customizable browser experience from your web or hybrid app. 
+- For fun. Build your own browser. Break free of the restrictive UI. Break free of the monopoly control. :metal:
+- Because you want to build something you can't otherwise. That's why I built this. I'm making an app on top of this that can record and playback user actions, to let you reduce the drudgery of repetitive tasks.
+
 ## One possible simple use case out of the box: Isolated Remote Browsers for security
 
 JoyStick can be used as a simple remote browser isolation application. 
