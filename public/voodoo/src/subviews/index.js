@@ -5,5 +5,5 @@ export * from './loadingIndicator.js';
 export * from './bandwidthIndicator.js';
 export * from './pluginsMenuButton.js';
 export * from './pluginsMenu.js';
-export * from './aux.js';
+export * from './other.js';
 export * from './contextMenu.js';
