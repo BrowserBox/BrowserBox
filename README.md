@@ -1,6 +1,6 @@
 # Joystick
 
-Joystick is a HTML/CSS/JavaScript front-end for your browser that is fully programmable. 
+Joystick is a HTML/CSS/JavaScript "browser remote control" (inlcuding a front-end that works just like a browser). And it is fully programmable. 
 
 This means you can customize the browsing experience however you like, without having to fork it or modify its source code. You can even run Joystick remotely in the cloud against a headless browser and connect to it from anywhere. Or you can run it on your device. 
 
