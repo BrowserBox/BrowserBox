@@ -85,6 +85,15 @@ If the answer is NO, then please email me at cris@dosycorp.com OR cris@dosyago.c
 
 An annotated transcript of an install is available at [this gist](https://gist.github.com/crislin2046/2fcd103234f93376c44d110d6295f32a).
 
+### Running on Windows locally
+
+Tested using latest Stable Node.JS and Git using Git bash. Clone as normal then run `npm i` then `./postinstall.sh` then modify `./zombie-lord/start_chrome.sh` to comment out and uncomment the lines preceeded by a `# windows ...` comment, as those lines indicate.
+Then run `node index.js 5002 8002 xxxcookie username token2`
+
+### Running locally in general
+
+If you want you can also modify `zombie-lord/screenShots.js` to increase the quality and framerate of shots taken if you're running locally.
+
 ### Development Roadmap
 
 In no particular order:
