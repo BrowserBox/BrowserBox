@@ -122,6 +122,8 @@ Becuase this works by running Chrome in headless mode and giving that headless C
 - Bogeyhead ???
 - BrowserGap
 - ChromeBoard
+- Browser Voodoo Doll
+- Poppet
 - BrowserView
 - BrowserSync - control one browser with another
 - Open Browser Platform
