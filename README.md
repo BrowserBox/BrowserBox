@@ -36,6 +36,8 @@ Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awe
 
 Download the repository and self-host on your own machine (at home, or in a VPS, VPC or the public cloud)
 
+You can run the browser you connect to in headless mode or normal mode.
+
 ### E.g on Debian
 
 ```sh
@@ -99,7 +101,7 @@ If you want you can also modify `zombie-lord/screenShots.js` to increase the qua
 In no particular order:
 
 - Automation, as in recording and replay of any user intent, or sequence of such (already exists in a basic and broken way)
-- Provide UI to install chrome extension
+- Provide UI to install extensions
 - build a replacement for the non-existent chromedriver / devtools extension Domain API
 - Extend and publish the API for the front-end and back-end to easily enable people to build plugins on top
 - Improve the latency and screen performance
@@ -114,7 +116,7 @@ Just run PPTR on the same machine as this and connect to localhost:5002
 
 ### Bonus Section 
 
-Becuase this works by running Chrome in headless mode and giving that headless Chrome a new head back (in the form of a front and back end to interace with the headless chrome to make it look like a normal browser), some clever folk have come up with a variety of quirky, unusual, funny and creative names for this:
+Becuase this can also work by running a browser in headless mode and giving that headless Browser a new head back, some clever folk have come up with a variety of quirky, unusual, funny and creative names for this:
 
 [[Alternate Names]]:
 - Bodyless :tada: :heavy_check_mark:
@@ -127,4 +129,4 @@ Becuase this works by running Chrome in headless mode and giving that headless C
 - BrowserView
 - BrowserSync - control one browser with another
 - Open Browser Platform
-- [DeFAANGED Headful Chrome](https://github.com/dosycorp/BrowserView/issues/20)
+- [DeFAANGED Headful browser](https://github.com/dosycorp/BrowserView/issues/20)
