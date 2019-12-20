@@ -123,5 +123,6 @@ Becuase this works by running Chrome in headless mode and giving that headless C
 - BrowserGap
 - ChromeBoard
 - BrowserView
+- BrowserSync - control one browser with another
 - Open Browser Platform
 - [DeFAANGED Headful Chrome](https://github.com/dosycorp/BrowserView/issues/20)
