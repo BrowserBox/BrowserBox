@@ -110,7 +110,7 @@ In no particular order:
 
 ### Connecting puppeteer
 
-Just run PPTR on the same machine as BV and connect to localhost:5002
+Just run PPTR on the same machine as this and connect to localhost:5002
 
 ### Bonus Section 
 
