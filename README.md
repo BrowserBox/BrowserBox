@@ -106,13 +106,17 @@ In no particular order:
 - Extend and publish the API for the front-end and back-end to easily enable people to build plugins on top
 - Improve the latency and screen performance
 
-### Why?
+### Opening DevTools
 
-[Why I built my own browser (and you can too)](https://medium.com/@cris_39045/why-i-built-my-own-browser-and-you-can-too-9dda4b4de869)
+Just connect your browser to http://localhost:5002 from the machine you run it on.
 
 ### Connecting puppeteer
 
 Just run PPTR on the same machine as this and connect to localhost:5002
+
+### Why?
+
+[Why I built my own browser (and you can too)](https://medium.com/@cris_39045/why-i-built-my-own-browser-and-you-can-too-9dda4b4de869)
 
 ### Bonus Section 
 
