@@ -4,10 +4,7 @@ port="$1"
 username="$2"
 is_docker="no"
 
-mkdir -p /home/$username/chrome-browser/
-
-# windows uncomment below
-# mkdir -p ./home/$username/chrome-browser/
+mkdir -p $HOME/chrome-browser/
 
 # Note that we open debugging port on public interface (0.0.0.0) IF we detect we are in docker
 # If we are in docker we are safe since we won't publish that port (5002) outside the container
@@ -16,17 +13,20 @@ mkdir -p /home/$username/chrome-browser/
 # do whatever they want (full DevTools protocol power) 
 
 # window comment out below if block
-if grep docker /proc/1/cgroup -qa; then
-  is_docker="yes"
+if [[ "$OSTYPE" == "win32" ]]; then
+  if grep docker /proc/1/cgroup -qa; then
+    is_docker="yes"
+  fi
 fi
 
 if [ $is_docker == "yes" ]; then
-  google-chrome-stable --mute-audio --headless --remote-debugging-address=0.0.0.0 --remote-debugging-port=$port --window-size=1280,800 --profile-directory=/home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=/home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
+  google-chrome-stable --mute-audio --headless --remote-debugging-address=0.0.0.0 --remote-debugging-port=$port --window-size=1280,800 --profile-directory=$HOME/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=$HOME/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
 else 
-  # windows comment out below command
-  google-chrome-stable --mute-audio --headless --remote-debugging-port=$port --window-size=1280,800 --profile-directory=/home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=/home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
-  # windows uncomment below command
-  # start chrome --new-window --mute-audio --headless --remote-debugging-port=$port --window-size=1280,800 --profile-directory=./home/$username/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=./home/$username/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 --no-sandbox --enable-logging &
+  if [[ "$OSTYPE" == "win32" ]]; then
+    start chrome --new-window --mute-audio --headless --remote-debugging-port=$port --window-size=1280,800 --profile-directory=$HOME/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=$HOME/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 --no-sandbox --enable-logging &
+  else
+    google-chrome-stable --mute-audio --headless --remote-debugging-port=$port --window-size=1280,800 --profile-directory=$HOME/chrome-browser/Default --profiling-flush=1 --enable-aggressive-domstorage-flushing --user-data-dir=$HOME/chrome-browser/ --restore-last-session --disk-cache-size=2750000000 &
+  fi
 fi
 
 BGPID=$!
