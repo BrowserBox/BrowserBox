@@ -46,7 +46,7 @@ class Privates {
     };
   }
 
-  static get firstDelay() { return 8; /* 20, 40, 250, 500;*/ }
+  static get firstDelay() { return 20; /* 20, 40, 250, 500;*/ }
 
   triggerSendLoop() {
     if ( this.loopActive ) return;
@@ -109,31 +109,7 @@ class Privates {
         }
       });
     } else {
-      events = events.filter(e => !!e);
-      //({data,meta,totalBandwidth} = await this.sendEvents({events, url}));
-      this.sendEvents({events,url}).then(({data,meta,totalBandwidth}) => {
-        if ( !!meta && meta.length ) {
-          meta.forEach(metaItem => {
-            const executionContextId = metaItem.executionContextId;
-            for ( const key of Object.keys(metaItem) ) {
-              let typeList = this.typeLists.get(key);
-              if ( !!typeList ) {
-                typeList.forEach(func => {
-                  try {
-                    func({[key]:metaItem[key], executionContextId});
-                  } catch(e) {
-                    DEBUG.val && console.warn(`Error on ${key} handler`, func, e);
-                  }
-                });
-              }
-            }
-          });
-        }
-
-        if ( !! totalBandwidth ) {
-          this.publics.state.totalBandwidth = totalBandwidth;
-        }
-      });
+      this.sendEvents({events,url});
     }
 
     if ( this.publics.queue.length ) {
@@ -146,6 +122,7 @@ class Privates {
   async sendEvents({events, url}) {
     if ( ! events ) return {meta:[],data:[]};
     events = events.filter(e => !!e && !!e.command);
+    if ( events.length == 0 ) return {meta:[], data:[]};
     this.maybeCheckForBufferedFrames(events);
     let protocol;
     try {
@@ -168,7 +145,7 @@ class Privates {
           } else {
             await this.connectSocket(url, events, messageId); 
           }
-          return await promise;
+          return promise;
         } catch(e) {
           console.warn(e);
           console.warn(JSON.stringify({
@@ -297,6 +274,28 @@ class Privates {
             }
             return;
           }
+        }
+
+        if ( !!meta && meta.length ) {
+          meta.forEach(metaItem => {
+            const executionContextId = metaItem.executionContextId;
+            for ( const key of Object.keys(metaItem) ) {
+              let typeList = this.typeLists.get(key);
+              if ( !!typeList ) {
+                typeList.forEach(func => {
+                  try {
+                    func({[key]:metaItem[key], executionContextId});
+                  } catch(e) {
+                    DEBUG.val && console.warn(`Error on ${key} handler`, func, e);
+                  }
+                });
+              }
+            }
+          });
+        }
+
+        if ( !! totalBandwidth ) {
+          this.publics.state.totalBandwidth = totalBandwidth;
         }
 
         const replyTransmitted  = transmitReply({url, id: serverMessageId, data, meta, totalBandwidth});
