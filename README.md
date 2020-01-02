@@ -1,8 +1,8 @@
-# skateboard
+# supreme-architect
 
-skateboard is a HTML/CSS/JavaScript "browser remote control" (inlcuding a front-end that works just like a browser). And it is fully programmable. 
+supreme-architect is a HTML/CSS/JavaScript "browser remote control" (inlcuding a front-end that works just like a browser). And it is fully programmable. 
 
-This means you can customize the browsing experience however you like, without having to fork it or modify its source code. You can even run skateboard remotely in the cloud against a headless browser and connect to it from anywhere. Or you can run it on your device. 
+This means you can customize the browsing experience however you like, without having to fork it or modify its source code. You can even run supreme-architect remotely in the cloud against a headless browser and connect to it from anywhere. Or you can run it on your device. 
 
 More than that you can build atop the Browser in ways that you can't using WebExtension APIs or with the DevTools protocol. 
 
@@ -17,7 +17,7 @@ Things that aren't normally possible, become possible.
 
 ## One possible simple use case out of the box: Isolated Remote Browsers for security
 
-skateboard can be used as a simple remote browser isolation application. 
+supreme-architect can be used as a simple remote browser isolation application. 
 
 If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
 
@@ -34,7 +34,15 @@ Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awe
 
 ## Use
 
-Download the repository and self-host on your own machine (at home, or in a VPS, VPC or the public cloud)
+Install from npm 
+
+`npm i supreme-architect`
+
+Or clone and download the repository.
+
+Then run `setup_machine.sh` in the repository directory.
+
+You can self-host on your own machine (at home, or in a VPS, VPC or the public cloud)
 
 You can run the browser you connect to in headless mode or normal mode.
 
@@ -43,8 +51,8 @@ You can run the browser you connect to in headless mode or normal mode.
 ```sh
 sudo apt update && sudo apt -y upgrade
 sudo apt install -y curl git wget
-git clone https://github.com/dosycorp/browsergap.ce.git
-cd browsergap.ce
+git clone https://github.com/dosyago/supreme-architect
+cd supreme-architect
 ./setup_machine.sh
 npm test
 ```
@@ -54,8 +62,8 @@ Or (using docker build yourself)
 ```sh
 sudo apt update && sudo apt -y upgrade
 sudo apt install -y curl git wget
-git clone https://github.com/dosycorp/browsergap.ce.git
-cd browsergap.ce
+git clone https://github.com/dosyago/supreme-architect
+cd supreme-architect
 ./buld_docker.sh
 ./run_docker.sh 
 ```
@@ -64,7 +72,7 @@ Or (using docker pull from hub)
 
 ```sh
 docker pull dosyago/browsergapce:1.0
-curl -o chrome.json https://raw.githubusercontent.com/dosycorp/browsergap.ce/master/chrome.json
+curl -o chrome.json https://raw.githubusercontent.com/dosyago/supreme-architect/master/chrome.json
 sudo su -c "echo 'kernel.unprivileged_userns_clone=1' > /etc/sysctl.d/00-local-userns.conf"
 sudo su -c "echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/01-network-ipv4.conf"
 sudo sysctl -p
