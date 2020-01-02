@@ -8,11 +8,12 @@ export const WorldName = 'PlanetZanj';
 const SHORT_TIMEOUT = 1000;
 
 const MIN_DELTA = 40;
+const MIN_PIX_DELTA = 8;
 const THRESHOLD_DELTA = 1;
 const DOM_DELTA_PIXEL = 0;
 const DOM_DELTA_LINE = 1;
 const DOM_DELTA_PAGE = 2;
-const LINE_HEIGHT_GUESS = 60;
+const LINE_HEIGHT_GUESS = 32;
 
 const SYNTHETIC_CTRL = e => keyEvent({key:'Control',originalType:e.originalType}, 2, true);
 
@@ -619,19 +620,24 @@ function adjustWheelDeltaByMode(delta, mode) {
   switch(mode) {
     case DOM_DELTA_PIXEL:
       console.log("pix mode", delta);
+      if ( threshold && Math.abs(delta) < MIN_PIX_DELTA ) {
+        delta = Math.sign(delta)*MIN_PIX_DELTA;
+      }
       break;
     case DOM_DELTA_LINE:
       console.log("line mode", delta);
       delta = delta * LINE_HEIGHT_GUESS;
+      if ( threshold && Math.abs(delta) < MIN_DELTA ) {
+        delta = Math.sign(delta)*MIN_DELTA;
+      }
       break;
     case DOM_DELTA_PAGE:
       console.log("page mode", delta);
       delta = delta * self.ViewportHeight;
+      if ( threshold && Math.abs(delta) < MIN_DELTA ) {
+        delta = Math.sign(delta)*MIN_DELTA;
+      }
       break;
-  }
-  if ( threshold && Math.abs(delta) < MIN_DELTA ) {
-    delta = Math.sign(delta)*MIN_DELTA;
-    console.log("Update delta", delta);
   }
   return delta;
 }
