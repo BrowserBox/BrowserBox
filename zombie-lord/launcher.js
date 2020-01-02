@@ -1,5 +1,7 @@
 import {exec} from 'child_process';
 import path from 'path';
+import os from 'os';
+import fs from 'fs';
 import {launch as ChromeLauncher} from 'chrome-launcher';
 import isDocker from 'is-docker';
 import {sleep} from '../common.js';
@@ -13,6 +15,11 @@ const deathHandlers = new Map();
 
 const launcher_api = {
   async newZombie({port, username} = {}) {
+    const udd = path.resolve(os.homedir(), 'chrome-browser');
+    const upd = path.resolve(udd, 'Default');
+    if ( ! fs.existsSync( udd ) ) {
+      fs.mkdirSync(udd, {recursive:true});
+    }
     if ( chrome_started ) {
       console.log(`Ignoring launch request as chrome already started.`);
     }
@@ -22,7 +29,8 @@ const launcher_api = {
       '--profiling-flush=1',
       '--enable-aggressive-domstorage-flushing',
       '--restore-last-session',
-      '--disk-cache-size=2750000000' 
+      '--disk-cache-size=2750000000',
+      `--profile-directory="${upd}"`
     ];
     chromeNumber += 1;
     console.log(`Chrome Number: ${chromeNumber}, Executing chrome-launcher`);
@@ -39,7 +47,7 @@ const launcher_api = {
       port,
       ignoreDefaultFlags: true,
       handleSIGINT: false,
-      userDataDir: false,
+      userDataDir: path.resolve(os.homedir(), 'chrome-browser'),
       logLevel: 'verbose',
       chromeFlags: CHROME_FLAGS
     };
