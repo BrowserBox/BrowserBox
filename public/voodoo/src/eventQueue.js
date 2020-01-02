@@ -13,7 +13,7 @@ const BUFFERED_FRAME_EVENT = {
   }
 };
 const BUFFERED_FRAME_COLLECT_DELAY = {
-  MIN: 500, /* 250, 500 */
+  MIN: 75, /* 250, 500 */
   MAX: 4000, /* 2000, 4000, 8000 */
 };
 const waiting = new Map();
@@ -46,7 +46,7 @@ class Privates {
     };
   }
 
-  static get firstDelay() { return 40; /* 20, 40, 250, 500;*/ }
+  static get firstDelay() { return 8; /* 20, 40, 250, 500;*/ }
 
   triggerSendLoop() {
     if ( this.loopActive ) return;
@@ -374,7 +374,6 @@ class Privates {
         this.willCollectBufferedFrame = false;
         bufferedFrameCollectDelay = BUFFERED_FRAME_COLLECT_DELAY.MIN;
       }
-      console.log("Getting buffered frame");
       this.willCollectBufferedFrame = setTimeout(() => this.pushNextCollectEvent(), bufferedFrameCollectDelay);
     }
   }
