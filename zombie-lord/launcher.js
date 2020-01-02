@@ -2,8 +2,8 @@ import {exec} from 'child_process';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
-import {launch as ChromeLauncher} from 'chrome-launcher';
 import isDocker from 'is-docker';
+import {launch as ChromeLauncher} from './custom-launcher/dist/chrome-launcher.js';
 import {sleep} from '../common.js';
 
 const RESTART_MS = 1000;
