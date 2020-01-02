@@ -29,10 +29,10 @@
   ]);
 
   const IMMEDIATE = 0;
-  const SHORT_DELAY = 40;
+  const SHORT_DELAY = 20;
   const LONG_DELAY = 300;
   const VERY_LONG_DELAY = 60000;
-  const EVENT_THROTTLE_MS = 80;  /* 20, 40, 80 */
+  const EVENT_THROTTLE_MS = 40;  /* 20, 40, 80 */
 
   // view frame debug
   let latestRequestId = 0;
