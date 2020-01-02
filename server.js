@@ -94,7 +94,6 @@
         command.receivesFrames = receivesFrames && ! command.isZombieLordCommand;
         DEBUG.val && console.log(`Sending ${JSON.stringify(command)}...`);
         const {data,frameBuffer,meta,totalBandwidth} = await timedSend(command, chrome_port);
-        console.log(`Sent ${JSON.stringify(command)}!`);
         DEBUG.val && console.log(`Sent ${JSON.stringify(command)}!`);
         Data.push(data);
         if ( !! meta ) {

@@ -1,0 +1,36 @@
+{
+  "name": "chrome-launcher",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "test": "mocha --require ts-node/register --reporter=dot test/**/*-test.ts --timeout=10000",
+    "test-formatting": "test/check-formatting.sh",
+    "format": "scripts/format.sh",
+    "type-check": "tsc --allowJs --checkJs --noEmit --target es2016 *.js"
+  },
+  "devDependencies": {
+    "@types/mkdirp": "^0.3.29",
+    "@types/mocha": "^5.2.7",
+    "@types/rimraf": "^0.0.28",
+    "@types/sinon": "^2.3.1",
+    "clang-format": "^1.0.50",
+    "mocha": "^6.1.4",
+    "sinon": "^2.3.5",
+    "ts-node": "8.3.0",
+    "typescript": "3.2.2"
+  },
+  "dependencies": {
+    "@types/node": "*",
+    "is-wsl": "^2.1.0",
+    "lighthouse-logger": "^1.0.0",
+    "mkdirp": "0.5.1",
+    "rimraf": "^2.6.1"
+  },
+  "version": "0.12.0",
+  "types": "./dist/index.d.ts",
+  "description": "Launch latest Chrome with the Devtools Protocol port open",
+  "repository": "https://github.com/GoogleChrome/chrome-launcher/",
+  "author": "The Chromium Authors",
+  "license": "Apache-2.0"
+}
