@@ -4,7 +4,7 @@
   "description": "A \"zombie / voodoo church\" where you can commune with the spirits ( control browser instances ).",
   "main": "index.js",
   "scripts": {
-    "test": "./test.sh",
+    "test": "test.sh",
     "dev": "node-dev --inspect=127.0.0.1:8111 index.js",
     "start": "node index.js",
     "postinstall": "./postinstall.sh && ./make_views.sh",

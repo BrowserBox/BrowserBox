@@ -13,7 +13,7 @@ const BUFFERED_FRAME_EVENT = {
   }
 };
 const BUFFERED_FRAME_COLLECT_DELAY = {
-  MIN: 250, /* 250, 500 */
+  MIN: 500, /* 250, 500 */
   MAX: 4000, /* 2000, 4000, 8000 */
 };
 const waiting = new Map();
@@ -374,6 +374,7 @@ class Privates {
         this.willCollectBufferedFrame = false;
         bufferedFrameCollectDelay = BUFFERED_FRAME_COLLECT_DELAY.MIN;
       }
+      console.log("Getting buffered frame");
       this.willCollectBufferedFrame = setTimeout(() => this.pushNextCollectEvent(), bufferedFrameCollectDelay);
     }
   }
@@ -491,7 +492,7 @@ function meetsCollectBufferedFrameCondition(queue, events) {
     *
     * Finally what type of event will it add to the queue.
   **/ 
-  const someRequireShot = events.some(({command}) => command.requiresShot);
+  const someRequireShot = events.some(({command}) => command.requiresShot || command.requiresTailShot);
   const createsTarget = events.some(({command}) => command.name == "Target.createTarget");
   const meetsCondition = someRequireShot || createsTarget;
   DEBUG.val >= DEBUG.med && console.log({events, someRequireShot, createsTarget});

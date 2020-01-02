@@ -7,12 +7,16 @@ export const WorldName = 'PlanetZanj';
 
 const SHORT_TIMEOUT = 1000;
 
+const MIN_DELTA = 40;
+const THRESHOLD_DELTA = 1;
 const DOM_DELTA_PIXEL = 0;
 const DOM_DELTA_LINE = 1;
 const DOM_DELTA_PAGE = 2;
-const LINE_HEIGHT_GUESS = 22;
+const LINE_HEIGHT_GUESS = 60;
 
 const SYNTHETIC_CTRL = e => keyEvent({key:'Control',originalType:e.originalType}, 2, true);
+
+let scrollShot = false;
 
 export default translator;
 
@@ -66,20 +70,25 @@ function translator(e, handled = {type:'case'}) {
       const clientX = 0;
       const clientY = 0
       const deltas = {deltaX,deltaY,clientX,clientY};
-      const retVal1 = {
-        command: {
-          name: "Runtime.evaluate",
-          params: {
-            expression: `self.ensureScroll(${JSON.stringify(deltas)});`,
-            includeCommandLineAPI: false,
-            userGesture: true,
-            contextId,
-            timeout: SHORT_TIMEOUT
+      let retVal;
+      if ( deltaX > MIN_DELTA || deltaY > MIN_DELTA ) {
+        const retVal1 = {
+          command: {
+            name: "Runtime.evaluate",
+            params: {
+              expression: `self.ensureScroll(${JSON.stringify(deltas)});`,
+              includeCommandLineAPI: false,
+              userGesture: true,
+              contextId,
+              timeout: SHORT_TIMEOUT
+            }
           }
-        }
-      };
-      const retVal2 = mouseEvent(e, deltaX, deltaY);
-      const retVal = [retVal1,retVal2];
+        };
+        const retVal2 = mouseEvent(e, deltaX, deltaY);
+        retVal = [retVal1,retVal2];
+      } else {
+        retVal = mouseEvent(e, deltaX, deltaY);
+      }
       return retVal;
       break;
     }
@@ -536,7 +545,8 @@ function mouseEvent(e, deltaX = 0, deltaY = 0) {
         type: "mouseWheel",
         deltaX, deltaY
       },
-      requiresShot: true
+      requiresShot: false,
+      requiresTailShot: true
     }
   };
 }
@@ -601,15 +611,27 @@ function encodeModifiers(originalEvent) {
 }
 
 function adjustWheelDeltaByMode(delta, mode) {
+  if ( delta == 0 ) return delta;
+  let threshold = Math.abs(delta) > THRESHOLD_DELTA;
+  if ( ! threshold ) {
+    delta = Math.sqrt(Math.abs(delta))*Math.sign(delta);
+  }
   switch(mode) {
     case DOM_DELTA_PIXEL:
+      console.log("pix mode", delta);
       break;
     case DOM_DELTA_LINE:
+      console.log("line mode", delta);
       delta = delta * LINE_HEIGHT_GUESS;
       break;
     case DOM_DELTA_PAGE:
+      console.log("page mode", delta);
       delta = delta * self.ViewportHeight;
       break;
+  }
+  if ( threshold && Math.abs(delta) < MIN_DELTA ) {
+    delta = Math.sign(delta)*MIN_DELTA;
+    console.log("Update delta", delta);
   }
   return delta;
 }
