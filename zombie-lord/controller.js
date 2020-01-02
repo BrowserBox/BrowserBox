@@ -10,6 +10,7 @@ const Options = {
   demoBlock: false
 };
 
+let lastTailShot = false;
 let lastHash;
 
 const controller_api = {
@@ -186,6 +187,12 @@ const controller_api = {
       }
       if ( command.requiresShot ) {
         await connection.doShot({ignoreHash: command.ignoreHash});
+      }
+      if ( command.requiresTailShot ) {
+        if ( lastTailShot ) {
+          clearTimeout(lastTailShot);
+        }
+        lastTailShot = setTimeout(() => connection.doShot({ignoreHash: command.ignoreHash}), 333);
       }
       if ( connection.frameBuffer.length && command.receivesFrames ) {
         retVal.frameBuffer = move([], connection.frameBuffer)

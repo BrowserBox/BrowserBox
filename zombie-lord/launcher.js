@@ -1,5 +1,7 @@
 import {exec} from 'child_process';
 import path from 'path';
+import {launch as ChromeLauncher} from 'chrome-launcher';
+import isDocker from 'is-docker';
 import {sleep} from '../common.js';
 
 const RESTART_MS = 1000;
@@ -14,50 +16,58 @@ const launcher_api = {
     if ( chrome_started ) {
       console.log(`Ignoring launch request as chrome already started.`);
     }
-    const cmd = `${path.join(__dirname, 'start_chrome.sh')} ${port} ${username}`;
+    const DEFAULT_FLAGS = [
+      '--mute-audio', 
+      '--window-size=1280,800',
+      '--profiling-flush=1',
+      '--enable-aggressive-domstorage-flushing',
+      '--restore-last-session',
+      '--disk-cache-size=2750000000' 
+    ];
     chromeNumber += 1;
-    console.log(`Chrome Number: ${chromeNumber}, Executing `, cmd);
-    const zomb = exec(cmd);
+    console.log(`Chrome Number: ${chromeNumber}, Executing chrome-launcher`);
+    const CHROME_FLAGS = Array.from(DEFAULT_FLAGS);
+    if (!process.env.DEBUG_SKATEBOARD) {
+      CHROME_FLAGS.push('--headless'); 
+    } else {
+      CHROME_FLAGS.push('--no-sandbox'); 
+    }
+    if (isDocker()) {
+      CHROME_FLAGS.push('--remote-debugging-address=0.0.0.0');
+    }
+    const CHROME_OPTS = {
+      port,
+      ignoreDefaultFlags: true,
+      handleSIGINT: false,
+      userDataDir: false,
+      logLevel: 'verbose',
+      chromeFlags: CHROME_FLAGS
+    };
+    console.log(CHROME_OPTS, CHROME_FLAGS);
+    const zomb = await ChromeLauncher(CHROME_OPTS);
     zombies.set(port,zomb);
     const retVal = {
       port
     };
-    process.on('exit', () => { 
+    process.on('SIGHUP', async () => {
       chrome_started = false; 
-      zomb.kill(); 
+      await zomb.kill(); 
     });
-    zomb.on('close', (code, signal) => {
-      chrome_started = false;
-      console.log(`Chrome going down with code ${code} and signal ${signal}.`);
-      //console.log(`Restarting in ${RESTART_MS}`);
-      //setTimeout(() => launcher_api.newZombie({port, username}), RESTART_MS);
-      const handlers = deathHandlers.get(port);
-      if ( !! handlers ) {
-        for( const func of handlers ) {
-          try {
-            func();
-          } catch(e) {
-            console.warn("Death handler error", e);
-          }
-        }
-      }
+    process.on('SIGUSR1', async () => {
+      chrome_started = false; 
+      await zomb.kill(); 
     });
-    zomb.on('exit', (code, signal) => {
-      chrome_started = false;
-      console.log(`Chrome going down with code ${code} and signal ${signal}.`);
+    process.on('SIGTERM', async () => {
+      chrome_started = false; 
+      await zomb.kill(); 
     });
-
-    zomb.on('error', err => {
-      const log = JSON.stringify({chromeProcessMetaError:err});
-      console.log(`Chrome zombie error ${log.slice(0,140)}`); 
+    process.on('SIGINT', async () => {
+      chrome_started = false; 
+      await zomb.kill(); 
     });
-    zomb.stdout.on('data', data => {
-      const log = JSON.stringify({chromeProcessData:data});
-      //console.log(`Chrome zombie stdout data ${log.slice(0,140)}`);
-    });
-    zomb.stderr.on('data', data => {
-      const log = JSON.stringify({chromeProcessError:data});
-      //console.log(`Chrome zombie stderr data ${log.slice(0,140)}`);
+    process.on('beforeExit', async () => { 
+      chrome_started = false; 
+      await zomb.kill(); 
     });
 
     return retVal;
