@@ -4,12 +4,12 @@
   "description": "A \"zombie / voodoo church\" where you can commune with the spirits ( control browser instances ).",
   "main": "index.js",
   "scripts": {
-    "test": "test.sh",
+    "test": "bash ./test.sh",
     "dev": "node-dev --inspect=127.0.0.1:8111 index.js",
     "start": "node index.js",
-    "postinstall": "./postinstall.sh && ./make_views.sh",
-    "prestart": "./make_views.sh",
-    "init": "./reinit_after_restart.sh"
+    "postinstall": "bash ./postinstall.sh && bash ./make_views.sh",
+    "prestart": "bash ./make_views.sh",
+    "init": "bash ./reinit_after_restart.sh"
   },
   "repository": {
     "type": "git",
