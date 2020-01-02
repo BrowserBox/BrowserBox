@@ -1,6 +1,6 @@
 {
   "name": "supreme-architect",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A \"zombie / voodoo church\" where you can commune with the spirits ( control browser instances ).",
   "main": "index.js",
   "scripts": {
