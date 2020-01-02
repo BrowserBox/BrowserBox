@@ -546,7 +546,7 @@ function mouseEvent(e, deltaX = 0, deltaY = 0) {
         type: "mouseWheel",
         deltaX, deltaY
       },
-      requiresShot: false,
+      requiresShot: true,
       requiresTailShot: true
     }
   };
