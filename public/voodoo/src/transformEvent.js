@@ -221,8 +221,8 @@ export function getBitmapCoordinates(event, scale = 1) {
     const scaleY = bitmap.height / elementHeight * scale;
 
     coordinates = {
-      bitmapX: (clientX - parentX) * scaleX,
-      bitmapY: (clientY - parentY) * scaleY
+      bitmapX: (clientX - parentX),
+      bitmapY: (clientY - parentY)
     };
 
     if ( DEBUG.val > DEBUG.high ) {
