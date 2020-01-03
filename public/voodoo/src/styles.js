@@ -669,6 +669,7 @@ export const dss = {
 
       * canvas {
         image-rendering: high-quality;
+        -webkit-touch-callout: none;
       }
     `;
   }
