@@ -63,7 +63,6 @@ class Privates {
 
     if ( !this.publics.state.demoMode && this.translators.has(url) ) {
       const translator = this.translators.get(url);
-      //alert(JSON.stringify(q));
       q = q.map(e => translator(e, {})).filter(e => e !== undefined);
       q = q.reduce((Q, e) => (Array.isArray(e) ? Q.push(...e) : Q.push(e), Q), []);
     }
@@ -164,7 +163,6 @@ class Privates {
         };
         return fetch(url, request).then(r => r.json()).then(async ({data,frameBuffer,meta}) => {
           if ( !!frameBuffer && this.images.has(url) ) {
-            //await drawFrames(this.publics.state, frameBuffer, this.images.get(url));
             drawFrames(this.publics.state, frameBuffer, this.images.get(url));
           }
           const errors = data.filter(d => !!d.error);
@@ -217,7 +215,6 @@ class Privates {
         messageData = JSON.parse(messageData);
         const {data,frameBuffer,meta,messageId:serverMessageId,totalBandwidth} = messageData;
         if ( !!frameBuffer && this.images.has(url) ) {
-          //await drawFrames(this.publics.state, frameBuffer, this.images.get(url));
           drawFrames(this.publics.state, frameBuffer, this.images.get(url));
         }
 
