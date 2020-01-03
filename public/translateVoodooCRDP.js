@@ -72,7 +72,7 @@ function translator(e, handled = {type:'case'}) {
       const clientY = 0
       const deltas = {deltaX,deltaY,clientX,clientY};
       let retVal;
-      if ( deltaX > MIN_DELTA || deltaY > MIN_DELTA ) {
+      if ( false && (deltaX > MIN_DELTA || deltaY > MIN_DELTA )) {
         const retVal1 = {
           command: {
             name: "Runtime.evaluate",

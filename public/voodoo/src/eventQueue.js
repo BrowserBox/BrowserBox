@@ -164,7 +164,8 @@ class Privates {
         };
         return fetch(url, request).then(r => r.json()).then(async ({data,frameBuffer,meta}) => {
           if ( !!frameBuffer && this.images.has(url) ) {
-            await drawFrames(this.publics.state, frameBuffer, this.images.get(url));
+            //await drawFrames(this.publics.state, frameBuffer, this.images.get(url));
+            drawFrames(this.publics.state, frameBuffer, this.images.get(url));
           }
           const errors = data.filter(d => !!d.error);
           if ( errors.length ) {
@@ -216,7 +217,8 @@ class Privates {
         messageData = JSON.parse(messageData);
         const {data,frameBuffer,meta,messageId:serverMessageId,totalBandwidth} = messageData;
         if ( !!frameBuffer && this.images.has(url) ) {
-          await drawFrames(this.publics.state, frameBuffer, this.images.get(url));
+          //await drawFrames(this.publics.state, frameBuffer, this.images.get(url));
+          drawFrames(this.publics.state, frameBuffer, this.images.get(url));
         }
 
         const errors = data.filter(d => !!d && !!d.error);
