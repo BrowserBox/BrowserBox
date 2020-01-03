@@ -1,5 +1,5 @@
 import {DEBUG, deviceIsMobile} from '../common.js';
-import {R,X} from '../../node_modules/brutalist-web/r.js';
+import {R,X} from '../../node_modules/craydom/r.js';
 import {openModal} from './index.js';
 
 const CLOSE_DELAY = 222;
