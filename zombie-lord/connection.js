@@ -124,7 +124,12 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       Object.assign(connection,next_connection);
     }, RECONNECT_MS);
   });
-  connection.doShot = makeCamera(connection);
+
+  {
+    const {doShot, queueTailShot} = makeCamera(connection);
+    connection.doShot = doShot;
+    connection.queueTailShot = queueTailShot;
+  }
 
   const {send,on, ons} = connection.zombie;
 
