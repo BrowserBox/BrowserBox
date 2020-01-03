@@ -143,3 +143,7 @@ Becuase this can also work by running a browser in headless mode and giving that
 - Open Browser Platform
 - Joystick
 - [DeFAANGED Headful browser](https://github.com/dosycorp/BrowserView/issues/20)
+
+### Current version
+
+v1.1.0
