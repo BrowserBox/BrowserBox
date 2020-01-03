@@ -286,6 +286,9 @@
       canvasBondTasks.push(indicateNoOpenTabs);
       canvasBondTasks.push(installZoomListener);
       canvasBondTasks.push(asyncSizeBrowserToBounds);
+      if ( isSafari() ) {
+        canvasBondTasks.push(installSafariLongTapListener);
+      }
 
       bondTasks.push(canKeysInput);
       bondTasks.push(getFavicon);
@@ -438,17 +441,46 @@
         //self.addEventListener('keyup', sendKey); 
       }
 
+      function installSafariLongTapListener(el) {
+        const FLAGS = {passive:true, capture:true};
+        const MIN_DURATION = 200;
+        const MAX_MOVEMENT = 20;
+        let lastStart;
+        el.addEventListener('touchstart', ts => lastStart = ts, FLAGS);
+        el.addEventListener('touchend', triggerContextMenuIfLongEnough, FLAGS);
+        el.addEventListener('touchcancel', triggerContextMenuIfLongEnough, FLAGS);
+
+        function triggerContextMenuIfLongEnough(tf) {
+          // space 
+            const touch1 = lastStart.changedTouches[0];
+            const touch2 = tf.changedTouches[0];
+            const movement = Math.hypot(
+              touch2.pageX - touch1.pageX,
+              touch2.pageY - touch1.pageY
+            );
+          // time
+            const duration = tf.timeStamp - lastStart.timeStamp;
+          if ( duration > MIN_DURATION && movement < MAX_MOVEMENT ) {
+            lastStart.preventDefault();
+            tf.preventDefault();
+            const {pageX,pageY,clientX,clientY} = touch1;
+            el.dispatchEvent(new CustomEvent('contextmenu', {detail:{pageX,pageY,clientX,clientY}}));
+          }
+        }
+      }
+
       function installZoomListener(el) {
+        const FLAGS = {passive:true};
         let lastScale = 1.0;
         let scaling = false;
         let startDist = 0;
         let lastDist = 0;
         let touch;
 
-        el.addEventListener('touchstart', begin);
-        el.addEventListener('touchmove', move);
-        el.addEventListener('touchend', end);
-        el.addEventListener('touchcancel', end);
+        el.addEventListener('touchstart', begin, FLAGS);
+        el.addEventListener('touchmove', move, FLAGS);
+        el.addEventListener('touchend', end, FLAGS);
+        el.addEventListener('touchcancel', end, FLAGS);
 
         el.addEventListener('wheel', sendZoom, {passive:true, capture: true});
 

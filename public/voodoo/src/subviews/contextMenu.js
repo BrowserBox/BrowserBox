@@ -74,8 +74,22 @@ export function makeContextMenuHandler(state, node = {type:'page', id: 'current-
     // we need this check because we attach a handler to each node
     // we could use delegation at the container of the root node
     // but for now we do it like this
+    if ( navigator.vibrate ) {
+      try {
+        navigator.vibrate(100);
+      } catch(e) {
+        console.warn('error vibrating', e);
+      }
+    }
     if ( contextMenu.currentTarget.contains(contextMenu.target) ) {
-      const {pageX, pageY} = contextMenu;
+      let pageX, pageY;
+      if ( contextMenu.pageX && contextMenu.pageY ) {
+        ({pageX, pageY} = contextMenu);
+      } else {
+        const {clientX, clientY} = contextMenu.detail;
+        ({pageX, pageY} = contextMenu.detail);
+        Object.assign(contextMenu, {pageX, pageY, clientX, clientY});
+      }
       // cancel click for chrome mobile
       // (note: this does not work as intended. 
       // It does not cancel a touch click on contextmenu open)
@@ -111,8 +125,8 @@ export function makeContextMenuHandler(state, node = {type:'page', id: 'current-
           } else {
             el.style.left = x;
           }
-          if ( pageY + el.scrollHeight > innerHeight )  {
-            el.style.bottom = '8px';
+          if ( pageY + el.scrollHeight > ( innerHeight - 32 ))  {
+            el.style.bottom = '48px';
           } else {
             el.style.top = y;
           }
