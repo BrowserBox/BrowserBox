@@ -9,8 +9,8 @@ cd zombie-lord
 npm i && npm rebuild
 cd ../public/voodoo
 npm i && npm rebuild
-cd ../../endbacker
-npm i && npm rebuild
+# cd ../../endbacker
+# npm i && npm rebuild
 
 #./make_bundle.sh
 
