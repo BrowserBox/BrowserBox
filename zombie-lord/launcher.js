@@ -57,28 +57,20 @@ const launcher_api = {
     const retVal = {
       port
     };
-    process.on('SIGHUP', async () => {
-      chrome_started = false; 
-      await zomb.kill(); 
-    });
-    process.on('SIGUSR1', async () => {
-      chrome_started = false; 
-      await zomb.kill(); 
-    });
-    process.on('SIGTERM', async () => {
-      chrome_started = false; 
-      await zomb.kill(); 
-    });
-    process.on('SIGINT', async () => {
-      chrome_started = false; 
-      await zomb.kill(); 
-    });
-    process.on('beforeExit', async () => { 
-      chrome_started = false; 
-      await zomb.kill(); 
-    });
+    process.on('SIGHUP', undoChrome);
+    process.on('SIGUSR1', undoChrome);
+    process.on('SIGTERM', undoChrome);
+    process.on('SIGINT', undoChrome);
+    process.on('beforeExit', undoChrome);
 
     return retVal;
+
+    async function undoChrome() {
+      console.log("Undo chrome called");
+      if ( ! chrome_started ) return;
+      chrome_started = false; 
+      await zomb.kill(); 
+    }
   },
 
   onDeath(port, func) {
