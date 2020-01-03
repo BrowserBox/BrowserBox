@@ -190,10 +190,7 @@ const controller_api = {
         await connection.doShot({ignoreHash: command.ignoreHash});
       }
       if ( command.requiresTailShot ) {
-        if ( lastTailShot ) {
-          clearTimeout(lastTailShot);
-        }
-        lastTailShot = setTimeout(() => connection.doShot({ignoreHash: command.ignoreHash}), TAIL_START);
+        connection.queueTailShot({ignoreHash: command.ignoreHash});
       }
       if ( connection.frameBuffer.length && command.receivesFrames ) {
         retVal.frameBuffer = move([], connection.frameBuffer)
