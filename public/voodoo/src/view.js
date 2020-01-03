@@ -161,16 +161,16 @@ export function component(state) {
                   }
                 }}
                 bond=${[saveCanvas, asyncSizeBrowserToBounds, emulateNavigator, ...canvasBondTasks]}
-                touchstart=${retargetTouchScroll}
+                touchstart:passive=${retargetTouchScroll}
                 touchmove=${[
                   e => e.preventDefault(), 
                   throttle(retargetTouchScroll, state.EVENT_THROTTLE_MS)
                 ]}
                 wheel:passive=${throttle(H, state.EVENT_THROTTLE_MS)}
-                mousemove=${throttle(H, state.EVENT_THROTTLE_MS)}         
+                mousemove:passive=${throttle(H, state.EVENT_THROTTLE_MS)}         
                 mousedown=${H}         
                 mouseup=${H}         
-                pointermove=${throttle(H, state.EVENT_THROTTLE_MS)}         
+                pointermove:passive=${throttle(H, state.EVENT_THROTTLE_MS)}         
                 pointerdown=${H}         
                 pointerup=${H}         
                 contextmenu=${subviews.makeContextMenuHandler(state)}
