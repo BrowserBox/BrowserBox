@@ -1,5 +1,5 @@
 import {DEBUG} from '../common.js';
-import {R,X} from '../../node_modules/brutalist-web/r.js';
+import {R,X} from '../../node_modules/craydom/r.js';
 import {PluginsMenuButton} from './pluginsMenuButton.js';
 
 let pmEl;
