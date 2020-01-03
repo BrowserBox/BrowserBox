@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import {FRAME_CONTROL, IMAGE_FORMAT} from './public/translateVoodooCRDP.js';
 import branchName from 'current-git-branch';
@@ -15,7 +16,7 @@ export const DEBUG = {
   high: 5
 };
 
-export const GO_SECURE = false;
+export const GO_SECURE = fs.existsSync(path.resolve('sslcert', 'master', 'privkey.pem'));
 
 export const STAGING = branchName() == 'staging';
 export const MASTER = branchName() == 'master';
