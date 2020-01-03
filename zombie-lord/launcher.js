@@ -53,6 +53,7 @@ const launcher_api = {
     };
     console.log(CHROME_OPTS, CHROME_FLAGS);
     const zomb = await ChromeLauncher(CHROME_OPTS);
+    chrome_started = true;
     zombies.set(port,zomb);
     const retVal = {
       port
@@ -69,7 +70,13 @@ const launcher_api = {
       console.log("Undo chrome called");
       if ( ! chrome_started ) return;
       chrome_started = false; 
-      await zomb.kill(); 
+      try {
+        await zomb.kill(); 
+        process.exit(0);
+      } catch(e) {
+        console.warn("Error on kill chrome on exit", e);
+        process.exit(1);
+      } 
     }
   },
 
