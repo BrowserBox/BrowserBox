@@ -3,7 +3,6 @@
 supreme-architect is a HTML/CSS/JavaScript "browser remote control" (inlcuding a front-end that works just like a browser). And it is fully programmable. 
 
 This means you can customize the browsing experience however you like, without having to fork it or modify its source code. You can even run supreme-architect remotely in the cloud against a headless browser and connect to it from anywhere. Or you can run it on your device. 
-
 More than that you can build atop the Browser in ways that you can't using WebExtension APIs or with the DevTools protocol. 
 
 Things that aren't normally possible, become possible. 
