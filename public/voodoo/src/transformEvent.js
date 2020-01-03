@@ -146,6 +146,9 @@ export default function transformEvent(e) {
       case "isSafari": {
         break;
       }
+      case "isFirefox": {
+        break;
+      }
       case "newIncognitoTab": {
         break; 
       }

@@ -76,8 +76,8 @@
       // for firefox because it's IME does not fire inputType
       // so we have no simple way to handle deleting content backward
       // this should be FF on MOBILE only probably so that's why it's false
-      // convertTypingEventsToSyncValueEvents: isFirefox(),
-      convertTypingEventsToSyncValueEvents: false,
+      convertTypingEventsToSyncValueEvents: isFirefox() && deviceIsMobile(),
+      //convertTypingEventsToSyncValueEvents: false,
 
       // for safari to detect if pointerevents work
       DoesNotSupportPointerEvents: true,
@@ -153,7 +153,7 @@
         }
       }
 
-      if ( isSafari ) {
+      if ( isSafari() ) {
         queue.send({type:"isSafari"});
       }
       if ( isFirefox() ) {
@@ -537,9 +537,11 @@
         const mouseWheel = event.type == "wheel";
         const syntheticNonTypingEventWrapper = event.synthetic && event.type != "typing" && event.event;
       
-        //if ( mouseWheel ) event.preventDefault && event.preventDefault();
-        if ( pointerEvent ) state.DoesNotSupportPointerEvents = false;
-        else if ( syntheticNonTypingEventWrapper ) {
+        if ( mouseWheel ) {
+          // do nothing
+        } else if ( pointerEvent ) {
+          state.DoesNotSupportPointerEvents = false;
+        } else if ( syntheticNonTypingEventWrapper ) {
           event.event.preventDefault && event.event.preventDefault();
         }
 
