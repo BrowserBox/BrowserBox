@@ -258,7 +258,6 @@ export const dss = {
         line-height: 2em;
         background: transparent;
       }
-
       
       nav:not(.targets) {
         padding: 0.35rem 0;
@@ -339,6 +338,11 @@ export const dss = {
       nav form.kbd-input textarea {
         opacity: 0;
         border: 0;
+
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
       }
     `;
   }

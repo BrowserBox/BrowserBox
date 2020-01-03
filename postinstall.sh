@@ -11,6 +11,8 @@ cd ../public/voodoo
 npm i && npm rebuild
 # cd ../../endbacker
 # npm i && npm rebuild
+cd ../../zombie-lord/custom-launcher
+npm i && npm rebuild
 
 #./make_bundle.sh
 
