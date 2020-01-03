@@ -450,12 +450,10 @@
         el.addEventListener('touchend', end);
         el.addEventListener('touchcancel', end);
 
-        el.addEventListener('wheel', sendZoom, {capture: true});
+        el.addEventListener('wheel', sendZoom, {passive:true, capture: true});
 
         function sendZoom(event) {
           if ( event.ctrlKey || event.deltaZ != 0 ) {
-            event.preventDefault();
-            event.stopPropagation();
             const delta = event.deltaZ || event.deltaY;
             const direction = Math.sign(delta);
             let multiplier;
@@ -539,8 +537,8 @@
         const mouseWheel = event.type == "wheel";
         const syntheticNonTypingEventWrapper = event.synthetic && event.type != "typing" && event.event;
       
-        if ( mouseWheel ) event.preventDefault && event.preventDefault();
-        else if ( pointerEvent ) state.DoesNotSupportPointerEvents = false;
+        //if ( mouseWheel ) event.preventDefault && event.preventDefault();
+        if ( pointerEvent ) state.DoesNotSupportPointerEvents = false;
         else if ( syntheticNonTypingEventWrapper ) {
           event.event.preventDefault && event.event.preventDefault();
         }

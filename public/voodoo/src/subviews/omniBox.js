@@ -1,4 +1,4 @@
-import {R,X} from '../../node_modules/brutalist-web/r.js';
+import {R,X} from '../../node_modules/craydom/r.js';
 import {saveClick} from './controls.js';
 
 const USE_DDG = false;

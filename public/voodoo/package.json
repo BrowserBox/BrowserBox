@@ -19,10 +19,10 @@
   },
   "homepage": "https://gitlab.com/dosycorp/voodoo#readme",
   "dependencies": {
-    "brutalist-web": "^2.3.1",
+    "craydom": "^2.3.6",
     "style.dss": "^1.3.4"
   },
   "devDependencies": {
-    "@babel/runtime": "^7.6.2"
+    "@babel/runtime": "^7.7.7"
   }
 }

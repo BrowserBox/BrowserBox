@@ -1,6 +1,6 @@
 import {throttle,DEBUG} from './common.js';
 import {cloneKeyEvent} from './constructor.js';
-import {R,X} from '../node_modules/brutalist-web/r.js';
+import {R,X} from '../node_modules/craydom/r.js';
 import * as Subviews from './subviews/index.js';
 import {dss, stylists} from './styles.js';
 import {getBitmapCoordinates} from './transformEvent.js';
@@ -166,7 +166,7 @@ export function component(state) {
                   e => e.preventDefault(), 
                   throttle(retargetTouchScroll, state.EVENT_THROTTLE_MS)
                 ]}
-                wheel=${throttle(H, state.EVENT_THROTTLE_MS)}
+                wheel:passive=${throttle(H, state.EVENT_THROTTLE_MS)}
                 mousemove=${throttle(H, state.EVENT_THROTTLE_MS)}         
                 mousedown=${H}         
                 mouseup=${H}         
