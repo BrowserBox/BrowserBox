@@ -72,7 +72,7 @@ function translator(e, handled = {type:'case'}) {
       const clientY = 0
       const deltas = {deltaX,deltaY,clientX,clientY};
       let retVal;
-      if ( false && (deltaX > MIN_DELTA || deltaY > MIN_DELTA )) {
+      if ( deltaX > MIN_DELTA || deltaY > MIN_DELTA ) {
         const retVal1 = {
           command: {
             name: "Runtime.evaluate",
@@ -166,7 +166,8 @@ function translator(e, handled = {type:'case'}) {
             url: e.address
           },
           requiresLoad: true,
-          requiresShot: true
+          requiresShot: true,
+          requiresTailShot: true
         }
       }
     }
@@ -178,7 +179,7 @@ function translator(e, handled = {type:'case'}) {
               requiresLoad: e.action == "reload",
               requiresShot: e.action == "reload",
               name: e.action == "reload" ? "Page.reload" : "Page.stopLoading",
-              params: {}
+              params: {},
             }
           };
         }
@@ -200,7 +201,8 @@ function translator(e, handled = {type:'case'}) {
                       entryId: intendedEntry.id
                     }, 
                     requiresLoad: true,
-                    requiresShot: true
+                    requiresShot: true,
+                    requiresTailShot: true
                   }
                 };
               } 
@@ -472,6 +474,15 @@ function translator(e, handled = {type:'case'}) {
         }
       };
     }
+    case "isFirefox": {
+      return {
+        command: {
+          isZombieLordCommand: true,
+          name: "Connection.setIsFirefox",
+          params: {}
+        }
+      };
+    }
     case "clearAllPageHistory": {
       return {chain:[
         {
@@ -547,7 +558,6 @@ function mouseEvent(e, deltaX = 0, deltaY = 0) {
         deltaX, deltaY
       },
       requiresShot: true,
-      requiresTailShot: true
     }
   };
 }
@@ -619,20 +629,20 @@ function adjustWheelDeltaByMode(delta, mode) {
   }
   switch(mode) {
     case DOM_DELTA_PIXEL:
-      console.log("pix mode", delta);
+      //console.log("pix mode", delta);
       if ( threshold && Math.abs(delta) < MIN_PIX_DELTA ) {
         delta = Math.sign(delta)*MIN_PIX_DELTA;
       }
       break;
     case DOM_DELTA_LINE:
-      console.log("line mode", delta);
+      //console.log("line mode", delta);
       delta = delta * LINE_HEIGHT_GUESS;
       if ( threshold && Math.abs(delta) < MIN_DELTA ) {
         delta = Math.sign(delta)*MIN_DELTA;
       }
       break;
     case DOM_DELTA_PAGE:
-      console.log("page mode", delta);
+      //console.log("page mode", delta);
       delta = delta * self.ViewportHeight;
       if ( threshold && Math.abs(delta) < MIN_DELTA ) {
         delta = Math.sign(delta)*MIN_DELTA;

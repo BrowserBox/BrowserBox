@@ -1,9 +1,10 @@
 import {DEBUG} from '../common.js';
 import sharp from 'sharp';
 
-const MAX_FRAMES = 2; /* 1, 2, 4 */
-const MIN_TIME_BETWEEN_SHOTS = 70; /* 20, 40, 100, 250, 500 */
-const MIN_TIME_BETWEEN_TAIL_SHOTS = 150;
+const MAX_FRAMES = 3; /* 1, 2, 4 */
+const MIN_TIME_BETWEEN_SHOTS = 150; /* 20, 40, 100, 250, 500 */
+const MIN_TIME_BETWEEN_TAIL_SHOTS = 250;
+const MAX_TIME_BETWEEN_TAIL_SHOTS = 3000;
 const NOIMAGE = {img: '', frame:0};
 const KEYS = [
   1, 11, 13, 629, 1229, 2046, 17912, 37953, 92194, 151840
@@ -44,9 +45,33 @@ export function makeCamera(connection) {
   let lastHash;
   let lastShot = Date.now();
   let nextShot;
-  let tailShot;
+  let tailShot, tailShotDelay = MIN_TIME_BETWEEN_TAIL_SHOTS;
 
-  return doShot;
+  const nextTailShot = () => {
+    DEBUG.shotDebug && console.log("Tail shot");
+    doShot();
+    tailShotDelay *= 1.618;
+    if ( tailShotDelay < MAX_TIME_BETWEEN_TAIL_SHOTS ) {
+      if ( !! tailShot ) {
+        clearTimeout(tailShot);
+      }
+      tailShot = setTimeout(nextTailShot, tailShotDelay);
+    } else {
+      tailShotDelay = MIN_TIME_BETWEEN_TAIL_SHOTS;
+      tailShot = false;
+    }
+  };
+
+  return {queueTailShot, doShot};
+
+  function queueTailShot() {
+    if ( !! tailShot ) {
+      clearTimeout(tailShot);
+      tailShotDelay = MIN_TIME_BETWEEN_TAIL_SHOTS;
+      tailShot = false;
+    }
+    tailShot = setTimeout(nextTailShot, tailShotDelay);
+  }
 
   async function shot() {
     if ( DEBUG.noShot ) return NOIMAGE;
@@ -63,7 +88,7 @@ export function makeCamera(connection) {
     }
     const targetId = connection.sessions.get(connection.sessionId);
     let response;
-		const ShotCommand = (connection.isSafari ? SAFARI_SHOT : WEBP_SHOT).command;
+		const ShotCommand = (connection.isSafari || connection.isFirefox ? SAFARI_SHOT : WEBP_SHOT).command;
     DEBUG.val > DEBUG.med && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
     response = await connection.sessionSend(ShotCommand);
     lastShot = timeNow;
@@ -101,16 +126,9 @@ export function makeCamera(connection) {
       while ( connection.frameBuffer.length > MAX_FRAMES ) {
         connection.frameBuffer.shift();
       }
-
-      if ( !! tailShot ) {
-        clearTimeout(tailShot);
-        tailShot = false;
-      }
-      tailShot = setTimeout(() => {
-				DEBUG.shotDebug && console.log("Tail shot");
-				doShot();
-		  }, MIN_TIME_BETWEEN_TAIL_SHOTS);
     }
+
+    queueTailShot();
 
     DEBUG.val > DEBUG.high && console.log({framesWaiting:connection.frameBuffer.length, now: Date.now()});
   }

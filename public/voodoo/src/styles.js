@@ -1,5 +1,5 @@
 import {restyleAll,restyleElement,initializeDSS,setState} from '../node_modules/style.dss/index.js';
-import {DEBUG, isSafari} from './common.js';
+import {DEBUG, isFirefox, isSafari} from './common.js';
 
 export const stylists = {
   styleDocument, styleVoodooMain,
@@ -301,7 +301,7 @@ export const dss = {
         display: flex;
       }
 
-      ${isSafari?
+      ${isSafari()?
         `nav button, nav input {
           -webkit-appearance: none;
           -moz-appearance: none;
@@ -362,7 +362,7 @@ export const dss = {
       }
       
       ${
-        isSafari? `
+        isSafari()? `
           input {
             -webkit-appearance: none;
           }
@@ -668,7 +668,7 @@ export const dss = {
       }
 
       * canvas {
-        image-rendering: crisp-edges;
+        image-rendering: high-quality;
       }
     `;
   }
