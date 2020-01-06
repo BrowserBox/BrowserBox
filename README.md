@@ -1,6 +1,6 @@
-# supreme-architect
+# Oni
 
-supreme-architect is a HTML/CSS/JavaScript "browser remote control" (inlcuding a front-end that works just like a browser). And it is fully programmable. 
+Oni is a HTML/CSS/JavaScript interactive mask or "browser remote control" (inlcuding a front-end that works just like a browser). And it is fully programmable, and you can deliver it as a web app. So you get a browser within a browser, basically. It connects to a browser you run locally or in the cloud via DevTools. The connected browser can be headless or not. Oni don't care.
 
 This means you can customize the browsing experience however you like, without having to fork it or modify its source code. You can even run supreme-architect remotely in the cloud against a headless browser and connect to it from anywhere. Or you can run it on your device. 
 More than that you can build atop the Browser in ways that you can't using WebExtension APIs or with the DevTools protocol. 
@@ -16,7 +16,7 @@ Things that aren't normally possible, become possible.
 
 ## One possible simple use case out of the box: Isolated Remote Browsers for security
 
-supreme-architect can be used as a simple remote browser isolation application. 
+Oni can be used as a simple remote browser isolation application. 
 
 If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
 
@@ -86,10 +86,6 @@ Try for free at https://free.cloudbrowser.xyz
 
 Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
 
-Would it be impossible for you to invest more time in your security? 
-
-If the answer is NO, then please email me at cris@dosycorp.com OR cris@dosyago.com to discuss how our RBI/CBII solution may assist you.
-
 ### Detailed Instructions
 
 An annotated transcript of an install is available at [this gist](https://gist.github.com/crislin2046/2fcd103234f93376c44d110d6295f32a).
@@ -121,27 +117,6 @@ Just connect your browser to http://localhost:5002 from the machine you run it o
 
 Just run PPTR on the same machine as this and connect to localhost:5002
 
-### Why?
-
-[Why I built my own browser (and you can too)](https://medium.com/@cris_39045/why-i-built-my-own-browser-and-you-can-too-9dda4b4de869)
-
-### Bonus Section 
-
-Becuase this can also work by running a browser in headless mode and giving that headless Browser a new head back, some clever folk have come up with a variety of quirky, unusual, funny and creative names for this:
-
-[[Alternate Names]]:
-- Bodyless :tada: :heavy_check_mark:
-- Horseman :horse: :skull: :man: :heavy_check_mark:
-- Bogeyhead ???
-- BrowserGap
-- ChromeBoard
-- Browser Voodoo Doll
-- Poppet
-- BrowserView
-- BrowserSync - control one browser with another
-- Open Browser Platform
-- Joystick
-- [DeFAANGED Headful browser](https://github.com/dosycorp/BrowserView/issues/20)
 
 ### Current version
 
