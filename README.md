@@ -11,35 +11,12 @@ Things that aren't normally possible, become possible.
 
 ![GIF of Oni browser in action](https://j.gifs.com/E8yzLv.gif)
 
-## Why?
-
-- For more control. Do things that can't be done with Extensions. Do things you can't do with DevTools protocol. Totally change the UI.
-- For more powerful apps. You can embed this as a component in a web app, and provide a full and fully customizable browser experience from your web or hybrid app. 
-- For fun. Build your own browser. Break free of the restrictive UI. Break free of the monopoly control. :metal:
-- Because you want to build something you can't otherwise. That's why I built this. I'm making an app on top of this that can record and playback user actions, to let you reduce the drudgery of repetitive tasks.
-
-## One possible simple use case out of the box: Isolated Remote Browsers for security
-
-Oni can be used as a simple remote browser isolation application. 
-
-If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
-
-## Other cool use cases this enables:
-
-- Build a plugin for Recording and playback of any sequence of user actions to create fully reproducible "web macros" that people can share. We're building this!
-- A "webview" tag for the open web. The web view tag is connected to a remote browser and provides all fuctionalities of a webview tag (such as in Electron or Android).
-- A "browser" tag for the open web. The browser tag is connected to a remote browser and provides all capabilities of a browser, including multiple tabs, history, an address bar and so on.
-- A service that lets you run electron apps in the cloud, but connect to them on a browser. So a UI for electron apps that you run in the cloud. So take any electron app and convert it into a docker container and server that you run in the cloud and interface with over a front-end on the client. We're building this, it's called [CloudChamber](https://github.com/dosycorp/CloudChamber)!
-
-## Optics
-
-Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools)? Take a look at the ["Zombie Lord" connection](https://github.com/dosycorp/browsergap.ce/blob/master/zombie-lord/connection.js) and ["Translate Voodoo CRDP"](https://github.com/dosycorp/browsergap.ce/blob/master/public/translateVoodooCRDP.js) for the two files with the largest concentrations of CRDTP code.
 
 ## Use
 
 Install from npm 
 
-`npm i supreme-architect`
+`npm i onibrowser`
 
 Or clone and download the repository.
 
@@ -102,6 +79,31 @@ Then run `node index.js 5002 8002 xxxcookie username token2`
 ### Running locally in general
 
 If you want you can also modify `zombie-lord/screenShots.js` to increase the quality and framerate of shots taken if you're running locally.
+
+## Why?
+
+- For more control. Do things that can't be done with Extensions. Do things you can't do with DevTools protocol. Totally change the UI.
+- For more powerful apps. You can embed this as a component in a web app, and provide a full and fully customizable browser experience from your web or hybrid app. 
+- For fun. Build your own browser. Break free of the restrictive UI. Break free of the monopoly control. :metal:
+- Because you want to build something you can't otherwise. That's why I built this. I'm making an app on top of this that can record and playback user actions, to let you reduce the drudgery of repetitive tasks.
+
+## One possible simple use case out of the box: Isolated Remote Browsers for security
+
+Oni can be used as a simple remote browser isolation application. 
+
+If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
+
+## Other cool use cases this enables:
+
+- Build a plugin for Recording and playback of any sequence of user actions to create fully reproducible "web macros" that people can share. We're building this!
+- A "webview" tag for the open web. The web view tag is connected to a remote browser and provides all fuctionalities of a webview tag (such as in Electron or Android).
+- A "browser" tag for the open web. The browser tag is connected to a remote browser and provides all capabilities of a browser, including multiple tabs, history, an address bar and so on.
+- A service that lets you run electron apps in the cloud, but connect to them on a browser. So a UI for electron apps that you run in the cloud. So take any electron app and convert it into a docker container and server that you run in the cloud and interface with over a front-end on the client. We're building this, it's called [CloudChamber](https://github.com/dosycorp/CloudChamber)!
+
+## Optics
+
+Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools)? Take a look at the ["Zombie Lord" connection](https://github.com/dosycorp/browsergap.ce/blob/master/zombie-lord/connection.js) and ["Translate Voodoo CRDP"](https://github.com/dosycorp/browsergap.ce/blob/master/public/translateVoodooCRDP.js) for the two files with the largest concentrations of CRDTP code.
+
 
 ### Development Roadmap
 
