@@ -1,5 +1,7 @@
 # Oni
 
+Deliver a browser over the web. 
+
 Oni is a HTML/CSS/JavaScript interactive mask or "browser remote control" (inlcuding a front-end that works just like a browser). And it is fully programmable, and you can deliver it as a web app. So you get a browser within a browser, basically. It connects to a browser you run locally or in the cloud via DevTools. The connected browser can be headless or not. Oni don't care.
 
 This means you can customize the browsing experience however you like, without having to fork it or modify its source code. You can even run supreme-architect remotely in the cloud against a headless browser and connect to it from anywhere. Or you can run it on your device. 
