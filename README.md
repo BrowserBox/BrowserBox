@@ -7,6 +7,8 @@ More than that you can build atop the Browser in ways that you can't using WebEx
 
 Things that aren't normally possible, become possible. 
 
+[Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k)
+
 ## Why?
 
 - For more control. Do things that can't be done with Extensions. Do things you can't do with DevTools protocol. Totally change the UI.
