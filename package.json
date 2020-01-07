@@ -1,7 +1,7 @@
 {
-  "name": "supreme-architect",
+  "name": "onibrowser",
   "version": "1.1.1",
-  "description": "A \"zombie / voodoo church\" where you can commune with the spirits ( control browser instances ).",
+  "description": "A browser in the browser",
   "main": "index.js",
   "scripts": {
     "test": "bash ./test.sh",
@@ -15,12 +15,21 @@
     "type": "git",
     "url": "git+https://github.com/dosyago/supreme-architect.git"
   },
+  "keywords": [
+    "browser",
+    "headless",
+    "automation",
+    "chrome",
+    "browsergap",
+    "supreme-architect",
+    "oni"
+  ],
   "author": "@dosy",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dosyago/supreme-architect/issues"
+    "url": "https://github.com/dosyago/oni/issues"
   },
-  "homepage": "https://gitlab.com/dosyago/supreme-architect#readme",
+  "homepage": "https://gitlab.com/dosyago/oni#readme",
   "dependencies": {
     "body-parser": "^1.18.3",
     "brutalist-web": "^2.3.0",
