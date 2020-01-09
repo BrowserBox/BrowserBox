@@ -1,6 +1,6 @@
 # GroundControl
 
-Deliver a browser over the web. 
+Fly browser remotely like a drone. And deliver the control console over the web. 
 
 GroundControl is a HTML/CSS/JavaScript interactive mask or "browser remote control" (inlcuding a front-end that works just like a browser). And it is fully programmable, and you can deliver it as a web app. So you get a browser within a browser, basically. It connects to a browser you run locally or in the cloud via DevTools. The connected browser can be headless or not. Oni don't care.
 
