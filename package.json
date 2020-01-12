@@ -1,7 +1,7 @@
 {
-  "name": "onibrowser",
-  "version": "1.1.1",
-  "description": "A browser in the browser",
+  "name": "remoteview",
+  "version": "2.0.0",
+  "description": "Fly a browser remotely from your browser? Yes.",
   "main": "index.js",
   "scripts": {
     "test": "bash ./test.sh",
@@ -22,14 +22,18 @@
     "chrome",
     "browsergap",
     "supreme-architect",
-    "oni"
+    "oni",
+    "remoteview",
+    "groundcontrol",
+    "chromescreen",
+    "chrome controller"
   ],
   "author": "@dosy",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dosyago/oni/issues"
+    "url": "https://github.com/dosyago/remoteview/issues"
   },
-  "homepage": "https://gitlab.com/dosyago/oni#readme",
+  "homepage": "https://gitlab.com/dosyago/remoteview#readme",
   "dependencies": {
     "body-parser": "^1.18.3",
     "brutalist-web": "^2.3.0",
