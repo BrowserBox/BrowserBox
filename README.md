@@ -10,7 +10,17 @@ RemoteView is a HTML/CSS/JavaScript "ground control" or "remote control" for a b
 
 ![browser in a browser](readme-files/tenor.gif)
 
-## Get
+## Hosted Free Demo
+
+Try for free at https://free.cloudbrowser.xyz
+
+Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
+
+## Paid Version for organizations
+
+https://browsergap.xyz
+
+## Get and self-host
 
 Install from npm 
 
@@ -53,21 +63,17 @@ sudo docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json browse
 
 And visit http://&lt;your ip&gt;:8002 to see it up.
 
-Or
-
-Try for free at https://free.cloudbrowser.xyz
-
-Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
-
 ## :sunglasses: Awesome
 
-Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools)? Take a look at the ["Zombie Lord" connection](https://github.com/dosycorp/browsergap.ce/blob/master/zombie-lord/connection.js) and ["Translate Voodoo CRDP"](https://github.com/dosycorp/browsergap.ce/blob/master/public/translateVoodooCRDP.js) for the two files with the largest concentrations of CRDTP code.
+Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools)? 
 
-### Opening DevTools
+Take a look at the ["Zombie Lord" connection](https://github.com/dosycorp/browsergap.ce/blob/master/zombie-lord/connection.js) and ["Translate Voodoo CRDP"](https://github.com/dosycorp/browsergap.ce/blob/master/public/translateVoodooCRDP.js).
+
+## Opening DevTools
 
 Just connect your browser to http://localhost:5002 from the machine you run it on.
 
-### Connecting puppeteer
+## Connecting puppeteer
 
 Just run PPTR on the same machine as this and connect to http://localhost:5002
 
