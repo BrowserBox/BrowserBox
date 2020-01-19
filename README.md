@@ -1,6 +1,10 @@
 # [RemoteView](https://github.com/dosyago/RemoteView) ![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)
 
-Fly browser remotely like a drone. And deliver the control console over the web. 
+RemoteView is a platform for live streaming the browser, with full interactivity. It lets you plug in to a local or remote, even a headless browser, and fly it as if it's a normal browser. 
+
+You can stream a remote browser with special cusotmizations to your clients to side step the restrictions of regular browsers. You can use it to build rich experiences based on the browser that are not possible using Flash, Browser Extensions or regular Web Driver protocol. 
+
+For business enquiries, please contact [Cris](mailto:cris@dosyago.com?subject=RemoteView)
 
 [Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k), or just watch the GIF below:
 
@@ -16,9 +20,9 @@ Try for free at https://free.cloudbrowser.xyz
 
 Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
 
-## Paid Version for organizations
+## Secure Cloud Based Internet Isolation Version for organizations
 
-https://browsergap.xyz
+For secure remote browers, see [BrowserGap](https://browsergap.xyz)
 
 ## Get and self-host
 
