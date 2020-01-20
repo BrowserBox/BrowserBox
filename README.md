@@ -1,4 +1,4 @@
-# :satellite: [RemoteView](https://github.com/dosyago/RemoteView) ![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview)
+# :satellite: [RemoteView](https://github.com/dosyago/RemoteView) ![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) ![npm downloads](https://img.shields.io/npm/dt/remoteview)
 
 RemoteView is a platform for live streaming the browser, with full interactivity. It lets you plug in to a local or remote, even a headless browser, and fly it as if it's a normal browser. 
 
