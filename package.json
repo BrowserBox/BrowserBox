@@ -29,7 +29,7 @@
     "chrome controller"
   ],
   "author": "@dosy",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/dosyago/remoteview/issues"
   },
