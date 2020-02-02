@@ -219,7 +219,7 @@
           state.attached.add(attached.targetId);
 
           if ( !! state.useViewFrame ) {
-            sizeBrowserToBounds(state.viewState.viewFrameEl);
+            sizeBrowserToBounds(state.viewState.viewFrameEl, true);
           } else {
             asyncSizeBrowserToBounds(state.viewState.canvasEl);
             emulateNavigator();
@@ -654,7 +654,7 @@
         }
       }
 
-      function sizeBrowserToBounds(el) {
+      function sizeBrowserToBounds(el, firstTime = false) {
         let {width, height} = el.getBoundingClientRect();
         width = Math.round(width);
         height = Math.round(height);
@@ -669,10 +669,21 @@
           el.width = width;
           el.height = height;
         }
+        const mobile = deviceIsMobile();
+        if ( firstTime ) {
+          H({ synthetic: true,
+            type: "window-bounds",
+            width:width + (mobile ? 0 : 17),  /* scrollbar */
+            mobile,
+            height:height + 64,
+            targetId: state.activeTarget
+          });
+        }
         H({ synthetic: true,
           type: "window-bounds-preImplementation",
-          width:width + (deviceIsMobile() ? 0 : 17),  /* scrollbar */
+          width:width + (mobile ? 0 : 17),  /* scrollbar */
           height,
+          mobile,
           targetId: state.activeTarget
         });
         self.ViewportWidth = width;
@@ -684,7 +695,7 @@
       }
 
       function asyncSizeBrowserToBounds(el) {
-        setTimeout(() => (sizeBrowserToBounds(el), indicateNoOpenTabs()), 0);
+        setTimeout(() => (sizeBrowserToBounds(el, true), indicateNoOpenTabs()), 0);
       }
 
       function emulateNavigator() {
