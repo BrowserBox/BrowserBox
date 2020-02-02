@@ -679,6 +679,10 @@
         self.ViewportHeight = height;
       }
 
+      function sizeTab() {
+        return sizeBrowserToBounds(state.viewState.canvasEl);
+      }
+
       function asyncSizeBrowserToBounds(el) {
         setTimeout(() => (sizeBrowserToBounds(el), indicateNoOpenTabs()), 0);
       }
@@ -713,6 +717,7 @@
             requiresShot: true,
           }
         });
+        sizeTab();
         canKeysInput();
         state.lastTarget = state.activeTarget;
         state.activeTarget = targetId;
