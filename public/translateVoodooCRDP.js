@@ -323,16 +323,40 @@ function translator(e, handled = {type:'case'}) {
     }
     case "window-bounds-preImplementation": {
       // This is here until Browser.getWindowForTarget and Browser.setWindowBounds come online
-      let {width,height} = e;
+      let {width,height,mobile} = e;
       width = parseInt(width);
       height = parseInt(height);
-      const retVal = {
-        command: {
-          name: "Emulation.setVisibleSize",
-          params: {width,height},
+      const retVal = [
+        {
+          command: {
+            name: "Emulation.clearDeviceMetricsOverride",
+            params: {},
+          },
+          requiresShot: false,
         },
-        requiresShot: true,
-      };
+        {
+          command: {
+            name: "Emulation.setDeviceMetricsOverride",
+            params: {
+              width,
+              height, 
+              deviceScaleFactor: 1,
+              mobile,
+              screenWidth: width,
+              screenHeight: height,
+              viewport: {width,height,scale:1}
+            },
+          },
+          requiresShot: false,
+        },
+        {
+          command: {
+            name: "Emulation.setVisibleSize",
+            params: {width,height},
+          },
+          requiresShot: true,
+        },
+      ];
       return retVal;
     }
     case "user-agent": {
