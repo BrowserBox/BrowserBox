@@ -8,10 +8,10 @@ export const DEBUG = {
     whether created with createTarget or simply spawning, 
     we must use legacy shots */
   IMAGE_FORMAT,                     /* JPEG, PNG, or WEBP (if supported (so not Safari)) */
-  showDebug: true,
+  shotDebug: true,
   noShot: false,
   dev: false,
-  val: 1,
+  val: 6,
   low: 1,
   med: 3,
   high: 5

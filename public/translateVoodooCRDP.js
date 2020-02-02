@@ -329,23 +329,8 @@ function translator(e, handled = {type:'case'}) {
       const retVal = [
         {
           command: {
-            name: "Emulation.clearDeviceMetricsOverride",
-            params: {},
-          },
-          requiresShot: false,
-        },
-        {
-          command: {
-            name: "Emulation.setDeviceMetricsOverride",
-            params: {
-              width,
-              height, 
-              deviceScaleFactor: 1,
-              mobile,
-              screenWidth: width,
-              screenHeight: height,
-              viewport: {width,height,scale:1}
-            },
+            name: "Emulation.setFocusEmulationEnabled",
+            params: {enabled:true},
           },
           requiresShot: false,
         },
