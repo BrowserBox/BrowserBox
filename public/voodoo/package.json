@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "test": "serve -p 8080",
-    "postinstall": "./import-assets.sh"
+    "postinstall": "bash ./import-assets.sh"
   },
   "repository": {
     "type": "git",
