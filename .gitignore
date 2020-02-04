@@ -1,0 +1,13 @@
+*.stackdump
+debug.log
+auto_killer_data
+file_transfer_groups
+node_modules
+certs/*
+sslcerts/*
+.*.swp
+isolate*
+public/bundle*
+public/meta_bundle*
+nohup.out
+

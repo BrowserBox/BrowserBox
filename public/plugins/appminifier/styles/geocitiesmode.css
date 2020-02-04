@@ -1,0 +1,8 @@
+:root, body {
+  background: black;
+  color: lime;
+}
+
+a, a:visited, a:link {
+  text-shadow: 1px 1px 2px lime;
+}

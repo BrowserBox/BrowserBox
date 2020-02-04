@@ -1,0 +1,176 @@
+:root {
+  line-height: 1.6;
+  -ms-hyphens: auto;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  word-break: break-word;
+  background: transparent;
+  --neon: rgb(204,245,75);
+  --ngreen: rgb(18,227,58);
+  --nblue: rgb(85,222,246);
+  --back: rgb(15,95,212);
+}
+
+:root, input, textarea, select, button, [role="button"], [role="button"] *{
+  font-size: 15pt;
+  font-family: system-ui, Arial, Helvetica, sans-serif;
+}
+
+:root.neon, :root.neon input, :root.neon textarea, :root.neon select, :root.neon button, 
+:root.neon [role="button"], :root.neon [role="button"] *{
+  color: var(--nblue) !important;
+  background: var(--back) !important;
+}
+
+:root.neon button, :root.neon [role="button"] {
+  -webkit-appearance: none !important;
+}
+
+/**
+h1 > a, h2 > a, h3 > a, h4 > a, h5 > a, h6 > a,
+div > a, div > button, div > [role="button"] {
+  display: inline-block;
+}
+
+button, [role="button"] {
+  display: inline-block;
+}
+**/
+
+body {
+  margin: 0 1rem; 
+  padding: 0;
+  /* we should make column width a toggleable property */
+  /* column-width: 15rem; */
+}
+
+@media screen and (max-width: 666px) {
+  :root {
+    font-size: 12pt;
+  }
+
+  :root, input, textarea, select, button {
+    font-size: 12pt;
+    font-family: system-ui, Arial, Helvetica, sans-serif;
+  }
+
+  body {
+    margin: 0.5rem; 
+  }
+}
+
+header ol li,
+header ul li,
+[role="navigation"] ul li,
+[role="navigation"] ol li,
+nav ol li,
+nav ul li {
+  display: inline-block; 
+  margin: 0 0.25rem;
+}
+
+h1, h2, h3, h4, h5, h6, ol, ul, dl {
+  margin: 0.5em 0;
+}
+
+:root.neon a, :root.neon :visited {
+  color: var(--ngreen);
+}
+a, span {
+  margin-right: 0.175rem;
+}
+
+a:not([role="button"]) *:not(h1):not(h2):not(p):not([role="heading"]):not(h3):not(h4):not(h5):not(h6):not(blockquote), 
+a[role="button"] *, 
+span {
+  display: inline !important;
+}
+
+:not(input):not(option):not(textarea):not([contenteditable]):not(br):not(td):not(tr):not(th):empty {
+  display: none;
+}
+
+button, input, [role="button"] {
+  margin: 0.175rem;
+  padding: 0.175rem 0.35rem;
+}
+
+:root.neon button, :root.neon input, :root.neon [role="button"] {
+  border: medium solid var(--nblue) !important;
+}
+
+[role="button"] * {
+  border: none !important;
+}
+
+p {
+  margin: 0.35rem 0;
+}
+
+pre {
+  max-width: 100%;
+  white-space: pre-wrap;
+}
+
+table {
+  empty-cells: hide;
+}
+
+th {
+  text-align: left;
+}
+
+th:not(:empty), td:not(:empty) {
+  min-width: fit-content;
+}
+
+[contenteditable] {
+  background: white;
+  border: 1px solid;
+}
+
+[contenteditable]:focus {
+  outline: thin solid dodgerblue;
+}
+
+input, select, button, textarea, [contenteditable] {
+  display: inline-block;
+}
+
+fieldset, input[type="radio"], input[type="checkbox"] {
+  display: inline-block;
+}
+
+
+[contenteditable]:focus-within {
+  outline: thin solid dodgerblue;
+}
+
+[role="button"] {
+  -webkit-appearance: button;
+  appearance: button;
+  width: fit-content;
+}
+
+[role="button"], [role="button"] * {
+  text-decoration: none !important;
+  color: black;
+}
+
+[role="button"] [role="button"] {
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
+  margin: 0;
+}
+
+[hidden], [aria-hidden="true"] {
+  display: none;
+}
+
+time {
+  font-style: italic;
+  color: grey;
+  margin: 0 0.35rem;
+}
+
