@@ -3,6 +3,9 @@
 
 import {DEBUG} from '../common.js';
 
+const tabNumbers = new Map();
+let TabNumber = 1;
+
 export async function fetchTabs({sessionToken}) {
   try {
     const url = new URL(location);
@@ -17,6 +20,16 @@ export async function fetchTabs({sessionToken}) {
         }
       }
       data.tabs = (data.tabs || []).filter(({type}) => type == 'page');
+      // FIX for #36 ? 
+      // note: this does *not* work because new tabs can be inserted anywhere
+      // data.tabs.reverse();
+      data.tabs.forEach(tab => {
+        if ( !tabNumbers.has(tab.targetId) ) {
+          tabNumbers.set(tab.targetId, TabNumber++);
+        }
+        tab.number = tabNumbers.get(tab.targetId);
+      });
+      data.tabs.sort((a,b) => a.number - b.number);
       return data;
     } else if ( resp.status == 401 ) {
       console.warn(`Session has been cleared. Let's attempt relogin`, sessionToken);
