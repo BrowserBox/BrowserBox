@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<meta charset=utf8>
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+<title>Zanj</title>
+<img id=image style="display:none;">
+<!--
+  <style>
+    #debugBox {
+      height: 100px;
+      overflow: scroll;
+    }
+  </style>
+  <div id=debugBox></div>
+-->
+<script type=module>
+  import translateVoodooCRDP from './translateVoodooCRDP.js';
+  import Voodoo from './voodoo/index.js';
+  const api = new URL(location);
+  api.pathname = "/api/v1/zombie";
+  let voodoo;
+  start();
+  async function start() {
+    voodoo = await Voodoo.voodoo('body', 'beforeEnd', {
+      tasks:[
+        () => setTimeout( () => {
+          voodoo.queue.addSubscriber(api, translateVoodooCRDP, image);
+        }, 0)
+      ]
+    });
+  }
+</script>
