@@ -1,6 +1,6 @@
 {
   "name": "remoteview",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Fly a browser remotely from your browser? Yes.",
   "main": "index.js",
   "scripts": {
