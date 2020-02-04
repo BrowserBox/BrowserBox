@@ -81,7 +81,7 @@ const controller_api = {
           // and instead offer a command like Connection.broadcastToAllContextsInSession()
           // that takes a script to evaluate 
           case "Connection.doShot": {
-            console.log("Calling do shot");
+            DEBUG.val && console.log("Calling do shot");
             connection.doShot();
           }
           case "Connection.getContextIdsForActiveSession": {
