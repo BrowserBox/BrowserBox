@@ -1,3 +1,4 @@
+vim.exe.stackdump
 *.stackdump
 debug.log
 auto_killer_data

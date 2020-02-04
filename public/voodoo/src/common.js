@@ -5,6 +5,7 @@ export const isSafari = () => /^((?!chrome|android).)*safari/i.test(navigator.us
 export const BLANK = "about:blank";
 
 export const DEBUG = {
+  activateNewTab: false,
   frameControl: FRAME_CONTROL,
   pluginsMenu: false,
   serviceWorker: false,
