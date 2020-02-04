@@ -43,7 +43,7 @@ cd RemoteView
 npm test
 ```
 
-Or (using docker build yourself)
+Or (using docker build yourself for latest)
 
 ```sh
 sudo apt update && sudo apt -y upgrade
