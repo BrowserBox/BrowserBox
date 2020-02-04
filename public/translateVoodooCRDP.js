@@ -323,15 +323,15 @@ function translator(e, handled = {type:'case'}) {
     }
     case "window-bounds-preImplementation": {
       // This is here until Browser.getWindowForTarget and Browser.setWindowBounds come online
-      let {width,height} = e;
+      let {width,height,mobile} = e;
       width = parseInt(width);
       height = parseInt(height);
       const retVal = {
-        command: {
-          name: "Emulation.setVisibleSize",
-          params: {width,height},
-        },
-        requiresShot: true,
+          command: {
+            name: "Emulation.setVisibleSize",
+            params: {width,height},
+          },
+          requiresShot: true,
       };
       return retVal;
     }
