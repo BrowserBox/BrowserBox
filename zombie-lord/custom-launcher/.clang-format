@@ -1,6 +1,0 @@
----
-BasedOnStyle: Google
-Language: JavaScript
-ColumnLimit: 100
-ReflowComments: false
-SpacesBeforeTrailingComments: 1
