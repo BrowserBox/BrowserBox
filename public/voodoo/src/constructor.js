@@ -96,6 +96,7 @@
       canvasBondTasks,
 
       // tabs
+      updateTabsTasks: [],
       lastTarget,
       activeTarget,
       tabs,
@@ -210,6 +211,11 @@
       // tabs
       queue.addMetaListener('created', meta => {
         if ( meta.created.type == 'page') {
+          if ( DEBUG.activateNewTab ) {
+            if ( meta.created.url == 'about:blank' || meta.created.url == '' ) {
+              state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
+            }
+          }
           updateTabs();
         }
       });
@@ -219,7 +225,7 @@
           state.attached.add(attached.targetId);
 
           if ( !! state.useViewFrame ) {
-            sizeBrowserToBounds(state.viewState.viewFrameEl);
+            sizeBrowserToBounds(state.viewState.viewFrameEl, true);
           } else {
             asyncSizeBrowserToBounds(state.viewState.canvasEl);
             emulateNavigator();
@@ -654,7 +660,7 @@
         }
       }
 
-      function sizeBrowserToBounds(el) {
+      function sizeBrowserToBounds(el, firstTime = false) {
         let {width, height} = el.getBoundingClientRect();
         width = Math.round(width);
         height = Math.round(height);
@@ -669,18 +675,33 @@
           el.width = width;
           el.height = height;
         }
+        const mobile = deviceIsMobile();
+        if ( firstTime ) {
+          H({ synthetic: true,
+            type: "window-bounds",
+            width:width + (mobile ? 0 : 17),  /* scrollbar */
+            mobile,
+            height:height + 64,
+            targetId: state.activeTarget
+          });
+        }
         H({ synthetic: true,
           type: "window-bounds-preImplementation",
-          width:width + (deviceIsMobile() ? 0 : 17),  /* scrollbar */
+          width:width + (mobile ? 0 : 17),  /* scrollbar */
           height,
+          mobile,
           targetId: state.activeTarget
         });
         self.ViewportWidth = width;
         self.ViewportHeight = height;
       }
 
+      function sizeTab() {
+        return sizeBrowserToBounds(state.viewState.canvasEl);
+      }
+
       function asyncSizeBrowserToBounds(el) {
-        setTimeout(() => (sizeBrowserToBounds(el), indicateNoOpenTabs()), 0);
+        setTimeout(() => (sizeBrowserToBounds(el, true), indicateNoOpenTabs()), 0);
       }
 
       function emulateNavigator() {
@@ -713,6 +734,7 @@
             requiresShot: true,
           }
         });
+        //sizeTab();
         canKeysInput();
         state.lastTarget = state.activeTarget;
         state.activeTarget = targetId;
@@ -790,6 +812,14 @@
         subviews.TabList(state);
         if ( state.tabs.length == 0 ) {
           indicateNoOpenTabs();
+        }
+        while(state.updateTabsTasks.length) {
+          const task = state.updateTabsTasks.shift();
+          try {
+            task();
+          } catch(e) {
+            console.warn("State update tabs task failed", e, task);
+          }
         }
       }
 
