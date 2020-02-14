@@ -399,7 +399,7 @@
               console.warn(e);
             }
           } else {
-            writeCanvas("All tabs closed.");
+            writeCanvas("All Boogeh tabs closed.");
           }
         }
       }
@@ -751,7 +751,7 @@
           if ( state.active && state.active.url != BLANK ) {
             canKeysInput();
           } else {
-            writeCanvas("This is a BrowserGap SecureTab.");
+            writeCanvas("Boogeh your way to some music.");
             state.viewState.omniBoxInput.focus();
           }
         }, SHORT_DELAY);
