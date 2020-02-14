@@ -4,6 +4,7 @@ import {FRAME_CONTROL, IMAGE_FORMAT} from './public/translateVoodooCRDP.js';
 import branchName from 'current-git-branch';
 
 export const DEBUG = {
+  noAudio: false,
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
     whether created with createTarget or simply spawning, 
     we must use legacy shots */

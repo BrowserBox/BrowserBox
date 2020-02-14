@@ -4,7 +4,7 @@ import os from 'os';
 import fs from 'fs';
 import isDocker from 'is-docker';
 import {launch as ChromeLauncher} from './custom-launcher/dist/chrome-launcher.js';
-import {sleep} from '../common.js';
+import {sleep, DEBUG} from '../common.js';
 
 const RESTART_MS = 1000;
 const zombies = new Map();
@@ -24,7 +24,6 @@ const launcher_api = {
       console.log(`Ignoring launch request as chrome already started.`);
     }
     const DEFAULT_FLAGS = [
-      '--mute-audio', 
       '--window-size=1280,800',
       '--profiling-flush=1',
       '--enable-aggressive-domstorage-flushing',
@@ -42,6 +41,9 @@ const launcher_api = {
     }
     if (isDocker()) {
       CHROME_FLAGS.push('--remote-debugging-address=0.0.0.0');
+    }
+    if ( DEBUG.noAudio ) {
+      CHROME_FLAGS.push('--mute-audio');
     }
     const CHROME_OPTS = {
       port,
