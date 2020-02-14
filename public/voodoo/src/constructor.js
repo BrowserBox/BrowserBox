@@ -751,7 +751,7 @@
           if ( state.active && state.active.url != BLANK ) {
             canKeysInput();
           } else {
-            writeCanvas("This is a BrowserGap SecureTab.");
+            writeCanvas("Secure RemoteView Tab.");
             state.viewState.omniBoxInput.focus();
           }
         }, SHORT_DELAY);
