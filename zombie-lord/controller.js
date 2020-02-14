@@ -196,11 +196,11 @@ const controller_api = {
         retVal.frameBuffer = move([], connection.frameBuffer)
         retVal.frameBuffer = retVal.frameBuffer.filter(frame => {
           if ( frame.hash == connection.lastHash ) {
-            DEBUG.val > DEBUG.med && console.log(`DROP frame ${frame.hash}`); 
+            DEBUG.shotDebug && DEBUG.val > DEBUG.med && console.log(`DROP frame ${frame.hash}`); 
             return false;
           } else {
             connection.lastHash = frame.hash;
-            DEBUG.val > DEBUG.med && console.log(`SEND frame ${frame.hash}`);
+            DEBUG.shotDebug && DEBUG.val > DEBUG.med && console.log(`SEND frame ${frame.hash}`);
             return true;
           }
         });
