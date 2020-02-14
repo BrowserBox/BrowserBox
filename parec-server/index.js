@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 'use strict';
 
+import fs from 'fs';
+import child_process from 'child_process';
+import http from 'http';
+import https from 'https';
+import {GO_SECURE} from '../common.js';
+
 var argv = process.argv;
 var device = argv[3] || 'auto_null.monitor';
 
@@ -26,19 +32,20 @@ var encoders = {
 };
 var encoderType = 'mp3';
 
-var https = require('https'),
-    childProcess = require('child_process'),
-    fs = require('fs');
 
 var hooks = 0;
 var parec = undefined;
 var encoder = undefined;
 
 const sslBranch = 'master'
-const SSL_OPTS = {
-  cert: fs.readFileSync(`../sslcert/${sslBranch}/fullchain.pem`),
-  key: fs.readFileSync(`../sslcert/${sslBranch}/privkey.pem`),
-  ca: fs.readFileSync(`../sslcert/${sslBranch}/chain.pem`),
+const SSL_OPTS = {};
+
+if ( DEBUG.goSecure ) {
+  Object.assign(SSL_OPTS, {
+    cert: fs.readFileSync(`../sslcert/${sslBranch}/fullchain.pem`),
+    key: fs.readFileSync(`../sslcert/${sslBranch}/privkey.pem`),
+    ca: fs.readFileSync(`../sslcert/${sslBranch}/chain.pem`),
+  });
 }
 
 function getEncoder() {
@@ -65,7 +72,8 @@ function releaseEncoder() {
 
 var port = argv[2];
 console.log('starting http server on port', port);
-var server = https.createServer(SSL_OPTS, function(request, response) {
+const MODE = GO_SECURE ? https: http;
+var server = MODE.createServer(SSL_OPTS, function(request, response) {
     var contentType = encoders[encoderType].contentType;
     console.log('  setting Content-Type to', contentType);
 
