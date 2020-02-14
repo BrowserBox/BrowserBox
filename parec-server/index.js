@@ -2,10 +2,10 @@
 'use strict';
 
 import fs from 'fs';
-import child_process from 'child_process';
+import childProcess from 'child_process';
 import http from 'http';
 import https from 'https';
-import {GO_SECURE} from '../common.js';
+import {DEBUG, GO_SECURE} from '../common.js';
 
 var argv = process.argv;
 var device = argv[3] || 'auto_null.monitor';

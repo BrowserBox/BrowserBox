@@ -12,7 +12,7 @@ export const DEBUG = {
   shotDebug: false,
   noShot: false,
   dev: false,
-  val: 2,
+  val: 0,
   low: 1,
   med: 3,
   high: 5
