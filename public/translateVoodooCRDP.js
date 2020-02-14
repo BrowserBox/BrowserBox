@@ -16,6 +16,7 @@ const DOM_DELTA_PAGE = 2;
 const LINE_HEIGHT_GUESS = 32;
 
 const SYNTHETIC_CTRL = e => keyEvent({key:'Control',originalType:e.originalType}, 2, true);
+const SYNTHETIC_ENTER = () => keyEvent({key:'Enter',originalType:"keypress"}, 0, true);
 
 let scrollShot = false;
 
