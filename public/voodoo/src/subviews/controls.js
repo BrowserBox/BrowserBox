@@ -105,12 +105,25 @@ export function Controls(state) {
     } else if ( e.inputType == 'deleteContentBackward' ) {
       if ( ! state.backspaceFiring ) {
         H({
+          type: "keydown",
+          key: "Backspace"
+        });
+        H({
+          type: "keyup",
+          key: "Backspace"
+        });
+        if ( state.viewState.shouldHaveFocus ) {
+          state.viewState.shouldHaveFocus.value = "";
+        }
+        /**
+        H({
           synthetic: true,
           type: 'typing-deleteContentBackward',
           event: e,
           contextId: state.contextIdOfFocusedInput,
           valueToDelete: state.latestCommitData,
         });
+        **/
       }
       state.latestData = "";
     } else if ( e.inputType == 'insertReplacementText' ) {

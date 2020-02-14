@@ -78,18 +78,18 @@ export function makeCamera(connection) {
     const timeNow = Date.now();
     const dur = timeNow - lastShot;
     if ( dur < MIN_TIME_BETWEEN_SHOTS ) {
-      if ( DEBUG.shotDebug || DEBUG.val > DEBUG.low ) {
+      if ( DEBUG.shotDebug && DEBUG.val > DEBUG.low ) {
         console.log(`Dropping as duration (${dur}) too short.`);
       }
       return NOIMAGE;
     }
-    if ( DEBUG.shotDebug || DEBUG.val > DEBUG.low ) {
+    if ( DEBUG.shotDebug && DEBUG.val > DEBUG.low ) {
       console.log(`Do shot ${dur}ms`);
     }
     const targetId = connection.sessions.get(connection.sessionId);
     let response;
 		const ShotCommand = (connection.isSafari || connection.isFirefox ? SAFARI_SHOT : WEBP_SHOT).command;
-    DEBUG.val > DEBUG.med && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
+    DEBUG.val > DEBUG.high && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
     response = await connection.sessionSend(ShotCommand);
     lastShot = timeNow;
     response = response || {};
@@ -100,7 +100,7 @@ export function makeCamera(connection) {
       const F = {img, frame: frameId, targetId};
       F.hash = `${F.img.length}${KEYS.map(k => F.img[k]).join('')}${F.img[F.img.length-1]}`;
       if ( lastHash == F.hash ) {
-        if ( DEBUG.shotDebug || DEBUG.val > DEBUG.low ) {
+        if ( DEBUG.shotDebug && DEBUG.val > DEBUG.low ) {
           console.log(`Dropping as image did not change.`);
         }
         return NOIMAGE;
@@ -111,7 +111,7 @@ export function makeCamera(connection) {
       }
     } else {
       DEBUG.val > DEBUG.med && console.log("Sending no frame");
-      if ( DEBUG.shotDebug || DEBUG.val > DEBUG.low ) {
+      if ( DEBUG.shotDebug && DEBUG.val > DEBUG.low ) {
         console.log(`Dropping as shot produced no data.`);
       }
       return NOIMAGE;
