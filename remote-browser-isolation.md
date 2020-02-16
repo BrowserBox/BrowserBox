@@ -4,11 +4,7 @@ BrowserGap is a UI and backend that turns headless Chrome into a regular browser
 
 BrowserGap Community Edition can be used as a simple remote browser isolation application.
 
-If you want a hosted or managed on-prem cloud-based internet isolation solution, check out my corporate page at https://browsergap.xyz
-
-[We're on HN](https://news.ycombinator.com/item?id=21561613) :tada: 
-
-If you're having service issues, publicly shame us [on Twitter](https://twitter.com/browsergap)
+If you want a hosted or managed on-prem cloud-based internet isolation solution, email me at cris@dosycorp.com
 
 ## What is BrowserGap and Remote Browser isolation?
 
