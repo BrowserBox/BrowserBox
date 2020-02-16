@@ -22,7 +22,7 @@ Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
 
 ## Secure Cloud Based Internet Isolation Version for organizations
 
-For secure remote browers, see [BrowserGap](https://browsergap.xyz)
+[Read more here](remote-browser-isolation.md)
 
 ## Get and self-host
 
