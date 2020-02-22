@@ -28,4 +28,4 @@ sudo visudo
 sudo apt install cpulimit cgroup-tools
 ./cgroup-create.sh
 ./traffic-control.sh
-
+./make_bundle.sh
