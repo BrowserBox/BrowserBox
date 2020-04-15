@@ -4,7 +4,7 @@ RemoteView is a platform for live streaming the browser, with full interactivity
 
 You can stream a remote browser with special cusotmizations to your clients to side step the restrictions of regular browsers. You can use it to build rich experiences based on the browser that are not possible using Flash, Browser Extensions or regular Web Driver protocol. 
 
-For business enquiries, please contact [Cris](mailto:cris@dosyago.com?subject=RemoteView)
+For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=RemoteView)
 
 [Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k), or just watch the GIF below:
 
