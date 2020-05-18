@@ -1,5 +1,15 @@
 # :satellite: [RemoteView](https://github.com/dosyago/RemoteView) ![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) ![npm downloads](https://img.shields.io/npm/dt/remoteview)
 
+## About
+
+Formerly *BrowserGap Community Edition*. Currently called RemoteView, and lets you interactively live-stream a remote browser.
+
+This work is released under an OSS license, and is &copy; [Cris Stringfellow](https://github.com/cris691/Portfolio). All my own work. 
+
+For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=RemoteView&body=Hey%20Cris)
+
+## In depth
+
 RemoteView is a platform for live streaming the browser, with full interactivity. It lets you plug in to a local or remote, even a headless browser, and fly it as if it's a normal browser. 
 
 You can stream a remote browser with special cusotmizations to your clients to side step the restrictions of regular browsers. You can use it to build rich experiences based on the browser that are not possible using Flash, Browser Extensions or regular Web Driver protocol. 
