@@ -1,5 +1,7 @@
 # :satellite: [RemoteView](https://github.com/dosyago/RemoteView) ![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) ![npm downloads](https://img.shields.io/npm/dt/remoteview)
 
+**Around 30,000 source lines of code** (see stats folder)
+
 ## About
 
 Formerly *BrowserGap Community Edition*. Currently called RemoteView, and lets you interactively live-stream a remote browser.
