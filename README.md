@@ -8,7 +8,21 @@ Formerly *BrowserGap Community Edition*. Currently called RemoteView, and lets y
 
 This work is released under an OSS license, and is &copy; [Cris Stringfellow](https://github.com/cris691/Portfolio). All my own work. 
 
-For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=RemoteView&body=Hey%20Cris)
+For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=RemoteView&body=Hey%20Cris%2C%0D%0A)
+
+## Get and self-host
+
+Glone this repo
+
+`git clone https://github.com/dosyago/RemoteView.git`
+
+or Install from npm 
+
+`npm i remoteview`
+
+Then run `setup_machine.sh` in the repository directory.
+
+Or, [get it on docker hub](https://hub.docker.com/r/dosyago/browsergapce), and see instructions below.
 
 ## In depth
 
@@ -36,13 +50,6 @@ Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
 
 [Read more here](remote-browser-isolation.md)
 
-## Get and self-host
-
-Install from npm 
-
-`npm i remoteview`
-
-Then run `setup_machine.sh` in the repository directory.
 
 ### Set up
 
