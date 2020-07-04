@@ -1,5 +1,5 @@
 import {DEBUG, deviceIsMobile} from '../common.js';
-import {R,X} from '../../node_modules/craydom/r.js';
+import {d as R, u as X} from '../../node_modules/dumbass/r.js';
 import {openModal} from './index.js';
 
 const CLOSE_DELAY = 222;

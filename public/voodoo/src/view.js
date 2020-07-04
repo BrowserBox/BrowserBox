@@ -1,6 +1,6 @@
 import {throttle,DEBUG} from './common.js';
 import {cloneKeyEvent} from './constructor.js';
-import {R,X} from '../node_modules/craydom/r.js';
+import {d as R, u as X} from '../node_modules/dumbass/r.js';
 import * as Subviews from './subviews/index.js';
 import {dss, stylists} from './styles.js';
 import {getBitmapCoordinates} from './transformEvent.js';
