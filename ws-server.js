@@ -41,7 +41,7 @@
   let requestId = 0;
 
   export async function start_ws_server(port, zombie_port, allowed_user_cookie, session_token) {
-    console.log(`Starting websocket server on ${port}`);
+    DEBUG.val && console.log(`Starting websocket server on ${port}`);
     const app = express();
     const server_port = port;
 
@@ -97,7 +97,7 @@
     wss.on('connection', (ws, req) => {
       const cookie = req.headers.cookie;
       zl.act.saveIP(req.connection.remoteAddress);
-      console.log({connectionIp:req.connection.remoteAddress});
+      DEBUG.val && console.log({connectionIp:req.connection.remoteAddress});
       if ( DEBUG.dev || allowed_user_cookie == 'cookie' || 
         (cookie && cookie.includes(`${COOKIENAME}=${allowed_user_cookie}`)) ) {
         zl.life.onDeath(zombie_port, () => {
@@ -179,7 +179,7 @@
         process.exit(1);
       } else {
         addHandlers();
-        console.log({uptime:new Date, message:'websocket server up', server_port});
+        DEBUG.val && console.log({uptime:new Date, message:'websocket server up', server_port});
       }
     });
 

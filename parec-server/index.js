@@ -46,11 +46,12 @@ if ( DEBUG.goSecure ) {
     key: fs.readFileSync(`../sslcert/${sslBranch}/privkey.pem`),
     ca: fs.readFileSync(`../sslcert/${sslBranch}/chain.pem`),
   });
+  DEBUG.val && console.log(SSL_OPTS, {GO_SECURE});
 }
 
 function getEncoder() {
     if (encoder) return encoder;
-    console.log('starting encoder');
+    DEBUG.val && console.log('starting encoder');
     hooks++;
     parec = childProcess.spawn('parec', ['-d', device]);
 
@@ -63,7 +64,7 @@ function getEncoder() {
 function releaseEncoder() {
     hooks--;
     if (hooks > 0) return;
-    console.log('killing encoder because nobody is listening');
+    DEBUG.val && console.log('killing encoder because nobody is listening');
     encoder.kill('SIGINT');
     parec.kill('SIGINT');
     encoder = undefined;
@@ -71,11 +72,11 @@ function releaseEncoder() {
 }
 
 var port = argv[2];
-console.log('starting http server on port', port);
+DEBUG.val && console.log('starting http server on port', port);
 const MODE = GO_SECURE ? https: http;
 var server = MODE.createServer(SSL_OPTS, function(request, response) {
     var contentType = encoders[encoderType].contentType;
-    console.log('  setting Content-Type to', contentType);
+    DEBUG.val && console.log('  setting Content-Type to', contentType);
 
     response.writeHead(200, {
 	'Connection': 'keep-alive',
@@ -95,6 +96,6 @@ var server = MODE.createServer(SSL_OPTS, function(request, response) {
 }).listen(port);
 
 server.on('connection', function(socket) {
-    console.log('New connection: setting no delay true');
+    DEBUG.val && console.log('New connection: setting no delay true');
     socket.setNoDelay(true);
 });

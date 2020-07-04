@@ -7,7 +7,7 @@
     "test": "bash ./test.sh",
     "dev": "node-dev --inspect=127.0.0.1:8111 index.js",
     "start": "node index.js",
-    "postinstall": "bash ./postinstall.sh && bash ./make_views.sh",
+    "postinstall": "bash ./postinstall.sh && bash ./setup_machine.sh",
     "prestart": "bash ./make_views.sh",
     "init": "bash ./reinit_after_restart.sh"
   },
@@ -29,7 +29,7 @@
     "chrome controller"
   ],
   "author": "@dosy",
-  "license": "GPL-3.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/dosyago/remoteview/issues"
   },
@@ -51,16 +51,16 @@
     "ws": "^6.1.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.8.4",
-    "@babel/plugin-external-helpers": "^7.8.3",
-    "@babel/plugin-transform-runtime": "^7.8.3",
-    "@babel/polyfill": "^7.8.3",
-    "@babel/preset-env": "^7.8.4",
-    "@babel/runtime": "^7.8.4",
+    "@babel/core": "^7.10.4",
+    "@babel/plugin-external-helpers": "^7.10.4",
+    "@babel/plugin-transform-runtime": "^7.10.4",
+    "@babel/polyfill": "^7.10.4",
+    "@babel/preset-env": "^7.10.4",
+    "@babel/runtime": "^7.10.4",
     "babel-plugin-external-helpers": "^6.22.0",
-    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0",
-    "whatwg-fetch": "^3.0.0"
+    "whatwg-fetch": "^3.1.0"
   }
 }
