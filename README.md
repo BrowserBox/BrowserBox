@@ -24,6 +24,13 @@ Then run `setup_machine.sh` in the repository directory.
 
 Or, [get it on docker hub](https://hub.docker.com/r/dosyago/browsergapce), and see instructions below.
 
+## Headless Detection
+
+Even tho RV uses headless Chrome, it attempts to conceal that fact. Sometimes, a service knows (such as Google, Google always knows). But othertimes the service cannot tell. For some tests of headless, visit the following when using RV:
+
+- [Detect headless](https://infosimples.github.io/detect-headless) :x: *note: currently causing errors in RV*
+- [Are you headless?](https://arh.antoinevastel.com/bots/areyouheadless) :heavy_check_mark:
+
 ## In depth
 
 RemoteView is a platform for live streaming the browser, with full interactivity. It lets you plug in to a local or remote, even a headless browser, and fly it as if it's a normal browser. 
