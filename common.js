@@ -7,15 +7,15 @@ import {FRAME_CONTROL, IMAGE_FORMAT} from './public/translateVoodooCRDP.js';
 
 export const DEBUG = {
   goSecure: true,
-  noAudio: true,
+  noAudio: false,
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
     whether created with createTarget or simply spawning, 
     we must use legacy shots */
   IMAGE_FORMAT,                     /* JPEG, PNG, or WEBP (if supported (so not Safari)) */
   shotDebug: false,
   noShot: false,
-  dev: true,
-  val: 4,
+  dev: false,
+  val: 0,
   low: 1,
   med: 3,
   high: 5
