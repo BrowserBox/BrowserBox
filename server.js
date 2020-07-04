@@ -8,7 +8,8 @@
   const MAX_FRAME = 2; /* 2, 4 */
 
   const EXPEDITE = new Set([
-    "Page.navigate"
+    "Page.navigate",
+    "Runtime.evaluate"
   ]);
 
   import {
