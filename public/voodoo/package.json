@@ -19,8 +19,8 @@
   },
   "homepage": "https://gitlab.com/dosycorp/voodoo#readme",
   "dependencies": {
-    "craydom": "^2.3.6",
-    "style.dss": "^1.3.4"
+    "dumbass": "latest",
+    "style.dss": "latest"
   },
   "devDependencies": {
     "@babel/runtime": "^7.7.7"
