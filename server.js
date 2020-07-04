@@ -26,7 +26,7 @@
     redirector.get('*', (req,res) => {
       res.redirect('https://' + req.headers.host + req.url);
     });
-    redirector.listen(80, () => console.log('listening on 80 for https redirect'));
+    redirector.listen(80, () => DEBUG.val && console.log('listening on 80 for https redirect'));
   }
 
   process.on('uncaughtException', err => {
@@ -61,7 +61,7 @@
         setTimeout(begin, BEGIN_AGAIN);
       }
       if ( port !== chrome_port ) throw Error(`Port must match port allocated`);
-      console.log({zombie:"gnawing at port ", port});
+      DEBUG.val && console.log({zombie:"gnawing at port ", port});
       await sleep(BEGIN_AGAIN);
     }
     if ( ! ws_started ) {

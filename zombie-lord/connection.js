@@ -139,7 +139,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
   ! DEBUG.legacyShots && await send("HeadlessExperimental.enable", {});
   await send("Target.setDiscoverTargets", {discover:true});
   await send("Target.setAutoAttach", {
-    autoAttach:true, 
+    autoAttach:false, 
     waitForDebuggerOnStart:false, 
     flatten:true, 
     windowOpen:true
@@ -594,9 +594,9 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       if ( ! worlds ) {
         DEBUG.val && console.log("reloading because no worlds we can access yet");
         await send("Page.reload", {}, sessionId);
-
+      } else {
+        DEBUG.val && console.log("Activate",sessionId);
       }
-      DEBUG.val && console.log("Activate",sessionId);
     }
     if ( command.name.startsWith("Target") || ! sessionId ) {
       if ( command.name.startsWith("Page") || command.name.startsWith("Runtime") ) {
@@ -609,7 +609,8 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         }
       } else {
         DEBUG.val > DEBUG.med && console.log({zombieNoSessionCommand:command});
-        return await send(command.name, command.params); 
+        const resp = await send(command.name, command.params); 
+        return resp;
       }
     } else {
       sessionId = command.params.sessionId || that.sessionId;

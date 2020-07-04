@@ -21,7 +21,7 @@ const launcher_api = {
       fs.mkdirSync(udd, {recursive:true});
     }
     if ( chrome_started ) {
-      console.log(`Ignoring launch request as chrome already started.`);
+      DEBUG.val && console.log(`Ignoring launch request as chrome already started.`);
     }
     const DEFAULT_FLAGS = [
       '--window-size=1280,800',
@@ -32,7 +32,7 @@ const launcher_api = {
       `--profile-directory="${upd}"`
     ];
     chromeNumber += 1;
-    console.log(`Chrome Number: ${chromeNumber}, Executing chrome-launcher`);
+    DEBUG.val && console.log(`Chrome Number: ${chromeNumber}, Executing chrome-launcher`);
     const CHROME_FLAGS = Array.from(DEFAULT_FLAGS);
     if (!process.env.DEBUG_SKATEBOARD) {
       CHROME_FLAGS.push('--headless'); 
@@ -53,7 +53,7 @@ const launcher_api = {
       logLevel: 'verbose',
       chromeFlags: CHROME_FLAGS
     };
-    console.log(CHROME_OPTS, CHROME_FLAGS);
+    DEBUG.val && console.log(CHROME_OPTS, CHROME_FLAGS);
     const zomb = await ChromeLauncher(CHROME_OPTS);
     chrome_started = true;
     zombies.set(port,zomb);
@@ -69,7 +69,7 @@ const launcher_api = {
     return retVal;
 
     async function undoChrome() {
-      console.log("Undo chrome called");
+      DEBUG.val && console.log("Undo chrome called");
       if ( ! chrome_started ) return;
       chrome_started = false; 
       try {
@@ -93,7 +93,7 @@ const launcher_api = {
 
   kill(port) {
     const zombie = zombies.get(port);
-    console.log(`Requesting zombie kill.`);
+    DEBUG.val && console.log(`Requesting zombie kill.`);
     zombie && zombie.kill();
   }
 };
