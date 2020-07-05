@@ -7,10 +7,6 @@
 > ./gglint.sh
 
 
-/home/cris/RemoteView/public/plugins/projector/installPlugin.js
-   3:20  error  'scrollToTop' is defined but never used             no-unused-vars
-  29:26  error  'clearViewport' is assigned a value but never used  no-unused-vars
-
 /home/cris/RemoteView/public/plugins/projector/scripts/treeUpdate.js
   100:56  error  'FocusCache' is not defined       no-undef
   163:12  error  'zigs' is defined but never used  no-unused-vars
