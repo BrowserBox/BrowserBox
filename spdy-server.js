@@ -4,7 +4,6 @@
   import zl from './zombie-lord/api.js';
   import path from 'path';
   import bodyParser from 'body-parser';
-  import {DEBUG} from './common.js';
   import {timedSend, eventSendLoop} from './server.js';
 
   const options = {

@@ -1,12 +1,12 @@
-import {exec} from 'child_process';
+//import {exec} from 'child_process';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
 import isDocker from 'is-docker';
 import {launch as ChromeLauncher} from './custom-launcher/dist/chrome-launcher.js';
-import {sleep, DEBUG} from '../common.js';
+import {DEBUG} from '../common.js';
 
-const RESTART_MS = 1000;
+//const RESTART_MS = 1000;
 const zombies = new Map();
 let chromeNumber = 0;
 let chrome_started = false;
@@ -14,7 +14,7 @@ let chrome_started = false;
 const deathHandlers = new Map();
 
 const launcher_api = {
-  async newZombie({port, username} = {}) {
+  async newZombie({port, /*username*/} = {}) {
     const udd = path.resolve(os.homedir(), 'chrome-browser');
     const upd = path.resolve(udd, 'Default');
     if ( ! fs.existsSync( udd ) ) {

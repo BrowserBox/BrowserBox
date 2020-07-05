@@ -2,7 +2,7 @@ import {URL} from 'url';
 import BLOCKING from './blocking.js';
 import {BLOCKED_BODY, BLOCKED_CODE, BLOCKED_HEADERS} from './blockedResponse.js';
 
-export async function blockAds(zombie, sessionId) {
+export async function blockAds(/*zombie, sessionId*/) {
   // do nothing
 }
 

@@ -187,7 +187,7 @@ function uniq(arr) {
 }
 function findChromeExecutables(folder) {
     const argumentsRegex = /(^[^ ]+).*/; // Take everything up to the first space
-    const chromeExecRegex = '^Exec=\/.*\/(google-chrome|chrome|chromium)-.*';
+    const chromeExecRegex = '^Exec=/.*/(google-chrome|chrome|chromium)-.*';
     let installations = [];
     if (canAccess(folder)) {
         // Output of the grep & print looks like:

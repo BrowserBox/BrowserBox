@@ -70,7 +70,7 @@
     console.log(JSON.stringify({scroll:o}));
   }
 
-  function err(e) {
+  function err(/*e*/) {
     // DEBUG: no need to show error now because it works
     // console.log(JSON.stringify({error:e}));
     return;

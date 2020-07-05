@@ -1,4 +1,4 @@
-import {URL} from 'url';
+//import {URL} from 'url';
 import NEWTAB_RESPONSE from './newtabResponse.js';
 
 let interceptId = 0;
