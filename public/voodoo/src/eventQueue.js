@@ -83,14 +83,14 @@ class Privates {
       this.publics.queue.splice(0, splice_index);
     }
 
-    if ( !! chain ) {
+    if ( chain ) {
       this.sendEventChain({chain,url}).then(({data,meta,totalBandwidth}) => {
         if ( !!meta && meta.length ) {
           meta.forEach(metaItem => {
             const executionContextId = metaItem.executionContextId;
             for ( const key of Object.keys(metaItem) ) {
               let typeList = this.typeLists.get(key);
-              if ( !!typeList ) {
+              if ( typeList ) {
                 typeList.forEach(func => {
                   try {
                     func({[key]:metaItem[key], executionContextId});
@@ -103,7 +103,7 @@ class Privates {
           });
         }
 
-        if ( !! totalBandwidth ) {
+        if ( totalBandwidth ) {
           this.publics.state.totalBandwidth = totalBandwidth;
         }
       });
@@ -139,7 +139,7 @@ class Privates {
           let resolve;
           const promise = new Promise(res => resolve = res);
           waiting.set(`${url}:${messageId}`, resolve);
-          if ( !! senders ) {
+          if ( senders ) {
             senders.so({messageId,zombie:{events}});
           } else {
             await this.connectSocket(url, events, messageId); 
@@ -188,7 +188,7 @@ class Privates {
     if ( connecting ) {
       this.publics.queue.unshift(...events);
       return;
-    };
+    }
     connecting = true;
     if ( !this.publics.state.demoMode && onLine() ) {
       let socket;
@@ -280,7 +280,7 @@ class Privates {
             const executionContextId = metaItem.executionContextId;
             for ( const key of Object.keys(metaItem) ) {
               let typeList = this.typeLists.get(key);
-              if ( !!typeList ) {
+              if ( typeList ) {
                 typeList.forEach(func => {
                   try {
                     func({[key]:metaItem[key], executionContextId});
@@ -293,7 +293,7 @@ class Privates {
           });
         }
 
-        if ( !! totalBandwidth ) {
+        if ( totalBandwidth ) {
           this.publics.state.totalBandwidth = totalBandwidth;
         }
 
@@ -367,7 +367,7 @@ class Privates {
 
   maybeCheckForBufferedFrames(events) {
     if ( meetsCollectBufferedFrameCondition(this.publics.queue, events) ) {
-      if ( !! this.willCollectBufferedFrame ) {
+      if ( this.willCollectBufferedFrame ) {
         clearTimeout(this.willCollectBufferedFrame);
         this.willCollectBufferedFrame = false;
         bufferedFrameCollectDelay = BUFFERED_FRAME_COLLECT_DELAY.MIN;
@@ -441,7 +441,7 @@ export default class EventQueue {
     }
     typeList.push(func);
   }
-};
+}
 
 async function drawFrames(state, buf, image) {
   // we don't draw frames for about blank
@@ -462,7 +462,7 @@ async function drawFrames(state, buf, image) {
       console.warn(`Got frame ${frame} less than ${latestFrame}. Dropping`);
       continue;
     }
-    if ( !! frameDrawing ) {
+    if ( frameDrawing ) {
       DEBUG.val >= DEBUG.med && console.log(`Wanting to draw ${frame} but waiting for ${frameDrawing} to load.`);
       await sleep(Privates.firstDelay);
     }
@@ -499,7 +499,7 @@ function meetsCollectBufferedFrameCondition(queue, events) {
 function transmitReply({url, id, data, meta, totalBandwidth}) {
   let key = `${url}:${id}`;
   const resolvePromise = waiting.get(key);
-  if ( !! resolvePromise ) {
+  if ( resolvePromise ) {
     waiting.delete(key);
     resolvePromise({data,meta,totalBandwidth});
     return true;

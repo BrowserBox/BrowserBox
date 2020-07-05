@@ -46,11 +46,11 @@
 
             let byFallbackSelector;
 
-            if ( !! fallbackSelector ) {
+            if ( fallbackSelector ) {
               byFallbackSelector = focusSaver.doc.querySelector(fallbackSelector);
             }
             
-            if ( !! byFallbackSelector ) {
+            if ( byFallbackSelector ) {
               updatedEl = byFallbackSelector;
             }
           } else {
@@ -58,7 +58,7 @@
             updatedEl = byDataId;
           }
 
-          if ( !! updatedEl ) {
+          if ( updatedEl ) {
             updatedEl.focus();
             updatedEl.value = focusSaver.oldValue;
             updatedEl.selectionStart = updatedEl.value ? updatedEl.value.length : focusSaver.selectionStart;
@@ -82,7 +82,7 @@
     } else {
       cache.focusSaver.reset();
     }
-    if ( !! executionContextId ) {
+    if ( executionContextId ) {
       cache.contextId = executionContextId;
     } 
   }
@@ -226,12 +226,12 @@
       return false;
     }
 
-    if ( !! insert ) {
+    if ( insert ) {
       parentElement.insertAdjacentHTML('beforeEnd', insert.outerHTML);
       //console.log(parentElement, "Added", insert.outerHTML);
     }
 
-    if ( !! remove ) {
+    if ( remove ) {
       const zigSelectorToRemove = `[zig="${remove.zig}"]`;
       const elToRemove = parentElement.querySelector(zigSelectorToRemove);
       if ( ! elToRemove ) {

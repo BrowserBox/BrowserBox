@@ -65,7 +65,7 @@ export function OmniBox(state) {
 }
 
 export function focusOmniBox() {
-  if ( !! omniBoxInput ) {
+  if ( omniBoxInput ) {
     omniBoxInput.focus();
   }
 }

@@ -51,7 +51,7 @@ export default function installPlugin(state, queue) {
       } else {
         // save scroll position of last target before we update window
         // using block scope oorah
-        if ( !! lastCache ) {
+        if ( lastCache ) {
           const {pageXOffset:scrollX,pageYOffset:scrollY} = win;
           Object.assign(lastCache,{scrollX,scrollY});
         }

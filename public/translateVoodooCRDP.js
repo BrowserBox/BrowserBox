@@ -194,7 +194,7 @@ function translator(e, handled = {type:'case'}) {
             },
             ({currentIndex, entries}) => {
               const intendedEntry = entries[currentIndex + (e.action == "back" ? -1 : +1 )]; 
-              if ( !! intendedEntry ) {
+              if ( intendedEntry ) {
                 return {
                   command: {
                     name: "Page.navigateToHistoryEntry",
@@ -570,7 +570,7 @@ function keyEvent(e, modifiers = 0, SYNTHETIC = false) {
   modifiers = modifiers || encodeModifiers(e.originalEvent);
   let type;
   if ( e.originalType == "keydown" ) {
-    if ( !! text ) 
+    if ( text ) 
       type = "keyDown";
     else 
       type = "rawKeyDown";

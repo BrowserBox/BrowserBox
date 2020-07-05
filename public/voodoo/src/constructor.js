@@ -201,7 +201,7 @@
       // patch tabs array with changes as they come through
       queue.addMetaListener('changed', ({changed}) => {
         const tab = findTab(changed.targetId);
-        if ( !! tab ) {
+        if ( tab ) {
           Object.assign(tab, changed);
           subviews.TabList(state);
         }
@@ -224,7 +224,7 @@
         if ( attached.type == 'page' ) {
           state.attached.add(attached.targetId);
 
-          if ( !! state.useViewFrame ) {
+          if ( state.useViewFrame ) {
             sizeBrowserToBounds(state.viewState.viewFrameEl, true);
           } else {
             asyncSizeBrowserToBounds(state.viewState.canvasEl);
@@ -258,7 +258,7 @@
 
       queue.addMetaListener('secureview', ({secureview}) => {
         const {url} = secureview;
-        if ( !! url ) {
+        if ( url ) {
           createTab(null, url);
         }
       });
@@ -390,7 +390,7 @@
       function indicateNoOpenTabs() {
         if ( state.tabs.length == 0 ) {
           clearViewport();
-          if ( !! state.useViewFrame ) {
+          if ( state.useViewFrame ) {
             try {
               state.viewState.viewFrameEl.contentDocument.body.innerHTML = `
                 <em>${state.factoryMode ? 'Factory Mode' : 'Custom Mode'}. No tabs open.</em>
@@ -416,7 +416,7 @@
       }
 
       function clearViewport() {
-        if ( !! state.useViewFrame ) {
+        if ( state.useViewFrame ) {
           try {
             state.viewState.viewFrameEl.contentDocument.body.innerHTML = ``;
           } catch(e) {
@@ -836,7 +836,7 @@
       }
 
       function canKeysInput() {
-        if ( !! state.viewState.viewFrameEl ) return;
+        if ( state.viewState.viewFrameEl ) return;
         setTimeout(() => {
           queue.send({
             type: "canKeysInput",

@@ -14,7 +14,7 @@ export default function transformEvent(e) {
     synthetic = e;
     originalEvent = e.event;
     let form;
-    if ( !!originalEvent ) {
+    if ( originalEvent ) {
       form = originalEvent.target && originalEvent.target.matches && originalEvent.target.matches('form') ? originalEvent.target : null;
       transformedEvent.originalType = originalEvent.type;
       transformedEvent.originalEvent = originalEvent;
@@ -41,7 +41,7 @@ export default function transformEvent(e) {
         
         let encodedValue;
         
-        if ( !!value) {
+        if ( value) {
           encodedValue = btoa(unescape(encodeURIComponent(value)));
         }
         Object.assign(transformedEvent, {
@@ -54,7 +54,7 @@ export default function transformEvent(e) {
       case "typing-deleteContentBackward": {
         let encodedValueToDelete;
         
-        if ( !!synthetic.valueToDelete ) {
+        if ( synthetic.valueToDelete ) {
           encodedValueToDelete = btoa(unescape(encodeURIComponent(synthetic.valueToDelete)));
         }
         
@@ -214,7 +214,7 @@ export function getBitmapCoordinates(event, scale = 1) {
   const bitmap = event.target;
   let coordinates;
 
-  if ( !! bitmap ) {
+  if ( bitmap ) {
     const {
       left:parentX, top:parentY, 
       width:elementWidth, height:elementHeight

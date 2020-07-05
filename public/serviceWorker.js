@@ -82,7 +82,7 @@
 
       else response = await cacheFetcher2(e);
 
-      if ( !! response ) {
+      if ( response ) {
         return response;
       }
     }
@@ -99,7 +99,7 @@
         console.warn(e, e.request);
       }
 
-      if ( !! response ) {
+      if ( response ) {
         if ( route in NEVER_CACHE ) {
           return response;
         } else {

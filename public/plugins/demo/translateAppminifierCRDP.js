@@ -45,7 +45,7 @@ function keyEvent(e, modifiers = 0, SYNTHETIC = false) {
   modifiers = modifiers || e.modifiers;
   let type;
   if ( e.originalType == "keydown" ) {
-    if ( !! text ) 
+    if ( text ) 
       type = "keyDown";
     else 
       type = "rawKeyDown";

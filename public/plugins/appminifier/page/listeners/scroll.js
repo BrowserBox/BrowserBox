@@ -10,7 +10,7 @@ export function installScrollWatcher() {
     const X = clientX;
     const Y = clientY;
     const target = document.elementFromPoint(X,Y);
-    if ( !! target ) {
+    if ( target ) {
       const {left:x,top:y,width,height} = target.getBoundingClientRect();
       const packet = {
         type: 'scrollToZig',
@@ -20,7 +20,7 @@ export function installScrollWatcher() {
         custom: true,
         originalEvent: e
       };
-      if ( !! packet.zig ) {
+      if ( packet.zig ) {
         se(packet);
       } else {
         console.log(`No zig on `, target);
