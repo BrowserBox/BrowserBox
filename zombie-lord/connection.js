@@ -518,7 +518,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       );
       //id = await overrideNewtab(connection.zombie, sessionId, id);
       if ( AD_BLOCK_ON ) {
-        await blockAds(connection.zombie, sessionId);
+        await blockAds(/*connection.zombie, sessionId*/);
       } else if ( DEMO_BLOCK_ON ) {
         console.warn("Demo block disabled.");
         //await blockSites(connection.zombie, sessionId);

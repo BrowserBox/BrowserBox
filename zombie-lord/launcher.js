@@ -14,7 +14,7 @@ let chrome_started = false;
 const deathHandlers = new Map();
 
 const launcher_api = {
-  async newZombie({port, /*username*/} = {}) {
+  async newZombie({port, /*username*/}) {
     const udd = path.resolve(os.homedir(), 'chrome-browser');
     const upd = path.resolve(udd, 'Default');
     if ( ! fs.existsSync( udd ) ) {
