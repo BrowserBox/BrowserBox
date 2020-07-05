@@ -1,3 +1,4 @@
+typetests
 vim.exe.stackdump
 *.stackdump
 debug.log
