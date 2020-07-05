@@ -1,3 +1,4 @@
+/* eslint-disable no-inner-declarations */
 {
   install();
 
@@ -53,3 +54,4 @@
     console.log(JSON.stringify({elementInfo:o}));
   }
 }
+/* eslint-enable no-inner-declarations */

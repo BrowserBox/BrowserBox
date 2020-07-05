@@ -1,3 +1,4 @@
+/* eslint-disable no-inner-declarations */
 /*
   This provides event for
   select box opening and select box closing
@@ -83,3 +84,4 @@
     console.log(JSON.stringify({selectInput:o}));
   }
 }
+/* eslint-enable no-inner-declarations */

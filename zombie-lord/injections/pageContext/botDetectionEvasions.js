@@ -8,6 +8,7 @@
 // https://infosimples.github.io/detect-headless/
 
 {
+  /* eslint-disable no-inner-declarations */
   // Pass the Webdriver Test.
     const newProto = navigator.__proto__;
     delete newProto.webdriver;
@@ -306,4 +307,6 @@
       //const {clientX,clientY,movementX,movementY} = e;
       //console.log(JSON.stringify({mm:{clientX,clientY,movementX,movementY}}));
      }, {capture:true});
+  
+  /* eslint-enable no-inner-declarations */
 }

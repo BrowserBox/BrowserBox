@@ -1,14 +1,17 @@
-/home/cris/RemoteView/plugins/projector/injections.js
-  29:8   error  'self' is not defined      no-undef
-  29:16  error  'top' is not defined       no-undef
-  33:23  error  'self' is not defined      no-undef
-  35:16  error  'self' is not defined      no-undef
-  40:31  error  'self' is not defined      no-undef
-  47:3   error  'self' is not defined      no-undef
-  52:10  error  'top' is not defined       no-undef
-  52:18  error  'self' is not defined      no-undef
-  55:7   error  'self' is not defined      no-undef
-  56:7   error  'document' is not defined  no-undef
+
+> remoteview@2.0.8 check /home/cris/RemoteView
+> rm -f public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check
+
+
+> remoteview@2.0.8 lint /home/cris/RemoteView
+> ./gglint.sh
+
+
+/home/cris/RemoteView/zombie-lord/injections/scrollNotify.js
+  73:16  error  'e' is defined but never used  no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+
 
 /home/cris/RemoteView/server.js
   23:7  error  'zombie_started' is assigned a value but never used  no-unused-vars
@@ -90,7 +93,7 @@
 /home/cris/RemoteView/zombie-lord/newtab/overrideNewtab.js
   1:9  error  'URL' is defined but never used  no-unused-vars
 
-✖ 63 problems (63 errors, 0 warnings)
+✖ 52 problems (52 errors, 0 warnings)
 
 
 > remoteview@2.0.8 tsc-check /home/cris/RemoteView
@@ -163,27 +166,25 @@ zombie-lord/screenShots.js(96,17): error TS2339: Property 'screenshotData' does 
 > tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System zombie-lord/injections/**/*.js decs.d.ts
 
 node_modules/@types/node-fetch/index.d.ts(19,27): error TS2307: Cannot find module 'form-data' or its corresponding type declarations.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(12,32): error TS2339: Property '__proto__' does not exist on type 'Navigator'.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(14,15): error TS2339: Property '__proto__' does not exist on type 'Navigator'.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(18,12): error TS2339: Property 'chrome' does not exist on type 'Window & typeof globalThis'.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(24,34): error TS2339: Property '__proto__' does not exist on type 'Permissions'.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(181,9): error TS2322: Type 'typeof Plugin' is not assignable to type '{ new (): Plugin; prototype: Plugin; }'.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(13,32): error TS2339: Property '__proto__' does not exist on type 'Navigator'.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(15,15): error TS2339: Property '__proto__' does not exist on type 'Navigator'.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(19,12): error TS2339: Property 'chrome' does not exist on type 'Window & typeof globalThis'.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(25,34): error TS2339: Property '__proto__' does not exist on type 'Permissions'.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(182,9): error TS2322: Type 'typeof Plugin' is not assignable to type '{ new (): Plugin; prototype: Plugin; }'.
   Types of property 'prototype' are incompatible.
     Type 'Plugin' is missing the following properties from type 'Plugin': description, filename, name, [Symbol.iterator]
-zombie-lord/injections/pageContext/botDetectionEvasions.js(182,9): error TS2322: Type 'typeof MimeType' is not assignable to type '{ new (): MimeType; prototype: MimeType; }'.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(183,9): error TS2322: Type 'typeof MimeType' is not assignable to type '{ new (): MimeType; prototype: MimeType; }'.
   Types of property 'prototype' are incompatible.
     Type 'MimeType' is missing the following properties from type 'MimeType': description, enabledPlugin, suffixes, type
-zombie-lord/injections/pageContext/botDetectionEvasions.js(185,32): error TS2339: Property '__proto__' does not exist on type 'PluginArray'.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(186,47): error TS2339: Property '__proto__' does not exist on type 'PluginArray'.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(190,34): error TS2339: Property '__proto__' does not exist on type 'MimeTypeArray'.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(191,50): error TS2339: Property '__proto__' does not exist on type 'MimeTypeArray'.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(219,32): error TS2304: Cannot find name 'n'.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(248,32): error TS2304: Cannot find name 'n'.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(299,12): error TS2704: The operand of a 'delete' operator cannot be a read-only property.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(186,32): error TS2339: Property '__proto__' does not exist on type 'PluginArray'.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(187,47): error TS2339: Property '__proto__' does not exist on type 'PluginArray'.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(191,34): error TS2339: Property '__proto__' does not exist on type 'MimeTypeArray'.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(192,50): error TS2339: Property '__proto__' does not exist on type 'MimeTypeArray'.
 zombie-lord/injections/pageContext/botDetectionEvasions.js(300,12): error TS2704: The operand of a 'delete' operator cannot be a read-only property.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(301,16): error TS2540: Cannot assign to 'movementX' because it is a read-only property.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(302,16): error TS2540: Cannot assign to 'movementY' because it is a read-only property.
-zombie-lord/injections/pageContext/botDetectionEvasions.js(305,9): error TS2339: Property '__proto__' does not exist on type 'MouseEvent'.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(301,12): error TS2704: The operand of a 'delete' operator cannot be a read-only property.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(302,16): error TS2540: Cannot assign to 'movementX' because it is a read-only property.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(303,16): error TS2540: Cannot assign to 'movementY' because it is a read-only property.
+zombie-lord/injections/pageContext/botDetectionEvasions.js(306,9): error TS2339: Property '__proto__' does not exist on type 'MouseEvent'.
 
 > remoteview@2.0.8 tsc-public /home/cris/RemoteView
 > tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System public/*.js decs.d.ts
@@ -281,7 +282,6 @@ public/voodoo/src/subviews/contextMenu.js(228,22): error TS2739: Type '{ type: s
 public/voodoo/src/subviews/contextMenu.js(250,22): error TS2739: Type '{ type: string; message: any; title: string; }' is missing the following properties from type '{ sessionId: any; mode: any; requestId: any; title: any; type: any; message: any; defaultPrompt: any; url: any; }': sessionId, mode, requestId, defaultPrompt, url
 public/voodoo/src/subviews/contextMenu.js(307,16): error TS2339: Property 'click' does not exist on type 'Element'.
 public/voodoo/src/subviews/other.js(238,38): error TS2525: Initializer provides no value for this binding element and the binding element has no default value.
-public/voodoo/src/subviews/pluginsMenu.js(14,15): error TS2304: Cannot find name 'pmEl'.
 public/voodoo/src/subviews/pluginsMenuButton.js(12,11): error TS2447: The '^=' operator is not allowed for boolean types. Consider using '!==' instead.
 public/voodoo/src/subviews/tabList.js(37,33): error TS2339: Property 'attrmarkup' does not exist on type '(p: any, ...v: any[]) => any'.
 public/voodoo/src/view.js(71,26): error TS2339: Property 'matches' does not exist on type 'EventTarget'.
