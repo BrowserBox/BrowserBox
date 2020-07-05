@@ -1,8 +1,8 @@
 
 ---------- Result ------------
 
-            Physical :  34358
-              Source :  30787
+            Physical :  34308
+              Source :  30737
              Comment :  1295
  Single-line comment :  660
        Block comment :  635
@@ -11,7 +11,7 @@
                Empty :  2394
                To Do :  3
 
-Number of files read :  396
+Number of files read :  383
 
 ----------------------------
 
