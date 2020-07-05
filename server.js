@@ -76,7 +76,7 @@
       command.dontWait = false;
       console.warn(`Can't set don't wait outside server`);
     }
-    if ( EXPEDITE.has(command.name) ) {
+    if ( EXPEDITE.has(command.name) && ! command.definitelyWait ) {
       command.dontWait = true;
     }
     if ( command.dontWait ) {

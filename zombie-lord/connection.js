@@ -10,6 +10,7 @@ import {username} from '../args.js';
 import {WorldName} from '../public/translateVoodooCRDP.js';
 import {makeCamera} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
+import {fileChoosers} from '../ws-server.js';
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
 
@@ -246,6 +247,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       const consoleMessage = message.params;
       const {args,executionContextId} = consoleMessage;
 
+      console.log(JSON.stringify(consoleMessage));
       try {
         DEBUG.val && console.log(executionContextId, consoleMessage.args[0].value.slice(0,255));
       } finally {
@@ -329,8 +331,9 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         );
       }
     } else if ( message.method == "Page.fileChooserOpened" ) {
-      const {mode} = message.params;
+      const {mode,backendNodeId} = message.params;
       const fileChooser = {mode, sessionId};
+      fileChoosers.set(sessionId, backendNodeId);
       DEBUG.val > DEBUG.med && console.log(fileChooser, message);
       connection.meta.push({fileChooser});
     } else if ( message.method == "Page.downloadWillBegin" ) {

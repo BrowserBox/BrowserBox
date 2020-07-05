@@ -15,6 +15,8 @@
   import {version, /*APP_ROOT,*/ BRANCH, COOKIENAME, GO_SECURE, DEBUG} from './common.js';
   import {timedSend, eventSendLoop} from './server.js';
 
+  export const fileChoosers = new Map();
+
   const protocol = GO_SECURE ? https : http;
   const COOKIE_OPTS = {
     secure: GO_SECURE,
@@ -242,7 +244,9 @@
         }
         const {files} = req;
         const {sessionid:sessionId} = req.body;
+        const backendNodeId = fileChoosers.get(sessionId);
         const action = ! files || files.length == 0 ? 'cancel' : 'accept';
+        /**
         const fileInputResult = await zl.act.send({
           name:"Runtime.evaluate",
           params: {
@@ -251,13 +255,14 @@
           definitelyWait: true,
           sessionId
         }, zombie_port);
-        //console.log({fileInputResult});
+        console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
         const objectId = fileInputResult.data.result.objectId;
+        **/
         const command = {
           name: "DOM.setFileInputFiles",
           params: {
             files: files && files.map(({path}) => path),
-            objectId
+            backendNodeId
           },
           sessionId
         };
@@ -270,14 +275,14 @@
           console.log("Error sending file input command", e);
         }
 
-        //console.log({fileResult:result});
+        console.log({fileResult:result});
 
         if ( !result || result.error ) {
           res.status(500).send(JSON.stringify({error:'there was an error attaching the files'}));
         } else {
           result = {
             success: true,
-            files: files.map(({originalName,size}) => ({name:originalName,size}))
+            files: files.map(({originalname,size}) => ({name:originalname,size}))
           };
           DEBUG.val > DEBUG.med && console.log("Sent files to file input", result, files);
           res.json(result);

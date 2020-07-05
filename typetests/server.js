@@ -971,7 +971,7 @@ System.register("common", ["fs", "path", "url", "current-git-branch", "public/tr
                 shotDebug: false,
                 noShot: false,
                 dev: false,
-                val: 0,
+                val: 2,
                 low: 1,
                 med: 3,
                 high: 5
@@ -2730,7 +2730,7 @@ System.register("ws-server", ["express", "http", "https", "node-fetch", "multer"
                     definitelyWait: true,
                     sessionId
                 }, zombie_port);
-                //console.log({fileInputResult});
+                console.log({ fileInputResult });
                 const objectId = fileInputResult.data.result.objectId;
                 const command = {
                     name: "DOM.setFileInputFiles",
@@ -2748,14 +2748,14 @@ System.register("ws-server", ["express", "http", "https", "node-fetch", "multer"
                 catch (e) {
                     console.log("Error sending file input command", e);
                 }
-                //console.log({fileResult:result});
+                console.log({ fileResult: result });
                 if (!result || result.error) {
                     res.status(500).send(JSON.stringify({ error: 'there was an error attaching the files' }));
                 }
                 else {
                     result = {
                         success: true,
-                        files: files.map(({ originalName, size }) => ({ name: originalName, size }))
+                        files: files.map(({ originalname, size }) => ({ name: originalname, size }))
                     };
                     common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log("Sent files to file input", result, files);
                     res.json(result);
@@ -2946,7 +2946,7 @@ System.register("server", ["express", "zombie-lord/api", "common", "ws-server", 
             command.dontWait = false;
             console.warn(`Can't set don't wait outside server`);
         }
-        if (EXPEDITE.has(command.name)) {
+        if (EXPEDITE.has(command.name) && !command.definitelyWait) {
             command.dontWait = true;
         }
         if (command.dontWait) {
