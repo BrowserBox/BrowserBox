@@ -1329,10 +1329,1284 @@ System.register("voodoo/src/handlers/scrollNotify", [], function (exports_10, co
         }
     };
 });
-System.register("voodoo/src/subviews/loadingIndicator", ["../../node_modules/dumbass/r.js"], function (exports_11, context_11) {
+System.register("voodoo/node_modules/dumbass/common", [], function (exports_11, context_11) {
+    "use strict";
+    var CODE;
+    var __moduleName = context_11 && context_11.id;
+    return {
+        setters: [],
+        execute: function () {
+            // common for all r submodules
+            exports_11("CODE", CODE = '' + Math.random());
+        }
+    };
+});
+System.register("voodoo/node_modules/dumbass/t", [], function (exports_12, context_12) {
+    "use strict";
+    var BuiltIns, DEBUG, SEALED_DEFAULT, isNone, typeCache;
+    var __moduleName = context_12 && context_12.id;
+    function T(parts, ...vals) {
+        const cooked = vals.reduce((prev, cur, i) => prev + cur + parts[i + 1], parts[0]);
+        const typeName = cooked;
+        if (!typeCache.has(typeName))
+            throw new TypeError(`Cannot use type ${typeName} before it is defined.`);
+        return typeCache.get(typeName).type;
+    }
+    exports_12("T", T);
+    function partialMatch(type, instance) {
+        return validate(type, instance, { partial: true });
+    }
+    function validate(type, instance, { partial: partial = false } = {}) {
+        guardType(type);
+        guardExists(type);
+        const typeName = type.name;
+        const { spec, kind, help, verify, verifiers, sealed } = typeCache.get(typeName);
+        const specKeyPaths = spec ? allKeyPaths(spec).sort() : [];
+        const specKeyPathSet = new Set(specKeyPaths);
+        const bigErrors = [];
+        switch (kind) {
+            case "def": {
+                let allValid = true;
+                if (spec) {
+                    const keyPaths = partial ? allKeyPaths(instance, specKeyPathSet) : specKeyPaths;
+                    allValid = !isNone(instance) && keyPaths.every(kp => {
+                        // Allow lookup errors if the type match for the key path can include None
+                        const { resolved, errors: lookupErrors } = lookup(instance, kp, () => checkTypeMatch(lookup(spec, kp).resolved, T `None`));
+                        bigErrors.push(...lookupErrors);
+                        if (lookupErrors.length)
+                            return false;
+                        const keyType = lookup(spec, kp).resolved;
+                        if (!keyType || !(keyType instanceof Type)) {
+                            bigErrors.push({
+                                error: `Key path '${kp}' is not present in the spec for type '${typeName}'`
+                            });
+                            return false;
+                        }
+                        const { valid, errors: validationErrors } = validate(keyType, resolved);
+                        bigErrors.push(...validationErrors);
+                        return valid;
+                    });
+                }
+                let verified = true;
+                if (partial && !spec && !!verify) {
+                    throw new TypeError(`Type checking with option 'partial' is not a valid option for types that` +
+                        ` only use a verify function but have no spec`);
+                }
+                else if (verify) {
+                    try {
+                        verified = verify(instance);
+                        if (!verified) {
+                            if (verifiers) {
+                                throw {
+                                    error: `Type ${typeName} value '${JSON.stringify(instance)}' violated at least 1 verify function in:\n${verifiers.map(f => '\t' + (f.help || '') + ' (' + f.verify.toString() + ')').join('\n')}`
+                                };
+                            }
+                            else if (type.isSumType) {
+                                throw {
+                                    error: `Value '${JSON.stringify(instance)}' did not match any of: ${[...type.types.keys()].map(t => t.name)}`,
+                                    verify, verifiers
+                                };
+                            }
+                            else {
+                                let helpMsg = '';
+                                if (help) {
+                                    helpMsg = `Help: ${help}. `;
+                                }
+                                throw { error: `${helpMsg}Type ${typeName} Value '${JSON.stringify(instance)}' violated verify function in: ${verify.toString()}` };
+                            }
+                        }
+                    }
+                    catch (e) {
+                        bigErrors.push(e);
+                        verified = false;
+                    }
+                }
+                let sealValid = true;
+                if (!!sealed && !!spec) {
+                    const type_key_paths = specKeyPaths;
+                    const all_key_paths = allKeyPaths(instance, specKeyPathSet).sort();
+                    sealValid = all_key_paths.join(',') == type_key_paths.join(',');
+                    if (!sealValid) {
+                        if (all_key_paths.length < type_key_paths.length) {
+                            sealValid = true;
+                        }
+                        else {
+                            const errorKeys = [];
+                            const tkp = new Set(type_key_paths);
+                            for (const k of all_key_paths) {
+                                if (!tkp.has(k)) {
+                                    errorKeys.push({
+                                        error: `Key path '${k}' is not in the spec for type ${typeName}`
+                                    });
+                                }
+                            }
+                            if (errorKeys.length) {
+                                bigErrors.push(...errorKeys);
+                            }
+                        }
+                    }
+                }
+                return { valid: allValid && verified && sealValid, errors: bigErrors, partial };
+            }
+            case "defCollection": {
+                const { valid: containerValid, errors: containerErrors } = validate(spec.container, instance);
+                let membersValid = true;
+                let verified = true;
+                bigErrors.push(...containerErrors);
+                if (partial) {
+                    throw new TypeError(`Type checking with option 'partial' is not a valid option for Collection types`);
+                }
+                else {
+                    if (containerValid) {
+                        membersValid = [...instance].every(member => {
+                            const { valid, errors } = validate(spec.member, member);
+                            bigErrors.push(...errors);
+                            return valid;
+                        });
+                    }
+                    if (verify) {
+                        try {
+                            verified = verify(instance);
+                        }
+                        catch (e) {
+                            bigErrors.push(e);
+                            verified = false;
+                        }
+                    }
+                }
+                return { valid: containerValid && membersValid && verified, errors: bigErrors };
+            }
+            default: {
+                throw new TypeError(`Checking for type kind ${kind} is not yet implemented.`);
+            }
+        }
+    }
+    function check(...args) {
+        return validate(...args).valid;
+    }
+    function lookup(obj, keyPath, canBeNone) {
+        if (isNone(obj))
+            throw new TypeError(`Lookup requires a non-unset object.`);
+        if (!keyPath)
+            throw new TypeError(`keyPath must not be empty`);
+        const keys = keyPath.split(/\./g);
+        const pathComplete = [];
+        const errors = [];
+        let resolved = obj;
+        while (keys.length) {
+            const nextKey = keys.shift();
+            resolved = resolved[nextKey];
+            pathComplete.push(nextKey);
+            if ((resolved === null || resolved === undefined)) {
+                if (keys.length) {
+                    errors.push({
+                        error: `Lookup on key path '${keyPath}' failed at '` +
+                            pathComplete.join('.') +
+                            `' when ${resolved} was found at '${nextKey}'.`
+                    });
+                }
+                else if (!!canBeNone && canBeNone()) {
+                    resolved = undefined;
+                }
+                else {
+                    errors.push({
+                        error: `Resolution on key path '${keyPath}' failed` +
+                            `when ${resolved} was found at '${nextKey}' and the Type of this` +
+                            `key's value cannot be None.`
+                    });
+                }
+                break;
+            }
+        }
+        return { resolved, errors };
+    }
+    function checkTypeMatch(typeA, typeB) {
+        guardType(typeA);
+        guardExists(typeA);
+        guardType(typeB);
+        guardExists(typeB);
+        if (typeA === typeB) {
+            return true;
+        }
+        else if (typeA.isSumType && typeA.types.has(typeB)) {
+            return true;
+        }
+        else if (typeB.isSumType && typeB.types.has(typeA)) {
+            return true;
+        }
+        else if (typeA.name.startsWith('?') && typeB == T `None`) {
+            return true;
+        }
+        else if (typeB.name.startsWith('?') && typeA == T `None`) {
+            return true;
+        }
+        if (typeA.name.startsWith('>') || typeB.name.startsWith('>')) {
+            console.error(new Error(`Check type match has not been implemented for derived//sub types yet.`));
+        }
+        return false;
+    }
+    function option(type) {
+        return T `?${type.name}`;
+    }
+    function sub(type) {
+        return T `>${type.name}`;
+    }
+    function defSub(type, spec, { verify: verify = undefined, help: help = '' } = {}, name = '') {
+        guardType(type);
+        guardExists(type);
+        let verifiers;
+        if (!verify) {
+            verify = () => true;
+        }
+        if (type.native) {
+            verifiers = [{ help, verify }];
+            verify = i => i instanceof type.native;
+            const helpMsg = `Needs to be of type ${type.native.name}. ${help || ''}`;
+            verifiers.push({ help: helpMsg, verify });
+        }
+        const newType = def(`${name}>${type.name}`, spec, { verify, help, verifiers });
+        return newType;
+    }
+    function defEnum(name, ...values) {
+        if (!name)
+            throw new TypeError(`Type must be named.`);
+        guardRedefinition(name);
+        const valueSet = new Set(values);
+        const verify = i => valueSet.has(i);
+        const help = `Value of Enum type ${name} must be one of ${values.join(',')}`;
+        return def(name, null, { verify, help });
+    }
+    function exists(name) {
+        return typeCache.has(name);
+    }
+    function guardRedefinition(name) {
+        if (exists(name))
+            throw new TypeError(`Type ${name} cannot be redefined.`);
+    }
+    function allKeyPaths(o, specKeyPaths) {
+        const isTypeSpec = !specKeyPaths;
+        const keyPaths = new Set();
+        return recurseObject(o, keyPaths, '');
+        function recurseObject(o, keyPathSet, lastLevel = '') {
+            const levelKeys = Object.getOwnPropertyNames(o);
+            const keyPaths = levelKeys
+                .map(k => lastLevel + (lastLevel.length ? '.' : '') + k);
+            levelKeys.forEach((k, i) => {
+                const v = o[k];
+                if (isTypeSpec) {
+                    if (v instanceof Type) {
+                        keyPathSet.add(keyPaths[i]);
+                    }
+                    else if (typeof v == "object") {
+                        if (!Array.isArray(v)) {
+                            recurseObject(v, keyPathSet, keyPaths[i]);
+                        }
+                        else {
+                            DEBUG && console.warn({ o, v, keyPathSet, lastLevel });
+                            throw new TypeError(`We don't support Types that use Arrays as structure, just yet.`);
+                        }
+                    }
+                    else {
+                        throw new TypeError(`Spec cannot contain leaf values that are not valid Types`);
+                    }
+                }
+                else {
+                    if (specKeyPaths.has(keyPaths[i])) {
+                        keyPathSet.add(keyPaths[i]);
+                    }
+                    else if (typeof v == "object") {
+                        if (!Array.isArray(v)) {
+                            recurseObject(v, keyPathSet, keyPaths[i]);
+                        }
+                        else {
+                            v.forEach((item, index) => recurseObject(item, keyPathSet, keyPaths[i] + '.' + index));
+                            //throw new TypeError(`We don't support Instances that use Arrays as structure, just yet.`); 
+                        }
+                    }
+                    else {
+                        //console.warn("Spec has no such key",  keyPaths[i]);
+                        keyPathSet.add(keyPaths[i]);
+                    }
+                }
+            });
+            return [...keyPathSet];
+        }
+    }
+    function defOption(type) {
+        guardType(type);
+        const typeName = type.name;
+        return T.def(`?${typeName}`, null, { verify: i => isUnset(i) || T.check(type, i) });
+    }
+    function maybe(type) {
+        try {
+            return defOption(type);
+        }
+        catch (e) {
+            // console.log(`Option Type ${type.name} already declared.`, e);
+        }
+        return T `?${type.name}`;
+    }
+    function verify(...args) { return check(...args); }
+    function defCollection(name, { container, member }, { sealed: sealed = SEALED_DEFAULT, verify: verify = undefined } = {}) {
+        if (!name)
+            throw new TypeError(`Type must be named.`);
+        if (!container || !member)
+            throw new TypeError(`Type must be specified.`);
+        guardRedefinition(name);
+        const kind = 'defCollection';
+        const t = new Type(name);
+        const spec = { kind, spec: { container, member }, verify, sealed, type: t };
+        typeCache.set(name, spec);
+        return t;
+    }
+    function defTuple(name, { pattern }) {
+        if (!name)
+            throw new TypeError(`Type must be named.`);
+        if (!pattern)
+            throw new TypeError(`Type must be specified.`);
+        const kind = 'def';
+        const specObj = {};
+        pattern.forEach((type, key) => specObj[key] = type);
+        const t = new Type(name);
+        const spec = { kind, spec: specObj, type: t };
+        typeCache.set(name, spec);
+        return t;
+    }
+    function Type(name, mods = {}) {
+        if (!new.target)
+            throw new TypeError(`Type with new only.`);
+        Object.defineProperty(this, 'name', { get: () => name });
+        this.typeName = name;
+        if (mods.types) {
+            const { types } = mods;
+            const typeSet = new Set(types);
+            Object.defineProperty(this, 'isSumType', { get: () => true });
+            Object.defineProperty(this, 'types', { get: () => typeSet });
+        }
+        if (mods.native) {
+            const { native } = mods;
+            Object.defineProperty(this, 'native', { get: () => native });
+        }
+    }
+    function def(name, spec, { help: help = '', verify: verify = undefined, sealed: sealed = undefined, types: types = undefined, verifiers: verifiers = undefined, native: native = undefined } = {}) {
+        if (!name)
+            throw new TypeError(`Type must be named.`);
+        guardRedefinition(name);
+        if (name.startsWith('?')) {
+            if (spec) {
+                throw new TypeError(`Option type can not have a spec.`);
+            }
+            if (!verify(null)) {
+                throw new TypeError(`Option type must be OK to be unset.`);
+            }
+        }
+        const kind = 'def';
+        if (sealed === undefined) {
+            sealed = true;
+        }
+        const t = new Type(name, { types, native });
+        const cache = { spec, kind, help, verify, verifiers, sealed, types, native, type: t };
+        typeCache.set(name, cache);
+        return t;
+    }
+    function defOr(name, ...types) {
+        return T.def(name, null, { types, verify: i => types.some(t => check(t, i)) });
+    }
+    function guard(type, instance) {
+        guardType(type);
+        guardExists(type);
+        const { valid, errors } = validate(type, instance);
+        if (!valid)
+            throw new TypeError(`Type ${type} requested, but item is not of that type: ${errors.join(', ')}`);
+    }
+    function guardType(t) {
+        //console.log(t);
+        if (!(t instanceof Type))
+            throw new TypeError(`Type must be a valid Type object.`);
+    }
+    function guardExists(t) {
+        const name = originalName(t);
+        if (!exists(name))
+            throw new TypeError(`Type must exist. Type ${name} has not been defined.`);
+    }
+    function errors(...args) {
+        return validate(...args).errors;
+    }
+    function mapBuiltins() {
+        BuiltIns.forEach(t => def(originalName(t), null, { native: t, verify: i => originalName(i.constructor) === originalName(t) }));
+        BuiltIns.forEach(t => defSub(T `${originalName(t)}`));
+    }
+    function defineSpecials() {
+        T.def(`Any`, null, { verify: () => true });
+        T.def(`Some`, null, { verify: i => !isUnset(i) });
+        T.def(`None`, null, { verify: i => isUnset(i) });
+        T.def(`Function`, null, { verify: i => i instanceof Function });
+        T.def(`Integer`, null, { verify: i => Number.isInteger(i) });
+        T.def(`Array`, null, { verify: i => Array.isArray(i) });
+        T.def(`Iterable`, null, { verify: i => i[Symbol.iterator] instanceof Function });
+    }
+    function isUnset(i) {
+        return i === null || i === undefined;
+    }
+    function originalName(t) {
+        if (!!t && t.name) {
+            return t.name;
+        }
+        const oName = Object.prototype.toString.call(t).replace(/\[object |\]/g, '');
+        if (oName.endsWith('Constructor')) {
+            return oName.replace(/Constructor$/, '');
+        }
+        return oName;
+    }
+    return {
+        setters: [],
+        execute: function () {
+            BuiltIns = [
+                Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet,
+                Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array,
+                Int8Array, Int16Array, Int32Array,
+                Uint8ClampedArray,
+                Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer,
+                FileList, Text, HTMLDocument, Document, DocumentFragment,
+                Error, File, Event, EventTarget, URL
+            ];
+            DEBUG = false;
+            SEALED_DEFAULT = true;
+            isNone = instance => instance == null || instance == undefined;
+            typeCache = new Map();
+            T.def = def;
+            T.check = check;
+            T.sub = sub;
+            T.verify = verify;
+            T.validate = validate;
+            T.partialMatch = partialMatch;
+            T.defEnum = defEnum;
+            T.defSub = defSub;
+            T.defTuple = defTuple;
+            T.defCollection = defCollection;
+            T.defOr = defOr;
+            T.option = option;
+            T.defOption = defOption;
+            T.maybe = maybe;
+            T.guard = guard;
+            T.errors = errors;
+            // debug
+            if (DEBUG) {
+                self.T = T;
+                self.typeCache = typeCache;
+            }
+            T[Symbol.for('jtype-system.typeCache')] = typeCache;
+            defineSpecials();
+            mapBuiltins();
+            Type.prototype.toString = function () {
+                return `${this.typeName} Type`;
+            };
+        }
+    };
+});
+System.register("voodoo/node_modules/dumbass/types", ["voodoo/node_modules/dumbass/t", "voodoo/node_modules/dumbass/common"], function (exports_13, context_13) {
+    "use strict";
+    var t_js_1, common_js_3, TKey, THandlers, TFuncArray, TEmptyArray, TMarkupObject, TMarkupAttrObject, TBrutalLikeObject, TBrutalObject, TBrutalArray, TSBrutalObject, TSBrutalArray, BS, SSR, Types;
+    var __moduleName = context_13 && context_13.id;
+    // verify function 
+    function verify(v) {
+        return common_js_3.CODE === v.code;
+    }
+    return {
+        setters: [
+            function (t_js_1_1) {
+                t_js_1 = t_js_1_1;
+            },
+            function (common_js_3_1) {
+                common_js_3 = common_js_3_1;
+            }
+        ],
+        execute: function () {
+            exports_13("default", t_js_1.T);
+            // Both SSR and Browser
+            exports_13("TKey", TKey = t_js_1.T.def('Key', {
+                key: t_js_1.T.defOr('ValidKey', t_js_1.T `String`, t_js_1.T `Number`)
+            }));
+            exports_13("THandlers", THandlers = t_js_1.T.def('Handlers', null, { verify: i => {
+                    const validObject = t_js_1.T.check(t_js_1.T `Object`, i);
+                    if (!validObject)
+                        return false;
+                    const eventNames = Object.keys(i);
+                    const handlerFuncs = Object.values(i);
+                    const validNames = eventNames.every(name => t_js_1.T.check(t_js_1.T `String`, name));
+                    const validFuncs = handlerFuncs.every(func => t_js_1.T.check(t_js_1.T `Function`, func));
+                    const valid = validNames && validFuncs;
+                    return valid;
+                } }));
+            exports_13("TFuncArray", TFuncArray = t_js_1.T.defCollection('FuncArray', {
+                container: t_js_1.T `Array`,
+                member: t_js_1.T `Function`
+            }));
+            exports_13("TEmptyArray", TEmptyArray = t_js_1.T.def('EmptyArray', null, { verify: i => Array.isArray(i) && i.length == 0 }));
+            exports_13("TMarkupObject", TMarkupObject = t_js_1.T.def('MarkupObject', {
+                type: t_js_1.T `String`,
+                code: t_js_1.T `String`,
+                nodes: t_js_1.T `Array`,
+                externals: t_js_1.T `Array`,
+            }, { verify: v => v.type == 'MarkupObject' && v.code == common_js_3.CODE }));
+            exports_13("TMarkupAttrObject", TMarkupAttrObject = t_js_1.T.def('MarkupAttrObject', {
+                type: t_js_1.T `String`,
+                code: t_js_1.T `String`,
+                str: t_js_1.T `String`
+            }, { verify: v => v.type == 'MarkupAttrObject' && v.code == common_js_3.CODE }));
+            // Browser side
+            exports_13("TBrutalLikeObject", TBrutalLikeObject = t_js_1.T.def('BrutalLikeObject', {
+                code: t_js_1.T `String`,
+                externals: t_js_1.T `Array`,
+                nodes: t_js_1.T `Array`,
+                to: t_js_1.T `Function`,
+                update: t_js_1.T `Function`,
+                v: t_js_1.T `Array`
+            }));
+            exports_13("TBrutalObject", TBrutalObject = t_js_1.T.def('BrutalObject', {
+                code: t_js_1.T `String`,
+                externals: t_js_1.T `Array`,
+                nodes: t_js_1.T `Array`,
+                to: t_js_1.T `Function`,
+                update: t_js_1.T `Function`,
+                v: t_js_1.T `Array`
+            }, { verify: v => verify(v) }));
+            exports_13("TBrutalArray", TBrutalArray = t_js_1.T.defCollection('BrutalArray', {
+                container: t_js_1.T `Array`,
+                member: t_js_1.T `BrutalObject`
+            }));
+            // SSR
+            exports_13("TSBrutalObject", TSBrutalObject = t_js_1.T.def('SBrutalObject', {
+                str: t_js_1.T `String`,
+                handlers: THandlers
+            }));
+            exports_13("TSBrutalArray", TSBrutalArray = t_js_1.T.defCollection('SBrutalArray', {
+                container: t_js_1.T `Array`,
+                member: t_js_1.T `SBrutalObject`
+            }));
+            // export
+            exports_13("BS", BS = { TKey, THandlers, TFuncArray, TBrutalObject, TBrutalLikeObject, TBrutalArray });
+            exports_13("SSR", SSR = { TKey, THandlers, TFuncArray, TSBrutalObject, TSBrutalArray });
+            exports_13("Types", Types = { BS, SSR });
+        }
+    };
+});
+System.register("voodoo/node_modules/dumbass/r", ["voodoo/node_modules/dumbass/common", "voodoo/node_modules/dumbass/types"], function (exports_14, context_14) {
+    "use strict";
+    var common_js_4, types_js_1, skip, attrskip, DEBUG, NULLFUNC, KEYMATCH, ATTRMATCH, KEYLEN, XSS, OBJ, UNSET, INSERT, NOTFOUND, MOVE, isKey, isHandlers, cache, d, u;
+    var __moduleName = context_14 && context_14.id;
+    function R(p, ...v) {
+        return dumbass(p, v);
+    }
+    exports_14("R", R);
+    function X(p, ...v) {
+        return dumbass(p, v, { useCache: false });
+    }
+    exports_14("X", X);
+    // main function (TODO: should we refactor?)
+    function dumbass(p, v, { useCache: useCache = true } = {}) {
+        let instanceKey, cacheKey;
+        v = v.map(guardAndTransformVal);
+        if (useCache) {
+            ({ key: instanceKey } = (v.find(isKey) || {}));
+            cacheKey = p.join('<link rel=join>');
+            const { cached, firstCall } = isCached(cacheKey, v, instanceKey);
+            if (!firstCall) {
+                cached.update(v);
+                return cached;
+            }
+        }
+        // compile the template into an updater
+        p = [...p];
+        const vmap = {};
+        const V = v.map(replaceValWithKeyAndOmitInstanceKey(vmap));
+        const externals = [];
+        let str = '';
+        while (p.length > 1)
+            str += p.shift() + V.shift();
+        str += p.shift();
+        const frag = toDOM(str);
+        const walker = document.createTreeWalker(frag, NodeFilter.SHOW_ALL);
+        do {
+            makeUpdaters({ walker, vmap, externals });
+        } while (walker.nextNode());
+        const retVal = { externals, v: Object.values(vmap), to,
+            update, code: common_js_4.CODE, nodes: [...frag.childNodes] };
+        if (useCache) {
+            if (instanceKey) {
+                cache[cacheKey].instances[instanceKey] = retVal;
+            }
+            else {
+                cache[cacheKey] = retVal;
+            }
+        }
+        return retVal;
+    }
+    // to function
+    function to(location, options) {
+        const position = (options || 'replace').toLocaleLowerCase();
+        const frag = document.createDocumentFragment();
+        this.nodes.forEach(n => frag.appendChild(n));
+        const isNode = types_js_1.default.check(types_js_1.default `>Node`, location);
+        const elem = isNode ? location : document.querySelector(location);
+        try {
+            MOVE[position](frag, elem);
+        }
+        catch (e) {
+            DEBUG && console.log({ location, options, e, elem, isNode });
+            DEBUG && console.warn(e);
+            switch (e.constructor && e.constructor.name) {
+                case "DOMException":
+                    die({ error: INSERT() }, e);
+                    break;
+                case "TypeError":
+                    die({ error: NOTFOUND(location) }, e);
+                    break;
+                default: throw e;
+            }
+        }
+        while (this.externals.length) {
+            this.externals.shift()();
+        }
+    }
+    // update functions
+    function makeUpdaters({ walker, vmap, externals }) {
+        const node = walker.currentNode;
+        switch (node.nodeType) {
+            case Node.ELEMENT_NODE:
+                handleElement({ node, vmap, externals });
+                break;
+            case Node.COMMENT_NODE:
+            case Node.TEXT_NODE:
+                handleNode({ node, vmap, externals });
+                break;
+        }
+    }
+    function handleNode({ node, vmap, externals }) {
+        const lengths = [];
+        const text = node.nodeValue;
+        let result = KEYMATCH.exec(text);
+        while (result) {
+            const { index } = result;
+            const key = result[1];
+            const val = vmap[key];
+            const replacer = makeNodeUpdater({ node, index, lengths, val });
+            externals.push(() => replacer(val.val));
+            val.replacers.push(replacer);
+            result = KEYMATCH.exec(text);
+        }
+    }
+    // node functions
+    function makeNodeUpdater(nodeState) {
+        const { node } = nodeState;
+        const scope = Object.assign({}, nodeState, {
+            oldVal: { length: KEYLEN },
+            oldNodes: [node],
+            lastAnchor: node,
+        });
+        return (newVal) => {
+            if (scope.oldVal == newVal)
+                return;
+            scope.val.val = newVal;
+            switch (getType(newVal)) {
+                case "markupobject":
+                case "brutalobject":
+                    handleMarkupInNode(newVal, scope);
+                    break;
+                default:
+                    handleTextInNode(newVal, scope);
+                    break;
+            }
+        };
+    }
+    function handleMarkupInNode(newVal, state) {
+        let { oldNodes, lastAnchor } = state;
+        if (newVal.nodes.length) {
+            Array.from(newVal.nodes).reverse().forEach(n => {
+                lastAnchor.parentNode.insertBefore(n, lastAnchor.nextSibling);
+                state.lastAnchor = lastAnchor.nextSibling;
+            });
+            state.lastAnchor = newVal.nodes[0];
+        }
+        else {
+            const placeholderNode = summonPlaceholder(lastAnchor);
+            lastAnchor.parentNode.insertBefore(placeholderNode, lastAnchor.nextSibling);
+            state.lastAnchor = placeholderNode;
+        }
+        // MARK: Unbond event might be relevant here.
+        const dn = diffNodes(oldNodes, newVal.nodes);
+        if (dn.size) {
+            const f = document.createDocumentFragment();
+            dn.forEach(n => f.appendChild(n));
+        }
+        state.oldNodes = newVal.nodes || [lastAnchor];
+        while (newVal.externals.length) {
+            const func = newVal.externals.shift();
+            func();
+        }
+    }
+    function handleTextInNode(newVal, state) {
+        let { oldVal, index, val, lengths, node } = state;
+        const valIndex = val.vi;
+        const originalLengthBefore = Object.keys(lengths.slice(0, valIndex)).length * KEYLEN;
+        const lengthBefore = lengths.slice(0, valIndex).reduce((sum, x) => sum + x, 0);
+        const value = node.nodeValue;
+        lengths[valIndex] = newVal.length;
+        const correction = lengthBefore - originalLengthBefore;
+        const before = value.slice(0, index + correction);
+        const after = value.slice(index + correction + oldVal.length);
+        const newValue = before + newVal + after;
+        node.nodeValue = newValue;
+        state.oldVal = newVal;
+    }
+    // element attribute functions
+    function handleElement({ node, vmap, externals }) {
+        getAttributes(node).forEach(({ name, value } = {}) => {
+            const attrState = { node, vmap, externals, name, lengths: [] };
+            KEYMATCH.lastIndex = 0;
+            let result = KEYMATCH.exec(name);
+            while (result) {
+                prepareAttributeUpdater(result, attrState, { updateName: true });
+                result = KEYMATCH.exec(name);
+            }
+            KEYMATCH.lastIndex = 0;
+            result = KEYMATCH.exec(value);
+            while (result) {
+                prepareAttributeUpdater(result, attrState, { updateName: false });
+                result = KEYMATCH.exec(value);
+            }
+        });
+    }
+    function prepareAttributeUpdater(result, attrState, { updateName }) {
+        const { index, input } = result;
+        const scope = Object.assign({}, attrState, {
+            index, input, updateName,
+            val: attrState.vmap[result[1]],
+            oldVal: { length: KEYLEN },
+            oldName: attrState.name,
+        });
+        let replacer;
+        if (updateName) {
+            replacer = makeAttributeNameUpdater(scope);
+        }
+        else {
+            replacer = makeAttributeValueUpdater(scope);
+        }
+        scope.externals.push(() => replacer(scope.val.val));
+        scope.val.replacers.push(replacer);
+    }
+    // FIXME: needs to support multiple replacements just like value
+    // QUESTION: why is the variable oldName so required here, why can't we call it oldVal?
+    // if we do it breaks, WHY?
+    function makeAttributeNameUpdater(scope) {
+        let { oldName, node, val } = scope;
+        return (newVal) => {
+            if (oldName == newVal)
+                return;
+            val.val = newVal;
+            const attr = node.hasAttribute(oldName) ? oldName : '';
+            if (attr !== newVal) {
+                if (attr) {
+                    node.removeAttribute(oldName);
+                    node[oldName] = undefined;
+                }
+                if (newVal) {
+                    newVal = newVal.trim();
+                    let name = newVal, value = undefined;
+                    if (ATTRMATCH.test(newVal)) {
+                        const assignmentIndex = newVal.indexOf('=');
+                        ([name, value] = [newVal.slice(0, assignmentIndex), newVal.slice(assignmentIndex + 1)]);
+                    }
+                    reliablySetAttribute(node, name, value);
+                }
+                oldName = newVal;
+            }
+        };
+    }
+    function makeAttributeValueUpdater(scope) {
+        return (newVal) => {
+            if (scope.oldVal == newVal)
+                return;
+            scope.val.val = newVal;
+            switch (getType(newVal)) {
+                case "funcarray":
+                    updateAttrWithFuncarrayValue(newVal, scope);
+                    break;
+                case "function":
+                    updateAttrWithFunctionValue(newVal, scope);
+                    break;
+                case "handlers":
+                    updateAttrWithHandlersValue(newVal, scope);
+                    break;
+                case "markupobject":
+                case "brutalobject":
+                    newVal = nodesToStr(newVal.nodes);
+                    updateAttrWithTextValue(newVal, scope);
+                    break;
+                /* eslint-disable no-fallthrough */
+                case "markupattrobject": // deliberate fall through
+                    newVal = newVal.str;
+                default:
+                    updateAttrWithTextValue(newVal, scope);
+                    break;
+                /* eslint-enable no-fallthrough */
+            }
+        };
+    }
+    // helpers
+    function getAttributes(node) {
+        if (!node.hasAttribute)
+            return [];
+        // for parity with classList.add (which trims whitespace)
+        // otherwise once the classList manipulation happens
+        // our indexes for replacement will be off
+        if (node.hasAttribute('class')) {
+            node.setAttribute('class', formatClassListValue(node.getAttribute('class')));
+        }
+        if (!!node.attributes && Number.isInteger(node.attributes.length))
+            return Array.from(node.attributes);
+        const attrs = [];
+        for (const name of node) {
+            if (node.hasAttribute(name)) {
+                attrs.push({ name, value: node.getAttribute(name) });
+            }
+        }
+        return attrs;
+    }
+    function updateAttrWithFunctionValue(newVal, scope) {
+        let { oldVal, node, name, externals } = scope;
+        if (name !== 'bond') {
+            let flags = {};
+            if (name.includes(':')) {
+                ([name, ...flags] = name.split(':'));
+                flags = flags.reduce((O, f) => {
+                    O[f] = true;
+                    return O;
+                }, {});
+            }
+            if (oldVal) {
+                node.removeEventListener(name, oldVal, flags);
+            }
+            node.addEventListener(name, newVal, flags);
+        }
+        else {
+            if (oldVal) {
+                const index = externals.indexOf(oldVal);
+                if (index >= 0) {
+                    externals.splice(index, 1);
+                }
+            }
+            externals.push(() => newVal(node));
+        }
+        scope.oldVal = newVal;
+    }
+    function updateAttrWithFuncarrayValue(newVal, scope) {
+        let { oldVal, node, name, externals } = scope;
+        if (oldVal && !Array.isArray(oldVal)) {
+            oldVal = [oldVal];
+        }
+        if (name !== 'bond') {
+            let flags = {};
+            if (name.includes(':')) {
+                ([name, ...flags] = name.split(':'));
+                flags = flags.reduce((O, f) => {
+                    O[f] = true;
+                    return O;
+                }, {});
+            }
+            if (oldVal) {
+                oldVal.forEach(of => node.removeEventListener(name, of, flags));
+            }
+            newVal.forEach(f => node.addEventListener(name, f, flags));
+        }
+        else {
+            if (oldVal) {
+                oldVal.forEach(of => {
+                    const index = externals.indexOf(of);
+                    if (index >= 0) {
+                        externals.splice(index, 1);
+                    }
+                });
+            }
+            newVal.forEach(f => externals.push(() => f(node)));
+        }
+        scope.oldVal = newVal;
+    }
+    function updateAttrWithHandlersValue(newVal, scope) {
+        let { oldVal, node, externals, } = scope;
+        if (!!oldVal && types_js_1.default.check(types_js_1.default `Handlers`, oldVal)) {
+            Object.entries(oldVal).forEach(([eventName, funcVal]) => {
+                if (eventName !== 'bond') {
+                    let flags = {};
+                    if (eventName.includes(':')) {
+                        ([eventName, ...flags] = eventName.split(':'));
+                        flags = flags.reduce((O, f) => {
+                            O[f] = true;
+                            return O;
+                        }, {});
+                    }
+                    console.log(eventName, funcVal, flags);
+                    node.removeEventListener(eventName, funcVal, flags);
+                }
+                else {
+                    const index = externals.indexOf(funcVal);
+                    if (index >= 0) {
+                        externals.splice(index, 1);
+                    }
+                }
+            });
+        }
+        Object.entries(newVal).forEach(([eventName, funcVal]) => {
+            if (eventName !== 'bond') {
+                let flags = {};
+                if (eventName.includes(':')) {
+                    ([eventName, ...flags] = eventName.split(':'));
+                    flags = flags.reduce((O, f) => {
+                        O[f] = true;
+                        return O;
+                    }, {});
+                }
+                node.addEventListener(eventName, funcVal, flags);
+            }
+            else {
+                externals.push(() => funcVal(node));
+            }
+        });
+        scope.oldVal = newVal;
+    }
+    function updateAttrWithTextValue(newVal, scope) {
+        let { oldVal, node, index, name, val, lengths } = scope;
+        let zeroWidthCorrection = 0;
+        const valIndex = val.vi;
+        const originalLengthBefore = Object.keys(lengths.slice(0, valIndex)).length * KEYLEN;
+        // we need to trim newVal to have parity with classlist add
+        // the reason we have zeroWidthCorrection = -1
+        // is because the classList is a set of non-zero width tokens
+        // separated by spaces
+        // when we have a zero width token, we have two adjacent spaces
+        // which, by virtue of our other requirement, gets replaced by a single space
+        // effectively elliding out our replacement location
+        // in order to keep our replacement location in tact
+        // we need to compensate for the loss of a token slot (effectively a token + a space)
+        // and having a -1 correction effectively does this.
+        if (name == "class") {
+            newVal = newVal.trim();
+            if (newVal.length == 0) {
+                zeroWidthCorrection = -1;
+            }
+            scope.val.val = newVal;
+        }
+        lengths[valIndex] = newVal.length + zeroWidthCorrection;
+        let attr = node.getAttribute(name);
+        const lengthBefore = lengths.slice(0, valIndex).reduce((sum, x) => sum + x, 0);
+        const correction = lengthBefore - originalLengthBefore;
+        const before = attr.slice(0, index + correction);
+        const after = attr.slice(index + correction + oldVal.length);
+        let newAttrValue;
+        if (name == "class") {
+            const spacer = oldVal.length == 0 ? ' ' : '';
+            newAttrValue = before + spacer + newVal + spacer + after;
+        }
+        else {
+            newAttrValue = before + newVal + after;
+        }
+        DEBUG && console.log(JSON.stringify({
+            newVal,
+            valIndex,
+            lengths,
+            attr,
+            lengthBefore,
+            originalLengthBefore,
+            correction,
+            before,
+            after,
+            newAttrValue
+        }, null, 2));
+        reliablySetAttribute(node, name, newAttrValue);
+        scope.oldVal = newVal;
+    }
+    function reliablySetAttribute(node, name, value) {
+        if (name == "class") {
+            value = formatClassListValue(value);
+        }
+        try {
+            node.setAttribute(name, value);
+        }
+        catch (e) {
+            DEBUG && console.warn(e);
+        }
+        try {
+            node[name] = value == undefined ? true : value;
+        }
+        catch (e) {
+            DEBUG && console.warn(e);
+        }
+    }
+    function getType(val) {
+        const type = types_js_1.default.check(types_js_1.default `Function`, val) ? 'function' :
+            types_js_1.default.check(types_js_1.default `Handlers`, val) ? 'handlers' :
+                types_js_1.default.check(types_js_1.default `BrutalObject`, val) ? 'brutalobject' :
+                    types_js_1.default.check(types_js_1.default `MarkupObject`, val) ? 'markupobject' :
+                        types_js_1.default.check(types_js_1.default `MarkupAttrObject`, val) ? 'markupattrobject' :
+                            types_js_1.default.check(types_js_1.default `FuncArray`, val) ? 'funcarray' : 'default';
+        return type;
+    }
+    function summonPlaceholder(sibling) {
+        let ph = [...sibling.parentNode.childNodes].find(node => node.nodeType == Node.COMMENT_NODE && node.nodeValue == 'brutal-placeholder');
+        if (!ph) {
+            ph = toDOM(`<!--brutal-placeholder-->`).firstChild;
+        }
+        return ph;
+    }
+    // cache helpers
+    // FIXME: function needs refactor
+    function isCached(cacheKey, v, instanceKey) {
+        let firstCall;
+        let cached = cache[cacheKey];
+        if (cached == undefined) {
+            cached = cache[cacheKey] = {};
+            if (instanceKey) {
+                cached.instances = {};
+                cached = cached.instances[instanceKey] = {};
+            }
+            firstCall = true;
+        }
+        else {
+            if (instanceKey) {
+                if (!cached.instances) {
+                    cached.instances = {};
+                    firstCall = true;
+                }
+                else {
+                    cached = cached.instances[instanceKey];
+                    if (!cached) {
+                        firstCall = true;
+                    }
+                    else {
+                        firstCall = false;
+                    }
+                }
+            }
+            else {
+                firstCall = false;
+            }
+        }
+        return { cached, firstCall };
+    }
+    // Markup helpers
+    // Returns an object that Brutal treats as markup,
+    // even tho it is NOT a Brutal Object (defined with R/X/$)
+    // And even tho it is in the location of a template value replacement
+    // Which would normally be the treated as String
+    function markup(str) {
+        str = types_js_1.default.check(types_js_1.default `None`, str) ? '' : str;
+        const frag = toDOM(str);
+        const retVal = {
+            type: 'MarkupObject',
+            code: common_js_4.CODE,
+            nodes: [...frag.childNodes],
+            externals: []
+        };
+        return retVal;
+    }
+    // Returns an object that Brutal treats, again, as markup
+    // But this time markup that is OKAY to have within a quoted attribute
+    function attrmarkup(str) {
+        str = types_js_1.default.check(types_js_1.default `None`, str) ? '' : str;
+        str = str.replace(/"/g, '&quot;');
+        const retVal = {
+            type: 'MarkupAttrObject',
+            code: common_js_4.CODE,
+            str
+        };
+        return retVal;
+    }
+    function guardEmptyHandlers(val) {
+        if (Array.isArray(val)) {
+            if (val.length == 0) {
+                return [NULLFUNC];
+            }
+            return val;
+        }
+        else {
+            if (types_js_1.default.check(types_js_1.default `None`, val)) {
+                return NULLFUNC;
+            }
+        }
+    }
+    // other helpers
+    function formatClassListValue(value) {
+        value = value.trim();
+        value = value.replace(/\s+/g, ' ');
+        return value;
+    }
+    function replaceValWithKeyAndOmitInstanceKey(vmap) {
+        return (val, vi) => {
+            // omit instance key
+            if (types_js_1.default.check(types_js_1.default `Key`, val)) {
+                return '';
+            }
+            const key = ('key' + Math.random()).replace('.', '').padEnd(KEYLEN, '0').slice(0, KEYLEN);
+            let k = key;
+            if (types_js_1.default.check(types_js_1.default `BrutalObject`, val) || types_js_1.default.check(types_js_1.default `MarkupObject`, val)) {
+                k = `<!--${k}-->`;
+            }
+            vmap[key.trim()] = { vi, val, replacers: [] };
+            return k;
+        };
+    }
+    function toDOM(str) {
+        const templateEl = (new DOMParser).parseFromString(`<template>${str}</template>`, "text/html").head.firstElementChild;
+        let f;
+        if (templateEl instanceof HTMLTemplateElement) {
+            f = templateEl.content;
+            f.normalize();
+            return f;
+        }
+        else {
+            throw new TypeError(`Could not find template element after parsing string to DOM:\n=START=\n${str}\n=END=`);
+        }
+    }
+    function guardAndTransformVal(v) {
+        const isFunc = types_js_1.default.check(types_js_1.default `Function`, v);
+        const isUnset = types_js_1.default.check(types_js_1.default `None`, v);
+        const isObject = types_js_1.default.check(types_js_1.default `Object`, v);
+        const isBrutalArray = types_js_1.default.check(types_js_1.default `BrutalArray`, v);
+        const isFuncArray = types_js_1.default.check(types_js_1.default `FuncArray`, v);
+        const isMarkupObject = types_js_1.default.check(types_js_1.default `MarkupObject`, v);
+        const isMarkupAttrObject = types_js_1.default.check(types_js_1.default `MarkupAttrObject`, v);
+        const isBrutal = types_js_1.default.check(types_js_1.default `BrutalObject`, v);
+        const isForgery = types_js_1.default.check(types_js_1.default `BrutalLikeObject`, v) && !isBrutal;
+        if (isFunc)
+            return v;
+        if (isBrutal)
+            return v;
+        if (isKey(v))
+            return v;
+        if (isHandlers(v))
+            return v;
+        if (isBrutalArray)
+            return join(v);
+        if (isFuncArray)
+            return v;
+        if (isMarkupObject)
+            return v;
+        if (isMarkupAttrObject)
+            return v;
+        if (isUnset)
+            die({ error: UNSET() });
+        if (isForgery)
+            die({ error: XSS() });
+        if (isObject)
+            die({ error: OBJ() });
+        return v + '';
+    }
+    function join(os) {
+        const externals = [];
+        const bigNodes = [];
+        os.forEach(o => (externals.push(...o.externals), bigNodes.push(...o.nodes)));
+        //Refers #45. Debug to try to see when node reverse order is introduced.
+        //setTimeout( () => console.log(nodesToStr(bigNodes)), 1000 );
+        const retVal = { v: [], code: common_js_4.CODE, nodes: bigNodes, to, update, externals };
+        return retVal;
+    }
+    function nodesToStr(nodes) {
+        const frag = document.createDocumentFragment();
+        nodes.forEach(n => frag.appendChild(n.cloneNode(true)));
+        const container = document.createElement('body');
+        container.appendChild(frag);
+        return container.innerHTML;
+    }
+    function diffNodes(last, next) {
+        last = new Set(last);
+        next = new Set(next);
+        return new Set([...last].filter(n => !next.has(n)));
+    }
+    function update(newVals) {
+        this.v.forEach(({ vi, replacers }) => replacers.forEach(f => f(newVals[vi])));
+    }
+    // reporting and error helpers 
+    function die(msg, err) {
+        if (DEBUG && err)
+            console.warn(err);
+        msg.stack = ((DEBUG && err) || new Error()).stack.split(/\s*\n\s*/g);
+        throw JSON.stringify(msg, null, 2);
+    }
+    function s(msg) {
+        if (DEBUG) {
+            console.log(JSON.stringify(msg, showNodes, 2));
+            console.info('.');
+        }
+    }
+    function showNodes(k, v) {
+        let out = v;
+        if (types_js_1.default.check(types_js_1.default `>Node`, v)) {
+            out = `<${v.nodeName.toLowerCase()} ${!v.attributes ? '' : [...v.attributes].map(({ name, value }) => `${name}='${value}'`).join(' ')}>${v.nodeValue || (v.children && v.children.length <= 1 ? v.innerText : '')}`;
+        }
+        else if (typeof v === "function") {
+            return `${v.name || 'anon'}() { ... }`;
+        }
+        return out;
+    }
+    return {
+        setters: [
+            function (common_js_4_1) {
+                common_js_4 = common_js_4_1;
+            },
+            function (types_js_1_1) {
+                types_js_1 = types_js_1_1;
+            }
+        ],
+        execute: function () {
+            // backwards compatible alias
+            skip = markup;
+            attrskip = attrmarkup;
+            // constants
+            DEBUG = false;
+            NULLFUNC = () => void 0;
+            /* eslint-disable no-useless-escape */
+            KEYMATCH = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
+            /* eslint-enable no-useless-escape */
+            ATTRMATCH = /\w+=/;
+            KEYLEN = 20;
+            XSS = () => `Possible XSS / object forgery attack detected. ` +
+                `Object code could not be verified.`;
+            OBJ = () => `Object values not allowed here.`;
+            UNSET = () => `Unset values not allowed here.`;
+            INSERT = () => `Error inserting template into DOM. ` +
+                `Position must be one of: ` +
+                `replace, beforebegin, afterbegin, beforeend, innerhtml, afterend`;
+            NOTFOUND = loc => `Error inserting template into DOM. ` +
+                `Location ${loc} was not found in the document.`;
+            MOVE = new class {
+                beforeend(frag, elem) { elem.appendChild(frag); }
+                beforebegin(frag, elem) { elem.parentNode.insertBefore(frag, elem); }
+                afterend(frag, elem) { elem.parentNode.insertBefore(frag, elem.nextSibling); }
+                replace(frag, elem) { elem.parentNode.replaceChild(frag, elem); }
+                afterbegin(frag, elem) { elem.insertBefore(frag, elem.firstChild); }
+                innerhtml(frag, elem) { elem.innerHTML = ''; elem.appendChild(frag); }
+            };
+            // logging
+            self.onerror = (...v) => (console.log(v, v[0] + '', v[4] && v[4].message, v[4] && v[4].stack), true);
+            // type functions
+            isKey = v => types_js_1.default.check(types_js_1.default `Key`, v);
+            isHandlers = v => types_js_1.default.check(types_js_1.default `Handlers`, v);
+            // cache 
+            cache = {};
+            exports_14("d", d = R);
+            exports_14("u", u = X);
+            // main exports 
+            Object.assign(R, { s, attrskip, skip, attrmarkup, markup, guardEmptyHandlers, die });
+            if (DEBUG) {
+                Object.assign(self, { d, u, T: types_js_1.default });
+            }
+        }
+    };
+});
+System.register("voodoo/src/subviews/loadingIndicator", ["voodoo/node_modules/dumbass/r"], function (exports_15, context_15) {
     "use strict";
     var r_js_1, loadings, SHOW_LOADED_MS, DEFAULT_LOADING, delayHideTimeout;
-    var __moduleName = context_11 && context_11.id;
+    var __moduleName = context_15 && context_15.id;
     function LoadingIndicator(state, delayHide = true) {
         const loading = loadings.get(state.activeTarget) || DEFAULT_LOADING;
         const isLoading = loading.waiting > 0;
@@ -1355,7 +2629,7 @@ System.register("voodoo/src/subviews/loadingIndicator", ["../../node_modules/dum
     </aside>
   `;
     }
-    exports_11("LoadingIndicator", LoadingIndicator);
+    exports_15("LoadingIndicator", LoadingIndicator);
     return {
         setters: [
             function (r_js_1_1) {
@@ -1363,7 +2637,7 @@ System.register("voodoo/src/subviews/loadingIndicator", ["../../node_modules/dum
             }
         ],
         execute: function () {
-            exports_11("loadings", loadings = new Map());
+            exports_15("loadings", loadings = new Map());
             SHOW_LOADED_MS = 300;
             DEFAULT_LOADING = {
                 waiting: 0,
@@ -1372,10 +2646,10 @@ System.register("voodoo/src/subviews/loadingIndicator", ["../../node_modules/dum
         }
     };
 });
-System.register("voodoo/src/handlers/loadingIndicator", ["voodoo/src/subviews/loadingIndicator"], function (exports_12, context_12) {
+System.register("voodoo/src/handlers/loadingIndicator", ["voodoo/src/subviews/loadingIndicator"], function (exports_16, context_16) {
     "use strict";
     var loadingIndicator_js_1;
-    var __moduleName = context_12 && context_12.id;
+    var __moduleName = context_16 && context_16.id;
     function resetLoadingIndicator({ navigated }, state) {
         const { targetId } = navigated;
         loadingIndicator_js_1.loadings.delete(targetId);
@@ -1383,7 +2657,7 @@ System.register("voodoo/src/handlers/loadingIndicator", ["voodoo/src/subviews/lo
             loadingIndicator_js_1.LoadingIndicator(state);
         }
     }
-    exports_12("resetLoadingIndicator", resetLoadingIndicator);
+    exports_16("resetLoadingIndicator", resetLoadingIndicator);
     function showLoadingIndicator({ resource }, state) {
         const { targetId } = resource;
         loadingIndicator_js_1.loadings.set(targetId, resource);
@@ -1391,7 +2665,7 @@ System.register("voodoo/src/handlers/loadingIndicator", ["voodoo/src/subviews/lo
             loadingIndicator_js_1.LoadingIndicator(state);
         }
     }
-    exports_12("showLoadingIndicator", showLoadingIndicator);
+    exports_16("showLoadingIndicator", showLoadingIndicator);
     return {
         setters: [
             function (loadingIndicator_js_1_1) {
@@ -1402,22 +2676,22 @@ System.register("voodoo/src/handlers/loadingIndicator", ["voodoo/src/subviews/lo
         }
     };
 });
-System.register("voodoo/src/subviews/faviconDataURL", [], function (exports_13, context_13) {
+System.register("voodoo/src/subviews/faviconDataURL", [], function (exports_17, context_17) {
     "use strict";
     var DEFAULT_FAVICON;
-    var __moduleName = context_13 && context_13.id;
+    var __moduleName = context_17 && context_17.id;
     return {
         setters: [],
         execute: function () {
             DEFAULT_FAVICON = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAYAAAA4TnrqAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAuIwAALiMBeKU/dgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAn/SURBVHic7Zx/bFzFEce/s+ezcc5OCC0lDi65OHf7zliyWlx+NUgY9VcKjYTbNKhAmtAKWiTapq1Q1fS/NqJIVCGlVI1IKSQ0qElQA7RFgNRimiAh1BSkJLLfu/MPim1CoKHxXXyu726nf/jZNc7bu927s1NV9/kreTs7sx6/nbezs2ugRo0aNWrUqFGjRo3zDJ1P411dXeEzZ87EhRAOM68hog8DaAIQBpADkAHwLoBBZu5funRp6ujRo7nzNd5Fd5aUMgHgiwC6iWgtMy+x6H6WiF5h5l4AhzzP61+QQWpYFGe1trY2RiKRLcy8BcBVVVT9GjM/ls1m94yMjGSrqDeQBXVWZ2dnZHJy8lsAtgK4ZAFNvUNEO9Lp9MNjY2MTC2VkwZwVi8XWCyEeAhBdKBsBjALY5nne3oVQXnVnRaPRC8Ph8G4i2lBt3RYczOfzdw4ODp6pptKqOiuRSHQppQ4CWG3ZNQdgEMBbAN4nohwzRwAsJ6IoM19WxnAGlFIbU6nU38voG0jVnOU4zjpmfgpAxECcARxh5meFEL0tLS1v9Pb25nXCHR0dF+VyuasB3AhgPYBVhsPKCCE29Pf3v2AoX5SqOEtKeQuAJzC9PirGODPvCoVCv+rv7x8u0xw5jnMDM98DoMdAPgdgk+d5+8u091/DlSrw36hnUdxReQAPTU1N/WR4eHg8Ho9fSUTNBupHdGupRCIRVUoNGQ4zJ4RYX+kbVpGz/Bj1MopMPWY+HgqFbu3v7z8GAFLKXwP4uqEJBrDZ87wnAmzbOAsAMkqp6yuJYaLcjtFo9EI/mBeLUXuz2exVM47yucHCDGE6Tp1DPp8/a6EHAJqEEAfb2tqWWfabpWxnhcPh3Sj+1bvf87wtAStrW5vrpZQ9HR0dF819mEql3gVwHxH9w0JXW11d3W5L+7OUNQ2llDcDOFRE5H7P836o6TuE8haqCsDdnuc9Mr/BcZzbmPm3poqI6GbXdZ+xHYD1m9XZ2RkBsLOIyF7P87YVaW+wtekjAHw5qKGlpWU/gH+bKmLmnStXrrRJ4GcHYIWf6wWuc5j5+MTExDcxHZg/QHd3d53jOLcBaLG1OUd/XdBzf432IIApQ1XR5ubme2ztW03D1tbWxiVLlgwhOCnOCyGumAnmjuPsY+aNAAJ/wHJg5t5kMqn9QHR3d9eNjo5uJKJ9BupOTkxMtNnsVli9WZFIZAv0uwcPzTiqvb29hZlvRRUdZUJvb28+mUw+CeBtA/EVjY2Nm230WzmLme/QNI03NDRsnyNXblyqFkbxi4i22Cg1dpa/w3llUBsz7zp27Nj7Nob/R7g6kUhIU2GbN0uXh7EQYpeFnrIhIlVtncxskl8CsHOWLrAecV3XJu0oG2Z+qdo6lVLGGYVRAO7q6gpnMpm1zOesCOAn0dVmnIi+x8xvzrHzXjKZfKPahojouq6urrBJ1cjIWX65KnARJ4ToDRjAuV61gJl/43neo5WosJCNjI+PxwD0lRI0moZCCEfTlGtpaTnnty2EeBvAOya6NfYqnW5Wb6AQwijIG71ZzBwjCly/DgbtcJ44cWJKStlFROuY+WsAPqlRPQJgB4DZHQQiOuG67ism49KRyWRub2pqWg/gJgCbSskrpeImeo2cRUQXaZ6/GfQcADzPGwXwaHt7+3OFQmFMI3av53m/MxmDDX45bD+AA1LKqwDoZgYAgIiWm+g1/Ro2aZ6nS3Xs6+t7G0Aq0LgQJw3tlwsDOGIgZ7Jra5yONAaOhNkorwqFQjfm8/lbhBA9zHyFoc2qkM/nvx8Oh48z8wpMFzsuDxAz2oEwdZbOKUa/kb6+viSA7Y7j/JyITlqeb6gIv3a4EwCklB0IdpZRFdt0GmY0z43m+gyu66aZ+dTM/5VSK2z6VwoRfUjTVDKcAOZfw9NBX0Miipr0L8IDjuNcUigU/ppKpV6vUFdJmPkjmqbTJv2N3iwiSmqMX5ZIJHS/LRNamXmnEOJv8Xj8YxXoKYlfqAisGRBR4AdoPkbOUkp5ujZmDtyJKMK/gsYhhLjeUo8V9fX110Dz8zKza6LDaBouW7YsmU6nzyKg7MXMNwF43kSPz7cBbMP0Oa3Z9Rsz3xuPx08R0bu6jkRUKBQKx/3KjhWFQmGtZmGdaW5uHjDRYbytLKV8EcBnApre9DxvNezyMcRisYuFEP2Y4zBDxgFc7i96TSEpZR8CFqfM/EIymVxnosRmi0aXr61yHMemcApgtu53wrYfgKVKKau1mpRyLTSreCHEX0z12OyRHwJwX1ADM98jpRwGgEKhkBkYGDgVJBfQr6CZGkUhopVSyjb/35Ou6+rSqRnu0jUIIYrVPz8oayroH9B4TdPcA2AAwEAoFHrHcZztGrmqQES7Zuwx82g8HtcWWGOxWAeAr2iaX/UXzEbYFiweM5T7qqFK48JoMYjoFl2bEOIBaGYQMz9uY8fKWdlsdg/M9qk+Go/Hb+3u7i41zR9B8FLClkA7UsoeAJ/X9DmZy+X22BixctbIyEiWiB40kSWifWNjY2ellD/VySSTyd97nrfcD9j/tBlLKRzHWQ1Au9vKzDuGh4cnbXRal+/T6fQvAAwbitcD+G4pIT/Vec52LHP4wAZka2trIzMfgD53Hcpmsw/bGrF21tjY2AQRbbXoYlRwZeb9MD+rENQXABCNRi+IRCJPA/iETp6ItpZzyaCs81n+cZ0D5fTVkUwm/+Tf3fk0ipffM0T0JIBvKKWuJaJLk8nk7cC0o8Lh8NPM/Nki/fe7rltWRarsswj5fP6uurq6LgBrytUxH9d10wD+LKXcC+AHASJD+Xz+40Hn26WUbUR0sMTmYkoppV1zlaLsk3+Dg4NnlFIbod/rmiUej98Bi9RKCPE85sUhn2VCiPr5Dx3H2QDgaAlHZfxz8eOm45hPxaeVE4nE55RSf0DpY92HlVJ3p1IpoxSnvb19VaFQuBbAzwBcOqfpNIDXmflBIcRbzLwDwKdKqMsppb6QSqVeNLGtY7HPwRcAPENEv3Rd9yUYJN+O43yHmYNOGk769kIlVEwR0SbXdSuOsVW7YeG/YU9BXwmaTx8R/VEp9TIzH9ZNj3g83k5Eb2B6GWJLRin1pUrfqBmqencnFotdIYQ4CKDNsmsB0wXXkwDew/RUuwBAvX/DNQH7j1HKj1FV266u+q2wtra2Zf7x6cDDsovEAaXUnZUE8yD+3+4bjgD40ULdNywVHMvm9OnTXkNDw+6GhoZxAJ0wj2XlcJKZf5zNZjcNDQ0dXSgji3ZHurGxcTMRbQZwTRVVv8rMj+dyuT22SXE5LPrt+0QiIZm5Ryl1AxFdB7P7iTOcBXCYiF4SQhyy2birBuf97zqk0+k1ABKY/oJejOnpWo/ppDoD4BQRDTKz29zcPHA+/65DjRo1atSoUaNGjRrnnf8APcnjzVWJn1oAAAAASUVORK5CYII=`;
-            exports_13("default", DEFAULT_FAVICON);
+            exports_17("default", DEFAULT_FAVICON);
         }
     };
 });
-System.register("voodoo/src/subviews/tabList", ["../../node_modules/dumbass/r.js", "voodoo/src/subviews/faviconDataURL"], function (exports_14, context_14) {
+System.register("voodoo/src/subviews/tabList", ["voodoo/node_modules/dumbass/r", "voodoo/src/subviews/faviconDataURL"], function (exports_18, context_18) {
     "use strict";
     var r_js_2, faviconDataURL_js_1;
-    var __moduleName = context_14 && context_14.id;
+    var __moduleName = context_18 && context_18.id;
     function TabList(state) {
         return r_js_2.d `
     <nav class="controls targets" stylist="styleTabList styleNavControl">
@@ -1431,7 +2705,7 @@ System.register("voodoo/src/subviews/tabList", ["../../node_modules/dumbass/r.js
     </nav>
   `;
     }
-    exports_14("TabList", TabList);
+    exports_18("TabList", TabList);
     function TabSelector(tab, index, state) {
         const title = tab.title == 'about:blank' ? '' : tab.title;
         const active = state.activeTarget == tab.targetId;
@@ -1446,7 +2720,7 @@ System.register("voodoo/src/subviews/tabList", ["../../node_modules/dumbass/r.js
     </li>
   `;
     }
-    exports_14("TabSelector", TabSelector);
+    exports_18("TabSelector", TabSelector);
     function FaviconElement({ targetId }, state) {
         let faviconURL;
         faviconURL = state.favicons.has(targetId) && state.favicons.get(targetId).dataURI;
@@ -1455,7 +2729,7 @@ System.register("voodoo/src/subviews/tabList", ["../../node_modules/dumbass/r.js
       data-target-id="${targetId}" bond=${el => bindFavicon(el, { targetId }, state)}>
   `;
     }
-    exports_14("FaviconElement", FaviconElement);
+    exports_18("FaviconElement", FaviconElement);
     function bindFavicon(el, { targetId }, state) {
         let favicon = state.favicons.get(targetId);
         if (favicon) {
@@ -1482,10 +2756,10 @@ System.register("voodoo/src/subviews/tabList", ["../../node_modules/dumbass/r.js
         }
     };
 });
-System.register("voodoo/src/handlers/favicon", ["voodoo/src/subviews/tabList", "voodoo/src/subviews/faviconDataURL"], function (exports_15, context_15) {
+System.register("voodoo/src/handlers/favicon", ["voodoo/src/subviews/tabList", "voodoo/src/subviews/faviconDataURL"], function (exports_19, context_19) {
     "use strict";
     var tabList_js_1, faviconDataURL_js_2;
-    var __moduleName = context_15 && context_15.id;
+    var __moduleName = context_19 && context_19.id;
     function resetFavicon({ targetId }, state) {
         const favicon = state.favicons.get(targetId);
         if (favicon) {
@@ -1493,7 +2767,7 @@ System.register("voodoo/src/handlers/favicon", ["voodoo/src/subviews/tabList", "
         }
         tabList_js_1.FaviconElement({ targetId }, state);
     }
-    exports_15("resetFavicon", resetFavicon);
+    exports_19("resetFavicon", resetFavicon);
     function handleFaviconMessage({ favicon: { faviconDataUrl, targetId } }, state) {
         let favicon = state.favicons.get(targetId);
         if (favicon) {
@@ -1505,7 +2779,7 @@ System.register("voodoo/src/handlers/favicon", ["voodoo/src/subviews/tabList", "
         }
         tabList_js_1.FaviconElement({ targetId }, state);
     }
-    exports_15("handleFaviconMessage", handleFaviconMessage);
+    exports_19("handleFaviconMessage", handleFaviconMessage);
     return {
         setters: [
             function (tabList_js_1_1) {
@@ -1519,15 +2793,15 @@ System.register("voodoo/src/handlers/favicon", ["voodoo/src/subviews/tabList", "
         }
     };
 });
-System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (exports_16, context_16) {
+System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (exports_20, context_20) {
     "use strict";
-    var common_js_3, $, TIME_BETWEEN_ONLINE_CHECKS, ALERT_TIMEOUT, BLANK_SPACE, MAX_E, BUFFERED_FRAME_EVENT, BUFFERED_FRAME_COLLECT_DELAY, waiting, connecting, latestReload, latestAlert, lastTestTime, lastOnlineCheck, messageId, latestFrame, frameDrawing, bufferedFrameCollectDelay, Privates, EventQueue;
-    var __moduleName = context_16 && context_16.id;
+    var common_js_5, $, TIME_BETWEEN_ONLINE_CHECKS, ALERT_TIMEOUT, BLANK_SPACE, MAX_E, BUFFERED_FRAME_EVENT, BUFFERED_FRAME_COLLECT_DELAY, waiting, connecting, latestReload, latestAlert, lastTestTime, lastOnlineCheck, messageId, latestFrame, frameDrawing, bufferedFrameCollectDelay, Privates, EventQueue;
+    var __moduleName = context_20 && context_20.id;
     async function drawFrames(state, buf, image) {
         // we don't draw frames for about blank
         // but, haha, this heuristic 
-        if (state.active && state.active.url == common_js_3.BLANK && buf[0] && buf[0].img.includes(BLANK_SPACE)) {
-            common_js_3.DEBUG.val >= common_js_3.DEBUG.med && console.log("Returning before drawing", buf, JSON.stringify(buf).length);
+        if (state.active && state.active.url == common_js_5.BLANK && buf[0] && buf[0].img.includes(BLANK_SPACE)) {
+            common_js_5.DEBUG.val >= common_js_5.DEBUG.med && console.log("Returning before drawing", buf, JSON.stringify(buf).length);
             return;
         }
         buf = buf.filter(x => !!x);
@@ -1543,13 +2817,13 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                 continue;
             }
             if (frameDrawing) {
-                common_js_3.DEBUG.val >= common_js_3.DEBUG.med && console.log(`Wanting to draw ${frame} but waiting for ${frameDrawing} to load.`);
-                await common_js_3.sleep(Privates.firstDelay);
+                common_js_5.DEBUG.val >= common_js_5.DEBUG.med && console.log(`Wanting to draw ${frame} but waiting for ${frameDrawing} to load.`);
+                await common_js_5.sleep(Privates.firstDelay);
             }
             frameDrawing = frame;
-            common_js_3.DEBUG.val >= common_js_3.DEBUG.med && console.log(`Drawing frame ${frame}`);
+            common_js_5.DEBUG.val >= common_js_5.DEBUG.med && console.log(`Drawing frame ${frame}`);
             image.src = `data:image/png;base64,${img}`;
-            await common_js_3.sleep(Privates.firstDelay);
+            await common_js_5.sleep(Privates.firstDelay);
         }
     }
     function meetsCollectBufferedFrameCondition(queue, events) {
@@ -1571,7 +2845,7 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
         const someRequireShot = events.some(({ command }) => command.requiresShot || command.requiresTailShot);
         const createsTarget = events.some(({ command }) => command.name == "Target.createTarget");
         const meetsCondition = someRequireShot || createsTarget;
-        common_js_3.DEBUG.val >= common_js_3.DEBUG.med && console.log({ events, someRequireShot, createsTarget });
+        common_js_5.DEBUG.val >= common_js_5.DEBUG.med && console.log({ events, someRequireShot, createsTarget });
         return meetsCondition;
     }
     function transmitReply({ url, id, data, meta, totalBandwidth }) {
@@ -1587,13 +2861,13 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
         }
     }
     async function die() {
-        if (common_js_3.DEBUG.val) {
+        if (common_js_5.DEBUG.val) {
             console.log(`Application is in an invalid state. Going to ask to reload`);
         }
-        if (!common_js_3.DEBUG.dev && await tconfirm(`Sorry, something went wrong, and we need to reload. Is this okay?`)) {
+        if (!common_js_5.DEBUG.dev && await tconfirm(`Sorry, something went wrong, and we need to reload. Is this okay?`)) {
             treload();
         }
-        else if (common_js_3.DEBUG.val) {
+        else if (common_js_5.DEBUG.val) {
             throw new Error(`App is in an invalid state`);
         }
         else {
@@ -1631,8 +2905,8 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
     }
     return {
         setters: [
-            function (common_js_3_1) {
-                common_js_3 = common_js_3_1;
+            function (common_js_5_1) {
+                common_js_5 = common_js_5_1;
             }
         ],
         execute: function () {
@@ -1719,7 +2993,7 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                                                     func({ [key]: metaItem[key], executionContextId });
                                                 }
                                                 catch (e) {
-                                                    common_js_3.DEBUG.val && console.warn(`Error on ${key} handler`, func, e);
+                                                    common_js_5.DEBUG.val && console.warn(`Error on ${key} handler`, func, e);
                                                 }
                                             });
                                         }
@@ -1796,8 +3070,8 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                                 }
                                 const errors = data.filter(d => !!d.error);
                                 if (errors.length) {
-                                    common_js_3.DEBUG.val >= common_js_3.DEBUG.low && console.warn(`${errors.length} errors occured.`);
-                                    common_js_3.DEBUG.val >= common_js_3.DEBUG.low && console.log(JSON.stringify(errors));
+                                    common_js_5.DEBUG.val >= common_js_5.DEBUG.low && console.warn(`${errors.length} errors occured.`);
+                                    common_js_5.DEBUG.val >= common_js_5.DEBUG.low && console.log(JSON.stringify(errors));
                                 }
                                 return { data, meta };
                             }).catch(e => {
@@ -1849,19 +3123,19 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                             }
                             const errors = data.filter(d => !!d && !!d.error);
                             if (errors.length) {
-                                common_js_3.DEBUG.val >= common_js_3.DEBUG.low && console.warn(`${errors.length} errors occured.`);
-                                common_js_3.DEBUG && console.log(JSON.stringify(errors));
+                                common_js_5.DEBUG.val >= common_js_5.DEBUG.low && console.warn(`${errors.length} errors occured.`);
+                                common_js_5.DEBUG && console.log(JSON.stringify(errors));
                                 if (errors.some(({ error }) => error.hasSession === false)) {
                                     console.warn(`Session has been cleared. Let's attempt relogin`, this.sessionToken);
-                                    if (common_js_3.DEBUG.blockAnotherReset)
+                                    if (common_js_5.DEBUG.blockAnotherReset)
                                         return;
-                                    common_js_3.DEBUG.blockAnotherReset = true;
+                                    common_js_5.DEBUG.blockAnotherReset = true;
                                     try {
                                         const x = new URL(location);
                                         x.pathname = 'login';
                                         x.search = `token=${this.sessionToken}&ran=${Math.random()}`;
                                         await talert("Your browser cleared your session. We need to reload the page to refresh it.");
-                                        common_js_3.DEBUG.delayUnload = false;
+                                        common_js_5.DEBUG.delayUnload = false;
                                         location.href = x;
                                         socket.onmessage = null;
                                     }
@@ -1872,18 +3146,18 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                                 }
                                 else if (errors.some(({ error }) => error.includes && error.includes("ECONNREFUSED"))) {
                                     console.warn(`Cloud browser has not started yet. Let's reload and see if it has then.`);
-                                    if (common_js_3.DEBUG.blockAnotherReset)
+                                    if (common_js_5.DEBUG.blockAnotherReset)
                                         return;
-                                    common_js_3.DEBUG.blockAnotherReset = true;
+                                    common_js_5.DEBUG.blockAnotherReset = true;
                                     talert("Your cloud browser has not started yet. We'll reload and see if it has then.");
                                     await treload();
                                     return;
                                 }
                                 else if (errors.some(({ error }) => error.includes && error.includes("Timed out"))) {
                                     console.warn(`Some events are timing out when sent to the cloud browser.`);
-                                    if (common_js_3.DEBUG.blockAnotherReset)
+                                    if (common_js_5.DEBUG.blockAnotherReset)
                                         return;
-                                    common_js_3.DEBUG.blockAnotherReset = true;
+                                    common_js_5.DEBUG.blockAnotherReset = true;
                                     const reload = await tconfirm(`Some events are timing out when sent to the cloud browser. Try reloading the page, and if the problem persists try switching your cloud browser off then on again. Want to reload now?`);
                                     if (reload) {
                                         treload();
@@ -1892,9 +3166,9 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                                 }
                                 else if (errors.some(({ error }) => error.includes && error.includes("not opened"))) {
                                     console.warn(`We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again.`);
-                                    if (common_js_3.DEBUG.blockAnotherReset)
+                                    if (common_js_5.DEBUG.blockAnotherReset)
                                         return;
-                                    common_js_3.DEBUG.blockAnotherReset = true;
+                                    common_js_5.DEBUG.blockAnotherReset = true;
                                     const reload = await tconfirm(`We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again. Reload the page now?`);
                                     if (reload) {
                                         treload();
@@ -1903,9 +3177,9 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                                 }
                                 else if (errors.some(({ resetRequired }) => resetRequired)) {
                                     console.warn(`Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again.`);
-                                    if (common_js_3.DEBUG.blockAnotherReset)
+                                    if (common_js_5.DEBUG.blockAnotherReset)
                                         return;
-                                    common_js_3.DEBUG.blockAnotherReset = true;
+                                    common_js_5.DEBUG.blockAnotherReset = true;
                                     const reload = await tconfirm(`Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again. Want to reload the page now?`);
                                     if (reload) {
                                         treload();
@@ -1924,7 +3198,7 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                                                     func({ [key]: metaItem[key], executionContextId });
                                                 }
                                                 catch (e) {
-                                                    common_js_3.DEBUG.val && console.warn(`Error on ${key} handler`, func, e);
+                                                    common_js_5.DEBUG.val && console.warn(`Error on ${key} handler`, func, e);
                                                 }
                                             });
                                         }
@@ -1937,14 +3211,14 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                             const replyTransmitted = transmitReply({ url, id: serverMessageId, data, meta, totalBandwidth });
                             if (replyTransmitted)
                                 return;
-                            else if (common_js_3.DEBUG.val) {
+                            else if (common_js_5.DEBUG.val) {
                                 console.warn(`Server sent message Id ${serverMessageId}, which is not in our table.`);
                                 console.info(`Falling back to closure message id ${messageId}`);
                             }
                             const fallbackReplyTransmitted = transmitReply({ url, id: messageId, data, meta, totalBandwidth });
                             if (fallbackReplyTransmitted)
                                 return;
-                            else if (common_js_3.DEBUG.val) {
+                            else if (common_js_5.DEBUG.val) {
                                 console.warn(`Neither server nor closure message ids were in our table.`);
                             }
                             //die();
@@ -2011,7 +3285,7 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                     }
                 }
                 pushNextCollectEvent() {
-                    common_js_3.DEBUG.val >= common_js_3.DEBUG.med && console.log("Meets collect delayed shot condition. Pushing a collect results event.");
+                    common_js_5.DEBUG.val >= common_js_5.DEBUG.med && console.log("Meets collect delayed shot condition. Pushing a collect results event.");
                     clearTimeout(this.willCollectBufferedFrame);
                     this.willCollectBufferedFrame = false;
                     if (bufferedFrameCollectDelay >= BUFFERED_FRAME_COLLECT_DELAY.MAX) {
@@ -2077,14 +3351,14 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                     typeList.push(func);
                 }
             };
-            exports_16("default", EventQueue);
+            exports_20("default", EventQueue);
         }
     };
 });
-System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (exports_17, context_17) {
+System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (exports_21, context_21) {
     "use strict";
-    var common_js_4, controlChars;
-    var __moduleName = context_17 && context_17.id;
+    var common_js_6, controlChars;
+    var __moduleName = context_21 && context_21.id;
     function transformEvent(e) {
         const transformedEvent = {
             type: e.type
@@ -2175,7 +3449,7 @@ System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (ex
                 }
                 case "window-bounds": {
                     const { width, height, targetId } = synthetic;
-                    common_js_4.DEBUG.val && console.log(width, height, targetId);
+                    common_js_6.DEBUG.val && console.log(width, height, targetId);
                     Object.assign(transformedEvent, { width, height, targetId });
                     break;
                 }
@@ -2261,7 +3535,7 @@ System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (ex
                         transformedEvent.key = event.key;
                         transformedEvent.code = event.code;
                         transformedEvent.keyCode = event.keyCode;
-                        common_js_4.DEBUG.val >= common_js_4.DEBUG.med && console.log(transformedEvent);
+                        common_js_6.DEBUG.val >= common_js_6.DEBUG.med && console.log(transformedEvent);
                     }
                     break;
                 }
@@ -2282,10 +3556,10 @@ System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (ex
                 }
             }
         }
-        common_js_4.DEBUG.val >= common_js_4.DEBUG.med && console.log(transformedEvent);
+        common_js_6.DEBUG.val >= common_js_6.DEBUG.med && console.log(transformedEvent);
         return transformedEvent;
     }
-    exports_17("default", transformEvent);
+    exports_21("default", transformEvent);
     function getBitmapCoordinates(event, scale = 1) {
         const { clientX, clientY } = event;
         const bitmap = event.target;
@@ -2298,10 +3572,10 @@ System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (ex
                 bitmapX: (clientX - parentX),
                 bitmapY: (clientY - parentY)
             };
-            if (common_js_4.DEBUG.val > common_js_4.DEBUG.high) {
+            if (common_js_6.DEBUG.val > common_js_6.DEBUG.high) {
                 const dpi = window.devicePixelRatio;
                 const info = { coordinates, parentX, parentY, clientX, clientY, scaleX, scaleY, dpi };
-                common_js_4.logit(info);
+                common_js_6.logit(info);
             }
         }
         else {
@@ -2309,25 +3583,25 @@ System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (ex
         }
         return coordinates;
     }
-    exports_17("getBitmapCoordinates", getBitmapCoordinates);
+    exports_21("getBitmapCoordinates", getBitmapCoordinates);
     return {
         setters: [
-            function (common_js_4_1) {
-                common_js_4 = common_js_4_1;
+            function (common_js_6_1) {
+                common_js_6 = common_js_6_1;
             }
         ],
         execute: function () {
-            exports_17("controlChars", controlChars = new Set([
+            exports_21("controlChars", controlChars = new Set([
                 "Enter", "Backspace", "Control", "Shift", "Alt", "Meta", "Space", "Delete",
                 "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Tab"
             ]));
         }
     };
 });
-System.register("voodoo/src/subviews/omniBox", ["../../node_modules/dumbass/r.js", "voodoo/src/subviews/controls"], function (exports_18, context_18) {
+System.register("voodoo/src/subviews/omniBox", ["voodoo/node_modules/dumbass/r", "voodoo/src/subviews/controls"], function (exports_22, context_22) {
     "use strict";
     var r_js_3, controls_js_1, USE_DDG, omniBoxInput, refocus;
-    var __moduleName = context_18 && context_18.id;
+    var __moduleName = context_22 && context_22.id;
     function OmniBox(state) {
         const activeTab = state.activeTab();
         const { H } = state;
@@ -2384,13 +3658,13 @@ System.register("voodoo/src/subviews/omniBox", ["../../node_modules/dumbass/r.js
     </nav>
   `;
     }
-    exports_18("OmniBox", OmniBox);
+    exports_22("OmniBox", OmniBox);
     function focusOmniBox() {
         if (omniBoxInput) {
             omniBoxInput.focus();
         }
     }
-    exports_18("focusOmniBox", focusOmniBox);
+    exports_22("focusOmniBox", focusOmniBox);
     // Search
     function searchProvider({ query: query = '' } = {}) {
         if (USE_DDG) {
@@ -2416,10 +3690,10 @@ System.register("voodoo/src/subviews/omniBox", ["../../node_modules/dumbass/r.js
         }
     };
 });
-System.register("voodoo/src/subviews/pluginsMenuButton", ["../../node_modules/dumbass/r.js"], function (exports_19, context_19) {
+System.register("voodoo/src/subviews/pluginsMenuButton", ["voodoo/node_modules/dumbass/r"], function (exports_23, context_23) {
     "use strict";
     var r_js_4, pluginsMenuOpen;
-    var __moduleName = context_19 && context_19.id;
+    var __moduleName = context_23 && context_23.id;
     function PluginsMenuButton(state) {
         return r_js_4.u `
     <nav class="controls plugins-menu-button aux" stylist="styleNavControl stylePluginsMenuButton">
@@ -2438,7 +3712,7 @@ System.register("voodoo/src/subviews/pluginsMenuButton", ["../../node_modules/du
     </nav>
   `;
     }
-    exports_19("PluginsMenuButton", PluginsMenuButton);
+    exports_23("PluginsMenuButton", PluginsMenuButton);
     return {
         setters: [
             function (r_js_4_1) {
@@ -2451,10 +3725,10 @@ System.register("voodoo/src/subviews/pluginsMenuButton", ["../../node_modules/du
         }
     };
 });
-System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "../../node_modules/dumbass/r.js", "voodoo/src/subviews/omniBox", "voodoo/src/subviews/pluginsMenuButton"], function (exports_20, context_20) {
+System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "voodoo/node_modules/dumbass/r", "voodoo/src/subviews/omniBox", "voodoo/src/subviews/pluginsMenuButton"], function (exports_24, context_24) {
     "use strict";
-    var kbd_js_2, common_js_5, r_js_5, omniBox_js_1, pluginsMenuButton_js_1;
-    var __moduleName = context_20 && context_20.id;
+    var kbd_js_2, common_js_7, r_js_5, omniBox_js_1, pluginsMenuButton_js_1;
+    var __moduleName = context_24 && context_24.id;
     function Controls(state) {
         const { H, retargetTab, toggleVirtualKeyboard } = state;
         return r_js_5.d `
@@ -2474,14 +3748,14 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "..
           <input tabindex=-1 class=control name=key_input size=2
             autocomplete=off
             bond=${el => state.viewState.keyinput = el}
-            keydown=${[common_js_5.logitKeyInputEvent, e => state.openKey = e.key, H, limitCursor, retargetTab]}
-            keyup=${[common_js_5.logitKeyInputEvent, e => state.openKey = '', H, retargetTab]}
+            keydown=${[common_js_7.logitKeyInputEvent, e => state.openKey = e.key, H, limitCursor, retargetTab]}
+            keyup=${[common_js_7.logitKeyInputEvent, e => state.openKey = '', H, retargetTab]}
             focusin=${[() => clearWord(state), () => state.openKey = '']}
-            compositionstart=${[common_js_5.logitKeyInputEvent, startComposition]}
-            compositionupdate=${[common_js_5.logitKeyInputEvent, updateComposition]}
-            compositionend=${[common_js_5.logitKeyInputEvent, endComposition]}
-            input=${[common_js_5.logitKeyInputEvent, inputText]}
-            keypress=${[common_js_5.logitKeyInputEvent, pressKey]}
+            compositionstart=${[common_js_7.logitKeyInputEvent, startComposition]}
+            compositionupdate=${[common_js_7.logitKeyInputEvent, updateComposition]}
+            compositionend=${[common_js_7.logitKeyInputEvent, endComposition]}
+            input=${[common_js_7.logitKeyInputEvent, inputText]}
+            keypress=${[common_js_7.logitKeyInputEvent, pressKey]}
             paste=${e => {
             inputText({ type: 'paste', data: e.clipboardData.getData('Text') });
         }}
@@ -2489,14 +3763,14 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "..
           <textarea tabindex=-1 class=control name=textarea_input cols=2 rows=1
             autocomplete=off
             bond=${el => state.viewState.textarea = el}
-            keydown=${[common_js_5.logitKeyInputEvent, e => state.openKey = e.key, H, limitCursor, retargetTab]}
-            keyup=${[common_js_5.logitKeyInputEvent, e => state.openKey = '', H, retargetTab]}
+            keydown=${[common_js_7.logitKeyInputEvent, e => state.openKey = e.key, H, limitCursor, retargetTab]}
+            keyup=${[common_js_7.logitKeyInputEvent, e => state.openKey = '', H, retargetTab]}
             focusin=${[() => clearWord(state), () => state.openKey = '']}
-            compositionstart=${[common_js_5.logitKeyInputEvent, startComposition]}
-            compositionupdate=${[common_js_5.logitKeyInputEvent, updateComposition]}
-            compositionend=${[common_js_5.logitKeyInputEvent, endComposition]}
-            input=${[common_js_5.logitKeyInputEvent, inputText]}
-            keypress=${[common_js_5.logitKeyInputEvent, pressKey]}
+            compositionstart=${[common_js_7.logitKeyInputEvent, startComposition]}
+            compositionupdate=${[common_js_7.logitKeyInputEvent, updateComposition]}
+            compositionend=${[common_js_7.logitKeyInputEvent, endComposition]}
+            input=${[common_js_7.logitKeyInputEvent, inputText]}
+            keypress=${[common_js_7.logitKeyInputEvent, pressKey]}
             paste=${e => {
             inputText({ type: 'paste', data: e.clipboardData.getData('Text') });
         }}
@@ -2504,7 +3778,7 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "..
         </form>
 		</nav>
     ${omniBox_js_1.OmniBox(state)}
-    ${common_js_5.DEBUG.pluginsMenu ? pluginsMenuButton_js_1.PluginsMenuButton(state) : ''}
+    ${common_js_7.DEBUG.pluginsMenu ? pluginsMenuButton_js_1.PluginsMenuButton(state) : ''}
   `;
         function startComposition(e) {
             state.isComposing = true;
@@ -2627,7 +3901,7 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "..
             retargetTab(e);
         }
     }
-    exports_20("Controls", Controls);
+    exports_24("Controls", Controls);
     // Helper functions 
     // save the target of a form submission
     function saveClick(event) {
@@ -2635,7 +3909,7 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "..
             event.currentTarget.clickedButton = event.target;
         }
     }
-    exports_20("saveClick", saveClick);
+    exports_24("saveClick", saveClick);
     // keep track of sequences of keypresses (words basically)
     // because some IMEs (iOS / Safari) issue a insertReplacementText if we select a 
     // suggested word, which requires we delete the word already entered.
@@ -2671,8 +3945,8 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "..
     function commitChange(e, state) {
         const canCommit = ((e.type == "input" && e.inputType == "insertText") ||
             (e.type == "compositionend" && !!(e.data || state.latestData)));
-        if (common_js_5.DEBUG.val >= common_js_5.DEBUG.high) {
-            common_js_5.logitKeyInputEvent(e);
+        if (common_js_7.DEBUG.val >= common_js_7.DEBUG.high) {
+            common_js_7.logitKeyInputEvent(e);
         }
         return canCommit;
     }
@@ -2681,8 +3955,8 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "..
             function (kbd_js_2_1) {
                 kbd_js_2 = kbd_js_2_1;
             },
-            function (common_js_5_1) {
-                common_js_5 = common_js_5_1;
+            function (common_js_7_1) {
+                common_js_7 = common_js_7_1;
             },
             function (r_js_5_1) {
                 r_js_5 = r_js_5_1;
@@ -2698,10 +3972,10 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "..
         }
     };
 });
-System.register("voodoo/src/subviews/bandwidthIndicator", ["../../node_modules/dumbass/r.js"], function (exports_21, context_21) {
+System.register("voodoo/src/subviews/bandwidthIndicator", ["voodoo/node_modules/dumbass/r"], function (exports_25, context_25) {
     "use strict";
     var r_js_6, lastBandwidth;
-    var __moduleName = context_21 && context_21.id;
+    var __moduleName = context_25 && context_25.id;
     function BandwidthIndicator(state) {
         const saved = (state.totalBandwidth - state.totalBytes) / 1000000;
         return r_js_6.d `
@@ -2716,7 +3990,7 @@ System.register("voodoo/src/subviews/bandwidthIndicator", ["../../node_modules/d
     </aside>
   `;
     }
-    exports_21("BandwidthIndicator", BandwidthIndicator);
+    exports_25("BandwidthIndicator", BandwidthIndicator);
     function startBandwidthLoop(state) {
         setInterval(() => {
             const bwThisSecond = state.totalBytes - lastBandwidth;
@@ -2725,7 +3999,7 @@ System.register("voodoo/src/subviews/bandwidthIndicator", ["../../node_modules/d
             BandwidthIndicator(state);
         }, 1000);
     }
-    exports_21("startBandwidthLoop", startBandwidthLoop);
+    exports_25("startBandwidthLoop", startBandwidthLoop);
     return {
         setters: [
             function (r_js_6_1) {
@@ -2737,10 +4011,10 @@ System.register("voodoo/src/subviews/bandwidthIndicator", ["../../node_modules/d
         }
     };
 });
-System.register("voodoo/src/subviews/pluginsMenu", ["../../node_modules/dumbass/r.js", "voodoo/src/subviews/pluginsMenuButton"], function (exports_22, context_22) {
+System.register("voodoo/src/subviews/pluginsMenu", ["voodoo/node_modules/dumbass/r", "voodoo/src/subviews/pluginsMenuButton"], function (exports_26, context_26) {
     "use strict";
     var r_js_7, pluginsMenuButton_js_2, pmEl;
-    var __moduleName = context_22 && context_22.id;
+    var __moduleName = context_26 && context_26.id;
     function PluginsMenu(state, { bondTasks: bondTasks = [], } = {}) {
         return r_js_7.d `
     <nav class=plugins-menu 
@@ -2832,7 +4106,7 @@ System.register("voodoo/src/subviews/pluginsMenu", ["../../node_modules/dumbass/
     </nav>
   `;
     }
-    exports_22("PluginsMenu", PluginsMenu);
+    exports_26("PluginsMenu", PluginsMenu);
     return {
         setters: [
             function (r_js_7_1) {
@@ -2846,10 +4120,10 @@ System.register("voodoo/src/subviews/pluginsMenu", ["../../node_modules/dumbass/
         }
     };
 });
-System.register("voodoo/src/subviews/other", ["voodoo/src/common", "../../node_modules/dumbass/r.js"], function (exports_23, context_23) {
+System.register("voodoo/src/subviews/other", ["voodoo/src/common", "voodoo/node_modules/dumbass/r"], function (exports_27, context_27) {
     "use strict";
-    var common_js_6, r_js_8, NATIVE_MODALS, ModalRef;
-    var __moduleName = context_23 && context_23.id;
+    var common_js_8, r_js_8, NATIVE_MODALS, ModalRef;
+    var __moduleName = context_27 && context_27.id;
     // Modals
     function Modals(state) {
         const { currentModal } = state.viewState;
@@ -2962,7 +4236,7 @@ System.register("voodoo/src/subviews/other", ["voodoo/src/common", "../../node_m
         </aside>
       `;
     }
-    exports_23("Modals", Modals);
+    exports_27("Modals", Modals);
     async function chooseFile(click, state) {
         click.preventDefault();
         click.stopPropagation();
@@ -2982,7 +4256,7 @@ System.register("voodoo/src/subviews/other", ["voodoo/src/common", "../../node_m
             alert(resp.error);
         }
         else {
-            common_js_6.DEBUG.val && console.log(`Success attached files`, resp);
+            common_js_8.DEBUG.val && console.log(`Success attached files`, resp);
         }
         closeModal(click, state);
     }
@@ -3007,7 +4281,7 @@ System.register("voodoo/src/subviews/other", ["voodoo/src/common", "../../node_m
             alert(`An error occurred`);
         }
         else {
-            common_js_6.DEBUG.val && console.log(`Success cancelling file attachment`, resp);
+            common_js_8.DEBUG.val && console.log(`Success cancelling file attachment`, resp);
         }
         closeModal(click, state);
     }
@@ -3055,11 +4329,11 @@ System.register("voodoo/src/subviews/other", ["voodoo/src/common", "../../node_m
         const modalDebug = {
             defaultPrompt, url, currentModal, ModalRef, state, title
         };
-        common_js_6.DEBUG.val >= common_js_6.DEBUG.med && Object.assign(self, { modalDebug });
-        common_js_6.DEBUG.val >= common_js_6.DEBUG.med && console.log(`Will display modal ${type} with ${msg} on el:`, state.viewState.currentModal.el);
+        common_js_8.DEBUG.val >= common_js_8.DEBUG.med && Object.assign(self, { modalDebug });
+        common_js_8.DEBUG.val >= common_js_8.DEBUG.med && console.log(`Will display modal ${type} with ${msg} on el:`, state.viewState.currentModal.el);
         Modals(state);
     }
-    exports_23("openModal", openModal);
+    exports_27("openModal", openModal);
     function closeModal(click, state) {
         if (!click.target.matches('button'))
             return;
@@ -3090,11 +4364,11 @@ System.register("voodoo/src/subviews/other", ["voodoo/src/common", "../../node_m
         </article>
       `;
     }
-    exports_23("PermissionRequest", PermissionRequest);
+    exports_27("PermissionRequest", PermissionRequest);
     return {
         setters: [
-            function (common_js_6_1) {
-                common_js_6 = common_js_6_1;
+            function (common_js_8_1) {
+                common_js_8 = common_js_8_1;
             },
             function (r_js_8_1) {
                 r_js_8 = r_js_8_1;
@@ -3115,16 +4389,16 @@ System.register("voodoo/src/subviews/other", ["voodoo/src/common", "../../node_m
         }
     };
 });
-System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "../../node_modules/dumbass/r.js", "voodoo/src/subviews/index"], function (exports_24, context_24) {
+System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "voodoo/node_modules/dumbass/r", "voodoo/src/subviews/index"], function (exports_28, context_28) {
     "use strict";
-    var common_js_7, r_js_9, index_js_1, CLOSE_DELAY, SHORT_CUT, FUNC, CONTEXT_MENU;
-    var __moduleName = context_24 && context_24.id;
+    var common_js_9, r_js_9, index_js_1, CLOSE_DELAY, SHORT_CUT, FUNC, CONTEXT_MENU;
+    var __moduleName = context_28 && context_28.id;
     function ContextMenu(state) {
         return r_js_9.d `
 
   `;
     }
-    exports_24("ContextMenu", ContextMenu);
+    exports_28("ContextMenu", ContextMenu);
     function makeContextMenuHandler(state, node = { type: 'page', id: 'current-page' }) {
         const { id, type: nodeType } = node;
         const menuItems = CONTEXT_MENU[nodeType];
@@ -3216,7 +4490,7 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "../../
             }
         };
     }
-    exports_24("makeContextMenuHandler", makeContextMenuHandler);
+    exports_28("makeContextMenuHandler", makeContextMenuHandler);
     function close(state, delay = true) {
         if (delay) {
             setTimeout(() => {
@@ -3366,7 +4640,7 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "../../
         const { target, pageX, pageY, clientX, clientY } = contextClick;
         const { H } = state;
         state.viewState.killNextMouseReleased = false;
-        if (common_js_7.deviceIsMobile()) {
+        if (common_js_9.deviceIsMobile()) {
             // we need to get the URL of the target link 
             // then use 
             // state.createTab(click, url);
@@ -3455,8 +4729,8 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "../../
     }
     return {
         setters: [
-            function (common_js_7_1) {
-                common_js_7 = common_js_7_1;
+            function (common_js_9_1) {
+                common_js_9 = common_js_9_1;
             },
             function (r_js_9_1) {
                 r_js_9 = r_js_9_1;
@@ -3525,15 +4799,15 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "../../
         }
     };
 });
-System.register("voodoo/src/subviews/index", ["voodoo/src/subviews/controls", "voodoo/src/subviews/omniBox", "voodoo/src/subviews/tabList", "voodoo/src/subviews/loadingIndicator", "voodoo/src/subviews/bandwidthIndicator", "voodoo/src/subviews/pluginsMenuButton", "voodoo/src/subviews/pluginsMenu", "voodoo/src/subviews/other", "voodoo/src/subviews/contextMenu"], function (exports_25, context_25) {
+System.register("voodoo/src/subviews/index", ["voodoo/src/subviews/controls", "voodoo/src/subviews/omniBox", "voodoo/src/subviews/tabList", "voodoo/src/subviews/loadingIndicator", "voodoo/src/subviews/bandwidthIndicator", "voodoo/src/subviews/pluginsMenuButton", "voodoo/src/subviews/pluginsMenu", "voodoo/src/subviews/other", "voodoo/src/subviews/contextMenu"], function (exports_29, context_29) {
     "use strict";
-    var __moduleName = context_25 && context_25.id;
+    var __moduleName = context_29 && context_29.id;
     function exportStar_1(m) {
         var exports = {};
         for (var n in m) {
             if (n !== "default") exports[n] = m[n];
         }
-        exports_25(exports);
+        exports_29(exports);
     }
     return {
         setters: [
@@ -3569,10 +4843,1001 @@ System.register("voodoo/src/subviews/index", ["voodoo/src/subviews/controls", "v
         }
     };
 });
-System.register("voodoo/src/styles", ["../node_modules/style.dss/index.js", "voodoo/src/common"], function (exports_26, context_26) {
+System.register("voodoo/node_modules/jtype-system/t", [], function (exports_30, context_30) {
     "use strict";
-    var index_js_2, common_js_8, stylists, dss;
-    var __moduleName = context_26 && context_26.id;
+    var BROWSER_SIDE, BuiltIns, DEBUG, SEALED_DEFAULT, isNone, typeCache;
+    var __moduleName = context_30 && context_30.id;
+    function T(parts, ...vals) {
+        const cooked = vals.reduce((prev, cur, i) => prev + cur + parts[i + 1], parts[0]);
+        const typeName = cooked;
+        if (!typeCache.has(typeName))
+            throw new TypeError(`Cannot use type ${typeName} before it is defined.`);
+        return typeCache.get(typeName).type;
+    }
+    exports_30("T", T);
+    function partialMatch(type, instance) {
+        return validate(type, instance, { partial: true });
+    }
+    function validate(type, instance, { partial: partial = false } = {}) {
+        guardType(type);
+        guardExists(type);
+        const typeName = type.name;
+        const { spec, kind, help, verify, verifiers, sealed } = typeCache.get(typeName);
+        const specKeyPaths = spec ? allKeyPaths(spec).sort() : [];
+        const specKeyPathSet = new Set(specKeyPaths);
+        const bigErrors = [];
+        switch (kind) {
+            case "def": {
+                let allValid = true;
+                if (spec) {
+                    const keyPaths = partial ? allKeyPaths(instance, specKeyPathSet) : specKeyPaths;
+                    allValid = !isNone(instance) && keyPaths.every(kp => {
+                        // Allow lookup errors if the type match for the key path can include None
+                        const { resolved, errors: lookupErrors } = lookup(instance, kp, () => checkTypeMatch(lookup(spec, kp).resolved, T `None`));
+                        bigErrors.push(...lookupErrors);
+                        if (lookupErrors.length)
+                            return false;
+                        const keyType = lookup(spec, kp).resolved;
+                        if (!keyType || !(keyType instanceof Type)) {
+                            bigErrors.push({
+                                error: `Key path '${kp}' is not present in the spec for type '${typeName}'`
+                            });
+                            return false;
+                        }
+                        const { valid, errors: validationErrors } = validate(keyType, resolved);
+                        bigErrors.push(...validationErrors);
+                        return valid;
+                    });
+                }
+                let verified = true;
+                if (partial && !spec && !!verify) {
+                    throw new TypeError(`Type checking with option 'partial' is not a valid option for types that` +
+                        ` only use a verify function but have no spec`);
+                }
+                else if (verify) {
+                    try {
+                        verified = verify(instance);
+                        if (!verified) {
+                            if (verifiers) {
+                                throw {
+                                    error: `Type ${typeName} value '${JSON.stringify(instance)}' violated at least 1 verify function in:\n${verifiers.map(f => '\t' + (f.help || '') + ' (' + f.verify.toString() + ')').join('\n')}`
+                                };
+                            }
+                            else if (type.isSumType) {
+                                throw {
+                                    error: `Value '${JSON.stringify(instance)}' did not match any of: ${[...type.types.keys()].map(t => t.name)}`,
+                                    verify, verifiers
+                                };
+                            }
+                            else {
+                                let helpMsg = '';
+                                if (help) {
+                                    helpMsg = `Help: ${help}. `;
+                                }
+                                throw { error: `${helpMsg}Type ${typeName} Value '${JSON.stringify(instance)}' violated verify function in: ${verify.toString()}` };
+                            }
+                        }
+                    }
+                    catch (e) {
+                        bigErrors.push(e);
+                        verified = false;
+                    }
+                }
+                let sealValid = true;
+                if (!!sealed && !!spec) {
+                    const type_key_paths = specKeyPaths;
+                    const all_key_paths = allKeyPaths(instance, specKeyPathSet).sort();
+                    sealValid = all_key_paths.join(',') == type_key_paths.join(',');
+                    if (!sealValid) {
+                        if (all_key_paths.length < type_key_paths.length) {
+                            sealValid = true;
+                        }
+                        else {
+                            const errorKeys = [];
+                            const tkp = new Set(type_key_paths);
+                            for (const k of all_key_paths) {
+                                if (!tkp.has(k)) {
+                                    errorKeys.push({
+                                        error: `Key path '${k}' is not in the spec for type ${typeName}`
+                                    });
+                                }
+                            }
+                            if (errorKeys.length) {
+                                bigErrors.push(...errorKeys);
+                            }
+                        }
+                    }
+                }
+                return { valid: allValid && verified && sealValid, errors: bigErrors, partial };
+            }
+            case "defCollection": {
+                const { valid: containerValid, errors: containerErrors } = validate(spec.container, instance);
+                let membersValid = true;
+                let verified = true;
+                bigErrors.push(...containerErrors);
+                if (partial) {
+                    throw new TypeError(`Type checking with option 'partial' is not a valid option for Collection types`);
+                }
+                else {
+                    if (containerValid) {
+                        membersValid = [...instance].every(member => {
+                            const { valid, errors } = validate(spec.member, member);
+                            bigErrors.push(...errors);
+                            return valid;
+                        });
+                    }
+                    if (verify) {
+                        try {
+                            verified = verify(instance);
+                        }
+                        catch (e) {
+                            bigErrors.push(e);
+                            verified = false;
+                        }
+                    }
+                }
+                return { valid: containerValid && membersValid && verified, errors: bigErrors };
+            }
+            default: {
+                throw new TypeError(`Checking for type kind ${kind} is not yet implemented.`);
+            }
+        }
+    }
+    function check(...args) {
+        return validate(...args).valid;
+    }
+    function lookup(obj, keyPath, canBeNone) {
+        if (isNone(obj))
+            throw new TypeError(`Lookup requires a non-unset object.`);
+        if (!keyPath)
+            throw new TypeError(`keyPath must not be empty`);
+        const keys = keyPath.split(/\./g);
+        const pathComplete = [];
+        const errors = [];
+        let resolved = obj;
+        while (keys.length) {
+            const nextKey = keys.shift();
+            resolved = resolved[nextKey];
+            pathComplete.push(nextKey);
+            if ((resolved === null || resolved === undefined)) {
+                if (keys.length) {
+                    errors.push({
+                        error: `Lookup on key path '${keyPath}' failed at '` +
+                            pathComplete.join('.') +
+                            `' when ${resolved} was found at '${nextKey}'.`
+                    });
+                }
+                else if (!!canBeNone && canBeNone()) {
+                    resolved = undefined;
+                }
+                else {
+                    errors.push({
+                        error: `Resolution on key path '${keyPath}' failed` +
+                            `when ${resolved} was found at '${nextKey}' and the Type of this` +
+                            `key's value cannot be None.`
+                    });
+                }
+                break;
+            }
+        }
+        return { resolved, errors };
+    }
+    function checkTypeMatch(typeA, typeB) {
+        guardType(typeA);
+        guardExists(typeA);
+        guardType(typeB);
+        guardExists(typeB);
+        if (typeA === typeB) {
+            return true;
+        }
+        else if (typeA.isSumType && typeA.types.has(typeB)) {
+            return true;
+        }
+        else if (typeB.isSumType && typeB.types.has(typeA)) {
+            return true;
+        }
+        else if (typeA.name.startsWith('?') && typeB == T `None`) {
+            return true;
+        }
+        else if (typeB.name.startsWith('?') && typeA == T `None`) {
+            return true;
+        }
+        if (typeA.name.startsWith('>') || typeB.name.startsWith('>')) {
+            console.error(new Error(`Check type match has not been implemented for derived//sub types yet.`));
+        }
+        return false;
+    }
+    function option(type) {
+        return T `?${type.name}`;
+    }
+    function sub(type) {
+        return T `>${type.name}`;
+    }
+    function defSub(type, spec, { verify: verify = undefined, help: help = '' } = {}, name = '') {
+        guardType(type);
+        guardExists(type);
+        let verifiers;
+        if (!verify) {
+            verify = () => true;
+        }
+        if (type.native) {
+            verifiers = [{ help, verify }];
+            verify = i => i instanceof type.native;
+            const helpMsg = `Needs to be of type ${type.native.name}. ${help || ''}`;
+            verifiers.push({ help: helpMsg, verify });
+        }
+        const newType = def(`${name}>${type.name}`, spec, { verify, help, verifiers });
+        return newType;
+    }
+    function defEnum(name, ...values) {
+        if (!name)
+            throw new TypeError(`Type must be named.`);
+        guardRedefinition(name);
+        const valueSet = new Set(values);
+        const verify = i => valueSet.has(i);
+        const help = `Value of Enum type ${name} must be one of ${values.join(',')}`;
+        return def(name, null, { verify, help });
+    }
+    function exists(name) {
+        return typeCache.has(name);
+    }
+    function guardRedefinition(name) {
+        if (exists(name))
+            throw new TypeError(`Type ${name} cannot be redefined.`);
+    }
+    function allKeyPaths(o, specKeyPaths) {
+        const isTypeSpec = !specKeyPaths;
+        const keyPaths = new Set();
+        return recurseObject(o, keyPaths, '');
+        function recurseObject(o, keyPathSet, lastLevel = '') {
+            const levelKeys = Object.getOwnPropertyNames(o);
+            const keyPaths = levelKeys
+                .map(k => lastLevel + (lastLevel.length ? '.' : '') + k);
+            levelKeys.forEach((k, i) => {
+                const v = o[k];
+                if (isTypeSpec) {
+                    if (v instanceof Type) {
+                        keyPathSet.add(keyPaths[i]);
+                    }
+                    else if (typeof v == "object") {
+                        if (!Array.isArray(v)) {
+                            recurseObject(v, keyPathSet, keyPaths[i]);
+                        }
+                        else {
+                            DEBUG && console.warn({ o, v, keyPathSet, lastLevel });
+                            throw new TypeError(`We don't support Types that use Arrays as structure, just yet.`);
+                        }
+                    }
+                    else {
+                        throw new TypeError(`Spec cannot contain leaf values that are not valid Types`);
+                    }
+                }
+                else {
+                    if (specKeyPaths.has(keyPaths[i])) {
+                        keyPathSet.add(keyPaths[i]);
+                    }
+                    else if (typeof v == "object") {
+                        if (!Array.isArray(v)) {
+                            recurseObject(v, keyPathSet, keyPaths[i]);
+                        }
+                        else {
+                            v.forEach((item, index) => recurseObject(item, keyPathSet, keyPaths[i] + '.' + index));
+                            //throw new TypeError(`We don't support Instances that use Arrays as structure, just yet.`); 
+                        }
+                    }
+                    else {
+                        //console.warn("Spec has no such key",  keyPaths[i]);
+                        keyPathSet.add(keyPaths[i]);
+                    }
+                }
+            });
+            return [...keyPathSet];
+        }
+    }
+    function defOption(type) {
+        guardType(type);
+        const typeName = type.name;
+        return T.def(`?${typeName}`, null, { verify: i => isUnset(i) || T.check(type, i) });
+    }
+    function maybe(type) {
+        try {
+            return defOption(type);
+        }
+        catch (e) {
+            // console.log(`Option Type ${type.name} already declared.`, e);
+        }
+        return T `?${type.name}`;
+    }
+    function verify(...args) { return check(...args); }
+    function defCollection(name, { container, member }, { sealed: sealed = SEALED_DEFAULT, verify: verify = undefined } = {}) {
+        if (!name)
+            throw new TypeError(`Type must be named.`);
+        if (!container || !member)
+            throw new TypeError(`Type must be specified.`);
+        guardRedefinition(name);
+        const kind = 'defCollection';
+        const t = new Type(name);
+        const spec = { kind, spec: { container, member }, verify, sealed, type: t };
+        typeCache.set(name, spec);
+        return t;
+    }
+    function defTuple(name, { pattern }) {
+        if (!name)
+            throw new TypeError(`Type must be named.`);
+        if (!pattern)
+            throw new TypeError(`Type must be specified.`);
+        const kind = 'def';
+        const specObj = {};
+        pattern.forEach((type, key) => specObj[key] = type);
+        const t = new Type(name);
+        const spec = { kind, spec: specObj, type: t };
+        typeCache.set(name, spec);
+        return t;
+    }
+    function Type(name, mods = {}) {
+        if (!new.target)
+            throw new TypeError(`Type with new only.`);
+        Object.defineProperty(this, 'name', { get: () => name });
+        this.typeName = name;
+        if (mods.types) {
+            const { types } = mods;
+            const typeSet = new Set(types);
+            Object.defineProperty(this, 'isSumType', { get: () => true });
+            Object.defineProperty(this, 'types', { get: () => typeSet });
+        }
+        if (mods.native) {
+            const { native } = mods;
+            Object.defineProperty(this, 'native', { get: () => native });
+        }
+    }
+    function def(name, spec, { help: help = '', verify: verify = undefined, sealed: sealed = undefined, types: types = undefined, verifiers: verifiers = undefined, native: native = undefined } = {}) {
+        if (!name)
+            throw new TypeError(`Type must be named.`);
+        guardRedefinition(name);
+        if (name.startsWith('?')) {
+            if (spec) {
+                throw new TypeError(`Option type can not have a spec.`);
+            }
+            if (!verify(null)) {
+                throw new TypeError(`Option type must be OK to be unset.`);
+            }
+        }
+        const kind = 'def';
+        if (sealed === undefined) {
+            sealed = true;
+        }
+        const t = new Type(name, { types, native });
+        const cache = { spec, kind, help, verify, verifiers, sealed, types, native, type: t };
+        typeCache.set(name, cache);
+        return t;
+    }
+    function defOr(name, ...types) {
+        return T.def(name, null, { types, verify: i => types.some(t => check(t, i)) });
+    }
+    function guard(type, instance) {
+        guardType(type);
+        guardExists(type);
+        const { valid, errors } = validate(type, instance);
+        if (!valid)
+            throw new TypeError(`Type ${type} requested, but item is not of that type: ${errors.join(', ')}`);
+    }
+    function guardType(t) {
+        //console.log(t);
+        if (!(t instanceof Type))
+            throw new TypeError(`Type must be a valid Type object.`);
+    }
+    function guardExists(t) {
+        const name = originalName(t);
+        if (!exists(name))
+            throw new TypeError(`Type must exist. Type ${name} has not been defined.`);
+    }
+    function errors(...args) {
+        return validate(...args).errors;
+    }
+    function mapBuiltins() {
+        BuiltIns.forEach(t => def(originalName(t), null, { native: t, verify: i => originalName(i.constructor) === originalName(t) }));
+        BuiltIns.forEach(t => defSub(T `${originalName(t)}`));
+    }
+    function defineSpecials() {
+        T.def(`Any`, null, { verify: () => true });
+        T.def(`Some`, null, { verify: i => !isUnset(i) });
+        T.def(`None`, null, { verify: i => isUnset(i) });
+        T.def(`Function`, null, { verify: i => i instanceof Function });
+        T.def(`Integer`, null, { verify: i => Number.isInteger(i) });
+        T.def(`Array`, null, { verify: i => Array.isArray(i) });
+        T.def(`Iterable`, null, { verify: i => i[Symbol.iterator] instanceof Function });
+    }
+    function isUnset(i) {
+        return i === null || i === undefined;
+    }
+    function originalName(t) {
+        if (!!t && t.name) {
+            return t.name;
+        }
+        const oName = Object.prototype.toString.call(t).replace(/\[object |\]/g, '');
+        if (oName.endsWith('Constructor')) {
+            return oName.replace(/Constructor$/, '');
+        }
+        return oName;
+    }
+    return {
+        setters: [],
+        execute: function () {
+            exports_30("BROWSER_SIDE", BROWSER_SIDE = (() => { try {
+                return self.DOMParser && true;
+            }
+            catch (e) {
+                return false;
+            } })());
+            BuiltIns = [
+                Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet,
+                Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array,
+                Int8Array, Int16Array, Int32Array,
+                Uint8ClampedArray,
+                ...(BROWSER_SIDE ? [
+                    Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer,
+                    FileList, Text, HTMLDocument, Document, DocumentFragment,
+                    Error, File, Event, EventTarget, URL
+                ] : [Buffer])
+            ];
+            DEBUG = false;
+            SEALED_DEFAULT = true;
+            isNone = instance => instance == null || instance == undefined;
+            typeCache = new Map();
+            T.def = def;
+            T.check = check;
+            T.sub = sub;
+            T.verify = verify;
+            T.validate = validate;
+            T.partialMatch = partialMatch;
+            T.defEnum = defEnum;
+            T.defSub = defSub;
+            T.defTuple = defTuple;
+            T.defCollection = defCollection;
+            T.defOr = defOr;
+            T.option = option;
+            T.defOption = defOption;
+            T.maybe = maybe;
+            T.guard = guard;
+            T.errors = errors;
+            // debug
+            if (DEBUG) {
+                self.T = T;
+                self.typeCache = typeCache;
+            }
+            T[Symbol.for('jtype-system.typeCache')] = typeCache;
+            defineSpecials();
+            mapBuiltins();
+            Type.prototype.toString = function () {
+                return `${this.typeName} Type`;
+            };
+        }
+    };
+});
+System.register("voodoo/node_modules/maskingtape.css/externals", ["voodoo/node_modules/jtype-system/t"], function (exports_31, context_31) {
+    "use strict";
+    var t_js_2;
+    var __moduleName = context_31 && context_31.id;
+    return {
+        setters: [
+            function (t_js_2_1) {
+                t_js_2 = t_js_2_1;
+            }
+        ],
+        execute: function () {
+            exports_31("T", t_js_2.T);
+            exports_31("default", { T: t_js_2.T });
+        }
+    };
+});
+System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules/maskingtape.css/externals"], function (exports_32, context_32) {
+    "use strict";
+    var FULL_LABEL, LABEL_LEN, LABEL, PREFIX_LEN, PREFIX_BASE, externals_js_1, counter, c3s;
+    var __moduleName = context_32 && context_32.id;
+    function generateUniquePrefix() {
+        counter += 3;
+        const number = counter * Math.random() * performance.now() * (+new Date);
+        const prefixString = (LABEL + number.toString(PREFIX_BASE).replace(/\./, '')).slice(0, PREFIX_LEN);
+        return { prefix: [prefixString] };
+    }
+    exports_32("generateUniquePrefix", generateUniquePrefix);
+    function extendPrefix({ prefix: existingPrefix }) {
+        externals_js_1.T.guard(externals_js_1.T `Prefix`, existingPrefix);
+        existingPrefix.push(generateUniquePrefix().prefix[0]);
+    }
+    exports_32("extendPrefix", extendPrefix);
+    function findStyleSheet(link) {
+        let ss;
+        const ssFound = Array.from(document.styleSheets).find(({ ownerNode }) => ownerNode == link);
+        if (!ssFound) {
+            console.warn("last error", link);
+            throw new TypeError(`Cannot find sheet for link`);
+        }
+        else {
+            ss = ssFound;
+        }
+        if (ss instanceof CSSStyleSheet) {
+            return ss;
+        }
+    }
+    exports_32("findStyleSheet", findStyleSheet);
+    function findStyleLink(url) {
+        let ss;
+        url = getURL(url);
+        const ssFound = Array.from(document.styleSheets).find(({ href }) => href == url);
+        if (!ssFound) {
+            const qsFound = document.querySelector(`link[href="${url}"]`);
+            if (qsFound) {
+                ss = qsFound;
+            }
+        }
+        else {
+            ss = ssFound.ownerNode;
+        }
+        if (ss instanceof HTMLLinkElement) {
+            return ss;
+        }
+    }
+    exports_32("findStyleLink", findStyleLink);
+    function isStyleSheetAccessible(ss) {
+        try {
+            Array.from(ss.sheet.cssRules);
+            return true;
+        }
+        catch (e) {
+            return false;
+        }
+    }
+    exports_32("isStyleSheetAccessible", isStyleSheetAccessible);
+    // it may actually be better to clone the sheet using
+    // a style element rather than cloning using the link 
+    // which may both rely on and recause a network request
+    function cloneStyleSheet(ss) {
+        const newNode = ss.cloneNode(true);
+        newNode.dataset.scoped = true;
+        ss.replaceWith(newNode);
+        return newNode;
+    }
+    exports_32("cloneStyleSheet", cloneStyleSheet);
+    function prefixAllRules(ss, prefix, combinator = ' ') {
+        let lastRuleIndex = ss.cssRules.length - 1;
+        let i = lastRuleIndex;
+        while (i >= 0) {
+            lastRuleIndex = ss.cssRules.length - 1;
+            const lastRule = ss.cssRules[lastRuleIndex];
+            if (!lastRule) {
+                console.warn("No such last rule", lastRuleIndex);
+                continue;
+            }
+            if (lastRule.type == CSSRule.STYLE_RULE) {
+                prefixStyleRule(lastRule, ss, lastRuleIndex, prefix, combinator);
+            }
+            else if (lastRule.type == CSSRule.MEDIA_RULE) {
+                const rules = Array.from(lastRule.cssRules);
+                const lastIndex = rules.length - 1;
+                for (const rule of rules) {
+                    prefixStyleRule(rule, lastRule, lastIndex, prefix, combinator);
+                }
+                ss.deleteRule(lastRuleIndex);
+                try {
+                    let index = 0;
+                    if (ss.cssRules.length && ss.cssRules[0].type == CSSRule.NAMESPACE_RULE) {
+                        index = 1;
+                    }
+                    ss.insertRule(lastRule.cssText, index);
+                }
+                catch (e) {
+                    console.log(e, lastRule.cssText, lastRule, ss);
+                    //throw e;
+                }
+            }
+            else {
+                ss.deleteRule(lastRuleIndex);
+                let index = 0;
+                if (ss.cssRules.length && ss.cssRules[0].type == CSSRule.NAMESPACE_RULE) {
+                    index = 1;
+                }
+                ss.insertRule(lastRule.cssText, index);
+            }
+            i--;
+        }
+    }
+    exports_32("prefixAllRules", prefixAllRules);
+    function prefixStyleRule(lastRule, ss, lastRuleIndex, prefix, combinator) {
+        let newRuleText = lastRule.cssText;
+        const { selectorText } = lastRule;
+        const selectors = selectorText.split(/\s*,\s*/g);
+        const modifiedSelectors = selectors.map(sel => {
+            // we also need to insert prefix BEFORE any descendent combinators
+            const firstDescendentIndex = sel.indexOf(' ');
+            if (firstDescendentIndex > -1) {
+                const firstSel = sel.slice(0, firstDescendentIndex);
+                const restSel = sel.slice(firstDescendentIndex);
+                // we also need to insert prefix BEFORE any pseudo selectors 
+                // NOTE: the following indexOf test will BREAK if selector contains a :
+                // such as [ns\\:name="scoped-name"]
+                const firstPseudoIndex = firstSel.indexOf(':');
+                if (firstPseudoIndex > -1) {
+                    const [pre, post] = [firstSel.slice(0, firstPseudoIndex), firstSel.slice(firstPseudoIndex)];
+                    return `${pre}${prefix}${post}${restSel}` + (combinator == '' ? '' : `, ${prefix}${combinator}${sel}`);
+                }
+                else
+                    return `${firstSel}${prefix}${restSel}` + (combinator == '' ? '' : `, ${prefix}${combinator}${sel}`);
+            }
+            else {
+                const firstPseudoIndex = sel.indexOf(':');
+                if (firstPseudoIndex > -1) {
+                    const [pre, post] = [sel.slice(0, firstPseudoIndex), sel.slice(firstPseudoIndex)];
+                    return `${pre}${prefix}${post}` + (combinator == '' ? '' : `, ${prefix}${combinator}${sel}`);
+                }
+                else
+                    return `${sel}${prefix}` + (combinator == '' ? '' : `, ${prefix}${combinator}${sel}`);
+            }
+        });
+        const ruleBlock = newRuleText.slice(newRuleText.indexOf('{'));
+        const newRuleSelectorText = modifiedSelectors.join(', ');
+        newRuleText = `${newRuleSelectorText} ${ruleBlock}`;
+        ss.deleteRule(lastRuleIndex);
+        try {
+            let index = 0;
+            if (ss.cssRules.length && ss.cssRules[0].type == CSSRule.NAMESPACE_RULE) {
+                index = 1;
+            }
+            ss.insertRule(newRuleText, index);
+        }
+        catch (e) {
+            console.log(e, newRuleText, selectorText, lastRuleIndex, ss);
+            //throw e;
+        }
+    }
+    async function scopeStyleSheet(url, prefix, combinator = ' ') {
+        const ss = findStyleLink(url);
+        if (!ss) {
+            throw new TypeError(`Stylesheet with URI ${url} cannot be found.`);
+        }
+        const isKnownAccessible = isStyleSheetAccessible(ss);
+        if (!isKnownAccessible) {
+            return new Promise(res => {
+                ss.onload = () => {
+                    const isAccessible = isStyleSheetAccessible(ss);
+                    if (!isAccessible) {
+                        throw new TypeError(`Non CORS sheet at ${url} cannot have its rules accessed so cannot be scoped.`);
+                    }
+                    const scopedSS = cloneStyleSheet(ss);
+                    scopedSS.onload = () => {
+                        const sheet = findStyleSheet(scopedSS);
+                        prefixAllRules(sheet, prefix, combinator);
+                    };
+                    res(scopedSS);
+                };
+            });
+        }
+        else {
+            const scopedSS = cloneStyleSheet(ss);
+            return new Promise(res => {
+                scopedSS.onload = () => {
+                    try {
+                        const sheet = findStyleSheet(scopedSS);
+                        prefixAllRules(sheet, prefix, combinator);
+                    }
+                    catch (e) {
+                        console.warn(e);
+                    }
+                    res(scopedSS);
+                };
+            });
+        }
+    }
+    exports_32("scopeStyleSheet", scopeStyleSheet);
+    function scope(url) {
+        const prefix = generateUniquePrefix().prefix[0];
+        return { scopedSheet: scopeStyleSheet(url, '.' + prefix), prefix };
+    }
+    exports_32("scope", scope);
+    // used when the first scoping didn't work and we need to add more prefix to increase specificity
+    // if this ever occurs
+    // which is why we use '' combinator to add to the prefix of the already scoped sheet
+    function rescope({ scopedSheet, prefix: existingPrefix }) {
+        const prefix = generateUniquePrefix().prefix[0];
+        const combinator = '';
+        prefixAllRules(scopedSheet, prefix, combinator);
+        return { scopedSheet, prefix: prefix + existingPrefix };
+    }
+    exports_32("rescope", rescope);
+    function getURL(uri) {
+        const link = document.createElement('a');
+        link.href = uri;
+        return link.href;
+    }
+    exports_32("getURL", getURL);
+    return {
+        setters: [
+            function (externals_js_1_1) {
+                externals_js_1 = externals_js_1_1;
+            }
+        ],
+        execute: function () {
+            FULL_LABEL = 'c3s-unique-';
+            LABEL_LEN = 3;
+            LABEL = FULL_LABEL.slice(0, LABEL_LEN);
+            PREFIX_LEN = 10 + LABEL_LEN;
+            PREFIX_BASE = 36;
+            externals_js_1.T.defCollection("Prefix", {
+                container: externals_js_1.T `Array`,
+                member: externals_js_1.T `String`
+            }, { verify: i => i.length > 0 });
+            counter = 1;
+            c3s = { scope, rescope };
+            exports_32("default", c3s);
+        }
+    };
+});
+System.register("voodoo/node_modules/style.dss/monitorChanges", [], function (exports_33, context_33) {
+    "use strict";
+    var InsertListeners, RemovedListeners, inserted, removed, monitoring;
+    var __moduleName = context_33 && context_33.id;
+    function addInsertListener(listener) {
+        if (inserted.has(listener))
+            return;
+        InsertListeners.push(listener);
+        inserted.add(listener);
+    }
+    exports_33("addInsertListener", addInsertListener);
+    function addRemovedListener(listener) {
+        if (removed.has(listener))
+            return;
+        RemovedListeners.push(listener);
+        removed.add(listener);
+    }
+    exports_33("addRemovedListener", addRemovedListener);
+    function monitorChanges() {
+        if (monitoring)
+            return;
+        // demo of watching for any new nodes that declare stylists
+        const mo = new MutationObserver((mutations) => {
+            let AddedElements = [];
+            let RemovedElements = [];
+            for (const mutation of mutations) {
+                const addedElements = Array.from(mutation.addedNodes);
+                const removedElements = Array.from(mutation.removedNodes);
+                addedElements.forEach(el => {
+                    if (!(el instanceof HTMLElement))
+                        return;
+                    if (el.matches('[stylist]')) {
+                        AddedElements.push(el);
+                    }
+                    AddedElements.push(...el.querySelectorAll('[stylist]'));
+                });
+                removedElements.forEach(el => {
+                    if (!(el instanceof HTMLElement))
+                        return;
+                    if (el.matches('[stylist]')) {
+                        RemovedElements.push(el);
+                    }
+                    RemovedElements.push(...el.querySelectorAll('[stylist]'));
+                });
+            }
+            const AddedSet = new Set(AddedElements);
+            const FilterOut = new Set();
+            RemovedElements.forEach(el => AddedSet.has(el) && FilterOut.add(el));
+            AddedElements = AddedElements.filter(el => !FilterOut.has(el));
+            RemovedElements = RemovedElements.filter(el => !FilterOut.has(el));
+            if (RemovedElements.length) {
+                for (const listener of RemovedListeners) {
+                    try {
+                        listener(...RemovedElements);
+                    }
+                    catch (e) {
+                        console.warn("Removed listener error", e, listener);
+                    }
+                }
+            }
+            if (AddedElements.length) {
+                for (const listener of InsertListeners) {
+                    try {
+                        listener(...AddedElements);
+                    }
+                    catch (e) {
+                        console.warn("Insert listener error", e, listener);
+                    }
+                }
+            }
+        });
+        mo.observe(document.documentElement, { childList: true, subtree: true });
+        monitoring = true;
+    }
+    exports_33("monitorChanges", monitorChanges);
+    return {
+        setters: [],
+        execute: function () {
+            InsertListeners = [];
+            RemovedListeners = [];
+            inserted = new Set();
+            removed = new Set();
+            monitoring = false;
+        }
+    };
+});
+System.register("voodoo/node_modules/style.dss/index", ["voodoo/node_modules/maskingtape.css/c3s", "voodoo/node_modules/style.dss/monitorChanges"], function (exports_34, context_34) {
+    "use strict";
+    var c3s_js_1, monitorChanges_js_1, stylistFunctions, mappings, memory, initialized;
+    var __moduleName = context_34 && context_34.id;
+    function setState(newState) {
+        const clonedState = clone(newState);
+        Object.assign(memory.state, clonedState);
+    }
+    exports_34("setState", setState);
+    function restyleElement(el) {
+        if (!el)
+            return;
+        el.classList.forEach(className => className.startsWith('c3s') && restyleClass(className));
+    }
+    exports_34("restyleElement", restyleElement);
+    function restyleClass(className) {
+        const { element, stylist } = mappings.get(className);
+        associate(className, element, stylist, memory.state);
+    }
+    exports_34("restyleClass", restyleClass);
+    function restyleAll() {
+        mappings.forEach(({ element, stylist }, className) => {
+            associate(className, element, stylist, memory.state);
+        });
+    }
+    exports_34("restyleAll", restyleAll);
+    function initializeDSS(state, functionsObject) {
+        setState(state);
+        /**
+          to REALLY prevent FOUC put this style tag BEFORE any DSS-styled markup
+          and before any scripts that add markup,
+          and before the initializeDSS call
+        **/
+        if (!document.querySelector('[data-role="prevent-fouc"]')) {
+            document.head.insertAdjacentHTML('beforeend', `
+      <style data-role="prevent-fouc">
+        [stylist]:not([associated]) {
+          display: none !important;
+        }
+      </style>
+    `);
+        }
+        addMoreStylistFunctions(functionsObject);
+        monitorChanges_js_1.addInsertListener(associateStylistFunctions);
+        monitorChanges_js_1.addRemovedListener(unassociateStylistFunctions);
+        monitorChanges_js_1.monitorChanges();
+        if (!initialized) {
+            const initialEls = Array.from(document.querySelectorAll('[stylist]'));
+            associateStylistFunctions(...initialEls);
+            initialized = true;
+        }
+        return;
+        function associateStylistFunctions(...els) {
+            els = els.filter(el => el.hasAttribute('stylist'));
+            if (els.length == 0)
+                return;
+            for (const el of els) {
+                const stylistNames = (el.getAttribute('stylist') || '').split(/\s+/g);
+                for (const stylistName of stylistNames) {
+                    const stylist = stylistFunctions.get(stylistName);
+                    if (!stylist)
+                        throw new TypeError(`Stylist named by ${stylistName} is unknown.`);
+                    const className = randomClass();
+                    el.classList.add(className);
+                    associate(className, el, stylist, state);
+                }
+            }
+        }
+    }
+    exports_34("initializeDSS", initializeDSS);
+    // an object whose properties are functions that are stylist functions
+    function addMoreStylistFunctions(functionsObject) {
+        const toRegister = [];
+        for (const funcName of Object.keys(functionsObject)) {
+            const value = functionsObject[funcName];
+            if (typeof value !== "function")
+                throw new TypeError("Functions object must only contain functions.");
+            // this prevents a bug where we miss an existing style element in 
+            // a check for a style element based on the stylist.name property
+            if (value.name !== funcName)
+                throw new TypeError(`Stylist function must be actual function named ${funcName} (it was ${value.name})`);
+            // don't overwrite exisiting names
+            if (!stylistFunctions.has(funcName)) {
+                toRegister.push(() => stylistFunctions.set(funcName, value));
+            }
+        }
+        while (toRegister.length)
+            toRegister.pop()();
+    }
+    exports_34("addMoreStylistFunctions", addMoreStylistFunctions);
+    function randomClass() {
+        const { prefix: [className] } = c3s_js_1.generateUniquePrefix();
+        return className;
+    }
+    function associate(className, element, stylist, state) {
+        const styleText = (stylist(element, state) || '');
+        let styleElement = document.head.querySelector(`style[data-prefix="${className}"]`);
+        let changes = false;
+        let prefixed = true;
+        let prefixedStyleText;
+        if (!mappings.has(className)) {
+            mappings.set(className, { element, stylist });
+        }
+        if (!styleElement) {
+            prefixed = false;
+            const styleMarkup = `
+      <style data-stylist="${stylist.name}" data-prefix="${className}">
+        ${styleText}
+      </style>
+    `;
+            document.head.insertAdjacentHTML('beforeend', styleMarkup);
+            styleElement = document.head.querySelector(`style[data-prefix="${className}"]`);
+        }
+        else {
+            if (styleElement instanceof HTMLStyleElement) {
+                prefixedStyleText = Array.from(styleElement.sheet.cssRules)
+                    .filter(rule => !rule.parentRule)
+                    .map(rule => rule.cssText)
+                    .join('\n');
+            }
+        }
+        // I don't know why this has to happen, but it does
+        if (styleElement.innerHTML != styleText) {
+            styleElement.innerHTML = styleText;
+            changes = true;
+        }
+        // only prefix if we have not already
+        if (!prefixed || changes) {
+            if (styleElement instanceof HTMLStyleElement) {
+                const styleSheet = styleElement.sheet;
+                c3s_js_1.prefixAllRules(styleSheet, "." + className, '');
+                element.setAttribute('associated', 'true');
+                prefixedStyleText = Array.from(styleSheet.cssRules)
+                    .filter(rule => !rule.parentRule)
+                    .map(rule => rule.cssText)
+                    .join('\n');
+                styleElement.innerHTML = prefixedStyleText;
+            }
+        }
+    }
+    function disassociate(className, element) {
+        const styleSheet = document.querySelector(`style[data-prefix="${className}"]`);
+        mappings.delete(className);
+        if (styleSheet) {
+            element.classList.remove(className);
+            styleSheet.remove();
+        }
+    }
+    function unassociateStylistFunctions(...els) {
+        els = els.filter(el => el.hasAttribute('stylist'));
+        if (els.length == 0)
+            return;
+        for (const el of els) {
+            el.classList.forEach(className => className.startsWith('c3s') && disassociate(className, el));
+        }
+    }
+    function clone(o) {
+        return JSON.parse(JSON.stringify(o));
+    }
+    return {
+        setters: [
+            function (c3s_js_1_1) {
+                c3s_js_1 = c3s_js_1_1;
+            },
+            function (monitorChanges_js_1_1) {
+                monitorChanges_js_1 = monitorChanges_js_1_1;
+            }
+        ],
+        execute: function () {
+            stylistFunctions = new Map();
+            mappings = new Map();
+            memory = { state: {} };
+            initialized = false;
+        }
+    };
+});
+System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "voodoo/src/common"], function (exports_35, context_35) {
+    "use strict";
+    var index_js_2, common_js_10, stylists, dss;
+    var __moduleName = context_35 && context_35.id;
     // stylists
     function styleDocument(el, state) {
         return `
@@ -3598,7 +5863,7 @@ System.register("voodoo/src/styles", ["../node_modules/style.dss/index.js", "voo
 
       :root .debugBox,
       :root #debugBox {
-        display: ${common_js_8.DEBUG.val >= common_js_8.DEBUG.high ? 'block' : 'none'};
+        display: ${common_js_10.DEBUG.val >= common_js_10.DEBUG.high ? 'block' : 'none'};
       }
 
       :root input, :root button, :root select, :root textarea, :root [contenteditable] {
@@ -3849,7 +6114,7 @@ System.register("voodoo/src/styles", ["../node_modules/style.dss/index.js", "voo
         display: flex;
       }
 
-      ${common_js_8.isSafari() ?
+      ${common_js_10.isSafari() ?
             `nav button, nav input {
           -webkit-appearance: none;
           -moz-appearance: none;
@@ -3912,7 +6177,7 @@ System.register("voodoo/src/styles", ["../node_modules/style.dss/index.js", "voo
         outline: medium solid dodgerblue;
       }
       
-      ${common_js_8.isSafari() ? `
+      ${common_js_10.isSafari() ? `
           input {
             -webkit-appearance: none;
           }
@@ -4329,12 +6594,12 @@ System.register("voodoo/src/styles", ["../node_modules/style.dss/index.js", "voo
             function (index_js_2_1) {
                 index_js_2 = index_js_2_1;
             },
-            function (common_js_8_1) {
-                common_js_8 = common_js_8_1;
+            function (common_js_10_1) {
+                common_js_10 = common_js_10_1;
             }
         ],
         execute: function () {
-            exports_26("stylists", stylists = {
+            exports_35("stylists", stylists = {
                 styleDocument, styleVoodooMain,
                 styleTabSelector, styleTabList,
                 styleNavControl, styleOmniBox, styleURLForm,
@@ -4347,16 +6612,16 @@ System.register("voodoo/src/styles", ["../node_modules/style.dss/index.js", "voo
                 styleModals,
                 styleContextMenu
             });
-            exports_26("dss", dss = {
+            exports_35("dss", dss = {
                 restyleAll: index_js_2.restyleAll, restyleElement: index_js_2.restyleElement, initializeDSS: index_js_2.initializeDSS, setState: index_js_2.setState
             });
         }
     };
 });
-System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor", "../node_modules/dumbass/r.js", "voodoo/src/subviews/index", "voodoo/src/styles", "voodoo/src/transformEvent"], function (exports_27, context_27) {
+System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor", "voodoo/node_modules/dumbass/r", "voodoo/src/subviews/index", "voodoo/src/styles", "voodoo/src/transformEvent"], function (exports_36, context_36) {
     "use strict";
-    var common_js_9, constructor_js_1, r_js_10, Subviews, styles_js_1, transformEvent_js_1, subviews, DEFAULT_URL, isIOS;
-    var __moduleName = context_27 && context_27.id;
+    var common_js_11, constructor_js_1, r_js_10, Subviews, styles_js_1, transformEvent_js_1, subviews, DEFAULT_URL, isIOS;
+    var __moduleName = context_36 && context_36.id;
     function component(state) {
         const { H, sizeBrowserToBounds, asyncSizeBrowserToBounds, emulateNavigator, bondTasks, installFrameListener, canvasBondTasks } = state;
         const audio_port = 1 + Number(location.port ? location.port : (location.protocol == 'https' ? 443 : 80));
@@ -4508,13 +6773,13 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
                 touchstart:passive=${retargetTouchScroll}
                 touchmove=${[
                     e => e.preventDefault(),
-                    common_js_9.throttle(retargetTouchScroll, state.EVENT_THROTTLE_MS)
+                    common_js_11.throttle(retargetTouchScroll, state.EVENT_THROTTLE_MS)
                 ]}
-                wheel:passive=${common_js_9.throttle(H, state.EVENT_THROTTLE_MS)}
-                mousemove:passive=${common_js_9.throttle(H, state.EVENT_THROTTLE_MS)}         
+                wheel:passive=${common_js_11.throttle(H, state.EVENT_THROTTLE_MS)}
+                mousemove:passive=${common_js_11.throttle(H, state.EVENT_THROTTLE_MS)}         
                 mousedown=${H}         
                 mouseup=${H}         
-                pointermove:passive=${common_js_9.throttle(H, state.EVENT_THROTTLE_MS)}         
+                pointermove:passive=${common_js_11.throttle(H, state.EVENT_THROTTLE_MS)}         
                 pointerdown=${H}         
                 pointerup=${H}         
                 contextmenu=${subviews.makeContextMenuHandler(state)}
@@ -4536,7 +6801,7 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
       <audio bond=${el => self.addEventListener('click', () => el.play(), { once: true })} autoplay loop id=audio>
         <source src="${audio_url}" type=audio/mp3>
       </audio>
-      ${common_js_9.DEBUG.pluginsMenu ? subviews.PluginsMenu(state) : ''}
+      ${common_js_11.DEBUG.pluginsMenu ? subviews.PluginsMenu(state) : ''}
     `;
         };
         state.viewState.dss = styles_js_1.dss;
@@ -4588,7 +6853,7 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
             state.viewState.ctx = canvasEl.getContext('2d');
         }
     }
-    exports_27("component", component);
+    exports_36("component", component);
     // helper functions
     function retargetTouchScrollToRemote(event, H, viewState) {
         const { type } = event;
@@ -4626,8 +6891,8 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
     }
     return {
         setters: [
-            function (common_js_9_1) {
-                common_js_9 = common_js_9_1;
+            function (common_js_11_1) {
+                common_js_11 = common_js_11_1;
             },
             function (constructor_js_1_1) {
                 constructor_js_1 = constructor_js_1_1;
@@ -4646,520 +6911,16 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
             }
         ],
         execute: function () {
-            exports_27("subviews", subviews = Subviews);
+            exports_36("subviews", subviews = Subviews);
             DEFAULT_URL = 'https://google.com';
             isIOS = navigator.platform && navigator.platform.match("iPhone|iPod|iPad");
         }
     };
 });
-System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (exports_28, context_28) {
-    "use strict";
-    var common_js_10, FocusCache;
-    var __moduleName = context_28 && context_28.id;
-    function resetFocusCache({ navigated: { targetId }, executionContextId }, state) {
-        let cache = state.domCache.get(targetId);
-        if (!cache) {
-            cache = { contextId: '', domTree: '', focusSaver: FocusCache() };
-            state.domCache.set(targetId, cache);
-        }
-        else {
-            cache.focusSaver.reset();
-        }
-        if (executionContextId) {
-            cache.contextId = executionContextId;
-        }
-    }
-    exports_28("resetFocusCache", resetFocusCache);
-    function handleTreeUpdate({ treeUpdate: { open, targetId, dontFocus, runFuncs }, executionContextId }, state) {
-        if (targetId !== state.activeTarget) {
-            common_js_10.DEBUG.val >= common_js_10.DEBUG.med && console.log(`Rejecting tree update for ${targetId} as it is not active target ${state.activeTarget}`);
-            common_js_10.DEBUG.val >= common_js_10.DEBUG.med && console.log(`But saving this update into that targets cache.`);
-            let cache = state.domCache.get(targetId);
-            if (!cache) {
-                cache = { contextId: '', domTree: '', focusSaver: FocusCache() };
-                state.domCache.set(targetId, cache);
-            }
-            // when we have  iframes this will be dangerous
-            // to flatten contextId (which will be multiple per page 1 for each iframe)
-            cache.contextId = executionContextId;
-            cache.domTree = open;
-            return;
-        }
-        if (state.viewState.viewFrameEl) {
-            updateTree({ targetId, domTree: open, contextId: executionContextId, dontFocus, runFuncs }, state);
-            if (state.scrollToTopOnNextTreeUpdate) {
-                scrollToTop({ navigated: state.scrollToTopOnNextTreeUpdate }, state);
-                state.scrollToTopOnNextTreeUpdate = null;
-            }
-        }
-        else {
-            common_js_10.DEBUG.val && console.warn(`No view frame`);
-        }
-    }
-    exports_28("handleTreeUpdate", handleTreeUpdate);
-    function updateTree({ domTree, targetId, contextId, dontFocus: dontFocus = false, runFuncs: runFuncs = [] }, state) {
-        const frame = getViewFrame(state);
-        let doc = getViewWindow(state).document;
-        let cache = state.domCache.get(targetId);
-        if (!cache) {
-            cache = { contextId: '', domTree: '', focusSaver: FocusCache() };
-            state.domCache.set(targetId, cache);
-        }
-        cache.contextId = contextId;
-        cache.domTree = domTree;
-        if (!doc.body || doc.body.outerHTML !== domTree) {
-            cache.focusSaver.save(doc);
-            if (frame.hasLoaded) {
-                doc = getViewWindow(state).document;
-                doc.body.outerHTML = domTree;
-                Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
-            }
-            else {
-                frame.addEventListener('load', () => {
-                    doc = getViewWindow(state).document;
-                    doc.body.outerHTML = domTree;
-                    Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
-                }, { once: true });
-            }
-            if (!dontFocus) {
-                cache.focusSaver.restore();
-            }
-            if (runFuncs) {
-                if (frame.hasLoaded) {
-                    const win = getViewWindow(state);
-                    for (const name of runFuncs) {
-                        try {
-                            win[name]();
-                        }
-                        catch (e) {
-                            common_js_10.DEBUG.val && console.warn(name, e);
-                        }
-                    }
-                }
-                else {
-                    frame.addEventListener('load', () => {
-                        const win = getViewWindow(state);
-                        for (const name of runFuncs) {
-                            try {
-                                win[name]();
-                            }
-                            catch (e) {
-                                common_js_10.DEBUG.val && console.warn(name, e);
-                            }
-                        }
-                    });
-                }
-            }
-        }
-    }
-    exports_28("updateTree", updateTree);
-    function scrollToTop({ navigated }, state) {
-        setTimeout(() => {
-            if (navigated.targetId !== state.activeTarget)
-                return;
-            if (state.viewState.viewFrameEl) {
-                getViewWindow(state).scrollTo(0, 0);
-            }
-            else {
-                common_js_10.DEBUG.val && console.warn(`No view frame`);
-            }
-        }, 40);
-    }
-    exports_28("scrollToTop", scrollToTop);
-    function scrollTo({ scrollY, scrollX }, state) {
-        setTimeout(() => {
-            if (state.viewState.viewFrameEl) {
-                getViewWindow(state).scrollTo(scrollX, scrollY);
-            }
-            else {
-                common_js_10.DEBUG.val && console.warn(`No view frame`);
-            }
-        }, 40);
-    }
-    exports_28("scrollTo", scrollTo);
-    function handleTreeDiff({ treeDiff: { diffs, targetId }, executionContextId }, state) {
-        if (targetId !== state.activeTarget) {
-            common_js_10.DEBUG.val >= common_js_10.DEBUG.med && console.log(`Rejecting tree diff for ${targetId} as it is not active target ${state.activeTarget}`);
-            common_js_10.DEBUG.val >= common_js_10.DEBUG.med && console.log(`But saving this diff into that targets cache.`);
-            let cache = state.domCache.get(targetId);
-            if (!cache) {
-                cache = { contextId: '', domTree: '', focusSaver: FocusCache() };
-                state.domCache.set(targetId, cache);
-            }
-            // when we have  iframes this will be dangerous
-            // to flatten contextId (which will be multiple per page 1 for each iframe)
-            cache.contextId = executionContextId;
-            cache.diffs = diffs;
-            return;
-        }
-        if (state.viewState.viewFrameEl) {
-            const later = [];
-            for (const diff of diffs) {
-                const result = patchTree(diff, state);
-                if (!result)
-                    later.push(diff);
-            }
-            for (const diff of later) {
-                const result = patchTree(diff, state);
-                if (!result) {
-                    console.warn(`Diff could not be applied after two tries`, diff);
-                }
-            }
-        }
-        else {
-            common_js_10.DEBUG.val && console.warn(`No view frame`);
-        }
-    }
-    exports_28("handleTreeDiff", handleTreeDiff);
-    function patchTree({ insert, remove }, state) {
-        const doc = getViewWindow(state).document;
-        const { parentZig } = insert || remove;
-        const parentZigSelector = `[zig="${parentZig}"]`;
-        const parentElement = doc.querySelector(parentZigSelector);
-        if (!parentElement) {
-            //throw new TypeError(`No such parent element selected by ${parentZigSelector}`);
-            //console.warn(`No such parent element selected by ${parentZigSelector}`);
-            return false;
-        }
-        if (insert) {
-            parentElement.insertAdjacentHTML('beforeEnd', insert.outerHTML);
-            //console.log(parentElement, "Added", insert.outerHTML);
-        }
-        if (remove) {
-            const zigSelectorToRemove = `[zig="${remove.zig}"]`;
-            const elToRemove = parentElement.querySelector(zigSelectorToRemove);
-            if (!elToRemove) {
-                //throw new TypeError(`No such element to remove selected by ${zigSelectorToRemove}`);
-                //console.warn(`No such element to remove selected by ${zigSelectorToRemove}`);
-                return true;
-            }
-            else {
-                elToRemove.remove();
-            }
-            //console.log("Removed", elToRemove);
-        }
-        return true;
-    }
-    function zigs(dataId, generation) {
-        return `[zig="${dataId} ${generation}"]`;
-    }
-    function getViewWindow(state) {
-        return state.viewState.viewFrameEl.contentWindow;
-    }
-    exports_28("getViewWindow", getViewWindow);
-    function getViewFrame(state) {
-        return state.viewState.viewFrameEl;
-    }
-    exports_28("getViewFrame", getViewFrame);
-    return {
-        setters: [
-            function (common_js_10_1) {
-                common_js_10 = common_js_10_1;
-            }
-        ],
-        execute: function () {
-            FocusCache = () => {
-                const focusSaver = {
-                    doc: null,
-                    oldValue: '',
-                    activeElement: null,
-                    selectionStart: 0,
-                    selectionEnd: 0,
-                    reset: () => {
-                        focusSaver.activeElement = null;
-                        focusSaver.selectionStart = 0;
-                        focusSaver.selectionEnd = 0;
-                        focusSaver.oldValue = '';
-                        focusSaver.doc = null;
-                    },
-                    save: doc => {
-                        try {
-                            const el = doc.activeElement;
-                            focusSaver.doc = doc;
-                            focusSaver.activeElement = el;
-                            focusSaver.selectionStart = el.selectionStart;
-                            focusSaver.selectionEnd = el.selectionEnd;
-                            focusSaver.oldValue = el.value;
-                        }
-                        catch (e) {
-                            common_js_10.DEBUG.val >= common_js_10.DEBUG.med && console.log(`Issue with save focus`, focusSaver, e);
-                        }
-                    },
-                    restore: () => {
-                        console.log('restore focus');
-                        try {
-                            const oldFocus = focusSaver.activeElement;
-                            if (!oldFocus) {
-                                common_js_10.DEBUG.val >= common_js_10.DEBUG.med && console.log(`No old focus`);
-                                return;
-                            }
-                            let updatedEl;
-                            const [oldId] = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "";
-                            const dataIdSelector = `${oldFocus.localName}[zig^="${oldId}"]`;
-                            const byDataId = focusSaver.doc.querySelector(dataIdSelector);
-                            if (!byDataId) {
-                                const fallbackSelector = oldFocus.id ? `${oldFocus.localName}#${oldFocus.id}` :
-                                    oldFocus.name ? `${oldFocus.localName}[name="${oldFocus.name}"]` : '';
-                                let byFallbackSelector;
-                                if (fallbackSelector) {
-                                    byFallbackSelector = focusSaver.doc.querySelector(fallbackSelector);
-                                }
-                                if (byFallbackSelector) {
-                                    updatedEl = byFallbackSelector;
-                                }
-                            }
-                            else {
-                                common_js_10.DEBUG.val >= common_js_10.DEBUG.med && console.log(`Restoring focus data id`);
-                                updatedEl = byDataId;
-                            }
-                            if (updatedEl) {
-                                updatedEl.focus();
-                                updatedEl.value = focusSaver.oldValue;
-                                updatedEl.selectionStart = updatedEl.value ? updatedEl.value.length : focusSaver.selectionStart;
-                                updatedEl.selectionEnd = updatedEl.value ? updatedEl.value.length : focusSaver.selectionEnd;
-                            }
-                            else {
-                                common_js_10.DEBUG.val >= common_js_10.DEBUG.med && console.warn(`Sorry, we couldn't find the element that was focused before.`);
-                            }
-                        }
-                        catch (e) {
-                            common_js_10.DEBUG.val >= common_js_10.DEBUG.med && console.log(`Issue with restore focus`, focusSaver, e);
-                        }
-                    }
-                };
-                return focusSaver;
-            };
-        }
-    };
-});
-System.register("plugins/demo/createListener", ["voodoo/src/common"], function (exports_29, context_29) {
-    "use strict";
-    var common_js_11, BUFFERED_FRAME_EVENT;
-    var __moduleName = context_29 && context_29.id;
-    function createFrameListener(queue, state) {
-        const { H } = state;
-        return function installFrameListener() {
-            self.addEventListener('message', e => {
-                if (e.data && e.data.event) {
-                    const { event } = e.data;
-                    const cache = state.domCache.get(state.activeTarget);
-                    if (cache) {
-                        event.contextId = cache.contextId;
-                    }
-                    if (event.type.endsWith('move')) {
-                        queue.send(BUFFERED_FRAME_EVENT);
-                    }
-                    else if (event.custom) {
-                        if (event.type == 'scrollToEnd') {
-                            let cache = state.domCache.get(state.activeTarget);
-                            if (!cache) {
-                                cache = {};
-                                state.domCache.set(state.activeTarget, cache);
-                            }
-                            cache.scrollTop = event.scrollTop;
-                            cache.scrollLeft = event.scrollLeft;
-                        }
-                        state.H(event);
-                    }
-                    else {
-                        if (!event.contextId) {
-                            common_js_11.DEBUG.val && console.warn(`Event will not have context id as no cache for activeTarget`);
-                        }
-                        if (event.type == 'input') {
-                            if (event.selectInput) {
-                                H({
-                                    synthetic: true,
-                                    type: 'select',
-                                    state: { waitingExecutionContext: event.contextId },
-                                    event
-                                });
-                            }
-                            else if (event.inputType == 'insertText') {
-                                H({
-                                    synthetic: true,
-                                    contextId: state.contextIdOfFocusedInput,
-                                    type: 'typing-clearAndInsertValue',
-                                    value: event.value,
-                                    event
-                                });
-                            }
-                        }
-                        else if (event.type == 'click' && event.href) {
-                            const activeTab = state.activeTab();
-                            let activeTabUrl = new URL(activeTab.url);
-                            let url = new URL(event.href);
-                            const frag = url.hash;
-                            activeTabUrl.hash = url.hash;
-                            url = url + '';
-                            activeTabUrl = activeTabUrl + '';
-                            common_js_11.DEBUG.val >= common_js_11.DEBUG.med && console.log(`Doc url ${activeTab.url}, target url ${url}`);
-                            if (url == activeTabUrl) {
-                                // in other words if they differ by only the hash
-                                const viewDoc = state.viewState.viewFrameEl.contentWindow.document;
-                                const fragElem = viewDoc.querySelector(frag);
-                                if (fragElem) {
-                                    fragElem.scrollIntoView();
-                                }
-                            }
-                        }
-                        else {
-                            if (event.type == 'keypress' && event.contenteditableTarget) {
-                                /**
-                                H({
-                                  synthetic: true,
-                                  contextId: state.contextIdOfFocusedInput,
-                                  type: 'typing',
-                                  data: event.key
-                                });
-                                **/
-                            }
-                            else {
-                                common_js_11.DEBUG.val >= common_js_11.DEBUG.med && console.log(event);
-                                H(event);
-                            }
-                        }
-                    }
-                }
-            });
-            const win = state.viewState.viewFrameEl.contentWindow;
-            common_js_11.DEBUG.val >= common_js_11.DEBUG.med && console.log(win);
-            win.addEventListener('load', () => {
-                common_js_11.DEBUG.val >= common_js_11.DEBUG.med && console.log("View frame content loaded");
-            });
-        };
-    }
-    exports_29("createFrameListener", createFrameListener);
-    function createDOMTreeGetter(queue, delay) {
-        return function getDOMTree(force = false) {
-            setTimeout(() => {
-                common_js_11.DEBUG.val >= common_js_11.DEBUG.med && console.log(`local requests remote tree`);
-                queue.send({
-                    type: "getDOMTree",
-                    force,
-                    custom: true
-                });
-            }, delay);
-        };
-    }
-    exports_29("createDOMTreeGetter", createDOMTreeGetter);
-    return {
-        setters: [
-            function (common_js_11_1) {
-                common_js_11 = common_js_11_1;
-            }
-        ],
-        execute: function () {
-            BUFFERED_FRAME_EVENT = {
-                type: "buffered-results-collection",
-                command: {
-                    isBufferedResultsCollectionOnly: true,
-                    params: {}
-                }
-            };
-        }
-    };
-});
-System.register("plugins/demo/programmaticClickIntervention", [], function (exports_30, context_30) {
-    "use strict";
-    var __moduleName = context_30 && context_30.id;
-    function saveFailingClick({ click }, state) {
-        if (click.clickModifiers & 2) {
-            state.createTab(click, click.intendedHref);
-        }
-        else if (click.intendedHref) {
-            state.H({
-                synthetic: true,
-                type: 'url-address',
-                url: click.intendedHref,
-                event: click
-            });
-        }
-    }
-    exports_30("saveFailingClick", saveFailingClick);
-    function auditClicks({ click }, state) {
-        if (click.hitsTarget)
-            return;
-        else {
-            saveFailingClick({ click }, state);
-        }
-    }
-    exports_30("auditClicks", auditClicks);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
-});
-System.register("plugins/demo/installPlugin", ["plugins/demo/treeUpdate", "plugins/demo/createListener", "plugins/demo/programmaticClickIntervention"], function (exports_31, context_31) {
-    "use strict";
-    var treeUpdate_js_1, createListener_js_1, programmaticClickIntervention_js_1;
-    var __moduleName = context_31 && context_31.id;
-    function installPlugin(state, queue) {
-        try {
-            self.state = state;
-            // key input 
-            state.ignoreKeysCanInputMessage = false;
-            state.dontFocusControlInputs = !!state.viewState.viewFrameEl;
-            // dom cache
-            state.domCache = new Map();
-            // select
-            state.ignoreSelectInputEvents = true;
-            state.installFrameListener = createListener_js_1.createFrameListener(queue, state);
-            state.getDOMTree = createListener_js_1.createDOMTreeGetter(queue, state.SHORT_DELAY);
-            // plugins 
-            queue.addMetaListener('treeUpdate', meta => treeUpdate_js_1.handleTreeUpdate(meta, state));
-            queue.addMetaListener('navigated', meta => clearDomCache(meta, state));
-            queue.addMetaListener('navigated', meta => state.getDOMTree());
-            queue.addMetaListener('navigated', meta => treeUpdate_js_1.scrollToTop(meta, state));
-            queue.addMetaListener('click', meta => programmaticClickIntervention_js_1.auditClicks(meta, state));
-            // start  
-            queue.addMetaListener('topRedirect', meta => {
-                const { browserUrl } = meta.topRedirect;
-                location = browserUrl;
-            });
-            state.addListener('activateTab', () => {
-                const { activeTarget } = state;
-                const cache = state.domCache.get(activeTarget);
-                if (!cache) {
-                    state.getDOMTree(true);
-                }
-                else {
-                    treeUpdate_js_1.updateTree(cache, state);
-                    const { scrollTop, scrollLeft } = cache;
-                    treeUpdate_js_1.scrollTo({ scrollTop, scrollLeft });
-                }
-            });
-            state.getDOMTree();
-        }
-        catch (e) {
-            console.info(e);
-        }
-    }
-    exports_31("default", installPlugin);
-    function clearDomCache({ navigated }, state) {
-        const { targetId } = navigated;
-        state.domCache.delete(targetId);
-    }
-    return {
-        setters: [
-            function (treeUpdate_js_1_1) {
-                treeUpdate_js_1 = treeUpdate_js_1_1;
-            },
-            function (createListener_js_1_1) {
-                createListener_js_1 = createListener_js_1_1;
-            },
-            function (programmaticClickIntervention_js_1_1) {
-                programmaticClickIntervention_js_1 = programmaticClickIntervention_js_1_1;
-            }
-        ],
-        execute: function () {
-        }
-    };
-});
-System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"], function (exports_32, context_32) {
+System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (exports_37, context_37) {
     "use strict";
     var common_js_12, FocusCache;
-    var __moduleName = context_32 && context_32.id;
+    var __moduleName = context_37 && context_37.id;
     function resetFocusCache({ navigated: { targetId }, executionContextId }, state) {
         let cache = state.domCache.get(targetId);
         if (!cache) {
@@ -5173,7 +6934,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             cache.contextId = executionContextId;
         }
     }
-    exports_32("resetFocusCache", resetFocusCache);
+    exports_37("resetFocusCache", resetFocusCache);
     function handleTreeUpdate({ treeUpdate: { open, targetId, dontFocus, runFuncs }, executionContextId }, state) {
         if (targetId !== state.activeTarget) {
             common_js_12.DEBUG.val >= common_js_12.DEBUG.med && console.log(`Rejecting tree update for ${targetId} as it is not active target ${state.activeTarget}`);
@@ -5200,7 +6961,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             common_js_12.DEBUG.val && console.warn(`No view frame`);
         }
     }
-    exports_32("handleTreeUpdate", handleTreeUpdate);
+    exports_37("handleTreeUpdate", handleTreeUpdate);
     function updateTree({ domTree, targetId, contextId, dontFocus: dontFocus = false, runFuncs: runFuncs = [] }, state) {
         const frame = getViewFrame(state);
         let doc = getViewWindow(state).document;
@@ -5256,7 +7017,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             }
         }
     }
-    exports_32("updateTree", updateTree);
+    exports_37("updateTree", updateTree);
     function scrollToTop({ navigated }, state) {
         setTimeout(() => {
             if (navigated.targetId !== state.activeTarget)
@@ -5269,7 +7030,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             }
         }, 40);
     }
-    exports_32("scrollToTop", scrollToTop);
+    exports_37("scrollToTop", scrollToTop);
     function scrollTo({ scrollY, scrollX }, state) {
         setTimeout(() => {
             if (state.viewState.viewFrameEl) {
@@ -5280,7 +7041,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             }
         }, 40);
     }
-    exports_32("scrollTo", scrollTo);
+    exports_37("scrollTo", scrollTo);
     function handleTreeDiff({ treeDiff: { diffs, targetId }, executionContextId }, state) {
         if (targetId !== state.activeTarget) {
             common_js_12.DEBUG.val >= common_js_12.DEBUG.med && console.log(`Rejecting tree diff for ${targetId} as it is not active target ${state.activeTarget}`);
@@ -5314,7 +7075,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             common_js_12.DEBUG.val && console.warn(`No view frame`);
         }
     }
-    exports_32("handleTreeDiff", handleTreeDiff);
+    exports_37("handleTreeDiff", handleTreeDiff);
     function patchTree({ insert, remove }, state) {
         const doc = getViewWindow(state).document;
         const { parentZig } = insert || remove;
@@ -5350,11 +7111,11 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
     function getViewWindow(state) {
         return state.viewState.viewFrameEl.contentWindow;
     }
-    exports_32("getViewWindow", getViewWindow);
+    exports_37("getViewWindow", getViewWindow);
     function getViewFrame(state) {
         return state.viewState.viewFrameEl;
     }
-    exports_32("getViewFrame", getViewFrame);
+    exports_37("getViewFrame", getViewFrame);
     return {
         setters: [
             function (common_js_12_1) {
@@ -5436,10 +7197,10 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
         }
     };
 });
-System.register("plugins/appminifier/scripts/createListener", ["voodoo/src/common"], function (exports_33, context_33) {
+System.register("plugins/demo/createListener", ["voodoo/src/common"], function (exports_38, context_38) {
     "use strict";
     var common_js_13, BUFFERED_FRAME_EVENT;
-    var __moduleName = context_33 && context_33.id;
+    var __moduleName = context_38 && context_38.id;
     function createFrameListener(queue, state) {
         const { H } = state;
         return function installFrameListener() {
@@ -5532,7 +7293,7 @@ System.register("plugins/appminifier/scripts/createListener", ["voodoo/src/commo
             });
         };
     }
-    exports_33("createFrameListener", createFrameListener);
+    exports_38("createFrameListener", createFrameListener);
     function createDOMTreeGetter(queue, delay) {
         return function getDOMTree(force = false) {
             setTimeout(() => {
@@ -5545,7 +7306,7 @@ System.register("plugins/appminifier/scripts/createListener", ["voodoo/src/commo
             }, delay);
         };
     }
-    exports_33("createDOMTreeGetter", createDOMTreeGetter);
+    exports_38("createDOMTreeGetter", createDOMTreeGetter);
     return {
         setters: [
             function (common_js_13_1) {
@@ -5563,9 +7324,9 @@ System.register("plugins/appminifier/scripts/createListener", ["voodoo/src/commo
         }
     };
 });
-System.register("plugins/appminifier/scripts/programmaticClickIntervention", [], function (exports_34, context_34) {
+System.register("plugins/demo/programmaticClickIntervention", [], function (exports_39, context_39) {
     "use strict";
-    var __moduleName = context_34 && context_34.id;
+    var __moduleName = context_39 && context_39.id;
     function saveFailingClick({ click }, state) {
         if (click.clickModifiers & 2) {
             state.createTab(click, click.intendedHref);
@@ -5579,7 +7340,7 @@ System.register("plugins/appminifier/scripts/programmaticClickIntervention", [],
             });
         }
     }
-    exports_34("saveFailingClick", saveFailingClick);
+    exports_39("saveFailingClick", saveFailingClick);
     function auditClicks({ click }, state) {
         if (click.hitsTarget)
             return;
@@ -5587,115 +7348,104 @@ System.register("plugins/appminifier/scripts/programmaticClickIntervention", [],
             saveFailingClick({ click }, state);
         }
     }
-    exports_34("auditClicks", auditClicks);
+    exports_39("auditClicks", auditClicks);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("plugins/appminifier/installPlugin", ["plugins/appminifier/scripts/treeUpdate", "plugins/appminifier/scripts/createListener", "plugins/appminifier/scripts/programmaticClickIntervention"], function (exports_35, context_35) {
+System.register("plugins/demo/installPlugin", ["plugins/demo/treeUpdate", "plugins/demo/createListener", "plugins/demo/programmaticClickIntervention"], function (exports_40, context_40) {
     "use strict";
-    var treeUpdate_js_2, createListener_js_2, programmaticClickIntervention_js_2;
-    var __moduleName = context_35 && context_35.id;
+    var treeUpdate_js_1, createListener_js_1, programmaticClickIntervention_js_1;
+    var __moduleName = context_40 && context_40.id;
     function installPlugin(state, queue) {
-        if (location.pathname !== "/custom.html" && location.pathname !== "/")
-            return;
         try {
+            self.state = state;
             // key input 
             state.ignoreKeysCanInputMessage = false;
-            state.dontFocusControlInputs = !!state.useViewFrame;
+            state.dontFocusControlInputs = !!state.viewState.viewFrameEl;
             // dom cache
             state.domCache = new Map();
             // select
             state.ignoreSelectInputEvents = true;
-            state.installFrameListener = createListener_js_2.createFrameListener(queue, state);
-            state.getDOMTree = createListener_js_2.createDOMTreeGetter(queue, state.SHORT_DELAY);
+            state.installFrameListener = createListener_js_1.createFrameListener(queue, state);
+            state.getDOMTree = createListener_js_1.createDOMTreeGetter(queue, state.SHORT_DELAY);
             // plugins 
+            queue.addMetaListener('treeUpdate', meta => treeUpdate_js_1.handleTreeUpdate(meta, state));
+            queue.addMetaListener('navigated', meta => clearDomCache(meta, state));
+            queue.addMetaListener('navigated', meta => state.getDOMTree());
+            queue.addMetaListener('navigated', meta => treeUpdate_js_1.scrollToTop(meta, state));
+            queue.addMetaListener('click', meta => programmaticClickIntervention_js_1.auditClicks(meta, state));
+            // start  
             queue.addMetaListener('topRedirect', meta => {
                 const { browserUrl } = meta.topRedirect;
                 location = browserUrl;
             });
-            queue.addMetaListener('treeUpdate', meta => treeUpdate_js_2.handleTreeUpdate(meta, state));
-            queue.addMetaListener('treeDiff', meta => treeUpdate_js_2.handleTreeDiff(meta, state));
-            queue.addMetaListener('navigated', meta => treeUpdate_js_2.resetFocusCache(meta, state));
-            queue.addMetaListener('navigated', meta => handleNavigate(meta, state));
-            queue.addMetaListener('click', meta => programmaticClickIntervention_js_2.auditClicks(meta, state));
-            // appminifier plugin 
-            queue.send({
-                type: "enableAppminifier",
-                custom: true
-            });
             state.addListener('activateTab', () => {
-                const win = treeUpdate_js_2.getViewWindow(state);
-                const { activeTarget, clearViewport, lastTarget } = state;
-                const lastCache = state.domCache.get(lastTarget);
+                const { activeTarget } = state;
                 const cache = state.domCache.get(activeTarget);
                 if (!cache) {
-                    state.clearViewport();
                     state.getDOMTree(true);
                 }
                 else {
-                    // save scroll position of last target before we update window
-                    // using block scope oorah
-                    if (lastCache) {
-                        const { pageXOffset: scrollX, pageYOffset: scrollY } = win;
-                        Object.assign(lastCache, { scrollX, scrollY });
-                    }
-                    state.clearViewport();
-                    treeUpdate_js_2.updateTree(cache, state);
-                    // restore scroll position of new target
-                    const { scrollX, scrollY } = cache;
-                    treeUpdate_js_2.scrollTo({ scrollX, scrollY }, state);
+                    treeUpdate_js_1.updateTree(cache, state);
+                    const { scrollTop, scrollLeft } = cache;
+                    treeUpdate_js_1.scrollTo({ scrollTop, scrollLeft });
                 }
             });
+            state.getDOMTree();
         }
         catch (e) {
             console.info(e);
         }
     }
-    exports_35("default", installPlugin);
+    exports_40("default", installPlugin);
     function clearDomCache({ navigated }, state) {
         const { targetId } = navigated;
         state.domCache.delete(targetId);
     }
-    function handleNavigate({ navigated }, state) {
-        clearDomCache({ navigated }, state);
-        if (navigated.url.startsWith('http')) {
-            state.scrollToTopOnNextTreeUpdate = navigated;
-            state.getDOMTree();
-        }
-        else {
-            state.clearViewport();
-        }
-    }
     return {
         setters: [
-            function (treeUpdate_js_2_1) {
-                treeUpdate_js_2 = treeUpdate_js_2_1;
+            function (treeUpdate_js_1_1) {
+                treeUpdate_js_1 = treeUpdate_js_1_1;
             },
-            function (createListener_js_2_1) {
-                createListener_js_2 = createListener_js_2_1;
+            function (createListener_js_1_1) {
+                createListener_js_1 = createListener_js_1_1;
             },
-            function (programmaticClickIntervention_js_2_1) {
-                programmaticClickIntervention_js_2 = programmaticClickIntervention_js_2_1;
+            function (programmaticClickIntervention_js_1_1) {
+                programmaticClickIntervention_js_1 = programmaticClickIntervention_js_1_1;
             }
         ],
         execute: function () {
         }
     };
 });
-System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], function (exports_36, context_36) {
+System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"], function (exports_41, context_41) {
     "use strict";
-    var common_js_14;
-    var __moduleName = context_36 && context_36.id;
+    var common_js_14, FocusCache;
+    var __moduleName = context_41 && context_41.id;
+    function resetFocusCache({ navigated: { targetId }, executionContextId }, state) {
+        let cache = state.domCache.get(targetId);
+        if (!cache) {
+            cache = { contextId: '', domTree: '', focusSaver: FocusCache() };
+            state.domCache.set(targetId, cache);
+        }
+        else {
+            cache.focusSaver.reset();
+        }
+        if (executionContextId) {
+            cache.contextId = executionContextId;
+        }
+    }
+    exports_41("resetFocusCache", resetFocusCache);
     function handleTreeUpdate({ treeUpdate: { open, targetId, dontFocus, runFuncs }, executionContextId }, state) {
         if (targetId !== state.activeTarget) {
             common_js_14.DEBUG.val >= common_js_14.DEBUG.med && console.log(`Rejecting tree update for ${targetId} as it is not active target ${state.activeTarget}`);
             common_js_14.DEBUG.val >= common_js_14.DEBUG.med && console.log(`But saving this update into that targets cache.`);
             let cache = state.domCache.get(targetId);
             if (!cache) {
-                cache = { contextId: '', domTree: '', focusSaver: null };
+                cache = { contextId: '', domTree: '', focusSaver: FocusCache() };
                 state.domCache.set(targetId, cache);
             }
             // when we have  iframes this will be dangerous
@@ -5715,19 +7465,19 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
             common_js_14.DEBUG.val && console.warn(`No view frame`);
         }
     }
-    exports_36("handleTreeUpdate", handleTreeUpdate);
+    exports_41("handleTreeUpdate", handleTreeUpdate);
     function updateTree({ domTree, targetId, contextId, dontFocus: dontFocus = false, runFuncs: runFuncs = [] }, state) {
         const frame = getViewFrame(state);
         let doc = getViewWindow(state).document;
         let cache = state.domCache.get(targetId);
         if (!cache) {
-            cache = { contextId: '', domTree: '', focusSaver: null };
+            cache = { contextId: '', domTree: '', focusSaver: FocusCache() };
             state.domCache.set(targetId, cache);
         }
         cache.contextId = contextId;
         cache.domTree = domTree;
         if (!doc.body || doc.body.outerHTML !== domTree) {
-            //cache.focusSaver.save(doc);
+            cache.focusSaver.save(doc);
             if (frame.hasLoaded) {
                 doc = getViewWindow(state).document;
                 doc.body.outerHTML = domTree;
@@ -5741,7 +7491,7 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
                 }, { once: true });
             }
             if (!dontFocus) {
-                //cache.focusSaver.restore();
+                cache.focusSaver.restore();
             }
             if (runFuncs) {
                 if (frame.hasLoaded) {
@@ -5771,7 +7521,7 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
             }
         }
     }
-    exports_36("updateTree", updateTree);
+    exports_41("updateTree", updateTree);
     function scrollToTop({ navigated }, state) {
         setTimeout(() => {
             if (navigated.targetId !== state.activeTarget)
@@ -5784,7 +7534,7 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
             }
         }, 40);
     }
-    exports_36("scrollToTop", scrollToTop);
+    exports_41("scrollToTop", scrollToTop);
     function scrollTo({ scrollY, scrollX }, state) {
         setTimeout(() => {
             if (state.viewState.viewFrameEl) {
@@ -5795,7 +7545,7 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
             }
         }, 40);
     }
-    exports_36("scrollTo", scrollTo);
+    exports_41("scrollTo", scrollTo);
     function handleTreeDiff({ treeDiff: { diffs, targetId }, executionContextId }, state) {
         if (targetId !== state.activeTarget) {
             common_js_14.DEBUG.val >= common_js_14.DEBUG.med && console.log(`Rejecting tree diff for ${targetId} as it is not active target ${state.activeTarget}`);
@@ -5829,7 +7579,7 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
             common_js_14.DEBUG.val && console.warn(`No view frame`);
         }
     }
-    exports_36("handleTreeDiff", handleTreeDiff);
+    exports_41("handleTreeDiff", handleTreeDiff);
     function patchTree({ insert, remove }, state) {
         const doc = getViewWindow(state).document;
         const { parentZig } = insert || remove;
@@ -5865,11 +7615,11 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
     function getViewWindow(state) {
         return state.viewState.viewFrameEl.contentWindow;
     }
-    exports_36("getViewWindow", getViewWindow);
+    exports_41("getViewWindow", getViewWindow);
     function getViewFrame(state) {
         return state.viewState.viewFrameEl;
     }
-    exports_36("getViewFrame", getViewFrame);
+    exports_41("getViewFrame", getViewFrame);
     return {
         setters: [
             function (common_js_14_1) {
@@ -5877,13 +7627,84 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
             }
         ],
         execute: function () {
+            FocusCache = () => {
+                const focusSaver = {
+                    doc: null,
+                    oldValue: '',
+                    activeElement: null,
+                    selectionStart: 0,
+                    selectionEnd: 0,
+                    reset: () => {
+                        focusSaver.activeElement = null;
+                        focusSaver.selectionStart = 0;
+                        focusSaver.selectionEnd = 0;
+                        focusSaver.oldValue = '';
+                        focusSaver.doc = null;
+                    },
+                    save: doc => {
+                        try {
+                            const el = doc.activeElement;
+                            focusSaver.doc = doc;
+                            focusSaver.activeElement = el;
+                            focusSaver.selectionStart = el.selectionStart;
+                            focusSaver.selectionEnd = el.selectionEnd;
+                            focusSaver.oldValue = el.value;
+                        }
+                        catch (e) {
+                            common_js_14.DEBUG.val >= common_js_14.DEBUG.med && console.log(`Issue with save focus`, focusSaver, e);
+                        }
+                    },
+                    restore: () => {
+                        console.log('restore focus');
+                        try {
+                            const oldFocus = focusSaver.activeElement;
+                            if (!oldFocus) {
+                                common_js_14.DEBUG.val >= common_js_14.DEBUG.med && console.log(`No old focus`);
+                                return;
+                            }
+                            let updatedEl;
+                            const [oldId] = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "";
+                            const dataIdSelector = `${oldFocus.localName}[zig^="${oldId}"]`;
+                            const byDataId = focusSaver.doc.querySelector(dataIdSelector);
+                            if (!byDataId) {
+                                const fallbackSelector = oldFocus.id ? `${oldFocus.localName}#${oldFocus.id}` :
+                                    oldFocus.name ? `${oldFocus.localName}[name="${oldFocus.name}"]` : '';
+                                let byFallbackSelector;
+                                if (fallbackSelector) {
+                                    byFallbackSelector = focusSaver.doc.querySelector(fallbackSelector);
+                                }
+                                if (byFallbackSelector) {
+                                    updatedEl = byFallbackSelector;
+                                }
+                            }
+                            else {
+                                common_js_14.DEBUG.val >= common_js_14.DEBUG.med && console.log(`Restoring focus data id`);
+                                updatedEl = byDataId;
+                            }
+                            if (updatedEl) {
+                                updatedEl.focus();
+                                updatedEl.value = focusSaver.oldValue;
+                                updatedEl.selectionStart = updatedEl.value ? updatedEl.value.length : focusSaver.selectionStart;
+                                updatedEl.selectionEnd = updatedEl.value ? updatedEl.value.length : focusSaver.selectionEnd;
+                            }
+                            else {
+                                common_js_14.DEBUG.val >= common_js_14.DEBUG.med && console.warn(`Sorry, we couldn't find the element that was focused before.`);
+                            }
+                        }
+                        catch (e) {
+                            common_js_14.DEBUG.val >= common_js_14.DEBUG.med && console.log(`Issue with restore focus`, focusSaver, e);
+                        }
+                    }
+                };
+                return focusSaver;
+            };
         }
     };
 });
-System.register("plugins/projector/scripts/createListener", ["voodoo/src/common"], function (exports_37, context_37) {
+System.register("plugins/appminifier/scripts/createListener", ["voodoo/src/common"], function (exports_42, context_42) {
     "use strict";
     var common_js_15, BUFFERED_FRAME_EVENT;
-    var __moduleName = context_37 && context_37.id;
+    var __moduleName = context_42 && context_42.id;
     function createFrameListener(queue, state) {
         const { H } = state;
         return function installFrameListener() {
@@ -5976,20 +7797,20 @@ System.register("plugins/projector/scripts/createListener", ["voodoo/src/common"
             });
         };
     }
-    exports_37("createFrameListener", createFrameListener);
+    exports_42("createFrameListener", createFrameListener);
     function createDOMTreeGetter(queue, delay) {
         return function getDOMTree(force = false) {
             setTimeout(() => {
                 common_js_15.DEBUG.val >= common_js_15.DEBUG.med && console.log(`local requests remote tree`);
                 queue.send({
-                    type: "getDOMSnapshot",
+                    type: "getDOMTree",
                     force,
                     custom: true
                 });
             }, delay);
         };
     }
-    exports_37("createDOMTreeGetter", createDOMTreeGetter);
+    exports_42("createDOMTreeGetter", createDOMTreeGetter);
     return {
         setters: [
             function (common_js_15_1) {
@@ -6007,10 +7828,454 @@ System.register("plugins/projector/scripts/createListener", ["voodoo/src/common"
         }
     };
 });
-System.register("plugins/projector/installPlugin", ["plugins/projector/scripts/treeUpdate", "plugins/projector/scripts/createListener"], function (exports_38, context_38) {
+System.register("plugins/appminifier/scripts/programmaticClickIntervention", [], function (exports_43, context_43) {
+    "use strict";
+    var __moduleName = context_43 && context_43.id;
+    function saveFailingClick({ click }, state) {
+        if (click.clickModifiers & 2) {
+            state.createTab(click, click.intendedHref);
+        }
+        else if (click.intendedHref) {
+            state.H({
+                synthetic: true,
+                type: 'url-address',
+                url: click.intendedHref,
+                event: click
+            });
+        }
+    }
+    exports_43("saveFailingClick", saveFailingClick);
+    function auditClicks({ click }, state) {
+        if (click.hitsTarget)
+            return;
+        else {
+            saveFailingClick({ click }, state);
+        }
+    }
+    exports_43("auditClicks", auditClicks);
+    return {
+        setters: [],
+        execute: function () {
+        }
+    };
+});
+System.register("plugins/appminifier/installPlugin", ["plugins/appminifier/scripts/treeUpdate", "plugins/appminifier/scripts/createListener", "plugins/appminifier/scripts/programmaticClickIntervention"], function (exports_44, context_44) {
+    "use strict";
+    var treeUpdate_js_2, createListener_js_2, programmaticClickIntervention_js_2;
+    var __moduleName = context_44 && context_44.id;
+    function installPlugin(state, queue) {
+        if (location.pathname !== "/custom.html" && location.pathname !== "/")
+            return;
+        try {
+            // key input 
+            state.ignoreKeysCanInputMessage = false;
+            state.dontFocusControlInputs = !!state.useViewFrame;
+            // dom cache
+            state.domCache = new Map();
+            // select
+            state.ignoreSelectInputEvents = true;
+            state.installFrameListener = createListener_js_2.createFrameListener(queue, state);
+            state.getDOMTree = createListener_js_2.createDOMTreeGetter(queue, state.SHORT_DELAY);
+            // plugins 
+            queue.addMetaListener('topRedirect', meta => {
+                const { browserUrl } = meta.topRedirect;
+                location = browserUrl;
+            });
+            queue.addMetaListener('treeUpdate', meta => treeUpdate_js_2.handleTreeUpdate(meta, state));
+            queue.addMetaListener('treeDiff', meta => treeUpdate_js_2.handleTreeDiff(meta, state));
+            queue.addMetaListener('navigated', meta => treeUpdate_js_2.resetFocusCache(meta, state));
+            queue.addMetaListener('navigated', meta => handleNavigate(meta, state));
+            queue.addMetaListener('click', meta => programmaticClickIntervention_js_2.auditClicks(meta, state));
+            // appminifier plugin 
+            queue.send({
+                type: "enableAppminifier",
+                custom: true
+            });
+            state.addListener('activateTab', () => {
+                const win = treeUpdate_js_2.getViewWindow(state);
+                const { activeTarget, clearViewport, lastTarget } = state;
+                const lastCache = state.domCache.get(lastTarget);
+                const cache = state.domCache.get(activeTarget);
+                if (!cache) {
+                    state.clearViewport();
+                    state.getDOMTree(true);
+                }
+                else {
+                    // save scroll position of last target before we update window
+                    // using block scope oorah
+                    if (lastCache) {
+                        const { pageXOffset: scrollX, pageYOffset: scrollY } = win;
+                        Object.assign(lastCache, { scrollX, scrollY });
+                    }
+                    state.clearViewport();
+                    treeUpdate_js_2.updateTree(cache, state);
+                    // restore scroll position of new target
+                    const { scrollX, scrollY } = cache;
+                    treeUpdate_js_2.scrollTo({ scrollX, scrollY }, state);
+                }
+            });
+        }
+        catch (e) {
+            console.info(e);
+        }
+    }
+    exports_44("default", installPlugin);
+    function clearDomCache({ navigated }, state) {
+        const { targetId } = navigated;
+        state.domCache.delete(targetId);
+    }
+    function handleNavigate({ navigated }, state) {
+        clearDomCache({ navigated }, state);
+        if (navigated.url.startsWith('http')) {
+            state.scrollToTopOnNextTreeUpdate = navigated;
+            state.getDOMTree();
+        }
+        else {
+            state.clearViewport();
+        }
+    }
+    return {
+        setters: [
+            function (treeUpdate_js_2_1) {
+                treeUpdate_js_2 = treeUpdate_js_2_1;
+            },
+            function (createListener_js_2_1) {
+                createListener_js_2 = createListener_js_2_1;
+            },
+            function (programmaticClickIntervention_js_2_1) {
+                programmaticClickIntervention_js_2 = programmaticClickIntervention_js_2_1;
+            }
+        ],
+        execute: function () {
+        }
+    };
+});
+System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], function (exports_45, context_45) {
+    "use strict";
+    var common_js_16;
+    var __moduleName = context_45 && context_45.id;
+    function handleTreeUpdate({ treeUpdate: { open, targetId, dontFocus, runFuncs }, executionContextId }, state) {
+        if (targetId !== state.activeTarget) {
+            common_js_16.DEBUG.val >= common_js_16.DEBUG.med && console.log(`Rejecting tree update for ${targetId} as it is not active target ${state.activeTarget}`);
+            common_js_16.DEBUG.val >= common_js_16.DEBUG.med && console.log(`But saving this update into that targets cache.`);
+            let cache = state.domCache.get(targetId);
+            if (!cache) {
+                cache = { contextId: '', domTree: '', focusSaver: null };
+                state.domCache.set(targetId, cache);
+            }
+            // when we have  iframes this will be dangerous
+            // to flatten contextId (which will be multiple per page 1 for each iframe)
+            cache.contextId = executionContextId;
+            cache.domTree = open;
+            return;
+        }
+        if (state.viewState.viewFrameEl) {
+            updateTree({ targetId, domTree: open, contextId: executionContextId, dontFocus, runFuncs }, state);
+            if (state.scrollToTopOnNextTreeUpdate) {
+                scrollToTop({ navigated: state.scrollToTopOnNextTreeUpdate }, state);
+                state.scrollToTopOnNextTreeUpdate = null;
+            }
+        }
+        else {
+            common_js_16.DEBUG.val && console.warn(`No view frame`);
+        }
+    }
+    exports_45("handleTreeUpdate", handleTreeUpdate);
+    function updateTree({ domTree, targetId, contextId, dontFocus: dontFocus = false, runFuncs: runFuncs = [] }, state) {
+        const frame = getViewFrame(state);
+        let doc = getViewWindow(state).document;
+        let cache = state.domCache.get(targetId);
+        if (!cache) {
+            cache = { contextId: '', domTree: '', focusSaver: null };
+            state.domCache.set(targetId, cache);
+        }
+        cache.contextId = contextId;
+        cache.domTree = domTree;
+        if (!doc.body || doc.body.outerHTML !== domTree) {
+            //cache.focusSaver.save(doc);
+            if (frame.hasLoaded) {
+                doc = getViewWindow(state).document;
+                doc.body.outerHTML = domTree;
+                Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
+            }
+            else {
+                frame.addEventListener('load', () => {
+                    doc = getViewWindow(state).document;
+                    doc.body.outerHTML = domTree;
+                    Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
+                }, { once: true });
+            }
+            if (!dontFocus) {
+                //cache.focusSaver.restore();
+            }
+            if (runFuncs) {
+                if (frame.hasLoaded) {
+                    const win = getViewWindow(state);
+                    for (const name of runFuncs) {
+                        try {
+                            win[name]();
+                        }
+                        catch (e) {
+                            common_js_16.DEBUG.val && console.warn(name, e);
+                        }
+                    }
+                }
+                else {
+                    frame.addEventListener('load', () => {
+                        const win = getViewWindow(state);
+                        for (const name of runFuncs) {
+                            try {
+                                win[name]();
+                            }
+                            catch (e) {
+                                common_js_16.DEBUG.val && console.warn(name, e);
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
+    exports_45("updateTree", updateTree);
+    function scrollToTop({ navigated }, state) {
+        setTimeout(() => {
+            if (navigated.targetId !== state.activeTarget)
+                return;
+            if (state.viewState.viewFrameEl) {
+                getViewWindow(state).scrollTo(0, 0);
+            }
+            else {
+                common_js_16.DEBUG.val && console.warn(`No view frame`);
+            }
+        }, 40);
+    }
+    exports_45("scrollToTop", scrollToTop);
+    function scrollTo({ scrollY, scrollX }, state) {
+        setTimeout(() => {
+            if (state.viewState.viewFrameEl) {
+                getViewWindow(state).scrollTo(scrollX, scrollY);
+            }
+            else {
+                common_js_16.DEBUG.val && console.warn(`No view frame`);
+            }
+        }, 40);
+    }
+    exports_45("scrollTo", scrollTo);
+    function handleTreeDiff({ treeDiff: { diffs, targetId }, executionContextId }, state) {
+        if (targetId !== state.activeTarget) {
+            common_js_16.DEBUG.val >= common_js_16.DEBUG.med && console.log(`Rejecting tree diff for ${targetId} as it is not active target ${state.activeTarget}`);
+            common_js_16.DEBUG.val >= common_js_16.DEBUG.med && console.log(`But saving this diff into that targets cache.`);
+            let cache = state.domCache.get(targetId);
+            if (!cache) {
+                cache = { contextId: '', domTree: '', focusSaver: FocusCache() };
+                state.domCache.set(targetId, cache);
+            }
+            // when we have  iframes this will be dangerous
+            // to flatten contextId (which will be multiple per page 1 for each iframe)
+            cache.contextId = executionContextId;
+            cache.diffs = diffs;
+            return;
+        }
+        if (state.viewState.viewFrameEl) {
+            const later = [];
+            for (const diff of diffs) {
+                const result = patchTree(diff, state);
+                if (!result)
+                    later.push(diff);
+            }
+            for (const diff of later) {
+                const result = patchTree(diff, state);
+                if (!result) {
+                    console.warn(`Diff could not be applied after two tries`, diff);
+                }
+            }
+        }
+        else {
+            common_js_16.DEBUG.val && console.warn(`No view frame`);
+        }
+    }
+    exports_45("handleTreeDiff", handleTreeDiff);
+    function patchTree({ insert, remove }, state) {
+        const doc = getViewWindow(state).document;
+        const { parentZig } = insert || remove;
+        const parentZigSelector = `[zig="${parentZig}"]`;
+        const parentElement = doc.querySelector(parentZigSelector);
+        if (!parentElement) {
+            //throw new TypeError(`No such parent element selected by ${parentZigSelector}`);
+            //console.warn(`No such parent element selected by ${parentZigSelector}`);
+            return false;
+        }
+        if (insert) {
+            parentElement.insertAdjacentHTML('beforeEnd', insert.outerHTML);
+            //console.log(parentElement, "Added", insert.outerHTML);
+        }
+        if (remove) {
+            const zigSelectorToRemove = `[zig="${remove.zig}"]`;
+            const elToRemove = parentElement.querySelector(zigSelectorToRemove);
+            if (!elToRemove) {
+                //throw new TypeError(`No such element to remove selected by ${zigSelectorToRemove}`);
+                //console.warn(`No such element to remove selected by ${zigSelectorToRemove}`);
+                return true;
+            }
+            else {
+                elToRemove.remove();
+            }
+            //console.log("Removed", elToRemove);
+        }
+        return true;
+    }
+    function zigs(dataId, generation) {
+        return `[zig="${dataId} ${generation}"]`;
+    }
+    function getViewWindow(state) {
+        return state.viewState.viewFrameEl.contentWindow;
+    }
+    exports_45("getViewWindow", getViewWindow);
+    function getViewFrame(state) {
+        return state.viewState.viewFrameEl;
+    }
+    exports_45("getViewFrame", getViewFrame);
+    return {
+        setters: [
+            function (common_js_16_1) {
+                common_js_16 = common_js_16_1;
+            }
+        ],
+        execute: function () {
+        }
+    };
+});
+System.register("plugins/projector/scripts/createListener", ["voodoo/src/common"], function (exports_46, context_46) {
+    "use strict";
+    var common_js_17, BUFFERED_FRAME_EVENT;
+    var __moduleName = context_46 && context_46.id;
+    function createFrameListener(queue, state) {
+        const { H } = state;
+        return function installFrameListener() {
+            self.addEventListener('message', e => {
+                if (e.data && e.data.event) {
+                    const { event } = e.data;
+                    const cache = state.domCache.get(state.activeTarget);
+                    if (cache) {
+                        event.contextId = cache.contextId;
+                    }
+                    if (event.type.endsWith('move')) {
+                        queue.send(BUFFERED_FRAME_EVENT);
+                    }
+                    else if (event.custom) {
+                        if (event.type == 'scrollToEnd') {
+                            let cache = state.domCache.get(state.activeTarget);
+                            if (!cache) {
+                                cache = {};
+                                state.domCache.set(state.activeTarget, cache);
+                            }
+                            cache.scrollTop = event.scrollTop;
+                            cache.scrollLeft = event.scrollLeft;
+                        }
+                        state.H(event);
+                    }
+                    else {
+                        if (!event.contextId) {
+                            common_js_17.DEBUG.val && console.warn(`Event will not have context id as no cache for activeTarget`);
+                        }
+                        if (event.type == 'input') {
+                            if (event.selectInput) {
+                                H({
+                                    synthetic: true,
+                                    type: 'select',
+                                    state: { waitingExecutionContext: event.contextId },
+                                    event
+                                });
+                            }
+                            else if (event.inputType == 'insertText') {
+                                H({
+                                    synthetic: true,
+                                    contextId: state.contextIdOfFocusedInput,
+                                    type: 'typing-clearAndInsertValue',
+                                    value: event.value,
+                                    event
+                                });
+                            }
+                        }
+                        else if (event.type == 'click' && event.href) {
+                            const activeTab = state.activeTab();
+                            let activeTabUrl = new URL(activeTab.url);
+                            let url = new URL(event.href);
+                            const frag = url.hash;
+                            activeTabUrl.hash = url.hash;
+                            url = url + '';
+                            activeTabUrl = activeTabUrl + '';
+                            common_js_17.DEBUG.val >= common_js_17.DEBUG.med && console.log(`Doc url ${activeTab.url}, target url ${url}`);
+                            if (url == activeTabUrl) {
+                                // in other words if they differ by only the hash
+                                const viewDoc = state.viewState.viewFrameEl.contentWindow.document;
+                                const fragElem = viewDoc.querySelector(frag);
+                                if (fragElem) {
+                                    fragElem.scrollIntoView();
+                                }
+                            }
+                        }
+                        else {
+                            if (event.type == 'keypress' && event.contenteditableTarget) {
+                                /**
+                                H({
+                                  synthetic: true,
+                                  contextId: state.contextIdOfFocusedInput,
+                                  type: 'typing',
+                                  data: event.key
+                                });
+                                **/
+                            }
+                            else {
+                                common_js_17.DEBUG.val >= common_js_17.DEBUG.med && console.log(event);
+                                H(event);
+                            }
+                        }
+                    }
+                }
+            });
+            const win = state.viewState.viewFrameEl.contentWindow;
+            common_js_17.DEBUG.val >= common_js_17.DEBUG.med && console.log(win);
+            win.addEventListener('load', () => {
+                common_js_17.DEBUG.val >= common_js_17.DEBUG.med && console.log("View frame content loaded");
+            });
+        };
+    }
+    exports_46("createFrameListener", createFrameListener);
+    function createDOMTreeGetter(queue, delay) {
+        return function getDOMTree(force = false) {
+            setTimeout(() => {
+                common_js_17.DEBUG.val >= common_js_17.DEBUG.med && console.log(`local requests remote tree`);
+                queue.send({
+                    type: "getDOMSnapshot",
+                    force,
+                    custom: true
+                });
+            }, delay);
+        };
+    }
+    exports_46("createDOMTreeGetter", createDOMTreeGetter);
+    return {
+        setters: [
+            function (common_js_17_1) {
+                common_js_17 = common_js_17_1;
+            }
+        ],
+        execute: function () {
+            BUFFERED_FRAME_EVENT = {
+                type: "buffered-results-collection",
+                command: {
+                    isBufferedResultsCollectionOnly: true,
+                    params: {}
+                }
+            };
+        }
+    };
+});
+System.register("plugins/projector/installPlugin", ["plugins/projector/scripts/treeUpdate", "plugins/projector/scripts/createListener"], function (exports_47, context_47) {
     "use strict";
     var treeUpdate_js_3, createListener_js_3;
-    var __moduleName = context_38 && context_38.id;
+    var __moduleName = context_47 && context_47.id;
     function installPlugin(state, queue) {
         console.log("Installing projector plugin");
         if (location.pathname !== "/factory.html")
@@ -6051,7 +8316,7 @@ System.register("plugins/projector/installPlugin", ["plugins/projector/scripts/t
             }
         });
     }
-    exports_38("default", installPlugin);
+    exports_47("default", installPlugin);
     function clearDomCache({ navigated }, state) {
         const { targetId } = navigated;
         state.domCache.delete(targetId);
@@ -6079,10 +8344,10 @@ System.register("plugins/projector/installPlugin", ["plugins/projector/scripts/t
         }
     };
 });
-System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "voodoo/src/handlers/targetInfo", "voodoo/src/handlers/demo", "voodoo/src/handlers/keysCanInput", "voodoo/src/handlers/elementInfo", "voodoo/src/handlers/scrollNotify", "voodoo/src/handlers/loadingIndicator", "voodoo/src/handlers/favicon", "voodoo/src/eventQueue", "voodoo/src/transformEvent", "voodoo/src/common", "voodoo/src/view", "plugins/demo/installPlugin", "plugins/appminifier/installPlugin", "plugins/projector/installPlugin"], function (exports_39, context_39) {
+System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "voodoo/src/handlers/targetInfo", "voodoo/src/handlers/demo", "voodoo/src/handlers/keysCanInput", "voodoo/src/handlers/elementInfo", "voodoo/src/handlers/scrollNotify", "voodoo/src/handlers/loadingIndicator", "voodoo/src/handlers/favicon", "voodoo/src/eventQueue", "voodoo/src/transformEvent", "voodoo/src/common", "voodoo/src/view", "plugins/demo/installPlugin", "plugins/appminifier/installPlugin", "plugins/projector/installPlugin"], function (exports_48, context_48) {
     "use strict";
-    var selectInput_js_1, targetInfo_js_1, demo_js_1, keysCanInput_js_1, elementInfo_js_1, scrollNotify_js_1, loadingIndicator_js_3, favicon_js_1, eventQueue_js_1, transformEvent_js_2, common_js_16, view_js_1, installPlugin_js_1, installPlugin_js_2, installPlugin_js_3, ThrottledEvents, SessionlessEvents, IMMEDIATE, SHORT_DELAY, LONG_DELAY, VERY_LONG_DELAY, EVENT_THROTTLE_MS, latestRequestId;
-    var __moduleName = context_39 && context_39.id;
+    var selectInput_js_1, targetInfo_js_1, demo_js_1, keysCanInput_js_1, elementInfo_js_1, scrollNotify_js_1, loadingIndicator_js_3, favicon_js_1, eventQueue_js_1, transformEvent_js_2, common_js_18, view_js_1, installPlugin_js_1, installPlugin_js_2, installPlugin_js_3, ThrottledEvents, SessionlessEvents, IMMEDIATE, SHORT_DELAY, LONG_DELAY, VERY_LONG_DELAY, EVENT_THROTTLE_MS, latestRequestId;
+    var __moduleName = context_48 && context_48.id;
     async function voodoo(selector, position, { postInstallTasks: postInstallTasks = [], preInstallTasks: preInstallTasks = [], canvasBondTasks: canvasBondTasks = [], bondTasks: bondTasks = [], useViewFrame: useViewFrame = false, demoMode: demoMode = false, } = {}) {
         const sessionToken = location.hash && location.hash.slice(1);
         location.hash = '';
@@ -6108,7 +8373,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
             // for firefox because it's IME does not fire inputType
             // so we have no simple way to handle deleting content backward
             // this should be FF on MOBILE only probably so that's why it's false
-            convertTypingEventsToSyncValueEvents: common_js_16.isFirefox() && common_js_16.deviceIsMobile(),
+            convertTypingEventsToSyncValueEvents: common_js_18.isFirefox() && common_js_18.deviceIsMobile(),
             //convertTypingEventsToSyncValueEvents: false,
             // for safari to detect if pointerevents work
             DoesNotSupportPointerEvents: true,
@@ -6151,11 +8416,11 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
                 funcList.push(func);
             }
         };
-        const updateTabs = common_js_16.debounce(rawUpdateTabs, LONG_DELAY);
+        const updateTabs = common_js_18.debounce(rawUpdateTabs, LONG_DELAY);
         if (state.demoMode) {
             state.demoEventConsumer = demo_js_1.demoZombie;
         }
-        if (common_js_16.DEBUG.dev) {
+        if (common_js_18.DEBUG.dev) {
             Object.assign(self, { state });
         }
         const queue = new eventQueue_js_1.default(state, sessionToken);
@@ -6170,13 +8435,13 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
                 installPlugin_js_1.default(state, queue);
             }
         }
-        if (common_js_16.isSafari()) {
+        if (common_js_18.isSafari()) {
             queue.send({ type: "isSafari" });
         }
-        if (common_js_16.isFirefox()) {
+        if (common_js_18.isFirefox()) {
             queue.send({ type: "isFirefox" });
         }
-        if (common_js_16.deviceIsMobile()) {
+        if (common_js_18.deviceIsMobile()) {
             state.hideScrollbars();
         }
         let nextSend;
@@ -6195,7 +8460,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
         // loading
         queue.addMetaListener('resource', meta => loadingIndicator_js_3.showLoadingIndicator(meta, state));
         queue.addMetaListener('navigated', meta => loadingIndicator_js_3.resetLoadingIndicator(meta, state));
-        if (common_js_16.DEBUG.val >= common_js_16.DEBUG.med) {
+        if (common_js_18.DEBUG.val >= common_js_18.DEBUG.med) {
             queue.addMetaListener('navigated', meta => console.log(meta));
             queue.addMetaListener('changed', meta => console.log(meta));
             queue.addMetaListener('created', meta => console.log(meta));
@@ -6217,7 +8482,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
         // tabs
         queue.addMetaListener('created', meta => {
             if (meta.created.type == 'page') {
-                if (common_js_16.DEBUG.activateNewTab) {
+                if (common_js_18.DEBUG.activateNewTab) {
                     if (meta.created.url == 'about:blank' || meta.created.url == '') {
                         state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
                     }
@@ -6291,7 +8556,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
         canvasBondTasks.push(indicateNoOpenTabs);
         canvasBondTasks.push(installZoomListener);
         canvasBondTasks.push(asyncSizeBrowserToBounds);
-        if (common_js_16.isSafari()) {
+        if (common_js_18.isSafari()) {
             canvasBondTasks.push(installSafariLongTapListener);
         }
         bondTasks.push(canKeysInput);
@@ -6325,7 +8590,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
         const pluginView = { addToQueue, subscribeToQueue, requestRender, api };
         const poppetView = { loadPlugin, api };
         const postinstallView = { queue };
-        await common_js_16.sleep(0);
+        await common_js_18.sleep(0);
         for (const task of postInstallTasks) {
             try {
                 task(postInstallView);
@@ -6476,7 +8741,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
                     }
                     const scale = lastScale * multiplier;
                     lastScale = scale;
-                    common_js_16.DEBUG.val > common_js_16.DEBUG.low && console.log('sending zoom ' + scale);
+                    common_js_18.DEBUG.val > common_js_18.DEBUG.low && console.log('sending zoom ' + scale);
                     H({ synthetic: true,
                         type: 'zoom',
                         scale,
@@ -6510,7 +8775,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
                     else {
                         const scale = lastScale * Math.abs(lastDist / startDist);
                         lastScale = scale;
-                        common_js_16.DEBUG.val > common_js_16.DEBUG.low && console.log('sending zoom ' + scale);
+                        common_js_18.DEBUG.val > common_js_18.DEBUG.low && console.log('sending zoom ' + scale);
                         H({ synthetic: true,
                             type: 'zoom',
                             scale,
@@ -6528,7 +8793,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
             // block if no tabs
             if (state.tabs.length == 0) {
                 if (SessionlessEvents.has(event.type)) {
-                    common_js_16.DEBUG.val > common_js_16.DEBUG.low && console.log(`passing through sessionless event of type ${event.type}`);
+                    common_js_18.DEBUG.val > common_js_18.DEBUG.low && console.log(`passing through sessionless event of type ${event.type}`);
                 }
                 else
                     return;
@@ -6634,15 +8899,15 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
             const { innerWidth: iw, outerWidth: ow, innerHeight: ih, outerHeight: oh } = window;
             const { width: w, availWidth: aw, height: h, availHeight: ah } = screen;
             width = iw;
-            if (common_js_16.DEBUG.val > common_js_16.DEBUG.high) {
-                common_js_16.logit({ iw, ow, ih, oh, width, height, w, aw, h, ah });
+            if (common_js_18.DEBUG.val > common_js_18.DEBUG.high) {
+                common_js_18.logit({ iw, ow, ih, oh, width, height, w, aw, h, ah });
             }
             if (!el.dataset.sized && (el.width != width || el.height != height)) {
                 el.dataset.sized = true;
                 el.width = width;
                 el.height = height;
             }
-            const mobile = common_js_16.deviceIsMobile();
+            const mobile = common_js_18.deviceIsMobile();
             if (firstTime) {
                 H({ synthetic: true,
                     type: "window-bounds",
@@ -6710,7 +8975,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
             view_js_1.subviews.OmniBox(state);
             view_js_1.subviews.LoadingIndicator(state);
             setTimeout(() => {
-                if (state.active && state.active.url != common_js_16.BLANK) {
+                if (state.active && state.active.url != common_js_18.BLANK) {
                     canKeysInput();
                 }
                 else {
@@ -6786,13 +9051,13 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
                 }
             }
         }
-        async function createTab(click, url = common_js_16.BLANK) {
+        async function createTab(click, url = common_js_18.BLANK) {
             queue.send({
                 command: {
                     name: "Target.createTarget",
                     params: {
                         url,
-                        enableBeginFrameControl: common_js_16.DEBUG.frameControl
+                        enableBeginFrameControl: common_js_18.DEBUG.frameControl
                     },
                 }
             });
@@ -6829,7 +9094,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
             console.warn("Unimplemented");
         }
     }
-    exports_39("default", voodoo);
+    exports_48("default", voodoo);
     function cloneKeyEvent(event, vRetargeted) {
         return {
             type: event.type,
@@ -6843,7 +9108,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
             vRetargeted
         };
     }
-    exports_39("cloneKeyEvent", cloneKeyEvent);
+    exports_48("cloneKeyEvent", cloneKeyEvent);
     return {
         setters: [
             function (selectInput_js_1_1) {
@@ -6876,8 +9141,8 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
             function (transformEvent_js_2_1) {
                 transformEvent_js_2 = transformEvent_js_2_1;
             },
-            function (common_js_16_1) {
-                common_js_16 = common_js_16_1;
+            function (common_js_18_1) {
+                common_js_18 = common_js_18_1;
             },
             function (view_js_1_1) {
                 view_js_1 = view_js_1_1;
@@ -6912,10 +9177,10 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
         }
     };
 });
-System.register("voodoo/index", ["voodoo/src/constructor"], function (exports_40, context_40) {
+System.register("voodoo/index", ["voodoo/src/constructor"], function (exports_49, context_49) {
     "use strict";
     var constructor_js_2, USE_BOTH;
-    var __moduleName = context_40 && context_40.id;
+    var __moduleName = context_49 && context_49.id;
     function Voodoo({ api, translator, image, useViewFrame: useViewFrame = false, demoMode: demoMode = false, } = {}, selector, position = 'beforeEnd') {
         let root;
         if (!selector) {
@@ -6968,7 +9233,7 @@ System.register("voodoo/index", ["voodoo/src/constructor"], function (exports_40
             postInstallTasks: []
         });
     }
-    exports_40("default", Voodoo);
+    exports_49("default", Voodoo);
     return {
         setters: [
             function (constructor_js_2_1) {
@@ -6981,9 +9246,9 @@ System.register("voodoo/index", ["voodoo/src/constructor"], function (exports_40
         }
     };
 });
-System.register("getAPI", [], function (exports_41, context_41) {
+System.register("getAPI", [], function (exports_50, context_50) {
     "use strict";
-    var __moduleName = context_41 && context_41.id;
+    var __moduleName = context_50 && context_50.id;
     function getAPI() {
         const api = new URL(location);
         api.hash = '';
@@ -6996,17 +9261,17 @@ System.register("getAPI", [], function (exports_41, context_41) {
         }
         return url;
     }
-    exports_41("default", getAPI);
+    exports_50("default", getAPI);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("canvas-start-app", ["voodoo/index", "getAPI", "translateVoodooCRDP"], function (exports_42, context_42) {
+System.register("canvas-start-app", ["voodoo/index", "getAPI", "translateVoodooCRDP"], function (exports_51, context_51) {
     "use strict";
     var index_js_3, getAPI_js_1, translateVoodooCRDP_js_2;
-    var __moduleName = context_42 && context_42.id;
+    var __moduleName = context_51 && context_51.id;
     async function start_app() {
         const useViewFrame = false;
         const translator = translateVoodooCRDP_js_2.default;
@@ -7031,10 +9296,10 @@ System.register("canvas-start-app", ["voodoo/index", "getAPI", "translateVoodooC
         }
     };
 });
-System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/common", "translateVoodooCRDP", "kbd"], function (exports_43, context_43) {
+System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/common", "translateVoodooCRDP", "kbd"], function (exports_52, context_52) {
     "use strict";
-    var common_js_17, translateVoodooCRDP_js_3, translateVoodooCRDP_js_4, kbd_js_3, Overrides, SHORT_TIMEOUT, INTERACTION_EDGE, NONE, DOM_DELTA_PIXEL, DOM_DELTA_LINE, DOM_DELTA_PAGE, LINE_HEIGHT_GUESS, BOXCACHE, BUTTON, SYNTHETIC_CTRL;
-    var __moduleName = context_43 && context_43.id;
+    var common_js_19, translateVoodooCRDP_js_3, translateVoodooCRDP_js_4, kbd_js_3, Overrides, SHORT_TIMEOUT, INTERACTION_EDGE, NONE, DOM_DELTA_PIXEL, DOM_DELTA_LINE, DOM_DELTA_PAGE, LINE_HEIGHT_GUESS, BOXCACHE, BUTTON, SYNTHETIC_CTRL;
+    var __moduleName = context_52 && context_52.id;
     function translator(e, handled = { type: 'case' }) {
         handled.type = handled.type || 'case';
         const TranslatedE = translateVoodooCRDP_js_3.default(e, handled);
@@ -7165,7 +9430,7 @@ System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/com
                     return;
                 const { x, y, width, height, clientX, clientY, pageX, pageY } = e;
                 const [dataId, generation] = zig.split(' ');
-                common_js_17.DEBUG.val >= common_js_17.DEBUG.med && console.log(`scroll to zig ${dataId} ${generation}`);
+                common_js_19.DEBUG.val >= common_js_19.DEBUG.med && console.log(`scroll to zig ${dataId} ${generation}`);
                 return [
                     {
                         command: {
@@ -7252,7 +9517,7 @@ System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/com
         };
     }
     function keyEvent(e, modifiers = false, SYNTHETIC = false) {
-        common_js_17.DEBUG.val >= common_js_17.DEBUG.med && console.log(e);
+        common_js_19.DEBUG.val >= common_js_19.DEBUG.med && console.log(e);
         const id = e.key && e.key.length > 1 ? e.key : e.code;
         const def = kbd_js_3.default[id];
         const text = e.originalType == "keypress" ? String.fromCharCode(e.keyCode) : undefined;
@@ -7325,8 +9590,8 @@ System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/com
     }
     return {
         setters: [
-            function (common_js_17_1) {
-                common_js_17 = common_js_17_1;
+            function (common_js_19_1) {
+                common_js_19 = common_js_19_1;
             },
             function (translateVoodooCRDP_js_3_1) {
                 translateVoodooCRDP_js_3 = translateVoodooCRDP_js_3_1;
@@ -7338,7 +9603,7 @@ System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/com
         ],
         execute: function () {
             //export const WorldName = 'PlanetZanj-Appminifier';
-            exports_43("Overrides", Overrides = new Set([
+            exports_52("Overrides", Overrides = new Set([
                 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'wheel',
                 'mousemove', 'pointermove'
             ]));
@@ -7352,14 +9617,14 @@ System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/com
             BOXCACHE = new Map();
             BUTTON = ["left", "middle", "right"];
             SYNTHETIC_CTRL = e => keyEvent({ key: 'Control', originalType: e.originalType }, 2, true);
-            exports_43("default", translator);
+            exports_52("default", translator);
         }
     };
 });
-System.register("custom-start-app", ["voodoo/index", "getAPI", "plugins/appminifier/translateAppminifierCRDP"], function (exports_44, context_44) {
+System.register("custom-start-app", ["voodoo/index", "getAPI", "plugins/appminifier/translateAppminifierCRDP"], function (exports_53, context_53) {
     "use strict";
     var index_js_4, getAPI_js_2, translateAppminifierCRDP_js_1;
-    var __moduleName = context_44 && context_44.id;
+    var __moduleName = context_53 && context_53.id;
     async function start_app() {
         const useViewFrame = true;
         const translator = translateAppminifierCRDP_js_1.default;
@@ -7393,10 +9658,10 @@ function EventTarget2() {
 }
 EventTarget2.prototype = Element.prototype;
 self.EventTarget = self.EventTarget || EventTarget2;
-System.register("dist-start", ["voodoo/index", "getAPI", "translateVoodooCRDP", "plugins/appminifier/translateAppminifierCRDP"], function (exports_45, context_45) {
+System.register("dist-start", ["voodoo/index", "getAPI", "translateVoodooCRDP", "plugins/appminifier/translateAppminifierCRDP"], function (exports_54, context_54) {
     "use strict";
     var index_js_5, getAPI_js_3, translateVoodooCRDP_js_5, translateAppminifierCRDP_js_2;
-    var __moduleName = context_45 && context_45.id;
+    var __moduleName = context_54 && context_54.id;
     async function start_app() {
         const useViewFrame = false;
         const translator = useViewFrame ? translateAppminifierCRDP_js_2.default : translateVoodooCRDP_js_5.default;
@@ -7424,15 +9689,15 @@ System.register("dist-start", ["voodoo/index", "getAPI", "translateVoodooCRDP", 
         }
     };
 });
-System.register("error_catchers", [], function (exports_46, context_46) {
+System.register("error_catchers", [], function (exports_55, context_55) {
     "use strict";
-    var __moduleName = context_46 && context_46.id;
+    var __moduleName = context_55 && context_55.id;
     function setupErrorCatchers() {
         //DEBUG.dev && (self.onerror = (v) => (func(v, extractMeat(v).message, extractMeat(v).stack, v+''), true));
         //DEBUG.dev && (self.onerror = (v) => (console.log(v), true));
         //DEBUG.dev && (self.onunhandledrejection = ({reason}) => (func(JSON.stringify(reason,null,2)), true));
     }
-    exports_46("default", setupErrorCatchers);
+    exports_55("default", setupErrorCatchers);
     function isMobile() {
         return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
     }
@@ -7464,10 +9729,10 @@ System.register("error_catchers", [], function (exports_46, context_46) {
         }
     };
 });
-System.register("plugins/projector/translateProjectorCRDP", ["translateVoodooCRDP"], function (exports_47, context_47) {
+System.register("plugins/projector/translateProjectorCRDP", ["translateVoodooCRDP"], function (exports_56, context_56) {
     "use strict";
     var translateVoodooCRDP_js_6, translateVoodooCRDP_js_7, Overrides, SHORT_TIMEOUT;
-    var __moduleName = context_47 && context_47.id;
+    var __moduleName = context_56 && context_56.id;
     function translator(e, handled = { type: 'case' }) {
         handled.type = handled.type || 'case';
         const TranslatedE = translateVoodooCRDP_js_6.default(e, handled);
@@ -7515,7 +9780,7 @@ System.register("plugins/projector/translateProjectorCRDP", ["translateVoodooCRD
         }
         return e;
     }
-    exports_47("default", translator);
+    exports_56("default", translator);
     return {
         setters: [
             function (translateVoodooCRDP_js_6_1) {
@@ -7525,15 +9790,15 @@ System.register("plugins/projector/translateProjectorCRDP", ["translateVoodooCRD
         ],
         execute: function () {
             //export const WorldName = 'PlanetZanj-Projector';
-            exports_47("Overrides", Overrides = new Set([]));
+            exports_56("Overrides", Overrides = new Set([]));
             SHORT_TIMEOUT = 1000;
         }
     };
 });
-System.register("factory-start-app", ["voodoo/index", "getAPI", "plugins/projector/translateProjectorCRDP"], function (exports_48, context_48) {
+System.register("factory-start-app", ["voodoo/index", "getAPI", "plugins/projector/translateProjectorCRDP"], function (exports_57, context_57) {
     "use strict";
     var index_js_6, getAPI_js_4, translateProjectorCRDP_js_1;
-    var __moduleName = context_48 && context_48.id;
+    var __moduleName = context_57 && context_57.id;
     async function start_app() {
         const useViewFrame = true;
         const translator = translateProjectorCRDP_js_1.default;
@@ -7558,10 +9823,10 @@ System.register("factory-start-app", ["voodoo/index", "getAPI", "plugins/project
         }
     };
 });
-System.register("image-start-app", ["voodoo/index", "getAPI", "translateVoodooCRDP"], function (exports_49, context_49) {
+System.register("image-start-app", ["voodoo/index", "getAPI", "translateVoodooCRDP"], function (exports_58, context_58) {
     "use strict";
     var index_js_7, getAPI_js_5, translateVoodooCRDP_js_8;
-    var __moduleName = context_49 && context_49.id;
+    var __moduleName = context_58 && context_58.id;
     async function start_app() {
         const useViewFrame = false;
         const translator = translateVoodooCRDP_js_8.default;
@@ -7586,9 +9851,9 @@ System.register("image-start-app", ["voodoo/index", "getAPI", "translateVoodooCR
         }
     };
 });
-System.register("landing", [], function (exports_50, context_50) {
+System.register("landing", [], function (exports_59, context_59) {
     "use strict";
-    var __moduleName = context_50 && context_50.id;
+    var __moduleName = context_59 && context_59.id;
     function Landing(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Remote Browser Isolation", `
@@ -7766,16 +10031,16 @@ System.register("landing", [], function (exports_50, context_50) {
           </section>
   `);
     }
-    exports_50("default", Landing);
+    exports_59("default", Landing);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/about", [], function (exports_51, context_51) {
+System.register("pages/about", [], function (exports_60, context_60) {
     "use strict";
-    var __moduleName = context_51 && context_51.id;
+    var __moduleName = context_60 && context_60.id;
     function About(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "About BrowserGap", `
@@ -7816,16 +10081,16 @@ System.register("pages/about", [], function (exports_51, context_51) {
         </section>
   `);
     }
-    exports_51("About", About);
+    exports_60("About", About);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/training", [], function (exports_52, context_52) {
+System.register("pages/training", [], function (exports_61, context_61) {
     "use strict";
-    var __moduleName = context_52 && context_52.id;
+    var __moduleName = context_61 && context_61.id;
     function Training(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Tutorials and Support Reading Room", `
@@ -7870,16 +10135,16 @@ System.register("pages/training", [], function (exports_52, context_52) {
           </section>
   `);
     }
-    exports_52("Training", Training);
+    exports_61("Training", Training);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/pricing", [], function (exports_53, context_53) {
+System.register("pages/pricing", [], function (exports_62, context_62) {
     "use strict";
-    var __moduleName = context_53 && context_53.id;
+    var __moduleName = context_62 && context_62.id;
     function Pricing(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Per-seat Subscription Pricing", `
@@ -7952,16 +10217,16 @@ System.register("pages/pricing", [], function (exports_53, context_53) {
           </section>
   `);
     }
-    exports_53("Pricing", Pricing);
+    exports_62("Pricing", Pricing);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/cloudBrowsers", [], function (exports_54, context_54) {
+System.register("pages/cloudBrowsers", [], function (exports_63, context_63) {
     "use strict";
-    var __moduleName = context_54 && context_54.id;
+    var __moduleName = context_63 && context_63.id;
     function CloudBrowsers(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Remote Cloud Browser Isolation Service", `
@@ -8025,16 +10290,16 @@ System.register("pages/cloudBrowsers", [], function (exports_54, context_54) {
           </section>
   `);
     }
-    exports_54("CloudBrowsers", CloudBrowsers);
+    exports_63("CloudBrowsers", CloudBrowsers);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/fiveElements", [], function (exports_55, context_55) {
+System.register("pages/fiveElements", [], function (exports_64, context_64) {
     "use strict";
-    var __moduleName = context_55 && context_55.id;
+    var __moduleName = context_64 && context_64.id;
     function FiveElements(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Five Elements of BrowserGap Security", `
@@ -8112,16 +10377,16 @@ System.register("pages/fiveElements", [], function (exports_55, context_55) {
           </section>
   `);
     }
-    exports_55("FiveElements", FiveElements);
+    exports_64("FiveElements", FiveElements);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/document-reading-room/history", [], function (exports_56, context_56) {
+System.register("pages/document-reading-room/history", [], function (exports_65, context_65) {
     "use strict";
-    var __moduleName = context_56 && context_56.id;
+    var __moduleName = context_65 && context_65.id;
     function History(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Reading Room: History of BrowserGap", `
@@ -8157,16 +10422,16 @@ System.register("pages/document-reading-room/history", [], function (exports_56,
           </section>
   `);
     }
-    exports_56("History", History);
+    exports_65("History", History);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/document-reading-room/threats", [], function (exports_57, context_57) {
+System.register("pages/document-reading-room/threats", [], function (exports_66, context_66) {
     "use strict";
-    var __moduleName = context_57 && context_57.id;
+    var __moduleName = context_66 && context_66.id;
     function Threats(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Reading Room: The Threats Facing the Web User", `
@@ -8189,16 +10454,16 @@ System.register("pages/document-reading-room/threats", [], function (exports_57,
           </section>
   `);
     }
-    exports_57("Threats", Threats);
+    exports_66("Threats", Threats);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/document-reading-room/features", [], function (exports_58, context_58) {
+System.register("pages/document-reading-room/features", [], function (exports_67, context_67) {
     "use strict";
-    var __moduleName = context_58 && context_58.id;
+    var __moduleName = context_67 && context_67.id;
     function Features(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Reading Room: An Overview of BrowserGap Features", `
@@ -8221,22 +10486,22 @@ System.register("pages/document-reading-room/features", [], function (exports_58
           </section>
   `);
     }
-    exports_58("Features", Features);
+    exports_67("Features", Features);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/document-reading-room/index", ["pages/document-reading-room/history", "pages/document-reading-room/threats", "pages/document-reading-room/features"], function (exports_59, context_59) {
+System.register("pages/document-reading-room/index", ["pages/document-reading-room/history", "pages/document-reading-room/threats", "pages/document-reading-room/features"], function (exports_68, context_68) {
     "use strict";
-    var __moduleName = context_59 && context_59.id;
+    var __moduleName = context_68 && context_68.id;
     function exportStar_2(m) {
         var exports = {};
         for (var n in m) {
             if (n !== "default") exports[n] = m[n];
         }
-        exports_59(exports);
+        exports_68(exports);
     }
     return {
         setters: [
@@ -8254,9 +10519,9 @@ System.register("pages/document-reading-room/index", ["pages/document-reading-ro
         }
     };
 });
-System.register("pages/legal-room/terms", [], function (exports_60, context_60) {
+System.register("pages/legal-room/terms", [], function (exports_69, context_69) {
     "use strict";
-    var __moduleName = context_60 && context_60.id;
+    var __moduleName = context_69 && context_69.id;
     function Terms(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Terms and Conditions", `
@@ -8398,16 +10663,16 @@ System.register("pages/legal-room/terms", [], function (exports_60, context_60) 
         </section>
   `);
     }
-    exports_60("Terms", Terms);
+    exports_69("Terms", Terms);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/legal-room/privacy", [], function (exports_61, context_61) {
+System.register("pages/legal-room/privacy", [], function (exports_70, context_70) {
     "use strict";
-    var __moduleName = context_61 && context_61.id;
+    var __moduleName = context_70 && context_70.id;
     function Privacy(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Privacy Policy", `
@@ -8484,16 +10749,16 @@ System.register("pages/legal-room/privacy", [], function (exports_61, context_61
       </section>
   `);
     }
-    exports_61("Privacy", Privacy);
+    exports_70("Privacy", Privacy);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/legal-room/security", [], function (exports_62, context_62) {
+System.register("pages/legal-room/security", [], function (exports_71, context_71) {
     "use strict";
-    var __moduleName = context_62 && context_62.id;
+    var __moduleName = context_71 && context_71.id;
     function Security(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Security Policy // Responsible Vulernability Disclosure Policy", `
@@ -8540,22 +10805,22 @@ System.register("pages/legal-room/security", [], function (exports_62, context_6
       </section>
   `);
     }
-    exports_62("Security", Security);
+    exports_71("Security", Security);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/legal-room/index", ["pages/legal-room/terms", "pages/legal-room/privacy", "pages/legal-room/security"], function (exports_63, context_63) {
+System.register("pages/legal-room/index", ["pages/legal-room/terms", "pages/legal-room/privacy", "pages/legal-room/security"], function (exports_72, context_72) {
     "use strict";
-    var __moduleName = context_63 && context_63.id;
+    var __moduleName = context_72 && context_72.id;
     function exportStar_3(m) {
         var exports = {};
         for (var n in m) {
             if (n !== "default") exports[n] = m[n];
         }
-        exports_63(exports);
+        exports_72(exports);
     }
     return {
         setters: [
@@ -8573,9 +10838,9 @@ System.register("pages/legal-room/index", ["pages/legal-room/terms", "pages/lega
         }
     };
 });
-System.register("pages/case-study/ukCorpWebCaseStudy", [], function (exports_64, context_64) {
+System.register("pages/case-study/ukCorpWebCaseStudy", [], function (exports_73, context_73) {
     "use strict";
-    var __moduleName = context_64 && context_64.id;
+    var __moduleName = context_73 && context_73.id;
     function UKCorpWeb(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Case Study: 100s of Company Computers Infected by Web Malware", `
@@ -8658,22 +10923,22 @@ System.register("pages/case-study/ukCorpWebCaseStudy", [], function (exports_64,
       </section>
   `);
     }
-    exports_64("UKCorpWeb", UKCorpWeb);
+    exports_73("UKCorpWeb", UKCorpWeb);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/case-study/index", ["pages/case-study/ukCorpWebCaseStudy"], function (exports_65, context_65) {
+System.register("pages/case-study/index", ["pages/case-study/ukCorpWebCaseStudy"], function (exports_74, context_74) {
     "use strict";
-    var __moduleName = context_65 && context_65.id;
+    var __moduleName = context_74 && context_74.id;
     function exportStar_4(m) {
         var exports = {};
         for (var n in m) {
             if (n !== "default") exports[n] = m[n];
         }
-        exports_65(exports);
+        exports_74(exports);
     }
     return {
         setters: [
@@ -8685,9 +10950,9 @@ System.register("pages/case-study/index", ["pages/case-study/ukCorpWebCaseStudy"
         }
     };
 });
-System.register("pages/index", ["pages/about", "pages/training", "pages/pricing", "pages/cloudBrowsers", "pages/fiveElements", "pages/document-reading-room/index", "pages/legal-room/index", "pages/case-study/index"], function (exports_66, context_66) {
+System.register("pages/index", ["pages/about", "pages/training", "pages/pricing", "pages/cloudBrowsers", "pages/fiveElements", "pages/document-reading-room/index", "pages/legal-room/index", "pages/case-study/index"], function (exports_75, context_75) {
     "use strict";
-    var __moduleName = context_66 && context_66.id;
+    var __moduleName = context_75 && context_75.id;
     var exportedNames_1 = {
         "DRR": true,
         "Legal": true,
@@ -8698,7 +10963,7 @@ System.register("pages/index", ["pages/about", "pages/training", "pages/pricing"
         for (var n in m) {
             if (n !== "default" && !exportedNames_1.hasOwnProperty(n)) exports[n] = m[n];
         }
-        exports_66(exports);
+        exports_75(exports);
     }
     return {
         setters: [
@@ -8718,22 +10983,22 @@ System.register("pages/index", ["pages/about", "pages/training", "pages/pricing"
                 exportStar_5(fiveElements_js_1_1);
             },
             function (DRR_1) {
-                exports_66("DRR", DRR_1);
+                exports_75("DRR", DRR_1);
             },
             function (Legal_1) {
-                exports_66("Legal", Legal_1);
+                exports_75("Legal", Legal_1);
             },
             function (CaseStudy_1) {
-                exports_66("CaseStudy", CaseStudy_1);
+                exports_75("CaseStudy", CaseStudy_1);
             }
         ],
         execute: function () {
         }
     };
 });
-System.register("pages/boilerplate", [], function (exports_67, context_67) {
+System.register("pages/boilerplate", [], function (exports_76, context_76) {
     "use strict";
-    var __moduleName = context_67 && context_67.id;
+    var __moduleName = context_76 && context_76.id;
     function Wrap(state, title, contentIntro, contentBody) {
         return `
     <!DOCTYPE html>
@@ -9057,53 +11322,53 @@ System.register("pages/boilerplate", [], function (exports_67, context_67) {
       <script defer async src=/scripts/populateHonorifics.js></script>
   `;
     }
-    exports_67("Wrap", Wrap);
+    exports_76("Wrap", Wrap);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("index", ["landing", "pages/index", "./.well-known/index.js", "pages/boilerplate"], function (exports_68, context_68) {
+System.register("index", ["landing", "pages/index", "./.well-known/index.js", "pages/boilerplate"], function (exports_77, context_77) {
     "use strict";
-    var __moduleName = context_68 && context_68.id;
+    var __moduleName = context_77 && context_77.id;
     return {
         setters: [
             function (Landing_1) {
-                exports_68("Landing", Landing_1);
+                exports_77("Landing", Landing_1);
             },
             function (Pages_1) {
-                exports_68("Pages", Pages_1);
+                exports_77("Pages", Pages_1);
             },
             function (SecTxt_1) {
-                exports_68("SecTxt", SecTxt_1);
+                exports_77("SecTxt", SecTxt_1);
             },
             function (Boilerplate_1) {
-                exports_68("Boilerplate", Boilerplate_1);
+                exports_77("Boilerplate", Boilerplate_1);
             }
         ],
         execute: function () {
         }
     };
 });
-System.register("prod/setup-service-worker", ["voodoo/src/common"], function (exports_69, context_69) {
+System.register("prod/setup-service-worker", ["voodoo/src/common"], function (exports_78, context_78) {
     "use strict";
-    var common_js_18;
-    var __moduleName = context_69 && context_69.id;
+    var common_js_20;
+    var __moduleName = context_78 && context_78.id;
     function setupServiceWorkers() {
-        if (common_js_18.DEBUG.serviceWorker && 'serviceWorker' in navigator) {
-            const refresh = common_js_18.DEBUG.resetCache ? 'CLEAR' + Math.random() : common_js_18.VERSION;
+        if (common_js_20.DEBUG.serviceWorker && 'serviceWorker' in navigator) {
+            const refresh = common_js_20.DEBUG.resetCache ? 'CLEAR' + Math.random() : common_js_20.VERSION;
             navigator.serviceWorker.register('/serviceWorker.js?v=' + refresh);
             navigator.serviceWorker.addEventListener("controllerchange", async (e) => {
                 console.log("Controller change", e);
             });
         }
     }
-    exports_69("default", setupServiceWorkers);
+    exports_78("default", setupServiceWorkers);
     return {
         setters: [
-            function (common_js_18_1) {
-                common_js_18 = common_js_18_1;
+            function (common_js_20_1) {
+                common_js_20 = common_js_20_1;
             }
         ],
         execute: function () {
@@ -9111,14 +11376,14 @@ System.register("prod/setup-service-worker", ["voodoo/src/common"], function (ex
         }
     };
 });
-System.register("prod/ask-before-unload", ["voodoo/src/common"], function (exports_70, context_70) {
+System.register("prod/ask-before-unload", ["voodoo/src/common"], function (exports_79, context_79) {
     "use strict";
-    var common_js_19;
-    var __moduleName = context_70 && context_70.id;
+    var common_js_21;
+    var __moduleName = context_79 && context_79.id;
     function setupUnloadHandler() {
-        common_js_19.DEBUG.delayUnload && self.addEventListener('beforeunload', event => {
+        common_js_21.DEBUG.delayUnload && self.addEventListener('beforeunload', event => {
             const delayOffRequested = !!document.querySelector('form.delay-off');
-            if (common_js_19.DEBUG.delayUnload && !delayOffRequested) {
+            if (common_js_21.DEBUG.delayUnload && !delayOffRequested) {
                 event.preventDefault();
                 event.returnValue = `
         You are about to leave the browser.
@@ -9127,11 +11392,11 @@ System.register("prod/ask-before-unload", ["voodoo/src/common"], function (expor
             }
         });
     }
-    exports_70("default", setupUnloadHandler);
+    exports_79("default", setupUnloadHandler);
     return {
         setters: [
-            function (common_js_19_1) {
-                common_js_19 = common_js_19_1;
+            function (common_js_21_1) {
+                common_js_21 = common_js_21_1;
             }
         ],
         execute: function () {
@@ -9139,9 +11404,9 @@ System.register("prod/ask-before-unload", ["voodoo/src/common"], function (expor
         }
     };
 });
-System.register("meta", ["whatwg-fetch", "@babel/polyfill", "error_catchers", "prod/setup-service-worker", "prod/ask-before-unload"], function (exports_71, context_71) {
+System.register("meta", ["whatwg-fetch", "@babel/polyfill", "error_catchers", "prod/setup-service-worker", "prod/ask-before-unload"], function (exports_80, context_80) {
     "use strict";
-    var __moduleName = context_71 && context_71.id;
+    var __moduleName = context_80 && context_80.id;
     return {
         setters: [
             function (_1) {
@@ -9161,10 +11426,10 @@ System.register("meta", ["whatwg-fetch", "@babel/polyfill", "error_catchers", "p
 });
 require = require('esm')(module /*, options*/);
 module.exports = require('./index.js');
-System.register("render_static", ["site", "fs", "path"], function (exports_72, context_72) {
+System.register("render_static", ["site", "fs", "path"], function (exports_81, context_81) {
     "use strict";
     var Site, Fs, Path, STATIC_FILE_PATHS, State;
-    var __moduleName = context_72 && context_72.id;
+    var __moduleName = context_81 && context_81.id;
     async function renderAll({ state }) {
         console.log(`Rendering all static file paths...`);
         for (const [pathList, renderFunc] of enumerateTree(STATIC_FILE_PATHS)) {
@@ -9398,10 +11663,10 @@ function NoLoadView() {
         </main>
       `;
 }
-System.register("start-demo-app", ["voodoo/index", "getAPI", "plugins/appminifier/translateAppminifierCRDP"], function (exports_73, context_73) {
+System.register("start-demo-app", ["voodoo/index", "getAPI", "plugins/appminifier/translateAppminifierCRDP"], function (exports_82, context_82) {
     "use strict";
     var index_js_8, getAPI_js_6, translateAppminifierCRDP_js_3;
-    var __moduleName = context_73 && context_73.id;
+    var __moduleName = context_82 && context_82.id;
     async function start_demo() {
         const useViewFrame = true;
         const demoMode = true;
