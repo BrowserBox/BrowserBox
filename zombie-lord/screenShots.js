@@ -52,7 +52,7 @@ export function makeCamera(connection) {
     doShot();
     tailShotDelay *= 1.618;
     if ( tailShotDelay < MAX_TIME_BETWEEN_TAIL_SHOTS ) {
-      if ( !! tailShot ) {
+      if ( tailShot ) {
         clearTimeout(tailShot);
       }
       tailShot = setTimeout(nextTailShot, tailShotDelay);
@@ -65,7 +65,7 @@ export function makeCamera(connection) {
   return {queueTailShot, doShot};
 
   function queueTailShot() {
-    if ( !! tailShot ) {
+    if ( tailShot ) {
       clearTimeout(tailShot);
       tailShotDelay = MIN_TIME_BETWEEN_TAIL_SHOTS;
       tailShot = false;
@@ -120,7 +120,7 @@ export function makeCamera(connection) {
 
   async function saveShot() {
     const F = await shot();        
-    if ( !! F.img ) {
+    if ( F.img ) {
       connection.frameBuffer.push(F);
 
       while ( connection.frameBuffer.length > MAX_FRAMES ) {

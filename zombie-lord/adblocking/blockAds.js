@@ -51,5 +51,5 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       console.warn("Issue with continuing request", e);
     }
   }
-};
+}
 

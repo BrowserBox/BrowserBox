@@ -97,7 +97,7 @@
         const {data,frameBuffer,meta,totalBandwidth} = await timedSend(command, chrome_port);
         DEBUG.val && console.log(`Sent ${JSON.stringify(command)}!`);
         Data.push(data);
-        if ( !! meta ) {
+        if ( meta ) {
           // filter out all but the last resource for each targetId
           const latestResourceForTarget = {};
           const nonResourceMeta = meta.filter(mi => {
@@ -107,7 +107,7 @@
           });
           Meta.push(...nonResourceMeta, ...Object.values(latestResourceForTarget));
         }
-        if ( !! frameBuffer) {
+        if ( frameBuffer) {
           Frames.push(...frameBuffer);
           while(Frames.length > MAX_FRAME) Frames.shift();
         }

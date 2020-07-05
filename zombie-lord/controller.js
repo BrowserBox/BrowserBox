@@ -103,7 +103,7 @@ const controller_api = {
               // so we have to check if the key is targetId and if so we skip
               if ( connection.targets.has(sessionId) ) continue;
               const contexts = connection.worlds.get(sessionId);
-              if ( !! contexts ) {
+              if ( contexts ) {
                 for ( const contextId of contexts ) {
                   allContexts.push({sessionId,contextId});
                 }
@@ -145,7 +145,7 @@ const controller_api = {
 
             // now enable 
             const {pluginName} = command.params;
-            if ( !! pluginName ) {
+            if ( pluginName ) {
               connection.plugins[pluginName] = true;
             }
             retVal.data = {};

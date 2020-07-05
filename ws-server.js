@@ -117,7 +117,7 @@
                 const {events} = zombie;
                 let {receivesFrames} = zombie;
 
-                if ( !!receivesFrames ) {
+                if ( receivesFrames ) {
                   // switch it on in DEBUG and save it on the websocket for all future events
                   DEBUG.noShot = false;
                   ws.receivesFrames = receivesFrames;

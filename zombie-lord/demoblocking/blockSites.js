@@ -85,5 +85,5 @@ export async function onInterceptRequest({sessionId, message}, Target) {
       }
     }
   }
-};
+}
 

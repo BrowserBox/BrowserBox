@@ -92,7 +92,7 @@ let id = 0;
 
 export default async function Connect({port}, {adBlock:adBlock = true, demoBlock: demoBlock = false} = {}) {
   AD_BLOCK_ON = adBlock;
-  if ( !! demoBlock ) {
+  if ( demoBlock ) {
     AD_BLOCK_ON = false;
     DEMO_BLOCK_ON = true;
   }
@@ -224,7 +224,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       let {payload} = message.params;
       try {
         payload = JSON.parse(payload);
-      } catch(e) {console.warn(e)};
+      } catch(e) {console.warn(e)}
 
       let response;
       if ( !!payload.method && !! payload.params ) {
@@ -569,7 +569,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         that.sessionId = null;
       }
       removeSession(targetId);
-      if ( !!tSessionId ) {
+      if ( tSessionId ) {
         DEBUG.val > DEBUG.med && console.log("Received close. Will send detach first.");
         // FIX NOTE: these sleeps (have not test ms sensitivity, maybe we could go lower), FIX issue #130
         // in other words, they prevent the seg fault crash on Target.closeTarget we get sometimes
@@ -601,7 +601,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
     if ( command.name.startsWith("Target") || ! sessionId ) {
       if ( command.name.startsWith("Page") || command.name.startsWith("Runtime") ) {
         sessionId = that.sessionId;
-        if ( !! sessionId ) {
+        if ( sessionId ) {
           return await send(command.name, command.params, sessionId); 
         } else {
           DEBUG.val && console.log(`Blocking as ${command.name} must be run with session.`, command);
@@ -664,7 +664,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
     DEBUG.val > DEBUG.med && console.log({deletingContext:{id,contextId}});
     const otherId = sessions.get(id);
     let contexts = connection.worlds.get(id);
-    if ( !! contexts ) {
+    if ( contexts ) {
       contexts.delete(contextId);
     }
   }

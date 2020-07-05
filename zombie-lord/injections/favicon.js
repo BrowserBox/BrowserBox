@@ -17,12 +17,12 @@
   async function getFaviconElement() {
     try {
       if ( faviconSent ) return;
-      if ( !! faviconDataUrl ) {
+      if ( faviconDataUrl ) {
         s({faviconDataUrl,targetId});
-      };
+      }
       const iconEl = document.querySelector('link[rel~="icon"]');
       let url;
-      if ( !! iconEl ) {
+      if ( iconEl ) {
         url = iconEl.href;
       } else {
         const urlCopy = new URL(location);
@@ -51,7 +51,7 @@
 
   function s(o) {
     if ( faviconSent ) return;
-    if ( !! o.faviconDataUrl ) faviconSent = true;
+    if ( o.faviconDataUrl ) faviconSent = true;
     console.log(JSON.stringify({favicon:o}));
   }
 }
