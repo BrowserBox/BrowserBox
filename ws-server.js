@@ -5,13 +5,14 @@
   import multer from 'multer';
   import WebSocket from 'ws';
   import fs from 'fs';
+  import os from 'os';
   import path from 'path';
   import bodyParser from 'body-parser';
   import cookieParser from 'cookie-parser';
   import {pluginsDemoPage} from './public/plugins/demo/page.js';
   import zl from './zombie-lord/api.js';
   import {start_mode} from './args.js';
-  import {version, BRANCH, COOKIENAME, GO_SECURE, DEBUG} from './common.js';
+  import {version, APP_ROOT, BRANCH, COOKIENAME, GO_SECURE, DEBUG} from './common.js';
   import {timedSend, eventSendLoop} from './server.js';
 
   const protocol = GO_SECURE ? https : http;
@@ -22,8 +23,13 @@
     sameSite: 'Strict'
   };
 
+  const uploadPath = path.resolve(os.homedir(), 'uploads');
+  if ( ! fs.existsSync(uploadPath) ) {
+    fs.mkdirSync(uploadPath, {recursive:true});
+  }
+
   const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, path.join(__dirname,'..', 'uploads')),
+    destination: (req, file, cb) => cb(null, uploadPath),
     filename: (req, file, cb) => {
       return cb(null, nextFileName(path.extname(file.originalname)))
     }
@@ -250,11 +256,11 @@
         if ( result.error ) {
           res.status(500).send(JSON.stringify({error:'there was an error attaching the files'}));
         } else {
-          DEBUG.val > DEBUG.med && console.log("Sent files to file input", result, files);
-          const result = {
+          const retVal = {
             success: true,
             files: files.map(({originalName,size}) => ({name:originalName,size}))
           };
+          DEBUG.val > DEBUG.med && console.log("Sent files to file input", retVal);
           res.json(files);
         }
       }); 
