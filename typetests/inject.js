@@ -1,27 +1,14 @@
 #!/usr/bin/env node
-System.register("voodoo/src/handlers/takeShot", [], function (exports_1, context_1) {
+System.register("voodoo/src/handlers/selectInput", [], function (exports_1, context_1) {
     "use strict";
     var __moduleName = context_1 && context_1.id;
-    function takeShot(msg, state) {
-        state.doShot();
-    }
-    exports_1("takeShot", takeShot);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
-});
-System.register("voodoo/src/handlers/selectInput", [], function (exports_2, context_2) {
-    "use strict";
-    var __moduleName = context_2 && context_2.id;
     function handleSelectMessage({ selectInput: { selectOpen, values }, executionContextId }, state) {
         state.waitingExecutionContext = executionContextId;
         if (state.ignoreSelectInputEvents)
             return;
         toggleSelect({ selectOpen, values });
     }
-    exports_2("handleSelectMessage", handleSelectMessage);
+    exports_1("handleSelectMessage", handleSelectMessage);
     function toggleSelect({ selectOpen, values }) {
         const input = document.querySelector('#selectinput');
         if (selectOpen) {
@@ -42,10 +29,10 @@ System.register("voodoo/src/handlers/selectInput", [], function (exports_2, cont
     };
 });
 /* eslint-disable no-useless-escape */
-System.register("kbd", [], function (exports_3, context_3) {
+System.register("kbd", [], function (exports_2, context_2) {
     "use strict";
     var keys;
-    var __moduleName = context_3 && context_3.id;
+    var __moduleName = context_2 && context_2.id;
     return {
         setters: [],
         execute: function () {/* eslint-disable no-useless-escape */
@@ -299,14 +286,14 @@ System.register("kbd", [], function (exports_3, context_3) {
                 '}': { 'keyCode': 221, 'key': '}', 'code': 'BracketRight' },
                 '"': { 'keyCode': 222, 'key': '"', 'code': 'Quote' }
             };
-            exports_3("default", keys);
+            exports_2("default", keys);
         }
     };
 });
-System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) {
+System.register("translateVoodooCRDP", ["kbd"], function (exports_3, context_3) {
     "use strict";
-    var kbd_js_1, FRAME_CONTROL, IMAGE_FORMAT, WorldName, SHORT_TIMEOUT, MIN_DELTA, MIN_PIX_DELTA, THRESHOLD_DELTA, DOM_DELTA_PIXEL, DOM_DELTA_LINE, DOM_DELTA_PAGE, LINE_HEIGHT_GUESS, SYNTHETIC_CTRL, SYNTHETIC_ENTER, scrollShot;
-    var __moduleName = context_4 && context_4.id;
+    var kbd_js_1, FRAME_CONTROL, IMAGE_FORMAT, WorldName, SHORT_TIMEOUT, MIN_DELTA, MIN_PIX_DELTA, THRESHOLD_DELTA, DOM_DELTA_PIXEL, DOM_DELTA_LINE, DOM_DELTA_PAGE, LINE_HEIGHT_GUESS, SYNTHETIC_CTRL;
+    var __moduleName = context_3 && context_3.id;
     function translator(e, handled = { type: 'case' }) {
         handled.type = handled.type || 'case';
         switch (e.type) {
@@ -319,7 +306,6 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
                         },
                     }
                 };
-                break;
             }
             case "mousedown":
             case "mouseup":
@@ -351,7 +337,6 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
                         requiresShot: !e.originalEvent.noShot && e.type.endsWith("down")
                     }
                 };
-                break;
             }
             case "wheel": {
                 // if we use emulateTouchFromMouseEvent we need a button value
@@ -383,7 +368,6 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
                     retVal = mouseEvent(e, deltaX, deltaY);
                 }
                 return retVal;
-                break;
             }
             case "auth-response": {
                 const { requestId, authResponse } = e;
@@ -415,7 +399,6 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
                             ignoreHash: true
                         }
                     };
-                break;
             }
             case "typing-syncValue": {
                 if (!e.encodedValue)
@@ -435,7 +418,6 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
                             ignoreHash: true
                         }
                     };
-                break;
             }
             case "typing-deleteContentBackward": {
                 if (!e.encodedValueToDelete)
@@ -454,7 +436,6 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
                             requiresShot: true
                         }
                     };
-                break;
             }
             case "url-address": {
                 return {
@@ -509,6 +490,9 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
                                 }
                             ] };
                     }
+                    default: {
+                        throw new TypeError(`Unkown history action ${e.action}`);
+                    }
                 }
             }
             case "touchscroll": {
@@ -547,21 +531,23 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
             }
             case "zoom": {
                 /** retval does not work. Expanding pinch is OK, but contracting seems to fail **/
+                /*
                 const retVal = {
-                    command: {
-                        name: "Input.synthesizePinchGesture",
-                        params: {
-                            relativeSpeed: 300,
-                            scaleFactor: e.scale,
-                            gestureSourceType: "touch",
-                            x: Math.round(e.bitmapX),
-                            y: Math.round(e.bitmapY)
-                        },
-                        requiresShot: true,
-                        requiresExtraWait: true,
-                        extraWait: 300
-                    }
+                  command: {
+                    name: "Input.synthesizePinchGesture",
+                    params: {
+                      relativeSpeed: 300,
+                      scaleFactor: e.scale,
+                      gestureSourceType: "touch",
+                      x: Math.round(e.bitmapX),
+                      y: Math.round(e.bitmapY)
+                    },
+                    requiresShot: true,
+                    requiresExtraWait: true,
+                    extraWait: 300
+                  }
                 };
+                */
                 /** so we are using emulation and multiplying the scale factor in the event listener **/
                 const retVal2 = {
                     command: {
@@ -625,7 +611,7 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
             }
             case "window-bounds-preImplementation": {
                 // This is here until Browser.getWindowForTarget and Browser.setWindowBounds come online
-                let { width, height, mobile } = e;
+                let { width, height } = e;
                 width = parseInt(width);
                 height = parseInt(height);
                 const retVal = {
@@ -959,9 +945,9 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
             }
         ],
         execute: function () {
-            exports_4("FRAME_CONTROL", FRAME_CONTROL = false);
-            exports_4("IMAGE_FORMAT", IMAGE_FORMAT = 'png');
-            exports_4("WorldName", WorldName = 'PlanetZanj');
+            exports_3("FRAME_CONTROL", FRAME_CONTROL = false);
+            exports_3("IMAGE_FORMAT", IMAGE_FORMAT = 'png');
+            exports_3("WorldName", WorldName = 'PlanetZanj');
             SHORT_TIMEOUT = 1000;
             MIN_DELTA = 40;
             MIN_PIX_DELTA = 8;
@@ -971,20 +957,18 @@ System.register("translateVoodooCRDP", ["kbd"], function (exports_4, context_4) 
             DOM_DELTA_PAGE = 2;
             LINE_HEIGHT_GUESS = 32;
             SYNTHETIC_CTRL = e => keyEvent({ key: 'Control', originalType: e.originalType }, 2, true);
-            SYNTHETIC_ENTER = () => keyEvent({ key: 'Enter', originalType: "keypress" }, 0, true);
-            scrollShot = false;
-            exports_4("default", translator);
+            exports_3("default", translator);
         }
     };
 });
-System.register("voodoo/src/common", ["translateVoodooCRDP"], function (exports_5, context_5) {
+System.register("voodoo/src/common", ["translateVoodooCRDP"], function (exports_4, context_4) {
     "use strict";
     var translateVoodooCRDP_js_1, VERSION, isSafari, BLANK, DEBUG;
-    var __moduleName = context_5 && context_5.id;
+    var __moduleName = context_4 && context_4.id;
     async function sleep(ms) {
         return new Promise(res => setTimeout(res, ms));
     }
-    exports_5("sleep", sleep);
+    exports_4("sleep", sleep);
     function debounce(func, wait) {
         let timeout;
         return function (...args) {
@@ -996,7 +980,7 @@ System.register("voodoo/src/common", ["translateVoodooCRDP"], function (exports_
             timeout = setTimeout(later, wait);
         };
     }
-    exports_5("debounce", debounce);
+    exports_4("debounce", debounce);
     // leading edge throttle
     function throttle(func, wait) {
         let timeout;
@@ -1008,15 +992,15 @@ System.register("voodoo/src/common", ["translateVoodooCRDP"], function (exports_
         };
         return throttled;
     }
-    exports_5("throttle", throttle);
+    exports_4("throttle", throttle);
     function isFirefox() {
         return /firefox/i.test(navigator.userAgent);
     }
-    exports_5("isFirefox", isFirefox);
+    exports_4("isFirefox", isFirefox);
     function deviceIsMobile() {
         return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
     }
-    exports_5("deviceIsMobile", deviceIsMobile);
+    exports_4("deviceIsMobile", deviceIsMobile);
     // debug logging
     function logitKeyInputEvent(e) {
         if (!DEBUG.val)
@@ -1031,7 +1015,7 @@ System.register("voodoo/src/common", ["translateVoodooCRDP"], function (exports_
             throw new Error("No element with ID 'debugBox' found.");
         }
     }
-    exports_5("logitKeyInputEvent", logitKeyInputEvent);
+    exports_4("logitKeyInputEvent", logitKeyInputEvent);
     // debug logging
     function logit(info) {
         if (!DEBUG.val)
@@ -1044,7 +1028,7 @@ System.register("voodoo/src/common", ["translateVoodooCRDP"], function (exports_
             throw new Error("No element with ID 'debugBox' found.");
         }
     }
-    exports_5("logit", logit);
+    exports_4("logit", logit);
     return {
         setters: [
             function (translateVoodooCRDP_js_1_1) {
@@ -1052,10 +1036,10 @@ System.register("voodoo/src/common", ["translateVoodooCRDP"], function (exports_
             }
         ],
         execute: function () {
-            exports_5("VERSION", VERSION = '3.1415926535897932384626338');
-            exports_5("isSafari", isSafari = () => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
-            exports_5("BLANK", BLANK = "about:blank");
-            exports_5("DEBUG", DEBUG = {
+            exports_4("VERSION", VERSION = '3.1415926535897932384626338');
+            exports_4("isSafari", isSafari = () => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
+            exports_4("BLANK", BLANK = "about:blank");
+            exports_4("DEBUG", DEBUG = {
                 activateNewTab: false,
                 frameControl: translateVoodooCRDP_js_1.FRAME_CONTROL,
                 pluginsMenu: false,
@@ -1074,10 +1058,10 @@ System.register("voodoo/src/common", ["translateVoodooCRDP"], function (exports_
 });
 //FIXME we could move this into constructor 
 // and switch it to WS 
-System.register("voodoo/src/handlers/targetInfo", ["voodoo/src/common"], function (exports_6, context_6) {
+System.register("voodoo/src/handlers/targetInfo", ["voodoo/src/common"], function (exports_5, context_5) {
     "use strict";
     var common_js_1, tabNumbers, TabNumber;
-    var __moduleName = context_6 && context_6.id;
+    var __moduleName = context_5 && context_5.id;
     async function fetchTabs({ sessionToken }) {
         try {
             const url = new URL(location);
@@ -1126,7 +1110,7 @@ System.register("voodoo/src/handlers/targetInfo", ["voodoo/src/common"], functio
                 location.reload();
         }
     }
-    exports_6("fetchTabs", fetchTabs);
+    exports_5("fetchTabs", fetchTabs);
     return {
         setters: [
             function (common_js_1_1) {
@@ -1140,16 +1124,16 @@ System.register("voodoo/src/handlers/targetInfo", ["voodoo/src/common"], functio
         }
     };
 });
-System.register("voodoo/src/handlers/demo", ["voodoo/src/common"], function (exports_7, context_7) {
+System.register("voodoo/src/handlers/demo", ["voodoo/src/common"], function (exports_6, context_6) {
     "use strict";
     var common_js_2, DemoTab, dontFocus, runFuncs, opts, started, tab, tabs, requestId, messageId;
-    var __moduleName = context_7 && context_7.id;
+    var __moduleName = context_6 && context_6.id;
     async function fetchDemoTabs() {
         requestId++;
         tab = tab || tabs[0];
         return { tabs, activeTarget: tab && tab.targetId, requestId };
     }
-    exports_7("fetchDemoTabs", fetchDemoTabs);
+    exports_6("fetchDemoTabs", fetchDemoTabs);
     async function demoZombie({ events }) {
         const meta = [];
         common_js_2.DEBUG.val >= common_js_2.DEBUG.med && console.log(`DEMO Received events: ${JSON.stringify({ events }, null, 2)}`);
@@ -1159,7 +1143,7 @@ System.register("voodoo/src/handlers/demo", ["voodoo/src/common"], function (exp
         messageId++;
         return { data: [], frameBuffer: [], meta, messageId };
     }
-    exports_7("demoZombie", demoZombie);
+    exports_6("demoZombie", demoZombie);
     async function handleEvent(event) {
         const meta = [];
         const { command } = event;
@@ -1256,9 +1240,9 @@ System.register("voodoo/src/handlers/demo", ["voodoo/src/common"], function (exp
         }
     };
 });
-System.register("voodoo/src/handlers/keysCanInput", [], function (exports_8, context_8) {
+System.register("voodoo/src/handlers/keysCanInput", [], function (exports_7, context_7) {
     "use strict";
-    var __moduleName = context_8 && context_8.id;
+    var __moduleName = context_7 && context_7.id;
     function handleKeysCanInputMessage({ keyInput: { keysCanInput, isTextareaOrContenteditable, type, inputmode, value: value = '' }, executionContextId }, state) {
         if (state.ignoreKeysCanInputMessage)
             return;
@@ -1286,17 +1270,17 @@ System.register("voodoo/src/handlers/keysCanInput", [], function (exports_8, con
             }
         }
     }
-    exports_8("handleKeysCanInputMessage", handleKeysCanInputMessage);
+    exports_7("handleKeysCanInputMessage", handleKeysCanInputMessage);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("voodoo/src/handlers/elementInfo", [], function (exports_9, context_9) {
+System.register("voodoo/src/handlers/elementInfo", [], function (exports_8, context_8) {
     "use strict";
-    var __moduleName = context_9 && context_9.id;
-    function handleElementInfo({ elementInfo: { attributes, innerText, noSuchElement }, executionContextId }, state) {
+    var __moduleName = context_8 && context_8.id;
+    function handleElementInfo({ elementInfo: { attributes, innerText, noSuchElement }, }, state) {
         if (!state.elementInfoContinuation) {
             console.warn(`Got element info message, but no continuation to pass it to`);
             console.warn(JSON.stringify({ elementInfo: { attributes, innerText, noSuchElement } }));
@@ -1310,42 +1294,42 @@ System.register("voodoo/src/handlers/elementInfo", [], function (exports_9, cont
             console.warn(JSON.stringify({ elementInfo: { attributes, innerText, noSuchElement } }));
         }
     }
-    exports_9("handleElementInfo", handleElementInfo);
+    exports_8("handleElementInfo", handleElementInfo);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("voodoo/src/handlers/scrollNotify", [], function (exports_10, context_10) {
+System.register("voodoo/src/handlers/scrollNotify", [], function (exports_9, context_9) {
     "use strict";
-    var __moduleName = context_10 && context_10.id;
-    function handleScrollNotification({ scroll: { didScroll }, executionContextId }, state) {
+    var __moduleName = context_9 && context_9.id;
+    function handleScrollNotification({ /*scroll:{didScroll},*/ executionContextId }, state) {
         state.viewState.latestScrollContext = executionContextId;
     }
-    exports_10("handleScrollNotification", handleScrollNotification);
+    exports_9("handleScrollNotification", handleScrollNotification);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("voodoo/node_modules/dumbass/common", [], function (exports_11, context_11) {
+System.register("voodoo/node_modules/dumbass/common", [], function (exports_10, context_10) {
     "use strict";
     var CODE;
-    var __moduleName = context_11 && context_11.id;
+    var __moduleName = context_10 && context_10.id;
     return {
         setters: [],
         execute: function () {
             // common for all r submodules
-            exports_11("CODE", CODE = '' + Math.random());
+            exports_10("CODE", CODE = '' + Math.random());
         }
     };
 });
-System.register("voodoo/node_modules/dumbass/t", [], function (exports_12, context_12) {
+System.register("voodoo/node_modules/dumbass/t", [], function (exports_11, context_11) {
     "use strict";
     var BuiltIns, DEBUG, SEALED_DEFAULT, isNone, typeCache;
-    var __moduleName = context_12 && context_12.id;
+    var __moduleName = context_11 && context_11.id;
     function T(parts, ...vals) {
         const cooked = vals.reduce((prev, cur, i) => prev + cur + parts[i + 1], parts[0]);
         const typeName = cooked;
@@ -1353,7 +1337,7 @@ System.register("voodoo/node_modules/dumbass/t", [], function (exports_12, conte
             throw new TypeError(`Cannot use type ${typeName} before it is defined.`);
         return typeCache.get(typeName).type;
     }
-    exports_12("T", T);
+    exports_11("T", T);
     function partialMatch(type, instance) {
         return validate(type, instance, { partial: true });
     }
@@ -1805,10 +1789,10 @@ System.register("voodoo/node_modules/dumbass/t", [], function (exports_12, conte
         }
     };
 });
-System.register("voodoo/node_modules/dumbass/types", ["voodoo/node_modules/dumbass/t", "voodoo/node_modules/dumbass/common"], function (exports_13, context_13) {
+System.register("voodoo/node_modules/dumbass/types", ["voodoo/node_modules/dumbass/t", "voodoo/node_modules/dumbass/common"], function (exports_12, context_12) {
     "use strict";
     var t_js_1, common_js_3, TKey, THandlers, TFuncArray, TEmptyArray, TMarkupObject, TMarkupAttrObject, TBrutalLikeObject, TBrutalObject, TBrutalArray, TSBrutalObject, TSBrutalArray, BS, SSR, Types;
-    var __moduleName = context_13 && context_13.id;
+    var __moduleName = context_12 && context_12.id;
     // verify function 
     function verify(v) {
         return common_js_3.CODE === v.code;
@@ -1823,12 +1807,12 @@ System.register("voodoo/node_modules/dumbass/types", ["voodoo/node_modules/dumba
             }
         ],
         execute: function () {
-            exports_13("default", t_js_1.T);
+            exports_12("default", t_js_1.T);
             // Both SSR and Browser
-            exports_13("TKey", TKey = t_js_1.T.def('Key', {
+            exports_12("TKey", TKey = t_js_1.T.def('Key', {
                 key: t_js_1.T.defOr('ValidKey', t_js_1.T `String`, t_js_1.T `Number`)
             }));
-            exports_13("THandlers", THandlers = t_js_1.T.def('Handlers', null, { verify: i => {
+            exports_12("THandlers", THandlers = t_js_1.T.def('Handlers', null, { verify: i => {
                     const validObject = t_js_1.T.check(t_js_1.T `Object`, i);
                     if (!validObject)
                         return false;
@@ -1839,24 +1823,24 @@ System.register("voodoo/node_modules/dumbass/types", ["voodoo/node_modules/dumba
                     const valid = validNames && validFuncs;
                     return valid;
                 } }));
-            exports_13("TFuncArray", TFuncArray = t_js_1.T.defCollection('FuncArray', {
+            exports_12("TFuncArray", TFuncArray = t_js_1.T.defCollection('FuncArray', {
                 container: t_js_1.T `Array`,
                 member: t_js_1.T `Function`
             }));
-            exports_13("TEmptyArray", TEmptyArray = t_js_1.T.def('EmptyArray', null, { verify: i => Array.isArray(i) && i.length == 0 }));
-            exports_13("TMarkupObject", TMarkupObject = t_js_1.T.def('MarkupObject', {
+            exports_12("TEmptyArray", TEmptyArray = t_js_1.T.def('EmptyArray', null, { verify: i => Array.isArray(i) && i.length == 0 }));
+            exports_12("TMarkupObject", TMarkupObject = t_js_1.T.def('MarkupObject', {
                 type: t_js_1.T `String`,
                 code: t_js_1.T `String`,
                 nodes: t_js_1.T `Array`,
                 externals: t_js_1.T `Array`,
             }, { verify: v => v.type == 'MarkupObject' && v.code == common_js_3.CODE }));
-            exports_13("TMarkupAttrObject", TMarkupAttrObject = t_js_1.T.def('MarkupAttrObject', {
+            exports_12("TMarkupAttrObject", TMarkupAttrObject = t_js_1.T.def('MarkupAttrObject', {
                 type: t_js_1.T `String`,
                 code: t_js_1.T `String`,
                 str: t_js_1.T `String`
             }, { verify: v => v.type == 'MarkupAttrObject' && v.code == common_js_3.CODE }));
             // Browser side
-            exports_13("TBrutalLikeObject", TBrutalLikeObject = t_js_1.T.def('BrutalLikeObject', {
+            exports_12("TBrutalLikeObject", TBrutalLikeObject = t_js_1.T.def('BrutalLikeObject', {
                 code: t_js_1.T `String`,
                 externals: t_js_1.T `Array`,
                 nodes: t_js_1.T `Array`,
@@ -1864,7 +1848,7 @@ System.register("voodoo/node_modules/dumbass/types", ["voodoo/node_modules/dumba
                 update: t_js_1.T `Function`,
                 v: t_js_1.T `Array`
             }));
-            exports_13("TBrutalObject", TBrutalObject = t_js_1.T.def('BrutalObject', {
+            exports_12("TBrutalObject", TBrutalObject = t_js_1.T.def('BrutalObject', {
                 code: t_js_1.T `String`,
                 externals: t_js_1.T `Array`,
                 nodes: t_js_1.T `Array`,
@@ -1872,38 +1856,38 @@ System.register("voodoo/node_modules/dumbass/types", ["voodoo/node_modules/dumba
                 update: t_js_1.T `Function`,
                 v: t_js_1.T `Array`
             }, { verify: v => verify(v) }));
-            exports_13("TBrutalArray", TBrutalArray = t_js_1.T.defCollection('BrutalArray', {
+            exports_12("TBrutalArray", TBrutalArray = t_js_1.T.defCollection('BrutalArray', {
                 container: t_js_1.T `Array`,
                 member: t_js_1.T `BrutalObject`
             }));
             // SSR
-            exports_13("TSBrutalObject", TSBrutalObject = t_js_1.T.def('SBrutalObject', {
+            exports_12("TSBrutalObject", TSBrutalObject = t_js_1.T.def('SBrutalObject', {
                 str: t_js_1.T `String`,
                 handlers: THandlers
             }));
-            exports_13("TSBrutalArray", TSBrutalArray = t_js_1.T.defCollection('SBrutalArray', {
+            exports_12("TSBrutalArray", TSBrutalArray = t_js_1.T.defCollection('SBrutalArray', {
                 container: t_js_1.T `Array`,
                 member: t_js_1.T `SBrutalObject`
             }));
             // export
-            exports_13("BS", BS = { TKey, THandlers, TFuncArray, TBrutalObject, TBrutalLikeObject, TBrutalArray });
-            exports_13("SSR", SSR = { TKey, THandlers, TFuncArray, TSBrutalObject, TSBrutalArray });
-            exports_13("Types", Types = { BS, SSR });
+            exports_12("BS", BS = { TKey, THandlers, TFuncArray, TBrutalObject, TBrutalLikeObject, TBrutalArray });
+            exports_12("SSR", SSR = { TKey, THandlers, TFuncArray, TSBrutalObject, TSBrutalArray });
+            exports_12("Types", Types = { BS, SSR });
         }
     };
 });
-System.register("voodoo/node_modules/dumbass/r", ["voodoo/node_modules/dumbass/common", "voodoo/node_modules/dumbass/types"], function (exports_14, context_14) {
+System.register("voodoo/node_modules/dumbass/r", ["voodoo/node_modules/dumbass/common", "voodoo/node_modules/dumbass/types"], function (exports_13, context_13) {
     "use strict";
     var common_js_4, types_js_1, skip, attrskip, DEBUG, NULLFUNC, KEYMATCH, ATTRMATCH, KEYLEN, XSS, OBJ, UNSET, INSERT, NOTFOUND, MOVE, isKey, isHandlers, cache, d, u;
-    var __moduleName = context_14 && context_14.id;
+    var __moduleName = context_13 && context_13.id;
     function R(p, ...v) {
         return dumbass(p, v);
     }
-    exports_14("R", R);
+    exports_13("R", R);
     function X(p, ...v) {
         return dumbass(p, v, { useCache: false });
     }
-    exports_14("X", X);
+    exports_13("X", X);
     // main function (TODO: should we refactor?)
     function dumbass(p, v, { useCache: useCache = true } = {}) {
         let instanceKey, cacheKey;
@@ -2594,8 +2578,8 @@ System.register("voodoo/node_modules/dumbass/r", ["voodoo/node_modules/dumbass/c
             isHandlers = v => types_js_1.default.check(types_js_1.default `Handlers`, v);
             // cache 
             cache = {};
-            exports_14("d", d = R);
-            exports_14("u", u = X);
+            exports_13("d", d = R);
+            exports_13("u", u = X);
             // main exports 
             Object.assign(R, { s, attrskip, skip, attrmarkup, markup, guardEmptyHandlers, die });
             if (DEBUG) {
@@ -2604,10 +2588,10 @@ System.register("voodoo/node_modules/dumbass/r", ["voodoo/node_modules/dumbass/c
         }
     };
 });
-System.register("voodoo/src/subviews/loadingIndicator", ["voodoo/node_modules/dumbass/r"], function (exports_15, context_15) {
+System.register("voodoo/src/subviews/loadingIndicator", ["voodoo/node_modules/dumbass/r"], function (exports_14, context_14) {
     "use strict";
     var r_js_1, loadings, SHOW_LOADED_MS, DEFAULT_LOADING, delayHideTimeout;
-    var __moduleName = context_15 && context_15.id;
+    var __moduleName = context_14 && context_14.id;
     function LoadingIndicator(state, delayHide = true) {
         const loading = loadings.get(state.activeTarget) || DEFAULT_LOADING;
         const isLoading = loading.waiting > 0;
@@ -2630,7 +2614,7 @@ System.register("voodoo/src/subviews/loadingIndicator", ["voodoo/node_modules/du
     </aside>
   `;
     }
-    exports_15("LoadingIndicator", LoadingIndicator);
+    exports_14("LoadingIndicator", LoadingIndicator);
     return {
         setters: [
             function (r_js_1_1) {
@@ -2638,7 +2622,7 @@ System.register("voodoo/src/subviews/loadingIndicator", ["voodoo/node_modules/du
             }
         ],
         execute: function () {
-            exports_15("loadings", loadings = new Map());
+            exports_14("loadings", loadings = new Map());
             SHOW_LOADED_MS = 300;
             DEFAULT_LOADING = {
                 waiting: 0,
@@ -2647,10 +2631,10 @@ System.register("voodoo/src/subviews/loadingIndicator", ["voodoo/node_modules/du
         }
     };
 });
-System.register("voodoo/src/handlers/loadingIndicator", ["voodoo/src/subviews/loadingIndicator"], function (exports_16, context_16) {
+System.register("voodoo/src/handlers/loadingIndicator", ["voodoo/src/subviews/loadingIndicator"], function (exports_15, context_15) {
     "use strict";
     var loadingIndicator_js_1;
-    var __moduleName = context_16 && context_16.id;
+    var __moduleName = context_15 && context_15.id;
     function resetLoadingIndicator({ navigated }, state) {
         const { targetId } = navigated;
         loadingIndicator_js_1.loadings.delete(targetId);
@@ -2658,7 +2642,7 @@ System.register("voodoo/src/handlers/loadingIndicator", ["voodoo/src/subviews/lo
             loadingIndicator_js_1.LoadingIndicator(state);
         }
     }
-    exports_16("resetLoadingIndicator", resetLoadingIndicator);
+    exports_15("resetLoadingIndicator", resetLoadingIndicator);
     function showLoadingIndicator({ resource }, state) {
         const { targetId } = resource;
         loadingIndicator_js_1.loadings.set(targetId, resource);
@@ -2666,7 +2650,7 @@ System.register("voodoo/src/handlers/loadingIndicator", ["voodoo/src/subviews/lo
             loadingIndicator_js_1.LoadingIndicator(state);
         }
     }
-    exports_16("showLoadingIndicator", showLoadingIndicator);
+    exports_15("showLoadingIndicator", showLoadingIndicator);
     return {
         setters: [
             function (loadingIndicator_js_1_1) {
@@ -2677,22 +2661,22 @@ System.register("voodoo/src/handlers/loadingIndicator", ["voodoo/src/subviews/lo
         }
     };
 });
-System.register("voodoo/src/subviews/faviconDataURL", [], function (exports_17, context_17) {
+System.register("voodoo/src/subviews/faviconDataURL", [], function (exports_16, context_16) {
     "use strict";
     var DEFAULT_FAVICON;
-    var __moduleName = context_17 && context_17.id;
+    var __moduleName = context_16 && context_16.id;
     return {
         setters: [],
         execute: function () {
             DEFAULT_FAVICON = `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAYAAAA4TnrqAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAuIwAALiMBeKU/dgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAn/SURBVHic7Zx/bFzFEce/s+ezcc5OCC0lDi65OHf7zliyWlx+NUgY9VcKjYTbNKhAmtAKWiTapq1Q1fS/NqJIVCGlVI1IKSQ0qElQA7RFgNRimiAh1BSkJLLfu/MPim1CoKHxXXyu726nf/jZNc7bu927s1NV9/kreTs7sx6/nbezs2ugRo0aNWrUqFGjRo3zDJ1P411dXeEzZ87EhRAOM68hog8DaAIQBpADkAHwLoBBZu5funRp6ujRo7nzNd5Fd5aUMgHgiwC6iWgtMy+x6H6WiF5h5l4AhzzP61+QQWpYFGe1trY2RiKRLcy8BcBVVVT9GjM/ls1m94yMjGSrqDeQBXVWZ2dnZHJy8lsAtgK4ZAFNvUNEO9Lp9MNjY2MTC2VkwZwVi8XWCyEeAhBdKBsBjALY5nne3oVQXnVnRaPRC8Ph8G4i2lBt3RYczOfzdw4ODp6pptKqOiuRSHQppQ4CWG3ZNQdgEMBbAN4nohwzRwAsJ6IoM19WxnAGlFIbU6nU38voG0jVnOU4zjpmfgpAxECcARxh5meFEL0tLS1v9Pb25nXCHR0dF+VyuasB3AhgPYBVhsPKCCE29Pf3v2AoX5SqOEtKeQuAJzC9PirGODPvCoVCv+rv7x8u0xw5jnMDM98DoMdAPgdgk+d5+8u091/DlSrw36hnUdxReQAPTU1N/WR4eHg8Ho9fSUTNBupHdGupRCIRVUoNGQ4zJ4RYX+kbVpGz/Bj1MopMPWY+HgqFbu3v7z8GAFLKXwP4uqEJBrDZ87wnAmzbOAsAMkqp6yuJYaLcjtFo9EI/mBeLUXuz2exVM47yucHCDGE6Tp1DPp8/a6EHAJqEEAfb2tqWWfabpWxnhcPh3Sj+1bvf87wtAStrW5vrpZQ9HR0dF819mEql3gVwHxH9w0JXW11d3W5L+7OUNQ2llDcDOFRE5H7P836o6TuE8haqCsDdnuc9Mr/BcZzbmPm3poqI6GbXdZ+xHYD1m9XZ2RkBsLOIyF7P87YVaW+wtekjAHw5qKGlpWU/gH+bKmLmnStXrrRJ4GcHYIWf6wWuc5j5+MTExDcxHZg/QHd3d53jOLcBaLG1OUd/XdBzf432IIApQ1XR5ubme2ztW03D1tbWxiVLlgwhOCnOCyGumAnmjuPsY+aNAAJ/wHJg5t5kMqn9QHR3d9eNjo5uJKJ9BupOTkxMtNnsVli9WZFIZAv0uwcPzTiqvb29hZlvRRUdZUJvb28+mUw+CeBtA/EVjY2Nm230WzmLme/QNI03NDRsnyNXblyqFkbxi4i22Cg1dpa/w3llUBsz7zp27Nj7Nob/R7g6kUhIU2GbN0uXh7EQYpeFnrIhIlVtncxskl8CsHOWLrAecV3XJu0oG2Z+qdo6lVLGGYVRAO7q6gpnMpm1zOesCOAn0dVmnIi+x8xvzrHzXjKZfKPahojouq6urrBJ1cjIWX65KnARJ4ToDRjAuV61gJl/43neo5WosJCNjI+PxwD0lRI0moZCCEfTlGtpaTnnty2EeBvAOya6NfYqnW5Wb6AQwijIG71ZzBwjCly/DgbtcJ44cWJKStlFROuY+WsAPqlRPQJgB4DZHQQiOuG67ism49KRyWRub2pqWg/gJgCbSskrpeImeo2cRUQXaZ6/GfQcADzPGwXwaHt7+3OFQmFMI3av53m/MxmDDX45bD+AA1LKqwDoZgYAgIiWm+g1/Ro2aZ6nS3Xs6+t7G0Aq0LgQJw3tlwsDOGIgZ7Jra5yONAaOhNkorwqFQjfm8/lbhBA9zHyFoc2qkM/nvx8Oh48z8wpMFzsuDxAz2oEwdZbOKUa/kb6+viSA7Y7j/JyITlqeb6gIv3a4EwCklB0IdpZRFdt0GmY0z43m+gyu66aZ+dTM/5VSK2z6VwoRfUjTVDKcAOZfw9NBX0Miipr0L8IDjuNcUigU/ppKpV6vUFdJmPkjmqbTJv2N3iwiSmqMX5ZIJHS/LRNamXmnEOJv8Xj8YxXoKYlfqAisGRBR4AdoPkbOUkp5ujZmDtyJKMK/gsYhhLjeUo8V9fX110Dz8zKza6LDaBouW7YsmU6nzyKg7MXMNwF43kSPz7cBbMP0Oa3Z9Rsz3xuPx08R0bu6jkRUKBQKx/3KjhWFQmGtZmGdaW5uHjDRYbytLKV8EcBnApre9DxvNezyMcRisYuFEP2Y4zBDxgFc7i96TSEpZR8CFqfM/EIymVxnosRmi0aXr61yHMemcApgtu53wrYfgKVKKau1mpRyLTSreCHEX0z12OyRHwJwX1ADM98jpRwGgEKhkBkYGDgVJBfQr6CZGkUhopVSyjb/35Ou6+rSqRnu0jUIIYrVPz8oayroH9B4TdPcA2AAwEAoFHrHcZztGrmqQES7Zuwx82g8HtcWWGOxWAeAr2iaX/UXzEbYFiweM5T7qqFK48JoMYjoFl2bEOIBaGYQMz9uY8fKWdlsdg/M9qk+Go/Hb+3u7i41zR9B8FLClkA7UsoeAJ/X9DmZy+X22BixctbIyEiWiB40kSWifWNjY2ellD/VySSTyd97nrfcD9j/tBlLKRzHWQ1Au9vKzDuGh4cnbXRal+/T6fQvAAwbitcD+G4pIT/Vec52LHP4wAZka2trIzMfgD53Hcpmsw/bGrF21tjY2AQRbbXoYlRwZeb9MD+rENQXABCNRi+IRCJPA/iETp6ItpZzyaCs81n+cZ0D5fTVkUwm/+Tf3fk0ipffM0T0JIBvKKWuJaJLk8nk7cC0o8Lh8NPM/Nki/fe7rltWRarsswj5fP6uurq6LgBrytUxH9d10wD+LKXcC+AHASJD+Xz+40Hn26WUbUR0sMTmYkoppV1zlaLsk3+Dg4NnlFIbod/rmiUej98Bi9RKCPE85sUhn2VCiPr5Dx3H2QDgaAlHZfxz8eOm45hPxaeVE4nE55RSf0DpY92HlVJ3p1IpoxSnvb19VaFQuBbAzwBcOqfpNIDXmflBIcRbzLwDwKdKqMsppb6QSqVeNLGtY7HPwRcAPENEv3Rd9yUYJN+O43yHmYNOGk769kIlVEwR0SbXdSuOsVW7YeG/YU9BXwmaTx8R/VEp9TIzH9ZNj3g83k5Eb2B6GWJLRin1pUrfqBmqencnFotdIYQ4CKDNsmsB0wXXkwDew/RUuwBAvX/DNQH7j1HKj1FV266u+q2wtra2Zf7x6cDDsovEAaXUnZUE8yD+3+4bjgD40ULdNywVHMvm9OnTXkNDw+6GhoZxAJ0wj2XlcJKZf5zNZjcNDQ0dXSgji3ZHurGxcTMRbQZwTRVVv8rMj+dyuT22SXE5LPrt+0QiIZm5Ryl1AxFdB7P7iTOcBXCYiF4SQhyy2birBuf97zqk0+k1ABKY/oJejOnpWo/ppDoD4BQRDTKz29zcPHA+/65DjRo1atSoUaNGjRrnnf8APcnjzVWJn1oAAAAASUVORK5CYII=`;
-            exports_17("default", DEFAULT_FAVICON);
+            exports_16("default", DEFAULT_FAVICON);
         }
     };
 });
-System.register("voodoo/src/subviews/tabList", ["voodoo/node_modules/dumbass/r", "voodoo/src/subviews/faviconDataURL"], function (exports_18, context_18) {
+System.register("voodoo/src/subviews/tabList", ["voodoo/node_modules/dumbass/r", "voodoo/src/subviews/faviconDataURL"], function (exports_17, context_17) {
     "use strict";
     var r_js_2, faviconDataURL_js_1;
-    var __moduleName = context_18 && context_18.id;
+    var __moduleName = context_17 && context_17.id;
     function TabList(state) {
         return r_js_2.d `
     <nav class="controls targets" stylist="styleTabList styleNavControl">
@@ -2706,7 +2690,7 @@ System.register("voodoo/src/subviews/tabList", ["voodoo/node_modules/dumbass/r",
     </nav>
   `;
     }
-    exports_18("TabList", TabList);
+    exports_17("TabList", TabList);
     function TabSelector(tab, index, state) {
         const title = tab.title == 'about:blank' ? '' : tab.title;
         const active = state.activeTarget == tab.targetId;
@@ -2721,7 +2705,7 @@ System.register("voodoo/src/subviews/tabList", ["voodoo/node_modules/dumbass/r",
     </li>
   `;
     }
-    exports_18("TabSelector", TabSelector);
+    exports_17("TabSelector", TabSelector);
     function FaviconElement({ targetId }, state) {
         let faviconURL;
         faviconURL = state.favicons.has(targetId) && state.favicons.get(targetId).dataURI;
@@ -2730,7 +2714,7 @@ System.register("voodoo/src/subviews/tabList", ["voodoo/node_modules/dumbass/r",
       data-target-id="${targetId}" bond=${el => bindFavicon(el, { targetId }, state)}>
   `;
     }
-    exports_18("FaviconElement", FaviconElement);
+    exports_17("FaviconElement", FaviconElement);
     function bindFavicon(el, { targetId }, state) {
         let favicon = state.favicons.get(targetId);
         if (favicon) {
@@ -2757,10 +2741,10 @@ System.register("voodoo/src/subviews/tabList", ["voodoo/node_modules/dumbass/r",
         }
     };
 });
-System.register("voodoo/src/handlers/favicon", ["voodoo/src/subviews/tabList", "voodoo/src/subviews/faviconDataURL"], function (exports_19, context_19) {
+System.register("voodoo/src/handlers/favicon", ["voodoo/src/subviews/tabList", "voodoo/src/subviews/faviconDataURL"], function (exports_18, context_18) {
     "use strict";
     var tabList_js_1, faviconDataURL_js_2;
-    var __moduleName = context_19 && context_19.id;
+    var __moduleName = context_18 && context_18.id;
     function resetFavicon({ targetId }, state) {
         const favicon = state.favicons.get(targetId);
         if (favicon) {
@@ -2768,7 +2752,7 @@ System.register("voodoo/src/handlers/favicon", ["voodoo/src/subviews/tabList", "
         }
         tabList_js_1.FaviconElement({ targetId }, state);
     }
-    exports_19("resetFavicon", resetFavicon);
+    exports_18("resetFavicon", resetFavicon);
     function handleFaviconMessage({ favicon: { faviconDataUrl, targetId } }, state) {
         let favicon = state.favicons.get(targetId);
         if (favicon) {
@@ -2780,7 +2764,7 @@ System.register("voodoo/src/handlers/favicon", ["voodoo/src/subviews/tabList", "
         }
         tabList_js_1.FaviconElement({ targetId }, state);
     }
-    exports_19("handleFaviconMessage", handleFaviconMessage);
+    exports_18("handleFaviconMessage", handleFaviconMessage);
     return {
         setters: [
             function (tabList_js_1_1) {
@@ -2794,10 +2778,10 @@ System.register("voodoo/src/handlers/favicon", ["voodoo/src/subviews/tabList", "
         }
     };
 });
-System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (exports_20, context_20) {
+System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (exports_19, context_19) {
     "use strict";
-    var common_js_5, $, TIME_BETWEEN_ONLINE_CHECKS, ALERT_TIMEOUT, BLANK_SPACE, MAX_E, BUFFERED_FRAME_EVENT, BUFFERED_FRAME_COLLECT_DELAY, waiting, connecting, latestReload, latestAlert, lastTestTime, lastOnlineCheck, messageId, latestFrame, frameDrawing, bufferedFrameCollectDelay, Privates, EventQueue;
-    var __moduleName = context_20 && context_20.id;
+    var common_js_5, $, ALERT_TIMEOUT, BLANK_SPACE, MAX_E, BUFFERED_FRAME_EVENT, BUFFERED_FRAME_COLLECT_DELAY, waiting, connecting, latestReload, latestAlert, messageId, latestFrame, frameDrawing, bufferedFrameCollectDelay, Privates, EventQueue;
+    var __moduleName = context_19 && context_19.id;
     async function drawFrames(state, buf, image) {
         // we don't draw frames for about blank
         // but, haha, this heuristic 
@@ -2861,20 +2845,18 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
             return false;
         }
     }
-    async function die() {
-        if (common_js_5.DEBUG.val) {
-            console.log(`Application is in an invalid state. Going to ask to reload`);
-        }
-        if (!common_js_5.DEBUG.dev && await tconfirm(`Sorry, something went wrong, and we need to reload. Is this okay?`)) {
-            treload();
-        }
-        else if (common_js_5.DEBUG.val) {
-            throw new Error(`App is in an invalid state`);
-        }
-        else {
-            treload();
-        }
-    }
+    /*async function die() {
+      if ( DEBUG.val ) {
+        console.log(`Application is in an invalid state. Going to ask to reload`);
+      }
+      if ( !DEBUG.dev && await tconfirm(`Sorry, something went wrong, and we need to reload. Is this okay?`) ) {
+        treload();
+      } else if ( DEBUG.val ) {
+        throw new Error(`App is in an invalid state`);
+      } else {
+        treload();
+      }
+    }*/
     function onLine() {
         return navigator.onLine;
     }
@@ -2912,7 +2894,7 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
         ],
         execute: function () {
             $ = Symbol('[[EventQueuePrivates]]');
-            TIME_BETWEEN_ONLINE_CHECKS = 1001;
+            //const TIME_BETWEEN_ONLINE_CHECKS = 1001;
             ALERT_TIMEOUT = 300;
             BLANK_SPACE = new Array(201).join('A');
             MAX_E = 255;
@@ -2928,6 +2910,8 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                 MAX: 4000,
             };
             waiting = new Map();
+            //let lastTestTime;
+            //let lastOnlineCheck;
             messageId = 0;
             latestFrame = 0;
             frameDrawing = false;
@@ -2958,7 +2942,7 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                     setTimeout(() => this.nextLoop(), this.currentDelay);
                 }
                 async nextLoop() {
-                    let data, meta, totalBandwidth;
+                    //let data, meta, totalBandwidth;
                     let q = Array.from(this.publics.queue);
                     const url = this.subscribers[0];
                     if (!this.publics.state.demoMode && this.translators.has(url)) {
@@ -3352,14 +3336,14 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                     typeList.push(func);
                 }
             };
-            exports_20("default", EventQueue);
+            exports_19("default", EventQueue);
         }
     };
 });
-System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (exports_21, context_21) {
+System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (exports_20, context_20) {
     "use strict";
     var common_js_6, controlChars;
-    var __moduleName = context_21 && context_21.id;
+    var __moduleName = context_20 && context_20.id;
     function transformEvent(e) {
         const transformedEvent = {
             type: e.type
@@ -3560,7 +3544,7 @@ System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (ex
         common_js_6.DEBUG.val >= common_js_6.DEBUG.med && console.log(transformedEvent);
         return transformedEvent;
     }
-    exports_21("default", transformEvent);
+    exports_20("default", transformEvent);
     function getBitmapCoordinates(event, scale = 1) {
         const { clientX, clientY } = event;
         const bitmap = event.target;
@@ -3584,7 +3568,7 @@ System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (ex
         }
         return coordinates;
     }
-    exports_21("getBitmapCoordinates", getBitmapCoordinates);
+    exports_20("getBitmapCoordinates", getBitmapCoordinates);
     return {
         setters: [
             function (common_js_6_1) {
@@ -3592,17 +3576,17 @@ System.register("voodoo/src/transformEvent", ["voodoo/src/common"], function (ex
             }
         ],
         execute: function () {
-            exports_21("controlChars", controlChars = new Set([
+            exports_20("controlChars", controlChars = new Set([
                 "Enter", "Backspace", "Control", "Shift", "Alt", "Meta", "Space", "Delete",
                 "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Tab"
             ]));
         }
     };
 });
-System.register("voodoo/src/subviews/omniBox", ["voodoo/node_modules/dumbass/r", "voodoo/src/subviews/controls"], function (exports_22, context_22) {
+System.register("voodoo/src/subviews/omniBox", ["voodoo/node_modules/dumbass/r", "voodoo/src/subviews/controls"], function (exports_21, context_21) {
     "use strict";
     var r_js_3, controls_js_1, USE_DDG, omniBoxInput, refocus;
-    var __moduleName = context_22 && context_22.id;
+    var __moduleName = context_21 && context_21.id;
     function OmniBox(state) {
         const activeTab = state.activeTab();
         const { H } = state;
@@ -3659,13 +3643,13 @@ System.register("voodoo/src/subviews/omniBox", ["voodoo/node_modules/dumbass/r",
     </nav>
   `;
     }
-    exports_22("OmniBox", OmniBox);
+    exports_21("OmniBox", OmniBox);
     function focusOmniBox() {
         if (omniBoxInput) {
             omniBoxInput.focus();
         }
     }
-    exports_22("focusOmniBox", focusOmniBox);
+    exports_21("focusOmniBox", focusOmniBox);
     // Search
     function searchProvider({ query: query = '' } = {}) {
         if (USE_DDG) {
@@ -3691,16 +3675,16 @@ System.register("voodoo/src/subviews/omniBox", ["voodoo/node_modules/dumbass/r",
         }
     };
 });
-System.register("voodoo/src/subviews/pluginsMenuButton", ["voodoo/node_modules/dumbass/r"], function (exports_23, context_23) {
+System.register("voodoo/src/subviews/pluginsMenuButton", ["voodoo/node_modules/dumbass/r"], function (exports_22, context_22) {
     "use strict";
     var r_js_4, pluginsMenuOpen;
-    var __moduleName = context_23 && context_23.id;
+    var __moduleName = context_22 && context_22.id;
     function PluginsMenuButton(state) {
         return r_js_4.u `
     <nav class="controls plugins-menu-button aux" stylist="styleNavControl stylePluginsMenuButton">
       <form submit=${[
             e => e.preventDefault(),
-            e => {
+            () => {
                 pluginsMenuOpen ^= true;
                 state.pluginsMenuActive = pluginsMenuOpen;
                 state.viewState.dss.setState(state);
@@ -3713,7 +3697,7 @@ System.register("voodoo/src/subviews/pluginsMenuButton", ["voodoo/node_modules/d
     </nav>
   `;
     }
-    exports_23("PluginsMenuButton", PluginsMenuButton);
+    exports_22("PluginsMenuButton", PluginsMenuButton);
     return {
         setters: [
             function (r_js_4_1) {
@@ -3726,12 +3710,12 @@ System.register("voodoo/src/subviews/pluginsMenuButton", ["voodoo/node_modules/d
         }
     };
 });
-System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "voodoo/node_modules/dumbass/r", "voodoo/src/subviews/omniBox", "voodoo/src/subviews/pluginsMenuButton"], function (exports_24, context_24) {
+System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "voodoo/node_modules/dumbass/r", "voodoo/src/subviews/omniBox", "voodoo/src/subviews/pluginsMenuButton"], function (exports_23, context_23) {
     "use strict";
     var kbd_js_2, common_js_7, r_js_5, omniBox_js_1, pluginsMenuButton_js_1;
-    var __moduleName = context_24 && context_24.id;
+    var __moduleName = context_23 && context_23.id;
     function Controls(state) {
-        const { H, retargetTab, toggleVirtualKeyboard } = state;
+        const { H, retargetTab } = state;
         return r_js_5.d `
     <nav class="controls history aux" stylist="styleNavControl">
       <!--History-->
@@ -3750,7 +3734,7 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "vo
             autocomplete=off
             bond=${el => state.viewState.keyinput = el}
             keydown=${[common_js_7.logitKeyInputEvent, e => state.openKey = e.key, H, limitCursor, retargetTab]}
-            keyup=${[common_js_7.logitKeyInputEvent, e => state.openKey = '', H, retargetTab]}
+            keyup=${[common_js_7.logitKeyInputEvent, () => state.openKey = '', H, retargetTab]}
             focusin=${[() => clearWord(state), () => state.openKey = '']}
             compositionstart=${[common_js_7.logitKeyInputEvent, startComposition]}
             compositionupdate=${[common_js_7.logitKeyInputEvent, updateComposition]}
@@ -3765,7 +3749,7 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "vo
             autocomplete=off
             bond=${el => state.viewState.textarea = el}
             keydown=${[common_js_7.logitKeyInputEvent, e => state.openKey = e.key, H, limitCursor, retargetTab]}
-            keyup=${[common_js_7.logitKeyInputEvent, e => state.openKey = '', H, retargetTab]}
+            keyup=${[common_js_7.logitKeyInputEvent, () => state.openKey = '', H, retargetTab]}
             focusin=${[() => clearWord(state), () => state.openKey = '']}
             compositionstart=${[common_js_7.logitKeyInputEvent, startComposition]}
             compositionupdate=${[common_js_7.logitKeyInputEvent, updateComposition]}
@@ -3781,7 +3765,7 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "vo
     ${omniBox_js_1.OmniBox(state)}
     ${common_js_7.DEBUG.pluginsMenu ? pluginsMenuButton_js_1.PluginsMenuButton(state) : ''}
   `;
-        function startComposition(e) {
+        function startComposition( /*e*/) {
             state.isComposing = true;
             state.latestData = "";
         }
@@ -3902,7 +3886,7 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "vo
             retargetTab(e);
         }
     }
-    exports_24("Controls", Controls);
+    exports_23("Controls", Controls);
     // Helper functions 
     // save the target of a form submission
     function saveClick(event) {
@@ -3910,7 +3894,7 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "vo
             event.currentTarget.clickedButton = event.target;
         }
     }
-    exports_24("saveClick", saveClick);
+    exports_23("saveClick", saveClick);
     // keep track of sequences of keypresses (words basically)
     // because some IMEs (iOS / Safari) issue a insertReplacementText if we select a 
     // suggested word, which requires we delete the word already entered.
@@ -3937,9 +3921,11 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "vo
       * of the textarea.
     **/
     function limitCursor(event) {
-        return;
+        /*
         const target = event.target;
         target.selectionStart = target.selectionEnd = target.value.length;
+        */
+        return;
     }
     // text
     // determines if it's time to commit a text input change from an IME
@@ -3973,10 +3959,10 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "vo
         }
     };
 });
-System.register("voodoo/src/subviews/bandwidthIndicator", ["voodoo/node_modules/dumbass/r"], function (exports_25, context_25) {
+System.register("voodoo/src/subviews/bandwidthIndicator", ["voodoo/node_modules/dumbass/r"], function (exports_24, context_24) {
     "use strict";
     var r_js_6, lastBandwidth;
-    var __moduleName = context_25 && context_25.id;
+    var __moduleName = context_24 && context_24.id;
     function BandwidthIndicator(state) {
         const saved = (state.totalBandwidth - state.totalBytes) / 1000000;
         return r_js_6.d `
@@ -3991,7 +3977,7 @@ System.register("voodoo/src/subviews/bandwidthIndicator", ["voodoo/node_modules/
     </aside>
   `;
     }
-    exports_25("BandwidthIndicator", BandwidthIndicator);
+    exports_24("BandwidthIndicator", BandwidthIndicator);
     function startBandwidthLoop(state) {
         setInterval(() => {
             const bwThisSecond = state.totalBytes - lastBandwidth;
@@ -4000,7 +3986,7 @@ System.register("voodoo/src/subviews/bandwidthIndicator", ["voodoo/node_modules/
             BandwidthIndicator(state);
         }, 1000);
     }
-    exports_25("startBandwidthLoop", startBandwidthLoop);
+    exports_24("startBandwidthLoop", startBandwidthLoop);
     return {
         setters: [
             function (r_js_6_1) {
@@ -4012,10 +3998,11 @@ System.register("voodoo/src/subviews/bandwidthIndicator", ["voodoo/node_modules/
         }
     };
 });
-System.register("voodoo/src/subviews/pluginsMenu", ["voodoo/node_modules/dumbass/r", "voodoo/src/subviews/pluginsMenuButton"], function (exports_26, context_26) {
+System.register("voodoo/src/subviews/pluginsMenu", ["voodoo/node_modules/dumbass/r", "voodoo/src/subviews/pluginsMenuButton"], function (exports_25, context_25) {
     "use strict";
-    var r_js_7, pluginsMenuButton_js_2, pmEl;
-    var __moduleName = context_26 && context_26.id;
+    var r_js_7, pluginsMenuButton_js_2;
+    var __moduleName = context_25 && context_25.id;
+    //let pmEl;
     function PluginsMenu(state, { bondTasks: bondTasks = [], } = {}) {
         return r_js_7.d `
     <nav class=plugins-menu 
@@ -4107,7 +4094,7 @@ System.register("voodoo/src/subviews/pluginsMenu", ["voodoo/node_modules/dumbass
     </nav>
   `;
     }
-    exports_26("PluginsMenu", PluginsMenu);
+    exports_25("PluginsMenu", PluginsMenu);
     return {
         setters: [
             function (r_js_7_1) {
@@ -4121,10 +4108,10 @@ System.register("voodoo/src/subviews/pluginsMenu", ["voodoo/node_modules/dumbass
         }
     };
 });
-System.register("voodoo/src/subviews/other", ["voodoo/src/common", "voodoo/node_modules/dumbass/r"], function (exports_27, context_27) {
+System.register("voodoo/src/subviews/other", ["voodoo/src/common", "voodoo/node_modules/dumbass/r"], function (exports_26, context_26) {
     "use strict";
     var common_js_8, r_js_8, NATIVE_MODALS, ModalRef;
-    var __moduleName = context_27 && context_27.id;
+    var __moduleName = context_26 && context_26.id;
     // Modals
     function Modals(state) {
         const { currentModal } = state.viewState;
@@ -4237,7 +4224,7 @@ System.register("voodoo/src/subviews/other", ["voodoo/src/common", "voodoo/node_
         </aside>
       `;
     }
-    exports_27("Modals", Modals);
+    exports_26("Modals", Modals);
     async function chooseFile(click, state) {
         click.preventDefault();
         click.stopPropagation();
@@ -4334,7 +4321,7 @@ System.register("voodoo/src/subviews/other", ["voodoo/src/common", "voodoo/node_
         common_js_8.DEBUG.val >= common_js_8.DEBUG.med && console.log(`Will display modal ${type} with ${msg} on el:`, state.viewState.currentModal.el);
         Modals(state);
     }
-    exports_27("openModal", openModal);
+    exports_26("openModal", openModal);
     function closeModal(click, state) {
         if (!click.target.matches('button'))
             return;
@@ -4365,7 +4352,7 @@ System.register("voodoo/src/subviews/other", ["voodoo/src/common", "voodoo/node_
         </article>
       `;
     }
-    exports_27("PermissionRequest", PermissionRequest);
+    exports_26("PermissionRequest", PermissionRequest);
     return {
         setters: [
             function (common_js_8_1) {
@@ -4390,18 +4377,18 @@ System.register("voodoo/src/subviews/other", ["voodoo/src/common", "voodoo/node_
         }
     };
 });
-System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "voodoo/node_modules/dumbass/r", "voodoo/src/subviews/index"], function (exports_28, context_28) {
+System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "voodoo/node_modules/dumbass/r", "voodoo/src/subviews/index"], function (exports_27, context_27) {
     "use strict";
-    var common_js_9, r_js_9, index_js_1, CLOSE_DELAY, SHORT_CUT, FUNC, CONTEXT_MENU;
-    var __moduleName = context_28 && context_28.id;
-    function ContextMenu(state) {
+    var common_js_9, r_js_9, index_js_1, CLOSE_DELAY, SHORT_CUT, CONTEXT_MENU;
+    var __moduleName = context_27 && context_27.id;
+    function ContextMenu( /*state*/) {
         return r_js_9.d `
 
   `;
     }
-    exports_28("ContextMenu", ContextMenu);
+    exports_27("ContextMenu", ContextMenu);
     function makeContextMenuHandler(state, node = { type: 'page', id: 'current-page' }) {
-        const { id, type: nodeType } = node;
+        const { /*id, */ type: nodeType } = node;
         const menuItems = CONTEXT_MENU[nodeType];
         return contextMenu => {
             // we need this check because we attach a handler to each node
@@ -4443,7 +4430,7 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "voodoo
                         close(state, false);
                         state.viewState.contextMenu = el;
                     },
-                    el => self.addEventListener('click', function remove(click) {
+                    () => self.addEventListener('click', function remove(click) {
                         // if we clicked outside the menu, 
                         // remove the menu and stop listening for such clicks
                         if (!click.target.closest('.context-menu')) {
@@ -4491,7 +4478,7 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "voodoo
             }
         };
     }
-    exports_28("makeContextMenuHandler", makeContextMenuHandler);
+    exports_27("makeContextMenuHandler", makeContextMenuHandler);
     function close(state, delay = true) {
         if (delay) {
             setTimeout(() => {
@@ -4508,42 +4495,42 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "voodoo
             }
         }
     }
-    function styleContextMenu(el, state) {
-        return `
-      * .context-menu {
-        position: absolute;
-        background: whitesmoke;
-        box-shadow: 1px 1px 1px 1px grey;
-        padding: 0.5em 0;
-        min-width: 200px;
-        z-index: 10;
-      }
-
-      * .context-menu h1 {
-        margin: 0;
-        font-size: smaller;
-      }
-
-      * .context-menu ul {
-        margin: 0;
-        padding: 0;
-        font-size: smaller;
-      }
-
-      * .context-menu ul li {
-        cursor: default;
-      }
-      
-      * .context-menu li,
-      * .context-menu h1 {
-        padding: 0 1em;
-      }
-
-      * .context-menu ul li:hover {
-        background: powderblue;
-      }
-  `;
-    }
+    /*function styleContextMenu(el, state) {
+      return `
+          * .context-menu {
+            position: absolute;
+            background: whitesmoke;
+            box-shadow: 1px 1px 1px 1px grey;
+            padding: 0.5em 0;
+            min-width: 200px;
+            z-index: 10;
+          }
+    
+          * .context-menu h1 {
+            margin: 0;
+            font-size: smaller;
+          }
+    
+          * .context-menu ul {
+            margin: 0;
+            padding: 0;
+            font-size: smaller;
+          }
+    
+          * .context-menu ul li {
+            cursor: default;
+          }
+          
+          * .context-menu li,
+          * .context-menu h1 {
+            padding: 0 1em;
+          }
+    
+          * .context-menu ul li:hover {
+            background: powderblue;
+          }
+      `;
+    }*/
     // context menu option functions
     /**
       * This code is needed like this
@@ -4617,7 +4604,7 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "voodoo
         close(state);
         const timeNow = new Date();
         const stringTime = timeNow.toJSON();
-        const fileName = stringTime.replace(/[-:\.]/g, "_");
+        const fileName = stringTime.replace(/[-:.]/g, "_");
         const imageData = state.viewState.canvasEl.toDataURL();
         const downloader = document.createElement('a');
         downloader.href = imageData;
@@ -4632,7 +4619,7 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "voodoo
         downloader.click();
         downloader.remove();
     }
-    function reload(click, state) {
+    function reload( /*click, state*/) {
         const goButton = document.querySelector('form.url button.go');
         goButton.click();
     }
@@ -4743,7 +4730,7 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "voodoo
         execute: function () {
             CLOSE_DELAY = 222;
             SHORT_CUT = 'Ctrl+Shift+J';
-            FUNC = e => console.log("Doing it", e);
+            //const FUNC = e => console.log("Doing it", e);
             CONTEXT_MENU = {
                 'page': [
                     {
@@ -4800,15 +4787,15 @@ System.register("voodoo/src/subviews/contextMenu", ["voodoo/src/common", "voodoo
         }
     };
 });
-System.register("voodoo/src/subviews/index", ["voodoo/src/subviews/controls", "voodoo/src/subviews/omniBox", "voodoo/src/subviews/tabList", "voodoo/src/subviews/loadingIndicator", "voodoo/src/subviews/bandwidthIndicator", "voodoo/src/subviews/pluginsMenuButton", "voodoo/src/subviews/pluginsMenu", "voodoo/src/subviews/other", "voodoo/src/subviews/contextMenu"], function (exports_29, context_29) {
+System.register("voodoo/src/subviews/index", ["voodoo/src/subviews/controls", "voodoo/src/subviews/omniBox", "voodoo/src/subviews/tabList", "voodoo/src/subviews/loadingIndicator", "voodoo/src/subviews/bandwidthIndicator", "voodoo/src/subviews/pluginsMenuButton", "voodoo/src/subviews/pluginsMenu", "voodoo/src/subviews/other", "voodoo/src/subviews/contextMenu"], function (exports_28, context_28) {
     "use strict";
-    var __moduleName = context_29 && context_29.id;
+    var __moduleName = context_28 && context_28.id;
     function exportStar_1(m) {
         var exports = {};
         for (var n in m) {
             if (n !== "default") exports[n] = m[n];
         }
-        exports_29(exports);
+        exports_28(exports);
     }
     return {
         setters: [
@@ -4844,10 +4831,10 @@ System.register("voodoo/src/subviews/index", ["voodoo/src/subviews/controls", "v
         }
     };
 });
-System.register("voodoo/node_modules/jtype-system/t", [], function (exports_30, context_30) {
+System.register("voodoo/node_modules/jtype-system/t", [], function (exports_29, context_29) {
     "use strict";
     var BROWSER_SIDE, BuiltIns, DEBUG, SEALED_DEFAULT, isNone, typeCache;
-    var __moduleName = context_30 && context_30.id;
+    var __moduleName = context_29 && context_29.id;
     function T(parts, ...vals) {
         const cooked = vals.reduce((prev, cur, i) => prev + cur + parts[i + 1], parts[0]);
         const typeName = cooked;
@@ -4855,7 +4842,7 @@ System.register("voodoo/node_modules/jtype-system/t", [], function (exports_30, 
             throw new TypeError(`Cannot use type ${typeName} before it is defined.`);
         return typeCache.get(typeName).type;
     }
-    exports_30("T", T);
+    exports_29("T", T);
     function partialMatch(type, instance) {
         return validate(type, instance, { partial: true });
     }
@@ -5264,7 +5251,7 @@ System.register("voodoo/node_modules/jtype-system/t", [], function (exports_30, 
     return {
         setters: [],
         execute: function () {
-            exports_30("BROWSER_SIDE", BROWSER_SIDE = (() => { try {
+            exports_29("BROWSER_SIDE", BROWSER_SIDE = (() => { try {
                 return self.DOMParser && true;
             }
             catch (e) {
@@ -5315,10 +5302,10 @@ System.register("voodoo/node_modules/jtype-system/t", [], function (exports_30, 
         }
     };
 });
-System.register("voodoo/node_modules/maskingtape.css/externals", ["voodoo/node_modules/jtype-system/t"], function (exports_31, context_31) {
+System.register("voodoo/node_modules/maskingtape.css/externals", ["voodoo/node_modules/jtype-system/t"], function (exports_30, context_30) {
     "use strict";
     var t_js_2;
-    var __moduleName = context_31 && context_31.id;
+    var __moduleName = context_30 && context_30.id;
     return {
         setters: [
             function (t_js_2_1) {
@@ -5326,27 +5313,27 @@ System.register("voodoo/node_modules/maskingtape.css/externals", ["voodoo/node_m
             }
         ],
         execute: function () {
-            exports_31("T", t_js_2.T);
-            exports_31("default", { T: t_js_2.T });
+            exports_30("T", t_js_2.T);
+            exports_30("default", { T: t_js_2.T });
         }
     };
 });
-System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules/maskingtape.css/externals"], function (exports_32, context_32) {
+System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules/maskingtape.css/externals"], function (exports_31, context_31) {
     "use strict";
     var FULL_LABEL, LABEL_LEN, LABEL, PREFIX_LEN, PREFIX_BASE, externals_js_1, counter, c3s;
-    var __moduleName = context_32 && context_32.id;
+    var __moduleName = context_31 && context_31.id;
     function generateUniquePrefix() {
         counter += 3;
         const number = counter * Math.random() * performance.now() * (+new Date);
         const prefixString = (LABEL + number.toString(PREFIX_BASE).replace(/\./, '')).slice(0, PREFIX_LEN);
         return { prefix: [prefixString] };
     }
-    exports_32("generateUniquePrefix", generateUniquePrefix);
+    exports_31("generateUniquePrefix", generateUniquePrefix);
     function extendPrefix({ prefix: existingPrefix }) {
         externals_js_1.T.guard(externals_js_1.T `Prefix`, existingPrefix);
         existingPrefix.push(generateUniquePrefix().prefix[0]);
     }
-    exports_32("extendPrefix", extendPrefix);
+    exports_31("extendPrefix", extendPrefix);
     function findStyleSheet(link) {
         let ss;
         const ssFound = Array.from(document.styleSheets).find(({ ownerNode }) => ownerNode == link);
@@ -5361,7 +5348,7 @@ System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules
             return ss;
         }
     }
-    exports_32("findStyleSheet", findStyleSheet);
+    exports_31("findStyleSheet", findStyleSheet);
     function findStyleLink(url) {
         let ss;
         url = getURL(url);
@@ -5379,7 +5366,7 @@ System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules
             return ss;
         }
     }
-    exports_32("findStyleLink", findStyleLink);
+    exports_31("findStyleLink", findStyleLink);
     function isStyleSheetAccessible(ss) {
         try {
             Array.from(ss.sheet.cssRules);
@@ -5389,7 +5376,7 @@ System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules
             return false;
         }
     }
-    exports_32("isStyleSheetAccessible", isStyleSheetAccessible);
+    exports_31("isStyleSheetAccessible", isStyleSheetAccessible);
     // it may actually be better to clone the sheet using
     // a style element rather than cloning using the link 
     // which may both rely on and recause a network request
@@ -5399,7 +5386,7 @@ System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules
         ss.replaceWith(newNode);
         return newNode;
     }
-    exports_32("cloneStyleSheet", cloneStyleSheet);
+    exports_31("cloneStyleSheet", cloneStyleSheet);
     function prefixAllRules(ss, prefix, combinator = ' ') {
         let lastRuleIndex = ss.cssRules.length - 1;
         let i = lastRuleIndex;
@@ -5443,7 +5430,7 @@ System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules
             i--;
         }
     }
-    exports_32("prefixAllRules", prefixAllRules);
+    exports_31("prefixAllRules", prefixAllRules);
     function prefixStyleRule(lastRule, ss, lastRuleIndex, prefix, combinator) {
         let newRuleText = lastRule.cssText;
         const { selectorText } = lastRule;
@@ -5529,12 +5516,12 @@ System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules
             });
         }
     }
-    exports_32("scopeStyleSheet", scopeStyleSheet);
+    exports_31("scopeStyleSheet", scopeStyleSheet);
     function scope(url) {
         const prefix = generateUniquePrefix().prefix[0];
         return { scopedSheet: scopeStyleSheet(url, '.' + prefix), prefix };
     }
-    exports_32("scope", scope);
+    exports_31("scope", scope);
     // used when the first scoping didn't work and we need to add more prefix to increase specificity
     // if this ever occurs
     // which is why we use '' combinator to add to the prefix of the already scoped sheet
@@ -5544,13 +5531,13 @@ System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules
         prefixAllRules(scopedSheet, prefix, combinator);
         return { scopedSheet, prefix: prefix + existingPrefix };
     }
-    exports_32("rescope", rescope);
+    exports_31("rescope", rescope);
     function getURL(uri) {
         const link = document.createElement('a');
         link.href = uri;
         return link.href;
     }
-    exports_32("getURL", getURL);
+    exports_31("getURL", getURL);
     return {
         setters: [
             function (externals_js_1_1) {
@@ -5569,28 +5556,28 @@ System.register("voodoo/node_modules/maskingtape.css/c3s", ["voodoo/node_modules
             }, { verify: i => i.length > 0 });
             counter = 1;
             c3s = { scope, rescope };
-            exports_32("default", c3s);
+            exports_31("default", c3s);
         }
     };
 });
-System.register("voodoo/node_modules/style.dss/monitorChanges", [], function (exports_33, context_33) {
+System.register("voodoo/node_modules/style.dss/monitorChanges", [], function (exports_32, context_32) {
     "use strict";
     var InsertListeners, RemovedListeners, inserted, removed, monitoring;
-    var __moduleName = context_33 && context_33.id;
+    var __moduleName = context_32 && context_32.id;
     function addInsertListener(listener) {
         if (inserted.has(listener))
             return;
         InsertListeners.push(listener);
         inserted.add(listener);
     }
-    exports_33("addInsertListener", addInsertListener);
+    exports_32("addInsertListener", addInsertListener);
     function addRemovedListener(listener) {
         if (removed.has(listener))
             return;
         RemovedListeners.push(listener);
         removed.add(listener);
     }
-    exports_33("addRemovedListener", addRemovedListener);
+    exports_32("addRemovedListener", addRemovedListener);
     function monitorChanges() {
         if (monitoring)
             return;
@@ -5647,7 +5634,7 @@ System.register("voodoo/node_modules/style.dss/monitorChanges", [], function (ex
         mo.observe(document.documentElement, { childList: true, subtree: true });
         monitoring = true;
     }
-    exports_33("monitorChanges", monitorChanges);
+    exports_32("monitorChanges", monitorChanges);
     return {
         setters: [],
         execute: function () {
@@ -5659,32 +5646,32 @@ System.register("voodoo/node_modules/style.dss/monitorChanges", [], function (ex
         }
     };
 });
-System.register("voodoo/node_modules/style.dss/index", ["voodoo/node_modules/maskingtape.css/c3s", "voodoo/node_modules/style.dss/monitorChanges"], function (exports_34, context_34) {
+System.register("voodoo/node_modules/style.dss/index", ["voodoo/node_modules/maskingtape.css/c3s", "voodoo/node_modules/style.dss/monitorChanges"], function (exports_33, context_33) {
     "use strict";
     var c3s_js_1, monitorChanges_js_1, stylistFunctions, mappings, memory, initialized;
-    var __moduleName = context_34 && context_34.id;
+    var __moduleName = context_33 && context_33.id;
     function setState(newState) {
         const clonedState = clone(newState);
         Object.assign(memory.state, clonedState);
     }
-    exports_34("setState", setState);
+    exports_33("setState", setState);
     function restyleElement(el) {
         if (!el)
             return;
         el.classList.forEach(className => className.startsWith('c3s') && restyleClass(className));
     }
-    exports_34("restyleElement", restyleElement);
+    exports_33("restyleElement", restyleElement);
     function restyleClass(className) {
         const { element, stylist } = mappings.get(className);
         associate(className, element, stylist, memory.state);
     }
-    exports_34("restyleClass", restyleClass);
+    exports_33("restyleClass", restyleClass);
     function restyleAll() {
         mappings.forEach(({ element, stylist }, className) => {
             associate(className, element, stylist, memory.state);
         });
     }
-    exports_34("restyleAll", restyleAll);
+    exports_33("restyleAll", restyleAll);
     function initializeDSS(state, functionsObject) {
         setState(state);
         /**
@@ -5728,7 +5715,7 @@ System.register("voodoo/node_modules/style.dss/index", ["voodoo/node_modules/mas
             }
         }
     }
-    exports_34("initializeDSS", initializeDSS);
+    exports_33("initializeDSS", initializeDSS);
     // an object whose properties are functions that are stylist functions
     function addMoreStylistFunctions(functionsObject) {
         const toRegister = [];
@@ -5748,7 +5735,7 @@ System.register("voodoo/node_modules/style.dss/index", ["voodoo/node_modules/mas
         while (toRegister.length)
             toRegister.pop()();
     }
-    exports_34("addMoreStylistFunctions", addMoreStylistFunctions);
+    exports_33("addMoreStylistFunctions", addMoreStylistFunctions);
     function randomClass() {
         const { prefix: [className] } = c3s_js_1.generateUniquePrefix();
         return className;
@@ -5835,12 +5822,12 @@ System.register("voodoo/node_modules/style.dss/index", ["voodoo/node_modules/mas
         }
     };
 });
-System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "voodoo/src/common"], function (exports_35, context_35) {
+System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "voodoo/src/common"], function (exports_34, context_34) {
     "use strict";
     var index_js_2, common_js_10, stylists, dss;
-    var __moduleName = context_35 && context_35.id;
+    var __moduleName = context_34 && context_34.id;
     // stylists
-    function styleDocument(el, state) {
+    function styleDocument( /*el, state*/) {
         return `
       :root {
         height: 100%;
@@ -5918,7 +5905,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
         ` : ''}
     `;
     }
-    function styleTabList(el, state) {
+    function styleTabList( /*el, state*/) {
         return `
       nav ul {
       }
@@ -5958,7 +5945,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function styleTabSelector(el, state) {
+    function styleTabSelector( /*el, state*/) {
         return `
       li.tab-selector {
         display: inline-flex;
@@ -6057,7 +6044,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function styleNavControl(el, state) {
+    function styleNavControl( /*el, state*/) {
         return `
       @media screen and (max-width: 600px) {
         nav.aux {
@@ -6160,7 +6147,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function styleOmniBox(el, state) {
+    function styleOmniBox( /*el, state*/) {
         return `
       input:not(:focus), input[disabled] {
         background: var(--verylightgrey);
@@ -6185,7 +6172,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
         ` : ''}
     `;
     }
-    function styleHistoryForm(el, state) {
+    function styleHistoryForm( /*el, state*/) {
         return `
       form button.back {
         background-image: url(./voodoo/asset-imports/nhsuk-icons/icon-chevron-left.svg);
@@ -6196,7 +6183,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function styleURLForm(el, state) {
+    function styleURLForm( /*el, state*/) {
         return `
       form {
         position: relative;
@@ -6299,7 +6286,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function stylePluginsMenuButton(el, state) {
+    function stylePluginsMenuButton( /*el, state*/) {
         return `
       nav.plugins-menu-button {
         grid-area: plugins-menu-button;
@@ -6341,48 +6328,48 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function styleOldPluginsMenu(el, state) {
-        return `
-      nav.plugins-menu {
-        grid-area: plugins-menu;
-        position: relative;
-      }
-
-      nav button {
-        background: var(--silver);
-      }
-      
-      nav ul.options {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-        display: none;
-      }
-
-      nav ul.options li {
-        -webkit-appearance: button;
-        -moz-appearance: button;
-        appearance: button;
-      }
-
-      nav ul.options.open {
-        display: table;
-        min-width: 10rem;
-        z-index: 2;
-        right: 0;
-        top: 100%;
-        transform: translate(0, 0);
-      }
-
-      @media screen and (max-width: 600px) {
-        nav ul.options.open {
-          top: 0;
-          transform: translate(0, -100%);
+    /*function styleOldPluginsMenu(el, state) {
+      return `
+        nav.plugins-menu {
+          grid-area: plugins-menu;
+          position: relative;
         }
-      }
-    `;
-    }
-    function styleBandwidthIndicator(el, state) {
+  
+        nav button {
+          background: var(--silver);
+        }
+        
+        nav ul.options {
+          list-style-type: none;
+          padding: 0;
+          margin: 0;
+          display: none;
+        }
+  
+        nav ul.options li {
+          -webkit-appearance: button;
+          -moz-appearance: button;
+          appearance: button;
+        }
+  
+        nav ul.options.open {
+          display: table;
+          min-width: 10rem;
+          z-index: 2;
+          right: 0;
+          top: 100%;
+          transform: translate(0, 0);
+        }
+  
+        @media screen and (max-width: 600px) {
+          nav ul.options.open {
+            top: 0;
+            transform: translate(0, -100%);
+          }
+        }
+      `;
+    }*/
+    function styleBandwidthIndicator( /*el, state*/) {
         return `
       aside.bandwidth-indicator {
         display: flex;
@@ -6409,7 +6396,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function styleLoadingIndicator(el, state) {
+    function styleLoadingIndicator( /*el, state*/) {
         return `
       aside.loading-indicator {
         grid-area: pending;
@@ -6446,7 +6433,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function styleTabViewport(el, state) {
+    function styleTabViewport( /*el, state*/) {
         return `
       article.tab-viewport {
         grid-area: viewport;
@@ -6480,7 +6467,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function styleSelectInput(el, state) {
+    function styleSelectInput( /*el, state*/) {
         return `
       #selectinput {
         position: absolute;
@@ -6497,7 +6484,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function styleModals(el, state) {
+    function styleModals( /*el, state*/) {
         return `
       aside {
         position: absolute;
@@ -6553,7 +6540,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
       }
     `;
     }
-    function styleContextMenu(el, state) {
+    function styleContextMenu( /*el, state*/) {
         return `
       * .context-menu {
         position: absolute;
@@ -6600,7 +6587,7 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
             }
         ],
         execute: function () {
-            exports_35("stylists", stylists = {
+            exports_34("stylists", stylists = {
                 styleDocument, styleVoodooMain,
                 styleTabSelector, styleTabList,
                 styleNavControl, styleOmniBox, styleURLForm,
@@ -6613,18 +6600,18 @@ System.register("voodoo/src/styles", ["voodoo/node_modules/style.dss/index", "vo
                 styleModals,
                 styleContextMenu
             });
-            exports_35("dss", dss = {
+            exports_34("dss", dss = {
                 restyleAll: index_js_2.restyleAll, restyleElement: index_js_2.restyleElement, initializeDSS: index_js_2.initializeDSS, setState: index_js_2.setState
             });
         }
     };
 });
-System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor", "voodoo/node_modules/dumbass/r", "voodoo/src/subviews/index", "voodoo/src/styles", "voodoo/src/transformEvent"], function (exports_36, context_36) {
+System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor", "voodoo/node_modules/dumbass/r", "voodoo/src/subviews/index", "voodoo/src/styles", "voodoo/src/transformEvent"], function (exports_35, context_35) {
     "use strict";
-    var common_js_11, constructor_js_1, r_js_10, Subviews, styles_js_1, transformEvent_js_1, subviews, DEFAULT_URL, isIOS;
-    var __moduleName = context_36 && context_36.id;
+    var common_js_11, constructor_js_1, r_js_10, Subviews, styles_js_1, transformEvent_js_1, subviews, USE_INPUT_MODE;
+    var __moduleName = context_35 && context_35.id;
     function component(state) {
-        const { H, sizeBrowserToBounds, asyncSizeBrowserToBounds, emulateNavigator, bondTasks, installFrameListener, canvasBondTasks } = state;
+        const { H, /*sizeBrowserToBounds,*/ asyncSizeBrowserToBounds, emulateNavigator, bondTasks, /*installFrameListener,*/ canvasBondTasks } = state;
         const audio_port = 1 + Number(location.port ? location.port : (location.protocol == 'https' ? 443 : 80));
         const audio_url = `${location.protocol}//${location.hostname}:${audio_port}/`;
         const FocusBorrowerSel = '[name="address"], #selectinput, .control';
@@ -6659,17 +6646,17 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
         state.toggleVirtualKeyboard = toggleVirtualKeyboard;
         // this will likely have to be updated for iOS since "keyboard summons by focus" MUST 
         // be triggered by a user action, I believe, and I think it will not work after a setTimeout
-        const refocusMeIfNotAllowedBorrower = (e, view_state) => {
-            const me = e.target;
-            setTimeout(() => {
-                const active = document.activeElement;
-                if (!!active && active.matches) {
-                    if (!active.matches(FocusBorrowerSel) && view_state.shouldHaveFocus == me) {
-                        me.focus();
-                    }
-                }
-            }, 50);
-        };
+        /*const refocusMeIfNotAllowedBorrower = (e, view_state) => {
+          const me = e.target;
+          setTimeout(() => {
+            const active = document.activeElement;
+            if ( !! active && active.matches ) {
+              if ( ! active.matches(FocusBorrowerSel) && view_state.shouldHaveFocus == me ) {
+                me.focus();
+              }
+            }
+          }, 50);
+        };*/
         const retargetTouchScroll = e => retargetTouchScrollToRemote(e, H, viewState);
         bondTasks.unshift(el => state.viewState.voodooEl = el);
         bondTasks.push(() => styles_js_1.dss.initializeDSS(state, styles_js_1.stylists));
@@ -6765,7 +6752,7 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
                   `) :
                 r_js_10.d `
               <canvas
-                click=${e => {
+                click=${() => {
                     if (viewState.shouldHaveFocus && document.activeElement != viewState.shouldHaveFocus) {
                         viewState.shouldHaveFocus.focus();
                     }
@@ -6813,11 +6800,9 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
         function focusKeyinput(type = 'text', inputmode = 'text', value = '') {
             const { viewState } = state;
             viewState.keyinput.type = type;
-            /**
-            if ( inputmode != 'text' ) {
-              viewState.keyinput.inputmode = inputmode;
+            if (USE_INPUT_MODE) {
+                viewState.keyinput.inputmode = inputmode;
             }
-            **/
             viewState.keyinput.value = value;
             if (document.activeElement != viewState.keyinput) {
                 viewState.keyinput.focus({ preventScroll: true });
@@ -6832,11 +6817,9 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
         }
         function focusTextarea(inputmode = 'text', value = '') {
             const { viewState } = state;
-            /**
-            if ( inputmode != 'text' ) {
-              viewState.textarea.inputmode = inputmode;
+            if (USE_INPUT_MODE) {
+                viewState.textarea.inputmode = inputmode;
             }
-            **/
             viewState.textarea.value = value;
             if (document.activeElement != viewState.textarea) {
                 viewState.textarea.focus({ preventScroll: true });
@@ -6854,7 +6837,7 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
             state.viewState.ctx = canvasEl.getContext('2d');
         }
     }
-    exports_36("component", component);
+    exports_35("component", component);
     // helper functions
     function retargetTouchScrollToRemote(event, H, viewState) {
         const { type } = event;
@@ -6912,16 +6895,17 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
             }
         ],
         execute: function () {
-            exports_36("subviews", subviews = Subviews);
-            DEFAULT_URL = 'https://google.com';
-            isIOS = navigator.platform && navigator.platform.match("iPhone|iPod|iPad");
+            exports_35("subviews", subviews = Subviews);
+            //const DEFAULT_URL = 'https://google.com';
+            //const isIOS = navigator.platform && navigator.platform.match("iPhone|iPod|iPad");
+            USE_INPUT_MODE = false;
         }
     };
 });
-System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (exports_37, context_37) {
+System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (exports_36, context_36) {
     "use strict";
     var common_js_12, FocusCache;
-    var __moduleName = context_37 && context_37.id;
+    var __moduleName = context_36 && context_36.id;
     function resetFocusCache({ navigated: { targetId }, executionContextId }, state) {
         let cache = state.domCache.get(targetId);
         if (!cache) {
@@ -6935,7 +6919,7 @@ System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (expo
             cache.contextId = executionContextId;
         }
     }
-    exports_37("resetFocusCache", resetFocusCache);
+    exports_36("resetFocusCache", resetFocusCache);
     function handleTreeUpdate({ treeUpdate: { open, targetId, dontFocus, runFuncs }, executionContextId }, state) {
         if (targetId !== state.activeTarget) {
             common_js_12.DEBUG.val >= common_js_12.DEBUG.med && console.log(`Rejecting tree update for ${targetId} as it is not active target ${state.activeTarget}`);
@@ -6962,7 +6946,7 @@ System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (expo
             common_js_12.DEBUG.val && console.warn(`No view frame`);
         }
     }
-    exports_37("handleTreeUpdate", handleTreeUpdate);
+    exports_36("handleTreeUpdate", handleTreeUpdate);
     function updateTree({ domTree, targetId, contextId, dontFocus: dontFocus = false, runFuncs: runFuncs = [] }, state) {
         const frame = getViewFrame(state);
         let doc = getViewWindow(state).document;
@@ -7018,7 +7002,7 @@ System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (expo
             }
         }
     }
-    exports_37("updateTree", updateTree);
+    exports_36("updateTree", updateTree);
     function scrollToTop({ navigated }, state) {
         setTimeout(() => {
             if (navigated.targetId !== state.activeTarget)
@@ -7031,7 +7015,7 @@ System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (expo
             }
         }, 40);
     }
-    exports_37("scrollToTop", scrollToTop);
+    exports_36("scrollToTop", scrollToTop);
     function scrollTo({ scrollY, scrollX }, state) {
         setTimeout(() => {
             if (state.viewState.viewFrameEl) {
@@ -7042,7 +7026,7 @@ System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (expo
             }
         }, 40);
     }
-    exports_37("scrollTo", scrollTo);
+    exports_36("scrollTo", scrollTo);
     function handleTreeDiff({ treeDiff: { diffs, targetId }, executionContextId }, state) {
         if (targetId !== state.activeTarget) {
             common_js_12.DEBUG.val >= common_js_12.DEBUG.med && console.log(`Rejecting tree diff for ${targetId} as it is not active target ${state.activeTarget}`);
@@ -7076,7 +7060,7 @@ System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (expo
             common_js_12.DEBUG.val && console.warn(`No view frame`);
         }
     }
-    exports_37("handleTreeDiff", handleTreeDiff);
+    exports_36("handleTreeDiff", handleTreeDiff);
     function patchTree({ insert, remove }, state) {
         const doc = getViewWindow(state).document;
         const { parentZig } = insert || remove;
@@ -7112,11 +7096,11 @@ System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (expo
     function getViewWindow(state) {
         return state.viewState.viewFrameEl.contentWindow;
     }
-    exports_37("getViewWindow", getViewWindow);
+    exports_36("getViewWindow", getViewWindow);
     function getViewFrame(state) {
         return state.viewState.viewFrameEl;
     }
-    exports_37("getViewFrame", getViewFrame);
+    exports_36("getViewFrame", getViewFrame);
     return {
         setters: [
             function (common_js_12_1) {
@@ -7198,10 +7182,10 @@ System.register("plugins/demo/treeUpdate", ["voodoo/src/common"], function (expo
         }
     };
 });
-System.register("plugins/demo/createListener", ["voodoo/src/common"], function (exports_38, context_38) {
+System.register("plugins/demo/createListener", ["voodoo/src/common"], function (exports_37, context_37) {
     "use strict";
     var common_js_13, BUFFERED_FRAME_EVENT;
-    var __moduleName = context_38 && context_38.id;
+    var __moduleName = context_37 && context_37.id;
     function createFrameListener(queue, state) {
         const { H } = state;
         return function installFrameListener() {
@@ -7294,7 +7278,7 @@ System.register("plugins/demo/createListener", ["voodoo/src/common"], function (
             });
         };
     }
-    exports_38("createFrameListener", createFrameListener);
+    exports_37("createFrameListener", createFrameListener);
     function createDOMTreeGetter(queue, delay) {
         return function getDOMTree(force = false) {
             setTimeout(() => {
@@ -7307,7 +7291,7 @@ System.register("plugins/demo/createListener", ["voodoo/src/common"], function (
             }, delay);
         };
     }
-    exports_38("createDOMTreeGetter", createDOMTreeGetter);
+    exports_37("createDOMTreeGetter", createDOMTreeGetter);
     return {
         setters: [
             function (common_js_13_1) {
@@ -7325,9 +7309,9 @@ System.register("plugins/demo/createListener", ["voodoo/src/common"], function (
         }
     };
 });
-System.register("plugins/demo/programmaticClickIntervention", [], function (exports_39, context_39) {
+System.register("plugins/demo/programmaticClickIntervention", [], function (exports_38, context_38) {
     "use strict";
-    var __moduleName = context_39 && context_39.id;
+    var __moduleName = context_38 && context_38.id;
     function saveFailingClick({ click }, state) {
         if (click.clickModifiers & 2) {
             state.createTab(click, click.intendedHref);
@@ -7341,7 +7325,7 @@ System.register("plugins/demo/programmaticClickIntervention", [], function (expo
             });
         }
     }
-    exports_39("saveFailingClick", saveFailingClick);
+    exports_38("saveFailingClick", saveFailingClick);
     function auditClicks({ click }, state) {
         if (click.hitsTarget)
             return;
@@ -7349,17 +7333,17 @@ System.register("plugins/demo/programmaticClickIntervention", [], function (expo
             saveFailingClick({ click }, state);
         }
     }
-    exports_39("auditClicks", auditClicks);
+    exports_38("auditClicks", auditClicks);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("plugins/demo/installPlugin", ["plugins/demo/treeUpdate", "plugins/demo/createListener", "plugins/demo/programmaticClickIntervention"], function (exports_40, context_40) {
+System.register("plugins/demo/installPlugin", ["plugins/demo/treeUpdate", "plugins/demo/createListener", "plugins/demo/programmaticClickIntervention"], function (exports_39, context_39) {
     "use strict";
     var treeUpdate_js_1, createListener_js_1, programmaticClickIntervention_js_1;
-    var __moduleName = context_40 && context_40.id;
+    var __moduleName = context_39 && context_39.id;
     function installPlugin(state, queue) {
         try {
             self.state = state;
@@ -7401,7 +7385,7 @@ System.register("plugins/demo/installPlugin", ["plugins/demo/treeUpdate", "plugi
             console.info(e);
         }
     }
-    exports_40("default", installPlugin);
+    exports_39("default", installPlugin);
     function clearDomCache({ navigated }, state) {
         const { targetId } = navigated;
         state.domCache.delete(targetId);
@@ -7422,10 +7406,10 @@ System.register("plugins/demo/installPlugin", ["plugins/demo/treeUpdate", "plugi
         }
     };
 });
-System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"], function (exports_41, context_41) {
+System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"], function (exports_40, context_40) {
     "use strict";
     var common_js_14, FocusCache;
-    var __moduleName = context_41 && context_41.id;
+    var __moduleName = context_40 && context_40.id;
     function resetFocusCache({ navigated: { targetId }, executionContextId }, state) {
         let cache = state.domCache.get(targetId);
         if (!cache) {
@@ -7439,7 +7423,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             cache.contextId = executionContextId;
         }
     }
-    exports_41("resetFocusCache", resetFocusCache);
+    exports_40("resetFocusCache", resetFocusCache);
     function handleTreeUpdate({ treeUpdate: { open, targetId, dontFocus, runFuncs }, executionContextId }, state) {
         if (targetId !== state.activeTarget) {
             common_js_14.DEBUG.val >= common_js_14.DEBUG.med && console.log(`Rejecting tree update for ${targetId} as it is not active target ${state.activeTarget}`);
@@ -7466,7 +7450,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             common_js_14.DEBUG.val && console.warn(`No view frame`);
         }
     }
-    exports_41("handleTreeUpdate", handleTreeUpdate);
+    exports_40("handleTreeUpdate", handleTreeUpdate);
     function updateTree({ domTree, targetId, contextId, dontFocus: dontFocus = false, runFuncs: runFuncs = [] }, state) {
         const frame = getViewFrame(state);
         let doc = getViewWindow(state).document;
@@ -7522,7 +7506,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             }
         }
     }
-    exports_41("updateTree", updateTree);
+    exports_40("updateTree", updateTree);
     function scrollToTop({ navigated }, state) {
         setTimeout(() => {
             if (navigated.targetId !== state.activeTarget)
@@ -7535,7 +7519,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             }
         }, 40);
     }
-    exports_41("scrollToTop", scrollToTop);
+    exports_40("scrollToTop", scrollToTop);
     function scrollTo({ scrollY, scrollX }, state) {
         setTimeout(() => {
             if (state.viewState.viewFrameEl) {
@@ -7546,7 +7530,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             }
         }, 40);
     }
-    exports_41("scrollTo", scrollTo);
+    exports_40("scrollTo", scrollTo);
     function handleTreeDiff({ treeDiff: { diffs, targetId }, executionContextId }, state) {
         if (targetId !== state.activeTarget) {
             common_js_14.DEBUG.val >= common_js_14.DEBUG.med && console.log(`Rejecting tree diff for ${targetId} as it is not active target ${state.activeTarget}`);
@@ -7580,7 +7564,7 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
             common_js_14.DEBUG.val && console.warn(`No view frame`);
         }
     }
-    exports_41("handleTreeDiff", handleTreeDiff);
+    exports_40("handleTreeDiff", handleTreeDiff);
     function patchTree({ insert, remove }, state) {
         const doc = getViewWindow(state).document;
         const { parentZig } = insert || remove;
@@ -7616,11 +7600,11 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
     function getViewWindow(state) {
         return state.viewState.viewFrameEl.contentWindow;
     }
-    exports_41("getViewWindow", getViewWindow);
+    exports_40("getViewWindow", getViewWindow);
     function getViewFrame(state) {
         return state.viewState.viewFrameEl;
     }
-    exports_41("getViewFrame", getViewFrame);
+    exports_40("getViewFrame", getViewFrame);
     return {
         setters: [
             function (common_js_14_1) {
@@ -7702,10 +7686,10 @@ System.register("plugins/appminifier/scripts/treeUpdate", ["voodoo/src/common"],
         }
     };
 });
-System.register("plugins/appminifier/scripts/createListener", ["voodoo/src/common"], function (exports_42, context_42) {
+System.register("plugins/appminifier/scripts/createListener", ["voodoo/src/common"], function (exports_41, context_41) {
     "use strict";
     var common_js_15, BUFFERED_FRAME_EVENT;
-    var __moduleName = context_42 && context_42.id;
+    var __moduleName = context_41 && context_41.id;
     function createFrameListener(queue, state) {
         const { H } = state;
         return function installFrameListener() {
@@ -7798,7 +7782,7 @@ System.register("plugins/appminifier/scripts/createListener", ["voodoo/src/commo
             });
         };
     }
-    exports_42("createFrameListener", createFrameListener);
+    exports_41("createFrameListener", createFrameListener);
     function createDOMTreeGetter(queue, delay) {
         return function getDOMTree(force = false) {
             setTimeout(() => {
@@ -7811,7 +7795,7 @@ System.register("plugins/appminifier/scripts/createListener", ["voodoo/src/commo
             }, delay);
         };
     }
-    exports_42("createDOMTreeGetter", createDOMTreeGetter);
+    exports_41("createDOMTreeGetter", createDOMTreeGetter);
     return {
         setters: [
             function (common_js_15_1) {
@@ -7829,9 +7813,9 @@ System.register("plugins/appminifier/scripts/createListener", ["voodoo/src/commo
         }
     };
 });
-System.register("plugins/appminifier/scripts/programmaticClickIntervention", [], function (exports_43, context_43) {
+System.register("plugins/appminifier/scripts/programmaticClickIntervention", [], function (exports_42, context_42) {
     "use strict";
-    var __moduleName = context_43 && context_43.id;
+    var __moduleName = context_42 && context_42.id;
     function saveFailingClick({ click }, state) {
         if (click.clickModifiers & 2) {
             state.createTab(click, click.intendedHref);
@@ -7845,7 +7829,7 @@ System.register("plugins/appminifier/scripts/programmaticClickIntervention", [],
             });
         }
     }
-    exports_43("saveFailingClick", saveFailingClick);
+    exports_42("saveFailingClick", saveFailingClick);
     function auditClicks({ click }, state) {
         if (click.hitsTarget)
             return;
@@ -7853,17 +7837,17 @@ System.register("plugins/appminifier/scripts/programmaticClickIntervention", [],
             saveFailingClick({ click }, state);
         }
     }
-    exports_43("auditClicks", auditClicks);
+    exports_42("auditClicks", auditClicks);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("plugins/appminifier/installPlugin", ["plugins/appminifier/scripts/treeUpdate", "plugins/appminifier/scripts/createListener", "plugins/appminifier/scripts/programmaticClickIntervention"], function (exports_44, context_44) {
+System.register("plugins/appminifier/installPlugin", ["plugins/appminifier/scripts/treeUpdate", "plugins/appminifier/scripts/createListener", "plugins/appminifier/scripts/programmaticClickIntervention"], function (exports_43, context_43) {
     "use strict";
     var treeUpdate_js_2, createListener_js_2, programmaticClickIntervention_js_2;
-    var __moduleName = context_44 && context_44.id;
+    var __moduleName = context_43 && context_43.id;
     function installPlugin(state, queue) {
         if (location.pathname !== "/custom.html" && location.pathname !== "/")
             return;
@@ -7920,7 +7904,7 @@ System.register("plugins/appminifier/installPlugin", ["plugins/appminifier/scrip
             console.info(e);
         }
     }
-    exports_44("default", installPlugin);
+    exports_43("default", installPlugin);
     function clearDomCache({ navigated }, state) {
         const { targetId } = navigated;
         state.domCache.delete(targetId);
@@ -7951,93 +7935,155 @@ System.register("plugins/appminifier/installPlugin", ["plugins/appminifier/scrip
         }
     };
 });
-System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], function (exports_45, context_45) {
+System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], function (exports_44, context_44) {
     "use strict";
     var common_js_16;
-    var __moduleName = context_45 && context_45.id;
-    function handleTreeUpdate({ treeUpdate: { open, targetId, dontFocus, runFuncs }, executionContextId }, state) {
-        if (targetId !== state.activeTarget) {
-            common_js_16.DEBUG.val >= common_js_16.DEBUG.med && console.log(`Rejecting tree update for ${targetId} as it is not active target ${state.activeTarget}`);
-            common_js_16.DEBUG.val >= common_js_16.DEBUG.med && console.log(`But saving this update into that targets cache.`);
-            let cache = state.domCache.get(targetId);
-            if (!cache) {
-                cache = { contextId: '', domTree: '', focusSaver: null };
-                state.domCache.set(targetId, cache);
-            }
-            // when we have  iframes this will be dangerous
-            // to flatten contextId (which will be multiple per page 1 for each iframe)
-            cache.contextId = executionContextId;
-            cache.domTree = open;
-            return;
+    var __moduleName = context_44 && context_44.id;
+    /*
+      export function handleTreeUpdate({treeUpdate:{open,targetId,dontFocus,runFuncs}, executionContextId}, state) {
+        if ( targetId !== state.activeTarget ) {
+          DEBUG.val >= DEBUG.med && console.log(`Rejecting tree update for ${targetId} as it is not active target ${state.activeTarget}`);
+          DEBUG.val >= DEBUG.med && console.log(`But saving this update into that targets cache.`);
+          let cache = state.domCache.get(targetId);
+          if ( ! cache ) {
+            cache = {contextId:'', domTree:'', focusSaver: null};
+            state.domCache.set(targetId, cache);
+          }
+          // when we have  iframes this will be dangerous
+          // to flatten contextId (which will be multiple per page 1 for each iframe)
+          cache.contextId = executionContextId;
+          cache.domTree = open;
+          return;
         }
-        if (state.viewState.viewFrameEl) {
-            updateTree({ targetId, domTree: open, contextId: executionContextId, dontFocus, runFuncs }, state);
-            if (state.scrollToTopOnNextTreeUpdate) {
-                scrollToTop({ navigated: state.scrollToTopOnNextTreeUpdate }, state);
-                state.scrollToTopOnNextTreeUpdate = null;
-            }
+        if ( state.viewState.viewFrameEl ) {
+          updateTree({targetId, domTree:open, contextId:executionContextId, dontFocus, runFuncs}, state);
+          if ( state.scrollToTopOnNextTreeUpdate ) {
+            scrollToTop({navigated:state.scrollToTopOnNextTreeUpdate}, state);
+            state.scrollToTopOnNextTreeUpdate = null;
+          }
+        } else {
+          DEBUG.val && console.warn(`No view frame`);
         }
-        else {
-            common_js_16.DEBUG.val && console.warn(`No view frame`);
-        }
-    }
-    exports_45("handleTreeUpdate", handleTreeUpdate);
-    function updateTree({ domTree, targetId, contextId, dontFocus: dontFocus = false, runFuncs: runFuncs = [] }, state) {
+      }
+  
+      export function updateTree({domTree,targetId,contextId,dontFocus:dontFocus = false, runFuncs: runFuncs= []}, state) {
         const frame = getViewFrame(state);
         let doc = getViewWindow(state).document;
         let cache = state.domCache.get(targetId);
-        if (!cache) {
-            cache = { contextId: '', domTree: '', focusSaver: null };
-            state.domCache.set(targetId, cache);
+        if ( ! cache ) {
+          cache = {contextId:'', domTree:'', focusSaver: null};
+          state.domCache.set(targetId, cache);
         }
         cache.contextId = contextId;
         cache.domTree = domTree;
-        if (!doc.body || doc.body.outerHTML !== domTree) {
-            //cache.focusSaver.save(doc);
-            if (frame.hasLoaded) {
-                doc = getViewWindow(state).document;
-                doc.body.outerHTML = domTree;
-                Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
-            }
-            else {
-                frame.addEventListener('load', () => {
-                    doc = getViewWindow(state).document;
-                    doc.body.outerHTML = domTree;
-                    Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
-                }, { once: true });
-            }
-            if (!dontFocus) {
-                //cache.focusSaver.restore();
-            }
-            if (runFuncs) {
-                if (frame.hasLoaded) {
-                    const win = getViewWindow(state);
-                    for (const name of runFuncs) {
-                        try {
-                            win[name]();
-                        }
-                        catch (e) {
-                            common_js_16.DEBUG.val && console.warn(name, e);
-                        }
-                    }
+        if ( !doc.body || doc.body.outerHTML !== domTree ) {
+          //cache.focusSaver.save(doc);
+          if ( frame.hasLoaded ) {
+            doc = getViewWindow(state).document;
+            doc.body.outerHTML = domTree;
+            Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
+          } else {
+            frame.addEventListener('load', () => {
+              doc = getViewWindow(state).document;
+              doc.body.outerHTML = domTree;
+              Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
+            }, {once:true});
+          }
+          if ( ! dontFocus ) {
+            //cache.focusSaver.restore();
+          }
+          if ( runFuncs ) {
+            if ( frame.hasLoaded ) {
+              const win = getViewWindow(state);
+              for ( const name of runFuncs ) {
+                try { win[name](); } catch(e){DEBUG.val && console.warn(name, e)}
+              }
+            } else {
+              frame.addEventListener('load', () => {
+                const win = getViewWindow(state);
+                for ( const name of runFuncs ) {
+                  try { win[name](); } catch(e){DEBUG.val && console.warn(name, e)}
                 }
-                else {
-                    frame.addEventListener('load', () => {
-                        const win = getViewWindow(state);
-                        for (const name of runFuncs) {
-                            try {
-                                win[name]();
-                            }
-                            catch (e) {
-                                common_js_16.DEBUG.val && console.warn(name, e);
-                            }
-                        }
-                    });
-                }
+              });
             }
+          }
         }
-    }
-    exports_45("updateTree", updateTree);
+      }
+    */
+    /*
+      export function handleTreeDiff({treeDiff:{diffs,targetId},executionContextId}, state) {
+        if ( targetId !== state.activeTarget ) {
+          DEBUG.val >= DEBUG.med && console.log(`Rejecting tree diff for ${targetId} as it is not active target ${state.activeTarget}`);
+          DEBUG.val >= DEBUG.med && console.log(`But saving this diff into that targets cache.`);
+          let cache = state.domCache.get(targetId);
+          if ( ! cache ) {
+            cache = {contextId:'', domTree:'', focusSaver: FocusCache()};
+            state.domCache.set(targetId, cache);
+          }
+          // when we have  iframes this will be dangerous
+          // to flatten contextId (which will be multiple per page 1 for each iframe)
+          cache.contextId = executionContextId;
+          cache.diffs = diffs;
+          return;
+        }
+        if ( state.viewState.viewFrameEl ) {
+          const later = [];
+          for ( const diff of diffs ) {
+            const result = patchTree(diff,state);
+            if ( ! result ) later.push(diff);
+          }
+          for ( const diff of later ) {
+            const result = patchTree(diff, state);
+            if ( ! result ) {
+              console.warn(`Diff could not be applied after two tries`, diff);
+            }
+          }
+        } else {
+          DEBUG.val && console.warn(`No view frame`);
+        }
+      }
+  
+      function patchTree({
+            insert, remove
+          }, state) {
+        const doc = getViewWindow(state).document;
+  
+        const {parentZig} = insert || remove;
+        const parentZigSelector = `[zig="${parentZig}"]`;
+        const parentElement = doc.querySelector(parentZigSelector);
+  
+        
+        if ( ! parentElement ) {
+          //throw new TypeError(`No such parent element selected by ${parentZigSelector}`);
+          //console.warn(`No such parent element selected by ${parentZigSelector}`);
+          return false;
+        }
+  
+        if ( insert ) {
+          parentElement.insertAdjacentHTML('beforeEnd', insert.outerHTML);
+          //console.log(parentElement, "Added", insert.outerHTML);
+        }
+  
+        if ( remove ) {
+          const zigSelectorToRemove = `[zig="${remove.zig}"]`;
+          const elToRemove = parentElement.querySelector(zigSelectorToRemove);
+          if ( ! elToRemove ) {
+            //throw new TypeError(`No such element to remove selected by ${zigSelectorToRemove}`);
+            //console.warn(`No such element to remove selected by ${zigSelectorToRemove}`);
+            return true;
+          } else {
+            elToRemove.remove();
+          }
+          //console.log("Removed", elToRemove);
+        }
+  
+        return true;
+      }
+  
+      function zigs(dataId, generation) {
+        return `[zig="${dataId} ${generation}"]`;
+      }
+    */
     function scrollToTop({ navigated }, state) {
         setTimeout(() => {
             if (navigated.targetId !== state.activeTarget)
@@ -8050,7 +8096,7 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
             }
         }, 40);
     }
-    exports_45("scrollToTop", scrollToTop);
+    exports_44("scrollToTop", scrollToTop);
     function scrollTo({ scrollY, scrollX }, state) {
         setTimeout(() => {
             if (state.viewState.viewFrameEl) {
@@ -8061,81 +8107,15 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
             }
         }, 40);
     }
-    exports_45("scrollTo", scrollTo);
-    function handleTreeDiff({ treeDiff: { diffs, targetId }, executionContextId }, state) {
-        if (targetId !== state.activeTarget) {
-            common_js_16.DEBUG.val >= common_js_16.DEBUG.med && console.log(`Rejecting tree diff for ${targetId} as it is not active target ${state.activeTarget}`);
-            common_js_16.DEBUG.val >= common_js_16.DEBUG.med && console.log(`But saving this diff into that targets cache.`);
-            let cache = state.domCache.get(targetId);
-            if (!cache) {
-                cache = { contextId: '', domTree: '', focusSaver: FocusCache() };
-                state.domCache.set(targetId, cache);
-            }
-            // when we have  iframes this will be dangerous
-            // to flatten contextId (which will be multiple per page 1 for each iframe)
-            cache.contextId = executionContextId;
-            cache.diffs = diffs;
-            return;
-        }
-        if (state.viewState.viewFrameEl) {
-            const later = [];
-            for (const diff of diffs) {
-                const result = patchTree(diff, state);
-                if (!result)
-                    later.push(diff);
-            }
-            for (const diff of later) {
-                const result = patchTree(diff, state);
-                if (!result) {
-                    console.warn(`Diff could not be applied after two tries`, diff);
-                }
-            }
-        }
-        else {
-            common_js_16.DEBUG.val && console.warn(`No view frame`);
-        }
-    }
-    exports_45("handleTreeDiff", handleTreeDiff);
-    function patchTree({ insert, remove }, state) {
-        const doc = getViewWindow(state).document;
-        const { parentZig } = insert || remove;
-        const parentZigSelector = `[zig="${parentZig}"]`;
-        const parentElement = doc.querySelector(parentZigSelector);
-        if (!parentElement) {
-            //throw new TypeError(`No such parent element selected by ${parentZigSelector}`);
-            //console.warn(`No such parent element selected by ${parentZigSelector}`);
-            return false;
-        }
-        if (insert) {
-            parentElement.insertAdjacentHTML('beforeEnd', insert.outerHTML);
-            //console.log(parentElement, "Added", insert.outerHTML);
-        }
-        if (remove) {
-            const zigSelectorToRemove = `[zig="${remove.zig}"]`;
-            const elToRemove = parentElement.querySelector(zigSelectorToRemove);
-            if (!elToRemove) {
-                //throw new TypeError(`No such element to remove selected by ${zigSelectorToRemove}`);
-                //console.warn(`No such element to remove selected by ${zigSelectorToRemove}`);
-                return true;
-            }
-            else {
-                elToRemove.remove();
-            }
-            //console.log("Removed", elToRemove);
-        }
-        return true;
-    }
-    function zigs(dataId, generation) {
-        return `[zig="${dataId} ${generation}"]`;
-    }
+    exports_44("scrollTo", scrollTo);
     function getViewWindow(state) {
         return state.viewState.viewFrameEl.contentWindow;
     }
-    exports_45("getViewWindow", getViewWindow);
+    exports_44("getViewWindow", getViewWindow);
     function getViewFrame(state) {
         return state.viewState.viewFrameEl;
     }
-    exports_45("getViewFrame", getViewFrame);
+    exports_44("getViewFrame", getViewFrame);
     return {
         setters: [
             function (common_js_16_1) {
@@ -8146,10 +8126,10 @@ System.register("plugins/projector/scripts/treeUpdate", ["voodoo/src/common"], f
         }
     };
 });
-System.register("plugins/projector/scripts/createListener", ["voodoo/src/common"], function (exports_46, context_46) {
+System.register("plugins/projector/scripts/createListener", ["voodoo/src/common"], function (exports_45, context_45) {
     "use strict";
     var common_js_17, BUFFERED_FRAME_EVENT;
-    var __moduleName = context_46 && context_46.id;
+    var __moduleName = context_45 && context_45.id;
     function createFrameListener(queue, state) {
         const { H } = state;
         return function installFrameListener() {
@@ -8242,7 +8222,7 @@ System.register("plugins/projector/scripts/createListener", ["voodoo/src/common"
             });
         };
     }
-    exports_46("createFrameListener", createFrameListener);
+    exports_45("createFrameListener", createFrameListener);
     function createDOMTreeGetter(queue, delay) {
         return function getDOMTree(force = false) {
             setTimeout(() => {
@@ -8255,7 +8235,7 @@ System.register("plugins/projector/scripts/createListener", ["voodoo/src/common"
             }, delay);
         };
     }
-    exports_46("createDOMTreeGetter", createDOMTreeGetter);
+    exports_45("createDOMTreeGetter", createDOMTreeGetter);
     return {
         setters: [
             function (common_js_17_1) {
@@ -8273,10 +8253,10 @@ System.register("plugins/projector/scripts/createListener", ["voodoo/src/common"
         }
     };
 });
-System.register("plugins/projector/installPlugin", ["plugins/projector/scripts/treeUpdate", "plugins/projector/scripts/createListener"], function (exports_47, context_47) {
+System.register("plugins/projector/installPlugin", ["plugins/projector/scripts/treeUpdate", "plugins/projector/scripts/createListener"], function (exports_46, context_46) {
     "use strict";
     var treeUpdate_js_3, createListener_js_3;
-    var __moduleName = context_47 && context_47.id;
+    var __moduleName = context_46 && context_46.id;
     function installPlugin(state, queue) {
         console.log("Installing projector plugin");
         if (location.pathname !== "/factory.html")
@@ -8285,8 +8265,8 @@ System.register("plugins/projector/installPlugin", ["plugins/projector/scripts/t
         state.domCache = new Map();
         state.installFrameListener = createListener_js_3.createFrameListener(queue, state);
         state.getDOMSnapshot = createListener_js_3.createDOMTreeGetter(queue, state.SHORT_DELAY);
-        queue.addMetaListener('treeUpdate', meta => treeUpdate_js_3.handleTreeUpdate(meta, state));
-        queue.addMetaListener('treeDiff', meta => treeUpdate_js_3.handleTreeDiff(meta, state));
+        //queue.addMetaListener('treeUpdate', meta => handleTreeUpdate(meta, state));
+        //queue.addMetaListener('treeDiff', meta => handleTreeDiff(meta, state));
         queue.addMetaListener('navigated', meta => handleNavigate(meta, state));
         queue.addMetaListener('domSnapshot', meta => console.log(meta, state));
         queue.send({
@@ -8295,7 +8275,7 @@ System.register("plugins/projector/installPlugin", ["plugins/projector/scripts/t
         });
         state.addListener('activateTab', () => {
             const win = treeUpdate_js_3.getViewWindow(state);
-            const { activeTarget, clearViewport, lastTarget } = state;
+            const { activeTarget, lastTarget } = state;
             const lastCache = state.domCache.get(lastTarget);
             const cache = state.domCache.get(activeTarget);
             if (!cache) {
@@ -8310,14 +8290,14 @@ System.register("plugins/projector/installPlugin", ["plugins/projector/scripts/t
                     Object.assign(lastCache, { scrollX, scrollY });
                 }
                 state.clearViewport();
-                treeUpdate_js_3.updateTree(cache, state);
+                //updateTree(cache, state); 
                 // restore scroll position of new target
                 const { scrollX, scrollY } = cache;
                 treeUpdate_js_3.scrollTo({ scrollX, scrollY }, state);
             }
         });
     }
-    exports_47("default", installPlugin);
+    exports_46("default", installPlugin);
     function clearDomCache({ navigated }, state) {
         const { targetId } = navigated;
         state.domCache.delete(targetId);
@@ -8345,10 +8325,10 @@ System.register("plugins/projector/installPlugin", ["plugins/projector/scripts/t
         }
     };
 });
-System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "voodoo/src/handlers/targetInfo", "voodoo/src/handlers/demo", "voodoo/src/handlers/keysCanInput", "voodoo/src/handlers/elementInfo", "voodoo/src/handlers/scrollNotify", "voodoo/src/handlers/loadingIndicator", "voodoo/src/handlers/favicon", "voodoo/src/eventQueue", "voodoo/src/transformEvent", "voodoo/src/common", "voodoo/src/view", "plugins/demo/installPlugin", "plugins/appminifier/installPlugin", "plugins/projector/installPlugin"], function (exports_48, context_48) {
+System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "voodoo/src/handlers/targetInfo", "voodoo/src/handlers/demo", "voodoo/src/handlers/keysCanInput", "voodoo/src/handlers/elementInfo", "voodoo/src/handlers/scrollNotify", "voodoo/src/handlers/loadingIndicator", "voodoo/src/handlers/favicon", "voodoo/src/eventQueue", "voodoo/src/transformEvent", "voodoo/src/common", "voodoo/src/view", "plugins/demo/installPlugin", "plugins/appminifier/installPlugin", "plugins/projector/installPlugin"], function (exports_47, context_47) {
     "use strict";
     var selectInput_js_1, targetInfo_js_1, demo_js_1, keysCanInput_js_1, elementInfo_js_1, scrollNotify_js_1, loadingIndicator_js_3, favicon_js_1, eventQueue_js_1, transformEvent_js_2, common_js_18, view_js_1, installPlugin_js_1, installPlugin_js_2, installPlugin_js_3, ThrottledEvents, SessionlessEvents, IMMEDIATE, SHORT_DELAY, LONG_DELAY, VERY_LONG_DELAY, EVENT_THROTTLE_MS, latestRequestId;
-    var __moduleName = context_48 && context_48.id;
+    var __moduleName = context_47 && context_47.id;
     async function voodoo(selector, position, { postInstallTasks: postInstallTasks = [], preInstallTasks: preInstallTasks = [], canvasBondTasks: canvasBondTasks = [], bondTasks: bondTasks = [], useViewFrame: useViewFrame = false, demoMode: demoMode = false, } = {}) {
         const sessionToken = location.hash && location.hash.slice(1);
         location.hash = '';
@@ -8445,13 +8425,12 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
         if (common_js_18.deviceIsMobile()) {
             state.hideScrollbars();
         }
-        let nextSend;
         // event handlers
         // input
         queue.addMetaListener('selectInput', meta => selectInput_js_1.handleSelectMessage(meta, state));
         queue.addMetaListener('keyInput', meta => keysCanInput_js_1.handleKeysCanInputMessage(meta, state));
         queue.addMetaListener('favicon', meta => favicon_js_1.handleFaviconMessage(meta, state));
-        queue.addMetaListener('navigated', meta => canKeysInput());
+        queue.addMetaListener('navigated', () => canKeysInput());
         queue.addMetaListener('navigated', ({ navigated: { targetId } }) => favicon_js_1.resetFavicon({ targetId }, state));
         //queue.addMetaListener('navigated', meta => takeShot(meta, state));
         // element info
@@ -8516,7 +8495,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
         queue.addMetaListener('modal', modalMessage => view_js_1.subviews.openModal(modalMessage, state));
         // remote secure downloads
         queue.addMetaListener('download', ({ download }) => {
-            const { sessionId, frameId, url } = download;
+            const { sessionId } = download;
             const modal = {
                 sessionId,
                 type: 'notice',
@@ -8590,7 +8569,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
         };
         const pluginView = { addToQueue, subscribeToQueue, requestRender, api };
         const poppetView = { loadPlugin, api };
-        const postinstallView = { queue };
+        const postInstallView = { queue };
         await common_js_18.sleep(0);
         for (const task of postInstallTasks) {
             try {
@@ -8605,14 +8584,14 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
         }
         return poppetView;
         // closures
-        function doShot() {
-            setTimeout(() => {
-                queue.send({
-                    type: "doShot",
-                    synthetic: true
-                });
-            }, SHORT_DELAY);
-        }
+        /*function doShot() {
+          setTimeout(() => {
+            queue.send({
+              type: "doShot",
+              synthetic: true
+            });
+          }, SHORT_DELAY);
+        }*/
         function runListeners(name, data) {
             const funcList = listeners.get(name);
             if (!funcList || funcList.length == 0)
@@ -8679,17 +8658,17 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
                 ctx.fillRect(0, 0, canv.width, canv.height);
             }
         }
-        function sendKey(keyEvent) {
-            const { viewState } = state;
-            if (document.activeElement !== viewState.keyinput && document.activeElement !== viewState.textarea) {
-                let ev = keyEvent;
-                if (keyEvent.key == "Tab" || keyEvent.key == "Space") {
-                    event.preventDefault();
-                    ev = cloneKeyEvent(event, true);
-                }
-                H(ev);
+        /*function sendKey(keyEvent) {
+          const {viewState} = state;
+          if ( document.activeElement !== viewState.keyinput && document.activeElement !== viewState.textarea ) {
+            let ev = keyEvent;
+            if ( keyEvent.key == "Tab" || keyEvent.key == "Space" ) {
+              event.preventDefault();
+              ev = cloneKeyEvent(event, true);
             }
-        }
+            H(ev);
+          }
+        }*/
         function installTopLevelKeyListeners() {
             //self.addEventListener('keydown', sendKey); 
             //self.addEventListener('keyup', sendKey); 
@@ -8768,7 +8747,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
                     lastDist = dist;
                 }
             }
-            function end(event) {
+            function end() {
                 if (scaling) {
                     if (lastDist < 8) {
                         // do nothing, 
@@ -8831,20 +8810,6 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
                 transformedEvent.contextId = state.viewState.latestScrollContext;
             }
             if (isThrottled) {
-                // FIXME: this is not the right way to throttle
-                // because we are mixing events (pointer, touch mouse all together)
-                // and we get a delayed event, not good)
-                // for now we comment out the old code
-                /**
-                if ( !nextSend ) {
-                  nextSend = setTimeout(() => {
-                    nextSend = false;
-                    queue.send(transformedEvent);
-                  }, EVENT_THROTTLE_MS);
-                }
-                **/
-                // and send the event straight away because we will throttle 
-                // at event capture
                 queue.send(transformedEvent);
             }
             else {
@@ -8869,7 +8834,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
                     state.backspaceFiring = false;
                 }
                 else if (event.type == "pointerdown" || event.type == "mousedown") {
-                    const { timeStamp, type } = event;
+                    //const {timeStamp,type} = event;
                     const { latestData } = state;
                     if (!!state.viewState.shouldHaveFocus && !!latestData && latestData.length > 1 && latestData != state.latestCommitData) {
                         state.isComposing = false;
@@ -8928,9 +8893,9 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
             self.ViewportWidth = width;
             self.ViewportHeight = height;
         }
-        function sizeTab() {
-            return sizeBrowserToBounds(state.viewState.canvasEl);
-        }
+        /*function sizeTab() {
+          return sizeBrowserToBounds(state.viewState.canvasEl);
+        }*/
         function asyncSizeBrowserToBounds(el) {
             setTimeout(() => (sizeBrowserToBounds(el, true), indicateNoOpenTabs()), 0);
         }
@@ -9085,17 +9050,17 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
             plugins.set(plugin.name, plugin);
             plugin.load(pluginView);
         }
-        function addToQueue(...events) {
+        function addToQueue( /*...events*/) {
             console.warn("Unimplemented");
         }
-        function requestRender(pluginRenderedView) {
+        function requestRender( /*pluginRenderedView*/) {
             console.warn("Unimplemented");
         }
-        function subscribeToQueue(name, listener) {
+        function subscribeToQueue( /*name, listener*/) {
             console.warn("Unimplemented");
         }
     }
-    exports_48("default", voodoo);
+    exports_47("default", voodoo);
     function cloneKeyEvent(event, vRetargeted) {
         return {
             type: event.type,
@@ -9109,7 +9074,7 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
             vRetargeted
         };
     }
-    exports_48("cloneKeyEvent", cloneKeyEvent);
+    exports_47("cloneKeyEvent", cloneKeyEvent);
     return {
         setters: [
             function (selectInput_js_1_1) {
@@ -9178,10 +9143,10 @@ System.register("voodoo/src/constructor", ["voodoo/src/handlers/selectInput", "v
         }
     };
 });
-System.register("voodoo/index", ["voodoo/src/constructor"], function (exports_49, context_49) {
+System.register("voodoo/index", ["voodoo/src/constructor"], function (exports_48, context_48) {
     "use strict";
     var constructor_js_2, USE_BOTH;
-    var __moduleName = context_49 && context_49.id;
+    var __moduleName = context_48 && context_48.id;
     function Voodoo({ api, translator, image, useViewFrame: useViewFrame = false, demoMode: demoMode = false, } = {}, selector, position = 'beforeEnd') {
         let root;
         if (!selector) {
@@ -9210,8 +9175,8 @@ System.register("voodoo/index", ["voodoo/src/constructor"], function (exports_49
             else if (typeof image == "string") {
                 root = document.querySelector(image);
             }
-            else if (image instanceof HTMLImageElement) {
-                image = image;
+            else if (!(image instanceof HTMLImageElement)) {
+                throw new TypeError(`A valid image was not found`);
             }
             image.style.display = 'none';
         }
@@ -9234,7 +9199,7 @@ System.register("voodoo/index", ["voodoo/src/constructor"], function (exports_49
             postInstallTasks: []
         });
     }
-    exports_49("default", Voodoo);
+    exports_48("default", Voodoo);
     return {
         setters: [
             function (constructor_js_2_1) {
@@ -9247,9 +9212,9 @@ System.register("voodoo/index", ["voodoo/src/constructor"], function (exports_49
         }
     };
 });
-System.register("getAPI", [], function (exports_50, context_50) {
+System.register("getAPI", [], function (exports_49, context_49) {
     "use strict";
-    var __moduleName = context_50 && context_50.id;
+    var __moduleName = context_49 && context_49.id;
     function getAPI() {
         const api = new URL(location);
         api.hash = '';
@@ -9262,17 +9227,17 @@ System.register("getAPI", [], function (exports_50, context_50) {
         }
         return url;
     }
-    exports_50("default", getAPI);
+    exports_49("default", getAPI);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("canvas-start-app", ["voodoo/index", "getAPI", "translateVoodooCRDP"], function (exports_51, context_51) {
+System.register("canvas-start-app", ["voodoo/index", "getAPI", "translateVoodooCRDP"], function (exports_50, context_50) {
     "use strict";
     var index_js_3, getAPI_js_1, translateVoodooCRDP_js_2;
-    var __moduleName = context_51 && context_51.id;
+    var __moduleName = context_50 && context_50.id;
     async function start_app() {
         const useViewFrame = false;
         const translator = translateVoodooCRDP_js_2.default;
@@ -9297,10 +9262,10 @@ System.register("canvas-start-app", ["voodoo/index", "getAPI", "translateVoodooC
         }
     };
 });
-System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/common", "translateVoodooCRDP", "kbd"], function (exports_52, context_52) {
+System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/common", "translateVoodooCRDP", "kbd"], function (exports_51, context_51) {
     "use strict";
     var common_js_19, translateVoodooCRDP_js_3, translateVoodooCRDP_js_4, kbd_js_3, Overrides, SHORT_TIMEOUT, INTERACTION_EDGE, NONE, DOM_DELTA_PIXEL, DOM_DELTA_LINE, DOM_DELTA_PAGE, LINE_HEIGHT_GUESS, BOXCACHE, BUTTON, SYNTHETIC_CTRL;
-    var __moduleName = context_52 && context_52.id;
+    var __moduleName = context_51 && context_51.id;
     function translator(e, handled = { type: 'case' }) {
         handled.type = handled.type || 'case';
         const TranslatedE = translateVoodooCRDP_js_3.default(e, handled);
@@ -9604,7 +9569,7 @@ System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/com
         ],
         execute: function () {
             //export const WorldName = 'PlanetZanj-Appminifier';
-            exports_52("Overrides", Overrides = new Set([
+            exports_51("Overrides", Overrides = new Set([
                 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'wheel',
                 'mousemove', 'pointermove'
             ]));
@@ -9618,14 +9583,14 @@ System.register("plugins/appminifier/translateAppminifierCRDP", ["voodoo/src/com
             BOXCACHE = new Map();
             BUTTON = ["left", "middle", "right"];
             SYNTHETIC_CTRL = e => keyEvent({ key: 'Control', originalType: e.originalType }, 2, true);
-            exports_52("default", translator);
+            exports_51("default", translator);
         }
     };
 });
-System.register("custom-start-app", ["voodoo/index", "getAPI", "plugins/appminifier/translateAppminifierCRDP"], function (exports_53, context_53) {
+System.register("custom-start-app", ["voodoo/index", "getAPI", "plugins/appminifier/translateAppminifierCRDP"], function (exports_52, context_52) {
     "use strict";
     var index_js_4, getAPI_js_2, translateAppminifierCRDP_js_1;
-    var __moduleName = context_53 && context_53.id;
+    var __moduleName = context_52 && context_52.id;
     async function start_app() {
         const useViewFrame = true;
         const translator = translateAppminifierCRDP_js_1.default;
@@ -9659,10 +9624,10 @@ function EventTarget2() {
 }
 EventTarget2.prototype = Element.prototype;
 self.EventTarget = self.EventTarget || EventTarget2;
-System.register("dist-start", ["voodoo/index", "getAPI", "translateVoodooCRDP", "plugins/appminifier/translateAppminifierCRDP"], function (exports_54, context_54) {
+System.register("dist-start", ["voodoo/index", "getAPI", "translateVoodooCRDP", "plugins/appminifier/translateAppminifierCRDP"], function (exports_53, context_53) {
     "use strict";
     var index_js_5, getAPI_js_3, translateVoodooCRDP_js_5, translateAppminifierCRDP_js_2;
-    var __moduleName = context_54 && context_54.id;
+    var __moduleName = context_53 && context_53.id;
     async function start_app() {
         const useViewFrame = false;
         const translator = useViewFrame ? translateAppminifierCRDP_js_2.default : translateVoodooCRDP_js_5.default;
@@ -9690,16 +9655,16 @@ System.register("dist-start", ["voodoo/index", "getAPI", "translateVoodooCRDP", 
         }
     };
 });
-System.register("error_catchers", ["voodoo/src/common"], function (exports_55, context_55) {
+System.register("error_catchers", ["voodoo/src/common"], function (exports_54, context_54) {
     "use strict";
     var common_js_20;
-    var __moduleName = context_55 && context_55.id;
+    var __moduleName = context_54 && context_54.id;
     function setupErrorCatchers() {
         common_js_20.DEBUG.dev && (self.onerror = (v) => (func(v, extractMeat(v).message, extractMeat(v).stack, v + ''), true));
         common_js_20.DEBUG.dev && (self.onerror = (v) => (console.log(v), true));
         common_js_20.DEBUG.dev && (self.onunhandledrejection = ({ reason }) => (func(JSON.stringify(reason, null, 2)), true));
     }
-    exports_55("default", setupErrorCatchers);
+    exports_54("default", setupErrorCatchers);
     function isMobile() {
         return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
     }
@@ -9735,10 +9700,10 @@ System.register("error_catchers", ["voodoo/src/common"], function (exports_55, c
         }
     };
 });
-System.register("plugins/projector/translateProjectorCRDP", ["translateVoodooCRDP"], function (exports_56, context_56) {
+System.register("plugins/projector/translateProjectorCRDP", ["translateVoodooCRDP"], function (exports_55, context_55) {
     "use strict";
     var translateVoodooCRDP_js_6, translateVoodooCRDP_js_7, Overrides, SHORT_TIMEOUT;
-    var __moduleName = context_56 && context_56.id;
+    var __moduleName = context_55 && context_55.id;
     function translator(e, handled = { type: 'case' }) {
         handled.type = handled.type || 'case';
         const TranslatedE = translateVoodooCRDP_js_6.default(e, handled);
@@ -9786,7 +9751,7 @@ System.register("plugins/projector/translateProjectorCRDP", ["translateVoodooCRD
         }
         return e;
     }
-    exports_56("default", translator);
+    exports_55("default", translator);
     return {
         setters: [
             function (translateVoodooCRDP_js_6_1) {
@@ -9796,15 +9761,15 @@ System.register("plugins/projector/translateProjectorCRDP", ["translateVoodooCRD
         ],
         execute: function () {
             //export const WorldName = 'PlanetZanj-Projector';
-            exports_56("Overrides", Overrides = new Set([]));
+            exports_55("Overrides", Overrides = new Set([]));
             SHORT_TIMEOUT = 1000;
         }
     };
 });
-System.register("factory-start-app", ["voodoo/index", "getAPI", "plugins/projector/translateProjectorCRDP"], function (exports_57, context_57) {
+System.register("factory-start-app", ["voodoo/index", "getAPI", "plugins/projector/translateProjectorCRDP"], function (exports_56, context_56) {
     "use strict";
     var index_js_6, getAPI_js_4, translateProjectorCRDP_js_1;
-    var __moduleName = context_57 && context_57.id;
+    var __moduleName = context_56 && context_56.id;
     async function start_app() {
         const useViewFrame = true;
         const translator = translateProjectorCRDP_js_1.default;
@@ -9829,10 +9794,10 @@ System.register("factory-start-app", ["voodoo/index", "getAPI", "plugins/project
         }
     };
 });
-System.register("image-start-app", ["voodoo/index", "getAPI", "translateVoodooCRDP"], function (exports_58, context_58) {
+System.register("image-start-app", ["voodoo/index", "getAPI", "translateVoodooCRDP"], function (exports_57, context_57) {
     "use strict";
     var index_js_7, getAPI_js_5, translateVoodooCRDP_js_8;
-    var __moduleName = context_58 && context_58.id;
+    var __moduleName = context_57 && context_57.id;
     async function start_app() {
         const useViewFrame = false;
         const translator = translateVoodooCRDP_js_8.default;
@@ -9857,9 +9822,9 @@ System.register("image-start-app", ["voodoo/index", "getAPI", "translateVoodooCR
         }
     };
 });
-System.register("landing", [], function (exports_59, context_59) {
+System.register("landing", [], function (exports_58, context_58) {
     "use strict";
-    var __moduleName = context_59 && context_59.id;
+    var __moduleName = context_58 && context_58.id;
     function Landing(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Remote Browser Isolation", `
@@ -10037,16 +10002,16 @@ System.register("landing", [], function (exports_59, context_59) {
           </section>
   `);
     }
-    exports_59("default", Landing);
+    exports_58("default", Landing);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/about", [], function (exports_60, context_60) {
+System.register("pages/about", [], function (exports_59, context_59) {
     "use strict";
-    var __moduleName = context_60 && context_60.id;
+    var __moduleName = context_59 && context_59.id;
     function About(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "About BrowserGap", `
@@ -10087,16 +10052,16 @@ System.register("pages/about", [], function (exports_60, context_60) {
         </section>
   `);
     }
-    exports_60("About", About);
+    exports_59("About", About);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/training", [], function (exports_61, context_61) {
+System.register("pages/training", [], function (exports_60, context_60) {
     "use strict";
-    var __moduleName = context_61 && context_61.id;
+    var __moduleName = context_60 && context_60.id;
     function Training(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Tutorials and Support Reading Room", `
@@ -10141,16 +10106,16 @@ System.register("pages/training", [], function (exports_61, context_61) {
           </section>
   `);
     }
-    exports_61("Training", Training);
+    exports_60("Training", Training);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/pricing", [], function (exports_62, context_62) {
+System.register("pages/pricing", [], function (exports_61, context_61) {
     "use strict";
-    var __moduleName = context_62 && context_62.id;
+    var __moduleName = context_61 && context_61.id;
     function Pricing(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Per-seat Subscription Pricing", `
@@ -10223,16 +10188,16 @@ System.register("pages/pricing", [], function (exports_62, context_62) {
           </section>
   `);
     }
-    exports_62("Pricing", Pricing);
+    exports_61("Pricing", Pricing);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/cloudBrowsers", [], function (exports_63, context_63) {
+System.register("pages/cloudBrowsers", [], function (exports_62, context_62) {
     "use strict";
-    var __moduleName = context_63 && context_63.id;
+    var __moduleName = context_62 && context_62.id;
     function CloudBrowsers(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Remote Cloud Browser Isolation Service", `
@@ -10296,16 +10261,16 @@ System.register("pages/cloudBrowsers", [], function (exports_63, context_63) {
           </section>
   `);
     }
-    exports_63("CloudBrowsers", CloudBrowsers);
+    exports_62("CloudBrowsers", CloudBrowsers);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/fiveElements", [], function (exports_64, context_64) {
+System.register("pages/fiveElements", [], function (exports_63, context_63) {
     "use strict";
-    var __moduleName = context_64 && context_64.id;
+    var __moduleName = context_63 && context_63.id;
     function FiveElements(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Five Elements of BrowserGap Security", `
@@ -10383,16 +10348,16 @@ System.register("pages/fiveElements", [], function (exports_64, context_64) {
           </section>
   `);
     }
-    exports_64("FiveElements", FiveElements);
+    exports_63("FiveElements", FiveElements);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/document-reading-room/history", [], function (exports_65, context_65) {
+System.register("pages/document-reading-room/history", [], function (exports_64, context_64) {
     "use strict";
-    var __moduleName = context_65 && context_65.id;
+    var __moduleName = context_64 && context_64.id;
     function History(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Reading Room: History of BrowserGap", `
@@ -10428,16 +10393,16 @@ System.register("pages/document-reading-room/history", [], function (exports_65,
           </section>
   `);
     }
-    exports_65("History", History);
+    exports_64("History", History);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/document-reading-room/threats", [], function (exports_66, context_66) {
+System.register("pages/document-reading-room/threats", [], function (exports_65, context_65) {
     "use strict";
-    var __moduleName = context_66 && context_66.id;
+    var __moduleName = context_65 && context_65.id;
     function Threats(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Reading Room: The Threats Facing the Web User", `
@@ -10460,16 +10425,16 @@ System.register("pages/document-reading-room/threats", [], function (exports_66,
           </section>
   `);
     }
-    exports_66("Threats", Threats);
+    exports_65("Threats", Threats);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/document-reading-room/features", [], function (exports_67, context_67) {
+System.register("pages/document-reading-room/features", [], function (exports_66, context_66) {
     "use strict";
-    var __moduleName = context_67 && context_67.id;
+    var __moduleName = context_66 && context_66.id;
     function Features(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Reading Room: An Overview of BrowserGap Features", `
@@ -10492,22 +10457,22 @@ System.register("pages/document-reading-room/features", [], function (exports_67
           </section>
   `);
     }
-    exports_67("Features", Features);
+    exports_66("Features", Features);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/document-reading-room/index", ["pages/document-reading-room/history", "pages/document-reading-room/threats", "pages/document-reading-room/features"], function (exports_68, context_68) {
+System.register("pages/document-reading-room/index", ["pages/document-reading-room/history", "pages/document-reading-room/threats", "pages/document-reading-room/features"], function (exports_67, context_67) {
     "use strict";
-    var __moduleName = context_68 && context_68.id;
+    var __moduleName = context_67 && context_67.id;
     function exportStar_2(m) {
         var exports = {};
         for (var n in m) {
             if (n !== "default") exports[n] = m[n];
         }
-        exports_68(exports);
+        exports_67(exports);
     }
     return {
         setters: [
@@ -10525,9 +10490,9 @@ System.register("pages/document-reading-room/index", ["pages/document-reading-ro
         }
     };
 });
-System.register("pages/legal-room/terms", [], function (exports_69, context_69) {
+System.register("pages/legal-room/terms", [], function (exports_68, context_68) {
     "use strict";
-    var __moduleName = context_69 && context_69.id;
+    var __moduleName = context_68 && context_68.id;
     function Terms(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Terms and Conditions", `
@@ -10669,16 +10634,16 @@ System.register("pages/legal-room/terms", [], function (exports_69, context_69) 
         </section>
   `);
     }
-    exports_69("Terms", Terms);
+    exports_68("Terms", Terms);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/legal-room/privacy", [], function (exports_70, context_70) {
+System.register("pages/legal-room/privacy", [], function (exports_69, context_69) {
     "use strict";
-    var __moduleName = context_70 && context_70.id;
+    var __moduleName = context_69 && context_69.id;
     function Privacy(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Privacy Policy", `
@@ -10755,16 +10720,16 @@ System.register("pages/legal-room/privacy", [], function (exports_70, context_70
       </section>
   `);
     }
-    exports_70("Privacy", Privacy);
+    exports_69("Privacy", Privacy);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/legal-room/security", [], function (exports_71, context_71) {
+System.register("pages/legal-room/security", [], function (exports_70, context_70) {
     "use strict";
-    var __moduleName = context_71 && context_71.id;
+    var __moduleName = context_70 && context_70.id;
     function Security(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Security Policy // Responsible Vulernability Disclosure Policy", `
@@ -10811,22 +10776,22 @@ System.register("pages/legal-room/security", [], function (exports_71, context_7
       </section>
   `);
     }
-    exports_71("Security", Security);
+    exports_70("Security", Security);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/legal-room/index", ["pages/legal-room/terms", "pages/legal-room/privacy", "pages/legal-room/security"], function (exports_72, context_72) {
+System.register("pages/legal-room/index", ["pages/legal-room/terms", "pages/legal-room/privacy", "pages/legal-room/security"], function (exports_71, context_71) {
     "use strict";
-    var __moduleName = context_72 && context_72.id;
+    var __moduleName = context_71 && context_71.id;
     function exportStar_3(m) {
         var exports = {};
         for (var n in m) {
             if (n !== "default") exports[n] = m[n];
         }
-        exports_72(exports);
+        exports_71(exports);
     }
     return {
         setters: [
@@ -10844,9 +10809,9 @@ System.register("pages/legal-room/index", ["pages/legal-room/terms", "pages/lega
         }
     };
 });
-System.register("pages/case-study/ukCorpWebCaseStudy", [], function (exports_73, context_73) {
+System.register("pages/case-study/ukCorpWebCaseStudy", [], function (exports_72, context_72) {
     "use strict";
-    var __moduleName = context_73 && context_73.id;
+    var __moduleName = context_72 && context_72.id;
     function UKCorpWeb(state) {
         const { Wrap } = state.boilerplate;
         return Wrap(state, "Case Study: 100s of Company Computers Infected by Web Malware", `
@@ -10929,22 +10894,22 @@ System.register("pages/case-study/ukCorpWebCaseStudy", [], function (exports_73,
       </section>
   `);
     }
-    exports_73("UKCorpWeb", UKCorpWeb);
+    exports_72("UKCorpWeb", UKCorpWeb);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("pages/case-study/index", ["pages/case-study/ukCorpWebCaseStudy"], function (exports_74, context_74) {
+System.register("pages/case-study/index", ["pages/case-study/ukCorpWebCaseStudy"], function (exports_73, context_73) {
     "use strict";
-    var __moduleName = context_74 && context_74.id;
+    var __moduleName = context_73 && context_73.id;
     function exportStar_4(m) {
         var exports = {};
         for (var n in m) {
             if (n !== "default") exports[n] = m[n];
         }
-        exports_74(exports);
+        exports_73(exports);
     }
     return {
         setters: [
@@ -10956,9 +10921,9 @@ System.register("pages/case-study/index", ["pages/case-study/ukCorpWebCaseStudy"
         }
     };
 });
-System.register("pages/index", ["pages/about", "pages/training", "pages/pricing", "pages/cloudBrowsers", "pages/fiveElements", "pages/document-reading-room/index", "pages/legal-room/index", "pages/case-study/index"], function (exports_75, context_75) {
+System.register("pages/index", ["pages/about", "pages/training", "pages/pricing", "pages/cloudBrowsers", "pages/fiveElements", "pages/document-reading-room/index", "pages/legal-room/index", "pages/case-study/index"], function (exports_74, context_74) {
     "use strict";
-    var __moduleName = context_75 && context_75.id;
+    var __moduleName = context_74 && context_74.id;
     var exportedNames_1 = {
         "DRR": true,
         "Legal": true,
@@ -10969,7 +10934,7 @@ System.register("pages/index", ["pages/about", "pages/training", "pages/pricing"
         for (var n in m) {
             if (n !== "default" && !exportedNames_1.hasOwnProperty(n)) exports[n] = m[n];
         }
-        exports_75(exports);
+        exports_74(exports);
     }
     return {
         setters: [
@@ -10989,22 +10954,22 @@ System.register("pages/index", ["pages/about", "pages/training", "pages/pricing"
                 exportStar_5(fiveElements_js_1_1);
             },
             function (DRR_1) {
-                exports_75("DRR", DRR_1);
+                exports_74("DRR", DRR_1);
             },
             function (Legal_1) {
-                exports_75("Legal", Legal_1);
+                exports_74("Legal", Legal_1);
             },
             function (CaseStudy_1) {
-                exports_75("CaseStudy", CaseStudy_1);
+                exports_74("CaseStudy", CaseStudy_1);
             }
         ],
         execute: function () {
         }
     };
 });
-System.register("pages/boilerplate", [], function (exports_76, context_76) {
+System.register("pages/boilerplate", [], function (exports_75, context_75) {
     "use strict";
-    var __moduleName = context_76 && context_76.id;
+    var __moduleName = context_75 && context_75.id;
     function Wrap(state, title, contentIntro, contentBody) {
         return `
     <!DOCTYPE html>
@@ -11328,39 +11293,39 @@ System.register("pages/boilerplate", [], function (exports_76, context_76) {
       <script defer async src=/scripts/populateHonorifics.js></script>
   `;
     }
-    exports_76("Wrap", Wrap);
+    exports_75("Wrap", Wrap);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("index", ["landing", "pages/index", "./.well-known/index.js", "pages/boilerplate"], function (exports_77, context_77) {
+System.register("index", ["landing", "pages/index", "./.well-known/index.js", "pages/boilerplate"], function (exports_76, context_76) {
     "use strict";
-    var __moduleName = context_77 && context_77.id;
+    var __moduleName = context_76 && context_76.id;
     return {
         setters: [
             function (Landing_1) {
-                exports_77("Landing", Landing_1);
+                exports_76("Landing", Landing_1);
             },
             function (Pages_1) {
-                exports_77("Pages", Pages_1);
+                exports_76("Pages", Pages_1);
             },
             function (SecTxt_1) {
-                exports_77("SecTxt", SecTxt_1);
+                exports_76("SecTxt", SecTxt_1);
             },
             function (Boilerplate_1) {
-                exports_77("Boilerplate", Boilerplate_1);
+                exports_76("Boilerplate", Boilerplate_1);
             }
         ],
         execute: function () {
         }
     };
 });
-System.register("prod/setup-service-worker", ["voodoo/src/common"], function (exports_78, context_78) {
+System.register("prod/setup-service-worker", ["voodoo/src/common"], function (exports_77, context_77) {
     "use strict";
     var common_js_21;
-    var __moduleName = context_78 && context_78.id;
+    var __moduleName = context_77 && context_77.id;
     function setupServiceWorkers() {
         if (common_js_21.DEBUG.serviceWorker && 'serviceWorker' in navigator) {
             const refresh = common_js_21.DEBUG.resetCache ? 'CLEAR' + Math.random() : common_js_21.VERSION;
@@ -11370,7 +11335,7 @@ System.register("prod/setup-service-worker", ["voodoo/src/common"], function (ex
             });
         }
     }
-    exports_78("default", setupServiceWorkers);
+    exports_77("default", setupServiceWorkers);
     return {
         setters: [
             function (common_js_21_1) {
@@ -11382,10 +11347,10 @@ System.register("prod/setup-service-worker", ["voodoo/src/common"], function (ex
         }
     };
 });
-System.register("prod/ask-before-unload", ["voodoo/src/common"], function (exports_79, context_79) {
+System.register("prod/ask-before-unload", ["voodoo/src/common"], function (exports_78, context_78) {
     "use strict";
     var common_js_22;
-    var __moduleName = context_79 && context_79.id;
+    var __moduleName = context_78 && context_78.id;
     function setupUnloadHandler() {
         common_js_22.DEBUG.delayUnload && self.addEventListener('beforeunload', event => {
             const delayOffRequested = !!document.querySelector('form.delay-off');
@@ -11398,7 +11363,7 @@ System.register("prod/ask-before-unload", ["voodoo/src/common"], function (expor
             }
         });
     }
-    exports_79("default", setupUnloadHandler);
+    exports_78("default", setupUnloadHandler);
     return {
         setters: [
             function (common_js_22_1) {
@@ -11410,9 +11375,9 @@ System.register("prod/ask-before-unload", ["voodoo/src/common"], function (expor
         }
     };
 });
-System.register("meta", ["whatwg-fetch", "@babel/polyfill", "error_catchers", "prod/setup-service-worker", "prod/ask-before-unload"], function (exports_80, context_80) {
+System.register("meta", ["whatwg-fetch", "@babel/polyfill", "error_catchers", "prod/setup-service-worker", "prod/ask-before-unload"], function (exports_79, context_79) {
     "use strict";
-    var __moduleName = context_80 && context_80.id;
+    var __moduleName = context_79 && context_79.id;
     return {
         setters: [
             function (_1) {
@@ -11430,12 +11395,14 @@ System.register("meta", ["whatwg-fetch", "@babel/polyfill", "error_catchers", "p
         }
     };
 });
+/* eslint-disable no-global-assign */
 require = require('esm')(module /*, options*/);
 module.exports = require('./index.js');
-System.register("render_static", ["site", "fs", "path"], function (exports_81, context_81) {
+/* eslint-enable no-global-assign */
+System.register("render_static", ["./common.js", "site", "fs", "path"], function (exports_80, context_80) {
     "use strict";
-    var Site, Fs, Path, STATIC_FILE_PATHS, State;
-    var __moduleName = context_81 && context_81.id;
+    var common_js_23, Site, Fs, Path, STATIC_FILE_PATHS, State;
+    var __moduleName = context_80 && context_80.id;
     async function renderAll({ state }) {
         console.log(`Rendering all static file paths...`);
         for (const [pathList, renderFunc] of enumerateTree(STATIC_FILE_PATHS)) {
@@ -11444,8 +11411,7 @@ System.register("render_static", ["site", "fs", "path"], function (exports_81, c
         console.log(`Done rendering!`);
     }
     async function render({ state, renderFunc, pathList }) {
-        const fileName = pathList[pathList.length - 1];
-        const path = Path.join(__dirname, ...pathList);
+        const path = Path.join(common_js_23.APP_ROOT, ...pathList);
         console.log(`Writing static file ${path}`);
         await Fs.promises.writeFile(path, renderFunc(state));
         console.log(`Wrote ${path}!`);
@@ -11477,6 +11443,9 @@ System.register("render_static", ["site", "fs", "path"], function (exports_81, c
     }
     return {
         setters: [
+            function (common_js_23_1) {
+                common_js_23 = common_js_23_1;
+            },
             function (Site_1) {
                 Site = Site_1;
             },
@@ -11554,25 +11523,18 @@ const OFFLINE = async () => new Response(NoLoadView(), {
         'Content-Type': 'text/html'
     }
 });
-// state 
-let cache;
 // handlers
-self.addEventListener('activate', async (e) => {
-    try {
-        await e.waitUntil(clients.claim());
-    }
-    catch (e) { }
-});
+self.addEventListener('activate', async (e) => await e.waitUntil(self.Clients.claim()));
 self.addEventListener('install', async (e) => {
     try {
         await e.skipWaiting();
     }
-    catch (e) { }
-    await setup();
+    finally {
+        await setup();
+    }
 });
 self.addEventListener('fetch', e => e.waitUntil(fetchResponder(e)));
 async function fetchResponder(e) {
-    let response;
     CLEAR && console.log(e.request);
     if (e.request.method != 'GET')
         return;
@@ -11586,8 +11548,9 @@ async function fetchResponder(e) {
     e.respondWith(fetchResponder2(e));
 }
 async function fetchResponder2(e) {
-    cache = await caches.open(CACHE);
+    const cache = await caches.open(CACHE);
     const cachedResponse = await cache.match(e.request);
+    let response;
     if (!CLEAR && cachedResponse)
         response = cachedResponse;
     else if (e.request.cache === 'only-if-cached' && e.request.mode !== 'same-origin')
@@ -11614,7 +11577,7 @@ async function cacheFetcher2(e) {
         }
         else {
             const clone = response.clone();
-            cache = await caches.open(CACHE);
+            const cache = await caches.open(CACHE);
             await cache.put(e.request, clone);
             return response;
         }
@@ -11627,7 +11590,7 @@ async function cacheFetcher2(e) {
     }
 }
 async function setup() {
-    cache = await caches.open(CACHE);
+    await caches.open(CACHE);
 }
 // views
 function NoLoadView() {
@@ -11649,7 +11612,7 @@ function NoLoadView() {
               <li>
                 You can sit here and wait.
               <li>
-                You can <a href=${registration.scope}>reload the page.</a>
+                You can <a href=${self.registration.scope}>reload the page.</a>
               <li>
                 You can <a href=https://github.com/dosycorp/service-issues/issues>open an issue.</a>
               <li> 
@@ -11669,10 +11632,10 @@ function NoLoadView() {
         </main>
       `;
 }
-System.register("start-demo-app", ["voodoo/index", "getAPI", "plugins/appminifier/translateAppminifierCRDP"], function (exports_82, context_82) {
+System.register("start-demo-app", ["voodoo/index", "getAPI", "plugins/appminifier/translateAppminifierCRDP"], function (exports_81, context_81) {
     "use strict";
     var index_js_8, getAPI_js_6, translateAppminifierCRDP_js_3;
-    var __moduleName = context_82 && context_82.id;
+    var __moduleName = context_81 && context_81.id;
     async function start_demo() {
         const useViewFrame = true;
         const demoMode = true;
@@ -11698,5 +11661,7 @@ System.register("start-demo-app", ["voodoo/index", "getAPI", "plugins/appminifie
         }
     };
 });
+/* eslint-disable no-global-assign */
 require = require('esm')(module /*, options*/);
 module.exports = require('./render_static.js');
+/* eslint-enable no-global-assign */

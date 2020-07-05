@@ -16,9 +16,6 @@ const DOM_DELTA_PAGE = 2;
 const LINE_HEIGHT_GUESS = 32;
 
 const SYNTHETIC_CTRL = e => keyEvent({key:'Control',originalType:e.originalType}, 2, true);
-const SYNTHETIC_ENTER = () => keyEvent({key:'Enter',originalType:"keypress"}, 0, true);
-
-let scrollShot = false;
 
 export default translator;
 
@@ -34,7 +31,6 @@ function translator(e, handled = {type:'case'}) {
           },
         }
       };
-      break;
     }
     case "mousedown": case "mouseup": case "mousemove": 
     case "pointerdown": case "pointerup": case "pointermove": {
@@ -61,7 +57,6 @@ function translator(e, handled = {type:'case'}) {
           requiresShot: ! e.originalEvent.noShot && e.type.endsWith("down") 
         }
       };
-      break;
     }
     case "wheel": {
       // if we use emulateTouchFromMouseEvent we need a button value
@@ -92,7 +87,6 @@ function translator(e, handled = {type:'case'}) {
         retVal = mouseEvent(e, deltaX, deltaY);
       }
       return retVal;
-      break;
     }
     case "auth-response": {
       const {requestId, authResponse} = e;
@@ -122,7 +116,6 @@ function translator(e, handled = {type:'case'}) {
           ignoreHash: true
         }
       }
-      break;
     }
     case "typing-syncValue": {
       if ( ! e.encodedValue ) return;
@@ -140,7 +133,6 @@ function translator(e, handled = {type:'case'}) {
           ignoreHash: true
         }
       }
-      break;
     }
     case "typing-deleteContentBackward": {
       if ( ! e.encodedValueToDelete ) return;
@@ -157,7 +149,6 @@ function translator(e, handled = {type:'case'}) {
           requiresShot: true
         }
       }
-      break;
     }
     case "url-address": {
       return {
@@ -210,6 +201,9 @@ function translator(e, handled = {type:'case'}) {
             }
           ]};
         }
+        default: {
+          throw new TypeError(`Unkown history action ${e.action}`);
+        }
       }
     }
     case "touchscroll": {
@@ -247,6 +241,7 @@ function translator(e, handled = {type:'case'}) {
     }
     case "zoom": {
       /** retval does not work. Expanding pinch is OK, but contracting seems to fail **/
+      /*
       const retVal = {
         command: {
           name: "Input.synthesizePinchGesture",
@@ -262,6 +257,7 @@ function translator(e, handled = {type:'case'}) {
           extraWait: 300
         }
       };
+      */
       /** so we are using emulation and multiplying the scale factor in the event listener **/
       const retVal2 = {
         command: {
@@ -324,7 +320,7 @@ function translator(e, handled = {type:'case'}) {
     }
     case "window-bounds-preImplementation": {
       // This is here until Browser.getWindowForTarget and Browser.setWindowBounds come online
-      let {width,height,mobile} = e;
+      let {width,height} = e;
       width = parseInt(width);
       height = parseInt(height);
       const retVal = {

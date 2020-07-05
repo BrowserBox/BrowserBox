@@ -1,4 +1,4 @@
-import {d as R, u as X} from '../../node_modules/dumbass/r.js';
+import {d as R} from '../../node_modules/dumbass/r.js';
 import DEFAULT_FAVICON from './faviconDataURL.js';
 
 export function TabList(state) {

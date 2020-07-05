@@ -34,7 +34,7 @@
     self.addEventListener('domcontentloaded', monitorActiveElement);
     setTimeout(monitorActiveElement, 100);
     self.canKeysInput = () => monitorActiveElement(null, {alwaysNotify:true});
-    console.log(JSON.stringify({message:"Defined canKeysInput",targetId}));
+    console.log(JSON.stringify({message:"Defined canKeysInput",targetId:self.targetId}));
   }
 
   function monitorActiveElementNextTick(e) {

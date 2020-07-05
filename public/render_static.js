@@ -1,3 +1,4 @@
+import {APP_ROOT} from './common.js';
 import * as Site from './site.js';
 import * as Fs from 'fs';
 import * as Path from 'path';
@@ -51,8 +52,7 @@ async function renderAll({state}) {
 }
 
 async function render({state, renderFunc, pathList}) {
-  const fileName = pathList[pathList.length-1];
-  const path = Path.join(__dirname, ...pathList);
+  const path = Path.join(APP_ROOT, ...pathList);
   console.log(`Writing static file ${path}`);
   await Fs.promises.writeFile(path, renderFunc(state));
   console.log(`Wrote ${path}!`);

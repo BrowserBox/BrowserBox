@@ -1,5 +1,5 @@
 import {DEBUG} from '../common.js';
-import {d as R, u as X} from '../../node_modules/dumbass/r.js';
+import {d as R} from '../../node_modules/dumbass/r.js';
 
   // Auxilliary view functions 
     const NATIVE_MODALS = new Set([

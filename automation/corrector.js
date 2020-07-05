@@ -3,6 +3,6 @@
 // into a correct version
 // by correcting selectors through generalization
 
-export function corrector(interactionStream) {
+export function corrector(/*interactionStream*/) {
 
 }

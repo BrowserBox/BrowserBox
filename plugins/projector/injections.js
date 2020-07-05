@@ -1,3 +1,4 @@
+/* eslint-disable no-inner-declarations */
 {
   const STYLE_WHITELIST = [
     'display',
@@ -77,3 +78,4 @@
     console.log(JSON.stringify(o));
   }
 }
+/* eslint-enable no-inner-declarations */

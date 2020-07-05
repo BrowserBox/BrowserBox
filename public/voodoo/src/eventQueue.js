@@ -1,6 +1,6 @@
 import {sleep, DEBUG, BLANK} from './common.js';
 const $ = Symbol('[[EventQueuePrivates]]');
-const TIME_BETWEEN_ONLINE_CHECKS = 1001;
+//const TIME_BETWEEN_ONLINE_CHECKS = 1001;
 
 const ALERT_TIMEOUT = 300;
 const BLANK_SPACE = new Array(201).join('A');
@@ -20,8 +20,8 @@ const waiting = new Map();
 let connecting;
 let latestReload;
 let latestAlert;
-let lastTestTime;
-let lastOnlineCheck;
+//let lastTestTime;
+//let lastOnlineCheck;
 let messageId = 0;
 let latestFrame = 0;
 let frameDrawing = false;
@@ -56,7 +56,7 @@ class Privates {
   }
 
   async nextLoop() {
-    let data, meta, totalBandwidth;
+    //let data, meta, totalBandwidth;
     let q = Array.from(this.publics.queue);
 
     const url = this.subscribers[0];
@@ -84,7 +84,7 @@ class Privates {
     }
 
     if ( chain ) {
-      this.sendEventChain({chain,url}).then(({data,meta,totalBandwidth}) => {
+      this.sendEventChain({chain,url}).then(({/*data,*/meta,totalBandwidth}) => {
         if ( !!meta && meta.length ) {
           meta.forEach(metaItem => {
             const executionContextId = metaItem.executionContextId;
@@ -508,7 +508,7 @@ function transmitReply({url, id, data, meta, totalBandwidth}) {
   }
 }
 
-async function die() {
+/*async function die() {
   if ( DEBUG.val ) {
     console.log(`Application is in an invalid state. Going to ask to reload`);
   }
@@ -519,7 +519,7 @@ async function die() {
   } else {
     treload();
   }
-}
+}*/
 
 function onLine() {
   return navigator.onLine;

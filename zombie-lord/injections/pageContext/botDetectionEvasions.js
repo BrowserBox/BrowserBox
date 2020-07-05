@@ -216,7 +216,7 @@
               value: i => this[i]
             },
             namedItem: {
-              value: i => this[n]
+              value: n => this[n]
             },
             refresh: {
               value: () => undefined
@@ -245,7 +245,7 @@
               value: i => this[i]
             },
             namedItem: {
-              value: i => this[n]
+              value: n => this[n]
             },
             refresh: {
               value: () => undefined

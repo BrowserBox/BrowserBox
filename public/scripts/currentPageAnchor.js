@@ -1,5 +1,6 @@
 "use strict";
 {
+  /* eslint-disable no-inner-declarations */
   self.addEventListener('load', markCurrentPageLink);
 
   function markCurrentPageLink() {
@@ -16,4 +17,5 @@
         }
       });
   }
+  /* eslint-enable no-inner-declarations */
 }

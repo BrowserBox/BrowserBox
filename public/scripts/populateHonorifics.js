@@ -1,5 +1,6 @@
 "use strict";
 {
+  /* eslint-disable no-inner-declarations */
   const HONORIFICS = '/data/englishHonorifics.json';
   let Setup = false;
   let H;
@@ -25,4 +26,6 @@
     Honorifics.innerHTML = '';
     Honorifics.insertAdjacentHTML('beforeEnd', markup);
   }
+
+  /* eslint-enable no-inner-declarations */
 }

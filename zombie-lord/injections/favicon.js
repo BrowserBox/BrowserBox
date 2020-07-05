@@ -41,7 +41,9 @@
         try {
           faviconDataUrl = canvas.toDataURL();
           s({faviconDataUrl,targetId});
-        } catch(e) {}
+        } finally {
+          void 0;
+        }
       };
       image.src = url;
     } catch(e) {

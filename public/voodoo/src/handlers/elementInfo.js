@@ -1,6 +1,6 @@
 export function handleElementInfo({elementInfo:{
       attributes, innerText, noSuchElement
-    }, executionContextId}, state) {
+    }, /*executionContextId*/}, state) {
   if ( ! state.elementInfoContinuation ) {
     console.warn(`Got element info message, but no continuation to pass it to`);
     console.warn(JSON.stringify({elementInfo:{attributes, innerText, noSuchElement}}));

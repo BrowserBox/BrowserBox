@@ -5,7 +5,6 @@
 // and by interleaving selectors
 // into the interqaction stream by applying them to each event that needs them
 
-
-export function transformer(interactionStream) {
+export function transformer(/*interactionStream*/) {
 
 }

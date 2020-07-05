@@ -1,5 +1,5 @@
-import {DEBUG} from '../common.js';
-import {d as R, u as X} from '../../node_modules/dumbass/r.js';
+//import {DEBUG} from '../common.js';
+import {u as X} from '../../node_modules/dumbass/r.js';
   
 let pluginsMenuOpen = false;
 
@@ -8,7 +8,7 @@ export function PluginsMenuButton(state) {
     <nav class="controls plugins-menu-button aux" stylist="styleNavControl stylePluginsMenuButton">
       <form submit=${[
         e => e.preventDefault(),
-        e => {
+        () => {
           pluginsMenuOpen ^= true;
           state.pluginsMenuActive = pluginsMenuOpen;
           state.viewState.dss.setState(state);
