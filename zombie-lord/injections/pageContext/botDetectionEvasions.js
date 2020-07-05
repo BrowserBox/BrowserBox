@@ -9,6 +9,27 @@
 
 {
   /* eslint-disable no-inner-declarations */
+  // temp location for file input related code in page context
+
+  const isFileInput = el => el.localName == 'input' && el.type == 'file';
+
+  self.zombieDosyLastClicked = null;
+
+  self.addEventListener('click', click => {
+    const {target} = click;
+    const {clientX,clientY} = click;
+    const stack = Array.from(document.elementsFromPoint(clientX,clientY));
+    self.zombieDosyLastClicked = {target, stack};
+    const fileInputFromStack = stack.find(isFileInput);
+    self.zombieDosyLastClicked.fileInput = (isFileInput(target) && target) || fileInputFromStack;
+    //console.log(JSON.stringify({zombieDosyLastClicked:self.zombieDosyLastClicked}));
+  }, {capture:true});
+
+  //console.log(JSON.stringify({install:"Installed zombieDosyLastClicked with isFileInput support"}));
+  /* eslint-enable no-inner-declarations */
+}
+{
+  /* eslint-disable no-inner-declarations */
   // Pass the Webdriver Test.
     const newProto = navigator.__proto__;
     delete newProto.webdriver;
