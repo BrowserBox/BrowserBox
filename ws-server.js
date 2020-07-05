@@ -234,7 +234,7 @@
           throw e;
         }
       }));
-      app.post("/file", upload.array("files", 6), async (req,res) => {
+      app.post("/file", upload.array("files", 10), async (req,res) => {
         const cookie = req.cookies[COOKIENAME];
         if ( !DEBUG.dev && allowed_user_cookie !== 'cookie' &&
           (cookie !== allowed_user_cookie) ) { 
@@ -243,25 +243,44 @@
         const {files} = req;
         const {sessionid:sessionId} = req.body;
         const action = ! files || files.length == 0 ? 'cancel' : 'accept';
+        const fileInputResult = await zl.act.send({
+          name:"Runtime.evaluate",
+          params: {
+            expression: "self.zombieDosyLastClicked.fileInput"
+          }, 
+          definitelyWait: true,
+          sessionId
+        }, zombie_port);
+        //console.log({fileInputResult});
+        const objectId = fileInputResult.data.result.objectId;
         const command = {
-          name: "Page.handleFileChooser",
+          name: "DOM.setFileInputFiles",
           params: {
             files: files && files.map(({path}) => path),
-            action
+            objectId
           },
           sessionId
         };
         DEBUG.val > DEBUG.med && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
-        const result = await zl.act.send(command, zombie_port);
-        if ( result.error ) {
+        let result;
+        
+        try {
+          result = await zl.act.send(command, zombie_port);
+        } catch(e) {
+          console.log("Error sending file input command", e);
+        }
+
+        //console.log({fileResult:result});
+
+        if ( !result || result.error ) {
           res.status(500).send(JSON.stringify({error:'there was an error attaching the files'}));
         } else {
-          const retVal = {
+          result = {
             success: true,
             files: files.map(({originalName,size}) => ({name:originalName,size}))
           };
-          DEBUG.val > DEBUG.med && console.log("Sent files to file input", retVal);
-          res.json(files);
+          DEBUG.val > DEBUG.med && console.log("Sent files to file input", result, files);
+          res.json(result);
         }
       }); 
       // error handling middleware
