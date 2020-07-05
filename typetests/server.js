@@ -971,7 +971,7 @@ System.register("common", ["fs", "path", "url", "current-git-branch", "public/tr
                 shotDebug: false,
                 noShot: false,
                 dev: false,
-                val: 2,
+                val: 0,
                 low: 1,
                 med: 3,
                 high: 5
@@ -1422,10 +1422,432 @@ System.register("zombie-lord/adblocking/blockAds", ["url", "zombie-lord/adblocki
         }
     };
 });
-System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "url", "querystring", "common", "args", "public/translateVoodooCRDP", "zombie-lord/screenShots", "zombie-lord/adblocking/blockAds"], function (exports_10, context_10) {
+System.register("public/plugins/demo/page", [], function (exports_10, context_10) {
     "use strict";
-    var ws_1, node_fetch_1, fs_3, path_3, url_3, querystring_1, common_js_3, args_js_1, translateVoodooCRDP_js_2, screenShots_js_1, blockAds_js_1, selectDropdownEvents, keysCanInputEvents, textComposition, favicon, elementInfo, scrollNotify, botDetectionEvasions, appMinifier, projector, injectionsScroll, pageContextInjectionsScroll, RECONNECT_MS, mobUA, LANG, mobPLAT, GrantedPermissions, ROOT_SESSION, UA, PLAT, targets, sessions, loadings, tabs, AD_BLOCK_ON, DEMO_BLOCK_ON;
     var __moduleName = context_10 && context_10.id;
+    function pluginsDemoPage({ body: body = '' } = {}) {
+        return `
+    <head>
+      <title>Demo</title>
+      <link rel=stylesheet href=/plugins/demo/styles/styletidyup.css>
+      <!--
+      <link rel=stylesheet href=styles/basic.css>
+      <link rel=stylesheet href=styles/dark.css>
+      <link rel=stylesheet href=styles/light.css>
+      <link rel=stylesheet href=styles/darkmode.css>
+      -->
+    </head>
+    <body>
+      ${body}
+      <script src=/plugins/demo/listen.js></script>
+      <script src=/plugins/demo/doingit.js></script>
+      <script src=/plugins/demo/stripe.js></script>
+    </body>
+  `;
+    }
+    exports_10("pluginsDemoPage", pluginsDemoPage);
+    return {
+        setters: [],
+        execute: function () {
+        }
+    };
+});
+System.register("ws-server", ["express", "http", "https", "node-fetch", "multer", "ws", "fs", "os", "path", "body-parser", "cookie-parser", "public/plugins/demo/page", "zombie-lord/api", "args", "common", "server"], function (exports_11, context_11) {
+    "use strict";
+    var express_1, http_1, https_1, node_fetch_1, multer_1, ws_1, fs_3, os_2, path_3, body_parser_1, cookie_parser_1, page_js_1, api_js_1, args_js_1, common_js_3, server_js_1, fileChoosers, protocol, COOKIE_OPTS, uploadPath, storage, upload, Queue, messageQueueRunning, browserTargetId, requestId;
+    var __moduleName = context_11 && context_11.id;
+    async function start_ws_server(port, zombie_port, allowed_user_cookie, session_token) {
+        common_js_3.DEBUG.val && console.log(`Starting websocket server on ${port}`);
+        const app = express_1.default();
+        const server_port = port;
+        app.use(body_parser_1.default.urlencoded({ extended: true }));
+        app.use(body_parser_1.default.json());
+        app.use(cookie_parser_1.default());
+        if (args_js_1.start_mode == "signup") {
+            app.get("/", (req, res) => res.sendFile(path_3.default.join(__dirname, 'public', 'index.html')));
+        }
+        else {
+            app.get("/", (req, res) => res.sendFile(path_3.default.join(__dirname, 'public', 'image.html')));
+            app.get("/login", (req, res) => {
+                const { token, ran } = req.query;
+                if (token == session_token) {
+                    res.cookie(common_js_3.COOKIENAME, allowed_user_cookie, COOKIE_OPTS);
+                    const url = `/?ran=${ran || Math.random()}#${session_token}`;
+                    res.redirect(url);
+                }
+                else {
+                    res.type("html");
+                    if (session_token == 'token2') {
+                        res.end(`Incorrect token ${token}/token2. <a href=/login?token=token2>Login first.</a>`);
+                    }
+                    else {
+                        res.end(`Incorrect token "${token}". <a href=https://${req.hostname}/signup.html>Login first.</a>`);
+                    }
+                }
+            });
+        }
+        app.use(express_1.default.static('public'));
+        app.post('/current/:current/event/:event', wrap(async (req, res) => {
+            const actualUri = 'https://' + req.headers.host + ':8001' + req.url;
+            const resp = await node_fetch_1.default(actualUri, { method: 'POST', body: JSON.stringify(req.body),
+                headers: {
+                    'Content-Type': 'application/json'
+                } }).then(r => r.text());
+            res.end(page_js_1.pluginsDemoPage({ body: resp }));
+        }));
+        const sslBranch = common_js_3.BRANCH == 'master' ? 'master' : 'staging';
+        const secure_options = {};
+        try {
+            const sec = {
+                cert: fs_3.default.readFileSync(`./sslcert/${sslBranch}/fullchain.pem`),
+                key: fs_3.default.readFileSync(`./sslcert/${sslBranch}/privkey.pem`),
+                ca: fs_3.default.readFileSync(`./sslcert/${sslBranch}/chain.pem`),
+            };
+            Object.assign(secure_options, sec);
+        }
+        catch (e) {
+            console.warn(`No certs found so will use insecure no SSL.`);
+        }
+        const secure = secure_options.cert && secure_options.ca && secure_options.key;
+        const server = protocol.createServer.apply(protocol, common_js_3.GO_SECURE && secure ? [secure_options, app] : [app]);
+        const wss = new ws_1.default.Server({ server });
+        wss.on('connection', (ws, req) => {
+            const cookie = req.headers.cookie;
+            api_js_1.default.act.saveIP(req.connection.remoteAddress);
+            common_js_3.DEBUG.val && console.log({ connectionIp: req.connection.remoteAddress });
+            if (common_js_3.DEBUG.dev || allowed_user_cookie == 'cookie' ||
+                (cookie && cookie.includes(`${common_js_3.COOKIENAME}=${allowed_user_cookie}`))) {
+                api_js_1.default.life.onDeath(zombie_port, () => {
+                    //console.log("Closing as zombie crashed.");
+                    //ws.close();
+                });
+                ws.on('message', message => {
+                    const func = async () => {
+                        const Data = [], Frames = [], Meta = [], State = {};
+                        message = JSON.parse(message);
+                        const { zombie, tabs, messageId } = message;
+                        try {
+                            if (zombie) {
+                                const { events } = zombie;
+                                let { receivesFrames } = zombie;
+                                if (receivesFrames) {
+                                    // switch it on in DEBUG and save it on the websocket for all future events
+                                    common_js_3.DEBUG.noShot = false;
+                                    ws.receivesFrames = receivesFrames;
+                                }
+                                else {
+                                    receivesFrames = ws.receivesFrames;
+                                }
+                                common_js_3.DEBUG.val && console.log(`Starting ${events.length} events for message ${messageId}`);
+                                await server_js_1.eventSendLoop(events, { Data, Frames, Meta, State, receivesFrames });
+                                common_js_3.DEBUG.val && console.log(`Ending ${events.length} events for message ${messageId}\n`);
+                                const { totalBandwidth } = State;
+                                so(ws, { messageId, data: Data, frameBuffer: Frames, meta: Meta, totalBandwidth });
+                            }
+                            else if (tabs) {
+                                let { data: { targetInfos: targets } } = await server_js_1.timedSend({
+                                    name: "Target.getTargets",
+                                    params: {},
+                                }, zombie_port);
+                                browserTargetId = browserTargetId || api_js_1.default.act.getBrowserTargetId(zombie_port);
+                                targets = targets.filter(({ targetId, type }) => type == 'page' && api_js_1.default.act.hasSession(targetId, zombie_port));
+                                const activeTarget = api_js_1.default.act.getActiveTarget(zombie_port);
+                                api_js_1.default.act.addTargets(targets, zombie_port);
+                                so(ws, { messageId, activeTarget, tabs: targets });
+                            }
+                            else {
+                                console.warn(JSON.stringify({ unknownMessage: message }));
+                            }
+                        }
+                        catch (e) {
+                            so(ws, { messageId, data: [
+                                    {
+                                        error: "Failed to communicate with cloud browser",
+                                        resetRequired: true
+                                    }
+                                ], frameBuffer: [], meta: [], totalBandwidth: 0 });
+                        }
+                    };
+                    Queue.funcs.push(func);
+                    if (!messageQueueRunning) {
+                        runMessageQueue();
+                    }
+                });
+            }
+            else {
+                const hadSession = !!cookie && cookie.includes(common_js_3.COOKIENAME);
+                const msg = hadSession ?
+                    `Your session has expired. Please log back in.`
+                    : `No session detected, have you signed up yet?`;
+                const error = { msg, willCloseSocket: true, hadSession };
+                so(ws, { messageId: 1, data: [{ error }] });
+                console.log("Closing as not authorized.");
+                ws.close();
+            }
+        });
+        server.listen(server_port, async (err) => {
+            if (err) {
+                console.error('err', err);
+                process.exit(1);
+            }
+            else {
+                addHandlers();
+                common_js_3.DEBUG.val && console.log({ uptime: new Date, message: 'websocket server up', server_port });
+            }
+        });
+        function so(socket, message) {
+            if (!message)
+                return;
+            if (typeof message == "string" || Array.isArray(message)) {
+                message;
+            }
+            else {
+                message = JSON.stringify(message);
+            }
+            try {
+                socket.send(message);
+            }
+            catch (e) {
+                console.warn(`Websocket error with sending message`, e, message);
+            }
+        }
+        function addHandlers() {
+            app.get(`/api/${common_js_3.version}/tabs`, wrap(async (req, res) => {
+                const cookie = req.cookies[common_js_3.COOKIENAME];
+                if (!common_js_3.DEBUG.dev && allowed_user_cookie !== 'cookie' &&
+                    (cookie !== allowed_user_cookie)) {
+                    return res.status(401).send('{"err":"forbidden"}');
+                }
+                requestId++;
+                res.type('json');
+                let targets;
+                try {
+                    ({ data: { targetInfos: targets } } = await server_js_1.timedSend({
+                        name: "Target.getTargets",
+                        params: {},
+                    }, zombie_port));
+                    browserTargetId = browserTargetId || api_js_1.default.act.getBrowserTargetId(zombie_port);
+                    targets = targets.filter(({ targetId, type }) => type == 'page' && api_js_1.default.act.hasSession(targetId, zombie_port));
+                    const activeTarget = api_js_1.default.act.getActiveTarget(zombie_port);
+                    api_js_1.default.act.addTargets(targets, zombie_port);
+                    res.end(JSON.stringify({ tabs: targets, activeTarget, requestId }));
+                }
+                catch (e) {
+                    console.warn('th', e);
+                    //res.end(JSON.stringify({error:e+'', resetRequired:true}));
+                    throw e;
+                }
+            }));
+            app.post("/file", upload.array("files", 10), async (req, res) => {
+                const cookie = req.cookies[common_js_3.COOKIENAME];
+                if (!common_js_3.DEBUG.dev && allowed_user_cookie !== 'cookie' &&
+                    (cookie !== allowed_user_cookie)) {
+                    return res.status(401).send('{"err":"forbidden"}');
+                }
+                const { files } = req;
+                const { sessionid: sessionId } = req.body;
+                const backendNodeId = fileChoosers.get(sessionId);
+                const action = !files || files.length == 0 ? 'cancel' : 'accept';
+                /**
+                const fileInputResult = await zl.act.send({
+                  name:"Runtime.evaluate",
+                  params: {
+                    expression: "self.zombieDosyLastClicked.fileInput"
+                  },
+                  definitelyWait: true,
+                  sessionId
+                }, zombie_port);
+                console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
+                const objectId = fileInputResult.data.result.objectId;
+                **/
+                const command = {
+                    name: "DOM.setFileInputFiles",
+                    params: {
+                        files: files && files.map(({ path }) => path),
+                        backendNodeId
+                    },
+                    sessionId
+                };
+                common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
+                let result;
+                try {
+                    result = await api_js_1.default.act.send(command, zombie_port);
+                }
+                catch (e) {
+                    console.log("Error sending file input command", e);
+                }
+                console.log({ fileResult: result });
+                if (!result || result.error) {
+                    res.status(500).send(JSON.stringify({ error: 'there was an error attaching the files' }));
+                }
+                else {
+                    result = {
+                        success: true,
+                        files: files.map(({ originalname, size }) => ({ name: originalname, size }))
+                    };
+                    common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log("Sent files to file input", result, files);
+                    res.json(result);
+                }
+            });
+            // error handling middleware
+            app.use('*', (err, req, res, next) => {
+                try {
+                    res.type('json');
+                }
+                finally {
+                    let message = '';
+                    if (common_js_3.DEBUG.dev && common_js_3.DEBUG.val) {
+                        message = s({ error: { msg: err.message, stack: err.stack.split(/\n/g) } });
+                    }
+                    else {
+                        message = s({ error: err.message || err + '', resetRequired: true });
+                    }
+                    res.write(message);
+                    res.end();
+                    console.warn(err);
+                    next();
+                }
+            });
+        }
+        async function runMessageQueue() {
+            if (messageQueueRunning)
+                return;
+            messageQueueRunning = true;
+            while (Queue.funcs.length) {
+                const func = Queue.funcs.shift();
+                try {
+                    await func();
+                }
+                catch (e) {
+                    console.warn("error while running message queue", e);
+                }
+                // await sleep(TIME_BETWEEN_MESSAGES);
+            }
+            messageQueueRunning = false;
+        }
+        // helpers
+        function wrap(fn) {
+            return async function handler(req, res, next) {
+                try {
+                    await fn(req, res, next);
+                }
+                catch (e) {
+                    common_js_3.DEBUG.val && console.log(e);
+                    console.info(`caught error in ${fn}`);
+                    next(e);
+                }
+            };
+        }
+        function s(o) {
+            let r;
+            if (typeof o == "string")
+                r = 0;
+            else
+                try {
+                    r = JSON.stringify(o, null, 2);
+                }
+                catch (e) {
+                    common_js_3.DEBUG.val > common_js_3.DEBUG.hi && console.warn(e);
+                }
+            try {
+                r = r + '';
+            }
+            catch (e) {
+                common_js_3.DEBUG.val > common_js_3.DEBUG.hi && console.warn(e);
+            }
+            return r;
+        }
+    }
+    exports_11("start_ws_server", start_ws_server);
+    function nextFileName(ext = '') {
+        if (!ext.startsWith('.')) {
+            ext = '.' + ext;
+        }
+        return `file${(Math.random() * 1000000).toString(36)}${ext}`;
+    }
+    return {
+        setters: [
+            function (express_1_1) {
+                express_1 = express_1_1;
+            },
+            function (http_1_1) {
+                http_1 = http_1_1;
+            },
+            function (https_1_1) {
+                https_1 = https_1_1;
+            },
+            function (node_fetch_1_1) {
+                node_fetch_1 = node_fetch_1_1;
+            },
+            function (multer_1_1) {
+                multer_1 = multer_1_1;
+            },
+            function (ws_1_1) {
+                ws_1 = ws_1_1;
+            },
+            function (fs_3_1) {
+                fs_3 = fs_3_1;
+            },
+            function (os_2_1) {
+                os_2 = os_2_1;
+            },
+            function (path_3_1) {
+                path_3 = path_3_1;
+            },
+            function (body_parser_1_1) {
+                body_parser_1 = body_parser_1_1;
+            },
+            function (cookie_parser_1_1) {
+                cookie_parser_1 = cookie_parser_1_1;
+            },
+            function (page_js_1_1) {
+                page_js_1 = page_js_1_1;
+            },
+            function (api_js_1_1) {
+                api_js_1 = api_js_1_1;
+            },
+            function (args_js_1_1) {
+                args_js_1 = args_js_1_1;
+            },
+            function (common_js_3_1) {
+                common_js_3 = common_js_3_1;
+            },
+            function (server_js_1_1) {
+                server_js_1 = server_js_1_1;
+            }
+        ],
+        execute: function () {
+            exports_11("fileChoosers", fileChoosers = new Map());
+            protocol = common_js_3.GO_SECURE ? https_1.default : http_1.default;
+            COOKIE_OPTS = {
+                secure: common_js_3.GO_SECURE,
+                httpOnly: true,
+                maxAge: 345600000,
+                sameSite: 'Strict'
+            };
+            uploadPath = path_3.default.resolve(os_2.default.homedir(), 'uploads');
+            if (!fs_3.default.existsSync(uploadPath)) {
+                fs_3.default.mkdirSync(uploadPath, { recursive: true });
+            }
+            storage = multer_1.default.diskStorage({
+                destination: (req, file, cb) => cb(null, uploadPath),
+                filename: (req, file, cb) => {
+                    return cb(null, nextFileName(path_3.default.extname(file.originalname)));
+                }
+            });
+            upload = multer_1.default({ storage });
+            Queue = {
+                funcs: []
+            };
+            messageQueueRunning = false;
+            requestId = 0;
+        }
+    };
+});
+System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "url", "querystring", "common", "args", "public/translateVoodooCRDP", "zombie-lord/screenShots", "zombie-lord/adblocking/blockAds", "ws-server"], function (exports_12, context_12) {
+    "use strict";
+    var ws_2, node_fetch_2, fs_4, path_4, url_3, querystring_1, common_js_4, args_js_2, translateVoodooCRDP_js_2, screenShots_js_1, blockAds_js_1, ws_server_js_1, selectDropdownEvents, keysCanInputEvents, textComposition, favicon, elementInfo, scrollNotify, botDetectionEvasions, appMinifier, projector, injectionsScroll, pageContextInjectionsScroll, RECONNECT_MS, mobUA, LANG, mobPLAT, GrantedPermissions, ROOT_SESSION, UA, PLAT, targets, sessions, loadings, tabs, AD_BLOCK_ON, DEMO_BLOCK_ON;
+    var __moduleName = context_12 && context_12.id;
     function addSession(targetId, sessionId) {
         sessions.set(targetId, sessionId);
         sessions.set(sessionId, targetId);
@@ -1484,7 +1906,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
         };
         connection.zombie.on('disconnect', async () => {
             console.log(`Reconnecting to zombie in ${RECONNECT_MS}`);
-            await common_js_3.sleep(RECONNECT_MS);
+            await common_js_4.sleep(RECONNECT_MS);
             setTimeout(async () => {
                 const next_connection = await Connect({ port: connection.port });
                 Object.assign(connection, next_connection);
@@ -1498,7 +1920,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
         const { send, on, ons } = connection.zombie;
         const { targetInfo: browserTargetInfo } = await send("Target.getTargetInfo");
         connection.browserTargetId = browserTargetInfo.targetId;
-        !common_js_3.DEBUG.legacyShots && await send("HeadlessExperimental.enable", {});
+        !common_js_4.DEBUG.legacyShots && await send("HeadlessExperimental.enable", {});
         await send("Target.setDiscoverTargets", { discover: true });
         await send("Target.setAutoAttach", {
             autoAttach: false,
@@ -1525,13 +1947,13 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 }
             }
             else {
-                common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log("Changed event for removed target", targetId, targetInfo);
+                common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log("Changed event for removed target", targetId, targetInfo);
             }
         });
         on("Target.attachedToTarget", async ({ sessionId, targetInfo, waitingForDebugger }) => {
             const attached = { sessionId, targetInfo, waitingForDebugger };
             const { targetId } = targetInfo;
-            common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log("Attached to target", sessionId, targetId);
+            common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log("Attached to target", sessionId, targetId);
             targets.add(targetId);
             addSession(targetId, sessionId);
             connection.meta.push({ attached });
@@ -1591,7 +2013,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                     payload.params.sessionId = sessionId;
                     response = await sessionSend(payload);
                 }
-                common_js_3.DEBUG.val >= common_js_3.DEBUG.med && console.log(JSON.stringify({ bindingCalled: { name, payload, response, executionContextId } }));
+                common_js_4.DEBUG.val >= common_js_4.DEBUG.med && console.log(JSON.stringify({ bindingCalled: { name, payload, response, executionContextId } }));
                 await send("Runtime.evaluate", {
                     expression: `self.instructZombie.onmessage(${JSON.stringify({ response })})`,
                     contextId: executionContextId,
@@ -1601,8 +2023,9 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             else if (message.method == "Runtime.consoleAPICalled") {
                 const consoleMessage = message.params;
                 const { args, executionContextId } = consoleMessage;
+                // console.log(JSON.stringify(consoleMessage));
                 try {
-                    common_js_3.DEBUG.val && console.log(executionContextId, consoleMessage.args[0].value.slice(0, 255));
+                    common_js_4.DEBUG.val && console.log(executionContextId, consoleMessage.args[0].value.slice(0, 255));
                 }
                 finally {
                     void 0;
@@ -1610,7 +2033,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 if (!args.length)
                     return;
                 const activeContexts = connection.worlds.get(connection.sessionId);
-                common_js_3.DEBUG.val > common_js_3.DEBUG.low && console.log(`Active context`, activeContexts);
+                common_js_4.DEBUG.val > common_js_4.DEBUG.low && console.log(`Active context`, activeContexts);
                 /*if ( ! activeContexts || ! activeContexts.has(executionContextId) ) {
                   DEBUG.val && console.log(`Blocking as is not a context in the active target.`);
                   return;
@@ -1626,11 +2049,11 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                     void 0;
                 }
                 finally {
-                    common_js_3.DEBUG.val > common_js_3.DEBUG.med && connection.meta.push({ consoleMessage });
+                    common_js_4.DEBUG.val > common_js_4.DEBUG.med && connection.meta.push({ consoleMessage });
                 }
             }
             else if (message.method == "Runtime.executionContextCreated") {
-                common_js_3.DEBUG.val && console.log(JSON.stringify({ createdContext: message.params.context }));
+                common_js_4.DEBUG.val && console.log(JSON.stringify({ createdContext: message.params.context }));
                 const { name: worldName, id: contextId } = message.params.context;
                 if (worldName == translateVoodooCRDP_js_2.WorldName) {
                     addContext(sessionId, contextId);
@@ -1645,7 +2068,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 deleteContext(sessionId, contextId);
             }
             else if (message.method == "Runtime.executionContextsCleared") {
-                common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log("Execution contexts cleared");
+                common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log("Execution contexts cleared");
                 deleteWorld(sessionId);
             }
             else if (message.method == "LayerTree.layerPainted") {
@@ -1681,9 +2104,10 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 }
             }
             else if (message.method == "Page.fileChooserOpened") {
-                const { mode } = message.params;
+                const { mode, backendNodeId } = message.params;
                 const fileChooser = { mode, sessionId };
-                common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log(fileChooser, message);
+                ws_server_js_1.fileChoosers.set(sessionId, backendNodeId);
+                common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log(fileChooser, message);
                 connection.meta.push({ fileChooser });
             }
             else if (message.method == "Page.downloadWillBegin") {
@@ -1695,7 +2119,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 connection.meta.push({ download });
                 connection.lastDownloadFileName = downloadFileName;
                 // logging 
-                common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log({ downloadFileName, SECURE_VIEW_SCRIPT: common_js_3.SECURE_VIEW_SCRIPT, username: args_js_1.username });
+                common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log({ downloadFileName, SECURE_VIEW_SCRIPT: common_js_4.SECURE_VIEW_SCRIPT, username: args_js_2.username });
                 /**
                 // This shouldn't be in the community edition
                 const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`]);
@@ -1749,7 +2173,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 connection.meta.push({ resource });
             }
             else if (message.method == "Runtime.exceptionThrown") {
-                common_js_3.DEBUG.val && console.log(JSON.stringify({ exception: message.params }, null, 2));
+                common_js_4.DEBUG.val && console.log(JSON.stringify({ exception: message.params }, null, 2));
             }
             else if (message.method == "Fetch.requestPaused") {
                 //newtabIntercept({sessionId, message}, Target);
@@ -1766,7 +2190,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 connection.pausing.set(requestId, request.url);
                 connection.pausing.set(request.url, requestId);
                 const authRequired = { authChallenge, requestId, resourceType };
-                common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log({ authRequired });
+                common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log({ authRequired });
                 connection.meta.push({ authRequired });
             }
             else if (message.method && (message.method.startsWith("LayerTree") || message.method.startsWith("Page") || message.method.startsWith("Network"))) {
@@ -1780,8 +2204,8 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
         async function setupTab({ attached }) {
             const { sessionId, targetInfo: { targetId } } = attached;
             try {
-                common_js_3.DEBUG.val && console.log(sessionId, targetId, 'setting up');
-                !common_js_3.DEBUG.legacyShots && await send("HeadlessExperimental.enable", {}, sessionId);
+                common_js_4.DEBUG.val && console.log(sessionId, targetId, 'setting up');
+                !common_js_4.DEBUG.legacyShots && await send("HeadlessExperimental.enable", {}, sessionId);
                 if (!loadings.has(sessionId)) {
                     const loading = { waiting: 0, complete: 0, targetId };
                     loadings.set(sessionId, loading);
@@ -1809,7 +2233,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 }, sessionId);
                 await send("Page.setDownloadBehavior", {
                     behavior: "allow",
-                    downloadPath: `/home/${args_js_1.username}/browser-downloads/`
+                    downloadPath: `/home/${args_js_2.username}/browser-downloads/`
                 }, sessionId);
                 await send("DOMSnapshot.enable", {}, sessionId);
                 await send("Runtime.enable", {}, sessionId);
@@ -1878,7 +2302,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 connection.navigator.acceptLanguage = command.params.acceptLanguage;
             }
             if (!!targetId && !targets.has(targetId)) {
-                common_js_3.DEBUG.val && console.log("Blocking as target does not exist.", targetId);
+                common_js_4.DEBUG.val && console.log("Blocking as target does not exist.", targetId);
                 return {};
             }
             if (command.name == "Target.closeTarget") {
@@ -1890,12 +2314,12 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 }
                 removeSession(targetId);
                 if (tSessionId) {
-                    common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log("Received close. Will send detach first.");
+                    common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log("Received close. Will send detach first.");
                     // FIX NOTE: these sleeps (have not test ms sensitivity, maybe we could go lower), FIX issue #130
                     // in other words, they prevent the seg fault crash on Target.closeTarget we get sometimes
-                    await common_js_3.sleep(300);
+                    await common_js_4.sleep(300);
                     await send("Target.detachFromTarget", { sessionId: tSessionId });
-                    await common_js_3.sleep(300);
+                    await common_js_4.sleep(300);
                 }
             }
             if (command.name == "Fetch.continueWithAuth") {
@@ -1913,11 +2337,11 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 sessionId = that.sessionId;
                 const worlds = connection.worlds.get(sessionId);
                 if (!worlds) {
-                    common_js_3.DEBUG.val && console.log("reloading because no worlds we can access yet");
+                    common_js_4.DEBUG.val && console.log("reloading because no worlds we can access yet");
                     await send("Page.reload", {}, sessionId);
                 }
                 else {
-                    common_js_3.DEBUG.val && console.log("Activate", sessionId);
+                    common_js_4.DEBUG.val && console.log("Activate", sessionId);
                 }
             }
             if (command.name.startsWith("Target") || !sessionId) {
@@ -1927,12 +2351,12 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                         return await send(command.name, command.params, sessionId);
                     }
                     else {
-                        common_js_3.DEBUG.val && console.log(`Blocking as ${command.name} must be run with session.`, command);
+                        common_js_4.DEBUG.val && console.log(`Blocking as ${command.name} must be run with session.`, command);
                         return {};
                     }
                 }
                 else {
-                    common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log({ zombieNoSessionCommand: command });
+                    common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log({ zombieNoSessionCommand: command });
                     const resp = await send(command.name, command.params);
                     return resp;
                 }
@@ -1940,14 +2364,14 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             else {
                 sessionId = command.params.sessionId || that.sessionId;
                 if (!sessions.has(sessionId)) {
-                    common_js_3.DEBUG.val && console.log("Blocking as session not exist.", sessionId);
+                    common_js_4.DEBUG.val && console.log("Blocking as session not exist.", sessionId);
                     return {};
                 }
                 if (!!command.params.contextId && !hasContext(sessionId, command.params.contextId)) {
-                    common_js_3.DEBUG.val && console.log("Blocking as context does not exist.", command, sessionId, connection.worlds, connection.worlds.get(sessionId));
+                    common_js_4.DEBUG.val && console.log("Blocking as context does not exist.", command, sessionId, connection.worlds, connection.worlds.get(sessionId));
                     return {};
                 }
-                common_js_3.DEBUG.val > common_js_3.DEBUG.med &&
+                common_js_4.DEBUG.val > common_js_4.DEBUG.med &&
                     command.name !== "Page.captureScreenshot" &&
                     command.name !== "HeadlessExperimental.beginFrame" &&
                     console.log({ zombieSessionCommand: command });
@@ -1960,7 +2384,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                     try {
                         if (e.Error && e.Error.indexOf("session")) {
                             removeSession(e.request.params.sessionId);
-                            common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log("Removed session");
+                            common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log("Removed session");
                         }
                     }
                     finally {
@@ -1970,7 +2394,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             }
         }
         function addContext(id, contextId) {
-            common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log({ addingContext: { id, contextId } });
+            common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log({ addingContext: { id, contextId } });
             const otherId = sessions.get(id);
             let contexts = connection.worlds.get(id);
             if (!contexts) {
@@ -1989,7 +2413,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 return contexts.has(contextId);
         }
         function deleteContext(id, contextId) {
-            common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log({ deletingContext: { id, contextId } });
+            common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log({ deletingContext: { id, contextId } });
             //const otherId = sessions.get(id);
             let contexts = connection.worlds.get(id);
             if (contexts) {
@@ -2002,7 +2426,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             connection.worlds.delete(otherId);
         }
         function endTarget({ targetId }, label) {
-            common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.warn({ [label]: { targetId } });
+            common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.warn({ [label]: { targetId } });
             targets.delete(targetId);
             tabs.delete(targetId);
             removeSession(targetId);
@@ -2010,7 +2434,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             connection.meta.push({ [label]: { targetId } });
         }
     }
-    exports_10("default", Connect);
+    exports_12("default", Connect);
     function saveTargetIdAsGlobal(targetId) {
         return `
     {
@@ -2027,8 +2451,8 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
         return scheme == 'file';
     }
     async function makeZombie({ port: port = 9222 } = {}) {
-        const { webSocketDebuggerUrl } = await node_fetch_1.default(`http://localhost:${port}/json/version`).then(r => r.json());
-        const socket = new ws_1.default(webSocketDebuggerUrl);
+        const { webSocketDebuggerUrl } = await node_fetch_2.default(`http://localhost:${port}/json/version`).then(r => r.json());
+        const socket = new ws_2.default(webSocketDebuggerUrl);
         const Resolvers = {};
         const Handlers = {};
         socket.on('message', handle);
@@ -2122,17 +2546,17 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
     }
     return {
         setters: [
-            function (ws_1_1) {
-                ws_1 = ws_1_1;
+            function (ws_2_1) {
+                ws_2 = ws_2_1;
             },
-            function (node_fetch_1_1) {
-                node_fetch_1 = node_fetch_1_1;
+            function (node_fetch_2_1) {
+                node_fetch_2 = node_fetch_2_1;
             },
-            function (fs_3_1) {
-                fs_3 = fs_3_1;
+            function (fs_4_1) {
+                fs_4 = fs_4_1;
             },
-            function (path_3_1) {
-                path_3 = path_3_1;
+            function (path_4_1) {
+                path_4 = path_4_1;
             },
             function (url_3_1) {
                 url_3 = url_3_1;
@@ -2140,11 +2564,11 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             function (querystring_1_1) {
                 querystring_1 = querystring_1_1;
             },
-            function (common_js_3_1) {
-                common_js_3 = common_js_3_1;
+            function (common_js_4_1) {
+                common_js_4 = common_js_4_1;
             },
-            function (args_js_1_1) {
-                args_js_1 = args_js_1_1;
+            function (args_js_2_1) {
+                args_js_2 = args_js_2_1;
             },
             function (translateVoodooCRDP_js_2_1) {
                 translateVoodooCRDP_js_2 = translateVoodooCRDP_js_2_1;
@@ -2154,22 +2578,25 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             },
             function (blockAds_js_1_1) {
                 blockAds_js_1 = blockAds_js_1_1;
+            },
+            function (ws_server_js_1_1) {
+                ws_server_js_1 = ws_server_js_1_1;
             }
         ],
         execute: function () {
             //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
             //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
             // standard injections
-            selectDropdownEvents = fs_3.default.readFileSync(path_3.default.join(__dirname, 'injections', 'selectDropdownEvents.js')).toString();
-            keysCanInputEvents = fs_3.default.readFileSync(path_3.default.join(__dirname, 'injections', 'keysCanInput.js')).toString();
-            textComposition = fs_3.default.readFileSync(path_3.default.join(__dirname, 'injections', 'textComposition.js')).toString();
-            favicon = fs_3.default.readFileSync(path_3.default.join(__dirname, 'injections', 'favicon.js')).toString();
-            elementInfo = fs_3.default.readFileSync(path_3.default.join(__dirname, 'injections', 'elementInfo.js')).toString();
-            scrollNotify = fs_3.default.readFileSync(path_3.default.join(__dirname, 'injections', 'scrollNotify.js')).toString();
-            botDetectionEvasions = fs_3.default.readFileSync(path_3.default.join(__dirname, 'injections', 'pageContext', 'botDetectionEvasions.js')).toString();
+            selectDropdownEvents = fs_4.default.readFileSync(path_4.default.join(__dirname, 'injections', 'selectDropdownEvents.js')).toString();
+            keysCanInputEvents = fs_4.default.readFileSync(path_4.default.join(__dirname, 'injections', 'keysCanInput.js')).toString();
+            textComposition = fs_4.default.readFileSync(path_4.default.join(__dirname, 'injections', 'textComposition.js')).toString();
+            favicon = fs_4.default.readFileSync(path_4.default.join(__dirname, 'injections', 'favicon.js')).toString();
+            elementInfo = fs_4.default.readFileSync(path_4.default.join(__dirname, 'injections', 'elementInfo.js')).toString();
+            scrollNotify = fs_4.default.readFileSync(path_4.default.join(__dirname, 'injections', 'scrollNotify.js')).toString();
+            botDetectionEvasions = fs_4.default.readFileSync(path_4.default.join(__dirname, 'injections', 'pageContext', 'botDetectionEvasions.js')).toString();
             // plugins injections
-            appMinifier = fs_3.default.readFileSync(path_3.default.join(__dirname, '..', 'plugins', 'appminifier', 'injections.js')).toString();
-            projector = fs_3.default.readFileSync(path_3.default.join(__dirname, '..', 'plugins', 'projector', 'injections.js')).toString();
+            appMinifier = fs_4.default.readFileSync(path_4.default.join(__dirname, '..', 'plugins', 'appminifier', 'injections.js')).toString();
+            projector = fs_4.default.readFileSync(path_4.default.join(__dirname, '..', 'plugins', 'projector', 'injections.js')).toString();
             // just concatenate the scripts together and do one injection
             // but for debugging better to add each separately
             // we can put in an array, and loop over to add each
@@ -2197,10 +2624,10 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
         }
     };
 });
-System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "fs"], function (exports_11, context_11) {
+System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "fs"], function (exports_13, context_13) {
     "use strict";
-    var connection_js_1, common_js_4, fs_4, connections, Options, controller_api;
-    var __moduleName = context_11 && context_11.id;
+    var connection_js_1, common_js_5, fs_5, connections, Options, controller_api;
+    var __moduleName = context_13 && context_13.id;
     function move(a_dest, a_src) {
         while (a_src.length) {
             a_dest.push(a_src.shift());
@@ -2212,11 +2639,11 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
             function (connection_js_1_1) {
                 connection_js_1 = connection_js_1_1;
             },
-            function (common_js_4_1) {
-                common_js_4 = common_js_4_1;
+            function (common_js_5_1) {
+                common_js_5 = common_js_5_1;
             },
-            function (fs_4_1) {
-                fs_4 = fs_4_1;
+            function (fs_5_1) {
+                fs_5 = fs_5_1;
             }
         ],
         execute: function () {
@@ -2285,7 +2712,7 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                         }
                         //({Page, Target} = connection.zombie);
                         command = command || {};
-                        common_js_4.DEBUG.val && !command.isBufferedResultsCollectionOnly && console.log(JSON.stringify(command));
+                        common_js_5.DEBUG.val && !command.isBufferedResultsCollectionOnly && console.log(JSON.stringify(command));
                         if (command.isBufferedResultsCollectionOnly) {
                             retVal.data = {};
                         }
@@ -2296,7 +2723,7 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                                 // that takes a script to evaluate 
                                 case "Connection.doShot":
                                     {
-                                        common_js_4.DEBUG.val && console.log("Calling do shot");
+                                        common_js_5.DEBUG.val && console.log("Calling do shot");
                                         connection.doShot();
                                     }
                                     break;
@@ -2309,7 +2736,7 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                                             retVal.data = { contextIds: [] };
                                         }
                                         else {
-                                            common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log({ currentSession: connection.sessionId, targetId, contexts: [...contexts.values()] });
+                                            common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log({ currentSession: connection.sessionId, targetId, contexts: [...contexts.values()] });
                                             retVal.data = { contextIds: [...contexts.values()] };
                                         }
                                     }
@@ -2393,7 +2820,7 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                             }
                         }
                         else if (command.name) {
-                            common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log({ command });
+                            common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log({ command });
                             if (command.dontWait) {
                                 connection.sessionSend(command);
                                 retVal.data = {};
@@ -2415,10 +2842,10 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                         if (command.requiresLoad) {
                             // we could do a promise race here load vs sleep
                             //await Page.loadEventFired();
-                            await common_js_4.sleep();
+                            await common_js_5.sleep();
                         }
                         if (command.requiresExtraWait) {
-                            await common_js_4.sleep(command.extraWait);
+                            await common_js_5.sleep(command.extraWait);
                         }
                         if (command.requiresShot) {
                             await connection.doShot({ ignoreHash: command.ignoreHash });
@@ -2430,20 +2857,20 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                             retVal.frameBuffer = move([], connection.frameBuffer);
                             retVal.frameBuffer = retVal.frameBuffer.filter(frame => {
                                 if (frame.hash == connection.lastHash) {
-                                    common_js_4.DEBUG.shotDebug && common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log(`DROP frame ${frame.hash}`);
+                                    common_js_5.DEBUG.shotDebug && common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log(`DROP frame ${frame.hash}`);
                                     return false;
                                 }
                                 else {
                                     connection.lastHash = frame.hash;
-                                    common_js_4.DEBUG.shotDebug && common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log(`SEND frame ${frame.hash}`);
+                                    common_js_5.DEBUG.shotDebug && common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log(`SEND frame ${frame.hash}`);
                                     return true;
                                 }
                             });
-                            common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log(`Sending ${retVal.frameBuffer.length} frames.`);
+                            common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log(`Sending ${retVal.frameBuffer.length} frames.`);
                         }
                         if (connection.meta.length) {
                             retVal.meta = move([], connection.meta);
-                            common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log(`Sending ${retVal.meta.length} meta.`);
+                            common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log(`Sending ${retVal.meta.length} meta.`);
                         }
                         retVal.totalBandwidth = connection.totalBandwidth;
                     }
@@ -2458,12 +2885,12 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                 },
                 logIP() {
                     try {
-                        fs_4.default.appendFileSync("/tmp/badIPLog", this.ip_address + "\n");
+                        fs_5.default.appendFileSync("/tmp/badIPLog", this.ip_address + "\n");
                     }
                     catch (e) {
                         console.warn("Error appending log", e);
                         try {
-                            fs_4.default.writeFileSync("/tmp/badIPLog", this.ip_address + "\n");
+                            fs_5.default.writeFileSync("/tmp/badIPLog", this.ip_address + "\n");
                         }
                         catch (e2) {
                             console.warn("Error writing log", e);
@@ -2471,14 +2898,14 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                     }
                 }
             };
-            exports_11("default", controller_api);
+            exports_13("default", controller_api);
         }
     };
 });
-System.register("zombie-lord/api", ["zombie-lord/launcher", "zombie-lord/controller"], function (exports_12, context_12) {
+System.register("zombie-lord/api", ["zombie-lord/launcher", "zombie-lord/controller"], function (exports_14, context_14) {
     "use strict";
     var launcher_js_1, controller_js_1, api;
-    var __moduleName = context_12 && context_12.id;
+    var __moduleName = context_14 && context_14.id;
     return {
         setters: [
             function (launcher_js_1_1) {
@@ -2493,431 +2920,13 @@ System.register("zombie-lord/api", ["zombie-lord/launcher", "zombie-lord/control
                 life: launcher_js_1.default,
                 act: controller_js_1.default
             };
-            exports_12("default", api);
-        }
-    };
-});
-System.register("public/plugins/demo/page", [], function (exports_13, context_13) {
-    "use strict";
-    var __moduleName = context_13 && context_13.id;
-    function pluginsDemoPage({ body: body = '' } = {}) {
-        return `
-    <head>
-      <title>Demo</title>
-      <link rel=stylesheet href=/plugins/demo/styles/styletidyup.css>
-      <!--
-      <link rel=stylesheet href=styles/basic.css>
-      <link rel=stylesheet href=styles/dark.css>
-      <link rel=stylesheet href=styles/light.css>
-      <link rel=stylesheet href=styles/darkmode.css>
-      -->
-    </head>
-    <body>
-      ${body}
-      <script src=/plugins/demo/listen.js></script>
-      <script src=/plugins/demo/doingit.js></script>
-      <script src=/plugins/demo/stripe.js></script>
-    </body>
-  `;
-    }
-    exports_13("pluginsDemoPage", pluginsDemoPage);
-    return {
-        setters: [],
-        execute: function () {
-        }
-    };
-});
-System.register("ws-server", ["express", "http", "https", "node-fetch", "multer", "ws", "fs", "os", "path", "body-parser", "cookie-parser", "public/plugins/demo/page", "zombie-lord/api", "args", "common", "server"], function (exports_14, context_14) {
-    "use strict";
-    var express_1, http_1, https_1, node_fetch_2, multer_1, ws_2, fs_5, os_2, path_4, body_parser_1, cookie_parser_1, page_js_1, api_js_1, args_js_2, common_js_5, server_js_1, protocol, COOKIE_OPTS, uploadPath, storage, upload, Queue, messageQueueRunning, browserTargetId, requestId;
-    var __moduleName = context_14 && context_14.id;
-    async function start_ws_server(port, zombie_port, allowed_user_cookie, session_token) {
-        common_js_5.DEBUG.val && console.log(`Starting websocket server on ${port}`);
-        const app = express_1.default();
-        const server_port = port;
-        app.use(body_parser_1.default.urlencoded({ extended: true }));
-        app.use(body_parser_1.default.json());
-        app.use(cookie_parser_1.default());
-        if (args_js_2.start_mode == "signup") {
-            app.get("/", (req, res) => res.sendFile(path_4.default.join(__dirname, 'public', 'index.html')));
-        }
-        else {
-            app.get("/", (req, res) => res.sendFile(path_4.default.join(__dirname, 'public', 'image.html')));
-            app.get("/login", (req, res) => {
-                const { token, ran } = req.query;
-                if (token == session_token) {
-                    res.cookie(common_js_5.COOKIENAME, allowed_user_cookie, COOKIE_OPTS);
-                    const url = `/?ran=${ran || Math.random()}#${session_token}`;
-                    res.redirect(url);
-                }
-                else {
-                    res.type("html");
-                    if (session_token == 'token2') {
-                        res.end(`Incorrect token ${token}/token2. <a href=/login?token=token2>Login first.</a>`);
-                    }
-                    else {
-                        res.end(`Incorrect token "${token}". <a href=https://${req.hostname}/signup.html>Login first.</a>`);
-                    }
-                }
-            });
-        }
-        app.use(express_1.default.static('public'));
-        app.post('/current/:current/event/:event', wrap(async (req, res) => {
-            const actualUri = 'https://' + req.headers.host + ':8001' + req.url;
-            const resp = await node_fetch_2.default(actualUri, { method: 'POST', body: JSON.stringify(req.body),
-                headers: {
-                    'Content-Type': 'application/json'
-                } }).then(r => r.text());
-            res.end(page_js_1.pluginsDemoPage({ body: resp }));
-        }));
-        const sslBranch = common_js_5.BRANCH == 'master' ? 'master' : 'staging';
-        const secure_options = {};
-        try {
-            const sec = {
-                cert: fs_5.default.readFileSync(`./sslcert/${sslBranch}/fullchain.pem`),
-                key: fs_5.default.readFileSync(`./sslcert/${sslBranch}/privkey.pem`),
-                ca: fs_5.default.readFileSync(`./sslcert/${sslBranch}/chain.pem`),
-            };
-            Object.assign(secure_options, sec);
-        }
-        catch (e) {
-            console.warn(`No certs found so will use insecure no SSL.`);
-        }
-        const secure = secure_options.cert && secure_options.ca && secure_options.key;
-        const server = protocol.createServer.apply(protocol, common_js_5.GO_SECURE && secure ? [secure_options, app] : [app]);
-        const wss = new ws_2.default.Server({ server });
-        wss.on('connection', (ws, req) => {
-            const cookie = req.headers.cookie;
-            api_js_1.default.act.saveIP(req.connection.remoteAddress);
-            common_js_5.DEBUG.val && console.log({ connectionIp: req.connection.remoteAddress });
-            if (common_js_5.DEBUG.dev || allowed_user_cookie == 'cookie' ||
-                (cookie && cookie.includes(`${common_js_5.COOKIENAME}=${allowed_user_cookie}`))) {
-                api_js_1.default.life.onDeath(zombie_port, () => {
-                    //console.log("Closing as zombie crashed.");
-                    //ws.close();
-                });
-                ws.on('message', message => {
-                    const func = async () => {
-                        const Data = [], Frames = [], Meta = [], State = {};
-                        message = JSON.parse(message);
-                        const { zombie, tabs, messageId } = message;
-                        try {
-                            if (zombie) {
-                                const { events } = zombie;
-                                let { receivesFrames } = zombie;
-                                if (receivesFrames) {
-                                    // switch it on in DEBUG and save it on the websocket for all future events
-                                    common_js_5.DEBUG.noShot = false;
-                                    ws.receivesFrames = receivesFrames;
-                                }
-                                else {
-                                    receivesFrames = ws.receivesFrames;
-                                }
-                                common_js_5.DEBUG.val && console.log(`Starting ${events.length} events for message ${messageId}`);
-                                await server_js_1.eventSendLoop(events, { Data, Frames, Meta, State, receivesFrames });
-                                common_js_5.DEBUG.val && console.log(`Ending ${events.length} events for message ${messageId}\n`);
-                                const { totalBandwidth } = State;
-                                so(ws, { messageId, data: Data, frameBuffer: Frames, meta: Meta, totalBandwidth });
-                            }
-                            else if (tabs) {
-                                let { data: { targetInfos: targets } } = await server_js_1.timedSend({
-                                    name: "Target.getTargets",
-                                    params: {},
-                                }, zombie_port);
-                                browserTargetId = browserTargetId || api_js_1.default.act.getBrowserTargetId(zombie_port);
-                                targets = targets.filter(({ targetId, type }) => type == 'page' && api_js_1.default.act.hasSession(targetId, zombie_port));
-                                const activeTarget = api_js_1.default.act.getActiveTarget(zombie_port);
-                                api_js_1.default.act.addTargets(targets, zombie_port);
-                                so(ws, { messageId, activeTarget, tabs: targets });
-                            }
-                            else {
-                                console.warn(JSON.stringify({ unknownMessage: message }));
-                            }
-                        }
-                        catch (e) {
-                            so(ws, { messageId, data: [
-                                    {
-                                        error: "Failed to communicate with cloud browser",
-                                        resetRequired: true
-                                    }
-                                ], frameBuffer: [], meta: [], totalBandwidth: 0 });
-                        }
-                    };
-                    Queue.funcs.push(func);
-                    if (!messageQueueRunning) {
-                        runMessageQueue();
-                    }
-                });
-            }
-            else {
-                const hadSession = !!cookie && cookie.includes(common_js_5.COOKIENAME);
-                const msg = hadSession ?
-                    `Your session has expired. Please log back in.`
-                    : `No session detected, have you signed up yet?`;
-                const error = { msg, willCloseSocket: true, hadSession };
-                so(ws, { messageId: 1, data: [{ error }] });
-                console.log("Closing as not authorized.");
-                ws.close();
-            }
-        });
-        server.listen(server_port, async (err) => {
-            if (err) {
-                console.error('err', err);
-                process.exit(1);
-            }
-            else {
-                addHandlers();
-                common_js_5.DEBUG.val && console.log({ uptime: new Date, message: 'websocket server up', server_port });
-            }
-        });
-        function so(socket, message) {
-            if (!message)
-                return;
-            if (typeof message == "string" || Array.isArray(message)) {
-                message;
-            }
-            else {
-                message = JSON.stringify(message);
-            }
-            try {
-                socket.send(message);
-            }
-            catch (e) {
-                console.warn(`Websocket error with sending message`, e, message);
-            }
-        }
-        function addHandlers() {
-            app.get(`/api/${common_js_5.version}/tabs`, wrap(async (req, res) => {
-                const cookie = req.cookies[common_js_5.COOKIENAME];
-                if (!common_js_5.DEBUG.dev && allowed_user_cookie !== 'cookie' &&
-                    (cookie !== allowed_user_cookie)) {
-                    return res.status(401).send('{"err":"forbidden"}');
-                }
-                requestId++;
-                res.type('json');
-                let targets;
-                try {
-                    ({ data: { targetInfos: targets } } = await server_js_1.timedSend({
-                        name: "Target.getTargets",
-                        params: {},
-                    }, zombie_port));
-                    browserTargetId = browserTargetId || api_js_1.default.act.getBrowserTargetId(zombie_port);
-                    targets = targets.filter(({ targetId, type }) => type == 'page' && api_js_1.default.act.hasSession(targetId, zombie_port));
-                    const activeTarget = api_js_1.default.act.getActiveTarget(zombie_port);
-                    api_js_1.default.act.addTargets(targets, zombie_port);
-                    res.end(JSON.stringify({ tabs: targets, activeTarget, requestId }));
-                }
-                catch (e) {
-                    console.warn('th', e);
-                    //res.end(JSON.stringify({error:e+'', resetRequired:true}));
-                    throw e;
-                }
-            }));
-            app.post("/file", upload.array("files", 10), async (req, res) => {
-                const cookie = req.cookies[common_js_5.COOKIENAME];
-                if (!common_js_5.DEBUG.dev && allowed_user_cookie !== 'cookie' &&
-                    (cookie !== allowed_user_cookie)) {
-                    return res.status(401).send('{"err":"forbidden"}');
-                }
-                const { files } = req;
-                const { sessionid: sessionId } = req.body;
-                const action = !files || files.length == 0 ? 'cancel' : 'accept';
-                const fileInputResult = await api_js_1.default.act.send({
-                    name: "Runtime.evaluate",
-                    params: {
-                        expression: "self.zombieDosyLastClicked.fileInput"
-                    },
-                    definitelyWait: true,
-                    sessionId
-                }, zombie_port);
-                console.log({ fileInputResult });
-                const objectId = fileInputResult.data.result.objectId;
-                const command = {
-                    name: "DOM.setFileInputFiles",
-                    params: {
-                        files: files && files.map(({ path }) => path),
-                        objectId
-                    },
-                    sessionId
-                };
-                common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
-                let result;
-                try {
-                    result = await api_js_1.default.act.send(command, zombie_port);
-                }
-                catch (e) {
-                    console.log("Error sending file input command", e);
-                }
-                console.log({ fileResult: result });
-                if (!result || result.error) {
-                    res.status(500).send(JSON.stringify({ error: 'there was an error attaching the files' }));
-                }
-                else {
-                    result = {
-                        success: true,
-                        files: files.map(({ originalname, size }) => ({ name: originalname, size }))
-                    };
-                    common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log("Sent files to file input", result, files);
-                    res.json(result);
-                }
-            });
-            // error handling middleware
-            app.use('*', (err, req, res, next) => {
-                try {
-                    res.type('json');
-                }
-                finally {
-                    let message = '';
-                    if (common_js_5.DEBUG.dev && common_js_5.DEBUG.val) {
-                        message = s({ error: { msg: err.message, stack: err.stack.split(/\n/g) } });
-                    }
-                    else {
-                        message = s({ error: err.message || err + '', resetRequired: true });
-                    }
-                    res.write(message);
-                    res.end();
-                    console.warn(err);
-                    next();
-                }
-            });
-        }
-        async function runMessageQueue() {
-            if (messageQueueRunning)
-                return;
-            messageQueueRunning = true;
-            while (Queue.funcs.length) {
-                const func = Queue.funcs.shift();
-                try {
-                    await func();
-                }
-                catch (e) {
-                    console.warn("error while running message queue", e);
-                }
-                // await sleep(TIME_BETWEEN_MESSAGES);
-            }
-            messageQueueRunning = false;
-        }
-        // helpers
-        function wrap(fn) {
-            return async function handler(req, res, next) {
-                try {
-                    await fn(req, res, next);
-                }
-                catch (e) {
-                    common_js_5.DEBUG.val && console.log(e);
-                    console.info(`caught error in ${fn}`);
-                    next(e);
-                }
-            };
-        }
-        function s(o) {
-            let r;
-            if (typeof o == "string")
-                r = 0;
-            else
-                try {
-                    r = JSON.stringify(o, null, 2);
-                }
-                catch (e) {
-                    common_js_5.DEBUG.val > common_js_5.DEBUG.hi && console.warn(e);
-                }
-            try {
-                r = r + '';
-            }
-            catch (e) {
-                common_js_5.DEBUG.val > common_js_5.DEBUG.hi && console.warn(e);
-            }
-            return r;
-        }
-    }
-    exports_14("start_ws_server", start_ws_server);
-    function nextFileName(ext = '') {
-        if (!ext.startsWith('.')) {
-            ext = '.' + ext;
-        }
-        return `file${(Math.random() * 1000000).toString(36)}${ext}`;
-    }
-    return {
-        setters: [
-            function (express_1_1) {
-                express_1 = express_1_1;
-            },
-            function (http_1_1) {
-                http_1 = http_1_1;
-            },
-            function (https_1_1) {
-                https_1 = https_1_1;
-            },
-            function (node_fetch_2_1) {
-                node_fetch_2 = node_fetch_2_1;
-            },
-            function (multer_1_1) {
-                multer_1 = multer_1_1;
-            },
-            function (ws_2_1) {
-                ws_2 = ws_2_1;
-            },
-            function (fs_5_1) {
-                fs_5 = fs_5_1;
-            },
-            function (os_2_1) {
-                os_2 = os_2_1;
-            },
-            function (path_4_1) {
-                path_4 = path_4_1;
-            },
-            function (body_parser_1_1) {
-                body_parser_1 = body_parser_1_1;
-            },
-            function (cookie_parser_1_1) {
-                cookie_parser_1 = cookie_parser_1_1;
-            },
-            function (page_js_1_1) {
-                page_js_1 = page_js_1_1;
-            },
-            function (api_js_1_1) {
-                api_js_1 = api_js_1_1;
-            },
-            function (args_js_2_1) {
-                args_js_2 = args_js_2_1;
-            },
-            function (common_js_5_1) {
-                common_js_5 = common_js_5_1;
-            },
-            function (server_js_1_1) {
-                server_js_1 = server_js_1_1;
-            }
-        ],
-        execute: function () {
-            protocol = common_js_5.GO_SECURE ? https_1.default : http_1.default;
-            COOKIE_OPTS = {
-                secure: common_js_5.GO_SECURE,
-                httpOnly: true,
-                maxAge: 345600000,
-                sameSite: 'Strict'
-            };
-            uploadPath = path_4.default.resolve(os_2.default.homedir(), 'uploads');
-            if (!fs_5.default.existsSync(uploadPath)) {
-                fs_5.default.mkdirSync(uploadPath, { recursive: true });
-            }
-            storage = multer_1.default.diskStorage({
-                destination: (req, file, cb) => cb(null, uploadPath),
-                filename: (req, file, cb) => {
-                    return cb(null, nextFileName(path_4.default.extname(file.originalname)));
-                }
-            });
-            upload = multer_1.default({ storage });
-            Queue = {
-                funcs: []
-            };
-            messageQueueRunning = false;
-            requestId = 0;
+            exports_14("default", api);
         }
     };
 });
 System.register("server", ["express", "zombie-lord/api", "common", "ws-server", "args"], function (exports_15, context_15) {
     "use strict";
-    var express_2, api_js_2, common_js_6, ws_server_js_1, BEGIN_AGAIN, COMMAND_MAX_WAIT, MAX_FRAME, EXPEDITE, args_js_3, demoBlock, ws_started;
+    var express_2, api_js_2, common_js_6, ws_server_js_2, BEGIN_AGAIN, COMMAND_MAX_WAIT, MAX_FRAME, EXPEDITE, args_js_3, demoBlock, ws_started;
     var __moduleName = context_15 && context_15.id;
     async function begin() {
         let port;
@@ -2937,7 +2946,7 @@ System.register("server", ["express", "zombie-lord/api", "common", "ws-server", 
             await common_js_6.sleep(BEGIN_AGAIN);
         }
         if (!ws_started) {
-            await ws_server_js_1.start_ws_server(args_js_3.app_port, args_js_3.chrome_port, args_js_3.cookie, args_js_3.token);
+            await ws_server_js_2.start_ws_server(args_js_3.app_port, args_js_3.chrome_port, args_js_3.cookie, args_js_3.token);
             ws_started = true;
         }
     }
@@ -3007,8 +3016,8 @@ System.register("server", ["express", "zombie-lord/api", "common", "ws-server", 
             function (common_js_6_1) {
                 common_js_6 = common_js_6_1;
             },
-            function (ws_server_js_1_1) {
-                ws_server_js_1 = ws_server_js_1_1;
+            function (ws_server_js_2_1) {
+                ws_server_js_2 = ws_server_js_2_1;
             },
             function (args_js_3_1) {
                 args_js_3 = args_js_3_1;
