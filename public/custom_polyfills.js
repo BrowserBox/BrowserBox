@@ -6,7 +6,7 @@
 
 function EventTarget2() {
   
-};
+}
 EventTarget2.prototype = Element.prototype;
 
 self.EventTarget = self.EventTarget || EventTarget2;

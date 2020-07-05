@@ -19,7 +19,7 @@ export function se(e, data = {}) {
         target = target.closest('[zig]');
       }
 
-      if ( !! target ) {
+      if ( target ) {
         ([dataId, generation] = target.getAttribute('zig').split(' '));
         if ( !(target.value instanceof HTMLElement) ) {
           value = target.value;
@@ -57,7 +57,7 @@ export function se(e, data = {}) {
   }
 
   top.postMessage({event}, TOP_ORIGIN);
-};
+}
 
 function inputValueDiffers(keyInputEvent, lastInput) {
   if ( keyInputEvent.target !== lastInput.target ) return true;

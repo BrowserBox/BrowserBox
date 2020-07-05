@@ -3,7 +3,7 @@ import DEFAULT_FAVICON from '../subviews/faviconDataURL.js'
 
 export function resetFavicon({targetId}, state) {
   const favicon = state.favicons.get(targetId);
-  if ( !! favicon ) {
+  if ( favicon ) {
     favicon.dataURI = DEFAULT_FAVICON;
   }
   FaviconElement({targetId}, state);

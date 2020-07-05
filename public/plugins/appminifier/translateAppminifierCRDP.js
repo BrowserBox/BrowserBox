@@ -84,7 +84,7 @@
                 if ( resp && resp.result && resp.result.value ) {
                   ({boundingBox} = resp.result.value);
                 }
-                if ( !! boundingBox ) {
+                if ( boundingBox ) {
                   BOXCACHE.set(key, boundingBox);
                   const {X,Y} = projectEventIntoBox({boundingBox, clientX, clientY, x, y, width, height}); 
                   return {
@@ -248,7 +248,7 @@
       Number.isInteger(e.modifiers) ? e.modifiers : 0;
     let type;
     if ( e.originalType == "keydown" ) {
-      if ( !! text ) 
+      if ( text ) 
         type = "keyDown";
       else 
         type = "rawKeyDown";

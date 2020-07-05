@@ -15,7 +15,7 @@
         if ( e.data && e.data.event ) {
           const {event} = e.data;
           const cache = state.domCache.get(state.activeTarget);
-          if ( !! cache ) {
+          if ( cache ) {
             event.contextId = cache.contextId;
           }
           if ( event.type.endsWith('move') ) {
@@ -65,7 +65,7 @@
                 // in other words if they differ by only the hash
                 const viewDoc = state.viewState.viewFrameEl.contentWindow.document;
                 const fragElem = viewDoc.querySelector(frag);
-                if ( !! fragElem ) {
+                if ( fragElem ) {
                   fragElem.scrollIntoView();
                 }
               }

@@ -63,7 +63,7 @@ export function logitKeyInputEvent(e) {
   const {type,key,code,data,isComposing,inputType,composed,target:{value}} = e;
   const typingData = {key,code,type,data,isComposing,inputType,composed,value};
   const debugBox = document.querySelector('#debugBox');
-  if ( !! debugBox ) {
+  if ( debugBox ) {
     debugBox.insertAdjacentHTML('afterBegin', `<p style="max-width:90vw;"><code><pre>${JSON.stringify(typingData,null,2)}</code></pre></p>`);
   } else {
     throw new Error("No element with ID 'debugBox' found.");
@@ -74,7 +74,7 @@ export function logitKeyInputEvent(e) {
 export function logit(info) {
   if ( ! DEBUG.val ) return;
   const debugBox = document.querySelector('#debugBox');
-  if ( !! debugBox ) {
+  if ( debugBox ) {
     debugBox.insertAdjacentHTML('afterBegin', `<p style="max-width:90vw;"><code><pre>${JSON.stringify(info,null,2)}</code></pre></p>`);
   } else {
     throw new Error("No element with ID 'debugBox' found.");

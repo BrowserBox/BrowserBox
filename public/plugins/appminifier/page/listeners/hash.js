@@ -3,7 +3,7 @@ import {getViewWindow, se} from '../helpers.js';
 export function installHashFragmentController() {
   getViewWindow().addEventListener('click', e => {
     const link = e.target.closest('a');
-    if ( !! link ) {
+    if ( link ) {
       try {
         const href = new URL(link.href);
         if ( href.hash ) {
@@ -23,10 +23,10 @@ export function installSyntheticHashChanger() {
   // (we already do), we need to hook it
   getViewWindow().addEventListener('hashchange', e => {
     const hash = location.hash;
-    if ( !! hash ) {
+    if ( hash ) {
       const id = hash.slice(1);
       const idEl = document.getElementById(id);
-      if ( !! idEl ) {
+      if ( idEl ) {
         idEl.scrollIntoView();
       }
     }

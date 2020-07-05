@@ -26,7 +26,7 @@ import {d as R, u as X} from '../../node_modules/dumbass/r.js';
       let cancelText = '';
       let working = false;
 
-      if ( !! currentModal ) {
+      if ( currentModal ) {
         // the defaults here are defaults when there *is* a current modal
         ({
           msg:msg = 'Empty',
@@ -55,7 +55,7 @@ import {d as R, u as X} from '../../node_modules/dumbass/r.js';
       }
 
       return R`
-        <aside class="modals ${!!currentModal ? 'active' : ''}" stylist="styleModals" click=${click => closeModal(click, state)}>
+        <aside class="modals ${currentModal ? 'active' : ''}" stylist="styleModals" click=${click => closeModal(click, state)}>
           <article bond=${el => ModalRef.alert = el} class="alert ${
               currentModalEl === ModalRef.alert ? 'open' : '' 
             }">

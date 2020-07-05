@@ -139,12 +139,12 @@
       return false;
     }
 
-    if ( !! insert ) {
+    if ( insert ) {
       parentElement.insertAdjacentHTML('beforeEnd', insert.outerHTML);
       //console.log(parentElement, "Added", insert.outerHTML);
     }
 
-    if ( !! remove ) {
+    if ( remove ) {
       const zigSelectorToRemove = `[zig="${remove.zig}"]`;
       const elToRemove = parentElement.querySelector(zigSelectorToRemove);
       if ( ! elToRemove ) {
