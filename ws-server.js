@@ -12,7 +12,7 @@
   import {pluginsDemoPage} from './public/plugins/demo/page.js';
   import zl from './zombie-lord/api.js';
   import {start_mode} from './args.js';
-  import {version, APP_ROOT, BRANCH, COOKIENAME, GO_SECURE, DEBUG} from './common.js';
+  import {version, /*APP_ROOT,*/ BRANCH, COOKIENAME, GO_SECURE, DEBUG} from './common.js';
   import {timedSend, eventSendLoop} from './server.js';
 
   const protocol = GO_SECURE ? https : http;

@@ -2527,9 +2527,9 @@ System.register("public/plugins/demo/page", [], function (exports_13, context_13
         }
     };
 });
-System.register("ws-server", ["express", "http", "https", "node-fetch", "multer", "ws", "fs", "path", "body-parser", "cookie-parser", "public/plugins/demo/page", "zombie-lord/api", "args", "common", "server"], function (exports_14, context_14) {
+System.register("ws-server", ["express", "http", "https", "node-fetch", "multer", "ws", "fs", "os", "path", "body-parser", "cookie-parser", "public/plugins/demo/page", "zombie-lord/api", "args", "common", "server"], function (exports_14, context_14) {
     "use strict";
-    var express_1, http_1, https_1, node_fetch_2, multer_1, ws_2, fs_5, path_4, body_parser_1, cookie_parser_1, page_js_1, api_js_1, args_js_2, common_js_5, server_js_1, protocol, COOKIE_OPTS, storage, upload, Queue, messageQueueRunning, browserTargetId, requestId;
+    var express_1, http_1, https_1, node_fetch_2, multer_1, ws_2, fs_5, os_2, path_4, body_parser_1, cookie_parser_1, page_js_1, api_js_1, args_js_2, common_js_5, server_js_1, protocol, COOKIE_OPTS, uploadPath, storage, upload, Queue, messageQueueRunning, browserTargetId, requestId;
     var __moduleName = context_14 && context_14.id;
     async function start_ws_server(port, zombie_port, allowed_user_cookie, session_token) {
         common_js_5.DEBUG.val && console.log(`Starting websocket server on ${port}`);
@@ -2713,7 +2713,7 @@ System.register("ws-server", ["express", "http", "https", "node-fetch", "multer"
                     throw e;
                 }
             }));
-            app.post("/file", upload.array("files", 6), async (req, res) => {
+            app.post("/file", upload.array("files", 10), async (req, res) => {
                 const cookie = req.cookies[common_js_5.COOKIENAME];
                 if (!common_js_5.DEBUG.dev && allowed_user_cookie !== 'cookie' &&
                     (cookie !== allowed_user_cookie)) {
@@ -2722,26 +2722,43 @@ System.register("ws-server", ["express", "http", "https", "node-fetch", "multer"
                 const { files } = req;
                 const { sessionid: sessionId } = req.body;
                 const action = !files || files.length == 0 ? 'cancel' : 'accept';
+                const fileInputResult = await api_js_1.default.act.send({
+                    name: "Runtime.evaluate",
+                    params: {
+                        expression: "self.zombieDosyLastClicked.fileInput"
+                    },
+                    definitelyWait: true,
+                    sessionId
+                }, zombie_port);
+                //console.log({fileInputResult});
+                const objectId = fileInputResult.data.result.objectId;
                 const command = {
-                    name: "Page.handleFileChooser",
+                    name: "DOM.setFileInputFiles",
                     params: {
                         files: files && files.map(({ path }) => path),
-                        action
+                        objectId
                     },
                     sessionId
                 };
                 common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
-                const result = await api_js_1.default.act.send(command, zombie_port);
-                if (result.error) {
+                let result;
+                try {
+                    result = await api_js_1.default.act.send(command, zombie_port);
+                }
+                catch (e) {
+                    console.log("Error sending file input command", e);
+                }
+                //console.log({fileResult:result});
+                if (!result || result.error) {
                     res.status(500).send(JSON.stringify({ error: 'there was an error attaching the files' }));
                 }
                 else {
-                    common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log("Sent files to file input", result, files);
-                    const result = {
+                    result = {
                         success: true,
                         files: files.map(({ originalName, size }) => ({ name: originalName, size }))
                     };
-                    res.json(files);
+                    common_js_5.DEBUG.val > common_js_5.DEBUG.med && console.log("Sent files to file input", result, files);
+                    res.json(result);
                 }
             });
             // error handling middleware
@@ -2843,6 +2860,9 @@ System.register("ws-server", ["express", "http", "https", "node-fetch", "multer"
             function (fs_5_1) {
                 fs_5 = fs_5_1;
             },
+            function (os_2_1) {
+                os_2 = os_2_1;
+            },
             function (path_4_1) {
                 path_4 = path_4_1;
             },
@@ -2876,8 +2896,12 @@ System.register("ws-server", ["express", "http", "https", "node-fetch", "multer"
                 maxAge: 345600000,
                 sameSite: 'Strict'
             };
+            uploadPath = path_4.default.resolve(os_2.default.homedir(), 'uploads');
+            if (!fs_5.default.existsSync(uploadPath)) {
+                fs_5.default.mkdirSync(uploadPath, { recursive: true });
+            }
             storage = multer_1.default.diskStorage({
-                destination: (req, file, cb) => cb(null, path_4.default.join(__dirname, '..', 'uploads')),
+                destination: (req, file, cb) => cb(null, uploadPath),
                 filename: (req, file, cb) => {
                     return cb(null, nextFileName(path_4.default.extname(file.originalname)));
                 }

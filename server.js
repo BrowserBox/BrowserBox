@@ -14,7 +14,7 @@
 
   import {
     chrome_port, app_port, cookie, 
-    username, token, start_mode
+    /*username,*/ token, start_mode
   } from './args.js';
 
   const demoBlock = token == 'demotoken';
