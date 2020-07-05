@@ -20,7 +20,7 @@
   const demoBlock = token == 'demotoken';
 
   let ws_started = false;
-  let zombie_started = false;
+  //let zombie_started = false;
 
   if ( GO_SECURE && start_mode == "signup" ) {
     const redirector = express();

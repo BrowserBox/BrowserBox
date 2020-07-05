@@ -36,6 +36,7 @@ const sigintListener = () => __awaiter(this, void 0, void 0, function* () {
             yield instance.kill();
         }
         catch (err) {
+          void 0;
         }
     }
 });
@@ -49,6 +50,7 @@ function launch(opts = {}) {
         }
         instances.add(instance);
         yield instance.launch();
+        /* eslint-disable require-yield */
         const kill = () => __awaiter(this, void 0, void 0, function* () {
             instances.delete(instance);
             if (instances.size === 0) {
@@ -56,6 +58,7 @@ function launch(opts = {}) {
             }
             return instance.kill();
         });
+        /* eslint-ensable require-yield */
         return { pid: instance.pid, port: instance.port, kill, process: instance.chrome };
     });
 }

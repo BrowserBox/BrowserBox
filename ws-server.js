@@ -11,7 +11,7 @@
   import {pluginsDemoPage} from './public/plugins/demo/page.js';
   import zl from './zombie-lord/api.js';
   import {start_mode} from './args.js';
-  import {version, BRANCH, COOKIENAME, GO_SECURE, DEBUG, CONNECTION_ID_URL} from './common.js';
+  import {version, BRANCH, COOKIENAME, GO_SECURE, DEBUG} from './common.js';
   import {timedSend, eventSendLoop} from './server.js';
 
   const protocol = GO_SECURE ? https : http;
@@ -22,12 +22,12 @@
     sameSite: 'Strict'
   };
 
-	const storage = multer.diskStorage({
-		destination: (req, file, cb) => cb(null, path.join(__dirname,'..', 'uploads')),
-		filename: (req, file, cb) => {
-			return cb(null, nextFileName(path.extname(file.originalname)))
-		}
-	});
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, path.join(__dirname,'..', 'uploads')),
+    filename: (req, file, cb) => {
+      return cb(null, nextFileName(path.extname(file.originalname)))
+    }
+  });
   const upload = multer({storage});
 
   const Queue = {
@@ -110,7 +110,7 @@
 
             message = JSON.parse(message);
 
-            const {zombie, tabs, messageId} = message;	
+            const {zombie, tabs, messageId} = message;  
 
             try {
               if ( zombie ) {
@@ -186,7 +186,7 @@
     function so(socket, message) {
       if ( !message ) return;
       if ( typeof message == "string" || Array.isArray(message) ){
-        message = message;
+        message;
       } else {
         message = JSON.stringify(message);
       }
@@ -259,19 +259,20 @@
         }
       }); 
       // error handling middleware
-        app.use('*', (err, req, res, next) => {
+        app.use('*', (err, req, res) => {
           try {
             res.type('json');
-          } catch(e){}
-          let message = '';
-          if ( DEBUG.dev && DEBUG.val ) {
-            message = s({error: { msg: err.message, stack: err.stack.split(/\n/g) }});
-          } else {
-            message = s({error: err.message || err+'', resetRequired:true});
+          } finally {
+            let message = '';
+            if ( DEBUG.dev && DEBUG.val ) {
+              message = s({error: { msg: err.message, stack: err.stack.split(/\n/g) }});
+            } else {
+              message = s({error: err.message || err+'', resetRequired:true});
+            }
+            res.write(message);
+            res.end();
+            console.warn(err);
           }
-          res.write(message);
-          res.end();
-          console.warn(err);
         });
     }
 
@@ -320,10 +321,10 @@
       }
   }
 
-	function nextFileName(ext = '') {
-	  if ( ! ext.startsWith('.') ) {
+  function nextFileName(ext = '') {
+    if ( ! ext.startsWith('.') ) {
       ext = '.' + ext;
     }
-		return `file${(Math.random()*1000000).toString(36)}${ext}`;
-	}
+    return `file${(Math.random()*1000000).toString(36)}${ext}`;
+  }
  
