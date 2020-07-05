@@ -1,5 +1,6 @@
 #!/bin/bash
 
+rm -rf typetests
 rm -rf node_modules
 cd zombie-lord 
 rm -rf node_modules

@@ -13,19 +13,32 @@
 
   const isFileInput = el => el.localName == 'input' && el.type == 'file';
 
-  self.zombieDosyLastClicked = null;
+  self.zombieDosyLastClicked = {};
 
   self.addEventListener('click', click => {
     const {target} = click;
     const {clientX,clientY} = click;
-    const stack = Array.from(document.elementsFromPoint(clientX,clientY));
+    const stack = expandShadowRoots(Array.from(document.elementsFromPoint(clientX,clientY)), clientX, clientY);
     self.zombieDosyLastClicked = {target, stack};
     const fileInputFromStack = stack.find(isFileInput);
+    self.zombieDosyLastClicked.stack = stack;
     self.zombieDosyLastClicked.fileInput = (isFileInput(target) && target) || fileInputFromStack;
-    //console.log(JSON.stringify({zombieDosyLastClicked:self.zombieDosyLastClicked}));
+    console.log(JSON.stringify({zombieDosyLastClicked:self.zombieDosyLastClicked}));
   }, {capture:true});
 
-  //console.log(JSON.stringify({install:"Installed zombieDosyLastClicked with isFileInput support"}));
+  function expandShadowRoots(els, x,y ) {
+    const result = []; 
+    for( const el of els ) {
+      if ( el.shadowRoot ) {
+        result.push(...el.shadowRoot.elementsFromPoint(x,y));
+      } else {
+        result.push(el);
+      }
+    }
+    return result;
+  }
+
+  console.log(JSON.stringify({install:"Installed zombieDosyLastClicked with isFileInput support"}));
   /* eslint-enable no-inner-declarations */
 }
 {
