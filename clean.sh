@@ -6,7 +6,7 @@ rm -rf node_modules
 cd ../public/voodoo
 rm -rf node_modules
 cd ../../public
-rm -rf *bundle*
+rm -f *bundle*.js
 cd ../zombie-lord/custom-launcher
 rm -rf node_modules
 
