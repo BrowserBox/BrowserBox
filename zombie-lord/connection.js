@@ -247,7 +247,8 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       const consoleMessage = message.params;
       const {args,executionContextId} = consoleMessage;
 
-      console.log(JSON.stringify(consoleMessage));
+      // console.log(JSON.stringify(consoleMessage));
+
       try {
         DEBUG.val && console.log(executionContextId, consoleMessage.args[0].value.slice(0,255));
       } finally {
