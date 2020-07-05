@@ -167,7 +167,7 @@
   }
 
   async function createObserver() {
-    if ( !! document.documentElement ) {
+    if ( document.documentElement ) {
       observer = new MutationObserver(updateOnMutation); 
       observer.observe(document.documentElement, MO_CONF);
     } 
@@ -298,10 +298,10 @@
       } else {
         nextNode = walker.nextNode();
       }
-    } while (!! nextNode);
+    } while (nextNode);
 
     
-    if ( !! lastRoot ) {
+    if ( lastRoot ) {
       walker = document.createTreeWalker(lastRoot, NodeFilter.SHOW_ELEMENT);
       do {
         const node = walker.currentNode;
@@ -348,7 +348,7 @@
         } else {
           nextNode = walker.nextNode();
         }
-      } while (!! nextNode);
+      } while (nextNode);
     }
 
     return diffs;
@@ -477,7 +477,7 @@
               }
               f = () => node.insertAdjacentHTML('beforeBegin', `<span ${role?`role=${role}`:''} zig="${id} ${g}">${text}</span>`);
             }
-            if ( !! f ) toInsert.push(f);
+            if ( f ) toInsert.push(f);
           } catch(e) { console.log(JSON.stringify({err:e+''})) }
           if ( ! INVISIBLE.has(nextId) ) {
             INVISIBLE.add(nextId);
@@ -554,7 +554,7 @@
             } else if ( node.hasAttribute('aria-label') ) {
               f = () => node.insertAdjacentHTML('afterBegin', `<span ${role?`role=${role}`:''} zig="${nextId++} ${g}">${node.getAttribute('aria-label')}</span>`);
             }
-            if ( !! f ) toInsert.push(f);
+            if ( f ) toInsert.push(f);
           } catch(e) { console.log(JSON.stringify({err:e+''})) }
         }
       }
@@ -613,7 +613,7 @@
             }
             text = text.slice(0,22);
           } 
-          if ( !! text ) {
+          if ( text ) {
             node.insertAdjacentText('afterBegin', text);
           }
         }
@@ -703,7 +703,7 @@
   function visible(el) { 
     if (el.nodeType == Node.TEXT_NODE ) return true;
     return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length); 
-  };
+  }
 
   function reportClick(e) {
     const {clientX,clientY,type, target} = e;
@@ -713,7 +713,7 @@
     const intendedLink = !! lastRequestEl && lastRequestEl.closest('a');
     let hitsTarget, intendedHref, clickModifiers, lastRequestHTML;
 
-    if ( !! intendedLink ) {
+    if ( intendedLink ) {
       hitsTarget = [...e.composedPath()].includes(intendedLink);
       hitsTarget = hitsTarget && withinViewport(intendedLink);
       if ( ! hitsTarget ) {
@@ -771,7 +771,7 @@
 
   function spliceContainer(el, tree) {
     const singleChild = el.childNodes[0];
-    if ( !! singleChild ) {
+    if ( singleChild ) {
       el.parentNode.insertBefore(singleChild, el);
       el.remove();
       const oNode = tree.get(el);

@@ -91,5 +91,5 @@ export async function onInterceptRequest({sessionId, message}, Target) {
       console.warn("Issue with continuing request", e);
     }
   }
-};
+}
 
