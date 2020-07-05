@@ -1,281 +1,14 @@
-
-> remoteview@2.0.8 check /home/cris/RemoteView
-> rm -f public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check
-
-
-> remoteview@2.0.8 lint /home/cris/RemoteView
-> ./gglint.sh
-
-
-/home/cris/RemoteView/public/plugins/projector/scripts/treeUpdate.js
-  100:56  error  'FocusCache' is not defined       no-undef
-  163:12  error  'zigs' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/public/plugins/projector/translateProjectorCRDP.js
-  2:11  error  'DEBUG' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/public/render_static.js
-  54:9  error  'fileName' is assigned a value but never used  no-unused-vars
-
-/home/cris/RemoteView/public/scripts/currentPageAnchor.js
-  5:3  error  Move function declaration to program root  no-inner-declarations
-
-/home/cris/RemoteView/public/scripts/populateHonorifics.js
-   9:3  error  Move function declaration to program root  no-inner-declarations
-  18:3  error  Move function declaration to program root  no-inner-declarations
-
-/home/cris/RemoteView/public/serviceWorker.js
-   45:27  error  'clients' is not defined              no-undef
-   46:18  error  Empty block statement                 no-empty
-   52:18  error  Empty block statement                 no-empty
-   60:11  error  'response' is defined but never used  no-unused-vars
-   79:37  error  'response' is not defined             no-undef
-   83:12  error  'response' is not defined             no-undef
-   85:12  error  'response' is not defined             no-undef
-   86:16  error  'response' is not defined             no-undef
-  142:35  error  'registration' is not defined         no-undef
-
-/home/cris/RemoteView/public/site.js
-  1:1  error  Read-only global 'require' should not be modified  no-global-assign
-
-/home/cris/RemoteView/public/translateVoodooCRDP.js
-   19:7   error  'SYNTHETIC_ENTER' is assigned a value but never used  no-unused-vars
-   21:5   error  'scrollShot' is assigned a value but never used       no-unused-vars
-   37:7   error  Unreachable code                                      no-unreachable
-   64:7   error  Unreachable code                                      no-unreachable
-   95:7   error  Unreachable code                                      no-unreachable
-  125:7   error  Unreachable code                                      no-unreachable
-  143:7   error  Unreachable code                                      no-unreachable
-  160:7   error  Unreachable code                                      no-unreachable
-  215:5   error  Expected a 'break' statement before 'case'            no-fallthrough
-  250:13  error  'retVal' is assigned a value but never used           no-unused-vars
-  327:25  error  'mobile' is assigned a value but never used           no-unused-vars
-
-/home/cris/RemoteView/public/update_render.js
-  3:1  error  Read-only global 'require' should not be modified  no-global-assign
-
-/home/cris/RemoteView/public/voodoo/index.js
-  38:15  error  'image' is assigned to itself  no-self-assign
-
-/home/cris/RemoteView/public/voodoo/src/constructor.js
-    2:11  error  'takeShot' is defined but never used                  no-unused-vars
-   13:18  error  'throttle' is defined but never used                  no-unused-vars
-  168:9   error  'nextSend' is defined but never used                  no-unused-vars
-  175:42  error  'meta' is defined but never used                      no-unused-vars
-  249:27  error  'frameId' is assigned a value but never used          no-unused-vars
-  249:36  error  'url' is assigned a value but never used              no-unused-vars
-  335:11  error  'postinstallView' is assigned a value but never used  no-unused-vars
-  341:14  error  'postInstallView' is not defined                      no-undef
-  354:16  error  'doShot' is defined but never used                    no-unused-vars
-  433:16  error  'sendKey' is defined but never used                   no-unused-vars
-  539:22  error  'event' is defined but never used                     no-unused-vars
-  639:20  error  'timeStamp' is assigned a value but never used        no-unused-vars
-  639:30  error  'type' is assigned a value but never used             no-unused-vars
-  699:16  error  'sizeTab' is defined but never used                   no-unused-vars
-  862:30  error  'events' is defined but never used                    no-unused-vars
-  866:30  error  'pluginRenderedView' is defined but never used        no-unused-vars
-  870:33  error  'name' is defined but never used                      no-unused-vars
-  870:39  error  'listener' is defined but never used                  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/eventQueue.js
-    3:7   error  'TIME_BETWEEN_ONLINE_CHECKS' is assigned a value but never used  no-unused-vars
-   23:5   error  'lastTestTime' is defined but never used                         no-unused-vars
-   24:5   error  'lastOnlineCheck' is defined but never used                      no-unused-vars
-   59:9   error  'data' is defined but never used                                 no-unused-vars
-   59:15  error  'meta' is defined but never used                                 no-unused-vars
-   59:21  error  'totalBandwidth' is defined but never used                       no-unused-vars
-   87:47  error  'data' is defined but never used                                 no-unused-vars
-  511:16  error  'die' is defined but never used                                  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/handlers/elementInfo.js
-  3:8  error  'executionContextId' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/handlers/scrollNotify.js
-  1:51  error  'didScroll' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/pluginsMenu.js
-   1:9   error  'DEBUG' is defined but never used          no-unused-vars
-   2:22  error  'X' is defined but never used              no-unused-vars
-  14:15  error  'pmEl' is assigned a value but never used  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/styles.js
-    2:16  error  'isFirefox' is defined but never used            no-unused-vars
-   23:26  error  'el' is defined but never used                   no-unused-vars
-   23:30  error  'state' is defined but never used                no-unused-vars
-  104:25  error  'el' is defined but never used                   no-unused-vars
-  104:29  error  'state' is defined but never used                no-unused-vars
-  145:29  error  'el' is defined but never used                   no-unused-vars
-  145:33  error  'state' is defined but never used                no-unused-vars
-  245:28  error  'el' is defined but never used                   no-unused-vars
-  245:32  error  'state' is defined but never used                no-unused-vars
-  350:25  error  'el' is defined but never used                   no-unused-vars
-  350:29  error  'state' is defined but never used                no-unused-vars
-  378:29  error  'el' is defined but never used                   no-unused-vars
-  378:33  error  'state' is defined but never used                no-unused-vars
-  390:25  error  'el' is defined but never used                   no-unused-vars
-  390:29  error  'state' is defined but never used                no-unused-vars
-  495:35  error  'el' is defined but never used                   no-unused-vars
-  495:39  error  'state' is defined but never used                no-unused-vars
-  538:12  error  'styleOldPluginsMenu' is defined but never used  no-unused-vars
-  538:32  error  'el' is defined but never used                   no-unused-vars
-  538:36  error  'state' is defined but never used                no-unused-vars
-  580:36  error  'el' is defined but never used                   no-unused-vars
-  580:40  error  'state' is defined but never used                no-unused-vars
-  608:34  error  'el' is defined but never used                   no-unused-vars
-  608:38  error  'state' is defined but never used                no-unused-vars
-  646:29  error  'el' is defined but never used                   no-unused-vars
-  646:33  error  'state' is defined but never used                no-unused-vars
-  681:29  error  'el' is defined but never used                   no-unused-vars
-  681:33  error  'state' is defined but never used                no-unused-vars
-  699:24  error  'el' is defined but never used                   no-unused-vars
-  699:28  error  'state' is defined but never used                no-unused-vars
-  756:29  error  'el' is defined but never used                   no-unused-vars
-  756:33  error  'state' is defined but never used                no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/subviews/bandwidthIndicator.js
-  1:22  error  'X' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/subviews/contextMenu.js
-    1:9   error  'DEBUG' is defined but never used             no-unused-vars
-    7:7   error  'FUNC' is assigned a value but never used     no-unused-vars
-   63:29  error  'state' is defined but never used             no-unused-vars
-   70:10  error  'id' is assigned a value but never used       no-unused-vars
-  112:9   error  'el' is defined but never used                no-unused-vars
-  176:10  error  'styleContextMenu' is defined but never used  no-unused-vars
-  176:27  error  'el' is defined but never used                no-unused-vars
-  176:31  error  'state' is defined but never used             no-unused-vars
-  289:47  error  Unnecessary escape character: \.              no-useless-escape
-  305:21  error  'click' is defined but never used             no-unused-vars
-  305:28  error  'state' is defined but never used             no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/subviews/controls.js
-    3:22  error  'X' is defined but never used                               no-unused-vars
-    8:24  error  'toggleVirtualKeyboard' is assigned a value but never used  no-unused-vars
-   27:41  error  'e' is defined but never used                               no-unused-vars
-   42:41  error  'e' is defined but never used                               no-unused-vars
-   59:29  error  'e' is defined but never used                               no-unused-vars
-  211:5   error  Unreachable code                                            no-unreachable
-
-/home/cris/RemoteView/public/voodoo/src/subviews/copyModal.js
-  1:9   error  'DEBUG' is defined but never used  no-unused-vars
-  2:22  error  'X' is defined but never used      no-unused-vars
-  4:27  error  'state' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/subviews/loadingIndicator.js
-  1:22  error  'X' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/subviews/omniBox.js
-  1:22  error  'X' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/subviews/other.js
-  2:22  error  'X' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/subviews/pluginsMenu.js
-   1:9   error  'DEBUG' is defined but never used          no-unused-vars
-   2:22  error  'X' is defined but never used              no-unused-vars
-  14:15  error  'pmEl' is assigned a value but never used  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/subviews/pluginsMenuButton.js
-   1:9   error  'DEBUG' is defined but never used  no-unused-vars
-   2:14  error  'R' is defined but never used      no-unused-vars
-  11:9   error  'e' is defined but never used      no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/subviews/tabList.js
-  1:22  error  'X' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/public/voodoo/src/view.js
-    3:22  error  'X' is defined but never used                                       no-unused-vars
-   10:7   error  'DEFAULT_URL' is assigned a value but never used                    no-unused-vars
-   11:7   error  'isIOS' is assigned a value but never used                          no-unused-vars
-   14:12  error  'sizeBrowserToBounds' is assigned a value but never used            no-unused-vars
-   14:88  error  'installFrameListener' is assigned a value but never used           no-unused-vars
-   52:9   error  'refocusMeIfNotAllowedBorrower' is assigned a value but never used  no-unused-vars
-  160:25  error  'e' is defined but never used                                       no-unused-vars
-  210:41  error  'inputmode' is assigned a value but never used                      no-unused-vars
-  232:26  error  'inputmode' is assigned a value but never used                      no-unused-vars
-
-✖ 135 problems (135 errors, 0 warnings)
-
-
-/home/cris/RemoteView/zombie-lord/injections/elementInfo.js
-   4:3  error  Move function declaration to program root  no-inner-declarations
-   8:3  error  Move function declaration to program root  no-inner-declarations
-  52:3  error  Move function declaration to program root  no-inner-declarations
-
-/home/cris/RemoteView/zombie-lord/injections/favicon.js
-   9:3   error  Move function declaration to program root  no-inner-declarations
-  17:3   error  Move function declaration to program root  no-inner-declarations
-  44:20  error  Empty block statement                      no-empty
-  52:3   error  Move function declaration to program root  no-inner-declarations
-
-/home/cris/RemoteView/zombie-lord/injections/keysCanInput.js
-  23:3   error  Move function declaration to program root  no-inner-declarations
-  37:64  error  'targetId' is not defined                  no-undef
-  40:3   error  Move function declaration to program root  no-inner-declarations
-  49:3   error  Move function declaration to program root  no-inner-declarations
-  71:3   error  Move function declaration to program root  no-inner-declarations
-
-/home/cris/RemoteView/zombie-lord/injections/pageContext/botDetectionEvasions.js
-   31:7   error  Move function declaration to program root  no-inner-declarations
-   39:7   error  Move function declaration to program root  no-inner-declarations
-  136:7   error  Move function declaration to program root  no-inner-declarations
-  219:22  error  'i' is defined but never used              no-unused-vars
-  219:32  error  'n' is not defined                         no-undef
-  248:22  error  'i' is defined but never used              no-unused-vars
-  248:32  error  'n' is not defined                         no-undef
-
-/home/cris/RemoteView/zombie-lord/injections/scrollNotify.js
-  10:3  error  Move function declaration to program root  no-inner-declarations
-  15:3  error  Move function declaration to program root  no-inner-declarations
-  22:3  error  Move function declaration to program root  no-inner-declarations
-  50:3  error  Move function declaration to program root  no-inner-declarations
-  68:3  error  Move function declaration to program root  no-inner-declarations
-  72:3  error  Move function declaration to program root  no-inner-declarations
-  75:5  error  Unreachable code                           no-unreachable
-
-/home/cris/RemoteView/zombie-lord/injections/selectDropdownEvents.js
-  22:3   error  Move function declaration to program root  no-inner-declarations
-  27:3   error  Move function declaration to program root  no-inner-declarations
-  56:3   error  Move function declaration to program root  no-inner-declarations
-  62:3   error  Move function declaration to program root  no-inner-declarations
-  62:18  error  'selectEl' is defined but never used       no-unused-vars
-  67:3   error  Move function declaration to program root  no-inner-declarations
-  71:3   error  Move function declaration to program root  no-inner-declarations
-  82:3   error  Move function declaration to program root  no-inner-declarations
-
-/home/cris/RemoteView/zombie-lord/injections/textComposition.js
-  4:3  error  Move function declaration to program root  no-inner-declarations
-
-✖ 35 problems (35 errors, 0 warnings)
-
-
-/home/cris/RemoteView/automation/corrector.js
-  6:27  error  'interactionStream' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/automation/transformer.js
-  9:29  error  'interactionStream' is defined but never used  no-unused-vars
-
-/home/cris/RemoteView/index.js
-  1:1  error  Read-only global 'require' should not be modified  no-global-assign
-
-/home/cris/RemoteView/parec-server/index.js
-  64:10  error  'releaseEncoder' is defined but never used  no-unused-vars
-
 /home/cris/RemoteView/plugins/projector/injections.js
-  28:8   error  'self' is not defined                      no-undef
-  28:16  error  'top' is not defined                       no-undef
-  31:5   error  Move function declaration to program root  no-inner-declarations
-  32:23  error  'self' is not defined                      no-undef
-  34:16  error  'self' is not defined                      no-undef
-  39:31  error  'self' is not defined                      no-undef
-  46:3   error  'self' is not defined                      no-undef
-  50:3   error  Move function declaration to program root  no-inner-declarations
-  51:10  error  'top' is not defined                       no-undef
-  51:18  error  'self' is not defined                      no-undef
-  54:7   error  'self' is not defined                      no-undef
-  55:7   error  'document' is not defined                  no-undef
-  62:3   error  Move function declaration to program root  no-inner-declarations
-  76:3   error  Move function declaration to program root  no-inner-declarations
+  29:8   error  'self' is not defined      no-undef
+  29:16  error  'top' is not defined       no-undef
+  33:23  error  'self' is not defined      no-undef
+  35:16  error  'self' is not defined      no-undef
+  40:31  error  'self' is not defined      no-undef
+  47:3   error  'self' is not defined      no-undef
+  52:10  error  'top' is not defined       no-undef
+  52:18  error  'self' is not defined      no-undef
+  55:7   error  'self' is not defined      no-undef
+  56:7   error  'document' is not defined  no-undef
 
 /home/cris/RemoteView/server.js
   23:7  error  'zombie_started' is assigned a value but never used  no-unused-vars
@@ -357,7 +90,7 @@
 /home/cris/RemoteView/zombie-lord/newtab/overrideNewtab.js
   1:9  error  'URL' is defined but never used  no-unused-vars
 
-✖ 70 problems (70 errors, 0 warnings)
+✖ 63 problems (63 errors, 0 warnings)
 
 
 > remoteview@2.0.8 tsc-check /home/cris/RemoteView
@@ -367,12 +100,12 @@
 > remoteview@2.0.8 tsc-server /home/cris/RemoteView
 > tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System *.js decs.d.ts
 
-index.js(1,26): error TS2345: Argument of type '{ "\"index\"": typeof import("/home/cris/RemoteView/server"); }' is not assignable to parameter of type 'NodeModule'.
+index.js(2,26): error TS2345: Argument of type '{ "\"index\"": typeof import("/home/cris/RemoteView/server"); }' is not assignable to parameter of type 'NodeModule'.
   Type '{ "\"index\"": typeof import("/home/cris/RemoteView/server"); }' is missing the following properties from type 'NodeModule': require, id, filename, loaded, and 3 more.
 node_modules/@types/node-fetch/index.d.ts(19,27): error TS2307: Cannot find module 'form-data' or its corresponding type declarations.
-public/translateVoodooCRDP.js(220,46): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
-public/translateVoodooCRDP.js(225,46): error TS2339: Property 'ViewportWidth' does not exist on type 'Window & typeof globalThis'.
-public/translateVoodooCRDP.js(647,28): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
+public/translateVoodooCRDP.js(214,46): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
+public/translateVoodooCRDP.js(219,46): error TS2339: Property 'ViewportWidth' does not exist on type 'Window & typeof globalThis'.
+public/translateVoodooCRDP.js(643,28): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
 rollup.config.js(1,19): error TS2307: Cannot find module 'rollup-plugin-babel' or its corresponding type declarations.
 rollup.config.js(2,22): error TS2307: Cannot find module 'rollup-plugin-commonjs' or its corresponding type declarations.
 rollup.config.js(3,21): error TS2307: Cannot find module 'rollup-plugin-node-resolve' or its corresponding type declarations.
@@ -489,25 +222,21 @@ public/plugins/demo/installPlugin.js(42,19): error TS2345: Argument of type '{ s
   Object literal may only specify known properties, and 'scrollTop' does not exist in type '{ scrollY: any; scrollX: any; }'.
 public/plugins/projector/scripts/createListener.js(61,15): error TS2322: Type 'string' is not assignable to type 'URL'.
 public/plugins/projector/scripts/createListener.js(62,15): error TS2322: Type 'string' is not assignable to type 'URL'.
-public/plugins/projector/scripts/treeUpdate.js(100,56): error TS2304: Cannot find name 'FocusCache'.
-public/serviceWorker.js(45,17): error TS2339: Property 'waitUntil' does not exist on type 'Event'.
-public/serviceWorker.js(45,27): error TS2304: Cannot find name 'clients'.
-public/serviceWorker.js(51,17): error TS2339: Property 'skipWaiting' does not exist on type 'Event'.
-public/serviceWorker.js(56,43): error TS2339: Property 'waitUntil' does not exist on type 'Event'.
-public/serviceWorker.js(79,37): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
-public/serviceWorker.js(83,12): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
-public/serviceWorker.js(85,12): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
-public/serviceWorker.js(86,16): error TS2552: Cannot find name 'response'. Did you mean 'Response'?
-public/serviceWorker.js(142,35): error TS2304: Cannot find name 'registration'.
-public/site.js(1,26): error TS2345: Argument of type '{ "\"/home/cris/RemoteView/public/site\"": typeof import("public/index"); }' is not assignable to parameter of type 'NodeModule'.
+public/render_static.js(1,24): error TS2307: Cannot find module './common.js' or its corresponding type declarations.
+public/serviceWorker.js(40,58): error TS2339: Property 'waitUntil' does not exist on type 'Event'.
+public/serviceWorker.js(40,73): error TS2339: Property 'Clients' does not exist on type 'Window & typeof globalThis'.
+public/serviceWorker.js(44,17): error TS2339: Property 'skipWaiting' does not exist on type 'Event'.
+public/serviceWorker.js(50,43): error TS2339: Property 'waitUntil' does not exist on type 'Event'.
+public/serviceWorker.js(134,40): error TS2339: Property 'registration' does not exist on type 'Window & typeof globalThis'.
+public/site.js(2,26): error TS2345: Argument of type '{ "\"/home/cris/RemoteView/public/site\"": typeof import("public/index"); }' is not assignable to parameter of type 'NodeModule'.
   Type '{ "\"/home/cris/RemoteView/public/site\"": typeof import("public/index"); }' is missing the following properties from type 'NodeModule': require, id, filename, loaded, and 3 more.
 public/start-demo-app.js(11,31): error TS2345: Argument of type '{ api: string; translator: (e: any, handled?: { type: string; }) => any; useViewFrame: true; demoMode: true; }' is not assignable to parameter of type '{ api: any; translator: any; image: any; useViewFrame?: boolean; demoMode?: boolean; }'.
   Property 'image' is missing in type '{ api: string; translator: (e: any, handled?: { type: string; }) => any; useViewFrame: true; demoMode: true; }' but required in type '{ api: any; translator: any; image: any; useViewFrame?: boolean; demoMode?: boolean; }'.
 public/start-demo-app.js(12,8): error TS2339: Property 'voodoo' does not exist on type 'Window & typeof globalThis'.
-public/translateVoodooCRDP.js(220,46): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
-public/translateVoodooCRDP.js(225,46): error TS2339: Property 'ViewportWidth' does not exist on type 'Window & typeof globalThis'.
-public/translateVoodooCRDP.js(647,28): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
-public/update_render.js(3,26): error TS2345: Argument of type '{ "\"public/update_render\"": typeof import("public/render_static"); }' is not assignable to parameter of type 'NodeModule'.
+public/translateVoodooCRDP.js(214,46): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
+public/translateVoodooCRDP.js(219,46): error TS2339: Property 'ViewportWidth' does not exist on type 'Window & typeof globalThis'.
+public/translateVoodooCRDP.js(643,28): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
+public/update_render.js(4,26): error TS2345: Argument of type '{ "\"public/update_render\"": typeof import("public/render_static"); }' is not assignable to parameter of type 'NodeModule'.
   Type '{ "\"public/update_render\"": typeof import("public/render_static"); }' is missing the following properties from type 'NodeModule': require, id, filename, loaded, and 3 more.
 public/voodoo/index.js(7,3): error TS2525: Initializer provides no value for this binding element and the binding element has no default value.
 public/voodoo/index.js(8,3): error TS2525: Initializer provides no value for this binding element and the binding element has no default value.
@@ -518,12 +247,11 @@ public/voodoo/node_modules/jtype-system/t.js(41,10): error TS2339: Property 'T' 
 public/voodoo/node_modules/jtype-system/t.js(42,10): error TS2339: Property 'typeCache' does not exist on type 'Window & typeof globalThis'.
 public/voodoo/src/common.js(67,33): error TS2345: Argument of type '"afterBegin"' is not assignable to parameter of type 'InsertPosition'.
 public/voodoo/src/common.js(78,33): error TS2345: Argument of type '"afterBegin"' is not assignable to parameter of type 'InsertPosition'.
-public/voodoo/src/constructor.js(256,29): error TS2739: Type '{ sessionId: any; type: string; message: string; title: string; }' is missing the following properties from type '{ sessionId: any; mode: any; requestId: any; title: any; type: any; message: any; defaultPrompt: any; url: any; }': mode, requestId, defaultPrompt, url
-public/voodoo/src/constructor.js(275,29): error TS2739: Type '{ requestId: any; type: string; message: string; title: string; }' is missing the following properties from type '{ sessionId: any; mode: any; requestId: any; title: any; type: any; message: any; defaultPrompt: any; url: any; }': sessionId, mode, defaultPrompt, url
-public/voodoo/src/constructor.js(287,29): error TS2739: Type '{ sessionId: any; mode: any; type: string; message: string; title: string; }' is missing the following properties from type '{ sessionId: any; mode: any; requestId: any; title: any; type: any; message: any; defaultPrompt: any; url: any; }': requestId, defaultPrompt, url
-public/voodoo/src/constructor.js(341,14): error TS2552: Cannot find name 'postInstallView'. Did you mean 'postinstallView'?
-public/voodoo/src/constructor.js(695,14): error TS2339: Property 'ViewportWidth' does not exist on type 'Window & typeof globalThis'.
-public/voodoo/src/constructor.js(696,14): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
+public/voodoo/src/constructor.js(253,29): error TS2739: Type '{ sessionId: any; type: string; message: string; title: string; }' is missing the following properties from type '{ sessionId: any; mode: any; requestId: any; title: any; type: any; message: any; defaultPrompt: any; url: any; }': mode, requestId, defaultPrompt, url
+public/voodoo/src/constructor.js(272,29): error TS2739: Type '{ requestId: any; type: string; message: string; title: string; }' is missing the following properties from type '{ sessionId: any; mode: any; requestId: any; title: any; type: any; message: any; defaultPrompt: any; url: any; }': sessionId, mode, defaultPrompt, url
+public/voodoo/src/constructor.js(284,29): error TS2739: Type '{ sessionId: any; mode: any; type: string; message: string; title: string; }' is missing the following properties from type '{ sessionId: any; mode: any; requestId: any; title: any; type: any; message: any; defaultPrompt: any; url: any; }': requestId, defaultPrompt, url
+public/voodoo/src/constructor.js(678,14): error TS2339: Property 'ViewportWidth' does not exist on type 'Window & typeof globalThis'.
+public/voodoo/src/constructor.js(679,14): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
 public/voodoo/src/eventQueue.js(54,42): error TS2339: Property 'firstDelay' does not exist on type 'Function'.
 public/voodoo/src/eventQueue.js(230,33): error TS2345: Argument of type 'Location' is not assignable to parameter of type 'string'.
 public/voodoo/src/eventQueue.js(235,15): error TS2322: Type 'URL' is not assignable to type 'string'.
@@ -553,7 +281,8 @@ public/voodoo/src/subviews/contextMenu.js(228,22): error TS2739: Type '{ type: s
 public/voodoo/src/subviews/contextMenu.js(250,22): error TS2739: Type '{ type: string; message: any; title: string; }' is missing the following properties from type '{ sessionId: any; mode: any; requestId: any; title: any; type: any; message: any; defaultPrompt: any; url: any; }': sessionId, mode, requestId, defaultPrompt, url
 public/voodoo/src/subviews/contextMenu.js(307,16): error TS2339: Property 'click' does not exist on type 'Element'.
 public/voodoo/src/subviews/other.js(238,38): error TS2525: Initializer provides no value for this binding element and the binding element has no default value.
+public/voodoo/src/subviews/pluginsMenu.js(14,15): error TS2304: Cannot find name 'pmEl'.
 public/voodoo/src/subviews/pluginsMenuButton.js(12,11): error TS2447: The '^=' operator is not allowed for boolean types. Consider using '!==' instead.
 public/voodoo/src/subviews/tabList.js(37,33): error TS2339: Property 'attrmarkup' does not exist on type '(p: any, ...v: any[]) => any'.
-public/voodoo/src/view.js(70,26): error TS2339: Property 'matches' does not exist on type 'EventTarget'.
-public/voodoo/src/view.js(91,26): error TS2339: Property 'matches' does not exist on type 'EventTarget'.
+public/voodoo/src/view.js(71,26): error TS2339: Property 'matches' does not exist on type 'EventTarget'.
+public/voodoo/src/view.js(92,26): error TS2339: Property 'matches' does not exist on type 'EventTarget'.

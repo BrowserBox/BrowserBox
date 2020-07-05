@@ -33,7 +33,7 @@ var encoders = {
 var encoderType = 'mp3';
 
 
-var hooks = 0;
+//var hooks = 0;
 var parec = undefined;
 var encoder = undefined;
 
@@ -50,52 +50,52 @@ if ( DEBUG.goSecure ) {
 }
 
 function getEncoder() {
-    if (encoder) return encoder;
-    DEBUG.val && console.log('starting encoder');
-    hooks++;
-    parec = childProcess.spawn('parec', ['-d', device]);
+  if (encoder) return encoder;
+  DEBUG.val && console.log('starting encoder');
+  //hooks++;
+  parec = childProcess.spawn('parec', ['-d', device]);
 
-    var encoderCommand = encoders[encoderType];
-    encoder = childProcess.spawn(encoderCommand.command, encoderCommand.args);
-    parec.stdout.pipe(encoder.stdin);
-    return encoder;
+  var encoderCommand = encoders[encoderType];
+  encoder = childProcess.spawn(encoderCommand.command, encoderCommand.args);
+  parec.stdout.pipe(encoder.stdin);
+  return encoder;
 }
 
-function releaseEncoder() {
-    hooks--;
-    if (hooks > 0) return;
-    DEBUG.val && console.log('killing encoder because nobody is listening');
-    encoder.kill('SIGINT');
-    parec.kill('SIGINT');
-    encoder = undefined;
-    parec = undefined;
-}
+/*function releaseEncoder() {
+  hooks--;
+  if (hooks > 0) return;
+  DEBUG.val && console.log('killing encoder because nobody is listening');
+  encoder.kill('SIGINT');
+  parec.kill('SIGINT');
+  encoder = undefined;
+  parec = undefined;
+}*/
 
 var port = argv[2];
 DEBUG.val && console.log('starting http server on port', port);
 const MODE = GO_SECURE ? https: http;
 var server = MODE.createServer(SSL_OPTS, function(request, response) {
-    var contentType = encoders[encoderType].contentType;
-    DEBUG.val && console.log('  setting Content-Type to', contentType);
+  var contentType = encoders[encoderType].contentType;
+  DEBUG.val && console.log('  setting Content-Type to', contentType);
 
-    response.writeHead(200, {
-	'Connection': 'keep-alive',
-        'Content-Type': contentType
-    });
+  response.writeHead(200, {
+    'Connection': 'keep-alive',
+    'Content-Type': contentType
+  });
 
-    var encoder = getEncoder();
+  var encoder = getEncoder();
 
-    encoder.stdout.on('data', function(buffer) {
-        response.write(buffer);
-    });
+  encoder.stdout.on('data', function(buffer) {
+      response.write(buffer);
+  });
 
-    request.on('close', function() {
-        //response.end();
-        //releaseEncoder();
-    });
+  request.on('close', function() {
+      //response.end();
+      //releaseEncoder();
+  });
 }).listen(port);
 
 server.on('connection', function(socket) {
-    DEBUG.val && console.log('New connection: setting no delay true');
-    socket.setNoDelay(true);
+  DEBUG.val && console.log('New connection: setting no delay true');
+  socket.setNoDelay(true);
 });

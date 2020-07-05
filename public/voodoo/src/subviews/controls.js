@@ -1,11 +1,11 @@
 import keys from '../../../kbd.js';
 import {DEBUG, logitKeyInputEvent} from '../common.js';
-import {d as R, u as X} from '../../node_modules/dumbass/r.js';
+import {d as R} from '../../node_modules/dumbass/r.js';
 import {OmniBox} from './omniBox.js';
 import {PluginsMenuButton} from './pluginsMenuButton.js';
 
 export function Controls(state) {
-  const {H,retargetTab,toggleVirtualKeyboard} = state;
+  const {H,retargetTab} = state;
   return R`
     <nav class="controls history aux" stylist="styleNavControl">
       <!--History-->
@@ -24,7 +24,7 @@ export function Controls(state) {
             autocomplete=off
             bond=${el => state.viewState.keyinput = el}
             keydown=${[logitKeyInputEvent,e => state.openKey = e.key, H,limitCursor,retargetTab]}
-            keyup=${[logitKeyInputEvent,e => state.openKey = '', H,retargetTab]}
+            keyup=${[logitKeyInputEvent,() => state.openKey = '', H,retargetTab]}
             focusin=${[() => clearWord(state), () => state.openKey = '']}
             compositionstart=${[logitKeyInputEvent,startComposition]}
             compositionupdate=${[logitKeyInputEvent,updateComposition]}
@@ -39,7 +39,7 @@ export function Controls(state) {
             autocomplete=off
             bond=${el => state.viewState.textarea = el}
             keydown=${[logitKeyInputEvent,e => state.openKey = e.key, H,limitCursor,retargetTab]}
-            keyup=${[logitKeyInputEvent,e => state.openKey = '', H,retargetTab]}
+            keyup=${[logitKeyInputEvent,() => state.openKey = '', H,retargetTab]}
             focusin=${[() => clearWord(state), () => state.openKey = '']}
             compositionstart=${[logitKeyInputEvent,startComposition]}
             compositionupdate=${[logitKeyInputEvent,updateComposition]}
@@ -56,7 +56,7 @@ export function Controls(state) {
     ${DEBUG.pluginsMenu ? PluginsMenuButton(state) : ''}
   `;
 
-  function startComposition(e) {
+  function startComposition(/*e*/) {
     state.isComposing = true;
     state.latestData = "";
   }
@@ -206,10 +206,12 @@ export function Controls(state) {
     * of the textarea. 
   **/
 
-  function limitCursor(event) {
-    return;
+  function limitCursor(/*event*/) {
+    /*
     const target = event.target;
     target.selectionStart = target.selectionEnd = target.value.length;
+    */
+    return;
   }
 
   // text

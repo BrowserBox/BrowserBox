@@ -34,8 +34,8 @@ export default function Voodoo({
       }
     } else if ( typeof image == "string" ) {
       root = document.querySelector(image);
-    } else if ( image instanceof HTMLImageElement ) {
-      image = image;
+    } else if ( !(image instanceof HTMLImageElement) ) {
+      throw new TypeError(`A valid image was not found`);
     }
 
     image.style.display = 'none';

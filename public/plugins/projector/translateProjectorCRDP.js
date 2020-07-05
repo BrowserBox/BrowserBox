@@ -1,5 +1,4 @@
 
-  import {DEBUG} from '../../voodoo/src/common.js';
   import BuiltinTranslator from '../../translateVoodooCRDP.js';
   import {WorldName} from '../../translateVoodooCRDP.js';
 

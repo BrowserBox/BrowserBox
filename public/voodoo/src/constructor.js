@@ -1,5 +1,4 @@
 
-  import {takeShot} from './handlers/takeShot.js';
   import {handleSelectMessage} from './handlers/selectInput.js';
   import {fetchTabs} from './handlers/targetInfo.js';
   import {demoZombie, fetchDemoTabs}  from './handlers/demo.js';
@@ -10,7 +9,7 @@
   import {resetFavicon, handleFaviconMessage} from './handlers/favicon.js';
   import EventQueue from './eventQueue.js';
   import transformEvent from './transformEvent.js';
-  import {sleep, throttle, debounce, DEBUG, BLANK, isFirefox,logit, isSafari, deviceIsMobile} from './common.js';
+  import {sleep, debounce, DEBUG, BLANK, isFirefox,logit, isSafari, deviceIsMobile} from './common.js';
   import {component, subviews} from './view.js';
 
   import installDemoPlugin from '../../plugins/demo/installPlugin.js';
@@ -165,14 +164,12 @@
         state.hideScrollbars();
       }
 
-    let nextSend;
-
     // event handlers
       // input
       queue.addMetaListener('selectInput', meta => handleSelectMessage(meta, state));
       queue.addMetaListener('keyInput', meta => handleKeysCanInputMessage(meta, state));
       queue.addMetaListener('favicon', meta => handleFaviconMessage(meta, state));
-      queue.addMetaListener('navigated', meta => canKeysInput());
+      queue.addMetaListener('navigated', () => canKeysInput());
       queue.addMetaListener('navigated', ({navigated:{targetId}}) => resetFavicon({targetId}, state));
 
       //queue.addMetaListener('navigated', meta => takeShot(meta, state));
@@ -246,7 +243,7 @@
 
       // remote secure downloads
       queue.addMetaListener('download', ({download}) => {
-        const {sessionId, frameId, url} = download;
+        const {sessionId} = download;
         const modal = {
           sessionId,
           type: 'notice',
@@ -332,7 +329,7 @@
 
     const poppetView = {loadPlugin, api};
 
-    const postinstallView = {queue};
+    const postInstallView = {queue};
 
     await sleep(0);
 
@@ -351,14 +348,14 @@
     return poppetView;
 
     // closures
-      function doShot() {
+      /*function doShot() {
         setTimeout(() => {
           queue.send({
             type: "doShot",
             synthetic: true
           });
         }, SHORT_DELAY);
-      }
+      }*/
 
       function runListeners(name, data) {
         const funcList = listeners.get(name);
@@ -430,7 +427,7 @@
         }
       }
 
-      function sendKey(keyEvent) {
+      /*function sendKey(keyEvent) {
         const {viewState} = state;
         if ( document.activeElement !== viewState.keyinput && document.activeElement !== viewState.textarea ) {
           let ev = keyEvent;
@@ -440,7 +437,7 @@
           } 
           H(ev);
         }
-      }
+      }*/
 
       function installTopLevelKeyListeners() {
         //self.addEventListener('keydown', sendKey); 
@@ -536,7 +533,7 @@
           }
         }
 
-        function end(event) {
+        function end() {
           if ( scaling ) {
             if ( lastDist < 8 ) {
               // do nothing, 
@@ -602,20 +599,6 @@
         }
         
         if ( isThrottled ) {
-          // FIXME: this is not the right way to throttle
-          // because we are mixing events (pointer, touch mouse all together)
-          // and we get a delayed event, not good)
-          // for now we comment out the old code
-          /**
-          if ( !nextSend ) {
-            nextSend = setTimeout(() => {
-              nextSend = false;
-              queue.send(transformedEvent);
-            }, EVENT_THROTTLE_MS);
-          }
-          **/
-          // and send the event straight away because we will throttle 
-          // at event capture
           queue.send(transformedEvent);
         } else {
           if ( event.type == "keydown" && event.key == "Enter" ) {
@@ -636,7 +619,7 @@
           } else if ( event.type == "keyup" && event.key == "Backspace" ) {
             state.backspaceFiring = false;
           } else if ( event.type == "pointerdown" || event.type == "mousedown" ) {
-            const {timeStamp,type} = event;
+            //const {timeStamp,type} = event;
             const {latestData} = state;
             if ( !! state.viewState.shouldHaveFocus && !! latestData && latestData.length > 1 && latestData != state.latestCommitData) {
               state.isComposing = false;
@@ -696,9 +679,9 @@
         self.ViewportHeight = height;
       }
 
-      function sizeTab() {
+      /*function sizeTab() {
         return sizeBrowserToBounds(state.viewState.canvasEl);
-      }
+      }*/
 
       function asyncSizeBrowserToBounds(el) {
         setTimeout(() => (sizeBrowserToBounds(el, true), indicateNoOpenTabs()), 0);
@@ -859,15 +842,15 @@
         plugin.load(pluginView);
       }
 
-      function addToQueue(...events) {
+      function addToQueue(/*...events*/) {
         console.warn("Unimplemented");
       }
 
-      function requestRender(pluginRenderedView) {
+      function requestRender(/*pluginRenderedView*/) {
         console.warn("Unimplemented");
       }
 
-      function subscribeToQueue(name, listener) {
+      function subscribeToQueue(/*name, listener*/) {
         console.warn("Unimplemented");
       }
   }

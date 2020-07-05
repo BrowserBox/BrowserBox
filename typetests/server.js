@@ -280,7 +280,7 @@ System.register("public/kbd", [], function (exports_2, context_2) {
 });
 System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_3, context_3) {
     "use strict";
-    var kbd_js_1, FRAME_CONTROL, IMAGE_FORMAT, WorldName, SHORT_TIMEOUT, MIN_DELTA, MIN_PIX_DELTA, THRESHOLD_DELTA, DOM_DELTA_PIXEL, DOM_DELTA_LINE, DOM_DELTA_PAGE, LINE_HEIGHT_GUESS, SYNTHETIC_CTRL, SYNTHETIC_ENTER, scrollShot;
+    var kbd_js_1, FRAME_CONTROL, IMAGE_FORMAT, WorldName, SHORT_TIMEOUT, MIN_DELTA, MIN_PIX_DELTA, THRESHOLD_DELTA, DOM_DELTA_PIXEL, DOM_DELTA_LINE, DOM_DELTA_PAGE, LINE_HEIGHT_GUESS, SYNTHETIC_CTRL;
     var __moduleName = context_3 && context_3.id;
     function translator(e, handled = { type: 'case' }) {
         handled.type = handled.type || 'case';
@@ -294,7 +294,6 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
                         },
                     }
                 };
-                break;
             }
             case "mousedown":
             case "mouseup":
@@ -326,7 +325,6 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
                         requiresShot: !e.originalEvent.noShot && e.type.endsWith("down")
                     }
                 };
-                break;
             }
             case "wheel": {
                 // if we use emulateTouchFromMouseEvent we need a button value
@@ -358,7 +356,6 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
                     retVal = mouseEvent(e, deltaX, deltaY);
                 }
                 return retVal;
-                break;
             }
             case "auth-response": {
                 const { requestId, authResponse } = e;
@@ -390,7 +387,6 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
                             ignoreHash: true
                         }
                     };
-                break;
             }
             case "typing-syncValue": {
                 if (!e.encodedValue)
@@ -410,7 +406,6 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
                             ignoreHash: true
                         }
                     };
-                break;
             }
             case "typing-deleteContentBackward": {
                 if (!e.encodedValueToDelete)
@@ -429,7 +424,6 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
                             requiresShot: true
                         }
                     };
-                break;
             }
             case "url-address": {
                 return {
@@ -484,6 +478,9 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
                                 }
                             ] };
                     }
+                    default: {
+                        throw new TypeError(`Unkown history action ${e.action}`);
+                    }
                 }
             }
             case "touchscroll": {
@@ -522,21 +519,23 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
             }
             case "zoom": {
                 /** retval does not work. Expanding pinch is OK, but contracting seems to fail **/
+                /*
                 const retVal = {
-                    command: {
-                        name: "Input.synthesizePinchGesture",
-                        params: {
-                            relativeSpeed: 300,
-                            scaleFactor: e.scale,
-                            gestureSourceType: "touch",
-                            x: Math.round(e.bitmapX),
-                            y: Math.round(e.bitmapY)
-                        },
-                        requiresShot: true,
-                        requiresExtraWait: true,
-                        extraWait: 300
-                    }
+                  command: {
+                    name: "Input.synthesizePinchGesture",
+                    params: {
+                      relativeSpeed: 300,
+                      scaleFactor: e.scale,
+                      gestureSourceType: "touch",
+                      x: Math.round(e.bitmapX),
+                      y: Math.round(e.bitmapY)
+                    },
+                    requiresShot: true,
+                    requiresExtraWait: true,
+                    extraWait: 300
+                  }
                 };
+                */
                 /** so we are using emulation and multiplying the scale factor in the event listener **/
                 const retVal2 = {
                     command: {
@@ -600,7 +599,7 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
             }
             case "window-bounds-preImplementation": {
                 // This is here until Browser.getWindowForTarget and Browser.setWindowBounds come online
-                let { width, height, mobile } = e;
+                let { width, height } = e;
                 width = parseInt(width);
                 height = parseInt(height);
                 const retVal = {
@@ -946,8 +945,6 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
             DOM_DELTA_PAGE = 2;
             LINE_HEIGHT_GUESS = 32;
             SYNTHETIC_CTRL = e => keyEvent({ key: 'Control', originalType: e.originalType }, 2, true);
-            SYNTHETIC_ENTER = () => keyEvent({ key: 'Enter', originalType: "keypress" }, 0, true);
-            scrollShot = false;
             exports_3("default", translator);
         }
     };
@@ -3149,8 +3146,10 @@ System.register("server", ["express", "zombie-lord/api", "common", "ws-server", 
         }
     };
 });
+/* eslint-disable no-global-assign */
 require = require('esm')(module /*, options*/);
 module.exports = require('./server.js');
+/* eslint-enable no-global-assign */
 System.register("rollup.config", ["rollup-plugin-babel", "rollup-plugin-commonjs", "rollup-plugin-node-resolve"], function (exports_19, context_19) {
     "use strict";
     var rollup_plugin_babel_1, rollup_plugin_commonjs_1, rollup_plugin_node_resolve_1;

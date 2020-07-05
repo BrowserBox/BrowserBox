@@ -36,29 +36,20 @@
       }
     );
 
-  // state 
-    let cache;
-
   // handlers
-    self.addEventListener('activate', async e => {
-      try {
-        await e.waitUntil(clients.claim());
-      } catch(e) {}
-    });
+    self.addEventListener('activate', async e => await e.waitUntil(self.Clients.claim()));
 
     self.addEventListener('install', async e => {
       try {
         await e.skipWaiting();
-      } catch(e) {}
-      await setup();
+      } finally { 
+        await setup();
+      }
     });
 
     self.addEventListener('fetch', e => e.waitUntil(fetchResponder(e)));
     
-    
     async function fetchResponder(e) {
-      let response;
-      
       CLEAR && console.log(e.request);
       if ( e.request.method != 'GET' ) return;
 
@@ -72,9 +63,10 @@
     }
 
     async function fetchResponder2(e) {
-      cache = await caches.open(CACHE);
-
+      const cache = await caches.open(CACHE);
       const cachedResponse = await cache.match(e.request); 
+
+      let response;
 
       if (!CLEAR && cachedResponse) response = cachedResponse;
 
@@ -104,7 +96,7 @@
           return response;
         } else {
           const clone = response.clone();
-          cache = await caches.open(CACHE);
+          const cache = await caches.open(CACHE);
           await cache.put(e.request, clone);
           return response;
         }
@@ -116,7 +108,7 @@
     }
 
     async function setup() {
-      cache = await caches.open(CACHE);
+      await caches.open(CACHE);
     }
 
   // views
@@ -139,7 +131,7 @@
               <li>
                 You can sit here and wait.
               <li>
-                You can <a href=${registration.scope}>reload the page.</a>
+                You can <a href=${self.registration.scope}>reload the page.</a>
               <li>
                 You can <a href=https://github.com/dosycorp/service-issues/issues>open an issue.</a>
               <li> 

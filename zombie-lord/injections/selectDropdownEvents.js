@@ -59,7 +59,7 @@
     self.setSelectValue = makeValueSetter(selectEl);
   }
 
-  function close(selectEl) {
+  function close(/*selectEl*/) {
     closed = true;
     s({selectOpen:false});
   }
