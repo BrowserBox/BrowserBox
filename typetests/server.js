@@ -1,26 +1,8 @@
-// Why can I just use "git submodule foreach 'npm i && npm rebuild'" ????
-"use strict";
-System.register("args", [], function (exports_1, context_1) {
-    "use strict";
-    var chrome_port, app_port, cookie, username, token, start_mode;
-    var __moduleName = context_1 && context_1.id;
-    return {
-        setters: [],
-        execute: function () {
-            exports_1("chrome_port", chrome_port = process.argv[2]);
-            exports_1("app_port", app_port = process.argv[3]);
-            exports_1("cookie", cookie = process.argv[4]);
-            exports_1("username", username = process.argv[5]);
-            exports_1("token", token = process.argv[6]);
-            exports_1("start_mode", start_mode = process.argv[7]);
-        }
-    };
-});
 /* eslint-disable no-useless-escape */
-System.register("public/kbd", [], function (exports_2, context_2) {
+System.register("public/kbd", [], function (exports_1, context_1) {
     "use strict";
     var keys;
-    var __moduleName = context_2 && context_2.id;
+    var __moduleName = context_1 && context_1.id;
     return {
         setters: [],
         execute: function () {/* eslint-disable no-useless-escape */
@@ -274,14 +256,14 @@ System.register("public/kbd", [], function (exports_2, context_2) {
                 '}': { 'keyCode': 221, 'key': '}', 'code': 'BracketRight' },
                 '"': { 'keyCode': 222, 'key': '"', 'code': 'Quote' }
             };
-            exports_2("default", keys);
+            exports_1("default", keys);
         }
     };
 });
-System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_3, context_3) {
+System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_2, context_2) {
     "use strict";
     var kbd_js_1, FRAME_CONTROL, IMAGE_FORMAT, WorldName, SHORT_TIMEOUT, MIN_DELTA, MIN_PIX_DELTA, THRESHOLD_DELTA, DOM_DELTA_PIXEL, DOM_DELTA_LINE, DOM_DELTA_PAGE, LINE_HEIGHT_GUESS, SYNTHETIC_CTRL;
-    var __moduleName = context_3 && context_3.id;
+    var __moduleName = context_2 && context_2.id;
     function translator(e, handled = { type: 'case' }) {
         handled.type = handled.type || 'case';
         switch (e.type) {
@@ -933,9 +915,9 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
             }
         ],
         execute: function () {
-            exports_3("FRAME_CONTROL", FRAME_CONTROL = false);
-            exports_3("IMAGE_FORMAT", IMAGE_FORMAT = 'png');
-            exports_3("WorldName", WorldName = 'PlanetZanj');
+            exports_2("FRAME_CONTROL", FRAME_CONTROL = false);
+            exports_2("IMAGE_FORMAT", IMAGE_FORMAT = 'png');
+            exports_2("WorldName", WorldName = 'PlanetZanj');
             SHORT_TIMEOUT = 1000;
             MIN_DELTA = 40;
             MIN_PIX_DELTA = 8;
@@ -945,23 +927,23 @@ System.register("public/translateVoodooCRDP", ["public/kbd"], function (exports_
             DOM_DELTA_PAGE = 2;
             LINE_HEIGHT_GUESS = 32;
             SYNTHETIC_CTRL = e => keyEvent({ key: 'Control', originalType: e.originalType }, 2, true);
-            exports_3("default", translator);
+            exports_2("default", translator);
         }
     };
 });
-System.register("common", ["fs", "path", "url", "current-git-branch", "public/translateVoodooCRDP"], function (exports_4, context_4) {
+System.register("common", ["fs", "path", "url", "current-git-branch", "public/translateVoodooCRDP"], function (exports_3, context_3) {
     "use strict";
     var fs_1, path_1, url_1, current_git_branch_1, translateVoodooCRDP_js_1, DEBUG, APP_ROOT, GO_SECURE, STAGING, MASTER, BRANCH, version, COOKIENAME, SECURE_VIEW_SCRIPT, CONNECTION_ID_URL;
-    var __moduleName = context_4 && context_4.id;
+    var __moduleName = context_3 && context_3.id;
     async function throwAfter(ms, command, port) {
         await sleep(ms);
         throw new Error(`Timed out after ${ms}. ${port} : ${JSON.stringify(command, null, 2)}`);
     }
-    exports_4("throwAfter", throwAfter);
+    exports_3("throwAfter", throwAfter);
     async function sleep(ms) {
         return new Promise(res => setTimeout(res, ms));
     }
-    exports_4("sleep", sleep);
+    exports_3("sleep", sleep);
     return {
         setters: [
             function (fs_1_1) {
@@ -981,7 +963,7 @@ System.register("common", ["fs", "path", "url", "current-git-branch", "public/tr
             }
         ],
         execute: function () {
-            exports_4("DEBUG", DEBUG = {
+            exports_3("DEBUG", DEBUG = {
                 goSecure: true,
                 noAudio: false,
                 legacyShots: !translateVoodooCRDP_js_1.FRAME_CONTROL,
@@ -994,22 +976,22 @@ System.register("common", ["fs", "path", "url", "current-git-branch", "public/tr
                 med: 3,
                 high: 5
             });
-            exports_4("APP_ROOT", APP_ROOT = path_1.default.dirname(url_1.fileURLToPath(context_4.meta.url)));
-            exports_4("GO_SECURE", GO_SECURE = fs_1.default.existsSync(path_1.default.resolve(APP_ROOT, 'sslcert', 'master', 'privkey.pem')));
-            exports_4("STAGING", STAGING = current_git_branch_1.default() == 'staging');
-            exports_4("MASTER", MASTER = current_git_branch_1.default() == 'master');
-            exports_4("BRANCH", BRANCH = current_git_branch_1.default());
-            exports_4("version", version = 'v1');
-            exports_4("COOKIENAME", COOKIENAME = `litewait-${version}-userauth-${GO_SECURE ? 'sec' : 'nonsec'}`);
-            exports_4("SECURE_VIEW_SCRIPT", SECURE_VIEW_SCRIPT = path_1.default.join(__dirname, 'zombie-lord', 'scripts', 'get_download_view_url.sh'));
-            exports_4("CONNECTION_ID_URL", CONNECTION_ID_URL = "data:text,DoNotDeleteMe");
+            exports_3("APP_ROOT", APP_ROOT = path_1.default.dirname(url_1.fileURLToPath(context_3.meta.url)));
+            exports_3("GO_SECURE", GO_SECURE = fs_1.default.existsSync(path_1.default.resolve(APP_ROOT, 'sslcert', 'master', 'privkey.pem')));
+            exports_3("STAGING", STAGING = current_git_branch_1.default() == 'staging');
+            exports_3("MASTER", MASTER = current_git_branch_1.default() == 'master');
+            exports_3("BRANCH", BRANCH = current_git_branch_1.default());
+            exports_3("version", version = 'v1');
+            exports_3("COOKIENAME", COOKIENAME = `litewait-${version}-userauth-${GO_SECURE ? 'sec' : 'nonsec'}`);
+            exports_3("SECURE_VIEW_SCRIPT", SECURE_VIEW_SCRIPT = path_1.default.join(__dirname, 'zombie-lord', 'scripts', 'get_download_view_url.sh'));
+            exports_3("CONNECTION_ID_URL", CONNECTION_ID_URL = "data:text,DoNotDeleteMe");
         }
     };
 });
-System.register("zombie-lord/launcher", ["path", "os", "fs", "is-docker", "./custom-launcher/dist/chrome-launcher.js", "common"], function (exports_5, context_5) {
+System.register("zombie-lord/launcher", ["path", "os", "fs", "is-docker", "./custom-launcher/dist/chrome-launcher.js", "common"], function (exports_4, context_4) {
     "use strict";
-    var path_2, os_1, fs_2, is_docker_1, chrome_launcher_js_1, common_js_1, RESTART_MS, zombies, chromeNumber, chrome_started, deathHandlers, launcher_api;
-    var __moduleName = context_5 && context_5.id;
+    var path_2, os_1, fs_2, is_docker_1, chrome_launcher_js_1, common_js_1, zombies, chromeNumber, chrome_started, deathHandlers, launcher_api;
+    var __moduleName = context_4 && context_4.id;
     return {
         setters: [
             function (path_2_1) {
@@ -1032,13 +1014,13 @@ System.register("zombie-lord/launcher", ["path", "os", "fs", "is-docker", "./cus
             }
         ],
         execute: function () {
-            RESTART_MS = 1000;
+            //const RESTART_MS = 1000;
             zombies = new Map();
             chromeNumber = 0;
             chrome_started = false;
             deathHandlers = new Map();
             launcher_api = {
-                async newZombie({ port, username } = {}) {
+                async newZombie({ port, }) {
                     const udd = path_2.default.resolve(os_1.default.homedir(), 'chrome-browser');
                     const upd = path_2.default.resolve(udd, 'Default');
                     if (!fs_2.default.existsSync(udd)) {
@@ -1120,7 +1102,23 @@ System.register("zombie-lord/launcher", ["path", "os", "fs", "is-docker", "./cus
                     zombie && zombie.kill();
                 }
             };
-            exports_5("default", launcher_api);
+            exports_4("default", launcher_api);
+        }
+    };
+});
+System.register("args", [], function (exports_5, context_5) {
+    "use strict";
+    var chrome_port, app_port, cookie, username, token, start_mode;
+    var __moduleName = context_5 && context_5.id;
+    return {
+        setters: [],
+        execute: function () {
+            exports_5("chrome_port", chrome_port = process.argv[2]);
+            exports_5("app_port", app_port = process.argv[3]);
+            exports_5("cookie", cookie = process.argv[4]);
+            exports_5("username", username = process.argv[5]);
+            exports_5("token", token = process.argv[6]);
+            exports_5("start_mode", start_mode = process.argv[7]);
         }
     };
 });
@@ -1359,7 +1357,7 @@ System.register("zombie-lord/adblocking/blockAds", ["url", "zombie-lord/adblocki
     "use strict";
     var url_2, blocking_js_1, blockedResponse_js_1;
     var __moduleName = context_9 && context_9.id;
-    async function blockAds(zombie, sessionId) {
+    async function blockAds( /*zombie, sessionId*/) {
         // do nothing
     }
     exports_9("blockAds", blockAds);
@@ -1424,158 +1422,10 @@ System.register("zombie-lord/adblocking/blockAds", ["url", "zombie-lord/adblocki
         }
     };
 });
-System.register("zombie-lord/demoblocking/whitelist", [], function (exports_10, context_10) {
+System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "url", "querystring", "common", "args", "public/translateVoodooCRDP", "zombie-lord/screenShots", "zombie-lord/adblocking/blockAds"], function (exports_10, context_10) {
     "use strict";
-    var WHITELIST;
+    var ws_1, node_fetch_1, fs_3, path_3, url_3, querystring_1, common_js_3, args_js_1, translateVoodooCRDP_js_2, screenShots_js_1, blockAds_js_1, selectDropdownEvents, keysCanInputEvents, textComposition, favicon, elementInfo, scrollNotify, botDetectionEvasions, appMinifier, projector, injectionsScroll, pageContextInjectionsScroll, RECONNECT_MS, mobUA, LANG, mobPLAT, GrantedPermissions, ROOT_SESSION, UA, PLAT, targets, sessions, loadings, tabs, AD_BLOCK_ON, DEMO_BLOCK_ON;
     var __moduleName = context_10 && context_10.id;
-    return {
-        setters: [],
-        execute: function () {
-            WHITELIST = [
-                /reddit.com$/,
-                /wikipedia.org$/,
-            ];
-            exports_10("default", WHITELIST);
-        }
-    };
-});
-System.register("zombie-lord/demoblocking/blockedResponse", [], function (exports_11, context_11) {
-    "use strict";
-    var BLOCKED_RESPONSE;
-    var __moduleName = context_11 && context_11.id;
-    return {
-        setters: [],
-        execute: function () {
-            BLOCKED_RESPONSE = `
-HTTP/1.1 200 OK
-X-Powered-By: Zanj-Dosyago-Corporation
-X-Blocked-Internally: Custom ad blocking
-Accept-Ranges: bytes
-Cache-Control: public, max-age=0
-Content-Type: text/html; charset=UTF-8
-Content-Length: 244
-
-<h1>Request blocked</h1>
-<p>This navigation was prevented because you're in demo mode.</p>
-<h2>Need to see this site?</h2>
-<p>You can sign up for unrestricted access to the whole internet
-  <a id=dosy-litewait-membership href=https://stretchy.live/signup.html?>here.</a>
-</p>
-`;
-            exports_11("default", BLOCKED_RESPONSE);
-        }
-    };
-});
-System.register("zombie-lord/demoblocking/blockSites", ["url", "zombie-lord/demoblocking/whitelist", "zombie-lord/demoblocking/blockedResponse"], function (exports_12, context_12) {
-    "use strict";
-    var url_3, whitelist_js_1, blockedResponse_js_2, interceptId;
-    var __moduleName = context_12 && context_12.id;
-    async function blockSites(zombie, sessionId, id) {
-        const { Target } = zombie;
-        // note
-        // to make a good try of avoiding message id collissions between ids issued in connection.js
-        // and ids issued asynchronously here in replies given in response to messages received
-        // TODO: could factor out a "nextId" function into common and use it everywhere.
-        // even better could factor out a sendMessage function into common which takes (sessionId, and zombie/Target).
-        interceptId = id;
-        await Target.sendMessageToTarget({
-            message: JSON.stringify({
-                id: ++id,
-                method: "Network.setRequestInterception", params: {
-                    patterns: [
-                        {
-                            urlPatterns: 'http://*/*',
-                        },
-                        {
-                            urlPatterns: 'https://*/*',
-                        }
-                    ]
-                }
-            }),
-            sessionId
-        });
-        await Target.sendMessageToTarget({
-            message: JSON.stringify({
-                id: ++id,
-                method: "Network.enable", params: {}
-            }),
-            sessionId
-        });
-        return id;
-    }
-    exports_12("blockSites", blockSites);
-    async function onInterceptRequest({ sessionId, message }, Target) {
-        if (message.method == "Network.requestIntercepted") {
-            const { request: { url }, interceptionId, isNavigationRequest } = message.params;
-            const host = new url_3.URL(url).host;
-            const whiteListed = whitelist_js_1.default.some(regex => regex.test(host));
-            if (!whiteListed) {
-                if (isNavigationRequest) {
-                    // we want to provide a response body to indicate that we blocked it via an ad blocker
-                    await Target.sendMessageToTarget({
-                        message: JSON.stringify({
-                            id: ++interceptId,
-                            method: "Network.continueInterceptedRequest", params: {
-                                interceptionId,
-                                rawResponse: Buffer.from(blockedResponse_js_2.default).toString('base64')
-                            }
-                        }),
-                        sessionId
-                    });
-                }
-                else {
-                    await Target.sendMessageToTarget({
-                        message: JSON.stringify({
-                            id: ++interceptId,
-                            method: "Network.continueInterceptedRequest", params: {
-                                interceptionId,
-                                errorReason: "BlockedByClient"
-                            }
-                        }),
-                        sessionId
-                    });
-                }
-            }
-            else {
-                try {
-                    await Target.sendMessageToTarget({
-                        message: JSON.stringify({
-                            id: ++interceptId,
-                            method: "Network.continueInterceptedRequest", params: {
-                                interceptionId,
-                            }
-                        }),
-                        sessionId
-                    });
-                }
-                catch (e) {
-                    console.warn("Issue with continuing request", e);
-                }
-            }
-        }
-    }
-    exports_12("onInterceptRequest", onInterceptRequest);
-    return {
-        setters: [
-            function (url_3_1) {
-                url_3 = url_3_1;
-            },
-            function (whitelist_js_1_1) {
-                whitelist_js_1 = whitelist_js_1_1;
-            },
-            function (blockedResponse_js_2_1) {
-                blockedResponse_js_2 = blockedResponse_js_2_1;
-            }
-        ],
-        execute: function () {
-            interceptId = 0;
-        }
-    };
-});
-System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "url", "querystring", "common", "args", "public/translateVoodooCRDP", "zombie-lord/screenShots", "zombie-lord/adblocking/blockAds"], function (exports_13, context_13) {
-    "use strict";
-    var ws_1, node_fetch_1, fs_3, path_3, url_4, querystring_1, common_js_3, args_js_1, translateVoodooCRDP_js_2, screenShots_js_1, blockAds_js_1, selectDropdownEvents, keysCanInputEvents, textComposition, favicon, elementInfo, scrollNotify, botDetectionEvasions, appMinifier, projector, injectionsScroll, pageContextInjectionsScroll, RECONNECT_MS, deskUA, mobUA, LANG, deskPLAT, mobPLAT, GrantedPermissions, PromptText, ROOT_SESSION, UA, PLAT, targets, waiting, sessions, loadings, tabs, originalMessage, AD_BLOCK_ON, DEMO_BLOCK_ON, id;
-    var __moduleName = context_13 && context_13.id;
     function addSession(targetId, sessionId) {
         sessions.set(targetId, sessionId);
         sessions.set(sessionId, targetId);
@@ -1605,6 +1455,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
         sessions.delete(id);
         sessions.delete(otherId);
     }
+    //let id = 0;
     async function Connect({ port }, { adBlock: adBlock = true, demoBlock: demoBlock = false } = {}) {
         AD_BLOCK_ON = adBlock;
         if (demoBlock) {
@@ -1753,15 +1604,17 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 try {
                     common_js_3.DEBUG.val && console.log(executionContextId, consoleMessage.args[0].value.slice(0, 255));
                 }
-                catch (e) { }
+                finally {
+                    void 0;
+                }
                 if (!args.length)
                     return;
                 const activeContexts = connection.worlds.get(connection.sessionId);
                 common_js_3.DEBUG.val > common_js_3.DEBUG.low && console.log(`Active context`, activeContexts);
-                if (false && (!activeContexts || !activeContexts.has(executionContextId))) {
-                    common_js_3.DEBUG.val && console.log(`Blocking as is not a context in the active target.`);
-                    return;
-                }
+                /*if ( ! activeContexts || ! activeContexts.has(executionContextId) ) {
+                  DEBUG.val && console.log(`Blocking as is not a context in the active target.`);
+                  return;
+                }*/
                 message = consoleMessage;
                 const firstArg = args[0];
                 try {
@@ -1769,8 +1622,12 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                     message.executionContextId = executionContextId;
                     connection.meta.push(message);
                 }
-                catch (e) { }
-                common_js_3.DEBUG.val > common_js_3.DEBUG.med && connection.meta.push({ consoleMessage });
+                catch (e) {
+                    void 0;
+                }
+                finally {
+                    common_js_3.DEBUG.val > common_js_3.DEBUG.med && connection.meta.push({ consoleMessage });
+                }
             }
             else if (message.method == "Runtime.executionContextCreated") {
                 common_js_3.DEBUG.val && console.log(JSON.stringify({ createdContext: message.params.context }));
@@ -1817,7 +1674,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                     await send("LayerTree.enable", {}, sessionId);
                 }
                 if (!unreachableUrl && securityOrigin || url) {
-                    const origin = securityOrigin || new url_4.URL(url).origin;
+                    const origin = securityOrigin || new url_3.URL(url).origin;
                     await send("Browser.grantPermissions", {
                         origin, permissions: GrantedPermissions
                     }, sessionId);
@@ -1831,7 +1688,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             }
             else if (message.method == "Page.downloadWillBegin") {
                 const { params: download } = message;
-                let uri = '';
+                //let uri = '';
                 download.sessionId = sessionId;
                 const downloadFileName = getFileFromURL(download.url);
                 // notification and only do once
@@ -1905,7 +1762,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 }
             }
             else if (message.method == "Fetch.authRequired") {
-                const { requestId, request, frameId, resourceType, authChallenge } = message.params;
+                const { requestId, request, /*frameId, */ resourceType, authChallenge } = message.params;
                 connection.pausing.set(requestId, request.url);
                 connection.pausing.set(request.url, requestId);
                 const authRequired = { authChallenge, requestId, resourceType };
@@ -1982,7 +1839,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                 await send("Network.setUserAgentOverride", connection.navigator, sessionId);
                 //id = await overrideNewtab(connection.zombie, sessionId, id);
                 if (AD_BLOCK_ON) {
-                    await blockAds_js_1.blockAds(connection.zombie, sessionId);
+                    await blockAds_js_1.blockAds( /*connection.zombie, sessionId*/);
                 }
                 else if (DEMO_BLOCK_ON) {
                     console.warn("Demo block disabled.");
@@ -2106,7 +1963,9 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
                             common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log("Removed session");
                         }
                     }
-                    catch (e2) { }
+                    finally {
+                        void 0;
+                    }
                 }
             }
         }
@@ -2131,7 +1990,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
         }
         function deleteContext(id, contextId) {
             common_js_3.DEBUG.val > common_js_3.DEBUG.med && console.log({ deletingContext: { id, contextId } });
-            const otherId = sessions.get(id);
+            //const otherId = sessions.get(id);
             let contexts = connection.worlds.get(id);
             if (contexts) {
                 contexts.delete(contextId);
@@ -2151,7 +2010,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             connection.meta.push({ [label]: { targetId } });
         }
     }
-    exports_13("default", Connect);
+    exports_10("default", Connect);
     function saveTargetIdAsGlobal(targetId) {
         return `
     {
@@ -2190,7 +2049,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             const stringMessage = message;
             message = JSON.parse(message);
             const { sessionId } = message;
-            const { method, params } = message;
+            const { method } = message;
             const { id, result } = message;
             if (id) {
                 const key = `${sessionId || ROOT_SESSION}:${id}`;
@@ -2240,7 +2099,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             listeners.push(handler);
         }
         function wrap(fn) {
-            return ({ message, sessionId }) => fn(message.params);
+            return ({ message }) => fn(message.params);
         }
         let resolve;
         const promise = new Promise(res => resolve = res);
@@ -2252,7 +2111,7 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
         };
     }
     function getFileFromURL(url) {
-        url = new url_4.URL(url);
+        url = new url_3.URL(url);
         const { pathname } = url;
         const nodes = pathname.split('/');
         let lastNode = nodes.pop();
@@ -2275,8 +2134,8 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             function (path_3_1) {
                 path_3 = path_3_1;
             },
-            function (url_4_1) {
-                url_4 = url_4_1;
+            function (url_3_1) {
+                url_3 = url_3_1;
             },
             function (querystring_1_1) {
                 querystring_1 = querystring_1_1;
@@ -2298,6 +2157,8 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             }
         ],
         execute: function () {
+            //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
+            //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
             // standard injections
             selectDropdownEvents = fs_3.default.readFileSync(path_3.default.join(__dirname, 'injections', 'selectDropdownEvents.js')).toString();
             keysCanInputEvents = fs_3.default.readFileSync(path_3.default.join(__dirname, 'injections', 'keysCanInput.js')).toString();
@@ -2315,32 +2176,31 @@ System.register("zombie-lord/connection", ["ws", "node-fetch", "fs", "path", "ur
             injectionsScroll = botDetectionEvasions + favicon + keysCanInputEvents + scrollNotify + elementInfo + textComposition + selectDropdownEvents;
             pageContextInjectionsScroll = botDetectionEvasions;
             RECONNECT_MS = 5000;
-            deskUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36";
+            //const deskUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36";
             mobUA = "Mozilla/5.0 (Linux; Android 8.1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3384.0 Mobile Safari/537.36";
             LANG = "en-US";
-            deskPLAT = "Win32";
+            //const deskPLAT = "Win32";
             mobPLAT = "Android";
             GrantedPermissions = ["geolocation", "notifications", "flash"];
-            PromptText = "Dosy was here.";
+            //const PromptText = "Dosy was here.";
             ROOT_SESSION = 'root';
             UA = mobUA;
             PLAT = mobPLAT;
             targets = new Set();
-            waiting = new Map();
+            //const waiting = new Map();
             sessions = new Map();
             loadings = new Map();
             tabs = new Map();
-            originalMessage = new Map();
+            //const originalMessage = new Map();
             AD_BLOCK_ON = true;
             DEMO_BLOCK_ON = false;
-            id = 0;
         }
     };
 });
-System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "fs"], function (exports_14, context_14) {
+System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "fs"], function (exports_11, context_11) {
     "use strict";
-    var connection_js_1, common_js_4, fs_4, connections, Options, TAIL_START, lastTailShot, lastHash, controller_api;
-    var __moduleName = context_14 && context_14.id;
+    var connection_js_1, common_js_4, fs_4, connections, Options, controller_api;
+    var __moduleName = context_11 && context_11.id;
     function move(a_dest, a_src) {
         while (a_src.length) {
             a_dest.push(a_src.shift());
@@ -2365,8 +2225,9 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                 adBlock: true,
                 demoBlock: false
             };
-            TAIL_START = 100;
-            lastTailShot = false;
+            //const TAIL_START = 100;
+            //let lastTailShot = false;
+            //let lastHash;
             controller_api = {
                 setOptions(new_options) {
                     Object.assign(Options, new_options);
@@ -2416,13 +2277,13 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                 async send(command, port) {
                     let retVal = {};
                     let connection = connections.get(port);
-                    let Page, Target;
+                    //let Page, Target;
                     try {
                         if (!connection) {
                             connection = await connection_js_1.default({ port }, Options);
                             connections.set(port, connection);
                         }
-                        ({ Page, Target } = connection.zombie);
+                        //({Page, Target} = connection.zombie);
                         command = command || {};
                         common_js_4.DEBUG.val && !command.isBufferedResultsCollectionOnly && console.log(JSON.stringify(command));
                         if (command.isBufferedResultsCollectionOnly) {
@@ -2433,87 +2294,102 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                                 // ALTERNATE : we COULD change this API to NOT reveal contextIds to client.
                                 // and instead offer a command like Connection.broadcastToAllContextsInSession()
                                 // that takes a script to evaluate 
-                                case "Connection.doShot": {
-                                    common_js_4.DEBUG.val && console.log("Calling do shot");
-                                    connection.doShot();
-                                }
-                                case "Connection.getContextIdsForActiveSession": {
-                                    const contexts = connection.worlds.get(connection.sessionId);
-                                    const targetId = connection.sessions.get(connection.sessionId);
-                                    // console.log(connection.worlds, connection.sessions, contexts,targetId,connection.sessionId);
-                                    if (!contexts) {
-                                        retVal.data = { contextIds: [] };
-                                    }
-                                    else {
-                                        common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log({ currentSession: connection.sessionId, targetId, contexts: [...contexts.values()] });
-                                        retVal.data = { contextIds: [...contexts.values()] };
+                                case "Connection.doShot":
+                                    {
+                                        common_js_4.DEBUG.val && console.log("Calling do shot");
+                                        connection.doShot();
                                     }
                                     break;
-                                }
-                                case "Connection.getAllContextIds": {
-                                    const allContexts = [];
-                                    for (const sessionId of connection.worlds.keys()) {
-                                        // because we double book entry in connection worlds both sessionId and targetId
-                                        // so we have to check if the key is targetId and if so we skip
-                                        if (connection.targets.has(sessionId))
-                                            continue;
-                                        const contexts = connection.worlds.get(sessionId);
-                                        if (contexts) {
-                                            for (const contextId of contexts) {
-                                                allContexts.push({ sessionId, contextId });
-                                            }
+                                case "Connection.getContextIdsForActiveSession":
+                                    {
+                                        const contexts = connection.worlds.get(connection.sessionId);
+                                        const targetId = connection.sessions.get(connection.sessionId);
+                                        // console.log(connection.worlds, connection.sessions, contexts,targetId,connection.sessionId);
+                                        if (!contexts) {
+                                            retVal.data = { contextIds: [] };
+                                        }
+                                        else {
+                                            common_js_4.DEBUG.val > common_js_4.DEBUG.med && console.log({ currentSession: connection.sessionId, targetId, contexts: [...contexts.values()] });
+                                            retVal.data = { contextIds: [...contexts.values()] };
                                         }
                                     }
-                                    retVal.data = { sessionContextIdPairs: allContexts };
                                     break;
-                                }
-                                case "Connection.getAllSessionIds": {
-                                    const sessionIds = [];
-                                    for (const sessionId of connection.worlds.keys()) {
-                                        // because we double book entry in connection worlds both sessionId and targetId
-                                        // so we have to check if the key is targetId and if so we skip
-                                        if (connection.targets.has(sessionId))
-                                            continue;
-                                        sessionIds.push(sessionId);
+                                case "Connection.getAllContextIds":
+                                    {
+                                        const allContexts = [];
+                                        for (const sessionId of connection.worlds.keys()) {
+                                            // because we double book entry in connection worlds both sessionId and targetId
+                                            // so we have to check if the key is targetId and if so we skip
+                                            if (connection.targets.has(sessionId))
+                                                continue;
+                                            const contexts = connection.worlds.get(sessionId);
+                                            if (contexts) {
+                                                for (const contextId of contexts) {
+                                                    allContexts.push({ sessionId, contextId });
+                                                }
+                                            }
+                                        }
+                                        retVal.data = { sessionContextIdPairs: allContexts };
                                     }
-                                    retVal.data = { sessionIds };
                                     break;
-                                }
-                                case "Connection.setIsFirefox": {
-                                    connection.isFirefox = true;
-                                    break;
-                                }
-                                case "Connection.setIsSafari": {
-                                    connection.isSafari = true;
-                                    break;
-                                }
-                                case "Connection.getTabs": {
-                                    const tabs = Array.from(connection.tabs.values());
-                                    retVal.data = { tabs };
-                                    break;
-                                }
-                                case "Connection.enableMode": {
-                                    // reset first
-                                    const plugins = Object.keys(connection.plugins);
-                                    for (const pluginName of plugins) {
-                                        connection.plugins[pluginName] = false;
+                                case "Connection.getAllSessionIds":
+                                    {
+                                        const sessionIds = [];
+                                        for (const sessionId of connection.worlds.keys()) {
+                                            // because we double book entry in connection worlds both sessionId and targetId
+                                            // so we have to check if the key is targetId and if so we skip
+                                            if (connection.targets.has(sessionId))
+                                                continue;
+                                            sessionIds.push(sessionId);
+                                        }
+                                        retVal.data = { sessionIds };
                                     }
-                                    // now enable 
-                                    const { pluginName } = command.params;
-                                    if (pluginName) {
-                                        connection.plugins[pluginName] = true;
-                                    }
-                                    retVal.data = {};
                                     break;
-                                }
-                                case "Connection.resetMode": {
-                                    const plugins = Object.keys(connection.plugins);
-                                    for (const pluginName of plugins) {
-                                        connection.plugins[pluginName] = false;
+                                case "Connection.setIsFirefox":
+                                    {
+                                        connection.isFirefox = true;
                                     }
-                                    retVal.data = {};
                                     break;
-                                }
+                                case "Connection.setIsSafari":
+                                    {
+                                        connection.isSafari = true;
+                                    }
+                                    break;
+                                case "Connection.getTabs":
+                                    {
+                                        const tabs = Array.from(connection.tabs.values());
+                                        retVal.data = { tabs };
+                                    }
+                                    break;
+                                case "Connection.enableMode":
+                                    {
+                                        // reset first
+                                        const plugins = Object.keys(connection.plugins);
+                                        for (const pluginName of plugins) {
+                                            connection.plugins[pluginName] = false;
+                                        }
+                                        // now enable 
+                                        const { pluginName } = command.params;
+                                        if (pluginName) {
+                                            connection.plugins[pluginName] = true;
+                                        }
+                                        retVal.data = {};
+                                    }
+                                    break;
+                                case "Connection.resetMode":
+                                    {
+                                        const plugins = Object.keys(connection.plugins);
+                                        for (const pluginName of plugins) {
+                                            connection.plugins[pluginName] = false;
+                                        }
+                                        retVal.data = {};
+                                    }
+                                    break;
+                                default:
+                                    {
+                                        console.warn(`Unknown zombie lord command: ${command.name}`);
+                                    }
+                                    break;
                             }
                         }
                         else if (command.name) {
@@ -2595,14 +2471,14 @@ System.register("zombie-lord/controller", ["zombie-lord/connection", "common", "
                     }
                 }
             };
-            exports_14("default", controller_api);
+            exports_11("default", controller_api);
         }
     };
 });
-System.register("zombie-lord/api", ["zombie-lord/launcher", "zombie-lord/controller"], function (exports_15, context_15) {
+System.register("zombie-lord/api", ["zombie-lord/launcher", "zombie-lord/controller"], function (exports_12, context_12) {
     "use strict";
     var launcher_js_1, controller_js_1, api;
-    var __moduleName = context_15 && context_15.id;
+    var __moduleName = context_12 && context_12.id;
     return {
         setters: [
             function (launcher_js_1_1) {
@@ -2617,13 +2493,13 @@ System.register("zombie-lord/api", ["zombie-lord/launcher", "zombie-lord/control
                 life: launcher_js_1.default,
                 act: controller_js_1.default
             };
-            exports_15("default", api);
+            exports_12("default", api);
         }
     };
 });
-System.register("public/plugins/demo/page", [], function (exports_16, context_16) {
+System.register("public/plugins/demo/page", [], function (exports_13, context_13) {
     "use strict";
-    var __moduleName = context_16 && context_16.id;
+    var __moduleName = context_13 && context_13.id;
     function pluginsDemoPage({ body: body = '' } = {}) {
         return `
     <head>
@@ -2644,23 +2520,23 @@ System.register("public/plugins/demo/page", [], function (exports_16, context_16
     </body>
   `;
     }
-    exports_16("pluginsDemoPage", pluginsDemoPage);
+    exports_13("pluginsDemoPage", pluginsDemoPage);
     return {
         setters: [],
         execute: function () {
         }
     };
 });
-System.register("ws-server", ["express", "http", "https", "node-fetch", "multer", "ws", "fs", "path", "body-parser", "cookie-parser", "public/plugins/demo/page", "zombie-lord/api", "args", "common", "server"], function (exports_17, context_17) {
+System.register("ws-server", ["express", "http", "https", "node-fetch", "multer", "ws", "fs", "path", "body-parser", "cookie-parser", "public/plugins/demo/page", "zombie-lord/api", "args", "common", "server"], function (exports_14, context_14) {
     "use strict";
     var express_1, http_1, https_1, node_fetch_2, multer_1, ws_2, fs_5, path_4, body_parser_1, cookie_parser_1, page_js_1, api_js_1, args_js_2, common_js_5, server_js_1, protocol, COOKIE_OPTS, storage, upload, Queue, messageQueueRunning, browserTargetId, requestId;
-    var __moduleName = context_17 && context_17.id;
+    var __moduleName = context_14 && context_14.id;
     async function start_ws_server(port, zombie_port, allowed_user_cookie, session_token) {
         common_js_5.DEBUG.val && console.log(`Starting websocket server on ${port}`);
         const app = express_1.default();
         const server_port = port;
         app.use(body_parser_1.default.urlencoded({ extended: true }));
-        app.use(body_parser_1.default.json({ extended: true }));
+        app.use(body_parser_1.default.json());
         app.use(cookie_parser_1.default());
         if (args_js_2.start_mode == "signup") {
             app.get("/", (req, res) => res.sendFile(path_4.default.join(__dirname, 'public', 'index.html')));
@@ -2798,7 +2674,7 @@ System.register("ws-server", ["express", "http", "https", "node-fetch", "multer"
             if (!message)
                 return;
             if (typeof message == "string" || Array.isArray(message)) {
-                message = message;
+                message;
             }
             else {
                 message = JSON.stringify(message);
@@ -2873,17 +2749,19 @@ System.register("ws-server", ["express", "http", "https", "node-fetch", "multer"
                 try {
                     res.type('json');
                 }
-                catch (e) { }
-                let message = '';
-                if (common_js_5.DEBUG.dev && common_js_5.DEBUG.val) {
-                    message = s({ error: { msg: err.message, stack: err.stack.split(/\n/g) } });
+                finally {
+                    let message = '';
+                    if (common_js_5.DEBUG.dev && common_js_5.DEBUG.val) {
+                        message = s({ error: { msg: err.message, stack: err.stack.split(/\n/g) } });
+                    }
+                    else {
+                        message = s({ error: err.message || err + '', resetRequired: true });
+                    }
+                    res.write(message);
+                    res.end();
+                    console.warn(err);
+                    next();
                 }
-                else {
-                    message = s({ error: err.message || err + '', resetRequired: true });
-                }
-                res.write(message);
-                res.end();
-                console.warn(err);
             });
         }
         async function runMessageQueue() {
@@ -2935,7 +2813,7 @@ System.register("ws-server", ["express", "http", "https", "node-fetch", "multer"
             return r;
         }
     }
-    exports_17("start_ws_server", start_ws_server);
+    exports_14("start_ws_server", start_ws_server);
     function nextFileName(ext = '') {
         if (!ext.startsWith('.')) {
             ext = '.' + ext;
@@ -3013,15 +2891,15 @@ System.register("ws-server", ["express", "http", "https", "node-fetch", "multer"
         }
     };
 });
-System.register("server", ["express", "zombie-lord/api", "common", "ws-server", "args"], function (exports_18, context_18) {
+System.register("server", ["express", "zombie-lord/api", "common", "ws-server", "args"], function (exports_15, context_15) {
     "use strict";
-    var express_2, api_js_2, common_js_6, ws_server_js_1, BEGIN_AGAIN, COMMAND_MAX_WAIT, MAX_FRAME, EXPEDITE, args_js_3, demoBlock, ws_started, zombie_started;
-    var __moduleName = context_18 && context_18.id;
+    var express_2, api_js_2, common_js_6, ws_server_js_1, BEGIN_AGAIN, COMMAND_MAX_WAIT, MAX_FRAME, EXPEDITE, args_js_3, demoBlock, ws_started;
+    var __moduleName = context_15 && context_15.id;
     async function begin() {
         let port;
         if (args_js_3.start_mode !== "signup") {
             try {
-                ({ port } = await api_js_2.default.life.newZombie({ port: args_js_3.chrome_port, username: args_js_3.username }));
+                ({ port } = await api_js_2.default.life.newZombie({ port: args_js_3.chrome_port, }));
                 api_js_2.default.act.setOptions({ demoBlock });
             }
             catch (e) {
@@ -3057,32 +2935,35 @@ System.register("server", ["express", "zombie-lord/api", "common", "ws-server", 
             ]);
         }
     }
-    exports_18("timedSend", timedSend);
+    exports_15("timedSend", timedSend);
     async function eventSendLoop(events, { Data, Frames, Meta, State, receivesFrames }) {
         for (const { command } of events) {
             try {
                 command.receivesFrames = receivesFrames && !command.isZombieLordCommand;
                 common_js_6.DEBUG.val && console.log(`Sending ${JSON.stringify(command)}...`);
-                const { data, frameBuffer, meta, totalBandwidth } = await timedSend(command, args_js_3.chrome_port);
-                common_js_6.DEBUG.val && console.log(`Sent ${JSON.stringify(command)}!`);
-                Data.push(data);
-                if (meta) {
-                    // filter out all but the last resource for each targetId
-                    const latestResourceForTarget = {};
-                    const nonResourceMeta = meta.filter(mi => {
-                        if (!mi.resource)
-                            return true;
-                        latestResourceForTarget[mi.resource.targetId] = mi;
-                        return false;
-                    });
-                    Meta.push(...nonResourceMeta, ...Object.values(latestResourceForTarget));
+                const sendResult = await timedSend(command, args_js_3.chrome_port);
+                if (sendResult) {
+                    const { data, frameBuffer, meta, totalBandwidth } = sendResult;
+                    common_js_6.DEBUG.val && console.log(`Sent ${JSON.stringify(command)}!`);
+                    Data.push(data);
+                    if (meta) {
+                        // filter out all but the last resource for each targetId
+                        const latestResourceForTarget = {};
+                        const nonResourceMeta = meta.filter(mi => {
+                            if (!mi.resource)
+                                return true;
+                            latestResourceForTarget[mi.resource.targetId] = mi;
+                            return false;
+                        });
+                        Meta.push(...nonResourceMeta, ...Object.values(latestResourceForTarget));
+                    }
+                    if (frameBuffer) {
+                        Frames.push(...frameBuffer);
+                        while (Frames.length > MAX_FRAME)
+                            Frames.shift();
+                    }
+                    State.totalBandwidth = totalBandwidth;
                 }
-                if (frameBuffer) {
-                    Frames.push(...frameBuffer);
-                    while (Frames.length > MAX_FRAME)
-                        Frames.shift();
-                }
-                State.totalBandwidth = totalBandwidth;
             }
             catch (e) {
                 console.warn(e);
@@ -3090,7 +2971,7 @@ System.register("server", ["express", "zombie-lord/api", "common", "ws-server", 
             }
         }
     }
-    exports_18("eventSendLoop", eventSendLoop);
+    exports_15("eventSendLoop", eventSendLoop);
     return {
         setters: [
             function (express_2_1) {
@@ -3119,7 +3000,7 @@ System.register("server", ["express", "zombie-lord/api", "common", "ws-server", 
             ]);
             demoBlock = args_js_3.token == 'demotoken';
             ws_started = false;
-            zombie_started = false;
+            //let zombie_started = false;
             if (common_js_6.GO_SECURE && args_js_3.start_mode == "signup") {
                 const redirector = express_2.default();
                 redirector.get('*', (req, res) => {
@@ -3143,176 +3024,6 @@ System.register("server", ["express", "zombie-lord/api", "common", "ws-server", 
                 //begin();
             });
             begin();
-        }
-    };
-});
-/* eslint-disable no-global-assign */
-require = require('esm')(module /*, options*/);
-module.exports = require('./server.js');
-/* eslint-enable no-global-assign */
-System.register("rollup.config", ["rollup-plugin-babel", "rollup-plugin-commonjs", "rollup-plugin-node-resolve"], function (exports_19, context_19) {
-    "use strict";
-    var rollup_plugin_babel_1, rollup_plugin_commonjs_1, rollup_plugin_node_resolve_1;
-    var __moduleName = context_19 && context_19.id;
-    return {
-        setters: [
-            function (rollup_plugin_babel_1_1) {
-                rollup_plugin_babel_1 = rollup_plugin_babel_1_1;
-            },
-            function (rollup_plugin_commonjs_1_1) {
-                rollup_plugin_commonjs_1 = rollup_plugin_commonjs_1_1;
-            },
-            function (rollup_plugin_node_resolve_1_1) {
-                rollup_plugin_node_resolve_1 = rollup_plugin_node_resolve_1_1;
-            }
-        ],
-        execute: function () {
-            exports_19("default", {
-                plugins: [
-                    rollup_plugin_commonjs_1.default(),
-                    rollup_plugin_node_resolve_1.default(),
-                    rollup_plugin_babel_1.default({
-                        "babelrc": false,
-                        "exclude": ['node_modules/@babel/runtime/**', 'public/voodoo/node_modules/@babel/runtime/**'],
-                        "runtimeHelpers": true,
-                        "plugins": [
-                            "@babel/plugin-transform-runtime"
-                        ],
-                        "presets": [
-                            [
-                                "@babel/preset-env",
-                                {
-                                    targets: {
-                                        browsers: ["safari >= 9"]
-                                    }
-                                }
-                            ]
-                        ]
-                    }),
-                ],
-                context: {
-                    [require.resolve('whatwg-fetch')]: 'fetch'
-                }
-            });
-        }
-    };
-});
-{
-    const fs = require('fs');
-    const cp = require('child_process');
-    const path = require('path');
-    const { promisify } = require('util');
-    const readdir = promisify(fs.readdir);
-    const stat = promisify(fs.stat);
-    const access = promisify(fs.access);
-    const exec = promisify(cp.exec);
-    const delay = ms => new Promise(res => setTimeout(res, ms));
-    perform();
-    async function perform() {
-        const thisDir = path.join(__dirname);
-        await exec('npm i; npm rebuild;');
-        await exec('npm set progress=false');
-        //await exec('npm i -g pnpm');
-        await recurser(thisDir);
-        await delay(1000);
-    }
-    async function recurser(dir) {
-        console.log("installed in ", dir);
-        await delay(500);
-        const files = await readdir(dir);
-        for (const f of files) {
-            try {
-                const isDir = (await stat(path.join(dir, f))).isDirectory();
-                if (isDir) {
-                    const isSubmodule = await stat(path.join(dir, f, 'package.json'));
-                    if (isDir && isSubmodule) {
-                        await exec(`cd ${path.join(dir, f)}; npm i; npm rebuild;`);
-                    }
-                    await recurser(path.join(dir, f));
-                }
-            }
-            catch (e) { /*console.warn(e)*/ }
-        }
-    }
-}
-System.register("spdy-server", ["express", "spdy", "fs", "zombie-lord/api", "path", "body-parser", "server"], function (exports_20, context_20) {
-    "use strict";
-    var express_3, spdy_1, fs_6, api_js_3, path_5, body_parser_2, server_js_2, options, version;
-    var __moduleName = context_20 && context_20.id;
-    async function start_spdy_server(port, zombie_port) {
-        console.log(`Starting SPDY server on port ${port}`);
-        const app = express_3.default();
-        const server_port = port;
-        app.use(express_3.default.static('public'));
-        app.use(body_parser_2.default.json({ extended: true }));
-        const { data: { targetInfos } } = await server_js_2.timedSend({
-            name: "Target.getTargets",
-            params: {}
-        }, zombie_port);
-        const browserTargetId = targetInfos[0].targetId;
-        function addHandlers() {
-            app.post(`/api/${version}/zombie`, async (req, res) => {
-                const Data = [], Frames = [], Meta = [];
-                const { events } = req.body;
-                await server_js_2.eventSendLoop(events, { Data, Frames, Meta });
-                res.type('json');
-                return res.end(JSON.stringify({ data: Data, frameBuffer: Frames, meta: Meta }));
-            });
-            app.get(`/api/${version}/tabs`, async (req, res) => {
-                res.type('json');
-                let { data: { targetInfos: tabs } } = await server_js_2.timedSend({
-                    name: "Target.getTargets",
-                    params: {}
-                }, zombie_port);
-                const activeTarget = api_js_3.default.act.getActiveTarget(zombie_port);
-                api_js_3.default.act.addTargets(tabs, zombie_port);
-                tabs = (tabs || []).filter(({ targetId }) => targetId != browserTargetId);
-                res.end(JSON.stringify({ tabs, activeTarget }));
-            });
-        }
-        const server = spdy_1.default.createServer(options, app);
-        server.listen(server_port, async (err) => {
-            if (err) {
-                console.error(err);
-                process.exit(1);
-            }
-            else {
-                console.log({ uptime: new Date, message: 'spdy server up', server_port });
-                addHandlers();
-            }
-        });
-    }
-    exports_20("start_spdy_server", start_spdy_server);
-    return {
-        setters: [
-            function (express_3_1) {
-                express_3 = express_3_1;
-            },
-            function (spdy_1_1) {
-                spdy_1 = spdy_1_1;
-            },
-            function (fs_6_1) {
-                fs_6 = fs_6_1;
-            },
-            function (api_js_3_1) {
-                api_js_3 = api_js_3_1;
-            },
-            function (path_5_1) {
-                path_5 = path_5_1;
-            },
-            function (body_parser_2_1) {
-                body_parser_2 = body_parser_2_1;
-            },
-            function (server_js_2_1) {
-                server_js_2 = server_js_2_1;
-            }
-        ],
-        execute: function () {
-            options = {
-                key: fs_6.default.readFileSync(path_5.default.join(__dirname, "certs", "server.key")),
-                cert: fs_6.default.readFileSync(path_5.default.join(__dirname, "certs", "server.crt")),
-            };
-            version = 'v1';
         }
     };
 });

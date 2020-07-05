@@ -54,7 +54,7 @@
     let port;
     if ( start_mode !== "signup" ) {
       try {
-        ({port} = await zl.life.newZombie({port: chrome_port, username}));
+        ({port} = await zl.life.newZombie({port: chrome_port, /*username*/}));
         zl.act.setOptions({demoBlock});
       } catch(e) {
         console.warn("ZL start error", e);
@@ -94,24 +94,27 @@
       try {
         command.receivesFrames = receivesFrames && ! command.isZombieLordCommand;
         DEBUG.val && console.log(`Sending ${JSON.stringify(command)}...`);
-        const {data,frameBuffer,meta,totalBandwidth} = await timedSend(command, chrome_port);
-        DEBUG.val && console.log(`Sent ${JSON.stringify(command)}!`);
-        Data.push(data);
-        if ( meta ) {
-          // filter out all but the last resource for each targetId
-          const latestResourceForTarget = {};
-          const nonResourceMeta = meta.filter(mi => {
-            if ( ! mi.resource ) return true;
-            latestResourceForTarget[mi.resource.targetId] = mi;
-            return false;
-          });
-          Meta.push(...nonResourceMeta, ...Object.values(latestResourceForTarget));
+        const sendResult = await timedSend(command, chrome_port);
+        if ( sendResult ) {
+          const {data,frameBuffer,meta,totalBandwidth} = sendResult;
+          DEBUG.val && console.log(`Sent ${JSON.stringify(command)}!`);
+          Data.push(data);
+          if ( meta ) {
+            // filter out all but the last resource for each targetId
+            const latestResourceForTarget = {};
+            const nonResourceMeta = meta.filter(mi => {
+              if ( ! mi.resource ) return true;
+              latestResourceForTarget[mi.resource.targetId] = mi;
+              return false;
+            });
+            Meta.push(...nonResourceMeta, ...Object.values(latestResourceForTarget));
+          }
+          if ( frameBuffer) {
+            Frames.push(...frameBuffer);
+            while(Frames.length > MAX_FRAME) Frames.shift();
+          }
+          State.totalBandwidth = totalBandwidth;
         }
-        if ( frameBuffer) {
-          Frames.push(...frameBuffer);
-          while(Frames.length > MAX_FRAME) Frames.shift();
-        }
-        State.totalBandwidth = totalBandwidth;
       } catch(e) {
         console.warn(e);
         Data.push({error:e+''});

@@ -46,7 +46,7 @@
     const server_port = port;
 
     app.use(bodyParser.urlencoded({extended:true}));
-    app.use(bodyParser.json({extended:true}));
+    app.use(bodyParser.json());
     app.use(cookieParser());
     if ( start_mode == "signup" ) {
       app.get("/", (req,res) => res.sendFile(path.join(__dirname, 'public', 'index.html'))); 
@@ -259,7 +259,7 @@
         }
       }); 
       // error handling middleware
-        app.use('*', (err, req, res) => {
+        app.use('*', (err, req, res, next) => {
           try {
             res.type('json');
           } finally {
@@ -272,6 +272,7 @@
             res.write(message);
             res.end();
             console.warn(err);
+            next();
           }
         });
     }

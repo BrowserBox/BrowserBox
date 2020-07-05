@@ -1,38 +1,37 @@
+
+> remoteview@2.0.8 check /home/cris/RemoteView
+> rm -f public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check
+
+
+> remoteview@2.0.8 lint /home/cris/RemoteView
+> ./gglint.sh
+
+
 > remoteview@2.0.8 tsc-check /home/cris/RemoteView
 > ./tsc-check.sh
 
 
 > remoteview@2.0.8 tsc-server /home/cris/RemoteView
-> tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System *.js decs.d.ts
+> tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System server.js decs.d.ts
 
-index.js(2,26): error TS2345: Argument of type '{ "\"index\"": typeof import("/home/cris/RemoteView/server"); }' is not assignable to parameter of type 'NodeModule'.
-  Type '{ "\"index\"": typeof import("/home/cris/RemoteView/server"); }' is missing the following properties from type 'NodeModule': require, id, filename, loaded, and 3 more.
 node_modules/@types/node-fetch/index.d.ts(19,27): error TS2307: Cannot find module 'form-data' or its corresponding type declarations.
 public/translateVoodooCRDP.js(214,46): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
 public/translateVoodooCRDP.js(219,46): error TS2339: Property 'ViewportWidth' does not exist on type 'Window & typeof globalThis'.
 public/translateVoodooCRDP.js(643,28): error TS2339: Property 'ViewportHeight' does not exist on type 'Window & typeof globalThis'.
-rollup.config.js(1,19): error TS2307: Cannot find module 'rollup-plugin-babel' or its corresponding type declarations.
-rollup.config.js(2,22): error TS2307: Cannot find module 'rollup-plugin-commonjs' or its corresponding type declarations.
-rollup.config.js(3,21): error TS2307: Cannot find module 'rollup-plugin-node-resolve' or its corresponding type declarations.
 server.js(40,32): error TS2339: Property 'stack' does not exist on type '{}'.
+server.js(57,63): error TS2345: Argument of type '{ port: string; username: string; }' is not assignable to parameter of type '{ port: any; }'.
+  Object literal may only specify known properties, and 'username' does not exist in type '{ port: any; }'.
 server.js(97,16): error TS2339: Property 'data' does not exist on type 'void | { data: {}; frameBuffer: any; meta: any; totalBandwidth: any; }'.
 server.js(97,21): error TS2339: Property 'frameBuffer' does not exist on type 'void | { data: {}; frameBuffer: any; meta: any; totalBandwidth: any; }'.
 server.js(97,33): error TS2339: Property 'meta' does not exist on type 'void | { data: {}; frameBuffer: any; meta: any; totalBandwidth: any; }'.
 server.js(97,38): error TS2339: Property 'totalBandwidth' does not exist on type 'void | { data: {}; frameBuffer: any; meta: any; totalBandwidth: any; }'.
-spdy-server.js(2,20): error TS2307: Cannot find module 'spdy' or its corresponding type declarations.
-spdy-server.js(22,30): error TS2345: Argument of type '{ extended: boolean; }' is not assignable to parameter of type 'OptionsJson'.
-  Object literal may only specify known properties, and 'extended' does not exist in type 'OptionsJson'.
-spdy-server.js(24,12): error TS2339: Property 'data' does not exist on type 'void | { data: {}; frameBuffer: any; meta: any; totalBandwidth: any; }'.
-spdy-server.js(37,37): error TS2345: Argument of type '{ Data: any[]; Frames: any[]; Meta: any[]; }' is not assignable to parameter of type '{ Data: any; Frames: any; Meta: any; State: any; receivesFrames: any; }'.
-  Type '{ Data: any[]; Frames: any[]; Meta: any[]; }' is missing the following properties from type '{ Data: any; Frames: any; Meta: any; State: any; receivesFrames: any; }': State, receivesFrames
-spdy-server.js(47,14): error TS2339: Property 'data' does not exist on type 'void | { data: {}; frameBuffer: any; meta: any; totalBandwidth: any; }'.
 ws-server.js(49,30): error TS2345: Argument of type '{ extended: boolean; }' is not assignable to parameter of type 'OptionsJson'.
   Object literal may only specify known properties, and 'extended' does not exist in type 'OptionsJson'.
 ws-server.js(58,55): error TS2769: No overload matches this call.
   Overload 1 of 3, '(name: string, val: string, options: CookieOptions): Response<any>', gave the following error.
     Argument of type '{ secure: boolean; httpOnly: boolean; maxAge: number; sameSite: string; }' is not assignable to parameter of type 'CookieOptions'.
       Types of property 'sameSite' are incompatible.
-        Type 'string' is not assignable to type 'boolean | "none" | "strict" | "lax"'.
+        Type 'string' is not assignable to type 'boolean | "none" | "lax" | "strict"'.
   Overload 2 of 3, '(name: string, val: any, options: CookieOptions): Response<any>', gave the following error.
     Argument of type '{ secure: boolean; httpOnly: boolean; maxAge: number; sameSite: string; }' is not assignable to parameter of type 'CookieOptions'.
 ws-server.js(111,34): error TS2345: Argument of type 'Data' is not assignable to parameter of type 'string'.
@@ -51,13 +50,19 @@ ws-server.js(253,76): error TS2448: Block-scoped variable 'result' used before i
 ws-server.js(256,26): error TS2349: This expression is not callable.
   Not all constituents of type 'File[] | (<U>(callbackfn: (value: File, index: number, array: File[]) => U, thisArg?: any) => U[])' are callable.
     Type 'File[]' has no call signatures.
-ws-server.js(268,13): error TS2322: Type 'string | number' is not assignable to type 'string'.
+ws-server.js(264,17): error TS2339: Property 'type' does not exist on type 'NextFunction'.
+ws-server.js(268,15): error TS2322: Type 'string | number' is not assignable to type 'string'.
   Type 'number' is not assignable to type 'string'.
-ws-server.js(270,13): error TS2322: Type 'string | number' is not assignable to type 'string'.
+ws-server.js(268,46): error TS2339: Property 'message' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs>'.
+ws-server.js(268,66): error TS2339: Property 'stack' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs>'.
+ws-server.js(270,15): error TS2322: Type 'string | number' is not assignable to type 'string'.
   Type 'number' is not assignable to type 'string'.
+ws-server.js(270,39): error TS2339: Property 'message' does not exist on type 'Request<ParamsDictionary, any, any, ParsedQs>'.
+ws-server.js(272,17): error TS2339: Property 'write' does not exist on type 'NextFunction'.
+ws-server.js(273,17): error TS2339: Property 'end' does not exist on type 'NextFunction'.
+zombie-lord/connection.js(521,24): error TS2554: Expected 0 arguments, but got 2.
 zombie-lord/launcher.js(5,22): error TS2307: Cannot find module 'is-docker' or its corresponding type declarations.
 zombie-lord/launcher.js(17,20): error TS2525: Initializer provides no value for this binding element and the binding element has no default value.
-zombie-lord/launcher.js(17,26): error TS2525: Initializer provides no value for this binding element and the binding element has no default value.
 zombie-lord/launcher.js(57,39): error TS2345: Argument of type '{ port: any; ignoreDefaultFlags: boolean; handleSIGINT: boolean; userDataDir: string; logLevel: string; chromeFlags: string[]; }' is not assignable to parameter of type 'Options'.
   Types of property 'logLevel' are incompatible.
     Type 'string' is not assignable to type '"silent" | "error" | "verbose" | "info"'.
