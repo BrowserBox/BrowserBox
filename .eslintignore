@@ -1,2 +1,4 @@
 public/
 zombie-lord/injections
+typetests
+plugins/appminifier

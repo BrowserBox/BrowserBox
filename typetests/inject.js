@@ -41,13 +41,14 @@ System.register("voodoo/src/handlers/selectInput", [], function (exports_2, cont
         }
     };
 });
+/* eslint-disable no-useless-escape */
 System.register("kbd", [], function (exports_3, context_3) {
     "use strict";
     var keys;
     var __moduleName = context_3 && context_3.id;
     return {
         setters: [],
-        execute: function () {
+        execute: function () {/* eslint-disable no-useless-escape */
             keys = {
                 '0': { 'keyCode': 48, 'key': '0', 'code': 'Digit0' },
                 '1': { 'keyCode': 49, 'key': '1', 'code': 'Digit1' },
@@ -9689,13 +9690,14 @@ System.register("dist-start", ["voodoo/index", "getAPI", "translateVoodooCRDP", 
         }
     };
 });
-System.register("error_catchers", [], function (exports_55, context_55) {
+System.register("error_catchers", ["voodoo/src/common"], function (exports_55, context_55) {
     "use strict";
+    var common_js_20;
     var __moduleName = context_55 && context_55.id;
     function setupErrorCatchers() {
-        //DEBUG.dev && (self.onerror = (v) => (func(v, extractMeat(v).message, extractMeat(v).stack, v+''), true));
-        //DEBUG.dev && (self.onerror = (v) => (console.log(v), true));
-        //DEBUG.dev && (self.onunhandledrejection = ({reason}) => (func(JSON.stringify(reason,null,2)), true));
+        common_js_20.DEBUG.dev && (self.onerror = (v) => (func(v, extractMeat(v).message, extractMeat(v).stack, v + ''), true));
+        common_js_20.DEBUG.dev && (self.onerror = (v) => (console.log(v), true));
+        common_js_20.DEBUG.dev && (self.onunhandledrejection = ({ reason }) => (func(JSON.stringify(reason, null, 2)), true));
     }
     exports_55("default", setupErrorCatchers);
     function isMobile() {
@@ -9723,7 +9725,11 @@ System.register("error_catchers", [], function (exports_55, context_55) {
         }
     }
     return {
-        setters: [],
+        setters: [
+            function (common_js_20_1) {
+                common_js_20 = common_js_20_1;
+            }
+        ],
         execute: function () {
             setupErrorCatchers();
         }
@@ -11353,11 +11359,11 @@ System.register("index", ["landing", "pages/index", "./.well-known/index.js", "p
 });
 System.register("prod/setup-service-worker", ["voodoo/src/common"], function (exports_78, context_78) {
     "use strict";
-    var common_js_20;
+    var common_js_21;
     var __moduleName = context_78 && context_78.id;
     function setupServiceWorkers() {
-        if (common_js_20.DEBUG.serviceWorker && 'serviceWorker' in navigator) {
-            const refresh = common_js_20.DEBUG.resetCache ? 'CLEAR' + Math.random() : common_js_20.VERSION;
+        if (common_js_21.DEBUG.serviceWorker && 'serviceWorker' in navigator) {
+            const refresh = common_js_21.DEBUG.resetCache ? 'CLEAR' + Math.random() : common_js_21.VERSION;
             navigator.serviceWorker.register('/serviceWorker.js?v=' + refresh);
             navigator.serviceWorker.addEventListener("controllerchange", async (e) => {
                 console.log("Controller change", e);
@@ -11367,8 +11373,8 @@ System.register("prod/setup-service-worker", ["voodoo/src/common"], function (ex
     exports_78("default", setupServiceWorkers);
     return {
         setters: [
-            function (common_js_20_1) {
-                common_js_20 = common_js_20_1;
+            function (common_js_21_1) {
+                common_js_21 = common_js_21_1;
             }
         ],
         execute: function () {
@@ -11378,12 +11384,12 @@ System.register("prod/setup-service-worker", ["voodoo/src/common"], function (ex
 });
 System.register("prod/ask-before-unload", ["voodoo/src/common"], function (exports_79, context_79) {
     "use strict";
-    var common_js_21;
+    var common_js_22;
     var __moduleName = context_79 && context_79.id;
     function setupUnloadHandler() {
-        common_js_21.DEBUG.delayUnload && self.addEventListener('beforeunload', event => {
+        common_js_22.DEBUG.delayUnload && self.addEventListener('beforeunload', event => {
             const delayOffRequested = !!document.querySelector('form.delay-off');
-            if (common_js_21.DEBUG.delayUnload && !delayOffRequested) {
+            if (common_js_22.DEBUG.delayUnload && !delayOffRequested) {
                 event.preventDefault();
                 event.returnValue = `
         You are about to leave the browser.
@@ -11395,8 +11401,8 @@ System.register("prod/ask-before-unload", ["voodoo/src/common"], function (expor
     exports_79("default", setupUnloadHandler);
     return {
         setters: [
-            function (common_js_21_1) {
-                common_js_21 = common_js_21_1;
+            function (common_js_22_1) {
+                common_js_22 = common_js_22_1;
             }
         ],
         execute: function () {
