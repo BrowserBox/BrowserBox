@@ -16,13 +16,14 @@ System.register("args", [], function (exports_1, context_1) {
         }
     };
 });
+/* eslint-disable no-useless-escape */
 System.register("public/kbd", [], function (exports_2, context_2) {
     "use strict";
     var keys;
     var __moduleName = context_2 && context_2.id;
     return {
         setters: [],
-        execute: function () {
+        execute: function () {/* eslint-disable no-useless-escape */
             keys = {
                 '0': { 'keyCode': 48, 'key': '0', 'code': 'Digit0' },
                 '1': { 'keyCode': 49, 'key': '1', 'code': 'Digit1' },

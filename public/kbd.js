@@ -1,3 +1,5 @@
+/* eslint-disable no-useless-escape */
+
 const keys = {
   '0': {'keyCode': 48, 'key': '0', 'code': 'Digit0'},
   '1': {'keyCode': 49, 'key': '1', 'code': 'Digit1'},
@@ -248,4 +250,6 @@ const keys = {
   '}': {'keyCode': 221, 'key': '}', 'code': 'BracketRight'},
   '"': {'keyCode': 222, 'key': '"', 'code': 'Quote'}
 };
+/* eslint-enable no-useless-escape*/
+
 export default keys;
