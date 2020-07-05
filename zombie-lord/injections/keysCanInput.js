@@ -1,3 +1,4 @@
+/* eslint-disable no-inner-declarations */
 /*
   This provides event for
   when focus moves to a element
@@ -72,3 +73,4 @@
     console.log(JSON.stringify({keyInput:o}));
   }
 }
+/* eslint-enable no-inner-declarations */

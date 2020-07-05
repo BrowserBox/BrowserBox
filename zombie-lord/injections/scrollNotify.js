@@ -1,3 +1,4 @@
+/* eslint-disable no-inner-declarations */
 {
   const THROTTLE_MS = 200;
   const WAIT_FOR_SCROLL = 150;
@@ -75,3 +76,4 @@
     return;
   }
 }
+/* eslint-enable no-inner-declarations */

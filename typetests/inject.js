@@ -2966,7 +2966,7 @@ System.register("voodoo/src/eventQueue", ["voodoo/src/common"], function (export
                         this.publics.queue.splice(0, splice_index);
                     }
                     if (chain) {
-                        this.sendEventChain({ chain, url }).then(({ data, meta, totalBandwidth }) => {
+                        this.sendEventChain({ chain, url }).then(({ /*data,*/ meta, totalBandwidth }) => {
                             if (!!meta && meta.length) {
                                 meta.forEach(metaItem => {
                                     const executionContextId = metaItem.executionContextId;
@@ -3920,7 +3920,7 @@ System.register("voodoo/src/subviews/controls", ["kbd", "voodoo/src/common", "vo
       * This limits us to only consider appending or deleting at the END
       * of the textarea.
     **/
-    function limitCursor(event) {
+    function limitCursor( /*event*/) {
         /*
         const target = event.target;
         target.selectionStart = target.selectionEnd = target.value.length;
@@ -4002,12 +4002,11 @@ System.register("voodoo/src/subviews/pluginsMenu", ["voodoo/node_modules/dumbass
     "use strict";
     var r_js_7, pluginsMenuButton_js_2;
     var __moduleName = context_25 && context_25.id;
-    //let pmEl;
     function PluginsMenu(state, { bondTasks: bondTasks = [], } = {}) {
         return r_js_7.d `
     <nav class=plugins-menu 
       bond=${[
-            el => pmEl = state.viewState.pmEl = el,
+            el => state.viewState.pmEl = el,
             () => console.log(`PMA?${!!state.pluginsMenuActive}`),
             ...bondTasks
         ]} 
@@ -6614,7 +6613,7 @@ System.register("voodoo/src/view", ["voodoo/src/common", "voodoo/src/constructor
         const { H, /*sizeBrowserToBounds,*/ asyncSizeBrowserToBounds, emulateNavigator, bondTasks, /*installFrameListener,*/ canvasBondTasks } = state;
         const audio_port = 1 + Number(location.port ? location.port : (location.protocol == 'https' ? 443 : 80));
         const audio_url = `${location.protocol}//${location.hostname}:${audio_port}/`;
-        const FocusBorrowerSel = '[name="address"], #selectinput, .control';
+        //const FocusBorrowerSel = '[name="address"], #selectinput, .control';
         const viewState = Object.assign(state.viewState, {
             touchX: 0, touchY: 0,
             textarea: null,

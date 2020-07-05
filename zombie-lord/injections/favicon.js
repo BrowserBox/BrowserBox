@@ -1,3 +1,4 @@
+/* eslint-disable no-inner-declarations */
 {
   let faviconSent = false;
   let faviconDataUrl;
@@ -57,3 +58,4 @@
     console.log(JSON.stringify({favicon:o}));
   }
 }
+/* eslint-enable no-inner-declarations */

@@ -1,3 +1,4 @@
+/* eslint-disable no-inner-declarations */
 {
   install();
 
@@ -26,3 +27,4 @@
     }
   }
 }
+/* eslint-enable no-inner-declarations */
