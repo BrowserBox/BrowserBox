@@ -16,7 +16,7 @@
 			click mousemove mouseover mouseout mousedown pointerdown pointerup pointermove 
 		`.split(/\s+/g).filter(s => s.length);
 		const Styles = {
-			position: 'absolute',
+			position: 'fixed',
 			pointerEvents: 'none',
 			transform: 'translate(-50%, -50%)',
 			zIndex:999999999,
