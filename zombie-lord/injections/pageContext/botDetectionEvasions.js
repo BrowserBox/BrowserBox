@@ -36,6 +36,25 @@
 		for( const eventName of Events ) {
 			document.addEventListener(eventName, showPosition);
 		}
+
+		document.defaultView.addEventListener('resize', () => {
+			const div = document.createElement('div');
+			Object.assign(div.style, Styles);
+			Object.assign(div.style, {
+				left: window.innerWidth/2+'px',
+				top: (window.innerHeight - window.innerHeight*0.85)+10+'px',
+				width: '66px',
+				borderColor: 'red',
+				background: 'lime',
+				textAlign: 'center'
+			})
+			div.style.position = 'fixed';
+			div.innerText = 'RESIZE';
+			setTimeout(() => {
+				div.remove();
+			}, 3000);
+			document.body.insertAdjacentElement('beforeend', div);
+		});
 	}
 
 	// display a marker
