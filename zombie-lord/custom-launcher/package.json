@@ -24,6 +24,7 @@
     "@types/node": "*",
     "is-wsl": "^2.1.0",
     "lighthouse-logger": "^1.0.0",
+    "minimist": "^1.2.5",
     "mkdirp": "0.5.1",
     "rimraf": "^2.6.1"
   },
