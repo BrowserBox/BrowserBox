@@ -10,7 +10,6 @@
     "type-check": "tsc --allowJs --checkJs --noEmit --target es2016 *.js"
   },
   "devDependencies": {
-    "@types/mkdirp": "^0.3.29",
     "@types/mocha": "^5.2.7",
     "@types/rimraf": "^0.0.28",
     "@types/sinon": "^2.3.1",
@@ -25,7 +24,6 @@
     "is-wsl": "^2.1.0",
     "lighthouse-logger": "^1.0.0",
     "minimist": "^1.2.5",
-    "mkdirp": "0.5.1",
     "rimraf": "^2.6.1"
   },
   "version": "0.12.0",
