@@ -30,7 +30,7 @@
 		}
 		const positionMarkers = [];
 
-	install();
+	//install();
 
 	function install() {
 		for( const eventName of Events ) {
