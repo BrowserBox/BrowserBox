@@ -325,7 +325,7 @@ function translator(e, handled = {type:'case'}) {
       height = parseInt(height);
       const retVal = {
           command: {
-            name: "Emulation.setVisibleSize",
+            name: "Emulation.setDeviceMetricsOverride",
             params: {width,height},
           },
           requiresShot: true,

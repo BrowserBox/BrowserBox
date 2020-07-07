@@ -222,7 +222,7 @@
           state.attached.add(attached.targetId);
 
           if ( state.useViewFrame ) {
-            sizeBrowserToBounds(state.viewState.viewFrameEl, true);
+            sizeBrowserToBounds(state.viewState.viewFrameEl);
           } else {
             asyncSizeBrowserToBounds(state.viewState.canvasEl);
             emulateNavigator();
@@ -643,34 +643,18 @@
         }
       }
 
-      function sizeBrowserToBounds(el, firstTime = false) {
+      function sizeBrowserToBounds(el) {
         let {width, height} = el.getBoundingClientRect();
         width = Math.round(width);
         height = Math.round(height);
-        const {innerWidth:iw, outerWidth:ow, innerHeight:ih, outerHeight:oh} = window;
-        const {width:w, availWidth:aw, height:h, availHeight:ah} = screen;
-        width = iw;
-        if ( DEBUG.val > DEBUG.high ) {
-          logit({iw,ow,ih,oh,width,height, w, aw, h, ah});
-        }
-        if ( ! el.dataset.sized && (el.width != width || el.height != height)) {
-          el.dataset.sized = true;
+        if ( el.width != width || el.height != height ) {
           el.width = width;
           el.height = height;
         }
         const mobile = deviceIsMobile();
-        if ( firstTime ) {
-          H({ synthetic: true,
-            type: "window-bounds",
-            width:width + (mobile ? 0 : 17),  /* scrollbar */
-            mobile,
-            height:height + 64,
-            targetId: state.activeTarget
-          });
-        }
         H({ synthetic: true,
           type: "window-bounds-preImplementation",
-          width:width + (mobile ? 0 : 17),  /* scrollbar */
+          width,
           height,
           mobile,
           targetId: state.activeTarget
@@ -679,12 +663,12 @@
         self.ViewportHeight = height;
       }
 
-      /*function sizeTab() {
+      function sizeTab() {
         return sizeBrowserToBounds(state.viewState.canvasEl);
-      }*/
+      }
 
       function asyncSizeBrowserToBounds(el) {
-        setTimeout(() => (sizeBrowserToBounds(el, true), indicateNoOpenTabs()), 0);
+        setTimeout(() => (sizeBrowserToBounds(el), indicateNoOpenTabs()), 0);
       }
 
       function emulateNavigator() {
@@ -717,7 +701,7 @@
             requiresShot: true,
           }
         });
-        //sizeTab();
+        sizeTab();
         canKeysInput();
         state.lastTarget = state.activeTarget;
         state.activeTarget = targetId;

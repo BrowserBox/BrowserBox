@@ -425,8 +425,10 @@ export default class EventQueue {
       };
       imageEl.addEventListener('load', () => {
         const canv = this.state.viewState.canvasEl;
+        /**
         canv.width = imageEl.width;
         canv.height = imageEl.height;
+        **/
         const ctx = this.state.viewState.ctx;
         ctx.drawImage(imageEl,0,0);
         frameDrawing = false;
