@@ -9,7 +9,7 @@
   import {resetFavicon, handleFaviconMessage} from './handlers/favicon.js';
   import EventQueue from './eventQueue.js';
   import transformEvent from './transformEvent.js';
-  import {sleep, debounce, DEBUG, BLANK, isFirefox,logit, isSafari, deviceIsMobile} from './common.js';
+  import {sleep, debounce, DEBUG, BLANK, isFirefox, isSafari, deviceIsMobile} from './common.js';
   import {component, subviews} from './view.js';
 
   import installDemoPlugin from '../../plugins/demo/installPlugin.js';

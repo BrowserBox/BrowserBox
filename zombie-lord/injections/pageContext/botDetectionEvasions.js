@@ -11,6 +11,7 @@
   /* eslint-disable no-inner-declarations */
   // temp location pointer targeting diagnois code
 
+  /**
 	// state and config
 		const Events = `
 			click mousemove mouseover mouseout mousedown pointerdown pointerup pointermove 
@@ -30,7 +31,7 @@
 		}
 		const positionMarkers = [];
 
-	//install();
+	install();
 
 	function install() {
 		for( const eventName of Events ) {
@@ -81,7 +82,7 @@
 			() => {
 				const Now = Date.now();
 				let spliceCount = 0;
-				for( const {timestamp, div, remove} of positionMarkers) {
+				for( const {timestamp, remove} of positionMarkers) {
 					const age = Now - timestamp;
 					if ( age > 500 ) {
 						remove(Math.max(0, 1000 - age));
@@ -90,6 +91,7 @@
 				}
 				positionMarkers.splice(0, spliceCount);
 			}, 1000);
+  **/
 
   /* eslint-enable no-inner-declarations */
 }
