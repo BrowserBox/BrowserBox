@@ -653,6 +653,12 @@
         }
         const mobile = deviceIsMobile();
         H({ synthetic: true,
+          type: "window-bounds",
+          width,
+          height,
+          targetId: state.activeTarget
+        });
+        H({ synthetic: true,
           type: "window-bounds-preImplementation",
           width,
           height,
