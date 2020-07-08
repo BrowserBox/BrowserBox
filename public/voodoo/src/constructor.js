@@ -214,6 +214,7 @@
             }
           }
           updateTabs();
+          sizeBrowserToBounds(state.viewState.canvasEl, meta.created.targetId);
         }
       });
       queue.addMetaListener('attached', meta => {
@@ -222,9 +223,9 @@
           state.attached.add(attached.targetId);
 
           if ( state.useViewFrame ) {
-            sizeBrowserToBounds(state.viewState.viewFrameEl);
+            sizeBrowserToBounds(state.viewState.viewFrameEl, attached.targetId);
           } else {
-            asyncSizeBrowserToBounds(state.viewState.canvasEl);
+            sizeBrowserToBounds(state.viewState.canvasEl, attached.targetId);
             emulateNavigator();
           }
           updateTabs();
@@ -643,7 +644,7 @@
         }
       }
 
-      function sizeBrowserToBounds(el) {
+      function sizeBrowserToBounds(el, targetId) {
         let {width, height} = el.getBoundingClientRect();
         width = Math.round(width);
         height = Math.round(height);
@@ -656,14 +657,14 @@
           type: "window-bounds",
           width,
           height,
-          targetId: state.activeTarget
+          targetId: targetId || state.activeTarget
         });
         H({ synthetic: true,
           type: "window-bounds-preImplementation",
           width,
           height,
           mobile,
-          targetId: state.activeTarget
+          targetId: targetId || state.activeTarget
         });
         self.ViewportWidth = width;
         self.ViewportHeight = height;
@@ -720,6 +721,7 @@
         subviews.TabList(state);
         subviews.OmniBox(state);
         subviews.LoadingIndicator(state);
+        sizeBrowserToBounds(state.viewState.canvasEl);
         setTimeout(() => {
           if ( state.active && state.active.url != BLANK ) {
             canKeysInput();

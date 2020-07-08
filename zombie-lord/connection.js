@@ -506,7 +506,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
           sessionId
         );
       await send(
-        "Emulation.setVisibleSize", 
+        "Emulation.setDeviceMetricsOverride", 
         connection.bounds,
         sessionId
       );
@@ -553,9 +553,8 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         return {};
       }
     }
-    if ( command.name == "Emulation.setVisibleSize" ) {
-      connection.bounds.width = command.params.width;
-      connection.bounds.height = command.params.height;
+    if ( command.name == "Emulation.setDeviceMetricsOverride" ) {
+      Object.assign(connection.bounds, command.params);
     }
     if ( command.name == "Emulation.setScrollbarsHidden" ) {
       connection.hideBars = command.params.hidden;

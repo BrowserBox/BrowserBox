@@ -319,16 +319,24 @@ function translator(e, handled = {type:'case'}) {
       return retVal;
     }
     case "window-bounds-preImplementation": {
-      // This is here until Browser.getWindowForTarget and Browser.setWindowBounds come online
-      let {width,height} = e;
+      let {width,height,mobile} = e;
       width = parseInt(width);
       height = parseInt(height);
       const retVal = {
-          command: {
-            name: "Emulation.setDeviceMetricsOverride",
-            params: {width,height},
-          },
-          requiresShot: true,
+        command: {
+          name: "Emulation.setDeviceMetricsOverride",
+          params: {
+            width,
+            height,
+            mobile,
+            deviceScaleFactor:1,
+            screenOrientation: {
+              angle: 90,
+              type: 'landscapePrimary'
+            }
+          }
+        },
+        requiresShot: true,
       };
       return retVal;
     }
