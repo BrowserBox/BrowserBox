@@ -275,9 +275,9 @@
 
       // File chooser 
       queue.addMetaListener('fileChooser', ({fileChooser}) => {
-        const {sessionId, mode} = fileChooser;
+        const {sessionId, mode, accept} = fileChooser;
         const modal = {
-          sessionId, mode,
+          sessionId, mode, accept,
           type: 'filechooser',
           message: `Securely send files to the remote page.`,
           title: `File Chooser`,

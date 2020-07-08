@@ -130,7 +130,7 @@ export function makeCamera(connection) {
 
     queueTailShot();
 
-    DEBUG.val > DEBUG.high && console.log({framesWaiting:connection.frameBuffer.length, now: Date.now()});
+    DEBUG.shotDebug && console.log({framesWaiting:connection.frameBuffer.length, now: Date.now()});
   }
 
   async function doShot() {
