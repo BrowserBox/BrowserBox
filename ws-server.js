@@ -353,9 +353,12 @@
   }
 
   function nextFileName(ext = '') {
+    console.log({nextFileName:{ext}});
     if ( ! ext.startsWith('.') ) {
       ext = '.' + ext;
     }
-    return `file${(Math.random()*1000000).toString(36)}${ext}`;
+    const name = `file${(Math.random()*1000000).toString(36)}${ext}`;
+    console.log({nextFileName:{name}});
+    return name;
   }
  
