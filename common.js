@@ -14,8 +14,8 @@ export const DEBUG = {
   IMAGE_FORMAT,                     /* JPEG, PNG, or WEBP (if supported (so not Safari)) */
   shotDebug: false,
   noShot: false,
-  dev: false,
-  val: 0,
+  dev: true,
+  val: 6,
   low: 1,
   med: 3,
   high: 5
