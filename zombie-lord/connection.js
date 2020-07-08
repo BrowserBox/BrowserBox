@@ -393,6 +393,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       connection.meta.push({resource}); 
     } else if ( message.method == "Network.loadingFailed" ) {
       const resource = endLoading(sessionId);
+      resource.failed = message;
       connection.meta.push({resource}); 
     } else if ( message.method == "Network.responseReceived" ) {
       const resource = endLoading(sessionId);
