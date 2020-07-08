@@ -10,19 +10,19 @@ export function Wrap(state, title, contentIntro, contentBody) {
       <meta name=author content="BrowserGap">
       <meta name=copright content="The Dosyago Corporation, Newark, DE">
       <meta name=robots content="index,follow">
-			<!-- aux meta -->
-				<!-- Twitter -->
-					<meta property="twitter:card" content="summary_large_image">
-					<meta property="twitter:url" content="https://browsergap.xyz/">
-					<meta property="twitter:title" content="BrowserGap. Remote browser isolation.">
-					<meta property="twitter:description" content="BrowserGap puts you first with the most familiar and secure browser isolation serivce, while our remote and fully isolated cloud browsers protect your network.">
-					<meta property="twitter:image" content="https://browsergap.xyz/images/3rd-party/undraw/security.svg"> 
-				<!-- Open Graph / Facebook -->
-					<meta property="og:type" content="website">
-					<meta property="og:url" content="https://browsergap.xyz">
-					<meta property="og:title" content="BrowserGap. Remote browser isolation.">
-					<meta property="og:description" content="BrowserGap puts you first with the most familiar and secure browser isolation serivce, while our remote and fully isolated cloud browsers protect your network.">
-					<meta property="og:image" content="https://browsergap.xyz/images/3rd-party/undraw/security.svg">
+      <!-- aux meta -->
+        <!-- Twitter -->
+          <meta property="twitter:card" content="summary_large_image">
+          <meta property="twitter:url" content="https://browsergap.xyz/">
+          <meta property="twitter:title" content="BrowserGap. Remote browser isolation.">
+          <meta property="twitter:description" content="BrowserGap puts you first with the most familiar and secure browser isolation serivce, while our remote and fully isolated cloud browsers protect your network.">
+          <meta property="twitter:image" content="https://browsergap.xyz/images/3rd-party/undraw/security.svg"> 
+        <!-- Open Graph / Facebook -->
+          <meta property="og:type" content="website">
+          <meta property="og:url" content="https://browsergap.xyz">
+          <meta property="og:title" content="BrowserGap. Remote browser isolation.">
+          <meta property="og:description" content="BrowserGap puts you first with the most familiar and secure browser isolation serivce, while our remote and fully isolated cloud browsers protect your network.">
+          <meta property="og:image" content="https://browsergap.xyz/images/3rd-party/undraw/security.svg">
       <title>
         BrowserGap &mdash; ${title}
       </title>

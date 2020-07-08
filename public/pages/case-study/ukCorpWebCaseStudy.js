@@ -6,7 +6,7 @@ export function UKCorpWeb(state) {
             <div class=story>
               <h1>Case Study: 100s of Company Computers Infected by Web Malware</h1>
               <p>
-                Attackers use company's own corporate website to deliver malware to employees machines through their browser.	
+                Attackers use company's own corporate website to deliver malware to employees machines through their browser. 
               </p>
             </div>
             <div class=graphic>
