@@ -1,17 +1,17 @@
 
-> remoteview@2.0.8 check /home/cris/RemoteView
+> remoteview@2.0.8 check /home/cris/BrowserGap
 > rm -f public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check
 
 
-> remoteview@2.0.8 lint /home/cris/RemoteView
+> remoteview@2.0.8 lint /home/cris/BrowserGap
 > ./gglint.sh
 
 
-> remoteview@2.0.8 tsc-check /home/cris/RemoteView
+> remoteview@2.0.8 tsc-check /home/cris/BrowserGap
 > ./tsc-check.sh
 
 
-> remoteview@2.0.8 tsc-server /home/cris/RemoteView
+> remoteview@2.0.8 tsc-server /home/cris/BrowserGap
 > tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System server.js decs.d.ts
 
 node_modules/@types/node-fetch/index.d.ts(19,27): error TS2307: Cannot find module 'form-data' or its corresponding type declarations.
@@ -69,7 +69,7 @@ zombie-lord/launcher.js(57,39): error TS2345: Argument of type '{ port: any; ign
 zombie-lord/screenShots.js(96,12): error TS2339: Property 'data' does not exist on type '{}'.
 zombie-lord/screenShots.js(96,17): error TS2339: Property 'screenshotData' does not exist on type '{}'.
 
-> remoteview@2.0.8 tsc-inject /home/cris/RemoteView
+> remoteview@2.0.8 tsc-inject /home/cris/BrowserGap
 > tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System zombie-lord/injections/**/*.js decs.d.ts
 
 node_modules/@types/node-fetch/index.d.ts(19,27): error TS2307: Cannot find module 'form-data' or its corresponding type declarations.
@@ -93,7 +93,7 @@ zombie-lord/injections/pageContext/botDetectionEvasions.js(302,16): error TS2540
 zombie-lord/injections/pageContext/botDetectionEvasions.js(303,16): error TS2540: Cannot assign to 'movementY' because it is a read-only property.
 zombie-lord/injections/pageContext/botDetectionEvasions.js(306,9): error TS2339: Property '__proto__' does not exist on type 'MouseEvent'.
 
-> remoteview@2.0.8 tsc-public /home/cris/RemoteView
+> remoteview@2.0.8 tsc-public /home/cris/BrowserGap
 > tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System public/*.js decs.d.ts
 
 node_modules/@types/node-fetch/index.d.ts(19,27): error TS2307: Cannot find module 'form-data' or its corresponding type declarations.
@@ -136,8 +136,8 @@ public/serviceWorker.js(40,73): error TS2339: Property 'Clients' does not exist 
 public/serviceWorker.js(44,17): error TS2339: Property 'skipWaiting' does not exist on type 'Event'.
 public/serviceWorker.js(50,43): error TS2339: Property 'waitUntil' does not exist on type 'Event'.
 public/serviceWorker.js(134,40): error TS2339: Property 'registration' does not exist on type 'Window & typeof globalThis'.
-public/site.js(2,26): error TS2345: Argument of type '{ "\"/home/cris/RemoteView/public/site\"": typeof import("public/index"); }' is not assignable to parameter of type 'NodeModule'.
-  Type '{ "\"/home/cris/RemoteView/public/site\"": typeof import("public/index"); }' is missing the following properties from type 'NodeModule': require, id, filename, loaded, and 3 more.
+public/site.js(2,26): error TS2345: Argument of type '{ "\"/home/cris/BrowserGap/public/site\"": typeof import("public/index"); }' is not assignable to parameter of type 'NodeModule'.
+  Type '{ "\"/home/cris/BrowserGap/public/site\"": typeof import("public/index"); }' is missing the following properties from type 'NodeModule': require, id, filename, loaded, and 3 more.
 public/start-demo-app.js(11,31): error TS2345: Argument of type '{ api: string; translator: (e: any, handled?: { type: string; }) => any; useViewFrame: true; demoMode: true; }' is not assignable to parameter of type '{ api: any; translator: any; image: any; useViewFrame?: boolean; demoMode?: boolean; }'.
   Property 'image' is missing in type '{ api: string; translator: (e: any, handled?: { type: string; }) => any; useViewFrame: true; demoMode: true; }' but required in type '{ api: any; translator: any; image: any; useViewFrame?: boolean; demoMode?: boolean; }'.
 public/start-demo-app.js(12,8): error TS2339: Property 'voodoo' does not exist on type 'Window & typeof globalThis'.

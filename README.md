@@ -1,12 +1,12 @@
-# :satellite: [RemoteView](https://github.com/dosyago/RemoteView) ![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) ![npm downloads](https://img.shields.io/npm/dt/remoteview)
+# :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) ![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) ![npm downloads](https://img.shields.io/npm/dt/remoteview)
 
 ## About
 
-Formerly *BrowserGap Community Edition*. Currently called RemoteView, and lets you interactively live-stream a remote browser.
+Formerly *BrowserGap Community Edition*. Currently called BrowserGap, and lets you interactively live-stream a remote browser.
 
 This work is released under an OSS license, and is &copy; [Cris Stringfellow](https://github.com/cris691/Portfolio). All my own work. 
 
-For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=RemoteView&body=Hey%20Cris%2C%0D%0A)
+For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=BrowserGap&body=Hey%20Cris%2C%0D%0A)
 
 ## Get and self-host
 
@@ -14,7 +14,7 @@ For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=RemoteView&bo
 
 Glone this repo
 
-`git clone https://github.com/dosyago/RemoteView.git`
+`git clone https://github.com/dosyago/BrowserGap.git`
 
 or Install from npm 
 
@@ -33,17 +33,17 @@ Even tho RV uses headless Chrome, it attempts to conceal that fact. Sometimes, a
 
 ## In depth
 
-RemoteView is a platform for live streaming the browser, with full interactivity. It lets you plug in to a local or remote, even a headless browser, and fly it as if it's a normal browser. 
+BrowserGap is a platform for live streaming the browser, with full interactivity. It lets you plug in to a local or remote, even a headless browser, and fly it as if it's a normal browser. 
 
 You can stream a remote browser with special cusotmizations to your clients to side step the restrictions of regular browsers. You can use it to build rich experiences based on the browser that are not possible using Flash, Browser Extensions or regular Web Driver protocol. 
 
-For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=RemoteView)
+For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=BrowserGap)
 
 [Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k), or just watch the GIF below:
 
 ![GIF of browser in action](https://j.gifs.com/E8yzLv.gif)
 
-RemoteView is a HTML/CSS/JavaScript "ground control" or "remote control" for a browser. It also looks and works just like a browser, but it runs in your browser and controls another browser.
+BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a browser. It also looks and works just like a browser, but it runs in your browser and controls another browser.
 
 ![browser in a browser](readme-files/tenor.gif)
 
@@ -63,8 +63,8 @@ Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
 ```sh
 sudo apt update && sudo apt -y upgrade
 sudo apt install -y curl git wget
-git clone https://github.com/dosyago/RemoteView
-cd RemoteView
+git clone https://github.com/dosyago/BrowserGap
+cd BrowserGap
 ./setup_machine.sh
 npm test
 ```
@@ -74,8 +74,8 @@ Or (using docker build yourself for latest)
 ```sh
 sudo apt update && sudo apt -y upgrade
 sudo apt install -y curl git wget
-git clone https://github.com/dosyago/RemoteView
-cd RemoteView
+git clone https://github.com/dosyago/BrowserGap
+cd BrowserGap
 ./buld_docker.sh
 ./run_docker.sh 
 ```
@@ -84,7 +84,7 @@ Or (using docker pull from hub)
 
 ```sh
 docker pull dosyago/browsergapce:1.0
-curl -o chrome.json https://raw.githubusercontent.com/dosyago/RemoteView/master/chrome.json
+curl -o chrome.json https://raw.githubusercontent.com/dosyago/BrowserGap/master/chrome.json
 sudo su -c "echo 'kernel.unprivileged_userns_clone=1' > /etc/sysctl.d/00-local-userns.conf"
 sudo su -c "echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/01-network-ipv4.conf"
 sudo sysctl -p
