@@ -17,7 +17,7 @@ export function Controls(state) {
           <button ${state.tabs.length?'':'disabled'} name=history_action title=Forward value=forward class=forward>&gt;</button>
         </form>
     </nav>
-		<nav class="controls keyinput aux" stylist="styleNavControl">
+    <nav class="controls keyinput aux" stylist="styleNavControl">
       <!--Text-->
         <form class=kbd-input submit=${e => e.preventDefault()}>
           <input tabindex=-1 class=control name=key_input size=2
@@ -51,7 +51,7 @@ export function Controls(state) {
             }}
             ></textarea>
         </form>
-		</nav>
+    </nav>
     ${OmniBox(state)}
     ${DEBUG.pluginsMenu ? PluginsMenuButton(state) : ''}
   `;

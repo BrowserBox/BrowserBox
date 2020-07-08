@@ -13,31 +13,31 @@ const KEYS = [
   const WEBP_FORMAT = {
     format: "png"
   };
-	const SAFARI_FORMAT = {
-		format: "jpeg",
-		quality: 35 /* 25, 50, 80, 90, 100 */
-	};
-	const SAFARI_SHOT = {
-		command: {
-			name: DEBUG.legacyShots ? "Page.captureScreenshot" : "HeadlessExperimental.beginFrame",
-			params: DEBUG.legacyShots ? SAFARI_FORMAT : {
-				interval: MIN_TIME_BETWEEN_SHOTS, /* ms between frames */
-				screenshot : SAFARI_FORMAT
-			}
-		}
-	};
-	const WEBP_SHOT = {
-		command: {
-			name: DEBUG.legacyShots ? "Page.captureScreenshot" : "HeadlessExperimental.beginFrame",
-			params: DEBUG.legacyShots ? WEBP_FORMAT : {
-				interval: MIN_TIME_BETWEEN_SHOTS, /* ms between frames */
-				screenshot : WEBP_FORMAT
-			}
-		}
-	};
-	const WEBP_OPTS = {
-		quality: 42,
-	};
+  const SAFARI_FORMAT = {
+    format: "jpeg",
+    quality: 35 /* 25, 50, 80, 90, 100 */
+  };
+  const SAFARI_SHOT = {
+    command: {
+      name: DEBUG.legacyShots ? "Page.captureScreenshot" : "HeadlessExperimental.beginFrame",
+      params: DEBUG.legacyShots ? SAFARI_FORMAT : {
+        interval: MIN_TIME_BETWEEN_SHOTS, /* ms between frames */
+        screenshot : SAFARI_FORMAT
+      }
+    }
+  };
+  const WEBP_SHOT = {
+    command: {
+      name: DEBUG.legacyShots ? "Page.captureScreenshot" : "HeadlessExperimental.beginFrame",
+      params: DEBUG.legacyShots ? WEBP_FORMAT : {
+        interval: MIN_TIME_BETWEEN_SHOTS, /* ms between frames */
+        screenshot : WEBP_FORMAT
+      }
+    }
+  };
+  const WEBP_OPTS = {
+    quality: 42,
+  };
 
 export function makeCamera(connection) {
   let shooting = false;
@@ -88,7 +88,7 @@ export function makeCamera(connection) {
     }
     const targetId = connection.sessions.get(connection.sessionId);
     let response;
-		const ShotCommand = (connection.isSafari || connection.isFirefox ? SAFARI_SHOT : WEBP_SHOT).command;
+    const ShotCommand = (connection.isSafari || connection.isFirefox ? SAFARI_SHOT : WEBP_SHOT).command;
     DEBUG.val > DEBUG.high && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
     response = await connection.sessionSend(ShotCommand);
     lastShot = timeNow;
@@ -106,7 +106,7 @@ export function makeCamera(connection) {
         return NOIMAGE;
       } else {
         lastHash = F.hash;
-				await forExport({frame:F, connection});
+        await forExport({frame:F, connection});
         return F;
       }
     } else {

@@ -13,16 +13,16 @@ export function Security(state) {
       <section class=content>
         <section class=legal>
           <div class=document>
-						<h1>Brand Promise</h1>
+            <h1>Brand Promise</h1>
             <p>
               Keeping user information safe and secure is a top priority for us at The Dosyago Corporation, and we welcome the contribution of external security researchers to report vulnerabilities in a responsible manner for BrowserGap.
-						<h1>Scope</h1>
+            <h1>Scope</h1>
             <p>
               If you believe you've found a security issue in any website, service, or software owned or operated by The Dosyago Corporation, we encourage you to notify us.
-						<h1>How to Submit a Report</h1>
+            <h1>How to Submit a Report</h1>
             <p>
               To submit a vulnerability report to The Dosyago Corporation, please contact us at cris@dosyago.com. Your submission will be reviewed and validated by a member of our security team.
-						<h1>Safe Harbor</h1>
+            <h1>Safe Harbor</h1>
             <p>
               The Dosyago Corporation supports safe harbor for security researchers who:
             <ol>
@@ -34,7 +34,7 @@ export function Security(state) {
               We will consider activities conducted consistent with this policy to constitute "authorized" conduct and will not pursue civil action or initiate a complaint to law enforcement. We will help to the extent we can if legal action is initiated by a third party against you.
             <p>
               Please submit a report to us before engaging in conduct that may be inconsistent with or unaddressed by this policy.
-						<h1>Preferences</h1>
+            <h1>Preferences</h1>
             <ol>
               <li>Please provide detailed reports with reproducible steps and a clearly defined impact.
               <li>Submit one vulnerability per report.

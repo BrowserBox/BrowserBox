@@ -31,7 +31,7 @@
       app.post(`/api/${version}/zombie`, async (req,res) => {
         const Data = [], Frames = [], Meta = [];
 
-        const {events} = req.body;	
+        const {events} = req.body;  
         
         await eventSendLoop(events, {Data, Frames, Meta});
 

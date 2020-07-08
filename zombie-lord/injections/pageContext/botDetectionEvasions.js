@@ -12,85 +12,85 @@
   // temp location pointer targeting diagnois code
 
   /**
-	// state and config
-		const Events = `
-			click mousemove mouseover mouseout mousedown pointerdown pointerup pointermove 
-		`.split(/\s+/g).filter(s => s.length);
-		const Styles = {
-			position: 'fixed',
-			pointerEvents: 'none',
-			transform: 'translate(-50%, -50%)',
-			zIndex:999999999,
-			display: 'block',
-			width: '1rem',
-			height: '1rem',
-			background: 'transparent',
-			border: 'medium solid aqua',
-			left: '0px',
-			top: '0px'
-		}
-		const positionMarkers = [];
+  // state and config
+    const Events = `
+      click mousemove mouseover mouseout mousedown pointerdown pointerup pointermove 
+    `.split(/\s+/g).filter(s => s.length);
+    const Styles = {
+      position: 'fixed',
+      pointerEvents: 'none',
+      transform: 'translate(-50%, -50%)',
+      zIndex:999999999,
+      display: 'block',
+      width: '1rem',
+      height: '1rem',
+      background: 'transparent',
+      border: 'medium solid aqua',
+      left: '0px',
+      top: '0px'
+    }
+    const positionMarkers = [];
 
-	install();
+  install();
 
-	function install() {
-		for( const eventName of Events ) {
-			document.addEventListener(eventName, showPosition);
-		}
+  function install() {
+    for( const eventName of Events ) {
+      document.addEventListener(eventName, showPosition);
+    }
 
-		document.defaultView.addEventListener('resize', () => {
-			const div = document.createElement('div');
-			Object.assign(div.style, Styles);
-			Object.assign(div.style, {
-				left: window.innerWidth/2+'px',
-				top: (window.innerHeight - window.innerHeight*0.85)+10+'px',
-				width: '66px',
-				borderColor: 'red',
-				background: 'lime',
-				textAlign: 'center'
-			})
-			div.style.position = 'fixed';
-			div.innerText = 'RESIZE';
-			setTimeout(() => {
-				div.remove();
-			}, 3000);
-			document.body.insertAdjacentElement('beforeend', div);
-		});
-	}
+    document.defaultView.addEventListener('resize', () => {
+      const div = document.createElement('div');
+      Object.assign(div.style, Styles);
+      Object.assign(div.style, {
+        left: window.innerWidth/2+'px',
+        top: (window.innerHeight - window.innerHeight*0.85)+10+'px',
+        width: '66px',
+        borderColor: 'red',
+        background: 'lime',
+        textAlign: 'center'
+      })
+      div.style.position = 'fixed';
+      div.innerText = 'RESIZE';
+      setTimeout(() => {
+        div.remove();
+      }, 3000);
+      document.body.insertAdjacentElement('beforeend', div);
+    });
+  }
 
-	// display a marker
-		function showPosition({clientX,clientY}) {
-			const div = document.createElement('div');
-			const timestamp = Date.now();
-			Object.assign(div.style, Styles);
-			Object.assign(div.style, {
-				left:clientX+'px', 
-				top:clientY+'px'
-			});
-			document.body.insertAdjacentElement('afterbegin', div);
-			positionMarkers.push({
-				timestamp, 
-				div, 
-				remove(ms) {
-					setTimeout(() => div.remove(), ms);
-				}
-			});
-		}
+  // display a marker
+    function showPosition({clientX,clientY}) {
+      const div = document.createElement('div');
+      const timestamp = Date.now();
+      Object.assign(div.style, Styles);
+      Object.assign(div.style, {
+        left:clientX+'px', 
+        top:clientY+'px'
+      });
+      document.body.insertAdjacentElement('afterbegin', div);
+      positionMarkers.push({
+        timestamp, 
+        div, 
+        remove(ms) {
+          setTimeout(() => div.remove(), ms);
+        }
+      });
+    }
 
-	// remove markers older than 2 seconds 
-		setInterval(
-			() => {
-				const Now = Date.now();
-				let spliceCount = 0;
-				for( const {timestamp, remove} of positionMarkers) {
-					const age = Now - timestamp;
-					if ( age > 500 ) {
-						remove(Math.max(0, 1000 - age));
-						spliceCount++;
-					}
-				}
-				positionMarkers.splice(0, spliceCount);
-			}, 1000);
+  // remove markers older than 2 seconds 
+    setInterval(
+      () => {
+        const Now = Date.now();
+        let spliceCount = 0;
+        for( const {timestamp, remove} of positionMarkers) {
+          const age = Now - timestamp;
+          if ( age > 500 ) {
+            remove(Math.max(0, 1000 - age));
+            spliceCount++;
+          }
+        }
+        positionMarkers.splice(0, spliceCount);
+      }, 1000);
   **/
 
   /* eslint-enable no-inner-declarations */
