@@ -8,7 +8,7 @@ export async function blockAds(/*zombie, sessionId*/) {
 
 export async function onInterceptRequest({sessionId, message}, zombie) {
   if ( message.method == "Fetch.requestPaused" ) {
-    const {request:{url}, requestId, resourceType} = message.params;
+    const {request:{url}, requestId, resourceType, responseStatusCode, responseErrorReason} = message.params;
     const isNavigationRequest = resourceType == "Document";
     const host = new URL(url).host;
     let blocked = false;
@@ -41,14 +41,34 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       }
     }
     if ( blocked ) return;
-    try {
-      await zombie.send("Fetch.continueRequest", {
-          requestId,
-        },
-        sessionId
-      );
-    } catch(e) {
-      console.warn("Issue with continuing request", e);
+    if ( responseErrorReason ) {
+      if ( isNavigationRequest ) {
+        await zombie.send("Fetch.fulfillRequest", {
+            requestId,
+            responseHeaders: BLOCKED_HEADERS,
+            responseCode: BLOCKED_CODE,
+            body: responseErrorReason
+          },
+          sessionId
+        );
+      } else {
+        await zombie.send("Fetch.failRequest", {
+            requestId,
+            errorReason: responseErrorReason
+          },
+          sessionId
+        );
+      }
+    } else {
+      try {
+        await zombie.send("Fetch.continueRequest", {
+            requestId,
+          },
+          sessionId
+        );
+      } catch(e) {
+        console.warn("Issue with continuing request", e);
+      }
     }
   }
 }
