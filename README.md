@@ -1,4 +1,4 @@
-# :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) ![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) ![npm downloads](https://img.shields.io/npm/dt/remoteview)
+# :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) ![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) ![npm downloads](https://img.shields.io/npm/dt/browsergap)
 
 ## About
 
