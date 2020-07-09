@@ -2,15 +2,13 @@
 
 ## About
 
-Formerly *BrowserGap Community Edition*. Currently called BrowserGap, and lets you interactively live-stream a remote browser.
+Play with a browser running remotely in the cloud, rather than on your own device. Useful for security and automation. 
 
-This work is released under an OSS license, and is &copy; [Cris Stringfellow](https://github.com/cris691/Portfolio). All my own work. 
+If you're a developer you can include a "BrowserView" in any other web application (for non-commercial use only).
 
-For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=BrowserGap&body=Hey%20Cris%2C%0D%0A)
+If you're like to deploy this in your org, or for a for-profit project, write me: cris@dosycorp.com Or keep an eye out for the cloud service, coming soon.
 
 ## Get and self-host
-
-**Around 30,000 source lines of code** (see stats folder)
 
 Glone this repo
 
@@ -47,7 +45,7 @@ BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a b
 
 ![browser in a browser](readme-files/tenor.gif)
 
-## Hosted Free Demo
+## Managed Cloud Service (coming soon)
 
 Try for free at https://free.cloudbrowser.xyz
 
@@ -57,6 +55,15 @@ Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
 
 [Read more here](remote-browser-isolation.md)
 
+## License And other Details
+
+Formerly *BrowserGap Community Edition*. Currently called BrowserGap, and lets you interactively live-stream a remote browser.
+
+This work is released under an OSS license, and is &copy; [Cris Stringfellow](https://github.com/cris691/Portfolio). All my own work. 
+
+For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=BrowserGap&body=Hey%20Cris%2C%0D%0A)
+
+**Around 30,000 source lines of code** (see stats folder)
 
 ### Set up
 
