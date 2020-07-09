@@ -21,6 +21,7 @@ import {d as R} from '../../node_modules/dumbass/r.js';
       let requestId = '';
       let sessionId = '';
       let mode = '';
+      let accept = '';
       let multiple = false;
       let submitText = '';
       let cancelText = '';
@@ -36,6 +37,7 @@ import {d as R} from '../../node_modules/dumbass/r.js';
           requestId:requestId = '',
           mode:mode = '',
           sessionId:sessionId = '',
+          accept: accept = '',
           submitText:submitText = 'Submit',
           cancelText:cancelText = 'Cancel',
           working:working = false,
@@ -46,7 +48,7 @@ import {d as R} from '../../node_modules/dumbass/r.js';
         throw new TypeError(`Auth modal requires a requestId to send the response to`);
       }
 
-      if ( type == 'filechooser' && !(mode || ! sessionId) ) {
+      if ( type == 'filechooser' && !(mode && sessionId) ) {
         throw new TypeError(`File chooser modal requires both sessionId and mode`);
       }
 
@@ -130,7 +132,7 @@ import {d as R} from '../../node_modules/dumbass/r.js';
               <p>
                 <label>
                   Select ${multiple?'one or more files':'one file'}.
-                  <input type=file name=files ${multiple?'multiple':''}>
+                  <input type=file name=files ${multiple?'multiple':''} accept="${accept}">
                 </label>
               <p>
                 <button 

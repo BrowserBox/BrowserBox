@@ -399,6 +399,17 @@ function translator(e, handled = {type:'case'}) {
         }))
       ]};
     }
+    case "describeNode": {
+      const {backendNodeId} = e;
+      return {
+        command: {
+          name: "DOM.describeNode",
+          params: {
+            backendNodeId
+          }
+        }
+      };
+    }
     case "getElementInfo": {
       return {chain:[
         {
