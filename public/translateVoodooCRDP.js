@@ -163,6 +163,29 @@ function translator(e, handled = {type:'case'}) {
         }
       }
     }
+    case "setDocument": {
+      const {html} = e;
+      return {chain:[
+        {
+          command: {
+            name: "Page.getFrameTree",
+            params: {}
+          }
+        },
+        ({frameTree:{frame:{frameId}}}) => {
+          return {
+            command: {
+              name: "Page.setDocumentContent",
+              params: {
+                html, frameId
+              }, 
+              requiresShot: true,
+            }
+          };
+        }
+      ]};
+      break;
+    }
     case "history": {
       switch(e.action) {
         case "reload": case "stop": {

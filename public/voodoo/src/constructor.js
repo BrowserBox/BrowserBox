@@ -408,6 +408,7 @@
       }
 
       function writeCanvas(text) {
+        return writeDocument(text);
         const canv = state.viewState.canvasEl;
         const ctx = state.viewState.ctx;
         ctx.fillStyle = 'white';
@@ -416,6 +417,14 @@
         ctx.font = 'italic 3vmax sans-serif';
         ctx.textAlign = "center";
         ctx.fillText(text, innerWidth/2, innerHeight/2-6*Math.max(innerWidth/100, innerHeight/100));
+      }
+
+      function writeDocument(html) {
+        queue.send({
+          type: 'setDocument',
+          html,
+          synthetic: true
+        });
       }
 
       function clearViewport() {
