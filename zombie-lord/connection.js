@@ -749,7 +749,19 @@ async function makeZombie({port:port = 9222} = {}) {
     };
     const key = `${sessionId||ROOT_SESSION}:${message.id}`;
     let resolve;
-    const promise = new Promise(res => resolve = res).then(resp => (console.log({message,resp}), resp));
+    let promise = new Promise(res => resolve = res);
+    if ( DEBUG.commands ) {
+      promise = promise.then(resp => {
+        if ( resp && resp.data ) {
+          if ( resp.data.length < 1000 ) {
+            console.log({messge,resp});
+          }
+        } else {
+          console.log(JSON.stringify({message,resp},null,2));
+        }
+        return resp;
+      });
+    }
     Resolvers[key] = resolve; 
     socket.send(JSON.stringify(message));
     return promise;
