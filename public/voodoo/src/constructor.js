@@ -182,10 +182,9 @@
 
       // loading
       queue.addMetaListener('resource', meta => showLoadingIndicator(meta, state));
-      queue.addMetaListener('resource', meta => {
-        console.log({meta});
-        if ( meta.resource.failed ) {
-          alert(JSON.stringify({failed:meta.resource.failed}));
+      queue.addMetaListener('failed', meta => {
+        if ( meta.failed.params.type == "Document" ) {
+          writeCanvas(`Request failed: ${meta.failed.params.errorText}`);
         }
       });
       queue.addMetaListener('navigated', meta => resetLoadingIndicator(meta, state));

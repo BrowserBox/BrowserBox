@@ -41,13 +41,15 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       }
     }
     if ( blocked ) return;
+    // responseErrorReason never appears to be set, regardless of interception stage 
+    //console.log({responseErrorReason,requestId, url, resourceType});
     if ( responseErrorReason ) {
       if ( isNavigationRequest ) {
         await zombie.send("Fetch.fulfillRequest", {
             requestId,
             responseHeaders: BLOCKED_HEADERS,
             responseCode: BLOCKED_CODE,
-            body: responseErrorReason
+            body: Buffer.from(responseErrorReason).toString("base64"),
           },
           sessionId
         );

@@ -93,11 +93,16 @@
     for ( const {command} of events ) {
       try {
         command.receivesFrames = receivesFrames && ! command.isZombieLordCommand;
-        DEBUG.val && console.log(`Sending ${JSON.stringify(command)}...`);
+        if ( DEBUG.val ) {
+          if ( command.isBufferedResultsCollectionOnly ) {
+            DEBUG.brc && console.log(`Sending ${JSON.stringify(command)}...`);
+          } else {
+            console.log(`Sending ${JSON.stringify(command)}...`);
+          }
+        }
         const sendResult = await timedSend(command, chrome_port);
         if ( sendResult ) {
           const {data,frameBuffer,meta,totalBandwidth} = sendResult;
-          DEBUG.val && console.log(`Sent ${JSON.stringify(command)}!`);
           Data.push(data);
           if ( meta ) {
             // filter out all but the last resource for each targetId
