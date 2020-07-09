@@ -465,9 +465,11 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
           patterns: [
             {
               urlPatterns: 'http://*/*',
+              requestStage: "Response"
             },
             {
               urlPatterns: 'https://*/*',
+              requestStage: "Response"
             }
           ],
         },
