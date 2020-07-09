@@ -172,7 +172,7 @@ function translator(e, handled = {type:'case'}) {
             params: {}
           }
         },
-        ({frameTree:{frame:{frameId}}}) => {
+        ({frameTree:{frame:{id:frameId}}}) => {
           return {
             command: {
               name: "Page.setDocumentContent",

@@ -184,7 +184,7 @@
       queue.addMetaListener('resource', meta => showLoadingIndicator(meta, state));
       queue.addMetaListener('failed', meta => {
         if ( meta.failed.params.type == "Document" ) {
-          writeCanvas(`Request failed: ${meta.failed.params.errorText}`);
+          writeDocument(`Request failed: ${meta.failed.params.errorText}`);
         }
       });
       queue.addMetaListener('navigated', meta => resetLoadingIndicator(meta, state));
@@ -408,7 +408,6 @@
       }
 
       function writeCanvas(text) {
-        return writeDocument(text);
         const canv = state.viewState.canvasEl;
         const ctx = state.viewState.ctx;
         ctx.fillStyle = 'white';
@@ -740,7 +739,7 @@
           if ( state.active && state.active.url != BLANK ) {
             canKeysInput();
           } else {
-            writeCanvas("Secure BrowserGap Tab.");
+            writeDocument("Secure BrowserGap Tab.");
             state.viewState.omniBoxInput.focus();
           }
         }, SHORT_DELAY);
