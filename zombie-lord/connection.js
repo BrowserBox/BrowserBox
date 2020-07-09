@@ -409,7 +409,9 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       connection.meta.push({resource}); 
     } else if ( message.method == "Network.loadingFailed" ) {
       const resource = endLoading(sessionId);
-      resource.failed = message;
+      if ( message.params.type == "Document" ) {
+        connection.meta.push({failed:message});
+      }
       connection.meta.push({resource}); 
     } else if ( message.method == "Network.responseReceived" ) {
       const resource = endLoading(sessionId);
@@ -464,11 +466,11 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
           handleAuthRequests: true,
           patterns: [
             {
-              urlPatterns: 'http://*/*',
+              urlPattern: 'http://*/*',
               requestStage: "Response"
             },
             {
-              urlPatterns: 'https://*/*',
+              urlPattern: 'https://*/*',
               requestStage: "Response"
             }
           ],
