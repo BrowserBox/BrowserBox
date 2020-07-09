@@ -275,7 +275,7 @@
           console.log("Error sending file input command", e);
         }
 
-        console.log({fileResult:result});
+        DEBUG.val > DEBUG.med && console.log({fileResult:result});
 
         if ( !result || result.error ) {
           res.status(500).send(JSON.stringify({error:'there was an error attaching the files'}));
@@ -353,9 +353,12 @@
   }
 
   function nextFileName(ext = '') {
+    //console.log({nextFileName:{ext}});
     if ( ! ext.startsWith('.') ) {
       ext = '.' + ext;
     }
-    return `file${(Math.random()*1000000).toString(36)}${ext}`;
+    const name = `file${(Math.random()*1000000).toString(36)}${ext}`;
+    //console.log({nextFileName:{name}});
+    return name;
   }
  

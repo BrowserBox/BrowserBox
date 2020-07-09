@@ -334,8 +334,24 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
     } else if ( message.method == "Page.fileChooserOpened" ) {
       const {mode,backendNodeId} = message.params;
       const fileChooser = {mode, sessionId};
+
       fileChoosers.set(sessionId, backendNodeId);
+
       DEBUG.val > DEBUG.med && console.log(fileChooser, message);
+
+      const {node:{attributes:fileInputAttributes}} = await send("DOM.describeNode", {
+        backendNodeId
+      }, sessionId);
+
+      if ( fileInputAttributes ) {
+        for( let i = 0; i < fileInputAttributes.length; i++ ) {
+          if ( fileInputAttributes[i] == "accept" ) {
+            fileChooser.accept = fileInputAttributes[i+1];
+            break;
+          }
+        }
+      }
+
       connection.meta.push({fileChooser});
     } else if ( message.method == "Page.downloadWillBegin" ) {
       const {params:download} = message;
