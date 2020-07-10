@@ -2,7 +2,7 @@
 
 ## About
 
-This is a feature complete remote browser isolation product. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
+This is a feature-complete remote browser isolation product. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
 
 You can use this repo to play with a browser running remotely in the cloud, rather than on your own device. Useful for security and automation. 
 
