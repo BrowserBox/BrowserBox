@@ -2,11 +2,21 @@
 
 ## About
 
-Play with a browser running remotely in the cloud, rather than on your own device. Useful for security and automation. 
+This is a feature complete remote browser isolation product. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
+
+You can use this repo to play with a browser running remotely in the cloud, rather than on your own device. Useful for security and automation. 
 
 If you're a developer you can include a "BrowserView" in any other web application (for non-commercial use only).
 
-If you're like to deploy this in your org, or for a for-profit project, write me: cris@dosycorp.com Or keep an eye out for the cloud service, coming soon.
+If you're like to deploy this in your org, or for a for-profit project, write me: cris@dosycorp.com Or keep an eye out for the cloud service, coming soon. Official government use OK without purchase, as long as deployment is done in-house (or using Dosyago Corporation, not by other contractors, nor part of a paid deployment). If you're in government and you'd like to deploy this and want help, contact me for help or to discuss a deployment contract.
+
+## Why this over Solution X?
+
+Sure, other companies might have bigger brands and bigger sales budgets, but this is open-source. You can vet the code, in the open, and so can anyone. You know there's nothing hidden inside. Plus, future updates have all the benefit of open-source software. 
+
+## Can I use this for Use Case Y, or Domain Z?
+
+Probably. If you can think of it, you can probably do it.
 
 ## Get and self-host
 
