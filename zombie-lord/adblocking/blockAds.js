@@ -8,7 +8,7 @@ export async function blockAds(/*zombie, sessionId*/) {
 
 export async function onInterceptRequest({sessionId, message}, zombie) {
   if ( message.method == "Fetch.requestPaused" ) {
-    const {request:{url}, requestId, resourceType, responseStatusCode, responseErrorReason} = message.params;
+    const {request:{url}, requestId, resourceType, responseErrorReason} = message.params;
     const isNavigationRequest = resourceType == "Document";
     const host = new URL(url).host;
     let blocked = false;

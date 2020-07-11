@@ -184,7 +184,6 @@ function translator(e, handled = {type:'case'}) {
           };
         }
       ]};
-      break;
     }
     case "history": {
       switch(e.action) {
