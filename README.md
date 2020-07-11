@@ -83,7 +83,7 @@ sudo apt install -y curl git wget
 git clone https://github.com/dosyago/BrowserGap
 cd BrowserGap
 ./setup_machine.sh
-npm test
+npm start
 ```
 
 Or (using docker build yourself for latest)
@@ -93,6 +93,7 @@ sudo apt update && sudo apt -y upgrade
 sudo apt install -y curl git wget
 git clone https://github.com/dosyago/BrowserGap
 cd BrowserGap
+npm i
 ./buld_docker.sh
 ./run_docker.sh 
 ```
