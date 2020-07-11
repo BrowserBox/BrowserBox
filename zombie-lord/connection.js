@@ -754,7 +754,7 @@ async function makeZombie({port:port = 9222} = {}) {
       promise = promise.then(resp => {
         if ( resp && resp.data ) {
           if ( resp.data.length < 1000 ) {
-            console.log({messge,resp});
+            console.log({message,resp});
           }
         } else {
           console.log(JSON.stringify({message,resp},null,2));
