@@ -40,6 +40,7 @@ const launcher_api = {
       CHROME_FLAGS.push('--no-sandbox'); 
     }
     if (isDocker()) {
+      console.log("We are in docker");
       CHROME_FLAGS.push('--remote-debugging-address=0.0.0.0');
     }
     if ( DEBUG.noAudio ) {

@@ -196,7 +196,7 @@ class Launcher {
     // resolves if ready, rejects otherwise
     isDebuggerReady() {
         return new Promise((resolve, reject) => {
-            const client = net.createConnection(this.port, '0.0.0.0');
+            const client = net.createConnection(this.port, 'localhost');
             client.once('error', err => {
                 this.cleanup(client);
                 reject(err);
