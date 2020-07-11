@@ -1,5 +1,9 @@
 # :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) ![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) ![npm downloads](https://img.shields.io/npm/dt/remoteview)
 
+## News
+
+- New Docker Hub image with latest changes: [dosyago/browsergapce:2.0](https://hub.docker.com/r/dosyago/browsergapce)
+
 ## About
 
 This is a feature-complete remote browser isolation product. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
