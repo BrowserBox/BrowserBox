@@ -12,4 +12,4 @@ RUN ./setup_machine.sh
 EXPOSE 5002
 EXPOSE 8002
 
-CMD ["npm", "test"]
+CMD ["npm", "start"]
