@@ -39,9 +39,13 @@ const mobUA = "Mozilla/5.0 (Linux; Android 8.1.0) AppleWebKit/537.36 (KHTML, lik
 const LANG = "en-US";
 //const deskPLAT = "Win32";
 const mobPLAT = "Android";
-const GrantedPermissions = ["geolocation", "notifications", "flash"];
+const GrantedPermissions = ["geolocation", "notifications", "flash", "midi"];
 //const PromptText = "Dosy was here.";
 const ROOT_SESSION = 'root';
+
+// for fun
+const Area51Lat = 37.234332396;
+const Area51Long = -115.80666344;
 
 const UA = mobUA;
 const PLAT = mobPLAT;
@@ -328,6 +332,12 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
           "Browser.grantPermissions", 
           {
             origin, permissions: GrantedPermissions
+          }
+        );
+        await send(
+          "Emulation.setGeolocationOverride",
+          {
+            latitude: Area51Lat, longitude: Area51Long, accuracy: 5
           },
           sessionId
         );
@@ -625,7 +635,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       connection.pausing.delete(requestId);
       connection.pausing.delete(url);
     }
-    if ( !command.name.startsWith("Target") ) {
+    if ( !command.name.startsWith("Target") && !(command.name.startsWith("Browser") && command.name != "Browser.getWindowForTarget") ) {
       sessionId = command.params.sessionId || that.sessionId;
     } else if ( command.name == "Target.activateTarget" ) {
       that.sessionId = sessions.get(targetId); 
@@ -764,16 +774,23 @@ async function makeZombie({port:port = 9222} = {}) {
     let resolve;
     let promise = new Promise(res => resolve = res);
     if ( DEBUG.commands ) {
-      promise = promise.then(resp => {
-        if ( resp && resp.data ) {
-          if ( resp.data.length < 1000 ) {
-            console.log({message,resp});
+      if ( !(message.method == "Page.captureScreenshot" && ! DEBUG.shotDebug) ) {
+        console.log({send:message});
+        promise = promise.then(resp => {
+          if ( resp && resp.data ) {
+            if ( resp.data.length < 1000 ) {
+              console.log({message,resp});
+            } else {
+              console.log(JSON.stringify({message,resp:'[long response]'},null,2));
+            }
+          } else {
+            console.log(JSON.stringify({message,resp: resp || '[no response]'},null,2));
           }
-        } else {
-          console.log(JSON.stringify({message,resp},null,2));
-        }
-        return resp;
-      });
+          return resp;
+        }).catch(err => {
+          console.warn({sendFail:err}); 
+        });
+      }
     }
     Resolvers[key] = resolve; 
     socket.send(JSON.stringify(message));

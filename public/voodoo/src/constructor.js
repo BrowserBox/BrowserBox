@@ -186,7 +186,7 @@
         if ( meta.failed.params.type == "Document" ) {
           // we also need to make sure the failure happens at the top level document
           // rather than writing the top level document for any failure in a sub frame
-          writeDocument(`Request failed: ${meta.failed.params.errorText}`, meta.failed.frameId);
+          writeDocument(`Request failed: ${meta.failed.params.errorText}`, meta.failed.frameId, meta.failed.sessionId);
         }
       });
       queue.addMetaListener('navigated', meta => resetLoadingIndicator(meta, state));
@@ -420,10 +420,10 @@
         ctx.fillText(text, innerWidth/2, innerHeight/2-6*Math.max(innerWidth/100, innerHeight/100));
       }
 
-      function writeDocument(html, frameId) {
+      function writeDocument(html, frameId, sessionId) {
         queue.send({
           type: 'setDocument',
-          html, frameId,
+          html, frameId, sessionId,
           synthetic: true
         });
       }

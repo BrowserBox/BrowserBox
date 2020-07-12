@@ -164,16 +164,38 @@ function translator(e, handled = {type:'case'}) {
       }
     }
     case "setDocument": {
-      const {frameId,html} = e;
-      return {
-        command: {
-          name: "Page.setDocumentContent",
-          params: {
-            html, frameId
-          }, 
-          requiresShot: true,
-        }
-      };
+      const {frameId,sessionId,html} = e;
+      if ( !! frameId ) {
+        return {
+          command: {
+            name: "Page.setDocumentContent",
+            params: {
+              html, frameId, sessionId
+            }, 
+            requiresShot: true,
+          }
+        };
+      } else {
+        return {chain:[
+          {
+            command: {
+              name: "Page.getFrameTree",
+              params: {}
+            }
+          },
+          ({frameTree:{frame:{id:frameId}}}) => {
+            return {
+              command: {
+                name: "Page.setDocumentContent",
+                params: {
+                  html, frameId
+                }, 
+                requiresShot: true,
+              }
+            };
+          }
+        ]};
+      }
     }
     case "history": {
       switch(e.action) {
