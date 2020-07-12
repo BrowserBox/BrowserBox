@@ -184,7 +184,9 @@
       queue.addMetaListener('resource', meta => showLoadingIndicator(meta, state));
       queue.addMetaListener('failed', meta => {
         if ( meta.failed.params.type == "Document" ) {
-          writeDocument(`Request failed: ${meta.failed.params.errorText}`);
+          // we also need to make sure the failure happens at the top level document
+          // rather than writing the top level document for any failure in a sub frame
+          writeDocument(`Request failed: ${meta.failed.params.errorText}`, meta.failed.frameId);
         }
       });
       queue.addMetaListener('navigated', meta => resetLoadingIndicator(meta, state));
@@ -418,10 +420,10 @@
         ctx.fillText(text, innerWidth/2, innerHeight/2-6*Math.max(innerWidth/100, innerHeight/100));
       }
 
-      function writeDocument(html) {
+      function writeDocument(html, frameId) {
         queue.send({
           type: 'setDocument',
-          html,
+          html, frameId,
           synthetic: true
         });
       }

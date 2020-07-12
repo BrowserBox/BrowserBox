@@ -51,6 +51,7 @@ const targets = new Set();
 const sessions = new Map();
 const loadings = new Map();
 const tabs = new Map();
+const Frames = new Map();
 //const originalMessage = new Map();
 
 let AD_BLOCK_ON = true;
@@ -400,19 +401,31 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       **/
     } else if ( message.method == "Network.requestWillBeSent" ) {
       const resource = startLoading(sessionId);
+      const {requestId,frameId} = message.params;
+      if ( requestId && frameId ) {
+        Frames.set(requestId,frameId);
+      }
       connection.meta.push({resource}); 
     } else if ( message.method == "Network.requestServedFromCache" ) {
       const resource = endLoading(sessionId);
+      const {requestId} = message.params;
       connection.meta.push({resource}); 
+      Frames.delete(requestId);
     } else if ( message.method == "Network.loadingFinished" ) {
       const resource = endLoading(sessionId);
+      const {requestId} = message.params;
       connection.meta.push({resource}); 
+      Frames.delete(requestId);
     } else if ( message.method == "Network.loadingFailed" ) {
       const resource = endLoading(sessionId);
+      const {requestId} = message.params;
+      const frameId = Frames.get(requestId)
       if ( message.params.type == "Document" ) {
+        message.frameId = frameId;
         connection.meta.push({failed:message});
       }
       connection.meta.push({resource}); 
+      Frames.delete(requestId);
     } else if ( message.method == "Network.responseReceived" ) {
       const resource = endLoading(sessionId);
       connection.meta.push({resource}); 

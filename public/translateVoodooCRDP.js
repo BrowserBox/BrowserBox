@@ -164,26 +164,16 @@ function translator(e, handled = {type:'case'}) {
       }
     }
     case "setDocument": {
-      const {html} = e;
-      return {chain:[
-        {
-          command: {
-            name: "Page.getFrameTree",
-            params: {}
-          }
-        },
-        ({frameTree:{frame:{id:frameId}}}) => {
-          return {
-            command: {
-              name: "Page.setDocumentContent",
-              params: {
-                html, frameId
-              }, 
-              requiresShot: true,
-            }
-          };
+      const {frameId,html} = e;
+      return {
+        command: {
+          name: "Page.setDocumentContent",
+          params: {
+            html, frameId
+          }, 
+          requiresShot: true,
         }
-      ]};
+      };
     }
     case "history": {
       switch(e.action) {

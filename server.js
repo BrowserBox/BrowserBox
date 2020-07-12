@@ -4,7 +4,7 @@
   import {start_ws_server} from './ws-server.js';
 
   const BEGIN_AGAIN = 500;
-  const COMMAND_MAX_WAIT = 11111;
+  const COMMAND_MAX_WAIT = 32000;
   const MAX_FRAME = 2; /* 2, 4 */
 
   const EXPEDITE = new Set([
