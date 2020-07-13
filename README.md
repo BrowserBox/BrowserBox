@@ -3,7 +3,7 @@
 ## News
 
 - New Docker Hub image with latest changes: [dosyago/browsergapce:2.0](https://hub.docker.com/r/dosyago/browsergapce)
-- Latest update: July 12 2020
+- Latest update: July 13 2020
 
 ## About
 

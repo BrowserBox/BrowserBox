@@ -251,12 +251,12 @@
 
       // remote secure downloads
       queue.addMetaListener('download', ({download}) => {
-        const {sessionId} = download;
+        const {sessionId, filename} = download;
         const modal = {
           sessionId,
           type: 'notice',
-          message: `Please purchase a license to use secure file view in Community-Edition. To purchase a license mail cris@dosycorp.com to speak with someone who will help.`,
-          title: "SecureView\u2122",
+          message: `The file "${filename}" is downloading to the BrowserGap\u2122 downloads folder, of the computer (or docker container) where ${location.host} (the BrowserGap server) is running. Your free Community-Edition BrowserGap does not come with SecureView document viewing. Mail cris@dosycorp.com to speak with me about buying a license to use SecureView - Secure Document Viewer.`,
+          title: "SecureView\u2122 Not-enabled",
         };
         subviews.openModal({modal}, state);
       });
