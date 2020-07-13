@@ -432,7 +432,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       const {url,frameId} = Frames.get(requestId)
       if ( message.params.type == "Document" ) {
         message.frameId = frameId;
-        console.log({failedURL:url});
+        DEBUG.val && console.log({failedURL:url});
         if ( !url.startsWith('http') ) {
           const modal = {
             type: 'intentPrompt',
@@ -440,7 +440,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
             message: `This page is asking to open an external app via URL: ${url}`,
             url
           };
-          console.log(JSON.stringify({modal},null,2));
+          DEBUG.val && console.log(JSON.stringify({modal},null,2));
           connection.meta.push({modal});
         } else {
           connection.meta.push({failed:message});
