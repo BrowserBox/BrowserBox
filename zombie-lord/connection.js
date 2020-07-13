@@ -411,9 +411,9 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       **/
     } else if ( message.method == "Network.requestWillBeSent" ) {
       const resource = startLoading(sessionId);
-      const {requestId,frameId} = message.params;
+      const {requestId,frameId, request:{url}} = message.params;
       if ( requestId && frameId ) {
-        Frames.set(requestId,frameId);
+        Frames.set(requestId,{url,frameId});
       }
       connection.meta.push({resource}); 
     } else if ( message.method == "Network.requestServedFromCache" ) {
@@ -429,10 +429,22 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
     } else if ( message.method == "Network.loadingFailed" ) {
       const resource = endLoading(sessionId);
       const {requestId} = message.params;
-      const frameId = Frames.get(requestId)
+      const {url,frameId} = Frames.get(requestId)
       if ( message.params.type == "Document" ) {
         message.frameId = frameId;
-        connection.meta.push({failed:message});
+        console.log({failedURL:url});
+        if ( !url.startsWith('http') ) {
+          const modal = {
+            type: 'intentPrompt',
+            title: 'External App Request',
+            message: `This page is asking to open an external app via URL: ${url}`,
+            url
+          };
+          console.log(JSON.stringify({modal},null,2));
+          connection.meta.push({modal});
+        } else {
+          connection.meta.push({failed:message});
+        }
       }
       connection.meta.push({resource}); 
       Frames.delete(requestId);
