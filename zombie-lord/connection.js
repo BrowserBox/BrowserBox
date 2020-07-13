@@ -34,6 +34,7 @@ const injectionsScroll = botDetectionEvasions + favicon + keysCanInputEvents + s
 const pageContextInjectionsScroll = botDetectionEvasions;
 
 const RECONNECT_MS = 5000;
+const WAIT_FOR_DOWNLOAD_BEGIN_DELAY = 5000;
 //const deskUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36";
 const mobUA = "Mozilla/5.0 (Linux; Android 8.1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3384.0 Mobile Safari/537.36";
 const LANG = "en-US";
@@ -366,10 +367,15 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       connection.meta.push({fileChooser});
     } else if ( message.method == "Page.downloadWillBegin" ) {
       const {params:download} = message;
-      //let uri = '';
+      const {suggestedFilename} = download;
+
+      const downloadFileName = getFileFromURL(download.url);
 
       download.sessionId = sessionId;
-      const downloadFileName = getFileFromURL(download.url);
+      download.filename = downloadFileName;
+
+      DEBUG.val && console.log({download});
+      DEBUG.val && console.log({suggestedFilename});
 
       // notification and only do once
         connection.meta.push({download});
@@ -379,35 +385,36 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         DEBUG.val > DEBUG.med && console.log({downloadFileName,SECURE_VIEW_SCRIPT,username});
 
       /**
-      // This shouldn't be in the community edition
-      const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`]);
+        // This shouldn't be in the community edition
+        const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`]);
+        let uri = '';
 
-      // subshell collect data and send once
-        subshell.stderr.pipe(process.stderr);
-        subshell.stdout.on('data', data => {
-          uri += data;
-        });
-        subshell.stdout.on('end', sendURL);
-        subshell.on('close', sendURL);
-        subshell.on('exit', sendURL);
+        // subshell collect data and send once
+          subshell.stderr.pipe(process.stderr);
+          subshell.stdout.on('data', data => {
+            uri += data;
+          });
+          subshell.stdout.on('end', sendURL);
+          subshell.on('close', sendURL);
+          subshell.on('exit', sendURL);
 
-      async function sendURL(code) {
-        if ( ! uri ) {
-          console.warn("No URI", downloadFileName);
-          //throw new Error( "No URI" );
+        async function sendURL(code) {
+          if ( ! uri ) {
+            console.warn("No URI", downloadFileName);
+            //throw new Error( "No URI" );
+          }
+          if ( connection.lastSentFileName == connection.lastDownloadFileName ) return;
+          connection.lastSentFileName = connection.lastDownloadFileName;
+          if ( ! code ) {
+            // trim any whitespace added by the shell echo in the script
+            const url  = uri.trim();
+            const secureview = {url};
+            DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
+            connection.meta.push({secureview});
+          } else {
+            console.warn(`Secure View subshell exited with code ${code}`);
+          }
         }
-        if ( connection.lastSentFileName == connection.lastDownloadFileName ) return;
-        connection.lastSentFileName = connection.lastDownloadFileName;
-        if ( ! code ) {
-          // trim any whitespace added by the shell echo in the script
-          const url  = uri.trim();
-          const secureview = {url};
-          DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
-          connection.meta.push({secureview});
-        } else {
-          console.warn(`Secure View subshell exited with code ${code}`);
-        }
-      }
       **/
     } else if ( message.method == "Network.requestWillBeSent" ) {
       const resource = startLoading(sessionId);
@@ -430,6 +437,9 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       const resource = endLoading(sessionId);
       const {requestId} = message.params;
       const {url,frameId} = Frames.get(requestId)
+
+      const someFileName = getFileFromURL(url);
+
       if ( message.params.type == "Document" ) {
         message.frameId = frameId;
         DEBUG.val && console.log({failedURL:url});
@@ -443,9 +453,16 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
           DEBUG.val && console.log(JSON.stringify({modal},null,2));
           connection.meta.push({modal});
         } else {
-          connection.meta.push({failed:message});
+          setTimeout(() => {
+            if ( someFileName == connection.lastDownloadFileName ) {
+              // this is not a failure 
+            } else {
+              connection.meta.push({failed:message});
+            }
+          }, WAIT_FOR_DOWNLOAD_BEGIN_DELAY );
         }
       }
+
       connection.meta.push({resource}); 
       Frames.delete(requestId);
     } else if ( message.method == "Network.responseReceived" ) {
@@ -884,7 +901,8 @@ function getFileFromURL(url) {
   const nodes = pathname.split('/');
   let lastNode = nodes.pop();
   if ( ! lastNode ) {
-    throw Error(`URL cannot be parsed to get filename`);
+    console.warn({fileNameError: Error(`URL cannot be parsed to get filename`)});
+    return `download${Date.now()}`;
   }
   return unescape(lastNode);
 }
