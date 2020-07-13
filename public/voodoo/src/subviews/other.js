@@ -10,7 +10,8 @@ import {d as R} from '../../node_modules/dumbass/r.js';
     ]);
     const ModalRef = {
       alert: null, confirm: null, prompt: null, beforeunload: null,
-      infobox: null, notice: null, auth: null, filechooser: null
+      infobox: null, notice: null, auth: null, filechooser: null,
+      intentPrompt: null
     };
 
   // Modals
@@ -26,12 +27,14 @@ import {d as R} from '../../node_modules/dumbass/r.js';
       let submitText = '';
       let cancelText = '';
       let working = false;
+      let url = '';
 
       if ( currentModal ) {
         // the defaults here are defaults when there *is* a current modal
         ({
           msg:msg = 'Empty',
           type,
+          url:url = '',
           title:title = 'Untitled',
           el:currentModalEl,
           requestId:requestId = '',
@@ -42,6 +45,20 @@ import {d as R} from '../../node_modules/dumbass/r.js';
           cancelText:cancelText = 'Cancel',
           working:working = false,
         } = currentModal);
+      }
+
+      if ( type == 'intentPrompt' ) {
+        if ( ! url ) {
+          throw new TypeError(`IntentPrompt modal requires a url`);
+        } else {
+          const Url = new URL(url);
+          if ( Url.protocol == 'intent:' ) {
+            if ( ( Url + '').includes('google.com/maps') ) {
+              Url.protocol = 'https:';
+            }
+            url = Url;
+          }
+        }
       }
 
       if ( type == 'auth' && ! requestId ) {
@@ -145,6 +162,22 @@ import {d as R} from '../../node_modules/dumbass/r.js';
                 >${cancelText}</button>
             </form>
           </article>
+          <article bond=${el => ModalRef.intentPrompt = el} class="intent-prompt ${
+              currentModalEl === ModalRef.intentPrompt ? 'open' : '' 
+            }">
+            <h1>${title}</h1>
+            <form method=GET action="${url}" target=_top submit=${submission => {
+              submission.preventDefault(); 
+              window.top.open(url);
+            }}>
+              <p class=message value=message>${
+                `This page is asking to open an external app using URL: ${url}`
+              }</p>
+              <p>
+                <button type=reset>Stop it</button>
+                <button>Open external app</button>
+            </form>
+          </article>
         </aside>
       `;
     }
@@ -240,11 +273,13 @@ import {d as R} from '../../node_modules/dumbass/r.js';
     export function openModal({modal:{
           sessionId, mode, requestId, title, type, message:msg, defaultPrompt, url
         }} = {}, state) {
-      const currentModal = {type, mode, requestId, msg,el:ModalRef[type], sessionId, title};
+      const currentModal = {type, mode, requestId, msg,el:ModalRef[type], sessionId, title, url};
       state.viewState.currentModal = currentModal;
 
+      console.log(state.viewState.currentModal);
+
       const modalDebug = {
-        defaultPrompt, url, currentModal, ModalRef, state, title
+        defaultPrompt, url, currentModal, ModalRef, state, title, type
       };
 
       DEBUG.val >= DEBUG.med && Object.assign(self, {modalDebug});
@@ -275,7 +310,7 @@ import {d as R} from '../../node_modules/dumbass/r.js';
         });
       }
       
-      Modals(state);
+      setTimeout(() => Modals(state), 50);
     }
 
   // Permission request
