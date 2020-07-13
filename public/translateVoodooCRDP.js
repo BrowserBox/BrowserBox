@@ -165,7 +165,7 @@ function translator(e, handled = {type:'case'}) {
     }
     case "setDocument": {
       const {frameId,sessionId,html} = e;
-      if ( !! frameId ) {
+      if ( frameId ) {
         return {
           command: {
             name: "Page.setDocumentContent",
