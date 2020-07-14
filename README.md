@@ -2,7 +2,9 @@
 
 ## News
 
-- [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). This is the first time BG has been turned into binary executables. Platforms available: Mac, Win, and Nix.
+- [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
+- Run via `npx remoteview` or `npm i -g remoteview` (**Working!**)
+- Latest update: July 14 2020
 - New Docker Hub image with latest changes: [dosyago/browsergapce:2.0](https://hub.docker.com/r/dosyago/browsergapce)
 - Latest update: July 13 2020
 
@@ -16,6 +18,10 @@ If you're a developer you can include a "BrowserView" in any other web applicati
 
 If you're like to deploy this in your org, or for a for-profit project, write me: cris@dosycorp.com Or keep an eye out for the cloud service, coming soon. Official government use OK without purchase, as long as deployment is done in-house (or using Dosyago Corporation, not by other contractors, nor part of a paid deployment). If you're in government and you'd like to deploy this and want help, contact me for help or to discuss a deployment contract.
 
+## localhost:8002
+
+By default (unless you provide command line arguments) it runs on port 8002.
+
 ## Why this over Solution X?
 
 Sure, other companies might have bigger brands and bigger sales budgets, but this is open-source. You can vet the code, in the open, and so can anyone. You know there's nothing hidden inside. Plus, future updates have all the benefit of open-source software. 
@@ -24,19 +30,35 @@ Sure, other companies might have bigger brands and bigger sales budgets, but thi
 
 Probably. If you can think of it, you can probably do it.
 
+## Easy install
+
+Use npx:
+
+`npx remoteview`
+
+*If it's your first time, say 'y' when asked if you want to run the `setup_machine` script*
+
+Or install as a global with npm:
+
+`npm i -g remoteview`
+
 ## Get and self-host
 
 Glone this repo
 
 `git clone https://github.com/dosyago/BrowserGap.git`
 
+Then run `npm i` in the repository directory.
+
 or Install from npm 
 
 `npm i remoteview`
 
-Then run `setup_machine.sh` in the repository directory.
+*Remember to follow the install prompt*
 
-Or, [get it on docker hub](https://hub.docker.com/r/dosyago/browsergapce), and see instructions below.
+## Docker build
+
+[Get it on docker hub](https://hub.docker.com/r/dosyago/browsergapce), and see instructions below.
 
 ## Headless Detection
 
@@ -81,38 +103,69 @@ For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=BrowserGap&bo
 
 **Around 30,000 source lines of code** (see stats folder)
 
-### Set up
+### Set up using a blank machine (running Linux)
+
+First set up the machine with git, and node (including nvm and npm) using the below:
 
 ```sh
 sudo apt update && sudo apt -y upgrade
 sudo apt install -y curl git wget
-git clone https://github.com/dosyago/BrowserGap
-cd BrowserGap
-./setup_machine.sh
-npm start
+udo apt-get update && sudo apt-get -y upgrade
+sudo apt -y install curl nodejs certbot vim
+curl -sL https://deb.nodesource.com/setup_10.x -o nodesource_setup.sh
+sudo bash ./nodesource_setup.sh
+sudo apt -y install nodejs build-essential
+curl -sL https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh -o install_nvm.sh
+bash ./install_nvm.sh
+source $HOME/.profile
+source $HOME/.nvm/nvm.sh
+nvm install --lts
+sudo apt autoremove
+sudo npm i -g serve nodemon pm2 npm npx
 ```
 
-Or (using docker build yourself for latest)
+Then install and run BrowserGap from source:
 
 ```sh
-sudo apt update && sudo apt -y upgrade
-sudo apt install -y curl git wget
 git clone https://github.com/dosyago/BrowserGap
 cd BrowserGap
 npm i
-./buld_docker.sh
-./run_docker.sh 
+npm start
 ```
 
-Or (using docker pull from hub)
+### Docker 
+
+*Note: running from docker image means you have no sound*
+
+You can pull an existing image from docker hub (already [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce))
 
 ```sh
 docker pull dosyago/browsergapce:2.0
+```
+
+And then run it 
+
+```sh
 curl -o chrome.json https://raw.githubusercontent.com/dosyago/BrowserGap/master/chrome.json
 sudo su -c "echo 'kernel.unprivileged_userns_clone=1' > /etc/sysctl.d/00-local-userns.conf"
 sudo su -c "echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/01-network-ipv4.conf"
 sudo sysctl -p
 sudo docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json dosyago/browsergapce:2.0
+```
+
+
+You can also build a docker image from source yourself. 
+
+Set up the machine (as above in the **Set up** section), then
+
+use clone the repo and install docker (`build_docker.sh` will do that for you) and build yourself an image:
+
+```sh
+git clone https://github.com/dosyago/BrowserGap
+cd BrowserGap
+npm i
+./buld_docker.sh
+./run_docker.sh 
 ```
 
 And visit http://&lt;your ip&gt;:8002 to see it up.
