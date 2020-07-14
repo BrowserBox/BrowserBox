@@ -2,7 +2,6 @@
 
 ## News
 
-- July 14 is [Product Hunt Day](https://www.producthunt.com/posts/browsergap-2?isitnot) :tada: :pinjata: Happy Product Hunt Day! <a href="https://www.producthunt.com/posts/browsergap-2?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-browsergap-2" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=216756&theme=light" alt="BrowserGap - An isolated browser | Product Hunt Embed" style="width: 250px; height: 54px;" width="250px" height="54px" /></a>
 - [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
 - Run via `npx remoteview` or `npm i -g remoteview` (**Working!**)
 - Latest update: July 14 2020
