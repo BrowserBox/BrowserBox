@@ -38,8 +38,9 @@ There's a lot of competition out there, BrowserGap art more lovely and more temp
 
 The main advantages of BrowserGap over any of these are:
 
-- Free (for non-commercial or governmental use) and open-source.
-- Fully clientless
+- Free (for non-commercial or governmental use when self-hosted) and open-source. You can pay for install, or maintenance, or a managed cloud service (bring your own cloud, also OK!).
+- Fully clientless (runs in your browser, nothing to download, but also available as download if you want to run locally easily).
+- Not hiding anything. You can use the software now, and see how it works. No need for us to grant you lengthy demos to evaluate. You can try it yourself whenever you like. 
 
 ## Can I use this for Use Case Y, or Domain Z?
 
