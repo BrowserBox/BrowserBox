@@ -12,6 +12,8 @@
 
 This is a feature-complete remote browser isolation product. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
 
+![Animated GIF of BrowserGap in action](https://j.gifs.com/E8yzLv.gif)
+
 You can use this repo to play with a browser running remotely in the cloud, rather than on your own device. Useful for security and automation. 
 
 If you're a developer you can include a "BrowserView" in any other web application (for non-commercial use only).
@@ -76,8 +78,6 @@ You can stream a remote browser with special cusotmizations to your clients to s
 For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=BrowserGap)
 
 [Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k), or just watch the GIF below:
-
-![GIF of browser in action](https://j.gifs.com/E8yzLv.gif)
 
 BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a browser. It also looks and works just like a browser, but it runs in your browser and controls another browser.
 
