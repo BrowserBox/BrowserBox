@@ -3,7 +3,6 @@
 ## News
 
 - [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
-- Run via `npx remoteview` or `npm i -g remoteview` (**Working!**)
 - Latest update: July 14 2020
 - New Docker Hub image with latest changes: [dosyago/browsergapce:2.0](https://hub.docker.com/r/dosyago/browsergapce)
 - Latest update: July 13 2020
@@ -47,18 +46,6 @@ The main advantages of BrowserGap over any of these are:
 
 Probably. If you can think of it, you can probably do it.
 
-## Easy install
-
-Use npx:
-
-`npx remoteview`
-
-*If it's your first time, say 'y' when asked if you want to run the `setup_machine` script*
-
-Or install as a global with npm:
-
-`npm i -g remoteview`
-
 ## Get and self-host
 
 Glone this repo
@@ -69,9 +56,17 @@ Then run `npm i` in the repository directory.
 
 or Install from npm 
 
-`npm i remoteview`
+`npm i -g remoteview`
 
 *Remember to follow the install prompt*
+
+## Easy install trouble shooting
+
+If you're on Git Bash (or Cygwin, or Mingw) you might have trouble using `npm i -g remoteview`.
+
+First make sure you configure npm 
+
+`npm config set script-shell "C:\\Program Files\\git\\bin\\bash.exe"`
 
 ## Docker build
 
