@@ -1,8 +1,10 @@
-#!/bin/sh
+#!/bin/bash
+
+source ~/.nvm/nvm.sh
+nvm use v12.10.0
 
 description=$1
 gbranch nexe-build
-git pull
 latest_tag=$(git describe --abbrev=0)
 echo $latest_tag > LAST_RELEASE.txt
 npm run build
