@@ -1,5 +1,7 @@
 #!/bin/bash
 
+time="$(date)"
+
 source ~/.nvm/nvm.sh
 nvm use v12.10.0
 
@@ -7,8 +9,7 @@ description=$1
 
 gbranch nexe-build
 
-latest_tag=$(git describe --abbrev=0)
-echo $latest_tag > LAST_RELEASE.txt
+echo $time > RELEASE_TIME.txt
 
 npm run build
 chmod +x BrowserGap.js
