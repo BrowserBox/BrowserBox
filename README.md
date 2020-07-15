@@ -2,8 +2,13 @@
 
 ## News
 
+- Run or install as global via `npx remoteview` or `npm i -g remoteview` (**Working!**)
+- Apologies to previous npx and global users, I accidentally pushed a release from master, rather than the build branch. Works now!
+- Latest update: July 15 2020
+
 - [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
 - Latest update: July 14 2020
+
 - New Docker Hub image with latest changes: [dosyago/browsergapce:2.0](https://hub.docker.com/r/dosyago/browsergapce)
 - Latest update: July 13 2020
 - New README (including some info on a few competitors).
