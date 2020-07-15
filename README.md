@@ -62,11 +62,18 @@ or Install from npm
 
 ## Easy install trouble shooting
 
+
+### Windows systems (and Mingw and Cygwin)
+
 If you're on Git Bash (or Cygwin, or Mingw) you might have trouble using `npm i -g remoteview`.
 
-First make sure you configure npm 
+Make sure you configure npm 
 
 `npm config set script-shell "C:\\Program Files\\git\\bin\\bash.exe"`
+
+### Binaries
+
+If you use a [binary](https://github.com/dosyago/BrowserGap/releases/latest), make sure you have Google chrome installed. You might also need to run the `setup_machine.sh` script, to make sure you have all dependencies of Google chrome headless installed.
 
 ## Docker build
 
