@@ -2,7 +2,7 @@
 
 ## News
 
-- Run or install as global via `npx remoteview` or `npm i -g remoteview` (**Working!**)
+- Run or install as global via `npx remoteview@latest` or `npm i -g remoteview@latest` (**Working!**)
 - Apologies to previous npx and global users, I accidentally pushed a release from master, rather than the build branch. Works now!
 - Latest update: July 15 2020
 
@@ -61,7 +61,7 @@ Then run `npm i` in the repository directory.
 
 or Install from npm 
 
-`npm i -g remoteview`
+`npm i -g remoteview@latest`
 
 *Remember to follow the install prompt*
 
