@@ -1,13 +1,16 @@
 {
   "name": "remoteview",
-  "version": "2.3.0",
+  "version": "2.2.7",
   "description": "Fly a browser remotely from your browser? Yes.",
   "main": "index.js",
+  "bin": {
+    "remoteview": "BrowserGap.js"
+  },
   "scripts": {
     "test": "bash ./test.sh",
     "dev": "node-dev --inspect=127.0.0.1:8111 index.js",
     "start": "bash ./start.sh",
-    "postinstall": "bash ./postinstall.sh && bash ./setup_machine.sh",
+    "postinstall": "bash ./postinstall.sh",
     "prestart": "bash ./make_views.sh",
     "init": "bash ./reinit_after_restart.sh",
     "clean": "./clean.sh",
@@ -17,7 +20,8 @@
     "tsc-public": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System public/*.js decs.d.ts",
     "tsc-check": "./tsc-check.sh",
     "check": "rm -f public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
-    "bundle": "npx webpack server.js"
+    "build": "npx webpack server.js && nexe -t linux-x64 -o BrowserGap.nix -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t windows -o BrowserGap.exe -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t macos-x64 -o BrowserGap.macos -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t windows-x32 -o BrowserGap.win32.exe -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t linux-x32 -o BrowserGap.nix32 -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\"",
+    "pack": "upx BrowserGap.exe && upx BrowserGap.nix && upx BrowserGap.macos && upx BrowserGap.win32.exe && upx BrowserGap.nix32"
   },
   "repository": {
     "type": "git",
@@ -78,10 +82,13 @@
     "babel-plugin-external-helpers": "^6.22.0",
     "eslint": "^7.4.0",
     "nexe": "^3.3.7",
+    "node-loader": "^1.0.0",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "typescript": "^3.9.6",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.12",
     "whatwg-fetch": "^3.2.0"
   }
 }
