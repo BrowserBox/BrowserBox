@@ -1,7 +1,4 @@
-#!/bin/bash
-
-source ~/.nvm/nvm.sh
-nvm use v12.10.0
+#!/bin/sh
 
 description=$1
 gbranch nexe-build
