@@ -5,7 +5,7 @@
   "description": "A browser API for performing actions on a bitmap representation of a browser tab, and viewing the changes.",
   "main": "index.js",
   "scripts": {
-    "test": "serve -p 8080",
+    "test": "serve -p 8080"
   },
   "repository": {
     "type": "git",
