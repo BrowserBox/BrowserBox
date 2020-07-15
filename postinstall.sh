@@ -5,14 +5,17 @@
 #./install_bundle_deps.sh
 
 npm rebuild
+sleep 1
+
 cd zombie-lord 
 npm i && npm rebuild
+sleep 1
+
 cd ../public/voodoo
 npm i && npm rebuild
-# cd ../../endbacker
-# npm i && npm rebuild
+sleep 1
+
 cd ../../zombie-lord/custom-launcher
 npm i && npm rebuild
-
-#./make_bundle.sh
+sleep 1
 
