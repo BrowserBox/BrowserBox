@@ -99,7 +99,7 @@ You can stream a remote browser with special cusotmizations to your clients to s
 
 For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=BrowserGap)
 
-[Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k), or just watch the GIF below:
+[Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k).
 
 BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a browser. It also looks and works just like a browser, but it runs in your browser and controls another browser.
 
