@@ -67,8 +67,9 @@ or Install from npm
 
 ## Easy install trouble shooting
 
-
 ### Windows systems (and Mingw and Cygwin)
+
+**Pre-requisites: Windows with Google chrome already instaled.**
 
 If you're on Git Bash (or Cygwin, or Mingw) you might have trouble using `npm i -g remoteview`.
 
@@ -76,9 +77,15 @@ Make sure you configure npm
 
 `npm config set script-shell "C:\\Program Files\\git\\bin\\bash.exe"`
 
+Also, don't worry about running "setup_machine" at the prompt, because it uses `apt-get` which won't work on Windows anyway.
+
+Normally, a Windows device with chrome already installed won't need to run "setup_machine" anyway, which is a script to install things like fonts, graphics libraries and some utilities useful for running headless Chrome in linux.
+
 ### Binaries
 
-If you use a [binary](https://github.com/dosyago/BrowserGap/releases/latest), make sure you have Google chrome installed. You might also need to run the `setup_machine.sh` script, to make sure you have all dependencies of Google chrome headless installed.
+**Pre-requisites: Windows, Mac OS or Linux with Chrome already installed.**
+
+If you use a [binary](https://github.com/dosyago/BrowserGap/releases/latest), make sure you have Google chrome installed. You might also need to run the `setup_machine.sh` script, to make sure you have all dependencies of Google chrome headless installed, but probably not if you have Windows.
 
 ## Docker build
 
