@@ -40,12 +40,19 @@ var encoder = undefined;
 const sslBranch = 'master'
 const SSL_OPTS = {};
 
+let certsFound = false;
+
 if ( DEBUG.goSecure ) {
-  Object.assign(SSL_OPTS, {
-    cert: fs.readFileSync(`../sslcert/${sslBranch}/fullchain.pem`),
-    key: fs.readFileSync(`../sslcert/${sslBranch}/privkey.pem`),
-    ca: fs.readFileSync(`../sslcert/${sslBranch}/chain.pem`),
-  });
+  try {
+    Object.assign(SSL_OPTS, {
+      cert: fs.readFileSync(`../sslcert/${sslBranch}/fullchain.pem`),
+      key: fs.readFileSync(`../sslcert/${sslBranch}/privkey.pem`),
+      ca: fs.readFileSync(`../sslcert/${sslBranch}/chain.pem`),
+    });
+    certsFound = true;
+  } catch(e) {
+    DEBUG.val && console.warn(e);
+  }
   DEBUG.val && console.log(SSL_OPTS, {GO_SECURE});
 }
 
@@ -73,7 +80,7 @@ function getEncoder() {
 
 var port = argv[2];
 DEBUG.val && console.log('starting http server on port', port);
-const MODE = GO_SECURE ? https: http;
+const MODE = certsFound ? https: http;
 var server = MODE.createServer(SSL_OPTS, function(request, response) {
   var contentType = encoders[encoderType].contentType;
   DEBUG.val && console.log('  setting Content-Type to', contentType);
