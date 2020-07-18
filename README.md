@@ -3,7 +3,6 @@
 ## News
 
 - Run or install as global via `npx remoteview@latest` or `npm i -g remoteview@latest` (**Working!**)
-- Apologies to previous npx and global users, I accidentally pushed a release from master, rather than the build branch. Works now!
 - Latest update: July 15 2020
 
 - [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
