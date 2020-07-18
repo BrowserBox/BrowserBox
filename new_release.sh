@@ -11,7 +11,7 @@ gbranch nexe-build
 
 echo $time > RELEASE_TIME.txt
 
-# npm run build
+npm run build
 chmod +x BrowserGap.js
 
 gpush minor "New release"
