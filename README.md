@@ -142,6 +142,9 @@ For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=BrowserGap&bo
 
 First set up the machine with git, and node (including nvm and npm) using the below:
 
+If you want to speed up install and it hangs on `processing triggers for man-db` you can remove all your man pages (**WARNING**), with:
+`sudo apt-get remove -y --purge man-db`
+
 ```sh
 sudo apt update && sudo apt -y upgrade
 sudo apt install -y curl git wget
@@ -156,6 +159,7 @@ source $HOME/.profile
 source $HOME/.nvm/nvm.sh
 nvm install --lts
 sudo apt autoremove
+npm i -g serve nodemon pm2 npm npx
 sudo npm i -g serve nodemon pm2 npm npx
 ```
 
