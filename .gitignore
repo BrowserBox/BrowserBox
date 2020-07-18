@@ -10,7 +10,7 @@ node_modules
 sslcert/*
 .*.swp
 isolate*
-public/bundle*
-public/meta_bundle*
+public/bundle*.js
+public/meta_bundle*.js
 nohup.out
 
