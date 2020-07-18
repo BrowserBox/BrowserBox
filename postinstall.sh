@@ -4,15 +4,15 @@
 # "Cannot find preset babel/env relative to directory public"
 #./install_bundle_deps.sh
 
-npm rebuild
+npm rebuild --quiet
 cd zombie-lord 
-npm i && npm rebuild
+npm i --quiet && npm rebuild --quiet
 cd ../public/voodoo
-npm i && npm rebuild
+npm i --quiet && npm rebuild --quiet
 # cd ../../endbacker
-# npm i && npm rebuild
+# npm i --quiet && npm rebuild --quiet
 cd ../../zombie-lord/custom-launcher
-npm i && npm rebuild
+npm i --quiet && npm rebuild --quiet
 cd ../../
 
 
