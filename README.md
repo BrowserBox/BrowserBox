@@ -2,15 +2,10 @@
 
 ## News
 
-- Run or install as global via `npx remoteview@latest` or `npm i -g remoteview@latest` (**Working!**)
-- Latest update: July 15 2020
-
-- [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
-- Latest update: July 14 2020
-
-- New Docker Hub image with latest changes: [dosyago/browsergapce:2.0](https://hub.docker.com/r/dosyago/browsergapce)
-- Latest update: July 13 2020
-- New README (including some info on a few competitors).
+- **July 18 2020** Bug fix on master: Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
+- **July 15 2020** Run or install as global via `npx remoteview@latest` or `npm i -g remoteview@latest` (**Working!**)
+- **July 14 2020** [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
+- **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.0](https://hub.docker.com/r/dosyago/browsergapce)
 
 ## About
 
