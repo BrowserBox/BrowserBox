@@ -63,12 +63,15 @@
     "ws": "^6.1.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.10.4",
-    "@babel/plugin-external-helpers": "^7.10.4",
-    "@babel/plugin-transform-runtime": "^7.10.4",
-    "@babel/polyfill": "^7.10.4",
-    "@babel/preset-env": "^7.10.4",
-    "@babel/runtime": "^7.10.4",
+    "@babel/core": "latest",
+    "@babel/plugin-external-helpers": "latest",
+    "@babel/plugin-transform-runtime": "latest",
+    "@babel/polyfill": "latest",
+    "@babel/preset-env": "latest",
+    "@babel/runtime": "latest",
+    "@rollup/plugin-babel": "latest",
+    "@rollup/plugin-commonjs": "latest",
+    "@rollup/plugin-node-resolve": "latest",
     "@types/body-parser": "^1.19.0",
     "@types/cookie-parser": "^1.4.2",
     "@types/current-git-branch": "^1.1.1",
@@ -79,16 +82,13 @@
     "@types/node-fetch": "^2.5.7",
     "@types/sharp": "^0.25.0",
     "@types/ws": "^7.2.6",
-    "babel-plugin-external-helpers": "^6.22.0",
+    "babel-plugin-external-helpers": "latest",
     "eslint": "^7.4.0",
     "nexe": "^3.3.7",
-    "node-loader": "^1.0.0",
-    "rollup-plugin-babel": "^4.4.0",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-node-resolve": "^5.2.0",
-    "typescript": "^3.9.6",
+    "rollup": "^2.21.0",
+    "typescript": "^3.9.7",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.12",
-    "whatwg-fetch": "^3.2.0"
+    "whatwg-fetch": "latest"
   }
 }

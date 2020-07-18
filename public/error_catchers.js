@@ -3,9 +3,9 @@ import {DEBUG} from './voodoo/src/common.js';
 setupErrorCatchers();
 
 export default function setupErrorCatchers() {
-  DEBUG.dev && (self.onerror = (v) => (func(v, extractMeat(v).message, extractMeat(v).stack, v+''), true));
+  DEBUG.dev && (self.onerror = (v) => (func()(v, extractMeat(v).message, extractMeat(v).stack, v+''), true));
   DEBUG.dev && (self.onerror = (v) => (console.log(v), true));
-  DEBUG.dev && (self.onunhandledrejection = ({reason}) => (func(JSON.stringify(reason,null,2)), true));
+  DEBUG.dev && (self.onunhandledrejection = ({reason}) => (func()(JSON.stringify(reason,null,2)), true));
 }
 
 function isMobile() {

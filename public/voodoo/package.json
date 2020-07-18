@@ -18,10 +18,10 @@
   },
   "homepage": "https://gitlab.com/dosycorp/voodoo#readme",
   "dependencies": {
-    "dumbass": "^2.5.6",
-    "style.dss": "^1.8.1"
+    "dumbass": "latest",
+    "style.dss": "latest"
   },
   "devDependencies": {
-    "@babel/runtime": "^7.7.7"
+    "@babel/runtime": "latest"
   }
 }
