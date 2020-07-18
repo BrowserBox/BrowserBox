@@ -4,6 +4,7 @@
 - Perform remote browser isolation for security and automation.
 - Run your browsers anywhere and connect to them from anywhera.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
+- Connect to Chrome headless with a Browser User Interface
 
 ## News
 
