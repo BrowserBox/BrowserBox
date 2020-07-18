@@ -13,6 +13,7 @@ npm i && npm rebuild
 # npm i && npm rebuild
 cd ../../zombie-lord/custom-launcher
 npm i && npm rebuild
+cd ../../
 
 echo 
 echo
