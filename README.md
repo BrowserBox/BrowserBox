@@ -118,11 +118,11 @@ BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a b
 
 ## Managed Cloud Service (coming soon)
 
-## Free Demos (currently disabled - they were too popular)
+## Free Demos (temporarily enabled)
 
-Try for free at https://free.cloudbrowser.xyz
+Try for free at https://start.cloudbrowser.xyz
 
-Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
+The Server is in Tokyo - I tried to strike a balance between access to APAC, EMEA and AMERICAS. 
 
 ## Secure Cloud Based Internet Isolation Version for organizations
 
