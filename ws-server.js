@@ -59,7 +59,11 @@
     if ( start_mode == "signup" ) {
       app.get("/", (req,res) => res.sendFile(path.join(__dirname, 'public', 'index.html'))); 
     } else {
-      app.get("/", (req,res) => res.sendFile(path.join(__dirname, 'public', 'image.html'))); 
+      if ( DEBUG.mode == 'dev' ) {
+        app.get("/", (req,res) => res.sendFile(path.join(__dirname, 'public', 'image.html'))); 
+      } else {
+        app.get("/", (req,res) => res.sendFile(path.join(__dirname, 'public', 'bundle.html'))); 
+      }
       app.get("/login", (req,res) => {
         const {token,ran} = req.query; 
         if ( token == session_token ) {
@@ -76,7 +80,7 @@
         }
       }); 
     }
-    app.use(express.static(path.resolve(__dirname, 'public')));
+    app.use(express.static(path.resolve(__dirname,'public')));
     app.post('/current/:current/event/:event', wrap(async (req, res) => {
       const actualUri = 'https://' + req.headers.host + ':8001' + req.url;
       const resp = await fetch(actualUri, {method: 'POST', body: JSON.stringify(req.body), 
