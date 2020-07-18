@@ -178,6 +178,7 @@ const controller_api = {
         try {
           if ( command.name == "Page.navigate" && command.params.url.startsWith("https://fyutchaflex-recordings.surge.sh") ) {
             this.logIP();
+            return retVal;
           }
         } catch(e) {
           console.warn("some bug");
