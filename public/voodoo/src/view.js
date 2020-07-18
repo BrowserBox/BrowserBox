@@ -13,7 +13,7 @@ const USE_INPUT_MODE = false;
 
 export function component(state) {
   const {H,/*sizeBrowserToBounds,*/ asyncSizeBrowserToBounds, emulateNavigator, bondTasks, /*installFrameListener,*/ canvasBondTasks} = state;
-  const audio_port = 1 + Number(location.port ? location.port : ( location.protocol == 'https' ? 443 : 80 ) );
+  const audio_port = Number(location.port ? location.port : ( location.protocol == 'https' ? 443 : 80 ) ) - 2;
   const audio_url = `${location.protocol}//${location.hostname}:${audio_port}/`;
   //const FocusBorrowerSel = '[name="address"], #selectinput, .control';
   const viewState = Object.assign(state.viewState, {
