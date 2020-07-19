@@ -255,7 +255,18 @@
         const modal = {
           sessionId,
           type: 'notice',
+          /*
           message: `The file "${filename}" is downloading to this pits of hell to be consumed in eternal damnation by stinky daemons. Send bitcoins to this address to save your file. Just kidding, bitcoin is not a valid store of value. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or deploy commercially. This open-source software is free to use for governments and not-for-profits. All data will be deleted at the end of your session. Also by daemons.`,
+          */
+          message: `The file "${filename}" is downloading a secure location and will be deleted at the end of your session. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or to deploy commercially. This open-source software is free to use for governments and not-for-profits. See the README.md for more details.`,
+          otherButton: {
+            /*
+            title: 'Open README.md',
+            onclick: () => window.open('https://github.com/dosyago/BrowserGap/blob/master/README.md', "_blank")
+            */
+            title: 'Mail Cris',
+            onclick: () => window.open('mailto:cris@dosycorp.com?Subject=BrowserGap+License+Inquiry&body=Hi%20Cris', "_blank")
+          },
           title: "SecureView\u2122 Not-enabled",
         };
         subviews.openModal({modal}, state);
@@ -741,8 +752,9 @@
           if ( state.active && state.active.url != BLANK ) {
             canKeysInput();
           } else {
+            writeDocument("New Blank Browser Tab");
             //writeDocument("Secure BrowserGap Tab.");
-            writeDocument("Undead Tab from the Crypt of Hell. <a href=https://github.com/dosyago/BrowserGap>Spells here</a>.");
+            //writeDocument("Undead Tab from the Crypt of Hell. <a href=https://github.com/dosyago/BrowserGap>Spells here</a>.");
             state.viewState.omniBoxInput.focus();
           }
         }, SHORT_DELAY);
