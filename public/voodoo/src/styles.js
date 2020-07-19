@@ -154,6 +154,7 @@ export const dss = {
         position: relative;
         height: 2rem;
         background: transparent;
+        background: rgba(200,210,220,0.6);
         padding-left: 0.5rem;
       }
       
@@ -165,7 +166,7 @@ export const dss = {
       }
 
       li.tab-selector:not(.active) {
-        opacity: 0.7;
+        opacity: 0.8;
       }
 
       li.tab-selector:not(.active):hover {

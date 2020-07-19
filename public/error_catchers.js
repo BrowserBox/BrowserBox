@@ -1,5 +1,6 @@
 import {DEBUG} from './voodoo/src/common.js';
 
+const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 setupErrorCatchers();
 
 export default function setupErrorCatchers() {
@@ -9,7 +10,7 @@ export default function setupErrorCatchers() {
 }
 
 function isMobile() {
-  return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
+  return MobilePlatform.test(navigator.userAgent);
 }
 
 function func() {
