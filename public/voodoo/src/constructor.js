@@ -752,7 +752,26 @@
           if ( state.active && state.active.url != BLANK ) {
             canKeysInput();
           } else {
-            writeDocument("New Blank Browser Tab");
+            writeDocument(`
+              <!DOCTYPE html>
+                <style>
+                  :root {
+                    height: 100%;
+                    background: #${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, 0)};
+                  }
+                  h2 {
+                    background: white;
+                    font-family: system-ui;
+                  }
+                </style>
+                <h2>
+                  New Blank Browser Tab. 
+                </h2>
+                <strong>
+                  Current time: ${(new Date).toString()}
+                </strong>
+              </html>
+            `);
             //writeDocument("Secure BrowserGap Tab.");
             //writeDocument("Undead Tab from the Crypt of Hell. <a href=https://github.com/dosyago/BrowserGap>Spells here</a>.");
             state.viewState.omniBoxInput.focus();
