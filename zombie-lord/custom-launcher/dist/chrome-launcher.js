@@ -174,7 +174,14 @@ class Launcher {
                     this.port = yield random_port_1.getRandomPort();
                 }
                 log.verbose('ChromeLauncher', `Launching with command:\n"${execPath}" ${this.flags.join(' ')}`);
-                const chrome = this.spawn(execPath, this.flags, { detached: true, stdio: ['ignore', this.outFile, this.errFile], env: this.envVars });
+                const script = `
+#!/bin/bash
+
+sudo -g browsers ${execPath} ${this.flags.join(' ')}
+                `
+                console.log({script});
+                fs.writeFileSync(path.resolve(os.homedir(), 'startc.sh'), script);
+                const chrome = this.spawn(path.resolve(os.homedir(), 'startc.sh'), { detached: true, stdio: ['ignore', process.stdout, process.stderr], env: this.envVars });
                 this.chrome = chrome;
                 this.fs.writeFileSync(this.pidFile, chrome.pid.toString());
                 log.verbose('ChromeLauncher', `Chrome running with pid ${chrome.pid} on port ${this.port}.`);
