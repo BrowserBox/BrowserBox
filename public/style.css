@@ -5,6 +5,8 @@
     --silver: silver;
     --mediumgrey: lightgrey;
     --lightgrey: #e6e9ec;
+    --lightgrey: linear-gradient(to left top, red, orange , yellow, green, cyan, blue, violet, red);
+    --lightgrey: cadetblue;
     --verylightgrey: #eee;
     --black: black;
     --white: white;

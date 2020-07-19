@@ -1,7 +1,12 @@
 import {FRAME_CONTROL} from '../../translateVoodooCRDP.js';
 
 export const VERSION = '3.1415926535897932384626338';
-export const isSafari = () => /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+const SafariPlatform = /^((?!chrome|android).)*safari/i;
+const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+const FirefoxPlatform = /firefox/i;
+
+export const isSafari = () => SafariPlatform.test(navigator.userAgent);
+
 export const BLANK = "about:blank";
 
 export const DEBUG = {
@@ -50,11 +55,11 @@ export function throttle(func, wait) {
 }
 
 export function isFirefox() {
-  return /firefox/i.test(navigator.userAgent);
+  return FirefoxPlatform.test(navigator.userAgent);
 }
 
 export function deviceIsMobile() {
-  return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
+  return MobilePlatform.test(navigator.userAgent);
 }
 
 // debug logging

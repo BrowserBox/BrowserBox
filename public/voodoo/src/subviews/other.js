@@ -1,5 +1,5 @@
 import {DEBUG} from '../common.js';
-import {d as R} from '../../node_modules/dumbass/r.js';
+import {d as R, u as X} from '../../node_modules/dumbass/r.js';
 
   // Auxilliary view functions 
     const NATIVE_MODALS = new Set([
@@ -26,6 +26,7 @@ import {d as R} from '../../node_modules/dumbass/r.js';
       let multiple = false;
       let submitText = '';
       let cancelText = '';
+      let otherButton = null;
       let working = false;
       let url = '';
 
@@ -43,6 +44,7 @@ import {d as R} from '../../node_modules/dumbass/r.js';
           accept: accept = '',
           submitText:submitText = 'Submit',
           cancelText:cancelText = 'Cancel',
+          otherButton:otherButton = null,
           working:working = false,
         } = currentModal);
       }
@@ -122,6 +124,7 @@ import {d as R} from '../../node_modules/dumbass/r.js';
             <h1>${title}</h1>
             <p class=message value=message>${msg||'Empty notice'}</p>
             <button class=ok title=Acknowledge value=ok>OK</button>
+            ${otherButton ? X`<button title="${otherButton.title}" click=${otherButton.onclick}>${otherButton.title}</button>` : ''}
           </article>
           <article bond=${el => ModalRef.auth = el} class="auth ${
               currentModalEl === ModalRef.auth ? 'open' : '' 
@@ -271,15 +274,15 @@ import {d as R} from '../../node_modules/dumbass/r.js';
     }
 
     export function openModal({modal:{
-          sessionId, mode, requestId, title, type, message:msg, defaultPrompt, url
+          sessionId, mode, requestId, title, type, message:msg, defaultPrompt, url, otherButton
         }} = {}, state) {
-      const currentModal = {type, mode, requestId, msg,el:ModalRef[type], sessionId, title, url};
+      const currentModal = {type, mode, requestId, msg,el:ModalRef[type], sessionId, otherButton, title, url};
       state.viewState.currentModal = currentModal;
 
-      console.log(state.viewState.currentModal);
+      //console.log(state.viewState.currentModal);
 
       const modalDebug = {
-        defaultPrompt, url, currentModal, ModalRef, state, title, type
+        defaultPrompt, url, currentModal, ModalRef, state, title, type, otherButton
       };
 
       DEBUG.val >= DEBUG.med && Object.assign(self, {modalDebug});

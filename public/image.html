@@ -11,6 +11,7 @@
     <link rel=icon-apple-touch-precomposed sizes=192x192 href=/images/icons/icon-192x192.png>
     <link rel=shortcut-icon href=/images/icons/icon-152x152.png>
     <link rel=stylesheet href=style.css>
+    <script type=module src=resize_helper.js></script>
     <script type=module src=error_catchers.js></script>
     <script type=module src=prod/setup-service-worker.js></script>
     <script type=module src=prod/ask-before-unload.js></script>
@@ -33,6 +34,43 @@
   </head>
   <body>
     <div tabindex=-1 id=debugBox></div>
+    <div id=loading>
+      <style>
+        #loading {
+          display: flex;
+          flex-direction: column;
+          position: absolute;
+          z-index: -1;
+          width: 95%;
+          height: 95%;
+          box-sizing: border-box;
+          justify-items: center;
+          align-items: center;
+          justify-content: center;
+        }
+
+        #loading .logo {
+          display: block;
+          font-size: 5rem;
+          width: 10rem;
+          height: 10rem;
+          border: 2rem solid white;
+          color: white;
+        }
+      </style>
+      <article class=logo>BG</article>
+      <progress max=100 value=30></progress>
+      <script>
+        const progress = document.currentScript.previousElementSibling;
+        const runner = setInterval(() => {
+          if ( progress.value < progress.max ) {
+            progress.value += 1;
+          } else {
+            clearInterval(runner);
+          }
+        }, 7);
+      </script>
+    </div>
     <script type=module src=image-start-app.js></script>
     <script nomodule src=bundle_image_start.js></script>
   </body>
