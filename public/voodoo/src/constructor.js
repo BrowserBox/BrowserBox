@@ -415,7 +415,7 @@
               console.warn(e);
             }
           } else {
-            writeCanvas("All tabs closed.");
+            writeCanvas("No tabs open.");
           }
         }
       }
