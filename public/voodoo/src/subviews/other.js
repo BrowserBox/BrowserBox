@@ -276,7 +276,7 @@ import {d as R} from '../../node_modules/dumbass/r.js';
       const currentModal = {type, mode, requestId, msg,el:ModalRef[type], sessionId, title, url};
       state.viewState.currentModal = currentModal;
 
-      console.log(state.viewState.currentModal);
+      //console.log(state.viewState.currentModal);
 
       const modalDebug = {
         defaultPrompt, url, currentModal, ModalRef, state, title, type

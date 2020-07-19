@@ -35,6 +35,7 @@ const pageContextInjectionsScroll = botDetectionEvasions;
 
 const RECONNECT_MS = 5000;
 const WAIT_FOR_DOWNLOAD_BEGIN_DELAY = 5000;
+const WAIT_FOR_COALESCED_NETWORK_EVENTS = 1000
 //const deskUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.102 Safari/537.36";
 const mobUA = "Mozilla/5.0 (Linux; Android 8.1.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3384.0 Mobile Safari/537.36";
 const LANG = "en-US";
@@ -427,44 +428,49 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       const resource = endLoading(sessionId);
       const {requestId} = message.params;
       connection.meta.push({resource}); 
-      Frames.delete(requestId);
+      setTimeout(() => Frames.delete(requestId), WAIT_FOR_COALESCED_NETWORK_EVENTS);
     } else if ( message.method == "Network.loadingFinished" ) {
       const resource = endLoading(sessionId);
       const {requestId} = message.params;
       connection.meta.push({resource}); 
-      Frames.delete(requestId);
+      setTimeout(() => Frames.delete(requestId), WAIT_FOR_COALESCED_NETWORK_EVENTS);
     } else if ( message.method == "Network.loadingFailed" ) {
       const resource = endLoading(sessionId);
       const {requestId} = message.params;
-      const {url,frameId} = Frames.get(requestId)
+      const savedFrame = Frames.get(requestId)
+      if ( savedFrame ) {
+        const {url,frameId} = savedFrame;
 
-      const someFileName = getFileFromURL(url);
+        const someFileName = getFileFromURL(url);
 
-      if ( message.params.type == "Document" ) {
-        message.frameId = frameId;
-        DEBUG.val && console.log({failedURL:url});
-        if ( !url.startsWith('http') ) {
-          const modal = {
-            type: 'intentPrompt',
-            title: 'External App Request',
-            message: `This page is asking to open an external app via URL: ${url}`,
-            url
-          };
-          DEBUG.val && console.log(JSON.stringify({modal},null,2));
-          connection.meta.push({modal});
-        } else {
-          setTimeout(() => {
-            if ( someFileName == connection.lastDownloadFileName ) {
-              // this is not a failure 
-            } else {
-              connection.meta.push({failed:message});
-            }
-          }, WAIT_FOR_DOWNLOAD_BEGIN_DELAY );
+        if ( message.params.type == "Document" ) {
+          message.frameId = frameId;
+          DEBUG.val && console.log({failedURL:url});
+          if ( !url.startsWith('http') ) {
+            const modal = {
+              type: 'intentPrompt',
+              title: 'External App Request',
+              message: `This page is asking to open an external app via URL: ${url}`,
+              url
+            };
+            DEBUG.val && console.log(JSON.stringify({modal},null,2));
+            connection.meta.push({modal});
+          } else {
+            setTimeout(() => {
+              if ( someFileName == connection.lastDownloadFileName ) {
+                // this is not a failure 
+              } else {
+                connection.meta.push({failed:message});
+              }
+            }, WAIT_FOR_DOWNLOAD_BEGIN_DELAY );
+          }
         }
-      }
 
-      connection.meta.push({resource}); 
-      Frames.delete(requestId);
+        connection.meta.push({resource}); 
+        setTimeout(() => Frames.delete(requestId), WAIT_FOR_COALESCED_NETWORK_EVENTS);
+      } else {
+        console.warn(`No url or frameId saved for requestId: ${requestId}`);
+      }
     } else if ( message.method == "Network.responseReceived" ) {
       const resource = endLoading(sessionId);
       connection.meta.push({resource}); 
