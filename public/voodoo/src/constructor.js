@@ -741,7 +741,8 @@
           if ( state.active && state.active.url != BLANK ) {
             canKeysInput();
           } else {
-            writeDocument("Secure BrowserGap Tab.");
+            //writeDocument("Secure BrowserGap Tab.");
+            writeDocument("Undead Tab from the Crypt of Hell. <a href=https://github.com/dosyago/BrowserGap>Code here</a>.");
             state.viewState.omniBoxInput.focus();
           }
         }, SHORT_DELAY);
