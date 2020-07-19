@@ -75,7 +75,7 @@
           if ( session_token == 'token2' ) {
             res.end(`Incorrect token ${token}/token2. <a href=/login?token=token2>Login first.</a>`);
           } else {
-            res.end(`Incorrect token "${token}". <a href=https://${req.hostname}/signup.html>Login first.</a>`);
+            res.end(`Incorrect token "${token}". <a href=https://${req.hostname}/>Try again.</a>`);
           }
         }
       }); 
