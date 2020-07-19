@@ -757,14 +757,15 @@
                 <style>
                   :root {
                     height: 100%;
+                    /*
                     background: #${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, 0)};
+                    */
+                    color: silver;
                     font-family: system-ui;
                   }
                   h2 {
-                    background: white;
                   }
                   strong {
-                    background: silver;
                     padding: 0.5rem;
                   }
                 </style>
