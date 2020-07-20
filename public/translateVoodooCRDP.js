@@ -100,6 +100,18 @@ function translator(e, handled = {type:'case'}) {
         }
       };
     }
+    case "resample-imagery": {
+      const {down, up, averageBw} = e;
+      return {
+        command: {
+          isZombieLordCommand: true,
+          name: "Connection.resampleImagery",
+          params: {
+            averageBw, down , up
+          }
+        }
+      }
+    }
     case "control-chars": {
       return keyEvent(e);
     }

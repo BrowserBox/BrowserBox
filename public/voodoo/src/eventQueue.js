@@ -41,9 +41,47 @@ class Privates {
     this.Meta = [];
     this.sessionToken = sessionToken;
 
-    this.addBytes = n => {
+    const WindowLength = 10;
+    const messageWindow = [];
+    const bwWindow = [];
+
+    this.addBytes = (n,hasFrame) => {
       state.totalBytes += n;
+
+      if ( hasFrame ) {
+        messageWindow.push(n);
+        bwWindow.push(state.totalBytesThisSecond);
+
+        while(messageWindow.length > WindowLength) {
+          messageWindow.shift();
+        }
+        while (bwWindow.length > WindowLength) {
+          bwWindow.shift();
+        }
+
+        const averageSize = Math.round(messageWindow.reduce((total, size) => total + size, 0)/messageWindow.length);
+        const averageBw = Math.round(bwWindow.reduce((total, size) => total + size, 0)/messageWindow.length);
+
+        if ( averageSize > averageBw * 1.1  ) {
+          state.H({
+            custom: true,
+            type: 'resample-imagery',
+            down: true,
+            averageBw
+          });
+        } else if ( averageSize < averageBw * 0.9 ) {
+          state.H({
+            custom: true,
+            type: 'resample-imagery',
+            up: true,
+            averageBw
+          });
+        }
+      }
     };
+
+    let lastBytes = 0;
+    let lastCheck = Date.now();
   }
 
   static get firstDelay() { return 20; /* 20, 40, 250, 500;*/ }
@@ -210,12 +248,14 @@ class Privates {
         }
       };
       socket.onmessage = async message => {
-        let {data:messageData} = message;
-        this.addBytes(messageData.length);    
-        messageData = JSON.parse(messageData);
+        let {data:MessageData} = message;
+        const messageData = JSON.parse(MessageData);
         const {data,frameBuffer,meta,messageId:serverMessageId,totalBandwidth} = messageData;
         if ( !!frameBuffer && this.images.has(url) ) {
+          this.addBytes(MessageData.length, frameBuffer.length);    
           drawFrames(this.publics.state, frameBuffer, this.images.get(url));
+        } else {
+          this.addBytes(MessageData.length, false);    
         }
 
         const errors = data.filter(d => !!d && !!d.error);

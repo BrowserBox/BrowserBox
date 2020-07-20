@@ -38,8 +38,11 @@ const KEYS = [
   const WEBP_OPTS = {
     quality: 8,
   };
+  const MIN_WP_QUAL = 2;
+  const MAX_WP_QUAL = 52;
 
 export function makeCamera(connection) {
+  const opts = WEBP_OPTS;
   let shooting = false;
   let frameId = 1;
   let lastHash;
@@ -62,7 +65,30 @@ export function makeCamera(connection) {
     }
   };
 
-  return {queueTailShot, doShot};
+  return {queueTailShot, doShot, shrinkImagery, growImagery};
+
+  function shrinkImagery({averageBw}) {
+    if ( connection.isSafari || connection.isFirefox ) {
+      console.warn("Not implemented yet");
+    } else {
+      opts.quality -= 2;
+      if ( opts.quality < MIN_WP_QUAL ) {
+        opts.quality = MIN_WP_QUAL;
+      }
+    }
+  }
+
+  function growImagery({averageBw}) {
+    if ( connection.isSafari || connection.isFirefox ) {
+      console.warn("Not implemented yet");
+    } else {
+      opts.quality += 2;
+      if ( opts.quality > MAX_WP_QUAL ) {
+        opts.quality = MAX_WP_QUAL;
+      }
+    }
+
+  }
 
   function queueTailShot() {
     if ( tailShot ) {
@@ -106,7 +132,7 @@ export function makeCamera(connection) {
         return NOIMAGE;
       } else {
         lastHash = F.hash;
-        await forExport({frame:F, connection});
+        await forExport({frame:F, connection, opts});
         return F;
       }
     } else {
@@ -142,12 +168,12 @@ export function makeCamera(connection) {
   }
 }
 
-export async function forExport({frame, connection}) {
+export async function forExport({frame, connection, opts}) {
   let {img} = frame;
   // FIXME : CPU issues
   img = Buffer.from(img, 'base64');
   if ( ! connection.isSafari ) {
-    img = await sharp(img).webp(WEBP_OPTS).toBuffer();
+    img = await sharp(img).webp(opts).toBuffer();
   }
   img = img.toString('base64');
   frame.img = img;
