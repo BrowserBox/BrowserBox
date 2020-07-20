@@ -44,6 +44,20 @@ class Privates {
     this.addBytes = n => {
       state.totalBytes += n;
     };
+
+    let lastBytes = 0;
+    let lastCheck = Date.now();
+
+    setInterval(() => {
+      const now = Date.now();
+      const byteDiff = state.totalBytes - lastBytes;
+      const timeDiff = now - lastCheck;
+
+      lastBytes = state.totalBytes;
+      lastCheck = now;
+
+      state.myBandwidth = (state.myBandwidth + byteDiff/timeDiff)/2;
+    }, 7777);
   }
 
   static get firstDelay() { return 20; /* 20, 40, 250, 500;*/ }

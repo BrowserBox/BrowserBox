@@ -57,7 +57,11 @@
       H,
 
       // bandwidth
+      showBandwidthRate: true,
+      myBandwidth: 0,
+      serverBandwidth: 0,
       totalBytes: 0,
+      totalServerBytesThisSecond: 0,
       totalBytesThisSecond: 0,
       totalBandwidth: 0,
 
