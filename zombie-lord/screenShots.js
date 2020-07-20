@@ -1,5 +1,4 @@
 import {DEBUG} from '../common.js';
-import sharp from 'sharp';
 
 const MAX_FRAMES = 3; /* 1, 2, 4 */
 const MIN_TIME_BETWEEN_SHOTS = 150; /* 20, 40, 100, 250, 500 */
@@ -44,7 +43,6 @@ const KEYS = [
   const MAX_JPG_QUAL = 83;
 
 export function makeCamera(connection) {
-  const opts = WEBP_OPTS;
   let shooting = false;
   let frameId = 1;
   let lastHash;
@@ -70,32 +68,17 @@ export function makeCamera(connection) {
   return {queueTailShot, doShot, shrinkImagery, growImagery};
 
   function shrinkImagery({averageBw}) {
-    if ( connection.isSafari || connection.isFirefox ) {
-      SAFARI_SHOT.command.params.quality -= 2;
-      if ( SAFARI_SHOT.command.params.quality < MIN_JPG_QUAL ) {
-        SAFARI_SHOT.command.params.quality = MIN_JPG_QUAL;
-      }
-    } else {
-      opts.quality -= 2;
-      if ( opts.quality < MIN_WP_QUAL ) {
-        opts.quality = MIN_WP_QUAL;
-      }
+    SAFARI_SHOT.command.params.quality -= 2;
+    if ( SAFARI_SHOT.command.params.quality < MIN_JPG_QUAL ) {
+      SAFARI_SHOT.command.params.quality = MIN_JPG_QUAL;
     }
   }
 
   function growImagery({averageBw}) {
-    if ( connection.isSafari || connection.isFirefox ) {
-      SAFARI_SHOT.command.params.quality += 2;
-      if ( SAFARI_SHOT.command.params.quality > MAX_JPG_QUAL ) {
-        SAFARI_SHOT.command.params.quality = MAX_JPG_QUAL;
-      }
-    } else {
-      opts.quality += 2;
-      if ( opts.quality > MAX_WP_QUAL ) {
-        opts.quality = MAX_WP_QUAL;
-      }
+    SAFARI_SHOT.command.params.quality += 2;
+    if ( SAFARI_SHOT.command.params.quality > MAX_JPG_QUAL ) {
+      SAFARI_SHOT.command.params.quality = MAX_JPG_QUAL;
     }
-
   }
 
   function queueTailShot() {
@@ -123,7 +106,8 @@ export function makeCamera(connection) {
     }
     const targetId = connection.sessions.get(connection.sessionId);
     let response;
-    const ShotCommand = ((connection.isSafari || connection.isFirefox) ? SAFARI_SHOT : WEBP_SHOT).command;
+    //const ShotCommand = ((connection.isSafari || connection.isFirefox) ? SAFARI_SHOT : WEBP_SHOT).command;
+    const ShotCommand = SAFARI_SHOT.command;
     DEBUG.shotDebug && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
     response = await connection.sessionSend(ShotCommand);
     lastShot = timeNow;
@@ -141,7 +125,7 @@ export function makeCamera(connection) {
         return NOIMAGE;
       } else {
         lastHash = F.hash;
-        await forExport({frame:F, connection, opts});
+        await forExport({frame:F, connection});
         return F;
       }
     } else {
@@ -177,14 +161,9 @@ export function makeCamera(connection) {
   }
 }
 
-export async function forExport({frame, connection, opts}) {
+export async function forExport({frame, connection}) {
   let {img} = frame;
   // FIXME : CPU issues
-  img = Buffer.from(img, 'base64');
-  if ( ! connection.isSafari ) {
-    img = await sharp(img).webp(opts).toBuffer();
-  }
-  img = img.toString('base64');
   frame.img = img;
   return frame;
 }

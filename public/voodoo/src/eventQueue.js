@@ -17,7 +17,7 @@ const BUFFERED_FRAME_COLLECT_DELAY = {
   MAX: 4000, /* 2000, 4000, 8000 */
 };
 const MAX_BW_MEASURES = 10;
-const Format = (isSafari() || isFirefox()) ? 'jpeg' : 'webp';
+const Format = 'jpeg';
 const waiting = new Map();
 let connecting;
 let latestReload;

@@ -13,7 +13,6 @@
     "is-docker": "^2.0.0",
     "node-fetch": "^2.6.0",
     "path": "^0.12.7",
-    "sharp": "^0.23.4",
     "url": "^0.11.0"
   },
   "devDependencies": {},
