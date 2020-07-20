@@ -763,10 +763,8 @@
                 <style>
                   :root {
                     height: 100%;
-                    /*
                     background: #${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, 0)};
-                    */
-                    color: silver;
+                    color: navy;
                     font-family: system-ui;
                   }
                   h2 {
