@@ -58,12 +58,14 @@ export function BandwidthIndicator(state) {
   return R`
     <aside title="Bandwidth savings" class="bandwidth-indicator" stylist="styleBandwidthIndicator">
       <section class=measure>
-        Server: <span>${Math.round(saved)+ss}</span>
-        ${state.showBandwidthRate? X`<span>(${Math.round(sr)+sm})</span>` : ''}
+        Server: <span>${Math.round(saved)+ss}</span>&nbsp;${
+          state.showBandwidthRate? X`<span>(${Math.round(sr)+sm})</span>` : ''
+        }
       </section>
       <section class=measure>
-        Local: <span>${Math.round(used)+us}</span>
-        ${state.showBandwidthRate? X`<span>(${Math.round(lr)+lm})</span>` : ''}
+        Local: <span>${Math.round(used)+us}</span>&nbsp;${
+          state.showBandwidthRate? X`<span>(${Math.round(lr)+lm})</span>` : ''
+        }
       </section>
     </aside>
   `;

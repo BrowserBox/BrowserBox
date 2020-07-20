@@ -590,6 +590,7 @@ export const dss = {
         overflow: hidden;
         color: var(--grey);
         background: transparent;
+        white-space: nowrap;
       }
 
       aside section.measure {
