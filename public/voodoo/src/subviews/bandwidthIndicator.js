@@ -6,16 +6,62 @@ let bwThisSecond = 0;
 let lastBandwidth = 0;
 
 export function BandwidthIndicator(state) {
-  const saved = (state.totalBandwidth - state.totalBytes)/1000000;
+  let saved = state.totalBandwidth/1000000 
+  let ss = 'M';
+  if ( saved > 1000 ) {
+    saved /= 1000;
+    ss = 'G';
+  }
+  let sr = state.totalServerBytesThisSecond;
+  let sm = 'B/s';
+  if ( sr > 1000 ) {
+    sr /= 1000;
+    sm = 'Kb/s';
+  } 
+  if ( sr > 1000 ) {
+    sr /= 1000;
+    sm = 'M/s';
+  } 
+  if ( sr > 1000 ) {
+    sr /= 1000;
+    sm = 'G/s';
+  } 
+
+  let used = state.totalBytes/1000;
+  let us = 'Kb';
+  if ( used > 1000 ) {
+    used /= 1000;
+    us = 'M';
+  }
+  if ( used > 1000 ) {
+    used /= 1000;
+    us = 'G';
+  }
+
+  let lr = state.totalBytesThisSecond;
+  let lm = 'B/s';
+  if ( lr > 1000 ) {
+    lr /= 1000;
+    lm = 'Kb/s';
+  } 
+  if ( lr > 1000 ) {
+    lr /= 1000;
+    lm = 'M/s';
+  } 
+  if ( lr > 1000 ) {
+    lr /= 1000;
+    lm = 'G/s';
+  } 
+
   return R`
     <aside title="Bandwidth savings" class="bandwidth-indicator" stylist="styleBandwidthIndicator">
       <section class=measure>
-        Saved: <span>${Math.round(saved)}M</span>
-        ${state.showBandwidthRate? X`<span>(${Math.round(state.totalServerBytesThisSecond/1000)}K/s)</span>` : ''}
+        Server: <span>${Math.round(saved)+ss}</span>
+        ${state.showBandwidthRate? X`<span>(${Math.round(sr)+sm})</span>` : ''}
       </section>
       <section class=measure>
-        Used: <span>${Math.round(state.totalBytes/1000000)}M</span>
-        ${state.showBandwidthRate? X`<span>(${Math.round(state.totalBytesThisSecond/1000)}K/s)</span>` : ''}
+        Local: <span>${Math.round(used)+us}</span>
+        ${state.showBandwidthRate? X`<span>(${Math.round(lr)+lm})</span>` : ''}
       </section>
     </aside>
   `;
