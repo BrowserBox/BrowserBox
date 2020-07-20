@@ -102,7 +102,6 @@ function translator(e, handled = {type:'case'}) {
     }
     case "resample-imagery": {
       const {down, up, averageBw} = e;
-      console.log({down,up,averageBw});
       return {
         command: {
           isZombieLordCommand: true,

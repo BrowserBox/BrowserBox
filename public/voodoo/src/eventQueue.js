@@ -69,7 +69,6 @@ class Privates {
             down: true,
             averageBw
           });
-          console.log("Downsample");
         } else if ( averageSize < averageBw * 0.9 ) {
           state.H({
             custom: true,
@@ -77,7 +76,6 @@ class Privates {
             up: true,
             averageBw
           });
-          console.log("Upsample");
         }
       }
     };
