@@ -23,7 +23,7 @@ export function BandwidthIndicator(state) {
 
 export function startBandwidthLoop(state) {
   setInterval(() => {
-    console.log(state);
+    //console.log(state);
     serverBwThisSecond = state.totalBandwidth - lastServerBandwidth;
     bwThisSecond = (bwThisSecond + state.totalBytes - lastBandwidth)/2;
 

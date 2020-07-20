@@ -36,7 +36,7 @@ const KEYS = [
     }
   };
   const WEBP_OPTS = {
-    quality: 44,
+    quality: 8,
   };
 
 export function makeCamera(connection) {
