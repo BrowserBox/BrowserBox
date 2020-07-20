@@ -443,9 +443,9 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       if ( savedFrame ) {
         const {url,frameId} = savedFrame;
 
-        const someFileName = getFileFromURL(url);
-
         if ( message.params.type == "Document" ) {
+          const someFileName = getFileFromURL(url);
+
           message.frameId = frameId;
           DEBUG.val && console.log({failedURL:url});
           if ( !url.startsWith('http') ) {
@@ -909,7 +909,7 @@ function getFileFromURL(url) {
   const nodes = pathname.split('/');
   let lastNode = nodes.pop();
   if ( ! lastNode ) {
-    console.warn({url, nodes, fileNameError: Error(`URL cannot be parsed to get filename`)});
+    DEBUG.val > DEBUG.med && console.warn({url, nodes, fileNameError: Error(`URL cannot be parsed to get filename`)});
     return `download${Date.now()}`;
   }
   return unescape(lastNode);
