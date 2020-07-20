@@ -3,7 +3,6 @@ const $ = Symbol('[[EventQueuePrivates]]');
 //const TIME_BETWEEN_ONLINE_CHECKS = 1001;
 
 const ALERT_TIMEOUT = 300;
-const BLANK_SPACE = new Array(201).join('A');
 const MAX_E = 255;
 const BUFFERED_FRAME_EVENT = {
   type: "buffered-results-collection",
