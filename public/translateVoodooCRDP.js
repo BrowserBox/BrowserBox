@@ -176,7 +176,6 @@ function translator(e, handled = {type:'case'}) {
     }
     case "setDocument": {
       const {frameId,sessionId,html} = e;
-      console.log({frameId, sessionId, html});
       if ( frameId ) {
         return {
           command: {

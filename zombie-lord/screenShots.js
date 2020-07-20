@@ -108,6 +108,7 @@ export function makeCamera(connection) {
     let response;
     //const ShotCommand = ((connection.isSafari || connection.isFirefox) ? SAFARI_SHOT : WEBP_SHOT).command;
     const ShotCommand = SAFARI_SHOT.command;
+    console.log(ShotCommand);
     DEBUG.shotDebug && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
     response = await connection.sessionSend(ShotCommand);
     lastShot = timeNow;
@@ -125,7 +126,6 @@ export function makeCamera(connection) {
         return NOIMAGE;
       } else {
         lastHash = F.hash;
-        await forExport({frame:F, connection});
         return F;
       }
     } else {
@@ -161,11 +161,5 @@ export function makeCamera(connection) {
   }
 }
 
-export async function forExport({frame, connection}) {
-  let {img} = frame;
-  // FIXME : CPU issues
-  frame.img = img;
-  return frame;
-}
 
 
