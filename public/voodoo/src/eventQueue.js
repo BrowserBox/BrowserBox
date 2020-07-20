@@ -203,7 +203,6 @@ class Privates {
         };
         return fetch(url, request).then(r => r.json()).then(async ({data,frameBuffer,meta}) => {
           if ( !!frameBuffer && this.images.has(url) ) {
-            console.log(frameBuffer);
             drawFrames(this.publics.state, frameBuffer, this.images.get(url));
           }
           const errors = data.filter(d => !!d.error);
@@ -254,7 +253,7 @@ class Privates {
         let {data:MessageData} = message;
         const messageData = JSON.parse(MessageData);
         const {data,frameBuffer,meta,messageId:serverMessageId,totalBandwidth} = messageData;
-        if ( !!frameBuffer && this.images.has(url) ) {
+        if ( !!frameBuffer && frameBuffer.length && this.images.has(url) ) {
           this.addBytes(MessageData.length, frameBuffer.length);    
           drawFrames(this.publics.state, frameBuffer, this.images.get(url));
         } else {
@@ -484,12 +483,6 @@ export default class EventQueue {
 }
 
 async function drawFrames(state, buf, image) {
-  // we don't draw frames for about blank
-  // but, haha, this heuristic 
-  if ( state.active && state.active.url == BLANK && buf[0] && buf[0].img.includes(BLANK_SPACE)) {
-    DEBUG.val >= DEBUG.med && console.log("Returning before drawing", buf, JSON.stringify(buf).length);
-    return;
-  }
   buf = buf.filter(x => !!x);
   buf.sort(({frame:frame1},{frame:frame2}) => frame2 - frame1);
   buf = buf.filter(({frame,targetId}) => {
