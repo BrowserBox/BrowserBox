@@ -59,8 +59,8 @@ class Privates {
           bwWindow.shift();
         }
 
-        const averageSize = messageWindow.reduce((total, size) => total + size, 0)/messageWindow.length;
-        const averageBw = bwWindow.reduce((total, size) => total + size, 0)/messageWindow.length;
+        const averageSize = Math.round(messageWindow.reduce((total, size) => total + size, 0)/messageWindow.length);
+        const averageBw = Math.round(bwWindow.reduce((total, size) => total + size, 0)/messageWindow.length);
 
         if ( averageSize > averageBw * 1.1  ) {
           state.H({
