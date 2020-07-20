@@ -41,23 +41,49 @@ class Privates {
     this.Meta = [];
     this.sessionToken = sessionToken;
 
-    this.addBytes = n => {
+    const WindowLength = 10;
+    const messageWindow = [];
+    const bwWindow = [];
+
+    this.addBytes = (n,hasFrame) => {
       state.totalBytes += n;
+
+      if ( hasFrame ) {
+        messageWindow.push(n);
+        bwWindow.push(state.totalBytesThisSecond);
+
+        while(messageWindow.length > WindowLength) {
+          messageWindow.shift();
+        }
+        while (bwWindow.length > WindowLength) {
+          bwWindow.shift();
+        }
+
+        const averageSize = messageWindow.reduce((total, size) => total + size, 0)/messageWindow.length;
+        const averageBw = bwWindow.reduce((total, size) => total + size, 0)/messageWindow.length;
+
+        if ( averageSize > averageBw * 1.1  ) {
+          state.H({
+            custom: true,
+            type: 'resample-imagery',
+            down: true,
+            averageBw
+          });
+          console.log("Downsample");
+        } else if ( averageSize < averageBw * 0.9 ) {
+          state.H({
+            custom: true,
+            type: 'resample-imagery',
+            up: true,
+            averageBw
+          });
+          console.log("Upsample");
+        }
+      }
     };
 
     let lastBytes = 0;
     let lastCheck = Date.now();
-
-    setInterval(() => {
-      const now = Date.now();
-      const byteDiff = state.totalBytes - lastBytes;
-      const timeDiff = now - lastCheck;
-
-      lastBytes = state.totalBytes;
-      lastCheck = now;
-
-      state.myBandwidth = (state.myBandwidth + byteDiff/timeDiff)/2;
-    }, 7777);
   }
 
   static get firstDelay() { return 20; /* 20, 40, 250, 500;*/ }
@@ -224,12 +250,14 @@ class Privates {
         }
       };
       socket.onmessage = async message => {
-        let {data:messageData} = message;
-        this.addBytes(messageData.length);    
-        messageData = JSON.parse(messageData);
+        let {data:MessageData} = message;
+        const messageData = JSON.parse(MessageData);
         const {data,frameBuffer,meta,messageId:serverMessageId,totalBandwidth} = messageData;
         if ( !!frameBuffer && this.images.has(url) ) {
+          this.addBytes(MessageData.length, frameBuffer.length);    
           drawFrames(this.publics.state, frameBuffer, this.images.get(url));
+        } else {
+          this.addBytes(MessageData.length, false);    
         }
 
         const errors = data.filter(d => !!d && !!d.error);
