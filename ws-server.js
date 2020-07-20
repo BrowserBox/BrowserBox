@@ -48,6 +48,8 @@
 
   let requestId = 0;
 
+  //let lastTS = Date.now();
+
   export async function start_ws_server(port, zombie_port, allowed_user_cookie, session_token) {
     DEBUG.val && console.log(`Starting websocket server on ${port}`);
     const app = express();
@@ -197,6 +199,9 @@
 
     function so(socket, message) {
       if ( !message ) return;
+      message.timestamp = Date.now();
+      //message.tgap = message.timestamp - lastTS;
+      //lastTS = message.timestamp;
       if ( typeof message == "string" || Array.isArray(message) ){
         message;
       } else {

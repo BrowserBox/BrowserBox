@@ -57,6 +57,7 @@
       H,
 
       // bandwidth
+      messageDelay: 0,          // time it takes to receive an average, non-frame message
       showBandwidthRate: true,
       myBandwidth: 0,
       serverBandwidth: 0,
@@ -64,6 +65,7 @@
       totalServerBytesThisSecond: 0,
       totalBytesThisSecond: 0,
       totalBandwidth: 0,
+      frameBandwidth: [],
 
       // demo mode
       demoMode,

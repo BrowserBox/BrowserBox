@@ -5,6 +5,8 @@ let lastServerBandwidth = 0;
 let bwThisSecond = 0;
 let lastBandwidth = 0;
 
+let last = Date.now();
+
 export function BandwidthIndicator(state) {
   let saved = state.totalBandwidth/1000000 
   let ss = 'M';
@@ -69,18 +71,20 @@ export function BandwidthIndicator(state) {
 
 export function startBandwidthLoop(state) {
   setInterval(() => {
-    //console.log(state);
+    const now = Date.now();
+    const diff = (now - last)/1000;
+    last = now;
+
     serverBwThisSecond = state.totalBandwidth - lastServerBandwidth;
-    bwThisSecond = (bwThisSecond + state.totalBytes - lastBandwidth)/2;
+    bwThisSecond = state.totalBytes - lastBandwidth;
 
     lastBandwidth = state.totalBytes;
-    state.totalBytesThisSecond = bwThisSecond;
+    state.totalBytesThisSecond = Math.round(bwThisSecond/diff);
     
-    if ( serverBwThisSecond ) {
-      lastServerBandwidth = state.totalBandwidth;
-      state.totalServerBytesThisSecond = serverBwThisSecond;
-    }
+    lastServerBandwidth = state.totalBandwidth;
+    state.totalServerBytesThisSecond = Math.round(serverBwThisSecond/diff);
 
     BandwidthIndicator(state);
+
   }, 1000);
 }

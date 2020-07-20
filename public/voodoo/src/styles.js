@@ -581,15 +581,12 @@ export const dss = {
   function styleBandwidthIndicator(/*el, state*/) {
     return `
       aside.bandwidth-indicator {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        justify-content: center;
         grid-area: bandwidth;
         font-size: smaller;
         pointer-events: none;
+        width: 18ch;
+        max-height: 2.5rem;
         overflow: hidden;
-        width: auto;
         color: var(--grey);
         background: transparent;
       }

@@ -1,4 +1,4 @@
-import {sleep, DEBUG, BLANK} from './common.js';
+import {sleep, isSafari, isFirefox, DEBUG, BLANK} from './common.js';
 const $ = Symbol('[[EventQueuePrivates]]');
 //const TIME_BETWEEN_ONLINE_CHECKS = 1001;
 
@@ -16,6 +16,8 @@ const BUFFERED_FRAME_COLLECT_DELAY = {
   MIN: 75, /* 250, 500 */
   MAX: 4000, /* 2000, 4000, 8000 */
 };
+const MAX_BW_MEASURES = 10;
+const Format = (isSafari() || isFirefox()) ? 'jpeg' : 'webp';
 const waiting = new Map();
 let connecting;
 let latestReload;
@@ -60,7 +62,7 @@ class Privates {
         }
 
         const averageSize = Math.round(messageWindow.reduce((total, size) => total + size, 0)/messageWindow.length);
-        const averageBw = Math.round(bwWindow.reduce((total, size) => total + size, 0)/messageWindow.length);
+        const averageBw = Math.round(bwWindow.reduce((total, size) => total + size, 0)/bwWindow.length);
 
         if ( averageSize > averageBw * 1.1  ) {
           state.H({
@@ -505,7 +507,7 @@ async function drawFrames(state, buf, image) {
     }
     frameDrawing = frame;
     DEBUG.val >= DEBUG.med && console.log(`Drawing frame ${frame}`);
-    image.src = `data:image/png;base64,${img}`;
+    image.src = `data:image/${Format};base64,${img}`;
     await sleep(Privates.firstDelay);
   }
 }

@@ -2,7 +2,6 @@ import keys from './kbd.js';
 
 
 export const FRAME_CONTROL = false;
-export const IMAGE_FORMAT = 'png';
 export const WorldName = 'PlanetZanj';
 
 const SHORT_TIMEOUT = 1000;

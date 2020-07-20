@@ -40,6 +40,8 @@ const KEYS = [
   };
   const MIN_WP_QUAL = 2;
   const MAX_WP_QUAL = 52;
+  const MIN_JPG_QUAL = 10;
+  const MAX_JPG_QUAL = 83;
 
 export function makeCamera(connection) {
   const opts = WEBP_OPTS;
@@ -69,7 +71,10 @@ export function makeCamera(connection) {
 
   function shrinkImagery({averageBw}) {
     if ( connection.isSafari || connection.isFirefox ) {
-      console.warn("Not implemented yet");
+      SAFARI_SHOT.command.params.quality -= 2;
+      if ( SAFARI_SHOT.command.params.quality < MIN_JPG_QUAL ) {
+        SAFARI_SHOT.command.params.quality = MIN_JPG_QUAL;
+      }
     } else {
       opts.quality -= 2;
       if ( opts.quality < MIN_WP_QUAL ) {
@@ -80,7 +85,10 @@ export function makeCamera(connection) {
 
   function growImagery({averageBw}) {
     if ( connection.isSafari || connection.isFirefox ) {
-      console.warn("Not implemented yet");
+      SAFARI_SHOT.command.params.quality += 2;
+      if ( SAFARI_SHOT.command.params.quality > MAX_JPG_QUAL ) {
+        SAFARI_SHOT.command.params.quality = MAX_JPG_QUAL;
+      }
     } else {
       opts.quality += 2;
       if ( opts.quality > MAX_WP_QUAL ) {
@@ -100,6 +108,7 @@ export function makeCamera(connection) {
   }
 
   async function shot() {
+    // DEBUG
     if ( DEBUG.noShot ) return NOIMAGE;
     const timeNow = Date.now();
     const dur = timeNow - lastShot;
@@ -114,7 +123,7 @@ export function makeCamera(connection) {
     }
     const targetId = connection.sessions.get(connection.sessionId);
     let response;
-    const ShotCommand = (connection.isSafari || connection.isFirefox ? SAFARI_SHOT : WEBP_SHOT).command;
+    const ShotCommand = ((connection.isSafari || connection.isFirefox) ? SAFARI_SHOT : WEBP_SHOT).command;
     DEBUG.shotDebug && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
     response = await connection.sessionSend(ShotCommand);
     lastShot = timeNow;
