@@ -203,6 +203,7 @@ class Privates {
         };
         return fetch(url, request).then(r => r.json()).then(async ({data,frameBuffer,meta}) => {
           if ( !!frameBuffer && this.images.has(url) ) {
+            console.log(frameBuffer);
             drawFrames(this.publics.state, frameBuffer, this.images.get(url));
           }
           const errors = data.filter(d => !!d.error);

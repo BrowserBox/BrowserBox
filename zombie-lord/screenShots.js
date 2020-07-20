@@ -108,7 +108,6 @@ export function makeCamera(connection) {
     let response;
     //const ShotCommand = ((connection.isSafari || connection.isFirefox) ? SAFARI_SHOT : WEBP_SHOT).command;
     const ShotCommand = SAFARI_SHOT.command;
-    console.log(ShotCommand);
     DEBUG.shotDebug && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
     response = await connection.sessionSend(ShotCommand);
     lastShot = timeNow;
