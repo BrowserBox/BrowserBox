@@ -261,10 +261,7 @@
         const modal = {
           sessionId,
           type: 'notice',
-          /*
-          message: `The file "${filename}" is downloading to this pits of hell to be consumed in eternal damnation by stinky daemons. Send bitcoins to this address to save your file. Just kidding, bitcoin is not a valid store of value. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or deploy commercially. This open-source software is free to use for governments and not-for-profits. All data will be deleted at the end of your session. Also by daemons.`,
-          */
-          message: `The file "${filename}" is downloading a secure location and will be deleted at the end of your session. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or to deploy commercially. This open-source software is free to use for governments and not-for-profits. See the README.md for more details.`,
+          message: `The file "${filename}" is downloading to a secure location and will be deleted at the end of your session. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or to deploy commercially. This open-source software is free to use for governments and not-for-profits. See the README.md for more details.`,
           otherButton: {
             /*
             title: 'Open README.md',
