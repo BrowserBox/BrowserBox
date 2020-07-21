@@ -118,5 +118,5 @@
     "tsc-public": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System public/*.js decs.d.ts",
     "tsc-server": "tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System server.js decs.d.ts"
   },
-  "version": "2.15.0"
+  "version": "2.16.0"
 }
