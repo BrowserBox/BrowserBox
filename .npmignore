@@ -1,4 +1,7 @@
-BrowserGap
+BrowserGap.exe
+BrowserGap.win*
+BrowserGap.nix*
+BrowserGap.mac*
 typetests
 public/fonts
 public/old
