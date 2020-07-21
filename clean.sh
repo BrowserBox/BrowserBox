@@ -1,5 +1,8 @@
 #!/bin/bash
 
+rm BrowserGap.js
+rm BrowserGap.*
+rm *.node
 rm -rf typetests
 rm -rf node_modules
 cd zombie-lord 
