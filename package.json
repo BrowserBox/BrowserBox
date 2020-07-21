@@ -1,38 +1,50 @@
 {
-  "_from": "remoteview@2.15.0",
-  "_id": "remoteview@2.15.0",
-  "_inBundle": false,
-  "_integrity": "sha512-udorg7GL9XdrB8L8+Jgf1xLYnFuKoyhnNcrzxW5Q9C5XRLFq2mmSpQ4zQDrApRS9hhjWebeItROD0z0J3DoDpQ==",
-  "_location": "/remoteview",
-  "_phantomChildren": {},
-  "_requested": {
-    "type": "version",
-    "registry": true,
-    "raw": "remoteview@2.15.0",
-    "name": "remoteview",
-    "escapedName": "remoteview",
-    "rawSpec": "2.15.0",
-    "saveSpec": null,
-    "fetchSpec": "2.15.0"
-  },
-  "_requiredBy": [
-    "#USER",
-    "/"
-  ],
-  "_resolved": "https://registry.npmjs.org/remoteview/-/remoteview-2.15.0.tgz",
-  "_shasum": "c4642de80fafc109ae51cceee7289274865f0b19",
-  "_spec": "remoteview@2.15.0",
-  "_where": "/home/cris/chrome-browser",
-  "author": {
-    "name": "@dosy"
-  },
+  "name": "remoteview",
+  "version": "2.21.0",
+  "description": "Fly a browser remotely from your browser? Yes.",
+  "main": "index.js",
   "bin": {
     "remoteview": "BrowserGap.js"
   },
+  "scripts": {
+    "test": "bash ./test.sh",
+    "dev": "node-dev --inspect=127.0.0.1:8111 index.js",
+    "start": "bash ./start.sh",
+    "postinstall": "bash ./postinstall.sh",
+    "init": "bash ./reinit_after_restart.sh",
+    "clean": "./clean.sh",
+    "lint": "./gglint.sh",
+    "tsc-server": "tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System server.js decs.d.ts",
+    "tsc-inject": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System zombie-lord/injections/**/*.js decs.d.ts",
+    "tsc-public": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System public/*.js decs.d.ts",
+    "tsc-check": "./tsc-check.sh",
+    "check": "rm -f public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
+    "build": "npx webpack server.js && nexe -t linux-x64 -o BrowserGap.nix -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t windows -o BrowserGap.exe -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t macos-x64 -o BrowserGap.macos -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t windows-x32 -o BrowserGap.win32.exe -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t linux-x32 -o BrowserGap.nix32 -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\"",
+    "pack": "upx BrowserGap.exe && upx BrowserGap.nix && upx BrowserGap.macos && upx BrowserGap.win32.exe && upx BrowserGap.nix32"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dosyago/supreme-architect.git"
+  },
+  "keywords": [
+    "browser",
+    "headless",
+    "automation",
+    "chrome",
+    "browsergap",
+    "supreme-architect",
+    "oni",
+    "remoteview",
+    "groundcontrol",
+    "chromescreen",
+    "chrome controller"
+  ],
+  "author": "@dosy",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/dosyago/remoteview/issues"
   },
-  "bundleDependencies": false,
+  "homepage": "https://gitlab.com/dosyago/remoteview#readme",
   "dependencies": {
     "body-parser": "^1.18.3",
     "brutalist-web": "^2.3.0",
@@ -49,8 +61,6 @@
     "spdy": "^4.0.1",
     "ws": "^6.1.4"
   },
-  "deprecated": false,
-  "description": "Fly a browser remotely from your browser? Yes.",
   "devDependencies": {
     "@babel/core": "latest",
     "@babel/plugin-external-helpers": "latest",
@@ -80,43 +90,5 @@
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.12",
     "whatwg-fetch": "latest"
-  },
-  "homepage": "https://gitlab.com/dosyago/remoteview#readme",
-  "keywords": [
-    "browser",
-    "headless",
-    "automation",
-    "chrome",
-    "browsergap",
-    "supreme-architect",
-    "oni",
-    "remoteview",
-    "groundcontrol",
-    "chromescreen",
-    "chrome controller"
-  ],
-  "license": "MIT",
-  "main": "index.js",
-  "name": "remoteview",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dosyago/supreme-architect.git"
-  },
-  "scripts": {
-    "build": "npx webpack server.js && nexe -t linux-x64 -o BrowserGap.nix -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t windows -o BrowserGap.exe -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t macos-x64 -o BrowserGap.macos -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t windows-x32 -o BrowserGap.win32.exe -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t linux-x32 -o BrowserGap.nix32 -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\"",
-    "check": "rm -f public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
-    "clean": "./clean.sh",
-    "dev": "node-dev --inspect=127.0.0.1:8111 index.js",
-    "init": "bash ./reinit_after_restart.sh",
-    "lint": "./gglint.sh",
-    "pack": "upx BrowserGap.exe && upx BrowserGap.nix && upx BrowserGap.macos && upx BrowserGap.win32.exe && upx BrowserGap.nix32",
-    "postinstall": "bash ./postinstall.sh",
-    "start": "bash ./start.sh",
-    "test": "bash ./test.sh",
-    "tsc-check": "./tsc-check.sh",
-    "tsc-inject": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System zombie-lord/injections/**/*.js decs.d.ts",
-    "tsc-public": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System public/*.js decs.d.ts",
-    "tsc-server": "tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System server.js decs.d.ts"
-  },
-  "version": "2.16.0"
+  }
 }
