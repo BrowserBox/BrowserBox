@@ -114,6 +114,21 @@ function translator(e, handled = {type:'case'}) {
     case "control-chars": {
       return keyEvent(e);
     }
+    case "keypress": {
+      if ( e.code == "Unidentified" && e.key.length > 1 ) {
+        const text = e.key;
+        return {
+          command: {
+            name: "Input.insertText",
+            params: {
+              text
+            },
+            requiresShot: true,
+            ignoreHash: true
+          }
+        }
+      } else return;
+    }
     case "typing": {
       //alert(JSON.stringify(e));
       if ( e.isComposing || ! e.characters ) return;
@@ -626,7 +641,13 @@ function mouseEvent(e, deltaX = 0, deltaY = 0) {
 function keyEvent(e, modifiers = 0, SYNTHETIC = false) {
   const id = e.key && e.key.length > 1 ? e.key : e.code;
   const def = keys[id];
-  const text = e.originalType == "keypress" ? String.fromCharCode(e.keyCode) : undefined;
+  const text = e.originalType == "keypress" ? 
+    e.keyCode ? 
+      String.fromCharCode(e.keyCode)
+      :
+      e.key
+    :
+    e.key;
   modifiers = modifiers || encodeModifiers(e.originalEvent);
   let type;
   if ( e.originalType == "keydown" ) {
