@@ -471,6 +471,7 @@
 
       function installTopLevelKeyListeners() {
         self.addEventListener('keydown', sendKey); 
+        self.addEventListener('keypress', sendKey); 
         self.addEventListener('keyup', sendKey); 
       }
 
