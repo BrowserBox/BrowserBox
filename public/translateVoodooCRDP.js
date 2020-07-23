@@ -641,13 +641,7 @@ function mouseEvent(e, deltaX = 0, deltaY = 0) {
 function keyEvent(e, modifiers = 0, SYNTHETIC = false) {
   const id = e.key && e.key.length > 1 ? e.key : e.code;
   const def = keys[id];
-  const text = e.originalType == "keypress" ? 
-    e.keyCode ? 
-      String.fromCharCode(e.keyCode)
-      :
-      e.key
-    :
-    e.key;
+  const text = e.originalType == "keypress" ? String.fromCharCode(e.keyCode) : undefined;
   modifiers = modifiers || encodeModifiers(e.originalEvent);
   let type;
   if ( e.originalType == "keydown" ) {
