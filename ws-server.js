@@ -48,6 +48,8 @@
 
   let requestId = 0;
 
+  //let lastTS = Date.now();
+
   export async function start_ws_server(port, zombie_port, allowed_user_cookie, session_token) {
     DEBUG.val && console.log(`Starting websocket server on ${port}`);
     const app = express();
@@ -73,9 +75,9 @@
         } else {
           res.type("html");
           if ( session_token == 'token2' ) {
-            res.end(`Incorrect token ${token}/token2. <a href=/login?token=token2>Login first.</a>`);
+            res.end(`Incorrect token ${token}/token2. <a href=/login?token=token2>Try again.</a>`);
           } else {
-            res.end(`Incorrect token "${token}". <a href=https://${req.hostname}/signup.html>Login first.</a>`);
+            res.end(`Incorrect token "${token}". <a href=https://${req.hostname}/>Try again.</a>`);
           }
         }
       }); 
@@ -197,6 +199,9 @@
 
     function so(socket, message) {
       if ( !message ) return;
+      message.timestamp = Date.now();
+      //message.tgap = message.timestamp - lastTS;
+      //lastTS = message.timestamp;
       if ( typeof message == "string" || Array.isArray(message) ){
         message;
       } else {

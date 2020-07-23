@@ -24,6 +24,10 @@ const launcher_api = {
       DEBUG.val && console.log(`Ignoring launch request as chrome already started.`);
     }
     const DEFAULT_FLAGS = [
+      /*
+      '--display:1',
+      '--use-gl=egl',
+      */
       '--window-size=2880,1800',
       '--profiling-flush=1',
       '--enable-aggressive-domstorage-flushing',

@@ -57,9 +57,15 @@
       H,
 
       // bandwidth
+      messageDelay: 0,          // time it takes to receive an average, non-frame message
+      showBandwidthRate: true,
+      myBandwidth: 0,
+      serverBandwidth: 0,
       totalBytes: 0,
+      totalServerBytesThisSecond: 0,
       totalBytesThisSecond: 0,
       totalBandwidth: 0,
+      frameBandwidth: [],
 
       // demo mode
       demoMode,
@@ -255,10 +261,7 @@
         const modal = {
           sessionId,
           type: 'notice',
-          /*
-          message: `The file "${filename}" is downloading to this pits of hell to be consumed in eternal damnation by stinky daemons. Send bitcoins to this address to save your file. Just kidding, bitcoin is not a valid store of value. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or deploy commercially. This open-source software is free to use for governments and not-for-profits. All data will be deleted at the end of your session. Also by daemons.`,
-          */
-          message: `The file "${filename}" is downloading a secure location and will be deleted at the end of your session. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or to deploy commercially. This open-source software is free to use for governments and not-for-profits. See the README.md for more details.`,
+          message: `The file "${filename}" is downloading to a secure location and will be deleted at the end of your session. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or to deploy commercially. This open-source software is free to use for governments and not-for-profits. See the README.md for more details.`,
           otherButton: {
             /*
             title: 'Open README.md',
@@ -758,10 +761,13 @@
                   :root {
                     height: 100%;
                     background: #${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, 0)};
+                    color: navy;
+                    font-family: system-ui;
                   }
                   h2 {
-                    background: white;
-                    font-family: system-ui;
+                  }
+                  strong {
+                    padding: 0.5rem;
                   }
                 </style>
                 <h2>

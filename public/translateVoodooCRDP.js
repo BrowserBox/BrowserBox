@@ -2,7 +2,6 @@ import keys from './kbd.js';
 
 
 export const FRAME_CONTROL = false;
-export const IMAGE_FORMAT = 'png';
 export const WorldName = 'PlanetZanj';
 
 const SHORT_TIMEOUT = 1000;
@@ -99,6 +98,18 @@ function translator(e, handled = {type:'case'}) {
           }
         }
       };
+    }
+    case "resample-imagery": {
+      const {down, up, averageBw} = e;
+      return {
+        command: {
+          isZombieLordCommand: true,
+          name: "Connection.resampleImagery",
+          params: {
+            averageBw, down , up
+          }
+        }
+      }
     }
     case "control-chars": {
       return keyEvent(e);

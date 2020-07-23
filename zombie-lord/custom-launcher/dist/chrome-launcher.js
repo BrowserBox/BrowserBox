@@ -15,6 +15,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const childProcess = require("child_process");
 const fs = require("fs");
+const os = require("os");
+const path = require("path");
 const net = require("net");
 const rimraf = require("rimraf");
 const chromeFinder = require("./chrome-finder");
@@ -174,7 +176,16 @@ class Launcher {
                     this.port = yield random_port_1.getRandomPort();
                 }
                 log.verbose('ChromeLauncher', `Launching with command:\n"${execPath}" ${this.flags.join(' ')}`);
-                const chrome = this.spawn(execPath, this.flags, { detached: true, stdio: ['ignore', this.outFile, this.errFile], env: this.envVars });
+                const script = `
+#!/bin/bash
+
+sudo -g browsers ${execPath} ${this.flags.join(' ')}
+                `
+                console.log({script});
+                const scriptPath = path.resolve(os.homedir(), 'startc.sh'); 
+                fs.writeFileSync(scriptPath, script);
+                fs.chmodSync(scriptPath, 0o777);
+                const chrome = this.spawn(path.resolve(os.homedir(), 'startc.sh'), { detached: true, stdio: ['ignore', this.outFile, this.errFile], env: this.envVars });
                 this.chrome = chrome;
                 this.fs.writeFileSync(this.pidFile, chrome.pid.toString());
                 log.verbose('ChromeLauncher', `Chrome running with pid ${chrome.pid} on port ${this.port}.`);

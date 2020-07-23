@@ -1,9 +1,8 @@
-import {sleep, DEBUG, BLANK} from './common.js';
+import {sleep, isSafari, isFirefox, DEBUG, BLANK} from './common.js';
 const $ = Symbol('[[EventQueuePrivates]]');
 //const TIME_BETWEEN_ONLINE_CHECKS = 1001;
 
 const ALERT_TIMEOUT = 300;
-const BLANK_SPACE = new Array(201).join('A');
 const MAX_E = 255;
 const BUFFERED_FRAME_EVENT = {
   type: "buffered-results-collection",
@@ -16,6 +15,8 @@ const BUFFERED_FRAME_COLLECT_DELAY = {
   MIN: 75, /* 250, 500 */
   MAX: 4000, /* 2000, 4000, 8000 */
 };
+const MAX_BW_MEASURES = 10;
+const Format = 'jpeg';
 const waiting = new Map();
 let connecting;
 let latestReload;
@@ -41,9 +42,47 @@ class Privates {
     this.Meta = [];
     this.sessionToken = sessionToken;
 
-    this.addBytes = n => {
+    const WindowLength = 10;
+    const messageWindow = [];
+    const bwWindow = [];
+
+    this.addBytes = (n,hasFrame) => {
       state.totalBytes += n;
+
+      if ( hasFrame ) {
+        messageWindow.push(n);
+        bwWindow.push(state.totalBytesThisSecond);
+
+        while(messageWindow.length > WindowLength) {
+          messageWindow.shift();
+        }
+        while (bwWindow.length > WindowLength) {
+          bwWindow.shift();
+        }
+
+        const averageSize = Math.round(messageWindow.reduce((total, size) => total + size, 0)/messageWindow.length);
+        const averageBw = Math.round(bwWindow.reduce((total, size) => total + size, 0)/bwWindow.length);
+
+        if ( averageSize > averageBw * 1.1  ) {
+          state.H({
+            custom: true,
+            type: 'resample-imagery',
+            down: true,
+            averageBw
+          });
+        } else if ( averageSize < averageBw * 0.9 ) {
+          state.H({
+            custom: true,
+            type: 'resample-imagery',
+            up: true,
+            averageBw
+          });
+        }
+      }
     };
+
+    let lastBytes = 0;
+    let lastCheck = Date.now();
   }
 
   static get firstDelay() { return 20; /* 20, 40, 250, 500;*/ }
@@ -210,12 +249,14 @@ class Privates {
         }
       };
       socket.onmessage = async message => {
-        let {data:messageData} = message;
-        this.addBytes(messageData.length);    
-        messageData = JSON.parse(messageData);
+        let {data:MessageData} = message;
+        const messageData = JSON.parse(MessageData);
         const {data,frameBuffer,meta,messageId:serverMessageId,totalBandwidth} = messageData;
-        if ( !!frameBuffer && this.images.has(url) ) {
+        if ( !!frameBuffer && frameBuffer.length && this.images.has(url) ) {
+          this.addBytes(MessageData.length, frameBuffer.length);    
           drawFrames(this.publics.state, frameBuffer, this.images.get(url));
+        } else {
+          this.addBytes(MessageData.length, false);    
         }
 
         const errors = data.filter(d => !!d && !!d.error);
@@ -441,12 +482,6 @@ export default class EventQueue {
 }
 
 async function drawFrames(state, buf, image) {
-  // we don't draw frames for about blank
-  // but, haha, this heuristic 
-  if ( state.active && state.active.url == BLANK && buf[0] && buf[0].img.includes(BLANK_SPACE)) {
-    DEBUG.val >= DEBUG.med && console.log("Returning before drawing", buf, JSON.stringify(buf).length);
-    return;
-  }
   buf = buf.filter(x => !!x);
   buf.sort(({frame:frame1},{frame:frame2}) => frame2 - frame1);
   buf = buf.filter(({frame,targetId}) => {
@@ -465,7 +500,7 @@ async function drawFrames(state, buf, image) {
     }
     frameDrawing = frame;
     DEBUG.val >= DEBUG.med && console.log(`Drawing frame ${frame}`);
-    image.src = `data:image/png;base64,${img}`;
+    image.src = `data:image/${Format};base64,${img}`;
     await sleep(Privates.firstDelay);
   }
 }
