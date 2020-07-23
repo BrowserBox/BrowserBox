@@ -127,7 +127,8 @@ function translator(e, handled = {type:'case'}) {
             ignoreHash: true
           }
         }
-      } else return keyEvent(e);
+      } else return; 
+      //keyEvent(e);
     }
     case "typing": {
       //alert(JSON.stringify(e));

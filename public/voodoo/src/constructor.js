@@ -459,11 +459,11 @@
 
       function sendKey(keyEvent) {
         const {viewState} = state;
-        if ( ! viewState.shouldHaveFocus ) {
+        if ( ! ( viewState.shouldHaveFocus || document.activeElement == viewState.omniBoxInput ) ) {
           let ev = keyEvent;
           if ( ev.key == "Tab" || ev.key == "Space" || ev.key == "Enter" ) {
             // do nothing
-          } else {
+          } else{
             H(ev);
           }
         }

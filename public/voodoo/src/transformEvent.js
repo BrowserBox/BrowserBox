@@ -188,6 +188,13 @@ export default function transformEvent(e) {
         } else if ( event.code == "Unidentified" ) {
           transformedEvent.key = event.key;
           transformedEvent.code = event.code;
+        } else {
+          transformedEvent.synthetic = true;
+          transformedEvent.originalType = event.type;
+          transformedEvent.type = "control-chars";
+          transformedEvent.key = event.key;
+          transformedEvent.code = event.code;
+          transformedEvent.keyCode = event.keyCode;
         }
         break;
       }
