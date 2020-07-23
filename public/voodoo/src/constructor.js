@@ -457,21 +457,21 @@
         }
       }
 
-      /*function sendKey(keyEvent) {
+      function sendKey(keyEvent) {
         const {viewState} = state;
-        if ( document.activeElement !== viewState.keyinput && document.activeElement !== viewState.textarea ) {
+        if ( ! viewState.shouldHaveFocus ) {
           let ev = keyEvent;
-          if ( keyEvent.key == "Tab" || keyEvent.key == "Space" ) {
-            event.preventDefault();
-            ev = cloneKeyEvent(event, true);
-          } 
-          H(ev);
+          if ( ev.key == "Tab" || ev.key == "Space" || ev.key == "Enter" ) {
+            // do nothing
+          } else {
+            H(ev);
+          }
         }
-      }*/
+      }
 
       function installTopLevelKeyListeners() {
-        //self.addEventListener('keydown', sendKey); 
-        //self.addEventListener('keyup', sendKey); 
+        self.addEventListener('keydown', sendKey); 
+        self.addEventListener('keyup', sendKey); 
       }
 
       function installSafariLongTapListener(el) {

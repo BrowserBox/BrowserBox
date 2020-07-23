@@ -82,6 +82,7 @@ export function component(state) {
           contextId: state.viewState.latestScrollContext,
           deltaY: event.shiftKey ? -0.618 : 0.618
         });
+        event.preventDefault();
       } else if ( event.key == "Tab" ) {
         retargetTab(event);
       } else if ( event.key == "Enter" ) {
