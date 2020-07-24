@@ -115,7 +115,9 @@ function translator(e, handled = {type:'case'}) {
       return keyEvent(e);
     }
     case "keydown":
+      return keyEvent(e);
     case "keyup":
+      return keyEvent(e);
     case "keypress": {
       if ( e.code == "Unidentified" ) {
         if( e.key.length ) {
