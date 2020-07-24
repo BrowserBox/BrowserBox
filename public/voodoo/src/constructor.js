@@ -192,7 +192,13 @@
         if ( meta.failed.params.type == "Document" ) {
           // we also need to make sure the failure happens at the top level document
           // rather than writing the top level document for any failure in a sub frame
-          writeDocument(`Request failed: ${meta.failed.params.errorText}`, meta.failed.frameId, meta.failed.sessionId);
+          if ( meta.failed.params.errorText && meta.failed.params.errorText.includes("ABORTED") ) {
+            // do nothing. Aborts are normal, and just mean existing document stays there. If we 
+            // overwrite that document with an aborted message, the normal function of the page
+            // will fail
+          } else {
+            writeDocument(`Request failed: ${meta.failed.params.errorText}`, meta.failed.frameId, meta.failed.sessionId);
+          }
         }
       });
       queue.addMetaListener('navigated', meta => resetLoadingIndicator(meta, state));
