@@ -114,6 +114,8 @@ function translator(e, handled = {type:'case'}) {
     case "control-chars": {
       return keyEvent(e);
     }
+    case "keydown":
+    case "keyup":
     case "keypress": {
       if ( e.code == "Unidentified" && e.key.length > 1 ) {
         const text = e.key;
@@ -127,8 +129,7 @@ function translator(e, handled = {type:'case'}) {
             ignoreHash: true
           }
         }
-      } else return; 
-      //keyEvent(e);
+      } else return keyEvent(e);
     }
     case "typing": {
       //alert(JSON.stringify(e));

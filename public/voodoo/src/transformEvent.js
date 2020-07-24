@@ -191,7 +191,7 @@ export default function transformEvent(e) {
         } else {
           transformedEvent.synthetic = true;
           transformedEvent.originalType = event.type;
-          transformedEvent.type = "control-chars";
+          transformedEvent.type = event.type;
           transformedEvent.key = event.key;
           transformedEvent.code = event.code;
           transformedEvent.keyCode = event.keyCode;
