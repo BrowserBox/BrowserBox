@@ -647,6 +647,9 @@
             } 
           } else if ( event.type == "keydown" && event.key == "Backspace" ) {
             state.backspaceFiring = true;
+            if ( state.viewState.shouldHaveFocus ) {
+              state.viewState.shouldHaveFocus.value = "";
+            }
           } else if ( event.type == "keyup" && event.key == "Backspace" ) {
             state.backspaceFiring = false;
           } else if ( event.type == "pointerdown" || event.type == "mousedown" ) {

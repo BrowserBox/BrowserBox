@@ -188,6 +188,9 @@ export default function transformEvent(e) {
         } else if ( event.code == "Unidentified" ) {
           transformedEvent.key = event.key;
           transformedEvent.code = event.code;
+        } else if ( event.key == "Unidentified" ) {
+          transformedEvent.key = event.key;
+          transformedEvent.code = event.code;
         } else {
           transformedEvent.synthetic = true;
           transformedEvent.originalType = event.type;

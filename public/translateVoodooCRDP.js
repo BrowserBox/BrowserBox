@@ -117,20 +117,36 @@ function translator(e, handled = {type:'case'}) {
     case "keydown":
     case "keyup":
     case "keypress": {
-      if ( e.code == "Unidentified" && e.key.length > 1 ) {
-        const text = e.key;
-        return {
-          command: {
-            name: "Input.insertText",
-            params: {
-              text
-            },
-            requiresShot: true,
-            ignoreHash: true
+      if ( e.code == "Unidentified" ) {
+        if( e.key.length ) {
+          const text = e.key;
+          return {
+            command: {
+              name: "Input.insertText",
+              params: {
+                text
+              },
+              requiresShot: true,
+              ignoreHash: true
+            }
           }
-        }
+        } else return;
+      } else if ( e.key == "Unidentified" ) {
+        if( e.code.length ) {
+          const text = e.code;
+          return {
+            command: {
+              name: "Input.insertText",
+              params: {
+                text
+              },
+              requiresShot: true,
+              ignoreHash: true
+            }
+          }
+        } else return;
       } else return keyEvent(e);
-    }
+    };
     case "typing": {
       //alert(JSON.stringify(e));
       if ( e.isComposing || ! e.characters ) return;
