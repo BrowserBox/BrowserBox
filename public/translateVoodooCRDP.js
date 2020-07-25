@@ -115,17 +115,21 @@ function translator(e, handled = {type:'case'}) {
       return keyEvent(e);
     }
     case "keydown":
-      if ( e.code == "Unidentified" ) {
+      if ( !e.key || ! e.code ) {
         return;
-      } else if ( e.key == "Unidentified" ) {
+      } else if ( e.key == "Unidentified" || e.code == "Unidentified" ) {
         return;
-      } else return keyEvent(e);
+      } else {
+        return keyEvent(e);
+      }
     case "keyup":
-      if ( e.code == "Unidentified" ) {
+      if ( !e.key || ! e.code ) {
         return;
-      } else if ( e.key == "Unidentified" ) {
+      } else if ( e.key == "Unidentified" || e.code == "Unidentified" ) {
         return;
-      } else return keyEvent(e);
+      } else {
+        return keyEvent(e);
+      }
     case "keypress": {
       if ( e.code == "Unidentified" ) {
         if( e.key.length ) {

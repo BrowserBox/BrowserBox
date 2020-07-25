@@ -467,7 +467,7 @@
         const {viewState} = state;
         if ( ! ( viewState.shouldHaveFocus || document.activeElement == viewState.omniBoxInput ) ) {
           let ev = keyEvent;
-          if ( ev.key == "Tab" || ev.key == "Space" || ev.key == "Enter" ) {
+          if ( ev.key == "Tab" || ev.key == "Enter" ) {
             // do nothing
           } else{
             H(ev);

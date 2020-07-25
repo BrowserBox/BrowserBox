@@ -11,7 +11,6 @@
     "Page.navigate",
     "Runtime.evaluate",
     "Network.setUserAgentOverride",
-    "Input.dispatchKeyEvent"
   ]);
 
   import {
