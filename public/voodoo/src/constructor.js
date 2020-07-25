@@ -9,7 +9,7 @@
   import {resetFavicon, handleFaviconMessage} from './handlers/favicon.js';
   import EventQueue from './eventQueue.js';
   import transformEvent from './transformEvent.js';
-  import {sleep, debounce, DEBUG, BLANK, isFirefox, isSafari, deviceIsMobile} from './common.js';
+  import {logit, sleep, debounce, DEBUG, BLANK, isFirefox, isSafari, deviceIsMobile} from './common.js';
   import {component, subviews} from './view.js';
 
   import installDemoPlugin from '../../plugins/demo/installPlugin.js';
@@ -477,7 +477,7 @@
 
       function installTopLevelKeyListeners() {
         self.addEventListener('keydown', sendKey); 
-        self.addEventListener('keypress', sendKey); 
+        self.addEventListener('keypress', sendKey);
         self.addEventListener('keyup', sendKey); 
       }
 
@@ -599,6 +599,46 @@
             DEBUG.val > DEBUG.low && console.log(`passing through sessionless event of type ${event.type}`);
           } else return;
         }
+
+        // this code fixes a weirdness in IOS safari where space will trigger scroll
+          if ( event.code == "Space" ) {
+            if ( event.type == "keydown" ) {
+              // cancel the default action
+              event.preventDefault();
+              const nextKeyPress = cloneKeyEvent(event); 
+              const nextKeyUp = cloneKeyEvent(event); 
+              nextKeyPress.type = "keypress";
+              nextKeyUp.type = "keyup";
+              // dispatch these events
+              setTimeout(() => H(nextKeyPress), 0);
+              setTimeout(() => H(nextKeyUp), 0);
+            } else if ( event.type == "keypress" ) {
+              if ( state.viewState.shouldHaveFocus ) {
+                // perform the default action;
+                state.viewState.shouldHaveFocus.value += " ";
+              }
+            }
+          } else if ( event.code == "Unidentified" ) {
+            if ( event.key.startsWith(" ") ) {
+              if ( event.type == "keydown" ) {
+                // cancel the default action
+                event.preventDefault();
+                const nextKeyPress = cloneKeyEvent(event); 
+                const nextKeyUp = cloneKeyEvent(event); 
+                nextKeyPress.type = "keypress";
+                nextKeyUp.type = "keyup";
+                // dispatch these events
+                setTimeout(() => H(nextKeyPress), 0);
+                setTimeout(() => H(nextKeyUp), 0);
+              } else if ( event.type == "keypress" ) {
+                if ( state.viewState.shouldHaveFocus ) {
+                  // perform the default action;
+                  state.viewState.shouldHaveFocus.value += " ";
+                }
+              }
+            }
+          }
+
         const mouseEventOnPointerDevice = event.type.startsWith("mouse") && event.type !== "wheel" && !state.DoesNotSupportPointerEvents;
         const tabKeyPressForBrowserUI = event.key == "Tab" && !event.vRetargeted;
         const eventCanBeIgnored = mouseEventOnPointerDevice || tabKeyPressForBrowserUI;
