@@ -115,9 +115,17 @@ function translator(e, handled = {type:'case'}) {
       return keyEvent(e);
     }
     case "keydown":
-      return keyEvent(e);
+      if ( e.code == "Unidentified" ) {
+        return;
+      } else if ( e.key == "Unidentified" ) {
+        return;
+      } else return keyEvent(e);
     case "keyup":
-      return keyEvent(e);
+      if ( e.code == "Unidentified" ) {
+        return;
+      } else if ( e.key == "Unidentified" ) {
+        return;
+      } else return keyEvent(e);
     case "keypress": {
       if ( e.code == "Unidentified" ) {
         if( e.key.length ) {
