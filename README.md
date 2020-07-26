@@ -6,6 +6,15 @@
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
 - Connect to Chrome headless with a Browser User Interface
 
+## Who can use this for free?
+
+- Private individuals for non-commercial use
+- Journalists, researches at public institutions, government officers and members of non-profits in the course of their work, so long as you self-host and deploy yourself, or if you need help for deployment contract Dosyago corporation to help you with that.
+
+## Who needs to pay to use this?
+
+- Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, or anyone non-covered by the free use exemption above.
+
 ## News
 - **July 26 2020** Merge changes from live demo into docker, npm and binaries.
 - **July 18 2020** 
