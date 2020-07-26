@@ -79,7 +79,6 @@
     "@types/is-docker": "^2.0.0",
     "@types/multer": "^1.4.3",
     "@types/node-fetch": "^2.5.7",
-    "@types/sharp": "^0.25.0",
     "@types/ws": "^7.2.6",
     "babel-plugin-external-helpers": "latest",
     "eslint": "^7.4.0",

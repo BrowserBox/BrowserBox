@@ -2,7 +2,7 @@ const path = require('path');
 const webpack = require('webpack');
 
 module.exports = {
-  entry: "./index.js",
+  entry: "./server.js",
   output: {
     path: path.resolve(__dirname),
     filename: "BrowserGap.js"
