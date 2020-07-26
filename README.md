@@ -7,7 +7,7 @@
 - Connect to Chrome headless with a Browser User Interface
 
 ## News
-- **July 29 2020** Merge changes from live demo into npm and binaries.
+- **July 26 2020** Merge changes from live demo into docker, npm and binaries.
 - **July 18 2020** 
   - New client web app bundling improves load speed of browser UI.
   - Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
@@ -118,11 +118,9 @@ BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a b
 
 ## Managed Cloud Service (coming soon)
 
-## Free Demos (temporarily enabled)
+## Free Demos (currently disabled)
 
-Try for free at https://start.cloudbrowser.xyz
-
-The Server is in Tokyo - I tried to strike a balance between access to APAC, EMEA and AMERICAS. 
+Inquire about demos: cris@dosycorp.com
 
 ## Secure Cloud Based Internet Isolation Version for organizations
 
