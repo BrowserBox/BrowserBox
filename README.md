@@ -7,7 +7,7 @@
 - Connect to Chrome headless with a Browser User Interface
 
 ## News
-- **July 29 2020** Merge changes from live demo into npm and binaries.
+- **July 26 2020** Merge changes from live demo into npm and binaries.
 - **July 18 2020** 
   - New client web app bundling improves load speed of browser UI.
   - Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
