@@ -10,7 +10,7 @@
   const EXPEDITE = new Set([
     "Page.navigate",
     "Runtime.evaluate",
-    "Network.setUserAgentOverride"
+    "Network.setUserAgentOverride",
   ]);
 
   import {

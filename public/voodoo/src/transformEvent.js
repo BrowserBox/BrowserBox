@@ -185,7 +185,17 @@ export default function transformEvent(e) {
           transformedEvent.code = event.code;
           transformedEvent.keyCode = event.keyCode;
           DEBUG.val >= DEBUG.med && console.log(transformedEvent);
-        } 
+        } else if ( event.code == "Unidentified" || event.key == "Unidentified" ) {
+          transformedEvent.key = event.key;
+          transformedEvent.code = event.code;
+        } else {
+          transformedEvent.synthetic = true;
+          transformedEvent.originalType = event.type;
+          transformedEvent.type = event.type;
+          transformedEvent.key = event.key;
+          transformedEvent.code = event.code;
+          transformedEvent.keyCode = event.keyCode;
+        }
         break;
       }
       case "wheel":

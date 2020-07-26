@@ -160,8 +160,8 @@ export function Controls(state) {
 
   function pressKey(e) {
     updateWord(e, state);
-    state.lastKeypressKey = e.key;
-    if ( !! e.key && e.key.length == 1 ) {
+    if ( e.key && e.key.length == 1 ) {
+      state.lastKeypressKey = e.key;
       H({
         synthetic: true,
         type: 'typing',

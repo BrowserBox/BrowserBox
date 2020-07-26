@@ -7,7 +7,7 @@
 - Connect to Chrome headless with a Browser User Interface
 
 ## News
-
+- **July 29 2020** Merge changes from live demo into npm and binaries.
 - **July 18 2020** 
   - New client web app bundling improves load speed of browser UI.
   - Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
@@ -41,7 +41,7 @@ Sure, other companies might have bigger brands and bigger sales budgets, but thi
 
 There's a lot of competition out there, BrowserGap art more lovely and more temperate. Here's a selection of the most notable:
 
-- [WEBGAP INC.](https://webgap.io/index.html) Fully hosted and managed solution. Aiming to cover the nexus of "low cost, widespread use", starting at just 5USD a head. I have not evaluated it, and there's no demo and no source code. But the website is beautiful! And it's [seed funded by a Royal Highness in the Al-Saud family](https://www.crunchbase.com/organization/webgap#section-investors) :sunglasses: how cool! Co-founder [Guise Bule](https://www.linkedin.com/in/guisebule), a tech-marketing veteran based stateside who describes himself as having "built some of the world's first remote browser platforms" at the NSA, [blogs profusely](https://medium.com/secjuice/a-quick-guide-to-the-remote-browser-isolation-space-and-its-vendors-4c0e220e696a) about RBI and has recently joined the ranks of some regional Security and tech "think tanks", including Singapore's [ITSEC](https://www.itsec.asia/) and Silicon Valley Bank's Brains Trust.
+- [WEBGAP INC.](https://webgap.io/index.html) Fully hosted and managed solution. Aiming to cover the nexus of "low cost, widespread use", starting at just 5USD a head. I have not evaluated it, and there's no demo and no source code. But the website is beautiful! And it's [seed funded by a Royal Highness in the Al-Saud family](https://www.crunchbase.com/organization/webgap#section-investors) :sunglasses: how cool! Co-founder [Guise Bule](https://www.linkedin.com/in/guisebule), a tech-marketing veteran based stateside who describes himself as having "built some of the world's first remote browser platforms" at the NNSA, [blogs profusely](https://medium.com/secjuice/a-quick-guide-to-the-remote-browser-isolation-space-and-its-vendors-4c0e220e696a) about RBI and has recently joined the ranks of some regional Security and tech "think tanks", including Singapore's [ITSEC](https://www.itsec.asia/) and Silicon Valley Bank's Brains Trust.
 - [McAfee nee Light Point Security](https://www.mcafee.com/blogs/enterprise/why-light-point-security-is-joining-the-mcafee-team/), the veterna cybersecurity incumbent acquired Light Point, a nascent (but also long-lived) RBI startup in 2020, which was founded around 2012 by ex-members of the US [Intelligence Community, Beau Adkins](https://www.linkedin.com/in/beauadkins/) and [Zuly Gonzalez](https://www.linkedin.com/in/zulygonzalez/). Again, there's no source-code and no demo and I have not evaluated the software, though it seems it is a highly user-focused web application, that is described in their PR copy as a clientless pure HTML/JavaScript RBI solution. The founders of the Maryland-based startup [surely know](https://www.prnewswire.com/news-releases/light-point-security-reveals-most-flexible-browser-isolation-platform-with-the-release-of-its-clientless-version-300797260.html) [what they are talking about.](https://twitter.com/zulygonz?lang=en)
 - [Isoolate](https://www.isoolate.com/) founded by Turkish [ex military-tech contractors](https://www.linkedin.com/in/muratdemirten), is headquartered in the United States, and staffed with around 10 people around the world ([including New Zealand!](https://www.linkedin.com/in/aycan-firatli-19b9a939/)), develops a Chrome Extension (and possibly other software) that assists the client choose whether they want to access a page locally, or remotely, aiming to provide a seamless and highly-configurable experience. 
 
@@ -118,11 +118,11 @@ BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a b
 
 ## Managed Cloud Service (coming soon)
 
-## Free Demos (currently disabled - they were too popular)
+## Free Demos (temporarily enabled)
 
-Try for free at https://free.cloudbrowser.xyz
+Try for free at https://start.cloudbrowser.xyz
 
-Or https://hk.cloudbrowser.xyz (if you're in Asia-Pac this is probably faster)
+The Server is in Tokyo - I tried to strike a balance between access to APAC, EMEA and AMERICAS. 
 
 ## Secure Cloud Based Internet Isolation Version for organizations
 
