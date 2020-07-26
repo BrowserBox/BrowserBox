@@ -1,6 +1,6 @@
 {
   "name": "remoteview",
-  "version": "2.14.1",
+  "version": "2.26.0",
   "description": "Fly a browser remotely from your browser? Yes.",
   "main": "index.js",
   "bin": {
@@ -10,6 +10,7 @@
     "test": "bash ./test.sh",
     "dev": "node-dev --inspect=127.0.0.1:8111 index.js",
     "start": "bash ./start.sh",
+    "docker_start": "bash ./docker_start.sh",
     "postinstall": "bash ./postinstall.sh",
     "init": "bash ./reinit_after_restart.sh",
     "clean": "./clean.sh",
@@ -79,7 +80,6 @@
     "@types/is-docker": "^2.0.0",
     "@types/multer": "^1.4.3",
     "@types/node-fetch": "^2.5.7",
-    "@types/sharp": "^0.25.0",
     "@types/ws": "^7.2.6",
     "babel-plugin-external-helpers": "latest",
     "eslint": "^7.4.0",
