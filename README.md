@@ -200,7 +200,7 @@ sudo docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json dosyag
 ```
 
 
-You can also build a docker image from source yourself. 
+You can also build a docker image from source yourself (you probably want to be on the nexe-build branch, tho).
 
 Set up the machine (as above in the **Set up** section), then
 
@@ -209,7 +209,8 @@ use clone the repo and install docker (`build_docker.sh` will do that for you) a
 ```sh
 git clone https://github.com/dosyago/BrowserGap
 cd BrowserGap
-npm i
+git fetch --all
+git branch nexe-build
 ./buld_docker.sh
 ./run_docker.sh 
 ```
