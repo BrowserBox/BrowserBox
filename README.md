@@ -70,7 +70,11 @@ Glone this repo
 
 `git clone https://github.com/dosyago/BrowserGap.git`
 
-Then run `npm i` in the repository directory.
+Then run `npm i` in the repository directory, followed by `npm test` to start on the default port.
+
+But you might like to `git fetch --all && git checkout nexe-build && git pull` to 
+be on the branch that has all the latest additions just like in the Docker image, npm globals
+and binaries.
 
 or Install from npm 
 
