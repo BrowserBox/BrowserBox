@@ -5,6 +5,7 @@ import fs from 'fs';
 
 const connections = new Map();
 
+// Connection options
 const Options = {
   adBlock: true,
   demoBlock: false
@@ -15,15 +16,25 @@ const Options = {
 //let lastHash;
 
 const controller_api = {
+  setClientErrorSender(sender, port) {
+    const connection = connections.get(port);    
+    if ( ! connection ) {
+      return false;
+    }
+    connection.setClientErrorSender(sender);
+    return true;
+  },
+
   setOptions(new_options) {
     Object.assign(Options, new_options);
   },
 
   async close(port) {
-    let connection = connections.get(port);    
+    const connection = connections.get(port);    
     if ( ! connection ) {
       return true;
     }
+    connections.delete(port);
     return await connection.close();
   },
 

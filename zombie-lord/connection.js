@@ -123,12 +123,18 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
     bounds: {width: 1280, height: 800},
     navigator: { userAgent: UA, platform: PLAT, acceptLanguage: LANG },
     plugins: {},
+    setClientErrorSender(e) {
+      this.zombie.sendErrorToClient = e;
+    }
   };
   connection.zombie.on('disconnect', async () => {
     console.log(`Reconnecting to zombie in ${RECONNECT_MS}`);
     await sleep(RECONNECT_MS);
     setTimeout(async () => {
-      const next_connection = await Connect({port:connection.port});
+      const next_connection = await Connect(
+        {port:connection.port}, 
+        {adBlock, demoBlock, sendErrorToClient}
+      );
       Object.assign(connection,next_connection);
     }, RECONNECT_MS);
   });
@@ -797,12 +803,22 @@ function isFileURL(url) {
 async function makeZombie({port:port = 9222} = {}) {
   const {webSocketDebuggerUrl} = await fetch(`http://localhost:${port}/json/version`).then(r => r.json());
   const socket = new ws(webSocketDebuggerUrl);
+  const Zombie = {
+    disconnected: true
+  };
   const Resolvers = {};
   const Handlers = {};
   socket.on('message', handle);
+  socket.on('close', () => {
+    Zombie.disconnected = true;
+  });
   let id = 0;
   
   async function send(method, params = {}, sessionId) {
+    if ( Zombie.disconnected ) {
+      Zombie.sendErrorToClient('Our connection to chrome is disconnected. Probably means chrome shut down or crashed.');
+      return;
+    }
     const message = {
       method, params, sessionId, 
       id: ++id
@@ -830,7 +846,12 @@ async function makeZombie({port:port = 9222} = {}) {
       }
     }
     Resolvers[key] = resolve; 
-    socket.send(JSON.stringify(message));
+    try {
+      socket.send(JSON.stringify(message));
+    } catch(e) {
+      console.warn("Error sending to chrome", e);
+      Zombie.sendErrorToClient(e);
+    }
     return promise;
   }
 
@@ -893,14 +914,19 @@ async function makeZombie({port:port = 9222} = {}) {
   let resolve;
   const promise = new Promise(res => resolve = res);
 
-  socket.on('open', () => resolve());
+  socket.on('open', () => {
+    Zombie.disconnected = false;
+    resolve();
+  });
 
   await promise;
 
-  return {
+  Object.assign(Zombie, {
     send,
     on, ons
-  }
+  });
+
+  return Zombie;
 }
 
 function getFileFromURL(url) {
