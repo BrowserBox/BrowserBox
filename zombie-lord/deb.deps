@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # I may need to call 
 # sudo apt --fix-broken install 
 # after running this to get it to work

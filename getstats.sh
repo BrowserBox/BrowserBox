@@ -1,3 +1,5 @@
+#!/bin/bash
+
 rm -rf ./stats
 mkdir stats
 sloc --exclude "node_modules|bundle" . > stats/codestats.txt
