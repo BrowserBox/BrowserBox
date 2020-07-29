@@ -1,6 +1,7 @@
 # :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
 
 - Live stream the browser remotely.
+- Embed a browser in another web application to integrate user flows.
 - Perform remote browser isolation for security and automation.
 - Run your browsers anywhere and connect to them from anywhera.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
@@ -18,6 +19,11 @@
 - Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, or anyone non-covered by the free use exemption above.
 
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
+
+
+## Fee
+
+**Unlimited Seat Per Site License** *normally USD$1,898 a month*. For a limited time, only USD$1,637 a month!
 
 ## News
 - **July 26 2020** Merge changes from live demo into docker, npm and binaries.
