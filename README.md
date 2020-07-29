@@ -76,7 +76,7 @@ Probably. If you can think of it, you can probably do it.
 
 ## Get and self-host
 
-Glone this repo
+Clone this repo
 
 `git clone https://github.com/dosyago/BrowserGap.git`
 
