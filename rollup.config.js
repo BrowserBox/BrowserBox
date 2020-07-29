@@ -4,6 +4,7 @@ import resolve from '@rollup/plugin-node-resolve';
 
 export default {
   plugins: [
+    /*
 		{
       transform ( code, id ) {
         console.log( id );
@@ -11,6 +12,7 @@ export default {
         // not returning anything, so doesn't affect bundle
       }
     },
+    */
     commonjs(),
     resolve(),
     babel({

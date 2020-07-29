@@ -48,10 +48,16 @@
 
   let requestId = 0;
 
-  export async function start_ws_server(port, zombie_port, allowed_user_cookie, session_token) {
+  //let lastTS = Date.now();
+
+  export async function start_ws_server(
+      port, zombie_port, allowed_user_cookie, session_token, 
+  ) {
     DEBUG.val && console.log(`Starting websocket server on ${port}`);
     const app = express();
     const server_port = port;
+
+    let latestMessageId = 0;
 
     app.use(bodyParser.urlencoded({extended:true}));
     app.use(bodyParser.json());
@@ -73,9 +79,9 @@
         } else {
           res.type("html");
           if ( session_token == 'token2' ) {
-            res.end(`Incorrect token ${token}/token2. <a href=/login?token=token2>Login first.</a>`);
+            res.end(`Incorrect token ${token}/token2. <a href=/login?token=token2>Try again.</a>`);
           } else {
-            res.end(`Incorrect token "${token}". <a href=https://${req.hostname}/signup.html>Login first.</a>`);
+            res.end(`Incorrect token "${token}". <a href=https://${req.hostname}/>Try again.</a>`);
           }
         }
       }); 
@@ -108,13 +114,19 @@
 
     wss.on('connection', (ws, req) => {
       const cookie = req.headers.cookie;
+      let closed = false;
+
       zl.act.saveIP(req.connection.remoteAddress);
       DEBUG.val && console.log({connectionIp:req.connection.remoteAddress});
       if ( DEBUG.dev || allowed_user_cookie == 'cookie' || 
         (cookie && cookie.includes(`${COOKIENAME}=${allowed_user_cookie}`)) ) {
         zl.life.onDeath(zombie_port, () => {
+          console.info("Zombie/chrome closed or crashed.");
           //console.log("Closing as zombie crashed.");
           //ws.close();
+        });
+        ws.on('close', () => {
+          closed = true;    
         });
         ws.on('message', message => {
           const func = async () => {
@@ -123,6 +135,8 @@
             message = JSON.parse(message);
 
             const {zombie, tabs, messageId} = message;  
+
+            latestMessageId = messageId;
 
             try {
               if ( zombie ) {
@@ -160,6 +174,8 @@
                 console.warn(JSON.stringify({unknownMessage:message}));
               }
             } catch(e) {
+              // errors are not always pushed up this far
+              // but when they are we can alert the client
               so(ws,{messageId, data:[
                 {
                   error: "Failed to communicate with cloud browser",
@@ -173,6 +189,21 @@
             runMessageQueue();
           }
         });
+        // why the below?
+          // for cases where we still want to alert the client
+          // to an error we don't push all the way
+          // (because say, the send() method that results in the error
+          // has no corresponding result that it is expected to tell the client about
+          // e.g.
+          // await send("Command.name", params); // errors from here will not go to client
+        zl.act.setClientErrorSender(err => {
+          so(ws,{messageId:latestMessageId, data:[
+            {
+              error: err,
+              resetRequired: true
+            }
+          ], frameBuffer:[], meta:[], totalBandwidth: 0});
+        }, zombie_port);
       } else {
         const hadSession = !! cookie && cookie.includes(COOKIENAME);
         const msg = hadSession ? 
@@ -182,6 +213,25 @@
         so(ws, {messageId:1,data:[{error}]});
         console.log("Closing as not authorized.");
         ws.close();
+      }
+
+      function so(socket, message) {
+        if ( closed ) return;
+        if ( !message ) return;
+        message.timestamp = Date.now();
+        //message.tgap = message.timestamp - lastTS;
+        //lastTS = message.timestamp;
+        if ( typeof message == "string" || Array.isArray(message) ){
+          message;
+        } else {
+          message = JSON.stringify(message);
+        }
+
+        try {
+          socket.send(message);
+        } catch(e) {
+          console.warn(`Websocket error with sending message`, e, message);
+        }
       }
     });
 
@@ -194,21 +244,6 @@
         DEBUG.val && console.log({uptime:new Date, message:'websocket server up', server_port});
       }
     });
-
-    function so(socket, message) {
-      if ( !message ) return;
-      if ( typeof message == "string" || Array.isArray(message) ){
-        message;
-      } else {
-        message = JSON.stringify(message);
-      }
-
-      try {
-        socket.send(message);
-      } catch(e) {
-        console.warn(`Websocket error with sending message`, e, message);
-      }
-    }
 
     function addHandlers() {
       app.get(`/api/${version}/tabs`, wrap(async (req, res) => {
@@ -235,8 +270,7 @@
           zl.act.addTargets(targets, zombie_port);
           res.end(JSON.stringify({tabs:targets,activeTarget,requestId}));
         } catch(e) {
-          console.warn('th', e);
-          //res.end(JSON.stringify({error:e+'', resetRequired:true}));
+          console.warn('No target data from chrome. Normally means chrome is not opened.');
           throw e;
         }
       }));
@@ -305,7 +339,9 @@
             }
             res.write(message);
             res.end();
-            console.warn(err);
+            if ( DEBUG.val ) {
+              console.warn(err);
+            }
             next();
           }
         });
@@ -332,8 +368,9 @@
           try {
             await fn(req, res, next);
           } catch(e) {
-            DEBUG.val && console.log(e);
-            console.info(`caught error in ${fn}`);
+            if ( DEBUG.val ) {
+              console.info(`caught error in ${fn}`, e);
+            }
             next(e);
           }
         }

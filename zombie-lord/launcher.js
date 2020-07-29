@@ -24,6 +24,10 @@ const launcher_api = {
       DEBUG.val && console.log(`Ignoring launch request as chrome already started.`);
     }
     const DEFAULT_FLAGS = [
+      /*
+      '--display:1',
+      '--use-gl=egl',
+      */
       '--window-size=2880,1800',
       '--profiling-flush=1',
       '--enable-aggressive-domstorage-flushing',
@@ -62,6 +66,19 @@ const launcher_api = {
     const retVal = {
       port
     };
+    zomb.process.on('exit', () => {
+      console.warn("Chrome exiting");
+      let handlers = deathHandlers.get(port);
+      if ( handlers ) {
+        for( const handler of handlers ) {
+          try { 
+            handler();
+          } catch(e) {
+            console.warn("Error in chrome death handler", e, handler);
+          }
+        }
+      }
+    });
     process.on('SIGHUP', undoChrome);
     process.on('SIGUSR1', undoChrome);
     process.on('SIGTERM', undoChrome);

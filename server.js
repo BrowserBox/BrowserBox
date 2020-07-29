@@ -10,7 +10,7 @@
   const EXPEDITE = new Set([
     "Page.navigate",
     "Runtime.evaluate",
-    "Network.setUserAgentOverride"
+    "Network.setUserAgentOverride",
   ]);
 
   import {
@@ -67,7 +67,9 @@
       await sleep(BEGIN_AGAIN);
     }
     if ( ! ws_started ) {
-      await start_ws_server(app_port, chrome_port, cookie, token);
+      await start_ws_server(
+        app_port, chrome_port, cookie, token, 
+      );
       ws_started = true;
     }
   }

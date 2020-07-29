@@ -123,20 +123,28 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
     bounds: {width: 1280, height: 800},
     navigator: { userAgent: UA, platform: PLAT, acceptLanguage: LANG },
     plugins: {},
+    setClientErrorSender(e) {
+      this.zombie.sendErrorToClient = e;
+    }
   };
   connection.zombie.on('disconnect', async () => {
     console.log(`Reconnecting to zombie in ${RECONNECT_MS}`);
     await sleep(RECONNECT_MS);
     setTimeout(async () => {
-      const next_connection = await Connect({port:connection.port});
+      const next_connection = await Connect(
+        {port:connection.port}, 
+        {adBlock, demoBlock, sendErrorToClient}
+      );
       Object.assign(connection,next_connection);
     }, RECONNECT_MS);
   });
 
   {
-    const {doShot, queueTailShot} = makeCamera(connection);
+    const {doShot, queueTailShot, shrinkImagery, growImagery} = makeCamera(connection);
     connection.doShot = doShot;
     connection.queueTailShot = queueTailShot;
+    connection.shrinkImagery = shrinkImagery;
+    connection.growImagery = growImagery;
   }
 
   const {send,on, ons} = connection.zombie;
@@ -441,9 +449,9 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       if ( savedFrame ) {
         const {url,frameId} = savedFrame;
 
-        const someFileName = getFileFromURL(url);
-
         if ( message.params.type == "Document" ) {
+          const someFileName = getFileFromURL(url);
+
           message.frameId = frameId;
           DEBUG.val && console.log({failedURL:url});
           if ( !url.startsWith('http') ) {
@@ -795,12 +803,22 @@ function isFileURL(url) {
 async function makeZombie({port:port = 9222} = {}) {
   const {webSocketDebuggerUrl} = await fetch(`http://localhost:${port}/json/version`).then(r => r.json());
   const socket = new ws(webSocketDebuggerUrl);
+  const Zombie = {
+    disconnected: true
+  };
   const Resolvers = {};
   const Handlers = {};
   socket.on('message', handle);
+  socket.on('close', () => {
+    Zombie.disconnected = true;
+  });
   let id = 0;
   
   async function send(method, params = {}, sessionId) {
+    if ( Zombie.disconnected ) {
+      Zombie.sendErrorToClient('Our connection to chrome is disconnected. Probably means chrome shut down or crashed.');
+      return;
+    }
     const message = {
       method, params, sessionId, 
       id: ++id
@@ -828,7 +846,12 @@ async function makeZombie({port:port = 9222} = {}) {
       }
     }
     Resolvers[key] = resolve; 
-    socket.send(JSON.stringify(message));
+    try {
+      socket.send(JSON.stringify(message));
+    } catch(e) {
+      console.warn("Error sending to chrome", e);
+      Zombie.sendErrorToClient(e);
+    }
     return promise;
   }
 
@@ -891,14 +914,19 @@ async function makeZombie({port:port = 9222} = {}) {
   let resolve;
   const promise = new Promise(res => resolve = res);
 
-  socket.on('open', () => resolve());
+  socket.on('open', () => {
+    Zombie.disconnected = false;
+    resolve();
+  });
 
   await promise;
 
-  return {
+  Object.assign(Zombie, {
     send,
     on, ons
-  }
+  });
+
+  return Zombie;
 }
 
 function getFileFromURL(url) {
@@ -907,7 +935,7 @@ function getFileFromURL(url) {
   const nodes = pathname.split('/');
   let lastNode = nodes.pop();
   if ( ! lastNode ) {
-    console.warn({fileNameError: Error(`URL cannot be parsed to get filename`)});
+    DEBUG.val > DEBUG.med && console.warn({url, nodes, fileNameError: Error(`URL cannot be parsed to get filename`)});
     return `download${Date.now()}`;
   }
   return unescape(lastNode);
