@@ -6,6 +6,8 @@
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
 - Connect to Chrome headless with a Browser User Interface
 
+[More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
+
 ## Who uses this for free?
 
 - Private individuals for non-commercial use
@@ -14,6 +16,8 @@
 ## Who pays to use this?
 
 - Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, or anyone non-covered by the free use exemption above.
+
+[More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
 ## News
 - **July 26 2020** Merge changes from live demo into docker, npm and binaries.
