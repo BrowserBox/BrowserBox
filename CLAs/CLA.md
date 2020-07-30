@@ -7,7 +7,7 @@ This license is for your protection as a Contributor as well as the protection o
 You accept and agree to the following terms and conditions for Your past, present and future Contributions submitted to Dosyago. 
 Except for the license granted herein to Dosyago and recipients of software distributed by Dosyago, You reserve all right, title, and interest in and to Your Contributions.
 
-Definitions.
+## Definitions.
 
 "You" (or "Your") shall mean the copyright owner or legal entity authorized by the copyright owner that is making this Agreement with Dosyago. For legal entities, the entity making a Contribution and all other entities that control, are controlled by, or are under common control with that entity are considered to be a single Contributor. For the purposes of this definition, "control" means (i) the power, direct or indirect, to cause the direction or management of such entity, whether by contract or otherwise, or (ii) ownership of fifty percent (50%) or more of the outstanding shares, or (iii) beneficial ownership of such entity.
 
@@ -23,14 +23,15 @@ You represent that each of Your Contributions is Your original creation (see sec
 
 You are not expected to provide support for Your Contributions, except to the extent You desire to provide support. You may provide support for free, for a fee, or not at all. Unless required by applicable law or agreed to in writing, You provide Your Contributions on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON- INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
 
-Should You wish to submit work that is not Your original creation, You may submit it to Dosyago separately from any Contribution, identifying the complete details of its source and of any license or other restriction (including, but not limited to, related patents, trademarks, and license agreements) of which you are personally aware, and conspicuously marking the work as "Submitted on behalf of a third-party: `<named here>`".
+Should You wish to submit work that is not Your original creation, You may submit it to Dosyago separately from any Contribution, identifying the complete details of its source and of any license or other restriction (including, but not limited to, related patents, trademarks, and license agreements) of which you are personally aware, and conspicuously marking the work as "Submitted on behalf of a third-party: (insert 3rd-party name here)".
 
 You agree to notify Dosyago of any facts or circumstances of which you become aware that would make these representations inaccurate in any respect.
 
-Signing Info
+## Signing Info
 
-Full name        :  
-Email address    :  
-GitHub Username  :  
+`Full name `       :  
+`Email address`    :  
+`GitHub Username`  :  
+`Date signed`      :
 
 -- Adapted from: https://www.docracy.com/0pmrhl5zsdf/individual-contributor-license-agreement-template-cla (http://archive.is/wip/SV3Ls)
