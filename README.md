@@ -9,6 +9,18 @@
 
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
+## News
+- **July 30 2020** New marketing/signup site (cloud browser SaaS with monthly subscription coming soon!) https://browsergap.dosyago.com Check it out!
+- **July 26 2020** Merge changes from live demo into docker, npm and binaries.
+- **July 18 2020** 
+  - New client web app bundling improves load speed of browser UI.
+  - Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
+  - New [docker builds](https://hub.docker.com/r/dosyago/browsergapce) and [releases](https://github.com/dosyago/BrowserGap/releases/latest) incorporating these changes. 
+- **July 18 2020** Bug fix on master: Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
+- **July 15 2020** Run or install as global via `npx remoteview@latest` or `npm i -g remoteview@latest` (**Working!**)
+- **July 14 2020** [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
+- **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.2](https://hub.docker.com/r/dosyago/browsergapce)
+
 ## Who uses this for free?
 
 - Private individuals for non-commercial use
@@ -19,7 +31,6 @@
 - Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, or anyone non-covered by the free use exemption above.
 
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
-
 
 ## Fee
 
@@ -66,17 +77,6 @@
 ## Major bugs
 
 - See the open issues, but most bugs are around interaction (such as multiple touch points) or client side quirks of browsers (like iOS Safari)
-
-## News
-- **July 26 2020** Merge changes from live demo into docker, npm and binaries.
-- **July 18 2020** 
-  - New client web app bundling improves load speed of browser UI.
-  - Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
-  - New [docker builds](https://hub.docker.com/r/dosyago/browsergapce) and [releases](https://github.com/dosyago/BrowserGap/releases/latest) incorporating these changes. 
-- **July 18 2020** Bug fix on master: Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
-- **July 15 2020** Run or install as global via `npx remoteview@latest` or `npm i -g remoteview@latest` (**Working!**)
-- **July 14 2020** [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
-- **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.2](https://hub.docker.com/r/dosyago/browsergapce)
 
 ## About
 
