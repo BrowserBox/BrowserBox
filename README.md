@@ -25,6 +25,48 @@
 
 **Unlimited Seat Per Site License** *normally USD$1,898 a month*. For a limited time, only USD$1,637 a month!
 
+## Normal Browser UI things that work
+
+- Copy and paste (paste is as normal, but for copy you need to use the right-click context menu)
+- File upload
+- File download (if self hosted, using cloud managed, or with secure file viewer license which is available on request, but not in free demo)
+- Modal dialogs
+- New tabs
+- History (invisible but you can navigate it with the forward and back buttons)
+- Address bar search (defaults to Google but you can add your own)
+- New incognito tabs 
+- Clearing cache, history and session cookies
+- Touch scrolling, track pad scrolling, mouse wheel and magic pad scrolling
+- Desktop, tablet and mobile
+- Form input (text, options, check boxes, etc)
+
+## Normal Browser UI things not yet implemented
+
+- Text selection
+- Page zooming and pinch/spread zooming on mobile (implementation is buggy)
+- Multi touch on tablet and mobile
+- Regular browser settings (language, default page scale, etc)
+- Summary list of history entries
+- WebGL (this is an open bug in Chrome headless)
+- Multiple windows (you can sort of do this by opening the app in different tabs, and say opening all BG tabs in incognito mode, but it's not fluid)
+
+## Advanced things only BG does
+
+- Local and remote bandwidth indicator
+- Secure browsing context (we only send you pixels from normal browsing, to protect you from exploits, malware and zero days)
+- Fully functioning browser that you can embed in any other app on the open web (basically a `<browserview>` tag that works everywhere, and has the normal UI you expect from a browser)
+- Control the resource usage of a pool of remote browsers, collectively and individually.
+- Adaptively resamples images based on the bandwidth you have available on your connection, to maintain responsiveness and use the best image quality your bandwidth permits
+
+## Some ways people are using BrowserGap
+
+- To embed other applications in their own web app to unite separate user flows, and overcome iframe restrictions.
+- As a browser proxy to enable secure browsing on locked down internal networks
+
+## Major bugs
+
+- See the open issues, but most bugs are around interaction (such as multiple touch points) or client side quirks of browsers (like iOS Safari)
+
 ## News
 - **July 26 2020** Merge changes from live demo into docker, npm and binaries.
 - **July 18 2020** 
