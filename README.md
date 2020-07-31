@@ -289,3 +289,6 @@ Just connect your browser to http://localhost:5002 from the machine you run it o
 
 Just run PPTR on the same machine as this and connect to http://localhost:5002
 
+## Other Similar Projects
+
+- [Remote Browser](https://github.com/bepsvpt-me/remote-browser) - Use WebRTC to stream remote server puppeteer. Also, seems [that project was inspired by BrowserGap](https://learnku.com/nodejs/t/37088).
