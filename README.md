@@ -31,7 +31,7 @@
 - I want it to use less bandwidth (it takes so much bandwidth! *edit: actually it often saves you bandwidht, but hey, I get that it can sometimes use a lot*)
 - I want the images it sends to be better quality (*edit: it will automatically adjust image quality based on bandwidth you have avilalbe, but concievably I could make the upper limit higher, say behind a setting*)
 
-[Vote for these NOW on the Twitter Poll!](https://twitter.com/BrowserGap)
+[Vote for these NOW on the Twitter Poll!](https://twitter.com/BrowserGap/status/1289462355475087360)
 
 ## Who uses this for free?
 
