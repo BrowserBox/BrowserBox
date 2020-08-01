@@ -85,7 +85,7 @@
     "eslint": "^7.4.0",
     "nexe": "^3.3.7",
     "node-loader": "^1.0.0",
-    "rollup": "^2.21.0",
+    "rollup": "^2.23.0",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.1.0",
     "typescript": "^3.9.7",
