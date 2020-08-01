@@ -1,13 +1,17 @@
 # :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
 
 - Live stream the browser remotely.
+- Embed a browser in another web application to integrate user flows.
 - Perform remote browser isolation for security and automation.
 - Run your browsers anywhere and connect to them from anywhera.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
 - Connect to Chrome headless with a Browser User Interface
 
+[More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
+
 ## News
-- **July 26 2020** Merge changes from live demo into npm and binaries.
+- **July 30 2020** New marketing/signup site (cloud browser SaaS with monthly subscription coming soon!) https://browsergap.dosyago.com Check it out!
+- **July 26 2020** Merge changes from live demo into docker, npm and binaries.
 - **July 18 2020** 
   - New client web app bundling improves load speed of browser UI.
   - Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
@@ -15,11 +19,70 @@
 - **July 18 2020** Bug fix on master: Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
 - **July 15 2020** Run or install as global via `npx remoteview@latest` or `npm i -g remoteview@latest` (**Working!**)
 - **July 14 2020** [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
-- **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.1](https://hub.docker.com/r/dosyago/browsergapce)
+- **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.2](https://hub.docker.com/r/dosyago/browsergapce)
+
+## Who uses this for free?
+
+- Private individuals for non-commercial use
+- Journalists for publicly available publications (so not specialized corporate press or internal publications), researches at public institutions, government officers and members of non-profits in the course of their work, so long as you self-host and deploy yourself, or if you need help for deployment contract Dosyago corporation to help you with that.
+
+## Who pays to use this?
+
+- Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, or anyone non-covered by the free use exemption above.
+
+[More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
+
+## Fee
+
+**Unlimited Seat Per Site License** *normally USD$1,898 a month*. For a limited time, only USD$1,637 a month!
+
+## Normal Browser UI things that work
+
+- Copy and paste (paste is as normal, but for copy you need to use the right-click context menu)
+- File upload
+- File download (if self hosted, using cloud managed, or with secure file viewer license which is available on request, but not in free demo)
+- Modal dialogs
+- New tabs
+- History (invisible but you can navigate it with the forward and back buttons)
+- Address bar search (defaults to Google but you can add your own)
+- New incognito tabs 
+- Clearing cache, history and session cookies
+- Touch scrolling, track pad scrolling, mouse wheel and magic pad scrolling
+- Desktop, tablet and mobile
+- Form input (text, options, check boxes, etc)
+
+## Normal Browser UI things not yet implemented
+
+- Text selection
+- Page zooming and pinch/spread zooming on mobile (implementation is buggy)
+- Multi touch on tablet and mobile
+- Regular browser settings (language, default page scale, etc)
+- Summary list of history entries
+- WebGL (this is an open bug in Chrome headless)
+- Multiple windows (you can sort of do this by opening the app in different tabs, and say opening all BG tabs in incognito mode, but it's not fluid)
+
+## Advanced things only BG does
+
+- Local and remote bandwidth indicator
+- Secure browsing context (we only send you pixels from normal browsing, to protect you from exploits, malware and zero days)
+- Fully functioning browser that you can embed in any other app on the open web (basically a `<browserview>` tag that works everywhere, and has the normal UI you expect from a browser)
+- Control the resource usage of a pool of remote browsers, collectively and individually.
+- Adaptively resamples images based on the bandwidth you have available on your connection, to maintain responsiveness and use the best image quality your bandwidth permits
+
+## Some ways people are using BrowserGap
+
+- To embed other applications in their own web app to unite separate user flows, and overcome iframe restrictions.
+- As a browser proxy to enable secure browsing on locked down internal networks
+
+## Major bugs
+
+- See the open issues, but most bugs are around interaction (such as multiple touch points) or client side quirks of browsers (like iOS Safari)
 
 ## About
 
 This is a feature-complete, clientless, remote browser isolation product, in HTML/JavaScript that runs right in your browser. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
+
+With BrowserGap, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
 
 ![Animated GIF of BrowserGap in action](https://j.gifs.com/E8yzLv.gif)
 
@@ -29,7 +92,7 @@ You can use this repo to play with a browser running remotely in the cloud, rath
 
 If you're a developer you can include a "BrowserView" in any other web application (for non-commercial use only).
 
-If you're like to deploy this in your org, or for a for-profit project, write me: cris@dosycorp.com Or keep an eye out for the cloud service, coming soon. Official government use OK without purchase, as long as deployment is done in-house (or using Dosyago Corporation, not by other contractors, nor part of a paid deployment). If you're in government and you'd like to deploy this and want help, contact me for help or to discuss a deployment contract.
+If you're like to deploy this in your org, or for a for-profit project, write me: cris@dosycorp.com Or keep an eye out for the cloud service, coming soon. Official government use OK without purchase (also for university/public institution researchers, journalists and not-for-profits), as long as deployment is done in-house (or using Dosyago Corporation, not by other contractors, nor part of a paid deployment). If you're in government and you'd like to deploy this and want help, contact me for help or to discuss a deployment contract.
 
 ## localhost:8002
 
@@ -57,11 +120,15 @@ Probably. If you can think of it, you can probably do it.
 
 ## Get and self-host
 
-Glone this repo
+Clone this repo
 
 `git clone https://github.com/dosyago/BrowserGap.git`
 
-Then run `npm i` in the repository directory.
+Then run `npm i` in the repository directory, followed by `npm test` to start on the default port.
+
+But you might like to `git fetch --all && git checkout nexe-build && git pull` to 
+be on the branch that has all the latest additions just like in the Docker image, npm globals
+and binaries.
 
 or Install from npm 
 
@@ -118,11 +185,9 @@ BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a b
 
 ## Managed Cloud Service (coming soon)
 
-## Free Demos (temporarily enabled)
+## Free Demos (currently disabled)
 
-Try for free at https://start.cloudbrowser.xyz
-
-The Server is in Tokyo - I tried to strike a balance between access to APAC, EMEA and AMERICAS. 
+Inquire about demos: cris@dosycorp.com
 
 ## Secure Cloud Based Internet Isolation Version for organizations
 
@@ -179,7 +244,7 @@ npm start
 You can pull an existing image from docker hub (already [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce))
 
 ```sh
-docker pull dosyago/browsergapce:2.1
+docker pull dosyago/browsergapce:2.2
 ```
 
 And then run it 
@@ -193,7 +258,7 @@ sudo docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json dosyag
 ```
 
 
-You can also build a docker image from source yourself. 
+You can also build a docker image from source yourself (you probably want to be on the nexe-build branch, tho).
 
 Set up the machine (as above in the **Set up** section), then
 
@@ -202,7 +267,8 @@ use clone the repo and install docker (`build_docker.sh` will do that for you) a
 ```sh
 git clone https://github.com/dosyago/BrowserGap
 cd BrowserGap
-npm i
+git fetch --all
+git branch nexe-build
 ./buld_docker.sh
 ./run_docker.sh 
 ```
@@ -223,3 +289,6 @@ Just connect your browser to http://localhost:5002 from the machine you run it o
 
 Just run PPTR on the same machine as this and connect to http://localhost:5002
 
+## Other Similar Projects
+
+- [Remote Browser](https://github.com/bepsvpt-me/remote-browser) - Use WebRTC to stream remote server puppeteer. Also, seems [that project was inspired by BrowserGap](https://learnku.com/nodejs/t/37088).

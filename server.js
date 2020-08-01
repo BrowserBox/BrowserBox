@@ -67,7 +67,9 @@
       await sleep(BEGIN_AGAIN);
     }
     if ( ! ws_started ) {
-      await start_ws_server(app_port, chrome_port, cookie, token);
+      await start_ws_server(
+        app_port, chrome_port, cookie, token, 
+      );
       ws_started = true;
     }
   }

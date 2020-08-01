@@ -66,6 +66,19 @@ const launcher_api = {
     const retVal = {
       port
     };
+    zomb.process.on('exit', () => {
+      console.warn("Chrome exiting");
+      let handlers = deathHandlers.get(port);
+      if ( handlers ) {
+        for( const handler of handlers ) {
+          try { 
+            handler();
+          } catch(e) {
+            console.warn("Error in chrome death handler", e, handler);
+          }
+        }
+      }
+    });
     process.on('SIGHUP', undoChrome);
     process.on('SIGUSR1', undoChrome);
     process.on('SIGTERM', undoChrome);

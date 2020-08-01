@@ -5,8 +5,11 @@
     --silver: silver;
     --mediumgrey: lightgrey;
     --lightgrey: #e6e9ec;
+    /*
     --lightgrey: linear-gradient(to left top, red, orange , yellow, green, cyan, blue, violet, red);
     --lightgrey: cadetblue;
+    */
+    --lightgrey: linear-gradient(to right, var(--left), var(--right));
     --verylightgrey: #eee;
     --black: black;
     --white: white;
@@ -15,6 +18,8 @@
     --ngreen: rgb(18,227,58);
     --nblue: rgb(85,222,246);
     --back: rgb(15,95,212);
+    --left: dodgerblue;
+    --right: mediumspringgreen;
   }
 
   :root.neon {
