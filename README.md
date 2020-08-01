@@ -21,6 +21,18 @@
 - **July 14 2020** [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
 - **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.2](https://hub.docker.com/r/dosyago/browsergapce)
 
+## Things People Say They Want (but I don't necessarily believe)
+
+- I want to be able to mask my userAgent and platform (so not send the one from your regular browser, this might break some things on websites but concievably I could put this behind settings)
+- I want to be able to mask my IP (um, use a VPN? or run BG remotely from a machine with the IP you want to use, to hide the IP you connect to BG from).
+- I want to be able to open DevTools inspector (this is possible, but not sure how popular it is, it will take some plumbing)
+- I want better interactions (e.g, context menu doesn't work on iOS Safari)
+- I want it to be faster (it seems to laggy)
+- I want it to use less bandwidth (it takes so much bandwidth! *edit: actually it often saves you bandwidht, but hey, I get that it can sometimes use a lot*)
+- I want the images it sends to be better quality (*edit: it will automatically adjust image quality based on bandwidth you have avilalbe, but concievably I could make the upper limit higher, say behind a setting*)
+
+[Vote for these NOW on the Twitter Poll!](https://twitter.com/BrowserGap)
+
 ## Who uses this for free?
 
 - Private individuals for non-commercial use
