@@ -2,7 +2,6 @@ import keys from './kbd.js';
 
 
 export const FRAME_CONTROL = false;
-export const IMAGE_FORMAT = 'png';
 export const WorldName = 'PlanetZanj';
 
 const SHORT_TIMEOUT = 1000;
@@ -100,9 +99,68 @@ function translator(e, handled = {type:'case'}) {
         }
       };
     }
+    case "resample-imagery": {
+      const {down, up, averageBw} = e;
+      return {
+        command: {
+          isZombieLordCommand: true,
+          name: "Connection.resampleImagery",
+          params: {
+            averageBw, down , up
+          }
+        }
+      }
+    }
     case "control-chars": {
       return keyEvent(e);
     }
+    case "keydown":
+      if ( !e.key || ! e.code ) {
+        return;
+      } else if ( e.key == "Unidentified" || e.code == "Unidentified" ) {
+        return;
+      } else {
+        return keyEvent(e);
+      }
+    case "keyup":
+      if ( !e.key || ! e.code ) {
+        return;
+      } else if ( e.key == "Unidentified" || e.code == "Unidentified" ) {
+        return;
+      } else {
+        return keyEvent(e);
+      }
+    case "keypress": {
+      if ( e.code == "Unidentified" ) {
+        if( e.key.length ) {
+          const text = e.key;
+          return {
+            command: {
+              name: "Input.insertText",
+              params: {
+                text
+              },
+              requiresShot: true,
+              ignoreHash: true
+            }
+          }
+        } else return;
+      } else if ( e.key == "Unidentified" ) {
+        if( e.code.length ) {
+          const text = e.code;
+          return {
+            command: {
+              name: "Input.insertText",
+              params: {
+                text
+              },
+              requiresShot: true,
+              ignoreHash: true
+            }
+          }
+        } else return;
+      } else return keyEvent(e);
+    };
     case "typing": {
       //alert(JSON.stringify(e));
       if ( e.isComposing || ! e.characters ) return;

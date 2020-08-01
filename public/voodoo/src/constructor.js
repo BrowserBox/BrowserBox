@@ -9,7 +9,7 @@
   import {resetFavicon, handleFaviconMessage} from './handlers/favicon.js';
   import EventQueue from './eventQueue.js';
   import transformEvent from './transformEvent.js';
-  import {sleep, debounce, DEBUG, BLANK, isFirefox, isSafari, deviceIsMobile} from './common.js';
+  import {logit, sleep, debounce, DEBUG, BLANK, isFirefox, isSafari, deviceIsMobile} from './common.js';
   import {component, subviews} from './view.js';
 
   import installDemoPlugin from '../../plugins/demo/installPlugin.js';
@@ -57,9 +57,15 @@
       H,
 
       // bandwidth
+      messageDelay: 0,          // time it takes to receive an average, non-frame message
+      showBandwidthRate: true,
+      myBandwidth: 0,
+      serverBandwidth: 0,
       totalBytes: 0,
+      totalServerBytesThisSecond: 0,
       totalBytesThisSecond: 0,
       totalBandwidth: 0,
+      frameBandwidth: [],
 
       // demo mode
       demoMode,
@@ -186,7 +192,13 @@
         if ( meta.failed.params.type == "Document" ) {
           // we also need to make sure the failure happens at the top level document
           // rather than writing the top level document for any failure in a sub frame
-          writeDocument(`Request failed: ${meta.failed.params.errorText}`, meta.failed.frameId, meta.failed.sessionId);
+          if ( meta.failed.params.errorText && meta.failed.params.errorText.includes("ABORTED") ) {
+            // do nothing. Aborts are normal, and just mean existing document stays there. If we 
+            // overwrite that document with an aborted message, the normal function of the page
+            // will fail
+          } else {
+            writeDocument(`Request failed: ${meta.failed.params.errorText}`, meta.failed.frameId, meta.failed.sessionId);
+          }
         }
       });
       queue.addMetaListener('navigated', meta => resetLoadingIndicator(meta, state));
@@ -255,10 +267,7 @@
         const modal = {
           sessionId,
           type: 'notice',
-          /*
-          message: `The file "${filename}" is downloading to this pits of hell to be consumed in eternal damnation by stinky daemons. Send bitcoins to this address to save your file. Just kidding, bitcoin is not a valid store of value. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or deploy commercially. This open-source software is free to use for governments and not-for-profits. All data will be deleted at the end of your session. Also by daemons.`,
-          */
-          message: `The file "${filename}" is downloading a secure location and will be deleted at the end of your session. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or to deploy commercially. This open-source software is free to use for governments and not-for-profits. See the README.md for more details.`,
+          message: `The file "${filename}" is downloading to a secure location and will be deleted at the end of your session. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or to deploy commercially. This open-source software is free to use for governments and not-for-profits. See the README.md for more details.`,
           otherButton: {
             /*
             title: 'Open README.md',
@@ -454,21 +463,22 @@
         }
       }
 
-      /*function sendKey(keyEvent) {
+      function sendKey(keyEvent) {
         const {viewState} = state;
-        if ( document.activeElement !== viewState.keyinput && document.activeElement !== viewState.textarea ) {
+        if ( ! ( viewState.shouldHaveFocus || document.activeElement == viewState.omniBoxInput ) ) {
           let ev = keyEvent;
-          if ( keyEvent.key == "Tab" || keyEvent.key == "Space" ) {
-            event.preventDefault();
-            ev = cloneKeyEvent(event, true);
-          } 
-          H(ev);
+          if ( ev.key == "Tab" || ev.key == "Enter" ) {
+            // do nothing
+          } else{
+            H(ev);
+          }
         }
-      }*/
+      }
 
       function installTopLevelKeyListeners() {
-        //self.addEventListener('keydown', sendKey); 
-        //self.addEventListener('keyup', sendKey); 
+        self.addEventListener('keydown', sendKey); 
+        self.addEventListener('keypress', sendKey);
+        self.addEventListener('keyup', sendKey); 
       }
 
       function installSafariLongTapListener(el) {
@@ -589,6 +599,46 @@
             DEBUG.val > DEBUG.low && console.log(`passing through sessionless event of type ${event.type}`);
           } else return;
         }
+
+        // this code fixes a weirdness in IOS safari where space will trigger scroll
+          if ( event.code == "Space" ) {
+            if ( event.type == "keydown" ) {
+              // cancel the default action
+              event.preventDefault();
+              const nextKeyPress = cloneKeyEvent(event); 
+              const nextKeyUp = cloneKeyEvent(event); 
+              nextKeyPress.type = "keypress";
+              nextKeyUp.type = "keyup";
+              // dispatch these events
+              setTimeout(() => H(nextKeyPress), 0);
+              setTimeout(() => H(nextKeyUp), 0);
+            } else if ( event.type == "keypress" ) {
+              if ( state.viewState.shouldHaveFocus ) {
+                // perform the default action;
+                state.viewState.shouldHaveFocus.value += " ";
+              }
+            }
+          } else if ( event.code == "Unidentified" ) {
+            if ( event.key.startsWith(" ") ) {
+              if ( event.type == "keydown" ) {
+                // cancel the default action
+                event.preventDefault();
+                const nextKeyPress = cloneKeyEvent(event); 
+                const nextKeyUp = cloneKeyEvent(event); 
+                nextKeyPress.type = "keypress";
+                nextKeyUp.type = "keyup";
+                // dispatch these events
+                setTimeout(() => H(nextKeyPress), 0);
+                setTimeout(() => H(nextKeyUp), 0);
+              } else if ( event.type == "keypress" ) {
+                if ( state.viewState.shouldHaveFocus ) {
+                  // perform the default action;
+                  state.viewState.shouldHaveFocus.value += " ";
+                }
+              }
+            }
+          }
+
         const mouseEventOnPointerDevice = event.type.startsWith("mouse") && event.type !== "wheel" && !state.DoesNotSupportPointerEvents;
         const tabKeyPressForBrowserUI = event.key == "Tab" && !event.vRetargeted;
         const eventCanBeIgnored = mouseEventOnPointerDevice || tabKeyPressForBrowserUI;
@@ -643,6 +693,9 @@
             } 
           } else if ( event.type == "keydown" && event.key == "Backspace" ) {
             state.backspaceFiring = true;
+            if ( state.viewState.shouldHaveFocus ) {
+              state.viewState.shouldHaveFocus.value = "";
+            }
           } else if ( event.type == "keyup" && event.key == "Backspace" ) {
             state.backspaceFiring = false;
           } else if ( event.type == "pointerdown" || event.type == "mousedown" ) {
@@ -758,10 +811,13 @@
                   :root {
                     height: 100%;
                     background: #${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, 0)};
+                    color: navy;
+                    font-family: system-ui;
                   }
                   h2 {
-                    background: white;
-                    font-family: system-ui;
+                  }
+                  strong {
+                    padding: 0.5rem;
                   }
                 </style>
                 <h2>

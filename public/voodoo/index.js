@@ -13,7 +13,7 @@ export default function Voodoo({
   let root;
 
   if ( ! selector ) {
-    console.warn(`Did not specify a root to attach to. Assuming it's the first found from either the body tag, or the document element.`);
+    //console.warn(`Did not specify a root to attach to. Assuming it's the first found from either the body tag, or the document element.`);
     root = document.body || document.documentElement;
   } else if ( typeof selector == "string" ) {
     root = document.querySelector(selector);
@@ -25,10 +25,10 @@ export default function Voodoo({
     console.log(`Using a view frame instead of a canvas.`);
   } else {
     if ( ! image ) {
-      console.warn(`Did not specify an image to act as the screen, searching for one descending from root`);
+      //console.warn(`Did not specify an image to act as the screen, searching for one descending from root`);
       image = root.querySelector('img');
       if ( ! image ) {
-        console.warn(`No image found! Creating one...`);
+        //console.warn(`No image found! Creating one...`);
         image = new Image();
         root.appendChild(image);
       }
@@ -44,12 +44,12 @@ export default function Voodoo({
   if ( ! api ) {
     // assume the root api is same
     // but warn
-    console.warn(`Did not specify an API, assuming it's ${location}`);
+    //console.warn(`Did not specify an API, assuming it's ${location}`);
     api = location.href;
   }
 
   if ( ! translator ) {
-    console.warn(`Did not specify a translator, will send RAW Voodoo commands to API`);
+    //console.warn(`Did not specify a translator, will send RAW Voodoo commands to API`);
     translator = e => e
   }
 

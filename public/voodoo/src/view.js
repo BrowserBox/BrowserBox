@@ -82,6 +82,7 @@ export function component(state) {
           contextId: state.viewState.latestScrollContext,
           deltaY: event.shiftKey ? -0.618 : 0.618
         });
+        //event.preventDefault();
       } else if ( event.key == "Tab" ) {
         retargetTab(event);
       } else if ( event.key == "Enter" ) {
@@ -214,7 +215,7 @@ export function component(state) {
     if ( USE_INPUT_MODE ) {
       viewState.keyinput.inputmode = inputmode;
     }
-    viewState.keyinput.value = value;
+    //viewState.keyinput.value = value;
     if ( document.activeElement != viewState.keyinput ) {
       viewState.keyinput.focus({preventScroll:true});
     }
@@ -233,7 +234,7 @@ export function component(state) {
     if ( USE_INPUT_MODE ) { 
       viewState.textarea.inputmode = inputmode;
     }
-    viewState.textarea.value = value;
+    //viewState.textarea.value = value;
     if ( document.activeElement != viewState.textarea ) {
       viewState.textarea.focus({preventScroll:true});
     }

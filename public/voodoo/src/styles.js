@@ -62,7 +62,7 @@ export const dss = {
           "targets targets targets targets targets"
           "bandwidth history url url plugins-menu-button"
           "viewport viewport viewport viewport viewport";
-        grid-template-rows: auto auto 1fr;
+        grid-template-rows: auto 3rem 1fr;
         grid-template-columns: auto auto 1fr auto auto;
         height: 100%;
         width: 100%;
@@ -79,7 +79,7 @@ export const dss = {
             "url url url url"
             "viewport viewport viewport viewport"
             "bandwidth history history plugins-menu-button";
-          grid-template-rows: auto auto 1fr auto;
+          grid-template-rows: auto 3rem 1fr 3rem;
           grid-template-columns: 1fr 1fr 1fr 1fr;
         }
 
@@ -581,17 +581,16 @@ export const dss = {
   function styleBandwidthIndicator(/*el, state*/) {
     return `
       aside.bandwidth-indicator {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-        justify-content: center;
         grid-area: bandwidth;
         font-size: smaller;
         pointer-events: none;
+        width: 18ch;
+        margin: 0.25rem 0;
+        max-height: 2.5rem;
         overflow: hidden;
-        width: auto;
         color: var(--grey);
         background: transparent;
+        white-space: nowrap;
       }
 
       aside section.measure {
