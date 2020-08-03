@@ -10,7 +10,7 @@
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
 ## News
-- **August 3 2020** ***BREAKING NEWS**
+- **August 3 2020** ***BREAKING NEWS***
   - New self-hosted license prices are as follows:
     - Per seat, per year: USD$174.99
     - Government, private non-commercial individual, public journalism and non profit use: 
