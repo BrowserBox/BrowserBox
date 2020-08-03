@@ -10,6 +10,12 @@
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
 ## News
+- **August 3 2020** ***BREAKING NEWS**
+  - New self-hosted license prices are as follows:
+    - Per seat, per year: USD$174.99
+    - Government, private non-commercial individual, public journalism and non profit use: 
+      - Free (under 10,000 seats)
+      - USD$30.00 per seat per year (10,000 seats or more)
 - **July 30 2020** New marketing/signup site (cloud browser SaaS with monthly subscription coming soon!) https://browsergap.dosyago.com Check it out!
 - **July 26 2020** Merge changes from live demo into docker, npm and binaries.
 - **July 18 2020** 
