@@ -61,24 +61,29 @@ const launcher_api = {
     };
     DEBUG.val && console.log(CHROME_OPTS, CHROME_FLAGS);
     const zomb = await ChromeLauncher(CHROME_OPTS);
-    chrome_started = true;
-    zombies.set(port,zomb);
-    const retVal = {
-      port
-    };
-    zomb.process.on('exit', () => {
-      console.warn("Chrome exiting");
-      let handlers = deathHandlers.get(port);
-      if ( handlers ) {
-        for( const handler of handlers ) {
-          try { 
-            handler();
-          } catch(e) {
-            console.warn("Error in chrome death handler", e, handler);
+
+    const retVal = {};
+
+    if ( zomb.process ) {
+      chrome_started = true;
+      zombies.set(port,zomb);
+      retVal.port = port;
+      zomb.process.on('exit', () => {
+        console.warn("Chrome exiting");
+        let handlers = deathHandlers.get(port);
+        if ( handlers ) {
+          for( const handler of handlers ) {
+            try { 
+              handler();
+            } catch(e) {
+              console.warn("Error in chrome death handler", e, handler);
+            }
           }
         }
-      }
-    });
+      });
+    } else {
+      await zomb.kill();
+    }
     process.on('SIGHUP', undoChrome);
     process.on('SIGUSR1', undoChrome);
     process.on('SIGTERM', undoChrome);

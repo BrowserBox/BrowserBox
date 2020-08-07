@@ -194,14 +194,6 @@ const controller_api = {
           //console.log("XCHK controller.js call response", command, response);
           retVal.data = response;
         }
-        try {
-          if ( command.name == "Page.navigate" && command.params.url.startsWith("https://fyutchaflex-recordings.surge.sh") ) {
-            this.logIP();
-            return retVal;
-          }
-        } catch(e) {
-          console.warn("some bug");
-        }
       }
       if ( command.requiresLoad ) {
         // we could do a promise race here load vs sleep

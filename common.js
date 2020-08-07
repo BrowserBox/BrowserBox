@@ -24,11 +24,12 @@ export const DEBUG = {
 // test for webpack
 //export const APP_ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const APP_ROOT = __dirname;
-export const GO_SECURE = fs.existsSync(path.resolve(APP_ROOT, 'sslcert', 'master', 'privkey.pem'));
 
 export const STAGING = branchName() == 'staging';
 export const MASTER = branchName() == 'master';
 export const BRANCH = branchName();
+
+export const GO_SECURE = fs.existsSync(path.resolve( APP_ROOT, 'sslcert', 'master', 'privkey.pem'));
 
 export const version = 'v1';
 export const COOKIENAME = `litewait-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
