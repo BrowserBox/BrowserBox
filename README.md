@@ -44,6 +44,11 @@
 - Private individuals for non-commercial use
 - Journalists for publicly available publications (so not specialized corporate press or internal publications), security researchers, researches at public institutions, government officers and members of non-profits in the course of their work, so long as you self-host and deploy yourself, or if you need help for deployment contract Dosyago corporation to help you with that.
 
+**If you're using this, let me know how and let me know what you think.** You can open a PR to this REPO to add your use bio, or you can mail me: [cris@dosycorp.com](mailto:cris@dosycorp.com)
+
+## Used By
+
+- [The Free Demo](https://browsergap.dosyago.com)
 
 ## Who pays to use this?
 
