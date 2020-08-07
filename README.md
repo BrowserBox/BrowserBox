@@ -42,7 +42,8 @@
 ## Who uses this for free?
 
 - Private individuals for non-commercial use
-- Journalists for publicly available publications (so not specialized corporate press or internal publications), researches at public institutions, government officers and members of non-profits in the course of their work, so long as you self-host and deploy yourself, or if you need help for deployment contract Dosyago corporation to help you with that.
+- Journalists for publicly available publications (so not specialized corporate press or internal publications), security researchers, researches at public institutions, government officers and members of non-profits in the course of their work, so long as you self-host and deploy yourself, or if you need help for deployment contract Dosyago corporation to help you with that.
+
 
 ## Who pays to use this?
 
