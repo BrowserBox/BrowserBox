@@ -10,7 +10,8 @@
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
 ## News
-- **August 3 2020** ***BREAKING NEWS***
+- **August 7 2020** Pushed new releases to binaries, npm globals and docker that increase stability.
+- **August 3 2020** 
   - New self-hosted license prices are as follows:
     - Per seat, per year: USD$174.99
     - Government, private non-commercial individual, public journalism and non profit use: 
@@ -26,18 +27,6 @@
 - **July 15 2020** Run or install as global via `npx remoteview@latest` or `npm i -g remoteview@latest` (**Working!**)
 - **July 14 2020** [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
 - **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.2](https://hub.docker.com/r/dosyago/browsergapce)
-
-## Things People Say They Want (but I don't necessarily believe)
-
-- I want to be able to mask my userAgent and platform (so not send the one from your regular browser, this might break some things on websites but concievably I could put this behind settings)
-- I want to be able to mask my IP (um, use a VPN? or run BG remotely from a machine with the IP you want to use, to hide the IP you connect to BG from).
-- I want to be able to open DevTools inspector (this is possible, but not sure how popular it is, it will take some plumbing)
-- I want better interactions (e.g, context menu doesn't work on iOS Safari)
-- I want it to be faster (it seems to laggy)
-- I want it to use less bandwidth (it takes so much bandwidth! *edit: actually it often saves you bandwidht, but hey, I get that it can sometimes use a lot*)
-- I want the images it sends to be better quality (*edit: it will automatically adjust image quality based on bandwidth you have avilalbe, but concievably I could make the upper limit higher, say behind a setting*)
-
-[Vote for these NOW on the Twitter Poll!](https://twitter.com/BrowserGap/status/1289462355475087360)
 
 ## Who uses this for free?
 
