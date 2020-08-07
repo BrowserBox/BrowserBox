@@ -638,7 +638,14 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       if ( url.startsWith("file:") || isFileURL(url) ) {
         console.log("Blocking file navigation");
         return {};
+      } else if ( url.startsWith("javascript:") ) {
+        console.log("Blocking javascript protocol url");
+        return {};
+      } else if ( url.startsWith("data:text/html") ) {
+        console.log("Blocking HTML data URL");
+        return {};
       }
+
     }
     if ( command.name == "Emulation.setDeviceMetricsOverride" ) {
       Object.assign(connection.bounds, command.params);

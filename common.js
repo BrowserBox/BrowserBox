@@ -6,17 +6,17 @@ import branchName from 'current-git-branch';
 import {FRAME_CONTROL} from './public/translateVoodooCRDP.js';
 
 export const DEBUG = {
-  mode: 'prod',
+  mode: 'dev',
   goSecure: true,
   noAudio: false,
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
     whether created with createTarget or simply spawning, 
     we must use legacy shots */
-  commands: false,
+  commands: true,
   shotDebug: false,
   noShot: false,
-  dev: false,
-  val: 0,
+  dev: true,
+  val: 6,
   low: 1,
   med: 3,
   high: 5
@@ -25,11 +25,12 @@ export const DEBUG = {
 // test for webpack
 //export const APP_ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const APP_ROOT = __dirname;
-export const GO_SECURE = fs.existsSync(path.resolve(APP_ROOT, 'sslcert', 'master', 'privkey.pem'));
 
 export const STAGING = branchName() == 'staging';
 export const MASTER = branchName() == 'master';
 export const BRANCH = branchName();
+
+export const GO_SECURE = fs.existsSync(path.resolve( APP_ROOT, 'sslcert', 'master', 'privkey.pem'));
 
 export const version = 'v1';
 export const COOKIENAME = `litewait-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
