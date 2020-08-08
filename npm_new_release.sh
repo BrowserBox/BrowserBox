@@ -14,7 +14,7 @@ echo $time > RELEASE_TIME.txt
 npx webpack server.js
 chmod +x BrowserGap.js
 
-gpush patch "New npm release"
+gpush minor "New npm release"
 
 
 
