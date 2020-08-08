@@ -162,7 +162,6 @@ function translator(e, handled = {type:'case'}) {
       } else return keyEvent(e);
     };
     case "typing": {
-      //alert(JSON.stringify(e));
       if ( e.isComposing || ! e.characters ) return;
       else return {
         command: {
@@ -303,13 +302,13 @@ function translator(e, handled = {type:'case'}) {
       // only one scroll direction at a time
       if ( Math.abs(deltaY) > Math.abs(deltaX) ) {
         deltaX = 0;
-        if ( Math.abs(deltaY) > 0.412 * self.ViewportHeight ) {
-          deltaY = Math.round(2.718 * deltaY);
+        if ( Math.abs(deltaY) > 0.2 * self.ViewportHeight ) {
+          deltaY = Math.round(5.718 * deltaY);
         }
       } else {
         deltaY = 0;
-        if ( Math.abs(deltaX) > 0.412 * self.ViewportWidth ) {
-          deltaX = Math.round(2.718 * deltaX);
+        if ( Math.abs(deltaX) > 0.3 * self.ViewportWidth ) {
+          deltaX = Math.round(5.718 * deltaX);
         }
       }
       clientX = Math.round(clientX);
