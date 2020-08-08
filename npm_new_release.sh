@@ -7,7 +7,7 @@ nvm use v12.10.0
 
 description=$1
 
-gbranch npm-build
+gbranch npm-build-2
 
 echo $time > RELEASE_TIME.txt
 
