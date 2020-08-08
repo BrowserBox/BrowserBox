@@ -28,6 +28,38 @@
 - **July 14 2020** [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
 - **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.2](https://hub.docker.com/r/dosyago/browsergapce)
 
+## &lt;browser-view&gt; tag
+
+A custom element that you can use to embed a browser in your application.
+
+Usage (with api key):
+
+```html
+  <body>
+    <browser-view
+      newtabs="https://abc.xyz https://facebook.com"
+      api-key="thisIsMyAPIKeyIBought"
+    ></browser-view>
+    
+  </body>
+```
+
+## `BG.openSecurely(url: URI, options: BGOptions)`
+
+An API to open a link in a secure remote browser context. Calling the below will open a new tab.
+
+```js
+  import BG from 'browsergap';
+  
+  // ...
+  
+  BG.openSecurely(url, {apiKey});
+```
+
+If you want to see a demo of that in action, check out: [https://openwith.cloudbrowser.xyz](https://openwith.cloudbrowser.xyz)
+
+These APIs support the full package include secure document viewing. 
+
 ## Who uses this for free?
 
 - Private individuals for non-commercial use
