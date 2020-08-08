@@ -10,7 +10,11 @@
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
 ## News
-- **August 3 2020** ***BREAKING NEWS***
+- **August 8 2020** 
+  - **Happy 42nd Birthday Olivia. RIP. :heart: Love You Forever. Thank you for the great times.**
+  - Pushed new releases to binaries, npm globals and docker that increase percieved speed especially on mobile when touch scrolling. 
+- **August 7 2020** Pushed new releases to binaries, npm globals and docker that increase stability.
+- **August 3 2020** 
   - New self-hosted license prices are as follows:
     - Per seat, per year: USD$174.99
     - Government, private non-commercial individual, public journalism and non profit use: 
@@ -27,17 +31,37 @@
 - **July 14 2020** [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
 - **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.2](https://hub.docker.com/r/dosyago/browsergapce)
 
-## Things People Say They Want (but I don't necessarily believe)
+## &lt;browser-view&gt; tag
 
-- I want to be able to mask my userAgent and platform (so not send the one from your regular browser, this might break some things on websites but concievably I could put this behind settings)
-- I want to be able to mask my IP (um, use a VPN? or run BG remotely from a machine with the IP you want to use, to hide the IP you connect to BG from).
-- I want to be able to open DevTools inspector (this is possible, but not sure how popular it is, it will take some plumbing)
-- I want better interactions (e.g, context menu doesn't work on iOS Safari)
-- I want it to be faster (it seems to laggy)
-- I want it to use less bandwidth (it takes so much bandwidth! *edit: actually it often saves you bandwidht, but hey, I get that it can sometimes use a lot*)
-- I want the images it sends to be better quality (*edit: it will automatically adjust image quality based on bandwidth you have avilalbe, but concievably I could make the upper limit higher, say behind a setting*)
+A custom element that you can use to embed a browser in your application.
 
-[Vote for these NOW on the Twitter Poll!](https://twitter.com/BrowserGap/status/1289462355475087360)
+Usage (with api key):
+
+```html
+  <body>
+    <browser-view
+      newtabs="https://abc.xyz https://facebook.com"
+      api-key="thisIsMyAPIKeyIBought"
+    ></browser-view>
+    
+  </body>
+```
+
+## `BG.openSecurely(url: URI, options: BGOptions)`
+
+An API to open a link in a secure remote browser context. Calling the below will open a new tab.
+
+```js
+  import BG from 'browsergap';
+  
+  // ...
+  
+  BG.openSecurely(url, {apiKey});
+```
+
+If you want to see a demo of that in action, check out: [https://openwith.cloudbrowser.xyz](https://openwith.cloudbrowser.xyz)
+
+These APIs support the full package include secure document viewing. 
 
 ## Who uses this for free?
 
@@ -148,7 +172,7 @@ Clone this repo
 
 `git clone https://github.com/dosyago/BrowserGap.git`
 
-Then run `npm i` in the repository directory, followed by `npm test` to start on the default port.
+Then run `npm i` in the repository directory, followed by `npm start` to start on the default port.
 
 But you might like to `git fetch --all && git checkout nexe-build && git pull` to 
 be on the branch that has all the latest additions just like in the Docker image, npm globals
@@ -166,7 +190,7 @@ or Install from npm
 
 **Pre-requisites: Windows with Google chrome already instaled.**
 
-If you're on Git Bash (or Cygwin, or Mingw) you might have trouble using `npm i -g remoteview`.
+If you're on Git Bash (or Cygwin, or Mingw) you might have trouble using `npm i -g remoteview@latest`.
 
 Make sure you configure npm 
 
@@ -234,6 +258,8 @@ First set up the machine with git, and node (including nvm and npm) using the be
 If you want to speed up install and it hangs on `processing triggers for man-db` you can remove all your man pages (**WARNING**), with:
 `sudo apt-get remove -y --purge man-db`
 
+alternately, somebody reported they had luck with passing a `--force` to the apt command that seems to hang.
+
 ```sh
 sudo apt update && sudo apt -y upgrade
 sudo apt install -y curl git wget
@@ -260,6 +286,15 @@ cd BrowserGap
 npm i
 npm start
 ```
+
+If you'd like more control (over say the ports that chrome and the web app run on, you can pass those
+parameters to the `start.sh` script, which has the following signature:
+
+```sh
+./start.sh <chrome_port> <app_port> <cookie_name> <username> token2
+```
+
+*Note: the audio port is always 2 less than the app_port*
 
 ### Docker 
 
