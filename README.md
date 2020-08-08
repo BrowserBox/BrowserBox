@@ -172,7 +172,7 @@ Clone this repo
 
 `git clone https://github.com/dosyago/BrowserGap.git`
 
-Then run `npm i` in the repository directory, followed by `npm test` to start on the default port.
+Then run `npm i` in the repository directory, followed by `npm start` to start on the default port.
 
 But you might like to `git fetch --all && git checkout nexe-build && git pull` to 
 be on the branch that has all the latest additions just like in the Docker image, npm globals
@@ -190,7 +190,7 @@ or Install from npm
 
 **Pre-requisites: Windows with Google chrome already instaled.**
 
-If you're on Git Bash (or Cygwin, or Mingw) you might have trouble using `npm i -g remoteview`.
+If you're on Git Bash (or Cygwin, or Mingw) you might have trouble using `npm i -g remoteview@latest`.
 
 Make sure you configure npm 
 
@@ -258,6 +258,8 @@ First set up the machine with git, and node (including nvm and npm) using the be
 If you want to speed up install and it hangs on `processing triggers for man-db` you can remove all your man pages (**WARNING**), with:
 `sudo apt-get remove -y --purge man-db`
 
+alternately, somebody reported they had luck with passing a `--force` to the apt command that seems to hang.
+
 ```sh
 sudo apt update && sudo apt -y upgrade
 sudo apt install -y curl git wget
@@ -284,6 +286,15 @@ cd BrowserGap
 npm i
 npm start
 ```
+
+If you'd like more control (over say the ports that chrome and the web app run on, you can pass those
+parameters to the `start.sh` script, which has the following signature:
+
+```sh
+./start.sh <chrome_port> <app_port> <cookie_name> <username> token2
+```
+
+*Note: the audio port is always 2 less than the app_port*
 
 ### Docker 
 
