@@ -10,9 +10,7 @@
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
 ## News
-- **August 8 2020** 
-  - **Happy 42nd Birthday Olivia. RIP. :heart: Love You Forever. Thank you for the great times.**
-  - Pushed new releases to binaries, npm globals and docker that increase percieved speed especially on mobile when touch scrolling. 
+- **August 8 2020** Pushed new releases to binaries, npm globals and docker that increase percieved speed especially on mobile when touch scrolling. 
 - **August 7 2020** Pushed new releases to binaries, npm globals and docker that increase stability.
 - **August 3 2020** 
   - New self-hosted license prices are as follows:
