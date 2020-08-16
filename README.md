@@ -50,14 +50,14 @@ Usage (with api key):
 An API to open a link in a secure remote browser context. Calling the below will open a new tab.
 
 ```js
-  import BG from 'browsergap';
+  import BrowserGap from 'browsergap';
+ 
+  const BG = BrowserGap('<my api key>');
   
-  // ...
-  
-  BG.openSecurely(url, {apiKey});
+  BG.openSecurely(url);
 ```
 
-If you want to see a demo of that in action, check out: [https://openwith.cloudbrowser.xyz](https://openwith.cloudbrowser.xyz)
+If you want to see a demo of that in action, check out: [https://api.browsergap.dosyago.com](https://api.browsergap.dosyago.com)
 
 These APIs support the full package include secure document viewing. 
 
