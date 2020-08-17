@@ -148,8 +148,10 @@
     if ( location.search.includes(`url=`) ) {
       let taskUrl;
       try {
-        taskUrl = decodeUriComponent(location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1]);
+        taskUrl = decodeURIComponent(location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1]);
       } catch(e) {
+        alert(e);
+        console.warn(e);
         taskUrl = location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1];
       }
       postInstallTasks.push(({queue}) => {
