@@ -227,11 +227,7 @@
       // tabs
       queue.addMetaListener('created', meta => {
         if ( meta.created.type == 'page') {
-          if ( DEBUG.activateNewTab ) {
-            if ( meta.created.url == 'about:blank' || meta.created.url == '' ) {
-              state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
-            }
-          }
+          state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
           updateTabs();
           sizeBrowserToBounds(state.viewState.canvasEl, meta.created.targetId);
         }
