@@ -877,6 +877,10 @@
           state.activeTarget = activeTarget;
         }
         state.active = activeTab();
+        // this ensures we activate the tab
+        if ( state.tabs.length == 1 ) {
+          state.activeTarget = null;
+        }
         if( !state.activeTarget || !state.active) {
           if ( state.tabs.length ) {
             await activateTab(null, state.tabs[0]);
