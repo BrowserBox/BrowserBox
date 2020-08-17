@@ -169,12 +169,12 @@
                   url: taskUrl
                 });
               }, 1000);
+              setTimeout(() => location.search = "", 10000);
             }, LONG_DELAY);
             completed = true;
           }
         });
         state.createTab();
-        location.search = "";
       });
     }
 
