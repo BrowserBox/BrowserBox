@@ -303,7 +303,7 @@
           },
           title: "SecureView\u2122 Enabled",
         };
-        subviews.openModal({modal}, state);
+        //subviews.openModal({modal}, state);
       });
 
       queue.addMetaListener('secureview', ({secureview}) => {
@@ -834,6 +834,7 @@
           if ( state.active && state.active.url != BLANK ) {
             canKeysInput();
           } else {
+            /**
             writeDocument(`
               <!DOCTYPE html>
                 <style>
@@ -857,7 +858,8 @@
                 </strong>
               </html>
             `);
-            //writeDocument("Secure BrowserGap Tab.");
+            **/
+            writeCanvas("Secure BrowserGap Tab.");
             //writeDocument("Undead Tab from the Crypt of Hell. <a href=https://github.com/dosyago/BrowserGap>Spells here</a>.");
             state.viewState.omniBoxInput.focus();
           }
