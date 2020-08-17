@@ -770,14 +770,12 @@
 
       async function activateTab(click, tab) {
         click && click.preventDefault(); 
-        /**
         if ( state.activeTarget == tab.targetId ) {
           if ( state.viewState.omniBoxInput == state.viewState.lastActive ) {
             state.viewState.omniBoxInput.focus();
           }
           return;
         }
-        **/
         const {targetId} = tab;
         queue.send({
           command: {
