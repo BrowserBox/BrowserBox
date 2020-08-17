@@ -11,6 +11,7 @@ export default function setupUnloadHandler() {
         You are about to leave the browser.
         If you wanted to navigate, use the < and > buttons provided.
       `;
+      location.search = "";
     }
   });
 }
