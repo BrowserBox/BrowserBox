@@ -174,6 +174,7 @@
           }
         });
         state.createTab();
+        history.pushState("", "", "/")
       });
     }
 
