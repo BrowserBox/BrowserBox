@@ -35,7 +35,7 @@
 An API to open a link in a secure remote browser context. Calling the below will open a new tab.
 
 ```js
-  import BrowserGap from 'browsergap';
+  import BrowserGap from '@dosy/browsergapjs';
  
   const BG = BrowserGap('<my api key>');
   
@@ -44,7 +44,7 @@ An API to open a link in a secure remote browser context. Calling the below will
 
 If you want to see a demo of that in action, check out: [https://quarantines.site](https://quarantines.site)
 
-These APIs support the full package include secure document viewing. 
+These APIs support the full package include secure document viewing. [Use the SDK](https://github.com/dosyago/browsergap.js)
 
 ## Who uses this for free?
 
