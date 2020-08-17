@@ -53,25 +53,6 @@
     const {tabs,activeTarget,requestId} = await (demoMode ? fetchDemoTabs() : fetchTabs({sessionToken}));
     latestRequestId = requestId;
 
-    if ( location.search.includes(`url=`) ) {
-      const taskUrl = location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1];
-      postInstallTasks.push(({queue}) => {
-        let completed = false;
-        queue.addMetaListener('created', meta => {
-          if ( completed ) return;
-          if ( meta.created.type == 'page') {
-            setTimeout(() => activateTab(null, meta.created), LONG_DELAY);
-            queue.send({
-              type: "url-address",
-              address: taskUrl
-            });
-            completed = true;
-          }
-        });
-        state.createTab();
-      });
-    }
-
     const state = {
       H,
 
@@ -162,6 +143,27 @@
 
     if ( DEBUG.dev ) {
       Object.assign(self, {state});
+    }
+
+    if ( location.search.includes(`url=`) ) {
+      const taskUrl = location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1];
+      postInstallTasks.push(({queue}) => {
+        let completed = false;
+        queue.addMetaListener('created', meta => {
+          if ( completed ) return;
+          if ( meta.created.type == 'page') {
+            setTimeout(() => activateTab(null, meta.created), LONG_DELAY);
+            H({
+              synthetic: true,
+              type: "url-address",
+              event: null,
+              url: taskUrl
+            });
+            completed = true;
+          }
+        });
+        state.createTab();
+      });
     }
 
     const queue = new EventQueue(state, sessionToken);
