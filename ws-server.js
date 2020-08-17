@@ -75,7 +75,7 @@
         if ( token == session_token ) {
           res.cookie(COOKIENAME, allowed_user_cookie, COOKIE_OPTS);
           console.log({Url});
-          const url = `/?url=${Url}&ran=${ran||Math.random()}#${session_token}`;
+          const url = `/?url=${encodeURIComponent(Url)}&ran=${ran||Math.random()}#${session_token}`;
           res.redirect(url);
         } else {
           res.type("html");
