@@ -71,10 +71,11 @@
         app.get("/", (req,res) => res.sendFile(path.join(__dirname, 'public', 'bundle.html'))); 
       }
       app.get("/login", (req,res) => {
-        const {token,ran} = req.query; 
+        const {token,ran,url:Url} = req.query; 
         if ( token == session_token ) {
           res.cookie(COOKIENAME, allowed_user_cookie, COOKIE_OPTS);
-          const url = `/?ran=${ran||Math.random()}#${session_token}`;
+          console.log({Url});
+          const url = `/?url=${Url}&ran=${ran||Math.random()}#${session_token}`;
           res.redirect(url);
         } else {
           res.type("html");
