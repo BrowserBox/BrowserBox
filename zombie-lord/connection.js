@@ -1,4 +1,4 @@
-//import {spawn} from 'child_process';
+import {spawn} from 'child_process';
 import ws from 'ws';
 import fetch from 'node-fetch';
 import fs from 'fs';
