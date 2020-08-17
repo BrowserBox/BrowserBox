@@ -263,16 +263,12 @@
         const modal = {
           sessionId,
           type: 'notice',
-          message: `The file "${filename}" is downloading to a secure location and will be deleted at the end of your session. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or to deploy commercially. This open-source software is free to use for governments and not-for-profits. See the README.md for more details.`,
+          message: `The file "${filename}" is downloading to a secure location and will be displayed securely momentarily if it is a supported format.`
           otherButton: {
-            /*
-            title: 'Open README.md',
-            onclick: () => window.open('https://github.com/dosyago/BrowserGap/blob/master/README.md', "_blank")
-            */
-            title: 'Mail Cris',
-            onclick: () => window.open('mailto:cris@dosycorp.com?Subject=BrowserGap+License+Inquiry&body=Hi%20Cris', "_blank")
+            title: 'Get License',
+            onclick: () => window.open('mailto:cris@dosycorp.com?Subject=BrowserGap+License+Support+Inquiry&body=Hi%20Cris', "_blank")
           },
-          title: "SecureView\u2122 Not-enabled",
+          title: "SecureView\u2122 Enabled",
         };
         subviews.openModal({modal}, state);
       });
