@@ -146,19 +146,28 @@
     }
 
     if ( location.search.includes(`url=`) ) {
-      const taskUrl = location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1];
+      let taskUrl;
+      try {
+        taskUrl = decodeUriComponent(location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1]);
+      } catch(e) {
+        taskUrl = location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1];
+      }
       postInstallTasks.push(({queue}) => {
         let completed = false;
         queue.addMetaListener('created', meta => {
           if ( completed ) return;
           if ( meta.created.type == 'page') {
-            setTimeout(() => activateTab(null, meta.created), LONG_DELAY);
-            H({
-              synthetic: true,
-              type: "url-address",
-              event: null,
-              url: taskUrl
-            });
+            setTimeout(async () => {
+              await activateTab(null, meta.created)
+              setTimeout(() => {
+                H({
+                  synthetic: true,
+                  type: "url-address",
+                  event: null,
+                  url: taskUrl
+                });
+              }, 1000);
+            }, LONG_DELAY);
             completed = true;
           }
         });
