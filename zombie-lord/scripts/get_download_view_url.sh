@@ -12,6 +12,8 @@ step=0
 #groups=$(grep '^Groups' /proc/$$/status)
 #echo $groups > ./file_transfer_groups
 
+echo $username $filename $secret > ./dl.log.txt
+
 cd /home/$username/browser-downloads/
 
 while [ $step -lt $maxwaitsteps ]; do
