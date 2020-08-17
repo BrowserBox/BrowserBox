@@ -226,12 +226,10 @@
 
       // tabs
       queue.addMetaListener('created', meta => {
-        if ( DEBUG.activateNewTab ) {
-          if ( meta.created.type == 'page') {
-            state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
-            updateTabs();
-            sizeBrowserToBounds(state.viewState.canvasEl, meta.created.targetId);
-          }
+        if ( meta.created.type == 'page') {
+          state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
+          updateTabs();
+          sizeBrowserToBounds(state.viewState.canvasEl, meta.created.targetId);
         }
       });
       queue.addMetaListener('attached', meta => {
@@ -366,6 +364,9 @@
 
     if ( activeTarget ) {
       setTimeout(() => activateTab(null, {targetId:activeTarget}), LONG_DELAY);
+      state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, {targetId:activeTarget}), LONG_DELAY));
+      updateTabs();
+      sizeBrowserToBounds(state.viewState.canvasEl, activeTarget);
     }
 
     return poppetView;
@@ -879,9 +880,15 @@
         // this ensures we activate the tab
         if ( state.tabs.length == 1 ) {
           setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY);
+          state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY));
+          updateTabs();
+          sizeBrowserToBounds(state.viewState.canvasEl, state.tabs[0].targetId);
         } else if( !state.activeTarget || !state.active) {
           if ( state.tabs.length ) {
             setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY);
+            state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY));
+            updateTabs();
+            sizeBrowserToBounds(state.viewState.canvasEl, state.tabs[0].targetId);
           }
         }
         subviews.Controls(state);
