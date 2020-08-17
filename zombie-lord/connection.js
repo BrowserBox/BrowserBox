@@ -11,6 +11,7 @@ import {WorldName} from '../public/translateVoodooCRDP.js';
 import {makeCamera} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
 import {fileChoosers} from '../ws-server.js';
+import docViewerSecret from '../secrets/docViewer.js';
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
 
@@ -393,9 +394,8 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       // logging 
         DEBUG.val > DEBUG.med && console.log({downloadFileName,SECURE_VIEW_SCRIPT,username});
 
-      /**
         // This shouldn't be in the community edition
-        const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`]);
+        const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`, docViewerSecret]);
         let uri = '';
 
         // subshell collect data and send once
@@ -424,7 +424,6 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
             console.warn(`Secure View subshell exited with code ${code}`);
           }
         }
-      **/
     } else if ( message.method == "Network.requestWillBeSent" ) {
       const resource = startLoading(sessionId);
       const {requestId,frameId, request:{url}} = message.params;
