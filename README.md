@@ -57,7 +57,7 @@ An API to open a link in a secure remote browser context. Calling the below will
   BG.openSecurely(url);
 ```
 
-If you want to see a demo of that in action, check out: [https://api.browsergap.dosyago.com](https://api.browsergap.dosyago.com)
+If you want to see a demo of that in action, check out: [https://quarantines.site](https://quarantines.site)
 
 These APIs support the full package include secure document viewing. 
 
