@@ -395,6 +395,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         DEBUG.val > DEBUG.med && console.log({downloadFileName,SECURE_VIEW_SCRIPT,username});
 
         // This shouldn't be in the community edition
+        console.log({docViewerSecret});
         const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`, docViewerSecret]);
         let uri = '';
 
