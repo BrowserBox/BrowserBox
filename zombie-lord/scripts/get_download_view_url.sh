@@ -12,7 +12,7 @@ step=0
 #groups=$(grep '^Groups' /proc/$$/status)
 #echo $groups > ./file_transfer_groups
 
-echo $username $filename $secret > ./dl.log.txt
+echo $username $filename >> ../dl.log.txt
 
 cd /home/$username/browser-downloads/
 
