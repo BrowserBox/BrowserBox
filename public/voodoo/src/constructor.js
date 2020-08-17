@@ -882,6 +882,8 @@
         // this ensures we activate the tab
         if ( state.tabs.length == 1 ) {
           state.activeTarget = null;
+          alert("OK");
+          console.log("Activate", state.tabs);
           await activateTab(null, state.tabs[0]);
         }
         if( !state.activeTarget || !state.active) {
