@@ -263,7 +263,7 @@
         const modal = {
           sessionId,
           type: 'notice',
-          message: `The file "${filename}" is downloading to a secure location and will be displayed securely momentarily if it is a supported format.`
+          message: `The file "${filename}" is downloading to a secure location and will be displayed securely momentarily if it is a supported format.`,
           otherButton: {
             title: 'Get License',
             onclick: () => window.open('mailto:cris@dosycorp.com?Subject=BrowserGap+License+Support+Inquiry&body=Hi%20Cris', "_blank")
