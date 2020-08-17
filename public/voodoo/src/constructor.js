@@ -226,10 +226,12 @@
 
       // tabs
       queue.addMetaListener('created', meta => {
-        if ( meta.created.type == 'page') {
-          state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
-          updateTabs();
-          sizeBrowserToBounds(state.viewState.canvasEl, meta.created.targetId);
+        if ( DEBUG.activateNewTab ) {
+          if ( meta.created.type == 'page') {
+            state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
+            updateTabs();
+            sizeBrowserToBounds(state.viewState.canvasEl, meta.created.targetId);
+          }
         }
       });
       queue.addMetaListener('attached', meta => {
@@ -363,7 +365,7 @@
     }
 
     if ( activeTarget ) {
-      activateTab(null, {targetId:activeTarget});
+      setTimeout(() => activateTab(null, {targetId:activeTarget}), LONG_DELAY);
     }
 
     return poppetView;
@@ -876,11 +878,10 @@
         state.active = activeTab();
         // this ensures we activate the tab
         if ( state.tabs.length == 1 ) {
-          await activateTab(null, state.tabs[0]);
-        }
-        if( !state.activeTarget || !state.active) {
+          setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY);
+        } else if( !state.activeTarget || !state.active) {
           if ( state.tabs.length ) {
-            await activateTab(null, state.tabs[0]);
+            setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY);
           }
         }
         subviews.Controls(state);
