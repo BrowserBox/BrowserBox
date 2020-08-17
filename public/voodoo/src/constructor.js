@@ -313,6 +313,7 @@
       canvasBondTasks.push(indicateNoOpenTabs);
       canvasBondTasks.push(installZoomListener);
       canvasBondTasks.push(asyncSizeBrowserToBounds);
+      canvasBondTasks.push(rawUpdateTabs);
       if ( isSafari() ) {
         canvasBondTasks.push(installSafariLongTapListener);
       }
@@ -880,6 +881,7 @@
         }
         state.active = activeTab();
         // this ensures we activate the tab
+        console.log(state.tabs);
         if ( state.tabs.length == 1 ) {
           state.activeTarget = null;
           alert("OK");
