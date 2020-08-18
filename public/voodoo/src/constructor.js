@@ -156,9 +156,10 @@
       }
       postInstallTasks.push(({queue}) => {
         let completed = false;
+        state.createTab(null, "https://www.google.com");
         queue.addMetaListener('created', meta => {
           if ( completed ) return;
-          if ( meta.created.type == 'page') {
+          if ( meta.created.type == 'page' && meta.created.url.includes("google") ) {
             setTimeout(async () => {
               await activateTab(null, meta.created)
               setTimeout(() => {
@@ -173,7 +174,6 @@
             completed = true;
           }
         });
-        state.createTab();
         history.pushState("", "", "/")
       });
     }

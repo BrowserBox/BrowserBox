@@ -11,11 +11,11 @@ export const DEBUG = {
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
     whether created with createTarget or simply spawning, 
     we must use legacy shots */
-  commands: true,
+  commands: false,
   shotDebug: false,
   noShot: false,
   dev: false,
-  val: 0,
+  val: 1,
   low: 1,
   med: 3,
   high: 5
