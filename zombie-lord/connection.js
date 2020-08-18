@@ -387,6 +387,13 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       DEBUG.val && console.log({download});
       DEBUG.val && console.log({suggestedFilename});
 
+      // TODO:
+      // bisect by 
+      // 1. disable download behaviour in Page domain
+      // 2. enable it and disable various parts of below code
+      // find out which part of the code creates the 'lock up' 
+      // issue we are experiencing
+
       // notification and only do once
         connection.meta.push({download});
         connection.lastDownloadFileName = downloadFileName;
