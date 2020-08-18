@@ -304,7 +304,7 @@
           },
           title: "SecureView\u2122 Enabled",
         };
-        //subviews.openModal({modal}, state);
+        subviews.openModal({modal}, state);
       });
 
       queue.addMetaListener('secureview', ({secureview}) => {

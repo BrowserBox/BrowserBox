@@ -398,6 +398,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         console.log({docViewerSecret});
         const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`, docViewerSecret]);
         let uri = '';
+        let done = false;
 
         // subshell collect data and send once
           subshell.stderr.pipe(process.stderr);
@@ -414,6 +415,9 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
             //throw new Error( "No URI" );
           }
           //if ( connection.lastSentFileName == connection.lastDownloadFileName ) return;
+          // only do once
+          if ( done ) return;
+          done = true;
           connection.lastSentFileName = connection.lastDownloadFileName;
           if ( ! code ) {
             // trim any whitespace added by the shell echo in the script
