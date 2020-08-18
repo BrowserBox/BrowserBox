@@ -73,9 +73,15 @@
       app.get("/login", (req,res) => {
         const {token,ran,url:Url} = req.query; 
         if ( token == session_token ) {
-          res.cookie(COOKIENAME, allowed_user_cookie, COOKIE_OPTS);
+          res.cookie(COOKIENAME, allowed_user_cookie, Object.assign({
+            domain: req.get('host')
+          }, COOKIE_OPTS));
           console.log({Url});
-          const url = `/?url=${encodeURIComponent(Url)}&ran=${ran||Math.random()}#${session_token}`;
+          let url;
+          url = `/?ran=${ran||Math.random()}#${session_token}`;
+          if ( !! Url ) {
+            url = `/?url=${encodeURIComponent(Url)}&ran=${ran||Math.random()}#${session_token}`;
+          }
           res.redirect(url);
         } else {
           res.type("html");
