@@ -156,12 +156,12 @@
       }
       postInstallTasks.push(({queue}) => {
         let completed = false;
-        state.createTab(null, "https://www.google.com");
-        queue.addMetaListener('created', meta => {
+        state.createTab(null, "https://quarantines.site/redirect.html");
+        queue.addMetaListener('changed', meta => {
           if ( completed ) return;
-          if ( meta.created.type == 'page' && meta.created.url.includes("google") ) {
+          if ( meta.changed.type == 'page' && meta.changed.url.startsWith("https://quarantines.site/redirect") ) {
             setTimeout(async () => {
-              await activateTab(null, meta.created)
+              await activateTab(null, meta.changed)
               setTimeout(() => {
                 H({
                   synthetic: true,
@@ -169,8 +169,8 @@
                   event: null,
                   url: taskUrl
                 });
-              }, 1000);
-            }, LONG_DELAY);
+              }, 3000);
+            }, 1000);
             completed = true;
           }
         });
