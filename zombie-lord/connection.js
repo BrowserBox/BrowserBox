@@ -413,7 +413,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
             console.warn("No URI", downloadFileName);
             //throw new Error( "No URI" );
           }
-          if ( connection.lastSentFileName == connection.lastDownloadFileName ) return;
+          //if ( connection.lastSentFileName == connection.lastDownloadFileName ) return;
           connection.lastSentFileName = connection.lastDownloadFileName;
           if ( ! code ) {
             // trim any whitespace added by the shell echo in the script
