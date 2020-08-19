@@ -160,6 +160,7 @@
           if ( completed ) return;
           if ( meta.changed.type == 'page' && meta.changed.url.startsWith("https://isolation.site/redirect") ) {
             completed = true;
+            await sleep(500);
             await activateTab(null, meta.changed)
             await sleep(2000);
             H({
