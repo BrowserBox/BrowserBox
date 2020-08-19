@@ -454,7 +454,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
               connection.meta.push({secureview});
             } else if ( code == undefined ) {
               // do nothing
-              DEBUG.val && console.log(`No code. Probably STDOUT end event.`);
+              console.log(`No code. Probably STDOUT end event.`);
             } else {
               console.warn(`Secure View subshell exited with code ${code}`);
             }
