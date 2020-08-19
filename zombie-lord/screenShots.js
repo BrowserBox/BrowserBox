@@ -141,7 +141,10 @@ export function makeCamera(connection) {
   }
 
   async function saveShot() {
-    const F = await shot();        
+    const F = await Promise.race([
+      shot(),
+      sleep(MAX_TIME_TO_WAIT_FOR_SCREENSHOT)
+    ]);
     if ( F.img ) {
       connection.frameBuffer.push(F);
 
@@ -158,7 +161,10 @@ export function makeCamera(connection) {
   async function doShot() {
     if ( nextShot || shooting ) return;
     shooting = true;
-    await saveShot();
+    await Promise.race([
+      saveShot(),
+      sleep(MAX_TIME_TO_WAIT_FOR_SCREENSHOT)
+    ]);
     nextShot = setTimeout(() => nextShot = false, MIN_TIME_BETWEEN_SHOTS);
     shooting = false;
   }
