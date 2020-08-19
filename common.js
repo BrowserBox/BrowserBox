@@ -12,10 +12,10 @@ export const DEBUG = {
     whether created with createTarget or simply spawning, 
     we must use legacy shots */
   commands: false,
-  shotDebug: false,
+  shotDebug: true,
   noShot: false,
   dev: false,
-  val: 0,
+  val: 1,
   low: 1,
   med: 3,
   high: 5

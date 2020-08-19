@@ -504,6 +504,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
             setTimeout(() => {
               if ( someFileName == connection.lastDownloadFileName ) {
                 // this is not a failure 
+                DEBUG.val && console.log({expectDownload:someFileName});
               } else {
                 connection.meta.push({failed:message});
               }
