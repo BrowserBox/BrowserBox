@@ -154,26 +154,24 @@
         console.warn(e);
         taskUrl = location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1];
       }
-      postInstallTasks.push(({queue}) => {
+      postInstallTasks.push(async ({queue}) => {
         let completed = false;
-        state.createTab(null, "https://quarantines.site/redirect.html");
-        queue.addMetaListener('changed', meta => {
+        queue.addMetaListener('changed', async meta => {
           if ( completed ) return;
           if ( meta.changed.type == 'page' && meta.changed.url.startsWith("https://quarantines.site/redirect") ) {
-            setTimeout(async () => {
-              await activateTab(null, meta.changed)
-              setTimeout(() => {
-                H({
-                  synthetic: true,
-                  type: "url-address",
-                  event: null,
-                  url: taskUrl
-                });
-              }, 500);
-            }, LONG_DELAY);
             completed = true;
+            await activateTab(null, meta.changed)
+            await sleep(2000);
+            H({
+              synthetic: true,
+              type: "url-address",
+              event: null,
+              url: taskUrl
+            });
           }
         });
+        state.createTab(null, "https://quarantines.site/redirect.html");
+        await sleep(5000);
         history.pushState("", "", "/")
       });
     }
