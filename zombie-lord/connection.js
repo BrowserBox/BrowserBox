@@ -390,13 +390,12 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         const {params:download} = message;
         const {suggestedFilename} = download;
 
-        const downloadFileName = download.suggestedFileName || getFileFromURL(download.url);
+        const downloadFileName = suggestedFilename || getFileFromURL(download.url);
 
         download.sessionId = sessionId;
         download.filename = downloadFileName;
 
         // MARK 6
-        console.log({download});
         DEBUG.val && console.log({download});
         DEBUG.val && console.log({suggestedFilename});
 
