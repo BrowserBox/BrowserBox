@@ -451,6 +451,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
               const url  = uri.trim();
               const secureview = {url};
               DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
+              console.log("Send secure view", secureview);
               connection.meta.push({secureview});
             } else if ( code == undefined ) {
               // do nothing
