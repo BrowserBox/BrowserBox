@@ -158,7 +158,7 @@
         let completed = false;
         queue.addMetaListener('changed', async meta => {
           if ( completed ) return;
-          if ( meta.changed.type == 'page' && meta.changed.url.startsWith("https://quarantines.site/redirect") ) {
+          if ( meta.changed.type == 'page' && meta.changed.url.startsWith("https://isolation.site/redirect") ) {
             completed = true;
             await activateTab(null, meta.changed)
             await sleep(2000);
@@ -170,7 +170,7 @@
             });
           }
         });
-        state.createTab(null, "https://quarantines.site/redirect.html");
+        state.createTab(null, "https://isolation.site/redirect.html");
         await sleep(5000);
         history.pushState("", "", "/")
       });

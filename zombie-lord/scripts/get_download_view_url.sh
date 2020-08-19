@@ -1,6 +1,6 @@
 #!/bin/bash
 
-provider="https://secureview.quarantines.site/very-secure-manifest-convert"
+provider="https://secureview.isolation.site/very-secure-manifest-convert"
 username=$1
 filename=$2
 secret=$3
