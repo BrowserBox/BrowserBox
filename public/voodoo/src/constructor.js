@@ -169,8 +169,8 @@
                   event: null,
                   url: taskUrl
                 });
-              }, 3000);
-            }, 1000);
+              }, 500);
+            }, LONG_DELAY);
             completed = true;
           }
         });
