@@ -586,14 +586,14 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         enabled: true
       }, sessionId);
       //MARK 1
-      /**
+      ///**
         await send("Page.setDownloadBehavior", {
             behavior: "allow",
             downloadPath: `/home/${username}/browser-downloads/`
           },
           sessionId
         );
-      **/
+      //**/
       await send(
         "DOMSnapshot.enable", 
         {},
