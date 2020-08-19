@@ -437,7 +437,6 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
 
           async function sendURL(code) {
             //MARK 5
-            console.log({code});
             if ( ! uri ) {
               console.warn("No URI", downloadFileName);
               //throw new Error( "No URI" );
@@ -447,7 +446,6 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
               // only do once
               if ( done ) return;
               done = true;
-              console.log({done});
               connection.lastSentFileName = connection.lastDownloadFileName;
 
               // trim any whitespace added by the shell echo in the script
@@ -587,14 +585,14 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         enabled: true
       }, sessionId);
       //MARK 1
-      ///**
+      /**
         await send("Page.setDownloadBehavior", {
             behavior: "allow",
             downloadPath: `/home/${username}/browser-downloads/`
           },
           sessionId
         );
-      //**/
+      **/
       await send(
         "DOMSnapshot.enable", 
         {},
