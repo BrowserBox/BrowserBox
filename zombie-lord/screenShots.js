@@ -1,9 +1,10 @@
-import {DEBUG} from '../common.js';
+import {DEBUG, sleep} from '../common.js';
 
 const MAX_FRAMES = 3; /* 1, 2, 4 */
 const MIN_TIME_BETWEEN_SHOTS = 150; /* 20, 40, 100, 250, 500 */
 const MIN_TIME_BETWEEN_TAIL_SHOTS = 250;
 const MAX_TIME_BETWEEN_TAIL_SHOTS = 3000;
+const MAX_TIME_TO_WAIT_FOR_SHOT = 200;
 const NOIMAGE = {img: '', frame:0};
 const KEYS = [
   1, 11, 13, 629, 1229, 2046, 17912, 37953, 92194, 151840
@@ -109,7 +110,10 @@ export function makeCamera(connection) {
     //const ShotCommand = ((connection.isSafari || connection.isFirefox) ? SAFARI_SHOT : WEBP_SHOT).command;
     const ShotCommand = SAFARI_SHOT.command;
     DEBUG.shotDebug && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
-    response = await connection.sessionSend(ShotCommand);
+    response = await Promise.race([
+      connection.sessionSend(ShotCommand),
+      sleep(MAX_TIME_TO_WAIT_FOR_SCREENSHOT)
+    ]);
     lastShot = timeNow;
     response = response || {};
     const {data,screenshotData} = response;
