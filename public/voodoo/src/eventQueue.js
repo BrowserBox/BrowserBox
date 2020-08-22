@@ -225,6 +225,7 @@ class Privates {
   }
 
   async connectSocket(url, events, messageId) {
+    await sleep(500);
     if ( connecting ) {
       this.publics.queue.unshift(...events);
       return;
