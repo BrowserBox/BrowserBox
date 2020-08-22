@@ -10,6 +10,7 @@
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
 ## News
+- **August 22 2020** Added demos and API key purchases for [https://isolation.site](https://isolation.site)
 - **August 8 2020** Pushed new releases to binaries, npm globals and docker that increase percieved speed especially on mobile when touch scrolling. 
 - **August 7 2020** Pushed new releases to binaries, npm globals and docker that increase stability.
 - **August 3 2020** 
@@ -32,17 +33,17 @@
 
 ## `BG.openSecurely(url: URI)`
 
-An API to open a link in a secure remote browser context. Calling the below will open a new tab.
+An API to open a link in a secure remote browser context. Calling the below in the browser will open a new tab.
 
 ```js
-  import BrowserGap from '@dosy/browsergapjs';
+  import BrowserGap from './web_modules/@dosy/browsergapjs.js';
  
   const BG = BrowserGap('<my api key>');
   
   BG.openSecurely(url);
 ```
 
-If you want to see a demo of that in action, check out: [https://quarantines.site](https://quarantines.site)
+If you want to see a demo of that in action, check out: [https://isolation.site](https://isolation.site)
 
 These APIs support the full package include secure document viewing. [Use the SDK](https://github.com/dosyago/browsergap.js)
 
