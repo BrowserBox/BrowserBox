@@ -216,7 +216,7 @@
           : `No session detected, have you signed up yet?`;
         const error = {msg, willCloseSocket: true, hadSession};
         so(ws, {messageId:1,data:[{error}]});
-        console.log("Closing as not authorized.");
+        console.log("Closing as not authorized.", cookie, hadSession, msg);
         ws.close();
       }
 

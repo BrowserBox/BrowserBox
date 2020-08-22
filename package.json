@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "bash ./test.sh",
+    "devtest": "bash ./devtest.sh",
     "dev": "node-dev --inspect=127.0.0.1:8111 index.js",
     "start": "bash ./dstart.sh",
     "docker_start": "bash ./docker_start.sh",
