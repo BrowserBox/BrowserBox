@@ -118,13 +118,26 @@
     const wss = new WebSocket.Server({server});
 
     wss.on('connection', (ws, req) => {
+      const qp = req.url.includes('?') ? 
+        req.url.slice(req.url.indexOf('?') + 1)
+        .split('&')
+        .filter(p => p.includes("session_token"))[0]
+        .split('=')[1]
+        
+        :
+        undefined;
       const cookie = req.headers.cookie;
+      console.log({wssURL:req.url, qp});
       let closed = false;
 
       zl.act.saveIP(req.connection.remoteAddress);
       DEBUG.val && console.log({connectionIp:req.connection.remoteAddress});
-      if ( DEBUG.dev || allowed_user_cookie == 'cookie' || 
-        (cookie && cookie.includes(`${COOKIENAME+port}=${allowed_user_cookie}`)) ) {
+      const validAuth = DEBUG.dev || 
+        allowed_user_cookie == 'cookie' || 
+        (cookie && cookie.includes(`${COOKIENAME+port}=${allowed_user_cookie}`)) ||
+        (qp && qp == session_token);
+
+      if( validAuth ) {
         zl.life.onDeath(zombie_port, () => {
           console.info("Zombie/chrome closed or crashed.");
           //console.log("Closing as zombie crashed.");

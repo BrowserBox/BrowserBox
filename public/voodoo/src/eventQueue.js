@@ -166,6 +166,7 @@ class Privates {
     try {
       url = new URL(url);
       protocol = url.protocol;
+      url.search = `session_token=a${this.sessionToken}`;
       url = url + '';
     } catch(e) {
       console.warn(e, url);
