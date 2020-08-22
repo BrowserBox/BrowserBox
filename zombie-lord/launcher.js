@@ -82,6 +82,7 @@ const launcher_api = {
         }
       });
     } else {
+      console.log("Chrome did not start", zomb);
       await zomb.kill();
     }
     process.on('SIGHUP', undoChrome);
