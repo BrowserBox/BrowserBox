@@ -166,7 +166,7 @@ class Privates {
     try {
       url = new URL(url);
       protocol = url.protocol;
-      url.search = `session_token=a${this.sessionToken}`;
+      url.search = `session_token=${this.sessionToken}`;
       url = url + '';
     } catch(e) {
       console.warn(e, url);
@@ -225,7 +225,6 @@ class Privates {
   }
 
   async connectSocket(url, events, messageId) {
-    await sleep(500);
     if ( connecting ) {
       this.publics.queue.unshift(...events);
       return;
