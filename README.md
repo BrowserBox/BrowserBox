@@ -9,29 +9,11 @@
 
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
-## News
-- **August 22 2020** Added demos and API key purchases for [https://isolation.site](https://isolation.site)
-- **August 8 2020** Pushed new releases to binaries, npm globals and docker that increase percieved speed especially on mobile when touch scrolling. 
-- **August 7 2020** Pushed new releases to binaries, npm globals and docker that increase stability.
-- **August 3 2020** 
-  - New self-hosted license prices are as follows:
-    - Per seat, per year: USD$174.99
-    - Government, private non-commercial individual, public journalism and non profit use: 
-      - Free (under 10,000 seats)
-      - USD$30.00 per seat per year (10,000 seats or more)
-- **July 30 2020** New marketing/signup site (cloud browser SaaS with monthly subscription coming soon!) https://browsergap.dosyago.com Check it out!
-- **July 26 2020** Merge changes from live demo into docker, npm and binaries.
-- **July 18 2020** 
-  - New client web app bundling improves load speed of browser UI.
-  - Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
-  - New [docker builds](https://hub.docker.com/r/dosyago/browsergapce) and [releases](https://github.com/dosyago/BrowserGap/releases/latest) incorporating these changes. 
-- **July 18 2020** Bug fix on master: Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
-- **July 15 2020** Run or install as global via `npx remoteview@latest` or `npm i -g remoteview@latest` (**Working!**)
-- **July 14 2020** [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
-- **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.2](https://hub.docker.com/r/dosyago/browsergapce)
+## Licensing
 
+[Contact me directly](mailto:cris@dosycorp.com?subject=License&body=Hi%20Cris)
 
-## `BG.openSecurely(url: URI)`
+## API: `BG.openSecurely(url: URI)`
 
 An API to open a link in a secure remote browser context. Calling the below in the browser will open a new tab.
 
