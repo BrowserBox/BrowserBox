@@ -46,10 +46,6 @@ These APIs support the full package include secure document viewing. [Use the SD
 
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
-## Fee
-
-**Unlimited Seat Per Site License** *normally USD$1,898 a month*. For a limited time, only USD$1,637 a month!
-
 ## Normal Browser UI things that work
 
 - Copy and paste (paste is as normal, but for copy you need to use the right-click context menu)
