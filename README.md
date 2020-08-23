@@ -32,7 +32,7 @@ These APIs support the full package include secure document viewing. [Use the SD
 ## Who uses this for free?
 
 - Private individuals for non-commercial use
-- Journalists for publicly available publications (so not specialized corporate press or internal publications), security researchers, researches at public institutions, government officers and members of non-profits in the course of their work, so long as you self-host and deploy yourself, or if you need help for deployment contract Dosyago corporation to help you with that.
+- Journalists for publicly available publications (so not specialized corporate press or internal publications), security researchers, researchers at public institutions. 
 
 **If you're using this, let me know how and let me know what you think.** You can open a PR to this REPO to add your use bio, or you can mail me: [cris@dosycorp.com](mailto:cris@dosycorp.com)
 
@@ -42,7 +42,7 @@ These APIs support the full package include secure document viewing. [Use the SD
 
 ## Who pays to use this?
 
-- Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, or anyone non-covered by the free use exemption above.
+- Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, government employees and organizations in the course of their work and anyone non-covered by the free use exemption above.
 
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
