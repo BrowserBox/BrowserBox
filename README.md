@@ -298,7 +298,7 @@ And visit http://&lt;your ip&gt;:8002 to see it up.
 
 ## :sunglasses: Awesome
 
-Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools)? 
+Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools) or [awesome-puppeteer](https://github.com/transitive-bullshit/awesome-puppeteer)? 
 
 Take a look at the [Zombie Lord connection](https://github.com/dosycorp/browsergap.ce/blob/master/zombie-lord/connection.js) and [Translate Voodoo CRDP](https://github.com/dosycorp/browsergap.ce/blob/master/public/translateVoodooCRDP.js).
 
