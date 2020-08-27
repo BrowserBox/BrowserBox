@@ -585,6 +585,7 @@ export const dss = {
         font-size: smaller;
         pointer-events: none;
         margin: 0.25rem 0;
+        width: 18ch;
         max-height: 2.5rem;
         overflow: hidden;
         color: var(--grey);
@@ -599,6 +600,8 @@ export const dss = {
       @media screen and (max-width: 600px) {
         aside.bandwidth-indicator {
           align-items: flex-start;
+          max-width: 25vw;
+          width: auto;
         }
       }
     `;
