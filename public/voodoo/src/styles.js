@@ -584,7 +584,6 @@ export const dss = {
         grid-area: bandwidth;
         font-size: smaller;
         pointer-events: none;
-        width: 18ch;
         margin: 0.25rem 0;
         max-height: 2.5rem;
         overflow: hidden;
