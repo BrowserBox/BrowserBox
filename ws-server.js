@@ -74,7 +74,6 @@
         const {token,ran,url:Url} = req.query; 
         if ( token == session_token ) {
           res.cookie(COOKIENAME+port, allowed_user_cookie, COOKIE_OPTS);
-          console.log({Url});
           let url;
           url = `/?ran=${ran||Math.random()}#${session_token}`;
           if ( !! Url ) {
@@ -127,7 +126,6 @@
         :
         undefined;
       const cookie = req.headers.cookie;
-      console.log({wssURL:req.url, qp});
       let closed = false;
 
       zl.act.saveIP(req.connection.remoteAddress);
