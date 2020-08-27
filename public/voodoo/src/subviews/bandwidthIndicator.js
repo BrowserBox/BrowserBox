@@ -58,7 +58,7 @@ export function BandwidthIndicator(state) {
   return R`
     <aside title="Bandwidth savings" class="bandwidth-indicator" stylist="styleBandwidthIndicator">
       <section class=measure>
-        &#x1f6f0; <span>${Math.round(saved)+ss}</span>&nbsp;${
+        &#x1f4e1; <span>${Math.round(saved)+ss}</span>&nbsp;${
           state.showBandwidthRate? X`<span>(${Math.round(sr)+sm})</span>` : ''
         }
       </section>
