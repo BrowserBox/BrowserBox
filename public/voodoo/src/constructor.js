@@ -505,9 +505,11 @@
       }
 
       function installTopLevelKeyListeners() {
-        self.addEventListener('keydown', sendKey); 
-        self.addEventListener('keypress', sendKey);
-        self.addEventListener('keyup', sendKey); 
+        if ( ! deviceIsMobile() ) {
+          self.addEventListener('keydown', sendKey); 
+          self.addEventListener('keypress', sendKey);
+          self.addEventListener('keyup', sendKey); 
+        }
       }
 
       function installSafariLongTapListener(el) {
