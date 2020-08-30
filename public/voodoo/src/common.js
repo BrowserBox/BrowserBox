@@ -75,14 +75,18 @@ export function deviceIsMobile() {
 // debug logging
 export function logitKeyInputEvent(e) {
   if ( ! DEBUG.val ) return;
+  //if ( DEBUG.loggableEvents && ! DEBUG.loggableEvents.has(e.type) ) return;
   const {type,key,code,data,isComposing,inputType,composed,target:{value}} = e;
-  if ( DEBUG.loggableEvents && ! DEBUG.loggableEvents.has(type) ) return;
   const typingData = {key,code,type,data,isComposing,inputType,composed,value};
   const debugBox = document.querySelector('#debugBox');
   if ( debugBox ) {
     debugBox.insertAdjacentHTML('afterbegin', `<p style="max-width:90vw;"><code><pre>${JSON.stringify(typingData,null,2)}</code></pre></p>`);
   } else {
-    throw new Error("No element with ID 'debugBox' found.");
+    if ( deviceIsMobile() ) {
+      alert("No debugBox found");
+    } else {
+      throw new Error("No element with ID 'debugBox' found.");
+    }
   }
 }
 

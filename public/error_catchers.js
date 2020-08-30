@@ -4,8 +4,7 @@ const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera
 setupErrorCatchers();
 
 export default function setupErrorCatchers() {
-  DEBUG.dev && (self.onerror = (v) => (func()(v, extractMeat(v).message, extractMeat(v).stack, v+''), true));
-  DEBUG.dev && (self.onerror = (v) => (console.log(v), true));
+  DEBUG.dev && (self.onerror = (...v) => (func()(v, extractMeat(v).message, extractMeat(v).stack, v+''), true));
   DEBUG.dev && (self.onunhandledrejection = ({reason}) => (func()(JSON.stringify(reason,null,2)), true));
 }
 
@@ -17,8 +16,8 @@ function func() {
   if ( isMobile() ) {
     return (x) => {
       console.log(x);
-      //alert(JSON.stringify(x));
-      //throw x[0];
+      alert(JSON.stringify(x));
+      throw x[0];
     };
   } else {
     return (...x) => console.log(...x)
