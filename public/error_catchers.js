@@ -14,7 +14,7 @@ function isMobile() {
 
 function func() {
   if ( isMobile() ) {
-    return (x) => {
+    return (...x) => {
       console.log(x);
       alert(JSON.stringify(x));
       throw x[0];
