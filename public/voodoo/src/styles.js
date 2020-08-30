@@ -44,7 +44,7 @@ export const dss = {
 
       :root .debugBox,
       :root #debugBox {
-        display: ${DEBUG.val>=DEBUG.high?'block':'none'};
+        display: ${DEBUG.val?'block':'none'};
       }
 
       :root input, :root button, :root select, :root textarea, :root [contenteditable] {
