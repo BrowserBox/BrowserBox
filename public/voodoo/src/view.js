@@ -215,7 +215,7 @@ export function component(state) {
     if ( USE_INPUT_MODE ) {
       viewState.keyinput.inputmode = inputmode;
     }
-    //viewState.keyinput.value = value;
+    viewState.keyinput.value = value;
     if ( document.activeElement != viewState.keyinput ) {
       viewState.keyinput.focus({preventScroll:true});
     }

@@ -71,10 +71,14 @@
         app.get("/", (req,res) => res.sendFile(path.join(__dirname, 'public', 'bundle.html'))); 
       }
       app.get("/login", (req,res) => {
-        const {token,ran} = req.query; 
+        const {token,ran,url:Url} = req.query; 
         if ( token == session_token ) {
-          res.cookie(COOKIENAME, allowed_user_cookie, COOKIE_OPTS);
-          const url = `/?ran=${ran||Math.random()}#${session_token}`;
+          res.cookie(COOKIENAME+port, allowed_user_cookie, COOKIE_OPTS);
+          let url;
+          url = `/?ran=${ran||Math.random()}#${session_token}`;
+          if ( !! Url ) {
+            url = `/?url=${encodeURIComponent(Url)}&ran=${ran||Math.random()}#${session_token}`;
+          }
           res.redirect(url);
         } else {
           res.type("html");
@@ -113,13 +117,25 @@
     const wss = new WebSocket.Server({server});
 
     wss.on('connection', (ws, req) => {
+      const qp = req.url.includes('?') ? 
+        req.url.slice(req.url.indexOf('?') + 1)
+        .split('&')
+        .filter(p => p.includes("session_token"))[0]
+        .split('=')[1]
+        
+        :
+        undefined;
       const cookie = req.headers.cookie;
       let closed = false;
 
       zl.act.saveIP(req.connection.remoteAddress);
       DEBUG.val && console.log({connectionIp:req.connection.remoteAddress});
-      if ( DEBUG.dev || allowed_user_cookie == 'cookie' || 
-        (cookie && cookie.includes(`${COOKIENAME}=${allowed_user_cookie}`)) ) {
+      const validAuth = DEBUG.dev || 
+        allowed_user_cookie == 'cookie' || 
+        (cookie && cookie.includes(`${COOKIENAME+port}=${allowed_user_cookie}`)) ||
+        (qp && qp == session_token);
+
+      if( validAuth ) {
         zl.life.onDeath(zombie_port, () => {
           console.info("Zombie/chrome closed or crashed.");
           //console.log("Closing as zombie crashed.");
@@ -205,13 +221,13 @@
           ], frameBuffer:[], meta:[], totalBandwidth: 0});
         }, zombie_port);
       } else {
-        const hadSession = !! cookie && cookie.includes(COOKIENAME);
+        const hadSession = !! cookie && cookie.includes(COOKIENAME+port);
         const msg = hadSession ? 
           `Your session has expired. Please log back in.` 
           : `No session detected, have you signed up yet?`;
         const error = {msg, willCloseSocket: true, hadSession};
         so(ws, {messageId:1,data:[{error}]});
-        console.log("Closing as not authorized.");
+        console.log("Closing as not authorized.", cookie, hadSession, msg);
         ws.close();
       }
 
@@ -247,7 +263,7 @@
 
     function addHandlers() {
       app.get(`/api/${version}/tabs`, wrap(async (req, res) => {
-        const cookie = req.cookies[COOKIENAME];
+        const cookie = req.cookies[COOKIENAME+port];
         if ( !DEBUG.dev && allowed_user_cookie !== 'cookie' &&
           (cookie !== allowed_user_cookie) ) {
           return res.status(401).send('{"err":"forbidden"}');
@@ -275,7 +291,7 @@
         }
       }));
       app.post("/file", upload.array("files", 10), async (req,res) => {
-        const cookie = req.cookies[COOKIENAME];
+        const cookie = req.cookies[COOKIENAME+port];
         if ( !DEBUG.dev && allowed_user_cookie !== 'cookie' &&
           (cookie !== allowed_user_cookie) ) { 
           return res.status(401).send('{"err":"forbidden"}');

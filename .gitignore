@@ -1,5 +1,6 @@
 BrowserGap
 BrowserGap*
+secrets/*.js*
 typetests
 vim.exe.stackdump
 *.stackdump
