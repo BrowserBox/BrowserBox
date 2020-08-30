@@ -75,7 +75,7 @@ export function deviceIsMobile() {
 // debug logging
 export function logitKeyInputEvent(e) {
   if ( ! DEBUG.val ) return;
-  //if ( DEBUG.loggableEvents && ! DEBUG.loggableEvents.has(e.type) ) return;
+  if ( DEBUG.loggableEvents && ! DEBUG.loggableEvents.has(e.type) ) return;
   const {type,key,code,data,isComposing,inputType,composed,target:{value}} = e;
   const typingData = {key,code,type,data,isComposing,inputType,composed,value};
   const debugBox = document.querySelector('#debugBox');
