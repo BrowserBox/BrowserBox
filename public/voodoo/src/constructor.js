@@ -724,19 +724,21 @@
           } else if ( event.type == "keyup" && event.key == "Backspace" ) {
             state.backspaceFiring = false;
           } else if ( event.type == "pointerdown" || event.type == "mousedown" ) {
-            //const {timeStamp,type} = event;
-            const {latestData} = state;
-            if ( !! state.viewState.shouldHaveFocus && !! latestData && latestData.length > 1 && latestData != state.latestCommitData) {
-              state.isComposing = false;
-              const data = latestData;
-              queue.send(transformEvent({
-                synthetic: true,
-                type: 'typing', 
-                data: data,
-                event: {pointerDown:true,simulated:true}
-              }));
-              state.latestCommitData = data;
-              state.latestData = "";
+            if ( ! state.convertTypingEventsToSyncValueEvents ) {
+              //const {timeStamp,type} = event;
+              const {latestData} = state;
+              if ( !! state.viewState.shouldHaveFocus && !! latestData && latestData.length > 1 && latestData != state.latestCommitData) {
+                state.isComposing = false;
+                const data = latestData;
+                queue.send(transformEvent({
+                  synthetic: true,
+                  type: 'typing', 
+                  data: data,
+                  event: {pointerDown:true,simulated:true}
+                }));
+                state.latestCommitData = data;
+                state.latestData = "";
+              }
             }
           } else if ( event.type == "pointerup" || event.type == "mouseup" ) {
             if ( state.viewState.killNextMouseReleased ) {
