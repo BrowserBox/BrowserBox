@@ -81,7 +81,7 @@
       // for firefox because it's IME does not fire inputType
       // so we have no simple way to handle deleting content backward
       // this should be FF on MOBILE only probably so that's why it's false
-      convertTypingEventsToSyncValueEvents: isFirefox() && deviceIsMobile(),
+      convertTypingEventsToSyncValueEvents: deviceIsMobile(),
       //convertTypingEventsToSyncValueEvents: false,
 
       // for safari to detect if pointerevents work
@@ -505,6 +505,7 @@
       }
 
       function installTopLevelKeyListeners() {
+        self.addEventListener('compositionstart', e => alert(e.type));
         if ( ! deviceIsMobile() ) {
           self.addEventListener('keydown', sendKey); 
           self.addEventListener('keypress', sendKey);

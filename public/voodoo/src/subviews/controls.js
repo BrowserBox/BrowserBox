@@ -26,7 +26,7 @@ export function Controls(state) {
             keydown=${[logitKeyInputEvent,e => state.openKey = e.key, H,limitCursor,retargetTab]}
             keyup=${[logitKeyInputEvent,() => state.openKey = '', H,retargetTab]}
             focusin=${[() => clearWord(state), () => state.openKey = '']}
-            compositionstart=${[logitKeyInputEvent,startComposition]}
+            compositionstart=${[logitKeyInputEvent, startComposition]}
             compositionupdate=${[logitKeyInputEvent,updateComposition]}
             compositionend=${[logitKeyInputEvent,endComposition]}
             input=${[logitKeyInputEvent,inputText]}
