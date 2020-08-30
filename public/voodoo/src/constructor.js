@@ -695,18 +695,27 @@
           queue.send(transformedEvent);
         } else {
           if ( event.type == "keydown" && event.key == "Enter" ) {
-            // We do this to make sure we send composed input data when enter is pressed
-            // in an input field, if we do not do this, the current composition is not printed
-            if ( !! state.latestData && !! event.target.matches('input') && state.latestData.length > 1 ) {
-              queue.send(transformEvent({
-                synthetic: true,
-                type: 'typing', 
-                data: state.latestData,
-                event: {enterKey:true,simulated:true}
-              }));
-              state.latestCommitData = state.latestData;
-              state.latestData = "";
-            } 
+            // Note
+              // We do this to make sure we send composed input data when enter is pressed
+              // in an input field, if we do not do this, the current composition is not printed
+              // but only if we are not using sync mode 
+              // (otherwise we will add an unnecessary bit on the end!)
+            if ( ! state.convertTypingEventsToSyncValueEvents ) {
+              if ( 
+                    !! state.latestData && 
+                    !! event.target.matches('input') && 
+                    state.latestData.length > 1 
+                  ) {
+                queue.send(transformEvent({
+                  synthetic: true,
+                  type: 'typing', 
+                  data: state.latestData,
+                  event: {enterKey:true,simulated:true}
+                }));
+                state.latestCommitData = state.latestData;
+                state.latestData = "";
+              } 
+            }
           } else if ( event.type == "keydown" && event.key == "Backspace" ) {
             state.backspaceFiring = true;
             if ( state.viewState.shouldHaveFocus && ! state.convertTypingEventsToSyncValueEvents ) {
