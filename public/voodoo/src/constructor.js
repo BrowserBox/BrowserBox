@@ -8,7 +8,7 @@
   import {resetLoadingIndicator,showLoadingIndicator} from './handlers/loadingIndicator.js';
   import {resetFavicon, handleFaviconMessage} from './handlers/favicon.js';
   import EventQueue from './eventQueue.js';
-  import transformEvent from './transformEvent.js';
+  import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
   import {logit, sleep, debounce, DEBUG, BLANK, isFirefox, isSafari, deviceIsMobile} from './common.js';
   import {component, subviews} from './view.js';
 
@@ -19,6 +19,24 @@
   const ThrottledEvents = new Set([
     "mousemove", "pointermove", "touchmove"
   ]);
+
+  const CancelWhenSyncValue = new Set([
+    "keydown",
+    "keyup",
+    "keypress",
+    "compositionstart",
+    "compositionend",
+    "compositionupdate",
+  ]);
+
+  const EnsureCancelWhenSyncValue = e => {
+    if ( !e.type.startsWith("key") || e.target.value.length > 0 ) {
+      return true;
+    } else {
+      const id = getKeyId(e);
+      return !controlChars.has(key); 
+    }
+  };
 
   const SessionlessEvents = new Set([
     "window-bounds",
@@ -505,7 +523,6 @@
       }
 
       function installTopLevelKeyListeners() {
-        self.addEventListener('compositionstart', e => alert(e.type));
         if ( ! deviceIsMobile() ) {
           self.addEventListener('keydown', sendKey); 
           self.addEventListener('keypress', sendKey);
@@ -632,48 +649,14 @@
           } else return;
         }
 
-        // this code fixes a weirdness in IOS safari where space will trigger scroll
-          if ( event.code == "Space" ) {
-            if ( event.type == "keydown" ) {
-              // cancel the default action
-              event.preventDefault();
-              const nextKeyPress = cloneKeyEvent(event); 
-              const nextKeyUp = cloneKeyEvent(event); 
-              nextKeyPress.type = "keypress";
-              nextKeyUp.type = "keyup";
-              // dispatch these events
-              setTimeout(() => H(nextKeyPress), 0);
-              setTimeout(() => H(nextKeyUp), 0);
-            } else if ( event.type == "keypress" ) {
-              if ( state.viewState.shouldHaveFocus ) {
-                // perform the default action;
-                state.viewState.shouldHaveFocus.value += " ";
-              }
-            }
-          } else if ( event.code == "Unidentified" ) {
-            if ( event.key.startsWith(" ") ) {
-              if ( event.type == "keydown" ) {
-                // cancel the default action
-                event.preventDefault();
-                const nextKeyPress = cloneKeyEvent(event); 
-                const nextKeyUp = cloneKeyEvent(event); 
-                nextKeyPress.type = "keypress";
-                nextKeyUp.type = "keyup";
-                // dispatch these events
-                setTimeout(() => H(nextKeyPress), 0);
-                setTimeout(() => H(nextKeyUp), 0);
-              } else if ( event.type == "keypress" ) {
-                if ( state.viewState.shouldHaveFocus ) {
-                  // perform the default action;
-                  state.viewState.shouldHaveFocus.value += " ";
-                }
-              }
-            }
-          }
-
         const mouseEventOnPointerDevice = event.type.startsWith("mouse") && event.type !== "wheel" && !state.DoesNotSupportPointerEvents;
         const tabKeyPressForBrowserUI = event.key == "Tab" && !event.vRetargeted;
-        const eventCanBeIgnored = mouseEventOnPointerDevice || tabKeyPressForBrowserUI;
+        const unnecessaryIfSyncValue = (
+          state.convertTypingEventsToSyncValueEvents && 
+          CancelWhenSyncValue.has(event.type) &&
+          EnsureCancelWhenSyncValue(event)
+        );
+        const eventCanBeIgnored = mouseEventOnPointerDevice || tabKeyPressForBrowserUI || unnecessaryIfSyncValue;
         
         if ( eventCanBeIgnored ) return;
 
@@ -725,7 +708,7 @@
             } 
           } else if ( event.type == "keydown" && event.key == "Backspace" ) {
             state.backspaceFiring = true;
-            if ( state.viewState.shouldHaveFocus ) {
+            if ( state.viewState.shouldHaveFocus && ! state.convertTypingEventsToSyncValueEvents ) {
               state.viewState.shouldHaveFocus.value = "";
             }
           } else if ( event.type == "keyup" && event.key == "Backspace" ) {

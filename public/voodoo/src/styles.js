@@ -253,6 +253,7 @@ export const dss = {
       }
 
       nav {
+        position: relative;
         display: inline-flex;
         flex-basis: 2em;
         min-height: 2em;
@@ -301,7 +302,7 @@ export const dss = {
         display: flex;
       }
 
-      ${isSafari()?
+      ${isSafari() && ! DEBUG.dev?
         `nav button, nav input {
           -webkit-appearance: none;
           -moz-appearance: none;
@@ -330,20 +331,18 @@ export const dss = {
 
       nav form.kbd-input {
         position: fixed;
-        top: 5rem;
-        left: 5rem;
-        z-index: -1;
+        top: -5rem;
+        left: -15rem;
+        z-index: 999999;
       }
 
       nav form.kbd-input input,
       nav form.kbd-input textarea {
-        opacity: 0;
-        border: 0;
-
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        user-select: none;
-        -webkit-touch-callout: none;
+        color: transparent;
+        background: transparent;
+        border-color: transparent;
+        box-shadow: none;
+        pointer-events: none;
       }
     `;
   }

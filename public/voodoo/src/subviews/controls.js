@@ -20,7 +20,7 @@ export function Controls(state) {
     <nav class="controls keyinput aux" stylist="styleNavControl">
       <!--Text-->
         <form class=kbd-input submit=${e => e.preventDefault()}>
-          <input tabindex=-1 class=control name=key_input size=2
+          <input tabindex=-1 class=control name=key_input size=5
             autocomplete=off
             bond=${el => state.viewState.keyinput = el}
             keydown=${[logitKeyInputEvent,e => state.openKey = e.key, H,limitCursor,retargetTab]}
@@ -35,7 +35,7 @@ export function Controls(state) {
               inputText({type:'paste',data:e.clipboardData.getData('Text')});
             }}
             >
-          <textarea tabindex=-1 class=control name=textarea_input cols=2 rows=1
+          <textarea tabindex=-1 class=control name=textarea_input cols=5 rows=1
             autocomplete=off
             bond=${el => state.viewState.textarea = el}
             keydown=${[logitKeyInputEvent,e => state.openKey = e.key, H,limitCursor,retargetTab]}
@@ -90,71 +90,143 @@ export function Controls(state) {
 
   function inputText(e) {
     let data = e.data || "";
-    if ( state.openKey == data ) return;
-    if ( commitChange(e, state) ) {
-      state.isComposing = false;
+    if ( state.convertTypingEventsToSyncValueEvents ) {
       H({
         synthetic: true,
         type: 'typing',
         event: e,
         data: data 
       });
-      state.latestCommitData = data;
-      state.hasCommitted = true;
-      state.latestData = "";
-    } else if ( e.inputType == 'deleteContentBackward' ) {
-      if ( ! state.backspaceFiring ) {
+    } else {
+      if ( state.openKey == data ) return;
+      if ( commitChange(e, state) ) {
+        state.isComposing = false;
         H({
-          type: "keydown",
-          key: "Backspace"
+          synthetic: true,
+          type: 'typing',
+          event: e,
+          data: data 
         });
-        H({
-          type: "keyup",
-          key: "Backspace"
-        });
-        if ( state.viewState.shouldHaveFocus ) {
-          state.viewState.shouldHaveFocus.value = "";
+        state.latestCommitData = data;
+        state.hasCommitted = true;
+        state.latestData = "";
+      } else if ( e.inputType == 'deleteContentBackward' ) {
+        if ( ! state.backspaceFiring ) {
+          H({
+            type: "keydown",
+            key: "Backspace"
+          });
+          H({
+            type: "keyup",
+            key: "Backspace"
+          });
+          if ( state.viewState.shouldHaveFocus ) {
+            state.viewState.shouldHaveFocus.value = "";
+          }
+          /**
+          H({
+            synthetic: true,
+            type: 'typing-deleteContentBackward',
+            event: e,
+            contextId: state.contextIdOfFocusedInput,
+            valueToDelete: state.latestCommitData,
+          });
+          **/
         }
-        /**
+        state.latestData = "";
+      } else if ( e.inputType == 'insertReplacementText' ) {
+        if ( ! state.backspaceFiring ) {
+          H({
+            type: "keydown",
+            key: "Backspace"
+          });
+          H({
+            type: "keyup",
+            key: "Backspace"
+          });
+          if ( state.viewState.shouldHaveFocus ) {
+            state.viewState.shouldHaveFocus.value = "";
+          }
+          /**
+          H({
+            synthetic: true,
+            type: 'typing-deleteContentBackward',
+            event: e,
+            contextId: state.contextIdOfFocusedInput,
+            valueToDelete: state.latestCommitData,
+          });
+          **/
+        }
+        state.latestData = "";
         H({
           synthetic: true,
           type: 'typing-deleteContentBackward',
           event: e,
           contextId: state.contextIdOfFocusedInput,
-          valueToDelete: state.latestCommitData,
+          valueToDelete: state.currentWord,
         });
-        **/
+        H({
+          synthetic: true,
+          type: 'typing',
+          event: e,
+          data: e.data
+        });
+        state.latestData = "";
+        clearWord(state);
+        state.latestCommitData = e.data;
+        state.hasCommitted = true;
+      } else if ( e.type == 'paste' ) {
+        if ( ! state.backspaceFiring ) {
+          H({
+            type: "keydown",
+            key: "Backspace"
+          });
+          H({
+            type: "keyup",
+            key: "Backspace"
+          });
+          if ( state.viewState.shouldHaveFocus ) {
+            state.viewState.shouldHaveFocus.value = "";
+          }
+          /**
+          H({
+            synthetic: true,
+            type: 'typing-deleteContentBackward',
+            event: e,
+            contextId: state.contextIdOfFocusedInput,
+            valueToDelete: state.latestCommitData,
+          });
+          **/
+        }
+        state.latestData = "";
+        H({
+          synthetic: true,
+          type: 'typing-deleteContentBackward',
+          event: e,
+          contextId: state.contextIdOfFocusedInput,
+          valueToDelete: state.currentWord,
+        });
+        H({
+          synthetic: true,
+          type: 'typing',
+          event: e,
+          data: e.data
+        });
+        state.latestData = "";
+        clearWord(state);
+        state.latestCommitData = e.data;
+        state.hasCommitted = true;
+        state.isComposing = false;
+        H({
+          synthetic: true,
+          type: 'typing',
+          event: e,
+          data: data 
+        });
+        state.latestCommitData = data;
+        state.hasCommitted = true;
+        state.latestData = "";
       }
-      state.latestData = "";
-    } else if ( e.inputType == 'insertReplacementText' ) {
-      H({
-        synthetic: true,
-        type: 'typing-deleteContentBackward',
-        event: e,
-        contextId: state.contextIdOfFocusedInput,
-        valueToDelete: state.currentWord,
-      });
-      H({
-        synthetic: true,
-        type: 'typing',
-        event: e,
-        data: e.data
-      });
-      state.latestData = "";
-      clearWord(state);
-      state.latestCommitData = e.data;
-      state.hasCommitted = true;
-    } else if ( e.type == 'paste' ) {
-      state.isComposing = false;
-      H({
-        synthetic: true,
-        type: 'typing',
-        event: e,
-        data: data 
-      });
-      state.latestCommitData = data;
-      state.hasCommitted = true;
-      state.latestData = "";
     }
   }
 
