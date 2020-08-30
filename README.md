@@ -262,7 +262,7 @@ parameters to the `start.sh` script, which has the following signature:
 You can pull an existing image from docker hub (already [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce))
 
 ```sh
-docker pull dosyago/browsergapce:2.2
+docker pull dosyago/browsergapce:2.4
 ```
 
 And then run it 
