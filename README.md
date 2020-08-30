@@ -1,11 +1,8 @@
 # :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
 
-- Live stream the browser remotely.
 - Embed a browser in another web application to integrate user flows.
-- Perform remote browser isolation for security and automation.
-- Run your browsers anywhere and connect to them from anywhera.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
-- Connect to Chrome headless with a Browser User Interface
+- Connect to Chrome headless with a Browser View
 
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
