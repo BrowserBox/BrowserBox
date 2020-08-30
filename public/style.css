@@ -49,7 +49,7 @@
 
 /* debug box styles */
   .debugBox, #debugBox {
-    max-height: 5rem;
+    height: 5rem;
     overflow-y: scroll;
     background: lime;
     color: black;
