@@ -17,8 +17,8 @@ export const DEBUG = {
   delayUnload: true,
   neonMode: false,
   resetCache: false,
-  dev: false,
-  val: 0,
+  dev: true,
+  val: 1,
   low: 1,
   med: 3,
   high: 5
