@@ -10,6 +10,16 @@ export const isSafari = () => SafariPlatform.test(navigator.userAgent);
 export const BLANK = "about:blank";
 
 export const DEBUG = {
+  loggableEvents: new Set([
+    'keydown',
+    'keypress',
+    'keyup',
+    'compositionstart',
+    'compositionupdate',
+    'compositionend',
+    'input',
+    'beforeinput'
+  ]),
   activateNewTab: false,
   frameControl: FRAME_CONTROL,
   pluginsMenu: false,
@@ -66,6 +76,7 @@ export function deviceIsMobile() {
 export function logitKeyInputEvent(e) {
   if ( ! DEBUG.val ) return;
   const {type,key,code,data,isComposing,inputType,composed,target:{value}} = e;
+  if ( DEBUG.loggableEvents && ! DEBUG.loggableEvents.has(type) ) return;
   const typingData = {key,code,type,data,isComposing,inputType,composed,value};
   const debugBox = document.querySelector('#debugBox');
   if ( debugBox ) {
