@@ -14,7 +14,7 @@ export const DEBUG = {
   commands: false,
   shotDebug: false,
   noShot: false,
-  dev: false,
+  dev: true,
   val: 0,
   low: 1,
   med: 3,
