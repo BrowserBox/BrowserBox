@@ -42,9 +42,10 @@ export default function transformEvent(e) {
         
         let encodedValue;
         
-        if ( value) {
+        if ( value != null && value != undefined ) {
           encodedValue = btoa(unescape(encodeURIComponent(value)));
         }
+
         Object.assign(transformedEvent, {
           encodedValue,
           value,

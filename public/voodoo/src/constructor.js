@@ -34,7 +34,7 @@
       return true;
     } else {
       const id = getKeyId(e);
-      return !controlChars.has(key); 
+      return !controlChars.has(id); 
     }
   };
 
@@ -684,6 +684,7 @@
         }
 
         const isThrottled = ThrottledEvents.has(event.type);
+
         const transformedEvent = transformEvent(event);
 
         if ( mouseWheel ) {
