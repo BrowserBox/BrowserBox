@@ -30,7 +30,7 @@
   ]);
 
   const EnsureCancelWhenSyncValue = e => {
-    if ( !e.type.startsWith("key") || e.target.value.length > 0 ) {
+    if ( !e.type.startsWith("key") || e.target.value.length > 1 ) {
       return true;
     } else {
       const id = getKeyId(e);
