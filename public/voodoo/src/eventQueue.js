@@ -166,9 +166,12 @@ class Privates {
     try {
       url = new URL(url);
       protocol = url.protocol;
+      // OK WTF
+      url.search = `session_token=${this.sessionToken}`;
       url = url + '';
     } catch(e) {
-      console.warn(e, url);
+      alert("WTF " + url);
+      console.warn(e, url, this);
     }
     if ( ! this.publics.state.demoMode ) {
       if ( protocol == 'ws:' || protocol == 'wss:' ) {

@@ -1,4 +1,4 @@
-//import {spawn} from 'child_process';
+import {spawn} from 'child_process';
 import ws from 'ws';
 import fetch from 'node-fetch';
 import fs from 'fs';
@@ -11,6 +11,7 @@ import {WorldName} from '../public/translateVoodooCRDP.js';
 import {makeCamera} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
 import {fileChoosers} from '../ws-server.js';
+import docViewerSecret from '../secrets/docViewer.js';
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
 
@@ -160,6 +161,15 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
     flatten:true, 
     windowOpen:true
   });
+
+  //UPGRADE for future
+  //Page.setDownloadBehavior is deprecated
+  /**
+  await send("Browser.setDownloadBehavior", {
+    behavior: "allow",
+    downloadPath: `/home/${username}/browser-downloads/`
+  });
+  **/
 
   on("Target.targetCreated", async ({targetInfo}) => {
     const {targetId} = targetInfo;
@@ -375,56 +385,83 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
 
       connection.meta.push({fileChooser});
     } else if ( message.method == "Page.downloadWillBegin" ) {
-      const {params:download} = message;
-      const {suggestedFilename} = download;
+      // MARK 3
+      ///**
+        const {params:download} = message;
+        const {suggestedFilename} = download;
 
-      const downloadFileName = getFileFromURL(download.url);
+        const downloadFileName = suggestedFilename || getFileFromURL(download.url);
 
-      download.sessionId = sessionId;
-      download.filename = downloadFileName;
+        download.sessionId = sessionId;
+        download.filename = downloadFileName;
 
-      DEBUG.val && console.log({download});
-      DEBUG.val && console.log({suggestedFilename});
+        // MARK 6
+        DEBUG.val && console.log({download});
+        DEBUG.val && console.log({suggestedFilename});
 
-      // notification and only do once
-        connection.meta.push({download});
-        connection.lastDownloadFileName = downloadFileName;
+        // TODO:
+        // bisect by 
+        // 1. disable download behaviour in Page domain
+        // 2. enable it and disable various parts of below code
+        // find out which part of the code creates the 'lock up' 
+        // issue we are experiencing
 
-      // logging 
-        DEBUG.val > DEBUG.med && console.log({downloadFileName,SECURE_VIEW_SCRIPT,username});
+        // notification
+          connection.meta.push({download});
+          connection.lastDownloadFileName = downloadFileName;
 
-      /**
-        // This shouldn't be in the community edition
-        const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`]);
-        let uri = '';
+        // do only once
+        if ( connection.lastDownloadGUID == download.guid ) return;
+        connection.lastDownloadGUID = download.guid;
 
-        // subshell collect data and send once
-          subshell.stderr.pipe(process.stderr);
-          subshell.stdout.on('data', data => {
-            uri += data;
-          });
-          subshell.stdout.on('end', sendURL);
-          subshell.on('close', sendURL);
-          subshell.on('exit', sendURL);
+        // logging 
+          DEBUG.val > DEBUG.med && console.log({downloadFileName,SECURE_VIEW_SCRIPT,username});
 
-        async function sendURL(code) {
-          if ( ! uri ) {
-            console.warn("No URI", downloadFileName);
-            //throw new Error( "No URI" );
+        // MARK 4 
+        ///**
+          // This shouldn't be in the community edition
+          console.log({docViewerSecret});
+          const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`, docViewerSecret]);
+          let uri = '';
+          let done = false;
+
+          // subshell collect data and send once
+            subshell.stderr.pipe(process.stderr);
+            subshell.stdout.on('data', data => {
+              uri += data;
+            });
+            subshell.stdout.on('end', sendURL);
+            subshell.on('close', sendURL);
+            subshell.on('exit', sendURL);
+
+          async function sendURL(code) {
+            //MARK 5
+            if ( ! uri ) {
+              console.warn("No URI", downloadFileName);
+              //throw new Error( "No URI" );
+            }
+
+            if ( code == 0 ) {
+              // only do once
+              if ( done ) return;
+              done = true;
+              connection.lastSentFileName = connection.lastDownloadFileName;
+
+              // trim any whitespace added by the shell echo in the script
+              const url  = uri.trim();
+              const secureview = {url};
+              DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
+              console.log("Send secure view", secureview);
+              connection.meta.push({secureview});
+            } else if ( code == undefined ) {
+              // do nothing
+              console.log(`No code. Probably STDOUT end event.`);
+            } else {
+              console.warn(`Secure View subshell exited with code ${code}`);
+            }
           }
-          if ( connection.lastSentFileName == connection.lastDownloadFileName ) return;
-          connection.lastSentFileName = connection.lastDownloadFileName;
-          if ( ! code ) {
-            // trim any whitespace added by the shell echo in the script
-            const url  = uri.trim();
-            const secureview = {url};
-            DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
-            connection.meta.push({secureview});
-          } else {
-            console.warn(`Secure View subshell exited with code ${code}`);
-          }
-        }
-      **/
+        //**/
+      //**/
     } else if ( message.method == "Network.requestWillBeSent" ) {
       const resource = startLoading(sessionId);
       const {requestId,frameId, request:{url}} = message.params;
@@ -467,6 +504,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
             setTimeout(() => {
               if ( someFileName == connection.lastDownloadFileName ) {
                 // this is not a failure 
+                DEBUG.val && console.log({expectDownload:someFileName});
               } else {
                 connection.meta.push({failed:message});
               }
@@ -547,12 +585,15 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       await send("Page.setInterceptFileChooserDialog", {
         enabled: true
       }, sessionId);
-      await send("Page.setDownloadBehavior", {
-          behavior: "allow",
-          downloadPath: `/home/${username}/browser-downloads/`
-        },
-        sessionId
-      );
+      //MARK 1
+      ///**
+        await send("Page.setDownloadBehavior", {
+            behavior: "allow",
+            downloadPath: `/home/${username}/browser-downloads/`
+          },
+          sessionId
+        );
+      //**/
       await send(
         "DOMSnapshot.enable", 
         {},
@@ -945,5 +986,8 @@ function getFileFromURL(url) {
     DEBUG.val > DEBUG.med && console.warn({url, nodes, fileNameError: Error(`URL cannot be parsed to get filename`)});
     return `download${Date.now()}`;
   }
-  return unescape(lastNode);
+  const name = unescape(lastNode);
+  // MARK 2
+  console.log({name});
+  return name;
 }

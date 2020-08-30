@@ -175,8 +175,7 @@ function translator(e, handled = {type:'case'}) {
       }
     }
     case "typing-syncValue": {
-      if ( ! e.encodedValue ) return;
-      else return {
+      return {
         command: {
           name: "Runtime.evaluate",
           params: {

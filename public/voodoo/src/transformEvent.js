@@ -1,5 +1,6 @@
 import {DEBUG, logit} from './common.js';
 
+export const getKeyId = event => event.key && event.key.length > 1 ? event.key : event.code;
 export const controlChars = new Set([
   "Enter", "Backspace", "Control", "Shift", "Alt", "Meta", "Space", "Delete",
   "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Tab"
@@ -41,9 +42,10 @@ export default function transformEvent(e) {
         
         let encodedValue;
         
-        if ( value) {
+        if ( value != null && value != undefined ) {
           encodedValue = btoa(unescape(encodeURIComponent(value)));
         }
+
         Object.assign(transformedEvent, {
           encodedValue,
           value,
@@ -175,7 +177,7 @@ export default function transformEvent(e) {
       case "keypress":
       case "keydown":
       case "keyup": {
-        const id = event.key && event.key.length > 1 ? event.key : event.code;
+        const id = getKeyId(event);
         if ( controlChars.has(id) ) {
           event.type == "keypress" && event.preventDefault && event.preventDefault();
           transformedEvent.synthetic = true;

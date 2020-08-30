@@ -8,7 +8,7 @@
   import {resetLoadingIndicator,showLoadingIndicator} from './handlers/loadingIndicator.js';
   import {resetFavicon, handleFaviconMessage} from './handlers/favicon.js';
   import EventQueue from './eventQueue.js';
-  import transformEvent from './transformEvent.js';
+  import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
   import {logit, sleep, debounce, DEBUG, BLANK, isFirefox, isSafari, deviceIsMobile} from './common.js';
   import {component, subviews} from './view.js';
 
@@ -19,6 +19,24 @@
   const ThrottledEvents = new Set([
     "mousemove", "pointermove", "touchmove"
   ]);
+
+  const CancelWhenSyncValue = new Set([
+    "keydown",
+    "keyup",
+    "keypress",
+    "compositionstart",
+    "compositionend",
+    "compositionupdate",
+  ]);
+
+  const EnsureCancelWhenSyncValue = e => {
+    if ( !e.type.startsWith("key") ) {
+      return true;
+    } else {
+      const id = getKeyId(e);
+      return !controlChars.has(id); 
+    }
+  };
 
   const SessionlessEvents = new Set([
     "window-bounds",
@@ -81,7 +99,7 @@
       // for firefox because it's IME does not fire inputType
       // so we have no simple way to handle deleting content backward
       // this should be FF on MOBILE only probably so that's why it's false
-      convertTypingEventsToSyncValueEvents: isFirefox() && deviceIsMobile(),
+      convertTypingEventsToSyncValueEvents: deviceIsMobile(),
       //convertTypingEventsToSyncValueEvents: false,
 
       // for safari to detect if pointerevents work
@@ -143,6 +161,38 @@
 
     if ( DEBUG.dev ) {
       Object.assign(self, {state});
+    }
+
+    if ( location.search.includes(`url=`) ) {
+      let taskUrl;
+      try {
+        taskUrl = decodeURIComponent(location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1]);
+      } catch(e) {
+        alert(e);
+        console.warn(e);
+        taskUrl = location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1];
+      }
+      postInstallTasks.push(async ({queue}) => {
+        let completed = false;
+        queue.addMetaListener('changed', async meta => {
+          if ( completed ) return;
+          if ( meta.changed.type == 'page' && meta.changed.url.startsWith("https://isolation.site/redirect") ) {
+            completed = true;
+            await sleep(500);
+            await activateTab(null, meta.changed)
+            await sleep(2000);
+            H({
+              synthetic: true,
+              type: "url-address",
+              event: null,
+              url: taskUrl
+            });
+          }
+        });
+        state.createTab(null, "https://isolation.site/redirect.html");
+        await sleep(5000);
+        history.pushState("", "", "/")
+      });
     }
 
     const queue = new EventQueue(state, sessionToken);
@@ -227,13 +277,10 @@
       // tabs
       queue.addMetaListener('created', meta => {
         if ( meta.created.type == 'page') {
-          if ( DEBUG.activateNewTab ) {
-            if ( meta.created.url == 'about:blank' || meta.created.url == '' ) {
-              state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
-            }
-          }
-          updateTabs();
-          sizeBrowserToBounds(state.viewState.canvasEl, meta.created.targetId);
+          setTimeout(() => activateTab(null, meta.created), LONG_DELAY);
+          //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
+          //updateTabs();
+          //sizeBrowserToBounds(state.viewState.canvasEl, meta.created.targetId);
         }
       });
       queue.addMetaListener('attached', meta => {
@@ -267,16 +314,12 @@
         const modal = {
           sessionId,
           type: 'notice',
-          message: `The file "${filename}" is downloading to a secure location and will be deleted at the end of your session. Contact cris@dosyrcorp.com for a license to use a secure file viewer, or to deploy commercially. This open-source software is free to use for governments and not-for-profits. See the README.md for more details.`,
+          message: `The file "${filename}" is downloading to a secure location and will be displayed securely momentarily if it is a supported format.`,
           otherButton: {
-            /*
-            title: 'Open README.md',
-            onclick: () => window.open('https://github.com/dosyago/BrowserGap/blob/master/README.md', "_blank")
-            */
-            title: 'Mail Cris',
-            onclick: () => window.open('mailto:cris@dosycorp.com?Subject=BrowserGap+License+Inquiry&body=Hi%20Cris', "_blank")
+            title: 'Get License',
+            onclick: () => window.open('mailto:cris@dosycorp.com?Subject=BrowserGap+License+Support+Inquiry&body=Hi%20Cris', "_blank")
           },
-          title: "SecureView\u2122 Not-enabled",
+          title: "SecureView\u2122 Enabled",
         };
         subviews.openModal({modal}, state);
       });
@@ -317,6 +360,7 @@
       canvasBondTasks.push(indicateNoOpenTabs);
       canvasBondTasks.push(installZoomListener);
       canvasBondTasks.push(asyncSizeBrowserToBounds);
+      canvasBondTasks.push(rawUpdateTabs);
       if ( isSafari() ) {
         canvasBondTasks.push(installSafariLongTapListener);
       }
@@ -370,7 +414,10 @@
     }
 
     if ( activeTarget ) {
-      activateTab(null, {targetId:activeTarget});
+      setTimeout(() => activateTab(null, {targetId:activeTarget}), LONG_DELAY);
+      //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, {targetId:activeTarget}), LONG_DELAY));
+      //updateTabs();
+      //sizeBrowserToBounds(state.viewState.canvasEl, activeTarget);
     }
 
     return poppetView;
@@ -476,9 +523,11 @@
       }
 
       function installTopLevelKeyListeners() {
-        self.addEventListener('keydown', sendKey); 
-        self.addEventListener('keypress', sendKey);
-        self.addEventListener('keyup', sendKey); 
+        if ( ! deviceIsMobile() ) {
+          self.addEventListener('keydown', sendKey); 
+          self.addEventListener('keypress', sendKey);
+          self.addEventListener('keyup', sendKey); 
+        }
       }
 
       function installSafariLongTapListener(el) {
@@ -600,48 +649,14 @@
           } else return;
         }
 
-        // this code fixes a weirdness in IOS safari where space will trigger scroll
-          if ( event.code == "Space" ) {
-            if ( event.type == "keydown" ) {
-              // cancel the default action
-              event.preventDefault();
-              const nextKeyPress = cloneKeyEvent(event); 
-              const nextKeyUp = cloneKeyEvent(event); 
-              nextKeyPress.type = "keypress";
-              nextKeyUp.type = "keyup";
-              // dispatch these events
-              setTimeout(() => H(nextKeyPress), 0);
-              setTimeout(() => H(nextKeyUp), 0);
-            } else if ( event.type == "keypress" ) {
-              if ( state.viewState.shouldHaveFocus ) {
-                // perform the default action;
-                state.viewState.shouldHaveFocus.value += " ";
-              }
-            }
-          } else if ( event.code == "Unidentified" ) {
-            if ( event.key.startsWith(" ") ) {
-              if ( event.type == "keydown" ) {
-                // cancel the default action
-                event.preventDefault();
-                const nextKeyPress = cloneKeyEvent(event); 
-                const nextKeyUp = cloneKeyEvent(event); 
-                nextKeyPress.type = "keypress";
-                nextKeyUp.type = "keyup";
-                // dispatch these events
-                setTimeout(() => H(nextKeyPress), 0);
-                setTimeout(() => H(nextKeyUp), 0);
-              } else if ( event.type == "keypress" ) {
-                if ( state.viewState.shouldHaveFocus ) {
-                  // perform the default action;
-                  state.viewState.shouldHaveFocus.value += " ";
-                }
-              }
-            }
-          }
-
         const mouseEventOnPointerDevice = event.type.startsWith("mouse") && event.type !== "wheel" && !state.DoesNotSupportPointerEvents;
         const tabKeyPressForBrowserUI = event.key == "Tab" && !event.vRetargeted;
-        const eventCanBeIgnored = mouseEventOnPointerDevice || tabKeyPressForBrowserUI;
+        const unnecessaryIfSyncValue = (
+          state.convertTypingEventsToSyncValueEvents && 
+          CancelWhenSyncValue.has(event.type) &&
+          EnsureCancelWhenSyncValue(event)
+        );
+        const eventCanBeIgnored = mouseEventOnPointerDevice || tabKeyPressForBrowserUI || unnecessaryIfSyncValue;
         
         if ( eventCanBeIgnored ) return;
 
@@ -669,6 +684,7 @@
         }
 
         const isThrottled = ThrottledEvents.has(event.type);
+
         const transformedEvent = transformEvent(event);
 
         if ( mouseWheel ) {
@@ -679,39 +695,50 @@
           queue.send(transformedEvent);
         } else {
           if ( event.type == "keydown" && event.key == "Enter" ) {
-            // We do this to make sure we send composed input data when enter is pressed
-            // in an input field, if we do not do this, the current composition is not printed
-            if ( !! state.latestData && !! event.target.matches('input') && state.latestData.length > 1 ) {
-              queue.send(transformEvent({
-                synthetic: true,
-                type: 'typing', 
-                data: state.latestData,
-                event: {enterKey:true,simulated:true}
-              }));
-              state.latestCommitData = state.latestData;
-              state.latestData = "";
-            } 
+            // Note
+              // We do this to make sure we send composed input data when enter is pressed
+              // in an input field, if we do not do this, the current composition is not printed
+              // but only if we are not using sync mode 
+              // (otherwise we will add an unnecessary bit on the end!)
+            if ( ! state.convertTypingEventsToSyncValueEvents ) {
+              if ( 
+                    !! state.latestData && 
+                    !! event.target.matches('input') && 
+                    state.latestData.length > 1 
+                  ) {
+                queue.send(transformEvent({
+                  synthetic: true,
+                  type: 'typing', 
+                  data: state.latestData,
+                  event: {enterKey:true,simulated:true}
+                }));
+                state.latestCommitData = state.latestData;
+                state.latestData = "";
+              } 
+            }
           } else if ( event.type == "keydown" && event.key == "Backspace" ) {
             state.backspaceFiring = true;
-            if ( state.viewState.shouldHaveFocus ) {
+            if ( state.viewState.shouldHaveFocus && ! state.convertTypingEventsToSyncValueEvents ) {
               state.viewState.shouldHaveFocus.value = "";
             }
           } else if ( event.type == "keyup" && event.key == "Backspace" ) {
             state.backspaceFiring = false;
           } else if ( event.type == "pointerdown" || event.type == "mousedown" ) {
-            //const {timeStamp,type} = event;
-            const {latestData} = state;
-            if ( !! state.viewState.shouldHaveFocus && !! latestData && latestData.length > 1 && latestData != state.latestCommitData) {
-              state.isComposing = false;
-              const data = latestData;
-              queue.send(transformEvent({
-                synthetic: true,
-                type: 'typing', 
-                data: data,
-                event: {pointerDown:true,simulated:true}
-              }));
-              state.latestCommitData = data;
-              state.latestData = "";
+            if ( ! state.convertTypingEventsToSyncValueEvents ) {
+              //const {timeStamp,type} = event;
+              const {latestData} = state;
+              if ( !! state.viewState.shouldHaveFocus && !! latestData && latestData.length > 1 && latestData != state.latestCommitData) {
+                state.isComposing = false;
+                const data = latestData;
+                queue.send(transformEvent({
+                  synthetic: true,
+                  type: 'typing', 
+                  data: data,
+                  event: {pointerDown:true,simulated:true}
+                }));
+                state.latestCommitData = data;
+                state.latestData = "";
+              }
             }
           } else if ( event.type == "pointerup" || event.type == "mouseup" ) {
             if ( state.viewState.killNextMouseReleased ) {
@@ -805,6 +832,7 @@
           if ( state.active && state.active.url != BLANK ) {
             canKeysInput();
           } else {
+            /**
             writeDocument(`
               <!DOCTYPE html>
                 <style>
@@ -828,7 +856,8 @@
                 </strong>
               </html>
             `);
-            //writeDocument("Secure BrowserGap Tab.");
+            **/
+            writeCanvas("Secure BrowserGap Tab.");
             //writeDocument("Undead Tab from the Crypt of Hell. <a href=https://github.com/dosyago/BrowserGap>Spells here</a>.");
             state.viewState.omniBoxInput.focus();
           }
@@ -881,9 +910,18 @@
           state.activeTarget = activeTarget;
         }
         state.active = activeTab();
-        if( !state.activeTarget || !state.active) {
+        // this ensures we activate the tab
+        if ( state.tabs.length == 1 ) {
+          setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY);
+          //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY));
+          //updateTabs();
+          //sizeBrowserToBounds(state.viewState.canvasEl, state.tabs[0].targetId);
+        } else if( !state.activeTarget || !state.active) {
           if ( state.tabs.length ) {
-            await activateTab(null, state.tabs[0]);
+            setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY);
+            //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY));
+            //updateTabs();
+            //sizeBrowserToBounds(state.viewState.canvasEl, state.tabs[0].targetId);
           }
         }
         subviews.Controls(state);

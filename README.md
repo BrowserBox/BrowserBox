@@ -1,72 +1,35 @@
 # :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
 
-- Live stream the browser remotely.
 - Embed a browser in another web application to integrate user flows.
-- Perform remote browser isolation for security and automation.
-- Run your browsers anywhere and connect to them from anywhera.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
-- Connect to Chrome headless with a Browser User Interface
+- Connect to Chrome headless with a Browser View
 
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
-## News
-- **August 8 2020** 
-  - **Happy 42nd Birthday Olivia. RIP. :heart: Love You Forever. Thank you for the great times.**
-  - Pushed new releases to binaries, npm globals and docker that increase percieved speed especially on mobile when touch scrolling. 
-- **August 7 2020** Pushed new releases to binaries, npm globals and docker that increase stability.
-- **August 3 2020** 
-  - New self-hosted license prices are as follows:
-    - Per seat, per year: USD$174.99
-    - Government, private non-commercial individual, public journalism and non profit use: 
-      - Free (under 10,000 seats)
-      - USD$30.00 per seat per year (10,000 seats or more)
-- **July 30 2020** New marketing/signup site (cloud browser SaaS with monthly subscription coming soon!) https://browsergap.dosyago.com Check it out!
-- **July 26 2020** Merge changes from live demo into docker, npm and binaries.
-- **July 18 2020** 
-  - New client web app bundling improves load speed of browser UI.
-  - Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
-  - New [docker builds](https://hub.docker.com/r/dosyago/browsergapce) and [releases](https://github.com/dosyago/BrowserGap/releases/latest) incorporating these changes. 
-- **July 18 2020** Bug fix on master: Remove UI icons from .gitignore because they're no longer added on install, but instead are always in the repo.
-- **July 15 2020** Run or install as global via `npx remoteview@latest` or `npm i -g remoteview@latest` (**Working!**)
-- **July 14 2020** [New Binary releases!](https://github.com/dosyago/BrowserGap/releases/latest). Binaries now come with default args. Platforms available: Mac, Win, and Nix.
-- **July 13 2020** New Docker Hub image with latest changes: [dosyago/browsergapce:2.2](https://hub.docker.com/r/dosyago/browsergapce)
+## Licensing
 
-## &lt;browser-view&gt; tag
+[Contact me directly](mailto:cris@dosycorp.com?subject=License&body=Hi%20Cris)
 
-A custom element that you can use to embed a browser in your application.
+## API: `BG.openSecurely(url: URI)`
 
-Usage (with api key):
-
-```html
-  <body>
-    <browser-view
-      newtabs="https://abc.xyz https://facebook.com"
-      api-key="thisIsMyAPIKeyIBought"
-    ></browser-view>
-    
-  </body>
-```
-
-## `BG.openSecurely(url: URI, options: BGOptions)`
-
-An API to open a link in a secure remote browser context. Calling the below will open a new tab.
+An API to open a link in a secure remote browser context. Calling the below in the browser will open a new tab.
 
 ```js
-  import BG from 'browsergap';
+  import BrowserGap from './web_modules/@dosy/browsergapjs.js';
+ 
+  const BG = BrowserGap('<my api key>');
   
-  // ...
-  
-  BG.openSecurely(url, {apiKey});
+  BG.openSecurely(url);
 ```
 
-If you want to see a demo of that in action, check out: [https://openwith.cloudbrowser.xyz](https://openwith.cloudbrowser.xyz)
+If you want to see a demo of that in action, check out: [https://isolation.site](https://isolation.site)
 
-These APIs support the full package include secure document viewing. 
+These APIs support the full package include secure document viewing. [Use the SDK](https://github.com/dosyago/browsergap.js)
 
 ## Who uses this for free?
 
 - Private individuals for non-commercial use
-- Journalists for publicly available publications (so not specialized corporate press or internal publications), security researchers, researches at public institutions, government officers and members of non-profits in the course of their work, so long as you self-host and deploy yourself, or if you need help for deployment contract Dosyago corporation to help you with that.
+- Journalists for publicly available publications (so not specialized corporate press or internal publications), security researchers, researchers at public institutions. 
 
 **If you're using this, let me know how and let me know what you think.** You can open a PR to this REPO to add your use bio, or you can mail me: [cris@dosycorp.com](mailto:cris@dosycorp.com)
 
@@ -76,13 +39,9 @@ These APIs support the full package include secure document viewing.
 
 ## Who pays to use this?
 
-- Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, or anyone non-covered by the free use exemption above.
+- Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, government employees and organizations in the course of their work and anyone non-covered by the free use exemption above.
 
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
-
-## Fee
-
-**Unlimited Seat Per Site License** *normally USD$1,898 a month*. For a limited time, only USD$1,637 a month!
 
 ## Normal Browser UI things that work
 
@@ -336,7 +295,7 @@ And visit http://&lt;your ip&gt;:8002 to see it up.
 
 ## :sunglasses: Awesome
 
-Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools)? 
+Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools) or [awesome-puppeteer](https://github.com/transitive-bullshit/awesome-puppeteer)? 
 
 Take a look at the [Zombie Lord connection](https://github.com/dosycorp/browsergap.ce/blob/master/zombie-lord/connection.js) and [Translate Voodoo CRDP](https://github.com/dosycorp/browsergap.ce/blob/master/public/translateVoodooCRDP.js).
 
