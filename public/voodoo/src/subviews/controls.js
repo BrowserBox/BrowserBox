@@ -176,53 +176,14 @@ export function Controls(state) {
         state.latestCommitData = e.data;
         state.hasCommitted = true;
       } else if ( e.type == 'paste' ) {
-        if ( ! state.backspaceFiring ) {
-          H({
-            type: "keydown",
-            key: "Backspace"
-          });
-          H({
-            type: "keyup",
-            key: "Backspace"
-          });
-          if ( state.viewState.shouldHaveFocus ) {
-            state.viewState.shouldHaveFocus.value = "";
-          }
-          /**
-          H({
-            synthetic: true,
-            type: 'typing-deleteContentBackward',
-            event: e,
-            contextId: state.contextIdOfFocusedInput,
-            valueToDelete: state.latestCommitData,
-          });
-          **/
-        }
-        state.latestData = "";
-        H({
-          synthetic: true,
-          type: 'typing-deleteContentBackward',
-          event: e,
-          contextId: state.contextIdOfFocusedInput,
-          valueToDelete: state.currentWord,
-        });
         H({
           synthetic: true,
           type: 'typing',
           event: e,
-          data: e.data
+          data: data
         });
         state.latestData = "";
         clearWord(state);
-        state.latestCommitData = e.data;
-        state.hasCommitted = true;
-        state.isComposing = false;
-        H({
-          synthetic: true,
-          type: 'typing',
-          event: e,
-          data: data 
-        });
         state.latestCommitData = data;
         state.hasCommitted = true;
         state.latestData = "";
