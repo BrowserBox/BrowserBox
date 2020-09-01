@@ -4,7 +4,7 @@
 
 - Embed a browser in another web application to integrate user flows.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
-- Connect to Chrome headless with a Browser View
+- Protect your network from [Browser Zero-day exploits](https://www.radsix.com/dashboard1/)
 
 [More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
