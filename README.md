@@ -1,10 +1,10 @@
-# :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
+# :satellite: [BrowserGrip](https://github.com/dosyago/BrowserGrip) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
 
 ## Free self hosted
 
 **A totally free (even for commercial use) and open source remote browser isolation product.**
 
-[Get the latest binary release](https://github.com/dosyago/BrowserGap/releases)
+[Get the latest binary release](https://github.com/dosyago/BrowserGrip/releases)
 
 - Embed a browser in another web application to integrate user flows.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
@@ -17,9 +17,9 @@
 An API to open a link in a secure remote browser context. Calling the below in the browser will open a new tab.
 
 ```js
-  import BrowserGap from './web_modules/@dosy/browsergapjs.js';
+  import BrowserGrip from './web_modules/@dosy/browsergapjs.js';
  
-  const BG = BrowserGap('<my api key>');
+  const BG = BrowserGrip('<my api key>');
   
   BG.openSecurely(url);
 ```
@@ -65,7 +65,7 @@ These APIs support the full package include secure document viewing. [Use the SD
 - Control the resource usage of a pool of remote browsers, collectively and individually.
 - Adaptively resamples images based on the bandwidth you have available on your connection, to maintain responsiveness and use the best image quality your bandwidth permits
 
-## Some ways people are using BrowserGap
+## Some ways people are using BrowserGrip
 
 - To embed other applications in their own web app to unite separate user flows, and overcome iframe restrictions.
 - As a browser proxy to enable secure browsing on locked down internal networks
