@@ -2,7 +2,7 @@
 
 ## Free self hosted
 
-**A totally free (even for commercial use) and open source remote browser isolation product.**
+**A totally free (even for commercial use), MIT licensed and open source remote browser isolation product.**
 
 [Get the latest binary release](https://github.com/dosyago/BrowserGrip/releases)
 
