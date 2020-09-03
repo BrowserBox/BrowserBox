@@ -1,18 +1,18 @@
 # :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
 
+## Free self hosted
+
+**A totally free (even for commercial use) and open source remote browser isolation product.**
+
 [Get the latest binary release](https://github.com/dosyago/BrowserGap/releases)
 
 - Embed a browser in another web application to integrate user flows.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
 - Protect your network from [Browser Zero-day exploits](https://www.radsix.com/dashboard1/)
 
-[More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
+[More info at on fully managed versions https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
-## Licensing
-
-[Contact me directly](mailto:cris@dosycorp.com?subject=License&body=Hi%20Cris)
-
-## API: `BG.openSecurely(url: URI)`
+## Managed API: `BG.openSecurely(url: URI)`
 
 An API to open a link in a secure remote browser context. Calling the below in the browser will open a new tab.
 
@@ -28,22 +28,9 @@ If you want to see a demo of that in action, check out: [https://isolation.site]
 
 These APIs support the full package include secure document viewing. [Use the SDK](https://github.com/dosyago/browsergap.js)
 
-## Who uses this for free?
-
-- Private individuals for non-commercial use
-- Journalists for publicly available publications (so not specialized corporate press or internal publications), security researchers, researchers at public institutions. 
-
-**If you're using this, let me know how and let me know what you think.** You can open a PR to this REPO to add your use bio, or you can mail me: [cris@dosycorp.com](mailto:cris@dosycorp.com)
-
-## Used By
+## Try it out
 
 - [The Free Demo](https://browsergap.dosyago.com)
-
-## Who pays to use this?
-
-- Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, government employees and organizations in the course of their work and anyone non-covered by the free use exemption above.
-
-[More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
 ## Normal Browser UI things that work
 
@@ -106,26 +93,6 @@ If you're like to deploy this in your org, or for a for-profit project, write me
 ## localhost:8002
 
 By default (unless you provide command line arguments) it runs on port 8002.
-
-## Why this over Solution X?
-
-Sure, other companies might have bigger brands and bigger sales budgets, but this is open-source. You can vet the code, in the open, and so can anyone. You know there's nothing hidden inside. Plus, future updates have all the benefit of open-source software. 
-
-There's a lot of competition out there, BrowserGap art more lovely and more temperate. Here's a selection of the most notable:
-
-- [WEBGAP INC.](https://webgap.io/index.html) Fully hosted and managed solution. Aiming to cover the nexus of "low cost, widespread use", starting at just 5USD a head. I have not evaluated it, and there's no demo and no source code. But the website is beautiful! And it's [seed funded by a Royal Highness in the Al-Saud family](https://www.crunchbase.com/organization/webgap#section-investors) :sunglasses: how cool! Co-founder [Guise Bule](https://www.linkedin.com/in/guisebule), a tech-marketing veteran based stateside who describes himself as having "built some of the world's first remote browser platforms" at the NNSA, [blogs profusely](https://medium.com/secjuice/a-quick-guide-to-the-remote-browser-isolation-space-and-its-vendors-4c0e220e696a) about RBI and has recently joined the ranks of some regional Security and tech "think tanks", including Singapore's [ITSEC](https://www.itsec.asia/) and Silicon Valley Bank's Brains Trust.
-- [McAfee nee Light Point Security](https://www.mcafee.com/blogs/enterprise/why-light-point-security-is-joining-the-mcafee-team/), the veterna cybersecurity incumbent acquired Light Point, a nascent (but also long-lived) RBI startup in 2020, which was founded around 2012 by ex-members of the US [Intelligence Community, Beau Adkins](https://www.linkedin.com/in/beauadkins/) and [Zuly Gonzalez](https://www.linkedin.com/in/zulygonzalez/). Again, there's no source-code and no demo and I have not evaluated the software, though it seems it is a highly user-focused web application, that is described in their PR copy as a clientless pure HTML/JavaScript RBI solution. The founders of the Maryland-based startup [surely know](https://www.prnewswire.com/news-releases/light-point-security-reveals-most-flexible-browser-isolation-platform-with-the-release-of-its-clientless-version-300797260.html) [what they are talking about.](https://twitter.com/zulygonz?lang=en)
-- [Isoolate](https://www.isoolate.com/) founded by Turkish [ex military-tech contractors](https://www.linkedin.com/in/muratdemirten), is headquartered in the United States, and staffed with around 10 people around the world ([including New Zealand!](https://www.linkedin.com/in/aycan-firatli-19b9a939/)), develops a Chrome Extension (and possibly other software) that assists the client choose whether they want to access a page locally, or remotely, aiming to provide a seamless and highly-configurable experience. 
-
-The main advantages of BrowserGap over any of these are:
-
-- Free (for non-commercial or governmental use when self-hosted) and open-source. You can pay for install, or maintenance, or a managed cloud service (bring your own cloud, also OK!).
-- Fully clientless (runs in your browser, nothing to download, but also available as download if you want to run locally easily).
-- Not hiding anything. You can use the software now, and see how it works. No need for us to grant you lengthy demos to evaluate. You can try it yourself whenever you like. 
-
-## Can I use this for Use Case Y, or Domain Z?
-
-Probably. If you can think of it, you can probably do it.
 
 ## Get and self-host
 
@@ -198,19 +165,9 @@ BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a b
 
 Inquire about demos: cris@dosycorp.com
 
-## Secure Cloud Based Internet Isolation Version for organizations
+## Secure Cloud Based Internet Isolation
 
 [Read more here](remote-browser-isolation.md)
-
-## License And other Details
-
-Formerly *BrowserGap Community Edition*. Currently called BrowserGap, and lets you interactively live-stream a remote browser.
-
-This work is released under an OSS license, and is &copy; [Cris Stringfellow](https://github.com/cris691/Portfolio). All my own work. 
-
-For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=BrowserGap&body=Hey%20Cris%2C%0D%0A)
-
-**Around 30,000 source lines of code** (see stats folder)
 
 ### Set up using a blank machine (running Linux)
 
