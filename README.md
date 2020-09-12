@@ -65,7 +65,7 @@ These APIs support the full package include secure document viewing. [Use the SD
 - Control the resource usage of a pool of remote browsers, collectively and individually.
 - Adaptively resamples images based on the bandwidth you have available on your connection, to maintain responsiveness and use the best image quality your bandwidth permits
 
-## Some ways people are using BrowserGrip
+## Some ways people are using OuterShell
 
 - To embed other applications in their own web app to unite separate user flows, and overcome iframe restrictions.
 - As a browser proxy to enable secure browsing on locked down internal networks
@@ -80,7 +80,7 @@ This is a feature-complete, clientless, remote browser isolation product, in HTM
 
 With BrowserGap, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
 
-![Animated GIF of BrowserGap in action](https://j.gifs.com/E8yzLv.gif)
+![Animated GIF of OuterShell in action](https://j.gifs.com/E8yzLv.gif)
 
 **You see that? :point_up: That's a browser running in your browser. All those tabs and UI, that's all BrowserGap. It's sending you pixels from a remote browser, running anywhere.**
 
@@ -155,7 +155,7 @@ For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=B
 
 [Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k).
 
-BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a browser. It also looks and works just like a browser, but it runs in your browser and controls another browser.
+OuterShell is a HTML/CSS/JavaScript "outer shell" for a browser. It also looks and works just like a browser, but it runs in your browser and controls another browser.
 
 ![browser in a browser](readme-files/tenor.gif)
 
