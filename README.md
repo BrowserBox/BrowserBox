@@ -1,8 +1,8 @@
 # [⚛️ OuterShell](https://github.com/dosyago/OuterShell) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
 
-## Free self hosted
+## License 
 
-**A totally free (even for commercial use), MIT licensed and open source remote browser isolation product.**
+To purchase a license for use contact cris@dosycorp.com and see https://browsergap.dosyago.com for options.
 
 [Get the latest binary release](https://github.com/dosyago/OuterShell/releases)
 
