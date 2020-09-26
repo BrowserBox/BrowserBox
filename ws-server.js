@@ -83,9 +83,9 @@
         } else {
           res.type("html");
           if ( session_token == 'token2' ) {
-            res.end(`Incorrect token ${token}/token2. <a href=/login?token=token2>Try again.</a>`);
+            res.end(`Incorrect token, not token2. <a href=/login?token=token2>Try again.</a>`);
           } else {
-            res.end(`Incorrect token "${token}". <a href=https://${req.hostname}/>Try again.</a>`);
+            res.end(`Incorrect token. <a href=https://${req.hostname}/>Try again.</a>`);
           }
         }
       }); 
