@@ -9,6 +9,9 @@
   import path from 'path';
   import bodyParser from 'body-parser';
   import cookieParser from 'cookie-parser';
+  import helmet from 'helmet';
+  import rateLimit from 'express-rate-limit';
+  import csrf from 'csurf';
   import {pluginsDemoPage} from './public/plugins/demo/page.js';
   import zl from './zombie-lord/api.js';
   import {start_mode} from './args.js';
@@ -42,6 +45,13 @@
     funcs: []
   };
 
+  // rate limiter
+
+  const RateLimiter = rateLimit({
+    windowMs: 1000 * 60 * 3,
+    max: 50
+  });
+
   let messageQueueRunning = false;
 
   let browserTargetId;
@@ -59,9 +69,39 @@
 
     let latestMessageId = 0;
 
+    app.use(helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          imgSrc: [
+            "'self'",
+            "data:"
+          ],
+          mediaSrc: [
+            "'self'",
+            "https://isolation.site:*",
+            "https://demo.browsergap.dosyago.com:*"
+          ],
+          styleSrc: [
+            "'self'", 
+            "'unsafe-inline'"
+          ],
+          scriptSrc: [
+            "'self'", 
+            "'unsafe-eval'",
+            "'sha256-ktnwD9kIpbxpOmbTg7NUsKRlpicCv8bryYhIbiRDFaQ='",
+          ],
+          objectSrc: ["'none'"],
+          upgradeInsecureRequests: [],
+        },
+        reportOnly: false,  
+      }
+    }));
+    app.use(RateLimiter);
     app.use(bodyParser.urlencoded({extended:true}));
     app.use(bodyParser.json());
     app.use(cookieParser());
+    app.use(csrf({cookie:true}));
     if ( start_mode == "signup" ) {
       app.get("/", (req,res) => res.sendFile(path.join(__dirname, 'public', 'index.html'))); 
     } else {
@@ -83,9 +123,9 @@
         } else {
           res.type("html");
           if ( session_token == 'token2' ) {
-            res.end(`Incorrect token ${token}/token2. <a href=/login?token=token2>Try again.</a>`);
+            res.end(`Incorrect token, not token2. <a href=/login?token=token2>Try again.</a>`);
           } else {
-            res.end(`Incorrect token "${token}". <a href=https://${req.hostname}/>Try again.</a>`);
+            res.end(`Incorrect token. <a href=https://${req.hostname}/>Try again.</a>`);
           }
         }
       }); 

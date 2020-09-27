@@ -1,23 +1,25 @@
-# :satellite: [BrowserGap](https://github.com/dosyago/BrowserGap) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
+# [⚛️ OuterShell](https://github.com/dosyago/OuterShell) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
+
+## License 
+
+To purchase a license for use contact cris@dosycorp.com and see https://browsergap.dosyago.com for options.
+
+[Get the latest binary release](https://github.com/dosyago/OuterShell/releases)
 
 - Embed a browser in another web application to integrate user flows.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
-- Connect to Chrome headless with a Browser View
+- Protect your network from [Browser Zero-day exploits](https://www.radsix.com/dashboard1/)
 
-[More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
+[More info at on fully managed versions https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
-## Licensing
-
-[Contact me directly](mailto:cris@dosycorp.com?subject=License&body=Hi%20Cris)
-
-## API: `BG.openSecurely(url: URI)`
+## Managed API: `BG.openSecurely(url: URI)`
 
 An API to open a link in a secure remote browser context. Calling the below in the browser will open a new tab.
 
 ```js
-  import BrowserGap from './web_modules/@dosy/browsergapjs.js';
+  import BrowserGrip from './web_modules/@dosy/browsergapjs.js';
  
-  const BG = BrowserGap('<my api key>');
+  const BG = BrowserGrip('<my api key>');
   
   BG.openSecurely(url);
 ```
@@ -26,22 +28,9 @@ If you want to see a demo of that in action, check out: [https://isolation.site]
 
 These APIs support the full package include secure document viewing. [Use the SDK](https://github.com/dosyago/browsergap.js)
 
-## Who uses this for free?
-
-- Private individuals for non-commercial use
-- Journalists for publicly available publications (so not specialized corporate press or internal publications), security researchers, researchers at public institutions. 
-
-**If you're using this, let me know how and let me know what you think.** You can open a PR to this REPO to add your use bio, or you can mail me: [cris@dosycorp.com](mailto:cris@dosycorp.com)
-
-## Used By
+## Try it out
 
 - [The Free Demo](https://browsergap.dosyago.com)
-
-## Who pays to use this?
-
-- Anyone who deploys this for use in a for-profit environment, as part of any project intended to make money, government employees and organizations in the course of their work and anyone non-covered by the free use exemption above.
-
-[More info at https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
 ## Normal Browser UI things that work
 
@@ -76,7 +65,7 @@ These APIs support the full package include secure document viewing. [Use the SD
 - Control the resource usage of a pool of remote browsers, collectively and individually.
 - Adaptively resamples images based on the bandwidth you have available on your connection, to maintain responsiveness and use the best image quality your bandwidth permits
 
-## Some ways people are using BrowserGap
+## Some ways people are using OuterShell
 
 - To embed other applications in their own web app to unite separate user flows, and overcome iframe restrictions.
 - As a browser proxy to enable secure browsing on locked down internal networks
@@ -91,7 +80,7 @@ This is a feature-complete, clientless, remote browser isolation product, in HTM
 
 With BrowserGap, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
 
-![Animated GIF of BrowserGap in action](https://j.gifs.com/E8yzLv.gif)
+![Animated GIF of OuterShell in action](https://j.gifs.com/E8yzLv.gif)
 
 **You see that? :point_up: That's a browser running in your browser. All those tabs and UI, that's all BrowserGap. It's sending you pixels from a remote browser, running anywhere.**
 
@@ -104,26 +93,6 @@ If you're like to deploy this in your org, or for a for-profit project, write me
 ## localhost:8002
 
 By default (unless you provide command line arguments) it runs on port 8002.
-
-## Why this over Solution X?
-
-Sure, other companies might have bigger brands and bigger sales budgets, but this is open-source. You can vet the code, in the open, and so can anyone. You know there's nothing hidden inside. Plus, future updates have all the benefit of open-source software. 
-
-There's a lot of competition out there, BrowserGap art more lovely and more temperate. Here's a selection of the most notable:
-
-- [WEBGAP INC.](https://webgap.io/index.html) Fully hosted and managed solution. Aiming to cover the nexus of "low cost, widespread use", starting at just 5USD a head. I have not evaluated it, and there's no demo and no source code. But the website is beautiful! And it's [seed funded by a Royal Highness in the Al-Saud family](https://www.crunchbase.com/organization/webgap#section-investors) :sunglasses: how cool! Co-founder [Guise Bule](https://www.linkedin.com/in/guisebule), a tech-marketing veteran based stateside who describes himself as having "built some of the world's first remote browser platforms" at the NNSA, [blogs profusely](https://medium.com/secjuice/a-quick-guide-to-the-remote-browser-isolation-space-and-its-vendors-4c0e220e696a) about RBI and has recently joined the ranks of some regional Security and tech "think tanks", including Singapore's [ITSEC](https://www.itsec.asia/) and Silicon Valley Bank's Brains Trust.
-- [McAfee nee Light Point Security](https://www.mcafee.com/blogs/enterprise/why-light-point-security-is-joining-the-mcafee-team/), the veterna cybersecurity incumbent acquired Light Point, a nascent (but also long-lived) RBI startup in 2020, which was founded around 2012 by ex-members of the US [Intelligence Community, Beau Adkins](https://www.linkedin.com/in/beauadkins/) and [Zuly Gonzalez](https://www.linkedin.com/in/zulygonzalez/). Again, there's no source-code and no demo and I have not evaluated the software, though it seems it is a highly user-focused web application, that is described in their PR copy as a clientless pure HTML/JavaScript RBI solution. The founders of the Maryland-based startup [surely know](https://www.prnewswire.com/news-releases/light-point-security-reveals-most-flexible-browser-isolation-platform-with-the-release-of-its-clientless-version-300797260.html) [what they are talking about.](https://twitter.com/zulygonz?lang=en)
-- [Isoolate](https://www.isoolate.com/) founded by Turkish [ex military-tech contractors](https://www.linkedin.com/in/muratdemirten), is headquartered in the United States, and staffed with around 10 people around the world ([including New Zealand!](https://www.linkedin.com/in/aycan-firatli-19b9a939/)), develops a Chrome Extension (and possibly other software) that assists the client choose whether they want to access a page locally, or remotely, aiming to provide a seamless and highly-configurable experience. 
-
-The main advantages of BrowserGap over any of these are:
-
-- Free (for non-commercial or governmental use when self-hosted) and open-source. You can pay for install, or maintenance, or a managed cloud service (bring your own cloud, also OK!).
-- Fully clientless (runs in your browser, nothing to download, but also available as download if you want to run locally easily).
-- Not hiding anything. You can use the software now, and see how it works. No need for us to grant you lengthy demos to evaluate. You can try it yourself whenever you like. 
-
-## Can I use this for Use Case Y, or Domain Z?
-
-Probably. If you can think of it, you can probably do it.
 
 ## Get and self-host
 
@@ -186,7 +155,7 @@ For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=B
 
 [Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k).
 
-BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a browser. It also looks and works just like a browser, but it runs in your browser and controls another browser.
+OuterShell is a HTML/CSS/JavaScript "outer shell" for a browser. It also looks and works just like a browser, but it runs in your browser and controls another browser.
 
 ![browser in a browser](readme-files/tenor.gif)
 
@@ -196,19 +165,9 @@ BrowserGap is a HTML/CSS/JavaScript "ground control" or "remote control" for a b
 
 Inquire about demos: cris@dosycorp.com
 
-## Secure Cloud Based Internet Isolation Version for organizations
+## Secure Cloud Based Internet Isolation
 
 [Read more here](remote-browser-isolation.md)
-
-## License And other Details
-
-Formerly *BrowserGap Community Edition*. Currently called BrowserGap, and lets you interactively live-stream a remote browser.
-
-This work is released under an OSS license, and is &copy; [Cris Stringfellow](https://github.com/cris691/Portfolio). All my own work. 
-
-For [business inquiries, mail me](mailto:cris@dosycorp.com?subject=BrowserGap&body=Hey%20Cris%2C%0D%0A)
-
-**Around 30,000 source lines of code** (see stats folder)
 
 ### Set up using a blank machine (running Linux)
 
@@ -262,7 +221,7 @@ parameters to the `start.sh` script, which has the following signature:
 You can pull an existing image from docker hub (already [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce))
 
 ```sh
-docker pull dosyago/browsergapce:2.2
+docker pull dosyago/browsergapce:2.4
 ```
 
 And then run it 
