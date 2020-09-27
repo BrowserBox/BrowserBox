@@ -11,7 +11,7 @@
     "fs": "0.0.1-security",
     "hasha": "^5.1.0",
     "is-docker": "^2.0.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "path": "^0.12.7",
     "url": "^0.11.0"
   },
