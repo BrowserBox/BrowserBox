@@ -9,6 +9,7 @@
 
   const EXPEDITE = new Set([
     "Page.navigate",
+    "Page.navigateToHistoryEntry",
     "Runtime.evaluate",
     "Network.setUserAgentOverride",
   ]);
