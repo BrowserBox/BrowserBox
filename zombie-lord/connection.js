@@ -418,7 +418,6 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
           DEBUG.val > DEBUG.med && console.log({downloadFileName,SECURE_VIEW_SCRIPT,username});
 
         // MARK 4 
-        /**
           // This shouldn't be in the community edition
           console.log({docViewerSecret});
           const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`, docViewerSecret]);
@@ -460,7 +459,6 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
               console.warn(`Secure View subshell exited with code ${code}`);
             }
           }
-        **/
       //**/
     } else if ( message.method == "Network.requestWillBeSent" ) {
       const resource = startLoading(sessionId);
