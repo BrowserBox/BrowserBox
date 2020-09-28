@@ -11,7 +11,7 @@ import {WorldName} from '../public/translateVoodooCRDP.js';
 import {makeCamera} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
 import {fileChoosers} from '../ws-server.js';
-//import docViewerSecret from '../secrets/docViewer.js';
+import docViewerSecret from '../secrets/docViewer.js';
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
 
