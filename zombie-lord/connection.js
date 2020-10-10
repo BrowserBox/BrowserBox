@@ -702,6 +702,8 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       //command.params.platform = connection.navigator.platform;
       command.params.userAgent = connection.isMobile ? mobUA : deskUA;
       command.params.platform = connection.isMobile ? mobPLAT : deskPLAT;
+      connection.navigator.platform = command.params.platform;
+      connection.navigator.userAgent = command.params.userAgent;
       connection.navigator.acceptLanguage = command.params.acceptLanguage;
     }
     if ( !! targetId && !targets.has(targetId) ) {
