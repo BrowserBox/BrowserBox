@@ -995,6 +995,6 @@ function getFileFromURL(url) {
   }
   const name = unescape(lastNode);
   // MARK 2
-  console.log({name});
+  DEBUG.val && console.log({name});
   return name;
 }
