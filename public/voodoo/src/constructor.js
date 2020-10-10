@@ -211,13 +211,13 @@
 
       if ( isSafari() ) {
         queue.send({type:"isSafari"});
-      }
-      if ( isFirefox() ) {
+      } else if ( isFirefox() ) {
         queue.send({type:"isFirefox"});
       }
 
       if ( deviceIsMobile() ) {
         state.hideScrollbars();
+        queue.send({type:"isMobile"});
       }
 
     // event handlers

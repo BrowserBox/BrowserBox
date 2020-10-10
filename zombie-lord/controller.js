@@ -143,6 +143,10 @@ const controller_api = {
             connection.isSafari = true;
           }
           break;
+          case "Connection.setIsMobile": {
+            connection.isMobile = true;
+          }
+          break;
           case "Connection.getTabs": {
             const tabs = Array.from(connection.tabs.values());
             retVal.data = {tabs};

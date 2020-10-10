@@ -1,5 +1,6 @@
+import {deviceIsMobile as isMobile} from './voodoo/src/common.js';
+
 // const
-  const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
   const timers = [];
 
   if ( isMobile() ) {
@@ -30,6 +31,3 @@
     });
   }
 
-function isMobile() {
-  return MobilePlatform.test(navigator.userAgent);
-}

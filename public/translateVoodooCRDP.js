@@ -571,6 +571,15 @@ function translator(e, handled = {type:'case'}) {
         }
       ]};
     }
+    case "isMobile": {
+      return {
+        command: {
+          isZombieLordCommand: true,
+          name: "Connection.setIsMobile",
+          params: {}
+        }
+      };
+    }
     case "isSafari": {
       return {
         command: {
