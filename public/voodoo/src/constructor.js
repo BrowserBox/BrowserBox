@@ -246,6 +246,11 @@
             // do nothing. Aborts are normal, and just mean existing document stays there. If we 
             // overwrite that document with an aborted message, the normal function of the page
             // will fail
+            // so we could notify with a writeCanvas instead
+            // writeCanvas(`Request failed: ${meta.failed.params.errorText}`, meta.failed.frameId, meta.failed.sessionId);
+            // but there's not really any point since these aborted errors are normally 
+            // quickly followed by something that works
+            // plus people are not used to seeing aborted
           } else {
             writeDocument(`Request failed: ${meta.failed.params.errorText}`, meta.failed.frameId, meta.failed.sessionId);
           }
@@ -356,6 +361,9 @@
       });
 
     
+    // make this so we can call it on resize
+      window._voodoo_asyncSizeTab = () => setTimeout(sizeTab, 0);
+
     // bond tasks 
       canvasBondTasks.push(indicateNoOpenTabs);
       canvasBondTasks.push(installZoomListener);
