@@ -1,10 +1,10 @@
-# [⚛️ OuterShell](https://github.com/dosyago/OuterShell) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/dosyago/BrowserGap/total?label=binary%20downloads)](https://github.com/dosyago/BrowserGap/releases/latest)
+# [:camera: ViewFinder](https://github.com/dosyago/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest)
 
 ## License 
 
 To purchase a license for use contact cris@dosycorp.com and see https://browsergap.dosyago.com for options.
 
-[Get the latest binary release](https://github.com/dosyago/OuterShell/releases)
+[Get the latest binary release](https://github.com/dosyago/ViewFinder/releases)
 
 - Embed a browser in another web application to integrate user flows.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
@@ -12,16 +12,16 @@ To purchase a license for use contact cris@dosycorp.com and see https://browserg
 
 [More info at on fully managed versions https://browsergap.dosyago.com](https://browsergap.dosyago.com)
 
-## Managed API: `BG.openSecurely(url: URI)`
+## Managed API: `VF.openSecurely(url: URI)`
 
 An API to open a link in a secure remote browser context. Calling the below in the browser will open a new tab.
 
 ```js
-  import BrowserGrip from './web_modules/@dosy/browsergapjs.js';
+  import ViewFinder from './web_modules/@dosy/browsergapjs.js';
  
-  const BG = BrowserGrip('<my api key>');
+  const VF = ViewFinder('<my api key>');
   
-  BG.openSecurely(url);
+  VF.openSecurely(url);
 ```
 
 If you want to see a demo of that in action, check out: [https://isolation.site](https://isolation.site)
@@ -65,7 +65,7 @@ These APIs support the full package include secure document viewing. [Use the SD
 - Control the resource usage of a pool of remote browsers, collectively and individually.
 - Adaptively resamples images based on the bandwidth you have available on your connection, to maintain responsiveness and use the best image quality your bandwidth permits
 
-## Some ways people are using OuterShell
+## Some ways people are using ViewFinder
 
 - To embed other applications in their own web app to unite separate user flows, and overcome iframe restrictions.
 - As a browser proxy to enable secure browsing on locked down internal networks
@@ -80,7 +80,7 @@ This is a feature-complete, clientless, remote browser isolation product, in HTM
 
 With BrowserGap, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
 
-![Animated GIF of OuterShell in action](https://j.gifs.com/E8yzLv.gif)
+![Animated GIF of ViewFinder in action](https://j.gifs.com/E8yzLv.gif)
 
 **You see that? :point_up: That's a browser running in your browser. All those tabs and UI, that's all BrowserGap. It's sending you pixels from a remote browser, running anywhere.**
 
@@ -155,7 +155,7 @@ For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=B
 
 [Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k).
 
-OuterShell is a HTML/CSS/JavaScript "outer shell" for a browser. It also looks and works just like a browser, but it runs in your browser and controls another browser.
+ViewFinder is a HTML/CSS/JavaScript "outer shell" for a browser. It also looks and works just like a browser, but it runs in your browser and controls another browser.
 
 ![browser in a browser](readme-files/tenor.gif)
 
@@ -196,11 +196,11 @@ npm i -g serve nodemon pm2 npm npx
 sudo npm i -g serve nodemon pm2 npm npx
 ```
 
-Then install and run BrowserGap from source:
+Then install and run ViewFinder from source:
 
 ```sh
-git clone https://github.com/dosyago/BrowserGap
-cd BrowserGap
+git clone https://github.com/cris691/ViewFinder
+cd ViewFinder
 npm i
 npm start
 ```
@@ -227,7 +227,7 @@ docker pull dosyago/browsergapce:2.4
 And then run it 
 
 ```sh
-curl -o chrome.json https://raw.githubusercontent.com/dosyago/BrowserGap/master/chrome.json
+curl -o chrome.json https://raw.githubusercontent.com/cris691/ViewFinder/master/chrome.json
 sudo su -c "echo 'kernel.unprivileged_userns_clone=1' > /etc/sysctl.d/00-local-userns.conf"
 sudo su -c "echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/01-network-ipv4.conf"
 sudo sysctl -p
@@ -242,7 +242,7 @@ Set up the machine (as above in the **Set up** section), then
 use clone the repo and install docker (`build_docker.sh` will do that for you) and build yourself an image:
 
 ```sh
-git clone https://github.com/dosyago/BrowserGap
+git clone https://github.com/cris691/ViewFinder
 cd BrowserGap
 git fetch --all
 git branch nexe-build
@@ -268,4 +268,4 @@ Just run PPTR on the same machine as this and connect to http://localhost:5002
 
 ## Other Similar Projects
 
-- [Remote Browser](https://github.com/bepsvpt-me/remote-browser) - Use WebRTC to stream remote server puppeteer. Also, seems [that project was inspired by BrowserGap](https://learnku.com/nodejs/t/37088).
+- [Remote Browser](https://github.com/bepsvpt-me/remote-browser) - Use WebRTC to stream remote server puppeteer. Also, seems [that project was inspired by ViewFinder](https://learnku.com/nodejs/t/37088).
