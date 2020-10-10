@@ -16,7 +16,12 @@ function func() {
   if ( isMobile() ) {
     return (...x) => {
       console.log(x);
-      alert(JSON.stringify(x));
+      alert(x);
+      try {
+        alert(JSON.stringify(x));
+      } catch(e) {
+
+      }
       throw x[0];
     };
   } else {
