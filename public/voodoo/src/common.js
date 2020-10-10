@@ -1,6 +1,6 @@
 import {FRAME_CONTROL} from '../../translateVoodooCRDP.js';
 
-export const VERSION = '3.1415926535897932384626338';
+export const VERSION = '3.14159265358979323846263381';
 const SafariPlatform = /^((?!chrome|android).)*safari/i;
 const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 const FirefoxPlatform = /firefox/i;
