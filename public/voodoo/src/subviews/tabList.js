@@ -6,9 +6,10 @@ export function TabList(state) {
     <nav class="controls targets" stylist="styleTabList styleNavControl">
       <ul>
         ${state.tabs.map((tab, index) => TabSelector(tab, index, state))}
-        <li class="new" stylist="styleTabSelector">
-          <button class=new title="New tab" accesskey="s" 
-            click=${click => state.createTab(click)}>+</button>
+        <li class="new" stylist="styleTabSelector"
+            click=${click => state.createTab(click)}
+          >
+            <button class=new title="New tab" accesskey="s">+</button>
         </li>
       </ul>
     </nav>
@@ -19,13 +20,16 @@ export function TabSelector(tab, index, state) {
   const title = tab.title == 'about:blank' ? '' : tab.title;
   const active = state.activeTarget == tab.targetId;
   return R`${{key:tab.targetId}}
-    <li class="tab-selector ${active?'active':''}" stylist="styleTabSelector">
-      ${FaviconElement(tab, state)}
-      <a title="Bring to front" 
-        mousedown=${() => state.viewState.lastActive = document.activeElement}
-        click=${click => state.activateTab(click, tab)} href=/tabs/${tab.targetId}>${title}</a>
-      <button class=close title="Close tab" ${active?'accesskey=d':''}
-        click=${click => state.closeTab(click, tab, index)}>&Chi;</button>
+    <li class="tab-selector ${active?'active':''}" stylist="styleTabSelector"
+        title="${title || 'Bring to front'}"
+        click=${click => state.activateTab(click, tab)} 
+      >
+        ${FaviconElement(tab, state)}
+        <a  
+          mousedown=${() => state.viewState.lastActive = document.activeElement}
+          href=/tabs/${tab.targetId}>${title}</a>
+        <button class=close title="Close tab" ${active?'accesskey=d':''}
+          click=${click => state.closeTab(click, tab, index)}>&Chi;</button>
     </li>
   `;
 }
