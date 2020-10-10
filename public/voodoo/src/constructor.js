@@ -807,7 +807,24 @@
       }
 
       async function activateTab(click, tab) {
+        // don't activate if we clicked close
+        if ( click && click.target.matches('button.close') ) return;
+
         click && click.preventDefault(); 
+
+        // sometimes we delay the call to activate tab and
+        // in the meantime the list of tabs can empty
+        // so we exit if there is no tab to activate
+        if ( ! tab ) return;
+
+        if ( click ) {
+          setTimeout(
+            () => click.target.closest('li')
+              .scrollIntoView({inline:'center', behavior:'smooth'}),
+            LONG_DELAY
+          );
+        }
+
         if ( state.activeTarget == tab.targetId ) {
           if ( state.viewState.omniBoxInput == state.viewState.lastActive ) {
             state.viewState.omniBoxInput.focus();
@@ -957,6 +974,8 @@
             },
           }
         });
+        click.target.blur();
+        click.currentTarget.blur();
       }
 
       function canKeysInput() {
