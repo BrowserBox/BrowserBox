@@ -6,7 +6,7 @@ const CLOSE_DELAY = 222;
 const SHORT_CUT = 'Ctrl+Shift+J';
 //const FUNC = e => console.log("Doing it", e);
 
-const CONTEXT_MENU = {
+const CONTEXT_MENU = (state) => ({
   'page': [
     {
       title: 'Open link in new tab',
@@ -57,8 +57,14 @@ const CONTEXT_MENU = {
       shortCut: SHORT_CUT,
       func: clearBrowsingData,
     },
+    {
+      title: document.fullscreenElement ? 'Exit full screen' : 'Full screen',
+      shortCut: SHORT_CUT,
+      func: fullScreen,
+      hr: true,
+    },
   ], 
-};
+});
 
 export function ContextMenu(/*state*/) {
   return R`
@@ -68,9 +74,9 @@ export function ContextMenu(/*state*/) {
 
 export function makeContextMenuHandler(state, node = {type:'page', id: 'current-page'}) {
   const {/*id, */ type:nodeType} = node;
-  const menuItems = CONTEXT_MENU[nodeType];
 
   return contextMenu => {
+    const menuItems = CONTEXT_MENU(state)[nodeType];
     // we need this check because we attach a handler to each node
     // we could use delegation at the container of the root node
     // but for now we do it like this
@@ -398,6 +404,15 @@ function close(state, delay = true) {
           type: "clearCookies"
         });
         alert("Cleared all history, caches and cookies.");
+      }
+      close(state);
+    }
+
+    async function fullScreen(click, state) {
+      if ( document.fullscreenElement ) {
+        await document.exitFullscreen();
+      } else {
+        await document.body.requestFullscreen({navigationUI:'hide'});
       }
       close(state);
     }

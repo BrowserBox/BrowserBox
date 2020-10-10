@@ -505,6 +505,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
                 DEBUG.val && console.log({expectDownload:someFileName});
               } else {
                 connection.meta.push({failed:message});
+                DEBUG.val && console.log({failed:message});
               }
             }, WAIT_FOR_DOWNLOAD_BEGIN_DELAY );
           }
