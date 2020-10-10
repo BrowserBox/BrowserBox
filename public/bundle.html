@@ -56,15 +56,7 @@
       </style>
       <article class=logo>BG</article>
       <progress max=100 value=30></progress>
-      <script>
-        const progress = document.currentScript.previousElementSibling;
-        const runner = setInterval(() => {
-          if ( progress.value < progress.max ) {
-            progress.value += 1;
-          } else {
-            clearInterval(runner);
-          }
-        }, 17);
+      <script src=loader_progress.js></script>
       </script>
     </div>
     <script src=bundle_image_start.js></script>

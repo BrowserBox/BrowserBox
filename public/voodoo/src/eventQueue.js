@@ -238,6 +238,7 @@ class Privates {
         socket = new WebSocket(url);
       } catch(e) {
         talert(`Error connecting to the server. Will reload to try again.`);
+        if ( DEBUG.val ) talert( {msg:e.message, name:e.name, newWebsocketError:e, url, WebSocket, socket} );
         await treload();
       }
       socket.onopen = () => {
@@ -360,20 +361,23 @@ class Privates {
 
         //die();
       };
-      socket.onclose = async () => {
+      socket.onclose = async (e) => {
         this.websockets.delete(url);
         console.log("Socket disconnected. Will reconnect when online");
-        talert(`Error connecting to the server - Will reload to try again.`);
+        talert(`Error connecting to the server -- Will reload to try again.`);
+        if ( DEBUG.val ) talert( {socketClosed:e} );
         await treload();
       };
-      socket.onerror = async () => {
+      socket.onerror = async (e) => {
         socket.onerror = null;
         talert(`Error connecting to the server - Will reload to try again.`);
+        if ( DEBUG.val ) talert( {socketError:e} );
         await treload();
       };
     } else {
       console.log("Offline. Will connect socket when online");
       talert(`Error connecting to the server, will reload to try again.`);
+      if ( DEBUG.val ) talert( {offline:true} );
       await treload();
     }
   }
@@ -561,8 +565,17 @@ function onLine() {
 }
 
 function talert(msg) {
-  if ( latestAlert ) {
+  if ( latestAlert && ! DEBUG.val ) {
     clearTimeout(latestAlert);
+  }
+  if ( typeof msg != "string" ) {
+    try {
+      msg = JSON.stringify(msg);
+    } catch(e) {
+      msg = "Original msg could not be converted to string";
+      console.warn(msg);
+    }
+
   }
   latestAlert = setTimeout(() => alert(msg), ALERT_TIMEOUT);
 }
@@ -582,6 +595,11 @@ async function tconfirm(msg) {
 }
 
 async function treload() {
+  if ( DEBUG.val ) {
+    alert("DEBUG mode. Not reloading automatically.");
+    return;
+  }
+
   let resolve;
   const pr = new Promise(res => resolve = res);
 
