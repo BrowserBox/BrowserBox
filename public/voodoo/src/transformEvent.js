@@ -148,6 +148,9 @@ export default function transformEvent(e) {
       case "isSafari": {
         break;
       }
+      case "isMobile": {
+        break;
+      }
       case "isFirefox": {
         break;
       }
