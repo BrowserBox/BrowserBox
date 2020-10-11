@@ -72,6 +72,8 @@ export function ContextMenu(/*state*/) {
   `;
 }
 
+export const CTX_MENU_THRESHOLD = 675;
+
 export function makeContextMenuHandler(state, node = {type:'page', id: 'current-page'}) {
   const {/*id, */ type:nodeType} = node;
 
