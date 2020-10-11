@@ -447,9 +447,10 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
 
           async function sendURL(code) {
             //MARK 5
-            if ( ! uri ) {
+            if ( ! uri || uri.length == 0 ) {
               console.warn("No URI", downloadFileName);
               //throw new Error( "No URI" );
+              return;
             }
 
             if ( code == 0 ) {
