@@ -447,7 +447,10 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
 
           async function sendURL(code) {
             //MARK 5
-            if ( ! uri || uri.length == 0 ) {
+
+            const url = uri ? uri.trim() : "";
+
+            if ( ! uri || url.length == 0 ) {
               console.warn("No URI", downloadFileName);
               //throw new Error( "No URI" );
               return;
@@ -460,14 +463,23 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
               connection.lastSentFileName = connection.lastDownloadFileName;
 
               // trim any whitespace added by the shell echo in the script
-              const url  = uri.trim();
               const secureview = {url};
               DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
               console.log("Send secure view", secureview);
               connection.meta.push({secureview});
             } else if ( code == undefined ) {
-              // do nothing
-              console.log(`No code. Probably STDOUT end event.`);
+              console.log(`No code. Probably STDOUT end event.`, url);
+
+              // only do once
+              if ( done ) return;
+              done = true;
+              connection.lastSentFileName = connection.lastDownloadFileName;
+
+              // trim any whitespace added by the shell echo in the script
+              const secureview = {url};
+              DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
+              console.log("Send secure view", secureview);
+              connection.meta.push({secureview});
             } else {
               console.warn(`Secure View subshell exited with code ${code}`);
             }
