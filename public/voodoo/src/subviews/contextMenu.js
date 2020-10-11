@@ -58,7 +58,13 @@ const CONTEXT_MENU = (state) => ({
       func: clearBrowsingData,
     },
     {
-      title: document.fullscreenElement ? 'Exit full screen' : 'Full screen',
+      title: (
+        document.fullscreenElement || 
+        document.webkitFullscreenElement
+      ) ? 
+        'Exit full screen' : 
+        'Full screen'
+      ,
       shortCut: SHORT_CUT,
       func: fullScreen,
       hr: true,
@@ -411,7 +417,7 @@ function close(state, delay = true) {
     }
 
     async function fullScreen(click, state) {
-      if ( document.fullscreenElement || document.webkitFullscreenEnabled ) {
+      if ( document.fullscreenElement || document.webkitFullscreenElement ) {
         if ( document.webkitCancelFullscreen ) {
           document.webkitCancelFullscreen();
         } else {
