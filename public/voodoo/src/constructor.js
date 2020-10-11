@@ -657,6 +657,8 @@
           } else return;
         }
 
+        if ( event.defaultPrevented ) return;
+
         const mouseEventOnPointerDevice = event.type.startsWith("mouse") && event.type !== "wheel" && !state.DoesNotSupportPointerEvents;
         const tabKeyPressForBrowserUI = event.key == "Tab" && !event.vRetargeted;
         const unnecessaryIfSyncValue = (
