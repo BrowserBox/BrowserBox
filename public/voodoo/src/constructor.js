@@ -807,8 +807,8 @@
       }
 
       async function activateTab(click, tab) {
-        // don't activate if we clicked close
-        if ( click && click.target.matches('button.close') ) return;
+        // don't activate if the click was a close click from our tab
+        if ( click && click.currentTarget.querySelector('button.close') == click.target ) return;
 
         click && click.preventDefault(); 
 
