@@ -1,4 +1,4 @@
-import {throttle,DEBUG} from './common.js';
+import {iden,deviceIsMobile, throttle,DEBUG,elogit} from './common.js';
 import {cloneKeyEvent} from './constructor.js';
 import {d as R} from '../node_modules/dumbass/r.js';
 import * as Subviews from './subviews/index.js';
@@ -159,25 +159,37 @@ export function component(state) {
             ) :
             R`
               <canvas
-                click=${() => {
-                  if ( viewState.shouldHaveFocus && document.activeElement != viewState.shouldHaveFocus ) {
-                    viewState.shouldHaveFocus.focus(); 
+                click=${[
+                  elogit,
+                  () => {
+                    if ( viewState.shouldHaveFocus && document.activeElement != viewState.shouldHaveFocus ) {
+                      viewState.shouldHaveFocus.focus(); 
+                    }
                   }
-                }}
+                ]}
                 bond=${[saveCanvas, asyncSizeBrowserToBounds, emulateNavigator, ...canvasBondTasks]}
-                touchstart:passive=${retargetTouchScroll}
+                touchstart:passive=${[elogit,retargetTouchScroll]}
                 touchmove=${[
                   e => e.preventDefault(), 
+                  elogit,
                   throttle(retargetTouchScroll, state.EVENT_THROTTLE_MS)
                 ]}
                 wheel:passive=${throttle(H, state.EVENT_THROTTLE_MS)}
-                mousemove:passive=${throttle(H, state.EVENT_THROTTLE_MS)}         
-                mousedown=${H}         
-                mouseup=${H}         
-                pointermove:passive=${throttle(H, state.EVENT_THROTTLE_MS)}         
-                pointerdown=${H}         
-                pointerup=${H}         
-                contextmenu=${subviews.makeContextMenuHandler(state)}
+                mousemove:passive=${[elogit, throttle(H, state.EVENT_THROTTLE_MS)]}         
+                mousedown=${[elogit,H]}         
+                mouseup=${[elogit,H]}         
+                pointermove:passive=${[elogit, throttle(H, state.EVENT_THROTTLE_MS)]}         
+                pointerdown=${[
+                  deviceIsMobile() ? e => startTimer(e, state.viewState) : iden,
+                  elogit,
+                  H
+                ]}         
+                pointerup=${[
+                  deviceIsMobile() ? e => endTimer(e, state.viewState) : iden,
+                  elogit,
+                  H
+                ]}         
+                contextmenu=${[elogit,subviews.makeContextMenuHandler(state)]}
               ></canvas>
             `
           }
@@ -255,6 +267,23 @@ export function component(state) {
 }
 
 // helper functions
+  function startTimer(e, viewState) {
+    const {pointerId:pointerId = 'default'} = e;
+
+    viewState[pointerId] = performance.now();
+  }
+
+  function endTimer(e, viewState) {
+    const {pointerId:pointerId = 'default'} = e;
+
+    viewState[pointerId] = performance.now() - viewState[pointerId];
+
+    if ( viewState[pointerId] > subviews.CTX_MENU_THRESHOLD ) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
   function retargetTouchScrollToRemote(event, H, viewState) {
     const {type} = event;
     const {target} = event;

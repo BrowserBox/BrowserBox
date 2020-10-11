@@ -5,12 +5,14 @@ const SafariPlatform = /^((?!chrome|android).)*safari/i;
 const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 const FirefoxPlatform = /firefox/i;
 
+export const iden = e => e;
 export const isSafari = () => SafariPlatform.test(navigator.userAgent);
 
 export const BLANK = "about:blank";
 
 export const DEBUG = {
   loggableEvents: new Set([
+    /*typing events*/
     'keydown',
     'keypress',
     'keyup',
@@ -18,7 +20,20 @@ export const DEBUG = {
     'compositionupdate',
     'compositionend',
     'input',
-    'beforeinput'
+    'beforeinput',
+    /*pointing events*/
+    'pointerdown',
+    'pointerup',
+    'pointermove',
+    'touchmove',
+    'touchstart',
+    'touchcancel',
+    'mousedown',
+    'mouseup',
+    'mousemove',
+    'click',
+    'contextmenu',
+    'dblclick'
   ]),
   activateNewTab: false,
   frameControl: FRAME_CONTROL,
@@ -88,6 +103,24 @@ export function logitKeyInputEvent(e) {
       throw new Error("No element with ID 'debugBox' found.");
     }
   }
+}
+
+export function elogit(e) {
+  if ( ! DEBUG.val ) return;
+  if ( DEBUG.loggableEvents && ! DEBUG.loggableEvents.has(e.type) ) return;
+  const {type,defaultPrevented,clientX,clientY,touches,deltaX,deltaY,ctrlKey,metaKey,shiftKey,pointerType,isPrimary,button,buttons} = e;
+  const data = {type,defaultPrevented,clientX,clientY,touches,deltaX,deltaY,ctrlKey,metaKey,shiftKey,pointerType,isPrimary,button,buttons};
+  const debugBox = document.querySelector('#debugBox');
+  if ( debugBox ) {
+    debugBox.insertAdjacentHTML('afterbegin', `<p style="max-width:90vw;"><code><pre>${JSON.stringify(data,null,2)}</code></pre></p>`);
+  } else {
+    if ( deviceIsMobile() ) {
+      alert("No debugBox found");
+    } else {
+      throw new Error("No element with ID 'debugBox' found.");
+    }
+  }
+
 }
 
 // debug logging

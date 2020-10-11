@@ -675,6 +675,9 @@ export const dss = {
 
       * canvas {
         image-rendering: high-quality;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
         -webkit-touch-callout: none;
       }
     `;
@@ -764,6 +767,10 @@ export const dss = {
         padding: 0.5em 0;
         min-width: 200px;
         z-index: 10;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
       }
 
       * .context-menu h1 {

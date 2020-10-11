@@ -72,6 +72,8 @@ export function ContextMenu(/*state*/) {
   `;
 }
 
+export const CTX_MENU_THRESHOLD = 675;
+
 export function makeContextMenuHandler(state, node = {type:'page', id: 'current-page'}) {
   const {/*id, */ type:nodeType} = node;
 
@@ -104,7 +106,7 @@ export function makeContextMenuHandler(state, node = {type:'page', id: 'current-
       // the actual way to kill the click is 
       // by killing the next mouse release like so:
       state.viewState.contextMenuClick = contextMenu;
-      state.viewState.killNextMouseReleased = true;
+      //state.viewState.killNextMouseReleased = true;
 
       // we also stop default context menu
       contextMenu.preventDefault();
@@ -409,10 +411,18 @@ function close(state, delay = true) {
     }
 
     async function fullScreen(click, state) {
-      if ( document.fullscreenElement ) {
-        await document.exitFullscreen();
+      if ( document.fullscreenElement || document.webkitFullscreenEnabled ) {
+        if ( document.webkitCancelFullscreen ) {
+          document.webkitCancelFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
       } else {
-        await document.body.requestFullscreen({navigationUI:'hide'});
+        if ( document.body.webkitRequestFullscreen ) {
+          document.body.webkitRequestFullscreen({navigationUI:'hide'});
+        } else {
+          await document.body.requestFullscreen({navigationUI:'hide'});
+        }
       }
       close(state);
     }
