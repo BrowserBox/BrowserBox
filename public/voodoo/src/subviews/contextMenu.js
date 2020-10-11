@@ -106,7 +106,7 @@ export function makeContextMenuHandler(state, node = {type:'page', id: 'current-
       // the actual way to kill the click is 
       // by killing the next mouse release like so:
       state.viewState.contextMenuClick = contextMenu;
-      state.viewState.killNextMouseReleased = true;
+      //state.viewState.killNextMouseReleased = true;
 
       // we also stop default context menu
       contextMenu.preventDefault();
