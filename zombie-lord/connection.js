@@ -235,6 +235,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
   ons("Page.fileChooserOpened", receiveMessage);
   ons("Page.javascriptDialogOpening", receiveMessage);
   ons("Page.downloadWillBegin", receiveMessage);
+  ons("Page.downloadProgress", receiveMessage);
   ons("Runtime.exceptionThrown", receiveMessage);
   ons("Target.detachedFromTarget", receiveMessage);
   
@@ -384,6 +385,17 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       }
 
       connection.meta.push({fileChooser});
+    } else if ( message.method == "Page.downloadProgress" ) {
+      const {params:downloadProgress} = message;
+      const {done, receivedBytes, totalBytes, state} = downloadProgress;
+
+      if ( ! done && state == 'inProgress' ) return;
+
+      const amountToAddToServerData = Math.max(receivedBytes, totalBytes, 1);
+      
+      if ( Number.isInteger(amountToAddToServerData) ) {
+        connection.totalBandwidth += amountToAddToServerData;
+      }
     } else if ( message.method == "Page.downloadWillBegin" ) {
       // MARK 3
       ///**

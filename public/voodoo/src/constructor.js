@@ -974,8 +974,10 @@
             },
           }
         });
-        click.target.blur();
-        click.currentTarget.blur();
+        if ( click ) {
+          click.target.blur();
+          click.currentTarget.blur();
+        }
       }
 
       function canKeysInput() {
