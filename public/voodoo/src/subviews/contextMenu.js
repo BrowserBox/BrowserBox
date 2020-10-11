@@ -411,10 +411,18 @@ function close(state, delay = true) {
     }
 
     async function fullScreen(click, state) {
-      if ( document.fullscreenElement ) {
-        await document.exitFullscreen();
+      if ( document.fullscreenElement || document.webkitFullscreenEnabled ) {
+        if ( document.webkitCancelFullscreen ) {
+          document.webkitCancelFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
       } else {
-        await document.body.requestFullscreen({navigationUI:'hide'});
+        if ( document.body.webkitRequestFullscreen ) {
+          document.body.webkitRequestFullscreen({navigationUI:'hide'});
+        } else {
+          await document.body.requestFullscreen({navigationUI:'hide'});
+        }
       }
       close(state);
     }
