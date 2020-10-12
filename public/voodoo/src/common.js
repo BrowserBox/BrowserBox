@@ -12,7 +12,7 @@ export const BLANK = "about:blank";
 
 export const DEBUG = {
   loggableEvents: new Set([
-    // typing events
+    /*typing events*/
     'keydown',
     'keypress',
     'keyup',
@@ -20,8 +20,8 @@ export const DEBUG = {
     'compositionupdate',
     'compositionend',
     'input',
-    'beforeinput'
-    // pointing events
+    'beforeinput',
+    /*pointing events*/
     'pointerdown',
     'pointerup',
     'pointermove',
