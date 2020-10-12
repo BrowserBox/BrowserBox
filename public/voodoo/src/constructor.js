@@ -876,7 +876,7 @@
                   }
                 </style>
                 <h2>
-                  New Blank Browser Tab. 
+                  Secure ViewFinder 
                 </h2>
                 <strong>
                   Current time: ${(new Date).toString()}
@@ -885,7 +885,6 @@
             `);
             **/
             writeCanvas("Secure ViewFinder");
-            //writeDocument("Undead Tab from the Crypt of Hell. <a href=https://github.com/dosyago/ViewFinder>Spells here</a>.");
             state.viewState.omniBoxInput.focus();
           }
         }, SHORT_DELAY);
