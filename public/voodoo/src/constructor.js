@@ -322,7 +322,7 @@
           message: `The file "${filename}" is downloading to a secure location and will be displayed securely momentarily if it is a supported format.`,
           otherButton: {
             title: 'Get License',
-            onclick: () => window.open('mailto:cris@dosycorp.com?Subject=BrowserGap+License+Support+Inquiry&body=Hi%20Cris', "_blank")
+            onclick: () => window.open('mailto:cris@dosycorp.com?Subject=ViewFinder+License+Support+Inquiry&body=Hi%20Cris', "_blank")
           },
           title: "SecureView\u2122 Enabled",
         };
@@ -884,8 +884,8 @@
               </html>
             `);
             **/
-            writeCanvas("Secure BrowserGap Tab.");
-            //writeDocument("Undead Tab from the Crypt of Hell. <a href=https://github.com/dosyago/BrowserGap>Spells here</a>.");
+            writeCanvas("Secure ViewFinder Tab.");
+            //writeDocument("Undead Tab from the Crypt of Hell. <a href=https://github.com/dosyago/ViewFinder>Spells here</a>.");
             state.viewState.omniBoxInput.focus();
           }
         }, SHORT_DELAY);

@@ -5,7 +5,7 @@ module.exports = {
   entry: "./server.js",
   output: {
     path: path.resolve(__dirname),
-    filename: "BrowserGap.js"
+    filename: "ViewFinder.js"
   },
   target: "node",
   node: {

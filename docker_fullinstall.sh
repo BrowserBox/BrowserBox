@@ -18,7 +18,7 @@ sudo apt update
 
 sudo apt install -y docker-ce
 
-git clone https://github.com/dosyago/BrowserGap
-cd BrowserGap
+git clone https://github.com/dosyago/ViewFinder
+cd ViewFinder
 ./build_docker.sh
 ./run_docker.sh

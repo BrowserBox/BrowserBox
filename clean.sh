@@ -1,7 +1,7 @@
 #!/bin/bash
 
-rm BrowserGap.js
-rm BrowserGap.*
+rm ViewFinder.js
+rm ViewFinder.*
 rm *.node
 rm -rf typetests
 rm -rf node_modules

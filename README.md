@@ -1,10 +1,10 @@
-# [:camera: ViewFinder](https://github.com/dosyago/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest)
+# [:camera: ViewFinder](https://github.com/cris691/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest)
 
 ## License 
 
 To purchase a license for use contact cris@dosycorp.com and see https://browsergap.dosyago.com for options.
 
-[Get the latest binary release](https://github.com/dosyago/ViewFinder/releases)
+[Get the latest binary release](https://github.com/cris691/ViewFinder/releases)
 
 - Embed a browser in another web application to integrate user flows.
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
@@ -78,11 +78,11 @@ These APIs support the full package include secure document viewing. [Use the SD
 
 This is a feature-complete, clientless, remote browser isolation product, in HTML/JavaScript that runs right in your browser. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
 
-With BrowserGap, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
+With ViewFinder, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
 
 ![Animated GIF of ViewFinder in action](https://j.gifs.com/E8yzLv.gif)
 
-**You see that? :point_up: That's a browser running in your browser. All those tabs and UI, that's all BrowserGap. It's sending you pixels from a remote browser, running anywhere.**
+**You see that? :point_up: That's a browser running in your browser. All those tabs and UI, that's all ViewFinder. It's sending you pixels from a remote browser, running anywhere.**
 
 You can use this repo to play with a browser running remotely in the cloud, rather than on your own device. Useful for security and automation. 
 
@@ -98,7 +98,7 @@ By default (unless you provide command line arguments) it runs on port 8002.
 
 Clone this repo
 
-`git clone https://github.com/dosyago/BrowserGap.git`
+`git clone https://github.com/cris691/ViewFinder.git`
 
 Then run `npm i` in the repository directory, followed by `npm start` to start on the default port.
 
@@ -132,7 +132,7 @@ Normally, a Windows device with chrome already installed won't need to run "setu
 
 **Pre-requisites: Windows, Mac OS or Linux with Chrome already installed.**
 
-If you use a [binary](https://github.com/dosyago/BrowserGap/releases/latest), make sure you have Google chrome installed. You might also need to run the `setup_machine.sh` script, to make sure you have all dependencies of Google chrome headless installed, but probably not if you have Windows.
+If you use a [binary](https://github.com/cris691/ViewFinder/releases/latest), make sure you have Google chrome installed. You might also need to run the `setup_machine.sh` script, to make sure you have all dependencies of Google chrome headless installed, but probably not if you have Windows.
 
 ## Docker build
 
@@ -147,11 +147,11 @@ Even tho RV uses headless Chrome, it attempts to conceal that fact. Sometimes, a
 
 ## In depth
 
-BrowserGap is a platform for live streaming the browser, with full interactivity. It lets you plug in to a local or remote, even a headless browser, and fly it as if it's a normal browser. 
+ViewFinder is a platform for live streaming the browser, with full interactivity. It lets you plug in to a local or remote, even a headless browser, and fly it as if it's a normal browser. 
 
 You can stream a remote browser with special cusotmizations to your clients to side step the restrictions of regular browsers. You can use it to build rich experiences based on the browser that are not possible using Flash, Browser Extensions or regular Web Driver protocol. 
 
-For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=BrowserGap)
+For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=ViewFinder)
 
 [Watch the 16 second video](https://www.youtube.com/watch?v=SD0Fhl9v87k).
 
@@ -243,7 +243,7 @@ use clone the repo and install docker (`build_docker.sh` will do that for you) a
 
 ```sh
 git clone https://github.com/cris691/ViewFinder
-cd BrowserGap
+cd ViewFinder
 git fetch --all
 git branch nexe-build
 ./buld_docker.sh

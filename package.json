@@ -4,7 +4,7 @@
   "description": "Fly a browser remotely from your browser? Yes.",
   "main": "index.js",
   "bin": {
-    "remoteview": "BrowserGap.js"
+    "remoteview": "ViewFinder.js"
   },
   "scripts": {
     "test": "bash ./test.sh",
@@ -21,18 +21,19 @@
     "tsc-public": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System public/*.js decs.d.ts",
     "tsc-check": "./tsc-check.sh",
     "check": "rm -f public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
-    "build": "npx webpack server.js && nexe -t linux-x64 -o BrowserGap.nix -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t windows -o BrowserGap.exe -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t macos-x64 -o BrowserGap.macos -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t windows-x32 -o BrowserGap.win32.exe -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t linux-x32 -o BrowserGap.nix32 -i BrowserGap.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\"",
-    "pack": "upx BrowserGap.exe && upx BrowserGap.nix && upx BrowserGap.macos && upx BrowserGap.win32.exe && upx BrowserGap.nix32"
+    "build": "npx webpack server.js && nexe -t linux-x64 -o ViewFinder.nix -i ViewFinder.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t windows -o ViewFinder.exe -i ViewFinder.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t macos-x64 -o ViewFinder.macos -i ViewFinder.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t windows-x32 -o ViewFinder.win32.exe -i ViewFinder.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\" && nexe -t linux-x32 -o ViewFinder.nix32 -i ViewFinder.js -r \"./zombie-lord/injections/**/*\" -r \"./plugins/**/*.js\" -r \"./public/**/*\"",
+    "pack": "upx ViewFinder.exe && upx ViewFinder.nix && upx ViewFinder.macos && upx ViewFinder.win32.exe && upx ViewFinder.nix32"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dosyago/supreme-architect.git"
+    "url": "git+https://github.com/cris691/ViewFinder.git"
   },
   "keywords": [
     "browser",
     "headless",
     "automation",
     "chrome",
+    "viewfinder",
     "browsergap",
     "supreme-architect",
     "oni",
@@ -44,9 +45,9 @@
   "author": "@dosy",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dosyago/remoteview/issues"
+    "url": "https://github.com/cris691/ViewFinder/issues"
   },
-  "homepage": "https://gitlab.com/dosyago/remoteview#readme",
+  "homepage": "https://gitlab.com/cris691/ViewFinder#readme",
   "dependencies": {
     "body-parser": "^1.18.3",
     "brutalist-web": "^2.3.0",

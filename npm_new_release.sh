@@ -14,7 +14,7 @@ gbranch npm-build-2
 echo $time > RELEASE_TIME.txt
 
 npx webpack server.js
-chmod +x BrowserGap.js
+chmod +x ViewFinder.js
 
 gpush minor "New npm release"
 

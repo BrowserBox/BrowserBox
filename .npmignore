@@ -1,7 +1,7 @@
-BrowserGap.exe
-BrowserGap.win*
-BrowserGap.nix*
-BrowserGap.mac*
+ViewFinder.exe
+ViewFinder.win*
+ViewFinder.nix*
+ViewFinder.mac*
 typetests
 public/fonts
 public/old
