@@ -18,8 +18,8 @@
     --ngreen: rgb(18,227,58);
     --nblue: rgb(85,222,246);
     --back: rgb(15,95,212);
-    --left: dodgerblue;
-    --right: mediumspringgreen;
+    --left: purple;
+    --right: dodgerblue;
   }
 
   :root.neon {
