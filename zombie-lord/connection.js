@@ -108,6 +108,7 @@ function removeSession(id) {
 
 export default async function Connect({port}, {adBlock:adBlock = true, demoBlock: demoBlock = false} = {}) {
   AD_BLOCK_ON = adBlock;
+
   if ( demoBlock ) {
     AD_BLOCK_ON = false;
     DEMO_BLOCK_ON = true;
@@ -278,14 +279,20 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       );
     } else if ( message.method == "Runtime.consoleAPICalled" ) {
       const consoleMessage = message.params;
-      const {args,executionContextId} = consoleMessage;
+      const {type,args,executionContextId} = consoleMessage;
 
-      // console.log(JSON.stringify(consoleMessage));
+      const logMessages = args.map(convertRemoteObjectToString);
 
       try {
-        DEBUG.val && console.log(executionContextId, consoleMessage.args[0].value.slice(0,255));
-      } finally {
-        void 0;
+        DEBUG.val && console.log("Runtime.consoleAPICalled",
+          {executionContextId}, 
+          {logMessageCount:logMessages.length}, 
+          {type},
+          JSON.stringify(logMessages).slice(0,255)
+        );
+      } catch(e) {
+        console.warn("Could not show messages from console API");
+        DEBUG.val && console.log(args);
       }
 
       if ( ! args.length ) return;
@@ -597,21 +604,23 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         },
         sessionId
       )
-      await send("Fetch.enable",{
-          handleAuthRequests: true,
-          patterns: [
-            {
-              urlPattern: 'http://*/*',
-              requestStage: "Response"
-            },
-            {
-              urlPattern: 'https://*/*',
-              requestStage: "Response"
-            }
-          ],
-        },
-        sessionId
-      );
+      if ( AD_BLOCK_ON ) {
+        await send("Fetch.enable",{
+            handleAuthRequests: true,
+            patterns: [
+              {
+                urlPattern: 'http://*/*',
+                requestStage: "Response"
+              },
+              {
+                urlPattern: 'https://*/*',
+                requestStage: "Response"
+              }
+            ],
+          },
+          sessionId
+        );
+      }
       await send("Page.enable", {}, sessionId);
       await send("Page.setInterceptFileChooserDialog", {
         enabled: true
@@ -1029,4 +1038,20 @@ function getFileFromURL(url) {
   // MARK 2
   DEBUG.val && console.log({name});
   return name;
+}
+
+function convertRemoteObjectToString({type, className, value, unserializableValue, description}) {
+  let asString;
+
+  if ( value ) {
+    try {
+      asString = JSON.stringify(value);  
+    } finally { void 0; }
+  } else if ( unserializableValue ) {
+    try {
+      asString = unserializableValue + "";
+    } finally { void 0; }
+  }
+
+  return `${type}:${className||type}:${asString||''}:${description||'[unknown value]'}`;
 }
