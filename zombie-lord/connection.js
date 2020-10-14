@@ -37,17 +37,19 @@ const pageContextInjectionsScroll = botDetectionEvasions;
 const RECONNECT_MS = 5000;
 const WAIT_FOR_DOWNLOAD_BEGIN_DELAY = 5000;
 const WAIT_FOR_COALESCED_NETWORK_EVENTS = 1000
-//const deskUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0";
+const deskUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:78.0) Gecko/20100101 Firefox/78.0";
 //const mobUA = "Mozilla/5.0 (Android 9; Mobile; rv:79.0) Gecko/79.0 Firefox/79.0";
-const deskUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36";
+//const deskUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36";
 const mobUA = "Mozilla/5.0 (Android 9; Mobile; rv:79.0) Gecko/79.0 Firefox/79.0";
 
 const LANG = "en-US";
-//const deskPLAT = "Win64";
-const deskPLAT = "MacIntel";
+const deskPLAT = "Win64";
+//const deskPLAT = "MacIntel";
 const mobPLAT = "Android";
 
-const VEND = "Apple Computer, Inc.";
+//const VEND = "Apple Computer, Inc.";
+//const VEND = "Google, Inc.";
+const VEND = "";
 
 const GrantedPermissions = ["geolocation", "notifications", "flash", "midi"];
 //const PromptText = "Dosy was here.";
