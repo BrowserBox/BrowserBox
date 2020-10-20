@@ -76,9 +76,11 @@ These APIs support the full package include secure document viewing. [Use the SD
 
 ## About
 
-This is a feature-complete, clientless, remote browser isolation product, in HTML/JavaScript that runs right in your browser. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
+This is a feature-complete, clientless, remote browser isolation product (RBI), including secure document viewing (CDR), built in HTML/JavaScript that runs right in your browser. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
 
 With ViewFinder, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
+
+[What is RBI / CDR?](https://hackernoon.com/zero-trust-browsing-to-reduce-cybersecurity-job-fatigue-7ce72a633d4)
 
 ![Animated GIF of ViewFinder in action](https://j.gifs.com/E8yzLv.gif)
 
