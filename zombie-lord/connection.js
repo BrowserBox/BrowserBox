@@ -530,7 +530,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
 
           message.frameId = frameId;
           DEBUG.val && console.log({failedURL:url});
-          if ( !(url.startsWith('http') || url.startsWith('ftp')) ) {
+          if ( !(url.startsWith('http')) ) {
             const modal = {
               type: 'intentPrompt',
               title: 'External App Request',
