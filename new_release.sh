@@ -5,6 +5,8 @@ time="$(date)"
 source ~/.nvm/nvm.sh
 nvm use v12.10.0
 
+exit
+
 description=$1
 
 gbranch nexe-build
