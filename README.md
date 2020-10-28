@@ -236,7 +236,7 @@ parameters to the `start.sh` script, which has the following signature:
 You can pull an existing image from docker hub (already [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce))
 
 ```sh
-docker pull dosyago/browsergapce:2.4
+docker pull dosyago/browsergapce:2.5
 ```
 
 And then run it 
@@ -246,7 +246,7 @@ curl -o chrome.json https://raw.githubusercontent.com/c9fe/ViewFinder/master/chr
 sudo su -c "echo 'kernel.unprivileged_userns_clone=1' > /etc/sysctl.d/00-local-userns.conf"
 sudo su -c "echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/01-network-ipv4.conf"
 sudo sysctl -p
-sudo docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json dosyago/browsergapce:2.0
+sudo docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json dosyago/browsergapce:2.5
 ```
 
 
