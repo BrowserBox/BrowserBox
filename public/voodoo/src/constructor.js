@@ -357,6 +357,7 @@
           message: `Securely send files to the remote page.`,
           title: `File Chooser`,
         };
+        console.log({fileChooserModal:modal});
         subviews.openModal({modal}, state);
       });
 

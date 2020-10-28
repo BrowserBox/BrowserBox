@@ -383,6 +383,8 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       const {mode,backendNodeId} = message.params;
       const fileChooser = {mode, sessionId};
 
+      console.log(fileChooser, message);
+
       fileChoosers.set(sessionId, backendNodeId);
 
       DEBUG.val > DEBUG.med && console.log(fileChooser, message);
@@ -399,6 +401,8 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
           }
         }
       }
+
+      console.log("Mark 2", fileChooser);
 
       connection.meta.push({fileChooser});
     } else if ( message.method == "Page.downloadProgress" ) {
