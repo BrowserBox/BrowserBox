@@ -350,13 +350,14 @@
 
       // File chooser 
       queue.addMetaListener('fileChooser', ({fileChooser}) => {
-        const {sessionId, mode, accept} = fileChooser;
+        const {sessionId, mode, accept, csrfToken} = fileChooser;
         const modal = {
-          sessionId, mode, accept,
+          sessionId, mode, accept, csrfToken,
           type: 'filechooser',
           message: `Securely send files to the remote page.`,
           title: `File Chooser`,
         };
+        console.log({fileChooserModal:modal});
         subviews.openModal({modal}, state);
       });
 

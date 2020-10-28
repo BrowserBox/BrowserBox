@@ -16,173 +16,181 @@ import {d as R, u as X} from '../../node_modules/dumbass/r.js';
 
   // Modals
     export function Modals(state) {
-      const {currentModal} = state.viewState;
-      // these are default values when there is no current Modal
-      let msg = '',type = '', title = '', currentModalEl = false;
-      let requestId = '';
-      let sessionId = '';
-      let mode = '';
-      let accept = '';
-      let multiple = false;
-      let submitText = '';
-      let cancelText = '';
-      let otherButton = null;
-      let working = false;
-      let url = '';
+      try {
+        const {currentModal} = state.viewState;
+        // these are default values when there is no current Modal
+        let msg = '',type = '', title = '', currentModalEl = false;
+        let csrfToken = '';
+        let requestId = '';
+        let sessionId = '';
+        let mode = '';
+        let accept = '';
+        let multiple = false;
+        let submitText = '';
+        let cancelText = '';
+        let otherButton = null;
+        let working = false;
+        let url = '';
 
-      if ( currentModal ) {
-        // the defaults here are defaults when there *is* a current modal
-        ({
-          msg:msg = 'Empty',
-          type,
-          url:url = '',
-          title:title = 'Untitled',
-          el:currentModalEl,
-          requestId:requestId = '',
-          mode:mode = '',
-          sessionId:sessionId = '',
-          accept: accept = '',
-          submitText:submitText = 'Submit',
-          cancelText:cancelText = 'Cancel',
-          otherButton:otherButton = null,
-          working:working = false,
-        } = currentModal);
-      }
+        if ( currentModal ) {
+          // the defaults here are defaults when there *is* a current modal
+          ({
+            msg:msg = 'Empty',
+            type,
+            csrfToken:csrfToken = '',
+            url:url = '',
+            title:title = 'Untitled',
+            el:currentModalEl,
+            requestId:requestId = '',
+            mode:mode = '',
+            sessionId:sessionId = '',
+            accept: accept = '',
+            submitText:submitText = 'Submit',
+            cancelText:cancelText = 'Cancel',
+            otherButton:otherButton = null,
+            working:working = false,
+          } = currentModal);
+        }
 
-      if ( type == 'intentPrompt' ) {
-        if ( ! url ) {
-          throw new TypeError(`IntentPrompt modal requires a url`);
-        } else {
-          const Url = new URL(url);
-          if ( Url.protocol == 'intent:' ) {
-            if ( ( Url + '').includes('google.com/maps') ) {
-              Url.protocol = 'https:';
+        if ( type == 'intentPrompt' ) {
+          if ( ! url ) {
+            throw new TypeError(`IntentPrompt modal requires a url`);
+          } else {
+            const Url = new URL(url);
+            if ( Url.protocol == 'intent:' ) {
+              if ( ( Url + '').includes('google.com/maps') ) {
+                Url.protocol = 'https:';
+              }
+              url = Url;
             }
-            url = Url;
           }
         }
-      }
 
-      if ( type == 'auth' && ! requestId ) {
-        throw new TypeError(`Auth modal requires a requestId to send the response to`);
-      }
+        if ( type == 'auth' && ! requestId ) {
+          throw new TypeError(`Auth modal requires a requestId to send the response to`);
+        }
 
-      if ( type == 'filechooser' && !(mode && sessionId) ) {
-        throw new TypeError(`File chooser modal requires both sessionId and mode`);
-      }
+        if ( type == 'filechooser' && !(mode && sessionId && csrfToken) ) {
+          console.log(currentModal);
+          throw new TypeError(`File chooser modal requires both sessionId, mode and csrfToken`);
+        }
 
-      if ( mode == 'selectMultiple' ) {
-        multiple = true;
-      }
+        if ( mode == 'selectMultiple' ) {
+          multiple = true;
+        }
 
-      return R`
-        <aside class="modals ${currentModal ? 'active' : ''}" stylist="styleModals" click=${click => closeModal(click, state)}>
-          <article bond=${el => ModalRef.alert = el} class="alert ${
-              currentModalEl === ModalRef.alert ? 'open' : '' 
-            }">
-            <h1>Alert!</h1>
-            <p class=message value=message>${msg||'You are alerted.'}</p>
-            <button class=ok title=Acknowledge value=ok>Acknowledge</button>
-          </article>
-          <article bond=${el => ModalRef.confirm = el} class="confirm ${
-              currentModalEl === ModalRef.confirm ? 'open' : '' 
-            }">
-            <h1>Confirm</h1>
-            <p class=message value=message>${msg||'You are asked to confirm'}</p>
-            <button class=ok title="Confirm" value=ok>Confirm</button>
-            <button class=cancel title="Deny" value=cancel>Deny</button>
-          </article>
-          <article bond=${el => ModalRef.prompt = el} class="prompt ${
-              currentModalEl === ModalRef.prompt ? 'open' : '' 
-            }">
-            <h1>Prompt</h1>
-            <p class=message value=message>${msg||'You are prompted for information:'}</p>
-            <p><input type=text name=response>
-            <button class=ok title="Send" value=ok>Send</button>
-            <button class=cancel title="Dismiss" value=cancel>Dismiss</button>
-          </article>
-          <article bond=${el => ModalRef.beforeunload = el} class="beforeunload ${
-              currentModalEl === ModalRef.beforeunload ? 'open' : '' 
-            }">
-            <h1>Page unloading</h1>
-            <p class=message value=message>${msg||'Are you sure you wish to leave?'}</p>
-            <button class=ok title="Leave" value=ok>Leave</button>
-            <button class=cancel title="Remain" value=cancel>Remain</button>
-          </article>
-          <article bond=${el => ModalRef.infobox = el} class="infobox ${
-              currentModalEl === ModalRef.infobox ? 'open' : '' 
-            }">
-            <h1>${title || 'Info'}</h1>
-            <textarea 
-              readonly class=message value=message rows=${Math.ceil(msg.length/80)}
-            >${msg}</textarea>
-            <button class=ok title="Got it" value=ok>OK</button>
-          </article>
-          <article bond=${el => ModalRef.notice = el} class="notice ${
-              currentModalEl === ModalRef.notice ? 'open' : '' 
-            }">
-            <h1>${title}</h1>
-            <p class=message value=message>${msg||'Empty notice'}</p>
-            <button class=ok title=Acknowledge value=ok>OK</button>
-            ${otherButton ? X`<button title="${otherButton.title}" click=${otherButton.onclick}>${otherButton.title}</button>` : ''}
-          </article>
-          <article bond=${el => ModalRef.auth = el} class="auth ${
-              currentModalEl === ModalRef.auth ? 'open' : '' 
-            }">
-            <h1>${title}</h1>
-            <form>
+        return R`
+          <aside class="modals ${currentModal ? 'active' : ''}" stylist="styleModals" click=${click => closeModal(click, state)}>
+            <article bond=${el => ModalRef.alert = el} class="alert ${
+                currentModalEl === ModalRef.alert ? 'open' : '' 
+              }">
+              <h1>Alert!</h1>
+              <p class=message value=message>${msg||'You are alerted.'}</p>
+              <button class=ok title=Acknowledge value=ok>Acknowledge</button>
+            </article>
+            <article bond=${el => ModalRef.confirm = el} class="confirm ${
+                currentModalEl === ModalRef.confirm ? 'open' : '' 
+              }">
+              <h1>Confirm</h1>
+              <p class=message value=message>${msg||'You are asked to confirm'}</p>
+              <button class=ok title="Confirm" value=ok>Confirm</button>
+              <button class=cancel title="Deny" value=cancel>Deny</button>
+            </article>
+            <article bond=${el => ModalRef.prompt = el} class="prompt ${
+                currentModalEl === ModalRef.prompt ? 'open' : '' 
+              }">
+              <h1>Prompt</h1>
+              <p class=message value=message>${msg||'You are prompted for information:'}</p>
+              <p><input type=text name=response>
+              <button class=ok title="Send" value=ok>Send</button>
+              <button class=cancel title="Dismiss" value=cancel>Dismiss</button>
+            </article>
+            <article bond=${el => ModalRef.beforeunload = el} class="beforeunload ${
+                currentModalEl === ModalRef.beforeunload ? 'open' : '' 
+              }">
+              <h1>Page unloading</h1>
+              <p class=message value=message>${msg||'Are you sure you wish to leave?'}</p>
+              <button class=ok title="Leave" value=ok>Leave</button>
+              <button class=cancel title="Remain" value=cancel>Remain</button>
+            </article>
+            <article bond=${el => ModalRef.infobox = el} class="infobox ${
+                currentModalEl === ModalRef.infobox ? 'open' : '' 
+              }">
+              <h1>${title || 'Info'}</h1>
+              <textarea 
+                readonly class=message value=message rows=${Math.ceil(msg.length/80)}
+              >${msg}</textarea>
+              <button class=ok title="Got it" value=ok>OK</button>
+            </article>
+            <article bond=${el => ModalRef.notice = el} class="notice ${
+                currentModalEl === ModalRef.notice ? 'open' : '' 
+              }">
+              <h1>${title}</h1>
               <p class=message value=message>${msg||'Empty notice'}</p>
-              <input type=hidden name=requestid value=${requestId}>
-              <p>
-                <input type=text name=username placeholder=username maxlength=140>
-              <p>
-                <input type=password name=password placeholder=password maxlength=140>
-              <p>
-                <button click=${click => respondWithAuth(click, state)}>Submit</button>
-                <button click=${click => respondWithCancel(click, state)}>Cancel</button>
-            </form>
-          </article>
-          <article bond=${el => ModalRef.filechooser = el} class="filechooser ${
-              currentModalEl === ModalRef.filechooser ? 'open' : '' 
-            }">
-            <h1>${title}</h1>
-            <form method=POST action=/file enctype=multipart/form-data>
-              <p class=message value=message>${msg||'Empty notice'}</p>
-              <input type=hidden name=sessionid value=${sessionId}>
-              <p>
-                <label>
-                  Select ${multiple?'one or more files':'one file'}.
-                  <input type=file name=files ${multiple?'multiple':''} accept="${accept}">
-                </label>
-              <p>
-                <button 
-                  ${working?'disabled':''} 
-                  click=${click => chooseFile(click, state)}
-                >${submitText}</button>
-                <button 
-                  ${working?'disabled':''} 
-                  click=${click => cancelFileChooser(click, state)}
-                >${cancelText}</button>
-            </form>
-          </article>
-          <article bond=${el => ModalRef.intentPrompt = el} class="intent-prompt ${
-              currentModalEl === ModalRef.intentPrompt ? 'open' : '' 
-            }">
-            <h1>${title}</h1>
-            <form method=GET action="${url}" target=_top submit=${submission => {
-              submission.preventDefault(); 
-              window.top.open(url);
-            }}>
-              <p class=message value=message>${
-                `This page is asking to open an external app using URL: ${url}`
-              }</p>
-              <p>
-                <button type=reset>Stop it</button>
-                <button>Open external app</button>
-            </form>
-          </article>
-        </aside>
-      `;
+              <button class=ok title=Acknowledge value=ok>OK</button>
+              ${otherButton ? X`<button title="${otherButton.title}" click=${otherButton.onclick}>${otherButton.title}</button>` : ''}
+            </article>
+            <article bond=${el => ModalRef.auth = el} class="auth ${
+                currentModalEl === ModalRef.auth ? 'open' : '' 
+              }">
+              <h1>${title}</h1>
+              <form>
+                <p class=message value=message>${msg||'Empty notice'}</p>
+                <input type=hidden name=requestid value=${requestId}>
+                <p>
+                  <input type=text name=username placeholder=username maxlength=140>
+                <p>
+                  <input type=password name=password placeholder=password maxlength=140>
+                <p>
+                  <button click=${click => respondWithAuth(click, state)}>Submit</button>
+                  <button click=${click => respondWithCancel(click, state)}>Cancel</button>
+              </form>
+            </article>
+            <article bond=${el => ModalRef.filechooser = el} class="filechooser ${
+                currentModalEl === ModalRef.filechooser ? 'open' : '' 
+              }">
+              <h1>${title}</h1>
+              <form method=POST action=/file enctype=multipart/form-data>
+                <p class=message value=message>${msg||'Empty notice'}</p>
+                <input type=hidden name=sessionid value=${sessionId}>
+                <input type=hidden name=_csrf value=${csrfToken}>
+                <p>
+                  <label>
+                    Select ${multiple?'one or more files':'one file'}.
+                    <input type=file name=files ${multiple?'multiple':''} accept="${accept}">
+                  </label>
+                <p>
+                  <button 
+                    ${working?'disabled':''} 
+                    click=${click => chooseFile(click, state)}
+                  >${submitText}</button>
+                  <button 
+                    ${working?'disabled':''} 
+                    click=${click => cancelFileChooser(click, state)}
+                  >${cancelText}</button>
+              </form>
+            </article>
+            <article bond=${el => ModalRef.intentPrompt = el} class="intent-prompt ${
+                currentModalEl === ModalRef.intentPrompt ? 'open' : '' 
+              }">
+              <h1>${title}</h1>
+              <form method=GET action="${url}" target=_top submit=${submission => {
+                submission.preventDefault(); 
+                window.top.open(url);
+              }}>
+                <p class=message value=message>${
+                  `This page is asking to open an external app using URL: ${url}`
+                }</p>
+                <p>
+                  <button type=reset>Stop it</button>
+                  <button>Open external app</button>
+              </form>
+            </article>
+          </aside>
+        `;
+      } catch(e) {
+        console.log("Modal error", e);
+      }
     }
 
     async function chooseFile(click, state) {
@@ -274,15 +282,16 @@ import {d as R, u as X} from '../../node_modules/dumbass/r.js';
     }
 
     export function openModal({modal:{
-          sessionId, mode, requestId, title, type, message:msg, defaultPrompt, url, otherButton
+          sessionId, mode, requestId, title, type, message:msg, defaultPrompt, url, otherButton,
+          csrfToken
         }} = {}, state) {
-      const currentModal = {type, mode, requestId, msg,el:ModalRef[type], sessionId, otherButton, title, url};
+      const currentModal = {type, csrfToken, mode, requestId, msg,el:ModalRef[type], sessionId, otherButton, title, url};
       state.viewState.currentModal = currentModal;
 
       //console.log(state.viewState.currentModal);
 
       const modalDebug = {
-        defaultPrompt, url, currentModal, ModalRef, state, title, type, otherButton
+        defaultPrompt, url, currentModal, ModalRef, state, title, type, otherButton, csrfToken
       };
 
       DEBUG.val >= DEBUG.med && Object.assign(self, {modalDebug});

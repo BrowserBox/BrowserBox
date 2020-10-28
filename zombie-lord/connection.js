@@ -10,7 +10,7 @@ import {username} from '../args.js';
 import {WorldName} from '../public/translateVoodooCRDP.js';
 import {makeCamera} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
-import {fileChoosers} from '../ws-server.js';
+import {LatestCSRFToken, fileChoosers} from '../ws-server.js';
 import docViewerSecret from '../secrets/docViewer.js';
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
@@ -387,18 +387,24 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
 
       DEBUG.val > DEBUG.med && console.log(fileChooser, message);
 
-      const {node:{attributes:fileInputAttributes}} = await send("DOM.describeNode", {
-        backendNodeId
-      }, sessionId);
+      try {
+        const {node:{attributes:fileInputAttributes}} = await send("DOM.describeNode", {
+          backendNodeId
+        }, sessionId);
 
-      if ( fileInputAttributes ) {
-        for( let i = 0; i < fileInputAttributes.length; i++ ) {
-          if ( fileInputAttributes[i] == "accept" ) {
-            fileChooser.accept = fileInputAttributes[i+1];
-            break;
+        if ( fileInputAttributes ) {
+          for( let i = 0; i < fileInputAttributes.length; i++ ) {
+            if ( fileInputAttributes[i] == "accept" ) {
+              fileChooser.accept = fileInputAttributes[i+1];
+              break;
+            }
           }
         }
+      } catch(e) {
+        console.info(`Error getting FileInput.accept attribute by describing backend node from id`, e, fileChooser)
       }
+
+      fileChooser.csrfToken = LatestCSRFToken;
 
       connection.meta.push({fileChooser});
     } else if ( message.method == "Page.downloadProgress" ) {
@@ -530,7 +536,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
 
           message.frameId = frameId;
           DEBUG.val && console.log({failedURL:url});
-          if ( !url.startsWith('http') ) {
+          if ( !(url.startsWith('http')) ) {
             const modal = {
               type: 'intentPrompt',
               title: 'External App Request',
