@@ -168,11 +168,16 @@ ViewFinder is a HTML/CSS/JavaScript "outer shell" for a browser. It also looks a
 
 ![browser in a browser](readme-files/tenor.gif)
 
-## Managed Cloud Service (coming soon)
+## Managed Cloud Service (available now)
 
-## Free Demos (currently disabled)
+Login at https://dosyago.com and purchase a license. 
 
-Inquire about demos: cris@dosycorp.com
+Try the free demos, first:
+
+- https://demo.browsergap.dosyago.com
+- https://isolation.site
+
+Contact [Cris](mailto:cris@dosycorp.com?subject=ViewFinder) for questions.
 
 ## Secure Cloud Based Internet Isolation
 
@@ -197,3 +202,85 @@ sudo bash ./nodesource_setup.sh
 sudo apt -y install nodejs build-essential
 curl -sL https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh -o install_nvm.sh
 bash ./install_nvm
+source $HOME/.profile
+source $HOME/.nvm/nvm.sh
+nvm install --lts
+sudo apt autoremove
+npm i -g serve nodemon pm2 npm npx
+sudo npm i -g serve nodemon pm2 npm npx
+```
+
+Then install and run VF from source:
+
+```sh
+git clone https://github.com/c9fe/ViewFinder
+cd ViewFinder
+npm i
+npm start
+```
+
+If you'd like more control (over say the ports that chrome and the web app run on, you can pass those
+parameters to the `start.sh` script, which has the following signature:
+
+```sh
+./start.sh <chrome_port> <app_port> <cookie_name> <username> token2
+```
+
+*Note: the audio port is always 2 less than the app_port*
+
+
+### Docker 
+
+*Note: running from docker image means you have no sound*
+
+You can pull an existing image from docker hub (already [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce))
+
+```sh
+docker pull dosyago/browsergapce:2.4
+```
+
+And then run it 
+
+```sh
+curl -o chrome.json https://raw.githubusercontent.com/c9fe/ViewFinder/master/chrome.json
+sudo su -c "echo 'kernel.unprivileged_userns_clone=1' > /etc/sysctl.d/00-local-userns.conf"
+sudo su -c "echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/01-network-ipv4.conf"
+sudo sysctl -p
+sudo docker run -d -p 8002:8002 --security-opt seccomp=$(pwd)/chrome.json dosyago/browsergapce:2.0
+```
+
+
+You can also build a docker image from source yourself (you probably want to be on the nexe-build branch, tho).
+
+Set up the machine (as above in the **Set up** section), then
+
+use clone the repo and install docker (`build_docker.sh` will do that for you) and build yourself an image:
+
+```sh
+git clone https://github.com/c9fe/ViewFinder
+cd BrowserGap
+git fetch --all
+git branch nexe-build
+./buld_docker.sh
+./run_docker.sh 
+```
+
+And visit http://&lt;your ip&gt;:8002 to see it up.
+
+## Awesome
+
+Coming here from [Awesome Chrome DevTools](https://github.com/ChromeDevTools/awesome-chrome-devtools) or [awesome-puppeteer](https://github.com/transitive-bullshit/awesome-puppeteer)? 
+
+Take a look at the [Zombie Lord connection](https://github.com/c9fe/ViewFinder/blob/master/zombie-lord/connection.js) and [Translate Voodoo CRDP](https://github.com/c9fe/ViewFinder/blob/master/public/translateVoodooCRDP.js).
+
+## Opening DevTools
+
+Just connect your browser to http://localhost:5002 from the machine you run it on.
+
+## Connecting puppeteer
+
+Just run PPTR on the same machine as this and connect to http://localhost:5002
+
+## Other Similar Projects
+
+- [Remote Browser](https://github.com/bepsvpt-me/remote-browser) - Use WebRTC to stream remote server puppeteer. Also, seems [that project was inspired by VF](https://learnku.com/nodejs/t/37088).
