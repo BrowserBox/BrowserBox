@@ -4,7 +4,17 @@
 
 ## License 
 
-To purchase a license for use contact cris@dosycorp.com and see https://browsergap.dosyago.com for options.
+Copyright (c) 2018, 2020, Dosyago and/or its affiliates. All rights reserved.
+
+This is a release of ViewFinder, a remote isolated browser.
+
+License information can be found in the LICENSE file.
+
+This software is dual-licensed. For information about commercial licensing, see [Dosyago Commercial License for OEMs, ISVs and VARs](https://github.com/dosyago/dual-licensing).
+
+For managed and hosted versions, see https://dosyago.com
+
+## Releases
 
 [Get the latest binary release](https://github.com/cris691/ViewFinder/releases)
 
