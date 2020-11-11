@@ -2,6 +2,38 @@
 
 [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com) 
 
+----------------------
+
+- [Overview](#camera-viewfinder----)
+  * [License](#license)
+  * [Releases](#releases)
+  * [Managed API: `VF.openSecurely(url: URI)`](#managed-api-vfopensecurelyurl-uri)
+  * [Try it out](#try-it-out)
+  * [Normal Browser UI things that work](#normal-browser-ui-things-that-work)
+  * [Normal Browser UI things not yet implemented](#normal-browser-ui-things-not-yet-implemented)
+  * [Advanced things only BG does](#advanced-things-only-bg-does)
+  * [Some ways people are using ViewFinder](#some-ways-people-are-using-viewfinder)
+  * [Major bugs](#major-bugs)
+  * [About](#about)
+  * [localhost:8002](#localhost-8002)
+  * [Get and self-host](#get-and-self-host)
+  * [Easy install trouble shooting](#easy-install-trouble-shooting)
+    + [Windows systems (and Mingw and Cygwin)](#windows-systems-and-mingw-and-cygwin)
+    + [Binaries](#binaries)
+  * [Docker build](#docker-build)
+  * [Headless Detection](#headless-detection)
+  * [In depth](#in-depth)
+  * [Managed Cloud Service (available now)](#managed-cloud-service-available-now)
+  * [Secure Cloud Based Internet Isolation](#secure-cloud-based-internet-isolation)
+    + [Set up using a blank machine (running Linux)](#set-up-using-a-blank-machine-running-linux)
+    + [Docker](#docker)
+  * [Awesome](#awesome)
+  * [Opening DevTools](#opening-devtools)
+  * [Connecting puppeteer](#connecting-puppeteer)
+  * [Other Similar Projects](#other-similar-projects)
+
+------------------------
+
 ## License 
 
 Copyright (c) 2018, 2020, Dosyago and/or its affiliates. All rights reserved.
