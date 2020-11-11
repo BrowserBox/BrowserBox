@@ -1,11 +1,12 @@
 # [:camera: ViewFinder](https://github.com/cris691/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com) 
 
-ViewFinder is a virtualized browser, running in your browser! It's secure, isolated and can be deployed locally or in any cloud, or on any server. It's a feature complete, opne-source dual-licensed remote browser isolation solution. 
+ViewFinder is a virtualized browser, running in your browser! It's secure, isolated and can be deployed locally or in any cloud, or on any server. It's a feature complete, clientless, opne-source dual-licensed remote browser isolation solution. 
 
 ----------------------
 
 - [Overview](#camera-viewfinder----)
   * [License](#license)
+  * [About](#about)
   * [Releases](#releases)
   * [Managed API: `VF.openSecurely(url: URI)`](#managed-api-vfopensecurelyurl-uri)
   * [Try it out](#try-it-out)
@@ -14,7 +15,6 @@ ViewFinder is a virtualized browser, running in your browser! It's secure, isola
   * [Advanced things only BG does](#advanced-things-only-bg-does)
   * [Some ways people are using ViewFinder](#some-ways-people-are-using-viewfinder)
   * [Major bugs](#major-bugs)
-  * [About](#about)
   * [localhost:8002](#localhost-8002)
   * [Get and self-host](#get-and-self-host)
   * [Easy install trouble shooting](#easy-install-trouble-shooting)
@@ -45,6 +45,24 @@ License information can be found in the LICENSE file.
 This software is dual-licensed. For information about commercial licensing, see [Dosyago Commercial License for OEMs, ISVs and VARs](https://github.com/dosyago/dual-licensing).
 
 For managed and hosted versions, see https://dosyago.com
+
+## About
+
+This is a feature-complete, clientless, remote browser isolation product (RBI), including secure document viewing (CDR), built in HTML/JavaScript that runs right in your browser. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
+
+With ViewFinder, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
+
+[What is RBI / CDR?](https://hackernoon.com/zero-trust-browsing-to-reduce-cybersecurity-job-fatigue-7ce72a633d4)
+
+![Animated GIF of ViewFinder in action](https://j.gifs.com/E8yzLv.gif)
+
+**You see that? :point_up: That's a browser running in your browser. All those tabs and UI, that's all ViewFinder. It's sending you pixels from a remote browser, running anywhere.**
+
+You can use this repo to play with a browser running remotely in the cloud, rather than on your own device. Useful for security and automation. 
+
+If you're a developer you can include a "BrowserView" in any other web application (for non-commercial use only).
+
+If you're like to deploy this in your org, or for a for-profit project, write me: cris@dosycorp.com Or keep an eye out for the cloud service, coming soon. Official government use OK without purchase (also for university/public institution researchers, journalists and not-for-profits), as long as deployment is done in-house (or using Dosyago Corporation, not by other contractors, nor part of a paid deployment). If you're in government and you'd like to deploy this and want help, contact me for help or to discuss a deployment contract.
 
 ## Releases
 
@@ -122,24 +140,6 @@ These APIs support the full package include secure document viewing. [Use the SD
 ## Major bugs
 
 - See the open issues, but most bugs are around interaction (such as multiple touch points) or client side quirks of browsers (like iOS Safari)
-
-## About
-
-This is a feature-complete, clientless, remote browser isolation product (RBI), including secure document viewing (CDR), built in HTML/JavaScript that runs right in your browser. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
-
-With ViewFinder, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
-
-[What is RBI / CDR?](https://hackernoon.com/zero-trust-browsing-to-reduce-cybersecurity-job-fatigue-7ce72a633d4)
-
-![Animated GIF of ViewFinder in action](https://j.gifs.com/E8yzLv.gif)
-
-**You see that? :point_up: That's a browser running in your browser. All those tabs and UI, that's all ViewFinder. It's sending you pixels from a remote browser, running anywhere.**
-
-You can use this repo to play with a browser running remotely in the cloud, rather than on your own device. Useful for security and automation. 
-
-If you're a developer you can include a "BrowserView" in any other web application (for non-commercial use only).
-
-If you're like to deploy this in your org, or for a for-profit project, write me: cris@dosycorp.com Or keep an eye out for the cloud service, coming soon. Official government use OK without purchase (also for university/public institution researchers, journalists and not-for-profits), as long as deployment is done in-house (or using Dosyago Corporation, not by other contractors, nor part of a paid deployment). If you're in government and you'd like to deploy this and want help, contact me for help or to discuss a deployment contract.
 
 ## localhost:8002
 
