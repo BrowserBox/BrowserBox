@@ -38,7 +38,7 @@ ViewFinder is a virtualized browser, running in your browser! It's secure, isola
 
 This is released into the public domain.
 
-For managed and hosted versions, see https://dosyago.com
+For managed and hosted versions, signup at https://dosyago.com
 
 ## About
 
