@@ -36,13 +36,7 @@ ViewFinder is a virtualized browser, running in your browser! It's secure, isola
 
 ## License 
 
-Copyright (c) 2018, 2020, Dosyago and/or its affiliates. All rights reserved.
-
-This is a release of ViewFinder, a remote isolated browser.
-
-License information can be found in the LICENSE file.
-
-This software is dual-licensed. For information about commercial licensing, see [Dosyago Commercial License for OEMs, ISVs and VARs](https://github.com/dosyago/dual-licensing).
+This is released into the public domain.
 
 For managed and hosted versions, see https://dosyago.com
 
