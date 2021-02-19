@@ -1,1 +1,2 @@
-export default SECRET = '';
+const SECRET = '';
+export default SECRET;

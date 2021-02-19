@@ -23,6 +23,6 @@ cd ../../zombie-lord/custom-launcher
 npm i &> /dev/null   
 cd ../../
 
-# ./make_bundle.sh &> /dev/null
+./make_bundle.sh 
 
 
