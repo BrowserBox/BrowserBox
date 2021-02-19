@@ -68,12 +68,12 @@
     "ws": "^6.1.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.11.6",
-    "@babel/plugin-external-helpers": "^7.10.4",
-    "@babel/plugin-transform-runtime": "^7.11.5",
-    "@babel/polyfill": "^7.11.5",
-    "@babel/preset-env": "^7.11.5",
-    "@babel/runtime": "^7.11.2",
+    "@babel/core": "^7.12.17",
+    "@babel/plugin-external-helpers": "^7.12.13",
+    "@babel/plugin-transform-runtime": "^7.12.17",
+    "@babel/polyfill": "^7.12.1",
+    "@babel/preset-env": "^7.12.17",
+    "@babel/runtime": "^7.12.18",
     "@rollup/plugin-babel": "^5.2.1",
     "@rollup/plugin-commonjs": "^15.1.0",
     "@rollup/plugin-node-resolve": "latest",
@@ -90,12 +90,12 @@
     "eslint": "^7.10.0",
     "nexe": "^3.3.7",
     "node-loader": "^1.0.1",
-    "rollup": "^2.28.2",
+    "rollup": "^2.39.0",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.1.0",
     "typescript": "^3.9.7",
     "webpack": "^4.44.2",
     "webpack-cli": "^3.3.12",
-    "whatwg-fetch": "^3.4.1"
+    "whatwg-fetch": "^3.6.1"
   }
 }

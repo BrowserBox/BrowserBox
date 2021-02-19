@@ -29,5 +29,6 @@
   "bugs": {
     "url": "https://gitlab.com/dosycorp/zombie-lord/issues"
   },
-  "homepage": "https://gitlab.com/dosycorp/zombie-lord#readme"
+  "homepage": "https://gitlab.com/dosycorp/zombie-lord#readme",
+  "_id": "@dosy-private/zombie-lord@1.0.0"
 }
