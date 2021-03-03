@@ -22,6 +22,7 @@ ViewFinderJS is a virtualized browser, running in your browser! It's secure, iso
   * [Easy install trouble shooting](#easy-install-trouble-shooting)
     + [Windows systems (and Mingw and Cygwin)](#windows-systems-and-mingw-and-cygwin)
     + [Binaries](#binaries)
+    + [Safari](#safari)
   * [Docker build](#docker-build)
   * [Headless Detection](#headless-detection)
   * [In depth](#in-depth)
@@ -180,6 +181,10 @@ Normally, a Windows device with chrome already installed won't need to run "setu
 **Pre-requisites: Windows, Mac OS or Linux with Chrome already installed.**
 
 If you use a [binary](https://github.com/cris691/ViewFinder/releases/latest), make sure you have Google chrome installed. You might also need to run the `setup_machine.sh` script, to make sure you have all dependencies of Google chrome headless installed, but probably not if you have Windows.
+
+### Safari
+
+Safari requires TLS to use WebSockets with ViewFinderJS. In order to set that up you'll need to get yourself some TLS certificates, and copy them to the `/sslcert/master/` directory. Then run as usual using `npm test` or `npm start`.
 
 ## Docker build
 
