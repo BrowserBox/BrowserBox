@@ -454,56 +454,58 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         // MARK 4 
           // This shouldn't be in the community edition
           console.log({docViewerSecret});
-          const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`, docViewerSecret]);
-          let uri = '';
-          let done = false;
+          if ( docViewerSecret ) {
+            const subshell = spawn(SECURE_VIEW_SCRIPT, [username, `${downloadFileName}`, docViewerSecret]);
+            let uri = '';
+            let done = false;
 
-          // subshell collect data and send once
-            subshell.stderr.pipe(process.stderr);
-            subshell.stdout.on('data', data => {
-              uri += data;
-            });
-            subshell.stdout.on('end', sendURL);
-            subshell.on('close', sendURL);
-            subshell.on('exit', sendURL);
+            // subshell collect data and send once
+              subshell.stderr.pipe(process.stderr);
+              subshell.stdout.on('data', data => {
+                uri += data;
+              });
+              subshell.stdout.on('end', sendURL);
+              subshell.on('close', sendURL);
+              subshell.on('exit', sendURL);
 
-          async function sendURL(code) {
-            //MARK 5
+            async function sendURL(code) {
+              //MARK 5
 
-            const url = uri ? uri.trim() : "";
+              const url = uri ? uri.trim() : "";
 
-            if ( ! uri || url.length == 0 ) {
-              console.warn("No URI", downloadFileName);
-              //throw new Error( "No URI" );
-              return;
-            }
+              if ( ! uri || url.length == 0 ) {
+                console.warn("No URI", downloadFileName);
+                //throw new Error( "No URI" );
+                return;
+              }
 
-            if ( code == 0 ) {
-              // only do once
-              if ( done ) return;
-              done = true;
-              connection.lastSentFileName = connection.lastDownloadFileName;
+              if ( code == 0 ) {
+                // only do once
+                if ( done ) return;
+                done = true;
+                connection.lastSentFileName = connection.lastDownloadFileName;
 
-              // trim any whitespace added by the shell echo in the script
-              const secureview = {url};
-              DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
-              console.log("Send secure view", secureview);
-              connection.meta.push({secureview});
-            } else if ( code == undefined ) {
-              console.log(`No code. Probably STDOUT end event.`, url);
+                // trim any whitespace added by the shell echo in the script
+                const secureview = {url};
+                DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
+                console.log("Send secure view", secureview);
+                connection.meta.push({secureview});
+              } else if ( code == undefined ) {
+                console.log(`No code. Probably STDOUT end event.`, url);
 
-              // only do once
-              if ( done ) return;
-              done = true;
-              connection.lastSentFileName = connection.lastDownloadFileName;
+                // only do once
+                if ( done ) return;
+                done = true;
+                connection.lastSentFileName = connection.lastDownloadFileName;
 
-              // trim any whitespace added by the shell echo in the script
-              const secureview = {url};
-              DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
-              console.log("Send secure view", secureview);
-              connection.meta.push({secureview});
-            } else {
-              console.warn(`Secure View subshell exited with code ${code}`);
+                // trim any whitespace added by the shell echo in the script
+                const secureview = {url};
+                DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
+                console.log("Send secure view", secureview);
+                connection.meta.push({secureview});
+              } else {
+                console.warn(`Secure View subshell exited with code ${code}`);
+              }
             }
           }
       //**/

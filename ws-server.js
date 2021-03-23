@@ -69,51 +69,68 @@
     const app = express();
     const server_port = port;
 
-    let latestMessageId = 0;
+    // determine if we use secure
+      let latestMessageId = 0;
 
-    app.use(helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          imgSrc: [
-            "'self'",
-            "data:"
-          ],
-          mediaSrc: [
-            "'self'",
-            "https://isolation.site:*",
-            "https://demo.browsergap.dosyago.com:*"
-          ],
-          connectSrc: [
-            "'self'",
-            "wss://isolation.site:*",
-            "wss://demo.browsergap.dosyago.com:*"
-          ],
-          styleSrc: [
-            "'self'", 
-            "'unsafe-inline'"
-          ],
-          scriptSrc: [
-            "'self'", 
-            "'unsafe-eval'",
-            "'sha256-ktnwD9kIpbxpOmbTg7NUsKRlpicCv8bryYhIbiRDFaQ='",
-          ],
-          objectSrc: ["'none'"],
-          upgradeInsecureRequests: [],
-        },
-        reportOnly: false,  
+      const sslBranch = BRANCH == 'master' ? 'master' : 'staging';
+      const secure_options = {};
+      try {
+        const sec = {
+          cert: fs.readFileSync(`./sslcert/${sslBranch}/fullchain.pem`),
+          key: fs.readFileSync(`./sslcert/${sslBranch}/privkey.pem`),
+          ca: fs.readFileSync(`./sslcert/${sslBranch}/chain.pem`),
+        };
+        Object.assign(secure_options, sec);
+      } catch(e) {
+        console.warn(`No certs found so will use insecure no SSL.`); 
       }
-    }));
-    app.use(RateLimiter);
-    app.use(bodyParser.urlencoded({extended:true}));
-    app.use(bodyParser.json());
-    app.use(cookieParser());
-    app.use(upload.array("files", 10));
-    app.use(csrf({cookie:true}));
-    app.use((req, res, next) => {
-      LatestCSRFToken = req.csrfToken();
-      next();
-    });
+      const secure = secure_options.cert && secure_options.ca && secure_options.key || false;
+
+    // set up express
+      app.use(helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            imgSrc: [
+              "'self'",
+              "data:"
+            ],
+            mediaSrc: [
+              "'self'",
+              "https://isolation.site:*",
+              "https://demo.browsergap.dosyago.com:*"
+            ],
+            connectSrc: [
+              "'self'",
+              "wss://isolation.site:*",
+              "wss://demo.browsergap.dosyago.com:*"
+            ],
+            styleSrc: [
+              "'self'", 
+              "'unsafe-inline'"
+            ],
+            scriptSrc: [
+              "'self'", 
+              "'unsafe-eval'",
+              "'sha256-ktnwD9kIpbxpOmbTg7NUsKRlpicCv8bryYhIbiRDFaQ='",
+            ],
+            objectSrc: ["'none'"],
+            ...(secure ? {updgradeInsecureRequests: []} : {})
+          },
+          reportOnly: false,  
+        },
+      }));
+      app.use(RateLimiter);
+      app.use(bodyParser.urlencoded({extended:true}));
+      app.use(bodyParser.json());
+      app.use(cookieParser());
+      app.use(upload.array("files", 10));
+      app.use(csrf({cookie:true}));
+      app.use((req, res, next) => {
+        LatestCSRFToken = req.csrfToken();
+        next();
+      });
+
     if ( start_mode == "signup" ) {
       app.get("/", (req,res) => res.sendFile(path.join(__dirname, 'public', 'index.html'))); 
     } else {
@@ -137,7 +154,7 @@
           if ( session_token == 'token2' ) {
             res.end(`Incorrect token, not token2. <a href=/login?token=token2>Try again.</a>`);
           } else {
-            res.end(`Incorrect token. <a href=https://${req.hostname}/>Try again.</a>`);
+            res.end(`Incorrect token. <a href=${secure ? 'https' : 'http'}://${req.hostname}/>Try again.</a>`);
           }
         }
       }); 
@@ -152,19 +169,6 @@
       res.end(pluginsDemoPage({body:resp}));
     }));
 
-    const sslBranch = BRANCH == 'master' ? 'master' : 'staging';
-    const secure_options = {};
-    try {
-      const sec = {
-        cert: fs.readFileSync(`./sslcert/${sslBranch}/fullchain.pem`),
-        key: fs.readFileSync(`./sslcert/${sslBranch}/privkey.pem`),
-        ca: fs.readFileSync(`./sslcert/${sslBranch}/chain.pem`),
-      };
-      Object.assign(secure_options, sec);
-    } catch(e) {
-      console.warn(`No certs found so will use insecure no SSL.`); 
-    }
-    const secure = secure_options.cert && secure_options.ca && secure_options.key;
     const server = protocol.createServer.apply(protocol, GO_SECURE && secure ? [secure_options, app] : [app]);
     const wss = new WebSocket.Server({server});
 
