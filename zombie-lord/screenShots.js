@@ -145,7 +145,7 @@ export function makeCamera(connection) {
       shot(),
       sleep(MAX_TIME_TO_WAIT_FOR_SCREENSHOT)
     ]);
-    if ( F.img ) {
+    if ( F && F.img ) {
       connection.frameBuffer.push(F);
 
       while ( connection.frameBuffer.length > MAX_FRAMES ) {
