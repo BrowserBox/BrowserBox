@@ -4,6 +4,8 @@ ViewFinderJS is a virtualized browser, running in your browser! It's secure, iso
 
 [Product Hunted](https://www.producthunt.com/posts/viewfinderjs/maker-invite?code=wMxcDN)
 
+If you use or like this, don't forget to show your appreciation by [starring this repo](https://github.com/i5ik/ViewFinderJS/stargazers), or [following me](https://github.com/i5ik) 😹
+
 ----------------------
 
 - [Overview](#camera-viewfinder----)
