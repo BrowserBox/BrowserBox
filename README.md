@@ -85,18 +85,18 @@ An API to open a link in a secure remote browser context. Calling the below in t
   VF.openSecurely(url);
 ```
 
-***News:*** VF.openSecurely (well the, [demo](https://isolation.site), anyway) was **featured** in ProductHunt.
+***News:*** VF.openSecurely (well the, [demo](https://pptrconsole.com), anyway) was **featured** in ProductHunt.
 OMG. Like Wow :rainbow: :joy_cat: I never got many likes on PH. And then suddently it got 72 (wow). And I didn't even check it until 2 months later I was going to PH for something else and I saw all these people voted. Yay. Here's..."The Badge":
 
 <a href="https://www.producthunt.com/posts/iso-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-iso-1" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=242265&theme=light" alt="ISO - Isolate dangerous sites and docs in your browser | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
-If you want to see a demo of that in action, check out: [https://isolation.site](https://isolation.site)
+If you want to see a demo of that in action, check out: [https://pptrconsole.com](https://pptrconsole.com)
 
 These APIs support the full package include secure document viewing. [Use the SDK](https://github.com/dosyago/browsergap.js)
 
 ## Try it out
 
-- [The Free Demo](https://browsergap.dosyago.com)
+- [The Free Demo](https://pptrconsole.com)
 
 ## Normal Browser UI things that work
 
@@ -219,8 +219,7 @@ Login at https://dosyago.com and purchase a license.
 
 Try the free demos, first:
 
-- https://demo.browsergap.dosyago.com
-- https://isolation.site
+- https://pptrconsole.com
 
 Contact [Cris](mailto:cris@dosycorp.com?subject=ViewFinder) for questions.
 
