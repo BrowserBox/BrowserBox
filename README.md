@@ -2,7 +2,9 @@
 
 ViewFinderJS is a virtualized browser, running in your browser! It's secure, isolated and can be deployed locally or in any cloud, or on any server. It's a feature complete, clientless, opne-source dual-licensed remote browser isolation solution. [Try a little demo](https://pptrconsole.com)
 
-[Product Hunted](https://www.producthunt.com/posts/viewfinderjs/maker-invite?code=wMxcDN)
+[Product Hunted x 2](https://www.producthunt.com/posts/viewfinderjs/maker-invite?code=wMxcDN)
+
+<a href="https://www.producthunt.com/posts/viewfinderjs?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-viewfinderjs" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=284819&theme=light" alt="ViewFinderJS - A secure browser you embed in your webapp | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 If you use or like this, don't forget to show your appreciation by [starring this repo](https://github.com/i5ik/ViewFinderJS/stargazers), or [following me](https://github.com/i5ik) 😹
 
@@ -62,7 +64,6 @@ You can use this repo to play with a browser running remotely in the cloud, rath
 If you're a developer you can include a "BrowserView" in any other web application (for non-commercial use only).
 
 If you're like to deploy this in your org, or for a for-profit project, write me: cris@dosycorp.com Or keep an eye out for the cloud service, coming soon. Official government use OK without purchase (also for university/public institution researchers, journalists and not-for-profits), as long as deployment is done in-house (or using Dosyago Corporation, not by other contractors, nor part of a paid deployment). If you're in government and you'd like to deploy this and want help, contact me for help or to discuss a deployment contract.
-
 ## Releases
 
 [Get the latest binary release](https://github.com/cris691/ViewFinder/releases)
@@ -86,7 +87,7 @@ An API to open a link in a secure remote browser context. Calling the below in t
 ```
 
 ***News:*** VF.openSecurely (well the, [demo](https://pptrconsole.com), anyway) was **featured** in ProductHunt.
-OMG. Like Wow :rainbow: :joy_cat: I never got many likes on PH. And then suddently it got 72 (wow). And I didn't even check it until 2 months later I was going to PH for something else and I saw all these people voted. Yay. Here's..."The Badge":
+OMG. Like Wow :rainbow: :joy_cat: I never got many likes on PH. And then suddently it got SO MANY! :P :) xx (wow). And I didn't even check it until 2 months later I was going to PH for something else and I saw all these people voted. Yay. Here's..."The Badge":
 
 <a href="https://www.producthunt.com/posts/iso-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-iso-1" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=242265&theme=light" alt="ISO - Isolate dangerous sites and docs in your browser | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
