@@ -2,7 +2,9 @@
 
 ViewFinderJS is a virtualized browser, running in your browser! It's secure, isolated and can be deployed locally or in any cloud, or on any server. It's a feature complete, clientless, opne-source dual-licensed remote browser isolation solution. [Try a little demo](https://pptrconsole.com)
 
-[Product Hunted x 2](https://www.producthunt.com/posts/viewfinderjs/maker-invite?code=wMxcDN)
+[Have a little look at the latest features to land on Product Hunt](https://www.producthunt.com/posts/puppeteer-console)
+
+[Product Hunted x 3](https://www.producthunt.com/posts/viewfinderjs/maker-invite?code=wMxcDN)
 
 <a href="https://www.producthunt.com/posts/viewfinderjs?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-viewfinderjs" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=284819&theme=light" alt="ViewFinderJS - A secure browser you embed in your webapp | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
