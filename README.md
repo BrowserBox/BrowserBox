@@ -1,6 +1,6 @@
 # [:camera: ViewFinder](https://github.com/cris691/ViewFinder) ![kindness](https://api.kindspeech.org/v1/badge) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com) 
 
-ViewFinderJS is a virtualized browser, running in your browser! It's secure, isolated and can be deployed locally or in any cloud, or on any server. It's a feature complete, clientless, opne-source dual-licensed remote browser isolation solution. [Try a little demo](https://pptrconsole.com)
+ViewFinderJS is a virtualized browser, running in your browser! It's secure, isolated and can be deployed locally or in any cloud, or on any server. It's a feature complete, clientless, opne-source dual-licensed remote browser isolation solution. [Try a little demo](https://comebrowsewithme.com)
 
 [Have a little look at the latest features to land on Product Hunt](https://www.producthunt.com/posts/puppeteer-console)
 
@@ -88,18 +88,18 @@ An API to open a link in a secure remote browser context. Calling the below in t
   VF.openSecurely(url);
 ```
 
-***News:*** VF.openSecurely (well the, [demo](https://pptrconsole.com), anyway) was **featured** in ProductHunt.
+***News:*** VF.openSecurely (well the, [demo](https://comebrowsewithme.com), anyway) was **featured** in ProductHunt.
 OMG. Like Wow :rainbow: :joy_cat: I never got many likes on PH. And then suddently it got SO MANY! :P :) xx (wow). And I didn't even check it until 2 months later I was going to PH for something else and I saw all these people voted. Yay. Here's..."The Badge":
 
 <a href="https://www.producthunt.com/posts/iso-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-iso-1" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=242265&theme=light" alt="ISO - Isolate dangerous sites and docs in your browser | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
-If you want to see a demo of that in action, check out: [https://pptrconsole.com](https://pptrconsole.com)
+If you want to see a demo of that in action, check out: [https://comebrowsewithme.com](https://comebrowsewithme.com)
 
 These APIs support the full package include secure document viewing. [Use the SDK](https://github.com/dosyago/browsergap.js)
 
 ## Try it out
 
-- [The Free Demo](https://pptrconsole.com)
+- [The Free Demo](https://comebrowsewithme.com)
 
 ## Normal Browser UI things that work
 
@@ -222,7 +222,7 @@ Login at https://dosyago.com and purchase a license.
 
 Try the free demos, first:
 
-- https://pptrconsole.com
+- https://comebrowsewithme.com
 
 Contact [Cris](mailto:cris@dosycorp.com?subject=ViewFinder) for questions.
 
