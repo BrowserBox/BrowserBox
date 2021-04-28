@@ -43,6 +43,30 @@ If you use or like this, don't forget to show your appreciation by [starring thi
 
 ------------------------
 
+## Very Quick Install
+
+```shell
+$ echo Update distro
+$ sudo apt update && sudo apt -y upgrade
+$ echo Install tools
+$ sudo apt install -y curl wget git
+$ echo Install node version manager
+$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+$ echo Load NVM
+$ source $HOME/.profile
+$ source $HOME/.nvm/nvm.sh
+$ echo Install latest NodeJS
+$ nvm install --lts
+$ echo Install latest Node Package Manager
+$ npm i -g npm
+$ echo Setup ViewFinderJS
+$ git clone https://github.com/i5ik/ViewFinderJS.git
+$ cd ViewFinderJS
+$ npm i
+```
+
+Follow the prompts. :)
+
 ## License 
 
 This is released into the public domain.
@@ -139,10 +163,6 @@ These APIs support the full package include secure document viewing. [Use the SD
 - To embed other applications in their own web app to unite separate user flows, and overcome iframe restrictions.
 - As a browser proxy to enable secure browsing on locked down internal networks
 
-## Major bugs
-
-- See the open issues, but most bugs are around interaction (such as multiple touch points) or client side quirks of browsers (like iOS Safari)
-
 ## localhost:8002
 
 By default (unless you provide command line arguments) it runs on port 8002.
@@ -151,7 +171,7 @@ By default (unless you provide command line arguments) it runs on port 8002.
 
 Clone this repo
 
-`git clone https://github.com/cris691/ViewFinder.git`
+`git clone https://github.com/i5ik/ViewFinderJS.git`
 
 Then run `npm i` in the repository directory, followed by `npm start` to start on the default port.
 
@@ -239,22 +259,24 @@ If you want to speed up install and it hangs on `processing triggers for man-db`
 
 alternately, somebody reported they had luck with passing a `--force` to the apt command that seems to hang.
 
-```sh
-sudo apt update && sudo apt -y upgrade
-sudo apt install -y curl git wget
-udo apt-get update && sudo apt-get -y upgrade
-sudo apt -y install curl nodejs certbot vim
-curl -sL https://deb.nodesource.com/setup_10.x -o nodesource_setup.sh
-sudo bash ./nodesource_setup.sh
-sudo apt -y install nodejs build-essential
-curl -sL https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh -o install_nvm.sh
-bash ./install_nvm
-source $HOME/.profile
-source $HOME/.nvm/nvm.sh
-nvm install --lts
-sudo apt autoremove
-npm i -g serve nodemon pm2 npm npx
-sudo npm i -g serve nodemon pm2 npm npx
+```shell
+$ echo Update distro
+$ sudo apt update && sudo apt -y upgrade
+$ echo Install tools
+$ sudo apt install -y curl wget git
+$ echo Install node version manager
+$ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash
+$ echo Load NVM
+$ source $HOME/.profile
+$ source $HOME/.nvm/nvm.sh
+$ echo Install latest NodeJS
+$ nvm install --lts
+$ echo Install latest Node Package Manager
+$ npm i -g npm
+$ echo Setup ViewFinderJS
+$ git clone https://github.com/i5ik/ViewFinderJS.git
+$ cd ViewFinderJS
+$ npm i
 ```
 
 Then install and run VF from source:
