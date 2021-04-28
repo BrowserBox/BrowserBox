@@ -23,6 +23,8 @@ cd ../../zombie-lord/custom-launcher
 npm i &> /dev/null   
 cd ../../
 
+echo Install rollup global
+npm i -g rollup
 ./make_bundle.sh 
 
 
