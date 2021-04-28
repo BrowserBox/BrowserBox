@@ -42,6 +42,11 @@ If you use or like this, don't forget to show your appreciation by [starring thi
   * [Other Similar Projects](#other-similar-projects)
 
 ------------------------
+## Very Very Quick Install
+
+```shell
+$ curl -o- https://raw.githubusercontent.com/i5ik/ViewFinderJS/6ddbc6b312d4795a557ea14aa9037ccc254be339/quick_script.sh | bash
+```
 
 ## Very Quick Install
 
