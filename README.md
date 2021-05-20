@@ -178,7 +178,7 @@ Clone this repo
 
 `git clone https://github.com/i5ik/ViewFinderJS.git`
 
-Then run `npm i` in the repository directory, followed by `npm start` to start on the default port.
+Then run `npm i` in the repository directory, followed by `npm test` to start on the default port.
 
 But you might like to `git fetch --all && git checkout nexe-build && git pull` to 
 be on the branch that has all the latest additions just like in the Docker image, npm globals
@@ -290,7 +290,7 @@ Then install and run VF from source:
 git clone https://github.com/c9fe/ViewFinder
 cd ViewFinder
 npm i
-npm start
+npm test
 ```
 
 If you'd like more control (over say the ports that chrome and the web app run on, you can pass those
