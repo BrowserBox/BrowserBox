@@ -74,9 +74,9 @@ Follow the prompts. :)
 
 ## License 
 
-This is released into the public domain.
+This is dual licensed under AGPL-3.0 and a custom exemption.
 
-For managed and hosted versions, signup at https://dosyago.com
+For managed and hosted versions, mail me at [mailto:cris@dosycorp.com](cris@dosycorp.com), signup at [https://dosyago.com](https://dosyago.com), or checkout [https://comebrowsewithme.com](https://comebrowsewithme.com) for per session access.
 
 ## About
 
