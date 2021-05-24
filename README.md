@@ -128,13 +128,13 @@ These APIs support the full package include secure document viewing. [Use the SD
 
 ## Try it out
 
-- [The Free Demo](https://comebrowsewithme.com)
+- [The $3.81 Session](https://comebrowsewithme.com)
 
 ## Normal Browser UI things that work
 
 - Copy and paste (paste is as normal, but for copy you need to use the right-click context menu)
 - File upload
-- File download (if self hosted, using cloud managed, or with secure file viewer license which is available on request, but not in free demo)
+- File download and CDR secure view (seamlessly integrated in licensed self-hosted, managed or per-session options)
 - Modal dialogs
 - New tabs
 - History (invisible but you can navigate it with the forward and back buttons)
@@ -245,7 +245,7 @@ ViewFinder is a HTML/CSS/JavaScript "outer shell" for a browser. It also looks a
 
 Login at https://dosyago.com and purchase a license. 
 
-Try the free demos, first:
+Try a session now for $3.81, first:
 
 - https://comebrowsewithme.com
 
