@@ -65,7 +65,7 @@
     "node-fetch": "^2.6.1",
     "path": "^0.12.7",
     "spdy": "^4.0.1",
-    "ws": "^6.1.4"
+    "ws": "^7.4.6"
   },
   "devDependencies": {
     "@babel/cli": "^7.13.16",
