@@ -23,6 +23,7 @@ Both open-source and Pro versions support secure document viewing with CDR from 
 ----------------------
 
 - [Overview](#camera-viewfinder----)
+  * [Get started](#very-very-quick-install)
   * [License](#license)
   * [About](#about)
   * [Releases](#releases)
