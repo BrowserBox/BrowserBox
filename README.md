@@ -1,6 +1,25 @@
 # [:camera: ViewFinder](https://github.com/cris691/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com) 
 
-ViewFinderJS is a virtualized browser, running in your browser! It's secure, isolated and can be deployed locally or in any cloud, or on any server. It's a feature complete, clientless, open-source dual-licensed remote browser isolation solution. [Schedule a demo](mailto:cris@dosycorp.com?subject=ViewFinderJS%20Demo&body=Hello%20Cris)
+ViewFinderJS is a virtualized browser, running in your browser! There's many ways you can think about what VF is:
+
+- a head for headless browsers
+- a browser interface that runs in client-side JavaScript and HTML and connects to a browser running locally or on a server
+- a free an open-source implementation of remote browser isolation
+
+**What's the Pro version?**
+
+Pro version is an updated version of this free, and open-source "community edition" version, that includes many enhancments including:
+
+- co-browsing support for any number of clients
+- advanced "adaptive variable rate"  streaming for optimal quality over a wide range of bandwidth conditions
+- chat panel for co-browsing participants
+- open DevTools to inspect remote pages
+- run puppeteer scripts in a secure sandbox
+- scale up to run multiple browsers on a single server
+- control CPU, memory and bandwidth resource usage
+- additional security and performance enhancements
+
+[Contact Dosycorp about a license](mailto:cris@dosycorp.com?subject=ViewFinderJS%20License&body=Hello%20Cris)
 
 [Have a little look at the latest features to land on Product Hunt](https://www.producthunt.com/posts/puppeteer-console)
 
