@@ -5,6 +5,7 @@ ViewFinderJS is a virtualized browser, running in your browser! There's many way
 - a head for headless browsers
 - a browser interface that runs in client-side JavaScript and HTML and connects to a browser running locally or on a server
 - a free an open-source implementation of remote browser isolation
+- a way to view automations you're running with puppeteer, playwright or using the DevTools protocol natively. 
 
 **What's the Pro version?**
 
@@ -19,6 +20,7 @@ Pro version is an updated version of this free, and open-source "community editi
 - control CPU, memory and bandwidth resource usage
 - additional security and performance enhancements
 
+You can license the Pro version for your product, or license the open-source version with a license exemption to avoid the GPL-3.0. 
 [Contact Dosycorp about a license](mailto:cris@dosycorp.com?subject=ViewFinderJS%20License&body=Hello%20Cris)
 
 [Have a little look at the latest features to land on Product Hunt](https://www.producthunt.com/posts/puppeteer-console)
