@@ -47,6 +47,7 @@ Both open-source and Pro versions support secure document viewing with CDR from 
   * [Get started](#very-very-quick-install)
   * [License](#license)
   * [About](#about)
+  * [Contributingn](#contributing)
   * [Releases](#releases)
   * [Managed API: `VF.openSecurely(url: URI)`](#managed-api-vfopensecurelyurl-uri)
   * [Try it out](#try-it-out)
@@ -127,6 +128,11 @@ You can use this repo to play with a browser running remotely in the cloud, rath
 If you're a developer you can include a "BrowserView" in any other web application (for non-commercial use only).
 
 If you're like to deploy this in your org, or for a for-profit project, write me: cris@dosycorp.com Or keep an eye out for the cloud service, coming soon. Official government use OK without purchase (also for university/public institution researchers, journalists and not-for-profits), as long as deployment is done in-house (or using Dosyago Corporation, not by other contractors, nor part of a paid deployment). If you're in government and you'd like to deploy this and want help, contact me for help or to discuss a deployment contract.
+
+## Contributing
+
+Hi there! :wave: :smiley: It's great that you'd want to contribute, but unfortunately I'd need you to sign a CLA which you might consider an issue :biohazard: I'm sorry, I'm sure you probably feel this is a stupid and inconvenient burden for you. If that is not impossible for you tho, and you're cool with that, then email me or please know that your PR will be closed unless you sign that. If you want to sign a CLA, have a read of it and if it's acceptable to you, sign it so you can contribute. In general terms, a CLA is a transfer of copyright and all rights (even moral rights) to your contributions to me and my company. The reason for this is to ensure there are no risks to me to license or sell this version to customers or others in future.
+
 ## Releases
 
 [Get the latest binary release](https://github.com/cris691/ViewFinder/releases)
