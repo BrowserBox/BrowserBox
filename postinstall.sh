@@ -15,16 +15,16 @@ fi
 
 
 cd zombie-lord 
-npm i &> /dev/null   
+npm i --no-optional &> /dev/null   
 cd ../public/voodoo
-npm i &> /dev/null  
+npm i --no-optional &> /dev/null  
 cd ../../zombie-lord/custom-launcher
 
-npm i &> /dev/null   
+npm i --no-optional &> /dev/null   
 cd ../../
 
 echo Install rollup global
-npm i -g rollup
+npm i --no-optional -g rollup
 ./make_bundle.sh 
 
 
