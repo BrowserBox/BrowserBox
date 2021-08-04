@@ -68,8 +68,8 @@
     "ws": "^7.4.6"
   },
   "devDependencies": {
-    "@babel/cli": "^7.13.16",
-    "@babel/core": "^7.14.2",
+    "@babel/cli": "latest",
+    "@babel/core": "latest",
     "@babel/plugin-external-helpers": "^7.12.13",
     "@babel/plugin-transform-runtime": "^7.14.2",
     "@babel/polyfill": "^7.12.1",
@@ -89,13 +89,13 @@
     "@types/ws": "^7.2.6",
     "babel-plugin-external-helpers": "latest",
     "eslint": "^7.10.0",
-    "nexe": "^3.3.7",
+    "nexe": "latest",
     "node-loader": "^1.0.1",
     "rollup": "^2.39.0",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.1.0",
     "typescript": "^3.9.7",
-    "webpack": "^4.44.2",
+    "webpack": "latest",
     "webpack-cli": "^3.3.12",
     "whatwg-fetch": "^3.6.2"
   }
