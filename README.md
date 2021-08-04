@@ -141,7 +141,7 @@ Hi there! :wave: :smiley: It's great that you'd want to contribute, but unfortun
 - Isolate your network from the risks of the public internet by running browsers in a remote machine.
 - Protect your network from [Browser Zero-day exploits](https://www.radsix.com/dashboard1/)
 
-[More info at on fully managed versions https://browsergap.dosyago.com](https://browsergap.dosyago.com)
+[For more info at on fully managed versions, email me](mailto:cris@dosycorp.com?subject=ViewFinder%20Managed&body=Hello%20Cris)
 
 ## Managed API: `VF.openSecurely(url: URI)`
 
@@ -369,8 +369,8 @@ Set up the machine (as above in the **Set up** section), then
 use clone the repo and install docker (`build_docker.sh` will do that for you) and build yourself an image:
 
 ```sh
-git clone https://github.com/c9fe/ViewFinder
-cd BrowserGap
+git clone https://github.com/i5ik/ViewFinder
+cd ViewFinder
 git fetch --all
 git branch nexe-build
 ./buld_docker.sh
