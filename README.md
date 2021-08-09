@@ -4,12 +4,12 @@ ViewFinderJS is a virtualized browser, running in your browser! There's many way
 
 - a head for headless browsers
 - a browser interface that runs in client-side JavaScript and HTML and connects to a browser running locally or on a server
-- a free an open-source implementation of remote browser isolation
+- a free and source-available implementation of remote browser isolation
 - a way to view automations you're running with puppeteer, playwright or using the DevTools protocol natively. 
 
 **What's the Pro version?**
 
-Pro version is an updated version of this free, and open-source "community edition" version, that includes many enhancments including:
+Pro version is an updated version of this free, and source-available "community edition" version, that includes many enhancments including:
 
 - co-browsing support for any number of clients
 - advanced "adaptive variable rate"  streaming for optimal quality over a wide range of bandwidth conditions
@@ -20,7 +20,7 @@ Pro version is an updated version of this free, and open-source "community editi
 - control CPU, memory and bandwidth resource usage
 - additional security and performance enhancements
 
-You can license the Pro version for your product, or license the open-source version with a license exemption to avoid the GPL-3.0. 
+You can license the Pro version for your product, or license the source-available version with a license exemption to avoid the AGPL-3.0. 
 [Contact Dosycorp about a license](mailto:cris@dosycorp.com?subject=ViewFinderJS%20License&body=Hello%20Cris)
 
 [Have a little look at the latest features to land on Product Hunt](https://www.producthunt.com/posts/puppeteer-console)
@@ -33,13 +33,13 @@ If you use or like this, don't forget to show your appreciation by [starring thi
 
 **What is this?**
 
-**ViewFinderJS** is a programmable virtualized browser for web apps. You can run it to serve your own remote browser isolation, integrate it as an embeddable BrowserView to permit cross-site process coordination, or build it into your tooling to give you greater visibility into your browser automation jobs, and keep a human-in-the-loop to intervene if a job gets stuck or requires manual input. The Open Source version offered here is a scaled down, simplified version of the more advanced, and full featured Pro version, which includes variable bandwidth streaming for optimal user experience as well as and co-browsing to enable use cases like real-time interactive support and training using a shared browser. 
+**ViewFinderJS** is a programmable virtualized browser for web apps. You can run it to serve your own remote browser isolation, integrate it as an embeddable BrowserView to permit cross-site process coordination, or build it into your tooling to give you greater visibility into your browser automation jobs, and keep a human-in-the-loop to intervene if a job gets stuck or requires manual input. The source available version offered here is a scaled down, simplified version of the more advanced, and full featured Pro version, which includes variable bandwidth streaming for optimal user experience as well as and co-browsing to enable use cases like real-time interactive support and training using a shared browser. 
 
-As it enables RBI and CBII, ViewFinderJS is like CloudFlare Cloud Browsers, S2, WebGap, Bromium, Authentic8, Menlo Security and Broadcom RBI, but the difference is ViewFinderJS is free and open-source. ViewFinderJS also lives in another space, because it's a fully programmable browser that you can connect to your existing browser workloads, powered by Puppeteer or your own custom automation logic. In this way it's similar to [Browserless](https://browserless.io), but different in that it's also serving a niche that needs a more complete browser experience with multiple tabs and same-as-native-browser UI and UX. Where Browserless focuses almost entirely on automation, ViewFinderJS is a platform for building many tools and apps on top of, from automation, internal tooling, to RBI and live support and training. 
+As it enables RBI and CBII, ViewFinderJS is like CloudFlare Cloud Browsers, S2, WebGap, Bromium, Authentic8, Menlo Security and Broadcom RBI, but the difference is ViewFinderJS is free and source-available. ViewFinderJS also lives in another space, because it's a fully programmable browser that you can connect to your existing browser workloads, powered by Puppeteer or your own custom automation logic. In this way it's similar to [Browserless](https://browserless.io), but different in that it's also serving a niche that needs a more complete browser experience with multiple tabs and same-as-native-browser UI and UX. Where Browserless focuses almost entirely on automation, ViewFinderJS is a platform for building many tools and apps on top of, from automation, internal tooling, to RBI and live support and training. 
 
 Similarly to Browserless, ViewFinderJS is dual licensed, so if you need to deploy it without releasing your own product under the GPL-3.0, you can [purchase an exemption](mailto:cris@dosycorp.com?subject=ViewFinderJS%20License&body=Hello%20Cris), or you can upgrade to the Pro version to access the more advanced features and a range of flexible licenses, maintenance contracts, deployment, delivery and custom development options to power your business. 
 
-Both open-source and Pro versions support secure document viewing with CDR from https://github.com/dosyago/p2%2e but you'll need to set that up yourself for the open-source version, while the Pro version includes this. 
+Both source-available and Pro versions support secure document viewing with CDR from https://github.com/dosyago/p2%2e but you'll need to set that up yourself for the source-available version, while the Pro version includes this. 
 
 ----------------------
 
