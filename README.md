@@ -47,7 +47,7 @@ Both source-available and Pro versions support secure document viewing with CDR 
   * [Get started](#very-very-quick-install)
   * [License](#license)
   * [About](#about)
-  * [Contributingn](#contributing)
+  * [Contributing](#contributing)
   * [Releases](#releases)
   * [Managed API: `VF.openSecurely(url: URI)`](#managed-api-vfopensecurelyurl-uri)
   * [Try it out](#try-it-out)
