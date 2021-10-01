@@ -4,8 +4,9 @@
 
 ViewFinderJS is a virtualized browser, running in your browser! There's many ways you can think about what VF is:
 
-- a head for headless browsers
+- a web UI for for headless Chrome (also can work with other browsers that support the DevTools protocol)
 - a browser interface that runs in client-side JavaScript and HTML and connects to a browser running locally or on a server
+- a platform to build enhanced browsing atop of, including capabilities like: co-browsing, secure document viewing, no-code automation
 - a free and source-available implementation of remote browser isolation
 - a way to view automations you're running with puppeteer, playwright or using the DevTools protocol natively. 
 
