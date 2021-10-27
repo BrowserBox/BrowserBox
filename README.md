@@ -1,6 +1,7 @@
 <img src=https://github.com/i5ik/ViewFinder/raw/master/.github/26881_DOSY_PP-01.png width=100%>
 
-# [:camera: ViewFinder](https://github.com/cris691/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com) 
+# [:camera: ViewFinder](https://github.com/cris691/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fi5ik%2FViewFinder.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fi5ik%2FViewFinder?ref=badge_shield)
+
 
 ViewFinderJS is a virtualized browser, running in your browser! There's many ways you can think about what VF is:
 
@@ -78,6 +79,9 @@ Both source-available and Pro versions support secure document viewing with CDR 
   * [Other Similar Projects](#other-similar-projects)
 
 ------------------------
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fi5ik%2FViewFinder.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fi5ik%2FViewFinder?ref=badge_large)
+
 ## Very Very Quick Install
 
 ```shell
