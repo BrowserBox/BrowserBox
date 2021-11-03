@@ -2,13 +2,15 @@
 
 # [:camera: ViewFinder](https://github.com/cris691/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fi5ik%2FViewFinder.svg?type=small)](https://app.fossa.com/projects/git%2Bgithub.com%2Fi5ik%2FViewFinder?ref=badge_small)
 
-ViewFinderJS is a virtualized browser, running in your browser! There's many ways you can think about what VF is:
+ViewFinder is a virtualized browser, running in your browser! There's many ways you can think about what VF is:
 
 - a web UI for for headless Chrome (also can work with other browsers that support the DevTools protocol)
 - a browser interface that runs in client-side JavaScript and HTML and connects to a browser running locally or on a server
 - a platform to build enhanced browsing atop of, including capabilities like: co-browsing, secure document viewing, no-code automation
 - a free and source-available implementation of remote browser isolation
 - a way to view automations you're running with puppeteer, playwright or using the DevTools protocol natively. 
+
+This repository is the source-available version of ViewFinder, otherwise known as ViewFinder Community Edition. It is feature complete but contains less features and less advanced capabilities compared to the closed-source ViewFinder Pro version, otherwise known as VF Pro.
 
 **What's the Pro version?**
 
@@ -23,7 +25,7 @@ Pro version is an updated version of this free, and source-available "community 
 - control CPU, memory and bandwidth resource usage
 - additional security and performance enhancements
 
-You can license the Pro version for your product, or license the source-available version with a license exemption to avoid the AGPL-3.0. 
+You can license the Pro version for your product, or license the source-available version with a license exemption to avoid the  PolyForm Strict License 1.0.0
 [Contact Dosycorp about a license](mailto:cris@dosycorp.com?subject=ViewFinderJS%20License&body=Hello%20Cris)
 
 [Have a little look at the latest features to land on Product Hunt](https://www.producthunt.com/posts/puppeteer-console)
@@ -36,7 +38,7 @@ If you use or like this, don't forget to show your appreciation by [starring thi
 
 **What is this?**
 
-**ViewFinderJS** is a programmable virtualized browser for web apps. You can run it to serve your own remote browser isolation, integrate it as an embeddable BrowserView to permit cross-site process coordination, or build it into your tooling to give you greater visibility into your browser automation jobs, and keep a human-in-the-loop to intervene if a job gets stuck or requires manual input. The source available version offered here is a scaled down, simplified version of the more advanced, and full featured Pro version, which includes variable bandwidth streaming for optimal user experience as well as and co-browsing to enable use cases like real-time interactive support and training using a shared browser. 
+**ViewFinder** is a programmable virtualized browser for web apps. You can run it to serve your own remote browser isolation, integrate it as an embeddable BrowserView to permit cross-site process coordination, or build it into your tooling to give you greater visibility into your browser automation jobs, and keep a human-in-the-loop to intervene if a job gets stuck or requires manual input. The source available version offered here is a scaled down, simplified version of the more advanced, and full featured Pro version, which includes variable bandwidth streaming for optimal user experience as well as and co-browsing to enable use cases like real-time interactive support and training using a shared browser. 
 
 As it enables RBI and CBII, ViewFinderJS is like CloudFlare Cloud Browsers, S2, WebGap, Bromium, Authentic8, Menlo Security and Broadcom RBI, but the difference is ViewFinderJS is free and source-available. ViewFinderJS also lives in another space, because it's a fully programmable browser that you can connect to your existing browser workloads, powered by Puppeteer or your own custom automation logic. In this way it's similar to [Browserless](https://browserless.io), but different in that it's also serving a niche that needs a more complete browser experience with multiple tabs and same-as-native-browser UI and UX. Where Browserless focuses almost entirely on automation, ViewFinderJS is a platform for building many tools and apps on top of, from automation, internal tooling, to RBI and live support and training. 
 
@@ -108,9 +110,30 @@ $ npm i
 
 Follow the prompts. :)
 
-## License 
+## CE Licenses
 
-This is dual licensed under AGPL-3.0 and a custom exemption.
+This is dual licensed under PolyForm Strict License 1.0.0 and a custom exemption EULA purchasable by contacting cris@dosycorp.com or via the following purchase links:
+
+- [Buy a Perpetual Internal Use License of the current CE Version re-upped Yearly to the Latest CE Version, USD $3000 per year](https://buy.stripe.com/28odS26dHeD9b2814q)
+- [Buy a Perpetual Defensive License of the current CE Version re-upped Yearly to the Latest CE Version, USD $60500 per year](https://buy.stripe.com/bIY01c31v7aHfiobJ5)
+
+## Pro Licenses
+
+VF Pro is only commercially licensed through a variety of Polyform commercial licenses.
+
+VF Pro comes with better streaming and more advanced features including:
+
+- Adaptive streaming to deliver reliable responsivness over a wider range of real-world bandwidth conditions
+- Improved security and scalability to multiple machines or multiple browsers on a single machine, including resource and bandwidth controls
+- Secure co-browsing to empower multiple collaborators to browse and chat about the same tabs at the same time
+- Built-in remote secure DevTools access (developer tools) to allow secure remote access to the internal components of the viewed tabs
+- More rapid update cycle than the source-available community edition version
+
+- [Buy a Perpetual Internal Use License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $12000 per years](https://buy.stripe.com/aEUeW659D66D6LS00o)
+- [Buy a Perpetual Defensive License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $85000 per years](https://buy.stripe.com/8wM4hseKdeD9b28aEZ)
+- [Buy a Perpetual Perimeter License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $110000 per years](https://buy.stripe.com/aEU01c8lPeD95HOeVe)
+- [Buy a Perpetual SMB License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $185000 per years](https://buy.stripe.com/7sI9BM59D0Mj9Y4aEX)
+
 
 For both managed and hosted versions, many flexible contracts and licenses are available. To negotiate your deployment, [write to me at cris@dosycorp.com](mailto:cris@dosycorp.com?subject=ViewFinderJS%20License&body=Hello%20Cris), or [schedule a demo](mailto:cris@dosycorp.com?subject=ViewFinderJS%20Demo&body=Hello%20Cris) to figure out if VF can meet your requirements.
 
