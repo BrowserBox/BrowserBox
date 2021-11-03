@@ -129,6 +129,8 @@ VF Pro comes with better streaming and more advanced features including:
 - Built-in remote secure DevTools access (developer tools) to allow secure remote access to the internal components of the viewed tabs
 - More rapid update cycle than the source-available community edition version
 
+**Purchase a Pro license**:
+
 - [Buy a Perpetual Internal Use License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $12000 per years](https://buy.stripe.com/aEUeW659D66D6LS00o)
 - [Buy a Perpetual Defensive License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $85000 per years](https://buy.stripe.com/8wM4hseKdeD9b28aEZ)
 - [Buy a Perpetual Perimeter License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $110000 per years](https://buy.stripe.com/aEU01c8lPeD95HOeVe)
