@@ -1,0 +1,192 @@
+/** variables **/
+  :root {
+    --font: system-ui, Arial, Helvetica, sans-serif, monospace, system;
+    --grey: silver;
+    --silver: silver;
+    --mediumgrey: lightgrey;
+    --lightgrey: #e6e9ec;
+    /*
+    --lightgrey: linear-gradient(to left top, red, orange , yellow, green, cyan, blue, violet, red);
+    --lightgrey: cadetblue;
+    */
+    --lightgrey: linear-gradient(to right, var(--left), var(--right));
+    --verylightgrey: #eee;
+    --black: black;
+    --white: white;
+    --theme: snow;
+    --neon: rgb(205,225,75);
+    --ngreen: rgb(18,227,58);
+    --nblue: rgb(85,222,246);
+    --back: rgb(15,95,212);
+    --left: purple;
+    --right: dodgerblue;
+  }
+
+  :root.neon {
+    --black: var(--back);
+    --theme: var(--back);
+    --white: var(--nblue);
+    --lightgrey: var(--back);
+    --verylightgrey: var(--nblue);
+    --grey: var(--nblue);
+    --mediumgrey: var(--back);
+  }
+
+/* 3d GPU */
+ :root {
+  transform: translateZ(0);
+ }
+
+/* styles that dss cannot do **/
+  ::selection {
+    background: var(--grey);
+    color: var(--white);
+  }
+
+  ::placeholder {
+    color: var(--grey); 
+  }
+
+/* debug box styles */
+  .debugBox, #debugBox {
+    max-height: 6rem;
+    overflow-y: scroll;
+    background: lime;
+    color: black;
+    white-space: pre-wrap;
+    max-width: 100%;
+    font-family: monospace;
+    font-size: 16px;
+  }
+
+/* lightweight styles */
+  :root {
+    font-family: var(--font);
+    color: var(--black);
+    background: var(--theme);
+  }
+
+  :root.neon {
+    background: var(--back);
+    color: var(--nblue);
+  }
+
+  :root.neon a, :root.neon :visited {
+    color: var(--ngreen);
+  }
+
+  :root {
+    background: var(--lightgrey);
+  }
+
+  nav.controls:not(.targets) {
+    padding-bottom: 0.35rem;
+  }
+
+  nav button[class] {
+    color: transparent;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+  }
+
+  a, a:link, a:visited, input, select, textarea, [contenteditable], button { 
+    
+  }
+
+  :root.neon li.tab-selector.active *,
+  :root.neon li.tab-selector:hover *,
+  :root.neon form.url input {
+    color: var(--back);
+  }
+
+  :root.neon input, :root.neon select, :root.neon textarea, :root.neon [contenteditable], 
+  :root.neon button, :root.neon fieldset, :root.neon hr, :root.neon table, :root.neon th, :root.neon td {
+  }
+
+  nav form.url input {
+    border-radius: 2rem;
+    border: 0;
+  }
+
+  table {
+    border-collapse: collapse;
+  }
+
+  ul, ol {
+    margin: 0;
+    padding: 0;
+  }
+
+  nav button {
+    background: transparent;
+    border: 0;
+    min-width: 48px;
+    box-sizing: border-box;
+    border-radius: 2rem;
+  }
+
+  button:hover, button:active, button:focus {
+    filter: opacity(0.5);
+  }
+
+  button.close {
+    min-width: unset;
+  }
+
+  nav button, nav input, nav a {
+    outline: none;
+  }
+
+/* legacy bundle styles */
+  body[mode~="legacy-bundle"] main.voodoo {
+    display: flex; 
+    flex-wrap: wrap;
+    align-content: flex-start;
+  }
+
+  body[mode~="legacy-bundle"] aside.bandwidth-indicator,
+  body[mode~="legacy-bundle"] nav.controls.history,
+  body[mode~="legacy-bundle"] nav.controls.url {
+    display: inline-flex; 
+    flex: 0 0 auto;
+  }
+
+  body[mode~="legacy-bundle"] nav.controls.url {
+    flex-grow: 1; 
+  }
+
+  @media screen and (max-width: 555px) {
+    body[mode~="legacy-bundle"] nav.controls.url {
+      flex: 1 0 40%;
+    }
+  }
+
+
+  body[mode~="legacy-bundle"] nav.controls.targets {
+    order: -1;
+  }
+
+  body[mode~="legacy-bundle"] aside.bandwidth-indicator,
+  body[mode~="legacy-bundle"] nav.controls.history,
+  body[mode~="legacy-bundle"] nav.controls.url,
+  body[mode~="legacy-bundle"] nav.controls.targets {
+    max-height: 2rem;
+  }
+
+  body[mode~="legacy-bundle"] nav.controls.targets,
+  body[mode~="legacy-bundle"] article.tab-viewport {
+    width: 100%;
+    flex-shrink: 0;
+    flex-grow: 1;
+    flex-basis: 100%;
+  }
+
+  body[mode~="legacy-bundle"] article.tab-viewport {
+    height: calc(100vh - 4rem - 0.25rem); 
+  }
+
+/* viewport */
+  :root, body {
+    min-height: 100%;
+  }
+

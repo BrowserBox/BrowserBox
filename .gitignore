@@ -1,0 +1,16 @@
+ViewFinder
+ViewFinder*
+typetests
+vim.exe.stackdump
+*.stackdump
+debug.log
+auto_killer_data
+file_transfer_groups
+node_modules
+sslcert/*
+.*.swp
+isolate*
+public/bundle*.js
+public/meta_bundle*.js
+nohup.out
+

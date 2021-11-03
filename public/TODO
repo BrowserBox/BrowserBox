@@ -1,0 +1,19 @@
+-- Reading Room
+  - create reading room articles
+  - add a gartner image about what is browser isolation in reading room
+  - make reading room absurd images smaller in size (saved as smaller)
+  DONE -- Fill out securiy incident case study story
+
+-- Link to browsergap.xyz
+  - get ssl cert
+
+-- general 
+  - make cloud browsers page more informative including points. Again consider each section a slide in a presentation.
+  - improve copy across pricing, five elements, reading room 
+  - make LOGO into PNG
+  - look at trying a 'slide in image' effect on scroll into view
+
+-- pagespeed stuff
+  - inline critical styles (separate styles into critical and rest)
+  - use serve with a better etag/cache policy ( for production )
+  - use a tool to build CSS

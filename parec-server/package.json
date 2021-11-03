@@ -1,0 +1,15 @@
+{
+  "name": "@dosy-private/parec-server",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Record pulseaudio monitor and serve http stream",
+  "main": "index.js",
+  "scripts": {
+    "test": "node index.js"
+  },
+  "author": "@dosy, forked and modified from work by original author, Jerko Steiner",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "compression": "^1.7.4"
+  }
+}

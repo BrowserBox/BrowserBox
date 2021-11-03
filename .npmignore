@@ -1,0 +1,10 @@
+ViewFinder.exe
+ViewFinder.win*
+ViewFinder.nix*
+ViewFinder.mac*
+typetests
+public/fonts
+public/old
+public/images/3rd-party/undraw
+sslcert
+
