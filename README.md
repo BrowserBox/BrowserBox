@@ -112,14 +112,13 @@ Follow the prompts. :)
 
 ## CE Licenses
 
-This is dual licensed under PolyForm Strict License 1.0.0 and a custom exemption EULA purchasable by contacting cris@dosycorp.com or via the following purchase links:
+The code in this repo (VF CE, "Community Edition") is licensed under PolyForm Strict License 1.0.0 (no modification, no distribution, no commercial use, [read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Strict-1.0.0.md) and you can upgrade your perpetual CE license to the following license options via these purchase links:
 
-- [Buy a Perpetual Internal Use License of the current CE Version re-upped Yearly to the Latest CE Version, USD $3000 per year](https://buy.stripe.com/28odS26dHeD9b2814q)
-- [Buy a Perpetual Defensive License of the current CE Version re-upped Yearly to the Latest CE Version, USD $60500 per year](https://buy.stripe.com/bIY01c31v7aHfiobJ5)
+- [Buy a Perpetual Non-commercial Use License of the current CE Version re-upped Monthly to the Latest CE Version, USD$2 per month](https://buy.stripe.com/4gw15g8lP1Qn9Y414u) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Noncommercial-1.0.0.md)
+- [Buy a Perpetual Internal Use License of the current CE Version re-upped Yearly to the Latest CE Version, USD $3000 per year](https://buy.stripe.com/28odS26dHeD9b2814q) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Internal-Use-1.0.0.md)
+- [Buy a Perpetual Shield License of the current CE Version re-upped Yearly to the Latest CE Version, USD $60500 per year](https://buy.stripe.com/bIY01c31v7aHfiobJ5) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Shield-1.0.0.md)
 
 ## Pro Licenses
-
-VF Pro is only commercially licensed through a variety of Polyform commercial licenses.
 
 VF Pro comes with better streaming and more advanced features including:
 
@@ -131,17 +130,16 @@ VF Pro comes with better streaming and more advanced features including:
 
 **Purchase a Pro license**:
 
-- [Buy a Perpetual Internal Use License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $12000 per years](https://buy.stripe.com/aEUeW659D66D6LS00o)
-- [Buy a Perpetual Defensive License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $85000 per years](https://buy.stripe.com/8wM4hseKdeD9b28aEZ)
-- [Buy a Perpetual Perimeter License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $110000 per years](https://buy.stripe.com/aEU01c8lPeD95HOeVe)
-- [Buy a Perpetual SMB License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $185000 per years](https://buy.stripe.com/7sI9BM59D0Mj9Y4aEX)
+VF Pro is only commercially licensed through a variety of Polyform licenses, which you can purchase using the following purchase links. Each purchase includes free install (into your own infrastructure or cloud, but managed options are available), and 2 months of free support and deployment help (after which you can purchase various support tiers, and custom development).
 
-
-For both managed and hosted versions, many flexible contracts and licenses are available. To negotiate your deployment, [write to me at cris@dosycorp.com](mailto:cris@dosycorp.com?subject=ViewFinderJS%20License&body=Hello%20Cris), or [schedule a demo](mailto:cris@dosycorp.com?subject=ViewFinderJS%20Demo&body=Hello%20Cris) to figure out if VF can meet your requirements.
+- [Buy a Perpetual Internal Use License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $12000 per years](https://buy.stripe.com/aEUeW659D66D6LS00o) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Internal-Use-1.0.0.md)
+- [Buy a Perpetual Shield License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $85000 per years](https://buy.stripe.com/8wM4hseKdeD9b28aEZ) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Shield-1.0.0.md)
+- [Buy a Perpetual Perimeter License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $110000 per years](https://buy.stripe.com/aEU01c8lPeD95HOeVe) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Perimeter-1.0.0.md)
+- [Buy a Perpetual SMB License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $185000 per years](https://buy.stripe.com/7sI9BM59D0Mj9Y4aEX) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Small-Business-1.0.0.md)
 
 ## About
 
-This is a feature-complete, clientless, remote browser isolation product (RBI), including secure document viewing (CDR), built in HTML/JavaScript that runs right in your browser. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
+The VF series of products are feature-complete, clientless, remote browser isolation products (RBI), including secure document viewing (CDR), built in HTML/JavaScript that runs right in your browser. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
 
 With ViewFinder, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
 
