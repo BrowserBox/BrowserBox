@@ -10,6 +10,9 @@ ViewFinder is a virtualized browser, running in your browser! It's available in 
 
 The rest of this README covers VF CE and VF Pro, including how the licenses available for each.
 
+
+**NOTE: if you'd like to get a hold of a release of Community Edition for personal use, I am currently revamping the release flavors and right now the best way is to either clone this repo, or get a Docker image (listed below). The latest NPM release is untested and binary releases are not available right now, so best to clone the repo or pull the Docker image. Thanks!**
+
 ## What is browser virtualization?
 
 Also known as remote browser isolation, or "cloud browsers", this technology was originally a security layer implementing the isolation model to isolate web-based threats from your network and device by running all web content on a remote, lightweight server: the browser isolation server. But the technology behind virtualizing just browsers (not entire Desktops) enables so much more than just security--it creates a whole set of applications where browsers can be embedded in regular web apps. The ViewFinder application implements a feature-complete, clientless (meaning you don't need to download anything, as it is entirely served as a web app) remote browser isolation. 
