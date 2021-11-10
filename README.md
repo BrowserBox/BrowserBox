@@ -112,7 +112,7 @@ Follow the prompts. :)
 
 ## CE Licenses
 
-The code in this repo (VF CE, "Community Edition") is licensed under PolyForm Strict License 1.0.0 (no modification, no distribution, no commercial use, [read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Strict-1.0.0.md) and you can upgrade your perpetual CE license to the following license options via these purchase links:
+The code in this repo (VF CE, "Community Edition") is licensed under PolyForm Strict License 1.0.0 (no modification, no distribution, no commercial use). [Read the license here.](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Strict-1.0.0.md). You can upgrade your perpetual CE license to the following license options via these purchase links:
 
 - [Buy a Perpetual Non-commercial Use License of the current CE Version re-upped Monthly to the Latest CE Version, USD$2 per month](https://buy.stripe.com/4gw15g8lP1Qn9Y414u) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Noncommercial-1.0.0.md)
 - [Buy a Perpetual Internal Use License of the current CE Version re-upped Yearly to the Latest CE Version, USD $3000 per year](https://buy.stripe.com/28odS26dHeD9b2814q) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Internal-Use-1.0.0.md)
