@@ -2,7 +2,19 @@
 
 # [:camera: ViewFinder](https://github.com/cris691/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fi5ik%2FViewFinder.svg?type=small)](https://app.fossa.com/projects/git%2Bgithub.com%2Fi5ik%2FViewFinder?ref=badge_small)
 
-ViewFinder is a virtualized browser, running in your browser! There's many ways you can think about what VF is:
+ViewFinder is a virtualized browser, running in your browser! It's available in 3 flavors:
+
+- VF CE, ViewFinder "Community Edition", which is this repository
+- VF Pro, a closed-source edition based on VF CE, with more advanced features including elastic scalability and adaptive streaming
+- VF Personal, your own fully managed VF Pro instance for personal use. [Read more about that here](https://personal.dosyago.com)
+
+The rest of this README covers VF CE and VF Pro, including how the licenses available for each.
+
+## What is browser virtualization?
+
+Also known as remote browser isolation, or "cloud browsers", this technology was originally a security layer implementing the isolation model to isolate web-based threats from your network and device by running all web content on a remote, lightweight server: the browser isolation server. But the technology behind virtualizing just browsers (not entire Desktops) enables so much more than just security--it creates a whole set of applications where browsers can be embedded in regular web apps. The ViewFinder application implements a feature-complete, clientless (meaning you don't need to download anything, as it is entirely served as a web app) remote browser isolation. 
+
+Some ways to you might like to think about what ViewFinder is. ViewFinder is:
 
 - a web UI for for headless Chrome (also can work with other browsers that support the DevTools protocol)
 - a browser interface that runs in client-side JavaScript and HTML and connects to a browser running locally or on a server
