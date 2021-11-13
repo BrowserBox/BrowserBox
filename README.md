@@ -6,7 +6,7 @@ ViewFinder is a virtualized browser, running in your browser! It's available in 
 
 - VF CE, ViewFinder "Community Edition", which is this repository
 - VF Pro, a closed-source edition based on VF CE, with more advanced features including elastic scalability and adaptive streaming
-- VF Personal, your own fully managed VF Pro instance for personal use. [Read more about that here](https://personal.dosyago.com)
+- VF Personal, your own fully managed VF Pro instance for personal use. [Read more about that here](https://personal.dosyago.com) or see the [Personal](#personal) section below.
 
 The rest of this README covers VF CE and VF Pro, including how the licenses available for each.
 
@@ -51,7 +51,7 @@ You can license the Pro version for your product, or license the source-availabl
 
 If you use or like this, don't forget to show your appreciation by [starring this repo](https://github.com/i5ik/ViewFinderJS/stargazers), or [following me](https://github.com/i5ik) 😹
 
-**What is this?**
+**What is this, in a (admittedly quite large) nutshell?**
 
 **ViewFinder** is a programmable virtualized browser for web apps. You can run it to serve your own remote browser isolation, integrate it as an embeddable BrowserView to permit cross-site process coordination, or build it into your tooling to give you greater visibility into your browser automation jobs, and keep a human-in-the-loop to intervene if a job gets stuck or requires manual input. The source available version offered here is a scaled down, simplified version of the more advanced, and full featured Pro version, which includes variable bandwidth streaming for optimal user experience as well as and co-browsing to enable use cases like real-time interactive support and training using a shared browser. 
 
@@ -60,6 +60,39 @@ As it enables RBI and CBII, ViewFinder is like CloudFlare Cloud Browsers, S2, We
 Similarly to Browserless, ViewFinder source code is publicly inspectable, and if you need it with a less restrictive license, you can purchase an upgrade via links in this README, or [via email](mailto:cris@dosycorp.com?subject=ViewFinder%20License&body=Hello%20Cris), where you can also upgrade to the Pro version to access the more advanced features and a range of flexible licenses, maintenance contracts, deployment, delivery and custom development options to power your business. 
 
 Both source-available and Pro versions support secure document viewing with CDR from https://github.com/dosyago/p2%2e but you'll need to set that up yourself for the source-available version, while the Pro version includes this. 
+
+# Personal
+
+VFPersonal is a range of bespoke 
+remote browsers, for personal use.
+
+VFPersonal lets you browse the web
+safely and securely without exposing
+your device to malware, ransomware,
+or 0-day exploits.
+
+## Features of VFPersonal
+
+  - Adaptive streaming optimizes 
+    latency
+  - DevTools panel for remote
+    access to browser DevTools 
+  - Use from mobile or
+    destkop with any modern browser
+  - Built-in secure document viewier
+  - Built-in live co-browsing and chat
+    for collaboration
+  - Fully-encrypted 'pixels-only',
+    clientless RBI 
+    
+## Where is it hosted? 
+
+VFPersonal is currently hosted on Vultr. Vultr provides great cloud services at an affordable price. I switched to them after being a loyal customer of other large cloud computing platforms. If you have a need for cloud infrastrucutre, you should definitely check them out with one of my referral links. The below links are my referral links. 
+
+- [Check out Vultr](https://vultr.grsm.io/iyiikd389y9k)
+- [Try Vultr with a USD100 free-credit (limited time only)](https://www.vultr.com/?ref=8967641-8H)
+- <a href="https://www.vultr.com/?ref=8967639"><img src="https://www.vultr.com/media/banners/banner_300x250.png" width="300" height="250"></a>
+
 
 ----------------------
 
@@ -124,6 +157,8 @@ $ npm i
 ```
 
 Follow the prompts. :)
+
+# License
 
 ## CE Licenses
 
