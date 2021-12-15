@@ -2,14 +2,23 @@
 
 # [:camera: ViewFinder](https://github.com/cris691/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fi5ik%2FViewFinder.svg?type=small)](https://app.fossa.com/projects/git%2Bgithub.com%2Fi5ik%2FViewFinder?ref=badge_small)
 
-ViewFinder is a virtualized browser, running in your browser! It's available in 3 flavors:
+ViewFinder is a virtualized browser, running in your browser! Run it on our cloud, or bring your own.
+
+This means VF is clientless browser isolation (a.k.a an embeddable BrowserView). You can also think of it as secure Chrome-as-a-service. This source-available version is free for personal use (see [the Polyform Strict License](LICENSE.md)). The Pro version (not source-available) has advanced features, like variable-rate adaptive streaming to minimize lag, remote DevTools, built-in instant messaging as well as co-browsing. 
+
+VF is like S2, WebGap, Bromium, Authentic8, Menlo Security and Broadcom remote cloud browser offerings, but free for personal use and source-available. Plus, the Pro version has many advanced features not offered by those competitors. 
+
+In addition, integrated secure document viewing with content-disarm and reconstruction (CDR) is available from https://github.com/dosyago/p2%2eIt's for either version. [Contact me](mailto:cris@dosycorp.com?subject=ViewFinder%20License) for more information, or see the [license options](#license) below. 
+
+## Offerings
+
+While many customizations are availalbe, VF is available in 3 distinct flavors:
 
 - VF CE, ViewFinder "Community Edition", which is this repository
 - VF Pro, a closed-source edition based on VF CE, with more advanced features including elastic scalability and adaptive streaming
 - VF Personal, your own fully managed VF Pro instance for personal use. [Read more about that here](https://personal.dosyago.com) or see the [Personal](#personal) section below.
 
 The rest of this README covers VF CE and VF Pro, including how the licenses available for each.
-
 
 **NOTE: if you'd like to get a hold of a release of Community Edition for personal use, I am currently revamping the release flavors and right now the best way is to either clone this repo, or get a Docker image (listed below). The latest NPM release is untested and binary releases are not available right now, so best to clone the repo or pull the Docker image. Thanks!**
 
