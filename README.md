@@ -8,7 +8,7 @@ This means VF is clientless browser isolation (a.k.a an embeddable BrowserView).
 
 VF is like S2, WebGap, Bromium, Authentic8, Menlo Security and Broadcom remote cloud browser offerings, but free for personal use and source-available. Plus, the Pro version has many advanced features not offered by those competitors. 
 
-In addition, integrated secure document viewing with content-disarm and reconstruction (CDR) is available from https://github.com/dosyago/p2%2eIt's for either version. [Contact me](mailto:cris@dosycorp.com?subject=ViewFinder%20License) for more information, or see the [license options](#license) below. 
+In addition, integrated secure document viewing with content-disarm and reconstruction (CDR) is available from https://github.com/dosyago/p2%2e for either version. [Contact me](mailto:cris@dosycorp.com?subject=ViewFinder%20License) for more information, or see the [license options](#license) below. 
 
 ## Offerings
 
