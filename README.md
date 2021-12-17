@@ -191,10 +191,10 @@ VF Pro comes with better streaming and more advanced features including:
 
 VF Pro is only commercially licensed through a variety of Polyform licenses, which you can purchase using the following purchase links. Each purchase includes free install (into your own infrastructure or cloud, but managed options are available), and 2 months of free support and deployment help (after which you can purchase various support tiers, and custom development).
 
-- [Buy a Perpetual Internal Use License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $12000 per years](https://buy.stripe.com/aEUeW659D66D6LS00o) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Internal-Use-1.0.0.md)
-- [Buy a Perpetual Shield License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $85000 per years](https://buy.stripe.com/8wM4hseKdeD9b28aEZ) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Shield-1.0.0.md)
-- [Buy a Perpetual Perimeter License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $110000 per years](https://buy.stripe.com/aEU01c8lPeD95HOeVe) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Perimeter-1.0.0.md)
-- [Buy a Perpetual SMB License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $185000 per years](https://buy.stripe.com/7sI9BM59D0Mj9Y4aEX) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Small-Business-1.0.0.md)
+- [Buy a Perpetual Internal Use License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $12000 per year](https://buy.stripe.com/aEUeW659D66D6LS00o) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Internal-Use-1.0.0.md)
+- [Buy a Perpetual Shield License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $85000 per year](https://buy.stripe.com/8wM4hseKdeD9b28aEZ) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Shield-1.0.0.md)
+- [Buy a Perpetual Perimeter License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $110000 per year](https://buy.stripe.com/aEU01c8lPeD95HOeVe) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Perimeter-1.0.0.md)
+- [Buy a Perpetual SMB License of the current CE & Pro Version re-upped Yearly to the Latest Versions, USD $185000 per year](https://buy.stripe.com/7sI9BM59D0Mj9Y4aEX) [Read license](https://github.com/DOSYCORPS/polyform-licenses/blob/1.0.0/PolyForm-Small-Business-1.0.0.md)
 
 ## About
 
