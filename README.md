@@ -95,6 +95,10 @@ or 0-day exploits.
   - Fully-encrypted 'pixels-only',
     clientless RBI 
     
+## Try it out
+
+Sign up now and we'll get you set up in a couple of days (or hours, depending on how busy we are) with your very own instance running the Pro teir that you can use yourself. [Try VFPersonal for USD15 a month](https://buy.stripe.com/dR615g7hL0Mjeek5kx)
+    
 ## Where is it hosted? 
 
 VFPersonal is currently hosted on Vultr. Vultr provides great cloud services at an affordable price. I switched to them after being a loyal customer of other large cloud computing platforms. If you have a need for cloud infrastrucutre, you should definitely check them out with one of my referral links. The below links are my referral links. 
