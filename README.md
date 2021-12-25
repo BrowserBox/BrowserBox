@@ -201,7 +201,7 @@ VF Pro is only commercially licensed through a variety of Polyform licenses, whi
 
 The VF series of products are feature-complete, clientless, remote browser isolation products (RBI), including secure document viewing (CDR), built in HTML/JavaScript that runs right in your browser. Integrated with a secure document viewer (available on request), this can provide safe remote browser isolation at deployments of any size. It also saves you bandwidth (on the last hop, anyway).
 
-With ViewFinder, in order to render the content of a web page, the only thing we send to your device form the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
+With ViewFinder, in order to render the content of a web page, the only thing we send to your device from the remote page is pixels. So no HTML, CSS, JavaScript, etc from your browsing is ever executed on your device.
 
 [What is RBI / CDR?](https://hackernoon.com/zero-trust-browsing-to-reduce-cybersecurity-job-fatigue-7ce72a633d4)
 
@@ -242,17 +242,13 @@ An API to open a link in a secure remote browser context. Calling the below in t
 ```
 
 ***News:*** VF.openSecurely was **featured** in ProductHunt.
-OMG. Like Wow :rainbow: :joy_cat: I never got many likes on PH. And then suddently it got SO MANY! :P :) xx (wow). And I didn't even check it until 2 months later I was going to PH for something else and I saw all these people voted. Yay. Here's..."The Badge":
+OMG. Like Wow :rainbow: :joy_cat: I never got many likes on PH. And then suddenly it got SO MANY! :P :) xx (wow). And I didn't even check it until 2 months later I was going to PH for something else and I saw all these people voted. Yay. Here's..."The Badge":
 
 <a href="https://www.producthunt.com/posts/iso-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-iso-1" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=242265&theme=light" alt="ISO - Isolate dangerous sites and docs in your browser | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 If you want to see a demo of that in action, check out:  [schedule a demo](mailto:cris@dosycorp.com?subject=ViewFinderJS%20Demo&body=Hello%20Cris)
 
 These APIs support the full package include secure document viewing. [Use the SDK](https://github.com/dosyago/browsergap.js)
-
-## Try it out
-
-- [The $3.81 Session](https://comebrowsewithme.com)
 
 ## Normal Browser UI things that work
 
@@ -273,7 +269,7 @@ These APIs support the full package include secure document viewing. [Use the SD
 
 - Text selection
 - Page zooming and pinch/spread zooming on mobile (implementation is buggy)
-- Multi touch on tablet and mobile
+- Multi-touch on tablet and mobile
 - Regular browser settings (language, default page scale, etc)
 - Summary list of history entries
 - WebGL (this is an open bug in Chrome headless)
@@ -318,7 +314,7 @@ or Install from npm
 
 ### Windows systems (and Mingw and Cygwin)
 
-**Pre-requisites: Windows with Google chrome already instaled.**
+**Pre-requisites: Windows with Google Chrome already installed.**
 
 If you're on Git Bash (or Cygwin, or Mingw) you might have trouble using `npm i -g remoteview@latest`.
 
@@ -328,13 +324,13 @@ Make sure you configure npm
 
 Also, don't worry about running "setup_machine" at the prompt, because it uses `apt-get` which won't work on Windows anyway.
 
-Normally, a Windows device with chrome already installed won't need to run "setup_machine" anyway, which is a script to install things like fonts, graphics libraries and some utilities useful for running headless Chrome in linux.
+Normally, a Windows device with Chrome already installed won't need to run "setup_machine" anyway, which is a script to install things like fonts, graphics libraries and some utilities useful for running headless Chrome in linux.
 
 ### Binaries
 
 **Pre-requisites: Windows, Mac OS or Linux with Chrome already installed.**
 
-If you use a [binary](https://github.com/cris691/ViewFinder/releases/latest), make sure you have Google chrome installed. You might also need to run the `setup_machine.sh` script, to make sure you have all dependencies of Google chrome headless installed, but probably not if you have Windows.
+If you use a [binary](https://github.com/cris691/ViewFinder/releases/latest), make sure you have Google Chrome installed. You might also need to run the `setup_machine.sh` script, to make sure you have all dependencies of Google Chrome headless installed, but probably not if you have Windows.
 
 ### Safari
 
@@ -346,7 +342,7 @@ Safari requires TLS to use WebSockets with ViewFinderJS. In order to set that up
 
 ## Headless Detection
 
-Even tho RV uses headless Chrome, it attempts to conceal that fact. Sometimes, a service knows (such as Google, Google always knows). But othertimes the service cannot tell. For some tests of headless, visit the following when using RV:
+Even tho RV uses headless Chrome, it attempts to conceal that fact. Sometimes, a service knows (such as Google, Google always knows). But other times the service cannot tell. For some tests of headless, visit the following when using RV:
 
 - [Detect headless](https://infosimples.github.io/detect-headless) :heavy_check_mark:
 - [Are you headless?](https://arh.antoinevastel.com/bots/areyouheadless) :heavy_check_mark:
@@ -355,7 +351,7 @@ Even tho RV uses headless Chrome, it attempts to conceal that fact. Sometimes, a
 
 ViewFinder is a platform for live streaming the browser, with full interactivity. It lets you plug in to a local or remote, even a headless browser, and fly it as if it's a normal browser. 
 
-You can stream a remote browser with special cusotmizations to your clients to side step the restrictions of regular browsers. You can use it to build rich experiences based on the browser that are not possible using Flash, Browser Extensions or regular Web Driver protocol. 
+You can stream a remote browser with special customizations to your clients to side step the restrictions of regular browsers. You can use it to build rich experiences based on the browser that are not possible using Flash, Browser Extensions or regular Web Driver protocol. 
 
 For business enquiries, please contact [Cris](mailto:cris@dosycorp.com?subject=ViewFinder)
 
@@ -417,7 +413,7 @@ npm i
 npm test
 ```
 
-If you'd like more control (over say the ports that chrome and the web app run on, you can pass those
+If you'd like more control (over say the ports that Chrome and the web app run on, you can pass those
 parameters to the `start.sh` script, which has the following signature:
 
 ```sh
@@ -459,7 +455,7 @@ git clone https://github.com/i5ik/ViewFinder
 cd ViewFinder
 git fetch --all
 git branch nexe-build
-./buld_docker.sh
+./build_docker.sh
 ./run_docker.sh 
 ```
 
