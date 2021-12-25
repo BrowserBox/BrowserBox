@@ -33,6 +33,7 @@ Some ways to you might like to think about what ViewFinder is. ViewFinder is:
 - a platform to build enhanced browsing atop of, including capabilities like: co-browsing, secure document viewing, no-code automation
 - a free and source-available implementation of remote browser isolation
 - a way to view automations you're running with puppeteer, playwright or using the DevTools protocol natively. 
+- a double web proxy or reverse proxy system for the whole web.
 
 This repository is the source-available version of ViewFinder, otherwise known as ViewFinder Community Edition. It is feature complete but contains less features and less advanced capabilities compared to the closed-source ViewFinder Pro version, otherwise known as VF Pro.
 
