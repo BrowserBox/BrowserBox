@@ -4,6 +4,13 @@
 
 ViewFinder is a virtualized browser, running in your browser! Run it on our cloud, or bring your own.
 
+**Main advantages over other RBI, using VNC/Remote Desktop, Browserless debug console, or custom inspection solutions:**
+
+- Source-available and readily demo-able by cloning this repo, unlike other RBI solutions
+- Faster and more adaptive to bandwidth degradation that VNC and remote desktop, so delivers you responsivness that VNC cannot and reduces lag relative to Remote Desktop in tight bandwidth conditions.
+- More extensive than Browserless debug console (VF includes remote debugging UI (the standard Chrome DevTools frontend you get with a regular browser), but also includes things that Browserless does not support such as multiple tabs, file uploads and downloads, sound, advanced adaptive streaming, and other "regular browser" features not supported by the more limited interactivity available with Browserless browser viewport inspection.
+- Custom inspection solutions must encounter many issues that are already solved in this software, and expend time and effort developing their own solutions and keeping them up to date, there's no need to duplicate that expertise if you can purchase it.
+
 This means VF is clientless browser isolation (a.k.a an embeddable BrowserView). You can also think of it as secure Chrome-as-a-service. This source-available version is free for personal use (see [the Polyform Strict License](LICENSE.md)). The Pro version (not source-available) has advanced features, like variable-rate adaptive streaming to minimize lag, remote DevTools, built-in instant messaging as well as co-browsing. 
 
 VF is like S2, WebGap, Bromium, Authentic8, Menlo Security and Broadcom remote cloud browser offerings, but free for personal use and source-available. Plus, the Pro version has many advanced features not offered by those competitors. 
