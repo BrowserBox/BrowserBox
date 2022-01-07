@@ -1,10 +1,10 @@
 <img src=https://github.com/i5ik/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=100%>
 
-# Viewfinder
+# Viewfinder · ![npm](https://img.shields.io/npm/dt/remoteview) ![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![npm](https://img.shields.io/npm/v/remoteview) 
 
 What is Viewfinder? It's a HTML user-interface for a browser that on a remote server. This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, tradition web `<iframe>` elements. In also enables the building of a number of interesting [applications](#applications).
 
-# Progress & Roadmap 
+## Progress & Roadmap 
 
 It's kind of a long road but--hey--we've come so far already, we're gonna keep going 😉:
 
@@ -58,3 +58,23 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [ ] Fully scriptable with comprehensive API 
 
 ⭐ - *only in Viewfinder Pro*
+
+## Motivation
+
+I originally created this in 2018 as a layer for a collaborative zero-download clientless web-scraping app I'm working on, but fell in love with this browser layer, and decided it was useful enough and a product category in its own right. 
+
+## Contributing
+
+Contributions welcome! But please sign the CLA first. Don't worry, if you open a pull request a bot will automatically let you know what you need to do! 😜😉❤️
+
+## Copyright
+
+This project copyright Cris Stringfellow & The Dosyago Corporation 2022
+
+## FAQ
+
+
+
+
+
+
