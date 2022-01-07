@@ -6,9 +6,7 @@ What is Viewfinder? It's a HTML user-interface for a browser that on a remote se
 
 ## Progress & Roadmap 
 
-It's kind of a long road but--hey--we've come so far already, we're gonna keep going 😉:
-
-⭐ - *only in Viewfinder Pro*
+It's kind of a long road but--hey--we've come so far already, we're gonna keep going 😉 (⭐ *features are only in Viewfinder Pro*)
 
 **Browser Features**
 - [x] Back and forward history buttons 
