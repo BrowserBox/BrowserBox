@@ -1,6 +1,6 @@
 <p align=center><a href=https://dosyago.com target=_blank><img src=https://github.com/i5ik/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=61.8%></a></p>
 
-# [Viewfinder](https://github.com/i5ik/Viewfinder) · [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![npm](https://img.shields.io/npm/v/remoteview) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls) [![visits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visits%20since%2027%2f10%2f2020&edge_flat=false)](https://hits.seeyoufarm.com)
+# [Viewfinder](https://github.com/i5ik/Viewfinder) · [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![npm](https://img.shields.io/npm/v/remoteview) [![visits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visits%20since%2027%2f10%2f2020&edge_flat=false)](https://hits.seeyoufarm.com) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls)
 
 What is Viewfinder? It's a HTML user-interface for a browser that runs on a remote server. This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. In also enables the building of a number of interesting [applications](#applications).
 
@@ -21,6 +21,33 @@ Includes the provision of software, license and various tiers of service. Basic 
 **Individual**
 
 Includes provision of a geographically located server wherever you want (or as close to it as possible for us), installed software, credentials to access, and various tiers of service. Basic cost principle is based on performance (CPU cores, memory, network speed and bandwidth amount). 
+
+## Applications
+
+Some possible applications to build with Viewfinder:
+
+**Product space**
+- Remote browser isolation for security, risk mitigation and privacy
+- Zero download co-browsing for collaboration and social interaction
+- Delivery layer for a zero download web scraping app that works on any device format
+- Alternate browser extension platform with associated app store
+- An online "internet cafe" with advanced security and privacy features
+- An alternative to VPNs, DNS blocklists
+- Email attachment threat mitigation via CDR and automatic opening of links and attachments in the remote browser
+- An intuitive UI affordance to enable clients to stay in-app while performing 3rd-party processes that normally require them to leave your web site.
+- A fully skinable and themeable client-customizable online hosted web browser alternative to downloadable browsers
+
+**Internal tooling space**
+- Human-in-the-loop intervention tool to unblock stuck browser automation jobs, and diagnose "selector drift" and script-page mismatch issues
+- An effective web proxy to easily integrate 3rd-party processes without APIs
+- An effective, interactive console to inspect, observe and interact with browser automation tasks
+- An automatable browser that more effectively evades bot detection mechanisms that pure headless Chrome
+- A scriptable console, and interactive simulator for automation tasks and automation script creation with a great, familiar and intuitive feedback loop
+
+**Tech and framework space**
+- A `<WebView>` tag for the open web
+- An `<iframe>` without cross-origin restrictions 
+- A 'head' for headless browsers
 
 ## Progress & Roadmap 
 
@@ -84,6 +111,8 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [x] Small resource footprint ⭐
 - [x] Bbandwidth, CPU and memory limiting for resource abuse detection and prevention ⭐
 - [x] Simple API ⭐
+- [x] Fully white-labelable
+- [ ] White-labeling API
 - [ ] Fully scriptable with comprehensive API 
 
 ## Motivation
