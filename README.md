@@ -50,6 +50,8 @@ Some possible applications to build with Viewfinder:
 - Email attachment threat mitigation via CDR and automatic opening of links and attachments in the remote browser
 - An intuitive UI affordance to enable clients to stay in-app while performing 3rd-party processes that normally require them to leave your web site.
 - A fully skinable and themeable client-customizable online hosted web browser alternative to downloadable browsers
+- Replay web app interactions to record bugs by recording the even stream and the viewport
+- Record visual How To guides illustrating key user stories
 
 **Internal tooling space**
 - Human-in-the-loop intervention tool to unblock stuck browser automation jobs, and diagnose "selector drift" and script-page mismatch issues
