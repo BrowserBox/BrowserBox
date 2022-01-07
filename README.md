@@ -4,6 +4,14 @@
 
 What is Viewfinder? It's a HTML user-interface for a browser that runs on a remote server. This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. In also enables the building of a number of interesting [applications](#applications).
 
+## Pro or Regular? 
+
+What's the difference between VF Pro and regular VF? The main differences are that VF Pro has more advanced features and more frequent updates than VF regular. Many Pro features eventually are sent down to regular, but some will likely remain exclusive to Pro. Pro is updated weekly, with major updates shipped every quarter, whereas regular VF follows a much slower and more haphazard release cycle. 
+
+The final main differenece you might want to be aware of is that while VF regular is source-available (and is the sourcecode in this repository), VF Pro is currently closed-source proprietary software only available commercially, for either use in an Individual server, or for deployment in a Self-hosted package. 
+
+More information on these [commercial options](#commercial-options) is below.
+
 ## Commercial Options
 
 Viewfinder Pro is provided by the [Dosyago Corporation](https://github.com/dosyago) as a commercial offering in two flavors: individual, and self-hosted.
@@ -127,13 +135,17 @@ I originally created this in 2018 as a layer for a collaborative zero-download c
 
 Contributions welcome! But please sign the CLA first. Don't worry, if you open a pull request a bot will automatically let you know what you need to do! 😜😉❤️
 
+## Licensing
+
+*Coming soon* 
+
 ## Copyright
 
 This project copyright Cris Stringfellow & The Dosyago Corporation 2022
 
 ## FAQ
 
-
+*Coming soon*
 
 
 
