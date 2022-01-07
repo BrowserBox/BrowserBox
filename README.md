@@ -266,8 +266,6 @@ An API to open a link in a secure remote browser context. Calling the below in t
 ***News:*** VF.openSecurely was **featured** in ProductHunt.
 OMG. Like Wow :rainbow: :joy_cat: I never got many likes on PH. And then suddenly it got SO MANY! :P :) xx (wow). And I didn't even check it until 2 months later I was going to PH for something else and I saw all these people voted. Yay. Here's..."The Badge":
 
-<a href="https://www.producthunt.com/posts/iso-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-iso-1" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=242265&theme=light" alt="ISO - Isolate dangerous sites and docs in your browser | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-
 If you want to see a demo of that in action, check out:  [schedule a demo](mailto:cris@dosycorp.com?subject=ViewFinderJS%20Demo&body=Hello%20Cris)
 
 These APIs support the full package include secure document viewing. [Use the SDK](https://github.com/dosyago/browsergap.js)
