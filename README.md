@@ -37,14 +37,15 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [ ] Displayable history
 
 **Security Features**
-- [x] [`cgroups`](https://man7.org/linux/man-pages/man7/cgroups.7.html) resource control sandboxing
-- [x] 1 temporary user account per browser session
-- [x] Clean-slate profile directory per browser session
 - [x] RBI [browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) security model
 - [x] Fully clientless, embeds straight into a web page, zero download required for front-end
 - [x] [Evades](https://github.com/paulirish/headless-cat-n-mouse) [headless](https://github.com/infosimples/detect-headless) [detection](https://github.com/azerpas/detect-headless) with a customizable browser-fingerprinting cross-section
+- [x] Works with proxies and Tor
 - [x] DevTools (*currently only works on Chrome clients*) ⭐
 - [x] Integrates with PDF/DOCX/XLSX secure document viewer ([CDR](https://en.wikipedia.org/wiki/Content_Disarm_%26_Reconstruction)) (built-in only in Pro ⭐)
+- [x] [`cgroups`](https://man7.org/linux/man-pages/man7/cgroups.7.html) resource control sandboxing ⭐
+- [x] 1 temporary user account per browser session ⭐
+- [x] Clean-slate profile directory per browser session ⭐
 
 **Application Features**
 - [x] Built-in AdBlocker
@@ -56,7 +57,8 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [ ] Sync browser cookies & settings from other browser (or, for example, Google account)
 - [ ] Chrome extensions API (or cloned functionality)
 
-**Development Features**
+**Development and Deployment Features**
+- [x] Fully Dockerized / Dockerizable + reproducible startup and install scripts
 - [x] Cloud-agnostic, runs on any cloud platform 
 - [x] Platform agnostic, and runs on Windows, Linux and Mac
 - [x] Dependency control and minimal dependencies (only 14 external 1st level deps on back-end--mostly [express](https://expressjs.com/) related--and 0 on front-end)
