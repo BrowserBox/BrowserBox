@@ -1,6 +1,6 @@
 <img src=https://github.com/i5ik/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=100%>
 
-# Viewfinder · ![npm](https://img.shields.io/npm/dt/remoteview) ![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![npm](https://img.shields.io/npm/v/remoteview) 
+# [Viewfinder](https://github.com/i5ik/Viewfinder) · ![npm](https://img.shields.io/npm/dt/remoteview) ![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce) ![npm](https://img.shields.io/npm/v/remoteview) 
 
 What is Viewfinder? It's a HTML user-interface for a browser that on a remote server. This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, tradition web `<iframe>` elements. In also enables the building of a number of interesting [applications](#applications).
 
