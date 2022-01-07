@@ -4,7 +4,7 @@
 
 What is Viewfinder? It's a HTML user-interface for a browser that on a remote server. This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, tradition web `<iframe>` elements. In also enables the building of a number of interesting [applications](#applications).
 
-# Roadmap 
+# Progress & Roadmap 
 
 It's kind of a long road but--hey--we've come so far already, we're gonna keep going 😉:
 
