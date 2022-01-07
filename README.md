@@ -1,8 +1,17 @@
 <img src=https://github.com/i5ik/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=100%>
 
-# [:camera: ViewFinder](https://github.com/cris691/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) [![binary downloads](https://img.shields.io/github/downloads/cris691/ViewFinder/total?label=binary%20downloads)](https://github.com/cris691/ViewFinder/releases/latest) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com)
+<div align=center>
+<a href="https://www.producthunt.com/posts/come-browse-with-me?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-come-browse-with-me" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=294970&theme=dark" alt="Come browse with me - Invite others to browse with you | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a><a href="https://www.producthunt.com/posts/viewfinder-pro?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-viewfinder-pro" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=311208&theme=dark" alt="ViewFinder Pro - Virtual browsers you embed in your web app | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a><a href="https://www.producthunt.com/posts/iso-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-iso-1" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=242265&theme=dark" alt="ISO - Isolate dangerous sites and docs in your browser | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a><a href="https://www.producthunt.com/posts/viewfinderjs?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-viewfinderjs" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=284819&theme=dark" alt="ViewFinderJS - A secure browser you embed in your webapp | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+</div>
 
-ViewFinder is a virtualized browser, running in your browser! Run it on our cloud, or bring your own.
+
+<div align=center>
+  <a href="https://hub.docker.com/r/dosyago/browsergapce" target="_blank"><img src="https://img.shields.io/docker/pulls/dosyago/browsergapce" alt="Come browse with me - Invite others to browse with you | Product Hunt" style="width: auto; height: 40px;" height="40" /></a><a href="https://www.npmjs.com/package/remoteview" target="_blank"><img src="https://img.shields.io/npm/v/remoteview" alt="ViewFinder Pro - Virtual browsers you embed in your web app | Product Hunt" style="width: auto; height: 40px;" height="40" /></a><a href="https://www.npmjs.com/package/remoteview" target="_blank"><img src="https://img.shields.io/npm/dt/remoteview" alt="ISO - Isolate dangerous sites and docs in your browser | Product Hunt" style="width: auto; height: 40px;" height="40" /></a><a href="https://hits.seeyoufarm.com" target="_blank"><img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%20since%20Oct%2027%202020&edge_flat=false" alt="ViewFinderJS - A secure browser you embed in your webapp | Product Hunt" style="width: auto; height: 40px;" height="40" /></a>
+</div>
+
+# [:camera: ViewFinder](https://github.com/i5ik/Viewfinder) 
+
+Viewfinder is a virtualized browser, running in your browser! Run it on our cloud, or bring your own.
 
 **Main advantages over other RBI, using VNC/Remote Desktop, Browserless debug console, or custom inspection solutions:**
 
@@ -10,6 +19,8 @@ ViewFinder is a virtualized browser, running in your browser! Run it on our clou
 - Faster and more adaptive to bandwidth degradation that VNC and remote desktop, so delivers you responsivness that VNC cannot and reduces lag relative to Remote Desktop in tight bandwidth conditions.
 - More extensive than Browserless debug console (VF includes remote debugging UI (the standard Chrome DevTools frontend you get with a regular browser), but also includes things that Browserless does not support such as multiple tabs, file uploads and downloads, sound, advanced adaptive streaming, and other "regular browser" features not supported by the more limited interactivity available with Browserless browser viewport inspection.
 - Custom inspection solutions must encounter many issues that are already solved in this software, and expend time and effort developing their own solutions and keeping them up to date, there's no need to duplicate that expertise if you can purchase it.
+
+-----------------------------------
 
 This means VF is clientless browser isolation (a.k.a an embeddable BrowserView). You can also think of it as secure Chrome-as-a-service. This source-available version is free for personal use (see [the Polyform Strict License](LICENSE.md)). The Pro version (not source-available) has advanced features, like variable-rate adaptive streaming to minimize lag, remote DevTools, built-in instant messaging as well as co-browsing. 
 
@@ -62,11 +73,11 @@ You can license the Pro version for your product, or license the source-availabl
 
 [Have a little look at the latest features to land on Product Hunt](https://www.producthunt.com/posts/puppeteer-console)
 
-[Product Hunted x 3](https://www.producthunt.com/posts/viewfinderjs/maker-invite?code=wMxcDN)
+[Product Hunted x 3](https://www.producthunt.com/posts/viewfinderjs/maker-invite?code=wMxcDN) https://www.producthunt.com/posts/viewfinder-pro
 
-<a href="https://www.producthunt.com/posts/viewfinderjs?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-viewfinderjs" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=284819&theme=light" alt="ViewFinderJS - A secure browser you embed in your webapp | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+If you use or like this, don't forget to show your appreciation by [starring this repo](https://github.com/i5ik/ViewFinderJS/stargazers), or [following me](https://github.com/i5ik) 😹 (*or upvoting the below PHs)
 
-If you use or like this, don't forget to show your appreciation by [starring this repo](https://github.com/i5ik/ViewFinderJS/stargazers), or [following me](https://github.com/i5ik) 😹
+
 
 **What is this, in a (admittedly quite large) nutshell?**
 
