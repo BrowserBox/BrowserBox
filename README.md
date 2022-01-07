@@ -4,6 +4,24 @@
 
 What is Viewfinder? It's a HTML user-interface for a browser that on a remote server. This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, tradition web `<iframe>` elements. In also enables the building of a number of interesting [applications](#applications).
 
+## Commercial Options
+
+Viewfinder Pro is provided by the [Dosyago Corporation](https://github.com/dosyago) as a commercial offering in two flavors: individual, and self-hosted.
+
+**Self-hosted**
+
+Includes the provision of software, license and various tiers of service. Basic cost principle is based on time (not scale): time you want the license for, time of the latest update you want, and time it takes us to service your deployment. Targeted at SMBs up to Enterprise. 
+
+- Various configurable packages available with either perpetual or yearly licensing, and included service and consulting. 
+- Starts at USD6,700 a year for non-perpetual single year license plus minimal service. 
+- Mid-tier options cost 10K - 16K yearly with a variety of options including perpetual or annual licenses.
+- Invoiceable service and consulting also available.
+- BYO cloud or data-center, or on-prem are all available.
+
+**Individual**
+
+Includes provision of a geographically located server wherever you want (or as close to it as possible for us), installed software, credentials to access, and various tiers of service. Basic cost principle is based on performance (CPU cores, memory, network speed and bandwidth amount). 
+
 ## Progress & Roadmap 
 
 It's kind of a long road but--hey--we've come so far already, we're gonna keep going 😉 (⭐ *features are only in Viewfinder Pro*)
