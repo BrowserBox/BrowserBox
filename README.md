@@ -25,6 +25,7 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [x] Responsive design for any device viewport
 - [x] Desktop scroll-zoom
 - [x] Mobile pinch-zoom
+- [x] `mailto:`, `tel:`, `sktype:` and other [app and protocol links](quora.com/What-are-tel-SMS-mailto-and-geo-in-URLs/answer/Matthew-Cox-33)
 - [x] RBI [browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) security model
 - [x] Fully clientless, embeds straight into a web page, zero download required for front-end
 - [x] DevTools (*currently only works on Chrome clients*)
