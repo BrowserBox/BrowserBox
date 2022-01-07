@@ -36,7 +36,7 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [x] Vertically scalable (multiple browsers per server)
 - [x] Advanced adaptive streaming (WebRTC + WebSockets) and Shortest path lag reduction 
 - [x] Small resource footprint
-- [x] Small browser-fingerprinting cross-section
+- [x] [Evades](https://github.com/paulirish/headless-cat-n-mouse) [headless](https://github.com/infosimples/detect-headless) [detection](https://github.com/azerpas/detect-headless) with a customizable browser-fingerprinting cross-section
 - [x] Built-in AdBlocker
 - [x] Cloud-agnostic, runs on any cloud platform
 - [x] Platform agnostic, and runs on Windows, Linux and Mac
