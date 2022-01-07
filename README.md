@@ -10,11 +10,14 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 
 - [x] Back and forward history buttons
 - [x] Multiple tabs
+- [x] Favicons
+- [x] Addressbar search
 - [x] Incognito tabs
 - [x] Persistent sessions
 - [x] `<select>` inputs
 - [x] Modal dialogs
 - [x] Copy and paste
+- [x] Native paste
 - [x] Touch scroll and touch drag
 - [x] File upload (including multiple files)
 - [x] PDF/DOCX/XLSX etc document viewer ([CDR](https://en.wikipedia.org/wiki/Content_Disarm_%26_Reconstruction))
@@ -46,8 +49,8 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [x] Kiosk mode (*no UI controls*)
 - [x] Simple API
 - [x] Many customizable settings (including site blocklist)
+- [x] Multiple select
 - [ ] Multi-touch on mobile
-- [ ] Multiple select
 - [ ] Bookmarks
 - [ ] Chrome extensions API (or cloned functionality)
 - [ ] Sync browser cookies & settings from other browser (or, for example, Google account)
