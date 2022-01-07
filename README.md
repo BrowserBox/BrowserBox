@@ -12,6 +12,8 @@ The final main differenece you might want to be aware of is that while VF regula
 
 More information on these [commercial options](#commercial-options) is below.
 
+*Cute product comparison markdown table - coming soon!*
+
 ## Commercial Options
 
 Viewfinder Pro is provided by the [Dosyago Corporation](https://github.com/dosyago) as a commercial offering in two flavors: individual, and self-hosted.
@@ -146,6 +148,12 @@ This project copyright Cris Stringfellow & The Dosyago Corporation 2022
 ## FAQ
 
 *Coming soon*
+
+## Other sections - coming soon
+
+- Click to deploy on GCP, AWS, Heroku
+- Planned: StackScript for Linode, Vultr Marketplace entry
+- Some sort of community page: Matrix? Reddit? Usenet? Kidding ... probably ? 
 
 
 
