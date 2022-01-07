@@ -1,4 +1,4 @@
-<img src=https://github.com/i5ik/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=100%>
+<p align=center><a href=https://dosyago.com target=_blank><img src=https://github.com/i5ik/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=61.8%></a></p>
 
 # [Viewfinder](https://github.com/i5ik/Viewfinder) · [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![npm](https://img.shields.io/npm/v/remoteview) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls)
 
@@ -8,6 +8,9 @@ What is Viewfinder? It's a HTML user-interface for a browser that on a remote se
 
 It's kind of a long road but--hey--we've come so far already, we're gonna keep going 😉:
 
+⭐ - *only in Viewfinder Pro*
+
+**Browser Features**
 - [x] Back and forward history buttons 
 - [x] Multiple tabs
 - [x] Favicons
@@ -20,7 +23,6 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [x] Native paste
 - [x] Touch scroll and touch drag
 - [x] File upload (including multiple files)
-- [x] PDF/DOCX/XLSX etc document viewer ([CDR](https://en.wikipedia.org/wiki/Content_Disarm_%26_Reconstruction))
 - [x] Basic & Digest Auth support
 - [x] Sound
 - [x] Interact with CAPTCHAs
@@ -29,35 +31,42 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [x] Desktop scroll-zoom
 - [x] Mobile pinch-zoom
 - [x] `mailto:`, `tel:`, `sktype:` and other [app and protocol links](quora.com/What-are-tel-SMS-mailto-and-geo-in-URLs/answer/Matthew-Cox-33)
-- [x] RBI [browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) security model
-- [x] Fully clientless, embeds straight into a web page, zero download required for front-end
-- [x] DevTools (*currently only works on Chrome clients*) ⭐
-- [x] Fully remote co-browsing + built-in chat ⭐
-- [x] Run sandboxed puppeteer scripts ⭐
-- [x] Embeddable in an `<iframe>` ⭐
-- [x] Skinnable browser UI ⭐
-- [x] Vertically scalable (multiple browsers per server) ⭐
-- [x] Advanced adaptive streaming (WebRTC + WebSockets) and Shortest path lag reduction ⭐
-- [x] Small resource footprint ⭐
-- [x] [Evades](https://github.com/paulirish/headless-cat-n-mouse) [headless](https://github.com/infosimples/detect-headless) [detection](https://github.com/azerpas/detect-headless) with a customizable browser-fingerprinting cross-section
-- [x] Built-in AdBlocker
-- [x] Cloud-agnostic, runs on any cloud platform 
-- [x] Platform agnostic, and runs on Windows, Linux and Mac
-- [x] Bbandwidth, CPU and memory limiting for resource abuse detection and prevention ⭐
-- [x] Written in JavaScript (front-end) and NodeJS (back-end)
-- [x] Dependency control and minimal dependencies (only 14 external 1st level deps on back-end--mostly [express](https://expressjs.com/) related--and 0 on front-end)
-- [x] Kiosk mode (*no UI controls*) ⭐
-- [x] Simple API ⭐
-- [x] Many customizable settings (including site blocklist)
 - [x] Multiple select 
 - [ ] Multi-touch on mobile
 - [ ] Bookmarks
-- [ ] Chrome extensions API (or cloned functionality)
-- [ ] Sync browser cookies & settings from other browser (or, for example, Google account)
 - [ ] Displayable history
-- [ ] Fully scriptable with comprehensive API 
 
-⭐ - *only in Viewfinder Pro*
+**Security Features**
+- [x] [`cgroups`](https://man7.org/linux/man-pages/man7/cgroups.7.html) resource control sandboxing
+- [x] 1 temporary user account per browser session
+- [x] Clean-slate profile directory per browser session
+- [x] RBI [browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) security model
+- [x] Fully clientless, embeds straight into a web page, zero download required for front-end
+- [x] [Evades](https://github.com/paulirish/headless-cat-n-mouse) [headless](https://github.com/infosimples/detect-headless) [detection](https://github.com/azerpas/detect-headless) with a customizable browser-fingerprinting cross-section
+- [x] DevTools (*currently only works on Chrome clients*) ⭐
+- [x] Integrates with PDF/DOCX/XLSX secure document viewer ([CDR](https://en.wikipedia.org/wiki/Content_Disarm_%26_Reconstruction)) (built-in only in Pro ⭐)
+
+**Application Features**
+- [x] Built-in AdBlocker
+- [x] Fully remote real-time co-browsing + built-in chat ⭐
+- [x] Advanced adaptive streaming (WebRTC + WebSockets) and Shortest path lag reduction ⭐
+- [x] Run sandboxed puppeteer scripts ⭐
+- [x] Skinnable browser UI ⭐
+- [x] Kiosk mode (*no UI controls*) ⭐
+- [ ] Sync browser cookies & settings from other browser (or, for example, Google account)
+- [ ] Chrome extensions API (or cloned functionality)
+
+**Development Features**
+- [x] Cloud-agnostic, runs on any cloud platform 
+- [x] Platform agnostic, and runs on Windows, Linux and Mac
+- [x] Dependency control and minimal dependencies (only 14 external 1st level deps on back-end--mostly [express](https://expressjs.com/) related--and 0 on front-end)
+- [x] Many customizable settings (including site blocklist)
+- [ ] Fully scriptable with comprehensive API 
+- [x] Embeddable in an `<iframe>` ⭐
+- [x] Vertically scalable (multiple browsers per server) ⭐
+- [x] Small resource footprint ⭐
+- [x] Bbandwidth, CPU and memory limiting for resource abuse detection and prevention ⭐
+- [x] Simple API ⭐
 
 ## Motivation
 
