@@ -226,15 +226,20 @@ I originally created this in 2018 as a layer for a collaborative zero-download c
 
 ## FAQ
 
-**Can you rush legacy Flash applications?**
-
-There's a customized version of Viewfind Pro with Flash support via two separate paths: Legacy Chrome (pre [Chrome 88+ - Jan 2021](https://www.chromium.org/flash-roadmap#TOC-Flash-Support-Removed-from-Chromium-Target:-Chrome-88---Jan-2021-)) with [xvfb], and using latest Chrome with [ruffle](https://github.com/ruffle-rs/ruffle). ***However***, there's no guaruntee that your particular application will work, because ruffle still has many missing features and bugs, and because streaming your app over the network in a virtual browser may introduce other issues for your application, or simply be not suitable in your case.
-
-But in the ideal case, yes, it can be done, and you can embed your legacy Flash player app in a VF Pro iframe and put it on your site.
 
 **Can I download files form the web using VF?**
 
-By default VF does not permit downloading of files to the local device, and instead downloads them to the remote server. In VF Pro, the built-in secure document viewer then processes and displays them if they are of a supported format. However, both Pro and Regular lines can be configured to provide a download link to get the file to the local device, although that is not recommended in security applications, at least not without proper scanning or CDR.
+By default, for security, VF does not permit downloading of files to the local device, and instead downloads them to the remote server. In VF Pro, the built-in secure document viewer then processes and displays them if they are of a supported format. However, both Pro and Regular lines can be configured to provide a download link to get the file to the local device, although that is not recommended in security applications, at least not without proper scanning or CDR.
+
+You can also link up your own secure document viewer with VF Regular. 
+
+**Can you rush legacy Flash applications?**
+
+There's a customized version of Viewfind Pro with Flash support via two separate paths: Legacy Chrome (pre [Chrome 88+ - Jan 2021](https://www.chromium.org/flash-roadmap#TOC-Flash-Support-Removed-from-Chromium-Target:-Chrome-88---Jan-2021-)) with [xvfb](https://www.x.org/releases/X11R7.7/doc/man/man1/Xvfb.1.xhtml), and using latest Chrome with [ruffle](https://github.com/ruffle-rs/ruffle). 
+
+**However**, there's no guaruntee that your particular application will work, because ruffle still has many missing features and bugs, and because streaming your app over the network in a virtual browser may introduce other issues for your application, or simply be not suitable in your case.
+
+But in the ideal case, yes, it can be done, and you can embed your legacy Flash player app in a VF Pro iframe and put it on your site.
 
 **Can VF integrate with our existing secure document viewer or download scanning?**
 
