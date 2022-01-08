@@ -50,7 +50,7 @@ Prices and buy links for Self-hosted tiers are *coming soon!* In the meantime, <
 
 Includes provision of a geographically located server wherever you want (or as close to it as possible for us), installed software, credentials to access, and various tiers of service. Basic cost principle is based on performance (CPU cores, memory, network speed and bandwidth amount). 
 
-See the current [prices and tiers](https://personal.dosyago.com) for the Individual track. 
+See the current [prices and tiers for the Individual track.](https://personal.dosyago.com)
 
 ## Applications
 
@@ -168,7 +168,35 @@ This project copyright Cris Stringfellow & The Dosyago Corporation 2022
 
 ## FAQ
 
-*Coming soon*
+**Can you rush legacy Flash applications?**
+
+There's a customized version of Viewfind Pro with Flash support via two separate paths: Legacy Chrome (pre [Chrome 88+ - Jan 2021](https://www.chromium.org/flash-roadmap#TOC-Flash-Support-Removed-from-Chromium-Target:-Chrome-88---Jan-2021-)) with [xvfb], and using latest Chrome with [ruffle](https://github.com/ruffle-rs/ruffle). ***However***, there's no guaruntee that your particular application will work, because ruffle still has many missing features and bugs, and because streaming your app over the network in a virtual browser may introduce other issues for your application, or simply be not suitable in your case.
+
+But in the ideal case, yes, it can be done, and you can embed your legacy Flash player app in a VF Pro iframe and put it on your site.
+
+**Can I download files form the web using VF?**
+
+By default VF does not permit downloading of files to the local device, and instead downloads them to the remote server. In VF Pro, the built-in secure document viewer then processes and displays them if they are of a supported format. However, both Pro and Regular tracks can be configured to provide a download link to get the file to the local device, although that is not recommended in security applications, at least not without proper scanning or CDR.
+
+**Can VF integrate with our existing secure document viewer or download scanning?**
+
+Not out of the box but VF Pro can be configured to pass requests for document viewing to a 3rd-party application and to serve downloaded files. In short, VF can be configured to send downloads to your secure document viewer or download scanner. In the case where VF is configured to allow downloads to the local device, it should not effect your normal download scanners and endpoint protection software. 
+
+**What sort of multi-profile or "fake profile" privacy options are available to defeat fingerprinting and tracking?**
+
+By default VF Pro runs with a clean slate every session, so there are no tracking cookies or data retained from any other session of VF. Even if persistent sessions are enabled, VF can still be configured to transmit various phoney profile information (such as installed plugins, geolocation, platform, device, browser version and so on) in order to attempt to defeat fingerprinting and tracking. However, even with the added layer of protection of an additional remote browser, a separate IP address, and forged browser identification, there's no guaruntee of 100% effectiveness. If someone logs in to an account linked to their other profiles or identities, it may still be possible to track them, even if they are using VF. Technology can only go so far, people must also take sensible precautions in their choices. 
+
+**Can you white-label VF as the tech for our internal RBI product?**
+
+Not us, but you can do it and we can help you. VF can most definitely be fully whitelabelled and customized with a variety of themes, splash pages, styles, design systems, brand look and assets.
+
+**Can I use VF tech to make my own commercial RBI product and sell that?**
+
+Yes of course. With the proper license this is most definitely a possible use case for VF, and we encourage you to do so.
+
+**Where can I get more information on your services, available licenses or pricing?**
+
+Eventually I intend to most of that information here, but for now you may [email me](mailto:cris@dosycorp.com?subject=VF%20Info&body=Hi%20Cris). The reason is I'm currently revising a lot of positioning, licensing and prices. If you let me know you prefer a voice call that's also available. 
 
 ## Other sections - coming soon
 
