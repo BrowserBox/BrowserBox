@@ -165,7 +165,11 @@ Viewfinder aims for feature-parity with desktop and mobile browsers, but also to
 
 **What's the difference between VF Pro and regular VF?**
 
-The main differences are that VF Pro has more advanced features and more frequent updates than VF regular. Many Pro features eventually are sent down to regular, but some will likely remain exclusive to Pro. Pro is updated weekly, with major updates shipped every quarter, whereas regular VF follows a much slower and more haphazard release cycle. 
+The main differences are that VF Pro has more advanced features and more frequent updates than VF regular.
+
+For example, Pro has much better rendering, higher quality graphics and lower lag than regular, as a result of many advanced streaming and variable bitrate innovations incorporated there.
+
+Many Pro features are eventually sent down to regular, but some will likely remain exclusive to Pro. Pro is updated weekly, with major updates shipped every quarter, whereas regular VF follows a much slower and more haphazard release cycle. 
 
 The final main differenece you might want to be aware of is that while VF regular is source-available (and is the sourcecode in this repository), VF Pro is currently closed-source proprietary software only available commercially, for either use in an Individual server, or for deployment in a Self-hosted package. 
 
