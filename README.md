@@ -2,15 +2,13 @@
 
 # [Viewfinder](https://github.com/i5ik/Viewfinder) · [![Source Lines of Code](https://sloc.xyz/github/i5ik/Viewfinder)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/remoteview)](https://npmjs.com/package/remoteview) [![visits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visits%20since%2027%2f10%2f2020&edge_flat=false)](https://hits.seeyoufarm.com) [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) 
 
-**What is Viewfinder?**
+**Viewfinder** is a component for a browser that runs on a remote server, with a UI you can embed on the web.
 
-**Viewfinder** is a HTML user-interface for a browser that runs on a remote server. 
+- **Powerful:** Viewfinder lets your provide controllable access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. 
+- **General:** Build [applications](#applications) that need cross-origin access, while delivering complex user stories that benefit from an encapsulated browser abstraction. Since the whole stack is written in JavaScript you can easily extend it to suit your needs.
+- **Unprecendented:** The technology that puts unrestricted browser capabilities within reach of a web app has never existed before in the open. 
 
-This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. 
-
-Viewfinder also enables the building of a number of interesting [applications](#applications).
-
-## Getting it
+## Installation
 
 **Clone the repo:**
 
