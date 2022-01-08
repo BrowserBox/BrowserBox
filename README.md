@@ -1,16 +1,16 @@
 <p align=center><a href=https://dosyago.com target=_blank><img src=https://github.com/i5ik/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=61.8%></a></p>
 
-# [Viewfinder](https://github.com/i5ik/Viewfinder) · [![Source Lines of Code](https://sloc.:heavy_check_mark:yz/github/i5ik/Viewfinder)](https://sloc.:heavy_check_mark:yz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/remoteview)](https://npmjs.com/package/remoteview) [![visits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visits%20since%2027%2f10%2f2020&edge_flat=false)](https://hits.seeyoufarm.com) [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) 
+# [Viewfinder](https://github.com/i5ik/Viewfinder) · [![Source Lines of Code](https://sloc.xyz/github/i5ik/Viewfinder)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/remoteview)](https://npmjs.com/package/remoteview) [![visits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visits%20since%2027%2f10%2f2020&edge_flat=false)](https://hits.seeyoufarm.com) [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) 
 
 **What is Viewfinder?**
 
-**Viewfinder** is a HTML user-interface for a browser that runs on a remote server. This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandbo:heavy_check_mark:ed than, and less restricted than, traditional web `<iframe>` elements. In also enables the building of a number of interesting [applications](#applications).
+**Viewfinder** is a HTML user-interface for a browser that runs on a remote server. This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. In also enables the building of a number of interesting [applications](#applications).
 
 ## Pro or Regular? 
 
 **What's the difference between VF Pro and regular VF?**
 
-The main differences are that VF Pro has more advanced features and more frequent updates than VF regular. Many Pro features eventually are sent down to regular, but some will likely remain e:heavy_check_mark:clusive to Pro. Pro is updated weekly, with major updates shipped every quarter, whereas regular VF follows a much slower and more haphazard release cycle. 
+The main differences are that VF Pro has more advanced features and more frequent updates than VF regular. Many Pro features eventually are sent down to regular, but some will likely remain exclusive to Pro. Pro is updated weekly, with major updates shipped every quarter, whereas regular VF follows a much slower and more haphazard release cycle. 
 
 The final main differenece you might want to be aware of is that while VF regular is source-available (and is the sourcecode in this repository), VF Pro is currently closed-source proprietary software only available commercially, for either use in an Individual server, or for deployment in a Self-hosted package. 
 
@@ -30,7 +30,7 @@ More information on these [commercial options](#commercial-options) is below, an
 | Auto scaling and resource control             |                    | :heavy_check_mark: |
 | Advanced viewport streaming and lag reduction |                    | :heavy_check_mark: |
 | Built-in cobrowsing and instant messaging     |                    | :heavy_check_mark: |
-| Run sandbo:heavy_check_mark:ed puppeteer scripts               |                    | :heavy_check_mark: |
+| Run sandboxed puppeteer scripts               |                    | :heavy_check_mark: |
 | `<iframe>` embeddable                         |                    | :heavy_check_mark: |
 | Kiosk mode                                    |                    | :heavy_check_mark: |
 | Simple API                                    |                    | :heavy_check_mark: |
@@ -68,7 +68,7 @@ Some possible applications to build with Viewfinder:
 - Remote browser isolation for security, risk mitigation and privacy
 - Zero download co-browsing for collaboration and social interaction
 - Delivery layer for a zero download web scraping app that works on any device format
-- Alternate browser e:heavy_check_mark:tension platform with associated app store
+- Alternate browser extension platform with associated app store
 - An online "internet cafe" with advanced security and privacy features
 - An alternative to VPNs, DNS blocklists
 - Email attachment threat mitigation via CDR and automatic opening of links and attachments in the remote browser
@@ -79,7 +79,7 @@ Some possible applications to build with Viewfinder:
 
 **Internal tooling space**
 - Human-in-the-loop intervention tool to unblock stuck browser automation jobs, and diagnose "selector drift" and script-page mismatch issues
-- An effective web pro:heavy_check_mark:y to easily integrate 3rd-party processes without APIs
+- An effective web proxy to easily integrate 3rd-party processes without APIs
 - An effective, interactive console to inspect, observe and interact with browser automation tasks
 - An automatable browser that more effectively evades bot detection mechanisms that pure headless Chrome
 - A scriptable console, and interactive simulator for automation tasks and automation script creation with a great, familiar and intuitive feedback loop
@@ -110,26 +110,26 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Clear all cookies and cached data during sessions
 - [:heavy_check_mark:] Sound
 - [:heavy_check_mark:] Interact with CAPTCHAs
-- [:heavy_check_mark:] Conte:heavy_check_mark:t-menu (for opening in new tab, copying link address, etc)
+- [:heavy_check_mark:] Context-menu (for opening in new tab, copying link address, etc)
 - [:heavy_check_mark:] Responsive design for any device viewport
 - [:heavy_check_mark:] Desktop scroll-zoom
 - [:heavy_check_mark:] Mobile pinch-zoom
-- [:heavy_check_mark:] `mailto:`, `tel:`, `sktype:` and other [app and protocol links](quora.com/What-are-tel-SMS-mailto-and-geo-in-URLs/answer/Matthew-Co:heavy_check_mark:-33)
+- [:heavy_check_mark:] `mailto:`, `tel:`, `sktype:` and other [app and protocol links](quora.com/What-are-tel-SMS-mailto-and-geo-in-URLs/answer/Matthew-Cox-33)
 - [:heavy_check_mark:] Multiple select 
-- [ ] Multi-touch on mobile
-- [ ] Bookmarks
-- [ ] Displayable history
-- [ ] Webcam and microphone support
+- [:heavy_cross:] Multi-touch on mobile
+- [:heavy_cross:] Bookmarks
+- [:heavy_cross:] Displayable history
+- [:heavy_cross:] Webcam and microphone support
 
 **Security Features**
 - [:heavy_check_mark:] RBI [browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) security model
 - [:heavy_check_mark:] Fully clientless, embeds straight into a web page, zero download required for front-end
 - [:heavy_check_mark:] [Evades](https://github.com/paulirish/headless-cat-n-mouse) [headless](https://github.com/infosimples/detect-headless) [detection](https://github.com/azerpas/detect-headless) 
 - [:heavy_check_mark:] Customizable browser-fingerprinting cross-section
-- [:heavy_check_mark:] Works with pro:heavy_check_mark:ies and Tor
+- [:heavy_check_mark:] Works with proxies and Tor
 - [:heavy_check_mark:] DevTools (*currently only works on Chrome clients*) ⭐
 - [:heavy_check_mark:] Integrates with PDF/DOCX/XLSX secure document viewer ([CDR](https://en.wikipedia.org/wiki/Content_Disarm_%26_Reconstruction)) (built-in only in Pro ⭐)
-- [:heavy_check_mark:] [`cgroups`](https://man7.org/linu:heavy_check_mark:/man-pages/man7/cgroups.7.html) resource control sandbo:heavy_check_mark:ing ⭐
+- [:heavy_check_mark:] [`cgroups`](https://man7.org/linux/man-pages/man7/cgroups.7.html) resource control sandboxing ⭐
 - [:heavy_check_mark:] 1 temporary user account per browser session ⭐
 - [:heavy_check_mark:] Clean-slate profile directory per browser session ⭐
 
@@ -137,17 +137,17 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Built-in AdBlocker
 - [:heavy_check_mark:] Fully remote real-time co-browsing + built-in chat ⭐
 - [:heavy_check_mark:] Advanced adaptive streaming (WebRTC + WebSockets) and Shortest path lag reduction ⭐
-- [:heavy_check_mark:] Run sandbo:heavy_check_mark:ed puppeteer scripts ⭐
+- [:heavy_check_mark:] Run sandboxed puppeteer scripts ⭐
 - [:heavy_check_mark:] Skinnable browser UI ⭐
 - [:heavy_check_mark:] Kiosk mode (*no UI controls*) ⭐
-- [ ] Sync browser cookies & settings from other browser (or, for e:heavy_check_mark:ample, Google account)
-- [ ] Chrome e:heavy_check_mark:tensions API (or cloned functionality)
+- [:heavy_cross:] Sync browser cookies & settings from other browser (or, for example, Google account)
+- [:heavy_cross:] Chrome extensions API (or cloned functionality)
 
 **Development and Deployment Features**
 - [:heavy_check_mark:] Fully Dockerized / Dockerizable + reproducible startup and install scripts
 - [:heavy_check_mark:] Cloud-agnostic, runs on any cloud platform 
-- [:heavy_check_mark:] Platform agnostic, and runs on Windows, Linu:heavy_check_mark: and Mac
-- [:heavy_check_mark:] Dependency control and minimal dependencies (only 14 e:heavy_check_mark:ternal 1st level deps on back-end--mostly [e:heavy_check_mark:press](https://e:heavy_check_mark:pressjs.com/) related--and 0 on front-end)
+- [:heavy_check_mark:] Platform agnostic, and runs on Windows, Linux and Mac
+- [:heavy_check_mark:] Dependency control and minimal dependencies (only 14 external 1st level deps on back-end--mostly [express](https://expressjs.com/) related--and 0 on front-end)
 - [:heavy_check_mark:] Many customizable settings (including site blocklist)
 - [:heavy_check_mark:] Embeddable in an `<iframe>` ⭐
 - [:heavy_check_mark:] Vertically scalable (multiple browsers per server) ⭐
@@ -155,8 +155,8 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Bandwidth, CPU and memory limiting for resource abuse detection and prevention ⭐
 - [:heavy_check_mark:] Simple API ⭐
 - [:heavy_check_mark:] Fully white-labelable
-- [ ] White-labeling API
-- [ ] Fully scriptable with comprehensive API 
+- [:heavy_cross:] White-labeling API
+- [:heavy_cross:] Fully scriptable with comprehensive API 
 
 ## Motivation
 
@@ -166,7 +166,7 @@ I originally created this in 2018 as a layer for a collaborative zero-download c
 
 **Can you rush legacy Flash applications?**
 
-There's a customized version of Viewfind Pro with Flash support via two separate paths: Legacy Chrome (pre [Chrome 88+ - Jan 2021](https://www.chromium.org/flash-roadmap#TOC-Flash-Support-Removed-from-Chromium-Target:-Chrome-88---Jan-2021-)) with [:heavy_check_mark:vfb], and using latest Chrome with [ruffle](https://github.com/ruffle-rs/ruffle). ***However***, there's no guaruntee that your particular application will work, because ruffle still has many missing features and bugs, and because streaming your app over the network in a virtual browser may introduce other issues for your application, or simply be not suitable in your case.
+There's a customized version of Viewfind Pro with Flash support via two separate paths: Legacy Chrome (pre [Chrome 88+ - Jan 2021](https://www.chromium.org/flash-roadmap#TOC-Flash-Support-Removed-from-Chromium-Target:-Chrome-88---Jan-2021-)) with [xvfb], and using latest Chrome with [ruffle](https://github.com/ruffle-rs/ruffle). ***However***, there's no guaruntee that your particular application will work, because ruffle still has many missing features and bugs, and because streaming your app over the network in a virtual browser may introduce other issues for your application, or simply be not suitable in your case.
 
 But in the ideal case, yes, it can be done, and you can embed your legacy Flash player app in a VF Pro iframe and put it on your site.
 
@@ -174,9 +174,9 @@ But in the ideal case, yes, it can be done, and you can embed your legacy Flash 
 
 By default VF does not permit downloading of files to the local device, and instead downloads them to the remote server. In VF Pro, the built-in secure document viewer then processes and displays them if they are of a supported format. However, both Pro and Regular lines can be configured to provide a download link to get the file to the local device, although that is not recommended in security applications, at least not without proper scanning or CDR.
 
-**Can VF integrate with our e:heavy_check_mark:isting secure document viewer or download scanning?**
+**Can VF integrate with our existing secure document viewer or download scanning?**
 
-Not out of the bo:heavy_check_mark: but VF Pro can be configured to pass requests for document viewing to a 3rd-party application and to serve downloaded files. In short, VF can be configured to send downloads to your secure document viewer or download scanner. In the case where VF is configured to allow downloads to the local device, it should not effect your normal download scanners and endpoint protection software. 
+Not out of the box but VF Pro can be configured to pass requests for document viewing to a 3rd-party application and to serve downloaded files. In short, VF can be configured to send downloads to your secure document viewer or download scanner. In the case where VF is configured to allow downloads to the local device, it should not effect your normal download scanners and endpoint protection software. 
 
 **What sort of multi-profile or "fake profile" privacy options are available to defeat fingerprinting and tracking?**
 
@@ -198,7 +198,7 @@ Eventually I intend to most of that information here, but for now you may [email
 
 - Click to deploy on GCP, AWS, Heroku
 - Planned: StackScript for Linode, Vultr Marketplace entry
-- Some sort of community page: Matri:heavy_check_mark:? Reddit? Usenet? Kidding ... probably ? 
+- Some sort of community page: Matrix? Reddit? Usenet? Kidding ... probably ? 
 
 
 ## Contributing
@@ -211,7 +211,7 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
   VF Regular (this repository) is licensed under the Polyform Noncommercial License 1.0 (NC license). Any previous licensed versions are also relicensed under this license. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE.md). 
 
-  In essence this license permits any use case besides those which are for a commercial purpose or anticipated commercial application. E:heavy_check_mark:plicitly, *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
+  In essence this license permits any use case besides those which are for a commercial purpose or anticipated commercial application. Explicitly, *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
 
 **VF Pro**
 
