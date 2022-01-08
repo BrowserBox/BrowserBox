@@ -38,11 +38,12 @@ $ cd Viewfinder
 $ npm i 
 ```
 
-or, **install it from NPM either as a package or a global:**
+or, **run**, **install** or **depend** on it from NPM:
 
 ```shell
-$ npm i --save viewfinder-regular
+$ npx viewfinder-regular@latest
 $ npm i -g viewfinder-regular
+$ npm i --save viewfinder-regular
 ```
 
 or, **pull it off DockerHub:**
