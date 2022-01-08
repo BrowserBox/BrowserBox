@@ -2,9 +2,10 @@
   "name": "viewfinder-regular",
   "version": "3.3.1",
   "description": "Remote isolated browser platform by Dosyago",
-  "main": "index.js",
+  "main": "./dist/Viewfinder.js",
+  "module": "./src/server.js",
   "bin": {
-    "vf": "Viewfinder.js"
+    "vf": "./dist/Viewfinder.js"
   },
   "scripts": {
     "test": "bash ./scripts/run-test.sh",
