@@ -2,7 +2,6 @@
   "name": "viewfinder-regular",
   "version": "3.3.4",
   "description": "Remote isolated browser platform by Dosyago",
-  "type": "module",
   "main": "./dist/Viewfinder.js",
   "module": "./src/server.js",
   "bin": {
@@ -23,8 +22,10 @@
     "tsc-public": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System ./src/public/*.js ./src/decs.d.ts",
     "tsc-check": "./scripts/tsc-check.sh",
     "check": "rm -f ./src/public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
-    "build": "npx webpack ./src/server.js --config ./config/webpack.config.js && npx pkg --compress Brotli .",
-    "pack": "upx ./build/Viewfinder.exe && upx ./build/Viewfinder.nix && upx ./build/Viewfinder.macos && upx ./build/Viewfinder.win32.exe && upx ./build/Viewfinder.nix32"
+    "pack": "npx webpack ./src/server.js --config ./config/webpack.config.js",
+    "package": "npx pkg --compress Brotli .",
+    "build": "npm run pack && npm run package",
+    "old-pack": "upx || : && echo 'upx may not work with pkg'"
   },
   "repository": {
     "type": "git",
