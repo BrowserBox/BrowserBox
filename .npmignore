@@ -1,7 +1,4 @@
-ViewFinder.exe
-ViewFinder.win*
-ViewFinder.nix*
-ViewFinder.mac*
+build/*
 typetests
 public/fonts
 public/old
