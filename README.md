@@ -10,7 +10,9 @@ What's the difference between VF Pro and regular VF? The main differences are th
 
 The final main differenece you might want to be aware of is that while VF regular is source-available (and is the sourcecode in this repository), VF Pro is currently closed-source proprietary software only available commercially, for either use in an Individual server, or for deployment in a Self-hosted package. 
 
-More information on these [commercial options](#commercial-options) is below, and take a look at this table of feature comparison between Regular and Pro.
+More information on these [commercial options](#commercial-options) is below, and take a look at the table of feature comparison between Regular and Pro.
+
+<b id=comparison-table>VF Pro vs Regular &mdash; Comparison Table</b>
 
 | Feature                                       | Regular            | Pro                |
 |-----------------------------------------------|--------------------|--------------------|
@@ -154,18 +156,6 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 
 I originally created this in 2018 as a layer for a collaborative zero-download clientless web-scraping app I'm working on, but fell in love with this browser layer, and decided it was useful enough and a product category in its own right. 
 
-## Contributing
-
-Contributions welcome! But please sign the CLA first. Don't worry, if you open a pull request a bot will automatically let you know what you need to do! 😜😉❤️
-
-## Licensing
-
-*Coming soon* 
-
-## Copyright
-
-This project copyright Cris Stringfellow & The Dosyago Corporation 2022
-
 ## FAQ
 
 **Can you rush legacy Flash applications?**
@@ -203,6 +193,19 @@ Eventually I intend to most of that information here, but for now you may [email
 - Click to deploy on GCP, AWS, Heroku
 - Planned: StackScript for Linode, Vultr Marketplace entry
 - Some sort of community page: Matrix? Reddit? Usenet? Kidding ... probably ? 
+
+
+## Contributing
+
+Contributions welcome! But please sign the CLA first. Don't worry, if you open a pull request a bot will automatically let you know what you need to do! 😜😉❤️
+
+## Licensing
+
+*Coming soon* 
+
+## Copyright
+
+This project copyright Cris Stringfellow & The Dosyago Corporation 2022
 
 
 
