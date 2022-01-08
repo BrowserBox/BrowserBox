@@ -22,6 +22,7 @@ const DEBUG = {
 
 const argv = process.argv;
 const device = argv[3] || 'rtp.monitor' || 'auto_null.monitor';
+console.log({device});
 
 const encoders = {
   mp3: {
@@ -81,7 +82,7 @@ if ( DEBUG.goSecure ) {
 function getEncoder() {
   if (encoder) return encoder;
 
-  DEBUG.val && console.log('starting encoder');
+  DEBUG.val && console.log('starting encoder', device);
   parec = childProcess.spawn('parec', ['--process-time-msec=100', '--latency-msec=100', '-d', device]);
   parec.stderr.pipe(process.stdout);
   parec.on('error', e => {
@@ -204,7 +205,7 @@ app.get('/login', (req, res) => {
   }
 });
 app.get('/', (request, response) => {
-  const cookie = request.cookies[COOKIENAME+PORT];
+  const cookie = request.cookies[COOKIENAME+(PORT+2)];
   if ( cookie == COOKIE ) {
     var contentType = encoders[encoderType].contentType;
     DEBUG.val && console.log('  setting Content-Type to', contentType);
