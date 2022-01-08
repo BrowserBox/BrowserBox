@@ -1,6 +1,6 @@
 {
   "name": "viewfinder",
-  "version": "2.39.1",
+  "version": "2.40.0",
   "description": "Fly a browser remotely from your browser? Yes.",
   "main": "index.js",
   "type": "module",
