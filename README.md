@@ -34,11 +34,13 @@ More information on these [commercial options](#commercial-options) is below, an
 
 ## Commercial Options
 
+If you want to use VF commercially your only option is to purchase an [#licensing](S license), which permits non-competing uses. If you'd like to license VF for purposes that competete with us, we'll have to negotiate an agreement. 
+
 Viewfinder Pro is provided by the [Dosyago Corporation](https://github.com/dosyago) as a commercial offering in two flavors: individual, and self-hosted.
 
 **Self-hosted**
 
-Includes the provision of software, license and various tiers of service. Basic cost principle is based on time (not scale): time you want the license for, time of the latest update you want, and time it takes us to service your deployment. Targeted at SMBs up to Enterprise. 
+Includes the provision of the VF Pro software, an S license and various tiers of service. The basic cost principle is established on time (not scale): time you want the license for, time of the latest update you want, and time it takes us to service your deployment. Targeted at SMBs up to Enterprise. 
 
 - Various configurable packages available with either perpetual or yearly licensing, and included service and consulting. 
 - Starts at USD6,700 a year for non-perpetual single year license plus minimal service. 
@@ -50,7 +52,7 @@ Prices and buy links for Self-hosted tiers are *coming soon!* In the meantime, <
 
 **Individual**
 
-Includes provision of a geographically located server wherever you want (or as close to it as possible for us), installed software, credentials to access, and various tiers of service. Basic cost principle is based on performance (CPU cores, memory, network speed and bandwidth amount). 
+Includes provision of a geographically located server wherever you want (or as close to it as possible for us), installed software, credentials to access, and various tiers of service. The basic cost principle is founded on performance (CPU cores, memory, network speed and bandwidth amount). 
 
 See the current [prices and tiers for the Individual track.](https://personal.dosyago.com)
 
@@ -202,11 +204,18 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 ## Licensing
 
 **VF Regular**
-  VF Regular (this repository) is licensed under the Polyform Noncommercial License 1.0 (NC license). Any previous licensed versions are also relicensed under this license. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE.md). In essence this license permits any use case besides those which are for a commercial purpose or anticipated commercial application. Explicitly, *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
-  I only ask that if you're using it under the NC license, you consider donating to assist and ensure continued development of the VF Regular line. And I also ask that if you have extensive modifications or custom requirements you seriously consider engaging the services of Dosyago Corporation to consult for you on that. [Reach out to me](mailto:cris@dosycorp.com?subject=NC%20VF%20Inquiry&body=Hi%20Cris) for service.
+
+  VF Regular (this repository) is licensed under the Polyform Noncommercial License 1.0 (NC license). Any previous licensed versions are also relicensed under this license. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE.md). 
+
+  In essence this license permits any use case besides those which are for a commercial purpose or anticipated commercial application. Explicitly, *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
+
+  I only ask that if you're using it under the NC license, you [consider donating to assist and ensure continued development](https://github.com/i5ik/Viewfinder/blob/boss/docs/DONATIONS.md) of the VF Regular line. And I also ask that if you have extensive modifications or custom requirements you seriously consider engaging the services of Dosyago Corporation to consult for you on that. [Reach out to me](mailto:cris@dosycorp.com?subject=NC%20VF%20Inquiry&body=Hi%20Cris) for service.
 
 **VF Pro**
-  VF Pro (closed-sourced) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreemetn with Dosyago Corporation. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE-Pro.md). In essence this license permits any use case besides those which compete with Dosyago Corporation (or the rightsholders of VF).
+
+  VF Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreemetn with Dosyago Corporation. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE-Pro.md). 
+
+  In essence this license permits any use case besides those which compete with Dosyago Corporation (or the rightsholders of VF).
 
 ## Copyright
 
