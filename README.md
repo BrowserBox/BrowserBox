@@ -107,6 +107,7 @@ Viewfinder aims for feature-parity with desktop and mobile browsers, but also to
 - [:heavy_check_mark:] Mobile pinch-zoom
 - [:heavy_check_mark:] `mailto:`, `tel:`, `sktype:` and other [app and protocol links](quora.com/What-are-tel-SMS-mailto-and-geo-in-URLs/answer/Matthew-Cox-33)
 - [:heavy_check_mark:] Multiple select 
+- [:heavy_check_mark:] Silky smooth variable-bitrate rendering performance ⭐
 - [:hourglass_flowing_sand:] Multi-touch on mobile
 - [:hourglass_flowing_sand:] Bookmarks
 - [:hourglass_flowing_sand:] Displayable history
