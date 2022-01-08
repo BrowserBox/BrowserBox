@@ -5851,7 +5851,7 @@
     } = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
     {
-      return "https://google.com/search?q=".concat(encodeURIComponent(query));
+      return "https://duckduckgo.com/?q=".concat(encodeURIComponent(query));
     }
   }
 
