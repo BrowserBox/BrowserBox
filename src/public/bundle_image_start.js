@@ -1,42 +1,30 @@
 "use strict";
 
-function _defineProperty2(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+var _interopRequireDefault = require("@babel/runtime/helpers/interopRequireDefault");
 
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+var _regenerator = _interopRequireDefault(require("@babel/runtime/regenerator"));
 
-function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+var _defineProperty3 = _interopRequireDefault(require("@babel/runtime/helpers/defineProperty"));
 
-function _toArray(arr) { return _arrayWithHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableRest(); }
+var _slicedToArray2 = _interopRequireDefault(require("@babel/runtime/helpers/slicedToArray"));
 
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+var _toArray2 = _interopRequireDefault(require("@babel/runtime/helpers/toArray"));
 
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+var _classCallCheck2 = _interopRequireDefault(require("@babel/runtime/helpers/classCallCheck"));
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var _createClass2 = _interopRequireDefault(require("@babel/runtime/helpers/createClass"));
 
-function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+var _typeof2 = _interopRequireDefault(require("@babel/runtime/helpers/typeof"));
 
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+var _toConsumableArray2 = _interopRequireDefault(require("@babel/runtime/helpers/toConsumableArray"));
 
-function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+var _asyncToGenerator2 = _interopRequireDefault(require("@babel/runtime/helpers/asyncToGenerator"));
 
-function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e2) { throw _e2; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e3) { didErr = true; err = _e3; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
-
-function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
-
-function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
 
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
 
-function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
-
-function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
-
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
-
-function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 
 (function () {
   'use strict';
@@ -2386,8 +2374,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _sleep() {
-    _sleep = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee9(ms) {
-      return regeneratorRuntime.wrap(function _callee9$(_context9) {
+    _sleep = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee9(ms) {
+      return _regenerator["default"].wrap(function _callee9$(_context9) {
         while (1) {
           switch (_context9.prev = _context9.next) {
             case 0:
@@ -2467,10 +2455,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _fetchTabs() {
-    _fetchTabs = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee10(_ref) {
+    _fetchTabs = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee10(_ref) {
       var sessionToken, url, resp, data, _reload4, x, _reload5;
 
-      return regeneratorRuntime.wrap(function _callee10$(_context10) {
+      return _regenerator["default"].wrap(function _callee10$(_context10) {
         while (1) {
           switch (_context10.prev = _context10.next) {
             case 0:
@@ -2637,8 +2625,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _fetchDemoTabs() {
-    _fetchDemoTabs = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee11() {
-      return regeneratorRuntime.wrap(function _callee11$(_context11) {
+    _fetchDemoTabs = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee11() {
+      return _regenerator["default"].wrap(function _callee11$(_context11) {
         while (1) {
           switch (_context11.prev = _context11.next) {
             case 0:
@@ -2665,10 +2653,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _demoZombie() {
-    _demoZombie = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee12(_ref) {
+    _demoZombie = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee12(_ref) {
       var events, meta, _iterator16, _step16, event;
 
-      return regeneratorRuntime.wrap(function _callee12$(_context12) {
+      return _regenerator["default"].wrap(function _callee12$(_context12) {
         while (1) {
           switch (_context12.prev = _context12.next) {
             case 0:
@@ -2688,7 +2676,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               event = _step16.value;
               _context12.t0 = meta.push;
               _context12.t1 = meta;
-              _context12.t2 = _toConsumableArray;
+              _context12.t2 = _toConsumableArray2["default"];
               _context12.next = 12;
               return handleEvent(event);
 
@@ -2743,10 +2731,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _handleEvent() {
-    _handleEvent = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee13(event) {
+    _handleEvent = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee13(event) {
       var meta, command, meta1, meta2, jres, _jres, browserUrl, _meta2, _meta3;
 
-      return regeneratorRuntime.wrap(function _callee13$(_context13) {
+      return _regenerator["default"].wrap(function _callee13$(_context13) {
         while (1) {
           switch (_context13.prev = _context13.next) {
             case 0:
@@ -3051,7 +3039,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   resolved = _lookup$.resolved,
                   lookupErrors = _lookup$.errors;
 
-              bigErrors.push.apply(bigErrors, _toConsumableArray(lookupErrors));
+              bigErrors.push.apply(bigErrors, (0, _toConsumableArray2["default"])(lookupErrors));
               if (lookupErrors.length) return false;
               var keyType = lookup$1(spec, kp).resolved;
 
@@ -3066,7 +3054,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   valid = _validate$.valid,
                   validationErrors = _validate$.errors;
 
-              bigErrors.push.apply(bigErrors, _toConsumableArray(validationErrors));
+              bigErrors.push.apply(bigErrors, (0, _toConsumableArray2["default"])(validationErrors));
               return valid;
             });
           }
@@ -3088,7 +3076,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   };
                 } else if (type.isSumType) {
                   throw {
-                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat(_toConsumableArray(type.types.keys()).map(function (t) {
+                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat((0, _toConsumableArray2["default"])(type.types.keys()).map(function (t) {
                       return t.name;
                     })),
                     verify: verify,
@@ -3167,18 +3155,18 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
           var membersValid = true;
           var _verified = true;
-          bigErrors.push.apply(bigErrors, _toConsumableArray(containerErrors));
+          bigErrors.push.apply(bigErrors, (0, _toConsumableArray2["default"])(containerErrors));
 
           if (partial) {
             throw new TypeError("Type checking with option 'partial' is not a valid option for Collection types");
           } else {
             if (containerValid) {
-              membersValid = _toConsumableArray(instance).every(function (member) {
+              membersValid = (0, _toConsumableArray2["default"])(instance).every(function (member) {
                 var _validate$3 = validate$1(spec.member, member),
                     valid = _validate$3.valid,
                     errors = _validate$3.errors;
 
-                bigErrors.push.apply(bigErrors, _toConsumableArray(errors));
+                bigErrors.push.apply(bigErrors, (0, _toConsumableArray2["default"])(errors));
                 return valid;
               });
             }
@@ -3368,7 +3356,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         if (isTypeSpec) {
           if (v instanceof Type$1) {
             keyPathSet.add(keyPaths[i]);
-          } else if (_typeof(v) == "object") {
+          } else if ((0, _typeof2["default"])(v) == "object") {
             if (!Array.isArray(v)) {
               recurseObject(v, keyPathSet, keyPaths[i]);
             } else {
@@ -3380,7 +3368,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         } else {
           if (specKeyPaths.has(keyPaths[i])) {
             keyPathSet.add(keyPaths[i]);
-          } else if (_typeof(v) == "object") {
+          } else if ((0, _typeof2["default"])(v) == "object") {
             if (!Array.isArray(v)) {
               recurseObject(v, keyPathSet, keyPaths[i]);
             } else {
@@ -3394,7 +3382,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
           }
         }
       });
-      return _toConsumableArray(keyPathSet);
+      return (0, _toConsumableArray2["default"])(keyPathSet);
     }
   }
 
@@ -3800,10 +3788,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
   var MOVE = new ( /*#__PURE__*/function () {
     function _class() {
-      _classCallCheck(this, _class);
+      (0, _classCallCheck2["default"])(this, _class);
     }
 
-    _createClass(_class, [{
+    (0, _createClass2["default"])(_class, [{
       key: "beforeend",
       value: function beforeend(frag, elem) {
         elem.appendChild(frag);
@@ -3835,7 +3823,6 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         elem.appendChild(frag);
       }
     }]);
-
     return _class;
   }())(); // logging
 
@@ -3920,7 +3907,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     } // compile the template into an updater
 
 
-    p = _toConsumableArray(p);
+    p = (0, _toConsumableArray2["default"])(p);
     var vmap = {};
     var V = v.map(replaceValWithKeyAndOmitInstanceKey(vmap));
     var externals = [];
@@ -3948,7 +3935,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       to: to,
       update: update,
       code: CODE,
-      nodes: _toConsumableArray(frag.childNodes)
+      nodes: (0, _toConsumableArray2["default"])(frag.childNodes)
     });
 
     if (useCache) {
@@ -4339,7 +4326,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       if (name.includes(':')) {
         var _name$split = name.split(':');
 
-        var _name$split2 = _toArray(_name$split);
+        var _name$split2 = (0, _toArray2["default"])(_name$split);
 
         name = _name$split2[0];
         flags = _name$split2.slice(1);
@@ -4387,7 +4374,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       if (name.includes(':')) {
         var _name$split3 = name.split(':');
 
-        var _name$split4 = _toArray(_name$split3);
+        var _name$split4 = (0, _toArray2["default"])(_name$split3);
 
         name = _name$split4[0];
         flags = _name$split4.slice(1);
@@ -4434,7 +4421,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
     if (!!oldVal && T$1.check(T$1(_templateObject4$3 || (_templateObject4$3 = taggedTemplateLiteral(["Handlers"]))), oldVal)) {
       Object.entries(oldVal).forEach(function (_ref5) {
-        var _ref24 = _slicedToArray(_ref5, 2),
+        var _ref24 = (0, _slicedToArray2["default"])(_ref5, 2),
             eventName = _ref24[0],
             funcVal = _ref24[1];
 
@@ -4444,7 +4431,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
           if (eventName.includes(':')) {
             var _eventName$split = eventName.split(':');
 
-            var _eventName$split2 = _toArray(_eventName$split);
+            var _eventName$split2 = (0, _toArray2["default"])(_eventName$split);
 
             eventName = _eventName$split2[0];
             flags = _eventName$split2.slice(1);
@@ -4467,7 +4454,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     }
 
     Object.entries(newVal).forEach(function (_ref6) {
-      var _ref25 = _slicedToArray(_ref6, 2),
+      var _ref25 = (0, _slicedToArray2["default"])(_ref6, 2),
           eventName = _ref25[0],
           funcVal = _ref25[1];
 
@@ -4477,7 +4464,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         if (eventName.includes(':')) {
           var _eventName$split3 = eventName.split(':');
 
-          var _eventName$split4 = _toArray(_eventName$split3);
+          var _eventName$split4 = (0, _toArray2["default"])(_eventName$split3);
 
           eventName = _eventName$split4[0];
           flags = _eventName$split4.slice(1);
@@ -4568,7 +4555,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function summonPlaceholder(sibling) {
-    var ph = _toConsumableArray(sibling.parentNode.childNodes).find(function (node) {
+    var ph = (0, _toConsumableArray2["default"])(sibling.parentNode.childNodes).find(function (node) {
       return node.nodeType == Node.COMMENT_NODE && node.nodeValue == 'brutal-placeholder';
     });
 
@@ -4630,7 +4617,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     var retVal = {
       type: 'MarkupObject',
       code: CODE,
-      nodes: _toConsumableArray(frag.childNodes),
+      nodes: (0, _toConsumableArray2["default"])(frag.childNodes),
       externals: []
     };
     return retVal;
@@ -4744,8 +4731,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     os.forEach(function (o) {
       //v.push(...o.v); 
       //oldVals.push(...o.oldVals);
-      externals.push.apply(externals, _toConsumableArray(o.externals));
-      bigNodes.push.apply(bigNodes, _toConsumableArray(o.nodes));
+      externals.push.apply(externals, (0, _toConsumableArray2["default"])(o.externals));
+      bigNodes.push.apply(bigNodes, (0, _toConsumableArray2["default"])(o.nodes));
     });
     var retVal = {
       v: v,
@@ -4772,7 +4759,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   function diffNodes(last, next) {
     last = new Set(last);
     next = new Set(next);
-    return new Set(_toConsumableArray(last).filter(function (n) {
+    return new Set((0, _toConsumableArray2["default"])(last).filter(function (n) {
       return !next.has(n);
     }));
   }
@@ -4796,7 +4783,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
   function didChange(oldVal, newVal) {
     var _map = [oldVal, newVal].map(getType),
-        _map2 = _slicedToArray(_map, 2),
+        _map2 = (0, _slicedToArray2["default"])(_map, 2),
         oldType = _map2[0],
         newType = _map2[1];
 
@@ -5027,8 +5014,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
   var Privates = /*#__PURE__*/function () {
     function Privates(publics, state, sessionToken) {
-      _classCallCheck(this, Privates);
-
+      (0, _classCallCheck2["default"])(this, Privates);
       this.willCollectBufferedFrame = null;
       this.websockets = new Map();
       this.publics = publics;
@@ -5085,7 +5071,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       };
     }
 
-    _createClass(Privates, [{
+    (0, _createClass2["default"])(Privates, [{
       key: "triggerSendLoop",
       value: function triggerSendLoop() {
         var _this3 = this;
@@ -5100,12 +5086,12 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     }, {
       key: "nextLoop",
       value: function () {
-        var _nextLoop = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+        var _nextLoop = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee() {
           var _this4 = this;
 
           var q, url, _translator, firstChainIndex, chain, events, _q$shift, splice_index;
 
-          return regeneratorRuntime.wrap(function _callee$(_context) {
+          return _regenerator["default"].wrap(function _callee$(_context) {
             while (1) {
               switch (_context.prev = _context.next) {
                 case 0:
@@ -5121,7 +5107,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                       return e !== undefined;
                     });
                     q = q.reduce(function (Q, e) {
-                      return Array.isArray(e) ? Q.push.apply(Q, _toConsumableArray(e)) : Q.push(e), Q;
+                      return Array.isArray(e) ? Q.push.apply(Q, (0, _toConsumableArray2["default"])(e)) : Q.push(e), Q;
                     }, []);
                   }
 
@@ -5155,7 +5141,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                           var executionContextId = metaItem.executionContextId;
 
                           var _loop2 = function _loop2() {
-                            var key = _Object$keys[_i2];
+                            var key = _Object$keys[_i];
 
                             var typeList = _this4.typeLists.get(key);
 
@@ -5164,13 +5150,13 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                                 try {
                                   var _func;
 
-                                  func((_func = {}, _defineProperty2(_func, key, metaItem[key]), _defineProperty2(_func, "executionContextId", executionContextId), _func));
+                                  func((_func = {}, (0, _defineProperty3["default"])(_func, key, metaItem[key]), (0, _defineProperty3["default"])(_func, "executionContextId", executionContextId), _func));
                                 } catch (e) {}
                               });
                             }
                           };
 
-                          for (var _i2 = 0, _Object$keys = Object.keys(metaItem); _i2 < _Object$keys.length; _i2++) {
+                          for (var _i = 0, _Object$keys = Object.keys(metaItem); _i < _Object$keys.length; _i++) {
                             _loop2();
                           }
                         });
@@ -5212,11 +5198,11 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     }, {
       key: "sendEvents",
       value: function () {
-        var _sendEvents = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(_ref2) {
+        var _sendEvents = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee3(_ref2) {
           var _this5 = this;
 
           var events, url, protocol, senders, resolve, promise, request;
-          return regeneratorRuntime.wrap(function _callee3$(_context3) {
+          return _regenerator["default"].wrap(function _callee3$(_context3) {
             while (1) {
               switch (_context3.prev = _context3.next) {
                 case 0:
@@ -5332,9 +5318,9 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   return _context3.abrupt("return", fetch(url, request).then(function (r) {
                     return r.json();
                   }).then( /*#__PURE__*/function () {
-                    var _ref26 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(_ref3) {
+                    var _ref26 = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee2(_ref3) {
                       var data, frameBuffer, meta, errors;
-                      return regeneratorRuntime.wrap(function _callee2$(_context2) {
+                      return _regenerator["default"].wrap(function _callee2$(_context2) {
                         while (1) {
                           switch (_context2.prev = _context2.next) {
                             case 0:
@@ -5407,12 +5393,12 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     }, {
       key: "connectSocket",
       value: function () {
-        var _connectSocket = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7(url, events, messageId) {
+        var _connectSocket = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee7(url, events, messageId) {
           var _this6 = this;
 
           var _this$publics$queue, socket;
 
-          return regeneratorRuntime.wrap(function _callee7$(_context7) {
+          return _regenerator["default"].wrap(function _callee7$(_context7) {
             while (1) {
               switch (_context7.prev = _context7.next) {
                 case 0:
@@ -5421,7 +5407,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                     break;
                   }
 
-                  (_this$publics$queue = this.publics.queue).unshift.apply(_this$publics$queue, _toConsumableArray(events));
+                  (_this$publics$queue = this.publics.queue).unshift.apply(_this$publics$queue, (0, _toConsumableArray2["default"])(events));
 
                   return _context7.abrupt("return");
 
@@ -5471,10 +5457,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   };
 
                   socket.onmessage = /*#__PURE__*/function () {
-                    var _ref27 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(message) {
+                    var _ref27 = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee4(message) {
                       var MessageData, messageData, data, frameBuffer, meta, serverMessageId, totalBandwidth, errors, x, _reload, _reload2, _reload3, replyTransmitted, fallbackReplyTransmitted;
 
-                      return regeneratorRuntime.wrap(function _callee4$(_context4) {
+                      return _regenerator["default"].wrap(function _callee4$(_context4) {
                         while (1) {
                           switch (_context4.prev = _context4.next) {
                             case 0:
@@ -5671,7 +5657,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                                   var executionContextId = metaItem.executionContextId;
 
                                   var _loop3 = function _loop3() {
-                                    var key = _Object$keys2[_i3];
+                                    var key = _Object$keys2[_i2];
 
                                     var typeList = _this6.typeLists.get(key);
 
@@ -5680,13 +5666,13 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                                         try {
                                           var _func2;
 
-                                          func((_func2 = {}, _defineProperty2(_func2, key, metaItem[key]), _defineProperty2(_func2, "executionContextId", executionContextId), _func2));
+                                          func((_func2 = {}, (0, _defineProperty3["default"])(_func2, key, metaItem[key]), (0, _defineProperty3["default"])(_func2, "executionContextId", executionContextId), _func2));
                                         } catch (e) {}
                                       });
                                     }
                                   };
 
-                                  for (var _i3 = 0, _Object$keys2 = Object.keys(metaItem); _i3 < _Object$keys2.length; _i3++) {
+                                  for (var _i2 = 0, _Object$keys2 = Object.keys(metaItem); _i2 < _Object$keys2.length; _i2++) {
                                     _loop3();
                                   }
                                 });
@@ -5741,8 +5727,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   }();
 
                   socket.onclose = /*#__PURE__*/function () {
-                    var _ref28 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(e) {
-                      return regeneratorRuntime.wrap(function _callee5$(_context5) {
+                    var _ref28 = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee5(e) {
+                      return _regenerator["default"].wrap(function _callee5$(_context5) {
                         while (1) {
                           switch (_context5.prev = _context5.next) {
                             case 0:
@@ -5767,8 +5753,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   }();
 
                   socket.onerror = /*#__PURE__*/function () {
-                    var _ref29 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(e) {
-                      return regeneratorRuntime.wrap(function _callee6$(_context6) {
+                    var _ref29 = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee6(e) {
+                      return _regenerator["default"].wrap(function _callee6$(_context6) {
                         while (1) {
                           switch (_context6.prev = _context6.next) {
                             case 0:
@@ -5816,10 +5802,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     }, {
       key: "sendEventChain",
       value: function () {
-        var _sendEventChain = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8(_ref9) {
+        var _sendEventChain = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee8(_ref9) {
           var chain, url, Meta, Data, lastData, _iterator3, _step3, next, _yield$this$sendEvent, meta, data, funcResult, events, _yield$this$sendEvent2, _meta, _data;
 
-          return regeneratorRuntime.wrap(function _callee8$(_context8) {
+          return _regenerator["default"].wrap(function _callee8$(_context8) {
             while (1) {
               switch (_context8.prev = _context8.next) {
                 case 0:
@@ -5838,7 +5824,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
                   next = _step3.value;
 
-                  if (!(_typeof(next) == "object")) {
+                  if (!((0, _typeof2["default"])(next) == "object")) {
                     _context8.next = 18;
                     break;
                   }
@@ -5853,8 +5839,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   _yield$this$sendEvent = _context8.sent;
                   meta = _yield$this$sendEvent.meta;
                   data = _yield$this$sendEvent.data;
-                  Meta.push.apply(Meta, _toConsumableArray(meta));
-                  Data.push.apply(Data, _toConsumableArray(data));
+                  Meta.push.apply(Meta, (0, _toConsumableArray2["default"])(meta));
+                  Data.push.apply(Data, (0, _toConsumableArray2["default"])(data));
                   lastData = data;
                   _context8.next = 31;
                   break;
@@ -5879,7 +5865,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
                   if (Array.isArray(funcResult)) {
                     events = funcResult;
-                  } else if (_typeof(funcResult) == "object") {
+                  } else if ((0, _typeof2["default"])(funcResult) == "object") {
                     events = [funcResult];
                   }
 
@@ -5893,8 +5879,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   _yield$this$sendEvent2 = _context8.sent;
                   _meta = _yield$this$sendEvent2.meta;
                   _data = _yield$this$sendEvent2.data;
-                  Meta.push.apply(Meta, _toConsumableArray(_meta));
-                  Data.push.apply(Data, _toConsumableArray(_data));
+                  Meta.push.apply(Meta, (0, _toConsumableArray2["default"])(_meta));
+                  Data.push.apply(Data, (0, _toConsumableArray2["default"])(_data));
                   lastData = _data;
 
                 case 31:
@@ -5984,18 +5970,16 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         /* 20, 40, 250, 500;*/
       }
     }]);
-
     return Privates;
   }();
 
   var EventQueue = /*#__PURE__*/function () {
     function EventQueue(state, sessionToken) {
-      _classCallCheck(this, EventQueue);
-
+      (0, _classCallCheck2["default"])(this, EventQueue);
       var privates = new Privates(this, state, sessionToken);
       var queue = [];
       this.state = state;
-      Object.defineProperties(this, _defineProperty2({
+      Object.defineProperties(this, (0, _defineProperty3["default"])({
         queue: {
           get: function get() {
             return queue;
@@ -6008,13 +5992,13 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       }));
     }
 
-    _createClass(EventQueue, [{
+    (0, _createClass2["default"])(EventQueue, [{
       key: "send",
       value: function send(event) {
         if (Array.isArray(event)) {
           var _this$queue;
 
-          (_this$queue = this.queue).push.apply(_this$queue, _toConsumableArray(event));
+          (_this$queue = this.queue).push.apply(_this$queue, (0, _toConsumableArray2["default"])(event));
         } else {
           this.queue.push(event);
         }
@@ -6059,7 +6043,6 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         typeList.push(func);
       }
     }]);
-
     return EventQueue;
   }();
 
@@ -6068,10 +6051,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _drawFrames() {
-    _drawFrames = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee14(state, buf, image) {
+    _drawFrames = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee14(state, buf, image) {
       var _iterator17, _step17, _step17$value, img, frame;
 
-      return regeneratorRuntime.wrap(function _callee14$(_context14) {
+      return _regenerator["default"].wrap(function _callee14$(_context14) {
         while (1) {
           switch (_context14.prev = _context14.next) {
             case 0:
@@ -6248,9 +6231,9 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _tconfirm() {
-    _tconfirm = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee15(msg) {
+    _tconfirm = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee15(msg) {
       var resolve, pr;
-      return regeneratorRuntime.wrap(function _callee15$(_context15) {
+      return _regenerator["default"].wrap(function _callee15$(_context15) {
         while (1) {
           switch (_context15.prev = _context15.next) {
             case 0:
@@ -6282,9 +6265,9 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _treload() {
-    _treload = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee16() {
+    _treload = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee16() {
       var resolve, pr;
-      return regeneratorRuntime.wrap(function _callee16$(_context16) {
+      return _regenerator["default"].wrap(function _callee16$(_context16) {
         while (1) {
           switch (_context16.prev = _context16.next) {
             case 0:
@@ -7130,7 +7113,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       return state.viewState.pmEl = el;
     }, function () {
       return console.log("PMA?".concat(!!state.pluginsMenuActive));
-    }].concat(_toConsumableArray(bondTasks)), PluginsMenuButton(state));
+    }].concat((0, _toConsumableArray2["default"])(bondTasks)), PluginsMenuButton(state));
   }
 
   var _templateObject$4, _templateObject2$4, _templateObject3$3;
@@ -7269,9 +7252,9 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _chooseFile() {
-    _chooseFile = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee17(click, state) {
+    _chooseFile = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee17(click, state) {
       var form, body, request, resp;
-      return regeneratorRuntime.wrap(function _callee17$(_context17) {
+      return _regenerator["default"].wrap(function _callee17$(_context17) {
         while (1) {
           switch (_context17.prev = _context17.next) {
             case 0:
@@ -7317,9 +7300,9 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _cancelFileChooser() {
-    _cancelFileChooser = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee18(click, state) {
+    _cancelFileChooser = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee18(click, state) {
       var form, body, request, resp;
-      return regeneratorRuntime.wrap(function _callee18$(_context18) {
+      return _regenerator["default"].wrap(function _callee18$(_context18) {
         while (1) {
           switch (_context18.prev = _context18.next) {
             case 0:
@@ -7930,8 +7913,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _fullScreen() {
-    _fullScreen = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee19(click, state) {
-      return regeneratorRuntime.wrap(function _callee19$(_context19) {
+    _fullScreen = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee19(click, state) {
+      return _regenerator["default"].wrap(function _callee19$(_context19) {
         while (1) {
           switch (_context19.prev = _context19.next) {
             case 0:
@@ -8021,7 +8004,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     }
   }();
 
-  var BuiltIns = [Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet, Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array, Int8Array, Int16Array, Int32Array, Uint8ClampedArray].concat(_toConsumableArray(BROWSER_SIDE ? [Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer, FileList, Text, HTMLDocument, Document, DocumentFragment, Error, File, Event, EventTarget, URL] : [Buffer]));
+  var BuiltIns = [Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet, Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array, Int8Array, Int16Array, Int32Array, Uint8ClampedArray].concat((0, _toConsumableArray2["default"])(BROWSER_SIDE ? [Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer, FileList, Text, HTMLDocument, Document, DocumentFragment, Error, File, Event, EventTarget, URL] : [Buffer]));
   var SEALED_DEFAULT = true;
 
   var isNone = function isNone(instance) {
@@ -8105,7 +8088,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   resolved = _lookup.resolved,
                   lookupErrors = _lookup.errors;
 
-              bigErrors.push.apply(bigErrors, _toConsumableArray(lookupErrors));
+              bigErrors.push.apply(bigErrors, (0, _toConsumableArray2["default"])(lookupErrors));
               if (lookupErrors.length) return false;
               var keyType = lookup(spec, kp).resolved;
 
@@ -8120,7 +8103,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   valid = _validate.valid,
                   validationErrors = _validate.errors;
 
-              bigErrors.push.apply(bigErrors, _toConsumableArray(validationErrors));
+              bigErrors.push.apply(bigErrors, (0, _toConsumableArray2["default"])(validationErrors));
               return valid;
             });
           }
@@ -8142,7 +8125,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   };
                 } else if (type.isSumType) {
                   throw {
-                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat(_toConsumableArray(type.types.keys()).map(function (t) {
+                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat((0, _toConsumableArray2["default"])(type.types.keys()).map(function (t) {
                       return t.name;
                     })),
                     verify: verify,
@@ -8221,18 +8204,18 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
           var membersValid = true;
           var _verified2 = true;
-          bigErrors.push.apply(bigErrors, _toConsumableArray(containerErrors));
+          bigErrors.push.apply(bigErrors, (0, _toConsumableArray2["default"])(containerErrors));
 
           if (partial) {
             throw new TypeError("Type checking with option 'partial' is not a valid option for Collection types");
           } else {
             if (containerValid) {
-              membersValid = _toConsumableArray(instance).every(function (member) {
+              membersValid = (0, _toConsumableArray2["default"])(instance).every(function (member) {
                 var _validate3 = validate(spec.member, member),
                     valid = _validate3.valid,
                     errors = _validate3.errors;
 
-                bigErrors.push.apply(bigErrors, _toConsumableArray(errors));
+                bigErrors.push.apply(bigErrors, (0, _toConsumableArray2["default"])(errors));
                 return valid;
               });
             }
@@ -8422,7 +8405,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         if (isTypeSpec) {
           if (v instanceof Type) {
             keyPathSet.add(keyPaths[i]);
-          } else if (_typeof(v) == "object") {
+          } else if ((0, _typeof2["default"])(v) == "object") {
             if (!Array.isArray(v)) {
               recurseObject(v, keyPathSet, keyPaths[i]);
             } else {
@@ -8434,7 +8417,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         } else {
           if (specKeyPaths.has(keyPaths[i])) {
             keyPathSet.add(keyPaths[i]);
-          } else if (_typeof(v) == "object") {
+          } else if ((0, _typeof2["default"])(v) == "object") {
             if (!Array.isArray(v)) {
               recurseObject(v, keyPathSet, keyPaths[i]);
             } else {
@@ -8448,7 +8431,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
           }
         }
       });
-      return _toConsumableArray(keyPathSet);
+      return (0, _toConsumableArray2["default"])(keyPathSet);
     }
   }
 
@@ -8771,8 +8754,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         var rules = Array.from(lastRule.cssRules);
         var lastIndex = rules.length - 1;
 
-        for (var _i4 = 0, _rules = rules; _i4 < _rules.length; _i4++) {
-          var rule = _rules[_i4];
+        for (var _i3 = 0, _rules = rules; _i3 < _rules.length; _i3++) {
+          var rule = _rules[_i3];
           prefixStyleRule(rule, lastRule, lastIndex, prefix, combinator);
         }
 
@@ -8897,7 +8880,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               AddedElements.push(el);
             }
 
-            (_AddedElements = AddedElements).push.apply(_AddedElements, _toConsumableArray(el.querySelectorAll('[stylist]')));
+            (_AddedElements = AddedElements).push.apply(_AddedElements, (0, _toConsumableArray2["default"])(el.querySelectorAll('[stylist]')));
           });
           removedElements.forEach(function (el) {
             var _RemovedElements;
@@ -8908,7 +8891,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               RemovedElements.push(el);
             }
 
-            (_RemovedElements = RemovedElements).push.apply(_RemovedElements, _toConsumableArray(el.querySelectorAll('[stylist]')));
+            (_RemovedElements = RemovedElements).push.apply(_RemovedElements, (0, _toConsumableArray2["default"])(el.querySelectorAll('[stylist]')));
           });
         }
       } catch (err) {
@@ -8938,7 +8921,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
             var listener = _step6.value;
 
             try {
-              listener.apply(void 0, _toConsumableArray(RemovedElements));
+              listener.apply(void 0, (0, _toConsumableArray2["default"])(RemovedElements));
             } catch (e) {
               console.warn("Removed listener error", e, listener);
             }
@@ -8959,7 +8942,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
             var _listener = _step7.value;
 
             try {
-              _listener.apply(void 0, _toConsumableArray(AddedElements));
+              _listener.apply(void 0, (0, _toConsumableArray2["default"])(AddedElements));
             } catch (e) {
               console.warn("Insert listener error", e, _listener);
             }
@@ -9032,7 +9015,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
     if (!initialized) {
       var initialEls = Array.from(document.querySelectorAll('[stylist]'));
-      associateStylistFunctions.apply(void 0, _toConsumableArray(initialEls));
+      associateStylistFunctions.apply(void 0, (0, _toConsumableArray2["default"])(initialEls));
       initialized = true;
     }
 
@@ -9087,7 +9070,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     var toRegister = [];
 
     var _loop4 = function _loop4() {
-      var funcName = _Object$keys3[_i5];
+      var funcName = _Object$keys3[_i4];
       var value = functionsObject[funcName];
       if (typeof value !== "function") throw new TypeError("Functions object must only contain functions."); // this prevents a bug where we miss an existing style element in 
       // a check for a style element based on the stylist.name property
@@ -9101,7 +9084,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       }
     };
 
-    for (var _i5 = 0, _Object$keys3 = Object.keys(functionsObject); _i5 < _Object$keys3.length; _i5++) {
+    for (var _i4 = 0, _Object$keys3 = Object.keys(functionsObject); _i4 < _Object$keys3.length; _i4++) {
       _loop4();
     }
 
@@ -9112,7 +9095,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
 
   function randomClass() {
     var _generateUniquePrefix = generateUniquePrefix(),
-        _generateUniquePrefix2 = _slicedToArray(_generateUniquePrefix.prefix, 1),
+        _generateUniquePrefix2 = (0, _slicedToArray2["default"])(_generateUniquePrefix.prefix, 1),
         className = _generateUniquePrefix2[0];
 
     return className;
@@ -9478,25 +9461,25 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     state.viewState.draw = function () {
       return d(_templateObject || (_templateObject = taggedTemplateLiteral(["\n      <main class=\"voodoo\" bond=", " stylist=\"styleVoodooMain\">\n        ", "\n        ", "\n        ", "\n        <article class=tab-viewport stylist=\"styleTabViewport styleContextMenu\">\n          ", "\n          ", "\n          <select id=selectinput stylist=\"styleSelectInput\"\n            input=", "\n            >\n            <option value=\"\" disabled>Select an option</option>\n          </select>\n        </article>\n        ", "\n      </main>\n      <audio bond=", " autoplay loop id=audio>\n        <source src=\"", "\" type=audio/mp3>\n      </audio>\n      ", "\n    "])), bondTasks, subviews.BandwidthIndicator(state), subviews.TabList(state), subviews.Controls(state), subviews.LoadingIndicator(state), state.useViewFrame ? state.demoMode ? d(_templateObject2 || (_templateObject2 = taggedTemplateLiteral(["\n                  <iframe name=viewFrame \n                    scrolling=yes\n                    src=/plugins/demo/index.html\n                    load=", "\n                    bond=", "\n                  ></iframe>\n                "])), [function (loaded) {
         return loaded.target.hasLoaded = true;
-      }, state.installFrameListener].concat(_toConsumableArray(canvasBondTasks)), [function (el) {
+      }, state.installFrameListener].concat((0, _toConsumableArray2["default"])(canvasBondTasks)), [function (el) {
         return state.viewState.viewFrameEl = el;
-      }, asyncSizeBrowserToBounds, emulateNavigator].concat(_toConsumableArray(canvasBondTasks))) : state.factoryMode ? d(_templateObject3 || (_templateObject3 = taggedTemplateLiteral(["\n                    <iframe name=viewFrame \n                      scrolling=yes\n                      load=", "\n                      bond=", "\n                    ></iframe>\n                  "])), [function (loaded) {
+      }, asyncSizeBrowserToBounds, emulateNavigator].concat((0, _toConsumableArray2["default"])(canvasBondTasks))) : state.factoryMode ? d(_templateObject3 || (_templateObject3 = taggedTemplateLiteral(["\n                    <iframe name=viewFrame \n                      scrolling=yes\n                      load=", "\n                      bond=", "\n                    ></iframe>\n                  "])), [function (loaded) {
         return loaded.target.hasLoaded = true;
-      }].concat(_toConsumableArray(canvasBondTasks)), [function (el) {
+      }].concat((0, _toConsumableArray2["default"])(canvasBondTasks)), [function (el) {
         return state.viewState.viewFrameEl = el;
-      }, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener].concat(_toConsumableArray(canvasBondTasks), [function (el) {
+      }, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener].concat((0, _toConsumableArray2["default"])(canvasBondTasks), [function (el) {
         return el.src = "/plugins/projector/".concat(isBundle() ? 'bundle' : 'index', ".html");
       }])) : d(_templateObject4 || (_templateObject4 = taggedTemplateLiteral(["\n                    <iframe name=viewFrame \n                      scrolling=yes\n                      load=", "\n                      bond=", "\n                    ></iframe>\n                  "])), [function (loaded) {
         return loaded.target.hasLoaded = true;
-      }].concat(_toConsumableArray(canvasBondTasks)), [function (el) {
+      }].concat((0, _toConsumableArray2["default"])(canvasBondTasks)), [function (el) {
         return state.viewState.viewFrameEl = el;
-      }, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener].concat(_toConsumableArray(canvasBondTasks), [function (el) {
+      }, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener].concat((0, _toConsumableArray2["default"])(canvasBondTasks), [function (el) {
         return el.src = "/plugins/appminifier/".concat(isBundle() ? 'bundle' : 'index', ".html");
       }])) : d(_templateObject5 || (_templateObject5 = taggedTemplateLiteral(["\n              <canvas\n                click=", "\n                bond=", "\n                touchstart:passive=", "\n                touchmove=", "\n                wheel:passive=", "\n                mousemove:passive=", "         \n                mousedown=", "         \n                mouseup=", "         \n                pointermove:passive=", "         \n                pointerdown=", "         \n                pointerup=", "         \n                contextmenu=", "\n              ></canvas>\n            "])), [elogit, function () {
         if (viewState.shouldHaveFocus && document.activeElement != viewState.shouldHaveFocus) {
           viewState.shouldHaveFocus.focus();
         }
-      }], [saveCanvas, asyncSizeBrowserToBounds, emulateNavigator].concat(_toConsumableArray(canvasBondTasks)), [elogit, retargetTouchScroll], [function (e) {
+      }], [saveCanvas, asyncSizeBrowserToBounds, emulateNavigator].concat((0, _toConsumableArray2["default"])(canvasBondTasks)), [elogit, retargetTouchScroll], [function (e) {
         return e.preventDefault();
       }, elogit, throttle(retargetTouchScroll, state.EVENT_THROTTLE_MS)], throttle(H, state.EVENT_THROTTLE_MS), [elogit, throttle(H, state.EVENT_THROTTLE_MS)], [elogit, H], [elogit, H], [elogit, throttle(H, state.EVENT_THROTTLE_MS)], [deviceIsMobile() ? function (e) {
         return startTimer(e, state.viewState);
@@ -9673,7 +9656,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
           var updatedEl;
 
           var _ref39 = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "",
-              _ref40 = _slicedToArray(_ref39, 1),
+              _ref40 = (0, _slicedToArray2["default"])(_ref39, 1),
               oldId = _ref40[0];
 
           var dataIdSelector = "".concat(oldFocus.localName, "[zig^=\"").concat(oldId, "\"]");
@@ -10104,7 +10087,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
           var updatedEl;
 
           var _ref41 = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "",
-              _ref42 = _slicedToArray(_ref41, 1),
+              _ref42 = (0, _slicedToArray2["default"])(_ref41, 1),
               oldId = _ref42[0];
 
           var dataIdSelector = "".concat(oldFocus.localName, "[zig^=\"").concat(oldId, "\"]");
@@ -10367,8 +10350,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         _iterator15.f();
       }
 
-      for (var _i6 = 0, _later = later; _i6 < _later.length; _i6++) {
-        var diff = _later[_i6];
+      for (var _i5 = 0, _later = later; _i5 < _later.length; _i5++) {
+        var diff = _later[_i5];
         var result = patchTree(diff, state);
 
         if (!result) {
@@ -10867,7 +10850,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _voodoo() {
-    _voodoo = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee26(selector, position) {
+    _voodoo = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee26(selector, position) {
       var _ref45,
           _ref45$postInstallTas,
           postInstallTasks,
@@ -10944,7 +10927,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       subscribeToQueue,
           _args26 = arguments;
 
-      return regeneratorRuntime.wrap(function _callee26$(_context26) {
+      return _regenerator["default"].wrap(function _callee26$(_context26) {
         while (1) {
           switch (_context26.prev = _context26.next) {
             case 0:
@@ -10985,10 +10968,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               };
 
               _createTab = function _createTab3() {
-                _createTab = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee25(click) {
+                _createTab = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee25(click) {
                   var url,
                       _args25 = arguments;
-                  return regeneratorRuntime.wrap(function _callee25$(_context25) {
+                  return _regenerator["default"].wrap(function _callee25$(_context25) {
                     while (1) {
                       switch (_context25.prev = _context25.next) {
                         case 0:
@@ -11023,10 +11006,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               };
 
               _rawUpdateTabs = function _rawUpdateTabs3() {
-                _rawUpdateTabs = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee24() {
+                _rawUpdateTabs = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee24() {
                   var _yield2, tabs, activeTarget, requestId, _task2;
 
-                  return regeneratorRuntime.wrap(function _callee24$(_context24) {
+                  return _regenerator["default"].wrap(function _callee24$(_context24) {
                     while (1) {
                       switch (_context24.prev = _context24.next) {
                         case 0:
@@ -11112,9 +11095,9 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               };
 
               _closeTab = function _closeTab3() {
-                _closeTab = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee23(click, tab, index) {
+                _closeTab = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee23(click, tab, index) {
                   var targetId, events, newActive;
-                  return regeneratorRuntime.wrap(function _callee23$(_context23) {
+                  return _regenerator["default"].wrap(function _callee23$(_context23) {
                     while (1) {
                       switch (_context23.prev = _context23.next) {
                         case 0:
@@ -11173,9 +11156,9 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               };
 
               _activateTab = function _activateTab3() {
-                _activateTab = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee22(click, tab) {
+                _activateTab = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee22(click, tab) {
                   var targetId;
-                  return regeneratorRuntime.wrap(function _callee22$(_context22) {
+                  return _regenerator["default"].wrap(function _callee22$(_context22) {
                     while (1) {
                       switch (_context22.prev = _context22.next) {
                         case 0:
@@ -11796,17 +11779,17 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                 }
 
                 postInstallTasks.push( /*#__PURE__*/function () {
-                  var _ref46 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee21(_ref) {
+                  var _ref46 = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee21(_ref) {
                     var queue, completed;
-                    return regeneratorRuntime.wrap(function _callee21$(_context21) {
+                    return _regenerator["default"].wrap(function _callee21$(_context21) {
                       while (1) {
                         switch (_context21.prev = _context21.next) {
                           case 0:
                             queue = _ref.queue;
                             completed = false;
                             queue.addMetaListener('changed', /*#__PURE__*/function () {
-                              var _ref47 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee20(meta) {
-                                return regeneratorRuntime.wrap(function _callee20$(_context20) {
+                              var _ref47 = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee20(meta) {
+                                return _regenerator["default"].wrap(function _callee20$(_context20) {
                                   while (1) {
                                     switch (_context20.prev = _context20.next) {
                                       case 0:
@@ -12315,9 +12298,9 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   }
 
   function _start_app() {
-    _start_app = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee27() {
+    _start_app = (0, _asyncToGenerator2["default"])( /*#__PURE__*/_regenerator["default"].mark(function _callee27() {
       var useViewFrame, translator$1, voodoo;
-      return regeneratorRuntime.wrap(function _callee27$(_context27) {
+      return _regenerator["default"].wrap(function _callee27$(_context27) {
         while (1) {
           switch (_context27.prev = _context27.next) {
             case 0:
