@@ -83,9 +83,9 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Mobile pinch-zoom
 - [:heavy_check_mark:] `mailto:`, `tel:`, `sktype:` and other [app and protocol links](quora.com/What-are-tel-SMS-mailto-and-geo-in-URLs/answer/Matthew-Cox-33)
 - [:heavy_check_mark:] Multiple select 
-- [:heavy_mutliplication_x:] Multi-touch on mobile
-- [:heavy_mutliplication_x:] Bookmarks
-- [:heavy_mutliplication_x:] Displayable history
+- [✖️] Multi-touch on mobile
+- [✖️] Bookmarks
+- [✖️] Displayable history
 - [:heavy_mutliplication_x:] Webcam and microphone support
 
 **Security Features**
