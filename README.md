@@ -116,10 +116,10 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Mobile pinch-zoom
 - [:heavy_check_mark:] `mailto:`, `tel:`, `sktype:` and other [app and protocol links](quora.com/What-are-tel-SMS-mailto-and-geo-in-URLs/answer/Matthew-Cox-33)
 - [:heavy_check_mark:] Multiple select 
-- [:heavy_cross:] Multi-touch on mobile
-- [:heavy_cross:] Bookmarks
-- [:heavy_cross:] Displayable history
-- [:heavy_cross:] Webcam and microphone support
+- [:heavy_mutliplication_x:] Multi-touch on mobile
+- [:heavy_mutliplication_x:] Bookmarks
+- [:heavy_mutliplication_x:] Displayable history
+- [:heavy_mutliplication_x:] Webcam and microphone support
 
 **Security Features**
 - [:heavy_check_mark:] RBI [browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) security model
@@ -140,8 +140,8 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Run sandboxed puppeteer scripts ⭐
 - [:heavy_check_mark:] Skinnable browser UI ⭐
 - [:heavy_check_mark:] Kiosk mode (*no UI controls*) ⭐
-- [:heavy_cross:] Sync browser cookies & settings from other browser (or, for example, Google account)
-- [:heavy_cross:] Chrome extensions API (or cloned functionality)
+- [:heavy_mutliplication_x:] Sync browser cookies & settings from other browser (or, for example, Google account)
+- [:heavy_mutliplication_x:] Chrome extensions API (or cloned functionality)
 
 **Development and Deployment Features**
 - [:heavy_check_mark:] Fully Dockerized / Dockerizable + reproducible startup and install scripts
@@ -155,8 +155,8 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Bandwidth, CPU and memory limiting for resource abuse detection and prevention ⭐
 - [:heavy_check_mark:] Simple API ⭐
 - [:heavy_check_mark:] Fully white-labelable
-- [:heavy_cross:] White-labeling API
-- [:heavy_cross:] Fully scriptable with comprehensive API 
+- [:heavy_mutliplication_x:] White-labeling API
+- [:heavy_mutliplication_x:] Fully scriptable with comprehensive API 
 
 ## Motivation
 
