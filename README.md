@@ -34,7 +34,7 @@ More information on these [commercial options](#commercial-options) is below, an
 
 ## Commercial Options
 
-If you want to use VF commercially your only option is to purchase an [#licensing](S license), which permits non-competing uses. If you'd like to license VF for purposes that competete with us, we'll have to negotiate an agreement. 
+If you want to use VF commercially your main option is to purchase an [S license](#licensing), which permits non-competing uses. If you'd like to license VF for purposes that competete with us, we'll have to negotiate agreements. [Reach out to me](mailto:cris@dosycorp.com?subject=VF%20Negotiation&body=Dear%20Cris) if that's the case.
 
 Viewfinder Pro is provided by the [Dosyago Corporation](https://github.com/dosyago) as a commercial offering in two flavors: individual, and self-hosted.
 
