@@ -6,59 +6,26 @@
 
 **Viewfinder** is a HTML user-interface for a browser that runs on a remote server. This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. In also enables the building of a number of interesting [applications](#applications).
 
-## Pro or Regular? 
+## Getting it
 
-**What's the difference between VF Pro and regular VF?**
+**Clone the repo:**
 
-The main differences are that VF Pro has more advanced features and more frequent updates than VF regular. Many Pro features eventually are sent down to regular, but some will likely remain exclusive to Pro. Pro is updated weekly, with major updates shipped every quarter, whereas regular VF follows a much slower and more haphazard release cycle. 
+```sh
+$ git clone https://github.com/i5ik/Viewfinder.git
+$ cd Viewfinder
+```
 
-The final main differenece you might want to be aware of is that while VF regular is source-available (and is the sourcecode in this repository), VF Pro is currently closed-source proprietary software only available commercially, for either use in an Individual server, or for deployment in a Self-hosted package. 
+or, **install it from NPM:**
 
-More information on these [commercial options](#commercial-options) is below, and take a look at the table of feature comparison between Regular and Pro.
+```sh
+$ npm i --save vfreg
+```
 
-<b id=comparison-table>VF Pro vs Regular &mdash; Comparison Table</b>
+or, **pull it off DockerHub:**
 
-| Feature                                       | Regular            | Pro                |
-|-----------------------------------------------|--------------------|--------------------|
-| Browser features                              | :heavy_check_mark: | :heavy_check_mark: |
-| Security features                             | :heavy_check_mark: | :heavy_check_mark: |
-| Privacy features                              | :heavy_check_mark: | :heavy_check_mark: |
-| Themeable browser UI                          | :heavy_check_mark: | :heavy_check_mark: |
-| Docker image                                  | :heavy_check_mark: | :heavy_check_mark: |
-| Cloud and platform agnostic                   | :heavy_check_mark: | :heavy_check_mark: |
-| Multi-user security features                  |                    | :heavy_check_mark: |
-| Auto scaling and resource control             |                    | :heavy_check_mark: |
-| Advanced viewport streaming and lag reduction |                    | :heavy_check_mark: |
-| Built-in cobrowsing and instant messaging     |                    | :heavy_check_mark: |
-| Run sandboxed puppeteer scripts               |                    | :heavy_check_mark: |
-| `<iframe>` embeddable                         |                    | :heavy_check_mark: |
-| Kiosk mode                                    |                    | :heavy_check_mark: |
-| Simple API                                    |                    | :heavy_check_mark: |
-
-
-## Commercial Options
-
-If you want to use VF commercially your main option is to purchase an [S license](#licensing), which permits non-competing uses. If you'd like to license VF for purposes that competete with us, we'll have to negotiate agreements. [Reach out to me](mailto:cris@dosycorp.com?subject=VF%20Negotiation&body=Dear%20Cris) if that's the case.
-
-Viewfinder Pro is provided by the [Dosyago Corporation](https://github.com/dosyago) as a commercial offering in two flavors: individual, and self-hosted.
-
-**Self-hosted**
-
-Includes the provision of the VF Pro software, an S license and various tiers of service. The basic cost principle is established on time (not scale): time you want the license for, time of the latest update you want, and time it takes us to service your deployment. Targeted at SMBs up to Enterprise. 
-
-- Various configurable packages available with either perpetual or yearly licensing, and included service and consulting. 
-- Starts at USD6,700 a year for non-perpetual single year license plus minimal service. 
-- Mid-tier options cost 10K - 16K yearly with a variety of options including perpetual or annual licenses.
-- Invoiceable service and consulting also available.
-- BYO cloud or data-center, or on-prem are all available.
-
-Prices and buy links for Self-hosted tiers are *coming soon!* In the meantime, <a href="mailto:cris@dosycorp.com?subject=VF%20Pro%20Packages&body=Hi%20Cris" target=_blank>email me</a> to ask a question.
-
-**Individual**
-
-Includes provision of a geographically located server wherever you want (or as close to it as possible for us), installed software, credentials to access, and various tiers of service. The basic cost principle is founded on performance (CPU cores, memory, network speed and bandwidth amount). 
-
-See the current [prices and tiers for the Individual track.](https://personal.dosyago.com)
+```sh
+$ docker pull dosyago:viewfinder
+```
 
 ## Applications
 
@@ -157,6 +124,60 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Fully white-labelable
 - [:heavy_mutliplication_x:] White-labeling API
 - [:heavy_mutliplication_x:] Fully scriptable with comprehensive API 
+
+## Pro or Regular? 
+
+**What's the difference between VF Pro and regular VF?**
+
+The main differences are that VF Pro has more advanced features and more frequent updates than VF regular. Many Pro features eventually are sent down to regular, but some will likely remain exclusive to Pro. Pro is updated weekly, with major updates shipped every quarter, whereas regular VF follows a much slower and more haphazard release cycle. 
+
+The final main differenece you might want to be aware of is that while VF regular is source-available (and is the sourcecode in this repository), VF Pro is currently closed-source proprietary software only available commercially, for either use in an Individual server, or for deployment in a Self-hosted package. 
+
+More information on these [commercial options](#commercial-options) is below, and take a look at the table of feature comparison between Regular and Pro.
+
+<b id=comparison-table>VF Pro vs Regular &mdash; Comparison Table</b>
+
+| Feature                                       | Regular            | Pro                |
+|-----------------------------------------------|--------------------|--------------------|
+| Browser features                              | :heavy_check_mark: | :heavy_check_mark: |
+| Security features                             | :heavy_check_mark: | :heavy_check_mark: |
+| Privacy features                              | :heavy_check_mark: | :heavy_check_mark: |
+| Themeable browser UI                          | :heavy_check_mark: | :heavy_check_mark: |
+| Docker image                                  | :heavy_check_mark: | :heavy_check_mark: |
+| Cloud and platform agnostic                   | :heavy_check_mark: | :heavy_check_mark: |
+| Multi-user security features                  |                    | :heavy_check_mark: |
+| Auto scaling and resource control             |                    | :heavy_check_mark: |
+| Advanced viewport streaming and lag reduction |                    | :heavy_check_mark: |
+| Built-in cobrowsing and instant messaging     |                    | :heavy_check_mark: |
+| Run sandboxed puppeteer scripts               |                    | :heavy_check_mark: |
+| `<iframe>` embeddable                         |                    | :heavy_check_mark: |
+| Kiosk mode                                    |                    | :heavy_check_mark: |
+| Simple API                                    |                    | :heavy_check_mark: |
+
+
+## Commercial Options
+
+If you want to use VF commercially your main option is to purchase an [S license](#licensing), which permits non-competing uses. If you'd like to license VF for purposes that competete with us, we'll have to negotiate agreements. [Reach out to me](mailto:cris@dosycorp.com?subject=VF%20Negotiation&body=Dear%20Cris) if that's the case.
+
+Viewfinder Pro is provided by the [Dosyago Corporation](https://github.com/dosyago) as a commercial offering in two flavors: individual, and self-hosted.
+
+**Self-hosted**
+
+Includes the provision of the VF Pro software, an S license and various tiers of service. The basic cost principle is established on time (not scale): time you want the license for, time of the latest update you want, and time it takes us to service your deployment. Targeted at SMBs up to Enterprise. 
+
+- Various configurable packages available with either perpetual or yearly licensing, and included service and consulting. 
+- Starts at USD6,700 a year for non-perpetual single year license plus minimal service. 
+- Mid-tier options cost 10K - 16K yearly with a variety of options including perpetual or annual licenses.
+- Invoiceable service and consulting also available.
+- BYO cloud or data-center, or on-prem are all available.
+
+Prices and buy links for Self-hosted tiers are *coming soon!* In the meantime, <a href="mailto:cris@dosycorp.com?subject=VF%20Pro%20Packages&body=Hi%20Cris" target=_blank>email me</a> to ask a question.
+
+**Individual**
+
+Includes provision of a geographically located server wherever you want (or as close to it as possible for us), installed software, credentials to access, and various tiers of service. The basic cost principle is founded on performance (CPU cores, memory, network speed and bandwidth amount). 
+
+See the current [prices and tiers for the Individual track.](https://personal.dosyago.com)
 
 ## Motivation
 
