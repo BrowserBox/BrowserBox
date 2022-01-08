@@ -2,12 +2,12 @@
 
 description=$1
 latest_tag=$(git describe --abbrev=0)
-grel release -u cris691 -r ViewFinder --tag $latest_tag --name "New release" --description '"'"$description"'"'
-grel upload -u cris691 -r ViewFinder --tag $latest_tag --name "ViewFinder.exe" --file ViewFinder.exe
-grel upload -u cris691 -r ViewFinder --tag $latest_tag --name "ViewFinder.macos" --file ViewFinder.macos
-grel upload -u cris691 -r ViewFinder --tag $latest_tag --name "ViewFinder.linux" --file ViewFinder.nix
-grel upload -u cris691 -r ViewFinder --tag $latest_tag --name "ViewFinder.linx32" --file ViewFinder.nix32
-grel upload -u cris691 -r ViewFinder --tag $latest_tag --name "ViewFinder.win32.exe" --file ViewFinder.win32.exe
+grel release -u i5ik -r Viewfinder --tag $latest_tag --name "Release new binary build" --description '"'"$description"'"'
+grel upload -u i5ik -r Viewfinder --tag $latest_tag --name "Viewfinder.exe" --file ./build/viewfinder-regular-win.exe
+grel upload -u i5ik -r Viewfinder --tag $latest_tag --name "Viewfinder.macos" --file ./build/viewfinder-regular-macos
+grel upload -u i5ik -r Viewfinder --tag $latest_tag --name "Viewfinder.linux" --file ./build/viewfinder-regular-linux
+#grel upload -u i5ik -r Viewfinder --tag $latest_tag --name "Viewfinder.linx32" --file Viewfinder.nix32
+#grel upload -u i5ik -r Viewfinder --tag $latest_tag --name "Viewfinder.win32.exe" --file Viewfinder.win32.exe
 
 
 
