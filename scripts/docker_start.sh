@@ -9,7 +9,7 @@ sudo -g browsers pulseaudio --start
 node=$(which node)
 username=$(whoami)
 cd ./src/parec-server
-sudo -g browsers $node -r esm index.js 8000 rtp.monitor xxxcookie token2 &
+sudo -g browsers $node index.js 8000 rtp.monitor xxxcookie token2 &
 BGPID=$!
 cd ../../
 $node ./src/server.js 5002 8002 xxxcookie $username token2

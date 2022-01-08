@@ -2,6 +2,11 @@
   "defaultAction": "SCMP_ACT_ERRNO",
   "syscalls": [
     {
+        "name": "personality",
+        "action": "SCMP_ACT_ALLOW",
+        "args": null
+    },
+    {
         "name": "accept",
         "action": "SCMP_ACT_ALLOW",
         "args": null
