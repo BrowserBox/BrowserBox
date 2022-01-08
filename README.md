@@ -62,7 +62,7 @@ Some possible applications to build with Viewfinder:
 
 ## Progress & Roadmap 
 
-Viewfinder has always aimed to replicate the experience of using a regular browser, as well as provide valuable extensions that push the limits of what's possible. You can check my progress in the list below. Please note that ⭐ features are only available in Viewfinder Pro.
+Viewfinder aims for feature-parity with desktop and mobile browsers, plus push the limits with extra features like co-browsing. The list below shows our progress toward those goals. Please note that ⭐ features are only available in Viewfinder Pro.
 
 **Browser Features**
 - [:heavy_check_mark:] Back and forward history buttons 
