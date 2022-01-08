@@ -10755,5 +10755,4 @@
     self.voodoo = voodoo;
     return voodoo;
   }
-
 })();
