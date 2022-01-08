@@ -225,7 +225,7 @@ Eventually I intend to most of that information here, but for now you may [email
 
 Contributions welcome! But please sign the CLA first. Don't worry, if you open a pull request a bot will automatically let you know what you need to do!
 
-## Licensing
+## :balance_scale: Licensing
 
 **VF Regular**
 
@@ -241,6 +241,6 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
   If you'd like to purchase a Pro S license, [see the price list here](https://github.com/i5ik/Viewfinder/blob/boss/docs/PRICELIST.md)
 
-## Copyright
+## &copy; Copyright 
 
 This project copyright The Rightsholders (currently Cris Stringfellow & The Dosyago Corporation) 2022
