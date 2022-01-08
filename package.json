@@ -1,5 +1,5 @@
 {
-  "name": "remoteview",
+  "name": "viewfinder",
   "version": "2.40.2",
   "description": "Remote isolated browser platform by Dosyago",
   "main": "index.js",
