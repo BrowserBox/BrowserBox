@@ -15,11 +15,11 @@ sudo -g browsers pulseaudio -k
 sudo -g browsers pulseaudio --start
 
 echo "Starting parec-server"
-cd parec-server
-sudo -g browsers $node index.js 8000 rtp.monitor xxxcookie bhvNDh6XYZ &
+cd ./src/parec-server
+sudo -g browsers $node ./index.js 8000 rtp.monitor xxxcookie bhvNDh6XYZ &
 BGPID1=$!
-cd ..
+cd ../../
 
 echo "Starting main process, viewfinder, in foreground"
-$node  server.js 5002 8002 xxxcookie $username bhvNDh6XYZ
+$node ./src/server.js 5002 8002 xxxcookie $username bhvNDh6XYZ
 

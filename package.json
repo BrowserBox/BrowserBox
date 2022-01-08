@@ -14,7 +14,7 @@
     "start": "bash ./scripts/dstart.sh",
     "docker_start": "bash ./scripts/docker_start.sh",
     "postinstall": "bash ./scripts/postinstall.sh",
-    "init": "bash ./scripts/reinit_after_restart.sh",
+    "bundle": "./scripts/make_bundle.sh",
     "clean": "./scripts/clean.sh",
     "lint": "./scripts/gglint.sh",
     "tsc-server": "tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System ./src/server.js ./src/decs.d.ts",

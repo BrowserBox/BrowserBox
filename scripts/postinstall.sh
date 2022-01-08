@@ -23,6 +23,9 @@ cd ../../../
 cd ./src/zombie-lord/custom-launcher
 npm i --no-optional &> /dev/null   
 cd ../../../
+cd ./src/parec-server
+npm i --no-optional &> /dev/null   
+cd ../../
 
 echo Install rollup global
 npm i --no-optional -g rollup
