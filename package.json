@@ -1,6 +1,6 @@
 {
   "name": "remoteview",
-  "version": "2.40.0",
+  "version": "2.40.1",
   "description": "Remote isolated browser platform by Dosyago",
   "main": "index.js",
   "type": "module",
