@@ -1,7 +1,7 @@
 import {d as R} from '../../node_modules/dumbass/r.js';
 import {saveClick} from './controls.js';
 
-const USE_DDG = false;
+const USE_DDG = true;
 
 let omniBoxInput = null;
 let refocus = false;
