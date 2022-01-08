@@ -10,30 +10,48 @@
 
 [Get ideas for how you can use Viewfinder in your own project](#applications).
 
+--------------------------------------
+# Table of contents
+
+- [Installation](#installation)
+- [Applications](#applications)
+- [Progress & Roadmap](#progress--roadmap)
+- [Pro or Regular?](#pro-or-regular)
+- [Commercial Options](#commercial-options)
+- [Motivation](#motivation)
+- [Stats](#stats)
+- [FAQ](#faq)
+- [Other sections - coming soon](#other-sections---coming-soon)
+- [Contributing](#contributing)
+- [:balance_scale: Licensing](#balance_scale-licensing)
+- [&copy; Copyright](#copy-copyright)
+
+--------------------------------------
+
 ## Installation
 
 **Clone the repo:**
 
-```sh
+```shell
 $ git clone https://github.com/i5ik/Viewfinder.git
 $ cd Viewfinder
 ```
 
 or, **install it from NPM:**
 
-```sh
-$ npm i --save vfreg
+```shell
+$ npm i --save viewfinder-regular
 ```
 
 or, **pull it off DockerHub:**
 
-```sh
+```shell
 $ docker pull dosyago:viewfinder
 ```
 
 ## Applications
 
-Some possible applications to build with Viewfinder:
+Viewfinder enables a number of different applications depending on your problem space:
 
 **Product space**
 - Remote browser isolation for security, risk mitigation and privacy
@@ -62,7 +80,7 @@ Some possible applications to build with Viewfinder:
 
 ## Progress & Roadmap 
 
-Viewfinder aims for feature-parity with desktop and mobile browsers, plus push the limits with extra features like co-browsing. The list below shows our progress toward those goals. Please note that ⭐ features are only available in Viewfinder Pro.
+Viewfinder aims for feature-parity with desktop and mobile browsers, but also to push the limits of this technology with extra features like co-browsing. The list below shows our progress toward those goals. Please note that ⭐ features are only available in Viewfinder Pro.
 
 **Browser Features**
 - [:heavy_check_mark:] Back and forward history buttons 
@@ -107,7 +125,7 @@ Viewfinder aims for feature-parity with desktop and mobile browsers, plus push t
 **Application Features**
 - [:heavy_check_mark:] Built-in AdBlocker
 - [:heavy_check_mark:] Fully remote real-time co-browsing + built-in chat ⭐
-- [:heavy_check_mark:] Advanced adaptive streaming (WebRTC + WebSockets) and Shortest path lag reduction ⭐
+- [:heavy_check_mark:] Advanced adaptive streaming (with WebRTC + WebSockets) and Shortest path lag reduction ⭐
 - [:heavy_check_mark:] Run sandboxed puppeteer scripts ⭐
 - [:heavy_check_mark:] Skinnable browser UI ⭐
 - [:heavy_check_mark:] Kiosk mode (*no UI controls*) ⭐
@@ -229,7 +247,7 @@ Eventually I intend to most of that information here, but for now you may [email
 
 - Click to deploy on GCP, AWS, Heroku
 - Planned: StackScript for Linode, Vultr Marketplace entry
-- Some sort of community page: Matrix? Reddit? Usenet? Kidding ... probably ? 
+- Community page
 
 ## Contributing
 
