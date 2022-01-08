@@ -4,7 +4,11 @@
 
 **What is Viewfinder?**
 
-**Viewfinder** is a HTML user-interface for a browser that runs on a remote server. This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. In also enables the building of a number of interesting [applications](#applications).
+**Viewfinder** is a HTML user-interface for a browser that runs on a remote server. 
+
+This means you can embed a browser UI on your website and provide unrestricted access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. 
+
+Viewfinder also enables the building of a number of interesting [applications](#applications).
 
 ## Getting it
 
@@ -229,9 +233,11 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
 **VF Regular**
 
-  VF Regular (this repository) is licensed under the Polyform Noncommercial License 1.0 (NC license). Any previous licensed versions are also relicensed under this license. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE.md). 
+  VF Regular (this repository) is licensed under the Polyform Noncommercial License 1.0 (NC license). Any previous licensed versions are also relicensed under this license.  
 
-  In essence this license permits any use case besides those which are for a commercial purpose or anticipated commercial application. Explicitly, *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
+  The NC license permits *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
+
+  [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE.md).
 
 **VF Pro**
 
