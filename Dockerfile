@@ -11,5 +11,5 @@ USER docker
 RUN ./scripts/container_setup.sh
 EXPOSE 8002
 
-WORKDIR /src/src/app
+WORKDIR /usr/src/app
 CMD ["npm", "run", "docker_start"]

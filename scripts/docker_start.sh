@@ -7,8 +7,8 @@ pulseaudio -k
 pulseaudio --start
 
 username=$(whoami)
-cd parec-server
+cd ./src/parec-server
 node -r esm index.js 8000 &
 BGPID=$!
-cd ..
-node index.js 5002 8002 xxxcookie $username token2
+cd ../../
+node ./src/server.js 5002 8002 xxxcookie $username token2
