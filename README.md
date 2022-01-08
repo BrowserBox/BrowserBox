@@ -215,7 +215,7 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
   In essence this license permits any use case besides those which compete with Dosyago Corporation (or the rightsholders of VF).
 
-  If you'd like to purchase a Pro S license, [see the price list here](
+  If you'd like to purchase a Pro S license, [see the price list here](https://github.com/i5ik/Viewfinder/blob/boss/docs/PRICELIST.md)
 
 ## Copyright
 
