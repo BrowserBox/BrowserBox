@@ -221,7 +221,6 @@ Eventually I intend to most of that information here, but for now you may [email
 - Planned: StackScript for Linode, Vultr Marketplace entry
 - Some sort of community page: Matrix? Reddit? Usenet? Kidding ... probably ? 
 
-
 ## Contributing
 
 Contributions welcome! But please sign the CLA first. Don't worry, if you open a pull request a bot will automatically let you know what you need to do!
