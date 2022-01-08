@@ -10,9 +10,25 @@ What's the difference between VF Pro and regular VF? The main differences are th
 
 The final main differenece you might want to be aware of is that while VF regular is source-available (and is the sourcecode in this repository), VF Pro is currently closed-source proprietary software only available commercially, for either use in an Individual server, or for deployment in a Self-hosted package. 
 
-More information on these [commercial options](#commercial-options) is below.
+More information on these [commercial options](#commercial-options) is below, and take a look at this table of feature comparison between Regular and Pro.
 
-*Cute product comparison markdown table - coming soon!*
+| Feature                                       | Regular            | Pro                |
+|-----------------------------------------------|--------------------|--------------------|
+| Browser features                              | :heavy_check_mark: | :heavy_check_mark: |
+| Security features                             | :heavy_check_mark: | :heavy_check_mark: |
+| Privacy features                              | :heavy_check_mark: | :heavy_check_mark: |
+| Docker image                                  | :heavy_check_mark: | :heavy_check_mark: |
+| themeable browser UI                          | :heavy_check_mark: | :heavy_check_mark: |
+| Cloud and platform agnostic                   | :heavy_check_mark: | :heavy_check_mark: |
+| Multi-session security features               |                    | :heavy_check_mark: |
+| automatic scaling and control                 |                    | :heavy_check_mark: |
+| advanced viewport streaming and lag reduction |                    | :heavy_check_mark: |
+| co-browsing and instant messaging             |                    | :heavy_check_mark: |
+| run sandboxed puppeteer scripts               |                    | :heavy_check_mark: |
+| embed in iframe                               |                    | :heavy_check_mark: |
+| kiosk mode                                    |                    | :heavy_check_mark: |
+| simple API                                    |                    | :heavy_check_mark: |
+
 
 ## Commercial Options
 
@@ -83,6 +99,7 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [x] Touch scroll and touch drag
 - [x] File upload (including multiple files)
 - [x] Basic & Digest Auth support
+- [x] Clear all cookies and cached data during sessions
 - [x] Sound
 - [x] Interact with CAPTCHAs
 - [x] Context-menu (for opening in new tab, copying link address, etc)
@@ -94,6 +111,7 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [ ] Multi-touch on mobile
 - [ ] Bookmarks
 - [ ] Displayable history
+- [ ] Webcam and microphone support
 
 **Security Features**
 - [x] RBI [browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) security model
@@ -126,7 +144,7 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [x] Embeddable in an `<iframe>` ⭐
 - [x] Vertically scalable (multiple browsers per server) ⭐
 - [x] Small resource footprint ⭐
-- [x] Bbandwidth, CPU and memory limiting for resource abuse detection and prevention ⭐
+- [x] Bandwidth, CPU and memory limiting for resource abuse detection and prevention ⭐
 - [x] Simple API ⭐
 - [x] Fully white-labelable
 - [ ] White-labeling API
