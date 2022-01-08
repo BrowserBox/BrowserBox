@@ -21,7 +21,7 @@
     "tsc-public": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System ./src/public/*.js ./src/decs.d.ts",
     "tsc-check": "./scripts/tsc-check.sh",
     "check": "rm -f ./src/public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
-    "build": "npx webpack ./src/server.js --config ./config/webpack.config.js && npx nexe -t linux-x64 -o ./build/Viewfinder.nix -i ./dist/Viewfinder.js -r \"./src/zombie-lord/injections/**/*\" -r \"./src/plugins/**/*.js\" -r \"./src/public/**/*\" && npx nexe -t windows -o ./build/Viewfinder.exe -i ./dist/Viewfinder.js -r \"./src/zombie-lord/injections/**/*\" -r \"./src/plugins/**/*.js\" -r \"./src/public/**/*\" && npx nexe -t macos-x64 -o ./build/Viewfinder.macos -i ./dist/Viewfinder.js -r \"./src/zombie-lord/injections/**/*\" -r \"./src/plugins/**/*.js\" -r \"./src/public/**/*\" && npx nexe -t windows-x32 -o ./build/Viewfinder.win32.exe -i ./dist/Viewfinder.js -r \"./src/zombie-lord/injections/**/*\" -r \"./src/plugins/**/*.js\" -r \"./src/public/**/*\" && npx nexe -t linux-x32 -o ./build/Viewfinder.nix32 -i ./dist/Viewfinder.js -r \"./src/zombie-lord/injections/**/*\" -r \"./src/plugins/**/*.js\" -r \"./src/public/**/*\"",
+    "build": "npx webpack ./src/server.js --config ./config/webpack.config.js && npx pkg .",
     "pack": "upx ./build/Viewfinder.exe && upx ./build/Viewfinder.nix && upx ./build/Viewfinder.macos && upx ./build/Viewfinder.win32.exe && upx ./build/Viewfinder.nix32"
   },
   "repository": {
@@ -45,6 +45,11 @@
     "secure",
     "web-proxy"
   ],
+  "pkg": {
+    "scripts": "dist/*.js",
+    "assets": "src/**/*",
+    "outputPath": "build/"
+  },
   "author": "@dosy",
   "license": "Polyform Noncommercial 1.0",
   "bugs": {
@@ -92,9 +97,9 @@
     "@types/ws": "^7.2.6",
     "babel-plugin-external-helpers": "latest",
     "eslint": "^7.10.0",
-    "nexe": "^4.0.0-beta.19",
     "node-dev": "^7.1.0",
     "node-loader": "^1.0.1",
+    "pkg": "^5.5.1",
     "rollup": "^2.39.0",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.1.0",
