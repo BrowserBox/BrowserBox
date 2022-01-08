@@ -1,6 +1,6 @@
 {
   "name": "vfreg",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Remote isolated browser platform by Dosyago",
   "main": "index.js",
   "type": "module",
