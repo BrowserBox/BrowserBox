@@ -245,11 +245,11 @@ Yes of course. With the proper license this is most definitely a possible use ca
 
 Eventually I intend to most of that information here, but for now you may [email me](mailto:cris@dosycorp.com?subject=VF%20Info&body=Hi%20Cris). The reason is I'm currently revising a lot of positioning, licensing and prices. If you let me know you prefer a voice call that's also available. 
 
-## Other sections - coming soon
+## Other resources 
 
 - Click to deploy on GCP, AWS, Heroku
 - Planned: StackScript for Linode, Vultr Marketplace entry
-- Community page
+- Learn and solve issues together at the [community discussion page](https://github.com/i5ik/Viewfinder/discussions).
 
 ## Contributing
 
