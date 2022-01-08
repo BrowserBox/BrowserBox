@@ -23,7 +23,7 @@
 - [FAQ](#faq)
 - [Other sections - coming soon](#other-sections---coming-soon)
 - [Contributing](#contributing)
-- [:balance_scale: Licensing](#balance_scale-licensing)
+- [⚖️ Licensing](#balance_scale-licensing)
 - [&copy; Copyright](#copy-copyright)
 
 --------------------------------------
@@ -266,7 +266,7 @@ Eventually I intend to most of that information here, but for now you may [email
 
 Contributions welcome! But please sign the CLA first. Don't worry, if you open a pull request a bot will automatically let you know what you need to do!
 
-## :balance_scale: Licensing
+## ⚖️ Licensing
 
 **VF Regular**
 
