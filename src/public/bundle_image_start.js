@@ -2,1546 +2,44 @@
 
 function _defineProperty2(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+
+function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"]; if (_i == null) return; var _arr = []; var _n = true; var _d = false; var _s, _e; try { for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function _toArray(arr) { return _arrayWithHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableRest(); }
+
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+
+function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e2) { throw _e2; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e3) { didErr = true; err = _e3; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
+
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
+
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
+
+function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
 
 (function () {
   'use strict';
-
-  function asyncGeneratorStep$1(gen, resolve, reject, _next, _throw, key, arg) {
-    try {
-      var info = gen[key](arg);
-      var value = info.value;
-    } catch (error) {
-      reject(error);
-      return;
-    }
-
-    if (info.done) {
-      resolve(value);
-    } else {
-      Promise.resolve(value).then(_next, _throw);
-    }
-  }
-
-  function _asyncToGenerator$1(fn) {
-    return function () {
-      var self = this,
-          args = arguments;
-      return new Promise(function (resolve, reject) {
-        var gen = fn.apply(self, args);
-
-        function _next(value) {
-          asyncGeneratorStep$1(gen, resolve, reject, _next, _throw, "next", value);
-        }
-
-        function _throw(err) {
-          asyncGeneratorStep$1(gen, resolve, reject, _next, _throw, "throw", err);
-        }
-
-        _next(undefined);
-      });
-    };
-  }
-
-  function createCommonjsModule(fn, basedir, module) {
-    return module = {
-      path: basedir,
-      exports: {},
-      require: function require(path, base) {
-        return commonjsRequire(path, base === undefined || base === null ? module.path : base);
-      }
-    }, fn(module, module.exports), module.exports;
-  }
-
-  function commonjsRequire() {
-    throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
-  }
-
-  var runtime_1$1 = createCommonjsModule(function (module) {
-    /**
-     * Copyright (c) 2014-present, Facebook, Inc.
-     *
-     * This source code is licensed under the MIT license found in the
-     * LICENSE file in the root directory of this source tree.
-     */
-    var runtime = function (exports) {
-      var Op = Object.prototype;
-      var hasOwn = Op.hasOwnProperty;
-      var undefined$1; // More compressible than void 0.
-
-      var $Symbol = typeof Symbol === "function" ? Symbol : {};
-      var iteratorSymbol = $Symbol.iterator || "@@iterator";
-      var asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator";
-      var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
-
-      function define(obj, key, value) {
-        Object.defineProperty(obj, key, {
-          value: value,
-          enumerable: true,
-          configurable: true,
-          writable: true
-        });
-        return obj[key];
-      }
-
-      try {
-        // IE 8 has a broken Object.defineProperty that only works on DOM objects.
-        define({}, "");
-      } catch (err) {
-        define = function define(obj, key, value) {
-          return obj[key] = value;
-        };
-      }
-
-      function wrap(innerFn, outerFn, self, tryLocsList) {
-        // If outerFn provided and outerFn.prototype is a Generator, then outerFn.prototype instanceof Generator.
-        var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator;
-        var generator = Object.create(protoGenerator.prototype);
-        var context = new Context(tryLocsList || []); // The ._invoke method unifies the implementations of the .next,
-        // .throw, and .return methods.
-
-        generator._invoke = makeInvokeMethod(innerFn, self, context);
-        return generator;
-      }
-
-      exports.wrap = wrap; // Try/catch helper to minimize deoptimizations. Returns a completion
-      // record like context.tryEntries[i].completion. This interface could
-      // have been (and was previously) designed to take a closure to be
-      // invoked without arguments, but in all the cases we care about we
-      // already have an existing method we want to call, so there's no need
-      // to create a new function object. We can even get away with assuming
-      // the method takes exactly one argument, since that happens to be true
-      // in every case, so we don't have to touch the arguments object. The
-      // only additional allocation required is the completion record, which
-      // has a stable shape and so hopefully should be cheap to allocate.
-
-      function tryCatch(fn, obj, arg) {
-        try {
-          return {
-            type: "normal",
-            arg: fn.call(obj, arg)
-          };
-        } catch (err) {
-          return {
-            type: "throw",
-            arg: err
-          };
-        }
-      }
-
-      var GenStateSuspendedStart = "suspendedStart";
-      var GenStateSuspendedYield = "suspendedYield";
-      var GenStateExecuting = "executing";
-      var GenStateCompleted = "completed"; // Returning this object from the innerFn has the same effect as
-      // breaking out of the dispatch switch statement.
-
-      var ContinueSentinel = {}; // Dummy constructor functions that we use as the .constructor and
-      // .constructor.prototype properties for functions that return Generator
-      // objects. For full spec compliance, you may wish to configure your
-      // minifier not to mangle the names of these two functions.
-
-      function Generator() {}
-
-      function GeneratorFunction() {}
-
-      function GeneratorFunctionPrototype() {} // This is a polyfill for %IteratorPrototype% for environments that
-      // don't natively support it.
-
-
-      var IteratorPrototype = {};
-      define(IteratorPrototype, iteratorSymbol, function () {
-        return this;
-      });
-      var getProto = Object.getPrototypeOf;
-      var NativeIteratorPrototype = getProto && getProto(getProto(values([])));
-
-      if (NativeIteratorPrototype && NativeIteratorPrototype !== Op && hasOwn.call(NativeIteratorPrototype, iteratorSymbol)) {
-        // This environment has a native %IteratorPrototype%; use it instead
-        // of the polyfill.
-        IteratorPrototype = NativeIteratorPrototype;
-      }
-
-      var Gp = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(IteratorPrototype);
-      GeneratorFunction.prototype = GeneratorFunctionPrototype;
-      define(Gp, "constructor", GeneratorFunctionPrototype);
-      define(GeneratorFunctionPrototype, "constructor", GeneratorFunction);
-      GeneratorFunction.displayName = define(GeneratorFunctionPrototype, toStringTagSymbol, "GeneratorFunction"); // Helper for defining the .next, .throw, and .return methods of the
-      // Iterator interface in terms of a single ._invoke method.
-
-      function defineIteratorMethods(prototype) {
-        ["next", "throw", "return"].forEach(function (method) {
-          define(prototype, method, function (arg) {
-            return this._invoke(method, arg);
-          });
-        });
-      }
-
-      exports.isGeneratorFunction = function (genFun) {
-        var ctor = typeof genFun === "function" && genFun.constructor;
-        return ctor ? ctor === GeneratorFunction || // For the native GeneratorFunction constructor, the best we can
-        // do is to check its .name property.
-        (ctor.displayName || ctor.name) === "GeneratorFunction" : false;
-      };
-
-      exports.mark = function (genFun) {
-        if (Object.setPrototypeOf) {
-          Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
-        } else {
-          genFun.__proto__ = GeneratorFunctionPrototype;
-          define(genFun, toStringTagSymbol, "GeneratorFunction");
-        }
-
-        genFun.prototype = Object.create(Gp);
-        return genFun;
-      }; // Within the body of any async function, `await x` is transformed to
-      // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
-      // `hasOwn.call(value, "__await")` to determine if the yielded value is
-      // meant to be awaited.
-
-
-      exports.awrap = function (arg) {
-        return {
-          __await: arg
-        };
-      };
-
-      function AsyncIterator(generator, PromiseImpl) {
-        function invoke(method, arg, resolve, reject) {
-          var record = tryCatch(generator[method], generator, arg);
-
-          if (record.type === "throw") {
-            reject(record.arg);
-          } else {
-            var result = record.arg;
-            var value = result.value;
-
-            if (value && _typeof(value) === "object" && hasOwn.call(value, "__await")) {
-              return PromiseImpl.resolve(value.__await).then(function (value) {
-                invoke("next", value, resolve, reject);
-              }, function (err) {
-                invoke("throw", err, resolve, reject);
-              });
-            }
-
-            return PromiseImpl.resolve(value).then(function (unwrapped) {
-              // When a yielded Promise is resolved, its final value becomes
-              // the .value of the Promise<{value,done}> result for the
-              // current iteration.
-              result.value = unwrapped;
-              resolve(result);
-            }, function (error) {
-              // If a rejected Promise was yielded, throw the rejection back
-              // into the async generator function so it can be handled there.
-              return invoke("throw", error, resolve, reject);
-            });
-          }
-        }
-
-        var previousPromise;
-
-        function enqueue(method, arg) {
-          function callInvokeWithMethodAndArg() {
-            return new PromiseImpl(function (resolve, reject) {
-              invoke(method, arg, resolve, reject);
-            });
-          }
-
-          return previousPromise = // If enqueue has been called before, then we want to wait until
-          // all previous Promises have been resolved before calling invoke,
-          // so that results are always delivered in the correct order. If
-          // enqueue has not been called before, then it is important to
-          // call invoke immediately, without waiting on a callback to fire,
-          // so that the async generator function has the opportunity to do
-          // any necessary setup in a predictable way. This predictability
-          // is why the Promise constructor synchronously invokes its
-          // executor callback, and why async functions synchronously
-          // execute code before the first await. Since we implement simple
-          // async functions in terms of async generators, it is especially
-          // important to get this right, even though it requires care.
-          previousPromise ? previousPromise.then(callInvokeWithMethodAndArg, // Avoid propagating failures to Promises returned by later
-          // invocations of the iterator.
-          callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg();
-        } // Define the unified helper method that is used to implement .next,
-        // .throw, and .return (see defineIteratorMethods).
-
-
-        this._invoke = enqueue;
-      }
-
-      defineIteratorMethods(AsyncIterator.prototype);
-      define(AsyncIterator.prototype, asyncIteratorSymbol, function () {
-        return this;
-      });
-      exports.AsyncIterator = AsyncIterator; // Note that simple async functions are implemented on top of
-      // AsyncIterator objects; they just return a Promise for the value of
-      // the final result produced by the iterator.
-
-      exports.async = function (innerFn, outerFn, self, tryLocsList, PromiseImpl) {
-        if (PromiseImpl === void 0) PromiseImpl = Promise;
-        var iter = new AsyncIterator(wrap(innerFn, outerFn, self, tryLocsList), PromiseImpl);
-        return exports.isGeneratorFunction(outerFn) ? iter // If outerFn is a generator, return the full iterator.
-        : iter.next().then(function (result) {
-          return result.done ? result.value : iter.next();
-        });
-      };
-
-      function makeInvokeMethod(innerFn, self, context) {
-        var state = GenStateSuspendedStart;
-        return function invoke(method, arg) {
-          if (state === GenStateExecuting) {
-            throw new Error("Generator is already running");
-          }
-
-          if (state === GenStateCompleted) {
-            if (method === "throw") {
-              throw arg;
-            } // Be forgiving, per 25.3.3.3.3 of the spec:
-            // https://people.mozilla.org/~jorendorff/es6-draft.html#sec-generatorresume
-
-
-            return doneResult();
-          }
-
-          context.method = method;
-          context.arg = arg;
-
-          while (true) {
-            var delegate = context.delegate;
-
-            if (delegate) {
-              var delegateResult = maybeInvokeDelegate(delegate, context);
-
-              if (delegateResult) {
-                if (delegateResult === ContinueSentinel) continue;
-                return delegateResult;
-              }
-            }
-
-            if (context.method === "next") {
-              // Setting context._sent for legacy support of Babel's
-              // function.sent implementation.
-              context.sent = context._sent = context.arg;
-            } else if (context.method === "throw") {
-              if (state === GenStateSuspendedStart) {
-                state = GenStateCompleted;
-                throw context.arg;
-              }
-
-              context.dispatchException(context.arg);
-            } else if (context.method === "return") {
-              context.abrupt("return", context.arg);
-            }
-
-            state = GenStateExecuting;
-            var record = tryCatch(innerFn, self, context);
-
-            if (record.type === "normal") {
-              // If an exception is thrown from innerFn, we leave state ===
-              // GenStateExecuting and loop back for another invocation.
-              state = context.done ? GenStateCompleted : GenStateSuspendedYield;
-
-              if (record.arg === ContinueSentinel) {
-                continue;
-              }
-
-              return {
-                value: record.arg,
-                done: context.done
-              };
-            } else if (record.type === "throw") {
-              state = GenStateCompleted; // Dispatch the exception by looping back around to the
-              // context.dispatchException(context.arg) call above.
-
-              context.method = "throw";
-              context.arg = record.arg;
-            }
-          }
-        };
-      } // Call delegate.iterator[context.method](context.arg) and handle the
-      // result, either by returning a { value, done } result from the
-      // delegate iterator, or by modifying context.method and context.arg,
-      // setting context.delegate to null, and returning the ContinueSentinel.
-
-
-      function maybeInvokeDelegate(delegate, context) {
-        var method = delegate.iterator[context.method];
-
-        if (method === undefined$1) {
-          // A .throw or .return when the delegate iterator has no .throw
-          // method always terminates the yield* loop.
-          context.delegate = null;
-
-          if (context.method === "throw") {
-            // Note: ["return"] must be used for ES3 parsing compatibility.
-            if (delegate.iterator["return"]) {
-              // If the delegate iterator has a return method, give it a
-              // chance to clean up.
-              context.method = "return";
-              context.arg = undefined$1;
-              maybeInvokeDelegate(delegate, context);
-
-              if (context.method === "throw") {
-                // If maybeInvokeDelegate(context) changed context.method from
-                // "return" to "throw", let that override the TypeError below.
-                return ContinueSentinel;
-              }
-            }
-
-            context.method = "throw";
-            context.arg = new TypeError("The iterator does not provide a 'throw' method");
-          }
-
-          return ContinueSentinel;
-        }
-
-        var record = tryCatch(method, delegate.iterator, context.arg);
-
-        if (record.type === "throw") {
-          context.method = "throw";
-          context.arg = record.arg;
-          context.delegate = null;
-          return ContinueSentinel;
-        }
-
-        var info = record.arg;
-
-        if (!info) {
-          context.method = "throw";
-          context.arg = new TypeError("iterator result is not an object");
-          context.delegate = null;
-          return ContinueSentinel;
-        }
-
-        if (info.done) {
-          // Assign the result of the finished delegate to the temporary
-          // variable specified by delegate.resultName (see delegateYield).
-          context[delegate.resultName] = info.value; // Resume execution at the desired location (see delegateYield).
-
-          context.next = delegate.nextLoc; // If context.method was "throw" but the delegate handled the
-          // exception, let the outer generator proceed normally. If
-          // context.method was "next", forget context.arg since it has been
-          // "consumed" by the delegate iterator. If context.method was
-          // "return", allow the original .return call to continue in the
-          // outer generator.
-
-          if (context.method !== "return") {
-            context.method = "next";
-            context.arg = undefined$1;
-          }
-        } else {
-          // Re-yield the result returned by the delegate method.
-          return info;
-        } // The delegate iterator is finished, so forget it and continue with
-        // the outer generator.
-
-
-        context.delegate = null;
-        return ContinueSentinel;
-      } // Define Generator.prototype.{next,throw,return} in terms of the
-      // unified ._invoke helper method.
-
-
-      defineIteratorMethods(Gp);
-      define(Gp, toStringTagSymbol, "Generator"); // A Generator should always return itself as the iterator object when the
-      // @@iterator function is called on it. Some browsers' implementations of the
-      // iterator prototype chain incorrectly implement this, causing the Generator
-      // object to not be returned from this call. This ensures that doesn't happen.
-      // See https://github.com/facebook/regenerator/issues/274 for more details.
-
-      define(Gp, iteratorSymbol, function () {
-        return this;
-      });
-      define(Gp, "toString", function () {
-        return "[object Generator]";
-      });
-
-      function pushTryEntry(locs) {
-        var entry = {
-          tryLoc: locs[0]
-        };
-
-        if (1 in locs) {
-          entry.catchLoc = locs[1];
-        }
-
-        if (2 in locs) {
-          entry.finallyLoc = locs[2];
-          entry.afterLoc = locs[3];
-        }
-
-        this.tryEntries.push(entry);
-      }
-
-      function resetTryEntry(entry) {
-        var record = entry.completion || {};
-        record.type = "normal";
-        delete record.arg;
-        entry.completion = record;
-      }
-
-      function Context(tryLocsList) {
-        // The root entry object (effectively a try statement without a catch
-        // or a finally block) gives us a place to store values thrown from
-        // locations where there is no enclosing try statement.
-        this.tryEntries = [{
-          tryLoc: "root"
-        }];
-        tryLocsList.forEach(pushTryEntry, this);
-        this.reset(true);
-      }
-
-      exports.keys = function (object) {
-        var keys = [];
-
-        for (var key in object) {
-          keys.push(key);
-        }
-
-        keys.reverse(); // Rather than returning an object with a next method, we keep
-        // things simple and return the next function itself.
-
-        return function next() {
-          while (keys.length) {
-            var key = keys.pop();
-
-            if (key in object) {
-              next.value = key;
-              next.done = false;
-              return next;
-            }
-          } // To avoid creating an additional object, we just hang the .value
-          // and .done properties off the next function object itself. This
-          // also ensures that the minifier will not anonymize the function.
-
-
-          next.done = true;
-          return next;
-        };
-      };
-
-      function values(iterable) {
-        if (iterable) {
-          var iteratorMethod = iterable[iteratorSymbol];
-
-          if (iteratorMethod) {
-            return iteratorMethod.call(iterable);
-          }
-
-          if (typeof iterable.next === "function") {
-            return iterable;
-          }
-
-          if (!isNaN(iterable.length)) {
-            var i = -1,
-                next = function next() {
-              while (++i < iterable.length) {
-                if (hasOwn.call(iterable, i)) {
-                  next.value = iterable[i];
-                  next.done = false;
-                  return next;
-                }
-              }
-
-              next.value = undefined$1;
-              next.done = true;
-              return next;
-            };
-
-            return next.next = next;
-          }
-        } // Return an iterator with no values.
-
-
-        return {
-          next: doneResult
-        };
-      }
-
-      exports.values = values;
-
-      function doneResult() {
-        return {
-          value: undefined$1,
-          done: true
-        };
-      }
-
-      Context.prototype = {
-        constructor: Context,
-        reset: function reset(skipTempReset) {
-          this.prev = 0;
-          this.next = 0; // Resetting context._sent for legacy support of Babel's
-          // function.sent implementation.
-
-          this.sent = this._sent = undefined$1;
-          this.done = false;
-          this.delegate = null;
-          this.method = "next";
-          this.arg = undefined$1;
-          this.tryEntries.forEach(resetTryEntry);
-
-          if (!skipTempReset) {
-            for (var name in this) {
-              // Not sure about the optimal order of these conditions:
-              if (name.charAt(0) === "t" && hasOwn.call(this, name) && !isNaN(+name.slice(1))) {
-                this[name] = undefined$1;
-              }
-            }
-          }
-        },
-        stop: function stop() {
-          this.done = true;
-          var rootEntry = this.tryEntries[0];
-          var rootRecord = rootEntry.completion;
-
-          if (rootRecord.type === "throw") {
-            throw rootRecord.arg;
-          }
-
-          return this.rval;
-        },
-        dispatchException: function dispatchException(exception) {
-          if (this.done) {
-            throw exception;
-          }
-
-          var context = this;
-
-          function handle(loc, caught) {
-            record.type = "throw";
-            record.arg = exception;
-            context.next = loc;
-
-            if (caught) {
-              // If the dispatched exception was caught by a catch block,
-              // then let that catch block handle the exception normally.
-              context.method = "next";
-              context.arg = undefined$1;
-            }
-
-            return !!caught;
-          }
-
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-            var record = entry.completion;
-
-            if (entry.tryLoc === "root") {
-              // Exception thrown outside of any try block that could handle
-              // it, so set the completion value of the entire function to
-              // throw the exception.
-              return handle("end");
-            }
-
-            if (entry.tryLoc <= this.prev) {
-              var hasCatch = hasOwn.call(entry, "catchLoc");
-              var hasFinally = hasOwn.call(entry, "finallyLoc");
-
-              if (hasCatch && hasFinally) {
-                if (this.prev < entry.catchLoc) {
-                  return handle(entry.catchLoc, true);
-                } else if (this.prev < entry.finallyLoc) {
-                  return handle(entry.finallyLoc);
-                }
-              } else if (hasCatch) {
-                if (this.prev < entry.catchLoc) {
-                  return handle(entry.catchLoc, true);
-                }
-              } else if (hasFinally) {
-                if (this.prev < entry.finallyLoc) {
-                  return handle(entry.finallyLoc);
-                }
-              } else {
-                throw new Error("try statement without catch or finally");
-              }
-            }
-          }
-        },
-        abrupt: function abrupt(type, arg) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.tryLoc <= this.prev && hasOwn.call(entry, "finallyLoc") && this.prev < entry.finallyLoc) {
-              var finallyEntry = entry;
-              break;
-            }
-          }
-
-          if (finallyEntry && (type === "break" || type === "continue") && finallyEntry.tryLoc <= arg && arg <= finallyEntry.finallyLoc) {
-            // Ignore the finally entry if control is not jumping to a
-            // location outside the try/catch block.
-            finallyEntry = null;
-          }
-
-          var record = finallyEntry ? finallyEntry.completion : {};
-          record.type = type;
-          record.arg = arg;
-
-          if (finallyEntry) {
-            this.method = "next";
-            this.next = finallyEntry.finallyLoc;
-            return ContinueSentinel;
-          }
-
-          return this.complete(record);
-        },
-        complete: function complete(record, afterLoc) {
-          if (record.type === "throw") {
-            throw record.arg;
-          }
-
-          if (record.type === "break" || record.type === "continue") {
-            this.next = record.arg;
-          } else if (record.type === "return") {
-            this.rval = this.arg = record.arg;
-            this.method = "return";
-            this.next = "end";
-          } else if (record.type === "normal" && afterLoc) {
-            this.next = afterLoc;
-          }
-
-          return ContinueSentinel;
-        },
-        finish: function finish(finallyLoc) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.finallyLoc === finallyLoc) {
-              this.complete(entry.completion, entry.afterLoc);
-              resetTryEntry(entry);
-              return ContinueSentinel;
-            }
-          }
-        },
-        "catch": function _catch(tryLoc) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.tryLoc === tryLoc) {
-              var record = entry.completion;
-
-              if (record.type === "throw") {
-                var thrown = record.arg;
-                resetTryEntry(entry);
-              }
-
-              return thrown;
-            }
-          } // The context.catch method must only be called with a location
-          // argument that corresponds to a known catch block.
-
-
-          throw new Error("illegal catch attempt");
-        },
-        delegateYield: function delegateYield(iterable, resultName, nextLoc) {
-          this.delegate = {
-            iterator: values(iterable),
-            resultName: resultName,
-            nextLoc: nextLoc
-          };
-
-          if (this.method === "next") {
-            // Deliberately forget the last sent value so that we don't
-            // accidentally pass it on to the delegate.
-            this.arg = undefined$1;
-          }
-
-          return ContinueSentinel;
-        }
-      }; // Regardless of whether this script is executing as a CommonJS module
-      // or not, return the runtime object so that we can declare the variable
-      // regeneratorRuntime in the outer scope, which allows this module to be
-      // injected easily by `bin/regenerator --include-runtime script.js`.
-
-      return exports;
-    }( // If this script is executing as a CommonJS module, use module.exports
-    // as the regeneratorRuntime namespace. Otherwise create a new empty
-    // object. Either way, the resulting object will be used to initialize
-    // the regeneratorRuntime variable at the top of this file.
-    module.exports);
-
-    try {
-      regeneratorRuntime = runtime;
-    } catch (accidentalStrictMode) {
-      // This module should not be running in strict mode, so the above
-      // assignment should always work unless something is misconfigured. Just
-      // in case runtime.js accidentally runs in strict mode, in modern engines
-      // we can explicitly access globalThis. In older engines we can escape
-      // strict mode using a global Function call. This could conceivably fail
-      // if a Content Security Policy forbids using Function, but in that case
-      // the proper solution is to fix the accidental strict mode problem. If
-      // you've misconfigured your bundler to force strict mode and applied a
-      // CSP to forbid Function, and you're not willing to fix either of those
-      // problems, please detail your unique predicament in a GitHub issue.
-      if ((typeof globalThis === "undefined" ? "undefined" : _typeof(globalThis)) === "object") {
-        globalThis.regeneratorRuntime = runtime;
-      } else {
-        Function("r", "regeneratorRuntime = r")(runtime);
-      }
-    }
-  });
-  var regenerator$1 = runtime_1$1;
-
-  function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
-    try {
-      var info = gen[key](arg);
-      var value = info.value;
-    } catch (error) {
-      reject(error);
-      return;
-    }
-
-    if (info.done) {
-      resolve(value);
-    } else {
-      Promise.resolve(value).then(_next, _throw);
-    }
-  }
-
-  function _asyncToGenerator(fn) {
-    return function () {
-      var self = this,
-          args = arguments;
-      return new Promise(function (resolve, reject) {
-        var gen = fn.apply(self, args);
-
-        function _next(value) {
-          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
-        }
-
-        function _throw(err) {
-          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
-        }
-
-        _next(undefined);
-      });
-    };
-  }
-
-  var asyncToGenerator = _asyncToGenerator;
-  var runtime_1 = createCommonjsModule(function (module) {
-    /**
-     * Copyright (c) 2014-present, Facebook, Inc.
-     *
-     * This source code is licensed under the MIT license found in the
-     * LICENSE file in the root directory of this source tree.
-     */
-    var runtime = function (exports) {
-      var Op = Object.prototype;
-      var hasOwn = Op.hasOwnProperty;
-      var undefined$1; // More compressible than void 0.
-
-      var $Symbol = typeof Symbol === "function" ? Symbol : {};
-      var iteratorSymbol = $Symbol.iterator || "@@iterator";
-      var asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator";
-      var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
-
-      function define(obj, key, value) {
-        Object.defineProperty(obj, key, {
-          value: value,
-          enumerable: true,
-          configurable: true,
-          writable: true
-        });
-        return obj[key];
-      }
-
-      try {
-        // IE 8 has a broken Object.defineProperty that only works on DOM objects.
-        define({}, "");
-      } catch (err) {
-        define = function define(obj, key, value) {
-          return obj[key] = value;
-        };
-      }
-
-      function wrap(innerFn, outerFn, self, tryLocsList) {
-        // If outerFn provided and outerFn.prototype is a Generator, then outerFn.prototype instanceof Generator.
-        var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator;
-        var generator = Object.create(protoGenerator.prototype);
-        var context = new Context(tryLocsList || []); // The ._invoke method unifies the implementations of the .next,
-        // .throw, and .return methods.
-
-        generator._invoke = makeInvokeMethod(innerFn, self, context);
-        return generator;
-      }
-
-      exports.wrap = wrap; // Try/catch helper to minimize deoptimizations. Returns a completion
-      // record like context.tryEntries[i].completion. This interface could
-      // have been (and was previously) designed to take a closure to be
-      // invoked without arguments, but in all the cases we care about we
-      // already have an existing method we want to call, so there's no need
-      // to create a new function object. We can even get away with assuming
-      // the method takes exactly one argument, since that happens to be true
-      // in every case, so we don't have to touch the arguments object. The
-      // only additional allocation required is the completion record, which
-      // has a stable shape and so hopefully should be cheap to allocate.
-
-      function tryCatch(fn, obj, arg) {
-        try {
-          return {
-            type: "normal",
-            arg: fn.call(obj, arg)
-          };
-        } catch (err) {
-          return {
-            type: "throw",
-            arg: err
-          };
-        }
-      }
-
-      var GenStateSuspendedStart = "suspendedStart";
-      var GenStateSuspendedYield = "suspendedYield";
-      var GenStateExecuting = "executing";
-      var GenStateCompleted = "completed"; // Returning this object from the innerFn has the same effect as
-      // breaking out of the dispatch switch statement.
-
-      var ContinueSentinel = {}; // Dummy constructor functions that we use as the .constructor and
-      // .constructor.prototype properties for functions that return Generator
-      // objects. For full spec compliance, you may wish to configure your
-      // minifier not to mangle the names of these two functions.
-
-      function Generator() {}
-
-      function GeneratorFunction() {}
-
-      function GeneratorFunctionPrototype() {} // This is a polyfill for %IteratorPrototype% for environments that
-      // don't natively support it.
-
-
-      var IteratorPrototype = {};
-
-      IteratorPrototype[iteratorSymbol] = function () {
-        return this;
-      };
-
-      var getProto = Object.getPrototypeOf;
-      var NativeIteratorPrototype = getProto && getProto(getProto(values([])));
-
-      if (NativeIteratorPrototype && NativeIteratorPrototype !== Op && hasOwn.call(NativeIteratorPrototype, iteratorSymbol)) {
-        // This environment has a native %IteratorPrototype%; use it instead
-        // of the polyfill.
-        IteratorPrototype = NativeIteratorPrototype;
-      }
-
-      var Gp = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(IteratorPrototype);
-      GeneratorFunction.prototype = Gp.constructor = GeneratorFunctionPrototype;
-      GeneratorFunctionPrototype.constructor = GeneratorFunction;
-      GeneratorFunction.displayName = define(GeneratorFunctionPrototype, toStringTagSymbol, "GeneratorFunction"); // Helper for defining the .next, .throw, and .return methods of the
-      // Iterator interface in terms of a single ._invoke method.
-
-      function defineIteratorMethods(prototype) {
-        ["next", "throw", "return"].forEach(function (method) {
-          define(prototype, method, function (arg) {
-            return this._invoke(method, arg);
-          });
-        });
-      }
-
-      exports.isGeneratorFunction = function (genFun) {
-        var ctor = typeof genFun === "function" && genFun.constructor;
-        return ctor ? ctor === GeneratorFunction || // For the native GeneratorFunction constructor, the best we can
-        // do is to check its .name property.
-        (ctor.displayName || ctor.name) === "GeneratorFunction" : false;
-      };
-
-      exports.mark = function (genFun) {
-        if (Object.setPrototypeOf) {
-          Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
-        } else {
-          genFun.__proto__ = GeneratorFunctionPrototype;
-          define(genFun, toStringTagSymbol, "GeneratorFunction");
-        }
-
-        genFun.prototype = Object.create(Gp);
-        return genFun;
-      }; // Within the body of any async function, `await x` is transformed to
-      // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
-      // `hasOwn.call(value, "__await")` to determine if the yielded value is
-      // meant to be awaited.
-
-
-      exports.awrap = function (arg) {
-        return {
-          __await: arg
-        };
-      };
-
-      function AsyncIterator(generator, PromiseImpl) {
-        function invoke(method, arg, resolve, reject) {
-          var record = tryCatch(generator[method], generator, arg);
-
-          if (record.type === "throw") {
-            reject(record.arg);
-          } else {
-            var result = record.arg;
-            var value = result.value;
-
-            if (value && _typeof(value) === "object" && hasOwn.call(value, "__await")) {
-              return PromiseImpl.resolve(value.__await).then(function (value) {
-                invoke("next", value, resolve, reject);
-              }, function (err) {
-                invoke("throw", err, resolve, reject);
-              });
-            }
-
-            return PromiseImpl.resolve(value).then(function (unwrapped) {
-              // When a yielded Promise is resolved, its final value becomes
-              // the .value of the Promise<{value,done}> result for the
-              // current iteration.
-              result.value = unwrapped;
-              resolve(result);
-            }, function (error) {
-              // If a rejected Promise was yielded, throw the rejection back
-              // into the async generator function so it can be handled there.
-              return invoke("throw", error, resolve, reject);
-            });
-          }
-        }
-
-        var previousPromise;
-
-        function enqueue(method, arg) {
-          function callInvokeWithMethodAndArg() {
-            return new PromiseImpl(function (resolve, reject) {
-              invoke(method, arg, resolve, reject);
-            });
-          }
-
-          return previousPromise = // If enqueue has been called before, then we want to wait until
-          // all previous Promises have been resolved before calling invoke,
-          // so that results are always delivered in the correct order. If
-          // enqueue has not been called before, then it is important to
-          // call invoke immediately, without waiting on a callback to fire,
-          // so that the async generator function has the opportunity to do
-          // any necessary setup in a predictable way. This predictability
-          // is why the Promise constructor synchronously invokes its
-          // executor callback, and why async functions synchronously
-          // execute code before the first await. Since we implement simple
-          // async functions in terms of async generators, it is especially
-          // important to get this right, even though it requires care.
-          previousPromise ? previousPromise.then(callInvokeWithMethodAndArg, // Avoid propagating failures to Promises returned by later
-          // invocations of the iterator.
-          callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg();
-        } // Define the unified helper method that is used to implement .next,
-        // .throw, and .return (see defineIteratorMethods).
-
-
-        this._invoke = enqueue;
-      }
-
-      defineIteratorMethods(AsyncIterator.prototype);
-
-      AsyncIterator.prototype[asyncIteratorSymbol] = function () {
-        return this;
-      };
-
-      exports.AsyncIterator = AsyncIterator; // Note that simple async functions are implemented on top of
-      // AsyncIterator objects; they just return a Promise for the value of
-      // the final result produced by the iterator.
-
-      exports.async = function (innerFn, outerFn, self, tryLocsList, PromiseImpl) {
-        if (PromiseImpl === void 0) PromiseImpl = Promise;
-        var iter = new AsyncIterator(wrap(innerFn, outerFn, self, tryLocsList), PromiseImpl);
-        return exports.isGeneratorFunction(outerFn) ? iter // If outerFn is a generator, return the full iterator.
-        : iter.next().then(function (result) {
-          return result.done ? result.value : iter.next();
-        });
-      };
-
-      function makeInvokeMethod(innerFn, self, context) {
-        var state = GenStateSuspendedStart;
-        return function invoke(method, arg) {
-          if (state === GenStateExecuting) {
-            throw new Error("Generator is already running");
-          }
-
-          if (state === GenStateCompleted) {
-            if (method === "throw") {
-              throw arg;
-            } // Be forgiving, per 25.3.3.3.3 of the spec:
-            // https://people.mozilla.org/~jorendorff/es6-draft.html#sec-generatorresume
-
-
-            return doneResult();
-          }
-
-          context.method = method;
-          context.arg = arg;
-
-          while (true) {
-            var delegate = context.delegate;
-
-            if (delegate) {
-              var delegateResult = maybeInvokeDelegate(delegate, context);
-
-              if (delegateResult) {
-                if (delegateResult === ContinueSentinel) continue;
-                return delegateResult;
-              }
-            }
-
-            if (context.method === "next") {
-              // Setting context._sent for legacy support of Babel's
-              // function.sent implementation.
-              context.sent = context._sent = context.arg;
-            } else if (context.method === "throw") {
-              if (state === GenStateSuspendedStart) {
-                state = GenStateCompleted;
-                throw context.arg;
-              }
-
-              context.dispatchException(context.arg);
-            } else if (context.method === "return") {
-              context.abrupt("return", context.arg);
-            }
-
-            state = GenStateExecuting;
-            var record = tryCatch(innerFn, self, context);
-
-            if (record.type === "normal") {
-              // If an exception is thrown from innerFn, we leave state ===
-              // GenStateExecuting and loop back for another invocation.
-              state = context.done ? GenStateCompleted : GenStateSuspendedYield;
-
-              if (record.arg === ContinueSentinel) {
-                continue;
-              }
-
-              return {
-                value: record.arg,
-                done: context.done
-              };
-            } else if (record.type === "throw") {
-              state = GenStateCompleted; // Dispatch the exception by looping back around to the
-              // context.dispatchException(context.arg) call above.
-
-              context.method = "throw";
-              context.arg = record.arg;
-            }
-          }
-        };
-      } // Call delegate.iterator[context.method](context.arg) and handle the
-      // result, either by returning a { value, done } result from the
-      // delegate iterator, or by modifying context.method and context.arg,
-      // setting context.delegate to null, and returning the ContinueSentinel.
-
-
-      function maybeInvokeDelegate(delegate, context) {
-        var method = delegate.iterator[context.method];
-
-        if (method === undefined$1) {
-          // A .throw or .return when the delegate iterator has no .throw
-          // method always terminates the yield* loop.
-          context.delegate = null;
-
-          if (context.method === "throw") {
-            // Note: ["return"] must be used for ES3 parsing compatibility.
-            if (delegate.iterator["return"]) {
-              // If the delegate iterator has a return method, give it a
-              // chance to clean up.
-              context.method = "return";
-              context.arg = undefined$1;
-              maybeInvokeDelegate(delegate, context);
-
-              if (context.method === "throw") {
-                // If maybeInvokeDelegate(context) changed context.method from
-                // "return" to "throw", let that override the TypeError below.
-                return ContinueSentinel;
-              }
-            }
-
-            context.method = "throw";
-            context.arg = new TypeError("The iterator does not provide a 'throw' method");
-          }
-
-          return ContinueSentinel;
-        }
-
-        var record = tryCatch(method, delegate.iterator, context.arg);
-
-        if (record.type === "throw") {
-          context.method = "throw";
-          context.arg = record.arg;
-          context.delegate = null;
-          return ContinueSentinel;
-        }
-
-        var info = record.arg;
-
-        if (!info) {
-          context.method = "throw";
-          context.arg = new TypeError("iterator result is not an object");
-          context.delegate = null;
-          return ContinueSentinel;
-        }
-
-        if (info.done) {
-          // Assign the result of the finished delegate to the temporary
-          // variable specified by delegate.resultName (see delegateYield).
-          context[delegate.resultName] = info.value; // Resume execution at the desired location (see delegateYield).
-
-          context.next = delegate.nextLoc; // If context.method was "throw" but the delegate handled the
-          // exception, let the outer generator proceed normally. If
-          // context.method was "next", forget context.arg since it has been
-          // "consumed" by the delegate iterator. If context.method was
-          // "return", allow the original .return call to continue in the
-          // outer generator.
-
-          if (context.method !== "return") {
-            context.method = "next";
-            context.arg = undefined$1;
-          }
-        } else {
-          // Re-yield the result returned by the delegate method.
-          return info;
-        } // The delegate iterator is finished, so forget it and continue with
-        // the outer generator.
-
-
-        context.delegate = null;
-        return ContinueSentinel;
-      } // Define Generator.prototype.{next,throw,return} in terms of the
-      // unified ._invoke helper method.
-
-
-      defineIteratorMethods(Gp);
-      define(Gp, toStringTagSymbol, "Generator"); // A Generator should always return itself as the iterator object when the
-      // @@iterator function is called on it. Some browsers' implementations of the
-      // iterator prototype chain incorrectly implement this, causing the Generator
-      // object to not be returned from this call. This ensures that doesn't happen.
-      // See https://github.com/facebook/regenerator/issues/274 for more details.
-
-      Gp[iteratorSymbol] = function () {
-        return this;
-      };
-
-      Gp.toString = function () {
-        return "[object Generator]";
-      };
-
-      function pushTryEntry(locs) {
-        var entry = {
-          tryLoc: locs[0]
-        };
-
-        if (1 in locs) {
-          entry.catchLoc = locs[1];
-        }
-
-        if (2 in locs) {
-          entry.finallyLoc = locs[2];
-          entry.afterLoc = locs[3];
-        }
-
-        this.tryEntries.push(entry);
-      }
-
-      function resetTryEntry(entry) {
-        var record = entry.completion || {};
-        record.type = "normal";
-        delete record.arg;
-        entry.completion = record;
-      }
-
-      function Context(tryLocsList) {
-        // The root entry object (effectively a try statement without a catch
-        // or a finally block) gives us a place to store values thrown from
-        // locations where there is no enclosing try statement.
-        this.tryEntries = [{
-          tryLoc: "root"
-        }];
-        tryLocsList.forEach(pushTryEntry, this);
-        this.reset(true);
-      }
-
-      exports.keys = function (object) {
-        var keys = [];
-
-        for (var key in object) {
-          keys.push(key);
-        }
-
-        keys.reverse(); // Rather than returning an object with a next method, we keep
-        // things simple and return the next function itself.
-
-        return function next() {
-          while (keys.length) {
-            var key = keys.pop();
-
-            if (key in object) {
-              next.value = key;
-              next.done = false;
-              return next;
-            }
-          } // To avoid creating an additional object, we just hang the .value
-          // and .done properties off the next function object itself. This
-          // also ensures that the minifier will not anonymize the function.
-
-
-          next.done = true;
-          return next;
-        };
-      };
-
-      function values(iterable) {
-        if (iterable) {
-          var iteratorMethod = iterable[iteratorSymbol];
-
-          if (iteratorMethod) {
-            return iteratorMethod.call(iterable);
-          }
-
-          if (typeof iterable.next === "function") {
-            return iterable;
-          }
-
-          if (!isNaN(iterable.length)) {
-            var i = -1,
-                next = function next() {
-              while (++i < iterable.length) {
-                if (hasOwn.call(iterable, i)) {
-                  next.value = iterable[i];
-                  next.done = false;
-                  return next;
-                }
-              }
-
-              next.value = undefined$1;
-              next.done = true;
-              return next;
-            };
-
-            return next.next = next;
-          }
-        } // Return an iterator with no values.
-
-
-        return {
-          next: doneResult
-        };
-      }
-
-      exports.values = values;
-
-      function doneResult() {
-        return {
-          value: undefined$1,
-          done: true
-        };
-      }
-
-      Context.prototype = {
-        constructor: Context,
-        reset: function reset(skipTempReset) {
-          this.prev = 0;
-          this.next = 0; // Resetting context._sent for legacy support of Babel's
-          // function.sent implementation.
-
-          this.sent = this._sent = undefined$1;
-          this.done = false;
-          this.delegate = null;
-          this.method = "next";
-          this.arg = undefined$1;
-          this.tryEntries.forEach(resetTryEntry);
-
-          if (!skipTempReset) {
-            for (var name in this) {
-              // Not sure about the optimal order of these conditions:
-              if (name.charAt(0) === "t" && hasOwn.call(this, name) && !isNaN(+name.slice(1))) {
-                this[name] = undefined$1;
-              }
-            }
-          }
-        },
-        stop: function stop() {
-          this.done = true;
-          var rootEntry = this.tryEntries[0];
-          var rootRecord = rootEntry.completion;
-
-          if (rootRecord.type === "throw") {
-            throw rootRecord.arg;
-          }
-
-          return this.rval;
-        },
-        dispatchException: function dispatchException(exception) {
-          if (this.done) {
-            throw exception;
-          }
-
-          var context = this;
-
-          function handle(loc, caught) {
-            record.type = "throw";
-            record.arg = exception;
-            context.next = loc;
-
-            if (caught) {
-              // If the dispatched exception was caught by a catch block,
-              // then let that catch block handle the exception normally.
-              context.method = "next";
-              context.arg = undefined$1;
-            }
-
-            return !!caught;
-          }
-
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-            var record = entry.completion;
-
-            if (entry.tryLoc === "root") {
-              // Exception thrown outside of any try block that could handle
-              // it, so set the completion value of the entire function to
-              // throw the exception.
-              return handle("end");
-            }
-
-            if (entry.tryLoc <= this.prev) {
-              var hasCatch = hasOwn.call(entry, "catchLoc");
-              var hasFinally = hasOwn.call(entry, "finallyLoc");
-
-              if (hasCatch && hasFinally) {
-                if (this.prev < entry.catchLoc) {
-                  return handle(entry.catchLoc, true);
-                } else if (this.prev < entry.finallyLoc) {
-                  return handle(entry.finallyLoc);
-                }
-              } else if (hasCatch) {
-                if (this.prev < entry.catchLoc) {
-                  return handle(entry.catchLoc, true);
-                }
-              } else if (hasFinally) {
-                if (this.prev < entry.finallyLoc) {
-                  return handle(entry.finallyLoc);
-                }
-              } else {
-                throw new Error("try statement without catch or finally");
-              }
-            }
-          }
-        },
-        abrupt: function abrupt(type, arg) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.tryLoc <= this.prev && hasOwn.call(entry, "finallyLoc") && this.prev < entry.finallyLoc) {
-              var finallyEntry = entry;
-              break;
-            }
-          }
-
-          if (finallyEntry && (type === "break" || type === "continue") && finallyEntry.tryLoc <= arg && arg <= finallyEntry.finallyLoc) {
-            // Ignore the finally entry if control is not jumping to a
-            // location outside the try/catch block.
-            finallyEntry = null;
-          }
-
-          var record = finallyEntry ? finallyEntry.completion : {};
-          record.type = type;
-          record.arg = arg;
-
-          if (finallyEntry) {
-            this.method = "next";
-            this.next = finallyEntry.finallyLoc;
-            return ContinueSentinel;
-          }
-
-          return this.complete(record);
-        },
-        complete: function complete(record, afterLoc) {
-          if (record.type === "throw") {
-            throw record.arg;
-          }
-
-          if (record.type === "break" || record.type === "continue") {
-            this.next = record.arg;
-          } else if (record.type === "return") {
-            this.rval = this.arg = record.arg;
-            this.method = "return";
-            this.next = "end";
-          } else if (record.type === "normal" && afterLoc) {
-            this.next = afterLoc;
-          }
-
-          return ContinueSentinel;
-        },
-        finish: function finish(finallyLoc) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.finallyLoc === finallyLoc) {
-              this.complete(entry.completion, entry.afterLoc);
-              resetTryEntry(entry);
-              return ContinueSentinel;
-            }
-          }
-        },
-        "catch": function _catch(tryLoc) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.tryLoc === tryLoc) {
-              var record = entry.completion;
-
-              if (record.type === "throw") {
-                var thrown = record.arg;
-                resetTryEntry(entry);
-              }
-
-              return thrown;
-            }
-          } // The context.catch method must only be called with a location
-          // argument that corresponds to a known catch block.
-
-
-          throw new Error("illegal catch attempt");
-        },
-        delegateYield: function delegateYield(iterable, resultName, nextLoc) {
-          this.delegate = {
-            iterator: values(iterable),
-            resultName: resultName,
-            nextLoc: nextLoc
-          };
-
-          if (this.method === "next") {
-            // Deliberately forget the last sent value so that we don't
-            // accidentally pass it on to the delegate.
-            this.arg = undefined$1;
-          }
-
-          return ContinueSentinel;
-        }
-      }; // Regardless of whether this script is executing as a CommonJS module
-      // or not, return the runtime object so that we can declare the variable
-      // regeneratorRuntime in the outer scope, which allows this module to be
-      // injected easily by `bin/regenerator --include-runtime script.js`.
-
-      return exports;
-    }( // If this script is executing as a CommonJS module, use module.exports
-    // as the regeneratorRuntime namespace. Otherwise create a new empty
-    // object. Either way, the resulting object will be used to initialize
-    // the regeneratorRuntime variable at the top of this file.
-    module.exports);
-
-    try {
-      regeneratorRuntime = runtime;
-    } catch (accidentalStrictMode) {
-      // This module should not be running in strict mode, so the above
-      // assignment should always work unless something is misconfigured. Just
-      // in case runtime.js accidentally runs in strict mode, we can escape
-      // strict mode using a global Function call. This could conceivably fail
-      // if a Content Security Policy forbids using Function, but in that case
-      // the proper solution is to fix the accidental strict mode problem. If
-      // you've misconfigured your bundler to force strict mode and applied a
-      // CSP to forbid Function, and you're not willing to fix either of those
-      // problems, please detail your unique predicament in a GitHub issue.
-      Function("r", "regeneratorRuntime = r")(runtime);
-    }
-  });
-  var regenerator = runtime_1;
 
   function handleSelectMessage(_ref, state) {
     var _ref$selectInput = _ref.selectInput,
@@ -3023,13 +1521,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
       case "auth-response":
         {
-          var requestId = e.requestId,
+          var _requestId = e.requestId,
               authResponse = e.authResponse;
           return {
             command: {
               name: "Fetch.continueWithAuth",
               params: {
-                requestId: requestId,
+                requestId: _requestId,
                 authChallengeResponse: authResponse
               }
             }
@@ -3888,21 +2386,21 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function _sleep() {
-    _sleep = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(ms) {
-      return regenerator.wrap(function _callee$(_context) {
+    _sleep = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee9(ms) {
+      return regeneratorRuntime.wrap(function _callee9$(_context9) {
         while (1) {
-          switch (_context.prev = _context.next) {
+          switch (_context9.prev = _context9.next) {
             case 0:
-              return _context.abrupt("return", new Promise(function (res) {
+              return _context9.abrupt("return", new Promise(function (res) {
                 return setTimeout(res, ms);
               }));
 
             case 1:
             case "end":
-              return _context.stop();
+              return _context9.stop();
           }
         }
-      }, _callee);
+      }, _callee9);
     }));
     return _sleep.apply(this, arguments);
   }
@@ -3958,48 +2456,49 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   function elogit(e) {
     return;
   } // debug logging
+  //FIXME we could move this into constructor 
 
 
   var tabNumbers = new Map();
   var TabNumber = 1;
 
-  function fetchTabs(_x) {
+  function fetchTabs(_x2) {
     return _fetchTabs.apply(this, arguments);
   }
 
   function _fetchTabs() {
-    _fetchTabs = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(_ref) {
-      var sessionToken, url, resp, data, reload, x, _reload;
+    _fetchTabs = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee10(_ref) {
+      var sessionToken, url, resp, data, _reload4, x, _reload5;
 
-      return regenerator.wrap(function _callee$(_context) {
+      return regeneratorRuntime.wrap(function _callee10$(_context10) {
         while (1) {
-          switch (_context.prev = _context.next) {
+          switch (_context10.prev = _context10.next) {
             case 0:
               sessionToken = _ref.sessionToken;
-              _context.prev = 1;
+              _context10.prev = 1;
               url = new URL(location);
               url.pathname = '/api/v1/tabs';
-              _context.next = 6;
+              _context10.next = 6;
               return fetch(url);
 
             case 6:
-              resp = _context.sent;
+              resp = _context10.sent;
 
               if (!resp.ok) {
-                _context.next = 18;
+                _context10.next = 18;
                 break;
               }
 
-              _context.next = 10;
+              _context10.next = 10;
               return resp.json();
 
             case 10:
-              data = _context.sent;
+              data = _context10.sent;
 
               if (data.error) {
                 if (data.resetRequired) {
-                  reload = confirm("Some errors occurred and we can't seem to reach your cloud browser. You can try reloading the page and if the problem persists, try switching your cloud browser off then on again. Want to reload the page now?");
-                  if (reload) location.reload();
+                  _reload4 = confirm("Some errors occurred and we can't seem to reach your cloud browser. You can try reloading the page and if the problem persists, try switching your cloud browser off then on again. Want to reload the page now?");
+                  if (_reload4) location.reload();
                 }
               }
 
@@ -4020,22 +2519,22 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               data.tabs.sort(function (a, b) {
                 return a.number - b.number;
               });
-              return _context.abrupt("return", data);
+              return _context10.abrupt("return", data);
 
             case 18:
               if (!(resp.status == 401)) {
-                _context.next = 30;
+                _context10.next = 30;
                 break;
               }
 
               console.warn("Session has been cleared. Let's attempt relogin", sessionToken);
 
               if (!DEBUG.blockAnotherReset) {
-                _context.next = 22;
+                _context10.next = 22;
                 break;
               }
 
-              return _context.abrupt("return");
+              return _context10.abrupt("return");
 
             case 22:
               DEBUG.blockAnotherReset = true;
@@ -4045,25 +2544,25 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               alert("Your browser cleared your session. We need to reload the page to refresh it.");
               DEBUG.delayUnload = false;
               location.href = x;
-              return _context.abrupt("return");
+              return _context10.abrupt("return");
 
             case 30:
-              _context.next = 37;
+              _context10.next = 37;
               break;
 
             case 32:
-              _context.prev = 32;
-              _context.t0 = _context["catch"](1);
-              console.warn(_context.t0);
-              _reload = confirm("Some errors occurred and we can't seem to reach your cloud browser. You can try reloading the page and if the problem persists, try switching your cloud browser off then on again. Want to reload the page now?");
-              if (_reload) location.reload();
+              _context10.prev = 32;
+              _context10.t0 = _context10["catch"](1);
+              console.warn(_context10.t0);
+              _reload5 = confirm("Some errors occurred and we can't seem to reach your cloud browser. You can try reloading the page and if the problem persists, try switching your cloud browser off then on again. Want to reload the page now?");
+              if (_reload5) location.reload();
 
             case 37:
             case "end":
-              return _context.stop();
+              return _context10.stop();
           }
         }
-      }, _callee, null, [[1, 32]]);
+      }, _callee10, null, [[1, 32]]);
     }));
     return _fetchTabs.apply(this, arguments);
   }
@@ -4084,53 +2583,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   var defineProperty = _defineProperty;
-
-  function _arrayLikeToArray$b(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-
-  var arrayLikeToArray = _arrayLikeToArray$b;
-
-  function _arrayWithoutHoles(arr) {
-    if (Array.isArray(arr)) return arrayLikeToArray(arr);
-  }
-
-  var arrayWithoutHoles = _arrayWithoutHoles;
-
-  function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
-  }
-
-  var iterableToArray = _iterableToArray;
-
-  function _unsupportedIterableToArray$b(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return arrayLikeToArray(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return arrayLikeToArray(o, minLen);
-  }
-
-  var unsupportedIterableToArray = _unsupportedIterableToArray$b;
-
-  function _nonIterableSpread() {
-    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-  }
-
-  var nonIterableSpread = _nonIterableSpread;
-
-  function _toConsumableArray(arr) {
-    return arrayWithoutHoles(arr) || iterableToArray(arr) || unsupportedIterableToArray(arr) || nonIterableSpread();
-  }
-
-  var toConsumableArray = _toConsumableArray;
 
   function ownKeys(object, enumerableOnly) {
     var keys = Object.keys(object);
@@ -4156,82 +2608,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
 
     return target;
-  }
-
-  function _createForOfIteratorHelper$9(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-    if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray$a(o)) || allowArrayLike && o && typeof o.length === "number") {
-        if (it) o = it;
-        var i = 0;
-
-        var F = function F() {};
-
-        return {
-          s: F,
-          n: function n() {
-            if (i >= o.length) return {
-              done: true
-            };
-            return {
-              done: false,
-              value: o[i++]
-            };
-          },
-          e: function e(_e) {
-            throw _e;
-          },
-          f: F
-        };
-      }
-
-      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-    }
-
-    var normalCompletion = true,
-        didErr = false,
-        err;
-    return {
-      s: function s() {
-        it = it.call(o);
-      },
-      n: function n() {
-        var step = it.next();
-        normalCompletion = step.done;
-        return step;
-      },
-      e: function e(_e2) {
-        didErr = true;
-        err = _e2;
-      },
-      f: function f() {
-        try {
-          if (!normalCompletion && it["return"] != null) it["return"]();
-        } finally {
-          if (didErr) throw err;
-        }
-      }
-    };
-  }
-
-  function _unsupportedIterableToArray$a(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$a(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$a(o, minLen);
-  }
-
-  function _arrayLikeToArray$a(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
   }
 
   var DemoTab = function DemoTab() {
@@ -4261,14 +2637,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function _fetchDemoTabs() {
-    _fetchDemoTabs = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee() {
-      return regenerator.wrap(function _callee$(_context) {
+    _fetchDemoTabs = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee11() {
+      return regeneratorRuntime.wrap(function _callee11$(_context11) {
         while (1) {
-          switch (_context.prev = _context.next) {
+          switch (_context11.prev = _context11.next) {
             case 0:
               requestId++;
               tab = tab || tabs[0];
-              return _context.abrupt("return", {
+              return _context11.abrupt("return", {
                 tabs: tabs,
                 activeTarget: tab && tab.targetId,
                 requestId: requestId
@@ -4276,138 +2652,138 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
             case 3:
             case "end":
-              return _context.stop();
+              return _context11.stop();
           }
         }
-      }, _callee);
+      }, _callee11);
     }));
     return _fetchDemoTabs.apply(this, arguments);
   }
 
-  function demoZombie(_x) {
+  function demoZombie(_x3) {
     return _demoZombie.apply(this, arguments);
   }
 
   function _demoZombie() {
-    _demoZombie = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee2(_ref) {
-      var events, meta, _iterator, _step, event;
+    _demoZombie = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee12(_ref) {
+      var events, meta, _iterator16, _step16, event;
 
-      return regenerator.wrap(function _callee2$(_context2) {
+      return regeneratorRuntime.wrap(function _callee12$(_context12) {
         while (1) {
-          switch (_context2.prev = _context2.next) {
+          switch (_context12.prev = _context12.next) {
             case 0:
               events = _ref.events;
               meta = [];
-              _iterator = _createForOfIteratorHelper$9(events);
-              _context2.prev = 4;
+              _iterator16 = _createForOfIteratorHelper(events);
+              _context12.prev = 3;
 
-              _iterator.s();
+              _iterator16.s();
 
-            case 6:
-              if ((_step = _iterator.n()).done) {
-                _context2.next = 18;
+            case 5:
+              if ((_step16 = _iterator16.n()).done) {
+                _context12.next = 17;
                 break;
               }
 
-              event = _step.value;
-              _context2.t0 = meta.push;
-              _context2.t1 = meta;
-              _context2.t2 = toConsumableArray;
-              _context2.next = 13;
+              event = _step16.value;
+              _context12.t0 = meta.push;
+              _context12.t1 = meta;
+              _context12.t2 = _toConsumableArray;
+              _context12.next = 12;
               return handleEvent(event);
 
-            case 13:
-              _context2.t3 = _context2.sent;
-              _context2.t4 = (0, _context2.t2)(_context2.t3);
+            case 12:
+              _context12.t3 = _context12.sent;
+              _context12.t4 = (0, _context12.t2)(_context12.t3);
 
-              _context2.t0.apply.call(_context2.t0, _context2.t1, _context2.t4);
+              _context12.t0.apply.call(_context12.t0, _context12.t1, _context12.t4);
 
-            case 16:
-              _context2.next = 6;
+            case 15:
+              _context12.next = 5;
               break;
 
-            case 18:
-              _context2.next = 23;
+            case 17:
+              _context12.next = 22;
               break;
 
-            case 20:
-              _context2.prev = 20;
-              _context2.t5 = _context2["catch"](4);
+            case 19:
+              _context12.prev = 19;
+              _context12.t5 = _context12["catch"](3);
 
-              _iterator.e(_context2.t5);
+              _iterator16.e(_context12.t5);
 
-            case 23:
-              _context2.prev = 23;
+            case 22:
+              _context12.prev = 22;
 
-              _iterator.f();
+              _iterator16.f();
 
-              return _context2.finish(23);
+              return _context12.finish(22);
 
-            case 26:
+            case 25:
               messageId$1++;
-              return _context2.abrupt("return", {
+              return _context12.abrupt("return", {
                 data: [],
                 frameBuffer: [],
                 meta: meta,
                 messageId: messageId$1
               });
 
-            case 28:
+            case 27:
             case "end":
-              return _context2.stop();
+              return _context12.stop();
           }
         }
-      }, _callee2, null, [[4, 20, 23, 26]]);
+      }, _callee12, null, [[3, 19, 22, 25]]);
     }));
     return _demoZombie.apply(this, arguments);
   }
 
-  function handleEvent(_x2) {
+  function handleEvent(_x4) {
     return _handleEvent.apply(this, arguments);
   }
 
   function _handleEvent() {
-    _handleEvent = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee3(event) {
-      var meta, command, meta1, meta2, jres, _jres, browserUrl, _meta, _meta2;
+    _handleEvent = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee13(event) {
+      var meta, command, meta1, meta2, jres, _jres, browserUrl, _meta2, _meta3;
 
-      return regenerator.wrap(function _callee3$(_context3) {
+      return regeneratorRuntime.wrap(function _callee13$(_context13) {
         while (1) {
-          switch (_context3.prev = _context3.next) {
+          switch (_context13.prev = _context13.next) {
             case 0:
               meta = [];
               command = event.command;
 
               if (!(tab && !started.has(tab.targetId))) {
-                _context3.next = 15;
+                _context13.next = 15;
                 break;
               }
 
               started.add(tab.targetId);
-              _context3.t0 = meta;
-              _context3.t1 = _objectSpread;
-              _context3.next = 8;
+              _context13.t0 = meta;
+              _context13.t1 = _objectSpread;
+              _context13.next = 8;
               return fetch("https://".concat(location.hostname, ":8001/demo-landing")).then(function (resp) {
                 return resp.text();
               });
 
             case 8:
-              _context3.t2 = _context3.sent;
-              _context3.t3 = tab && tab.targetId;
-              _context3.t4 = {
-                open: _context3.t2,
-                targetId: _context3.t3
+              _context13.t2 = _context13.sent;
+              _context13.t3 = tab && tab.targetId;
+              _context13.t4 = {
+                open: _context13.t2,
+                targetId: _context13.t3
               };
-              _context3.t5 = opts;
-              _context3.t6 = (0, _context3.t1)(_context3.t4, _context3.t5);
-              _context3.t7 = {
-                treeUpdate: _context3.t6
+              _context13.t5 = opts;
+              _context13.t6 = (0, _context13.t1)(_context13.t4, _context13.t5);
+              _context13.t7 = {
+                treeUpdate: _context13.t6
               };
 
-              _context3.t0.push.call(_context3.t0, _context3.t7);
+              _context13.t0.push.call(_context13.t0, _context13.t7);
 
             case 15:
-              _context3.t8 = command.name;
-              _context3.next = _context3.t8 === "Target.createTarget" ? 18 : _context3.t8 === "Target.activateTarget" ? 32 : _context3.t8 === "Demo.formSubmission" ? 34 : 46;
+              _context13.t8 = command.name;
+              _context13.next = _context13.t8 === "Target.createTarget" ? 18 : _context13.t8 === "Target.activateTarget" ? 32 : _context13.t8 === "Demo.formSubmission" ? 34 : 46;
               break;
 
             case 18:
@@ -4418,33 +2794,33 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   targetId: tab.targetId
                 }
               };
-              _context3.t9 = _objectSpread;
-              _context3.next = 24;
+              _context13.t9 = _objectSpread;
+              _context13.next = 24;
               return fetch("https://".concat(location.hostname, ":8001/demo-landing")).then(function (resp) {
                 return resp.text();
               });
 
             case 24:
-              _context3.t10 = _context3.sent;
-              _context3.t11 = tab.targetId;
-              _context3.t12 = {
-                open: _context3.t10,
-                targetId: _context3.t11
+              _context13.t10 = _context13.sent;
+              _context13.t11 = tab.targetId;
+              _context13.t12 = {
+                open: _context13.t10,
+                targetId: _context13.t11
               };
-              _context3.t13 = opts;
-              _context3.t14 = (0, _context3.t9)(_context3.t12, _context3.t13);
+              _context13.t13 = opts;
+              _context13.t14 = (0, _context13.t9)(_context13.t12, _context13.t13);
               meta2 = {
-                treeUpdate: _context3.t14
+                treeUpdate: _context13.t14
               };
               meta.push(meta1, meta2);
-              return _context3.abrupt("break", 46);
+              return _context13.abrupt("break", 46);
 
             case 32:
               tab = tabs.find(function (_ref2) {
                 var targetId = _ref2.targetId;
                 return targetId == command.params.targetId;
               });
-              return _context3.abrupt("break", 46);
+              return _context13.abrupt("break", 46);
 
             case 34:
               try {
@@ -4452,46 +2828,46 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               } catch (e) {}
 
               if (!(!!jres && !!jres.browserUrl)) {
-                _context3.next = 43;
+                _context13.next = 43;
                 break;
               }
 
               _jres = jres, browserUrl = _jres.browserUrl;
-              _meta = {
+              _meta2 = {
                 topRedirect: {
                   browserUrl: browserUrl,
                   targetId: tab && tab.targetId
                 }
               };
-              _context3.next = 40;
+              _context13.next = 40;
               return sleep(5000);
 
             case 40:
-              meta.push(_meta);
-              _context3.next = 45;
+              meta.push(_meta2);
+              _context13.next = 45;
               break;
 
             case 43:
-              _meta2 = {
+              _meta3 = {
                 treeUpdate: _objectSpread({
                   open: event.result,
                   targetId: tab && tab.targetId
                 }, opts)
               };
-              meta.push(_meta2);
+              meta.push(_meta3);
 
             case 45:
-              return _context3.abrupt("break", 46);
+              return _context13.abrupt("break", 46);
 
             case 46:
-              return _context3.abrupt("return", meta);
+              return _context13.abrupt("return", meta);
 
             case 47:
             case "end":
-              return _context3.stop();
+              return _context13.stop();
           }
         }
-      }, _callee3);
+      }, _callee13);
     }));
     return _handleEvent.apply(this, arguments);
   }
@@ -4585,171 +2961,16 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }));
   }
 
-  var taggedTemplateLiteral = _taggedTemplateLiteral;
-
-  function _arrayWithHoles$1(arr) {
-    if (Array.isArray(arr)) return arr;
-  }
-
-  var arrayWithHoles = _arrayWithHoles$1;
-
-  function _iterableToArrayLimit$1(arr, i) {
-    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
-    var _arr = [];
-    var _n = true;
-    var _d = false;
-    var _e = undefined;
-
-    try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);
-
-        if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;
-      _e = err;
-    } finally {
-      try {
-        if (!_n && _i["return"] != null) _i["return"]();
-      } finally {
-        if (_d) throw _e;
-      }
-    }
-
-    return _arr;
-  }
-
-  var iterableToArrayLimit = _iterableToArrayLimit$1;
-
-  function _nonIterableRest$1() {
-    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-  }
-
-  var nonIterableRest = _nonIterableRest$1;
-
-  function _slicedToArray$1(arr, i) {
-    return arrayWithHoles(arr) || iterableToArrayLimit(arr, i) || unsupportedIterableToArray(arr, i) || nonIterableRest();
-  }
-
-  var slicedToArray = _slicedToArray$1;
-
-  function _toArray(arr) {
-    return arrayWithHoles(arr) || iterableToArray(arr) || unsupportedIterableToArray(arr) || nonIterableRest();
-  }
-
-  var toArray = _toArray;
-
-  function _classCallCheck(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
-    }
-  }
-
-  var classCallCheck = _classCallCheck;
-
-  function _defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];
-      descriptor.enumerable = descriptor.enumerable || false;
-      descriptor.configurable = true;
-      if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }
-
-  function _createClass(Constructor, protoProps, staticProps) {
-    if (protoProps) _defineProperties(Constructor.prototype, protoProps);
-    if (staticProps) _defineProperties(Constructor, staticProps);
-    return Constructor;
-  }
-
-  var createClass = _createClass; // common for all r submodules
+  var taggedTemplateLiteral = _taggedTemplateLiteral; // common for all r submodules
 
   var CODE = '' + Math.random();
 
   var _templateObject$e, _templateObject2$9, _templateObject3$8, _templateObject4$5, _templateObject5$4, _templateObject6$3, _templateObject7$3;
 
-  function _createForOfIteratorHelper$8(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-    if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray$9(o)) || allowArrayLike && o && typeof o.length === "number") {
-        if (it) o = it;
-        var i = 0;
-
-        var F = function F() {};
-
-        return {
-          s: F,
-          n: function n() {
-            if (i >= o.length) return {
-              done: true
-            };
-            return {
-              done: false,
-              value: o[i++]
-            };
-          },
-          e: function e(_e) {
-            throw _e;
-          },
-          f: F
-        };
-      }
-
-      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-    }
-
-    var normalCompletion = true,
-        didErr = false,
-        err;
-    return {
-      s: function s() {
-        it = it.call(o);
-      },
-      n: function n() {
-        var step = it.next();
-        normalCompletion = step.done;
-        return step;
-      },
-      e: function e(_e2) {
-        didErr = true;
-        err = _e2;
-      },
-      f: function f() {
-        try {
-          if (!normalCompletion && it["return"] != null) it["return"]();
-        } finally {
-          if (didErr) throw err;
-        }
-      }
-    };
-  }
-
-  function _unsupportedIterableToArray$9(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$9(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$9(o, minLen);
-  }
-
-  function _arrayLikeToArray$9(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-
   var BuiltIns$1 = [Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet, Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array, Int8Array, Int16Array, Int32Array, Uint8ClampedArray, Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer, FileList, Text, HTMLDocument, Document, DocumentFragment, Error, File, Event, EventTarget, URL];
   var SEALED_DEFAULT$1 = true;
 
-  var isNone$1 = function isNone(instance) {
+  var isNone$1 = function isNone$1(instance) {
     return instance == null || instance == undefined;
   };
 
@@ -4757,7 +2978,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   T$1.def = def$1;
   T$1.check = check$1;
   T$1.sub = sub$1;
-  T$1.verify = verify$1;
+  T$1.verify = verify$2;
   T$1.validate = validate$1;
   T$1.partialMatch = partialMatch$1;
   T$1.defEnum = defEnum$1;
@@ -4795,21 +3016,21 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function validate$1(type, instance) {
-    var _ref = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref$partial = _ref.partial,
-        partial = _ref$partial === void 0 ? false : _ref$partial;
+    var _ref16 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+        _ref16$partial = _ref16.partial,
+        partial = _ref16$partial === void 0 ? false : _ref16$partial;
 
     guardType$1(type);
     guardExists$1(type);
     var typeName = type.name;
 
-    var _typeCache$get = typeCache$1.get(typeName),
-        spec = _typeCache$get.spec,
-        kind = _typeCache$get.kind,
-        help = _typeCache$get.help,
-        verify = _typeCache$get.verify,
-        verifiers = _typeCache$get.verifiers,
-        sealed = _typeCache$get.sealed;
+    var _typeCache$1$get = typeCache$1.get(typeName),
+        spec = _typeCache$1$get.spec,
+        kind = _typeCache$1$get.kind,
+        help = _typeCache$1$get.help,
+        verify = _typeCache$1$get.verify,
+        verifiers = _typeCache$1$get.verifiers,
+        sealed = _typeCache$1$get.sealed;
 
     var specKeyPaths = spec ? allKeyPaths$1(spec).sort() : [];
     var specKeyPathSet = new Set(specKeyPaths);
@@ -4824,13 +3045,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
             var keyPaths = partial ? allKeyPaths$1(instance, specKeyPathSet) : specKeyPaths;
             allValid = !isNone$1(instance) && keyPaths.every(function (kp) {
               // Allow lookup errors if the type match for the key path can include None
-              var _lookup = lookup$1(instance, kp, function () {
+              var _lookup$ = lookup$1(instance, kp, function () {
                 return checkTypeMatch$1(lookup$1(spec, kp).resolved, T$1(_templateObject$e || (_templateObject$e = taggedTemplateLiteral(["None"]))));
               }),
-                  resolved = _lookup.resolved,
-                  lookupErrors = _lookup.errors;
+                  resolved = _lookup$.resolved,
+                  lookupErrors = _lookup$.errors;
 
-              bigErrors.push.apply(bigErrors, toConsumableArray(lookupErrors));
+              bigErrors.push.apply(bigErrors, _toConsumableArray(lookupErrors));
               if (lookupErrors.length) return false;
               var keyType = lookup$1(spec, kp).resolved;
 
@@ -4841,11 +3062,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 return false;
               }
 
-              var _validate = validate$1(keyType, resolved),
-                  valid = _validate.valid,
-                  validationErrors = _validate.errors;
+              var _validate$ = validate$1(keyType, resolved),
+                  valid = _validate$.valid,
+                  validationErrors = _validate$.errors;
 
-              bigErrors.push.apply(bigErrors, toConsumableArray(validationErrors));
+              bigErrors.push.apply(bigErrors, _toConsumableArray(validationErrors));
               return valid;
             });
           }
@@ -4867,7 +3088,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   };
                 } else if (type.isSumType) {
                   throw {
-                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat(toConsumableArray(type.types.keys()).map(function (t) {
+                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat(_toConsumableArray(type.types.keys()).map(function (t) {
                       return t.name;
                     })),
                     verify: verify,
@@ -4905,7 +3126,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 var errorKeys = [];
                 var tkp = new Set(type_key_paths);
 
-                var _iterator = _createForOfIteratorHelper$8(all_key_paths),
+                var _iterator = _createForOfIteratorHelper(all_key_paths),
                     _step;
 
                 try {
@@ -4940,24 +3161,24 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
       case "defCollection":
         {
-          var _validate2 = validate$1(spec.container, instance),
-              containerValid = _validate2.valid,
-              containerErrors = _validate2.errors;
+          var _validate$2 = validate$1(spec.container, instance),
+              containerValid = _validate$2.valid,
+              containerErrors = _validate$2.errors;
 
           var membersValid = true;
           var _verified = true;
-          bigErrors.push.apply(bigErrors, toConsumableArray(containerErrors));
+          bigErrors.push.apply(bigErrors, _toConsumableArray(containerErrors));
 
           if (partial) {
             throw new TypeError("Type checking with option 'partial' is not a valid option for Collection types");
           } else {
             if (containerValid) {
-              membersValid = toConsumableArray(instance).every(function (member) {
-                var _validate3 = validate$1(spec.member, member),
-                    valid = _validate3.valid,
-                    errors = _validate3.errors;
+              membersValid = _toConsumableArray(instance).every(function (member) {
+                var _validate$3 = validate$1(spec.member, member),
+                    valid = _validate$3.valid,
+                    errors = _validate$3.errors;
 
-                bigErrors.push.apply(bigErrors, toConsumableArray(errors));
+                bigErrors.push.apply(bigErrors, _toConsumableArray(errors));
                 return valid;
               });
             }
@@ -5059,11 +3280,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function defSub$1(type, spec) {
-    var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref2$verify = _ref2.verify,
-        verify = _ref2$verify === void 0 ? undefined : _ref2$verify,
-        _ref2$help = _ref2.help,
-        help = _ref2$help === void 0 ? '' : _ref2$help;
+    var _ref17 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+        _ref17$verify = _ref17.verify,
+        verify = _ref17$verify === void 0 ? undefined : _ref17$verify,
+        _ref17$help = _ref17.help,
+        help = _ref17$help === void 0 ? '' : _ref17$help;
 
     var name = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
     guardType$1(type);
@@ -5173,7 +3394,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           }
         }
       });
-      return toConsumableArray(keyPathSet);
+      return _toConsumableArray(keyPathSet);
     }
   }
 
@@ -5196,19 +3417,19 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     return T$1(_templateObject6$3 || (_templateObject6$3 = taggedTemplateLiteral(["?", ""])), type.name);
   }
 
-  function verify$1() {
+  function verify$2() {
     return check$1.apply(void 0, arguments);
   }
 
-  function defCollection$1(name, _ref3) {
-    var container = _ref3.container,
-        member = _ref3.member;
+  function defCollection$1(name, _ref) {
+    var container = _ref.container,
+        member = _ref.member;
 
-    var _ref4 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref4$sealed = _ref4.sealed,
-        sealed = _ref4$sealed === void 0 ? SEALED_DEFAULT$1 : _ref4$sealed,
-        _ref4$verify = _ref4.verify,
-        verify = _ref4$verify === void 0 ? undefined : _ref4$verify;
+    var _ref18 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+        _ref18$sealed = _ref18.sealed,
+        sealed = _ref18$sealed === void 0 ? SEALED_DEFAULT$1 : _ref18$sealed,
+        _ref18$verify = _ref18.verify,
+        verify = _ref18$verify === void 0 ? undefined : _ref18$verify;
 
     if (!name) throw new TypeError("Type must be named.");
     if (!container || !member) throw new TypeError("Type must be specified.");
@@ -5229,8 +3450,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     return t;
   }
 
-  function defTuple$1(name, _ref5) {
-    var pattern = _ref5.pattern;
+  function defTuple$1(name, _ref2) {
+    var pattern = _ref2.pattern;
     if (!name) throw new TypeError("Type must be named.");
     if (!pattern) throw new TypeError("Type must be specified.");
     var kind = 'def';
@@ -5288,19 +3509,19 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   };
 
   function def$1(name, spec) {
-    var _ref6 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref6$help = _ref6.help,
-        help = _ref6$help === void 0 ? '' : _ref6$help,
-        _ref6$verify = _ref6.verify,
-        verify = _ref6$verify === void 0 ? undefined : _ref6$verify,
-        _ref6$sealed = _ref6.sealed,
-        sealed = _ref6$sealed === void 0 ? undefined : _ref6$sealed,
-        _ref6$types = _ref6.types,
-        types = _ref6$types === void 0 ? undefined : _ref6$types,
-        _ref6$verifiers = _ref6.verifiers,
-        verifiers = _ref6$verifiers === void 0 ? undefined : _ref6$verifiers,
-        _ref6$native = _ref6["native"],
-        _native2 = _ref6$native === void 0 ? undefined : _ref6$native;
+    var _ref19 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+        _ref19$help = _ref19.help,
+        help = _ref19$help === void 0 ? '' : _ref19$help,
+        _ref19$verify = _ref19.verify,
+        verify = _ref19$verify === void 0 ? undefined : _ref19$verify,
+        _ref19$sealed = _ref19.sealed,
+        sealed = _ref19$sealed === void 0 ? undefined : _ref19$sealed,
+        _ref19$types = _ref19.types,
+        types = _ref19$types === void 0 ? undefined : _ref19$types,
+        _ref19$verifiers = _ref19.verifiers,
+        verifiers = _ref19$verifiers === void 0 ? undefined : _ref19$verifiers,
+        _ref19$native = _ref19["native"],
+        _native2 = _ref19$native === void 0 ? undefined : _ref19$native;
 
     if (!name) throw new TypeError("Type must be named.");
     guardRedefinition$1(name);
@@ -5359,9 +3580,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     guardType$1(type);
     guardExists$1(type);
 
-    var _validate4 = validate$1(type, instance),
-        valid = _validate4.valid,
-        errors = _validate4.errors;
+    var _validate$4 = validate$1(type, instance),
+        valid = _validate$4.valid,
+        errors = _validate$4.errors;
 
     if (!valid) throw new TypeError("Type ".concat(type, " requested, but item is not of that type: ").concat(errors.join(', ')));
   }
@@ -5519,7 +3740,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     oldVals: T$1(_templateObject28 || (_templateObject28 = taggedTemplateLiteral(["Array"])))
   }, {
     verify: function verify(v) {
-      return _verify(v);
+      return verify$1(v);
     }
   });
   T$1.defCollection('BrutalArray', {
@@ -5536,87 +3757,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     member: T$1(_templateObject33 || (_templateObject33 = taggedTemplateLiteral(["SBrutalObject"])))
   }); // export
 
-  function _verify(v) {
+  function verify$1(v) {
     return CODE === v.code;
   }
 
   var _templateObject$c, _templateObject2$7, _templateObject3$6, _templateObject4$3, _templateObject5$2, _templateObject6$1, _templateObject7$1, _templateObject8, _templateObject9, _templateObject10, _templateObject11, _templateObject12, _templateObject13, _templateObject14, _templateObject15, _templateObject16, _templateObject17, _templateObject18, _templateObject19, _templateObject20, _templateObject21, _templateObject22, _templateObject23, _templateObject24, _templateObject25, _templateObject26;
-
-  function _createForOfIteratorHelper$7(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-    if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray$8(o)) || allowArrayLike && o && typeof o.length === "number") {
-        if (it) o = it;
-        var i = 0;
-
-        var F = function F() {};
-
-        return {
-          s: F,
-          n: function n() {
-            if (i >= o.length) return {
-              done: true
-            };
-            return {
-              done: false,
-              value: o[i++]
-            };
-          },
-          e: function e(_e) {
-            throw _e;
-          },
-          f: F
-        };
-      }
-
-      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-    }
-
-    var normalCompletion = true,
-        didErr = false,
-        err;
-    return {
-      s: function s() {
-        it = it.call(o);
-      },
-      n: function n() {
-        var step = it.next();
-        normalCompletion = step.done;
-        return step;
-      },
-      e: function e(_e2) {
-        didErr = true;
-        err = _e2;
-      },
-      f: function f() {
-        try {
-          if (!normalCompletion && it["return"] != null) it["return"]();
-        } finally {
-          if (didErr) throw err;
-        }
-      }
-    };
-  }
-
-  function _unsupportedIterableToArray$8(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$8(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$8(o, minLen);
-  }
-
-  function _arrayLikeToArray$8(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
 
   var skip = markup;
   var attrskip = attrmarkup; // constants
@@ -5655,10 +3800,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
   var MOVE = new ( /*#__PURE__*/function () {
     function _class() {
-      classCallCheck(this, _class);
+      _classCallCheck(this, _class);
     }
 
-    createClass(_class, [{
+    _createClass(_class, [{
       key: "beforeend",
       value: function beforeend(frag, elem) {
         elem.appendChild(frag);
@@ -5690,6 +3835,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         elem.appendChild(frag);
       }
     }]);
+
     return _class;
   }())(); // logging
 
@@ -5745,18 +3891,18 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
 
   function dumbass(p, v) {
-    var _ref = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref$useCache = _ref.useCache,
-        useCache = _ref$useCache === void 0 ? true : _ref$useCache;
+    var _ref20 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+        _ref20$useCache = _ref20.useCache,
+        useCache = _ref20$useCache === void 0 ? true : _ref20$useCache;
 
     var retVal = {};
     var instanceKey, cacheKey;
     v = v.map(guardAndTransformVal);
 
     if (useCache) {
-      var _ref2 = v.find(isKey) || {};
+      var _ref21 = v.find(isKey) || {};
 
-      instanceKey = _ref2.key;
+      instanceKey = _ref21.key;
       cacheKey = p.join('<link rel=join>');
 
       var _isCached = isCached(cacheKey, v, instanceKey),
@@ -5774,7 +3920,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     } // compile the template into an updater
 
 
-    p = toConsumableArray(p);
+    p = _toConsumableArray(p);
     var vmap = {};
     var V = v.map(replaceValWithKeyAndOmitInstanceKey(vmap));
     var externals = [];
@@ -5802,7 +3948,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       to: to,
       update: update,
       code: CODE,
-      nodes: toConsumableArray(frag.childNodes)
+      nodes: _toConsumableArray(frag.childNodes)
     });
 
     if (useCache) {
@@ -5853,10 +3999,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   } // update functions
 
 
-  function makeUpdaters(_ref3) {
-    var walker = _ref3.walker,
-        vmap = _ref3.vmap,
-        externals = _ref3.externals;
+  function makeUpdaters(_ref) {
+    var walker = _ref.walker,
+        vmap = _ref.vmap,
+        externals = _ref.externals;
     var node = walker.currentNode;
 
     switch (node.nodeType) {
@@ -5879,10 +4025,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }
 
-  function handleNode(_ref4) {
-    var node = _ref4.node,
-        vmap = _ref4.vmap,
-        externals = _ref4.externals;
+  function handleNode(_ref2) {
+    var node = _ref2.node,
+        vmap = _ref2.vmap,
+        externals = _ref2.externals;
     var lengths = [];
     var text = node.nodeValue;
     var result = KEYMATCH.exec(text);
@@ -6002,14 +4148,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   } // element attribute functions
 
 
-  function handleElement(_ref5) {
-    var node = _ref5.node,
-        vmap = _ref5.vmap,
-        externals = _ref5.externals;
+  function handleElement(_ref3) {
+    var node = _ref3.node,
+        vmap = _ref3.vmap,
+        externals = _ref3.externals;
     getAttributes(node).forEach(function () {
-      var _ref6 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-          name = _ref6.name,
-          value = _ref6.value;
+      var _ref22 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+          name = _ref22.name,
+          value = _ref22.value;
 
       var attrState = {
         node: node,
@@ -6040,8 +4186,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     });
   }
 
-  function prepareAttributeUpdater(result, attrState, _ref7) {
-    var updateName = _ref7.updateName;
+  function prepareAttributeUpdater(result, attrState, _ref4) {
+    var updateName = _ref4.updateName;
     var index = result.index,
         input = result.input;
     var scope = Object.assign({}, attrState, {
@@ -6093,9 +4239,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
           if (ATTRMATCH.test(newVal)) {
             var assignmentIndex = newVal.indexOf('=');
-            var _ref8 = [newVal.slice(0, assignmentIndex), newVal.slice(assignmentIndex + 1)];
-            name = _ref8[0];
-            value = _ref8[1];
+            var _ref23 = [newVal.slice(0, assignmentIndex), newVal.slice(assignmentIndex + 1)];
+            name = _ref23[0];
+            value = _ref23[1];
           }
 
           reliablySetAttribute(node, name, value);
@@ -6158,12 +4304,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     if (!!node.attributes && Number.isInteger(node.attributes.length)) return Array.from(node.attributes);
     var attrs = [];
 
-    var _iterator = _createForOfIteratorHelper$7(node),
-        _step;
+    var _iterator2 = _createForOfIteratorHelper(node),
+        _step2;
 
     try {
-      for (_iterator.s(); !(_step = _iterator.n()).done;) {
-        var name = _step.value;
+      for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+        var name = _step2.value;
 
         if (node.hasAttribute(name)) {
           attrs.push({
@@ -6173,9 +4319,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         }
       }
     } catch (err) {
-      _iterator.e(err);
+      _iterator2.e(err);
     } finally {
-      _iterator.f();
+      _iterator2.f();
     }
 
     return attrs;
@@ -6193,7 +4339,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       if (name.includes(':')) {
         var _name$split = name.split(':');
 
-        var _name$split2 = toArray(_name$split);
+        var _name$split2 = _toArray(_name$split);
 
         name = _name$split2[0];
         flags = _name$split2.slice(1);
@@ -6241,7 +4387,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       if (name.includes(':')) {
         var _name$split3 = name.split(':');
 
-        var _name$split4 = toArray(_name$split3);
+        var _name$split4 = _toArray(_name$split3);
 
         name = _name$split4[0];
         flags = _name$split4.slice(1);
@@ -6287,10 +4433,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         externals = scope.externals;
 
     if (!!oldVal && T$1.check(T$1(_templateObject4$3 || (_templateObject4$3 = taggedTemplateLiteral(["Handlers"]))), oldVal)) {
-      Object.entries(oldVal).forEach(function (_ref9) {
-        var _ref10 = slicedToArray(_ref9, 2),
-            eventName = _ref10[0],
-            funcVal = _ref10[1];
+      Object.entries(oldVal).forEach(function (_ref5) {
+        var _ref24 = _slicedToArray(_ref5, 2),
+            eventName = _ref24[0],
+            funcVal = _ref24[1];
 
         if (eventName !== 'bond') {
           var flags = {};
@@ -6298,7 +4444,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           if (eventName.includes(':')) {
             var _eventName$split = eventName.split(':');
 
-            var _eventName$split2 = toArray(_eventName$split);
+            var _eventName$split2 = _toArray(_eventName$split);
 
             eventName = _eventName$split2[0];
             flags = _eventName$split2.slice(1);
@@ -6320,10 +4466,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       });
     }
 
-    Object.entries(newVal).forEach(function (_ref11) {
-      var _ref12 = slicedToArray(_ref11, 2),
-          eventName = _ref12[0],
-          funcVal = _ref12[1];
+    Object.entries(newVal).forEach(function (_ref6) {
+      var _ref25 = _slicedToArray(_ref6, 2),
+          eventName = _ref25[0],
+          funcVal = _ref25[1];
 
       if (eventName !== 'bond') {
         var flags = {};
@@ -6331,7 +4477,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         if (eventName.includes(':')) {
           var _eventName$split3 = eventName.split(':');
 
-          var _eventName$split4 = toArray(_eventName$split3);
+          var _eventName$split4 = _toArray(_eventName$split3);
 
           eventName = _eventName$split4[0];
           flags = _eventName$split4.slice(1);
@@ -6422,7 +4568,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function summonPlaceholder(sibling) {
-    var ph = toConsumableArray(sibling.parentNode.childNodes).find(function (node) {
+    var ph = _toConsumableArray(sibling.parentNode.childNodes).find(function (node) {
       return node.nodeType == Node.COMMENT_NODE && node.nodeValue == 'brutal-placeholder';
     });
 
@@ -6484,7 +4630,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     var retVal = {
       type: 'MarkupObject',
       code: CODE,
-      nodes: toConsumableArray(frag.childNodes),
+      nodes: _toConsumableArray(frag.childNodes),
       externals: []
     };
     return retVal;
@@ -6598,8 +4744,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     os.forEach(function (o) {
       //v.push(...o.v); 
       //oldVals.push(...o.oldVals);
-      externals.push.apply(externals, toConsumableArray(o.externals));
-      bigNodes.push.apply(bigNodes, toConsumableArray(o.nodes));
+      externals.push.apply(externals, _toConsumableArray(o.externals));
+      bigNodes.push.apply(bigNodes, _toConsumableArray(o.nodes));
     });
     var retVal = {
       v: v,
@@ -6626,21 +4772,21 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   function diffNodes(last, next) {
     last = new Set(last);
     next = new Set(next);
-    return new Set(toConsumableArray(last).filter(function (n) {
+    return new Set(_toConsumableArray(last).filter(function (n) {
       return !next.has(n);
     }));
   }
 
   function update(newVals) {
-    var _this = this;
+    var _this2 = this;
 
-    var updateable = this.v.filter(function (_ref13) {
-      var vi = _ref13.vi;
-      return didChange(newVals[vi], _this.oldVals[vi]);
+    var updateable = this.v.filter(function (_ref7) {
+      var vi = _ref7.vi;
+      return didChange(newVals[vi], _this2.oldVals[vi]);
     });
-    updateable.forEach(function (_ref14) {
-      var vi = _ref14.vi,
-          replacers = _ref14.replacers;
+    updateable.forEach(function (_ref8) {
+      var vi = _ref8.vi,
+          replacers = _ref8.replacers;
       return replacers.forEach(function (f) {
         return f(newVals[vi]);
       });
@@ -6650,7 +4796,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
   function didChange(oldVal, newVal) {
     var _map = [oldVal, newVal].map(getType),
-        _map2 = slicedToArray(_map, 2),
+        _map2 = _slicedToArray(_map, 2),
         oldType = _map2[0],
         newType = _map2[1];
 
@@ -6848,82 +4994,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }, state);
   }
 
-  function _createForOfIteratorHelper$6(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-    if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray$7(o)) || allowArrayLike && o && typeof o.length === "number") {
-        if (it) o = it;
-        var i = 0;
-
-        var F = function F() {};
-
-        return {
-          s: F,
-          n: function n() {
-            if (i >= o.length) return {
-              done: true
-            };
-            return {
-              done: false,
-              value: o[i++]
-            };
-          },
-          e: function e(_e) {
-            throw _e;
-          },
-          f: F
-        };
-      }
-
-      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-    }
-
-    var normalCompletion = true,
-        didErr = false,
-        err;
-    return {
-      s: function s() {
-        it = it.call(o);
-      },
-      n: function n() {
-        var step = it.next();
-        normalCompletion = step.done;
-        return step;
-      },
-      e: function e(_e2) {
-        didErr = true;
-        err = _e2;
-      },
-      f: function f() {
-        try {
-          if (!normalCompletion && it["return"] != null) it["return"]();
-        } finally {
-          if (didErr) throw err;
-        }
-      }
-    };
-  }
-
-  function _unsupportedIterableToArray$7(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$7(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$7(o, minLen);
-  }
-
-  function _arrayLikeToArray$7(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-
   var $ = Symbol('[[EventQueuePrivates]]'); //const TIME_BETWEEN_ONLINE_CHECKS = 1001;
 
   var ALERT_TIMEOUT = 300;
@@ -6957,7 +5027,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
   var Privates = /*#__PURE__*/function () {
     function Privates(publics, state, sessionToken) {
-      classCallCheck(this, Privates);
+      _classCallCheck(this, Privates);
+
       this.willCollectBufferedFrame = null;
       this.websockets = new Map();
       this.publics = publics;
@@ -7014,27 +5085,27 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       };
     }
 
-    createClass(Privates, [{
+    _createClass(Privates, [{
       key: "triggerSendLoop",
       value: function triggerSendLoop() {
-        var _this = this;
+        var _this3 = this;
 
         if (this.loopActive) return;
         this.loopActive = true;
         this.currentDelay = this.constructor.firstDelay;
         setTimeout(function () {
-          return _this.nextLoop();
+          return _this3.nextLoop();
         }, this.currentDelay);
       }
     }, {
       key: "nextLoop",
       value: function () {
-        var _nextLoop = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee() {
-          var _this2 = this;
+        var _nextLoop = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+          var _this4 = this;
 
-          var q, url, translator, firstChainIndex, chain, events, _q$shift, splice_index;
+          var q, url, _translator, firstChainIndex, chain, events, _q$shift, splice_index;
 
-          return regenerator.wrap(function _callee$(_context) {
+          return regeneratorRuntime.wrap(function _callee$(_context) {
             while (1) {
               switch (_context.prev = _context.next) {
                 case 0:
@@ -7043,14 +5114,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   url = this.subscribers[0];
 
                   if (!this.publics.state.demoMode && this.translators.has(url)) {
-                    translator = this.translators.get(url);
+                    _translator = this.translators.get(url);
                     q = q.map(function (e) {
-                      return translator(e, {});
+                      return _translator(e, {});
                     }).filter(function (e) {
                       return e !== undefined;
                     });
                     q = q.reduce(function (Q, e) {
-                      return Array.isArray(e) ? Q.push.apply(Q, toConsumableArray(e)) : Q.push(e), Q;
+                      return Array.isArray(e) ? Q.push.apply(Q, _toConsumableArray(e)) : Q.push(e), Q;
                     }, []);
                   }
 
@@ -7083,10 +5154,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                         meta.forEach(function (metaItem) {
                           var executionContextId = metaItem.executionContextId;
 
-                          var _loop = function _loop() {
-                            var key = _Object$keys[_i];
+                          var _loop2 = function _loop2() {
+                            var key = _Object$keys[_i2];
 
-                            var typeList = _this2.typeLists.get(key);
+                            var typeList = _this4.typeLists.get(key);
 
                             if (typeList) {
                               typeList.forEach(function (func) {
@@ -7099,14 +5170,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                             }
                           };
 
-                          for (var _i = 0, _Object$keys = Object.keys(metaItem); _i < _Object$keys.length; _i++) {
-                            _loop();
+                          for (var _i2 = 0, _Object$keys = Object.keys(metaItem); _i2 < _Object$keys.length; _i2++) {
+                            _loop2();
                           }
                         });
                       }
 
                       if (totalBandwidth) {
-                        _this2.publics.state.totalBandwidth = totalBandwidth;
+                        _this4.publics.state.totalBandwidth = totalBandwidth;
                       }
                     });
                   } else {
@@ -7118,7 +5189,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
                   if (this.publics.queue.length) {
                     setTimeout(function () {
-                      return _this2.nextLoop();
+                      return _this4.nextLoop();
                     }, this.currentDelay);
                   } else {
                     this.loopActive = false;
@@ -7141,11 +5212,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }, {
       key: "sendEvents",
       value: function () {
-        var _sendEvents = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee3(_ref2) {
-          var _this3 = this;
+        var _sendEvents = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(_ref2) {
+          var _this5 = this;
 
           var events, url, protocol, senders, resolve, promise, request;
-          return regenerator.wrap(function _callee3$(_context3) {
+          return regeneratorRuntime.wrap(function _callee3$(_context3) {
             while (1) {
               switch (_context3.prev = _context3.next) {
                 case 0:
@@ -7261,16 +5332,16 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   return _context3.abrupt("return", fetch(url, request).then(function (r) {
                     return r.json();
                   }).then( /*#__PURE__*/function () {
-                    var _ref4 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee2(_ref3) {
+                    var _ref26 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(_ref3) {
                       var data, frameBuffer, meta, errors;
-                      return regenerator.wrap(function _callee2$(_context2) {
+                      return regeneratorRuntime.wrap(function _callee2$(_context2) {
                         while (1) {
                           switch (_context2.prev = _context2.next) {
                             case 0:
                               data = _ref3.data, frameBuffer = _ref3.frameBuffer, meta = _ref3.meta;
 
-                              if (!!frameBuffer && _this3.images.has(url)) {
-                                drawFrames(_this3.publics.state, frameBuffer, _this3.images.get(url));
+                              if (!!frameBuffer && _this5.images.has(url)) {
+                                drawFrames(_this5.publics.state, frameBuffer, _this5.images.get(url));
                               }
 
                               errors = data.filter(function (d) {
@@ -7290,8 +5361,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                       }, _callee2);
                     }));
 
-                    return function (_x2) {
-                      return _ref4.apply(this, arguments);
+                    return function (_x6) {
+                      return _ref26.apply(this, arguments);
                     };
                   }())["catch"](function (e) {
                     console.warn(JSON.stringify({
@@ -7327,7 +5398,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           }, _callee3, this, [[10, 24]]);
         }));
 
-        function sendEvents(_x) {
+        function sendEvents(_x5) {
           return _sendEvents.apply(this, arguments);
         }
 
@@ -7336,12 +5407,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }, {
       key: "connectSocket",
       value: function () {
-        var _connectSocket = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee7(url, events, messageId) {
-          var _this4 = this;
+        var _connectSocket = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7(url, events, messageId) {
+          var _this6 = this;
 
           var _this$publics$queue, socket;
 
-          return regenerator.wrap(function _callee7$(_context7) {
+          return regeneratorRuntime.wrap(function _callee7$(_context7) {
             while (1) {
               switch (_context7.prev = _context7.next) {
                 case 0:
@@ -7350,7 +5421,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                     break;
                   }
 
-                  (_this$publics$queue = this.publics.queue).unshift.apply(_this$publics$queue, toConsumableArray(events));
+                  (_this$publics$queue = this.publics.queue).unshift.apply(_this$publics$queue, _toConsumableArray(events));
 
                   return _context7.abrupt("return");
 
@@ -7358,30 +5429,30 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   connecting = true;
 
                   if (!(!this.publics.state.demoMode && onLine())) {
-                    _context7.next = 21;
+                    _context7.next = 20;
                     break;
                   }
 
                   _context7.prev = 5;
                   socket = new WebSocket(url);
-                  _context7.next = 15;
+                  _context7.next = 14;
                   break;
 
                 case 9:
                   _context7.prev = 9;
                   _context7.t0 = _context7["catch"](5);
                   talert("Error connecting to the server. Will reload to try again.");
-                  _context7.next = 15;
+                  _context7.next = 14;
                   return treload();
 
-                case 15:
+                case 14:
                   socket.onopen = function () {
-                    _this4.websockets.set(url, {
+                    _this6.websockets.set(url, {
                       so: so,
                       sa: sa
                     });
 
-                    var receivesFrames = !_this4.publics.state.useViewFrame;
+                    var receivesFrames = !_this6.publics.state.useViewFrame;
                     so({
                       messageId: messageId,
                       zombie: {
@@ -7400,10 +5471,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   };
 
                   socket.onmessage = /*#__PURE__*/function () {
-                    var _ref5 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee4(message) {
-                      var MessageData, messageData, data, frameBuffer, meta, serverMessageId, totalBandwidth, errors, x, reload, _reload, _reload2, replyTransmitted, fallbackReplyTransmitted;
+                    var _ref27 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(message) {
+                      var MessageData, messageData, data, frameBuffer, meta, serverMessageId, totalBandwidth, errors, x, _reload, _reload2, _reload3, replyTransmitted, fallbackReplyTransmitted;
 
-                      return regenerator.wrap(function _callee4$(_context4) {
+                      return regeneratorRuntime.wrap(function _callee4$(_context4) {
                         while (1) {
                           switch (_context4.prev = _context4.next) {
                             case 0:
@@ -7411,12 +5482,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                               messageData = JSON.parse(MessageData);
                               data = messageData.data, frameBuffer = messageData.frameBuffer, meta = messageData.meta, serverMessageId = messageData.messageId, totalBandwidth = messageData.totalBandwidth;
 
-                              if (!!frameBuffer && frameBuffer.length && _this4.images.has(url)) {
-                                _this4.addBytes(MessageData.length, frameBuffer.length);
+                              if (!!frameBuffer && frameBuffer.length && _this6.images.has(url)) {
+                                _this6.addBytes(MessageData.length, frameBuffer.length);
 
-                                drawFrames(_this4.publics.state, frameBuffer, _this4.images.get(url));
+                                drawFrames(_this6.publics.state, frameBuffer, _this6.images.get(url));
                               } else {
-                                _this4.addBytes(MessageData.length, false);
+                                _this6.addBytes(MessageData.length, false);
                               }
 
                               errors = data.filter(function (d) {
@@ -7424,136 +5495,104 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                               });
 
                               if (!errors.length) {
-                                _context4.next = 75;
+                                _context4.next = 74;
                                 break;
                               }
 
                               DEBUG && console.log(JSON.stringify(errors));
 
-                              if (!errors.some(function (_ref6) {
-                                var error = _ref6.error;
+                              if (!errors.some(function (_ref4) {
+                                var error = _ref4.error;
                                 return error.hasSession === false;
                               })) {
-                                _context4.next = 30;
+                                _context4.next = 29;
                                 break;
                               }
 
-                              console.warn("Session has been cleared. Let's attempt relogin", _this4.sessionToken);
+                              console.warn("Session has been cleared. Let's attempt relogin", _this6.sessionToken);
 
                               if (!DEBUG.blockAnotherReset) {
-                                _context4.next = 12;
+                                _context4.next = 11;
                                 break;
                               }
 
                               return _context4.abrupt("return");
 
-                            case 12:
+                            case 11:
                               DEBUG.blockAnotherReset = true;
-                              _context4.prev = 13;
+                              _context4.prev = 12;
                               x = new URL(location);
                               x.pathname = 'login';
-                              x.search = "token=".concat(_this4.sessionToken, "&ran=").concat(Math.random());
-                              _context4.next = 19;
+                              x.search = "token=".concat(_this6.sessionToken, "&ran=").concat(Math.random());
+                              _context4.next = 18;
                               return talert("Your browser cleared your session. We need to reload the page to refresh it.");
 
-                            case 19:
+                            case 18:
                               DEBUG.delayUnload = false;
                               location.href = x;
                               socket.onmessage = null;
-                              _context4.next = 27;
+                              _context4.next = 26;
                               break;
 
-                            case 24:
-                              _context4.prev = 24;
-                              _context4.t0 = _context4["catch"](13);
+                            case 23:
+                              _context4.prev = 23;
+                              _context4.t0 = _context4["catch"](12);
                               talert("An error occurred. Please reload.");
 
-                            case 27:
+                            case 26:
                               return _context4.abrupt("return");
 
-                            case 30:
-                              if (!errors.some(function (_ref7) {
-                                var error = _ref7.error;
+                            case 29:
+                              if (!errors.some(function (_ref5) {
+                                var error = _ref5.error;
                                 return error.includes && error.includes("ECONNREFUSED");
                               })) {
-                                _context4.next = 41;
+                                _context4.next = 40;
                                 break;
                               }
 
                               console.warn("Cloud browser has not started yet. Let's reload and see if it has then.");
 
                               if (!DEBUG.blockAnotherReset) {
-                                _context4.next = 34;
+                                _context4.next = 33;
                                 break;
                               }
 
                               return _context4.abrupt("return");
 
-                            case 34:
+                            case 33:
                               DEBUG.blockAnotherReset = true;
                               talert("Your cloud browser has not started yet. We'll reload and see if it has then.");
-                              _context4.next = 38;
+                              _context4.next = 37;
                               return treload();
 
-                            case 38:
+                            case 37:
                               return _context4.abrupt("return");
 
-                            case 41:
-                              if (!errors.some(function (_ref8) {
-                                var error = _ref8.error;
+                            case 40:
+                              if (!errors.some(function (_ref6) {
+                                var error = _ref6.error;
                                 return error.includes && error.includes("Timed out");
                               })) {
-                                _context4.next = 53;
+                                _context4.next = 52;
                                 break;
                               }
 
                               console.warn("Some events are timing out when sent to the cloud browser.");
 
                               if (!DEBUG.blockAnotherReset) {
-                                _context4.next = 45;
+                                _context4.next = 44;
                                 break;
                               }
 
                               return _context4.abrupt("return");
 
-                            case 45:
+                            case 44:
                               DEBUG.blockAnotherReset = true;
-                              _context4.next = 48;
+                              _context4.next = 47;
                               return tconfirm("Some events are timing out when sent to the cloud browser. Try reloading the page, and if the problem persists try switching your cloud browser off then on again. Want to reload now?");
 
-                            case 48:
-                              reload = _context4.sent;
-
-                              if (reload) {
-                                treload();
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 53:
-                              if (!errors.some(function (_ref9) {
-                                var error = _ref9.error;
-                                return error.includes && error.includes("not opened");
-                              })) {
-                                _context4.next = 65;
-                                break;
-                              }
-
-                              console.warn("We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again.");
-
-                              if (!DEBUG.blockAnotherReset) {
-                                _context4.next = 57;
-                                break;
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 57:
-                              DEBUG.blockAnotherReset = true;
-                              _context4.next = 60;
-                              return tconfirm("We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again. Reload the page now?");
-
-                            case 60:
+                            case 47:
                               _reload = _context4.sent;
 
                               if (_reload) {
@@ -7562,30 +5601,30 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
                               return _context4.abrupt("return");
 
-                            case 65:
-                              if (!errors.some(function (_ref10) {
-                                var resetRequired = _ref10.resetRequired;
-                                return resetRequired;
+                            case 52:
+                              if (!errors.some(function (_ref7) {
+                                var error = _ref7.error;
+                                return error.includes && error.includes("not opened");
                               })) {
-                                _context4.next = 75;
+                                _context4.next = 64;
                                 break;
                               }
 
-                              console.warn("Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again.");
+                              console.warn("We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again.");
 
                               if (!DEBUG.blockAnotherReset) {
-                                _context4.next = 69;
+                                _context4.next = 56;
                                 break;
                               }
 
                               return _context4.abrupt("return");
 
-                            case 69:
+                            case 56:
                               DEBUG.blockAnotherReset = true;
-                              _context4.next = 72;
-                              return tconfirm("Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again. Want to reload the page now?");
+                              _context4.next = 59;
+                              return tconfirm("We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again. Reload the page now?");
 
-                            case 72:
+                            case 59:
                               _reload2 = _context4.sent;
 
                               if (_reload2) {
@@ -7594,15 +5633,47 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
                               return _context4.abrupt("return");
 
-                            case 75:
+                            case 64:
+                              if (!errors.some(function (_ref8) {
+                                var resetRequired = _ref8.resetRequired;
+                                return resetRequired;
+                              })) {
+                                _context4.next = 74;
+                                break;
+                              }
+
+                              console.warn("Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again.");
+
+                              if (!DEBUG.blockAnotherReset) {
+                                _context4.next = 68;
+                                break;
+                              }
+
+                              return _context4.abrupt("return");
+
+                            case 68:
+                              DEBUG.blockAnotherReset = true;
+                              _context4.next = 71;
+                              return tconfirm("Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again. Want to reload the page now?");
+
+                            case 71:
+                              _reload3 = _context4.sent;
+
+                              if (_reload3) {
+                                treload();
+                              }
+
+                              return _context4.abrupt("return");
+
+                            case 74:
                               if (!!meta && meta.length) {
                                 meta.forEach(function (metaItem) {
                                   var executionContextId = metaItem.executionContextId;
 
-                                  var _loop2 = function _loop2() {
-                                    var key = _Object$keys2[_i2];
+                                  var _loop3 = function _loop3() {
+                                    var key = _Object$keys2[_i3];
 
-                                    var typeList = _this4.typeLists.get(key);
+                                    var typeList = _this6.typeLists.get(key);
 
                                     if (typeList) {
                                       typeList.forEach(function (func) {
@@ -7615,14 +5686,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                                     }
                                   };
 
-                                  for (var _i2 = 0, _Object$keys2 = Object.keys(metaItem); _i2 < _Object$keys2.length; _i2++) {
-                                    _loop2();
+                                  for (var _i3 = 0, _Object$keys2 = Object.keys(metaItem); _i3 < _Object$keys2.length; _i3++) {
+                                    _loop3();
                                   }
                                 });
                               }
 
                               if (totalBandwidth) {
-                                _this4.publics.state.totalBandwidth = totalBandwidth;
+                                _this6.publics.state.totalBandwidth = totalBandwidth;
                               }
 
                               replyTransmitted = transmitReply({
@@ -7634,14 +5705,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                               });
 
                               if (!replyTransmitted) {
-                                _context4.next = 82;
+                                _context4.next = 79;
                                 break;
                               }
 
                               return _context4.abrupt("return");
 
-                            case 82:
-                            case 83:
+                            case 79:
                               fallbackReplyTransmitted = transmitReply({
                                 url: url,
                                 id: messageId,
@@ -7651,40 +5721,39 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                               });
 
                               if (!fallbackReplyTransmitted) {
-                                _context4.next = 88;
+                                _context4.next = 82;
                                 break;
                               }
 
                               return _context4.abrupt("return");
 
-                            case 88:
-                            case 89:
+                            case 82:
                             case "end":
                               return _context4.stop();
                           }
                         }
-                      }, _callee4, null, [[13, 24]]);
+                      }, _callee4, null, [[12, 23]]);
                     }));
 
-                    return function (_x6) {
-                      return _ref5.apply(this, arguments);
+                    return function (_x10) {
+                      return _ref27.apply(this, arguments);
                     };
                   }();
 
                   socket.onclose = /*#__PURE__*/function () {
-                    var _ref11 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee5(e) {
-                      return regenerator.wrap(function _callee5$(_context5) {
+                    var _ref28 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(e) {
+                      return regeneratorRuntime.wrap(function _callee5$(_context5) {
                         while (1) {
                           switch (_context5.prev = _context5.next) {
                             case 0:
-                              _this4.websockets["delete"](url);
+                              _this6.websockets["delete"](url);
 
                               console.log("Socket disconnected. Will reconnect when online");
                               talert("Error connecting to the server -- Will reload to try again.");
-                              _context5.next = 6;
+                              _context5.next = 5;
                               return treload();
 
-                            case 6:
+                            case 5:
                             case "end":
                               return _context5.stop();
                           }
@@ -7692,23 +5761,23 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                       }, _callee5);
                     }));
 
-                    return function (_x7) {
-                      return _ref11.apply(this, arguments);
+                    return function (_x11) {
+                      return _ref28.apply(this, arguments);
                     };
                   }();
 
                   socket.onerror = /*#__PURE__*/function () {
-                    var _ref12 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee6(e) {
-                      return regenerator.wrap(function _callee6$(_context6) {
+                    var _ref29 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(e) {
+                      return regeneratorRuntime.wrap(function _callee6$(_context6) {
                         while (1) {
                           switch (_context6.prev = _context6.next) {
                             case 0:
                               socket.onerror = null;
                               talert("Error connecting to the server - Will reload to try again.");
-                              _context6.next = 5;
+                              _context6.next = 4;
                               return treload();
 
-                            case 5:
+                            case 4:
                             case "end":
                               return _context6.stop();
                           }
@@ -7716,21 +5785,21 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                       }, _callee6);
                     }));
 
-                    return function (_x8) {
-                      return _ref12.apply(this, arguments);
+                    return function (_x12) {
+                      return _ref29.apply(this, arguments);
                     };
                   }();
 
-                  _context7.next = 26;
+                  _context7.next = 24;
                   break;
 
-                case 21:
+                case 20:
                   console.log("Offline. Will connect socket when online");
                   talert("Error connecting to the server, will reload to try again.");
-                  _context7.next = 26;
+                  _context7.next = 24;
                   return treload();
 
-                case 26:
+                case 24:
                 case "end":
                   return _context7.stop();
               }
@@ -7738,7 +5807,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           }, _callee7, this, [[5, 9]]);
         }));
 
-        function connectSocket(_x3, _x4, _x5) {
+        function connectSocket(_x7, _x8, _x9) {
           return _connectSocket.apply(this, arguments);
         }
 
@@ -7747,27 +5816,27 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }, {
       key: "sendEventChain",
       value: function () {
-        var _sendEventChain = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee8(_ref13) {
-          var chain, url, Meta, Data, lastData, _iterator, _step, next, _yield$this$sendEvent, meta, data, funcResult, events, _yield$this$sendEvent2, _meta, _data;
+        var _sendEventChain = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee8(_ref9) {
+          var chain, url, Meta, Data, lastData, _iterator3, _step3, next, _yield$this$sendEvent, meta, data, funcResult, events, _yield$this$sendEvent2, _meta, _data;
 
-          return regenerator.wrap(function _callee8$(_context8) {
+          return regeneratorRuntime.wrap(function _callee8$(_context8) {
             while (1) {
               switch (_context8.prev = _context8.next) {
                 case 0:
-                  chain = _ref13.chain, url = _ref13.url;
+                  chain = _ref9.chain, url = _ref9.url;
                   Meta = [], Data = [];
-                  _iterator = _createForOfIteratorHelper$6(chain);
+                  _iterator3 = _createForOfIteratorHelper(chain);
                   _context8.prev = 3;
 
-                  _iterator.s();
+                  _iterator3.s();
 
                 case 5:
-                  if ((_step = _iterator.n()).done) {
+                  if ((_step3 = _iterator3.n()).done) {
                     _context8.next = 33;
                     break;
                   }
 
-                  next = _step.value;
+                  next = _step3.value;
 
                   if (!(_typeof(next) == "object")) {
                     _context8.next = 18;
@@ -7784,8 +5853,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   _yield$this$sendEvent = _context8.sent;
                   meta = _yield$this$sendEvent.meta;
                   data = _yield$this$sendEvent.data;
-                  Meta.push.apply(Meta, toConsumableArray(meta));
-                  Data.push.apply(Data, toConsumableArray(data));
+                  Meta.push.apply(Meta, _toConsumableArray(meta));
+                  Data.push.apply(Data, _toConsumableArray(data));
                   lastData = data;
                   _context8.next = 31;
                   break;
@@ -7824,8 +5893,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   _yield$this$sendEvent2 = _context8.sent;
                   _meta = _yield$this$sendEvent2.meta;
                   _data = _yield$this$sendEvent2.data;
-                  Meta.push.apply(Meta, toConsumableArray(_meta));
-                  Data.push.apply(Data, toConsumableArray(_data));
+                  Meta.push.apply(Meta, _toConsumableArray(_meta));
+                  Data.push.apply(Data, _toConsumableArray(_data));
                   lastData = _data;
 
                 case 31:
@@ -7840,12 +5909,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   _context8.prev = 35;
                   _context8.t0 = _context8["catch"](3);
 
-                  _iterator.e(_context8.t0);
+                  _iterator3.e(_context8.t0);
 
                 case 38:
                   _context8.prev = 38;
 
-                  _iterator.f();
+                  _iterator3.f();
 
                   return _context8.finish(38);
 
@@ -7863,7 +5932,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           }, _callee8, this, [[3, 35, 38, 41]]);
         }));
 
-        function sendEventChain(_x9) {
+        function sendEventChain(_x13) {
           return _sendEventChain.apply(this, arguments);
         }
 
@@ -7872,7 +5941,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }, {
       key: "maybeCheckForBufferedFrames",
       value: function maybeCheckForBufferedFrames(events) {
-        var _this5 = this;
+        var _this7 = this;
 
         if (meetsCollectBufferedFrameCondition(this.publics.queue, events)) {
           if (this.willCollectBufferedFrame) {
@@ -7882,14 +5951,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           }
 
           this.willCollectBufferedFrame = setTimeout(function () {
-            return _this5.pushNextCollectEvent();
+            return _this7.pushNextCollectEvent();
           }, bufferedFrameCollectDelay);
         }
       }
     }, {
       key: "pushNextCollectEvent",
       value: function pushNextCollectEvent() {
-        var _this6 = this;
+        var _this8 = this;
 
         clearTimeout(this.willCollectBufferedFrame);
         this.willCollectBufferedFrame = false;
@@ -7899,7 +5968,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         } else {
           bufferedFrameCollectDelay *= 1.618;
           this.willCollectBufferedFrame = setTimeout(function () {
-            return _this6.pushNextCollectEvent();
+            return _this8.pushNextCollectEvent();
           }, bufferedFrameCollectDelay);
         }
 
@@ -7915,12 +5984,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         /* 20, 40, 250, 500;*/
       }
     }]);
+
     return Privates;
   }();
 
   var EventQueue = /*#__PURE__*/function () {
     function EventQueue(state, sessionToken) {
-      classCallCheck(this, EventQueue);
+      _classCallCheck(this, EventQueue);
+
       var privates = new Privates(this, state, sessionToken);
       var queue = [];
       this.state = state;
@@ -7937,13 +6008,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       }));
     }
 
-    createClass(EventQueue, [{
+    _createClass(EventQueue, [{
       key: "send",
       value: function send(event) {
         if (Array.isArray(event)) {
           var _this$queue;
 
-          (_this$queue = this.queue).push.apply(_this$queue, toConsumableArray(event));
+          (_this$queue = this.queue).push.apply(_this$queue, _toConsumableArray(event));
         } else {
           this.queue.push(event);
         }
@@ -7953,7 +6024,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }, {
       key: "addSubscriber",
       value: function addSubscriber(url, translator, imageEl) {
-        var _this7 = this;
+        var _this9 = this;
 
         this[$].subscribers.push(url);
 
@@ -7969,7 +6040,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           };
 
           imageEl.addEventListener('load', function () {
-            var ctx = _this7.state.viewState.ctx;
+            var ctx = _this9.state.viewState.ctx;
             ctx.drawImage(imageEl, 0, 0);
             frameDrawing = false;
           });
@@ -7988,99 +6059,100 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         typeList.push(func);
       }
     }]);
+
     return EventQueue;
   }();
 
-  function drawFrames(_x10, _x11, _x12) {
+  function drawFrames(_x14, _x15, _x16) {
     return _drawFrames.apply(this, arguments);
   }
 
   function _drawFrames() {
-    _drawFrames = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee9(state, buf, image) {
-      var _iterator2, _step2, _step2$value, img, frame;
+    _drawFrames = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee14(state, buf, image) {
+      var _iterator17, _step17, _step17$value, img, frame;
 
-      return regenerator.wrap(function _callee9$(_context9) {
+      return regeneratorRuntime.wrap(function _callee14$(_context14) {
         while (1) {
-          switch (_context9.prev = _context9.next) {
+          switch (_context14.prev = _context14.next) {
             case 0:
               buf = buf.filter(function (x) {
                 return !!x;
               });
-              buf.sort(function (_ref17, _ref18) {
-                var frame1 = _ref17.frame;
-                var frame2 = _ref18.frame;
+              buf.sort(function (_ref10, _ref11) {
+                var frame1 = _ref10.frame;
+                var frame2 = _ref11.frame;
                 return frame2 - frame1;
               });
-              buf = buf.filter(function (_ref19) {
-                var frame = _ref19.frame,
-                    targetId = _ref19.targetId;
+              buf = buf.filter(function (_ref12) {
+                var frame = _ref12.frame,
+                    targetId = _ref12.targetId;
                 var cond = frame > latestFrame && targetId == state.activeTarget;
                 latestFrame = frame;
                 return cond;
               });
-              _iterator2 = _createForOfIteratorHelper$6(buf);
-              _context9.prev = 4;
+              _iterator17 = _createForOfIteratorHelper(buf);
+              _context14.prev = 4;
 
-              _iterator2.s();
+              _iterator17.s();
 
             case 6:
-              if ((_step2 = _iterator2.n()).done) {
-                _context9.next = 22;
+              if ((_step17 = _iterator17.n()).done) {
+                _context14.next = 20;
                 break;
               }
 
-              _step2$value = _step2.value, img = _step2$value.img, frame = _step2$value.frame;
+              _step17$value = _step17.value, img = _step17$value.img, frame = _step17$value.frame;
 
               if (!(frame < latestFrame)) {
-                _context9.next = 11;
+                _context14.next = 11;
                 break;
               }
 
               console.warn("Got frame ".concat(frame, " less than ").concat(latestFrame, ". Dropping"));
-              return _context9.abrupt("continue", 20);
+              return _context14.abrupt("continue", 18);
 
             case 11:
               if (!frameDrawing) {
-                _context9.next = 15;
+                _context14.next = 14;
                 break;
               }
 
-              _context9.next = 15;
+              _context14.next = 14;
               return sleep(Privates.firstDelay);
 
-            case 15:
+            case 14:
               frameDrawing = frame;
               image.src = "data:image/".concat(Format, ";base64,").concat(img);
-              _context9.next = 20;
+              _context14.next = 18;
               return sleep(Privates.firstDelay);
 
+            case 18:
+              _context14.next = 6;
+              break;
+
             case 20:
-              _context9.next = 6;
+              _context14.next = 25;
               break;
 
             case 22:
-              _context9.next = 27;
-              break;
+              _context14.prev = 22;
+              _context14.t0 = _context14["catch"](4);
 
-            case 24:
-              _context9.prev = 24;
-              _context9.t0 = _context9["catch"](4);
+              _iterator17.e(_context14.t0);
 
-              _iterator2.e(_context9.t0);
+            case 25:
+              _context14.prev = 25;
 
-            case 27:
-              _context9.prev = 27;
+              _iterator17.f();
 
-              _iterator2.f();
+              return _context14.finish(25);
 
-              return _context9.finish(27);
-
-            case 30:
+            case 28:
             case "end":
-              return _context9.stop();
+              return _context14.stop();
           }
         }
-      }, _callee9, null, [[4, 24, 27, 30]]);
+      }, _callee14, null, [[4, 22, 25, 28]]);
     }));
     return _drawFrames.apply(this, arguments);
   }
@@ -8101,24 +6173,24 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       *
       * Finally what type of event will it add to the queue.
     **/
-    var someRequireShot = events.some(function (_ref14) {
-      var command = _ref14.command;
+    var someRequireShot = events.some(function (_ref13) {
+      var command = _ref13.command;
       return command.requiresShot || command.requiresTailShot;
     });
-    var createsTarget = events.some(function (_ref15) {
-      var command = _ref15.command;
+    var createsTarget = events.some(function (_ref14) {
+      var command = _ref14.command;
       return command.name == "Target.createTarget";
     });
     var meetsCondition = someRequireShot || createsTarget;
     return meetsCondition;
   }
 
-  function transmitReply(_ref16) {
-    var url = _ref16.url,
-        id = _ref16.id,
-        data = _ref16.data,
-        meta = _ref16.meta,
-        totalBandwidth = _ref16.totalBandwidth;
+  function transmitReply(_ref15) {
+    var url = _ref15.url,
+        id = _ref15.id,
+        data = _ref15.data,
+        meta = _ref15.meta,
+        totalBandwidth = _ref15.totalBandwidth;
     var key = "".concat(url, ":").concat(id);
     var resolvePromise = waiting.get(key);
 
@@ -8171,16 +6243,16 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }, ALERT_TIMEOUT);
   }
 
-  function tconfirm(_x13) {
+  function tconfirm(_x17) {
     return _tconfirm.apply(this, arguments);
   }
 
   function _tconfirm() {
-    _tconfirm = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee10(msg) {
+    _tconfirm = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee15(msg) {
       var resolve, pr;
-      return regenerator.wrap(function _callee10$(_context10) {
+      return regeneratorRuntime.wrap(function _callee15$(_context15) {
         while (1) {
-          switch (_context10.prev = _context10.next) {
+          switch (_context15.prev = _context15.next) {
             case 0:
               pr = new Promise(function (res) {
                 return resolve = res;
@@ -8193,14 +6265,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               latestAlert = setTimeout(function () {
                 resolve(confirm(msg));
               }, ALERT_TIMEOUT);
-              return _context10.abrupt("return", pr);
+              return _context15.abrupt("return", pr);
 
             case 4:
             case "end":
-              return _context10.stop();
+              return _context15.stop();
           }
         }
-      }, _callee10);
+      }, _callee15);
     }));
     return _tconfirm.apply(this, arguments);
   }
@@ -8210,18 +6282,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function _treload() {
-    _treload = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee11() {
+    _treload = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee16() {
       var resolve, pr;
-      return regenerator.wrap(function _callee11$(_context11) {
+      return regeneratorRuntime.wrap(function _callee16$(_context16) {
         while (1) {
-          switch (_context11.prev = _context11.next) {
+          switch (_context16.prev = _context16.next) {
             case 0:
-              {
-                _context11.next = 3;
-                break;
-              }
-
-            case 3:
               pr = new Promise(function (res) {
                 return resolve = res;
               });
@@ -8233,14 +6299,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               latestReload = setTimeout(function () {
                 return resolve(location.reload());
               }, ALERT_TIMEOUT);
-              return _context11.abrupt("return", pr);
+              return _context16.abrupt("return", pr);
 
-            case 7:
+            case 4:
             case "end":
-              return _context11.stop();
+              return _context16.stop();
           }
         }
-      }, _callee11);
+      }, _callee16);
     }));
     return _treload.apply(this, arguments);
   }
@@ -8273,10 +6339,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           {
             var _synthetic = synthetic,
                 authResponse = _synthetic.authResponse,
-                requestId = _synthetic.requestId;
+                _requestId2 = _synthetic.requestId;
             Object.assign(transformedEvent, {
               authResponse: authResponse,
-              requestId: requestId
+              requestId: _requestId2
             });
             break;
           }
@@ -8363,13 +6429,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 deltaY = _synthetic3.deltaY,
                 bitmapX = _synthetic3.bitmapX,
                 bitmapY = _synthetic3.bitmapY,
-                _contextId = _synthetic3.contextId;
+                _contextId2 = _synthetic3.contextId;
             Object.assign(transformedEvent, {
               deltaX: deltaX,
               deltaY: deltaY,
               bitmapX: bitmapX,
               bitmapY: bitmapY,
-              contextId: _contextId
+              contextId: _contextId2
             });
             break;
           }
@@ -8413,21 +6479,21 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         case "window-bounds-preImplementation":
           {
             // This is here until Browser.getWindowForTarget and Browser.setWindowBounds come online
-            var _width, _height;
+            var _width2, _height2;
 
             if (synthetic.width !== undefined && synthetic.height !== undefined) {
               var _synthetic6 = synthetic;
-              _width = _synthetic6.width;
-              _height = _synthetic6.height;
+              _width2 = _synthetic6.width;
+              _height2 = _synthetic6.height;
             } else {
               var _form = form;
-              _width = _form.width.value;
-              _height = _form.height.value;
+              _width2 = _form.width.value;
+              _height2 = _form.height.value;
             }
 
             Object.assign(transformedEvent, {
-              width: _width,
-              height: _height
+              width: _width2,
+              height: _height2
             });
             break;
           }
@@ -8681,9 +6747,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
 
   function searchProvider() {
-    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-        _ref$query = _ref.query,
-        query = _ref$query === void 0 ? '' : _ref$query;
+    var _ref30 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+        _ref30$query = _ref30.query,
+        query = _ref30$query === void 0 ? '' : _ref30$query;
 
     {
       return "https://google.com/search?q=".concat(encodeURIComponent(query));
@@ -9056,15 +7122,15 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   var _templateObject$5;
 
   function PluginsMenu(state) {
-    var _ref = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
-        _ref$bondTasks = _ref.bondTasks,
-        bondTasks = _ref$bondTasks === void 0 ? [] : _ref$bondTasks;
+    var _ref31 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
+        _ref31$bondTasks = _ref31.bondTasks,
+        bondTasks = _ref31$bondTasks === void 0 ? [] : _ref31$bondTasks;
 
     return d(_templateObject$5 || (_templateObject$5 = taggedTemplateLiteral(["\n    <nav class=plugins-menu \n      bond=", " \n      stylist=\"stylePluginsMenu\"\n    >\n      <aside>\n        <header>\n          <h1 class=spread>\n            Menu\n            ", "\n          </h1>\n        </header>\n        <article>\n          <section>\n            <h1>\n              Quality Settings\n            </h1>\n            <form method=POST action=#save-settings>\n              <fieldset>\n                <legend>Image Mode Settings</legend>\n                <p>\n                  <label>\n                    <input type=range min=1 max=100 value=25 name=jpeg_quality\n                      oninput=\"jfqvalue.value = this.value;\" \n                    >\n                    JPEG frame quality\n                    &nbsp;(<output id=jfqvalue>25</output>)\n                  </label>\n                <p>\n                  <button>Save</button>\n              </fieldset>\n            </form>\n          </section>\n          <section>\n            <h1>\n              Plugins\n            </h1>\n            <form method=POST action=#plugins-settings>\n              <fieldset>\n                <legend>Enabled plugins</legend>\n                <p>\n                  <label>\n                    <input type=checkbox name=mapmaker>\n                    Map Maker \n                  </label>\n                <p>\n                  <label>\n                    <input type=checkbox name=mapviewer>\n                    Map Viewer\n                  </label>\n                <p>\n                  <label>\n                    <input type=checkbox name=trailmarker>\n                    Trail Marker\n                  </label>\n                <p>\n                  <label>\n                    <input type=checkbox name=trailrunner>\n                    Trail Runner\n                  </label>\n                <p>\n                  <button>Save</button>\n              </fieldset>\n              <fieldset>\n                <legend>Discover plugins</legend>\n                <p>\n                  <label>\n                    <button name=discover>Discover</button>\n                    Discover plugins to install \n                  </label>\n                <p>\n                  <label>\n                    <input type=search name=plugin_search>\n                    <button name=search>Search</button>\n                    Search for plugins to install\n                  </label>\n                <p>\n                  <ul class=plugins-search-results></ul>\n              </fieldset>\n            </form>\n          </section>\n        </article>\n      </aside>\n    </nav>\n  "])), [function (el) {
       return state.viewState.pmEl = el;
     }, function () {
       return console.log("PMA?".concat(!!state.pluginsMenuActive));
-    }].concat(toConsumableArray(bondTasks)), PluginsMenuButton(state));
+    }].concat(_toConsumableArray(bondTasks)), PluginsMenuButton(state));
   }
 
   var _templateObject$4, _templateObject2$4, _templateObject3$3;
@@ -9091,7 +7157,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           title = '',
           currentModalEl = false;
       var csrfToken = '';
-      var requestId = '';
+      var _requestId3 = '';
       var sessionId = '';
       var mode = '';
       var accept = '';
@@ -9115,7 +7181,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         title = _currentModal$title === void 0 ? 'Untitled' : _currentModal$title;
         currentModalEl = currentModal.el;
         var _currentModal$request = currentModal.requestId;
-        requestId = _currentModal$request === void 0 ? '' : _currentModal$request;
+        _requestId3 = _currentModal$request === void 0 ? '' : _currentModal$request;
         var _currentModal$mode = currentModal.mode;
         mode = _currentModal$mode === void 0 ? '' : _currentModal$mode;
         var _currentModal$session = currentModal.sessionId;
@@ -9148,7 +7214,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         }
       }
 
-      if (type == 'auth' && !requestId) {
+      if (type == 'auth' && !_requestId3) {
         throw new TypeError("Auth modal requires a requestId to send the response to");
       }
 
@@ -9177,7 +7243,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         return ModalRef.notice = el;
       }, currentModalEl === ModalRef.notice ? 'open' : '', title, msg || 'Empty notice', otherButton ? u(_templateObject2$4 || (_templateObject2$4 = taggedTemplateLiteral(["<button title=\"", "\" click=", ">", "</button>"])), otherButton.title, otherButton.onclick, otherButton.title) : '', function (el) {
         return ModalRef.auth = el;
-      }, currentModalEl === ModalRef.auth ? 'open' : '', title, msg || 'Empty notice', requestId, function (click) {
+      }, currentModalEl === ModalRef.auth ? 'open' : '', title, msg || 'Empty notice', _requestId3, function (click) {
         return respondWithAuth(click, state);
       }, function (click) {
         return respondWithCancel(click, state);
@@ -9198,16 +7264,16 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }
 
-  function chooseFile(_x, _x2) {
+  function chooseFile(_x18, _x19) {
     return _chooseFile.apply(this, arguments);
   }
 
   function _chooseFile() {
-    _chooseFile = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(click, state) {
+    _chooseFile = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee17(click, state) {
       var form, body, request, resp;
-      return regenerator.wrap(function _callee$(_context) {
+      return regeneratorRuntime.wrap(function _callee17$(_context17) {
         while (1) {
-          switch (_context.prev = _context.next) {
+          switch (_context17.prev = _context17.next) {
             case 0:
               click.preventDefault();
               click.stopPropagation();
@@ -9222,13 +7288,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 working: true
               });
               Modals(state);
-              _context.next = 9;
+              _context17.next = 9;
               return fetch(form.action, request).then(function (r) {
                 return r.json();
               });
 
             case 9:
-              resp = _context.sent;
+              resp = _context17.sent;
 
               if (resp.error) {
                 alert(resp.error);
@@ -9238,24 +7304,24 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
             case 12:
             case "end":
-              return _context.stop();
+              return _context17.stop();
           }
         }
-      }, _callee);
+      }, _callee17);
     }));
     return _chooseFile.apply(this, arguments);
   }
 
-  function cancelFileChooser(_x3, _x4) {
+  function cancelFileChooser(_x20, _x21) {
     return _cancelFileChooser.apply(this, arguments);
   }
 
   function _cancelFileChooser() {
-    _cancelFileChooser = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee2(click, state) {
+    _cancelFileChooser = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee18(click, state) {
       var form, body, request, resp;
-      return regenerator.wrap(function _callee2$(_context2) {
+      return regeneratorRuntime.wrap(function _callee18$(_context18) {
         while (1) {
-          switch (_context2.prev = _context2.next) {
+          switch (_context18.prev = _context18.next) {
             case 0:
               click.preventDefault();
               click.stopPropagation();
@@ -9272,13 +7338,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 working: true
               });
               Modals(state);
-              _context2.next = 11;
+              _context18.next = 11;
               return fetch(form.action, request).then(function (r) {
                 return r.json();
               });
 
             case 11:
-              resp = _context2.sent;
+              resp = _context18.sent;
 
               if (resp.error) {
                 alert("An error occurred");
@@ -9288,10 +7354,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
             case 14:
             case "end":
-              return _context2.stop();
+              return _context18.stop();
           }
         }
-      }, _callee2);
+      }, _callee18);
     }));
     return _cancelFileChooser.apply(this, arguments);
   }
@@ -9337,19 +7403,19 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function openModal() {
-    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-        _ref$modal = _ref.modal,
-        sessionId = _ref$modal.sessionId,
-        mode = _ref$modal.mode,
-        requestId = _ref$modal.requestId,
-        title = _ref$modal.title,
-        type = _ref$modal.type,
-        msg = _ref$modal.message;
+    var _ref32 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+        _ref32$modal = _ref32.modal,
+        sessionId = _ref32$modal.sessionId,
+        mode = _ref32$modal.mode,
+        requestId = _ref32$modal.requestId,
+        title = _ref32$modal.title,
+        type = _ref32$modal.type,
+        msg = _ref32$modal.message,
+        defaultPrompt = _ref32$modal.defaultPrompt,
+        url = _ref32$modal.url,
+        otherButton = _ref32$modal.otherButton,
+        csrfToken = _ref32$modal.csrfToken;
 
-    _ref$modal.defaultPrompt;
-    var url = _ref$modal.url,
-        otherButton = _ref$modal.otherButton,
-        csrfToken = _ref$modal.csrfToken;
     var state = arguments.length > 1 ? arguments[1] : undefined;
     var currentModal = {
       type: type,
@@ -9392,10 +7458,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   } // Permission request
 
 
-  function PermissionRequest(_ref2) {
-    var permission = _ref2.permission,
-        request = _ref2.request,
-        page = _ref2.page;
+  function PermissionRequest(_ref) {
+    var permission = _ref.permission,
+        request = _ref.request,
+        page = _ref.page;
     return d(_templateObject3$3 || (_templateObject3$3 = taggedTemplateLiteral(["\n        <article class=\"permission-request hidden\">\n          <h1>", "</h1>\n          <p class=request>", " is requesting ", " permission. The details are: ", "</p>\n          <button class=grant>Grant</button>\n          <button class=deny>Deny</button>\n        </article>\n      "])), permission, page, permission, request);
   }
 
@@ -9859,52 +7925,52 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     close(state);
   }
 
-  function fullScreen(_x, _x2) {
+  function fullScreen(_x22, _x23) {
     return _fullScreen.apply(this, arguments);
   }
 
   function _fullScreen() {
-    _fullScreen = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(click, state) {
-      return regenerator.wrap(function _callee$(_context) {
+    _fullScreen = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee19(click, state) {
+      return regeneratorRuntime.wrap(function _callee19$(_context19) {
         while (1) {
-          switch (_context.prev = _context.next) {
+          switch (_context19.prev = _context19.next) {
             case 0:
               if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
-                _context.next = 9;
+                _context19.next = 9;
                 break;
               }
 
               if (!document.webkitCancelFullscreen) {
-                _context.next = 5;
+                _context19.next = 5;
                 break;
               }
 
               document.webkitCancelFullscreen();
-              _context.next = 7;
+              _context19.next = 7;
               break;
 
             case 5:
-              _context.next = 7;
+              _context19.next = 7;
               return document.exitFullscreen();
 
             case 7:
-              _context.next = 15;
+              _context19.next = 15;
               break;
 
             case 9:
               if (!document.body.webkitRequestFullscreen) {
-                _context.next = 13;
+                _context19.next = 13;
                 break;
               }
 
               document.body.webkitRequestFullscreen({
                 navigationUI: 'hide'
               });
-              _context.next = 15;
+              _context19.next = 15;
               break;
 
             case 13:
-              _context.next = 15;
+              _context19.next = 15;
               return document.body.requestFullscreen({
                 navigationUI: 'hide'
               });
@@ -9914,10 +7980,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
             case 16:
             case "end":
-              return _context.stop();
+              return _context19.stop();
           }
         }
-      }, _callee);
+      }, _callee19);
     }));
     return _fullScreen.apply(this, arguments);
   }
@@ -9947,82 +8013,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
   var _templateObject$2, _templateObject2$2, _templateObject3$1, _templateObject4$1, _templateObject5$1, _templateObject6, _templateObject7;
 
-  function _createForOfIteratorHelper$5(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-    if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray$6(o)) || allowArrayLike && o && typeof o.length === "number") {
-        if (it) o = it;
-        var i = 0;
-
-        var F = function F() {};
-
-        return {
-          s: F,
-          n: function n() {
-            if (i >= o.length) return {
-              done: true
-            };
-            return {
-              done: false,
-              value: o[i++]
-            };
-          },
-          e: function e(_e) {
-            throw _e;
-          },
-          f: F
-        };
-      }
-
-      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-    }
-
-    var normalCompletion = true,
-        didErr = false,
-        err;
-    return {
-      s: function s() {
-        it = it.call(o);
-      },
-      n: function n() {
-        var step = it.next();
-        normalCompletion = step.done;
-        return step;
-      },
-      e: function e(_e2) {
-        didErr = true;
-        err = _e2;
-      },
-      f: function f() {
-        try {
-          if (!normalCompletion && it["return"] != null) it["return"]();
-        } finally {
-          if (didErr) throw err;
-        }
-      }
-    };
-  }
-
-  function _unsupportedIterableToArray$6(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$6(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$6(o, minLen);
-  }
-
-  function _arrayLikeToArray$6(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-
   var BROWSER_SIDE = function () {
     try {
       return self.DOMParser && true;
@@ -10031,7 +8021,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }();
 
-  var BuiltIns = [Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet, Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array, Int8Array, Int16Array, Int32Array, Uint8ClampedArray].concat(toConsumableArray(BROWSER_SIDE ? [Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer, FileList, Text, HTMLDocument, Document, DocumentFragment, Error, File, Event, EventTarget, URL] : [Buffer]));
+  var BuiltIns = [Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet, Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array, Int8Array, Int16Array, Int32Array, Uint8ClampedArray].concat(_toConsumableArray(BROWSER_SIDE ? [Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer, FileList, Text, HTMLDocument, Document, DocumentFragment, Error, File, Event, EventTarget, URL] : [Buffer]));
   var SEALED_DEFAULT = true;
 
   var isNone = function isNone(instance) {
@@ -10080,9 +8070,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function validate(type, instance) {
-    var _ref = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref$partial = _ref.partial,
-        partial = _ref$partial === void 0 ? false : _ref$partial;
+    var _ref33 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+        _ref33$partial = _ref33.partial,
+        partial = _ref33$partial === void 0 ? false : _ref33$partial;
 
     guardType(type);
     guardExists(type);
@@ -10115,7 +8105,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   resolved = _lookup.resolved,
                   lookupErrors = _lookup.errors;
 
-              bigErrors.push.apply(bigErrors, toConsumableArray(lookupErrors));
+              bigErrors.push.apply(bigErrors, _toConsumableArray(lookupErrors));
               if (lookupErrors.length) return false;
               var keyType = lookup(spec, kp).resolved;
 
@@ -10130,7 +8120,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   valid = _validate.valid,
                   validationErrors = _validate.errors;
 
-              bigErrors.push.apply(bigErrors, toConsumableArray(validationErrors));
+              bigErrors.push.apply(bigErrors, _toConsumableArray(validationErrors));
               return valid;
             });
           }
@@ -10152,7 +8142,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   };
                 } else if (type.isSumType) {
                   throw {
-                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat(toConsumableArray(type.types.keys()).map(function (t) {
+                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat(_toConsumableArray(type.types.keys()).map(function (t) {
                       return t.name;
                     })),
                     verify: verify,
@@ -10190,12 +8180,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 var errorKeys = [];
                 var tkp = new Set(type_key_paths);
 
-                var _iterator = _createForOfIteratorHelper$5(all_key_paths),
-                    _step;
+                var _iterator4 = _createForOfIteratorHelper(all_key_paths),
+                    _step4;
 
                 try {
-                  for (_iterator.s(); !(_step = _iterator.n()).done;) {
-                    var k = _step.value;
+                  for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+                    var k = _step4.value;
 
                     if (!tkp.has(k)) {
                       errorKeys.push({
@@ -10204,9 +8194,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                     }
                   }
                 } catch (err) {
-                  _iterator.e(err);
+                  _iterator4.e(err);
                 } finally {
-                  _iterator.f();
+                  _iterator4.f();
                 }
 
                 if (errorKeys.length) {
@@ -10230,35 +8220,35 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               containerErrors = _validate2.errors;
 
           var membersValid = true;
-          var _verified = true;
-          bigErrors.push.apply(bigErrors, toConsumableArray(containerErrors));
+          var _verified2 = true;
+          bigErrors.push.apply(bigErrors, _toConsumableArray(containerErrors));
 
           if (partial) {
             throw new TypeError("Type checking with option 'partial' is not a valid option for Collection types");
           } else {
             if (containerValid) {
-              membersValid = toConsumableArray(instance).every(function (member) {
+              membersValid = _toConsumableArray(instance).every(function (member) {
                 var _validate3 = validate(spec.member, member),
                     valid = _validate3.valid,
                     errors = _validate3.errors;
 
-                bigErrors.push.apply(bigErrors, toConsumableArray(errors));
+                bigErrors.push.apply(bigErrors, _toConsumableArray(errors));
                 return valid;
               });
             }
 
             if (verify) {
               try {
-                _verified = verify(instance);
+                _verified2 = verify(instance);
               } catch (e) {
                 bigErrors.push(e);
-                _verified = false;
+                _verified2 = false;
               }
             }
           }
 
           return {
-            valid: containerValid && membersValid && _verified,
+            valid: containerValid && membersValid && _verified2,
             errors: bigErrors
           };
         }
@@ -10344,11 +8334,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function defSub(type, spec) {
-    var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref2$verify = _ref2.verify,
-        verify = _ref2$verify === void 0 ? undefined : _ref2$verify,
-        _ref2$help = _ref2.help,
-        help = _ref2$help === void 0 ? '' : _ref2$help;
+    var _ref34 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+        _ref34$verify = _ref34.verify,
+        verify = _ref34$verify === void 0 ? undefined : _ref34$verify,
+        _ref34$help = _ref34.help,
+        help = _ref34$help === void 0 ? '' : _ref34$help;
 
     var name = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
     guardType(type);
@@ -10458,7 +8448,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           }
         }
       });
-      return toConsumableArray(keyPathSet);
+      return _toConsumableArray(keyPathSet);
     }
   }
 
@@ -10485,15 +8475,15 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     return check.apply(void 0, arguments);
   }
 
-  function defCollection(name, _ref3) {
-    var container = _ref3.container,
-        member = _ref3.member;
+  function defCollection(name, _ref) {
+    var container = _ref.container,
+        member = _ref.member;
 
-    var _ref4 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref4$sealed = _ref4.sealed,
-        sealed = _ref4$sealed === void 0 ? SEALED_DEFAULT : _ref4$sealed,
-        _ref4$verify = _ref4.verify,
-        verify = _ref4$verify === void 0 ? undefined : _ref4$verify;
+    var _ref35 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+        _ref35$sealed = _ref35.sealed,
+        sealed = _ref35$sealed === void 0 ? SEALED_DEFAULT : _ref35$sealed,
+        _ref35$verify = _ref35.verify,
+        verify = _ref35$verify === void 0 ? undefined : _ref35$verify;
 
     if (!name) throw new TypeError("Type must be named.");
     if (!container || !member) throw new TypeError("Type must be specified.");
@@ -10514,8 +8504,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     return t;
   }
 
-  function defTuple(name, _ref5) {
-    var pattern = _ref5.pattern;
+  function defTuple(name, _ref2) {
+    var pattern = _ref2.pattern;
     if (!name) throw new TypeError("Type must be named.");
     if (!pattern) throw new TypeError("Type must be specified.");
     var kind = 'def';
@@ -10573,19 +8563,19 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   };
 
   function def(name, spec) {
-    var _ref6 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref6$help = _ref6.help,
-        help = _ref6$help === void 0 ? '' : _ref6$help,
-        _ref6$verify = _ref6.verify,
-        verify = _ref6$verify === void 0 ? undefined : _ref6$verify,
-        _ref6$sealed = _ref6.sealed,
-        sealed = _ref6$sealed === void 0 ? undefined : _ref6$sealed,
-        _ref6$types = _ref6.types,
-        types = _ref6$types === void 0 ? undefined : _ref6$types,
-        _ref6$verifiers = _ref6.verifiers,
-        verifiers = _ref6$verifiers === void 0 ? undefined : _ref6$verifiers,
-        _ref6$native = _ref6["native"],
-        _native4 = _ref6$native === void 0 ? undefined : _ref6$native;
+    var _ref36 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+        _ref36$help = _ref36.help,
+        help = _ref36$help === void 0 ? '' : _ref36$help,
+        _ref36$verify = _ref36.verify,
+        verify = _ref36$verify === void 0 ? undefined : _ref36$verify,
+        _ref36$sealed = _ref36.sealed,
+        sealed = _ref36$sealed === void 0 ? undefined : _ref36$sealed,
+        _ref36$types = _ref36.types,
+        types = _ref36$types === void 0 ? undefined : _ref36$types,
+        _ref36$verifiers = _ref36.verifiers,
+        verifiers = _ref36$verifiers === void 0 ? undefined : _ref36$verifiers,
+        _ref36$native = _ref36["native"],
+        _native4 = _ref36$native === void 0 ? undefined : _ref36$native;
 
     if (!name) throw new TypeError("Type must be named.");
     guardRedefinition(name);
@@ -10781,8 +8771,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         var rules = Array.from(lastRule.cssRules);
         var lastIndex = rules.length - 1;
 
-        for (var _i = 0, _rules = rules; _i < _rules.length; _i++) {
-          var rule = _rules[_i];
+        for (var _i4 = 0, _rules = rules; _i4 < _rules.length; _i4++) {
+          var rule = _rules[_i4];
           prefixStyleRule(rule, lastRule, lastIndex, prefix, combinator);
         }
 
@@ -10831,18 +8821,18 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         var firstPseudoIndex = firstSel.indexOf(':');
 
         if (firstPseudoIndex > -1) {
-          var _ref4 = [firstSel.slice(0, firstPseudoIndex), firstSel.slice(firstPseudoIndex)],
-              pre = _ref4[0],
-              post = _ref4[1];
+          var _ref37 = [firstSel.slice(0, firstPseudoIndex), firstSel.slice(firstPseudoIndex)],
+              pre = _ref37[0],
+              post = _ref37[1];
           return "".concat(pre).concat(prefix).concat(post).concat(restSel) + (combinator == '' ? '' : ", ".concat(prefix).concat(combinator).concat(sel));
         } else return "".concat(firstSel).concat(prefix).concat(restSel) + (combinator == '' ? '' : ", ".concat(prefix).concat(combinator).concat(sel));
       } else {
         var _firstPseudoIndex = sel.indexOf(':');
 
         if (_firstPseudoIndex > -1) {
-          var _ref5 = [sel.slice(0, _firstPseudoIndex), sel.slice(_firstPseudoIndex)],
-              _pre = _ref5[0],
-              _post = _ref5[1];
+          var _ref38 = [sel.slice(0, _firstPseudoIndex), sel.slice(_firstPseudoIndex)],
+              _pre = _ref38[0],
+              _post = _ref38[1];
           return "".concat(_pre).concat(prefix).concat(_post) + (combinator == '' ? '' : ", ".concat(prefix).concat(combinator).concat(sel));
         } else return "".concat(sel).concat(prefix) + (combinator == '' ? '' : ", ".concat(prefix).concat(combinator).concat(sel));
       }
@@ -10863,82 +8853,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     } catch (e) {
       console.log(e, newRuleText, selectorText, lastRuleIndex, ss); //throw e;
     }
-  }
-
-  function _createForOfIteratorHelper$4(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-    if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray$5(o)) || allowArrayLike && o && typeof o.length === "number") {
-        if (it) o = it;
-        var i = 0;
-
-        var F = function F() {};
-
-        return {
-          s: F,
-          n: function n() {
-            if (i >= o.length) return {
-              done: true
-            };
-            return {
-              done: false,
-              value: o[i++]
-            };
-          },
-          e: function e(_e) {
-            throw _e;
-          },
-          f: F
-        };
-      }
-
-      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-    }
-
-    var normalCompletion = true,
-        didErr = false,
-        err;
-    return {
-      s: function s() {
-        it = it.call(o);
-      },
-      n: function n() {
-        var step = it.next();
-        normalCompletion = step.done;
-        return step;
-      },
-      e: function e(_e2) {
-        didErr = true;
-        err = _e2;
-      },
-      f: function f() {
-        try {
-          if (!normalCompletion && it["return"] != null) it["return"]();
-        } finally {
-          if (didErr) throw err;
-        }
-      }
-    };
-  }
-
-  function _unsupportedIterableToArray$5(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$5(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$5(o, minLen);
-  }
-
-  function _arrayLikeToArray$5(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
   }
 
   var InsertListeners = [];
@@ -10966,12 +8880,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       var AddedElements = [];
       var RemovedElements = [];
 
-      var _iterator = _createForOfIteratorHelper$4(mutations),
-          _step;
+      var _iterator5 = _createForOfIteratorHelper(mutations),
+          _step5;
 
       try {
-        for (_iterator.s(); !(_step = _iterator.n()).done;) {
-          var mutation = _step.value;
+        for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+          var mutation = _step5.value;
           var addedElements = Array.from(mutation.addedNodes);
           var removedElements = Array.from(mutation.removedNodes);
           addedElements.forEach(function (el) {
@@ -10983,7 +8897,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               AddedElements.push(el);
             }
 
-            (_AddedElements = AddedElements).push.apply(_AddedElements, toConsumableArray(el.querySelectorAll('[stylist]')));
+            (_AddedElements = AddedElements).push.apply(_AddedElements, _toConsumableArray(el.querySelectorAll('[stylist]')));
           });
           removedElements.forEach(function (el) {
             var _RemovedElements;
@@ -10994,13 +8908,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               RemovedElements.push(el);
             }
 
-            (_RemovedElements = RemovedElements).push.apply(_RemovedElements, toConsumableArray(el.querySelectorAll('[stylist]')));
+            (_RemovedElements = RemovedElements).push.apply(_RemovedElements, _toConsumableArray(el.querySelectorAll('[stylist]')));
           });
         }
       } catch (err) {
-        _iterator.e(err);
+        _iterator5.e(err);
       } finally {
-        _iterator.f();
+        _iterator5.f();
       }
 
       var AddedSet = new Set(AddedElements);
@@ -11016,44 +8930,44 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       });
 
       if (RemovedElements.length) {
-        var _iterator2 = _createForOfIteratorHelper$4(RemovedListeners),
-            _step2;
+        var _iterator6 = _createForOfIteratorHelper(RemovedListeners),
+            _step6;
 
         try {
-          for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-            var listener = _step2.value;
+          for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+            var listener = _step6.value;
 
             try {
-              listener.apply(void 0, toConsumableArray(RemovedElements));
+              listener.apply(void 0, _toConsumableArray(RemovedElements));
             } catch (e) {
               console.warn("Removed listener error", e, listener);
             }
           }
         } catch (err) {
-          _iterator2.e(err);
+          _iterator6.e(err);
         } finally {
-          _iterator2.f();
+          _iterator6.f();
         }
       }
 
       if (AddedElements.length) {
-        var _iterator3 = _createForOfIteratorHelper$4(InsertListeners),
-            _step3;
+        var _iterator7 = _createForOfIteratorHelper(InsertListeners),
+            _step7;
 
         try {
-          for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-            var _listener = _step3.value;
+          for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
+            var _listener = _step7.value;
 
             try {
-              _listener.apply(void 0, toConsumableArray(AddedElements));
+              _listener.apply(void 0, _toConsumableArray(AddedElements));
             } catch (e) {
               console.warn("Insert listener error", e, _listener);
             }
           }
         } catch (err) {
-          _iterator3.e(err);
+          _iterator7.e(err);
         } finally {
-          _iterator3.f();
+          _iterator7.f();
         }
       }
     });
@@ -11062,82 +8976,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       subtree: true
     });
     monitoring = true;
-  }
-
-  function _createForOfIteratorHelper$3(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-    if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray$4(o)) || allowArrayLike && o && typeof o.length === "number") {
-        if (it) o = it;
-        var i = 0;
-
-        var F = function F() {};
-
-        return {
-          s: F,
-          n: function n() {
-            if (i >= o.length) return {
-              done: true
-            };
-            return {
-              done: false,
-              value: o[i++]
-            };
-          },
-          e: function e(_e) {
-            throw _e;
-          },
-          f: F
-        };
-      }
-
-      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-    }
-
-    var normalCompletion = true,
-        didErr = false,
-        err;
-    return {
-      s: function s() {
-        it = it.call(o);
-      },
-      n: function n() {
-        var step = it.next();
-        normalCompletion = step.done;
-        return step;
-      },
-      e: function e(_e2) {
-        didErr = true;
-        err = _e2;
-      },
-      f: function f() {
-        try {
-          if (!normalCompletion && it["return"] != null) it["return"]();
-        } finally {
-          if (didErr) throw err;
-        }
-      }
-    };
-  }
-
-  function _unsupportedIterableToArray$4(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$4(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$4(o, minLen);
-  }
-
-  function _arrayLikeToArray$4(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
   }
 
   var stylistFunctions = new Map();
@@ -11194,7 +9032,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
     if (!initialized) {
       var initialEls = Array.from(document.querySelectorAll('[stylist]'));
-      associateStylistFunctions.apply(void 0, toConsumableArray(initialEls));
+      associateStylistFunctions.apply(void 0, _toConsumableArray(initialEls));
       initialized = true;
     }
 
@@ -11210,20 +9048,20 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       });
       if (els.length == 0) return;
 
-      var _iterator = _createForOfIteratorHelper$3(els),
-          _step;
+      var _iterator8 = _createForOfIteratorHelper(els),
+          _step8;
 
       try {
-        for (_iterator.s(); !(_step = _iterator.n()).done;) {
-          var el = _step.value;
+        for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
+          var el = _step8.value;
           var stylistNames = (el.getAttribute('stylist') || '').split(/\s+/g);
 
-          var _iterator2 = _createForOfIteratorHelper$3(stylistNames),
-              _step2;
+          var _iterator9 = _createForOfIteratorHelper(stylistNames),
+              _step9;
 
           try {
-            for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-              var stylistName = _step2.value;
+            for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
+              var stylistName = _step9.value;
               var stylist = stylistFunctions.get(stylistName);
               if (!stylist) throw new TypeError("Stylist named by ".concat(stylistName, " is unknown."));
               var className = randomClass();
@@ -11231,15 +9069,15 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               associate(className, el, stylist, state);
             }
           } catch (err) {
-            _iterator2.e(err);
+            _iterator9.e(err);
           } finally {
-            _iterator2.f();
+            _iterator9.f();
           }
         }
       } catch (err) {
-        _iterator.e(err);
+        _iterator8.e(err);
       } finally {
-        _iterator.f();
+        _iterator8.f();
       }
     }
   } // an object whose properties are functions that are stylist functions
@@ -11248,8 +9086,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   function addMoreStylistFunctions(functionsObject) {
     var toRegister = [];
 
-    var _loop = function _loop() {
-      var funcName = _Object$keys[_i];
+    var _loop4 = function _loop4() {
+      var funcName = _Object$keys3[_i5];
       var value = functionsObject[funcName];
       if (typeof value !== "function") throw new TypeError("Functions object must only contain functions."); // this prevents a bug where we miss an existing style element in 
       // a check for a style element based on the stylist.name property
@@ -11263,8 +9101,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       }
     };
 
-    for (var _i = 0, _Object$keys = Object.keys(functionsObject); _i < _Object$keys.length; _i++) {
-      _loop();
+    for (var _i5 = 0, _Object$keys3 = Object.keys(functionsObject); _i5 < _Object$keys3.length; _i5++) {
+      _loop4();
     }
 
     while (toRegister.length) {
@@ -11274,7 +9112,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
   function randomClass() {
     var _generateUniquePrefix = generateUniquePrefix(),
-        _generateUniquePrefix2 = slicedToArray(_generateUniquePrefix.prefix, 1),
+        _generateUniquePrefix2 = _slicedToArray(_generateUniquePrefix.prefix, 1),
         className = _generateUniquePrefix2[0];
 
     return className;
@@ -11351,24 +9189,24 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     });
     if (els.length == 0) return;
 
-    var _iterator3 = _createForOfIteratorHelper$3(els),
-        _step3;
+    var _iterator10 = _createForOfIteratorHelper(els),
+        _step10;
 
     try {
-      var _loop2 = function _loop2() {
-        var el = _step3.value;
+      var _loop5 = function _loop5() {
+        var el = _step10.value;
         el.classList.forEach(function (className) {
           return className.startsWith('c3s') && disassociate(className, el);
         });
       };
 
-      for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-        _loop2();
+      for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
+        _loop5();
       }
     } catch (err) {
-      _iterator3.e(err);
+      _iterator10.e(err);
     } finally {
-      _iterator3.f();
+      _iterator10.f();
     }
   }
 
@@ -11640,25 +9478,25 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     state.viewState.draw = function () {
       return d(_templateObject || (_templateObject = taggedTemplateLiteral(["\n      <main class=\"voodoo\" bond=", " stylist=\"styleVoodooMain\">\n        ", "\n        ", "\n        ", "\n        <article class=tab-viewport stylist=\"styleTabViewport styleContextMenu\">\n          ", "\n          ", "\n          <select id=selectinput stylist=\"styleSelectInput\"\n            input=", "\n            >\n            <option value=\"\" disabled>Select an option</option>\n          </select>\n        </article>\n        ", "\n      </main>\n      <audio bond=", " autoplay loop id=audio>\n        <source src=\"", "\" type=audio/mp3>\n      </audio>\n      ", "\n    "])), bondTasks, subviews.BandwidthIndicator(state), subviews.TabList(state), subviews.Controls(state), subviews.LoadingIndicator(state), state.useViewFrame ? state.demoMode ? d(_templateObject2 || (_templateObject2 = taggedTemplateLiteral(["\n                  <iframe name=viewFrame \n                    scrolling=yes\n                    src=/plugins/demo/index.html\n                    load=", "\n                    bond=", "\n                  ></iframe>\n                "])), [function (loaded) {
         return loaded.target.hasLoaded = true;
-      }, state.installFrameListener].concat(toConsumableArray(canvasBondTasks)), [function (el) {
+      }, state.installFrameListener].concat(_toConsumableArray(canvasBondTasks)), [function (el) {
         return state.viewState.viewFrameEl = el;
-      }, asyncSizeBrowserToBounds, emulateNavigator].concat(toConsumableArray(canvasBondTasks))) : state.factoryMode ? d(_templateObject3 || (_templateObject3 = taggedTemplateLiteral(["\n                    <iframe name=viewFrame \n                      scrolling=yes\n                      load=", "\n                      bond=", "\n                    ></iframe>\n                  "])), [function (loaded) {
+      }, asyncSizeBrowserToBounds, emulateNavigator].concat(_toConsumableArray(canvasBondTasks))) : state.factoryMode ? d(_templateObject3 || (_templateObject3 = taggedTemplateLiteral(["\n                    <iframe name=viewFrame \n                      scrolling=yes\n                      load=", "\n                      bond=", "\n                    ></iframe>\n                  "])), [function (loaded) {
         return loaded.target.hasLoaded = true;
-      }].concat(toConsumableArray(canvasBondTasks)), [function (el) {
+      }].concat(_toConsumableArray(canvasBondTasks)), [function (el) {
         return state.viewState.viewFrameEl = el;
-      }, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener].concat(toConsumableArray(canvasBondTasks), [function (el) {
+      }, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener].concat(_toConsumableArray(canvasBondTasks), [function (el) {
         return el.src = "/plugins/projector/".concat(isBundle() ? 'bundle' : 'index', ".html");
       }])) : d(_templateObject4 || (_templateObject4 = taggedTemplateLiteral(["\n                    <iframe name=viewFrame \n                      scrolling=yes\n                      load=", "\n                      bond=", "\n                    ></iframe>\n                  "])), [function (loaded) {
         return loaded.target.hasLoaded = true;
-      }].concat(toConsumableArray(canvasBondTasks)), [function (el) {
+      }].concat(_toConsumableArray(canvasBondTasks)), [function (el) {
         return state.viewState.viewFrameEl = el;
-      }, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener].concat(toConsumableArray(canvasBondTasks), [function (el) {
+      }, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener].concat(_toConsumableArray(canvasBondTasks), [function (el) {
         return el.src = "/plugins/appminifier/".concat(isBundle() ? 'bundle' : 'index', ".html");
       }])) : d(_templateObject5 || (_templateObject5 = taggedTemplateLiteral(["\n              <canvas\n                click=", "\n                bond=", "\n                touchstart:passive=", "\n                touchmove=", "\n                wheel:passive=", "\n                mousemove:passive=", "         \n                mousedown=", "         \n                mouseup=", "         \n                pointermove:passive=", "         \n                pointerdown=", "         \n                pointerup=", "         \n                contextmenu=", "\n              ></canvas>\n            "])), [elogit, function () {
         if (viewState.shouldHaveFocus && document.activeElement != viewState.shouldHaveFocus) {
           viewState.shouldHaveFocus.focus();
         }
-      }], [saveCanvas, asyncSizeBrowserToBounds, emulateNavigator].concat(toConsumableArray(canvasBondTasks)), [elogit, retargetTouchScroll], [function (e) {
+      }], [saveCanvas, asyncSizeBrowserToBounds, emulateNavigator].concat(_toConsumableArray(canvasBondTasks)), [elogit, retargetTouchScroll], [function (e) {
         return e.preventDefault();
       }, elogit, throttle(retargetTouchScroll, state.EVENT_THROTTLE_MS)], throttle(H, state.EVENT_THROTTLE_MS), [elogit, throttle(H, state.EVENT_THROTTLE_MS)], [elogit, H], [elogit, H], [elogit, throttle(H, state.EVENT_THROTTLE_MS)], [deviceIsMobile() ? function (e) {
         return startTimer(e, state.viewState);
@@ -11760,13 +9598,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     var clientX = touch.clientX,
         clientY = touch.clientY;
 
-    var _getBitmapCoordinates = getBitmapCoordinates({
+    var _getBitmapCoordinates2 = getBitmapCoordinates({
       target: target,
       clientX: clientX,
       clientY: clientY
     }),
-        bitmapX = _getBitmapCoordinates.bitmapX,
-        bitmapY = _getBitmapCoordinates.bitmapY;
+        bitmapX = _getBitmapCoordinates2.bitmapX,
+        bitmapY = _getBitmapCoordinates2.bitmapY;
 
     if (type == 'touchmove') {
       event.preventDefault();
@@ -11797,144 +9635,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     H(ev);
   }
 
-  function _arrayWithHoles(arr) {
-    if (Array.isArray(arr)) return arr;
-  }
-
-  function _iterableToArrayLimit(arr, i) {
-    var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"];
-
-    if (_i == null) return;
-    var _arr = [];
-    var _n = true;
-    var _d = false;
-
-    var _s, _e;
-
-    try {
-      for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);
-
-        if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;
-      _e = err;
-    } finally {
-      try {
-        if (!_n && _i["return"] != null) _i["return"]();
-      } finally {
-        if (_d) throw _e;
-      }
-    }
-
-    return _arr;
-  }
-
-  function _arrayLikeToArray$3(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-
-  function _unsupportedIterableToArray$3(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$3(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$3(o, minLen);
-  }
-
-  function _nonIterableRest() {
-    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-  }
-
-  function _slicedToArray(arr, i) {
-    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray$3(arr, i) || _nonIterableRest();
-  }
-
-  function _createForOfIteratorHelper$2(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-    if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray$2(o)) || allowArrayLike && o && typeof o.length === "number") {
-        if (it) o = it;
-        var i = 0;
-
-        var F = function F() {};
-
-        return {
-          s: F,
-          n: function n() {
-            if (i >= o.length) return {
-              done: true
-            };
-            return {
-              done: false,
-              value: o[i++]
-            };
-          },
-          e: function e(_e) {
-            throw _e;
-          },
-          f: F
-        };
-      }
-
-      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-    }
-
-    var normalCompletion = true,
-        didErr = false,
-        err;
-    return {
-      s: function s() {
-        it = it.call(o);
-      },
-      n: function n() {
-        var step = it.next();
-        normalCompletion = step.done;
-        return step;
-      },
-      e: function e(_e2) {
-        didErr = true;
-        err = _e2;
-      },
-      f: function f() {
-        try {
-          if (!normalCompletion && it["return"] != null) it["return"]();
-        } finally {
-          if (didErr) throw err;
-        }
-      }
-    };
-  }
-
-  function _unsupportedIterableToArray$2(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$2(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$2(o, minLen);
-  }
-
-  function _arrayLikeToArray$2(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-
-  var FocusCache$1 = function FocusCache() {
+  var FocusCache$1 = function FocusCache$1() {
     var focusSaver = {
       doc: null,
       oldValue: '',
@@ -11971,9 +9672,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
           var updatedEl;
 
-          var _ref = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "",
-              _ref2 = _slicedToArray(_ref, 1),
-              oldId = _ref2[0];
+          var _ref39 = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "",
+              _ref40 = _slicedToArray(_ref39, 1),
+              oldId = _ref40[0];
 
           var dataIdSelector = "".concat(oldFocus.localName, "[zig^=\"").concat(oldId, "\"]");
           var byDataId = focusSaver.doc.querySelector(dataIdSelector);
@@ -12008,30 +9709,30 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     return focusSaver;
   };
 
-  function handleTreeUpdate$1(_ref4, state) {
-    var _ref4$treeUpdate = _ref4.treeUpdate,
-        open = _ref4$treeUpdate.open,
-        targetId = _ref4$treeUpdate.targetId,
-        dontFocus = _ref4$treeUpdate.dontFocus,
-        runFuncs = _ref4$treeUpdate.runFuncs,
-        executionContextId = _ref4.executionContextId;
+  function handleTreeUpdate$1(_ref2, state) {
+    var _ref2$treeUpdate = _ref2.treeUpdate,
+        open = _ref2$treeUpdate.open,
+        targetId = _ref2$treeUpdate.targetId,
+        dontFocus = _ref2$treeUpdate.dontFocus,
+        runFuncs = _ref2$treeUpdate.runFuncs,
+        executionContextId = _ref2.executionContextId;
 
     if (targetId !== state.activeTarget) {
-      var cache = state.domCache.get(targetId);
+      var _cache = state.domCache.get(targetId);
 
-      if (!cache) {
-        cache = {
+      if (!_cache) {
+        _cache = {
           contextId: '',
           domTree: '',
           focusSaver: FocusCache$1()
         };
-        state.domCache.set(targetId, cache);
+        state.domCache.set(targetId, _cache);
       } // when we have  iframes this will be dangerous
       // to flatten contextId (which will be multiple per page 1 for each iframe)
 
 
-      cache.contextId = executionContextId;
-      cache.domTree = open;
+      _cache.contextId = executionContextId;
+      _cache.domTree = open;
       return;
     }
 
@@ -12053,14 +9754,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }
 
-  function updateTree$1(_ref5, state) {
-    var domTree = _ref5.domTree,
-        targetId = _ref5.targetId,
-        contextId = _ref5.contextId,
-        _ref5$dontFocus = _ref5.dontFocus,
-        dontFocus = _ref5$dontFocus === void 0 ? false : _ref5$dontFocus,
-        _ref5$runFuncs = _ref5.runFuncs,
-        runFuncs = _ref5$runFuncs === void 0 ? [] : _ref5$runFuncs;
+  function updateTree$1(_ref3, state) {
+    var domTree = _ref3.domTree,
+        targetId = _ref3.targetId,
+        contextId = _ref3.contextId,
+        _ref3$dontFocus = _ref3.dontFocus,
+        dontFocus = _ref3$dontFocus === void 0 ? false : _ref3$dontFocus,
+        _ref3$runFuncs = _ref3.runFuncs,
+        runFuncs = _ref3$runFuncs === void 0 ? [] : _ref3$runFuncs;
     var frame = getViewFrame$1(state);
     var doc = getViewWindow$2(state).document;
     var cache = state.domCache.get(targetId);
@@ -12106,45 +9807,41 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         if (frame.hasLoaded) {
           var win = getViewWindow$2(state);
 
-          var _iterator = _createForOfIteratorHelper$2(runFuncs),
-              _step;
+          var _iterator11 = _createForOfIteratorHelper(runFuncs),
+              _step11;
 
           try {
-            for (_iterator.s(); !(_step = _iterator.n()).done;) {
-              var name = _step.value;
+            for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
+              var name = _step11.value;
 
               try {
                 win[name]();
-              } catch (e) {
-                DEBUG.val && console.warn(name, e);
-              }
+              } catch (e) {}
             }
           } catch (err) {
-            _iterator.e(err);
+            _iterator11.e(err);
           } finally {
-            _iterator.f();
+            _iterator11.f();
           }
         } else {
           frame.addEventListener('load', function () {
             var win = getViewWindow$2(state);
 
-            var _iterator2 = _createForOfIteratorHelper$2(runFuncs),
-                _step2;
+            var _iterator12 = _createForOfIteratorHelper(runFuncs),
+                _step12;
 
             try {
-              for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-                var _name = _step2.value;
+              for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
+                var _name = _step12.value;
 
                 try {
                   win[_name]();
-                } catch (e) {
-                  DEBUG.val && console.warn(_name, e);
-                }
+                } catch (e) {}
               }
             } catch (err) {
-              _iterator2.e(err);
+              _iterator12.e(err);
             } finally {
-              _iterator2.f();
+              _iterator12.f();
             }
           });
         }
@@ -12152,8 +9849,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }
 
-  function scrollToTop$1(_ref6, state) {
-    var navigated = _ref6.navigated;
+  function scrollToTop$1(_ref4, state) {
+    var navigated = _ref4.navigated;
     setTimeout(function () {
       if (navigated.targetId !== state.activeTarget) return;
 
@@ -12163,9 +9860,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }, 40);
   }
 
-  function scrollTo$2(_ref7, state) {
-    var scrollY = _ref7.scrollY,
-        scrollX = _ref7.scrollX;
+  function scrollTo$2(_ref5, state) {
+    var scrollY = _ref5.scrollY,
+        scrollX = _ref5.scrollX;
     setTimeout(function () {
       if (state.viewState.viewFrameEl) {
         getViewWindow$2(state).scrollTo(scrollX, scrollY);
@@ -12195,25 +9892,26 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       self.addEventListener('message', function (e) {
         if (e.data && e.data.event) {
           var event = e.data.event;
-          var cache = state.domCache.get(state.activeTarget);
 
-          if (cache) {
-            event.contextId = cache.contextId;
+          var _cache2 = state.domCache.get(state.activeTarget);
+
+          if (_cache2) {
+            event.contextId = _cache2.contextId;
           }
 
           if (event.type.endsWith('move')) {
             queue.send(BUFFERED_FRAME_EVENT$2);
           } else if (event.custom) {
             if (event.type == 'scrollToEnd') {
-              var _cache = state.domCache.get(state.activeTarget);
+              var _cache3 = state.domCache.get(state.activeTarget);
 
-              if (!_cache) {
-                _cache = {};
-                state.domCache.set(state.activeTarget, _cache);
+              if (!_cache3) {
+                _cache3 = {};
+                state.domCache.set(state.activeTarget, _cache3);
               }
 
-              _cache.scrollTop = event.scrollTop;
-              _cache.scrollLeft = event.scrollLeft;
+              _cache3.scrollTop = event.scrollTop;
+              _cache3.scrollLeft = event.scrollLeft;
             }
 
             state.H(event);
@@ -12368,82 +10066,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     state.domCache["delete"](targetId);
   }
 
-  function _createForOfIteratorHelper$1(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-    if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray$1(o)) || allowArrayLike && o && typeof o.length === "number") {
-        if (it) o = it;
-        var i = 0;
-
-        var F = function F() {};
-
-        return {
-          s: F,
-          n: function n() {
-            if (i >= o.length) return {
-              done: true
-            };
-            return {
-              done: false,
-              value: o[i++]
-            };
-          },
-          e: function e(_e) {
-            throw _e;
-          },
-          f: F
-        };
-      }
-
-      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-    }
-
-    var normalCompletion = true,
-        didErr = false,
-        err;
-    return {
-      s: function s() {
-        it = it.call(o);
-      },
-      n: function n() {
-        var step = it.next();
-        normalCompletion = step.done;
-        return step;
-      },
-      e: function e(_e2) {
-        didErr = true;
-        err = _e2;
-      },
-      f: function f() {
-        try {
-          if (!normalCompletion && it["return"] != null) it["return"]();
-        } finally {
-          if (didErr) throw err;
-        }
-      }
-    };
-  }
-
-  function _unsupportedIterableToArray$1(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$1(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$1(o, minLen);
-  }
-
-  function _arrayLikeToArray$1(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-
   var FocusCache = function FocusCache() {
     var focusSaver = {
       doc: null,
@@ -12481,9 +10103,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
           var updatedEl;
 
-          var _ref = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "",
-              _ref2 = _slicedToArray(_ref, 1),
-              oldId = _ref2[0];
+          var _ref41 = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "",
+              _ref42 = _slicedToArray(_ref41, 1),
+              oldId = _ref42[0];
 
           var dataIdSelector = "".concat(oldFocus.localName, "[zig^=\"").concat(oldId, "\"]");
           var byDataId = focusSaver.doc.querySelector(dataIdSelector);
@@ -12518,9 +10140,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     return focusSaver;
   };
 
-  function resetFocusCache(_ref3, state) {
-    var targetId = _ref3.navigated.targetId,
-        executionContextId = _ref3.executionContextId;
+  function resetFocusCache(_ref, state) {
+    var targetId = _ref.navigated.targetId,
+        executionContextId = _ref.executionContextId;
     var cache = state.domCache.get(targetId);
 
     if (!cache) {
@@ -12539,30 +10161,30 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }
 
-  function handleTreeUpdate(_ref4, state) {
-    var _ref4$treeUpdate = _ref4.treeUpdate,
-        open = _ref4$treeUpdate.open,
-        targetId = _ref4$treeUpdate.targetId,
-        dontFocus = _ref4$treeUpdate.dontFocus,
-        runFuncs = _ref4$treeUpdate.runFuncs,
-        executionContextId = _ref4.executionContextId;
+  function handleTreeUpdate(_ref2, state) {
+    var _ref2$treeUpdate2 = _ref2.treeUpdate,
+        open = _ref2$treeUpdate2.open,
+        targetId = _ref2$treeUpdate2.targetId,
+        dontFocus = _ref2$treeUpdate2.dontFocus,
+        runFuncs = _ref2$treeUpdate2.runFuncs,
+        executionContextId = _ref2.executionContextId;
 
     if (targetId !== state.activeTarget) {
-      var cache = state.domCache.get(targetId);
+      var _cache4 = state.domCache.get(targetId);
 
-      if (!cache) {
-        cache = {
+      if (!_cache4) {
+        _cache4 = {
           contextId: '',
           domTree: '',
           focusSaver: FocusCache()
         };
-        state.domCache.set(targetId, cache);
+        state.domCache.set(targetId, _cache4);
       } // when we have  iframes this will be dangerous
       // to flatten contextId (which will be multiple per page 1 for each iframe)
 
 
-      cache.contextId = executionContextId;
-      cache.domTree = open;
+      _cache4.contextId = executionContextId;
+      _cache4.domTree = open;
       return;
     }
 
@@ -12584,14 +10206,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }
 
-  function updateTree(_ref5, state) {
-    var domTree = _ref5.domTree,
-        targetId = _ref5.targetId,
-        contextId = _ref5.contextId,
-        _ref5$dontFocus = _ref5.dontFocus,
-        dontFocus = _ref5$dontFocus === void 0 ? false : _ref5$dontFocus,
-        _ref5$runFuncs = _ref5.runFuncs,
-        runFuncs = _ref5$runFuncs === void 0 ? [] : _ref5$runFuncs;
+  function updateTree(_ref3, state) {
+    var domTree = _ref3.domTree,
+        targetId = _ref3.targetId,
+        contextId = _ref3.contextId,
+        _ref3$dontFocus2 = _ref3.dontFocus,
+        dontFocus = _ref3$dontFocus2 === void 0 ? false : _ref3$dontFocus2,
+        _ref3$runFuncs2 = _ref3.runFuncs,
+        runFuncs = _ref3$runFuncs2 === void 0 ? [] : _ref3$runFuncs2;
     var frame = getViewFrame(state);
     var doc = getViewWindow$1(state).document;
     var cache = state.domCache.get(targetId);
@@ -12637,45 +10259,41 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         if (frame.hasLoaded) {
           var win = getViewWindow$1(state);
 
-          var _iterator = _createForOfIteratorHelper$1(runFuncs),
-              _step;
+          var _iterator13 = _createForOfIteratorHelper(runFuncs),
+              _step13;
 
           try {
-            for (_iterator.s(); !(_step = _iterator.n()).done;) {
-              var name = _step.value;
+            for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
+              var name = _step13.value;
 
               try {
                 win[name]();
-              } catch (e) {
-                DEBUG.val && console.warn(name, e);
-              }
+              } catch (e) {}
             }
           } catch (err) {
-            _iterator.e(err);
+            _iterator13.e(err);
           } finally {
-            _iterator.f();
+            _iterator13.f();
           }
         } else {
           frame.addEventListener('load', function () {
             var win = getViewWindow$1(state);
 
-            var _iterator2 = _createForOfIteratorHelper$1(runFuncs),
-                _step2;
+            var _iterator14 = _createForOfIteratorHelper(runFuncs),
+                _step14;
 
             try {
-              for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-                var _name = _step2.value;
+              for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
+                var _name2 = _step14.value;
 
                 try {
-                  win[_name]();
-                } catch (e) {
-                  DEBUG.val && console.warn(_name, e);
-                }
+                  win[_name2]();
+                } catch (e) {}
               }
             } catch (err) {
-              _iterator2.e(err);
+              _iterator14.e(err);
             } finally {
-              _iterator2.f();
+              _iterator14.f();
             }
           });
         }
@@ -12683,8 +10301,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }
 
-  function scrollToTop(_ref6, state) {
-    var navigated = _ref6.navigated;
+  function scrollToTop(_ref4, state) {
+    var navigated = _ref4.navigated;
     setTimeout(function () {
       if (navigated.targetId !== state.activeTarget) return;
 
@@ -12694,9 +10312,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }, 40);
   }
 
-  function scrollTo$1(_ref7, state) {
-    var scrollY = _ref7.scrollY,
-        scrollX = _ref7.scrollX;
+  function scrollTo$1(_ref5, state) {
+    var scrollY = _ref5.scrollY,
+        scrollX = _ref5.scrollX;
     setTimeout(function () {
       if (state.viewState.viewFrameEl) {
         getViewWindow$1(state).scrollTo(scrollX, scrollY);
@@ -12704,53 +10322,53 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }, 40);
   }
 
-  function handleTreeDiff(_ref8, state) {
-    var _ref8$treeDiff = _ref8.treeDiff,
-        diffs = _ref8$treeDiff.diffs,
-        targetId = _ref8$treeDiff.targetId,
-        executionContextId = _ref8.executionContextId;
+  function handleTreeDiff(_ref6, state) {
+    var _ref6$treeDiff = _ref6.treeDiff,
+        diffs = _ref6$treeDiff.diffs,
+        targetId = _ref6$treeDiff.targetId,
+        executionContextId = _ref6.executionContextId;
 
     if (targetId !== state.activeTarget) {
-      var cache = state.domCache.get(targetId);
+      var _cache5 = state.domCache.get(targetId);
 
-      if (!cache) {
-        cache = {
+      if (!_cache5) {
+        _cache5 = {
           contextId: '',
           domTree: '',
           focusSaver: FocusCache()
         };
-        state.domCache.set(targetId, cache);
+        state.domCache.set(targetId, _cache5);
       } // when we have  iframes this will be dangerous
       // to flatten contextId (which will be multiple per page 1 for each iframe)
 
 
-      cache.contextId = executionContextId;
-      cache.diffs = diffs;
+      _cache5.contextId = executionContextId;
+      _cache5.diffs = diffs;
       return;
     }
 
     if (state.viewState.viewFrameEl) {
       var later = [];
 
-      var _iterator3 = _createForOfIteratorHelper$1(diffs),
-          _step3;
+      var _iterator15 = _createForOfIteratorHelper(diffs),
+          _step15;
 
       try {
-        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-          var _diff = _step3.value;
+        for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
+          var _diff = _step15.value;
 
-          var _result = patchTree(_diff, state);
+          var _result2 = patchTree(_diff, state);
 
-          if (!_result) later.push(_diff);
+          if (!_result2) later.push(_diff);
         }
       } catch (err) {
-        _iterator3.e(err);
+        _iterator15.e(err);
       } finally {
-        _iterator3.f();
+        _iterator15.f();
       }
 
-      for (var _i = 0, _later = later; _i < _later.length; _i++) {
-        var diff = _later[_i];
+      for (var _i6 = 0, _later = later; _i6 < _later.length; _i6++) {
+        var diff = _later[_i6];
         var result = patchTree(diff, state);
 
         if (!result) {
@@ -12760,13 +10378,13 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }
 
-  function patchTree(_ref9, state) {
-    var insert = _ref9.insert,
-        remove = _ref9.remove;
+  function patchTree(_ref7, state) {
+    var insert = _ref7.insert,
+        remove = _ref7.remove;
     var doc = getViewWindow$1(state).document;
 
-    var _ref10 = insert || remove,
-        parentZig = _ref10.parentZig;
+    var _ref43 = insert || remove,
+        parentZig = _ref43.parentZig;
 
     var parentZigSelector = "[zig=\"".concat(parentZig, "\"]");
     var parentElement = doc.querySelector(parentZigSelector);
@@ -12820,25 +10438,26 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       self.addEventListener('message', function (e) {
         if (e.data && e.data.event) {
           var event = e.data.event;
-          var cache = state.domCache.get(state.activeTarget);
 
-          if (cache) {
-            event.contextId = cache.contextId;
+          var _cache6 = state.domCache.get(state.activeTarget);
+
+          if (_cache6) {
+            event.contextId = _cache6.contextId;
           }
 
           if (event.type.endsWith('move')) {
             queue.send(BUFFERED_FRAME_EVENT$1);
           } else if (event.custom) {
             if (event.type == 'scrollToEnd') {
-              var _cache = state.domCache.get(state.activeTarget);
+              var _cache7 = state.domCache.get(state.activeTarget);
 
-              if (!_cache) {
-                _cache = {};
-                state.domCache.set(state.activeTarget, _cache);
+              if (!_cache7) {
+                _cache7 = {};
+                state.domCache.set(state.activeTarget, _cache7);
               }
 
-              _cache.scrollTop = event.scrollTop;
-              _cache.scrollLeft = event.scrollLeft;
+              _cache7.scrollTop = event.scrollTop;
+              _cache7.scrollLeft = event.scrollLeft;
             }
 
             state.H(event);
@@ -13057,25 +10676,26 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
       self.addEventListener('message', function (e) {
         if (e.data && e.data.event) {
           var event = e.data.event;
-          var cache = state.domCache.get(state.activeTarget);
 
-          if (cache) {
-            event.contextId = cache.contextId;
+          var _cache8 = state.domCache.get(state.activeTarget);
+
+          if (_cache8) {
+            event.contextId = _cache8.contextId;
           }
 
           if (event.type.endsWith('move')) {
             queue.send(BUFFERED_FRAME_EVENT);
           } else if (event.custom) {
             if (event.type == 'scrollToEnd') {
-              var _cache = state.domCache.get(state.activeTarget);
+              var _cache9 = state.domCache.get(state.activeTarget);
 
-              if (!_cache) {
-                _cache = {};
-                state.domCache.set(state.activeTarget, _cache);
+              if (!_cache9) {
+                _cache9 = {};
+                state.domCache.set(state.activeTarget, _cache9);
               }
 
-              _cache.scrollTop = event.scrollTop;
-              _cache.scrollLeft = event.scrollLeft;
+              _cache9.scrollTop = event.scrollTop;
+              _cache9.scrollLeft = event.scrollLeft;
             }
 
             state.H(event);
@@ -13178,11 +10798,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
         // save scroll position of last target before we update window
         // using block scope oorah
         if (lastCache) {
-          var _scrollX = win.pageXOffset,
-              _scrollY = win.pageYOffset;
+          var _scrollX2 = win.pageXOffset,
+              _scrollY2 = win.pageYOffset;
           Object.assign(lastCache, {
-            scrollX: _scrollX,
-            scrollY: _scrollY
+            scrollX: _scrollX2,
+            scrollY: _scrollY2
           });
         }
 
@@ -13219,82 +10839,6 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
     }
   }
 
-  function _createForOfIteratorHelper(o, allowArrayLike) {
-    var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
-
-    if (!it) {
-      if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
-        if (it) o = it;
-        var i = 0;
-
-        var F = function F() {};
-
-        return {
-          s: F,
-          n: function n() {
-            if (i >= o.length) return {
-              done: true
-            };
-            return {
-              done: false,
-              value: o[i++]
-            };
-          },
-          e: function e(_e) {
-            throw _e;
-          },
-          f: F
-        };
-      }
-
-      throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-    }
-
-    var normalCompletion = true,
-        didErr = false,
-        err;
-    return {
-      s: function s() {
-        it = it.call(o);
-      },
-      n: function n() {
-        var step = it.next();
-        normalCompletion = step.done;
-        return step;
-      },
-      e: function e(_e2) {
-        didErr = true;
-        err = _e2;
-      },
-      f: function f() {
-        try {
-          if (!normalCompletion && it["return"] != null) it["return"]();
-        } finally {
-          if (didErr) throw err;
-        }
-      }
-    };
-  }
-
-  function _unsupportedIterableToArray(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
-  }
-
-  function _arrayLikeToArray(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-
   var ThrottledEvents = new Set(["mousemove", "pointermove", "touchmove"]);
   var CancelWhenSyncValue = new Set(["keydown", "keyup", "keypress", "compositionstart", "compositionend", "compositionupdate"]);
 
@@ -13318,24 +10862,24 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
   var latestRequestId = 0;
 
-  function voodoo(_x, _x2) {
+  function voodoo(_x24, _x25) {
     return _voodoo.apply(this, arguments);
   }
 
   function _voodoo() {
-    _voodoo = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee7(selector, position) {
-      var _ref,
-          _ref$postInstallTasks,
+    _voodoo = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee26(selector, position) {
+      var _ref45,
+          _ref45$postInstallTas,
           postInstallTasks,
-          _ref$preInstallTasks,
+          _ref45$preInstallTask,
           preInstallTasks,
-          _ref$canvasBondTasks,
+          _ref45$canvasBondTask,
           canvasBondTasks,
-          _ref$bondTasks,
+          _ref45$bondTasks,
           bondTasks,
-          _ref$useViewFrame,
+          _ref45$useViewFrame,
           useViewFrame,
-          _ref$demoMode,
+          _ref45$demoMode,
           demoMode,
           sessionToken,
           closed,
@@ -13345,22 +10889,21 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           tabs,
           activeTarget,
           requestId,
-          funcList,
           state,
           updateTabs,
           taskUrl,
           queue,
           plugins,
           preInstallView,
-          _iterator,
-          _step,
+          _iterator18,
+          _step18,
           task,
           api,
           pluginView,
           poppetView,
           postInstallView,
-          _iterator2,
-          _step2,
+          _iterator19,
+          _step19,
           _task,
           runListeners,
           findTab,
@@ -13390,14 +10933,20 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
           canKeysInput,
           getFavicon,
           loadPlugin,
-          addToQueue,
-          requestRender,
-          subscribeToQueue,
-          _args7 = arguments;
 
-      return regenerator.wrap(function _callee7$(_context7) {
+      /*...events*/
+      addToQueue,
+
+      /*pluginRenderedView*/
+      requestRender,
+
+      /*name, listener*/
+      subscribeToQueue,
+          _args26 = arguments;
+
+      return regeneratorRuntime.wrap(function _callee26$(_context26) {
         while (1) {
-          switch (_context7.prev = _context7.next) {
+          switch (_context26.prev = _context26.next) {
             case 0:
               subscribeToQueue = function _subscribeToQueue() {
                 console.warn("Unimplemented");
@@ -13436,14 +10985,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               };
 
               _createTab = function _createTab3() {
-                _createTab = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee6(click) {
+                _createTab = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee25(click) {
                   var url,
-                      _args6 = arguments;
-                  return regenerator.wrap(function _callee6$(_context6) {
+                      _args25 = arguments;
+                  return regeneratorRuntime.wrap(function _callee25$(_context25) {
                     while (1) {
-                      switch (_context6.prev = _context6.next) {
+                      switch (_context25.prev = _context25.next) {
                         case 0:
-                          url = _args6.length > 1 && _args6[1] !== undefined ? _args6[1] : BLANK;
+                          url = _args25.length > 1 && _args25[1] !== undefined ? _args25[1] : BLANK;
                           queue.send({
                             command: {
                               name: "Target.createTarget",
@@ -13461,47 +11010,47 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
                         case 3:
                         case "end":
-                          return _context6.stop();
+                          return _context25.stop();
                       }
                     }
-                  }, _callee6);
+                  }, _callee25);
                 }));
                 return _createTab.apply(this, arguments);
               };
 
-              createTab = function _createTab2(_x10) {
+              createTab = function _createTab2(_x33) {
                 return _createTab.apply(this, arguments);
               };
 
               _rawUpdateTabs = function _rawUpdateTabs3() {
-                _rawUpdateTabs = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee5() {
+                _rawUpdateTabs = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee24() {
                   var _yield2, tabs, activeTarget, requestId, _task2;
 
-                  return regenerator.wrap(function _callee5$(_context5) {
+                  return regeneratorRuntime.wrap(function _callee24$(_context24) {
                     while (1) {
-                      switch (_context5.prev = _context5.next) {
+                      switch (_context24.prev = _context24.next) {
                         case 0:
-                          _context5.next = 2;
+                          _context24.next = 2;
                           return demoMode ? fetchDemoTabs() : fetchTabs({
                             sessionToken: sessionToken
                           });
 
                         case 2:
-                          _yield2 = _context5.sent;
+                          _yield2 = _context24.sent;
                           tabs = _yield2.tabs;
                           activeTarget = _yield2.activeTarget;
                           requestId = _yield2.requestId;
-                          tabs = tabs.filter(function (_ref13) {
-                            var targetId = _ref13.targetId;
+                          tabs = tabs.filter(function (_ref10) {
+                            var targetId = _ref10.targetId;
                             return !closed.has(targetId);
                           });
 
                           if (!(requestId <= latestRequestId)) {
-                            _context5.next = 11;
+                            _context24.next = 11;
                             break;
                           }
 
-                          return _context5.abrupt("return");
+                          return _context24.abrupt("return");
 
                         case 11:
                           latestRequestId = requestId;
@@ -13550,10 +11099,10 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
                         case 20:
                         case "end":
-                          return _context5.stop();
+                          return _context24.stop();
                       }
                     }
-                  }, _callee5);
+                  }, _callee24);
                 }));
                 return _rawUpdateTabs.apply(this, arguments);
               };
@@ -13563,11 +11112,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               };
 
               _closeTab = function _closeTab3() {
-                _closeTab = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee4(click, tab, index) {
+                _closeTab = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee23(click, tab, index) {
                   var targetId, events, newActive;
-                  return regenerator.wrap(function _callee4$(_context4) {
+                  return regeneratorRuntime.wrap(function _callee23$(_context23) {
                     while (1) {
-                      switch (_context4.prev = _context4.next) {
+                      switch (_context23.prev = _context23.next) {
                         case 0:
                           targetId = tab.targetId;
                           closed.add(targetId);
@@ -13585,7 +11134,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                               }
                             }
                           }];
-                          _context4.next = 7;
+                          _context23.next = 7;
                           return queue.send(events);
 
                         case 7:
@@ -13611,31 +11160,31 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
                         case 11:
                         case "end":
-                          return _context4.stop();
+                          return _context23.stop();
                       }
                     }
-                  }, _callee4);
+                  }, _callee23);
                 }));
                 return _closeTab.apply(this, arguments);
               };
 
-              closeTab = function _closeTab2(_x7, _x8, _x9) {
+              closeTab = function _closeTab2(_x30, _x31, _x32) {
                 return _closeTab.apply(this, arguments);
               };
 
               _activateTab = function _activateTab3() {
-                _activateTab = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee3(click, tab) {
+                _activateTab = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee22(click, tab) {
                   var targetId;
-                  return regenerator.wrap(function _callee3$(_context3) {
+                  return regeneratorRuntime.wrap(function _callee22$(_context22) {
                     while (1) {
-                      switch (_context3.prev = _context3.next) {
+                      switch (_context22.prev = _context22.next) {
                         case 0:
                           if (!(click && click.currentTarget.querySelector('button.close') == click.target)) {
-                            _context3.next = 2;
+                            _context22.next = 2;
                             break;
                           }
 
-                          return _context3.abrupt("return");
+                          return _context22.abrupt("return");
 
                         case 2:
                           click && click.preventDefault(); // sometimes we delay the call to activate tab and
@@ -13643,11 +11192,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                           // so we exit if there is no tab to activate
 
                           if (tab) {
-                            _context3.next = 5;
+                            _context22.next = 5;
                             break;
                           }
 
-                          return _context3.abrupt("return");
+                          return _context22.abrupt("return");
 
                         case 5:
                           if (click) {
@@ -13660,7 +11209,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                           }
 
                           if (!(state.activeTarget == tab.targetId)) {
-                            _context3.next = 9;
+                            _context22.next = 9;
                             break;
                           }
 
@@ -13668,7 +11217,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                             state.viewState.omniBoxInput.focus();
                           }
 
-                          return _context3.abrupt("return");
+                          return _context22.abrupt("return");
 
                         case 9:
                           targetId = tab.targetId;
@@ -13732,15 +11281,15 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
                         case 22:
                         case "end":
-                          return _context3.stop();
+                          return _context22.stop();
                       }
                     }
-                  }, _callee3);
+                  }, _callee22);
                 }));
                 return _activateTab.apply(this, arguments);
               };
 
-              activateTab = function _activateTab2(_x5, _x6) {
+              activateTab = function _activateTab2(_x28, _x29) {
                 return _activateTab.apply(this, arguments);
               };
 
@@ -14107,8 +11656,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               };
 
               findTab = function _findTab(id) {
-                return state.tabs.find(function (_ref12) {
-                  var targetId = _ref12.targetId;
+                return state.tabs.find(function (_ref9) {
+                  var targetId = _ref9.targetId;
                   return id == targetId;
                 });
               };
@@ -14118,12 +11667,12 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 if (!funcList || funcList.length == 0) return false;
                 var score = false;
 
-                var _iterator3 = _createForOfIteratorHelper(funcList),
-                    _step3;
+                var _iterator20 = _createForOfIteratorHelper(funcList),
+                    _step20;
 
                 try {
-                  for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-                    var func = _step3.value;
+                  for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
+                    var func = _step20.value;
 
                     try {
                       func(data);
@@ -14133,27 +11682,27 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                     }
                   }
                 } catch (err) {
-                  _iterator3.e(err);
+                  _iterator20.e(err);
                 } finally {
-                  _iterator3.f();
+                  _iterator20.f();
                 }
 
                 return score;
               };
 
-              _ref = _args7.length > 2 && _args7[2] !== undefined ? _args7[2] : {}, _ref$postInstallTasks = _ref.postInstallTasks, postInstallTasks = _ref$postInstallTasks === void 0 ? [] : _ref$postInstallTasks, _ref$preInstallTasks = _ref.preInstallTasks, preInstallTasks = _ref$preInstallTasks === void 0 ? [] : _ref$preInstallTasks, _ref$canvasBondTasks = _ref.canvasBondTasks, canvasBondTasks = _ref$canvasBondTasks === void 0 ? [] : _ref$canvasBondTasks, _ref$bondTasks = _ref.bondTasks, bondTasks = _ref$bondTasks === void 0 ? [] : _ref$bondTasks, _ref$useViewFrame = _ref.useViewFrame, useViewFrame = _ref$useViewFrame === void 0 ? false : _ref$useViewFrame, _ref$demoMode = _ref.demoMode, demoMode = _ref$demoMode === void 0 ? false : _ref$demoMode;
+              _ref45 = _args26.length > 2 && _args26[2] !== undefined ? _args26[2] : {}, _ref45$postInstallTas = _ref45.postInstallTasks, postInstallTasks = _ref45$postInstallTas === void 0 ? [] : _ref45$postInstallTas, _ref45$preInstallTask = _ref45.preInstallTasks, preInstallTasks = _ref45$preInstallTask === void 0 ? [] : _ref45$preInstallTask, _ref45$canvasBondTask = _ref45.canvasBondTasks, canvasBondTasks = _ref45$canvasBondTask === void 0 ? [] : _ref45$canvasBondTask, _ref45$bondTasks = _ref45.bondTasks, bondTasks = _ref45$bondTasks === void 0 ? [] : _ref45$bondTasks, _ref45$useViewFrame = _ref45.useViewFrame, useViewFrame = _ref45$useViewFrame === void 0 ? false : _ref45$useViewFrame, _ref45$demoMode = _ref45.demoMode, demoMode = _ref45$demoMode === void 0 ? false : _ref45$demoMode;
               sessionToken = location.hash && location.hash.slice(1);
               location.hash = '';
               closed = new Set();
               listeners = new Map();
               lastTarget = '[lastTarget]';
-              _context7.next = 39;
+              _context26.next = 39;
               return demoMode ? fetchDemoTabs() : fetchTabs({
                 sessionToken: sessionToken
               });
 
             case 39:
-              _yield = _context7.sent;
+              _yield = _context26.sent;
               tabs = _yield.tabs;
               activeTarget = _yield.activeTarget;
               requestId = _yield.requestId;
@@ -14217,7 +11766,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 viewState: {},
                 clearViewport: clearViewport,
                 addListener: function addListener(name, func) {
-                  funcList = listeners.get(name);
+                  var funcList = listeners.get(name);
 
                   if (!funcList) {
                     funcList = [];
@@ -14247,42 +11796,42 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 }
 
                 postInstallTasks.push( /*#__PURE__*/function () {
-                  var _ref3 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee2(_ref2) {
+                  var _ref46 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee21(_ref) {
                     var queue, completed;
-                    return regenerator.wrap(function _callee2$(_context2) {
+                    return regeneratorRuntime.wrap(function _callee21$(_context21) {
                       while (1) {
-                        switch (_context2.prev = _context2.next) {
+                        switch (_context21.prev = _context21.next) {
                           case 0:
-                            queue = _ref2.queue;
+                            queue = _ref.queue;
                             completed = false;
                             queue.addMetaListener('changed', /*#__PURE__*/function () {
-                              var _ref4 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(meta) {
-                                return regenerator.wrap(function _callee$(_context) {
+                              var _ref47 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee20(meta) {
+                                return regeneratorRuntime.wrap(function _callee20$(_context20) {
                                   while (1) {
-                                    switch (_context.prev = _context.next) {
+                                    switch (_context20.prev = _context20.next) {
                                       case 0:
                                         if (!completed) {
-                                          _context.next = 2;
+                                          _context20.next = 2;
                                           break;
                                         }
 
-                                        return _context.abrupt("return");
+                                        return _context20.abrupt("return");
 
                                       case 2:
                                         if (!(meta.changed.type == 'page' && meta.changed.url.startsWith("https://isolation.site/redirect"))) {
-                                          _context.next = 14;
+                                          _context20.next = 14;
                                           break;
                                         }
 
-                                        _context.next = 5;
+                                        _context20.next = 5;
                                         return sleep(500);
 
                                       case 5:
-                                        _context.next = 7;
+                                        _context20.next = 7;
                                         return activateTab(null, meta.changed);
 
                                       case 7:
-                                        _context.next = 9;
+                                        _context20.next = 9;
                                         return sleep(2000);
 
                                       case 9:
@@ -14293,7 +11842,7 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                                           url: taskUrl
                                         });
                                         completed = true;
-                                        _context.next = 13;
+                                        _context20.next = 13;
                                         return sleep(5000);
 
                                       case 13:
@@ -14301,28 +11850,28 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
 
                                       case 14:
                                       case "end":
-                                        return _context.stop();
+                                        return _context20.stop();
                                     }
                                   }
-                                }, _callee);
+                                }, _callee20);
                               }));
 
-                              return function (_x4) {
-                                return _ref4.apply(this, arguments);
+                              return function (_x27) {
+                                return _ref47.apply(this, arguments);
                               };
                             }());
                             state.createTab(null, "https://isolation.site/redirect.html");
 
                           case 4:
                           case "end":
-                            return _context2.stop();
+                            return _context21.stop();
                         }
                       }
-                    }, _callee2);
+                    }, _callee21);
                   }));
 
-                  return function (_x3) {
-                    return _ref3.apply(this, arguments);
+                  return function (_x26) {
+                    return _ref46.apply(this, arguments);
                   };
                 }());
               }
@@ -14374,8 +11923,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               queue.addMetaListener('navigated', function () {
                 return canKeysInput();
               });
-              queue.addMetaListener('navigated', function (_ref5) {
-                var targetId = _ref5.navigated.targetId;
+              queue.addMetaListener('navigated', function (_ref2) {
+                var targetId = _ref2.navigated.targetId;
                 return resetFavicon({
                   targetId: targetId
                 }, state);
@@ -14405,8 +11954,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               queue.addMetaListener('navigated', function (meta) {
                 return resetLoadingIndicator(meta, state);
               });
-              queue.addMetaListener('changed', function (_ref6) {
-                var changed = _ref6.changed;
+              queue.addMetaListener('changed', function (_ref3) {
+                var changed = _ref3.changed;
                 var tab = findTab(changed.targetId);
 
                 if (tab) {
@@ -14446,8 +11995,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               });
               queue.addMetaListener('navigated', updateTabs);
               queue.addMetaListener('detached', updateTabs);
-              queue.addMetaListener('destroyed', function (_ref7) {
-                var destroyed = _ref7.destroyed;
+              queue.addMetaListener('destroyed', function (_ref4) {
+                var destroyed = _ref4.destroyed;
                 closed["delete"](destroyed.targetId);
                 updateTabs();
               });
@@ -14457,8 +12006,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 return subviews.openModal(modalMessage, state);
               }); // remote secure downloads
 
-              queue.addMetaListener('download', function (_ref8) {
-                var download = _ref8.download;
+              queue.addMetaListener('download', function (_ref5) {
+                var download = _ref5.download;
                 var sessionId = download.sessionId,
                     filename = download.filename;
                 var modal = {
@@ -14477,8 +12026,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   modal: modal
                 }, state);
               });
-              queue.addMetaListener('secureview', function (_ref9) {
-                var secureview = _ref9.secureview;
+              queue.addMetaListener('secureview', function (_ref6) {
+                var secureview = _ref6.secureview;
                 var url = secureview.url;
 
                 if (url) {
@@ -14486,8 +12035,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 }
               }); // HTTP auth
 
-              queue.addMetaListener('authRequired', function (_ref10) {
-                var authRequired = _ref10.authRequired;
+              queue.addMetaListener('authRequired', function (_ref7) {
+                var authRequired = _ref7.authRequired;
                 var requestId = authRequired.requestId;
                 var modal = {
                   requestId: requestId,
@@ -14500,8 +12049,8 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 }, state);
               }); // File chooser 
 
-              queue.addMetaListener('fileChooser', function (_ref11) {
-                var fileChooser = _ref11.fileChooser;
+              queue.addMetaListener('fileChooser', function (_ref8) {
+                var fileChooser = _ref8.fileChooser;
                 var sessionId = fileChooser.sessionId,
                     mode = fileChooser.mode,
                     accept = fileChooser.accept,
@@ -14543,11 +12092,11 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               preInstallView = {
                 queue: queue
               };
-              _iterator = _createForOfIteratorHelper(preInstallTasks);
+              _iterator18 = _createForOfIteratorHelper(preInstallTasks);
 
               try {
-                for (_iterator.s(); !(_step = _iterator.n()).done;) {
-                  task = _step.value;
+                for (_iterator18.s(); !(_step18 = _iterator18.n()).done;) {
+                  task = _step18.value;
 
                   try {
                     task(preInstallView);
@@ -14556,9 +12105,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   }
                 }
               } catch (err) {
-                _iterator.e(err);
+                _iterator18.e(err);
               } finally {
-                _iterator.f();
+                _iterator18.f();
               }
 
               component(state).to(selector, position);
@@ -14616,15 +12165,15 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               postInstallView = {
                 queue: queue
               };
-              _context7.next = 96;
+              _context26.next = 94;
               return sleep(0);
 
-            case 96:
-              _iterator2 = _createForOfIteratorHelper(postInstallTasks);
+            case 94:
+              _iterator19 = _createForOfIteratorHelper(postInstallTasks);
 
               try {
-                for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-                  _task = _step2.value;
+                for (_iterator19.s(); !(_step19 = _iterator19.n()).done;) {
+                  _task = _step19.value;
 
                   try {
                     _task(postInstallView);
@@ -14633,9 +12182,9 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                   }
                 }
               } catch (err) {
-                _iterator2.e(err);
+                _iterator19.e(err);
               } finally {
-                _iterator2.f();
+                _iterator19.f();
               }
 
               if (activeTarget) {
@@ -14648,14 +12197,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
                 //sizeBrowserToBounds(state.viewState.canvasEl, activeTarget);
               }
 
-              return _context7.abrupt("return", poppetView);
+              return _context26.abrupt("return", poppetView);
 
-            case 100:
+            case 98:
             case "end":
-              return _context7.stop();
+              return _context26.stop();
           }
         }
-      }, _callee7);
+      }, _callee26);
     }));
     return _voodoo.apply(this, arguments);
   }
@@ -14675,14 +12224,14 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function Voodoo() {
-    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-        api = _ref.api,
-        translator = _ref.translator,
-        image = _ref.image,
-        _ref$useViewFrame = _ref.useViewFrame,
-        useViewFrame = _ref$useViewFrame === void 0 ? false : _ref$useViewFrame,
-        _ref$demoMode = _ref.demoMode,
-        demoMode = _ref$demoMode === void 0 ? false : _ref$demoMode;
+    var _ref44 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+        api = _ref44.api,
+        translator = _ref44.translator,
+        image = _ref44.image,
+        _ref44$useViewFrame = _ref44.useViewFrame,
+        useViewFrame = _ref44$useViewFrame === void 0 ? false : _ref44$useViewFrame,
+        _ref44$demoMode = _ref44.demoMode,
+        demoMode = _ref44$demoMode === void 0 ? false : _ref44$demoMode;
 
     var selector = arguments.length > 1 ? arguments[1] : undefined;
     var position = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'beforeEnd';
@@ -14766,15 +12315,15 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
   }
 
   function _start_app() {
-    _start_app = _asyncToGenerator$1( /*#__PURE__*/regenerator$1.mark(function _callee() {
+    _start_app = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee27() {
       var useViewFrame, translator$1, voodoo;
-      return regenerator$1.wrap(function _callee$(_context) {
+      return regeneratorRuntime.wrap(function _callee27$(_context27) {
         while (1) {
-          switch (_context.prev = _context.next) {
+          switch (_context27.prev = _context27.next) {
             case 0:
               useViewFrame = false;
               translator$1 = translator;
-              _context.next = 4;
+              _context27.next = 4;
               return Voodoo({
                 api: getAPI(),
                 translator: translator$1,
@@ -14782,16 +12331,16 @@ function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" =
               });
 
             case 4:
-              voodoo = _context.sent;
+              voodoo = _context27.sent;
               self.voodoo = voodoo;
-              return _context.abrupt("return", voodoo);
+              return _context27.abrupt("return", voodoo);
 
             case 7:
             case "end":
-              return _context.stop();
+              return _context27.stop();
           }
         }
-      }, _callee);
+      }, _callee27);
     }));
     return _start_app.apply(this, arguments);
   }

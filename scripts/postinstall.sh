@@ -10,21 +10,22 @@ then
   echo "Not running full setup...Just doing npm install..."
 else 
   echo "Running full setup..."
-  ./setup_machine.sh
+  ./scripts/setup_machine.sh
 fi
 
 
-cd zombie-lord 
-npm i --no-optional &> /dev/null   
-cd ../public/voodoo
-npm i --no-optional &> /dev/null  
-cd ../../zombie-lord/custom-launcher
-
+cd ./src/zombie-lord 
 npm i --no-optional &> /dev/null   
 cd ../../
+cd ./src/public/voodoo
+npm i --no-optional &> /dev/null  
+cd ../../../
+cd ./src/zombie-lord/custom-launcher
+npm i --no-optional &> /dev/null   
+cd ../../../
 
 echo Install rollup global
 npm i --no-optional -g rollup
-./make_bundle.sh 
+./scripts/make_bundle.sh 
 
 

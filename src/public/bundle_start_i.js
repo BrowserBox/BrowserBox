@@ -1,1552 +1,14 @@
 (function () {
   'use strict';
 
-  function asyncGeneratorStep$1(gen, resolve, reject, _next, _throw, key, arg) {
-    try {
-      var info = gen[key](arg);
-      var value = info.value;
-    } catch (error) {
-      reject(error);
-      return;
-    }
-
-    if (info.done) {
-      resolve(value);
-    } else {
-      Promise.resolve(value).then(_next, _throw);
-    }
-  }
-
-  function _asyncToGenerator$1(fn) {
-    return function () {
-      var self = this,
-          args = arguments;
-      return new Promise(function (resolve, reject) {
-        var gen = fn.apply(self, args);
-
-        function _next(value) {
-          asyncGeneratorStep$1(gen, resolve, reject, _next, _throw, "next", value);
-        }
-
-        function _throw(err) {
-          asyncGeneratorStep$1(gen, resolve, reject, _next, _throw, "throw", err);
-        }
-
-        _next(undefined);
-      });
-    };
-  }
-
-  function createCommonjsModule(fn, basedir, module) {
-  	return module = {
-  		path: basedir,
-  		exports: {},
-  		require: function (path, base) {
-  			return commonjsRequire(path, (base === undefined || base === null) ? module.path : base);
-  		}
-  	}, fn(module, module.exports), module.exports;
-  }
-
-  function commonjsRequire () {
-  	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
-  }
-
-  var runtime_1$1 = createCommonjsModule(function (module) {
-    /**
-     * Copyright (c) 2014-present, Facebook, Inc.
-     *
-     * This source code is licensed under the MIT license found in the
-     * LICENSE file in the root directory of this source tree.
-     */
-    var runtime = function (exports) {
-
-      var Op = Object.prototype;
-      var hasOwn = Op.hasOwnProperty;
-      var undefined$1; // More compressible than void 0.
-
-      var $Symbol = typeof Symbol === "function" ? Symbol : {};
-      var iteratorSymbol = $Symbol.iterator || "@@iterator";
-      var asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator";
-      var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
-
-      function define(obj, key, value) {
-        Object.defineProperty(obj, key, {
-          value: value,
-          enumerable: true,
-          configurable: true,
-          writable: true
-        });
-        return obj[key];
-      }
-
-      try {
-        // IE 8 has a broken Object.defineProperty that only works on DOM objects.
-        define({}, "");
-      } catch (err) {
-        define = function define(obj, key, value) {
-          return obj[key] = value;
-        };
-      }
-
-      function wrap(innerFn, outerFn, self, tryLocsList) {
-        // If outerFn provided and outerFn.prototype is a Generator, then outerFn.prototype instanceof Generator.
-        var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator;
-        var generator = Object.create(protoGenerator.prototype);
-        var context = new Context(tryLocsList || []); // The ._invoke method unifies the implementations of the .next,
-        // .throw, and .return methods.
-
-        generator._invoke = makeInvokeMethod(innerFn, self, context);
-        return generator;
-      }
-
-      exports.wrap = wrap; // Try/catch helper to minimize deoptimizations. Returns a completion
-      // record like context.tryEntries[i].completion. This interface could
-      // have been (and was previously) designed to take a closure to be
-      // invoked without arguments, but in all the cases we care about we
-      // already have an existing method we want to call, so there's no need
-      // to create a new function object. We can even get away with assuming
-      // the method takes exactly one argument, since that happens to be true
-      // in every case, so we don't have to touch the arguments object. The
-      // only additional allocation required is the completion record, which
-      // has a stable shape and so hopefully should be cheap to allocate.
-
-      function tryCatch(fn, obj, arg) {
-        try {
-          return {
-            type: "normal",
-            arg: fn.call(obj, arg)
-          };
-        } catch (err) {
-          return {
-            type: "throw",
-            arg: err
-          };
-        }
-      }
-
-      var GenStateSuspendedStart = "suspendedStart";
-      var GenStateSuspendedYield = "suspendedYield";
-      var GenStateExecuting = "executing";
-      var GenStateCompleted = "completed"; // Returning this object from the innerFn has the same effect as
-      // breaking out of the dispatch switch statement.
-
-      var ContinueSentinel = {}; // Dummy constructor functions that we use as the .constructor and
-      // .constructor.prototype properties for functions that return Generator
-      // objects. For full spec compliance, you may wish to configure your
-      // minifier not to mangle the names of these two functions.
-
-      function Generator() {}
-
-      function GeneratorFunction() {}
-
-      function GeneratorFunctionPrototype() {} // This is a polyfill for %IteratorPrototype% for environments that
-      // don't natively support it.
-
-
-      var IteratorPrototype = {};
-      define(IteratorPrototype, iteratorSymbol, function () {
-        return this;
-      });
-      var getProto = Object.getPrototypeOf;
-      var NativeIteratorPrototype = getProto && getProto(getProto(values([])));
-
-      if (NativeIteratorPrototype && NativeIteratorPrototype !== Op && hasOwn.call(NativeIteratorPrototype, iteratorSymbol)) {
-        // This environment has a native %IteratorPrototype%; use it instead
-        // of the polyfill.
-        IteratorPrototype = NativeIteratorPrototype;
-      }
-
-      var Gp = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(IteratorPrototype);
-      GeneratorFunction.prototype = GeneratorFunctionPrototype;
-      define(Gp, "constructor", GeneratorFunctionPrototype);
-      define(GeneratorFunctionPrototype, "constructor", GeneratorFunction);
-      GeneratorFunction.displayName = define(GeneratorFunctionPrototype, toStringTagSymbol, "GeneratorFunction"); // Helper for defining the .next, .throw, and .return methods of the
-      // Iterator interface in terms of a single ._invoke method.
-
-      function defineIteratorMethods(prototype) {
-        ["next", "throw", "return"].forEach(function (method) {
-          define(prototype, method, function (arg) {
-            return this._invoke(method, arg);
-          });
-        });
-      }
-
-      exports.isGeneratorFunction = function (genFun) {
-        var ctor = typeof genFun === "function" && genFun.constructor;
-        return ctor ? ctor === GeneratorFunction || // For the native GeneratorFunction constructor, the best we can
-        // do is to check its .name property.
-        (ctor.displayName || ctor.name) === "GeneratorFunction" : false;
-      };
-
-      exports.mark = function (genFun) {
-        if (Object.setPrototypeOf) {
-          Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
-        } else {
-          genFun.__proto__ = GeneratorFunctionPrototype;
-          define(genFun, toStringTagSymbol, "GeneratorFunction");
-        }
-
-        genFun.prototype = Object.create(Gp);
-        return genFun;
-      }; // Within the body of any async function, `await x` is transformed to
-      // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
-      // `hasOwn.call(value, "__await")` to determine if the yielded value is
-      // meant to be awaited.
-
-
-      exports.awrap = function (arg) {
-        return {
-          __await: arg
-        };
-      };
-
-      function AsyncIterator(generator, PromiseImpl) {
-        function invoke(method, arg, resolve, reject) {
-          var record = tryCatch(generator[method], generator, arg);
-
-          if (record.type === "throw") {
-            reject(record.arg);
-          } else {
-            var result = record.arg;
-            var value = result.value;
-
-            if (value && typeof value === "object" && hasOwn.call(value, "__await")) {
-              return PromiseImpl.resolve(value.__await).then(function (value) {
-                invoke("next", value, resolve, reject);
-              }, function (err) {
-                invoke("throw", err, resolve, reject);
-              });
-            }
-
-            return PromiseImpl.resolve(value).then(function (unwrapped) {
-              // When a yielded Promise is resolved, its final value becomes
-              // the .value of the Promise<{value,done}> result for the
-              // current iteration.
-              result.value = unwrapped;
-              resolve(result);
-            }, function (error) {
-              // If a rejected Promise was yielded, throw the rejection back
-              // into the async generator function so it can be handled there.
-              return invoke("throw", error, resolve, reject);
-            });
-          }
-        }
-
-        var previousPromise;
-
-        function enqueue(method, arg) {
-          function callInvokeWithMethodAndArg() {
-            return new PromiseImpl(function (resolve, reject) {
-              invoke(method, arg, resolve, reject);
-            });
-          }
-
-          return previousPromise = // If enqueue has been called before, then we want to wait until
-          // all previous Promises have been resolved before calling invoke,
-          // so that results are always delivered in the correct order. If
-          // enqueue has not been called before, then it is important to
-          // call invoke immediately, without waiting on a callback to fire,
-          // so that the async generator function has the opportunity to do
-          // any necessary setup in a predictable way. This predictability
-          // is why the Promise constructor synchronously invokes its
-          // executor callback, and why async functions synchronously
-          // execute code before the first await. Since we implement simple
-          // async functions in terms of async generators, it is especially
-          // important to get this right, even though it requires care.
-          previousPromise ? previousPromise.then(callInvokeWithMethodAndArg, // Avoid propagating failures to Promises returned by later
-          // invocations of the iterator.
-          callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg();
-        } // Define the unified helper method that is used to implement .next,
-        // .throw, and .return (see defineIteratorMethods).
-
-
-        this._invoke = enqueue;
-      }
-
-      defineIteratorMethods(AsyncIterator.prototype);
-      define(AsyncIterator.prototype, asyncIteratorSymbol, function () {
-        return this;
-      });
-      exports.AsyncIterator = AsyncIterator; // Note that simple async functions are implemented on top of
-      // AsyncIterator objects; they just return a Promise for the value of
-      // the final result produced by the iterator.
-
-      exports.async = function (innerFn, outerFn, self, tryLocsList, PromiseImpl) {
-        if (PromiseImpl === void 0) PromiseImpl = Promise;
-        var iter = new AsyncIterator(wrap(innerFn, outerFn, self, tryLocsList), PromiseImpl);
-        return exports.isGeneratorFunction(outerFn) ? iter // If outerFn is a generator, return the full iterator.
-        : iter.next().then(function (result) {
-          return result.done ? result.value : iter.next();
-        });
-      };
-
-      function makeInvokeMethod(innerFn, self, context) {
-        var state = GenStateSuspendedStart;
-        return function invoke(method, arg) {
-          if (state === GenStateExecuting) {
-            throw new Error("Generator is already running");
-          }
-
-          if (state === GenStateCompleted) {
-            if (method === "throw") {
-              throw arg;
-            } // Be forgiving, per 25.3.3.3.3 of the spec:
-            // https://people.mozilla.org/~jorendorff/es6-draft.html#sec-generatorresume
-
-
-            return doneResult();
-          }
-
-          context.method = method;
-          context.arg = arg;
-
-          while (true) {
-            var delegate = context.delegate;
-
-            if (delegate) {
-              var delegateResult = maybeInvokeDelegate(delegate, context);
-
-              if (delegateResult) {
-                if (delegateResult === ContinueSentinel) continue;
-                return delegateResult;
-              }
-            }
-
-            if (context.method === "next") {
-              // Setting context._sent for legacy support of Babel's
-              // function.sent implementation.
-              context.sent = context._sent = context.arg;
-            } else if (context.method === "throw") {
-              if (state === GenStateSuspendedStart) {
-                state = GenStateCompleted;
-                throw context.arg;
-              }
-
-              context.dispatchException(context.arg);
-            } else if (context.method === "return") {
-              context.abrupt("return", context.arg);
-            }
-
-            state = GenStateExecuting;
-            var record = tryCatch(innerFn, self, context);
-
-            if (record.type === "normal") {
-              // If an exception is thrown from innerFn, we leave state ===
-              // GenStateExecuting and loop back for another invocation.
-              state = context.done ? GenStateCompleted : GenStateSuspendedYield;
-
-              if (record.arg === ContinueSentinel) {
-                continue;
-              }
-
-              return {
-                value: record.arg,
-                done: context.done
-              };
-            } else if (record.type === "throw") {
-              state = GenStateCompleted; // Dispatch the exception by looping back around to the
-              // context.dispatchException(context.arg) call above.
-
-              context.method = "throw";
-              context.arg = record.arg;
-            }
-          }
-        };
-      } // Call delegate.iterator[context.method](context.arg) and handle the
-      // result, either by returning a { value, done } result from the
-      // delegate iterator, or by modifying context.method and context.arg,
-      // setting context.delegate to null, and returning the ContinueSentinel.
-
-
-      function maybeInvokeDelegate(delegate, context) {
-        var method = delegate.iterator[context.method];
-
-        if (method === undefined$1) {
-          // A .throw or .return when the delegate iterator has no .throw
-          // method always terminates the yield* loop.
-          context.delegate = null;
-
-          if (context.method === "throw") {
-            // Note: ["return"] must be used for ES3 parsing compatibility.
-            if (delegate.iterator["return"]) {
-              // If the delegate iterator has a return method, give it a
-              // chance to clean up.
-              context.method = "return";
-              context.arg = undefined$1;
-              maybeInvokeDelegate(delegate, context);
-
-              if (context.method === "throw") {
-                // If maybeInvokeDelegate(context) changed context.method from
-                // "return" to "throw", let that override the TypeError below.
-                return ContinueSentinel;
-              }
-            }
-
-            context.method = "throw";
-            context.arg = new TypeError("The iterator does not provide a 'throw' method");
-          }
-
-          return ContinueSentinel;
-        }
-
-        var record = tryCatch(method, delegate.iterator, context.arg);
-
-        if (record.type === "throw") {
-          context.method = "throw";
-          context.arg = record.arg;
-          context.delegate = null;
-          return ContinueSentinel;
-        }
-
-        var info = record.arg;
-
-        if (!info) {
-          context.method = "throw";
-          context.arg = new TypeError("iterator result is not an object");
-          context.delegate = null;
-          return ContinueSentinel;
-        }
-
-        if (info.done) {
-          // Assign the result of the finished delegate to the temporary
-          // variable specified by delegate.resultName (see delegateYield).
-          context[delegate.resultName] = info.value; // Resume execution at the desired location (see delegateYield).
-
-          context.next = delegate.nextLoc; // If context.method was "throw" but the delegate handled the
-          // exception, let the outer generator proceed normally. If
-          // context.method was "next", forget context.arg since it has been
-          // "consumed" by the delegate iterator. If context.method was
-          // "return", allow the original .return call to continue in the
-          // outer generator.
-
-          if (context.method !== "return") {
-            context.method = "next";
-            context.arg = undefined$1;
-          }
-        } else {
-          // Re-yield the result returned by the delegate method.
-          return info;
-        } // The delegate iterator is finished, so forget it and continue with
-        // the outer generator.
-
-
-        context.delegate = null;
-        return ContinueSentinel;
-      } // Define Generator.prototype.{next,throw,return} in terms of the
-      // unified ._invoke helper method.
-
-
-      defineIteratorMethods(Gp);
-      define(Gp, toStringTagSymbol, "Generator"); // A Generator should always return itself as the iterator object when the
-      // @@iterator function is called on it. Some browsers' implementations of the
-      // iterator prototype chain incorrectly implement this, causing the Generator
-      // object to not be returned from this call. This ensures that doesn't happen.
-      // See https://github.com/facebook/regenerator/issues/274 for more details.
-
-      define(Gp, iteratorSymbol, function () {
-        return this;
-      });
-      define(Gp, "toString", function () {
-        return "[object Generator]";
-      });
-
-      function pushTryEntry(locs) {
-        var entry = {
-          tryLoc: locs[0]
-        };
-
-        if (1 in locs) {
-          entry.catchLoc = locs[1];
-        }
-
-        if (2 in locs) {
-          entry.finallyLoc = locs[2];
-          entry.afterLoc = locs[3];
-        }
-
-        this.tryEntries.push(entry);
-      }
-
-      function resetTryEntry(entry) {
-        var record = entry.completion || {};
-        record.type = "normal";
-        delete record.arg;
-        entry.completion = record;
-      }
-
-      function Context(tryLocsList) {
-        // The root entry object (effectively a try statement without a catch
-        // or a finally block) gives us a place to store values thrown from
-        // locations where there is no enclosing try statement.
-        this.tryEntries = [{
-          tryLoc: "root"
-        }];
-        tryLocsList.forEach(pushTryEntry, this);
-        this.reset(true);
-      }
-
-      exports.keys = function (object) {
-        var keys = [];
-
-        for (var key in object) {
-          keys.push(key);
-        }
-
-        keys.reverse(); // Rather than returning an object with a next method, we keep
-        // things simple and return the next function itself.
-
-        return function next() {
-          while (keys.length) {
-            var key = keys.pop();
-
-            if (key in object) {
-              next.value = key;
-              next.done = false;
-              return next;
-            }
-          } // To avoid creating an additional object, we just hang the .value
-          // and .done properties off the next function object itself. This
-          // also ensures that the minifier will not anonymize the function.
-
-
-          next.done = true;
-          return next;
-        };
-      };
-
-      function values(iterable) {
-        if (iterable) {
-          var iteratorMethod = iterable[iteratorSymbol];
-
-          if (iteratorMethod) {
-            return iteratorMethod.call(iterable);
-          }
-
-          if (typeof iterable.next === "function") {
-            return iterable;
-          }
-
-          if (!isNaN(iterable.length)) {
-            var i = -1,
-                next = function next() {
-              while (++i < iterable.length) {
-                if (hasOwn.call(iterable, i)) {
-                  next.value = iterable[i];
-                  next.done = false;
-                  return next;
-                }
-              }
-
-              next.value = undefined$1;
-              next.done = true;
-              return next;
-            };
-
-            return next.next = next;
-          }
-        } // Return an iterator with no values.
-
-
-        return {
-          next: doneResult
-        };
-      }
-
-      exports.values = values;
-
-      function doneResult() {
-        return {
-          value: undefined$1,
-          done: true
-        };
-      }
-
-      Context.prototype = {
-        constructor: Context,
-        reset: function reset(skipTempReset) {
-          this.prev = 0;
-          this.next = 0; // Resetting context._sent for legacy support of Babel's
-          // function.sent implementation.
-
-          this.sent = this._sent = undefined$1;
-          this.done = false;
-          this.delegate = null;
-          this.method = "next";
-          this.arg = undefined$1;
-          this.tryEntries.forEach(resetTryEntry);
-
-          if (!skipTempReset) {
-            for (var name in this) {
-              // Not sure about the optimal order of these conditions:
-              if (name.charAt(0) === "t" && hasOwn.call(this, name) && !isNaN(+name.slice(1))) {
-                this[name] = undefined$1;
-              }
-            }
-          }
-        },
-        stop: function stop() {
-          this.done = true;
-          var rootEntry = this.tryEntries[0];
-          var rootRecord = rootEntry.completion;
-
-          if (rootRecord.type === "throw") {
-            throw rootRecord.arg;
-          }
-
-          return this.rval;
-        },
-        dispatchException: function dispatchException(exception) {
-          if (this.done) {
-            throw exception;
-          }
-
-          var context = this;
-
-          function handle(loc, caught) {
-            record.type = "throw";
-            record.arg = exception;
-            context.next = loc;
-
-            if (caught) {
-              // If the dispatched exception was caught by a catch block,
-              // then let that catch block handle the exception normally.
-              context.method = "next";
-              context.arg = undefined$1;
-            }
-
-            return !!caught;
-          }
-
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-            var record = entry.completion;
-
-            if (entry.tryLoc === "root") {
-              // Exception thrown outside of any try block that could handle
-              // it, so set the completion value of the entire function to
-              // throw the exception.
-              return handle("end");
-            }
-
-            if (entry.tryLoc <= this.prev) {
-              var hasCatch = hasOwn.call(entry, "catchLoc");
-              var hasFinally = hasOwn.call(entry, "finallyLoc");
-
-              if (hasCatch && hasFinally) {
-                if (this.prev < entry.catchLoc) {
-                  return handle(entry.catchLoc, true);
-                } else if (this.prev < entry.finallyLoc) {
-                  return handle(entry.finallyLoc);
-                }
-              } else if (hasCatch) {
-                if (this.prev < entry.catchLoc) {
-                  return handle(entry.catchLoc, true);
-                }
-              } else if (hasFinally) {
-                if (this.prev < entry.finallyLoc) {
-                  return handle(entry.finallyLoc);
-                }
-              } else {
-                throw new Error("try statement without catch or finally");
-              }
-            }
-          }
-        },
-        abrupt: function abrupt(type, arg) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.tryLoc <= this.prev && hasOwn.call(entry, "finallyLoc") && this.prev < entry.finallyLoc) {
-              var finallyEntry = entry;
-              break;
-            }
-          }
-
-          if (finallyEntry && (type === "break" || type === "continue") && finallyEntry.tryLoc <= arg && arg <= finallyEntry.finallyLoc) {
-            // Ignore the finally entry if control is not jumping to a
-            // location outside the try/catch block.
-            finallyEntry = null;
-          }
-
-          var record = finallyEntry ? finallyEntry.completion : {};
-          record.type = type;
-          record.arg = arg;
-
-          if (finallyEntry) {
-            this.method = "next";
-            this.next = finallyEntry.finallyLoc;
-            return ContinueSentinel;
-          }
-
-          return this.complete(record);
-        },
-        complete: function complete(record, afterLoc) {
-          if (record.type === "throw") {
-            throw record.arg;
-          }
-
-          if (record.type === "break" || record.type === "continue") {
-            this.next = record.arg;
-          } else if (record.type === "return") {
-            this.rval = this.arg = record.arg;
-            this.method = "return";
-            this.next = "end";
-          } else if (record.type === "normal" && afterLoc) {
-            this.next = afterLoc;
-          }
-
-          return ContinueSentinel;
-        },
-        finish: function finish(finallyLoc) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.finallyLoc === finallyLoc) {
-              this.complete(entry.completion, entry.afterLoc);
-              resetTryEntry(entry);
-              return ContinueSentinel;
-            }
-          }
-        },
-        "catch": function _catch(tryLoc) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.tryLoc === tryLoc) {
-              var record = entry.completion;
-
-              if (record.type === "throw") {
-                var thrown = record.arg;
-                resetTryEntry(entry);
-              }
-
-              return thrown;
-            }
-          } // The context.catch method must only be called with a location
-          // argument that corresponds to a known catch block.
-
-
-          throw new Error("illegal catch attempt");
-        },
-        delegateYield: function delegateYield(iterable, resultName, nextLoc) {
-          this.delegate = {
-            iterator: values(iterable),
-            resultName: resultName,
-            nextLoc: nextLoc
-          };
-
-          if (this.method === "next") {
-            // Deliberately forget the last sent value so that we don't
-            // accidentally pass it on to the delegate.
-            this.arg = undefined$1;
-          }
-
-          return ContinueSentinel;
-        }
-      }; // Regardless of whether this script is executing as a CommonJS module
-      // or not, return the runtime object so that we can declare the variable
-      // regeneratorRuntime in the outer scope, which allows this module to be
-      // injected easily by `bin/regenerator --include-runtime script.js`.
-
-      return exports;
-    }( // If this script is executing as a CommonJS module, use module.exports
-    // as the regeneratorRuntime namespace. Otherwise create a new empty
-    // object. Either way, the resulting object will be used to initialize
-    // the regeneratorRuntime variable at the top of this file.
-    module.exports );
-
-    try {
-      regeneratorRuntime = runtime;
-    } catch (accidentalStrictMode) {
-      // This module should not be running in strict mode, so the above
-      // assignment should always work unless something is misconfigured. Just
-      // in case runtime.js accidentally runs in strict mode, in modern engines
-      // we can explicitly access globalThis. In older engines we can escape
-      // strict mode using a global Function call. This could conceivably fail
-      // if a Content Security Policy forbids using Function, but in that case
-      // the proper solution is to fix the accidental strict mode problem. If
-      // you've misconfigured your bundler to force strict mode and applied a
-      // CSP to forbid Function, and you're not willing to fix either of those
-      // problems, please detail your unique predicament in a GitHub issue.
-      if (typeof globalThis === "object") {
-        globalThis.regeneratorRuntime = runtime;
-      } else {
-        Function("r", "regeneratorRuntime = r")(runtime);
-      }
-    }
-  });
-
-  var regenerator$1 = runtime_1$1;
-
-  function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) {
-    try {
-      var info = gen[key](arg);
-      var value = info.value;
-    } catch (error) {
-      reject(error);
-      return;
-    }
-
-    if (info.done) {
-      resolve(value);
-    } else {
-      Promise.resolve(value).then(_next, _throw);
-    }
-  }
-
-  function _asyncToGenerator(fn) {
-    return function () {
-      var self = this,
-          args = arguments;
-      return new Promise(function (resolve, reject) {
-        var gen = fn.apply(self, args);
-
-        function _next(value) {
-          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value);
-        }
-
-        function _throw(err) {
-          asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err);
-        }
-
-        _next(undefined);
-      });
-    };
-  }
-
-  var asyncToGenerator = _asyncToGenerator;
-
-  var runtime_1 = createCommonjsModule(function (module) {
-    /**
-     * Copyright (c) 2014-present, Facebook, Inc.
-     *
-     * This source code is licensed under the MIT license found in the
-     * LICENSE file in the root directory of this source tree.
-     */
-    var runtime = function (exports) {
-
-      var Op = Object.prototype;
-      var hasOwn = Op.hasOwnProperty;
-      var undefined$1; // More compressible than void 0.
-
-      var $Symbol = typeof Symbol === "function" ? Symbol : {};
-      var iteratorSymbol = $Symbol.iterator || "@@iterator";
-      var asyncIteratorSymbol = $Symbol.asyncIterator || "@@asyncIterator";
-      var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
-
-      function define(obj, key, value) {
-        Object.defineProperty(obj, key, {
-          value: value,
-          enumerable: true,
-          configurable: true,
-          writable: true
-        });
-        return obj[key];
-      }
-
-      try {
-        // IE 8 has a broken Object.defineProperty that only works on DOM objects.
-        define({}, "");
-      } catch (err) {
-        define = function define(obj, key, value) {
-          return obj[key] = value;
-        };
-      }
-
-      function wrap(innerFn, outerFn, self, tryLocsList) {
-        // If outerFn provided and outerFn.prototype is a Generator, then outerFn.prototype instanceof Generator.
-        var protoGenerator = outerFn && outerFn.prototype instanceof Generator ? outerFn : Generator;
-        var generator = Object.create(protoGenerator.prototype);
-        var context = new Context(tryLocsList || []); // The ._invoke method unifies the implementations of the .next,
-        // .throw, and .return methods.
-
-        generator._invoke = makeInvokeMethod(innerFn, self, context);
-        return generator;
-      }
-
-      exports.wrap = wrap; // Try/catch helper to minimize deoptimizations. Returns a completion
-      // record like context.tryEntries[i].completion. This interface could
-      // have been (and was previously) designed to take a closure to be
-      // invoked without arguments, but in all the cases we care about we
-      // already have an existing method we want to call, so there's no need
-      // to create a new function object. We can even get away with assuming
-      // the method takes exactly one argument, since that happens to be true
-      // in every case, so we don't have to touch the arguments object. The
-      // only additional allocation required is the completion record, which
-      // has a stable shape and so hopefully should be cheap to allocate.
-
-      function tryCatch(fn, obj, arg) {
-        try {
-          return {
-            type: "normal",
-            arg: fn.call(obj, arg)
-          };
-        } catch (err) {
-          return {
-            type: "throw",
-            arg: err
-          };
-        }
-      }
-
-      var GenStateSuspendedStart = "suspendedStart";
-      var GenStateSuspendedYield = "suspendedYield";
-      var GenStateExecuting = "executing";
-      var GenStateCompleted = "completed"; // Returning this object from the innerFn has the same effect as
-      // breaking out of the dispatch switch statement.
-
-      var ContinueSentinel = {}; // Dummy constructor functions that we use as the .constructor and
-      // .constructor.prototype properties for functions that return Generator
-      // objects. For full spec compliance, you may wish to configure your
-      // minifier not to mangle the names of these two functions.
-
-      function Generator() {}
-
-      function GeneratorFunction() {}
-
-      function GeneratorFunctionPrototype() {} // This is a polyfill for %IteratorPrototype% for environments that
-      // don't natively support it.
-
-
-      var IteratorPrototype = {};
-
-      IteratorPrototype[iteratorSymbol] = function () {
-        return this;
-      };
-
-      var getProto = Object.getPrototypeOf;
-      var NativeIteratorPrototype = getProto && getProto(getProto(values([])));
-
-      if (NativeIteratorPrototype && NativeIteratorPrototype !== Op && hasOwn.call(NativeIteratorPrototype, iteratorSymbol)) {
-        // This environment has a native %IteratorPrototype%; use it instead
-        // of the polyfill.
-        IteratorPrototype = NativeIteratorPrototype;
-      }
-
-      var Gp = GeneratorFunctionPrototype.prototype = Generator.prototype = Object.create(IteratorPrototype);
-      GeneratorFunction.prototype = Gp.constructor = GeneratorFunctionPrototype;
-      GeneratorFunctionPrototype.constructor = GeneratorFunction;
-      GeneratorFunction.displayName = define(GeneratorFunctionPrototype, toStringTagSymbol, "GeneratorFunction"); // Helper for defining the .next, .throw, and .return methods of the
-      // Iterator interface in terms of a single ._invoke method.
-
-      function defineIteratorMethods(prototype) {
-        ["next", "throw", "return"].forEach(function (method) {
-          define(prototype, method, function (arg) {
-            return this._invoke(method, arg);
-          });
-        });
-      }
-
-      exports.isGeneratorFunction = function (genFun) {
-        var ctor = typeof genFun === "function" && genFun.constructor;
-        return ctor ? ctor === GeneratorFunction || // For the native GeneratorFunction constructor, the best we can
-        // do is to check its .name property.
-        (ctor.displayName || ctor.name) === "GeneratorFunction" : false;
-      };
-
-      exports.mark = function (genFun) {
-        if (Object.setPrototypeOf) {
-          Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
-        } else {
-          genFun.__proto__ = GeneratorFunctionPrototype;
-          define(genFun, toStringTagSymbol, "GeneratorFunction");
-        }
-
-        genFun.prototype = Object.create(Gp);
-        return genFun;
-      }; // Within the body of any async function, `await x` is transformed to
-      // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
-      // `hasOwn.call(value, "__await")` to determine if the yielded value is
-      // meant to be awaited.
-
-
-      exports.awrap = function (arg) {
-        return {
-          __await: arg
-        };
-      };
-
-      function AsyncIterator(generator, PromiseImpl) {
-        function invoke(method, arg, resolve, reject) {
-          var record = tryCatch(generator[method], generator, arg);
-
-          if (record.type === "throw") {
-            reject(record.arg);
-          } else {
-            var result = record.arg;
-            var value = result.value;
-
-            if (value && typeof value === "object" && hasOwn.call(value, "__await")) {
-              return PromiseImpl.resolve(value.__await).then(function (value) {
-                invoke("next", value, resolve, reject);
-              }, function (err) {
-                invoke("throw", err, resolve, reject);
-              });
-            }
-
-            return PromiseImpl.resolve(value).then(function (unwrapped) {
-              // When a yielded Promise is resolved, its final value becomes
-              // the .value of the Promise<{value,done}> result for the
-              // current iteration.
-              result.value = unwrapped;
-              resolve(result);
-            }, function (error) {
-              // If a rejected Promise was yielded, throw the rejection back
-              // into the async generator function so it can be handled there.
-              return invoke("throw", error, resolve, reject);
-            });
-          }
-        }
-
-        var previousPromise;
-
-        function enqueue(method, arg) {
-          function callInvokeWithMethodAndArg() {
-            return new PromiseImpl(function (resolve, reject) {
-              invoke(method, arg, resolve, reject);
-            });
-          }
-
-          return previousPromise = // If enqueue has been called before, then we want to wait until
-          // all previous Promises have been resolved before calling invoke,
-          // so that results are always delivered in the correct order. If
-          // enqueue has not been called before, then it is important to
-          // call invoke immediately, without waiting on a callback to fire,
-          // so that the async generator function has the opportunity to do
-          // any necessary setup in a predictable way. This predictability
-          // is why the Promise constructor synchronously invokes its
-          // executor callback, and why async functions synchronously
-          // execute code before the first await. Since we implement simple
-          // async functions in terms of async generators, it is especially
-          // important to get this right, even though it requires care.
-          previousPromise ? previousPromise.then(callInvokeWithMethodAndArg, // Avoid propagating failures to Promises returned by later
-          // invocations of the iterator.
-          callInvokeWithMethodAndArg) : callInvokeWithMethodAndArg();
-        } // Define the unified helper method that is used to implement .next,
-        // .throw, and .return (see defineIteratorMethods).
-
-
-        this._invoke = enqueue;
-      }
-
-      defineIteratorMethods(AsyncIterator.prototype);
-
-      AsyncIterator.prototype[asyncIteratorSymbol] = function () {
-        return this;
-      };
-
-      exports.AsyncIterator = AsyncIterator; // Note that simple async functions are implemented on top of
-      // AsyncIterator objects; they just return a Promise for the value of
-      // the final result produced by the iterator.
-
-      exports.async = function (innerFn, outerFn, self, tryLocsList, PromiseImpl) {
-        if (PromiseImpl === void 0) PromiseImpl = Promise;
-        var iter = new AsyncIterator(wrap(innerFn, outerFn, self, tryLocsList), PromiseImpl);
-        return exports.isGeneratorFunction(outerFn) ? iter // If outerFn is a generator, return the full iterator.
-        : iter.next().then(function (result) {
-          return result.done ? result.value : iter.next();
-        });
-      };
-
-      function makeInvokeMethod(innerFn, self, context) {
-        var state = GenStateSuspendedStart;
-        return function invoke(method, arg) {
-          if (state === GenStateExecuting) {
-            throw new Error("Generator is already running");
-          }
-
-          if (state === GenStateCompleted) {
-            if (method === "throw") {
-              throw arg;
-            } // Be forgiving, per 25.3.3.3.3 of the spec:
-            // https://people.mozilla.org/~jorendorff/es6-draft.html#sec-generatorresume
-
-
-            return doneResult();
-          }
-
-          context.method = method;
-          context.arg = arg;
-
-          while (true) {
-            var delegate = context.delegate;
-
-            if (delegate) {
-              var delegateResult = maybeInvokeDelegate(delegate, context);
-
-              if (delegateResult) {
-                if (delegateResult === ContinueSentinel) continue;
-                return delegateResult;
-              }
-            }
-
-            if (context.method === "next") {
-              // Setting context._sent for legacy support of Babel's
-              // function.sent implementation.
-              context.sent = context._sent = context.arg;
-            } else if (context.method === "throw") {
-              if (state === GenStateSuspendedStart) {
-                state = GenStateCompleted;
-                throw context.arg;
-              }
-
-              context.dispatchException(context.arg);
-            } else if (context.method === "return") {
-              context.abrupt("return", context.arg);
-            }
-
-            state = GenStateExecuting;
-            var record = tryCatch(innerFn, self, context);
-
-            if (record.type === "normal") {
-              // If an exception is thrown from innerFn, we leave state ===
-              // GenStateExecuting and loop back for another invocation.
-              state = context.done ? GenStateCompleted : GenStateSuspendedYield;
-
-              if (record.arg === ContinueSentinel) {
-                continue;
-              }
-
-              return {
-                value: record.arg,
-                done: context.done
-              };
-            } else if (record.type === "throw") {
-              state = GenStateCompleted; // Dispatch the exception by looping back around to the
-              // context.dispatchException(context.arg) call above.
-
-              context.method = "throw";
-              context.arg = record.arg;
-            }
-          }
-        };
-      } // Call delegate.iterator[context.method](context.arg) and handle the
-      // result, either by returning a { value, done } result from the
-      // delegate iterator, or by modifying context.method and context.arg,
-      // setting context.delegate to null, and returning the ContinueSentinel.
-
-
-      function maybeInvokeDelegate(delegate, context) {
-        var method = delegate.iterator[context.method];
-
-        if (method === undefined$1) {
-          // A .throw or .return when the delegate iterator has no .throw
-          // method always terminates the yield* loop.
-          context.delegate = null;
-
-          if (context.method === "throw") {
-            // Note: ["return"] must be used for ES3 parsing compatibility.
-            if (delegate.iterator["return"]) {
-              // If the delegate iterator has a return method, give it a
-              // chance to clean up.
-              context.method = "return";
-              context.arg = undefined$1;
-              maybeInvokeDelegate(delegate, context);
-
-              if (context.method === "throw") {
-                // If maybeInvokeDelegate(context) changed context.method from
-                // "return" to "throw", let that override the TypeError below.
-                return ContinueSentinel;
-              }
-            }
-
-            context.method = "throw";
-            context.arg = new TypeError("The iterator does not provide a 'throw' method");
-          }
-
-          return ContinueSentinel;
-        }
-
-        var record = tryCatch(method, delegate.iterator, context.arg);
-
-        if (record.type === "throw") {
-          context.method = "throw";
-          context.arg = record.arg;
-          context.delegate = null;
-          return ContinueSentinel;
-        }
-
-        var info = record.arg;
-
-        if (!info) {
-          context.method = "throw";
-          context.arg = new TypeError("iterator result is not an object");
-          context.delegate = null;
-          return ContinueSentinel;
-        }
-
-        if (info.done) {
-          // Assign the result of the finished delegate to the temporary
-          // variable specified by delegate.resultName (see delegateYield).
-          context[delegate.resultName] = info.value; // Resume execution at the desired location (see delegateYield).
-
-          context.next = delegate.nextLoc; // If context.method was "throw" but the delegate handled the
-          // exception, let the outer generator proceed normally. If
-          // context.method was "next", forget context.arg since it has been
-          // "consumed" by the delegate iterator. If context.method was
-          // "return", allow the original .return call to continue in the
-          // outer generator.
-
-          if (context.method !== "return") {
-            context.method = "next";
-            context.arg = undefined$1;
-          }
-        } else {
-          // Re-yield the result returned by the delegate method.
-          return info;
-        } // The delegate iterator is finished, so forget it and continue with
-        // the outer generator.
-
-
-        context.delegate = null;
-        return ContinueSentinel;
-      } // Define Generator.prototype.{next,throw,return} in terms of the
-      // unified ._invoke helper method.
-
-
-      defineIteratorMethods(Gp);
-      define(Gp, toStringTagSymbol, "Generator"); // A Generator should always return itself as the iterator object when the
-      // @@iterator function is called on it. Some browsers' implementations of the
-      // iterator prototype chain incorrectly implement this, causing the Generator
-      // object to not be returned from this call. This ensures that doesn't happen.
-      // See https://github.com/facebook/regenerator/issues/274 for more details.
-
-      Gp[iteratorSymbol] = function () {
-        return this;
-      };
-
-      Gp.toString = function () {
-        return "[object Generator]";
-      };
-
-      function pushTryEntry(locs) {
-        var entry = {
-          tryLoc: locs[0]
-        };
-
-        if (1 in locs) {
-          entry.catchLoc = locs[1];
-        }
-
-        if (2 in locs) {
-          entry.finallyLoc = locs[2];
-          entry.afterLoc = locs[3];
-        }
-
-        this.tryEntries.push(entry);
-      }
-
-      function resetTryEntry(entry) {
-        var record = entry.completion || {};
-        record.type = "normal";
-        delete record.arg;
-        entry.completion = record;
-      }
-
-      function Context(tryLocsList) {
-        // The root entry object (effectively a try statement without a catch
-        // or a finally block) gives us a place to store values thrown from
-        // locations where there is no enclosing try statement.
-        this.tryEntries = [{
-          tryLoc: "root"
-        }];
-        tryLocsList.forEach(pushTryEntry, this);
-        this.reset(true);
-      }
-
-      exports.keys = function (object) {
-        var keys = [];
-
-        for (var key in object) {
-          keys.push(key);
-        }
-
-        keys.reverse(); // Rather than returning an object with a next method, we keep
-        // things simple and return the next function itself.
-
-        return function next() {
-          while (keys.length) {
-            var key = keys.pop();
-
-            if (key in object) {
-              next.value = key;
-              next.done = false;
-              return next;
-            }
-          } // To avoid creating an additional object, we just hang the .value
-          // and .done properties off the next function object itself. This
-          // also ensures that the minifier will not anonymize the function.
-
-
-          next.done = true;
-          return next;
-        };
-      };
-
-      function values(iterable) {
-        if (iterable) {
-          var iteratorMethod = iterable[iteratorSymbol];
-
-          if (iteratorMethod) {
-            return iteratorMethod.call(iterable);
-          }
-
-          if (typeof iterable.next === "function") {
-            return iterable;
-          }
-
-          if (!isNaN(iterable.length)) {
-            var i = -1,
-                next = function next() {
-              while (++i < iterable.length) {
-                if (hasOwn.call(iterable, i)) {
-                  next.value = iterable[i];
-                  next.done = false;
-                  return next;
-                }
-              }
-
-              next.value = undefined$1;
-              next.done = true;
-              return next;
-            };
-
-            return next.next = next;
-          }
-        } // Return an iterator with no values.
-
-
-        return {
-          next: doneResult
-        };
-      }
-
-      exports.values = values;
-
-      function doneResult() {
-        return {
-          value: undefined$1,
-          done: true
-        };
-      }
-
-      Context.prototype = {
-        constructor: Context,
-        reset: function reset(skipTempReset) {
-          this.prev = 0;
-          this.next = 0; // Resetting context._sent for legacy support of Babel's
-          // function.sent implementation.
-
-          this.sent = this._sent = undefined$1;
-          this.done = false;
-          this.delegate = null;
-          this.method = "next";
-          this.arg = undefined$1;
-          this.tryEntries.forEach(resetTryEntry);
-
-          if (!skipTempReset) {
-            for (var name in this) {
-              // Not sure about the optimal order of these conditions:
-              if (name.charAt(0) === "t" && hasOwn.call(this, name) && !isNaN(+name.slice(1))) {
-                this[name] = undefined$1;
-              }
-            }
-          }
-        },
-        stop: function stop() {
-          this.done = true;
-          var rootEntry = this.tryEntries[0];
-          var rootRecord = rootEntry.completion;
-
-          if (rootRecord.type === "throw") {
-            throw rootRecord.arg;
-          }
-
-          return this.rval;
-        },
-        dispatchException: function dispatchException(exception) {
-          if (this.done) {
-            throw exception;
-          }
-
-          var context = this;
-
-          function handle(loc, caught) {
-            record.type = "throw";
-            record.arg = exception;
-            context.next = loc;
-
-            if (caught) {
-              // If the dispatched exception was caught by a catch block,
-              // then let that catch block handle the exception normally.
-              context.method = "next";
-              context.arg = undefined$1;
-            }
-
-            return !!caught;
-          }
-
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-            var record = entry.completion;
-
-            if (entry.tryLoc === "root") {
-              // Exception thrown outside of any try block that could handle
-              // it, so set the completion value of the entire function to
-              // throw the exception.
-              return handle("end");
-            }
-
-            if (entry.tryLoc <= this.prev) {
-              var hasCatch = hasOwn.call(entry, "catchLoc");
-              var hasFinally = hasOwn.call(entry, "finallyLoc");
-
-              if (hasCatch && hasFinally) {
-                if (this.prev < entry.catchLoc) {
-                  return handle(entry.catchLoc, true);
-                } else if (this.prev < entry.finallyLoc) {
-                  return handle(entry.finallyLoc);
-                }
-              } else if (hasCatch) {
-                if (this.prev < entry.catchLoc) {
-                  return handle(entry.catchLoc, true);
-                }
-              } else if (hasFinally) {
-                if (this.prev < entry.finallyLoc) {
-                  return handle(entry.finallyLoc);
-                }
-              } else {
-                throw new Error("try statement without catch or finally");
-              }
-            }
-          }
-        },
-        abrupt: function abrupt(type, arg) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.tryLoc <= this.prev && hasOwn.call(entry, "finallyLoc") && this.prev < entry.finallyLoc) {
-              var finallyEntry = entry;
-              break;
-            }
-          }
-
-          if (finallyEntry && (type === "break" || type === "continue") && finallyEntry.tryLoc <= arg && arg <= finallyEntry.finallyLoc) {
-            // Ignore the finally entry if control is not jumping to a
-            // location outside the try/catch block.
-            finallyEntry = null;
-          }
-
-          var record = finallyEntry ? finallyEntry.completion : {};
-          record.type = type;
-          record.arg = arg;
-
-          if (finallyEntry) {
-            this.method = "next";
-            this.next = finallyEntry.finallyLoc;
-            return ContinueSentinel;
-          }
-
-          return this.complete(record);
-        },
-        complete: function complete(record, afterLoc) {
-          if (record.type === "throw") {
-            throw record.arg;
-          }
-
-          if (record.type === "break" || record.type === "continue") {
-            this.next = record.arg;
-          } else if (record.type === "return") {
-            this.rval = this.arg = record.arg;
-            this.method = "return";
-            this.next = "end";
-          } else if (record.type === "normal" && afterLoc) {
-            this.next = afterLoc;
-          }
-
-          return ContinueSentinel;
-        },
-        finish: function finish(finallyLoc) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.finallyLoc === finallyLoc) {
-              this.complete(entry.completion, entry.afterLoc);
-              resetTryEntry(entry);
-              return ContinueSentinel;
-            }
-          }
-        },
-        "catch": function _catch(tryLoc) {
-          for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-            var entry = this.tryEntries[i];
-
-            if (entry.tryLoc === tryLoc) {
-              var record = entry.completion;
-
-              if (record.type === "throw") {
-                var thrown = record.arg;
-                resetTryEntry(entry);
-              }
-
-              return thrown;
-            }
-          } // The context.catch method must only be called with a location
-          // argument that corresponds to a known catch block.
-
-
-          throw new Error("illegal catch attempt");
-        },
-        delegateYield: function delegateYield(iterable, resultName, nextLoc) {
-          this.delegate = {
-            iterator: values(iterable),
-            resultName: resultName,
-            nextLoc: nextLoc
-          };
-
-          if (this.method === "next") {
-            // Deliberately forget the last sent value so that we don't
-            // accidentally pass it on to the delegate.
-            this.arg = undefined$1;
-          }
-
-          return ContinueSentinel;
-        }
-      }; // Regardless of whether this script is executing as a CommonJS module
-      // or not, return the runtime object so that we can declare the variable
-      // regeneratorRuntime in the outer scope, which allows this module to be
-      // injected easily by `bin/regenerator --include-runtime script.js`.
-
-      return exports;
-    }( // If this script is executing as a CommonJS module, use module.exports
-    // as the regeneratorRuntime namespace. Otherwise create a new empty
-    // object. Either way, the resulting object will be used to initialize
-    // the regeneratorRuntime variable at the top of this file.
-    module.exports );
-
-    try {
-      regeneratorRuntime = runtime;
-    } catch (accidentalStrictMode) {
-      // This module should not be running in strict mode, so the above
-      // assignment should always work unless something is misconfigured. Just
-      // in case runtime.js accidentally runs in strict mode, we can escape
-      // strict mode using a global Function call. This could conceivably fail
-      // if a Content Security Policy forbids using Function, but in that case
-      // the proper solution is to fix the accidental strict mode problem. If
-      // you've misconfigured your bundler to force strict mode and applied a
-      // CSP to forbid Function, and you're not willing to fix either of those
-      // problems, please detail your unique predicament in a GitHub issue.
-      Function("r", "regeneratorRuntime = r")(runtime);
-    }
-  });
-
-  var regenerator = runtime_1;
-
   function handleSelectMessage(_ref, state) {
-    var _ref$selectInput = _ref.selectInput,
-        selectOpen = _ref$selectInput.selectOpen,
-        values = _ref$selectInput.values,
-        executionContextId = _ref.executionContextId;
+    let {
+      selectInput: {
+        selectOpen,
+        values
+      },
+      executionContextId
+    } = _ref;
     state.waitingExecutionContext = executionContextId;
     if (state.ignoreSelectInputEvents) return;
     toggleSelect({
@@ -1556,9 +18,11 @@
   }
 
   function toggleSelect(_ref2) {
-    var selectOpen = _ref2.selectOpen,
-        values = _ref2.values;
-    var input = document.querySelector('#selectinput');
+    let {
+      selectOpen,
+      values
+    } = _ref2;
+    const input = document.querySelector('#selectinput');
 
     if (selectOpen) {
       input.innerHTML = values;
@@ -1570,7 +34,7 @@
   }
 
   /* eslint-disable no-useless-escape */
-  var keys = {
+  const keys = {
     '0': {
       'keyCode': 48,
       'key': '0',
@@ -2911,26 +1375,24 @@
     }
   };
 
-  var FRAME_CONTROL = false;
-  var WorldName = 'PlanetZanj';
-  var SHORT_TIMEOUT = 1000;
-  var MIN_DELTA = 40;
-  var MIN_PIX_DELTA = 8;
-  var THRESHOLD_DELTA = 1;
-  var DOM_DELTA_PIXEL = 0;
-  var DOM_DELTA_LINE = 1;
-  var DOM_DELTA_PAGE = 2;
-  var LINE_HEIGHT_GUESS = 32;
+  const FRAME_CONTROL = false;
+  const WorldName = 'PlanetZanj';
+  const SHORT_TIMEOUT = 1000;
+  const MIN_DELTA = 40;
+  const MIN_PIX_DELTA = 8;
+  const THRESHOLD_DELTA = 1;
+  const DOM_DELTA_PIXEL = 0;
+  const DOM_DELTA_LINE = 1;
+  const DOM_DELTA_PAGE = 2;
+  const LINE_HEIGHT_GUESS = 32;
 
-  var SYNTHETIC_CTRL = function SYNTHETIC_CTRL(e) {
-    return keyEvent({
-      key: 'Control',
-      originalType: e.originalType
-    }, 2, true);
-  };
+  const SYNTHETIC_CTRL = e => keyEvent({
+    key: 'Control',
+    originalType: e.originalType
+  }, 2, true);
 
   function translator(e) {
-    var handled = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
+    let handled = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
       type: 'case'
     };
     handled.type = handled.type || 'case';
@@ -2955,7 +1417,7 @@
       case "pointerup":
       case "pointermove":
         {
-          var button = "none";
+          let button = "none";
 
           if (!e.type.endsWith("move")) {
             if (e.button == 0) {
@@ -2984,22 +1446,24 @@
       case "wheel":
         {
           // if we use emulateTouchFromMouseEvent we need a button value
-          var deltaMode = e.originalEvent.deltaMode;
-          var deltaX = adjustWheelDeltaByMode(e.originalEvent.deltaX, deltaMode);
-          var deltaY = adjustWheelDeltaByMode(e.originalEvent.deltaY, deltaMode);
-          var contextId = e.contextId;
-          var clientX = 0;
-          var clientY = 0;
-          var deltas = {
+          const deltaMode = e.originalEvent.deltaMode;
+          const deltaX = adjustWheelDeltaByMode(e.originalEvent.deltaX, deltaMode);
+          const deltaY = adjustWheelDeltaByMode(e.originalEvent.deltaY, deltaMode);
+          const {
+            contextId
+          } = e;
+          const clientX = 0;
+          const clientY = 0;
+          const deltas = {
             deltaX,
             deltaY,
             clientX,
             clientY
           };
-          var retVal;
+          let retVal;
 
           if (deltaX > MIN_DELTA || deltaY > MIN_DELTA) {
-            var retVal1 = {
+            const retVal1 = {
               command: {
                 name: "Runtime.evaluate",
                 params: {
@@ -3011,7 +1475,7 @@
                 }
               }
             };
-            var retVal2 = mouseEvent(e, deltaX, deltaY);
+            const retVal2 = mouseEvent(e, deltaX, deltaY);
             retVal = [retVal1, retVal2];
           } else {
             retVal = mouseEvent(e, deltaX, deltaY);
@@ -3022,8 +1486,10 @@
 
       case "auth-response":
         {
-          var requestId = e.requestId,
-              authResponse = e.authResponse;
+          const {
+            requestId,
+            authResponse
+          } = e;
           return {
             command: {
               name: "Fetch.continueWithAuth",
@@ -3037,9 +1503,11 @@
 
       case "resample-imagery":
         {
-          var down = e.down,
-              up = e.up,
-              averageBw = e.averageBw;
+          const {
+            down,
+            up,
+            averageBw
+          } = e;
           return {
             command: {
               isZombieLordCommand: true,
@@ -3080,7 +1548,7 @@
         {
           if (e.code == "Unidentified") {
             if (e.key.length) {
-              var text = e.key;
+              const text = e.key;
               return {
                 command: {
                   name: "Input.insertText",
@@ -3094,12 +1562,12 @@
             } else return;
           } else if (e.key == "Unidentified") {
             if (e.code.length) {
-              var _text = e.code;
+              const text = e.code;
               return {
                 command: {
                   name: "Input.insertText",
                   params: {
-                    text: _text
+                    text
                   },
                   requiresShot: true,
                   ignoreHash: true
@@ -3175,9 +1643,11 @@
 
       case "setDocument":
         {
-          var frameId = e.frameId,
-              sessionId = e.sessionId,
-              html = e.html;
+          const {
+            frameId,
+            sessionId,
+            html
+          } = e;
 
           if (frameId) {
             return {
@@ -3198,8 +1668,14 @@
                   name: "Page.getFrameTree",
                   params: {}
                 }
-              }, function (_ref) {
-                var frameId = _ref.frameTree.frame.id;
+              }, _ref => {
+                let {
+                  frameTree: {
+                    frame: {
+                      id: frameId
+                    }
+                  }
+                } = _ref;
                 return {
                   command: {
                     name: "Page.setDocumentContent",
@@ -3240,10 +1716,12 @@
                       name: "Page.getNavigationHistory",
                       params: {}
                     }
-                  }, function (_ref2) {
-                    var currentIndex = _ref2.currentIndex,
-                        entries = _ref2.entries;
-                    var intendedEntry = entries[currentIndex + (e.action == "back" ? -1 : +1)];
+                  }, _ref2 => {
+                    let {
+                      currentIndex,
+                      entries
+                    } = _ref2;
+                    const intendedEntry = entries[currentIndex + (e.action == "back" ? -1 : +1)];
 
                     if (intendedEntry) {
                       return {
@@ -3271,51 +1749,51 @@
 
       case "touchscroll":
         {
-          var _deltaX = e.deltaX,
-              _deltaY = e.deltaY,
-              _clientX = e.bitmapX,
-              _clientY = e.bitmapY,
-              _contextId = e.contextId; // only one scroll direction at a time
+          let {
+            deltaX,
+            deltaY,
+            bitmapX: clientX,
+            bitmapY: clientY,
+            contextId
+          } = e; // only one scroll direction at a time
 
-          if (Math.abs(_deltaY) > Math.abs(_deltaX)) {
-            _deltaX = 0;
+          if (Math.abs(deltaY) > Math.abs(deltaX)) {
+            deltaX = 0;
 
-            if (Math.abs(_deltaY) > 0.2 * self.ViewportHeight) {
-              _deltaY = Math.round(5.718 * _deltaY);
+            if (Math.abs(deltaY) > 0.2 * self.ViewportHeight) {
+              deltaY = Math.round(5.718 * deltaY);
             }
           } else {
-            _deltaY = 0;
+            deltaY = 0;
 
-            if (Math.abs(_deltaX) > 0.3 * self.ViewportWidth) {
-              _deltaX = Math.round(5.718 * _deltaX);
+            if (Math.abs(deltaX) > 0.3 * self.ViewportWidth) {
+              deltaX = Math.round(5.718 * deltaX);
             }
           }
 
-          _clientX = Math.round(_clientX);
-          _clientY = Math.round(_clientY);
-          var _deltas = {
-            deltaX: _deltaX,
-            deltaY: _deltaY,
-            clientX: _clientX,
-            clientY: _clientY
+          clientX = Math.round(clientX);
+          clientY = Math.round(clientY);
+          const deltas = {
+            deltaX,
+            deltaY,
+            clientX,
+            clientY
           };
-          var _retVal = {
+          const retVal1 = {
             command: {
               name: "Runtime.evaluate",
               params: {
-                expression: "self.ensureScroll(".concat(JSON.stringify(_deltas), ");"),
+                expression: "self.ensureScroll(".concat(JSON.stringify(deltas), ");"),
                 includeCommandLineAPI: false,
                 userGesture: true,
-                contextId: _contextId,
+                contextId,
                 timeout: SHORT_TIMEOUT
               }
             }
           };
-
-          var _retVal2 = mouseEvent(e, _deltaX, _deltaY);
-
-          var _retVal3 = [_retVal, _retVal2];
-          return _retVal3;
+          const retVal2 = mouseEvent(e, deltaX, deltaY);
+          const retVal = [retVal1, retVal2];
+          return retVal;
         }
 
       case "zoom":
@@ -3341,7 +1819,7 @@
           */
 
           /** so we are using emulation and multiplying the scale factor in the event listener **/
-          var _retVal4 = {
+          const retVal2 = {
             command: {
               name: "Emulation.setPageScaleFactor",
               params: {
@@ -3352,12 +1830,12 @@
               extraWait: 300
             }
           };
-          return _retVal4;
+          return retVal2;
         }
 
       case "select":
         {
-          var _retVal5 = {
+          const retVal = {
             command: {
               name: "Runtime.evaluate",
               params: {
@@ -3372,17 +1850,19 @@
               extraWait: 300
             }
           };
-          return _retVal5;
+          return retVal;
         }
 
       case "window-bounds":
         {
-          var width = e.width,
-              height = e.height,
-              targetId = e.targetId;
+          let {
+            width,
+            height,
+            targetId
+          } = e;
           width = parseInt(width);
           height = parseInt(height);
-          var _retVal6 = {
+          const retVal = {
             chain: [{
               command: {
                 name: "Browser.getWindowForTarget",
@@ -3390,11 +1870,13 @@
                   targetId
                 }
               }
-            }, function (_ref3) {
-              var windowId = _ref3.windowId,
-                  bounds = _ref3.bounds;
+            }, _ref3 => {
+              let {
+                windowId,
+                bounds
+              } = _ref3;
               if (bounds.width == width && bounds.height == height) return;
-              var retVal = {
+              const retVal = {
                 command: {
                   name: "Browser.setWindowBounds",
                   params: {
@@ -3410,22 +1892,24 @@
               return retVal;
             }]
           };
-          return _retVal6;
+          return retVal;
         }
 
       case "window-bounds-preImplementation":
         {
-          var _width = e.width,
-              _height = e.height,
-              mobile = e.mobile;
-          _width = parseInt(_width);
-          _height = parseInt(_height);
-          var _retVal7 = {
+          let {
+            width,
+            height,
+            mobile
+          } = e;
+          width = parseInt(width);
+          height = parseInt(height);
+          const retVal = {
             command: {
               name: "Emulation.setDeviceMetricsOverride",
               params: {
-                width: _width,
-                height: _height,
+                width,
+                height,
                 mobile,
                 deviceScaleFactor: 1,
                 screenOrientation: {
@@ -3436,15 +1920,17 @@
             },
             requiresShot: true
           };
-          return _retVal7;
+          return retVal;
         }
 
       case "user-agent":
         {
-          var userAgent = e.userAgent,
-              platform = e.platform,
-              acceptLanguage = e.acceptLanguage;
-          var _retVal8 = {
+          const {
+            userAgent,
+            platform,
+            acceptLanguage
+          } = e;
+          const retVal = {
             command: {
               name: "Network.setUserAgentOverride",
               params: {
@@ -3454,12 +1940,12 @@
               }
             }
           };
-          return _retVal8;
+          return retVal;
         }
 
       case "hide-scrollbars":
         {
-          var _retVal9 = {
+          const retVal = {
             command: {
               name: "Emulation.setScrollbarsHidden",
               params: {
@@ -3467,7 +1953,7 @@
               }
             }
           };
-          return _retVal9;
+          return retVal;
         }
 
       case "buffered-results-collection":
@@ -3497,27 +1983,29 @@
                   worldName: WorldName
                 }
               }
-            }, function (_ref4) {
-              var contextIds = _ref4.contextIds;
-              return contextIds.map(function (contextId) {
-                return {
-                  command: {
-                    name: "Runtime.evaluate",
-                    params: {
-                      expression: "canKeysInput();",
-                      contextId: contextId,
-                      timeout: SHORT_TIMEOUT
-                    }
+            }, _ref4 => {
+              let {
+                contextIds
+              } = _ref4;
+              return contextIds.map(contextId => ({
+                command: {
+                  name: "Runtime.evaluate",
+                  params: {
+                    expression: "canKeysInput();",
+                    contextId: contextId,
+                    timeout: SHORT_TIMEOUT
                   }
-                };
-              });
+                }
+              }));
             }]
           };
         }
 
       case "describeNode":
         {
-          var backendNodeId = e.backendNodeId;
+          const {
+            backendNodeId
+          } = e;
           return {
             command: {
               name: "DOM.describeNode",
@@ -3539,20 +2027,20 @@
                   worldName: WorldName
                 }
               }
-            }, function (_ref5) {
-              var contextIds = _ref5.contextIds;
-              return contextIds.map(function (contextId) {
-                return {
-                  command: {
-                    name: "Runtime.evaluate",
-                    params: {
-                      expression: "getElementInfo(".concat(JSON.stringify(e.data), ");"),
-                      contextId: contextId,
-                      timeout: SHORT_TIMEOUT
-                    }
+            }, _ref5 => {
+              let {
+                contextIds
+              } = _ref5;
+              return contextIds.map(contextId => ({
+                command: {
+                  name: "Runtime.evaluate",
+                  params: {
+                    expression: "getElementInfo(".concat(JSON.stringify(e.data), ");"),
+                    contextId: contextId,
+                    timeout: SHORT_TIMEOUT
                   }
-                };
-              });
+                }
+              }));
             }]
           };
         }
@@ -3568,11 +2056,15 @@
                   worldName: WorldName
                 }
               }
-            }, function (_ref6) {
-              var sessionContextIdPairs = _ref6.sessionContextIdPairs;
-              return sessionContextIdPairs.map(function (_ref7) {
-                var sessionId = _ref7.sessionId,
-                    contextId = _ref7.contextId;
+            }, _ref6 => {
+              let {
+                sessionContextIdPairs
+              } = _ref6;
+              return sessionContextIdPairs.map(_ref7 => {
+                let {
+                  sessionId,
+                  contextId
+                } = _ref7;
                 return {
                   command: {
                     name: "Runtime.evaluate",
@@ -3597,8 +2089,10 @@
                 name: "Target.createBrowserContext",
                 params: {}
               }
-            }, function (_ref8) {
-              var browserContextId = _ref8.browserContextId;
+            }, _ref8 => {
+              let {
+                browserContextId
+              } = _ref8;
               return {
                 command: {
                   name: "Target.createTarget",
@@ -3655,9 +2149,11 @@
                 name: "Connection.getAllSessionIds",
                 params: {}
               }
-            }, function (_ref9) {
-              var sessionIds = _ref9.sessionIds;
-              return sessionIds.map(function (sessionId) {
+            }, _ref9 => {
+              let {
+                sessionIds
+              } = _ref9;
+              return sessionIds.map(sessionId => {
                 return {
                   command: {
                     name: "Page.resetNavigationHistory",
@@ -3693,10 +2189,12 @@
 
       case "respond-to-modal":
         {
-          var accept = false;
-          var response = e.response,
-              _sessionId = e.sessionId,
-              promptText = e.promptText;
+          let accept = false;
+          let {
+            response,
+            sessionId,
+            promptText
+          } = e;
 
           if (response == "ok") {
             accept = true;
@@ -3708,7 +2206,7 @@
               params: {
                 accept,
                 promptText,
-                sessionId: _sessionId
+                sessionId
               }
             }
           };
@@ -3728,8 +2226,8 @@
   }
 
   function mouseEvent(e) {
-    var deltaX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-    var deltaY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+    let deltaX = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    let deltaY = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
     return {
       command: {
         name: "Input.dispatchMouseEvent",
@@ -3746,13 +2244,13 @@
   }
 
   function keyEvent(e) {
-    var modifiers = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-    var SYNTHETIC = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-    var id = e.key && e.key.length > 1 ? e.key : e.code;
-    var def = keys[id];
-    var text = e.originalType == "keypress" ? String.fromCharCode(e.keyCode) : undefined;
+    let modifiers = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
+    let SYNTHETIC = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+    const id = e.key && e.key.length > 1 ? e.key : e.code;
+    const def = keys[id];
+    const text = e.originalType == "keypress" ? String.fromCharCode(e.keyCode) : undefined;
     modifiers = modifiers || encodeModifiers(e.originalEvent);
-    var type;
+    let type;
 
     if (e.originalType == "keydown") {
       if (text) type = "keyDown";else type = "rawKeyDown";
@@ -3762,7 +2260,7 @@
       type = "keyUp";
     }
 
-    var retVal = {
+    const retVal = {
       command: {
         name: "Input.dispatchKeyEvent",
         params: {
@@ -3787,7 +2285,7 @@
   }
 
   function encodeModifiers(originalEvent) {
-    var modifiers = 0;
+    let modifiers = 0;
 
     if (originalEvent.altKey) {
       modifiers += 1;
@@ -3810,7 +2308,7 @@
 
   function adjustWheelDeltaByMode(delta, mode) {
     if (delta == 0) return delta;
-    var threshold = Math.abs(delta) > THRESHOLD_DELTA;
+    let threshold = Math.abs(delta) > THRESHOLD_DELTA;
 
     if (!threshold) {
       delta = Math.sqrt(Math.abs(delta)) * Math.sign(delta);
@@ -3849,17 +2347,13 @@
     return delta;
   }
 
-  var SafariPlatform = /^((?!chrome|android).)*safari/i;
-  var MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-  var FirefoxPlatform = /firefox/i;
-  var iden = function iden(e) {
-    return e;
-  };
-  var isSafari = function isSafari() {
-    return SafariPlatform.test(navigator.userAgent);
-  };
-  var BLANK = "about:blank";
-  var DEBUG = {
+  const SafariPlatform = /^((?!chrome|android).)*safari/i;
+  const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+  const FirefoxPlatform = /firefox/i;
+  const iden = e => e;
+  const isSafari = () => SafariPlatform.test(navigator.userAgent);
+  const BLANK = "about:blank";
+  const DEBUG = {
     loggableEvents: new Set([
     /*typing events*/
     'keydown', 'keypress', 'keyup', 'compositionstart', 'compositionupdate', 'compositionend', 'input', 'beforeinput',
@@ -3878,42 +2372,19 @@
     med: 3,
     high: 5
   };
-  function sleep(_x) {
-    return _sleep.apply(this, arguments);
+  async function sleep(ms) {
+    return new Promise(res => setTimeout(res, ms));
   }
-
-  function _sleep() {
-    _sleep = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(ms) {
-      return regenerator.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              return _context.abrupt("return", new Promise(function (res) {
-                return setTimeout(res, ms);
-              }));
-
-            case 1:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, _callee);
-    }));
-    return _sleep.apply(this, arguments);
-  }
-
   function debounce(func, wait) {
-    var timeout;
+    let timeout;
     return function () {
-      var _this = this;
-
       for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
         args[_key] = arguments[_key];
       }
 
-      var later = function later() {
+      const later = () => {
         timeout = null;
-        func.apply(_this, args);
+        func.apply(this, args);
       };
 
       clearTimeout(timeout);
@@ -3922,14 +2393,12 @@
   } // leading edge throttle
 
   function throttle(func, wait) {
-    var timeout;
+    let timeout;
 
-    var throttled = function throttled() {
+    const throttled = function () {
       if (!timeout) {
-        timeout = setTimeout(function () {
-          return timeout = false;
-        }, wait);
-        return func.apply(void 0, arguments);
+        timeout = setTimeout(() => timeout = false, wait);
+        return func(...arguments);
       }
     };
 
@@ -3949,111 +2418,64 @@
     return;
   } // debug logging
 
-  var tabNumbers = new Map();
-  var TabNumber = 1;
-  function fetchTabs(_x) {
-    return _fetchTabs.apply(this, arguments);
-  }
+  //FIXME we could move this into constructor 
+  const tabNumbers = new Map();
+  let TabNumber = 1;
+  async function fetchTabs(_ref) {
+    let {
+      sessionToken
+    } = _ref;
 
-  function _fetchTabs() {
-    _fetchTabs = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(_ref) {
-      var sessionToken, url, resp, data, reload, x, _reload;
+    try {
+      const url = new URL(location);
+      url.pathname = '/api/v1/tabs';
+      const resp = await fetch(url);
 
-      return regenerator.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              sessionToken = _ref.sessionToken;
-              _context.prev = 1;
-              url = new URL(location);
-              url.pathname = '/api/v1/tabs';
-              _context.next = 6;
-              return fetch(url);
+      if (resp.ok) {
+        const data = await resp.json();
 
-            case 6:
-              resp = _context.sent;
-
-              if (!resp.ok) {
-                _context.next = 18;
-                break;
-              }
-
-              _context.next = 10;
-              return resp.json();
-
-            case 10:
-              data = _context.sent;
-
-              if (data.error) {
-                if (data.resetRequired) {
-                  reload = confirm("Some errors occurred and we can't seem to reach your cloud browser. You can try reloading the page and if the problem persists, try switching your cloud browser off then on again. Want to reload the page now?");
-                  if (reload) location.reload();
-                }
-              }
-
-              data.tabs = (data.tabs || []).filter(function (_ref2) {
-                var type = _ref2.type;
-                return type == 'page';
-              }); // FIX for #36 ? 
-              // note: this does *not* work because new tabs can be inserted anywhere
-              // data.tabs.reverse();
-
-              data.tabs.forEach(function (tab) {
-                if (!tabNumbers.has(tab.targetId)) {
-                  tabNumbers.set(tab.targetId, TabNumber++);
-                }
-
-                tab.number = tabNumbers.get(tab.targetId);
-              });
-              data.tabs.sort(function (a, b) {
-                return a.number - b.number;
-              });
-              return _context.abrupt("return", data);
-
-            case 18:
-              if (!(resp.status == 401)) {
-                _context.next = 30;
-                break;
-              }
-
-              console.warn("Session has been cleared. Let's attempt relogin", sessionToken);
-
-              if (!DEBUG.blockAnotherReset) {
-                _context.next = 22;
-                break;
-              }
-
-              return _context.abrupt("return");
-
-            case 22:
-              DEBUG.blockAnotherReset = true;
-              x = new URL(location);
-              x.pathname = 'login';
-              x.search = "token=".concat(sessionToken, "&ran=").concat(Math.random());
-              alert("Your browser cleared your session. We need to reload the page to refresh it.");
-              DEBUG.delayUnload = false;
-              location.href = x;
-              return _context.abrupt("return");
-
-            case 30:
-              _context.next = 37;
-              break;
-
-            case 32:
-              _context.prev = 32;
-              _context.t0 = _context["catch"](1);
-              console.warn(_context.t0);
-              _reload = confirm("Some errors occurred and we can't seem to reach your cloud browser. You can try reloading the page and if the problem persists, try switching your cloud browser off then on again. Want to reload the page now?");
-              if (_reload) location.reload();
-
-            case 37:
-            case "end":
-              return _context.stop();
+        if (data.error) {
+          if (data.resetRequired) {
+            const reload = confirm("Some errors occurred and we can't seem to reach your cloud browser. You can try reloading the page and if the problem persists, try switching your cloud browser off then on again. Want to reload the page now?");
+            if (reload) location.reload();
           }
         }
-      }, _callee, null, [[1, 32]]);
-    }));
-    return _fetchTabs.apply(this, arguments);
+
+        data.tabs = (data.tabs || []).filter(_ref2 => {
+          let {
+            type
+          } = _ref2;
+          return type == 'page';
+        }); // FIX for #36 ? 
+        // note: this does *not* work because new tabs can be inserted anywhere
+        // data.tabs.reverse();
+
+        data.tabs.forEach(tab => {
+          if (!tabNumbers.has(tab.targetId)) {
+            tabNumbers.set(tab.targetId, TabNumber++);
+          }
+
+          tab.number = tabNumbers.get(tab.targetId);
+        });
+        data.tabs.sort((a, b) => a.number - b.number);
+        return data;
+      } else if (resp.status == 401) {
+        console.warn("Session has been cleared. Let's attempt relogin", sessionToken);
+        if (DEBUG.blockAnotherReset) return;
+        DEBUG.blockAnotherReset = true;
+        const x = new URL(location);
+        x.pathname = 'login';
+        x.search = "token=".concat(sessionToken, "&ran=").concat(Math.random());
+        alert("Your browser cleared your session. We need to reload the page to refresh it.");
+        DEBUG.delayUnload = false;
+        location.href = x;
+        return;
+      }
+    } catch (e) {
+      console.warn(e);
+      const reload = confirm("Some errors occurred and we can't seem to reach your cloud browser. You can try reloading the page and if the problem persists, try switching your cloud browser off then on again. Want to reload the page now?");
+      if (reload) location.reload();
+    }
   }
 
   function _defineProperty(obj, key, value) {
@@ -4073,333 +2495,152 @@
 
   var defineProperty = _defineProperty;
 
-  function _arrayLikeToArray$b(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-
-  var arrayLikeToArray = _arrayLikeToArray$b;
-
-  function _arrayWithoutHoles(arr) {
-    if (Array.isArray(arr)) return arrayLikeToArray(arr);
-  }
-
-  var arrayWithoutHoles = _arrayWithoutHoles;
-
-  function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter);
-  }
-
-  var iterableToArray = _iterableToArray;
-
-  function _unsupportedIterableToArray$b(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return arrayLikeToArray(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return arrayLikeToArray(o, minLen);
-  }
-
-  var unsupportedIterableToArray = _unsupportedIterableToArray$b;
-
-  function _nonIterableSpread() {
-    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-  }
-
-  var nonIterableSpread = _nonIterableSpread;
-
-  function _toConsumableArray(arr) {
-    return arrayWithoutHoles(arr) || iterableToArray(arr) || unsupportedIterableToArray(arr) || nonIterableSpread();
-  }
-
-  var toConsumableArray = _toConsumableArray;
-
   function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 
   function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
 
-  function _createForOfIteratorHelper$9(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$a(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+  const DemoTab = () => ({
+    targetId: 'demo1' + Math.random(),
+    browserContextId: 'demobrowser1',
+    title: 'Dosy Browser',
+    type: 'page',
+    url: 'payment://signup-to-dosy-browser.html'
+  });
 
-  function _unsupportedIterableToArray$a(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$a(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$a(o, minLen); }
-
-  function _arrayLikeToArray$a(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-  var DemoTab = function DemoTab() {
-    return {
-      targetId: 'demo1' + Math.random(),
-      browserContextId: 'demobrowser1',
-      title: 'Dosy Browser',
-      type: 'page',
-      url: 'payment://signup-to-dosy-browser.html'
-    };
-  };
-
-  var dontFocus = true;
-  var runFuncs = ['installFormSubmitButtonHandler', 'installStripeButton'];
-  var opts = {
+  const dontFocus = true;
+  const runFuncs = ['installFormSubmitButtonHandler', 'installStripeButton'];
+  const opts = {
     dontFocus,
     runFuncs
   };
-  var started = new Set();
-  var tab = DemoTab();
-  var tabs = [tab];
-  var requestId = 1;
-  var messageId$1 = 1;
-  function fetchDemoTabs() {
-    return _fetchDemoTabs.apply(this, arguments);
+  const started = new Set();
+  let tab = DemoTab();
+  const tabs = [tab];
+  let requestId = 1;
+  let messageId$1 = 1;
+  async function fetchDemoTabs() {
+    requestId++;
+    tab = tab || tabs[0];
+    return {
+      tabs,
+      activeTarget: tab && tab.targetId,
+      requestId
+    };
+  }
+  async function demoZombie(_ref) {
+    let {
+      events
+    } = _ref;
+    const meta = [];
+
+    for (const event of events) {
+      meta.push(...(await handleEvent(event)));
+    }
+
+    messageId$1++;
+    return {
+      data: [],
+      frameBuffer: [],
+      meta,
+      messageId: messageId$1
+    };
   }
 
-  function _fetchDemoTabs() {
-    _fetchDemoTabs = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee() {
-      return regenerator.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              requestId++;
-              tab = tab || tabs[0];
-              return _context.abrupt("return", {
-                tabs,
-                activeTarget: tab && tab.targetId,
-                requestId
-              });
+  async function handleEvent(event) {
+    const meta = [];
+    const {
+      command
+    } = event;
 
-            case 3:
-            case "end":
-              return _context.stop();
-          }
+    if (tab && !started.has(tab.targetId)) {
+      started.add(tab.targetId);
+      meta.push({
+        treeUpdate: _objectSpread({
+          open: await fetch("https://".concat(location.hostname, ":8001/demo-landing")).then(resp => resp.text()),
+          targetId: tab && tab.targetId
+        }, opts)
+      });
+    }
+
+    switch (command.name) {
+      case "Target.createTarget":
+        {
+          tab = DemoTab();
+          tabs.push(tab);
+          const meta1 = {
+            created: {
+              targetId: tab.targetId
+            }
+          };
+          const meta2 = {
+            treeUpdate: _objectSpread({
+              open: await fetch("https://".concat(location.hostname, ":8001/demo-landing")).then(resp => resp.text()),
+              targetId: tab.targetId
+            }, opts)
+          };
+          meta.push(meta1, meta2);
+          break;
         }
-      }, _callee);
-    }));
-    return _fetchDemoTabs.apply(this, arguments);
-  }
 
-  function demoZombie(_x) {
-    return _demoZombie.apply(this, arguments);
-  }
-
-  function _demoZombie() {
-    _demoZombie = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee2(_ref) {
-      var events, meta, _iterator, _step, event;
-
-      return regenerator.wrap(function _callee2$(_context2) {
-        while (1) {
-          switch (_context2.prev = _context2.next) {
-            case 0:
-              events = _ref.events;
-              meta = [];
-              _iterator = _createForOfIteratorHelper$9(events);
-              _context2.prev = 4;
-
-              _iterator.s();
-
-            case 6:
-              if ((_step = _iterator.n()).done) {
-                _context2.next = 18;
-                break;
-              }
-
-              event = _step.value;
-              _context2.t0 = meta.push;
-              _context2.t1 = meta;
-              _context2.t2 = toConsumableArray;
-              _context2.next = 13;
-              return handleEvent(event);
-
-            case 13:
-              _context2.t3 = _context2.sent;
-              _context2.t4 = (0, _context2.t2)(_context2.t3);
-
-              _context2.t0.apply.call(_context2.t0, _context2.t1, _context2.t4);
-
-            case 16:
-              _context2.next = 6;
-              break;
-
-            case 18:
-              _context2.next = 23;
-              break;
-
-            case 20:
-              _context2.prev = 20;
-              _context2.t5 = _context2["catch"](4);
-
-              _iterator.e(_context2.t5);
-
-            case 23:
-              _context2.prev = 23;
-
-              _iterator.f();
-
-              return _context2.finish(23);
-
-            case 26:
-              messageId$1++;
-              return _context2.abrupt("return", {
-                data: [],
-                frameBuffer: [],
-                meta,
-                messageId: messageId$1
-              });
-
-            case 28:
-            case "end":
-              return _context2.stop();
-          }
+      case "Target.activateTarget":
+        {
+          tab = tabs.find(_ref2 => {
+            let {
+              targetId
+            } = _ref2;
+            return targetId == command.params.targetId;
+          });
+          break;
         }
-      }, _callee2, null, [[4, 20, 23, 26]]);
-    }));
-    return _demoZombie.apply(this, arguments);
-  }
 
-  function handleEvent(_x2) {
-    return _handleEvent.apply(this, arguments);
-  }
+      case "Demo.formSubmission":
+        {
+          let jres;
 
-  function _handleEvent() {
-    _handleEvent = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee3(event) {
-      var meta, command, meta1, meta2, jres, _jres, browserUrl, _meta, _meta2;
+          try {
+            jres = JSON.parse(event.result);
+          } catch (e) {}
 
-      return regenerator.wrap(function _callee3$(_context3) {
-        while (1) {
-          switch (_context3.prev = _context3.next) {
-            case 0:
-              meta = [];
-              command = event.command;
-
-              if (!(tab && !started.has(tab.targetId))) {
-                _context3.next = 15;
-                break;
+          if (!!jres && !!jres.browserUrl) {
+            const {
+              browserUrl
+            } = jres;
+            const meta1 = {
+              topRedirect: {
+                browserUrl,
+                targetId: tab && tab.targetId
               }
-
-              started.add(tab.targetId);
-              _context3.t0 = meta;
-              _context3.t1 = _objectSpread;
-              _context3.next = 8;
-              return fetch("https://".concat(location.hostname, ":8001/demo-landing")).then(function (resp) {
-                return resp.text();
-              });
-
-            case 8:
-              _context3.t2 = _context3.sent;
-              _context3.t3 = tab && tab.targetId;
-              _context3.t4 = {
-                open: _context3.t2,
-                targetId: _context3.t3
-              };
-              _context3.t5 = opts;
-              _context3.t6 = (0, _context3.t1)(_context3.t4, _context3.t5);
-              _context3.t7 = {
-                treeUpdate: _context3.t6
-              };
-
-              _context3.t0.push.call(_context3.t0, _context3.t7);
-
-            case 15:
-              _context3.t8 = command.name;
-              _context3.next = _context3.t8 === "Target.createTarget" ? 18 : _context3.t8 === "Target.activateTarget" ? 32 : _context3.t8 === "Demo.formSubmission" ? 34 : 46;
-              break;
-
-            case 18:
-              tab = DemoTab();
-              tabs.push(tab);
-              meta1 = {
-                created: {
-                  targetId: tab.targetId
-                }
-              };
-              _context3.t9 = _objectSpread;
-              _context3.next = 24;
-              return fetch("https://".concat(location.hostname, ":8001/demo-landing")).then(function (resp) {
-                return resp.text();
-              });
-
-            case 24:
-              _context3.t10 = _context3.sent;
-              _context3.t11 = tab.targetId;
-              _context3.t12 = {
-                open: _context3.t10,
-                targetId: _context3.t11
-              };
-              _context3.t13 = opts;
-              _context3.t14 = (0, _context3.t9)(_context3.t12, _context3.t13);
-              meta2 = {
-                treeUpdate: _context3.t14
-              };
-              meta.push(meta1, meta2);
-              return _context3.abrupt("break", 46);
-
-            case 32:
-              tab = tabs.find(function (_ref2) {
-                var targetId = _ref2.targetId;
-                return targetId == command.params.targetId;
-              });
-              return _context3.abrupt("break", 46);
-
-            case 34:
-              try {
-                jres = JSON.parse(event.result);
-              } catch (e) {}
-
-              if (!(!!jres && !!jres.browserUrl)) {
-                _context3.next = 43;
-                break;
-              }
-
-              _jres = jres, browserUrl = _jres.browserUrl;
-              _meta = {
-                topRedirect: {
-                  browserUrl,
-                  targetId: tab && tab.targetId
-                }
-              };
-              _context3.next = 40;
-              return sleep(5000);
-
-            case 40:
-              meta.push(_meta);
-              _context3.next = 45;
-              break;
-
-            case 43:
-              _meta2 = {
-                treeUpdate: _objectSpread({
-                  open: event.result,
-                  targetId: tab && tab.targetId
-                }, opts)
-              };
-              meta.push(_meta2);
-
-            case 45:
-              return _context3.abrupt("break", 46);
-
-            case 46:
-              return _context3.abrupt("return", meta);
-
-            case 47:
-            case "end":
-              return _context3.stop();
+            };
+            await sleep(5000);
+            meta.push(meta1);
+          } else {
+            const meta1 = {
+              treeUpdate: _objectSpread({
+                open: event.result,
+                targetId: tab && tab.targetId
+              }, opts)
+            };
+            meta.push(meta1);
           }
+
+          break;
         }
-      }, _callee3);
-    }));
-    return _handleEvent.apply(this, arguments);
+    }
+
+    return meta;
   }
 
   function handleKeysCanInputMessage(_ref, state) {
-    var _ref$keyInput = _ref.keyInput,
-        keysCanInput = _ref$keyInput.keysCanInput,
-        isTextareaOrContenteditable = _ref$keyInput.isTextareaOrContenteditable,
-        type = _ref$keyInput.type,
-        inputmode = _ref$keyInput.inputmode,
-        _ref$keyInput$value = _ref$keyInput.value,
-        value = _ref$keyInput$value === void 0 ? '' : _ref$keyInput$value,
-        executionContextId = _ref.executionContextId;
+    let {
+      keyInput: {
+        keysCanInput,
+        isTextareaOrContenteditable,
+        type,
+        inputmode,
+        value = ''
+      },
+      executionContextId
+    } = _ref;
     if (state.ignoreKeysCanInputMessage) return;
 
     if (keysCanInput) {
@@ -4416,7 +2657,7 @@
       state.contextIdOfFocusedInput = null;
 
       if (!state.dontFocusControlInputs) {
-        var active = document.activeElement;
+        const active = document.activeElement;
 
         if (active == state.viewState.textarea) {
           state.viewState.blurTextarea();
@@ -4428,10 +2669,15 @@
   }
 
   function handleElementInfo(_ref, state) {
-    var _ref$elementInfo = _ref.elementInfo,
-        attributes = _ref$elementInfo.attributes,
-        innerText = _ref$elementInfo.innerText,
-        noSuchElement = _ref$elementInfo.noSuchElement;
+    let {
+      elementInfo: {
+        attributes,
+        innerText,
+        noSuchElement
+      }
+      /*executionContextId*/
+
+    } = _ref;
 
     if (!state.elementInfoContinuation) {
       console.warn("Got element info message, but no continuation to pass it to");
@@ -4464,7 +2710,10 @@
   }
 
   function handleScrollNotification(_ref, state) {
-    var executionContextId = _ref.executionContextId;
+    let {
+      /*scroll:{didScroll},*/
+      executionContextId
+    } = _ref;
     state.viewState.latestScrollContext = executionContextId;
   }
 
@@ -4482,108 +2731,21 @@
 
   var taggedTemplateLiteral = _taggedTemplateLiteral;
 
-  function _arrayWithHoles$1(arr) {
-    if (Array.isArray(arr)) return arr;
-  }
-
-  var arrayWithHoles = _arrayWithHoles$1;
-
-  function _iterableToArrayLimit$1(arr, i) {
-    if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return;
-    var _arr = [];
-    var _n = true;
-    var _d = false;
-    var _e = undefined;
-
-    try {
-      for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);
-
-        if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;
-      _e = err;
-    } finally {
-      try {
-        if (!_n && _i["return"] != null) _i["return"]();
-      } finally {
-        if (_d) throw _e;
-      }
-    }
-
-    return _arr;
-  }
-
-  var iterableToArrayLimit = _iterableToArrayLimit$1;
-
-  function _nonIterableRest$1() {
-    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-  }
-
-  var nonIterableRest = _nonIterableRest$1;
-
-  function _slicedToArray$1(arr, i) {
-    return arrayWithHoles(arr) || iterableToArrayLimit(arr, i) || unsupportedIterableToArray(arr, i) || nonIterableRest();
-  }
-
-  var slicedToArray = _slicedToArray$1;
-
-  function _toArray(arr) {
-    return arrayWithHoles(arr) || iterableToArray(arr) || unsupportedIterableToArray(arr) || nonIterableRest();
-  }
-
-  var toArray = _toArray;
-
-  function _classCallCheck(instance, Constructor) {
-    if (!(instance instanceof Constructor)) {
-      throw new TypeError("Cannot call a class as a function");
-    }
-  }
-
-  var classCallCheck = _classCallCheck;
-
-  function _defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];
-      descriptor.enumerable = descriptor.enumerable || false;
-      descriptor.configurable = true;
-      if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }
-
-  function _createClass(Constructor, protoProps, staticProps) {
-    if (protoProps) _defineProperties(Constructor.prototype, protoProps);
-    if (staticProps) _defineProperties(Constructor, staticProps);
-    return Constructor;
-  }
-
-  var createClass = _createClass;
-
   // common for all r submodules
-  var CODE = '' + Math.random();
+  const CODE = '' + Math.random();
 
   var _templateObject$e, _templateObject2$9, _templateObject3$8, _templateObject4$5, _templateObject5$4, _templateObject6$3, _templateObject7$3;
 
-  function _createForOfIteratorHelper$8(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$9(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+  const BuiltIns$1 = [Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet, Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array, Int8Array, Int16Array, Int32Array, Uint8ClampedArray, Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer, FileList, Text, HTMLDocument, Document, DocumentFragment, Error, File, Event, EventTarget, URL];
+  const SEALED_DEFAULT$1 = true;
 
-  function _unsupportedIterableToArray$9(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$9(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$9(o, minLen); }
+  const isNone$1 = instance => instance == null || instance == undefined;
 
-  function _arrayLikeToArray$9(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-  var BuiltIns$1 = [Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet, Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array, Int8Array, Int16Array, Int32Array, Uint8ClampedArray, Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer, FileList, Text, HTMLDocument, Document, DocumentFragment, Error, File, Event, EventTarget, URL];
-  var SEALED_DEFAULT$1 = true;
-
-  var isNone$1 = function isNone(instance) {
-    return instance == null || instance == undefined;
-  };
-
-  var typeCache$1 = new Map();
+  const typeCache$1 = new Map();
   T$1.def = def$1;
   T$1.check = check$1;
   T$1.sub = sub$1;
-  T$1.verify = verify$1;
+  T$1.verify = verify$2;
   T$1.validate = validate$1;
   T$1.partialMatch = partialMatch$1;
   T$1.defEnum = defEnum$1;
@@ -4605,10 +2767,8 @@
       vals[_key - 1] = arguments[_key];
     }
 
-    var cooked = vals.reduce(function (prev, cur, i) {
-      return prev + cur + parts[i + 1];
-    }, parts[0]);
-    var typeName = cooked;
+    const cooked = vals.reduce((prev, cur, i) => prev + cur + parts[i + 1], parts[0]);
+    const typeName = cooked;
     if (!typeCache$1.has(typeName)) throw new TypeError("Cannot use type ".concat(typeName, " before it is defined."));
     return typeCache$1.get(typeName).type;
   }
@@ -4620,44 +2780,40 @@
   }
 
   function validate$1(type, instance) {
-    var _ref = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref$partial = _ref.partial,
-        partial = _ref$partial === void 0 ? false : _ref$partial;
-
+    let {
+      partial = false
+    } = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     guardType$1(type);
     guardExists$1(type);
-    var typeName = type.name;
-
-    var _typeCache$get = typeCache$1.get(typeName),
-        spec = _typeCache$get.spec,
-        kind = _typeCache$get.kind,
-        help = _typeCache$get.help,
-        verify = _typeCache$get.verify,
-        verifiers = _typeCache$get.verifiers,
-        sealed = _typeCache$get.sealed;
-
-    var specKeyPaths = spec ? allKeyPaths$1(spec).sort() : [];
-    var specKeyPathSet = new Set(specKeyPaths);
-    var bigErrors = [];
+    const typeName = type.name;
+    const {
+      spec,
+      kind,
+      help,
+      verify,
+      verifiers,
+      sealed
+    } = typeCache$1.get(typeName);
+    const specKeyPaths = spec ? allKeyPaths$1(spec).sort() : [];
+    const specKeyPathSet = new Set(specKeyPaths);
+    const bigErrors = [];
 
     switch (kind) {
       case "def":
         {
-          var allValid = true;
+          let allValid = true;
 
           if (spec) {
-            var keyPaths = partial ? allKeyPaths$1(instance, specKeyPathSet) : specKeyPaths;
-            allValid = !isNone$1(instance) && keyPaths.every(function (kp) {
+            const keyPaths = partial ? allKeyPaths$1(instance, specKeyPathSet) : specKeyPaths;
+            allValid = !isNone$1(instance) && keyPaths.every(kp => {
               // Allow lookup errors if the type match for the key path can include None
-              var _lookup = lookup$1(instance, kp, function () {
-                return checkTypeMatch$1(lookup$1(spec, kp).resolved, T$1(_templateObject$e || (_templateObject$e = taggedTemplateLiteral(["None"]))));
-              }),
-                  resolved = _lookup.resolved,
-                  lookupErrors = _lookup.errors;
-
-              bigErrors.push.apply(bigErrors, toConsumableArray(lookupErrors));
+              const {
+                resolved,
+                errors: lookupErrors
+              } = lookup$1(instance, kp, () => checkTypeMatch$1(lookup$1(spec, kp).resolved, T$1(_templateObject$e || (_templateObject$e = taggedTemplateLiteral(["None"])))));
+              bigErrors.push(...lookupErrors);
               if (lookupErrors.length) return false;
-              var keyType = lookup$1(spec, kp).resolved;
+              const keyType = lookup$1(spec, kp).resolved;
 
               if (!keyType || !(keyType instanceof Type$1)) {
                 bigErrors.push({
@@ -4666,16 +2822,16 @@
                 return false;
               }
 
-              var _validate = validate$1(keyType, resolved),
-                  valid = _validate.valid,
-                  validationErrors = _validate.errors;
-
-              bigErrors.push.apply(bigErrors, toConsumableArray(validationErrors));
+              const {
+                valid,
+                errors: validationErrors
+              } = validate$1(keyType, resolved);
+              bigErrors.push(...validationErrors);
               return valid;
             });
           }
 
-          var verified = true;
+          let verified = true;
 
           if (partial && !spec && !!verify) {
             throw new TypeError("Type checking with option 'partial' is not a valid option for types that" + " only use a verify function but have no spec");
@@ -4686,20 +2842,16 @@
               if (!verified) {
                 if (verifiers) {
                   throw {
-                    error: "Type ".concat(typeName, " value '").concat(JSON.stringify(instance), "' violated at least 1 verify function in:\n").concat(verifiers.map(function (f) {
-                      return '\t' + (f.help || '') + ' (' + f.verify.toString() + ')';
-                    }).join('\n'))
+                    error: "Type ".concat(typeName, " value '").concat(JSON.stringify(instance), "' violated at least 1 verify function in:\n").concat(verifiers.map(f => '\t' + (f.help || '') + ' (' + f.verify.toString() + ')').join('\n'))
                   };
                 } else if (type.isSumType) {
                   throw {
-                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat(toConsumableArray(type.types.keys()).map(function (t) {
-                      return t.name;
-                    })),
+                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat([...type.types.keys()].map(t => t.name)),
                     verify,
                     verifiers
                   };
                 } else {
-                  var helpMsg = '';
+                  let helpMsg = '';
 
                   if (help) {
                     helpMsg = "Help: ".concat(help, ". ");
@@ -4716,41 +2868,30 @@
             }
           }
 
-          var sealValid = true;
+          let sealValid = true;
 
           if (!!sealed && !!spec) {
-            var type_key_paths = specKeyPaths;
-            var all_key_paths = allKeyPaths$1(instance, specKeyPathSet).sort();
+            const type_key_paths = specKeyPaths;
+            const all_key_paths = allKeyPaths$1(instance, specKeyPathSet).sort();
             sealValid = all_key_paths.join(',') == type_key_paths.join(',');
 
             if (!sealValid) {
               if (all_key_paths.length < type_key_paths.length) {
                 sealValid = true;
               } else {
-                var errorKeys = [];
-                var tkp = new Set(type_key_paths);
+                const errorKeys = [];
+                const tkp = new Set(type_key_paths);
 
-                var _iterator = _createForOfIteratorHelper$8(all_key_paths),
-                    _step;
-
-                try {
-                  for (_iterator.s(); !(_step = _iterator.n()).done;) {
-                    var k = _step.value;
-
-                    if (!tkp.has(k)) {
-                      errorKeys.push({
-                        error: "Key path '".concat(k, "' is not in the spec for type ").concat(typeName)
-                      });
-                    }
+                for (const k of all_key_paths) {
+                  if (!tkp.has(k)) {
+                    errorKeys.push({
+                      error: "Key path '".concat(k, "' is not in the spec for type ").concat(typeName)
+                    });
                   }
-                } catch (err) {
-                  _iterator.e(err);
-                } finally {
-                  _iterator.f();
                 }
 
                 if (errorKeys.length) {
-                  bigErrors.push.apply(bigErrors, errorKeys);
+                  bigErrors.push(...errorKeys);
                 }
               }
             }
@@ -4765,40 +2906,40 @@
 
       case "defCollection":
         {
-          var _validate2 = validate$1(spec.container, instance),
-              containerValid = _validate2.valid,
-              containerErrors = _validate2.errors;
-
-          var membersValid = true;
-          var _verified = true;
-          bigErrors.push.apply(bigErrors, toConsumableArray(containerErrors));
+          const {
+            valid: containerValid,
+            errors: containerErrors
+          } = validate$1(spec.container, instance);
+          let membersValid = true;
+          let verified = true;
+          bigErrors.push(...containerErrors);
 
           if (partial) {
             throw new TypeError("Type checking with option 'partial' is not a valid option for Collection types");
           } else {
             if (containerValid) {
-              membersValid = toConsumableArray(instance).every(function (member) {
-                var _validate3 = validate$1(spec.member, member),
-                    valid = _validate3.valid,
-                    errors = _validate3.errors;
-
-                bigErrors.push.apply(bigErrors, toConsumableArray(errors));
+              membersValid = [...instance].every(member => {
+                const {
+                  valid,
+                  errors
+                } = validate$1(spec.member, member);
+                bigErrors.push(...errors);
                 return valid;
               });
             }
 
             if (verify) {
               try {
-                _verified = verify(instance);
+                verified = verify(instance);
               } catch (e) {
                 bigErrors.push(e);
-                _verified = false;
+                verified = false;
               }
             }
           }
 
           return {
-            valid: containerValid && membersValid && _verified,
+            valid: containerValid && membersValid && verified,
             errors: bigErrors
           };
         }
@@ -4811,19 +2952,19 @@
   }
 
   function check$1() {
-    return validate$1.apply(void 0, arguments).valid;
+    return validate$1(...arguments).valid;
   }
 
   function lookup$1(obj, keyPath, canBeNone) {
     if (isNone$1(obj)) throw new TypeError("Lookup requires a non-unset object.");
     if (!keyPath) throw new TypeError("keyPath must not be empty");
-    var keys = keyPath.split(/\./g);
-    var pathComplete = [];
-    var errors = [];
-    var resolved = obj;
+    const keys = keyPath.split(/\./g);
+    const pathComplete = [];
+    const errors = [];
+    let resolved = obj;
 
     while (keys.length) {
-      var nextKey = keys.shift();
+      const nextKey = keys.shift();
       resolved = resolved[nextKey];
       pathComplete.push(nextKey);
 
@@ -4884,21 +3025,17 @@
   }
 
   function defSub$1(type, spec) {
-    var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref2$verify = _ref2.verify,
-        verify = _ref2$verify === void 0 ? undefined : _ref2$verify,
-        _ref2$help = _ref2.help,
-        help = _ref2$help === void 0 ? '' : _ref2$help;
-
-    var name = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
+    let {
+      verify = undefined,
+      help = ''
+    } = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+    let name = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
     guardType$1(type);
     guardExists$1(type);
-    var verifiers;
+    let verifiers;
 
     if (!verify) {
-      verify = function verify() {
-        return true;
-      };
+      verify = () => true;
     }
 
     if (type.native) {
@@ -4907,18 +3044,16 @@
         verify
       }];
 
-      verify = function verify(i) {
-        return i instanceof type.native;
-      };
+      verify = i => i instanceof type.native;
 
-      var helpMsg = "Needs to be of type ".concat(type.native.name, ". ").concat(help || '');
+      const helpMsg = "Needs to be of type ".concat(type.native.name, ". ").concat(help || '');
       verifiers.push({
         help: helpMsg,
         verify
       });
     }
 
-    var newType = def$1("".concat(name, ">").concat(type.name), spec, {
+    const newType = def$1("".concat(name, ">").concat(type.name), spec, {
       verify,
       help,
       verifiers
@@ -4934,13 +3069,11 @@
       values[_key2 - 1] = arguments[_key2];
     }
 
-    var valueSet = new Set(values);
+    const valueSet = new Set(values);
 
-    var verify = function verify(i) {
-      return valueSet.has(i);
-    };
+    const verify = i => valueSet.has(i);
 
-    var help = "Value of Enum type ".concat(name, " must be one of ").concat(values.join(','));
+    const help = "Value of Enum type ".concat(name, " must be one of ").concat(values.join(','));
     return def$1(name, null, {
       verify,
       help
@@ -4956,18 +3089,16 @@
   }
 
   function allKeyPaths$1(o, specKeyPaths) {
-    var isTypeSpec = !specKeyPaths;
-    var keyPaths = new Set();
+    const isTypeSpec = !specKeyPaths;
+    const keyPaths = new Set();
     return recurseObject(o, keyPaths, '');
 
     function recurseObject(o, keyPathSet) {
-      var lastLevel = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
-      var levelKeys = Object.getOwnPropertyNames(o);
-      var keyPaths = levelKeys.map(function (k) {
-        return lastLevel + (lastLevel.length ? '.' : '') + k;
-      });
-      levelKeys.forEach(function (k, i) {
-        var v = o[k];
+      let lastLevel = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+      const levelKeys = Object.getOwnPropertyNames(o);
+      const keyPaths = levelKeys.map(k => lastLevel + (lastLevel.length ? '.' : '') + k);
+      levelKeys.forEach((k, i) => {
+        const v = o[k];
 
         if (isTypeSpec) {
           if (v instanceof Type$1) {
@@ -4988,9 +3119,7 @@
             if (!Array.isArray(v)) {
               recurseObject(v, keyPathSet, keyPaths[i]);
             } else {
-              v.forEach(function (item, index) {
-                return recurseObject(item, keyPathSet, keyPaths[i] + '.' + index);
-              }); //throw new TypeError(`We don't support Instances that use Arrays as structure, just yet.`); 
+              v.forEach((item, index) => recurseObject(item, keyPathSet, keyPaths[i] + '.' + index)); //throw new TypeError(`We don't support Instances that use Arrays as structure, just yet.`); 
             }
           } else {
             //console.warn("Spec has no such key",  keyPaths[i]);
@@ -4998,17 +3127,15 @@
           }
         }
       });
-      return toConsumableArray(keyPathSet);
+      return [...keyPathSet];
     }
   }
 
   function defOption$1(type) {
     guardType$1(type);
-    var typeName = type.name;
+    const typeName = type.name;
     return T$1.def("?".concat(typeName), null, {
-      verify: function verify(i) {
-        return isUnset$1(i) || T$1.check(type, i);
-      }
+      verify: i => isUnset$1(i) || T$1.check(type, i)
     });
   }
 
@@ -5021,26 +3148,25 @@
     return T$1(_templateObject6$3 || (_templateObject6$3 = taggedTemplateLiteral(["?", ""])), type.name);
   }
 
-  function verify$1() {
-    return check$1.apply(void 0, arguments);
+  function verify$2() {
+    return check$1(...arguments);
   }
 
-  function defCollection$1(name, _ref3) {
-    var container = _ref3.container,
-        member = _ref3.member;
-
-    var _ref4 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref4$sealed = _ref4.sealed,
-        sealed = _ref4$sealed === void 0 ? SEALED_DEFAULT$1 : _ref4$sealed,
-        _ref4$verify = _ref4.verify,
-        verify = _ref4$verify === void 0 ? undefined : _ref4$verify;
-
+  function defCollection$1(name, _ref) {
+    let {
+      container,
+      member
+    } = _ref;
+    let {
+      sealed = SEALED_DEFAULT$1,
+      verify = undefined
+    } = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     if (!name) throw new TypeError("Type must be named.");
     if (!container || !member) throw new TypeError("Type must be specified.");
     guardRedefinition$1(name);
-    var kind = 'defCollection';
-    var t = new Type$1(name);
-    var spec = {
+    const kind = 'defCollection';
+    const t = new Type$1(name);
+    const spec = {
       kind,
       spec: {
         container,
@@ -5054,17 +3180,17 @@
     return t;
   }
 
-  function defTuple$1(name, _ref5) {
-    var pattern = _ref5.pattern;
+  function defTuple$1(name, _ref2) {
+    let {
+      pattern
+    } = _ref2;
     if (!name) throw new TypeError("Type must be named.");
     if (!pattern) throw new TypeError("Type must be specified.");
-    var kind = 'def';
-    var specObj = {};
-    pattern.forEach(function (type, key) {
-      return specObj[key] = type;
-    });
-    var t = new Type$1(name);
-    var spec = {
+    const kind = 'def';
+    const specObj = {};
+    pattern.forEach((type, key) => specObj[key] = type);
+    const t = new Type$1(name);
+    const spec = {
       kind,
       spec: specObj,
       type: t
@@ -5074,36 +3200,32 @@
   }
 
   function Type$1(name) {
-    var mods = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    if (!(this instanceof Type$1 ? this.constructor : void 0)) throw new TypeError("Type with new only.");
+    let mods = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    if (!new.target) throw new TypeError("Type with new only.");
     Object.defineProperty(this, 'name', {
-      get: function get() {
-        return name;
-      }
+      get: () => name
     });
     this.typeName = name;
 
     if (mods.types) {
-      var types = mods.types;
-      var typeSet = new Set(types);
+      const {
+        types
+      } = mods;
+      const typeSet = new Set(types);
       Object.defineProperty(this, 'isSumType', {
-        get: function get() {
-          return true;
-        }
+        get: () => true
       });
       Object.defineProperty(this, 'types', {
-        get: function get() {
-          return typeSet;
-        }
+        get: () => typeSet
       });
     }
 
     if (mods.native) {
-      var native = mods.native;
+      const {
+        native
+      } = mods;
       Object.defineProperty(this, 'native', {
-        get: function get() {
-          return native;
-        }
+        get: () => native
       });
     }
   }
@@ -5113,20 +3235,14 @@
   };
 
   function def$1(name, spec) {
-    var _ref6 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref6$help = _ref6.help,
-        help = _ref6$help === void 0 ? '' : _ref6$help,
-        _ref6$verify = _ref6.verify,
-        verify = _ref6$verify === void 0 ? undefined : _ref6$verify,
-        _ref6$sealed = _ref6.sealed,
-        sealed = _ref6$sealed === void 0 ? undefined : _ref6$sealed,
-        _ref6$types = _ref6.types,
-        types = _ref6$types === void 0 ? undefined : _ref6$types,
-        _ref6$verifiers = _ref6.verifiers,
-        verifiers = _ref6$verifiers === void 0 ? undefined : _ref6$verifiers,
-        _ref6$native = _ref6.native,
-        native = _ref6$native === void 0 ? undefined : _ref6$native;
-
+    let {
+      help = '',
+      verify = undefined,
+      sealed = undefined,
+      types = undefined,
+      verifiers = undefined,
+      native = undefined
+    } = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     if (!name) throw new TypeError("Type must be named.");
     guardRedefinition$1(name);
 
@@ -5140,17 +3256,17 @@
       }
     }
 
-    var kind = 'def';
+    const kind = 'def';
 
     if (sealed === undefined) {
       sealed = true;
     }
 
-    var t = new Type$1(name, {
+    const t = new Type$1(name, {
       types,
       native
     });
-    var cache = {
+    const cache = {
       spec,
       kind,
       help,
@@ -5172,22 +3288,17 @@
 
     return T$1.def(name, null, {
       types,
-      verify: function verify(i) {
-        return types.some(function (t) {
-          return check$1(t, i);
-        });
-      }
+      verify: i => types.some(t => check$1(t, i))
     });
   }
 
   function guard$1(type, instance) {
     guardType$1(type);
     guardExists$1(type);
-
-    var _validate4 = validate$1(type, instance),
-        valid = _validate4.valid,
-        errors = _validate4.errors;
-
+    const {
+      valid,
+      errors
+    } = validate$1(type, instance);
     if (!valid) throw new TypeError("Type ".concat(type, " requested, but item is not of that type: ").concat(errors.join(', ')));
   }
 
@@ -5197,63 +3308,43 @@
   }
 
   function guardExists$1(t) {
-    var name = originalName$1(t);
+    const name = originalName$1(t);
     if (!exists$1(name)) throw new TypeError("Type must exist. Type ".concat(name, " has not been defined."));
   }
 
   function errors$1() {
-    return validate$1.apply(void 0, arguments).errors;
+    return validate$1(...arguments).errors;
   }
 
   function mapBuiltins$1() {
-    BuiltIns$1.forEach(function (t) {
-      return def$1(originalName$1(t), null, {
-        native: t,
-        verify: function verify(i) {
-          return originalName$1(i.constructor) === originalName$1(t);
-        }
-      });
-    });
-    BuiltIns$1.forEach(function (t) {
-      return defSub$1(T$1(_templateObject7$3 || (_templateObject7$3 = taggedTemplateLiteral(["", ""])), originalName$1(t)));
-    });
+    BuiltIns$1.forEach(t => def$1(originalName$1(t), null, {
+      native: t,
+      verify: i => originalName$1(i.constructor) === originalName$1(t)
+    }));
+    BuiltIns$1.forEach(t => defSub$1(T$1(_templateObject7$3 || (_templateObject7$3 = taggedTemplateLiteral(["", ""])), originalName$1(t))));
   }
 
   function defineSpecials$1() {
     T$1.def("Any", null, {
-      verify: function verify() {
-        return true;
-      }
+      verify: () => true
     });
     T$1.def("Some", null, {
-      verify: function verify(i) {
-        return !isUnset$1(i);
-      }
+      verify: i => !isUnset$1(i)
     });
     T$1.def("None", null, {
-      verify: function verify(i) {
-        return isUnset$1(i);
-      }
+      verify: i => isUnset$1(i)
     });
     T$1.def("Function", null, {
-      verify: function verify(i) {
-        return i instanceof Function;
-      }
+      verify: i => i instanceof Function
     });
     T$1.def("Integer", null, {
-      verify: function verify(i) {
-        return Number.isInteger(i);
-      }
+      verify: i => Number.isInteger(i)
     });
     T$1.def("Array", null, {
-      verify: function verify(i) {
-        return Array.isArray(i);
-      }
+      verify: i => Array.isArray(i)
     });
     T$1.def("Iterable", null, {
-      verify: function verify(i) {
-        return i[Symbol.iterator] instanceof Function;
-      }
+      verify: i => i[Symbol.iterator] instanceof Function
     });
   }
 
@@ -5266,7 +3357,7 @@
       return t.name;
     }
 
-    var oName = Object.prototype.toString.call(t).replace(/\[object |\]/g, '');
+    const oName = Object.prototype.toString.call(t).replace(/\[object |\]/g, '');
 
     if (oName.endsWith('Constructor')) {
       return oName.replace(/Constructor$/, '');
@@ -5280,19 +3371,15 @@
   T$1.def('Key', {
     key: T$1.defOr('ValidKey', T$1(_templateObject$d || (_templateObject$d = taggedTemplateLiteral(["String"]))), T$1(_templateObject2$8 || (_templateObject2$8 = taggedTemplateLiteral(["Number"]))))
   });
-  var THandlers = T$1.def('Handlers', null, {
-    verify: function verify(i) {
-      var validObject = T$1.check(T$1(_templateObject3$7 || (_templateObject3$7 = taggedTemplateLiteral(["Object"]))), i);
+  const THandlers = T$1.def('Handlers', null, {
+    verify: i => {
+      const validObject = T$1.check(T$1(_templateObject3$7 || (_templateObject3$7 = taggedTemplateLiteral(["Object"]))), i);
       if (!validObject) return false;
-      var eventNames = Object.keys(i);
-      var handlerFuncs = Object.values(i);
-      var validNames = eventNames.every(function (name) {
-        return T$1.check(T$1(_templateObject4$4 || (_templateObject4$4 = taggedTemplateLiteral(["String"]))), name);
-      });
-      var validFuncs = handlerFuncs.every(function (func) {
-        return T$1.check(T$1(_templateObject5$3 || (_templateObject5$3 = taggedTemplateLiteral(["Function"]))), func);
-      });
-      var valid = validNames && validFuncs;
+      const eventNames = Object.keys(i);
+      const handlerFuncs = Object.values(i);
+      const validNames = eventNames.every(name => T$1.check(T$1(_templateObject4$4 || (_templateObject4$4 = taggedTemplateLiteral(["String"]))), name));
+      const validFuncs = handlerFuncs.every(func => T$1.check(T$1(_templateObject5$3 || (_templateObject5$3 = taggedTemplateLiteral(["Function"]))), func));
+      const valid = validNames && validFuncs;
       return valid;
     }
   });
@@ -5301,9 +3388,7 @@
     member: T$1(_templateObject7$2 || (_templateObject7$2 = taggedTemplateLiteral(["Function"])))
   });
   T$1.def('EmptyArray', null, {
-    verify: function verify(i) {
-      return Array.isArray(i) && i.length == 0;
-    }
+    verify: i => Array.isArray(i) && i.length == 0
   });
   T$1.def('MarkupObject', {
     type: T$1(_templateObject8$1 || (_templateObject8$1 = taggedTemplateLiteral(["String"]))),
@@ -5311,18 +3396,14 @@
     nodes: T$1(_templateObject10$1 || (_templateObject10$1 = taggedTemplateLiteral(["Array"]))),
     externals: T$1(_templateObject11$1 || (_templateObject11$1 = taggedTemplateLiteral(["Array"])))
   }, {
-    verify: function verify(v) {
-      return v.type == 'MarkupObject' && v.code == CODE;
-    }
+    verify: v => v.type == 'MarkupObject' && v.code == CODE
   });
   T$1.def('MarkupAttrObject', {
     type: T$1(_templateObject12$1 || (_templateObject12$1 = taggedTemplateLiteral(["String"]))),
     code: T$1(_templateObject13$1 || (_templateObject13$1 = taggedTemplateLiteral(["String"]))),
     str: T$1(_templateObject14$1 || (_templateObject14$1 = taggedTemplateLiteral(["String"])))
   }, {
-    verify: function verify(v) {
-      return v.type == 'MarkupAttrObject' && v.code == CODE;
-    }
+    verify: v => v.type == 'MarkupAttrObject' && v.code == CODE
   }); // Browser side
 
   T$1.def('BrutalLikeObject', {
@@ -5343,9 +3424,7 @@
     v: T$1(_templateObject27 || (_templateObject27 = taggedTemplateLiteral(["Array"]))),
     oldVals: T$1(_templateObject28 || (_templateObject28 = taggedTemplateLiteral(["Array"])))
   }, {
-    verify: function verify(v) {
-      return _verify(v);
-    }
+    verify: v => verify$1(v)
   });
   T$1.defCollection('BrutalArray', {
     container: T$1(_templateObject29 || (_templateObject29 = taggedTemplateLiteral(["Array"]))),
@@ -5361,93 +3440,62 @@
     member: T$1(_templateObject33 || (_templateObject33 = taggedTemplateLiteral(["SBrutalObject"])))
   }); // export
 
-  function _verify(v) {
+  function verify$1(v) {
     return CODE === v.code;
   }
 
   var _templateObject$c, _templateObject2$7, _templateObject3$6, _templateObject4$3, _templateObject5$2, _templateObject6$1, _templateObject7$1, _templateObject8, _templateObject9, _templateObject10, _templateObject11, _templateObject12, _templateObject13, _templateObject14, _templateObject15, _templateObject16, _templateObject17, _templateObject18, _templateObject19, _templateObject20, _templateObject21, _templateObject22, _templateObject23, _templateObject24, _templateObject25, _templateObject26;
 
-  function _createForOfIteratorHelper$7(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$8(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+  const skip = markup;
+  const attrskip = attrmarkup; // constants
 
-  function _unsupportedIterableToArray$8(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$8(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$8(o, minLen); }
-
-  function _arrayLikeToArray$8(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-  var skip = markup;
-  var attrskip = attrmarkup; // constants
-
-  var NULLFUNC = function NULLFUNC() {
-    return void 0;
-  };
+  const NULLFUNC = () => void 0;
   /* eslint-disable no-useless-escape */
 
 
-  var KEYMATCH = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
+  const KEYMATCH = /(?:<!\-\-)?(key\d+)(?:\-\->)?/gm;
   /* eslint-enable no-useless-escape */
 
-  var ATTRMATCH = /\w+=/;
-  var KEYLEN = 20;
+  const ATTRMATCH = /\w+=/;
+  const KEYLEN = 20;
 
-  var XSS = function XSS() {
-    return "Possible XSS / object forgery attack detected. " + "Object code could not be verified.";
-  };
+  const XSS = () => "Possible XSS / object forgery attack detected. " + "Object code could not be verified.";
 
-  var OBJ = function OBJ() {
-    return "Object values not allowed here.";
-  };
+  const OBJ = () => "Object values not allowed here.";
 
-  var UNSET = function UNSET() {
-    return "Unset values not allowed here.";
-  };
+  const UNSET = () => "Unset values not allowed here.";
 
-  var INSERT = function INSERT() {
-    return "Error inserting template into DOM. " + "Position must be one of: " + "replace, beforebegin, afterbegin, beforeend, innerhtml, afterend";
-  };
+  const INSERT = () => "Error inserting template into DOM. " + "Position must be one of: " + "replace, beforebegin, afterbegin, beforeend, innerhtml, afterend";
 
-  var NOTFOUND = function NOTFOUND(loc) {
-    return "Error inserting template into DOM. " + "Location ".concat(loc, " was not found in the document.");
-  };
+  const NOTFOUND = loc => "Error inserting template into DOM. " + "Location ".concat(loc, " was not found in the document.");
 
-  var MOVE = new ( /*#__PURE__*/function () {
-    function _class() {
-      classCallCheck(this, _class);
+  const MOVE = new class {
+    beforeend(frag, elem) {
+      elem.appendChild(frag);
     }
 
-    createClass(_class, [{
-      key: "beforeend",
-      value: function beforeend(frag, elem) {
-        elem.appendChild(frag);
-      }
-    }, {
-      key: "beforebegin",
-      value: function beforebegin(frag, elem) {
-        elem.parentNode.insertBefore(frag, elem);
-      }
-    }, {
-      key: "afterend",
-      value: function afterend(frag, elem) {
-        elem.parentNode.insertBefore(frag, elem.nextSibling);
-      }
-    }, {
-      key: "replace",
-      value: function replace(frag, elem) {
-        elem.parentNode.replaceChild(frag, elem);
-      }
-    }, {
-      key: "afterbegin",
-      value: function afterbegin(frag, elem) {
-        elem.insertBefore(frag, elem.firstChild);
-      }
-    }, {
-      key: "innerhtml",
-      value: function innerhtml(frag, elem) {
-        elem.innerHTML = '';
-        elem.appendChild(frag);
-      }
-    }]);
+    beforebegin(frag, elem) {
+      elem.parentNode.insertBefore(frag, elem);
+    }
 
-    return _class;
-  }())(); // logging
+    afterend(frag, elem) {
+      elem.parentNode.insertBefore(frag, elem.nextSibling);
+    }
+
+    replace(frag, elem) {
+      elem.parentNode.replaceChild(frag, elem);
+    }
+
+    afterbegin(frag, elem) {
+      elem.insertBefore(frag, elem.firstChild);
+    }
+
+    innerhtml(frag, elem) {
+      elem.innerHTML = '';
+      elem.appendChild(frag);
+    }
+
+  }(); // logging
 
   self.onerror = function () {
     for (var _len = arguments.length, v = new Array(_len), _key = 0; _key < _len; _key++) {
@@ -5458,18 +3506,14 @@
   }; // type functions
 
 
-  var isKey = function isKey(v) {
-    return T$1.check(T$1(_templateObject$c || (_templateObject$c = taggedTemplateLiteral(["Key"]))), v);
-  };
+  const isKey = v => T$1.check(T$1(_templateObject$c || (_templateObject$c = taggedTemplateLiteral(["Key"]))), v);
 
-  var isHandlers = function isHandlers(v) {
-    return T$1.check(T$1(_templateObject2$7 || (_templateObject2$7 = taggedTemplateLiteral(["Handlers"]))), v);
-  }; // cache 
+  const isHandlers = v => T$1.check(T$1(_templateObject2$7 || (_templateObject2$7 = taggedTemplateLiteral(["Handlers"]))), v); // cache 
 
 
-  var cache = {};
-  var d = R;
-  var u = X; // main exports 
+  const cache = {};
+  const d = R;
+  const u = X; // main exports 
 
   Object.assign(R, {
     s,
@@ -5499,23 +3543,22 @@
   } // main function (TODO: should we refactor?)
 
   function dumbass(p, v) {
-    var _ref = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref$useCache = _ref.useCache,
-        useCache = _ref$useCache === void 0 ? true : _ref$useCache;
-
-    var retVal = {};
-    var instanceKey, cacheKey;
+    let {
+      useCache = true
+    } = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+    const retVal = {};
+    let instanceKey, cacheKey;
     v = v.map(guardAndTransformVal);
 
     if (useCache) {
-      var _ref2 = v.find(isKey) || {};
-
-      instanceKey = _ref2.key;
+      ({
+        key: instanceKey
+      } = v.find(isKey) || {});
       cacheKey = p.join('<link rel=join>');
-
-      var _isCached = isCached(cacheKey, v, instanceKey),
-          cached = _isCached.cached,
-          firstCall = _isCached.firstCall;
+      const {
+        cached,
+        firstCall
+      } = isCached(cacheKey, v, instanceKey);
 
       if (!firstCall) {
         cached.update(v);
@@ -5528,19 +3571,17 @@
     } // compile the template into an updater
 
 
-    p = toConsumableArray(p);
-    var vmap = {};
-    var V = v.map(replaceValWithKeyAndOmitInstanceKey(vmap));
-    var externals = [];
-    var str = '';
+    p = [...p];
+    const vmap = {};
+    const V = v.map(replaceValWithKeyAndOmitInstanceKey(vmap));
+    const externals = [];
+    let str = '';
 
-    while (p.length > 1) {
-      str += p.shift() + V.shift();
-    }
+    while (p.length > 1) str += p.shift() + V.shift();
 
     str += p.shift();
-    var frag = toDOM(str);
-    var walker = document.createTreeWalker(frag, NodeFilter.SHOW_ALL);
+    const frag = toDOM(str);
+    const walker = document.createTreeWalker(frag, NodeFilter.SHOW_ALL);
 
     do {
       makeUpdaters({
@@ -5556,7 +3597,7 @@
       to,
       update,
       code: CODE,
-      nodes: toConsumableArray(frag.childNodes)
+      nodes: [...frag.childNodes]
     });
 
     if (useCache) {
@@ -5572,13 +3613,11 @@
 
 
   function to(location, options) {
-    var position = (options || 'replace').toLocaleLowerCase();
-    var frag = document.createDocumentFragment();
-    this.nodes.forEach(function (n) {
-      return frag.appendChild(n);
-    });
-    var isNode = T$1.check(T$1(_templateObject3$6 || (_templateObject3$6 = taggedTemplateLiteral([">Node"]))), location);
-    var elem = isNode ? location : document.querySelector(location);
+    const position = (options || 'replace').toLocaleLowerCase();
+    const frag = document.createDocumentFragment();
+    this.nodes.forEach(n => frag.appendChild(n));
+    const isNode = T$1.check(T$1(_templateObject3$6 || (_templateObject3$6 = taggedTemplateLiteral([">Node"]))), location);
+    const elem = isNode ? location : document.querySelector(location);
 
     try {
       MOVE[position](frag, elem);
@@ -5608,11 +3647,13 @@
   } // update functions
 
 
-  function makeUpdaters(_ref3) {
-    var walker = _ref3.walker,
-        vmap = _ref3.vmap,
-        externals = _ref3.externals;
-    var node = walker.currentNode;
+  function makeUpdaters(_ref) {
+    let {
+      walker,
+      vmap,
+      externals
+    } = _ref;
+    const node = walker.currentNode;
 
     switch (node.nodeType) {
       case Node.ELEMENT_NODE:
@@ -5634,48 +3675,47 @@
     }
   }
 
-  function handleNode(_ref4) {
-    var node = _ref4.node,
-        vmap = _ref4.vmap,
-        externals = _ref4.externals;
-    var lengths = [];
-    var text = node.nodeValue;
-    var result = KEYMATCH.exec(text);
+  function handleNode(_ref2) {
+    let {
+      node,
+      vmap,
+      externals
+    } = _ref2;
+    const lengths = [];
+    const text = node.nodeValue;
+    let result = KEYMATCH.exec(text);
 
-    var _loop = function _loop() {
-      var _result = result,
-          index = _result.index;
-      var key = result[1];
-      var val = vmap[key];
-      var replacer = makeNodeUpdater({
+    while (result) {
+      const {
+        index
+      } = result;
+      const key = result[1];
+      const val = vmap[key];
+      const replacer = makeNodeUpdater({
         node,
         index,
         lengths,
         val
       });
-      externals.push(function () {
-        return replacer(val.val);
-      });
+      externals.push(() => replacer(val.val));
       val.replacers.push(replacer);
       result = KEYMATCH.exec(text);
-    };
-
-    while (result) {
-      _loop();
     }
   } // node functions
 
 
   function makeNodeUpdater(nodeState) {
-    var node = nodeState.node;
-    var scope = Object.assign({}, nodeState, {
+    const {
+      node
+    } = nodeState;
+    const scope = Object.assign({}, nodeState, {
       oldVal: {
         length: KEYLEN
       },
       oldNodes: [node],
       lastAnchor: node
     });
-    return function (newVal) {
+    return newVal => {
       if (scope.oldVal == newVal) return;
       scope.val.val = newVal;
 
@@ -5693,80 +3733,80 @@
   }
 
   function handleMarkupInNode(newVal, state) {
-    var oldNodes = state.oldNodes,
-        lastAnchor = state.lastAnchor;
+    let {
+      oldNodes,
+      lastAnchor
+    } = state;
 
     if (newVal.nodes.length) {
       if (sameOrder(oldNodes, newVal.nodes)) ; else {
-        Array.from(newVal.nodes).reverse().forEach(function (n) {
+        Array.from(newVal.nodes).reverse().forEach(n => {
           lastAnchor.parentNode.insertBefore(n, lastAnchor.nextSibling);
           state.lastAnchor = lastAnchor.nextSibling;
         });
         state.lastAnchor = newVal.nodes[0];
       }
     } else {
-      var placeholderNode = summonPlaceholder(lastAnchor);
+      const placeholderNode = summonPlaceholder(lastAnchor);
       lastAnchor.parentNode.insertBefore(placeholderNode, lastAnchor.nextSibling);
       state.lastAnchor = placeholderNode;
     } // MARK: Unbond event might be relevant here.
 
 
-    var dn = diffNodes(oldNodes, newVal.nodes);
+    const dn = diffNodes(oldNodes, newVal.nodes);
 
     if (dn.size) {
-      var f = document.createDocumentFragment();
-      dn.forEach(function (n) {
-        return f.appendChild(n);
-      });
+      const f = document.createDocumentFragment();
+      dn.forEach(n => f.appendChild(n));
     }
 
     state.oldNodes = newVal.nodes || [lastAnchor];
 
     while (newVal.externals.length) {
-      var func = newVal.externals.shift();
+      const func = newVal.externals.shift();
       func();
     }
   }
 
   function sameOrder(nodesA, nodesB) {
     if (nodesA.length != nodesB.length) return false;
-    return Array.from(nodesA).every(function (an, i) {
-      return an == nodesB[i];
-    });
+    return Array.from(nodesA).every((an, i) => an == nodesB[i]);
   }
 
   function handleTextInNode(newVal, state) {
-    var oldVal = state.oldVal,
-        index = state.index,
-        val = state.val,
-        lengths = state.lengths,
-        node = state.node;
-    var valIndex = val.vi;
-    var originalLengthBefore = Object.keys(lengths.slice(0, valIndex)).length * KEYLEN;
-    var lengthBefore = lengths.slice(0, valIndex).reduce(function (sum, x) {
-      return sum + x;
-    }, 0);
-    var value = node.nodeValue;
+    let {
+      oldVal,
+      index,
+      val,
+      lengths,
+      node
+    } = state;
+    const valIndex = val.vi;
+    const originalLengthBefore = Object.keys(lengths.slice(0, valIndex)).length * KEYLEN;
+    const lengthBefore = lengths.slice(0, valIndex).reduce((sum, x) => sum + x, 0);
+    const value = node.nodeValue;
     lengths[valIndex] = newVal.length;
-    var correction = lengthBefore - originalLengthBefore;
-    var before = value.slice(0, index + correction);
-    var after = value.slice(index + correction + oldVal.length);
-    var newValue = before + newVal + after;
+    const correction = lengthBefore - originalLengthBefore;
+    const before = value.slice(0, index + correction);
+    const after = value.slice(index + correction + oldVal.length);
+    const newValue = before + newVal + after;
     node.nodeValue = newValue;
     state.oldVal = newVal;
   } // element attribute functions
 
 
-  function handleElement(_ref5) {
-    var node = _ref5.node,
-        vmap = _ref5.vmap,
-        externals = _ref5.externals;
+  function handleElement(_ref3) {
+    let {
+      node,
+      vmap,
+      externals
+    } = _ref3;
     getAttributes(node).forEach(function () {
-      var _ref6 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-          name = _ref6.name,
-          value = _ref6.value;
-
-      var attrState = {
+      let {
+        name,
+        value
+      } = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+      const attrState = {
         node,
         vmap,
         externals,
@@ -5774,7 +3814,7 @@
         lengths: []
       };
       KEYMATCH.lastIndex = 0;
-      var result = KEYMATCH.exec(name);
+      let result = KEYMATCH.exec(name);
 
       while (result) {
         prepareAttributeUpdater(result, attrState, {
@@ -5795,11 +3835,15 @@
     });
   }
 
-  function prepareAttributeUpdater(result, attrState, _ref7) {
-    var updateName = _ref7.updateName;
-    var index = result.index,
-        input = result.input;
-    var scope = Object.assign({}, attrState, {
+  function prepareAttributeUpdater(result, attrState, _ref4) {
+    let {
+      updateName
+    } = _ref4;
+    const {
+      index,
+      input
+    } = result;
+    const scope = Object.assign({}, attrState, {
       index,
       input,
       updateName,
@@ -5809,7 +3853,7 @@
       },
       oldName: attrState.name
     });
-    var replacer;
+    let replacer;
 
     if (updateName) {
       replacer = makeAttributeNameUpdater(scope);
@@ -5817,9 +3861,7 @@
       replacer = makeAttributeValueUpdater(scope);
     }
 
-    scope.externals.push(function () {
-      return replacer(scope.val.val);
-    });
+    scope.externals.push(() => replacer(scope.val.val));
     scope.val.replacers.push(replacer);
   } // FIXME: needs to support multiple replacements just like value
   // QUESTION: why is the variable oldName so required here, why can't we call it oldVal?
@@ -5827,13 +3869,15 @@
 
 
   function makeAttributeNameUpdater(scope) {
-    var oldName = scope.oldName,
-        node = scope.node,
-        val = scope.val;
-    return function (newVal) {
+    let {
+      oldName,
+      node,
+      val
+    } = scope;
+    return newVal => {
       if (oldName == newVal) return;
       val.val = newVal;
-      var attr = node.hasAttribute(oldName) ? oldName : '';
+      const attr = node.hasAttribute(oldName) ? oldName : '';
 
       if (attr !== newVal) {
         if (attr) {
@@ -5843,14 +3887,12 @@
 
         if (newVal) {
           newVal = newVal.trim();
-          var name = newVal,
+          let name = newVal,
               value = undefined;
 
           if (ATTRMATCH.test(newVal)) {
-            var assignmentIndex = newVal.indexOf('=');
-            var _ref8 = [newVal.slice(0, assignmentIndex), newVal.slice(assignmentIndex + 1)];
-            name = _ref8[0];
-            value = _ref8[1];
+            const assignmentIndex = newVal.indexOf('=');
+            [name, value] = [newVal.slice(0, assignmentIndex), newVal.slice(assignmentIndex + 1)];
           }
 
           reliablySetAttribute(node, name, value);
@@ -5862,7 +3904,7 @@
   }
 
   function makeAttributeValueUpdater(scope) {
-    return function (newVal) {
+    return newVal => {
       if (scope.oldVal == newVal) return;
       scope.val.val = newVal;
 
@@ -5911,48 +3953,34 @@
     }
 
     if (!!node.attributes && Number.isInteger(node.attributes.length)) return Array.from(node.attributes);
-    var attrs = [];
+    const attrs = [];
 
-    var _iterator = _createForOfIteratorHelper$7(node),
-        _step;
-
-    try {
-      for (_iterator.s(); !(_step = _iterator.n()).done;) {
-        var name = _step.value;
-
-        if (node.hasAttribute(name)) {
-          attrs.push({
-            name,
-            value: node.getAttribute(name)
-          });
-        }
+    for (const name of node) {
+      if (node.hasAttribute(name)) {
+        attrs.push({
+          name,
+          value: node.getAttribute(name)
+        });
       }
-    } catch (err) {
-      _iterator.e(err);
-    } finally {
-      _iterator.f();
     }
 
     return attrs;
   }
 
   function updateAttrWithFunctionValue(newVal, scope) {
-    var oldVal = scope.oldVal,
-        node = scope.node,
-        name = scope.name,
-        externals = scope.externals;
+    let {
+      oldVal,
+      node,
+      name,
+      externals
+    } = scope;
 
     if (name !== 'bond') {
-      var flags = {};
+      let flags = {};
 
       if (name.includes(':')) {
-        var _name$split = name.split(':');
-
-        var _name$split2 = toArray(_name$split);
-
-        name = _name$split2[0];
-        flags = _name$split2.slice(1);
-        flags = flags.reduce(function (O, f) {
+        [name, ...flags] = name.split(':');
+        flags = flags.reduce((O, f) => {
           O[f] = true;
           return O;
         }, {});
@@ -5965,60 +3993,51 @@
       node.addEventListener(name, newVal, flags);
     } else {
       if (oldVal) {
-        var index = externals.indexOf(oldVal);
+        const index = externals.indexOf(oldVal);
 
         if (index >= 0) {
           externals.splice(index, 1);
         }
       }
 
-      externals.push(function () {
-        return newVal(node);
-      });
+      externals.push(() => newVal(node));
     }
 
     scope.oldVal = newVal;
   }
 
   function updateAttrWithFuncarrayValue(newVal, scope) {
-    var oldVal = scope.oldVal,
-        node = scope.node,
-        name = scope.name,
-        externals = scope.externals;
+    let {
+      oldVal,
+      node,
+      name,
+      externals
+    } = scope;
 
     if (oldVal && !Array.isArray(oldVal)) {
       oldVal = [oldVal];
     }
 
     if (name !== 'bond') {
-      var flags = {};
+      let flags = {};
 
       if (name.includes(':')) {
-        var _name$split3 = name.split(':');
-
-        var _name$split4 = toArray(_name$split3);
-
-        name = _name$split4[0];
-        flags = _name$split4.slice(1);
-        flags = flags.reduce(function (O, f) {
+        [name, ...flags] = name.split(':');
+        flags = flags.reduce((O, f) => {
           O[f] = true;
           return O;
         }, {});
       }
 
       if (oldVal) {
-        oldVal.forEach(function (of) {
-          return node.removeEventListener(name, of, flags);
-        });
+        oldVal.forEach(of => node.removeEventListener(name, of, flags));
       }
 
-      newVal.forEach(function (f) {
-        return node.addEventListener(name, f, flags);
-      });
+      newVal.forEach(f => node.addEventListener(name, f, flags));
     } else {
       if (oldVal) {
-        oldVal.forEach(function (of) {
-          var index = externals.indexOf(of);
+        oldVal.forEach(of => {
+          const index = externals.indexOf(of);
 
           if (index >= 0) {
             externals.splice(index, 1);
@@ -6026,38 +4045,29 @@
         });
       }
 
-      newVal.forEach(function (f) {
-        return externals.push(function () {
-          return f(node);
-        });
-      });
+      newVal.forEach(f => externals.push(() => f(node)));
     }
 
     scope.oldVal = newVal;
   }
 
   function updateAttrWithHandlersValue(newVal, scope) {
-    var oldVal = scope.oldVal,
-        node = scope.node,
-        externals = scope.externals;
+    let {
+      oldVal,
+      node,
+      externals
+    } = scope;
 
     if (!!oldVal && T$1.check(T$1(_templateObject4$3 || (_templateObject4$3 = taggedTemplateLiteral(["Handlers"]))), oldVal)) {
-      Object.entries(oldVal).forEach(function (_ref9) {
-        var _ref10 = slicedToArray(_ref9, 2),
-            eventName = _ref10[0],
-            funcVal = _ref10[1];
+      Object.entries(oldVal).forEach(_ref5 => {
+        let [eventName, funcVal] = _ref5;
 
         if (eventName !== 'bond') {
-          var flags = {};
+          let flags = {};
 
           if (eventName.includes(':')) {
-            var _eventName$split = eventName.split(':');
-
-            var _eventName$split2 = toArray(_eventName$split);
-
-            eventName = _eventName$split2[0];
-            flags = _eventName$split2.slice(1);
-            flags = flags.reduce(function (O, f) {
+            [eventName, ...flags] = eventName.split(':');
+            flags = flags.reduce((O, f) => {
               O[f] = true;
               return O;
             }, {});
@@ -6066,7 +4076,7 @@
           console.log(eventName, funcVal, flags);
           node.removeEventListener(eventName, funcVal, flags);
         } else {
-          var index = externals.indexOf(funcVal);
+          const index = externals.indexOf(funcVal);
 
           if (index >= 0) {
             externals.splice(index, 1);
@@ -6075,22 +4085,15 @@
       });
     }
 
-    Object.entries(newVal).forEach(function (_ref11) {
-      var _ref12 = slicedToArray(_ref11, 2),
-          eventName = _ref12[0],
-          funcVal = _ref12[1];
+    Object.entries(newVal).forEach(_ref6 => {
+      let [eventName, funcVal] = _ref6;
 
       if (eventName !== 'bond') {
-        var flags = {};
+        let flags = {};
 
         if (eventName.includes(':')) {
-          var _eventName$split3 = eventName.split(':');
-
-          var _eventName$split4 = toArray(_eventName$split3);
-
-          eventName = _eventName$split4[0];
-          flags = _eventName$split4.slice(1);
-          flags = flags.reduce(function (O, f) {
+          [eventName, ...flags] = eventName.split(':');
+          flags = flags.reduce((O, f) => {
             O[f] = true;
             return O;
           }, {});
@@ -6098,24 +4101,24 @@
 
         node.addEventListener(eventName, funcVal, flags);
       } else {
-        externals.push(function () {
-          return funcVal(node);
-        });
+        externals.push(() => funcVal(node));
       }
     });
     scope.oldVal = newVal;
   }
 
   function updateAttrWithTextValue(newVal, scope) {
-    var oldVal = scope.oldVal,
-        node = scope.node,
-        index = scope.index,
-        name = scope.name,
-        val = scope.val,
-        lengths = scope.lengths;
-    var zeroWidthCorrection = 0;
-    var valIndex = val.vi;
-    var originalLengthBefore = Object.keys(lengths.slice(0, valIndex)).length * KEYLEN; // we need to trim newVal to have parity with classlist add
+    let {
+      oldVal,
+      node,
+      index,
+      name,
+      val,
+      lengths
+    } = scope;
+    let zeroWidthCorrection = 0;
+    const valIndex = val.vi;
+    const originalLengthBefore = Object.keys(lengths.slice(0, valIndex)).length * KEYLEN; // we need to trim newVal to have parity with classlist add
     // the reason we have zeroWidthCorrection = -1
     // is because the classList is a set of non-zero width tokens
     // separated by spaces
@@ -6137,17 +4140,15 @@
     }
 
     lengths[valIndex] = newVal.length + zeroWidthCorrection;
-    var attr = node.getAttribute(name);
-    var lengthBefore = lengths.slice(0, valIndex).reduce(function (sum, x) {
-      return sum + x;
-    }, 0);
-    var correction = lengthBefore - originalLengthBefore;
-    var before = attr.slice(0, index + correction);
-    var after = attr.slice(index + correction + oldVal.length);
-    var newAttrValue;
+    let attr = node.getAttribute(name);
+    const lengthBefore = lengths.slice(0, valIndex).reduce((sum, x) => sum + x, 0);
+    const correction = lengthBefore - originalLengthBefore;
+    const before = attr.slice(0, index + correction);
+    const after = attr.slice(index + correction + oldVal.length);
+    let newAttrValue;
 
     if (name == "class") {
-      var spacer = oldVal.length == 0 ? ' ' : '';
+      const spacer = oldVal.length == 0 ? ' ' : '';
       newAttrValue = before + spacer + newVal + spacer + after;
     } else {
       newAttrValue = before + newVal + after;
@@ -6173,14 +4174,12 @@
   }
 
   function getType(val) {
-    var type = T$1.check(T$1(_templateObject5$2 || (_templateObject5$2 = taggedTemplateLiteral(["Function"]))), val) ? 'function' : T$1.check(T$1(_templateObject6$1 || (_templateObject6$1 = taggedTemplateLiteral(["Handlers"]))), val) ? 'handlers' : T$1.check(T$1(_templateObject7$1 || (_templateObject7$1 = taggedTemplateLiteral(["BrutalObject"]))), val) ? 'brutalobject' : T$1.check(T$1(_templateObject8 || (_templateObject8 = taggedTemplateLiteral(["MarkupObject"]))), val) ? 'markupobject' : T$1.check(T$1(_templateObject9 || (_templateObject9 = taggedTemplateLiteral(["MarkupAttrObject"]))), val) ? 'markupattrobject' : T$1.check(T$1(_templateObject10 || (_templateObject10 = taggedTemplateLiteral(["BrutalArray"]))), val) ? 'brutalarray' : T$1.check(T$1(_templateObject11 || (_templateObject11 = taggedTemplateLiteral(["FuncArray"]))), val) ? 'funcarray' : 'default';
+    const type = T$1.check(T$1(_templateObject5$2 || (_templateObject5$2 = taggedTemplateLiteral(["Function"]))), val) ? 'function' : T$1.check(T$1(_templateObject6$1 || (_templateObject6$1 = taggedTemplateLiteral(["Handlers"]))), val) ? 'handlers' : T$1.check(T$1(_templateObject7$1 || (_templateObject7$1 = taggedTemplateLiteral(["BrutalObject"]))), val) ? 'brutalobject' : T$1.check(T$1(_templateObject8 || (_templateObject8 = taggedTemplateLiteral(["MarkupObject"]))), val) ? 'markupobject' : T$1.check(T$1(_templateObject9 || (_templateObject9 = taggedTemplateLiteral(["MarkupAttrObject"]))), val) ? 'markupattrobject' : T$1.check(T$1(_templateObject10 || (_templateObject10 = taggedTemplateLiteral(["BrutalArray"]))), val) ? 'brutalarray' : T$1.check(T$1(_templateObject11 || (_templateObject11 = taggedTemplateLiteral(["FuncArray"]))), val) ? 'funcarray' : 'default';
     return type;
   }
 
   function summonPlaceholder(sibling) {
-    var ph = toConsumableArray(sibling.parentNode.childNodes).find(function (node) {
-      return node.nodeType == Node.COMMENT_NODE && node.nodeValue == 'brutal-placeholder';
-    });
+    let ph = [...sibling.parentNode.childNodes].find(node => node.nodeType == Node.COMMENT_NODE && node.nodeValue == 'brutal-placeholder');
 
     if (!ph) {
       ph = toDOM("<!--brutal-placeholder-->").firstChild;
@@ -6192,8 +4191,8 @@
 
 
   function isCached(cacheKey, v, instanceKey) {
-    var firstCall;
-    var cached = cache[cacheKey];
+    let firstCall;
+    let cached = cache[cacheKey];
 
     if (cached == undefined) {
       cached = cache[cacheKey] = {};
@@ -6236,11 +4235,11 @@
 
   function markup(str) {
     str = T$1.check(T$1(_templateObject12 || (_templateObject12 = taggedTemplateLiteral(["None"]))), str) ? '' : str;
-    var frag = toDOM(str);
-    var retVal = {
+    const frag = toDOM(str);
+    const retVal = {
       type: 'MarkupObject',
       code: CODE,
-      nodes: toConsumableArray(frag.childNodes),
+      nodes: [...frag.childNodes],
       externals: []
     };
     return retVal;
@@ -6251,7 +4250,7 @@
   function attrmarkup(str) {
     str = T$1.check(T$1(_templateObject13 || (_templateObject13 = taggedTemplateLiteral(["None"]))), str) ? '' : str;
     str = str.replace(/"/g, '&quot;');
-    var retVal = {
+    const retVal = {
       type: 'MarkupAttrObject',
       code: CODE,
       str
@@ -6281,14 +4280,14 @@
   }
 
   function replaceValWithKeyAndOmitInstanceKey(vmap) {
-    return function (val, vi) {
+    return (val, vi) => {
       // omit instance key
       if (T$1.check(T$1(_templateObject15 || (_templateObject15 = taggedTemplateLiteral(["Key"]))), val)) {
         return '';
       }
 
-      var key = ('key' + Math.random()).replace('.', '').padEnd(KEYLEN, '0').slice(0, KEYLEN);
-      var k = key;
+      const key = ('key' + Math.random()).replace('.', '').padEnd(KEYLEN, '0').slice(0, KEYLEN);
+      let k = key;
 
       if (T$1.check(T$1(_templateObject16 || (_templateObject16 = taggedTemplateLiteral(["BrutalObject"]))), val) || T$1.check(T$1(_templateObject17 || (_templateObject17 = taggedTemplateLiteral(["MarkupObject"]))), val)) {
         k = "<!--".concat(k, "-->");
@@ -6304,8 +4303,8 @@
   }
 
   function toDOM(str) {
-    var templateEl = new DOMParser().parseFromString("<template>".concat(str, "</template>"), "text/html").head.firstElementChild;
-    var f;
+    const templateEl = new DOMParser().parseFromString("<template>".concat(str, "</template>"), "text/html").head.firstElementChild;
+    let f;
 
     if (templateEl instanceof HTMLTemplateElement) {
       f = templateEl.content;
@@ -6317,15 +4316,15 @@
   }
 
   function guardAndTransformVal(v) {
-    var isFunc = T$1.check(T$1(_templateObject18 || (_templateObject18 = taggedTemplateLiteral(["Function"]))), v);
-    var isUnset = T$1.check(T$1(_templateObject19 || (_templateObject19 = taggedTemplateLiteral(["None"]))), v);
-    var isObject = T$1.check(T$1(_templateObject20 || (_templateObject20 = taggedTemplateLiteral(["Object"]))), v);
-    var isBrutalArray = T$1.check(T$1(_templateObject21 || (_templateObject21 = taggedTemplateLiteral(["BrutalArray"]))), v);
-    var isFuncArray = T$1.check(T$1(_templateObject22 || (_templateObject22 = taggedTemplateLiteral(["FuncArray"]))), v);
-    var isMarkupObject = T$1.check(T$1(_templateObject23 || (_templateObject23 = taggedTemplateLiteral(["MarkupObject"]))), v);
-    var isMarkupAttrObject = T$1.check(T$1(_templateObject24 || (_templateObject24 = taggedTemplateLiteral(["MarkupAttrObject"]))), v);
-    var isBrutal = T$1.check(T$1(_templateObject25 || (_templateObject25 = taggedTemplateLiteral(["BrutalObject"]))), v);
-    var isForgery = T$1.check(T$1(_templateObject26 || (_templateObject26 = taggedTemplateLiteral(["BrutalLikeObject"]))), v) && !isBrutal;
+    const isFunc = T$1.check(T$1(_templateObject18 || (_templateObject18 = taggedTemplateLiteral(["Function"]))), v);
+    const isUnset = T$1.check(T$1(_templateObject19 || (_templateObject19 = taggedTemplateLiteral(["None"]))), v);
+    const isObject = T$1.check(T$1(_templateObject20 || (_templateObject20 = taggedTemplateLiteral(["Object"]))), v);
+    const isBrutalArray = T$1.check(T$1(_templateObject21 || (_templateObject21 = taggedTemplateLiteral(["BrutalArray"]))), v);
+    const isFuncArray = T$1.check(T$1(_templateObject22 || (_templateObject22 = taggedTemplateLiteral(["FuncArray"]))), v);
+    const isMarkupObject = T$1.check(T$1(_templateObject23 || (_templateObject23 = taggedTemplateLiteral(["MarkupObject"]))), v);
+    const isMarkupAttrObject = T$1.check(T$1(_templateObject24 || (_templateObject24 = taggedTemplateLiteral(["MarkupAttrObject"]))), v);
+    const isBrutal = T$1.check(T$1(_templateObject25 || (_templateObject25 = taggedTemplateLiteral(["BrutalObject"]))), v);
+    const isForgery = T$1.check(T$1(_templateObject26 || (_templateObject26 = taggedTemplateLiteral(["BrutalLikeObject"]))), v) && !isBrutal;
     if (isFunc) return v;
     if (isBrutal) return v;
     if (isKey(v)) return v;
@@ -6347,17 +4346,17 @@
   }
 
   function join(os) {
-    var externals = [];
-    var bigNodes = [];
-    var v = [];
-    var oldVals = [];
-    os.forEach(function (o) {
+    const externals = [];
+    const bigNodes = [];
+    const v = [];
+    const oldVals = [];
+    os.forEach(o => {
       //v.push(...o.v); 
       //oldVals.push(...o.oldVals);
-      externals.push.apply(externals, toConsumableArray(o.externals));
-      bigNodes.push.apply(bigNodes, toConsumableArray(o.nodes));
+      externals.push(...o.externals);
+      bigNodes.push(...o.nodes);
     });
-    var retVal = {
+    const retVal = {
       v,
       code: CODE,
       oldVals,
@@ -6370,11 +4369,9 @@
   }
 
   function nodesToStr(nodes) {
-    var frag = document.createDocumentFragment();
-    nodes.forEach(function (n) {
-      return frag.appendChild(n.cloneNode(true));
-    });
-    var container = document.createElement('body');
+    const frag = document.createDocumentFragment();
+    nodes.forEach(n => frag.appendChild(n.cloneNode(true)));
+    const container = document.createElement('body');
     container.appendChild(frag);
     return container.innerHTML;
   }
@@ -6382,36 +4379,29 @@
   function diffNodes(last, next) {
     last = new Set(last);
     next = new Set(next);
-    return new Set(toConsumableArray(last).filter(function (n) {
-      return !next.has(n);
-    }));
+    return new Set([...last].filter(n => !next.has(n)));
   }
 
   function update(newVals) {
-    var _this = this;
-
-    var updateable = this.v.filter(function (_ref13) {
-      var vi = _ref13.vi;
-      return didChange(newVals[vi], _this.oldVals[vi]);
+    const updateable = this.v.filter(_ref7 => {
+      let {
+        vi
+      } = _ref7;
+      return didChange(newVals[vi], this.oldVals[vi]);
     });
-    updateable.forEach(function (_ref14) {
-      var vi = _ref14.vi,
-          replacers = _ref14.replacers;
-      return replacers.forEach(function (f) {
-        return f(newVals[vi]);
-      });
+    updateable.forEach(_ref8 => {
+      let {
+        vi,
+        replacers
+      } = _ref8;
+      return replacers.forEach(f => f(newVals[vi]));
     });
     this.oldVals = Array.from(newVals);
   }
 
   function didChange(oldVal, newVal) {
-
-    var _map = [oldVal, newVal].map(getType),
-        _map2 = slicedToArray(_map, 2),
-        oldType = _map2[0],
-        newType = _map2[1];
-
-    var ret;
+    const [oldType, newType] = [oldVal, newVal].map(getType);
+    let ret;
 
     if (oldType != newType) {
       ret = true;
@@ -6464,22 +4454,22 @@
   }
 
   var _templateObject$b;
-  var loadings = new Map();
-  var SHOW_LOADED_MS = 300;
-  var DEFAULT_LOADING = {
+  const loadings = new Map();
+  const SHOW_LOADED_MS = 300;
+  const DEFAULT_LOADING = {
     waiting: 0,
     complete: 0
   };
-  var delayHideTimeout;
+  let delayHideTimeout;
   function LoadingIndicator(state) {
-    var delayHide = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-    var loading = loadings.get(state.activeTarget) || DEFAULT_LOADING;
-    var isLoading = loading.waiting > 0;
+    let delayHide = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+    const loading = loadings.get(state.activeTarget) || DEFAULT_LOADING;
+    const isLoading = loading.waiting > 0;
 
     if (delayHide && loading.complete > 0) {
       if (!isLoading) {
         clearTimeout(delayHideTimeout);
-        delayHideTimeout = setTimeout(function () {
+        delayHideTimeout = setTimeout(() => {
           loading.isLoading = false;
           LoadingIndicator(state, false);
         }, SHOW_LOADED_MS);
@@ -6494,8 +4484,12 @@
   }
 
   function resetLoadingIndicator(_ref, state) {
-    var navigated = _ref.navigated;
-    var targetId = navigated.targetId;
+    let {
+      navigated
+    } = _ref;
+    const {
+      targetId
+    } = navigated;
     loadings.delete(targetId);
 
     if (state.activeTarget == targetId) {
@@ -6503,8 +4497,12 @@
     }
   }
   function showLoadingIndicator(_ref2, state) {
-    var resource = _ref2.resource;
-    var targetId = resource.targetId;
+    let {
+      resource
+    } = _ref2;
+    const {
+      targetId
+    } = resource;
     loadings.set(targetId, resource);
 
     if (state.activeTarget == targetId) {
@@ -6512,45 +4510,37 @@
     }
   }
 
-  var DEFAULT_FAVICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAYAAAA4TnrqAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAuIwAALiMBeKU/dgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAn/SURBVHic7Zx/bFzFEce/s+ezcc5OCC0lDi65OHf7zliyWlx+NUgY9VcKjYTbNKhAmtAKWiTapq1Q1fS/NqJIVCGlVI1IKSQ0qElQA7RFgNRimiAh1BSkJLLfu/MPim1CoKHxXXyu726nf/jZNc7bu927s1NV9/kreTs7sx6/nbezs2ugRo0aNWrUqFGjRo3zDJ1P411dXeEzZ87EhRAOM68hog8DaAIQBpADkAHwLoBBZu5funRp6ujRo7nzNd5Fd5aUMgHgiwC6iWgtMy+x6H6WiF5h5l4AhzzP61+QQWpYFGe1trY2RiKRLcy8BcBVVVT9GjM/ls1m94yMjGSrqDeQBXVWZ2dnZHJy8lsAtgK4ZAFNvUNEO9Lp9MNjY2MTC2VkwZwVi8XWCyEeAhBdKBsBjALY5nne3oVQXnVnRaPRC8Ph8G4i2lBt3RYczOfzdw4ODp6pptKqOiuRSHQppQ4CWG3ZNQdgEMBbAN4nohwzRwAsJ6IoM19WxnAGlFIbU6nU38voG0jVnOU4zjpmfgpAxECcARxh5meFEL0tLS1v9Pb25nXCHR0dF+VyuasB3AhgPYBVhsPKCCE29Pf3v2AoX5SqOEtKeQuAJzC9PirGODPvCoVCv+rv7x8u0xw5jnMDM98DoMdAPgdgk+d5+8u091/DlSrw36hnUdxReQAPTU1N/WR4eHg8Ho9fSUTNBupHdGupRCIRVUoNGQ4zJ4RYX+kbVpGz/Bj1MopMPWY+HgqFbu3v7z8GAFLKXwP4uqEJBrDZ87wnAmzbOAsAMkqp6yuJYaLcjtFo9EI/mBeLUXuz2exVM47yucHCDGE6Tp1DPp8/a6EHAJqEEAfb2tqWWfabpWxnhcPh3Sj+1bvf87wtAStrW5vrpZQ9HR0dF819mEql3gVwHxH9w0JXW11d3W5L+7OUNQ2llDcDOFRE5H7P836o6TuE8haqCsDdnuc9Mr/BcZzbmPm3poqI6GbXdZ+xHYD1m9XZ2RkBsLOIyF7P87YVaW+wtekjAHw5qKGlpWU/gH+bKmLmnStXrrRJ4GcHYIWf6wWuc5j5+MTExDcxHZg/QHd3d53jOLcBaLG1OUd/XdBzf432IIApQ1XR5ubme2ztW03D1tbWxiVLlgwhOCnOCyGumAnmjuPsY+aNAAJ/wHJg5t5kMqn9QHR3d9eNjo5uJKJ9BupOTkxMtNnsVli9WZFIZAv0uwcPzTiqvb29hZlvRRUdZUJvb28+mUw+CeBtA/EVjY2Nm230WzmLme/QNI03NDRsnyNXblyqFkbxi4i22Cg1dpa/w3llUBsz7zp27Nj7Nob/R7g6kUhIU2GbN0uXh7EQYpeFnrIhIlVtncxskl8CsHOWLrAecV3XJu0oG2Z+qdo6lVLGGYVRAO7q6gpnMpm1zOesCOAn0dVmnIi+x8xvzrHzXjKZfKPahojouq6urrBJ1cjIWX65KnARJ4ToDRjAuV61gJl/43neo5WosJCNjI+PxwD0lRI0moZCCEfTlGtpaTnnty2EeBvAOya6NfYqnW5Wb6AQwijIG71ZzBwjCly/DgbtcJ44cWJKStlFROuY+WsAPqlRPQJgB4DZHQQiOuG67ism49KRyWRub2pqWg/gJgCbSskrpeImeo2cRUQXaZ6/GfQcADzPGwXwaHt7+3OFQmFMI3av53m/MxmDDX45bD+AA1LKqwDoZgYAgIiWm+g1/Ro2aZ6nS3Xs6+t7G0Aq0LgQJw3tlwsDOGIgZ7Jra5yONAaOhNkorwqFQjfm8/lbhBA9zHyFoc2qkM/nvx8Oh48z8wpMFzsuDxAz2oEwdZbOKUa/kb6+viSA7Y7j/JyITlqeb6gIv3a4EwCklB0IdpZRFdt0GmY0z43m+gyu66aZ+dTM/5VSK2z6VwoRfUjTVDKcAOZfw9NBX0Miipr0L8IDjuNcUigU/ppKpV6vUFdJmPkjmqbTJv2N3iwiSmqMX5ZIJHS/LRNamXmnEOJv8Xj8YxXoKYlfqAisGRBR4AdoPkbOUkp5ujZmDtyJKMK/gsYhhLjeUo8V9fX110Dz8zKza6LDaBouW7YsmU6nzyKg7MXMNwF43kSPz7cBbMP0Oa3Z9Rsz3xuPx08R0bu6jkRUKBQKx/3KjhWFQmGtZmGdaW5uHjDRYbytLKV8EcBnApre9DxvNezyMcRisYuFEP2Y4zBDxgFc7i96TSEpZR8CFqfM/EIymVxnosRmi0aXr61yHMemcApgtu53wrYfgKVKKau1mpRyLTSreCHEX0z12OyRHwJwX1ADM98jpRwGgEKhkBkYGDgVJBfQr6CZGkUhopVSyjb/35Ou6+rSqRnu0jUIIYrVPz8oayroH9B4TdPcA2AAwEAoFHrHcZztGrmqQES7Zuwx82g8HtcWWGOxWAeAr2iaX/UXzEbYFiweM5T7qqFK48JoMYjoFl2bEOIBaGYQMz9uY8fKWdlsdg/M9qk+Go/Hb+3u7i41zR9B8FLClkA7UsoeAJ/X9DmZy+X22BixctbIyEiWiB40kSWifWNjY2ellD/VySSTyd97nrfcD9j/tBlLKRzHWQ1Au9vKzDuGh4cnbXRal+/T6fQvAAwbitcD+G4pIT/Vec52LHP4wAZka2trIzMfgD53Hcpmsw/bGrF21tjY2AQRbbXoYlRwZeb9MD+rENQXABCNRi+IRCJPA/iETp6ItpZzyaCs81n+cZ0D5fTVkUwm/+Tf3fk0ipffM0T0JIBvKKWuJaJLk8nk7cC0o8Lh8NPM/Nki/fe7rltWRarsswj5fP6uurq6LgBrytUxH9d10wD+LKXcC+AHASJD+Xz+40Hn26WUbUR0sMTmYkoppV1zlaLsk3+Dg4NnlFIbod/rmiUej98Bi9RKCPE85sUhn2VCiPr5Dx3H2QDgaAlHZfxz8eOm45hPxaeVE4nE55RSf0DpY92HlVJ3p1IpoxSnvb19VaFQuBbAzwBcOqfpNIDXmflBIcRbzLwDwKdKqMsppb6QSqVeNLGtY7HPwRcAPENEv3Rd9yUYJN+O43yHmYNOGk769kIlVEwR0SbXdSuOsVW7YeG/YU9BXwmaTx8R/VEp9TIzH9ZNj3g83k5Eb2B6GWJLRin1pUrfqBmqencnFotdIYQ4CKDNsmsB0wXXkwDew/RUuwBAvX/DNQH7j1HKj1FV266u+q2wtra2Zf7x6cDDsovEAaXUnZUE8yD+3+4bjgD40ULdNywVHMvm9OnTXkNDw+6GhoZxAJ0wj2XlcJKZf5zNZjcNDQ0dXSgji3ZHurGxcTMRbQZwTRVVv8rMj+dyuT22SXE5LPrt+0QiIZm5Ryl1AxFdB7P7iTOcBXCYiF4SQhyy2birBuf97zqk0+k1ABKY/oJejOnpWo/ppDoD4BQRDTKz29zcPHA+/65DjRo1atSoUaNGjRrnnf8APcnjzVWJn1oAAAAASUVORK5CYII=";
+  const DEFAULT_FAVICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEsAAABLCAYAAAA4TnrqAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAuIwAALiMBeKU/dgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAn/SURBVHic7Zx/bFzFEce/s+ezcc5OCC0lDi65OHf7zliyWlx+NUgY9VcKjYTbNKhAmtAKWiTapq1Q1fS/NqJIVCGlVI1IKSQ0qElQA7RFgNRimiAh1BSkJLLfu/MPim1CoKHxXXyu726nf/jZNc7bu927s1NV9/kreTs7sx6/nbezs2ugRo0aNWrUqFGjRo3zDJ1P411dXeEzZ87EhRAOM68hog8DaAIQBpADkAHwLoBBZu5funRp6ujRo7nzNd5Fd5aUMgHgiwC6iWgtMy+x6H6WiF5h5l4AhzzP61+QQWpYFGe1trY2RiKRLcy8BcBVVVT9GjM/ls1m94yMjGSrqDeQBXVWZ2dnZHJy8lsAtgK4ZAFNvUNEO9Lp9MNjY2MTC2VkwZwVi8XWCyEeAhBdKBsBjALY5nne3oVQXnVnRaPRC8Ph8G4i2lBt3RYczOfzdw4ODp6pptKqOiuRSHQppQ4CWG3ZNQdgEMBbAN4nohwzRwAsJ6IoM19WxnAGlFIbU6nU38voG0jVnOU4zjpmfgpAxECcARxh5meFEL0tLS1v9Pb25nXCHR0dF+VyuasB3AhgPYBVhsPKCCE29Pf3v2AoX5SqOEtKeQuAJzC9PirGODPvCoVCv+rv7x8u0xw5jnMDM98DoMdAPgdgk+d5+8u091/DlSrw36hnUdxReQAPTU1N/WR4eHg8Ho9fSUTNBupHdGupRCIRVUoNGQ4zJ4RYX+kbVpGz/Bj1MopMPWY+HgqFbu3v7z8GAFLKXwP4uqEJBrDZ87wnAmzbOAsAMkqp6yuJYaLcjtFo9EI/mBeLUXuz2exVM47yucHCDGE6Tp1DPp8/a6EHAJqEEAfb2tqWWfabpWxnhcPh3Sj+1bvf87wtAStrW5vrpZQ9HR0dF819mEql3gVwHxH9w0JXW11d3W5L+7OUNQ2llDcDOFRE5H7P836o6TuE8haqCsDdnuc9Mr/BcZzbmPm3poqI6GbXdZ+xHYD1m9XZ2RkBsLOIyF7P87YVaW+wtekjAHw5qKGlpWU/gH+bKmLmnStXrrRJ4GcHYIWf6wWuc5j5+MTExDcxHZg/QHd3d53jOLcBaLG1OUd/XdBzf432IIApQ1XR5ubme2ztW03D1tbWxiVLlgwhOCnOCyGumAnmjuPsY+aNAAJ/wHJg5t5kMqn9QHR3d9eNjo5uJKJ9BupOTkxMtNnsVli9WZFIZAv0uwcPzTiqvb29hZlvRRUdZUJvb28+mUw+CeBtA/EVjY2Nm230WzmLme/QNI03NDRsnyNXblyqFkbxi4i22Cg1dpa/w3llUBsz7zp27Nj7Nob/R7g6kUhIU2GbN0uXh7EQYpeFnrIhIlVtncxskl8CsHOWLrAecV3XJu0oG2Z+qdo6lVLGGYVRAO7q6gpnMpm1zOesCOAn0dVmnIi+x8xvzrHzXjKZfKPahojouq6urrBJ1cjIWX65KnARJ4ToDRjAuV61gJl/43neo5WosJCNjI+PxwD0lRI0moZCCEfTlGtpaTnnty2EeBvAOya6NfYqnW5Wb6AQwijIG71ZzBwjCly/DgbtcJ44cWJKStlFROuY+WsAPqlRPQJgB4DZHQQiOuG67ism49KRyWRub2pqWg/gJgCbSskrpeImeo2cRUQXaZ6/GfQcADzPGwXwaHt7+3OFQmFMI3av53m/MxmDDX45bD+AA1LKqwDoZgYAgIiWm+g1/Ro2aZ6nS3Xs6+t7G0Aq0LgQJw3tlwsDOGIgZ7Jra5yONAaOhNkorwqFQjfm8/lbhBA9zHyFoc2qkM/nvx8Oh48z8wpMFzsuDxAz2oEwdZbOKUa/kb6+viSA7Y7j/JyITlqeb6gIv3a4EwCklB0IdpZRFdt0GmY0z43m+gyu66aZ+dTM/5VSK2z6VwoRfUjTVDKcAOZfw9NBX0Miipr0L8IDjuNcUigU/ppKpV6vUFdJmPkjmqbTJv2N3iwiSmqMX5ZIJHS/LRNamXmnEOJv8Xj8YxXoKYlfqAisGRBR4AdoPkbOUkp5ujZmDtyJKMK/gsYhhLjeUo8V9fX110Dz8zKza6LDaBouW7YsmU6nzyKg7MXMNwF43kSPz7cBbMP0Oa3Z9Rsz3xuPx08R0bu6jkRUKBQKx/3KjhWFQmGtZmGdaW5uHjDRYbytLKV8EcBnApre9DxvNezyMcRisYuFEP2Y4zBDxgFc7i96TSEpZR8CFqfM/EIymVxnosRmi0aXr61yHMemcApgtu53wrYfgKVKKau1mpRyLTSreCHEX0z12OyRHwJwX1ADM98jpRwGgEKhkBkYGDgVJBfQr6CZGkUhopVSyjb/35Ou6+rSqRnu0jUIIYrVPz8oayroH9B4TdPcA2AAwEAoFHrHcZztGrmqQES7Zuwx82g8HtcWWGOxWAeAr2iaX/UXzEbYFiweM5T7qqFK48JoMYjoFl2bEOIBaGYQMz9uY8fKWdlsdg/M9qk+Go/Hb+3u7i41zR9B8FLClkA7UsoeAJ/X9DmZy+X22BixctbIyEiWiB40kSWifWNjY2ellD/VySSTyd97nrfcD9j/tBlLKRzHWQ1Au9vKzDuGh4cnbXRal+/T6fQvAAwbitcD+G4pIT/Vec52LHP4wAZka2trIzMfgD53Hcpmsw/bGrF21tjY2AQRbbXoYlRwZeb9MD+rENQXABCNRi+IRCJPA/iETp6ItpZzyaCs81n+cZ0D5fTVkUwm/+Tf3fk0ipffM0T0JIBvKKWuJaJLk8nk7cC0o8Lh8NPM/Nki/fe7rltWRarsswj5fP6uurq6LgBrytUxH9d10wD+LKXcC+AHASJD+Xz+40Hn26WUbUR0sMTmYkoppV1zlaLsk3+Dg4NnlFIbod/rmiUej98Bi9RKCPE85sUhn2VCiPr5Dx3H2QDgaAlHZfxz8eOm45hPxaeVE4nE55RSf0DpY92HlVJ3p1IpoxSnvb19VaFQuBbAzwBcOqfpNIDXmflBIcRbzLwDwKdKqMsppb6QSqVeNLGtY7HPwRcAPENEv3Rd9yUYJN+O43yHmYNOGk769kIlVEwR0SbXdSuOsVW7YeG/YU9BXwmaTx8R/VEp9TIzH9ZNj3g83k5Eb2B6GWJLRin1pUrfqBmqencnFotdIYQ4CKDNsmsB0wXXkwDew/RUuwBAvX/DNQH7j1HKj1FV266u+q2wtra2Zf7x6cDDsovEAaXUnZUE8yD+3+4bjgD40ULdNywVHMvm9OnTXkNDw+6GhoZxAJ0wj2XlcJKZf5zNZjcNDQ0dXSgji3ZHurGxcTMRbQZwTRVVv8rMj+dyuT22SXE5LPrt+0QiIZm5Ryl1AxFdB7P7iTOcBXCYiF4SQhyy2birBuf97zqk0+k1ABKY/oJejOnpWo/ppDoD4BQRDTKz29zcPHA+/65DjRo1atSoUaNGjRrnnf8APcnjzVWJn1oAAAAASUVORK5CYII=";
 
   var _templateObject$a, _templateObject2$6, _templateObject3$5;
   function TabList(state) {
-    return d(_templateObject$a || (_templateObject$a = taggedTemplateLiteral(["\n    <nav class=\"controls targets\" stylist=\"styleTabList styleNavControl\">\n      <ul>\n        ", "\n        <li class=\"new\" stylist=\"styleTabSelector\"\n            click=", "\n          >\n            <button class=new title=\"New tab\" accesskey=\"s\">+</button>\n        </li>\n      </ul>\n    </nav>\n  "])), state.tabs.map(function (tab, index) {
-      return TabSelector(tab, index, state);
-    }), function (click) {
-      return state.createTab(click);
-    });
+    return d(_templateObject$a || (_templateObject$a = taggedTemplateLiteral(["\n    <nav class=\"controls targets\" stylist=\"styleTabList styleNavControl\">\n      <ul>\n        ", "\n        <li class=\"new\" stylist=\"styleTabSelector\"\n            click=", "\n          >\n            <button class=new title=\"New tab\" accesskey=\"s\">+</button>\n        </li>\n      </ul>\n    </nav>\n  "])), state.tabs.map((tab, index) => TabSelector(tab, index, state)), click => state.createTab(click));
   }
   function TabSelector(tab, index, state) {
-    var title = tab.title == 'about:blank' ? '' : tab.title;
-    var active = state.activeTarget == tab.targetId;
+    const title = tab.title == 'about:blank' ? '' : tab.title;
+    const active = state.activeTarget == tab.targetId;
     return d(_templateObject2$6 || (_templateObject2$6 = taggedTemplateLiteral(["", "\n    <li class=\"tab-selector ", "\" stylist=\"styleTabSelector\"\n        title=\"", "\"\n        click=", " \n      >\n        ", "\n        <a  \n          mousedown=", "\n          href=/tabs/", ">", "</a>\n        <button class=close title=\"Close tab\" ", "\n          click=", ">&Chi;</button>\n    </li>\n  "])), {
       key: tab.targetId
-    }, active ? 'active' : '', title || 'Bring to front', function (click) {
-      return state.activateTab(click, tab);
-    }, FaviconElement(tab, state), function () {
-      return state.viewState.lastActive = document.activeElement;
-    }, tab.targetId, title, active ? 'accesskey=d' : '', function (click) {
-      return state.closeTab(click, tab, index);
-    });
+    }, active ? 'active' : '', title || 'Bring to front', click => state.activateTab(click, tab), FaviconElement(tab, state), () => state.viewState.lastActive = document.activeElement, tab.targetId, title, active ? 'accesskey=d' : '', click => state.closeTab(click, tab, index));
   }
   function FaviconElement(_ref, state) {
-    var targetId = _ref.targetId;
-    var faviconURL;
+    let {
+      targetId
+    } = _ref;
+    let faviconURL;
     faviconURL = state.favicons.has(targetId) && state.favicons.get(targetId).dataURI;
     return d(_templateObject3$5 || (_templateObject3$5 = taggedTemplateLiteral(["", "\n    <img class=favicon src=\"", "\" \n      data-target-id=\"", "\" bond=", ">\n  "])), {
       key: targetId
-    }, d.attrmarkup(faviconURL || DEFAULT_FAVICON), targetId, function (el) {
-      return bindFavicon(el, {
-        targetId
-      }, state);
-    });
+    }, d.attrmarkup(faviconURL || DEFAULT_FAVICON), targetId, el => bindFavicon(el, {
+      targetId
+    }, state));
   }
 
   function bindFavicon(el, _ref2, state) {
-    var targetId = _ref2.targetId;
-    var favicon = state.favicons.get(targetId);
+    let {
+      targetId
+    } = _ref2;
+    let favicon = state.favicons.get(targetId);
 
     if (favicon) {
       favicon.el = el;
@@ -6567,8 +4557,10 @@
   }
 
   function resetFavicon(_ref, state) {
-    var targetId = _ref.targetId;
-    var favicon = state.favicons.get(targetId);
+    let {
+      targetId
+    } = _ref;
+    const favicon = state.favicons.get(targetId);
 
     if (favicon) {
       favicon.dataURI = DEFAULT_FAVICON;
@@ -6579,10 +4571,13 @@
     }, state);
   }
   function handleFaviconMessage(_ref2, state) {
-    var _ref2$favicon = _ref2.favicon,
-        faviconDataUrl = _ref2$favicon.faviconDataUrl,
-        targetId = _ref2$favicon.targetId;
-    var favicon = state.favicons.get(targetId);
+    let {
+      favicon: {
+        faviconDataUrl,
+        targetId
+      }
+    } = _ref2;
+    let favicon = state.favicons.get(targetId);
 
     if (favicon) {
       favicon.dataURI = faviconDataUrl;
@@ -6598,23 +4593,18 @@
     }, state);
   }
 
-  function _createForOfIteratorHelper$6(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$7(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+  const $ = Symbol('[[EventQueuePrivates]]'); //const TIME_BETWEEN_ONLINE_CHECKS = 1001;
 
-  function _unsupportedIterableToArray$7(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$7(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$7(o, minLen); }
-
-  function _arrayLikeToArray$7(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-  var $ = Symbol('[[EventQueuePrivates]]'); //const TIME_BETWEEN_ONLINE_CHECKS = 1001;
-
-  var ALERT_TIMEOUT = 300;
-  var MAX_E = 255;
-  var BUFFERED_FRAME_EVENT$3 = {
+  const ALERT_TIMEOUT = 300;
+  const MAX_E = 255;
+  const BUFFERED_FRAME_EVENT$3 = {
     type: "buffered-results-collection",
     command: {
       isBufferedResultsCollectionOnly: true,
       params: {}
     }
   };
-  var BUFFERED_FRAME_COLLECT_DELAY = {
+  const BUFFERED_FRAME_COLLECT_DELAY = {
     MIN: 75,
 
     /* 250, 500 */
@@ -6622,22 +4612,20 @@
     /* 2000, 4000, 8000 */
 
   };
-  var Format = 'jpeg';
-  var waiting = new Map();
-  var connecting;
-  var latestReload;
-  var latestAlert; //let lastTestTime;
+  const Format = 'jpeg';
+  const waiting = new Map();
+  let connecting;
+  let latestReload;
+  let latestAlert; //let lastTestTime;
   //let lastOnlineCheck;
 
-  var messageId = 0;
-  var latestFrame = 0;
-  var frameDrawing = false;
-  var bufferedFrameCollectDelay = BUFFERED_FRAME_COLLECT_DELAY.MIN;
+  let messageId = 0;
+  let latestFrame = 0;
+  let frameDrawing = false;
+  let bufferedFrameCollectDelay = BUFFERED_FRAME_COLLECT_DELAY.MIN;
 
-  var Privates = /*#__PURE__*/function () {
-    function Privates(publics, state, sessionToken) {
-      classCallCheck(this, Privates);
-
+  class Privates {
+    constructor(publics, state, sessionToken) {
       this.willCollectBufferedFrame = null;
       this.websockets = new Map();
       this.publics = publics;
@@ -6649,11 +4637,11 @@
       this.Data = [];
       this.Meta = [];
       this.sessionToken = sessionToken;
-      var WindowLength = 10;
-      var messageWindow = [];
-      var bwWindow = [];
+      const WindowLength = 10;
+      const messageWindow = [];
+      const bwWindow = [];
 
-      this.addBytes = function (n, hasFrame) {
+      this.addBytes = (n, hasFrame) => {
         state.totalBytes += n;
 
         if (hasFrame) {
@@ -6668,12 +4656,8 @@
             bwWindow.shift();
           }
 
-          var averageSize = Math.round(messageWindow.reduce(function (total, size) {
-            return total + size;
-          }, 0) / messageWindow.length);
-          var averageBw = Math.round(bwWindow.reduce(function (total, size) {
-            return total + size;
-          }, 0) / bwWindow.length);
+          const averageSize = Math.round(messageWindow.reduce((total, size) => total + size, 0) / messageWindow.length);
+          const averageBw = Math.round(bwWindow.reduce((total, size) => total + size, 0) / bwWindow.length);
 
           if (averageSize > averageBw * 1.1) {
             state.H({
@@ -6694,1084 +4678,611 @@
       };
     }
 
-    createClass(Privates, [{
-      key: "triggerSendLoop",
-      value: function triggerSendLoop() {
-        var _this = this;
+    static get firstDelay() {
+      return 20;
+      /* 20, 40, 250, 500;*/
+    }
 
-        if (this.loopActive) return;
-        this.loopActive = true;
-        this.currentDelay = this.constructor.firstDelay;
-        setTimeout(function () {
-          return _this.nextLoop();
-        }, this.currentDelay);
+    triggerSendLoop() {
+      if (this.loopActive) return;
+      this.loopActive = true;
+      this.currentDelay = this.constructor.firstDelay;
+      setTimeout(() => this.nextLoop(), this.currentDelay);
+    }
+
+    async nextLoop() {
+      //let data, meta, totalBandwidth;
+      let q = Array.from(this.publics.queue);
+      const url = this.subscribers[0];
+
+      if (!this.publics.state.demoMode && this.translators.has(url)) {
+        const translator = this.translators.get(url);
+        q = q.map(e => translator(e, {})).filter(e => e !== undefined);
+        q = q.reduce((Q, e) => (Array.isArray(e) ? Q.push(...e) : Q.push(e), Q), []);
       }
-    }, {
-      key: "nextLoop",
-      value: function () {
-        var _nextLoop = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee() {
-          var _this2 = this;
 
-          var q, url, translator, firstChainIndex, chain, events, _q$shift, splice_index;
+      const firstChainIndex = q.findIndex(e => !!e.chain);
+      let chain, events;
 
-          return regenerator.wrap(function _callee$(_context) {
-            while (1) {
-              switch (_context.prev = _context.next) {
-                case 0:
-                  //let data, meta, totalBandwidth;
-                  q = Array.from(this.publics.queue);
-                  url = this.subscribers[0];
+      if (firstChainIndex == -1) {
+        events = q.splice(0, MAX_E);
+        this.publics.queue.splice(0, MAX_E);
+      } else if (firstChainIndex == 0) {
+        ({
+          chain
+        } = q.shift());
+        this.publics.queue.shift();
+      } else {
+        const splice_index = Math.min(MAX_E, firstChainIndex);
+        events = q.splice(0, splice_index);
+        this.publics.queue.splice(0, splice_index);
+      }
 
-                  if (!this.publics.state.demoMode && this.translators.has(url)) {
-                    translator = this.translators.get(url);
-                    q = q.map(function (e) {
-                      return translator(e, {});
-                    }).filter(function (e) {
-                      return e !== undefined;
-                    });
-                    q = q.reduce(function (Q, e) {
-                      return Array.isArray(e) ? Q.push.apply(Q, toConsumableArray(e)) : Q.push(e), Q;
-                    }, []);
-                  }
+      if (chain) {
+        this.sendEventChain({
+          chain,
+          url
+        }).then(_ref => {
+          let {
+            /*data,*/
+            meta,
+            totalBandwidth
+          } = _ref;
 
-                  firstChainIndex = q.findIndex(function (e) {
-                    return !!e.chain;
-                  });
+          if (!!meta && meta.length) {
+            meta.forEach(metaItem => {
+              const executionContextId = metaItem.executionContextId;
 
-                  if (firstChainIndex == -1) {
-                    events = q.splice(0, MAX_E);
-                    this.publics.queue.splice(0, MAX_E);
-                  } else if (firstChainIndex == 0) {
-                    _q$shift = q.shift();
-                    chain = _q$shift.chain;
-                    this.publics.queue.shift();
-                  } else {
-                    splice_index = Math.min(MAX_E, firstChainIndex);
-                    events = q.splice(0, splice_index);
-                    this.publics.queue.splice(0, splice_index);
-                  }
+              for (const key of Object.keys(metaItem)) {
+                let typeList = this.typeLists.get(key);
 
-                  if (chain) {
-                    this.sendEventChain({
-                      chain,
-                      url
-                    }).then(function (_ref) {
-                      var meta = _ref.meta,
-                          totalBandwidth = _ref.totalBandwidth;
-
-                      if (!!meta && meta.length) {
-                        meta.forEach(function (metaItem) {
-                          var executionContextId = metaItem.executionContextId;
-
-                          var _loop = function _loop() {
-                            var key = _Object$keys[_i];
-
-                            var typeList = _this2.typeLists.get(key);
-
-                            if (typeList) {
-                              typeList.forEach(function (func) {
-                                try {
-                                  func({
-                                    [key]: metaItem[key],
-                                    executionContextId
-                                  });
-                                } catch (e) {
-                                }
-                              });
-                            }
-                          };
-
-                          for (var _i = 0, _Object$keys = Object.keys(metaItem); _i < _Object$keys.length; _i++) {
-                            _loop();
-                          }
-                        });
-                      }
-
-                      if (totalBandwidth) {
-                        _this2.publics.state.totalBandwidth = totalBandwidth;
-                      }
-                    });
-                  } else {
-                    this.sendEvents({
-                      events,
-                      url
-                    });
-                  }
-
-                  if (this.publics.queue.length) {
-                    setTimeout(function () {
-                      return _this2.nextLoop();
-                    }, this.currentDelay);
-                  } else {
-                    this.loopActive = false;
-                  }
-
-                case 7:
-                case "end":
-                  return _context.stop();
-              }
-            }
-          }, _callee, this);
-        }));
-
-        function nextLoop() {
-          return _nextLoop.apply(this, arguments);
-        }
-
-        return nextLoop;
-      }()
-    }, {
-      key: "sendEvents",
-      value: function () {
-        var _sendEvents = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee3(_ref2) {
-          var _this3 = this;
-
-          var events, url, protocol, senders, resolve, promise, request;
-          return regenerator.wrap(function _callee3$(_context3) {
-            while (1) {
-              switch (_context3.prev = _context3.next) {
-                case 0:
-                  events = _ref2.events, url = _ref2.url;
-
-                  if (events) {
-                    _context3.next = 3;
-                    break;
-                  }
-
-                  return _context3.abrupt("return", {
-                    meta: [],
-                    data: []
-                  });
-
-                case 3:
-                  events = events.filter(function (e) {
-                    return !!e && !!e.command;
-                  });
-
-                  if (!(events.length == 0)) {
-                    _context3.next = 6;
-                    break;
-                  }
-
-                  return _context3.abrupt("return", {
-                    meta: [],
-                    data: []
-                  });
-
-                case 6:
-                  this.maybeCheckForBufferedFrames(events);
-
-                  try {
-                    url = new URL(url);
-                    protocol = url.protocol; // OK WTF
-
-                    url.search = "session_token=".concat(this.sessionToken);
-                    url = url + '';
-                  } catch (e) {
-                    alert("WTF " + url);
-                    console.warn(e, url, this);
-                  }
-
-                  if (this.publics.state.demoMode) {
-                    _context3.next = 35;
-                    break;
-                  }
-
-                  if (!(protocol == 'ws:' || protocol == 'wss:')) {
-                    _context3.next = 31;
-                    break;
-                  }
-
-                  _context3.prev = 10;
-                  senders = this.websockets.get(url);
-                  messageId++;
-                  promise = new Promise(function (res) {
-                    return resolve = res;
-                  });
-                  waiting.set("".concat(url, ":").concat(messageId), resolve);
-
-                  if (!senders) {
-                    _context3.next = 19;
-                    break;
-                  }
-
-                  senders.so({
-                    messageId,
-                    zombie: {
-                      events
+                if (typeList) {
+                  typeList.forEach(func => {
+                    try {
+                      func({
+                        [key]: metaItem[key],
+                        executionContextId
+                      });
+                    } catch (e) {
                     }
                   });
-                  _context3.next = 21;
-                  break;
-
-                case 19:
-                  _context3.next = 21;
-                  return this.connectSocket(url, events, messageId);
-
-                case 21:
-                  return _context3.abrupt("return", promise);
-
-                case 24:
-                  _context3.prev = 24;
-                  _context3.t0 = _context3["catch"](10);
-                  console.warn(_context3.t0);
-                  console.warn(JSON.stringify({
-                    msg: "Error sending event to websocket ".concat(url),
-                    events,
-                    url,
-                    error: _context3.t0
-                  }));
-                  return _context3.abrupt("return", {
-                    error: 'failed to send',
-                    events
-                  });
-
-                case 29:
-                  _context3.next = 33;
-                  break;
-
-                case 31:
-                  request = {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      events
-                    }),
-                    headers: {
-                      'content-type': 'application/json'
-                    }
-                  };
-                  return _context3.abrupt("return", fetch(url, request).then(function (r) {
-                    return r.json();
-                  }).then( /*#__PURE__*/function () {
-                    var _ref4 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee2(_ref3) {
-                      var data, frameBuffer, meta, errors;
-                      return regenerator.wrap(function _callee2$(_context2) {
-                        while (1) {
-                          switch (_context2.prev = _context2.next) {
-                            case 0:
-                              data = _ref3.data, frameBuffer = _ref3.frameBuffer, meta = _ref3.meta;
-
-                              if (!!frameBuffer && _this3.images.has(url)) {
-                                drawFrames(_this3.publics.state, frameBuffer, _this3.images.get(url));
-                              }
-
-                              errors = data.filter(function (d) {
-                                return !!d.error;
-                              });
-
-                              if (errors.length) ;
-
-                              return _context2.abrupt("return", {
-                                data,
-                                meta
-                              });
-
-                            case 5:
-                            case "end":
-                              return _context2.stop();
-                          }
-                        }
-                      }, _callee2);
-                    }));
-
-                    return function (_x2) {
-                      return _ref4.apply(this, arguments);
-                    };
-                  }()).catch(function (e) {
-                    console.warn(JSON.stringify({
-                      msg: "Error sending event to POST url ".concat(url),
-                      events,
-                      url,
-                      error: e
-                    }));
-                    return {
-                      error: 'failed to send',
-                      events
-                    };
-                  }));
-
-                case 33:
-                  _context3.next = 38;
-                  break;
-
-                case 35:
-                  _context3.next = 37;
-                  return this.publics.state.demoEventConsumer({
-                    events
-                  });
-
-                case 37:
-                  return _context3.abrupt("return", _context3.sent);
-
-                case 38:
-                case "end":
-                  return _context3.stop();
+                }
               }
-            }
-          }, _callee3, this, [[10, 24]]);
-        }));
-
-        function sendEvents(_x) {
-          return _sendEvents.apply(this, arguments);
-        }
-
-        return sendEvents;
-      }()
-    }, {
-      key: "connectSocket",
-      value: function () {
-        var _connectSocket = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee7(url, events, messageId) {
-          var _this4 = this;
-
-          var _this$publics$queue, socket;
-
-          return regenerator.wrap(function _callee7$(_context7) {
-            while (1) {
-              switch (_context7.prev = _context7.next) {
-                case 0:
-                  if (!connecting) {
-                    _context7.next = 3;
-                    break;
-                  }
-
-                  (_this$publics$queue = this.publics.queue).unshift.apply(_this$publics$queue, toConsumableArray(events));
-
-                  return _context7.abrupt("return");
-
-                case 3:
-                  connecting = true;
-
-                  if (!(!this.publics.state.demoMode && onLine())) {
-                    _context7.next = 21;
-                    break;
-                  }
-
-                  _context7.prev = 5;
-                  socket = new WebSocket(url);
-                  _context7.next = 15;
-                  break;
-
-                case 9:
-                  _context7.prev = 9;
-                  _context7.t0 = _context7["catch"](5);
-                  talert("Error connecting to the server. Will reload to try again.");
-                  _context7.next = 15;
-                  return treload();
-
-                case 15:
-                  socket.onopen = function () {
-                    _this4.websockets.set(url, {
-                      so,
-                      sa
-                    });
-
-                    var receivesFrames = !_this4.publics.state.useViewFrame;
-                    so({
-                      messageId,
-                      zombie: {
-                        events,
-                        receivesFrames
-                      }
-                    });
-
-                    function so(o) {
-                      socket.send(JSON.stringify(o));
-                    }
-
-                    function sa(a) {
-                      socket.send(a);
-                    }
-                  };
-
-                  socket.onmessage = /*#__PURE__*/function () {
-                    var _ref5 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee4(message) {
-                      var MessageData, messageData, data, frameBuffer, meta, serverMessageId, totalBandwidth, errors, x, reload, _reload, _reload2, replyTransmitted, fallbackReplyTransmitted;
-
-                      return regenerator.wrap(function _callee4$(_context4) {
-                        while (1) {
-                          switch (_context4.prev = _context4.next) {
-                            case 0:
-                              MessageData = message.data;
-                              messageData = JSON.parse(MessageData);
-                              data = messageData.data, frameBuffer = messageData.frameBuffer, meta = messageData.meta, serverMessageId = messageData.messageId, totalBandwidth = messageData.totalBandwidth;
-
-                              if (!!frameBuffer && frameBuffer.length && _this4.images.has(url)) {
-                                _this4.addBytes(MessageData.length, frameBuffer.length);
-
-                                drawFrames(_this4.publics.state, frameBuffer, _this4.images.get(url));
-                              } else {
-                                _this4.addBytes(MessageData.length, false);
-                              }
-
-                              errors = data.filter(function (d) {
-                                return !!d && !!d.error;
-                              });
-
-                              if (!errors.length) {
-                                _context4.next = 75;
-                                break;
-                              }
-                              DEBUG && console.log(JSON.stringify(errors));
-
-                              if (!errors.some(function (_ref6) {
-                                var error = _ref6.error;
-                                return error.hasSession === false;
-                              })) {
-                                _context4.next = 30;
-                                break;
-                              }
-
-                              console.warn("Session has been cleared. Let's attempt relogin", _this4.sessionToken);
-
-                              if (!DEBUG.blockAnotherReset) {
-                                _context4.next = 12;
-                                break;
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 12:
-                              DEBUG.blockAnotherReset = true;
-                              _context4.prev = 13;
-                              x = new URL(location);
-                              x.pathname = 'login';
-                              x.search = "token=".concat(_this4.sessionToken, "&ran=").concat(Math.random());
-                              _context4.next = 19;
-                              return talert("Your browser cleared your session. We need to reload the page to refresh it.");
-
-                            case 19:
-                              DEBUG.delayUnload = false;
-                              location.href = x;
-                              socket.onmessage = null;
-                              _context4.next = 27;
-                              break;
-
-                            case 24:
-                              _context4.prev = 24;
-                              _context4.t0 = _context4["catch"](13);
-                              talert("An error occurred. Please reload.");
-
-                            case 27:
-                              return _context4.abrupt("return");
-
-                            case 30:
-                              if (!errors.some(function (_ref7) {
-                                var error = _ref7.error;
-                                return error.includes && error.includes("ECONNREFUSED");
-                              })) {
-                                _context4.next = 41;
-                                break;
-                              }
-
-                              console.warn("Cloud browser has not started yet. Let's reload and see if it has then.");
-
-                              if (!DEBUG.blockAnotherReset) {
-                                _context4.next = 34;
-                                break;
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 34:
-                              DEBUG.blockAnotherReset = true;
-                              talert("Your cloud browser has not started yet. We'll reload and see if it has then.");
-                              _context4.next = 38;
-                              return treload();
-
-                            case 38:
-                              return _context4.abrupt("return");
-
-                            case 41:
-                              if (!errors.some(function (_ref8) {
-                                var error = _ref8.error;
-                                return error.includes && error.includes("Timed out");
-                              })) {
-                                _context4.next = 53;
-                                break;
-                              }
-
-                              console.warn("Some events are timing out when sent to the cloud browser.");
-
-                              if (!DEBUG.blockAnotherReset) {
-                                _context4.next = 45;
-                                break;
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 45:
-                              DEBUG.blockAnotherReset = true;
-                              _context4.next = 48;
-                              return tconfirm("Some events are timing out when sent to the cloud browser. Try reloading the page, and if the problem persists try switching your cloud browser off then on again. Want to reload now?");
-
-                            case 48:
-                              reload = _context4.sent;
-
-                              if (reload) {
-                                treload();
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 53:
-                              if (!errors.some(function (_ref9) {
-                                var error = _ref9.error;
-                                return error.includes && error.includes("not opened");
-                              })) {
-                                _context4.next = 65;
-                                break;
-                              }
-
-                              console.warn("We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again.");
-
-                              if (!DEBUG.blockAnotherReset) {
-                                _context4.next = 57;
-                                break;
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 57:
-                              DEBUG.blockAnotherReset = true;
-                              _context4.next = 60;
-                              return tconfirm("We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again. Reload the page now?");
-
-                            case 60:
-                              _reload = _context4.sent;
-
-                              if (_reload) {
-                                treload();
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 65:
-                              if (!errors.some(function (_ref10) {
-                                var resetRequired = _ref10.resetRequired;
-                                return resetRequired;
-                              })) {
-                                _context4.next = 75;
-                                break;
-                              }
-
-                              console.warn("Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again.");
-
-                              if (!DEBUG.blockAnotherReset) {
-                                _context4.next = 69;
-                                break;
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 69:
-                              DEBUG.blockAnotherReset = true;
-                              _context4.next = 72;
-                              return tconfirm("Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again. Want to reload the page now?");
-
-                            case 72:
-                              _reload2 = _context4.sent;
-
-                              if (_reload2) {
-                                treload();
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 75:
-                              if (!!meta && meta.length) {
-                                meta.forEach(function (metaItem) {
-                                  var executionContextId = metaItem.executionContextId;
-
-                                  var _loop2 = function _loop2() {
-                                    var key = _Object$keys2[_i2];
-
-                                    var typeList = _this4.typeLists.get(key);
-
-                                    if (typeList) {
-                                      typeList.forEach(function (func) {
-                                        try {
-                                          func({
-                                            [key]: metaItem[key],
-                                            executionContextId
-                                          });
-                                        } catch (e) {
-                                        }
-                                      });
-                                    }
-                                  };
-
-                                  for (var _i2 = 0, _Object$keys2 = Object.keys(metaItem); _i2 < _Object$keys2.length; _i2++) {
-                                    _loop2();
-                                  }
-                                });
-                              }
-
-                              if (totalBandwidth) {
-                                _this4.publics.state.totalBandwidth = totalBandwidth;
-                              }
-
-                              replyTransmitted = transmitReply({
-                                url,
-                                id: serverMessageId,
-                                data,
-                                meta,
-                                totalBandwidth
-                              });
-
-                              if (!replyTransmitted) {
-                                _context4.next = 82;
-                                break;
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 82:
-
-                            case 83:
-                              fallbackReplyTransmitted = transmitReply({
-                                url,
-                                id: messageId,
-                                data,
-                                meta,
-                                totalBandwidth
-                              });
-
-                              if (!fallbackReplyTransmitted) {
-                                _context4.next = 88;
-                                break;
-                              }
-
-                              return _context4.abrupt("return");
-
-                            case 88:
-
-                            case 89:
-                            case "end":
-                              return _context4.stop();
-                          }
-                        }
-                      }, _callee4, null, [[13, 24]]);
-                    }));
-
-                    return function (_x6) {
-                      return _ref5.apply(this, arguments);
-                    };
-                  }();
-
-                  socket.onclose = /*#__PURE__*/function () {
-                    var _ref11 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee5(e) {
-                      return regenerator.wrap(function _callee5$(_context5) {
-                        while (1) {
-                          switch (_context5.prev = _context5.next) {
-                            case 0:
-                              _this4.websockets.delete(url);
-
-                              console.log("Socket disconnected. Will reconnect when online");
-                              talert("Error connecting to the server -- Will reload to try again.");
-                              _context5.next = 6;
-                              return treload();
-
-                            case 6:
-                            case "end":
-                              return _context5.stop();
-                          }
-                        }
-                      }, _callee5);
-                    }));
-
-                    return function (_x7) {
-                      return _ref11.apply(this, arguments);
-                    };
-                  }();
-
-                  socket.onerror = /*#__PURE__*/function () {
-                    var _ref12 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee6(e) {
-                      return regenerator.wrap(function _callee6$(_context6) {
-                        while (1) {
-                          switch (_context6.prev = _context6.next) {
-                            case 0:
-                              socket.onerror = null;
-                              talert("Error connecting to the server - Will reload to try again.");
-                              _context6.next = 5;
-                              return treload();
-
-                            case 5:
-                            case "end":
-                              return _context6.stop();
-                          }
-                        }
-                      }, _callee6);
-                    }));
-
-                    return function (_x8) {
-                      return _ref12.apply(this, arguments);
-                    };
-                  }();
-
-                  _context7.next = 26;
-                  break;
-
-                case 21:
-                  console.log("Offline. Will connect socket when online");
-                  talert("Error connecting to the server, will reload to try again.");
-                  _context7.next = 26;
-                  return treload();
-
-                case 26:
-                case "end":
-                  return _context7.stop();
-              }
-            }
-          }, _callee7, this, [[5, 9]]);
-        }));
-
-        function connectSocket(_x3, _x4, _x5) {
-          return _connectSocket.apply(this, arguments);
-        }
-
-        return connectSocket;
-      }()
-    }, {
-      key: "sendEventChain",
-      value: function () {
-        var _sendEventChain = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee8(_ref13) {
-          var chain, url, Meta, Data, lastData, _iterator, _step, next, _yield$this$sendEvent, meta, data, funcResult, events, _yield$this$sendEvent2, _meta, _data;
-
-          return regenerator.wrap(function _callee8$(_context8) {
-            while (1) {
-              switch (_context8.prev = _context8.next) {
-                case 0:
-                  chain = _ref13.chain, url = _ref13.url;
-                  Meta = [], Data = [];
-                  _iterator = _createForOfIteratorHelper$6(chain);
-                  _context8.prev = 3;
-
-                  _iterator.s();
-
-                case 5:
-                  if ((_step = _iterator.n()).done) {
-                    _context8.next = 33;
-                    break;
-                  }
-
-                  next = _step.value;
-
-                  if (!(typeof next == "object")) {
-                    _context8.next = 18;
-                    break;
-                  }
-
-                  _context8.next = 10;
-                  return this.sendEvents({
-                    events: [next],
-                    url
-                  });
-
-                case 10:
-                  _yield$this$sendEvent = _context8.sent;
-                  meta = _yield$this$sendEvent.meta;
-                  data = _yield$this$sendEvent.data;
-                  Meta.push.apply(Meta, toConsumableArray(meta));
-                  Data.push.apply(Data, toConsumableArray(data));
-                  lastData = data;
-                  _context8.next = 31;
-                  break;
-
-                case 18:
-                  if (!(typeof next == "function")) {
-                    _context8.next = 31;
-                    break;
-                  }
-
-                  funcResult = void 0;
-
-                  try {
-                    funcResult = next(lastData[0]);
-                  } catch (e) {
-                    Data.push({
-                      error: e + ''
-                    });
-                  }
-
-                  events = void 0;
-
-                  if (Array.isArray(funcResult)) {
-                    events = funcResult;
-                  } else if (typeof funcResult == "object") {
-                    events = [funcResult];
-                  }
-
-                  _context8.next = 25;
-                  return this.sendEvents({
-                    events,
-                    url
-                  });
-
-                case 25:
-                  _yield$this$sendEvent2 = _context8.sent;
-                  _meta = _yield$this$sendEvent2.meta;
-                  _data = _yield$this$sendEvent2.data;
-                  Meta.push.apply(Meta, toConsumableArray(_meta));
-                  Data.push.apply(Data, toConsumableArray(_data));
-                  lastData = _data;
-
-                case 31:
-                  _context8.next = 5;
-                  break;
-
-                case 33:
-                  _context8.next = 38;
-                  break;
-
-                case 35:
-                  _context8.prev = 35;
-                  _context8.t0 = _context8["catch"](3);
-
-                  _iterator.e(_context8.t0);
-
-                case 38:
-                  _context8.prev = 38;
-
-                  _iterator.f();
-
-                  return _context8.finish(38);
-
-                case 41:
-                  return _context8.abrupt("return", {
-                    data: Data,
-                    meta: Meta
-                  });
-
-                case 42:
-                case "end":
-                  return _context8.stop();
-              }
-            }
-          }, _callee8, this, [[3, 35, 38, 41]]);
-        }));
-
-        function sendEventChain(_x9) {
-          return _sendEventChain.apply(this, arguments);
-        }
-
-        return sendEventChain;
-      }()
-    }, {
-      key: "maybeCheckForBufferedFrames",
-      value: function maybeCheckForBufferedFrames(events) {
-        var _this5 = this;
-
-        if (meetsCollectBufferedFrameCondition(this.publics.queue, events)) {
-          if (this.willCollectBufferedFrame) {
-            clearTimeout(this.willCollectBufferedFrame);
-            this.willCollectBufferedFrame = false;
-            bufferedFrameCollectDelay = BUFFERED_FRAME_COLLECT_DELAY.MIN;
+            });
           }
 
-          this.willCollectBufferedFrame = setTimeout(function () {
-            return _this5.pushNextCollectEvent();
-          }, bufferedFrameCollectDelay);
-        }
+          if (totalBandwidth) {
+            this.publics.state.totalBandwidth = totalBandwidth;
+          }
+        });
+      } else {
+        this.sendEvents({
+          events,
+          url
+        });
       }
-    }, {
-      key: "pushNextCollectEvent",
-      value: function pushNextCollectEvent() {
-        var _this6 = this;
-        clearTimeout(this.willCollectBufferedFrame);
-        this.willCollectBufferedFrame = false;
 
-        if (bufferedFrameCollectDelay >= BUFFERED_FRAME_COLLECT_DELAY.MAX) {
-          bufferedFrameCollectDelay = BUFFERED_FRAME_COLLECT_DELAY.MIN;
+      if (this.publics.queue.length) {
+        setTimeout(() => this.nextLoop(), this.currentDelay);
+      } else {
+        this.loopActive = false;
+      }
+    }
+
+    async sendEvents(_ref2) {
+      let {
+        events,
+        url
+      } = _ref2;
+      if (!events) return {
+        meta: [],
+        data: []
+      };
+      events = events.filter(e => !!e && !!e.command);
+      if (events.length == 0) return {
+        meta: [],
+        data: []
+      };
+      this.maybeCheckForBufferedFrames(events);
+      let protocol;
+
+      try {
+        url = new URL(url);
+        protocol = url.protocol; // OK WTF
+
+        url.search = "session_token=".concat(this.sessionToken);
+        url = url + '';
+      } catch (e) {
+        alert("WTF " + url);
+        console.warn(e, url, this);
+      }
+
+      if (!this.publics.state.demoMode) {
+        if (protocol == 'ws:' || protocol == 'wss:') {
+          try {
+            const senders = this.websockets.get(url);
+            messageId++;
+            let resolve;
+            const promise = new Promise(res => resolve = res);
+            waiting.set("".concat(url, ":").concat(messageId), resolve);
+
+            if (senders) {
+              senders.so({
+                messageId,
+                zombie: {
+                  events
+                }
+              });
+            } else {
+              await this.connectSocket(url, events, messageId);
+            }
+
+            return promise;
+          } catch (e) {
+            console.warn(e);
+            console.warn(JSON.stringify({
+              msg: "Error sending event to websocket ".concat(url),
+              events,
+              url,
+              error: e
+            }));
+            return {
+              error: 'failed to send',
+              events
+            };
+          }
         } else {
-          bufferedFrameCollectDelay *= 1.618;
-          this.willCollectBufferedFrame = setTimeout(function () {
-            return _this6.pushNextCollectEvent();
-          }, bufferedFrameCollectDelay);
+          const request = {
+            method: 'POST',
+            body: JSON.stringify({
+              events
+            }),
+            headers: {
+              'content-type': 'application/json'
+            }
+          };
+          return fetch(url, request).then(r => r.json()).then(async _ref3 => {
+            let {
+              data,
+              frameBuffer,
+              meta
+            } = _ref3;
+
+            if (!!frameBuffer && this.images.has(url)) {
+              drawFrames(this.publics.state, frameBuffer, this.images.get(url));
+            }
+
+            const errors = data.filter(d => !!d.error);
+
+            if (errors.length) ;
+
+            return {
+              data,
+              meta
+            };
+          }).catch(e => {
+            console.warn(JSON.stringify({
+              msg: "Error sending event to POST url ".concat(url),
+              events,
+              url,
+              error: e
+            }));
+            return {
+              error: 'failed to send',
+              events
+            };
+          });
+        }
+      } else {
+        return await this.publics.state.demoEventConsumer({
+          events
+        });
+      }
+    }
+
+    async connectSocket(url, events, messageId) {
+      if (connecting) {
+        this.publics.queue.unshift(...events);
+        return;
+      }
+
+      connecting = true;
+
+      if (!this.publics.state.demoMode && onLine()) {
+        let socket;
+
+        try {
+          socket = new WebSocket(url);
+        } catch (e) {
+          talert("Error connecting to the server. Will reload to try again.");
+          await treload();
         }
 
-        this.publics.queue.push(Object.assign({
-          id: messageId++
-        }, BUFFERED_FRAME_EVENT$3));
-        this.triggerSendLoop();
+        socket.onopen = () => {
+          this.websockets.set(url, {
+            so,
+            sa
+          });
+          const receivesFrames = !this.publics.state.useViewFrame;
+          so({
+            messageId,
+            zombie: {
+              events,
+              receivesFrames
+            }
+          });
+
+          function so(o) {
+            socket.send(JSON.stringify(o));
+          }
+
+          function sa(a) {
+            socket.send(a);
+          }
+        };
+
+        socket.onmessage = async message => {
+          let {
+            data: MessageData
+          } = message;
+          const messageData = JSON.parse(MessageData);
+          const {
+            data,
+            frameBuffer,
+            meta,
+            messageId: serverMessageId,
+            totalBandwidth
+          } = messageData;
+
+          if (!!frameBuffer && frameBuffer.length && this.images.has(url)) {
+            this.addBytes(MessageData.length, frameBuffer.length);
+            drawFrames(this.publics.state, frameBuffer, this.images.get(url));
+          } else {
+            this.addBytes(MessageData.length, false);
+          }
+
+          const errors = data.filter(d => !!d && !!d.error);
+
+          if (errors.length) {
+            DEBUG && console.log(JSON.stringify(errors));
+
+            if (errors.some(_ref4 => {
+              let {
+                error
+              } = _ref4;
+              return error.hasSession === false;
+            })) {
+              console.warn("Session has been cleared. Let's attempt relogin", this.sessionToken);
+              if (DEBUG.blockAnotherReset) return;
+              DEBUG.blockAnotherReset = true;
+
+              try {
+                const x = new URL(location);
+                x.pathname = 'login';
+                x.search = "token=".concat(this.sessionToken, "&ran=").concat(Math.random());
+                await talert("Your browser cleared your session. We need to reload the page to refresh it.");
+                DEBUG.delayUnload = false;
+                location.href = x;
+                socket.onmessage = null;
+              } catch (e) {
+                talert("An error occurred. Please reload.");
+              }
+
+              return;
+            } else if (errors.some(_ref5 => {
+              let {
+                error
+              } = _ref5;
+              return error.includes && error.includes("ECONNREFUSED");
+            })) {
+              console.warn("Cloud browser has not started yet. Let's reload and see if it has then.");
+              if (DEBUG.blockAnotherReset) return;
+              DEBUG.blockAnotherReset = true;
+              talert("Your cloud browser has not started yet. We'll reload and see if it has then.");
+              await treload();
+              return;
+            } else if (errors.some(_ref6 => {
+              let {
+                error
+              } = _ref6;
+              return error.includes && error.includes("Timed out");
+            })) {
+              console.warn("Some events are timing out when sent to the cloud browser.");
+              if (DEBUG.blockAnotherReset) return;
+              DEBUG.blockAnotherReset = true;
+              const reload = await tconfirm("Some events are timing out when sent to the cloud browser. Try reloading the page, and if the problem persists try switching your cloud browser off then on again. Want to reload now?");
+
+              if (reload) {
+                treload();
+              }
+
+              return;
+            } else if (errors.some(_ref7 => {
+              let {
+                error
+              } = _ref7;
+              return error.includes && error.includes("not opened");
+            })) {
+              console.warn("We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again.");
+              if (DEBUG.blockAnotherReset) return;
+              DEBUG.blockAnotherReset = true;
+              const reload = await tconfirm("We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again. Reload the page now?");
+
+              if (reload) {
+                treload();
+              }
+
+              return;
+            } else if (errors.some(_ref8 => {
+              let {
+                resetRequired
+              } = _ref8;
+              return resetRequired;
+            })) {
+              console.warn("Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again.");
+              if (DEBUG.blockAnotherReset) return;
+              DEBUG.blockAnotherReset = true;
+              const reload = await tconfirm("Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again. Want to reload the page now?");
+
+              if (reload) {
+                treload();
+              }
+
+              return;
+            }
+          }
+
+          if (!!meta && meta.length) {
+            meta.forEach(metaItem => {
+              const executionContextId = metaItem.executionContextId;
+
+              for (const key of Object.keys(metaItem)) {
+                let typeList = this.typeLists.get(key);
+
+                if (typeList) {
+                  typeList.forEach(func => {
+                    try {
+                      func({
+                        [key]: metaItem[key],
+                        executionContextId
+                      });
+                    } catch (e) {
+                    }
+                  });
+                }
+              }
+            });
+          }
+
+          if (totalBandwidth) {
+            this.publics.state.totalBandwidth = totalBandwidth;
+          }
+
+          const replyTransmitted = transmitReply({
+            url,
+            id: serverMessageId,
+            data,
+            meta,
+            totalBandwidth
+          });
+          if (replyTransmitted) return;
+          const fallbackReplyTransmitted = transmitReply({
+            url,
+            id: messageId,
+            data,
+            meta,
+            totalBandwidth
+          });
+          if (fallbackReplyTransmitted) return; //die();
+        };
+
+        socket.onclose = async e => {
+          this.websockets.delete(url);
+          console.log("Socket disconnected. Will reconnect when online");
+          talert("Error connecting to the server -- Will reload to try again.");
+          await treload();
+        };
+
+        socket.onerror = async e => {
+          socket.onerror = null;
+          talert("Error connecting to the server - Will reload to try again.");
+          await treload();
+        };
+      } else {
+        console.log("Offline. Will connect socket when online");
+        talert("Error connecting to the server, will reload to try again.");
+        await treload();
       }
-    }], [{
-      key: "firstDelay",
-      get: function get() {
-        return 20;
-        /* 20, 40, 250, 500;*/
+    }
+
+    async sendEventChain(_ref9) {
+      let {
+        chain,
+        url
+      } = _ref9;
+      const Meta = [],
+            Data = [];
+      let lastData;
+
+      for (const next of chain) {
+        if (typeof next == "object") {
+          const {
+            meta,
+            data
+          } = await this.sendEvents({
+            events: [next],
+            url
+          });
+          Meta.push(...meta);
+          Data.push(...data);
+          lastData = data;
+        } else if (typeof next == "function") {
+          let funcResult;
+
+          try {
+            funcResult = next(lastData[0]);
+          } catch (e) {
+            Data.push({
+              error: e + ''
+            });
+          }
+
+          let events;
+
+          if (Array.isArray(funcResult)) {
+            events = funcResult;
+          } else if (typeof funcResult == "object") {
+            events = [funcResult];
+          }
+
+          let {
+            meta,
+            data
+          } = await this.sendEvents({
+            events,
+            url
+          });
+          Meta.push(...meta);
+          Data.push(...data);
+          lastData = data;
+        }
       }
-    }]);
 
-    return Privates;
-  }();
+      return {
+        data: Data,
+        meta: Meta
+      };
+    }
 
-  var EventQueue = /*#__PURE__*/function () {
-    function EventQueue(state, sessionToken) {
-      classCallCheck(this, EventQueue);
+    maybeCheckForBufferedFrames(events) {
+      if (meetsCollectBufferedFrameCondition(this.publics.queue, events)) {
+        if (this.willCollectBufferedFrame) {
+          clearTimeout(this.willCollectBufferedFrame);
+          this.willCollectBufferedFrame = false;
+          bufferedFrameCollectDelay = BUFFERED_FRAME_COLLECT_DELAY.MIN;
+        }
 
-      var privates = new Privates(this, state, sessionToken);
-      var queue = [];
+        this.willCollectBufferedFrame = setTimeout(() => this.pushNextCollectEvent(), bufferedFrameCollectDelay);
+      }
+    }
+
+    pushNextCollectEvent() {
+      clearTimeout(this.willCollectBufferedFrame);
+      this.willCollectBufferedFrame = false;
+
+      if (bufferedFrameCollectDelay >= BUFFERED_FRAME_COLLECT_DELAY.MAX) {
+        bufferedFrameCollectDelay = BUFFERED_FRAME_COLLECT_DELAY.MIN;
+      } else {
+        bufferedFrameCollectDelay *= 1.618;
+        this.willCollectBufferedFrame = setTimeout(() => this.pushNextCollectEvent(), bufferedFrameCollectDelay);
+      }
+
+      this.publics.queue.push(Object.assign({
+        id: messageId++
+      }, BUFFERED_FRAME_EVENT$3));
+      this.triggerSendLoop();
+    }
+
+  }
+
+  class EventQueue {
+    constructor(state, sessionToken) {
+      const privates = new Privates(this, state, sessionToken);
+      const queue = [];
       this.state = state;
       Object.defineProperties(this, {
         queue: {
-          get: function get() {
-            return queue;
-          }
+          get: () => queue
         },
         [$]: {
-          get: function get() {
-            return privates;
-          }
+          get: () => privates
         }
       });
     }
 
-    createClass(EventQueue, [{
-      key: "send",
-      value: function send(event) {
-        if (Array.isArray(event)) {
-          var _this$queue;
-
-          (_this$queue = this.queue).push.apply(_this$queue, toConsumableArray(event));
-        } else {
-          this.queue.push(event);
-        }
-
-        this[$].triggerSendLoop();
+    send(event) {
+      if (Array.isArray(event)) {
+        this.queue.push(...event);
+      } else {
+        this.queue.push(event);
       }
-    }, {
-      key: "addSubscriber",
-      value: function addSubscriber(url, translator, imageEl) {
-        var _this7 = this;
 
-        this[$].subscribers.push(url);
+      this[$].triggerSendLoop();
+    }
 
-        if (!!translator && typeof translator == "function") {
-          this[$].translators.set(url, translator);
-        }
+    addSubscriber(url, translator, imageEl) {
+      this[$].subscribers.push(url);
 
-        if (!!imageEl && imageEl instanceof HTMLImageElement) {
-          this[$].images.set(url, imageEl);
-
-          imageEl.onerror = function () {
-            frameDrawing = false;
-          };
-
-          imageEl.addEventListener('load', function () {
-            var ctx = _this7.state.viewState.ctx;
-            ctx.drawImage(imageEl, 0, 0);
-            frameDrawing = false;
-          });
-        }
+      if (!!translator && typeof translator == "function") {
+        this[$].translators.set(url, translator);
       }
-    }, {
-      key: "addMetaListener",
-      value: function addMetaListener(type, func) {
-        var typeList = this[$].typeLists.get(type);
 
-        if (!typeList) {
-          typeList = [];
-          this[$].typeLists.set(type, typeList);
-        }
+      if (!!imageEl && imageEl instanceof HTMLImageElement) {
+        this[$].images.set(url, imageEl);
 
-        typeList.push(func);
+        imageEl.onerror = () => {
+          frameDrawing = false;
+        };
+
+        imageEl.addEventListener('load', () => {
+          const ctx = this.state.viewState.ctx;
+          ctx.drawImage(imageEl, 0, 0);
+          frameDrawing = false;
+        });
       }
-    }]);
+    }
 
-    return EventQueue;
-  }();
+    addMetaListener(type, func) {
+      let typeList = this[$].typeLists.get(type);
 
-  function drawFrames(_x10, _x11, _x12) {
-    return _drawFrames.apply(this, arguments);
+      if (!typeList) {
+        typeList = [];
+        this[$].typeLists.set(type, typeList);
+      }
+
+      typeList.push(func);
+    }
+
   }
 
-  function _drawFrames() {
-    _drawFrames = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee9(state, buf, image) {
-      var _iterator2, _step2, _step2$value, img, frame;
+  async function drawFrames(state, buf, image) {
+    buf = buf.filter(x => !!x);
+    buf.sort((_ref10, _ref11) => {
+      let {
+        frame: frame1
+      } = _ref10;
+      let {
+        frame: frame2
+      } = _ref11;
+      return frame2 - frame1;
+    });
+    buf = buf.filter(_ref12 => {
+      let {
+        frame,
+        targetId
+      } = _ref12;
+      const cond = frame > latestFrame && targetId == state.activeTarget;
+      latestFrame = frame;
+      return cond;
+    });
 
-      return regenerator.wrap(function _callee9$(_context9) {
-        while (1) {
-          switch (_context9.prev = _context9.next) {
-            case 0:
-              buf = buf.filter(function (x) {
-                return !!x;
-              });
-              buf.sort(function (_ref17, _ref18) {
-                var frame1 = _ref17.frame;
-                var frame2 = _ref18.frame;
-                return frame2 - frame1;
-              });
-              buf = buf.filter(function (_ref19) {
-                var frame = _ref19.frame,
-                    targetId = _ref19.targetId;
-                var cond = frame > latestFrame && targetId == state.activeTarget;
-                latestFrame = frame;
-                return cond;
-              });
-              _iterator2 = _createForOfIteratorHelper$6(buf);
-              _context9.prev = 4;
+    for (const {
+      img,
+      frame
+    } of buf) {
+      if (frame < latestFrame) {
+        console.warn("Got frame ".concat(frame, " less than ").concat(latestFrame, ". Dropping"));
+        continue;
+      }
 
-              _iterator2.s();
+      if (frameDrawing) {
+        await sleep(Privates.firstDelay);
+      }
 
-            case 6:
-              if ((_step2 = _iterator2.n()).done) {
-                _context9.next = 22;
-                break;
-              }
-
-              _step2$value = _step2.value, img = _step2$value.img, frame = _step2$value.frame;
-
-              if (!(frame < latestFrame)) {
-                _context9.next = 11;
-                break;
-              }
-
-              console.warn("Got frame ".concat(frame, " less than ").concat(latestFrame, ". Dropping"));
-              return _context9.abrupt("continue", 20);
-
-            case 11:
-              if (!frameDrawing) {
-                _context9.next = 15;
-                break;
-              }
-              _context9.next = 15;
-              return sleep(Privates.firstDelay);
-
-            case 15:
-              frameDrawing = frame;
-              image.src = "data:image/".concat(Format, ";base64,").concat(img);
-              _context9.next = 20;
-              return sleep(Privates.firstDelay);
-
-            case 20:
-              _context9.next = 6;
-              break;
-
-            case 22:
-              _context9.next = 27;
-              break;
-
-            case 24:
-              _context9.prev = 24;
-              _context9.t0 = _context9["catch"](4);
-
-              _iterator2.e(_context9.t0);
-
-            case 27:
-              _context9.prev = 27;
-
-              _iterator2.f();
-
-              return _context9.finish(27);
-
-            case 30:
-            case "end":
-              return _context9.stop();
-          }
-        }
-      }, _callee9, null, [[4, 24, 27, 30]]);
-    }));
-    return _drawFrames.apply(this, arguments);
+      frameDrawing = frame;
+      image.src = "data:image/".concat(Format, ";base64,").concat(img);
+      await sleep(Privates.firstDelay);
+    }
   }
 
   function meetsCollectBufferedFrameCondition(queue, events) {
@@ -7790,26 +5301,32 @@
       *
       * Finally what type of event will it add to the queue.
     **/
-    var someRequireShot = events.some(function (_ref14) {
-      var command = _ref14.command;
+    const someRequireShot = events.some(_ref13 => {
+      let {
+        command
+      } = _ref13;
       return command.requiresShot || command.requiresTailShot;
     });
-    var createsTarget = events.some(function (_ref15) {
-      var command = _ref15.command;
+    const createsTarget = events.some(_ref14 => {
+      let {
+        command
+      } = _ref14;
       return command.name == "Target.createTarget";
     });
-    var meetsCondition = someRequireShot || createsTarget;
+    const meetsCondition = someRequireShot || createsTarget;
     return meetsCondition;
   }
 
-  function transmitReply(_ref16) {
-    var url = _ref16.url,
-        id = _ref16.id,
-        data = _ref16.data,
-        meta = _ref16.meta,
-        totalBandwidth = _ref16.totalBandwidth;
-    var key = "".concat(url, ":").concat(id);
-    var resolvePromise = waiting.get(key);
+  function transmitReply(_ref15) {
+    let {
+      url,
+      id,
+      data,
+      meta,
+      totalBandwidth
+    } = _ref15;
+    let key = "".concat(url, ":").concat(id);
+    const resolvePromise = waiting.get(key);
 
     if (resolvePromise) {
       waiting.delete(key);
@@ -7855,99 +5372,48 @@
       }
     }
 
-    latestAlert = setTimeout(function () {
-      return alert(msg);
+    latestAlert = setTimeout(() => alert(msg), ALERT_TIMEOUT);
+  }
+
+  async function tconfirm(msg) {
+    let resolve;
+    const pr = new Promise(res => resolve = res);
+
+    if (latestAlert) {
+      clearTimeout(latestAlert);
+    }
+
+    latestAlert = setTimeout(() => {
+      resolve(confirm(msg));
     }, ALERT_TIMEOUT);
+    return pr;
   }
 
-  function tconfirm(_x13) {
-    return _tconfirm.apply(this, arguments);
+  async function treload() {
+
+    let resolve;
+    const pr = new Promise(res => resolve = res);
+
+    if (latestReload) {
+      clearTimeout(latestReload);
+    }
+
+    latestReload = setTimeout(() => resolve(location.reload()), ALERT_TIMEOUT);
+    return pr;
   }
 
-  function _tconfirm() {
-    _tconfirm = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee10(msg) {
-      var resolve, pr;
-      return regenerator.wrap(function _callee10$(_context10) {
-        while (1) {
-          switch (_context10.prev = _context10.next) {
-            case 0:
-              pr = new Promise(function (res) {
-                return resolve = res;
-              });
-
-              if (latestAlert) {
-                clearTimeout(latestAlert);
-              }
-
-              latestAlert = setTimeout(function () {
-                resolve(confirm(msg));
-              }, ALERT_TIMEOUT);
-              return _context10.abrupt("return", pr);
-
-            case 4:
-            case "end":
-              return _context10.stop();
-          }
-        }
-      }, _callee10);
-    }));
-    return _tconfirm.apply(this, arguments);
-  }
-
-  function treload() {
-    return _treload.apply(this, arguments);
-  }
-
-  function _treload() {
-    _treload = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee11() {
-      var resolve, pr;
-      return regenerator.wrap(function _callee11$(_context11) {
-        while (1) {
-          switch (_context11.prev = _context11.next) {
-            case 0:
-              {
-                _context11.next = 3;
-                break;
-              }
-
-            case 3:
-              pr = new Promise(function (res) {
-                return resolve = res;
-              });
-
-              if (latestReload) {
-                clearTimeout(latestReload);
-              }
-
-              latestReload = setTimeout(function () {
-                return resolve(location.reload());
-              }, ALERT_TIMEOUT);
-              return _context11.abrupt("return", pr);
-
-            case 7:
-            case "end":
-              return _context11.stop();
-          }
-        }
-      }, _callee11);
-    }));
-    return _treload.apply(this, arguments);
-  }
-
-  var getKeyId = function getKeyId(event) {
-    return event.key && event.key.length > 1 ? event.key : event.code;
-  };
-  var controlChars = new Set(["Enter", "Backspace", "Control", "Shift", "Alt", "Meta", "Space", "Delete", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Tab"]);
+  const getKeyId = event => event.key && event.key.length > 1 ? event.key : event.code;
+  const controlChars = new Set(["Enter", "Backspace", "Control", "Shift", "Alt", "Meta", "Space", "Delete", "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Tab"]);
   function transformEvent(e) {
-    var transformedEvent = {
+    const transformedEvent = {
       type: e.type
     };
-    var event, synthetic, originalEvent;
+    let event, synthetic, originalEvent;
 
     if (e.synthetic) {
       synthetic = e;
       originalEvent = e.event;
-      var form;
+      let form;
 
       if (originalEvent) {
         form = originalEvent.target && originalEvent.target.matches && originalEvent.target.matches('form') ? originalEvent.target : null;
@@ -7958,9 +5424,10 @@
       switch (synthetic.type) {
         case "auth-response":
           {
-            var _synthetic = synthetic,
-                authResponse = _synthetic.authResponse,
-                requestId = _synthetic.requestId;
+            const {
+              authResponse,
+              requestId
+            } = synthetic;
             Object.assign(transformedEvent, {
               authResponse,
               requestId
@@ -7971,7 +5438,7 @@
         case "typing":
           {
             // get (composed) characters created
-            var data = synthetic.data;
+            let data = synthetic.data;
             Object.assign(transformedEvent, {
               characters: data
             });
@@ -7981,10 +5448,11 @@
         case "typing-syncValue":
         case "typing-clearAndInsertValue":
           {
-            var _synthetic2 = synthetic,
-                value = _synthetic2.value,
-                contextId = _synthetic2.contextId;
-            var encodedValue;
+            const {
+              value,
+              contextId
+            } = synthetic;
+            let encodedValue;
 
             if (value != null && value != undefined) {
               encodedValue = btoa(unescape(encodeURIComponent(value)));
@@ -8000,7 +5468,7 @@
 
         case "typing-deleteContentBackward":
           {
-            var encodedValueToDelete;
+            let encodedValueToDelete;
 
             if (synthetic.valueToDelete) {
               encodedValueToDelete = btoa(unescape(encodeURIComponent(synthetic.valueToDelete)));
@@ -8016,7 +5484,7 @@
         case "url-address":
           {
             // get URL address
-            var address = synthetic.url;
+            const address = synthetic.url;
             Object.assign(transformedEvent, {
               address
             });
@@ -8026,7 +5494,7 @@
         case "search-bar":
           {
             // get URL address
-            var search = originalEvent.target.search.value;
+            const search = originalEvent.target.search.value;
             Object.assign(transformedEvent, {
               search
             });
@@ -8036,7 +5504,7 @@
         case "history":
           {
             // get button
-            var action = form.clickedButton.value;
+            const action = form.clickedButton.value;
             Object.assign(transformedEvent, {
               action
             });
@@ -8045,27 +5513,29 @@
 
         case "touchscroll":
           {
-            var _synthetic3 = synthetic,
-                deltaX = _synthetic3.deltaX,
-                deltaY = _synthetic3.deltaY,
-                bitmapX = _synthetic3.bitmapX,
-                bitmapY = _synthetic3.bitmapY,
-                _contextId = _synthetic3.contextId;
+            const {
+              deltaX,
+              deltaY,
+              bitmapX,
+              bitmapY,
+              contextId
+            } = synthetic;
             Object.assign(transformedEvent, {
               deltaX,
               deltaY,
               bitmapX,
               bitmapY,
-              contextId: _contextId
+              contextId
             });
             break;
           }
 
         case "zoom":
           {
-            var _synthetic4 = synthetic,
-                scale = _synthetic4.scale;
-            var coords = getBitmapCoordinates(originalEvent);
+            const {
+              scale
+            } = synthetic;
+            const coords = getBitmapCoordinates(originalEvent);
             Object.assign(transformedEvent, coords, {
               scale
             });
@@ -8074,10 +5544,10 @@
 
         case "select":
           {
-            var _value = originalEvent.target.value;
-            var executionContext = synthetic.state.waitingExecutionContext;
+            const value = originalEvent.target.value;
+            const executionContext = synthetic.state.waitingExecutionContext;
             Object.assign(transformedEvent, {
-              value: _value,
+              value,
               executionContext
             });
             break;
@@ -8085,10 +5555,11 @@
 
         case "window-bounds":
           {
-            var _synthetic5 = synthetic,
-                width = _synthetic5.width,
-                height = _synthetic5.height,
-                targetId = _synthetic5.targetId;
+            const {
+              width,
+              height,
+              targetId
+            } = synthetic;
             Object.assign(transformedEvent, {
               width,
               height,
@@ -8100,31 +5571,38 @@
         case "window-bounds-preImplementation":
           {
             // This is here until Browser.getWindowForTarget and Browser.setWindowBounds come online
-            var _width, _height;
+            let width, height;
 
             if (synthetic.width !== undefined && synthetic.height !== undefined) {
-              var _synthetic6 = synthetic;
-              _width = _synthetic6.width;
-              _height = _synthetic6.height;
+              ({
+                width,
+                height
+              } = synthetic);
             } else {
-              var _form = form;
-              _width = _form.width.value;
-              _height = _form.height.value;
+              ({
+                width: {
+                  value: width
+                },
+                height: {
+                  value: height
+                }
+              } = form);
             }
 
             Object.assign(transformedEvent, {
-              width: _width,
-              height: _height
+              width,
+              height
             });
             break;
           }
 
         case "user-agent":
           {
-            var _synthetic7 = synthetic,
-                userAgent = _synthetic7.userAgent,
-                platform = _synthetic7.platform,
-                acceptLanguage = _synthetic7.acceptLanguage;
+            const {
+              userAgent,
+              platform,
+              acceptLanguage
+            } = synthetic;
             Object.assign(transformedEvent, {
               userAgent,
               platform,
@@ -8151,11 +5629,10 @@
         case "getElementInfo":
           {
             transformedEvent.data = e.data;
-
-            var _getBitmapCoordinates = getBitmapCoordinates(transformedEvent.data),
-                clientX = _getBitmapCoordinates.bitmapX,
-                clientY = _getBitmapCoordinates.bitmapY;
-
+            const {
+              bitmapX: clientX,
+              bitmapY: clientY
+            } = getBitmapCoordinates(transformedEvent.data);
             Object.assign(transformedEvent.data, {
               clientX,
               clientY
@@ -8228,7 +5705,7 @@
         case "keydown":
         case "keyup":
           {
-            var id = getKeyId(event);
+            const id = getKeyId(event);
 
             if (controlChars.has(id)) {
               event.type == "keypress" && event.preventDefault && event.preventDefault();
@@ -8264,12 +5741,11 @@
             // get relevant X, Y coordinates and element under point
             // also get any relevant touch points and pressures and other associated
             // pointer or touch metadata or properties
-            var _event = event,
-                button = _event.button;
-
-            var _coords = getBitmapCoordinates(event);
-
-            Object.assign(transformedEvent, _coords, {
+            const {
+              button
+            } = event;
+            const coords = getBitmapCoordinates(event);
+            Object.assign(transformedEvent, coords, {
               button
             });
             break;
@@ -8279,19 +5755,21 @@
     return transformedEvent;
   }
   function getBitmapCoordinates(event) {
-    var scale = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
-    var clientX = event.clientX,
-        clientY = event.clientY;
-    var bitmap = event.target;
-    var coordinates;
+    let scale = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 1;
+    const {
+      clientX,
+      clientY
+    } = event;
+    const bitmap = event.target;
+    let coordinates;
 
     if (bitmap) {
-      var _bitmap$getBoundingCl = bitmap.getBoundingClientRect(),
-          parentX = _bitmap$getBoundingCl.left,
-          parentY = _bitmap$getBoundingCl.top,
-          elementWidth = _bitmap$getBoundingCl.width,
-          elementHeight = _bitmap$getBoundingCl.height;
-
+      const {
+        left: parentX,
+        top: parentY,
+        width: elementWidth,
+        height: elementHeight
+      } = bitmap.getBoundingClientRect();
       bitmap.width / elementWidth * scale;
       bitmap.height / elementHeight * scale;
       coordinates = {
@@ -8309,20 +5787,26 @@
   }
 
   var _templateObject$9;
-  var omniBoxInput = null;
-  var refocus = false;
+  let omniBoxInput = null;
+  let refocus = false;
   function OmniBox(state) {
-    var activeTab = state.activeTab();
-    var H = state.H;
+    const activeTab = state.activeTab();
+    const {
+      H
+    } = state;
 
     if (document.activeElement == omniBoxInput) {
       refocus = true;
     }
 
-    return d(_templateObject$9 || (_templateObject$9 = taggedTemplateLiteral(["\n    <nav class=\"controls url\" stylist=styleNavControl>\n      <!--URL-->\n        <form class=url stylist=styleURLForm submit=", " click=", ">\n          <input \n            maxlength=3000\n            title=\"Address or search\"\n            bond=", "\n            stylist=styleOmniBox \n            autocomplete=off ", " \n            name=address \n            placeholder=\"", "\" \n            type=search \n            value=\"", "\"\n          >\n          <button ", " title=\"Go\" class=go>&crarr;</button>\n        </form>\n    </nav>\n  "])), function (e) {
-      var form = e.target;
-      var address = form.address;
-      var url, search;
+    return d(_templateObject$9 || (_templateObject$9 = taggedTemplateLiteral(["\n    <nav class=\"controls url\" stylist=styleNavControl>\n      <!--URL-->\n        <form class=url stylist=styleURLForm submit=", " click=", ">\n          <input \n            maxlength=3000\n            title=\"Address or search\"\n            bond=", "\n            stylist=styleOmniBox \n            autocomplete=off ", " \n            name=address \n            placeholder=\"", "\" \n            type=search \n            value=\"", "\"\n          >\n          <button ", " title=\"Go\" class=go>&crarr;</button>\n        </form>\n    </nav>\n  "])), e => {
+      const {
+        target: form
+      } = e;
+      const {
+        address
+      } = form;
+      let url, search;
 
       try {
         url = new URL(address.value);
@@ -8345,7 +5829,7 @@
         event: e,
         url: url || search
       });
-    }, saveClick, function (el) {
+    }, saveClick, el => {
       omniBoxInput = el;
       state.viewState.omniBoxInput = omniBoxInput;
 
@@ -8362,9 +5846,9 @@
   } // Search
 
   function searchProvider() {
-    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-        _ref$query = _ref.query,
-        query = _ref$query === void 0 ? '' : _ref$query;
+    let {
+      query = ''
+    } = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
     {
       return "https://google.com/search?q=".concat(encodeURIComponent(query));
@@ -8372,11 +5856,9 @@
   }
 
   var _templateObject$8;
-  var pluginsMenuOpen = false;
+  let pluginsMenuOpen = false;
   function PluginsMenuButton(state) {
-    return u(_templateObject$8 || (_templateObject$8 = taggedTemplateLiteral(["\n    <nav class=\"controls plugins-menu-button aux\" stylist=\"styleNavControl stylePluginsMenuButton\">\n      <form submit=", ">\n        <button title=\"Menu\" accesskey=p>&#9776;</button>\n      </form>\n    </nav>\n  "])), [function (e) {
-      return e.preventDefault();
-    }, function () {
+    return u(_templateObject$8 || (_templateObject$8 = taggedTemplateLiteral(["\n    <nav class=\"controls plugins-menu-button aux\" stylist=\"styleNavControl stylePluginsMenuButton\">\n      <form submit=", ">\n        <button title=\"Menu\" accesskey=p>&#9776;</button>\n      </form>\n    </nav>\n  "])), [e => e.preventDefault(), () => {
       pluginsMenuOpen ^= true;
       state.pluginsMenuActive = pluginsMenuOpen;
       state.viewState.dss.setState(state);
@@ -8387,42 +5869,20 @@
 
   var _templateObject$7;
   function Controls(state) {
-    var H = state.H,
-        retargetTab = state.retargetTab;
-    return d(_templateObject$7 || (_templateObject$7 = taggedTemplateLiteral(["\n    <nav class=\"controls history aux\" stylist=\"styleNavControl\">\n      <!--History-->\n        <form submit=", " click=", " stylist=\"styleHistoryForm\">\n          <button ", " name=history_action title=Back value=back class=back>&lt;</button>\n          <button ", " name=history_action title=Forward value=forward class=forward>&gt;</button>\n        </form>\n    </nav>\n    <nav class=\"controls keyinput aux\" stylist=\"styleNavControl\">\n      <!--Text-->\n        <form class=kbd-input submit=", ">\n          <input tabindex=-1 class=control name=key_input size=5\n            autocomplete=off\n            bond=", "\n            keydown=", "\n            keyup=", "\n            focusin=", "\n            compositionstart=", "\n            compositionupdate=", "\n            compositionend=", "\n            input=", "\n            keypress=", "\n            paste=", "\n            >\n          <textarea tabindex=-1 class=control name=textarea_input cols=5 rows=1\n            autocomplete=off\n            bond=", "\n            keydown=", "\n            keyup=", "\n            focusin=", "\n            compositionstart=", "\n            compositionupdate=", "\n            compositionend=", "\n            input=", "\n            keypress=", "\n            paste=", "\n            ></textarea>\n        </form>\n    </nav>\n    ", "\n    ", "\n  "])), function (e) {
-      return H({
-        synthetic: true,
-        type: 'history',
-        event: e
-      });
-    }, saveClick, state.tabs.length ? '' : 'disabled', state.tabs.length ? '' : 'disabled', function (e) {
-      return e.preventDefault();
-    }, function (el) {
-      return state.viewState.keyinput = el;
-    }, [logitKeyInputEvent, function (e) {
-      return state.openKey = e.key;
-    }, H, limitCursor, retargetTab], [logitKeyInputEvent, function () {
-      return state.openKey = '';
-    }, H, retargetTab], [function () {
-      return clearWord(state);
-    }, function () {
-      return state.openKey = '';
-    }], [logitKeyInputEvent, startComposition], [logitKeyInputEvent, updateComposition], [logitKeyInputEvent, endComposition], [logitKeyInputEvent, inputText], [logitKeyInputEvent, pressKey], function (e) {
+    const {
+      H,
+      retargetTab
+    } = state;
+    return d(_templateObject$7 || (_templateObject$7 = taggedTemplateLiteral(["\n    <nav class=\"controls history aux\" stylist=\"styleNavControl\">\n      <!--History-->\n        <form submit=", " click=", " stylist=\"styleHistoryForm\">\n          <button ", " name=history_action title=Back value=back class=back>&lt;</button>\n          <button ", " name=history_action title=Forward value=forward class=forward>&gt;</button>\n        </form>\n    </nav>\n    <nav class=\"controls keyinput aux\" stylist=\"styleNavControl\">\n      <!--Text-->\n        <form class=kbd-input submit=", ">\n          <input tabindex=-1 class=control name=key_input size=5\n            autocomplete=off\n            bond=", "\n            keydown=", "\n            keyup=", "\n            focusin=", "\n            compositionstart=", "\n            compositionupdate=", "\n            compositionend=", "\n            input=", "\n            keypress=", "\n            paste=", "\n            >\n          <textarea tabindex=-1 class=control name=textarea_input cols=5 rows=1\n            autocomplete=off\n            bond=", "\n            keydown=", "\n            keyup=", "\n            focusin=", "\n            compositionstart=", "\n            compositionupdate=", "\n            compositionend=", "\n            input=", "\n            keypress=", "\n            paste=", "\n            ></textarea>\n        </form>\n    </nav>\n    ", "\n    ", "\n  "])), e => H({
+      synthetic: true,
+      type: 'history',
+      event: e
+    }), saveClick, state.tabs.length ? '' : 'disabled', state.tabs.length ? '' : 'disabled', e => e.preventDefault(), el => state.viewState.keyinput = el, [logitKeyInputEvent, e => state.openKey = e.key, H, limitCursor, retargetTab], [logitKeyInputEvent, () => state.openKey = '', H, retargetTab], [() => clearWord(state), () => state.openKey = ''], [logitKeyInputEvent, startComposition], [logitKeyInputEvent, updateComposition], [logitKeyInputEvent, endComposition], [logitKeyInputEvent, inputText], [logitKeyInputEvent, pressKey], e => {
       inputText({
         type: 'paste',
         data: e.clipboardData.getData('Text')
       });
-    }, function (el) {
-      return state.viewState.textarea = el;
-    }, [logitKeyInputEvent, function (e) {
-      return state.openKey = e.key;
-    }, H, limitCursor, retargetTab], [logitKeyInputEvent, function () {
-      return state.openKey = '';
-    }, H, retargetTab], [function () {
-      return clearWord(state);
-    }, function () {
-      return state.openKey = '';
-    }], [logitKeyInputEvent, startComposition], [logitKeyInputEvent, updateComposition], [logitKeyInputEvent, endComposition], [logitKeyInputEvent, inputText], [logitKeyInputEvent, pressKey], function (e) {
+    }, el => state.viewState.textarea = el, [logitKeyInputEvent, e => state.openKey = e.key, H, limitCursor, retargetTab], [logitKeyInputEvent, () => state.openKey = '', H, retargetTab], [() => clearWord(state), () => state.openKey = ''], [logitKeyInputEvent, startComposition], [logitKeyInputEvent, updateComposition], [logitKeyInputEvent, endComposition], [logitKeyInputEvent, inputText], [logitKeyInputEvent, pressKey], e => {
       inputText({
         type: 'paste',
         data: e.clipboardData.getData('Text')
@@ -8448,7 +5908,7 @@
       if (!state.isComposing) return;
       state.isComposing = false;
       if (e.data == state.latestCommitData) return;
-      var data = e.data || "";
+      let data = e.data || "";
 
       if (commitChange(e, state)) {
         H({
@@ -8466,7 +5926,7 @@
     }
 
     function inputText(e) {
-      var data = e.data || "";
+      let data = e.data || "";
 
       if (state.convertTypingEventsToSyncValueEvents) {
         H({
@@ -8608,7 +6068,7 @@
   }
 
   function updateWord(keypress, state) {
-    var key = keys[keypress.key];
+    const key = keys[keypress.key];
 
     if (!!key && (key.code == 'Space' || key.code == 'Enter')) {
       clearWord(state);
@@ -8640,28 +6100,28 @@
 
 
   function commitChange(e, state) {
-    var canCommit = e.type == "input" && e.inputType == "insertText" || e.type == "compositionend" && !!(e.data || state.latestData);
+    const canCommit = e.type == "input" && e.inputType == "insertText" || e.type == "compositionend" && !!(e.data || state.latestData);
 
     return canCommit;
   }
 
   var _templateObject$6, _templateObject2$5, _templateObject3$4;
-  var serverBwThisSecond = 0;
-  var lastServerBandwidth = 0;
-  var bwThisSecond = 0;
-  var lastBandwidth = 0;
-  var last = Date.now();
+  let serverBwThisSecond = 0;
+  let lastServerBandwidth = 0;
+  let bwThisSecond = 0;
+  let lastBandwidth = 0;
+  let last = Date.now();
   function BandwidthIndicator(state) {
-    var saved = state.totalBandwidth / 1000000;
-    var ss = 'M';
+    let saved = state.totalBandwidth / 1000000;
+    let ss = 'M';
 
     if (saved > 1000) {
       saved /= 1000;
       ss = 'G';
     }
 
-    var sr = state.totalServerBytesThisSecond;
-    var sm = 'B/s';
+    let sr = state.totalServerBytesThisSecond;
+    let sm = 'B/s';
 
     if (sr > 1000) {
       sr /= 1000;
@@ -8678,8 +6138,8 @@
       sm = 'G/s';
     }
 
-    var used = state.totalBytes / 1000;
-    var us = 'Kb';
+    let used = state.totalBytes / 1000;
+    let us = 'Kb';
 
     if (used > 1000) {
       used /= 1000;
@@ -8691,8 +6151,8 @@
       us = 'G';
     }
 
-    var lr = state.totalBytesThisSecond;
-    var lm = 'B/s';
+    let lr = state.totalBytesThisSecond;
+    let lm = 'B/s';
 
     if (lr > 1000) {
       lr /= 1000;
@@ -8712,9 +6172,9 @@
     return d(_templateObject$6 || (_templateObject$6 = taggedTemplateLiteral(["\n    <aside title=\"Bandwidth savings\" class=\"bandwidth-indicator\" stylist=\"styleBandwidthIndicator\">\n      <section class=measure>\n        &#x1f4e1; <span>", "</span>&nbsp;", "\n      </section>\n      <section class=measure>\n        &#x1f4bb; <span>", "</span>&nbsp;", "\n      </section>\n    </aside>\n  "])), Math.round(saved) + ss, state.showBandwidthRate ? u(_templateObject2$5 || (_templateObject2$5 = taggedTemplateLiteral(["<span>(", ")</span>"])), Math.round(sr) + sm) : '', Math.round(used) + us, state.showBandwidthRate ? u(_templateObject3$4 || (_templateObject3$4 = taggedTemplateLiteral(["<span>(", ")</span>"])), Math.round(lr) + lm) : '');
   }
   function startBandwidthLoop(state) {
-    setInterval(function () {
-      var now = Date.now();
-      var diff = (now - last) / 1000;
+    setInterval(() => {
+      const now = Date.now();
+      const diff = (now - last) / 1000;
       last = now;
       serverBwThisSecond = state.totalBandwidth - lastServerBandwidth;
       bwThisSecond = state.totalBytes - lastBandwidth;
@@ -8728,21 +6188,16 @@
 
   var _templateObject$5;
   function PluginsMenu(state) {
-    var _ref = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {},
-        _ref$bondTasks = _ref.bondTasks,
-        bondTasks = _ref$bondTasks === void 0 ? [] : _ref$bondTasks;
-
-    return d(_templateObject$5 || (_templateObject$5 = taggedTemplateLiteral(["\n    <nav class=plugins-menu \n      bond=", " \n      stylist=\"stylePluginsMenu\"\n    >\n      <aside>\n        <header>\n          <h1 class=spread>\n            Menu\n            ", "\n          </h1>\n        </header>\n        <article>\n          <section>\n            <h1>\n              Quality Settings\n            </h1>\n            <form method=POST action=#save-settings>\n              <fieldset>\n                <legend>Image Mode Settings</legend>\n                <p>\n                  <label>\n                    <input type=range min=1 max=100 value=25 name=jpeg_quality\n                      oninput=\"jfqvalue.value = this.value;\" \n                    >\n                    JPEG frame quality\n                    &nbsp;(<output id=jfqvalue>25</output>)\n                  </label>\n                <p>\n                  <button>Save</button>\n              </fieldset>\n            </form>\n          </section>\n          <section>\n            <h1>\n              Plugins\n            </h1>\n            <form method=POST action=#plugins-settings>\n              <fieldset>\n                <legend>Enabled plugins</legend>\n                <p>\n                  <label>\n                    <input type=checkbox name=mapmaker>\n                    Map Maker \n                  </label>\n                <p>\n                  <label>\n                    <input type=checkbox name=mapviewer>\n                    Map Viewer\n                  </label>\n                <p>\n                  <label>\n                    <input type=checkbox name=trailmarker>\n                    Trail Marker\n                  </label>\n                <p>\n                  <label>\n                    <input type=checkbox name=trailrunner>\n                    Trail Runner\n                  </label>\n                <p>\n                  <button>Save</button>\n              </fieldset>\n              <fieldset>\n                <legend>Discover plugins</legend>\n                <p>\n                  <label>\n                    <button name=discover>Discover</button>\n                    Discover plugins to install \n                  </label>\n                <p>\n                  <label>\n                    <input type=search name=plugin_search>\n                    <button name=search>Search</button>\n                    Search for plugins to install\n                  </label>\n                <p>\n                  <ul class=plugins-search-results></ul>\n              </fieldset>\n            </form>\n          </section>\n        </article>\n      </aside>\n    </nav>\n  "])), [function (el) {
-      return state.viewState.pmEl = el;
-    }, function () {
-      return console.log("PMA?".concat(!!state.pluginsMenuActive));
-    }].concat(toConsumableArray(bondTasks)), PluginsMenuButton(state));
+    let {
+      bondTasks = []
+    } = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    return d(_templateObject$5 || (_templateObject$5 = taggedTemplateLiteral(["\n    <nav class=plugins-menu \n      bond=", " \n      stylist=\"stylePluginsMenu\"\n    >\n      <aside>\n        <header>\n          <h1 class=spread>\n            Menu\n            ", "\n          </h1>\n        </header>\n        <article>\n          <section>\n            <h1>\n              Quality Settings\n            </h1>\n            <form method=POST action=#save-settings>\n              <fieldset>\n                <legend>Image Mode Settings</legend>\n                <p>\n                  <label>\n                    <input type=range min=1 max=100 value=25 name=jpeg_quality\n                      oninput=\"jfqvalue.value = this.value;\" \n                    >\n                    JPEG frame quality\n                    &nbsp;(<output id=jfqvalue>25</output>)\n                  </label>\n                <p>\n                  <button>Save</button>\n              </fieldset>\n            </form>\n          </section>\n          <section>\n            <h1>\n              Plugins\n            </h1>\n            <form method=POST action=#plugins-settings>\n              <fieldset>\n                <legend>Enabled plugins</legend>\n                <p>\n                  <label>\n                    <input type=checkbox name=mapmaker>\n                    Map Maker \n                  </label>\n                <p>\n                  <label>\n                    <input type=checkbox name=mapviewer>\n                    Map Viewer\n                  </label>\n                <p>\n                  <label>\n                    <input type=checkbox name=trailmarker>\n                    Trail Marker\n                  </label>\n                <p>\n                  <label>\n                    <input type=checkbox name=trailrunner>\n                    Trail Runner\n                  </label>\n                <p>\n                  <button>Save</button>\n              </fieldset>\n              <fieldset>\n                <legend>Discover plugins</legend>\n                <p>\n                  <label>\n                    <button name=discover>Discover</button>\n                    Discover plugins to install \n                  </label>\n                <p>\n                  <label>\n                    <input type=search name=plugin_search>\n                    <button name=search>Search</button>\n                    Search for plugins to install\n                  </label>\n                <p>\n                  <ul class=plugins-search-results></ul>\n              </fieldset>\n            </form>\n          </section>\n        </article>\n      </aside>\n    </nav>\n  "])), [el => state.viewState.pmEl = el, () => console.log("PMA?".concat(!!state.pluginsMenuActive)), ...bondTasks], PluginsMenuButton(state));
   }
 
   var _templateObject$4, _templateObject2$4, _templateObject3$3;
 
-  var NATIVE_MODALS = new Set(['alert', 'confirm', 'prompt', 'beforeunload']);
-  var ModalRef = {
+  const NATIVE_MODALS = new Set(['alert', 'confirm', 'prompt', 'beforeunload']);
+  const ModalRef = {
     alert: null,
     confirm: null,
     prompt: null,
@@ -8756,59 +6211,51 @@
 
   function Modals(state) {
     try {
-      var currentModal = state.viewState.currentModal; // these are default values when there is no current Modal
+      const {
+        currentModal
+      } = state.viewState; // these are default values when there is no current Modal
 
-      var msg = '',
+      let msg = '',
           type = '',
           title = '',
           currentModalEl = false;
-      var csrfToken = '';
-      var requestId = '';
-      var sessionId = '';
-      var mode = '';
-      var accept = '';
-      var multiple = false;
-      var submitText = '';
-      var cancelText = '';
-      var otherButton = null;
-      var working = false;
-      var url = '';
+      let csrfToken = '';
+      let requestId = '';
+      let sessionId = '';
+      let mode = '';
+      let accept = '';
+      let multiple = false;
+      let submitText = '';
+      let cancelText = '';
+      let otherButton = null;
+      let working = false;
+      let url = '';
 
       if (currentModal) {
         // the defaults here are defaults when there *is* a current modal
-        var _currentModal$msg = currentModal.msg;
-        msg = _currentModal$msg === void 0 ? 'Empty' : _currentModal$msg;
-        type = currentModal.type;
-        var _currentModal$csrfTok = currentModal.csrfToken;
-        csrfToken = _currentModal$csrfTok === void 0 ? '' : _currentModal$csrfTok;
-        var _currentModal$url = currentModal.url;
-        url = _currentModal$url === void 0 ? '' : _currentModal$url;
-        var _currentModal$title = currentModal.title;
-        title = _currentModal$title === void 0 ? 'Untitled' : _currentModal$title;
-        currentModalEl = currentModal.el;
-        var _currentModal$request = currentModal.requestId;
-        requestId = _currentModal$request === void 0 ? '' : _currentModal$request;
-        var _currentModal$mode = currentModal.mode;
-        mode = _currentModal$mode === void 0 ? '' : _currentModal$mode;
-        var _currentModal$session = currentModal.sessionId;
-        sessionId = _currentModal$session === void 0 ? '' : _currentModal$session;
-        var _currentModal$accept = currentModal.accept;
-        accept = _currentModal$accept === void 0 ? '' : _currentModal$accept;
-        var _currentModal$submitT = currentModal.submitText;
-        submitText = _currentModal$submitT === void 0 ? 'Submit' : _currentModal$submitT;
-        var _currentModal$cancelT = currentModal.cancelText;
-        cancelText = _currentModal$cancelT === void 0 ? 'Cancel' : _currentModal$cancelT;
-        var _currentModal$otherBu = currentModal.otherButton;
-        otherButton = _currentModal$otherBu === void 0 ? null : _currentModal$otherBu;
-        var _currentModal$working = currentModal.working;
-        working = _currentModal$working === void 0 ? false : _currentModal$working;
+        ({
+          msg = 'Empty',
+          type,
+          csrfToken = '',
+          url = '',
+          title = 'Untitled',
+          el: currentModalEl,
+          requestId = '',
+          mode = '',
+          sessionId = '',
+          accept = '',
+          submitText = 'Submit',
+          cancelText = 'Cancel',
+          otherButton = null,
+          working = false
+        } = currentModal);
       }
 
       if (type == 'intentPrompt') {
         if (!url) {
           throw new TypeError("IntentPrompt modal requires a url");
         } else {
-          var Url = new URL(url);
+          const Url = new URL(url);
 
           if (Url.protocol == 'intent:') {
             if ((Url + '').includes('google.com/maps')) {
@@ -8833,35 +6280,7 @@
         multiple = true;
       }
 
-      return d(_templateObject$4 || (_templateObject$4 = taggedTemplateLiteral(["\n          <aside class=\"modals ", "\" stylist=\"styleModals\" click=", ">\n            <article bond=", " class=\"alert ", "\">\n              <h1>Alert!</h1>\n              <p class=message value=message>", "</p>\n              <button class=ok title=Acknowledge value=ok>Acknowledge</button>\n            </article>\n            <article bond=", " class=\"confirm ", "\">\n              <h1>Confirm</h1>\n              <p class=message value=message>", "</p>\n              <button class=ok title=\"Confirm\" value=ok>Confirm</button>\n              <button class=cancel title=\"Deny\" value=cancel>Deny</button>\n            </article>\n            <article bond=", " class=\"prompt ", "\">\n              <h1>Prompt</h1>\n              <p class=message value=message>", "</p>\n              <p><input type=text name=response>\n              <button class=ok title=\"Send\" value=ok>Send</button>\n              <button class=cancel title=\"Dismiss\" value=cancel>Dismiss</button>\n            </article>\n            <article bond=", " class=\"beforeunload ", "\">\n              <h1>Page unloading</h1>\n              <p class=message value=message>", "</p>\n              <button class=ok title=\"Leave\" value=ok>Leave</button>\n              <button class=cancel title=\"Remain\" value=cancel>Remain</button>\n            </article>\n            <article bond=", " class=\"infobox ", "\">\n              <h1>", "</h1>\n              <textarea \n                readonly class=message value=message rows=", "\n              >", "</textarea>\n              <button class=ok title=\"Got it\" value=ok>OK</button>\n            </article>\n            <article bond=", " class=\"notice ", "\">\n              <h1>", "</h1>\n              <p class=message value=message>", "</p>\n              <button class=ok title=Acknowledge value=ok>OK</button>\n              ", "\n            </article>\n            <article bond=", " class=\"auth ", "\">\n              <h1>", "</h1>\n              <form>\n                <p class=message value=message>", "</p>\n                <input type=hidden name=requestid value=", ">\n                <p>\n                  <input type=text name=username placeholder=username maxlength=140>\n                <p>\n                  <input type=password name=password placeholder=password maxlength=140>\n                <p>\n                  <button click=", ">Submit</button>\n                  <button click=", ">Cancel</button>\n              </form>\n            </article>\n            <article bond=", " class=\"filechooser ", "\">\n              <h1>", "</h1>\n              <form method=POST action=/file enctype=multipart/form-data>\n                <p class=message value=message>", "</p>\n                <input type=hidden name=sessionid value=", ">\n                <input type=hidden name=_csrf value=", ">\n                <p>\n                  <label>\n                    Select ", ".\n                    <input type=file name=files ", " accept=\"", "\">\n                  </label>\n                <p>\n                  <button \n                    ", " \n                    click=", "\n                  >", "</button>\n                  <button \n                    ", " \n                    click=", "\n                  >", "</button>\n              </form>\n            </article>\n            <article bond=", " class=\"intent-prompt ", "\">\n              <h1>", "</h1>\n              <form method=GET action=\"", "\" target=_top submit=", ">\n                <p class=message value=message>", "</p>\n                <p>\n                  <button type=reset>Stop it</button>\n                  <button>Open external app</button>\n              </form>\n            </article>\n          </aside>\n        "])), currentModal ? 'active' : '', function (click) {
-        return closeModal(click, state);
-      }, function (el) {
-        return ModalRef.alert = el;
-      }, currentModalEl === ModalRef.alert ? 'open' : '', msg || 'You are alerted.', function (el) {
-        return ModalRef.confirm = el;
-      }, currentModalEl === ModalRef.confirm ? 'open' : '', msg || 'You are asked to confirm', function (el) {
-        return ModalRef.prompt = el;
-      }, currentModalEl === ModalRef.prompt ? 'open' : '', msg || 'You are prompted for information:', function (el) {
-        return ModalRef.beforeunload = el;
-      }, currentModalEl === ModalRef.beforeunload ? 'open' : '', msg || 'Are you sure you wish to leave?', function (el) {
-        return ModalRef.infobox = el;
-      }, currentModalEl === ModalRef.infobox ? 'open' : '', title || 'Info', Math.ceil(msg.length / 80), msg, function (el) {
-        return ModalRef.notice = el;
-      }, currentModalEl === ModalRef.notice ? 'open' : '', title, msg || 'Empty notice', otherButton ? u(_templateObject2$4 || (_templateObject2$4 = taggedTemplateLiteral(["<button title=\"", "\" click=", ">", "</button>"])), otherButton.title, otherButton.onclick, otherButton.title) : '', function (el) {
-        return ModalRef.auth = el;
-      }, currentModalEl === ModalRef.auth ? 'open' : '', title, msg || 'Empty notice', requestId, function (click) {
-        return respondWithAuth(click, state);
-      }, function (click) {
-        return respondWithCancel(click, state);
-      }, function (el) {
-        return ModalRef.filechooser = el;
-      }, currentModalEl === ModalRef.filechooser ? 'open' : '', title, msg || 'Empty notice', sessionId, csrfToken, multiple ? 'one or more files' : 'one file', multiple ? 'multiple' : '', accept, working ? 'disabled' : '', function (click) {
-        return chooseFile(click, state);
-      }, submitText, working ? 'disabled' : '', function (click) {
-        return cancelFileChooser(click, state);
-      }, cancelText, function (el) {
-        return ModalRef.intentPrompt = el;
-      }, currentModalEl === ModalRef.intentPrompt ? 'open' : '', title, url, function (submission) {
+      return d(_templateObject$4 || (_templateObject$4 = taggedTemplateLiteral(["\n          <aside class=\"modals ", "\" stylist=\"styleModals\" click=", ">\n            <article bond=", " class=\"alert ", "\">\n              <h1>Alert!</h1>\n              <p class=message value=message>", "</p>\n              <button class=ok title=Acknowledge value=ok>Acknowledge</button>\n            </article>\n            <article bond=", " class=\"confirm ", "\">\n              <h1>Confirm</h1>\n              <p class=message value=message>", "</p>\n              <button class=ok title=\"Confirm\" value=ok>Confirm</button>\n              <button class=cancel title=\"Deny\" value=cancel>Deny</button>\n            </article>\n            <article bond=", " class=\"prompt ", "\">\n              <h1>Prompt</h1>\n              <p class=message value=message>", "</p>\n              <p><input type=text name=response>\n              <button class=ok title=\"Send\" value=ok>Send</button>\n              <button class=cancel title=\"Dismiss\" value=cancel>Dismiss</button>\n            </article>\n            <article bond=", " class=\"beforeunload ", "\">\n              <h1>Page unloading</h1>\n              <p class=message value=message>", "</p>\n              <button class=ok title=\"Leave\" value=ok>Leave</button>\n              <button class=cancel title=\"Remain\" value=cancel>Remain</button>\n            </article>\n            <article bond=", " class=\"infobox ", "\">\n              <h1>", "</h1>\n              <textarea \n                readonly class=message value=message rows=", "\n              >", "</textarea>\n              <button class=ok title=\"Got it\" value=ok>OK</button>\n            </article>\n            <article bond=", " class=\"notice ", "\">\n              <h1>", "</h1>\n              <p class=message value=message>", "</p>\n              <button class=ok title=Acknowledge value=ok>OK</button>\n              ", "\n            </article>\n            <article bond=", " class=\"auth ", "\">\n              <h1>", "</h1>\n              <form>\n                <p class=message value=message>", "</p>\n                <input type=hidden name=requestid value=", ">\n                <p>\n                  <input type=text name=username placeholder=username maxlength=140>\n                <p>\n                  <input type=password name=password placeholder=password maxlength=140>\n                <p>\n                  <button click=", ">Submit</button>\n                  <button click=", ">Cancel</button>\n              </form>\n            </article>\n            <article bond=", " class=\"filechooser ", "\">\n              <h1>", "</h1>\n              <form method=POST action=/file enctype=multipart/form-data>\n                <p class=message value=message>", "</p>\n                <input type=hidden name=sessionid value=", ">\n                <input type=hidden name=_csrf value=", ">\n                <p>\n                  <label>\n                    Select ", ".\n                    <input type=file name=files ", " accept=\"", "\">\n                  </label>\n                <p>\n                  <button \n                    ", " \n                    click=", "\n                  >", "</button>\n                  <button \n                    ", " \n                    click=", "\n                  >", "</button>\n              </form>\n            </article>\n            <article bond=", " class=\"intent-prompt ", "\">\n              <h1>", "</h1>\n              <form method=GET action=\"", "\" target=_top submit=", ">\n                <p class=message value=message>", "</p>\n                <p>\n                  <button type=reset>Stop it</button>\n                  <button>Open external app</button>\n              </form>\n            </article>\n          </aside>\n        "])), currentModal ? 'active' : '', click => closeModal(click, state), el => ModalRef.alert = el, currentModalEl === ModalRef.alert ? 'open' : '', msg || 'You are alerted.', el => ModalRef.confirm = el, currentModalEl === ModalRef.confirm ? 'open' : '', msg || 'You are asked to confirm', el => ModalRef.prompt = el, currentModalEl === ModalRef.prompt ? 'open' : '', msg || 'You are prompted for information:', el => ModalRef.beforeunload = el, currentModalEl === ModalRef.beforeunload ? 'open' : '', msg || 'Are you sure you wish to leave?', el => ModalRef.infobox = el, currentModalEl === ModalRef.infobox ? 'open' : '', title || 'Info', Math.ceil(msg.length / 80), msg, el => ModalRef.notice = el, currentModalEl === ModalRef.notice ? 'open' : '', title, msg || 'Empty notice', otherButton ? u(_templateObject2$4 || (_templateObject2$4 = taggedTemplateLiteral(["<button title=\"", "\" click=", ">", "</button>"])), otherButton.title, otherButton.onclick, otherButton.title) : '', el => ModalRef.auth = el, currentModalEl === ModalRef.auth ? 'open' : '', title, msg || 'Empty notice', requestId, click => respondWithAuth(click, state), click => respondWithCancel(click, state), el => ModalRef.filechooser = el, currentModalEl === ModalRef.filechooser ? 'open' : '', title, msg || 'Empty notice', sessionId, csrfToken, multiple ? 'one or more files' : 'one file', multiple ? 'multiple' : '', accept, working ? 'disabled' : '', click => chooseFile(click, state), submitText, working ? 'disabled' : '', click => cancelFileChooser(click, state), cancelText, el => ModalRef.intentPrompt = el, currentModalEl === ModalRef.intentPrompt ? 'open' : '', title, url, submission => {
         submission.preventDefault();
         window.top.open(url);
       }, "This page is asking to open an external app using URL: ".concat(url));
@@ -8870,113 +6289,63 @@
     }
   }
 
-  function chooseFile(_x, _x2) {
-    return _chooseFile.apply(this, arguments);
+  async function chooseFile(click, state) {
+    click.preventDefault();
+    click.stopPropagation();
+    const form = click.target.closest('form');
+    const body = new FormData(form);
+    const request = {
+      method: form.method,
+      body
+    };
+    Object.assign(state.viewState.currentModal, {
+      submitText: 'Uploading...',
+      working: true
+    });
+    Modals(state);
+    const resp = await fetch(form.action, request).then(r => r.json());
+
+    if (resp.error) {
+      alert(resp.error);
+    }
+
+    closeModal(click, state);
   }
 
-  function _chooseFile() {
-    _chooseFile = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(click, state) {
-      var form, body, request, resp;
-      return regenerator.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              click.preventDefault();
-              click.stopPropagation();
-              form = click.target.closest('form');
-              body = new FormData(form);
-              request = {
-                method: form.method,
-                body
-              };
-              Object.assign(state.viewState.currentModal, {
-                submitText: 'Uploading...',
-                working: true
-              });
-              Modals(state);
-              _context.next = 9;
-              return fetch(form.action, request).then(function (r) {
-                return r.json();
-              });
+  async function cancelFileChooser(click, state) {
+    click.preventDefault();
+    click.stopPropagation();
+    const form = click.target.closest('form');
+    form.reset();
+    const body = new FormData(form);
+    body.delete('files');
+    const request = {
+      method: form.method,
+      body
+    };
+    Object.assign(state.viewState.currentModal, {
+      cancelText: 'Canceling...',
+      working: true
+    });
+    Modals(state);
+    const resp = await fetch(form.action, request).then(r => r.json());
 
-            case 9:
-              resp = _context.sent;
+    if (resp.error) {
+      alert("An error occurred");
+    }
 
-              if (resp.error) {
-                alert(resp.error);
-              }
-
-              closeModal(click, state);
-
-            case 12:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, _callee);
-    }));
-    return _chooseFile.apply(this, arguments);
-  }
-
-  function cancelFileChooser(_x3, _x4) {
-    return _cancelFileChooser.apply(this, arguments);
-  }
-
-  function _cancelFileChooser() {
-    _cancelFileChooser = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee2(click, state) {
-      var form, body, request, resp;
-      return regenerator.wrap(function _callee2$(_context2) {
-        while (1) {
-          switch (_context2.prev = _context2.next) {
-            case 0:
-              click.preventDefault();
-              click.stopPropagation();
-              form = click.target.closest('form');
-              form.reset();
-              body = new FormData(form);
-              body.delete('files');
-              request = {
-                method: form.method,
-                body
-              };
-              Object.assign(state.viewState.currentModal, {
-                cancelText: 'Canceling...',
-                working: true
-              });
-              Modals(state);
-              _context2.next = 11;
-              return fetch(form.action, request).then(function (r) {
-                return r.json();
-              });
-
-            case 11:
-              resp = _context2.sent;
-
-              if (resp.error) {
-                alert("An error occurred");
-              }
-
-              closeModal(click, state);
-
-            case 14:
-            case "end":
-              return _context2.stop();
-          }
-        }
-      }, _callee2);
-    }));
-    return _cancelFileChooser.apply(this, arguments);
+    closeModal(click, state);
   }
 
   function respondWithAuth(click, state) {
     click.preventDefault();
     click.stopPropagation();
-    var form = click.target.closest('form');
-    var data = new FormData(form);
-    var requestId = data.get('requestid').slice(0, 140);
-    var username = data.get('username').slice(0, 140);
-    var password = data.get('password').slice(0, 140);
-    var authResponse = {
+    const form = click.target.closest('form');
+    const data = new FormData(form);
+    const requestId = data.get('requestid').slice(0, 140);
+    const username = data.get('username').slice(0, 140);
+    const password = data.get('password').slice(0, 140);
+    const authResponse = {
       username,
       password,
       response: "ProvideCredentials"
@@ -8993,10 +6362,10 @@
   function respondWithCancel(click, state) {
     click.preventDefault();
     click.stopPropagation();
-    var form = click.target.closest('form');
-    var data = new FormData(form);
-    var requestId = data.get('requestid').slice(0, 140);
-    var authResponse = {
+    const form = click.target.closest('form');
+    const data = new FormData(form);
+    const requestId = data.get('requestid').slice(0, 140);
+    const authResponse = {
       response: "CancelAuth"
     };
     state.H({
@@ -9009,21 +6378,22 @@
   }
 
   function openModal() {
-    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-        _ref$modal = _ref.modal,
-        sessionId = _ref$modal.sessionId,
-        mode = _ref$modal.mode,
-        requestId = _ref$modal.requestId,
-        title = _ref$modal.title,
-        type = _ref$modal.type,
-        msg = _ref$modal.message;
-        _ref$modal.defaultPrompt;
-        var url = _ref$modal.url,
-        otherButton = _ref$modal.otherButton,
-        csrfToken = _ref$modal.csrfToken;
-
-    var state = arguments.length > 1 ? arguments[1] : undefined;
-    var currentModal = {
+    let {
+      modal: {
+        sessionId,
+        mode,
+        requestId,
+        title,
+        type,
+        message: msg,
+        defaultPrompt,
+        url,
+        otherButton,
+        csrfToken
+      }
+    } = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    let state = arguments.length > 1 ? arguments[1] : undefined;
+    const currentModal = {
       type,
       csrfToken,
       mode,
@@ -9041,8 +6411,10 @@
 
   function closeModal(click, state) {
     if (!click.target.matches('button')) return;
-    var response = click.target.value || 'unknown';
-    var sessionId = state.viewState.currentModal.sessionId;
+    const response = click.target.value || 'unknown';
+    const {
+      sessionId
+    } = state.viewState.currentModal;
     state.viewState.lastModal = state.viewState.currentModal;
     state.viewState.currentModal = null;
     state.viewState.lastModal.modalResponse = response;
@@ -9057,88 +6429,89 @@
       });
     }
 
-    setTimeout(function () {
-      return Modals(state);
-    }, 50);
+    setTimeout(() => Modals(state), 50);
   } // Permission request
 
 
-  function PermissionRequest(_ref2) {
-    var permission = _ref2.permission,
-        request = _ref2.request,
-        page = _ref2.page;
+  function PermissionRequest(_ref) {
+    let {
+      permission,
+      request,
+      page
+    } = _ref;
     return d(_templateObject3$3 || (_templateObject3$3 = taggedTemplateLiteral(["\n        <article class=\"permission-request hidden\">\n          <h1>", "</h1>\n          <p class=request>", " is requesting ", " permission. The details are: ", "</p>\n          <button class=grant>Grant</button>\n          <button class=deny>Deny</button>\n        </article>\n      "])), permission, page, permission, request);
   }
 
   var _templateObject$3, _templateObject2$3, _templateObject3$2, _templateObject4$2;
-  var CLOSE_DELAY = 222;
-  var SHORT_CUT = 'Ctrl+Shift+J'; //const FUNC = e => console.log("Doing it", e);
+  const CLOSE_DELAY = 222;
+  const SHORT_CUT = 'Ctrl+Shift+J'; //const FUNC = e => console.log("Doing it", e);
 
-  var CONTEXT_MENU = function CONTEXT_MENU(state) {
-    return {
-      'page': [{
-        title: 'Open link in new tab',
-        shortCut: SHORT_CUT,
-        func: openInNewTab
-      }, {
-        title: 'Save screenshot',
-        shortCut: SHORT_CUT,
-        func: download
-      }, {
-        title: 'Reload',
-        shortCut: SHORT_CUT,
-        func: reload
-      }, {
-        title: 'Copy text from here',
-        shortCut: SHORT_CUT,
-        func: copy,
-        hr: true
-      }, {
-        title: 'Copy link address from here',
-        shortCut: SHORT_CUT,
-        func: copyLink
-      }, {
-        title: 'Paste text',
-        shortCut: SHORT_CUT,
-        func: paste
-      }, //  This is blocked (apparently) on: https://bugs.chromium.org/p/chromium/issues/detail?id=1015260
-      {
-        title: 'New incognito tab',
-        shortCut: SHORT_CUT,
-        func: newBrowserContextAndTab,
-        hr: true
-      }, {
-        title: 'Clear history',
-        shortCut: SHORT_CUT,
-        func: clearHistoryAndCacheLeaveCookies,
-        hr: true
-      }, {
-        title: 'Wipe everything',
-        shortCut: SHORT_CUT,
-        func: clearBrowsingData
-      }, {
-        title: document.fullscreenElement || document.webkitFullscreenElement ? 'Exit full screen' : 'Full screen',
-        shortCut: SHORT_CUT,
-        func: fullScreen,
-        hr: true
-      }]
-    };
-  };
+  const CONTEXT_MENU = state => ({
+    'page': [{
+      title: 'Open link in new tab',
+      shortCut: SHORT_CUT,
+      func: openInNewTab
+    }, {
+      title: 'Save screenshot',
+      shortCut: SHORT_CUT,
+      func: download
+    }, {
+      title: 'Reload',
+      shortCut: SHORT_CUT,
+      func: reload
+    }, {
+      title: 'Copy text from here',
+      shortCut: SHORT_CUT,
+      func: copy,
+      hr: true
+    }, {
+      title: 'Copy link address from here',
+      shortCut: SHORT_CUT,
+      func: copyLink
+    }, {
+      title: 'Paste text',
+      shortCut: SHORT_CUT,
+      func: paste
+    }, //  This is blocked (apparently) on: https://bugs.chromium.org/p/chromium/issues/detail?id=1015260
+    {
+      title: 'New incognito tab',
+      shortCut: SHORT_CUT,
+      func: newBrowserContextAndTab,
+      hr: true
+    }, {
+      title: 'Clear history',
+      shortCut: SHORT_CUT,
+      func: clearHistoryAndCacheLeaveCookies,
+      hr: true
+    }, {
+      title: 'Wipe everything',
+      shortCut: SHORT_CUT,
+      func: clearBrowsingData
+    }, {
+      title: document.fullscreenElement || document.webkitFullscreenElement ? 'Exit full screen' : 'Full screen',
+      shortCut: SHORT_CUT,
+      func: fullScreen,
+      hr: true
+    }]
+  });
 
   function
     /*state*/
   ContextMenu() {
     return d(_templateObject$3 || (_templateObject$3 = taggedTemplateLiteral(["\n\n  "])));
   }
-  var CTX_MENU_THRESHOLD = 675;
+  const CTX_MENU_THRESHOLD = 675;
   function makeContextMenuHandler(state) {
-    var node = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
+    let node = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
       type: 'page',
       id: 'current-page'
     };
-    var nodeType = node.type;
-    return function (contextMenu) {
-      var menuItems = CONTEXT_MENU()[nodeType]; // we need this check because we attach a handler to each node
+    const {
+      /*id, */
+      type: nodeType
+    } = node;
+    return contextMenu => {
+      const menuItems = CONTEXT_MENU()[nodeType]; // we need this check because we attach a handler to each node
       // we could use delegation at the container of the root node
       // but for now we do it like this
 
@@ -9151,18 +6524,22 @@
       }
 
       if (contextMenu.currentTarget.contains(contextMenu.target)) {
-        var pageX, pageY;
+        let pageX, pageY;
 
         if (contextMenu.pageX && contextMenu.pageY) {
-          pageX = contextMenu.pageX;
-          pageY = contextMenu.pageY;
+          ({
+            pageX,
+            pageY
+          } = contextMenu);
         } else {
-          var _contextMenu$detail = contextMenu.detail,
-              clientX = _contextMenu$detail.clientX,
-              clientY = _contextMenu$detail.clientY;
-          var _contextMenu$detail2 = contextMenu.detail;
-          pageX = _contextMenu$detail2.pageX;
-          pageY = _contextMenu$detail2.pageY;
+          const {
+            clientX,
+            clientY
+          } = contextMenu.detail;
+          ({
+            pageX,
+            pageY
+          } = contextMenu.detail);
           Object.assign(contextMenu, {
             pageX,
             pageY,
@@ -9183,22 +6560,20 @@
 
         contextMenu.preventDefault();
         contextMenu.stopPropagation();
-        var bondTasks = [function (el) {
+        const bondTasks = [el => {
           // only have 1 context menu at a time
           close(state, false);
           state.viewState.contextMenu = el;
-        }, function () {
-          return self.addEventListener('click', function remove(click) {
-            // if we clicked outside the menu, 
-            // remove the menu and stop listening for such clicks
-            if (!click.target.closest('.context-menu')) {
-              close(state, false);
-              self.removeEventListener('click', remove);
-            }
-          });
-        }, function (el) {
-          var x = pageX + 'px';
-          var y = pageY + 'px';
+        }, () => self.addEventListener('click', function remove(click) {
+          // if we clicked outside the menu, 
+          // remove the menu and stop listening for such clicks
+          if (!click.target.closest('.context-menu')) {
+            close(state, false);
+            self.removeEventListener('click', remove);
+          }
+        }), el => {
+          const x = pageX + 'px';
+          const y = pageY + 'px';
 
           if (pageX + el.scrollWidth > innerWidth) {
             el.style.right = '8px';
@@ -9212,18 +6587,15 @@
             el.style.top = y;
           }
         }];
-        var menuView = u(_templateObject2$3 || (_templateObject2$3 = taggedTemplateLiteral(["\n        <aside class=context-menu \n          role=menu \n          bond=", "\n          contextmenu=", "\n        >\n          <h1>Menu</h1> \n          <hr>\n          <ul>\n            ", "\n          </ul>\n        </aside>\n      "])), bondTasks, function (e) {
-          return (
-            /* don't trigger within the menu */
-            e.preventDefault(), e.stopPropagation()
-          );
-        }, menuItems.map(function (_ref) {
-          var title = _ref.title,
-              func = _ref.func,
-              hr = _ref.hr;
-          return u(_templateObject3$2 || (_templateObject3$2 = taggedTemplateLiteral(["\n              ", "\n              <li click=", ">", "</li>\n            "])), hr ? u(_templateObject4$2 || (_templateObject4$2 = taggedTemplateLiteral(["<hr>"]))) : '', function (click) {
-            return func(click, state);
-          }, title);
+        const menuView = u(_templateObject2$3 || (_templateObject2$3 = taggedTemplateLiteral(["\n        <aside class=context-menu \n          role=menu \n          bond=", "\n          contextmenu=", "\n        >\n          <h1>Menu</h1> \n          <hr>\n          <ul>\n            ", "\n          </ul>\n        </aside>\n      "])), bondTasks, e => (
+        /* don't trigger within the menu */
+        e.preventDefault(), e.stopPropagation()), menuItems.map(_ref => {
+          let {
+            title,
+            func,
+            hr
+          } = _ref;
+          return u(_templateObject3$2 || (_templateObject3$2 = taggedTemplateLiteral(["\n              ", "\n              <li click=", ">", "</li>\n            "])), hr ? u(_templateObject4$2 || (_templateObject4$2 = taggedTemplateLiteral(["<hr>"]))) : '', click => func(click, state), title);
         }));
         menuView.to(contextMenu.currentTarget, 'afterEnd');
       }
@@ -9231,10 +6603,10 @@
   }
 
   function close(state) {
-    var delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+    let delay = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
 
     if (delay) {
-      setTimeout(function () {
+      setTimeout(() => {
         if (state.viewState.contextMenu) {
           state.viewState.contextMenu.remove();
           state.viewState.contextMenu = null;
@@ -9293,16 +6665,22 @@
 
 
   function copy(click, state) {
-    var contextClick = state.viewState.contextMenuClick;
-    var clientX = contextClick.clientX,
-        clientY = contextClick.clientY,
-        target = contextClick.target;
-    var H = state.H;
+    const contextClick = state.viewState.contextMenuClick;
+    const {
+      clientX,
+      clientY,
+      target
+    } = contextClick;
+    const {
+      H
+    } = state;
     close(state);
 
-    state.elementInfoContinuation = function (_ref2) {
-      var innerText = _ref2.innerText,
-          noSuchElement = _ref2.noSuchElement;
+    state.elementInfoContinuation = _ref2 => {
+      let {
+        innerText,
+        noSuchElement
+      } = _ref2;
 
       if (!noSuchElement) {
         state.elementInfoContinuation = null;
@@ -9329,16 +6707,22 @@
   }
 
   function copyLink(click, state) {
-    var contextClick = state.viewState.contextMenuClick;
-    var clientX = contextClick.clientX,
-        clientY = contextClick.clientY,
-        target = contextClick.target;
-    var H = state.H;
+    const contextClick = state.viewState.contextMenuClick;
+    const {
+      clientX,
+      clientY,
+      target
+    } = contextClick;
+    const {
+      H
+    } = state;
     close(state);
 
-    state.elementInfoContinuation = function (_ref3) {
-      var attributes = _ref3.attributes,
-          noSuchElement = _ref3.noSuchElement;
+    state.elementInfoContinuation = _ref3 => {
+      let {
+        attributes,
+        noSuchElement
+      } = _ref3;
 
       if (!noSuchElement) {
         state.elementInfoContinuation = null;
@@ -9367,11 +6751,11 @@
 
   function paste(click, state) {
     close(state);
-    var pasteData = prompt("Enter text to paste");
-    var input = state.viewState.shouldHaveFocus;
+    const pasteData = prompt("Enter text to paste");
+    const input = state.viewState.shouldHaveFocus;
     if (!input) return;
-    var value = input.value;
-    var newValue = value.slice(0, input.selectionStart) + pasteData + value.slice(input.selectionEnd);
+    const value = input.value;
+    const newValue = value.slice(0, input.selectionStart) + pasteData + value.slice(input.selectionEnd);
     input.value = newValue;
     input.selectionStart = input.selectionEnd;
 
@@ -9392,11 +6776,11 @@
 
   function download(click, state) {
     close(state);
-    var timeNow = new Date();
-    var stringTime = timeNow.toJSON();
-    var fileName = stringTime.replace(/[-:.]/g, "_");
-    var imageData = state.viewState.canvasEl.toDataURL();
-    var downloader = document.createElement('a');
+    const timeNow = new Date();
+    const stringTime = timeNow.toJSON();
+    const fileName = stringTime.replace(/[-:.]/g, "_");
+    const imageData = state.viewState.canvasEl.toDataURL();
+    const downloader = document.createElement('a');
     downloader.href = imageData;
     Object.assign(downloader.style, {
       position: 'absolute',
@@ -9413,27 +6797,33 @@
   function
     /*click, state*/
   reload() {
-    var goButton = document.querySelector('form.url button.go');
+    const goButton = document.querySelector('form.url button.go');
     goButton.click();
   }
 
   function openInNewTab(click, state) {
-    var contextClick = state.viewState.contextMenuClick;
-    var target = contextClick.target,
-        pageX = contextClick.pageX,
-        pageY = contextClick.pageY,
-        clientX = contextClick.clientX,
-        clientY = contextClick.clientY;
-    var H = state.H;
+    const contextClick = state.viewState.contextMenuClick;
+    const {
+      target,
+      pageX,
+      pageY,
+      clientX,
+      clientY
+    } = contextClick;
+    const {
+      H
+    } = state;
     state.viewState.killNextMouseReleased = false;
 
     if (deviceIsMobile()) {
       // we need to get the URL of the target link 
       // then use 
       // state.createTab(click, url);
-      state.elementInfoContinuation = function (_ref4) {
-        var attributes = _ref4.attributes,
-            noSuchElement = _ref4.noSuchElement;
+      state.elementInfoContinuation = _ref4 => {
+        let {
+          attributes,
+          noSuchElement
+        } = _ref4;
 
         if (!noSuchElement) {
           state.elementInfoContinuation = null;
@@ -9480,7 +6870,9 @@
   }
 
   function newBrowserContextAndTab(click, state) {
-    var H = state.H;
+    const {
+      H
+    } = state;
     H({
       synthetic: true,
       type: 'newIncognitoTab',
@@ -9490,10 +6882,12 @@
   }
 
   function clearHistoryAndCacheLeaveCookies(click, state) {
-    var doIt = confirm("You'll stay signed in to most sites, but wipe browsing history and cached files. Are you sure?");
+    const doIt = confirm("You'll stay signed in to most sites, but wipe browsing history and cached files. Are you sure?");
 
     if (doIt) {
-      var H = state.H;
+      const {
+        H
+      } = state;
       H({
         synthetic: true,
         type: "clearAllPageHistory"
@@ -9509,10 +6903,12 @@
   }
 
   function clearBrowsingData(click, state) {
-    var doIt = confirm("This will sign you out of most sites, and wipe all history and caches. Really wipe everything?");
+    const doIt = confirm("This will sign you out of most sites, and wipe all history and caches. Really wipe everything?");
 
     if (doIt) {
-      var H = state.H;
+      const {
+        H
+      } = state;
       H({
         synthetic: true,
         type: "clearAllPageHistory"
@@ -9531,67 +6927,26 @@
     close(state);
   }
 
-  function fullScreen(_x, _x2) {
-    return _fullScreen.apply(this, arguments);
-  }
+  async function fullScreen(click, state) {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      if (document.webkitCancelFullscreen) {
+        document.webkitCancelFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } else {
+      if (document.body.webkitRequestFullscreen) {
+        document.body.webkitRequestFullscreen({
+          navigationUI: 'hide'
+        });
+      } else {
+        await document.body.requestFullscreen({
+          navigationUI: 'hide'
+        });
+      }
+    }
 
-  function _fullScreen() {
-    _fullScreen = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(click, state) {
-      return regenerator.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              if (!(document.fullscreenElement || document.webkitFullscreenElement)) {
-                _context.next = 9;
-                break;
-              }
-
-              if (!document.webkitCancelFullscreen) {
-                _context.next = 5;
-                break;
-              }
-
-              document.webkitCancelFullscreen();
-              _context.next = 7;
-              break;
-
-            case 5:
-              _context.next = 7;
-              return document.exitFullscreen();
-
-            case 7:
-              _context.next = 15;
-              break;
-
-            case 9:
-              if (!document.body.webkitRequestFullscreen) {
-                _context.next = 13;
-                break;
-              }
-
-              document.body.webkitRequestFullscreen({
-                navigationUI: 'hide'
-              });
-              _context.next = 15;
-              break;
-
-            case 13:
-              _context.next = 15;
-              return document.body.requestFullscreen({
-                navigationUI: 'hide'
-              });
-
-            case 15:
-              close(state);
-
-            case 16:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, _callee);
-    }));
-    return _fullScreen.apply(this, arguments);
+    close(state);
   }
 
   var Subviews = /*#__PURE__*/Object.freeze({
@@ -9619,27 +6974,19 @@
 
   var _templateObject$2, _templateObject2$2, _templateObject3$1, _templateObject4$1, _templateObject5$1, _templateObject6, _templateObject7;
 
-  function _createForOfIteratorHelper$5(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$6(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
-
-  function _unsupportedIterableToArray$6(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$6(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$6(o, minLen); }
-
-  function _arrayLikeToArray$6(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-  var BROWSER_SIDE = function () {
+  const BROWSER_SIDE = (() => {
     try {
       return self.DOMParser && true;
     } catch (e) {
       return false;
     }
-  }();
-  var BuiltIns = [Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet, Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array, Int8Array, Int16Array, Int32Array, Uint8ClampedArray].concat(toConsumableArray(BROWSER_SIDE ? [Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer, FileList, Text, HTMLDocument, Document, DocumentFragment, Error, File, Event, EventTarget, URL] : [Buffer]));
-  var SEALED_DEFAULT = true;
+  })();
+  const BuiltIns = [Symbol, Boolean, Number, String, Object, Set, Map, WeakMap, WeakSet, Uint8Array, Uint16Array, Uint32Array, Float32Array, Float64Array, Int8Array, Int16Array, Int32Array, Uint8ClampedArray, ...(BROWSER_SIDE ? [Node, NodeList, Element, HTMLElement, Blob, ArrayBuffer, FileList, Text, HTMLDocument, Document, DocumentFragment, Error, File, Event, EventTarget, URL] : [Buffer])];
+  const SEALED_DEFAULT = true;
 
-  var isNone = function isNone(instance) {
-    return instance == null || instance == undefined;
-  };
+  const isNone = instance => instance == null || instance == undefined;
 
-  var typeCache = new Map();
+  const typeCache = new Map();
   T.def = def;
   T.check = check;
   T.sub = sub;
@@ -9665,10 +7012,8 @@
       vals[_key - 1] = arguments[_key];
     }
 
-    var cooked = vals.reduce(function (prev, cur, i) {
-      return prev + cur + parts[i + 1];
-    }, parts[0]);
-    var typeName = cooked;
+    const cooked = vals.reduce((prev, cur, i) => prev + cur + parts[i + 1], parts[0]);
+    const typeName = cooked;
     if (!typeCache.has(typeName)) throw new TypeError("Cannot use type ".concat(typeName, " before it is defined."));
     return typeCache.get(typeName).type;
   }
@@ -9680,44 +7025,40 @@
   }
 
   function validate(type, instance) {
-    var _ref = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref$partial = _ref.partial,
-        partial = _ref$partial === void 0 ? false : _ref$partial;
-
+    let {
+      partial = false
+    } = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     guardType(type);
     guardExists(type);
-    var typeName = type.name;
-
-    var _typeCache$get = typeCache.get(typeName),
-        spec = _typeCache$get.spec,
-        kind = _typeCache$get.kind,
-        help = _typeCache$get.help,
-        verify = _typeCache$get.verify,
-        verifiers = _typeCache$get.verifiers,
-        sealed = _typeCache$get.sealed;
-
-    var specKeyPaths = spec ? allKeyPaths(spec).sort() : [];
-    var specKeyPathSet = new Set(specKeyPaths);
-    var bigErrors = [];
+    const typeName = type.name;
+    const {
+      spec,
+      kind,
+      help,
+      verify,
+      verifiers,
+      sealed
+    } = typeCache.get(typeName);
+    const specKeyPaths = spec ? allKeyPaths(spec).sort() : [];
+    const specKeyPathSet = new Set(specKeyPaths);
+    const bigErrors = [];
 
     switch (kind) {
       case "def":
         {
-          var allValid = true;
+          let allValid = true;
 
           if (spec) {
-            var keyPaths = partial ? allKeyPaths(instance, specKeyPathSet) : specKeyPaths;
-            allValid = !isNone(instance) && keyPaths.every(function (kp) {
+            const keyPaths = partial ? allKeyPaths(instance, specKeyPathSet) : specKeyPaths;
+            allValid = !isNone(instance) && keyPaths.every(kp => {
               // Allow lookup errors if the type match for the key path can include None
-              var _lookup = lookup(instance, kp, function () {
-                return checkTypeMatch(lookup(spec, kp).resolved, T(_templateObject$2 || (_templateObject$2 = taggedTemplateLiteral(["None"]))));
-              }),
-                  resolved = _lookup.resolved,
-                  lookupErrors = _lookup.errors;
-
-              bigErrors.push.apply(bigErrors, toConsumableArray(lookupErrors));
+              const {
+                resolved,
+                errors: lookupErrors
+              } = lookup(instance, kp, () => checkTypeMatch(lookup(spec, kp).resolved, T(_templateObject$2 || (_templateObject$2 = taggedTemplateLiteral(["None"])))));
+              bigErrors.push(...lookupErrors);
               if (lookupErrors.length) return false;
-              var keyType = lookup(spec, kp).resolved;
+              const keyType = lookup(spec, kp).resolved;
 
               if (!keyType || !(keyType instanceof Type)) {
                 bigErrors.push({
@@ -9726,16 +7067,16 @@
                 return false;
               }
 
-              var _validate = validate(keyType, resolved),
-                  valid = _validate.valid,
-                  validationErrors = _validate.errors;
-
-              bigErrors.push.apply(bigErrors, toConsumableArray(validationErrors));
+              const {
+                valid,
+                errors: validationErrors
+              } = validate(keyType, resolved);
+              bigErrors.push(...validationErrors);
               return valid;
             });
           }
 
-          var verified = true;
+          let verified = true;
 
           if (partial && !spec && !!verify) {
             throw new TypeError("Type checking with option 'partial' is not a valid option for types that" + " only use a verify function but have no spec");
@@ -9746,20 +7087,16 @@
               if (!verified) {
                 if (verifiers) {
                   throw {
-                    error: "Type ".concat(typeName, " value '").concat(JSON.stringify(instance), "' violated at least 1 verify function in:\n").concat(verifiers.map(function (f) {
-                      return '\t' + (f.help || '') + ' (' + f.verify.toString() + ')';
-                    }).join('\n'))
+                    error: "Type ".concat(typeName, " value '").concat(JSON.stringify(instance), "' violated at least 1 verify function in:\n").concat(verifiers.map(f => '\t' + (f.help || '') + ' (' + f.verify.toString() + ')').join('\n'))
                   };
                 } else if (type.isSumType) {
                   throw {
-                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat(toConsumableArray(type.types.keys()).map(function (t) {
-                      return t.name;
-                    })),
+                    error: "Value '".concat(JSON.stringify(instance), "' did not match any of: ").concat([...type.types.keys()].map(t => t.name)),
                     verify,
                     verifiers
                   };
                 } else {
-                  var helpMsg = '';
+                  let helpMsg = '';
 
                   if (help) {
                     helpMsg = "Help: ".concat(help, ". ");
@@ -9776,41 +7113,30 @@
             }
           }
 
-          var sealValid = true;
+          let sealValid = true;
 
           if (!!sealed && !!spec) {
-            var type_key_paths = specKeyPaths;
-            var all_key_paths = allKeyPaths(instance, specKeyPathSet).sort();
+            const type_key_paths = specKeyPaths;
+            const all_key_paths = allKeyPaths(instance, specKeyPathSet).sort();
             sealValid = all_key_paths.join(',') == type_key_paths.join(',');
 
             if (!sealValid) {
               if (all_key_paths.length < type_key_paths.length) {
                 sealValid = true;
               } else {
-                var errorKeys = [];
-                var tkp = new Set(type_key_paths);
+                const errorKeys = [];
+                const tkp = new Set(type_key_paths);
 
-                var _iterator = _createForOfIteratorHelper$5(all_key_paths),
-                    _step;
-
-                try {
-                  for (_iterator.s(); !(_step = _iterator.n()).done;) {
-                    var k = _step.value;
-
-                    if (!tkp.has(k)) {
-                      errorKeys.push({
-                        error: "Key path '".concat(k, "' is not in the spec for type ").concat(typeName)
-                      });
-                    }
+                for (const k of all_key_paths) {
+                  if (!tkp.has(k)) {
+                    errorKeys.push({
+                      error: "Key path '".concat(k, "' is not in the spec for type ").concat(typeName)
+                    });
                   }
-                } catch (err) {
-                  _iterator.e(err);
-                } finally {
-                  _iterator.f();
                 }
 
                 if (errorKeys.length) {
-                  bigErrors.push.apply(bigErrors, errorKeys);
+                  bigErrors.push(...errorKeys);
                 }
               }
             }
@@ -9825,40 +7151,40 @@
 
       case "defCollection":
         {
-          var _validate2 = validate(spec.container, instance),
-              containerValid = _validate2.valid,
-              containerErrors = _validate2.errors;
-
-          var membersValid = true;
-          var _verified = true;
-          bigErrors.push.apply(bigErrors, toConsumableArray(containerErrors));
+          const {
+            valid: containerValid,
+            errors: containerErrors
+          } = validate(spec.container, instance);
+          let membersValid = true;
+          let verified = true;
+          bigErrors.push(...containerErrors);
 
           if (partial) {
             throw new TypeError("Type checking with option 'partial' is not a valid option for Collection types");
           } else {
             if (containerValid) {
-              membersValid = toConsumableArray(instance).every(function (member) {
-                var _validate3 = validate(spec.member, member),
-                    valid = _validate3.valid,
-                    errors = _validate3.errors;
-
-                bigErrors.push.apply(bigErrors, toConsumableArray(errors));
+              membersValid = [...instance].every(member => {
+                const {
+                  valid,
+                  errors
+                } = validate(spec.member, member);
+                bigErrors.push(...errors);
                 return valid;
               });
             }
 
             if (verify) {
               try {
-                _verified = verify(instance);
+                verified = verify(instance);
               } catch (e) {
                 bigErrors.push(e);
-                _verified = false;
+                verified = false;
               }
             }
           }
 
           return {
-            valid: containerValid && membersValid && _verified,
+            valid: containerValid && membersValid && verified,
             errors: bigErrors
           };
         }
@@ -9871,19 +7197,19 @@
   }
 
   function check() {
-    return validate.apply(void 0, arguments).valid;
+    return validate(...arguments).valid;
   }
 
   function lookup(obj, keyPath, canBeNone) {
     if (isNone(obj)) throw new TypeError("Lookup requires a non-unset object.");
     if (!keyPath) throw new TypeError("keyPath must not be empty");
-    var keys = keyPath.split(/\./g);
-    var pathComplete = [];
-    var errors = [];
-    var resolved = obj;
+    const keys = keyPath.split(/\./g);
+    const pathComplete = [];
+    const errors = [];
+    let resolved = obj;
 
     while (keys.length) {
-      var nextKey = keys.shift();
+      const nextKey = keys.shift();
       resolved = resolved[nextKey];
       pathComplete.push(nextKey);
 
@@ -9944,21 +7270,17 @@
   }
 
   function defSub(type, spec) {
-    var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref2$verify = _ref2.verify,
-        verify = _ref2$verify === void 0 ? undefined : _ref2$verify,
-        _ref2$help = _ref2.help,
-        help = _ref2$help === void 0 ? '' : _ref2$help;
-
-    var name = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
+    let {
+      verify = undefined,
+      help = ''
+    } = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+    let name = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : '';
     guardType(type);
     guardExists(type);
-    var verifiers;
+    let verifiers;
 
     if (!verify) {
-      verify = function verify() {
-        return true;
-      };
+      verify = () => true;
     }
 
     if (type.native) {
@@ -9967,18 +7289,16 @@
         verify
       }];
 
-      verify = function verify(i) {
-        return i instanceof type.native;
-      };
+      verify = i => i instanceof type.native;
 
-      var helpMsg = "Needs to be of type ".concat(type.native.name, ". ").concat(help || '');
+      const helpMsg = "Needs to be of type ".concat(type.native.name, ". ").concat(help || '');
       verifiers.push({
         help: helpMsg,
         verify
       });
     }
 
-    var newType = def("".concat(name, ">").concat(type.name), spec, {
+    const newType = def("".concat(name, ">").concat(type.name), spec, {
       verify,
       help,
       verifiers
@@ -9994,13 +7314,11 @@
       values[_key2 - 1] = arguments[_key2];
     }
 
-    var valueSet = new Set(values);
+    const valueSet = new Set(values);
 
-    var verify = function verify(i) {
-      return valueSet.has(i);
-    };
+    const verify = i => valueSet.has(i);
 
-    var help = "Value of Enum type ".concat(name, " must be one of ").concat(values.join(','));
+    const help = "Value of Enum type ".concat(name, " must be one of ").concat(values.join(','));
     return def(name, null, {
       verify,
       help
@@ -10016,18 +7334,16 @@
   }
 
   function allKeyPaths(o, specKeyPaths) {
-    var isTypeSpec = !specKeyPaths;
-    var keyPaths = new Set();
+    const isTypeSpec = !specKeyPaths;
+    const keyPaths = new Set();
     return recurseObject(o, keyPaths, '');
 
     function recurseObject(o, keyPathSet) {
-      var lastLevel = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
-      var levelKeys = Object.getOwnPropertyNames(o);
-      var keyPaths = levelKeys.map(function (k) {
-        return lastLevel + (lastLevel.length ? '.' : '') + k;
-      });
-      levelKeys.forEach(function (k, i) {
-        var v = o[k];
+      let lastLevel = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+      const levelKeys = Object.getOwnPropertyNames(o);
+      const keyPaths = levelKeys.map(k => lastLevel + (lastLevel.length ? '.' : '') + k);
+      levelKeys.forEach((k, i) => {
+        const v = o[k];
 
         if (isTypeSpec) {
           if (v instanceof Type) {
@@ -10048,9 +7364,7 @@
             if (!Array.isArray(v)) {
               recurseObject(v, keyPathSet, keyPaths[i]);
             } else {
-              v.forEach(function (item, index) {
-                return recurseObject(item, keyPathSet, keyPaths[i] + '.' + index);
-              }); //throw new TypeError(`We don't support Instances that use Arrays as structure, just yet.`); 
+              v.forEach((item, index) => recurseObject(item, keyPathSet, keyPaths[i] + '.' + index)); //throw new TypeError(`We don't support Instances that use Arrays as structure, just yet.`); 
             }
           } else {
             //console.warn("Spec has no such key",  keyPaths[i]);
@@ -10058,17 +7372,15 @@
           }
         }
       });
-      return toConsumableArray(keyPathSet);
+      return [...keyPathSet];
     }
   }
 
   function defOption(type) {
     guardType(type);
-    var typeName = type.name;
+    const typeName = type.name;
     return T.def("?".concat(typeName), null, {
-      verify: function verify(i) {
-        return isUnset(i) || T.check(type, i);
-      }
+      verify: i => isUnset(i) || T.check(type, i)
     });
   }
 
@@ -10082,25 +7394,24 @@
   }
 
   function verify() {
-    return check.apply(void 0, arguments);
+    return check(...arguments);
   }
 
-  function defCollection(name, _ref3) {
-    var container = _ref3.container,
-        member = _ref3.member;
-
-    var _ref4 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref4$sealed = _ref4.sealed,
-        sealed = _ref4$sealed === void 0 ? SEALED_DEFAULT : _ref4$sealed,
-        _ref4$verify = _ref4.verify,
-        verify = _ref4$verify === void 0 ? undefined : _ref4$verify;
-
+  function defCollection(name, _ref) {
+    let {
+      container,
+      member
+    } = _ref;
+    let {
+      sealed = SEALED_DEFAULT,
+      verify = undefined
+    } = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     if (!name) throw new TypeError("Type must be named.");
     if (!container || !member) throw new TypeError("Type must be specified.");
     guardRedefinition(name);
-    var kind = 'defCollection';
-    var t = new Type(name);
-    var spec = {
+    const kind = 'defCollection';
+    const t = new Type(name);
+    const spec = {
       kind,
       spec: {
         container,
@@ -10114,17 +7425,17 @@
     return t;
   }
 
-  function defTuple(name, _ref5) {
-    var pattern = _ref5.pattern;
+  function defTuple(name, _ref2) {
+    let {
+      pattern
+    } = _ref2;
     if (!name) throw new TypeError("Type must be named.");
     if (!pattern) throw new TypeError("Type must be specified.");
-    var kind = 'def';
-    var specObj = {};
-    pattern.forEach(function (type, key) {
-      return specObj[key] = type;
-    });
-    var t = new Type(name);
-    var spec = {
+    const kind = 'def';
+    const specObj = {};
+    pattern.forEach((type, key) => specObj[key] = type);
+    const t = new Type(name);
+    const spec = {
       kind,
       spec: specObj,
       type: t
@@ -10134,36 +7445,32 @@
   }
 
   function Type(name) {
-    var mods = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    if (!(this instanceof Type ? this.constructor : void 0)) throw new TypeError("Type with new only.");
+    let mods = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    if (!new.target) throw new TypeError("Type with new only.");
     Object.defineProperty(this, 'name', {
-      get: function get() {
-        return name;
-      }
+      get: () => name
     });
     this.typeName = name;
 
     if (mods.types) {
-      var types = mods.types;
-      var typeSet = new Set(types);
+      const {
+        types
+      } = mods;
+      const typeSet = new Set(types);
       Object.defineProperty(this, 'isSumType', {
-        get: function get() {
-          return true;
-        }
+        get: () => true
       });
       Object.defineProperty(this, 'types', {
-        get: function get() {
-          return typeSet;
-        }
+        get: () => typeSet
       });
     }
 
     if (mods.native) {
-      var native = mods.native;
+      const {
+        native
+      } = mods;
       Object.defineProperty(this, 'native', {
-        get: function get() {
-          return native;
-        }
+        get: () => native
       });
     }
   }
@@ -10173,20 +7480,14 @@
   };
 
   function def(name, spec) {
-    var _ref6 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-        _ref6$help = _ref6.help,
-        help = _ref6$help === void 0 ? '' : _ref6$help,
-        _ref6$verify = _ref6.verify,
-        verify = _ref6$verify === void 0 ? undefined : _ref6$verify,
-        _ref6$sealed = _ref6.sealed,
-        sealed = _ref6$sealed === void 0 ? undefined : _ref6$sealed,
-        _ref6$types = _ref6.types,
-        types = _ref6$types === void 0 ? undefined : _ref6$types,
-        _ref6$verifiers = _ref6.verifiers,
-        verifiers = _ref6$verifiers === void 0 ? undefined : _ref6$verifiers,
-        _ref6$native = _ref6.native,
-        native = _ref6$native === void 0 ? undefined : _ref6$native;
-
+    let {
+      help = '',
+      verify = undefined,
+      sealed = undefined,
+      types = undefined,
+      verifiers = undefined,
+      native = undefined
+    } = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
     if (!name) throw new TypeError("Type must be named.");
     guardRedefinition(name);
 
@@ -10200,17 +7501,17 @@
       }
     }
 
-    var kind = 'def';
+    const kind = 'def';
 
     if (sealed === undefined) {
       sealed = true;
     }
 
-    var t = new Type(name, {
+    const t = new Type(name, {
       types,
       native
     });
-    var cache = {
+    const cache = {
       spec,
       kind,
       help,
@@ -10232,22 +7533,17 @@
 
     return T.def(name, null, {
       types,
-      verify: function verify(i) {
-        return types.some(function (t) {
-          return check(t, i);
-        });
-      }
+      verify: i => types.some(t => check(t, i))
     });
   }
 
   function guard(type, instance) {
     guardType(type);
     guardExists(type);
-
-    var _validate4 = validate(type, instance),
-        valid = _validate4.valid,
-        errors = _validate4.errors;
-
+    const {
+      valid,
+      errors
+    } = validate(type, instance);
     if (!valid) throw new TypeError("Type ".concat(type, " requested, but item is not of that type: ").concat(errors.join(', ')));
   }
 
@@ -10257,63 +7553,43 @@
   }
 
   function guardExists(t) {
-    var name = originalName(t);
+    const name = originalName(t);
     if (!exists(name)) throw new TypeError("Type must exist. Type ".concat(name, " has not been defined."));
   }
 
   function errors() {
-    return validate.apply(void 0, arguments).errors;
+    return validate(...arguments).errors;
   }
 
   function mapBuiltins() {
-    BuiltIns.forEach(function (t) {
-      return def(originalName(t), null, {
-        native: t,
-        verify: function verify(i) {
-          return originalName(i.constructor) === originalName(t);
-        }
-      });
-    });
-    BuiltIns.forEach(function (t) {
-      return defSub(T(_templateObject7 || (_templateObject7 = taggedTemplateLiteral(["", ""])), originalName(t)));
-    });
+    BuiltIns.forEach(t => def(originalName(t), null, {
+      native: t,
+      verify: i => originalName(i.constructor) === originalName(t)
+    }));
+    BuiltIns.forEach(t => defSub(T(_templateObject7 || (_templateObject7 = taggedTemplateLiteral(["", ""])), originalName(t))));
   }
 
   function defineSpecials() {
     T.def("Any", null, {
-      verify: function verify() {
-        return true;
-      }
+      verify: () => true
     });
     T.def("Some", null, {
-      verify: function verify(i) {
-        return !isUnset(i);
-      }
+      verify: i => !isUnset(i)
     });
     T.def("None", null, {
-      verify: function verify(i) {
-        return isUnset(i);
-      }
+      verify: i => isUnset(i)
     });
     T.def("Function", null, {
-      verify: function verify(i) {
-        return i instanceof Function;
-      }
+      verify: i => i instanceof Function
     });
     T.def("Integer", null, {
-      verify: function verify(i) {
-        return Number.isInteger(i);
-      }
+      verify: i => Number.isInteger(i)
     });
     T.def("Array", null, {
-      verify: function verify(i) {
-        return Array.isArray(i);
-      }
+      verify: i => Array.isArray(i)
     });
     T.def("Iterable", null, {
-      verify: function verify(i) {
-        return i[Symbol.iterator] instanceof Function;
-      }
+      verify: i => i[Symbol.iterator] instanceof Function
     });
   }
 
@@ -10326,7 +7602,7 @@
       return t.name;
     }
 
-    var oName = Object.prototype.toString.call(t).replace(/\[object |\]/g, '');
+    const oName = Object.prototype.toString.call(t).replace(/\[object |\]/g, '');
 
     if (oName.endsWith('Constructor')) {
       return oName.replace(/Constructor$/, '');
@@ -10336,36 +7612,35 @@
   }
 
   var _templateObject$1, _templateObject2$1;
-  var FULL_LABEL = 'c3s-unique-';
-  var LABEL_LEN = 3;
-  var LABEL = FULL_LABEL.slice(0, LABEL_LEN);
-  var PREFIX_LEN = 10 + LABEL_LEN;
-  var PREFIX_BASE = 36;
+
+  const FULL_LABEL = 'c3s-unique-';
+  const LABEL_LEN = 3;
+  const LABEL = FULL_LABEL.slice(0, LABEL_LEN);
+  const PREFIX_LEN = 10 + LABEL_LEN;
+  const PREFIX_BASE = 36;
   T.defCollection("Prefix", {
     container: T(_templateObject$1 || (_templateObject$1 = taggedTemplateLiteral(["Array"]))),
     member: T(_templateObject2$1 || (_templateObject2$1 = taggedTemplateLiteral(["String"])))
   }, {
-    verify: function verify(i) {
-      return i.length > 0;
-    }
+    verify: i => i.length > 0
   });
-  var counter = 1;
+  let counter = 1;
   function generateUniquePrefix() {
     counter += 3;
-    var number = counter * Math.random() * performance.now() * +new Date();
-    var prefixString = (LABEL + number.toString(PREFIX_BASE).replace(/\./, '')).slice(0, PREFIX_LEN);
+    const number = counter * Math.random() * performance.now() * +new Date();
+    const prefixString = (LABEL + number.toString(PREFIX_BASE).replace(/\./, '')).slice(0, PREFIX_LEN);
     return {
       prefix: [prefixString]
     };
   }
   function prefixAllRules(ss, prefix) {
-    var combinator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : ' ';
-    var lastRuleIndex = ss.cssRules.length - 1;
-    var i = lastRuleIndex;
+    let combinator = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : ' ';
+    let lastRuleIndex = ss.cssRules.length - 1;
+    let i = lastRuleIndex;
 
     while (i >= 0) {
       lastRuleIndex = ss.cssRules.length - 1;
-      var lastRule = ss.cssRules[lastRuleIndex];
+      const lastRule = ss.cssRules[lastRuleIndex];
 
       if (!lastRule) {
         console.warn("No such last rule", lastRuleIndex);
@@ -10375,18 +7650,17 @@
       if (lastRule.type == CSSRule.STYLE_RULE) {
         prefixStyleRule(lastRule, ss, lastRuleIndex, prefix, combinator);
       } else if (lastRule.type == CSSRule.MEDIA_RULE) {
-        var rules = Array.from(lastRule.cssRules);
-        var lastIndex = rules.length - 1;
+        const rules = Array.from(lastRule.cssRules);
+        const lastIndex = rules.length - 1;
 
-        for (var _i = 0, _rules = rules; _i < _rules.length; _i++) {
-          var rule = _rules[_i];
+        for (const rule of rules) {
           prefixStyleRule(rule, lastRule, lastIndex, prefix, combinator);
         }
 
         ss.deleteRule(lastRuleIndex);
 
         try {
-          var index = 0;
+          let index = 0;
 
           if (ss.cssRules.length && ss.cssRules[0].type == CSSRule.NAMESPACE_RULE) {
             index = 1;
@@ -10398,13 +7672,13 @@
         }
       } else {
         ss.deleteRule(lastRuleIndex);
-        var _index = 0;
+        let index = 0;
 
         if (ss.cssRules.length && ss.cssRules[0].type == CSSRule.NAMESPACE_RULE) {
-          _index = 1;
+          index = 1;
         }
 
-        ss.insertRule(lastRule.cssText, _index);
+        ss.insertRule(lastRule.cssText, index);
       }
 
       i--;
@@ -10412,45 +7686,43 @@
   }
 
   function prefixStyleRule(lastRule, ss, lastRuleIndex, prefix, combinator) {
-    var newRuleText = lastRule.cssText;
-    var selectorText = lastRule.selectorText;
-    var selectors = selectorText.split(/\s*,\s*/g);
-    var modifiedSelectors = selectors.map(function (sel) {
+    let newRuleText = lastRule.cssText;
+    const {
+      selectorText
+    } = lastRule;
+    const selectors = selectorText.split(/\s*,\s*/g);
+    const modifiedSelectors = selectors.map(sel => {
       // we also need to insert prefix BEFORE any descendent combinators
-      var firstDescendentIndex = sel.indexOf(' ');
+      const firstDescendentIndex = sel.indexOf(' ');
 
       if (firstDescendentIndex > -1) {
-        var firstSel = sel.slice(0, firstDescendentIndex);
-        var restSel = sel.slice(firstDescendentIndex); // we also need to insert prefix BEFORE any pseudo selectors 
+        const firstSel = sel.slice(0, firstDescendentIndex);
+        const restSel = sel.slice(firstDescendentIndex); // we also need to insert prefix BEFORE any pseudo selectors 
         // NOTE: the following indexOf test will BREAK if selector contains a :
         // such as [ns\\:name="scoped-name"]
 
-        var firstPseudoIndex = firstSel.indexOf(':');
+        const firstPseudoIndex = firstSel.indexOf(':');
 
         if (firstPseudoIndex > -1) {
-          var _ref4 = [firstSel.slice(0, firstPseudoIndex), firstSel.slice(firstPseudoIndex)],
-              pre = _ref4[0],
-              post = _ref4[1];
+          const [pre, post] = [firstSel.slice(0, firstPseudoIndex), firstSel.slice(firstPseudoIndex)];
           return "".concat(pre).concat(prefix).concat(post).concat(restSel) + (combinator == '' ? '' : ", ".concat(prefix).concat(combinator).concat(sel));
         } else return "".concat(firstSel).concat(prefix).concat(restSel) + (combinator == '' ? '' : ", ".concat(prefix).concat(combinator).concat(sel));
       } else {
-        var _firstPseudoIndex = sel.indexOf(':');
+        const firstPseudoIndex = sel.indexOf(':');
 
-        if (_firstPseudoIndex > -1) {
-          var _ref5 = [sel.slice(0, _firstPseudoIndex), sel.slice(_firstPseudoIndex)],
-              _pre = _ref5[0],
-              _post = _ref5[1];
-          return "".concat(_pre).concat(prefix).concat(_post) + (combinator == '' ? '' : ", ".concat(prefix).concat(combinator).concat(sel));
+        if (firstPseudoIndex > -1) {
+          const [pre, post] = [sel.slice(0, firstPseudoIndex), sel.slice(firstPseudoIndex)];
+          return "".concat(pre).concat(prefix).concat(post) + (combinator == '' ? '' : ", ".concat(prefix).concat(combinator).concat(sel));
         } else return "".concat(sel).concat(prefix) + (combinator == '' ? '' : ", ".concat(prefix).concat(combinator).concat(sel));
       }
     });
-    var ruleBlock = newRuleText.slice(newRuleText.indexOf('{'));
-    var newRuleSelectorText = modifiedSelectors.join(', ');
+    const ruleBlock = newRuleText.slice(newRuleText.indexOf('{'));
+    const newRuleSelectorText = modifiedSelectors.join(', ');
     newRuleText = "".concat(newRuleSelectorText, " ").concat(ruleBlock);
     ss.deleteRule(lastRuleIndex);
 
     try {
-      var index = 0;
+      let index = 0;
 
       if (ss.cssRules.length && ss.cssRules[0].type == CSSRule.NAMESPACE_RULE) {
         index = 1;
@@ -10462,17 +7734,11 @@
     }
   }
 
-  function _createForOfIteratorHelper$4(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$5(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
-
-  function _unsupportedIterableToArray$5(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$5(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$5(o, minLen); }
-
-  function _arrayLikeToArray$5(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-  var InsertListeners = [];
-  var RemovedListeners = [];
-  var inserted = new Set();
-  var removed = new Set();
-  var monitoring = false;
+  const InsertListeners = [];
+  const RemovedListeners = [];
+  const inserted = new Set();
+  const removed = new Set();
+  let monitoring = false;
   function addInsertListener(listener) {
     if (inserted.has(listener)) return;
     InsertListeners.push(listener);
@@ -10486,98 +7752,56 @@
   function monitorChanges() {
     if (monitoring) return; // demo of watching for any new nodes that declare stylists
 
-    var mo = new MutationObserver(function (mutations) {
-      var AddedElements = [];
-      var RemovedElements = [];
+    const mo = new MutationObserver(mutations => {
+      let AddedElements = [];
+      let RemovedElements = [];
 
-      var _iterator = _createForOfIteratorHelper$4(mutations),
-          _step;
+      for (const mutation of mutations) {
+        const addedElements = Array.from(mutation.addedNodes);
+        const removedElements = Array.from(mutation.removedNodes);
+        addedElements.forEach(el => {
+          if (!(el instanceof HTMLElement)) return;
 
-      try {
-        for (_iterator.s(); !(_step = _iterator.n()).done;) {
-          var mutation = _step.value;
-          var addedElements = Array.from(mutation.addedNodes);
-          var removedElements = Array.from(mutation.removedNodes);
-          addedElements.forEach(function (el) {
-            var _AddedElements;
+          if (el.matches('[stylist]')) {
+            AddedElements.push(el);
+          }
 
-            if (!(el instanceof HTMLElement)) return;
+          AddedElements.push(...el.querySelectorAll('[stylist]'));
+        });
+        removedElements.forEach(el => {
+          if (!(el instanceof HTMLElement)) return;
 
-            if (el.matches('[stylist]')) {
-              AddedElements.push(el);
-            }
+          if (el.matches('[stylist]')) {
+            RemovedElements.push(el);
+          }
 
-            (_AddedElements = AddedElements).push.apply(_AddedElements, toConsumableArray(el.querySelectorAll('[stylist]')));
-          });
-          removedElements.forEach(function (el) {
-            var _RemovedElements;
-
-            if (!(el instanceof HTMLElement)) return;
-
-            if (el.matches('[stylist]')) {
-              RemovedElements.push(el);
-            }
-
-            (_RemovedElements = RemovedElements).push.apply(_RemovedElements, toConsumableArray(el.querySelectorAll('[stylist]')));
-          });
-        }
-      } catch (err) {
-        _iterator.e(err);
-      } finally {
-        _iterator.f();
+          RemovedElements.push(...el.querySelectorAll('[stylist]'));
+        });
       }
 
-      var AddedSet = new Set(AddedElements);
-      var FilterOut = new Set();
-      RemovedElements.forEach(function (el) {
-        return AddedSet.has(el) && FilterOut.add(el);
-      });
-      AddedElements = AddedElements.filter(function (el) {
-        return !FilterOut.has(el);
-      });
-      RemovedElements = RemovedElements.filter(function (el) {
-        return !FilterOut.has(el);
-      });
+      const AddedSet = new Set(AddedElements);
+      const FilterOut = new Set();
+      RemovedElements.forEach(el => AddedSet.has(el) && FilterOut.add(el));
+      AddedElements = AddedElements.filter(el => !FilterOut.has(el));
+      RemovedElements = RemovedElements.filter(el => !FilterOut.has(el));
 
       if (RemovedElements.length) {
-        var _iterator2 = _createForOfIteratorHelper$4(RemovedListeners),
-            _step2;
-
-        try {
-          for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-            var listener = _step2.value;
-
-            try {
-              listener.apply(void 0, toConsumableArray(RemovedElements));
-            } catch (e) {
-              console.warn("Removed listener error", e, listener);
-            }
+        for (const listener of RemovedListeners) {
+          try {
+            listener(...RemovedElements);
+          } catch (e) {
+            console.warn("Removed listener error", e, listener);
           }
-        } catch (err) {
-          _iterator2.e(err);
-        } finally {
-          _iterator2.f();
         }
       }
 
       if (AddedElements.length) {
-        var _iterator3 = _createForOfIteratorHelper$4(InsertListeners),
-            _step3;
-
-        try {
-          for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-            var _listener = _step3.value;
-
-            try {
-              _listener.apply(void 0, toConsumableArray(AddedElements));
-            } catch (e) {
-              console.warn("Insert listener error", e, _listener);
-            }
+        for (const listener of InsertListeners) {
+          try {
+            listener(...AddedElements);
+          } catch (e) {
+            console.warn("Insert listener error", e, listener);
           }
-        } catch (err) {
-          _iterator3.e(err);
-        } finally {
-          _iterator3.f();
         }
       }
     });
@@ -10588,38 +7812,33 @@
     monitoring = true;
   }
 
-  function _createForOfIteratorHelper$3(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$4(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
-
-  function _unsupportedIterableToArray$4(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$4(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$4(o, minLen); }
-
-  function _arrayLikeToArray$4(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-  var stylistFunctions = new Map();
-  var mappings = new Map();
-  var memory = {
+  const stylistFunctions = new Map();
+  const mappings = new Map();
+  const memory = {
     state: {}
   };
-  var initialized = false;
+  let initialized = false;
   function setState(newState) {
-    var clonedState = clone(newState);
+    const clonedState = clone(newState);
     Object.assign(memory.state, clonedState);
   }
   function restyleElement(el) {
     if (!el) return;
-    el.classList.forEach(function (className) {
-      return className.startsWith('c3s') && restyleClass(className);
-    });
+    el.classList.forEach(className => className.startsWith('c3s') && restyleClass(className));
   }
   function restyleClass(className) {
-    var _mappings$get = mappings.get(className),
-        element = _mappings$get.element,
-        stylist = _mappings$get.stylist;
-
+    const {
+      element,
+      stylist
+    } = mappings.get(className);
     associate(className, element, stylist, memory.state);
   }
   function restyleAll() {
-    mappings.forEach(function (_ref, className) {
-      var element = _ref.element,
-          stylist = _ref.stylist;
+    mappings.forEach((_ref, className) => {
+      let {
+        element,
+        stylist
+      } = _ref;
       associate(className, element, stylist, memory.state);
     });
   }
@@ -10641,8 +7860,8 @@
     monitorChanges();
 
     if (!initialized) {
-      var initialEls = Array.from(document.querySelectorAll('[stylist]'));
-      associateStylistFunctions.apply(void 0, toConsumableArray(initialEls));
+      const initialEls = Array.from(document.querySelectorAll('[stylist]'));
+      associateStylistFunctions(...initialEls);
       initialized = true;
     }
 
@@ -10653,86 +7872,54 @@
         els[_key] = arguments[_key];
       }
 
-      els = els.filter(function (el) {
-        return el.hasAttribute('stylist');
-      });
+      els = els.filter(el => el.hasAttribute('stylist'));
       if (els.length == 0) return;
 
-      var _iterator = _createForOfIteratorHelper$3(els),
-          _step;
+      for (const el of els) {
+        const stylistNames = (el.getAttribute('stylist') || '').split(/\s+/g);
 
-      try {
-        for (_iterator.s(); !(_step = _iterator.n()).done;) {
-          var el = _step.value;
-          var stylistNames = (el.getAttribute('stylist') || '').split(/\s+/g);
-
-          var _iterator2 = _createForOfIteratorHelper$3(stylistNames),
-              _step2;
-
-          try {
-            for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-              var stylistName = _step2.value;
-              var stylist = stylistFunctions.get(stylistName);
-              if (!stylist) throw new TypeError("Stylist named by ".concat(stylistName, " is unknown."));
-              var className = randomClass();
-              el.classList.add(className);
-              associate(className, el, stylist, state);
-            }
-          } catch (err) {
-            _iterator2.e(err);
-          } finally {
-            _iterator2.f();
-          }
+        for (const stylistName of stylistNames) {
+          const stylist = stylistFunctions.get(stylistName);
+          if (!stylist) throw new TypeError("Stylist named by ".concat(stylistName, " is unknown."));
+          const className = randomClass();
+          el.classList.add(className);
+          associate(className, el, stylist, state);
         }
-      } catch (err) {
-        _iterator.e(err);
-      } finally {
-        _iterator.f();
       }
     }
   } // an object whose properties are functions that are stylist functions
 
   function addMoreStylistFunctions(functionsObject) {
-    var toRegister = [];
+    const toRegister = [];
 
-    var _loop = function _loop() {
-      var funcName = _Object$keys[_i];
-      var value = functionsObject[funcName];
+    for (const funcName of Object.keys(functionsObject)) {
+      const value = functionsObject[funcName];
       if (typeof value !== "function") throw new TypeError("Functions object must only contain functions."); // this prevents a bug where we miss an existing style element in 
       // a check for a style element based on the stylist.name property
 
       if (value.name !== funcName) throw new TypeError("Stylist function must be actual function named ".concat(funcName, " (it was ").concat(value.name, ")")); // don't overwrite exisiting names
 
       if (!stylistFunctions.has(funcName)) {
-        toRegister.push(function () {
-          return stylistFunctions.set(funcName, value);
-        });
+        toRegister.push(() => stylistFunctions.set(funcName, value));
       }
-    };
-
-    for (var _i = 0, _Object$keys = Object.keys(functionsObject); _i < _Object$keys.length; _i++) {
-      _loop();
     }
 
-    while (toRegister.length) {
-      toRegister.pop()();
-    }
+    while (toRegister.length) toRegister.pop()();
   }
 
   function randomClass() {
-    var _generateUniquePrefix = generateUniquePrefix(),
-        _generateUniquePrefix2 = slicedToArray(_generateUniquePrefix.prefix, 1),
-        className = _generateUniquePrefix2[0];
-
+    const {
+      prefix: [className]
+    } = generateUniquePrefix();
     return className;
   }
 
   function associate(className, element, stylist, state) {
-    var styleText = stylist(element, state) || '';
-    var styleElement = document.head.querySelector("style[data-prefix=\"".concat(className, "\"]"));
-    var changes = false;
-    var prefixed = true;
-    var prefixedStyleText;
+    const styleText = stylist(element, state) || '';
+    let styleElement = document.head.querySelector("style[data-prefix=\"".concat(className, "\"]"));
+    let changes = false;
+    let prefixed = true;
+    let prefixedStyleText;
 
     if (!mappings.has(className)) {
       mappings.set(className, {
@@ -10743,16 +7930,12 @@
 
     if (!styleElement) {
       prefixed = false;
-      var styleMarkup = "\n      <style data-stylist=\"".concat(stylist.name, "\" data-prefix=\"").concat(className, "\">\n        ").concat(styleText, "\n      </style>\n    ");
+      const styleMarkup = "\n      <style data-stylist=\"".concat(stylist.name, "\" data-prefix=\"").concat(className, "\">\n        ").concat(styleText, "\n      </style>\n    ");
       document.head.insertAdjacentHTML('beforeend', styleMarkup);
       styleElement = document.head.querySelector("style[data-prefix=\"".concat(className, "\"]"));
     } else {
       if (styleElement instanceof HTMLStyleElement) {
-        prefixedStyleText = Array.from(styleElement.sheet.cssRules).filter(function (rule) {
-          return !rule.parentRule;
-        }).map(function (rule) {
-          return rule.cssText;
-        }).join('\n');
+        prefixedStyleText = Array.from(styleElement.sheet.cssRules).filter(rule => !rule.parentRule).map(rule => rule.cssText).join('\n');
       }
     } // I don't know why this has to happen, but it does
 
@@ -10765,21 +7948,17 @@
 
     if (!prefixed || changes) {
       if (styleElement instanceof HTMLStyleElement) {
-        var styleSheet = styleElement.sheet;
+        const styleSheet = styleElement.sheet;
         prefixAllRules(styleSheet, "." + className, '');
         element.setAttribute('associated', 'true');
-        prefixedStyleText = Array.from(styleSheet.cssRules).filter(function (rule) {
-          return !rule.parentRule;
-        }).map(function (rule) {
-          return rule.cssText;
-        }).join('\n');
+        prefixedStyleText = Array.from(styleSheet.cssRules).filter(rule => !rule.parentRule).map(rule => rule.cssText).join('\n');
         styleElement.innerHTML = prefixedStyleText;
       }
     }
   }
 
   function disassociate(className, element) {
-    var styleSheet = document.querySelector("style[data-prefix=\"".concat(className, "\"]"));
+    const styleSheet = document.querySelector("style[data-prefix=\"".concat(className, "\"]"));
     mappings.delete(className);
 
     if (styleSheet) {
@@ -10793,29 +7972,11 @@
       els[_key2] = arguments[_key2];
     }
 
-    els = els.filter(function (el) {
-      return el.hasAttribute('stylist');
-    });
+    els = els.filter(el => el.hasAttribute('stylist'));
     if (els.length == 0) return;
 
-    var _iterator3 = _createForOfIteratorHelper$3(els),
-        _step3;
-
-    try {
-      var _loop2 = function _loop2() {
-        var el = _step3.value;
-        el.classList.forEach(function (className) {
-          return className.startsWith('c3s') && disassociate(className, el);
-        });
-      };
-
-      for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-        _loop2();
-      }
-    } catch (err) {
-      _iterator3.e(err);
-    } finally {
-      _iterator3.f();
+    for (const el of els) {
+      el.classList.forEach(className => className.startsWith('c3s') && disassociate(className, el));
     }
   }
 
@@ -10823,7 +7984,7 @@
     return JSON.parse(JSON.stringify(o));
   }
 
-  var stylists = {
+  const stylists = {
     styleDocument,
     styleVoodooMain,
     styleTabSelector,
@@ -10841,7 +8002,7 @@
     styleModals,
     styleContextMenu
   };
-  var dss = {
+  const dss = {
     restyleAll,
     restyleElement,
     initializeDSS,
@@ -10979,17 +8140,23 @@
   }
 
   var _templateObject, _templateObject2, _templateObject3, _templateObject4, _templateObject5;
-  var subviews = Subviews; //const DEFAULT_URL = 'https://google.com';
+  const subviews = Subviews; //const DEFAULT_URL = 'https://google.com';
   function component(state) {
-    var H = state.H,
-        asyncSizeBrowserToBounds = state.asyncSizeBrowserToBounds,
-        emulateNavigator = state.emulateNavigator,
-        bondTasks = state.bondTasks,
-        canvasBondTasks = state.canvasBondTasks;
-    var audio_port = Number(location.port ? location.port : location.protocol == 'https' ? 443 : 80) - 2;
-    var audio_url = "".concat(location.protocol, "//").concat(location.hostname, ":").concat(audio_port, "/"); //const FocusBorrowerSel = '[name="address"], #selectinput, .control';
+    const {
+      H,
 
-    var viewState = Object.assign(state.viewState, {
+      /*sizeBrowserToBounds,*/
+      asyncSizeBrowserToBounds,
+      emulateNavigator,
+      bondTasks,
+
+      /*installFrameListener,*/
+      canvasBondTasks
+    } = state;
+    const audio_port = Number(location.port ? location.port : location.protocol == 'https' ? 443 : 80) - 2;
+    const audio_url = "".concat(location.protocol, "//").concat(location.hostname, ":").concat(audio_port, "/"); //const FocusBorrowerSel = '[name="address"], #selectinput, .control';
+
+    const viewState = Object.assign(state.viewState, {
       touchX: 0,
       touchY: 0,
       textarea: null,
@@ -11004,9 +8171,9 @@
     });
     state.viewState = viewState;
 
-    var toggleVirtualKeyboard = function toggleVirtualKeyboard(e) {
+    const toggleVirtualKeyboard = e => {
       e.preventDefault();
-      var el = viewState.shouldHaveFocus;
+      let el = viewState.shouldHaveFocus;
 
       if (el) {
         if (el == viewState.keyinput) {
@@ -11019,9 +8186,7 @@
       }
     };
 
-    var retargetTab = function retargetTab(e) {
-      return retargetTabToRemote(e, H);
-    };
+    const retargetTab = e => retargetTabToRemote(e, H);
 
     state.retargetTab = retargetTab;
     state.toggleVirtualKeyboard = toggleVirtualKeyboard; // this will likely have to be updated for iOS since "keyboard summons by focus" MUST 
@@ -11039,18 +8204,12 @@
       }, 50);
     };*/
 
-    var retargetTouchScroll = function retargetTouchScroll(e) {
-      return retargetTouchScrollToRemote(e, H, viewState);
-    };
+    const retargetTouchScroll = e => retargetTouchScrollToRemote(e, H, viewState);
 
-    bondTasks.unshift(function (el) {
-      return state.viewState.voodooEl = el;
-    });
-    bondTasks.push(function () {
-      return dss.initializeDSS(state, stylists);
-    });
-    bondTasks.push(function () {
-      document.addEventListener('keydown', function (event) {
+    bondTasks.unshift(el => state.viewState.voodooEl = el);
+    bondTasks.push(() => dss.initializeDSS(state, stylists));
+    bondTasks.push(() => {
+      document.addEventListener('keydown', event => {
         if (!event.target.matches('body') || state.viewState.shouldHaveFocus) return;
 
         if (event.code == "Space") {
@@ -11072,7 +8231,7 @@
           H(cloneKeyEvent(event, true));
         }
       });
-      document.addEventListener('keyup', function (event) {
+      document.addEventListener('keyup', event => {
         if (!event.target.matches('body') || state.viewState.shouldHaveFocus) return;
 
         if (event.key == "Enter") {
@@ -11082,47 +8241,19 @@
     });
     subviews.startBandwidthLoop(state);
 
-    state.viewState.draw = function () {
-      return d(_templateObject || (_templateObject = taggedTemplateLiteral(["\n      <main class=\"voodoo\" bond=", " stylist=\"styleVoodooMain\">\n        ", "\n        ", "\n        ", "\n        <article class=tab-viewport stylist=\"styleTabViewport styleContextMenu\">\n          ", "\n          ", "\n          <select id=selectinput stylist=\"styleSelectInput\"\n            input=", "\n            >\n            <option value=\"\" disabled>Select an option</option>\n          </select>\n        </article>\n        ", "\n      </main>\n      <audio bond=", " autoplay loop id=audio>\n        <source src=\"", "\" type=audio/mp3>\n      </audio>\n      ", "\n    "])), bondTasks, subviews.BandwidthIndicator(state), subviews.TabList(state), subviews.Controls(state), subviews.LoadingIndicator(state), state.useViewFrame ? state.demoMode ? d(_templateObject2 || (_templateObject2 = taggedTemplateLiteral(["\n                  <iframe name=viewFrame \n                    scrolling=yes\n                    src=/plugins/demo/index.html\n                    load=", "\n                    bond=", "\n                  ></iframe>\n                "])), [function (loaded) {
-        return loaded.target.hasLoaded = true;
-      }, state.installFrameListener].concat(toConsumableArray(canvasBondTasks)), [function (el) {
-        return state.viewState.viewFrameEl = el;
-      }, asyncSizeBrowserToBounds, emulateNavigator].concat(toConsumableArray(canvasBondTasks))) : state.factoryMode ? d(_templateObject3 || (_templateObject3 = taggedTemplateLiteral(["\n                    <iframe name=viewFrame \n                      scrolling=yes\n                      load=", "\n                      bond=", "\n                    ></iframe>\n                  "])), [function (loaded) {
-        return loaded.target.hasLoaded = true;
-      }].concat(toConsumableArray(canvasBondTasks)), [function (el) {
-        return state.viewState.viewFrameEl = el;
-      }, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener].concat(toConsumableArray(canvasBondTasks), [function (el) {
-        return el.src = "/plugins/projector/".concat(isBundle() ? 'bundle' : 'index', ".html");
-      }])) : d(_templateObject4 || (_templateObject4 = taggedTemplateLiteral(["\n                    <iframe name=viewFrame \n                      scrolling=yes\n                      load=", "\n                      bond=", "\n                    ></iframe>\n                  "])), [function (loaded) {
-        return loaded.target.hasLoaded = true;
-      }].concat(toConsumableArray(canvasBondTasks)), [function (el) {
-        return state.viewState.viewFrameEl = el;
-      }, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener].concat(toConsumableArray(canvasBondTasks), [function (el) {
-        return el.src = "/plugins/appminifier/".concat(isBundle() ? 'bundle' : 'index', ".html");
-      }])) : d(_templateObject5 || (_templateObject5 = taggedTemplateLiteral(["\n              <canvas\n                click=", "\n                bond=", "\n                touchstart:passive=", "\n                touchmove=", "\n                wheel:passive=", "\n                mousemove:passive=", "         \n                mousedown=", "         \n                mouseup=", "         \n                pointermove:passive=", "         \n                pointerdown=", "         \n                pointerup=", "         \n                contextmenu=", "\n              ></canvas>\n            "])), [elogit, function () {
+    state.viewState.draw = () => {
+      return d(_templateObject || (_templateObject = taggedTemplateLiteral(["\n      <main class=\"voodoo\" bond=", " stylist=\"styleVoodooMain\">\n        ", "\n        ", "\n        ", "\n        <article class=tab-viewport stylist=\"styleTabViewport styleContextMenu\">\n          ", "\n          ", "\n          <select id=selectinput stylist=\"styleSelectInput\"\n            input=", "\n            >\n            <option value=\"\" disabled>Select an option</option>\n          </select>\n        </article>\n        ", "\n      </main>\n      <audio bond=", " autoplay loop id=audio>\n        <source src=\"", "\" type=audio/mp3>\n      </audio>\n      ", "\n    "])), bondTasks, subviews.BandwidthIndicator(state), subviews.TabList(state), subviews.Controls(state), subviews.LoadingIndicator(state), state.useViewFrame ? state.demoMode ? d(_templateObject2 || (_templateObject2 = taggedTemplateLiteral(["\n                  <iframe name=viewFrame \n                    scrolling=yes\n                    src=/plugins/demo/index.html\n                    load=", "\n                    bond=", "\n                  ></iframe>\n                "])), [loaded => loaded.target.hasLoaded = true, state.installFrameListener, ...canvasBondTasks], [el => state.viewState.viewFrameEl = el, asyncSizeBrowserToBounds, emulateNavigator, ...canvasBondTasks]) : state.factoryMode ? d(_templateObject3 || (_templateObject3 = taggedTemplateLiteral(["\n                    <iframe name=viewFrame \n                      scrolling=yes\n                      load=", "\n                      bond=", "\n                    ></iframe>\n                  "])), [loaded => loaded.target.hasLoaded = true, ...canvasBondTasks], [el => state.viewState.viewFrameEl = el, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener, ...canvasBondTasks, el => el.src = "/plugins/projector/".concat(isBundle() ? 'bundle' : 'index', ".html")]) : d(_templateObject4 || (_templateObject4 = taggedTemplateLiteral(["\n                    <iframe name=viewFrame \n                      scrolling=yes\n                      load=", "\n                      bond=", "\n                    ></iframe>\n                  "])), [loaded => loaded.target.hasLoaded = true, ...canvasBondTasks], [el => state.viewState.viewFrameEl = el, asyncSizeBrowserToBounds, emulateNavigator, state.installFrameListener, ...canvasBondTasks, el => el.src = "/plugins/appminifier/".concat(isBundle() ? 'bundle' : 'index', ".html")]) : d(_templateObject5 || (_templateObject5 = taggedTemplateLiteral(["\n              <canvas\n                click=", "\n                bond=", "\n                touchstart:passive=", "\n                touchmove=", "\n                wheel:passive=", "\n                mousemove:passive=", "         \n                mousedown=", "         \n                mouseup=", "         \n                pointermove:passive=", "         \n                pointerdown=", "         \n                pointerup=", "         \n                contextmenu=", "\n              ></canvas>\n            "])), [elogit, () => {
         if (viewState.shouldHaveFocus && document.activeElement != viewState.shouldHaveFocus) {
           viewState.shouldHaveFocus.focus();
         }
-      }], [saveCanvas, asyncSizeBrowserToBounds, emulateNavigator].concat(toConsumableArray(canvasBondTasks)), [elogit, retargetTouchScroll], [function (e) {
-        return e.preventDefault();
-      }, elogit, throttle(retargetTouchScroll, state.EVENT_THROTTLE_MS)], throttle(H, state.EVENT_THROTTLE_MS), [elogit, throttle(H, state.EVENT_THROTTLE_MS)], [elogit, H], [elogit, H], [elogit, throttle(H, state.EVENT_THROTTLE_MS)], [deviceIsMobile() ? function (e) {
-        return startTimer(e, state.viewState);
-      } : iden, elogit, H], [deviceIsMobile() ? function (e) {
-        return endTimer(e, state.viewState);
-      } : iden, elogit, H], [elogit, subviews.makeContextMenuHandler(state)]), function (e) {
-        return H({
-          synthetic: true,
-          type: "select",
-          state,
-          event: e
-        });
-      }, subviews.Modals(state), function (el) {
-        return self.addEventListener('click', function () {
-          return el.play();
-        }, {
-          once: true
-        });
-      }, audio_url, '');
+      }], [saveCanvas, asyncSizeBrowserToBounds, emulateNavigator, ...canvasBondTasks], [elogit, retargetTouchScroll], [e => e.preventDefault(), elogit, throttle(retargetTouchScroll, state.EVENT_THROTTLE_MS)], throttle(H, state.EVENT_THROTTLE_MS), [elogit, throttle(H, state.EVENT_THROTTLE_MS)], [elogit, H], [elogit, H], [elogit, throttle(H, state.EVENT_THROTTLE_MS)], [deviceIsMobile() ? e => startTimer(e, state.viewState) : iden, elogit, H], [deviceIsMobile() ? e => endTimer(e, state.viewState) : iden, elogit, H], [elogit, subviews.makeContextMenuHandler(state)]), e => H({
+        synthetic: true,
+        type: "select",
+        state,
+        event: e
+      }), subviews.Modals(state), el => self.addEventListener('click', () => el.play(), {
+        once: true
+      }), audio_url, '');
     };
 
     state.viewState.dss = dss;
@@ -11133,9 +8264,11 @@
     }
 
     function focusKeyinput() {
-      var type = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'text';
-      var value = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
-      var viewState = state.viewState;
+      let type = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'text';
+      let value = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '';
+      const {
+        viewState
+      } = state;
       viewState.keyinput.type = type;
 
       viewState.keyinput.value = value;
@@ -11150,13 +8283,17 @@
     }
 
     function blurKeyinput() {
-      var viewState = state.viewState;
+      const {
+        viewState
+      } = state;
       if (document.activeElement == viewState.keyinput) viewState.keyinput.blur();
       viewState.shouldHaveFocus = null;
     }
 
     function focusTextarea() {
-      var viewState = state.viewState;
+      const {
+        viewState
+      } = state;
 
 
       if (document.activeElement != viewState.textarea) {
@@ -11169,7 +8306,9 @@
     }
 
     function blurTextarea() {
-      var viewState = state.viewState;
+      const {
+        viewState
+      } = state;
       if (document.activeElement == viewState.textarea) viewState.textarea.blur();
       viewState.shouldHaveFocus = null;
     }
@@ -11181,14 +8320,16 @@
   } // helper functions
 
   function startTimer(e, viewState) {
-    var _e$pointerId = e.pointerId,
-        pointerId = _e$pointerId === void 0 ? 'default' : _e$pointerId;
+    const {
+      pointerId = 'default'
+    } = e;
     viewState[pointerId] = performance.now();
   }
 
   function endTimer(e, viewState) {
-    var _e$pointerId2 = e.pointerId,
-        pointerId = _e$pointerId2 === void 0 ? 'default' : _e$pointerId2;
+    const {
+      pointerId = 'default'
+    } = e;
     viewState[pointerId] = performance.now() - viewState[pointerId];
 
     if (viewState[pointerId] > subviews.CTX_MENU_THRESHOLD) {
@@ -11198,26 +8339,34 @@
   }
 
   function retargetTouchScrollToRemote(event, H, viewState) {
-    var type = event.type;
-    var target = event.target;
-    var changes = event.changedTouches;
+    const {
+      type
+    } = event;
+    const {
+      target
+    } = event;
+    const {
+      changedTouches: changes
+    } = event;
     if (changes.length > 1) return;
-    var touch = changes[0];
-    var clientX = touch.clientX,
-        clientY = touch.clientY;
-
-    var _getBitmapCoordinates = getBitmapCoordinates({
+    const touch = changes[0];
+    const {
+      clientX,
+      clientY
+    } = touch;
+    const {
+      bitmapX,
+      bitmapY
+    } = getBitmapCoordinates({
       target,
       clientX,
       clientY
-    }),
-        bitmapX = _getBitmapCoordinates.bitmapX,
-        bitmapY = _getBitmapCoordinates.bitmapY;
+    });
 
     if (type == 'touchmove') {
       event.preventDefault();
-      var deltaX = Math.ceil(viewState.touchX - bitmapX);
-      var deltaY = Math.ceil(viewState.touchY - bitmapY);
+      const deltaX = Math.ceil(viewState.touchX - bitmapX);
+      const deltaY = Math.ceil(viewState.touchY - bitmapY);
       viewState.killNextMouseReleased = true;
       H({
         synthetic: true,
@@ -11239,94 +8388,27 @@
     if (event.key !== "Tab") return;
     event.preventDefault();
     event.stopPropagation();
-    var ev = cloneKeyEvent(event, true);
+    const ev = cloneKeyEvent(event, true);
     H(ev);
   }
 
-  function _arrayWithHoles(arr) {
-    if (Array.isArray(arr)) return arr;
-  }
-
-  function _iterableToArrayLimit(arr, i) {
-    var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"];
-
-    if (_i == null) return;
-    var _arr = [];
-    var _n = true;
-    var _d = false;
-
-    var _s, _e;
-
-    try {
-      for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
-        _arr.push(_s.value);
-
-        if (i && _arr.length === i) break;
-      }
-    } catch (err) {
-      _d = true;
-      _e = err;
-    } finally {
-      try {
-        if (!_n && _i["return"] != null) _i["return"]();
-      } finally {
-        if (_d) throw _e;
-      }
-    }
-
-    return _arr;
-  }
-
-  function _arrayLikeToArray$3(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-
-    for (var i = 0, arr2 = new Array(len); i < len; i++) {
-      arr2[i] = arr[i];
-    }
-
-    return arr2;
-  }
-
-  function _unsupportedIterableToArray$3(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray$3(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$3(o, minLen);
-  }
-
-  function _nonIterableRest() {
-    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
-  }
-
-  function _slicedToArray(arr, i) {
-    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray$3(arr, i) || _nonIterableRest();
-  }
-
-  function _createForOfIteratorHelper$2(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$2(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
-
-  function _unsupportedIterableToArray$2(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$2(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$2(o, minLen); }
-
-  function _arrayLikeToArray$2(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-  var FocusCache$1 = function FocusCache() {
-    var focusSaver = {
+  const FocusCache$1 = () => {
+    const focusSaver = {
       doc: null,
       oldValue: '',
       activeElement: null,
       selectionStart: 0,
       selectionEnd: 0,
-      reset: function reset() {
+      reset: () => {
         focusSaver.activeElement = null;
         focusSaver.selectionStart = 0;
         focusSaver.selectionEnd = 0;
         focusSaver.oldValue = '';
         focusSaver.doc = null;
       },
-      save: function save(doc) {
+      save: doc => {
         try {
-          var el = doc.activeElement;
+          const el = doc.activeElement;
           focusSaver.doc = doc;
           focusSaver.activeElement = el;
           focusSaver.selectionStart = el.selectionStart;
@@ -11335,29 +8417,25 @@
         } catch (e) {
         }
       },
-      restore: function restore() {
+      restore: () => {
         console.log('restore focus');
 
         try {
-          var oldFocus = focusSaver.activeElement;
+          const oldFocus = focusSaver.activeElement;
 
           if (!oldFocus) {
             DEBUG.val >= DEBUG.med && console.log("No old focus");
             return;
           }
 
-          var updatedEl;
-
-          var _ref = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "",
-              _ref2 = _slicedToArray(_ref, 1),
-              oldId = _ref2[0];
-
-          var dataIdSelector = "".concat(oldFocus.localName, "[zig^=\"").concat(oldId, "\"]");
-          var byDataId = focusSaver.doc.querySelector(dataIdSelector);
+          let updatedEl;
+          const [oldId] = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "";
+          const dataIdSelector = "".concat(oldFocus.localName, "[zig^=\"").concat(oldId, "\"]");
+          const byDataId = focusSaver.doc.querySelector(dataIdSelector);
 
           if (!byDataId) {
-            var fallbackSelector = oldFocus.id ? "".concat(oldFocus.localName, "#").concat(oldFocus.id) : oldFocus.name ? "".concat(oldFocus.localName, "[name=\"").concat(oldFocus.name, "\"]") : '';
-            var byFallbackSelector;
+            const fallbackSelector = oldFocus.id ? "".concat(oldFocus.localName, "#").concat(oldFocus.id) : oldFocus.name ? "".concat(oldFocus.localName, "[name=\"").concat(oldFocus.name, "\"]") : '';
+            let byFallbackSelector;
 
             if (fallbackSelector) {
               byFallbackSelector = focusSaver.doc.querySelector(fallbackSelector);
@@ -11385,16 +8463,19 @@
     };
     return focusSaver;
   };
-  function handleTreeUpdate$1(_ref4, state) {
-    var _ref4$treeUpdate = _ref4.treeUpdate,
-        open = _ref4$treeUpdate.open,
-        targetId = _ref4$treeUpdate.targetId,
-        dontFocus = _ref4$treeUpdate.dontFocus,
-        runFuncs = _ref4$treeUpdate.runFuncs,
-        executionContextId = _ref4.executionContextId;
+  function handleTreeUpdate$1(_ref2, state) {
+    let {
+      treeUpdate: {
+        open,
+        targetId,
+        dontFocus,
+        runFuncs
+      },
+      executionContextId
+    } = _ref2;
 
     if (targetId !== state.activeTarget) {
-      var cache = state.domCache.get(targetId);
+      let cache = state.domCache.get(targetId);
 
       if (!cache) {
         cache = {
@@ -11429,17 +8510,17 @@
       }
     }
   }
-  function updateTree$1(_ref5, state) {
-    var domTree = _ref5.domTree,
-        targetId = _ref5.targetId,
-        contextId = _ref5.contextId,
-        _ref5$dontFocus = _ref5.dontFocus,
-        dontFocus = _ref5$dontFocus === void 0 ? false : _ref5$dontFocus,
-        _ref5$runFuncs = _ref5.runFuncs,
-        runFuncs = _ref5$runFuncs === void 0 ? [] : _ref5$runFuncs;
-    var frame = getViewFrame$1(state);
-    var doc = getViewWindow$2(state).document;
-    var cache = state.domCache.get(targetId);
+  function updateTree$1(_ref3, state) {
+    let {
+      domTree,
+      targetId,
+      contextId,
+      dontFocus = false,
+      runFuncs = []
+    } = _ref3;
+    const frame = getViewFrame$1(state);
+    let doc = getViewWindow$2(state).document;
+    let cache = state.domCache.get(targetId);
 
     if (!cache) {
       cache = {
@@ -11459,16 +8540,12 @@
       if (frame.hasLoaded) {
         doc = getViewWindow$2(state).document;
         doc.body.outerHTML = domTree;
-        Array.from(doc.querySelectorAll('html > head')).forEach(function (node) {
-          return node !== doc.head && node.remove();
-        });
+        Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
       } else {
-        frame.addEventListener('load', function () {
+        frame.addEventListener('load', () => {
           doc = getViewWindow$2(state).document;
           doc.body.outerHTML = domTree;
-          Array.from(doc.querySelectorAll('html > head')).forEach(function (node) {
-            return node !== doc.head && node.remove();
-          });
+          Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
         }, {
           once: true
         });
@@ -11480,56 +8557,34 @@
 
       if (runFuncs) {
         if (frame.hasLoaded) {
-          var win = getViewWindow$2(state);
+          const win = getViewWindow$2(state);
 
-          var _iterator = _createForOfIteratorHelper$2(runFuncs),
-              _step;
+          for (const name of runFuncs) {
+            try {
+              win[name]();
+            } catch (e) {
+            }
+          }
+        } else {
+          frame.addEventListener('load', () => {
+            const win = getViewWindow$2(state);
 
-          try {
-            for (_iterator.s(); !(_step = _iterator.n()).done;) {
-              var name = _step.value;
-
+            for (const name of runFuncs) {
               try {
                 win[name]();
               } catch (e) {
-                DEBUG.val && console.warn(name, e);
               }
-            }
-          } catch (err) {
-            _iterator.e(err);
-          } finally {
-            _iterator.f();
-          }
-        } else {
-          frame.addEventListener('load', function () {
-            var win = getViewWindow$2(state);
-
-            var _iterator2 = _createForOfIteratorHelper$2(runFuncs),
-                _step2;
-
-            try {
-              for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-                var _name = _step2.value;
-
-                try {
-                  win[_name]();
-                } catch (e) {
-                  DEBUG.val && console.warn(_name, e);
-                }
-              }
-            } catch (err) {
-              _iterator2.e(err);
-            } finally {
-              _iterator2.f();
             }
           });
         }
       }
     }
   }
-  function scrollToTop$1(_ref6, state) {
-    var navigated = _ref6.navigated;
-    setTimeout(function () {
+  function scrollToTop$1(_ref4, state) {
+    let {
+      navigated
+    } = _ref4;
+    setTimeout(() => {
       if (navigated.targetId !== state.activeTarget) return;
 
       if (state.viewState.viewFrameEl) {
@@ -11537,10 +8592,12 @@
       }
     }, 40);
   }
-  function scrollTo$2(_ref7, state) {
-    var scrollY = _ref7.scrollY,
-        scrollX = _ref7.scrollX;
-    setTimeout(function () {
+  function scrollTo$2(_ref5, state) {
+    let {
+      scrollY,
+      scrollX
+    } = _ref5;
+    setTimeout(() => {
       if (state.viewState.viewFrameEl) {
         getViewWindow$2(state).scrollTo(scrollX, scrollY);
       }
@@ -11554,7 +8611,7 @@
     return state.viewState.viewFrameEl;
   }
 
-  var BUFFERED_FRAME_EVENT$2 = {
+  const BUFFERED_FRAME_EVENT$2 = {
     type: "buffered-results-collection",
     command: {
       isBufferedResultsCollectionOnly: true,
@@ -11562,12 +8619,16 @@
     }
   };
   function createFrameListener$2(queue, state) {
-    var H = state.H;
+    const {
+      H
+    } = state;
     return function installFrameListener() {
-      self.addEventListener('message', function (e) {
+      self.addEventListener('message', e => {
         if (e.data && e.data.event) {
-          var event = e.data.event;
-          var cache = state.domCache.get(state.activeTarget);
+          const {
+            event
+          } = e.data;
+          const cache = state.domCache.get(state.activeTarget);
 
           if (cache) {
             event.contextId = cache.contextId;
@@ -11577,15 +8638,15 @@
             queue.send(BUFFERED_FRAME_EVENT$2);
           } else if (event.custom) {
             if (event.type == 'scrollToEnd') {
-              var _cache = state.domCache.get(state.activeTarget);
+              let cache = state.domCache.get(state.activeTarget);
 
-              if (!_cache) {
-                _cache = {};
-                state.domCache.set(state.activeTarget, _cache);
+              if (!cache) {
+                cache = {};
+                state.domCache.set(state.activeTarget, cache);
               }
 
-              _cache.scrollTop = event.scrollTop;
-              _cache.scrollLeft = event.scrollLeft;
+              cache.scrollTop = event.scrollTop;
+              cache.scrollLeft = event.scrollLeft;
             }
 
             state.H(event);
@@ -11612,18 +8673,18 @@
                 });
               }
             } else if (event.type == 'click' && event.href) {
-              var activeTab = state.activeTab();
-              var activeTabUrl = new URL(activeTab.url);
-              var url = new URL(event.href);
-              var frag = url.hash;
+              const activeTab = state.activeTab();
+              let activeTabUrl = new URL(activeTab.url);
+              let url = new URL(event.href);
+              const frag = url.hash;
               activeTabUrl.hash = url.hash;
               url = url + '';
               activeTabUrl = activeTabUrl + '';
 
               if (url == activeTabUrl) {
                 // in other words if they differ by only the hash
-                var viewDoc = state.viewState.viewFrameEl.contentWindow.document;
-                var fragElem = viewDoc.querySelector(frag);
+                const viewDoc = state.viewState.viewFrameEl.contentWindow.document;
+                const fragElem = viewDoc.querySelector(frag);
 
                 if (fragElem) {
                   fragElem.scrollIntoView();
@@ -11637,15 +8698,15 @@
           }
         }
       });
-      var win = state.viewState.viewFrameEl.contentWindow;
-      win.addEventListener('load', function () {
+      const win = state.viewState.viewFrameEl.contentWindow;
+      win.addEventListener('load', () => {
       });
     };
   }
   function createDOMTreeGetter$2(queue, delay) {
     return function getDOMTree() {
-      var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-      setTimeout(function () {
+      let force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      setTimeout(() => {
         queue.send({
           type: "getDOMTree",
           force,
@@ -11656,7 +8717,9 @@
   }
 
   function saveFailingClick$1(_ref, state) {
-    var click = _ref.click;
+    let {
+      click
+    } = _ref;
 
     if (click.clickModifiers & 2) {
       state.createTab(click, click.intendedHref);
@@ -11670,7 +8733,9 @@
     }
   }
   function auditClicks$1(_ref2, state) {
-    var click = _ref2.click;
+    let {
+      click
+    } = _ref2;
     if (click.hitsTarget) return;else {
       saveFailingClick$1({
         click
@@ -11691,36 +8756,32 @@
       state.installFrameListener = createFrameListener$2(queue, state);
       state.getDOMTree = createDOMTreeGetter$2(queue, state.SHORT_DELAY); // plugins 
 
-      queue.addMetaListener('treeUpdate', function (meta) {
-        return handleTreeUpdate$1(meta, state);
-      });
-      queue.addMetaListener('navigated', function (meta) {
-        return clearDomCache$2(meta, state);
-      });
-      queue.addMetaListener('navigated', function (meta) {
-        return state.getDOMTree();
-      });
-      queue.addMetaListener('navigated', function (meta) {
-        return scrollToTop$1(meta, state);
-      });
-      queue.addMetaListener('click', function (meta) {
-        return auditClicks$1(meta, state);
-      }); // start  
+      queue.addMetaListener('treeUpdate', meta => handleTreeUpdate$1(meta, state));
+      queue.addMetaListener('navigated', meta => clearDomCache$2(meta, state));
+      queue.addMetaListener('navigated', meta => state.getDOMTree());
+      queue.addMetaListener('navigated', meta => scrollToTop$1(meta, state));
+      queue.addMetaListener('click', meta => auditClicks$1(meta, state)); // start  
 
-      queue.addMetaListener('topRedirect', function (meta) {
-        var browserUrl = meta.topRedirect.browserUrl;
+      queue.addMetaListener('topRedirect', meta => {
+        const {
+          browserUrl
+        } = meta.topRedirect;
         location = browserUrl;
       });
-      state.addListener('activateTab', function () {
-        var activeTarget = state.activeTarget;
-        var cache = state.domCache.get(activeTarget);
+      state.addListener('activateTab', () => {
+        const {
+          activeTarget
+        } = state;
+        const cache = state.domCache.get(activeTarget);
 
         if (!cache) {
           state.getDOMTree(true);
         } else {
           updateTree$1(cache, state);
-          var scrollTop = cache.scrollTop,
-              scrollLeft = cache.scrollLeft;
+          const {
+            scrollTop,
+            scrollLeft
+          } = cache;
           scrollTo$2({
             scrollTop,
             scrollLeft
@@ -11734,34 +8795,32 @@
   }
 
   function clearDomCache$2(_ref, state) {
-    var navigated = _ref.navigated;
-    var targetId = navigated.targetId;
+    let {
+      navigated
+    } = _ref;
+    const {
+      targetId
+    } = navigated;
     state.domCache.delete(targetId);
   }
 
-  function _createForOfIteratorHelper$1(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray$1(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
-
-  function _unsupportedIterableToArray$1(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray$1(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray$1(o, minLen); }
-
-  function _arrayLikeToArray$1(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-  var FocusCache = function FocusCache() {
-    var focusSaver = {
+  const FocusCache = () => {
+    const focusSaver = {
       doc: null,
       oldValue: '',
       activeElement: null,
       selectionStart: 0,
       selectionEnd: 0,
-      reset: function reset() {
+      reset: () => {
         focusSaver.activeElement = null;
         focusSaver.selectionStart = 0;
         focusSaver.selectionEnd = 0;
         focusSaver.oldValue = '';
         focusSaver.doc = null;
       },
-      save: function save(doc) {
+      save: doc => {
         try {
-          var el = doc.activeElement;
+          const el = doc.activeElement;
           focusSaver.doc = doc;
           focusSaver.activeElement = el;
           focusSaver.selectionStart = el.selectionStart;
@@ -11770,29 +8829,25 @@
         } catch (e) {
         }
       },
-      restore: function restore() {
+      restore: () => {
         console.log('restore focus');
 
         try {
-          var oldFocus = focusSaver.activeElement;
+          const oldFocus = focusSaver.activeElement;
 
           if (!oldFocus) {
             DEBUG.val >= DEBUG.med && console.log("No old focus");
             return;
           }
 
-          var updatedEl;
-
-          var _ref = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "",
-              _ref2 = _slicedToArray(_ref, 1),
-              oldId = _ref2[0];
-
-          var dataIdSelector = "".concat(oldFocus.localName, "[zig^=\"").concat(oldId, "\"]");
-          var byDataId = focusSaver.doc.querySelector(dataIdSelector);
+          let updatedEl;
+          const [oldId] = oldFocus.hasAttribute('zig') ? oldFocus.getAttribute('zig').split(' ') : "";
+          const dataIdSelector = "".concat(oldFocus.localName, "[zig^=\"").concat(oldId, "\"]");
+          const byDataId = focusSaver.doc.querySelector(dataIdSelector);
 
           if (!byDataId) {
-            var fallbackSelector = oldFocus.id ? "".concat(oldFocus.localName, "#").concat(oldFocus.id) : oldFocus.name ? "".concat(oldFocus.localName, "[name=\"").concat(oldFocus.name, "\"]") : '';
-            var byFallbackSelector;
+            const fallbackSelector = oldFocus.id ? "".concat(oldFocus.localName, "#").concat(oldFocus.id) : oldFocus.name ? "".concat(oldFocus.localName, "[name=\"").concat(oldFocus.name, "\"]") : '';
+            let byFallbackSelector;
 
             if (fallbackSelector) {
               byFallbackSelector = focusSaver.doc.querySelector(fallbackSelector);
@@ -11821,10 +8876,14 @@
     return focusSaver;
   };
 
-  function resetFocusCache(_ref3, state) {
-    var targetId = _ref3.navigated.targetId,
-        executionContextId = _ref3.executionContextId;
-    var cache = state.domCache.get(targetId);
+  function resetFocusCache(_ref, state) {
+    let {
+      navigated: {
+        targetId
+      },
+      executionContextId
+    } = _ref;
+    let cache = state.domCache.get(targetId);
 
     if (!cache) {
       cache = {
@@ -11841,16 +8900,19 @@
       cache.contextId = executionContextId;
     }
   }
-  function handleTreeUpdate(_ref4, state) {
-    var _ref4$treeUpdate = _ref4.treeUpdate,
-        open = _ref4$treeUpdate.open,
-        targetId = _ref4$treeUpdate.targetId,
-        dontFocus = _ref4$treeUpdate.dontFocus,
-        runFuncs = _ref4$treeUpdate.runFuncs,
-        executionContextId = _ref4.executionContextId;
+  function handleTreeUpdate(_ref2, state) {
+    let {
+      treeUpdate: {
+        open,
+        targetId,
+        dontFocus,
+        runFuncs
+      },
+      executionContextId
+    } = _ref2;
 
     if (targetId !== state.activeTarget) {
-      var cache = state.domCache.get(targetId);
+      let cache = state.domCache.get(targetId);
 
       if (!cache) {
         cache = {
@@ -11885,17 +8947,17 @@
       }
     }
   }
-  function updateTree(_ref5, state) {
-    var domTree = _ref5.domTree,
-        targetId = _ref5.targetId,
-        contextId = _ref5.contextId,
-        _ref5$dontFocus = _ref5.dontFocus,
-        dontFocus = _ref5$dontFocus === void 0 ? false : _ref5$dontFocus,
-        _ref5$runFuncs = _ref5.runFuncs,
-        runFuncs = _ref5$runFuncs === void 0 ? [] : _ref5$runFuncs;
-    var frame = getViewFrame(state);
-    var doc = getViewWindow$1(state).document;
-    var cache = state.domCache.get(targetId);
+  function updateTree(_ref3, state) {
+    let {
+      domTree,
+      targetId,
+      contextId,
+      dontFocus = false,
+      runFuncs = []
+    } = _ref3;
+    const frame = getViewFrame(state);
+    let doc = getViewWindow$1(state).document;
+    let cache = state.domCache.get(targetId);
 
     if (!cache) {
       cache = {
@@ -11915,16 +8977,12 @@
       if (frame.hasLoaded) {
         doc = getViewWindow$1(state).document;
         doc.body.outerHTML = domTree;
-        Array.from(doc.querySelectorAll('html > head')).forEach(function (node) {
-          return node !== doc.head && node.remove();
-        });
+        Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
       } else {
-        frame.addEventListener('load', function () {
+        frame.addEventListener('load', () => {
           doc = getViewWindow$1(state).document;
           doc.body.outerHTML = domTree;
-          Array.from(doc.querySelectorAll('html > head')).forEach(function (node) {
-            return node !== doc.head && node.remove();
-          });
+          Array.from(doc.querySelectorAll('html > head')).forEach(node => node !== doc.head && node.remove());
         }, {
           once: true
         });
@@ -11936,56 +8994,34 @@
 
       if (runFuncs) {
         if (frame.hasLoaded) {
-          var win = getViewWindow$1(state);
+          const win = getViewWindow$1(state);
 
-          var _iterator = _createForOfIteratorHelper$1(runFuncs),
-              _step;
+          for (const name of runFuncs) {
+            try {
+              win[name]();
+            } catch (e) {
+            }
+          }
+        } else {
+          frame.addEventListener('load', () => {
+            const win = getViewWindow$1(state);
 
-          try {
-            for (_iterator.s(); !(_step = _iterator.n()).done;) {
-              var name = _step.value;
-
+            for (const name of runFuncs) {
               try {
                 win[name]();
               } catch (e) {
-                DEBUG.val && console.warn(name, e);
               }
-            }
-          } catch (err) {
-            _iterator.e(err);
-          } finally {
-            _iterator.f();
-          }
-        } else {
-          frame.addEventListener('load', function () {
-            var win = getViewWindow$1(state);
-
-            var _iterator2 = _createForOfIteratorHelper$1(runFuncs),
-                _step2;
-
-            try {
-              for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-                var _name = _step2.value;
-
-                try {
-                  win[_name]();
-                } catch (e) {
-                  DEBUG.val && console.warn(_name, e);
-                }
-              }
-            } catch (err) {
-              _iterator2.e(err);
-            } finally {
-              _iterator2.f();
             }
           });
         }
       }
     }
   }
-  function scrollToTop(_ref6, state) {
-    var navigated = _ref6.navigated;
-    setTimeout(function () {
+  function scrollToTop(_ref4, state) {
+    let {
+      navigated
+    } = _ref4;
+    setTimeout(() => {
       if (navigated.targetId !== state.activeTarget) return;
 
       if (state.viewState.viewFrameEl) {
@@ -11993,23 +9029,28 @@
       }
     }, 40);
   }
-  function scrollTo$1(_ref7, state) {
-    var scrollY = _ref7.scrollY,
-        scrollX = _ref7.scrollX;
-    setTimeout(function () {
+  function scrollTo$1(_ref5, state) {
+    let {
+      scrollY,
+      scrollX
+    } = _ref5;
+    setTimeout(() => {
       if (state.viewState.viewFrameEl) {
         getViewWindow$1(state).scrollTo(scrollX, scrollY);
       }
     }, 40);
   }
-  function handleTreeDiff(_ref8, state) {
-    var _ref8$treeDiff = _ref8.treeDiff,
-        diffs = _ref8$treeDiff.diffs,
-        targetId = _ref8$treeDiff.targetId,
-        executionContextId = _ref8.executionContextId;
+  function handleTreeDiff(_ref6, state) {
+    let {
+      treeDiff: {
+        diffs,
+        targetId
+      },
+      executionContextId
+    } = _ref6;
 
     if (targetId !== state.activeTarget) {
-      var cache = state.domCache.get(targetId);
+      let cache = state.domCache.get(targetId);
 
       if (!cache) {
         cache = {
@@ -12028,28 +9069,15 @@
     }
 
     if (state.viewState.viewFrameEl) {
-      var later = [];
+      const later = [];
 
-      var _iterator3 = _createForOfIteratorHelper$1(diffs),
-          _step3;
-
-      try {
-        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-          var _diff = _step3.value;
-
-          var _result = patchTree(_diff, state);
-
-          if (!_result) later.push(_diff);
-        }
-      } catch (err) {
-        _iterator3.e(err);
-      } finally {
-        _iterator3.f();
+      for (const diff of diffs) {
+        const result = patchTree(diff, state);
+        if (!result) later.push(diff);
       }
 
-      for (var _i = 0, _later = later; _i < _later.length; _i++) {
-        var diff = _later[_i];
-        var result = patchTree(diff, state);
+      for (const diff of later) {
+        const result = patchTree(diff, state);
 
         if (!result) {
           console.warn("Diff could not be applied after two tries", diff);
@@ -12058,16 +9086,17 @@
     }
   }
 
-  function patchTree(_ref9, state) {
-    var insert = _ref9.insert,
-        remove = _ref9.remove;
-    var doc = getViewWindow$1(state).document;
-
-    var _ref10 = insert || remove,
-        parentZig = _ref10.parentZig;
-
-    var parentZigSelector = "[zig=\"".concat(parentZig, "\"]");
-    var parentElement = doc.querySelector(parentZigSelector);
+  function patchTree(_ref7, state) {
+    let {
+      insert,
+      remove
+    } = _ref7;
+    const doc = getViewWindow$1(state).document;
+    const {
+      parentZig
+    } = insert || remove;
+    const parentZigSelector = "[zig=\"".concat(parentZig, "\"]");
+    const parentElement = doc.querySelector(parentZigSelector);
 
     if (!parentElement) {
       //throw new TypeError(`No such parent element selected by ${parentZigSelector}`);
@@ -12080,8 +9109,8 @@
     }
 
     if (remove) {
-      var zigSelectorToRemove = "[zig=\"".concat(remove.zig, "\"]");
-      var elToRemove = parentElement.querySelector(zigSelectorToRemove);
+      const zigSelectorToRemove = "[zig=\"".concat(remove.zig, "\"]");
+      const elToRemove = parentElement.querySelector(zigSelectorToRemove);
 
       if (!elToRemove) {
         //throw new TypeError(`No such element to remove selected by ${zigSelectorToRemove}`);
@@ -12103,7 +9132,7 @@
     return state.viewState.viewFrameEl;
   }
 
-  var BUFFERED_FRAME_EVENT$1 = {
+  const BUFFERED_FRAME_EVENT$1 = {
     type: "buffered-results-collection",
     command: {
       isBufferedResultsCollectionOnly: true,
@@ -12111,12 +9140,16 @@
     }
   };
   function createFrameListener$1(queue, state) {
-    var H = state.H;
+    const {
+      H
+    } = state;
     return function installFrameListener() {
-      self.addEventListener('message', function (e) {
+      self.addEventListener('message', e => {
         if (e.data && e.data.event) {
-          var event = e.data.event;
-          var cache = state.domCache.get(state.activeTarget);
+          const {
+            event
+          } = e.data;
+          const cache = state.domCache.get(state.activeTarget);
 
           if (cache) {
             event.contextId = cache.contextId;
@@ -12126,15 +9159,15 @@
             queue.send(BUFFERED_FRAME_EVENT$1);
           } else if (event.custom) {
             if (event.type == 'scrollToEnd') {
-              var _cache = state.domCache.get(state.activeTarget);
+              let cache = state.domCache.get(state.activeTarget);
 
-              if (!_cache) {
-                _cache = {};
-                state.domCache.set(state.activeTarget, _cache);
+              if (!cache) {
+                cache = {};
+                state.domCache.set(state.activeTarget, cache);
               }
 
-              _cache.scrollTop = event.scrollTop;
-              _cache.scrollLeft = event.scrollLeft;
+              cache.scrollTop = event.scrollTop;
+              cache.scrollLeft = event.scrollLeft;
             }
 
             state.H(event);
@@ -12161,18 +9194,18 @@
                 });
               }
             } else if (event.type == 'click' && event.href) {
-              var activeTab = state.activeTab();
-              var activeTabUrl = new URL(activeTab.url);
-              var url = new URL(event.href);
-              var frag = url.hash;
+              const activeTab = state.activeTab();
+              let activeTabUrl = new URL(activeTab.url);
+              let url = new URL(event.href);
+              const frag = url.hash;
               activeTabUrl.hash = url.hash;
               url = url + '';
               activeTabUrl = activeTabUrl + '';
 
               if (url == activeTabUrl) {
                 // in other words if they differ by only the hash
-                var viewDoc = state.viewState.viewFrameEl.contentWindow.document;
-                var fragElem = viewDoc.querySelector(frag);
+                const viewDoc = state.viewState.viewFrameEl.contentWindow.document;
+                const fragElem = viewDoc.querySelector(frag);
 
                 if (fragElem) {
                   fragElem.scrollIntoView();
@@ -12186,15 +9219,15 @@
           }
         }
       });
-      var win = state.viewState.viewFrameEl.contentWindow;
-      win.addEventListener('load', function () {
+      const win = state.viewState.viewFrameEl.contentWindow;
+      win.addEventListener('load', () => {
       });
     };
   }
   function createDOMTreeGetter$1(queue, delay) {
     return function getDOMTree() {
-      var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-      setTimeout(function () {
+      let force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      setTimeout(() => {
         queue.send({
           type: "getDOMTree",
           force,
@@ -12205,7 +9238,9 @@
   }
 
   function saveFailingClick(_ref, state) {
-    var click = _ref.click;
+    let {
+      click
+    } = _ref;
 
     if (click.clickModifiers & 2) {
       state.createTab(click, click.intendedHref);
@@ -12219,7 +9254,9 @@
     }
   }
   function auditClicks(_ref2, state) {
-    var click = _ref2.click;
+    let {
+      click
+    } = _ref2;
     if (click.hitsTarget) return;else {
       saveFailingClick({
         click
@@ -12241,37 +9278,31 @@
       state.installFrameListener = createFrameListener$1(queue, state);
       state.getDOMTree = createDOMTreeGetter$1(queue, state.SHORT_DELAY); // plugins 
 
-      queue.addMetaListener('topRedirect', function (meta) {
-        var browserUrl = meta.topRedirect.browserUrl;
+      queue.addMetaListener('topRedirect', meta => {
+        const {
+          browserUrl
+        } = meta.topRedirect;
         location = browserUrl;
       });
-      queue.addMetaListener('treeUpdate', function (meta) {
-        return handleTreeUpdate(meta, state);
-      });
-      queue.addMetaListener('treeDiff', function (meta) {
-        return handleTreeDiff(meta, state);
-      });
-      queue.addMetaListener('navigated', function (meta) {
-        return resetFocusCache(meta, state);
-      });
-      queue.addMetaListener('navigated', function (meta) {
-        return handleNavigate$1(meta, state);
-      });
-      queue.addMetaListener('click', function (meta) {
-        return auditClicks(meta, state);
-      }); // appminifier plugin 
+      queue.addMetaListener('treeUpdate', meta => handleTreeUpdate(meta, state));
+      queue.addMetaListener('treeDiff', meta => handleTreeDiff(meta, state));
+      queue.addMetaListener('navigated', meta => resetFocusCache(meta, state));
+      queue.addMetaListener('navigated', meta => handleNavigate$1(meta, state));
+      queue.addMetaListener('click', meta => auditClicks(meta, state)); // appminifier plugin 
 
       queue.send({
         type: "enableAppminifier",
         custom: true
       });
-      state.addListener('activateTab', function () {
-        var win = getViewWindow$1(state);
-        var activeTarget = state.activeTarget,
-            clearViewport = state.clearViewport,
-            lastTarget = state.lastTarget;
-        var lastCache = state.domCache.get(lastTarget);
-        var cache = state.domCache.get(activeTarget);
+      state.addListener('activateTab', () => {
+        const win = getViewWindow$1(state);
+        const {
+          activeTarget,
+          clearViewport,
+          lastTarget
+        } = state;
+        const lastCache = state.domCache.get(lastTarget);
+        const cache = state.domCache.get(activeTarget);
 
         if (!cache) {
           state.clearViewport();
@@ -12280,19 +9311,23 @@
           // save scroll position of last target before we update window
           // using block scope oorah
           if (lastCache) {
-            var _scrollX = win.pageXOffset,
-                _scrollY = win.pageYOffset;
+            const {
+              pageXOffset: scrollX,
+              pageYOffset: scrollY
+            } = win;
             Object.assign(lastCache, {
-              scrollX: _scrollX,
-              scrollY: _scrollY
+              scrollX,
+              scrollY
             });
           }
 
           state.clearViewport();
           updateTree(cache, state); // restore scroll position of new target
 
-          var scrollX = cache.scrollX,
-              scrollY = cache.scrollY;
+          const {
+            scrollX,
+            scrollY
+          } = cache;
           scrollTo$1({
             scrollX,
             scrollY
@@ -12305,13 +9340,19 @@
   }
 
   function clearDomCache$1(_ref, state) {
-    var navigated = _ref.navigated;
-    var targetId = navigated.targetId;
+    let {
+      navigated
+    } = _ref;
+    const {
+      targetId
+    } = navigated;
     state.domCache.delete(targetId);
   }
 
   function handleNavigate$1(_ref2, state) {
-    var navigated = _ref2.navigated;
+    let {
+      navigated
+    } = _ref2;
     clearDomCache$1({
       navigated
     }, state);
@@ -12325,9 +9366,11 @@
   }
 
   function scrollTo(_ref2, state) {
-    var scrollY = _ref2.scrollY,
-        scrollX = _ref2.scrollX;
-    setTimeout(function () {
+    let {
+      scrollY,
+      scrollX
+    } = _ref2;
+    setTimeout(() => {
       if (state.viewState.viewFrameEl) {
         getViewWindow(state).scrollTo(scrollX, scrollY);
       }
@@ -12337,7 +9380,7 @@
     return state.viewState.viewFrameEl.contentWindow;
   }
 
-  var BUFFERED_FRAME_EVENT = {
+  const BUFFERED_FRAME_EVENT = {
     type: "buffered-results-collection",
     command: {
       isBufferedResultsCollectionOnly: true,
@@ -12345,12 +9388,16 @@
     }
   };
   function createFrameListener(queue, state) {
-    var H = state.H;
+    const {
+      H
+    } = state;
     return function installFrameListener() {
-      self.addEventListener('message', function (e) {
+      self.addEventListener('message', e => {
         if (e.data && e.data.event) {
-          var event = e.data.event;
-          var cache = state.domCache.get(state.activeTarget);
+          const {
+            event
+          } = e.data;
+          const cache = state.domCache.get(state.activeTarget);
 
           if (cache) {
             event.contextId = cache.contextId;
@@ -12360,15 +9407,15 @@
             queue.send(BUFFERED_FRAME_EVENT);
           } else if (event.custom) {
             if (event.type == 'scrollToEnd') {
-              var _cache = state.domCache.get(state.activeTarget);
+              let cache = state.domCache.get(state.activeTarget);
 
-              if (!_cache) {
-                _cache = {};
-                state.domCache.set(state.activeTarget, _cache);
+              if (!cache) {
+                cache = {};
+                state.domCache.set(state.activeTarget, cache);
               }
 
-              _cache.scrollTop = event.scrollTop;
-              _cache.scrollLeft = event.scrollLeft;
+              cache.scrollTop = event.scrollTop;
+              cache.scrollLeft = event.scrollLeft;
             }
 
             state.H(event);
@@ -12395,18 +9442,18 @@
                 });
               }
             } else if (event.type == 'click' && event.href) {
-              var activeTab = state.activeTab();
-              var activeTabUrl = new URL(activeTab.url);
-              var url = new URL(event.href);
-              var frag = url.hash;
+              const activeTab = state.activeTab();
+              let activeTabUrl = new URL(activeTab.url);
+              let url = new URL(event.href);
+              const frag = url.hash;
               activeTabUrl.hash = url.hash;
               url = url + '';
               activeTabUrl = activeTabUrl + '';
 
               if (url == activeTabUrl) {
                 // in other words if they differ by only the hash
-                var viewDoc = state.viewState.viewFrameEl.contentWindow.document;
-                var fragElem = viewDoc.querySelector(frag);
+                const viewDoc = state.viewState.viewFrameEl.contentWindow.document;
+                const fragElem = viewDoc.querySelector(frag);
 
                 if (fragElem) {
                   fragElem.scrollIntoView();
@@ -12420,15 +9467,15 @@
           }
         }
       });
-      var win = state.viewState.viewFrameEl.contentWindow;
-      win.addEventListener('load', function () {
+      const win = state.viewState.viewFrameEl.contentWindow;
+      win.addEventListener('load', () => {
       });
     };
   }
   function createDOMTreeGetter(queue, delay) {
     return function getDOMTree() {
-      var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-      setTimeout(function () {
+      let force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+      setTimeout(() => {
         queue.send({
           type: "getDOMSnapshot",
           force,
@@ -12447,22 +9494,20 @@
     state.getDOMSnapshot = createDOMTreeGetter(queue, state.SHORT_DELAY); //queue.addMetaListener('treeUpdate', meta => handleTreeUpdate(meta, state));
     //queue.addMetaListener('treeDiff', meta => handleTreeDiff(meta, state));
 
-    queue.addMetaListener('navigated', function (meta) {
-      return handleNavigate(meta, state);
-    });
-    queue.addMetaListener('domSnapshot', function (meta) {
-      return console.log(meta, state);
-    });
+    queue.addMetaListener('navigated', meta => handleNavigate(meta, state));
+    queue.addMetaListener('domSnapshot', meta => console.log(meta, state));
     queue.send({
       type: "enableProjector",
       custom: true
     });
-    state.addListener('activateTab', function () {
-      var win = getViewWindow(state);
-      var activeTarget = state.activeTarget,
-          lastTarget = state.lastTarget;
-      var lastCache = state.domCache.get(lastTarget);
-      var cache = state.domCache.get(activeTarget);
+    state.addListener('activateTab', () => {
+      const win = getViewWindow(state);
+      const {
+        activeTarget,
+        lastTarget
+      } = state;
+      const lastCache = state.domCache.get(lastTarget);
+      const cache = state.domCache.get(activeTarget);
 
       if (!cache) {
         state.clearViewport();
@@ -12471,19 +9516,23 @@
         // save scroll position of last target before we update window
         // using block scope oorah
         if (lastCache) {
-          var _scrollX = win.pageXOffset,
-              _scrollY = win.pageYOffset;
+          const {
+            pageXOffset: scrollX,
+            pageYOffset: scrollY
+          } = win;
           Object.assign(lastCache, {
-            scrollX: _scrollX,
-            scrollY: _scrollY
+            scrollX,
+            scrollY
           });
         }
 
         state.clearViewport(); //updateTree(cache, state); 
         // restore scroll position of new target
 
-        var scrollX = cache.scrollX,
-            scrollY = cache.scrollY;
+        const {
+          scrollX,
+          scrollY
+        } = cache;
         scrollTo({
           scrollX,
           scrollY
@@ -12493,13 +9542,19 @@
   }
 
   function clearDomCache(_ref, state) {
-    var navigated = _ref.navigated;
-    var targetId = navigated.targetId;
+    let {
+      navigated
+    } = _ref;
+    const {
+      targetId
+    } = navigated;
     state.domCache.delete(targetId);
   }
 
   function handleNavigate(_ref2, state) {
-    var navigated = _ref2.navigated;
+    let {
+      navigated
+    } = _ref2;
     clearDomCache({
       navigated
     }, state);
@@ -12512,1383 +9567,1089 @@
     }
   }
 
-  function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
+  const ThrottledEvents = new Set(["mousemove", "pointermove", "touchmove"]);
+  const CancelWhenSyncValue = new Set(["keydown", "keyup", "keypress", "compositionstart", "compositionend", "compositionupdate"]);
 
-  function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-  function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-  var ThrottledEvents = new Set(["mousemove", "pointermove", "touchmove"]);
-  var CancelWhenSyncValue = new Set(["keydown", "keyup", "keypress", "compositionstart", "compositionend", "compositionupdate"]);
-
-  var EnsureCancelWhenSyncValue = function EnsureCancelWhenSyncValue(e) {
+  const EnsureCancelWhenSyncValue = e => {
     if (!e.type.startsWith("key")) {
       return true;
     } else {
-      var id = getKeyId(e);
+      const id = getKeyId(e);
       return !controlChars.has(id);
     }
   };
 
-  var SessionlessEvents = new Set(["window-bounds", "window-bounds-preImplementation", "user-agent", "hide-scrollbars"]);
-  var IMMEDIATE = 0;
-  var SHORT_DELAY = 20;
-  var LONG_DELAY = 300;
-  var VERY_LONG_DELAY = 60000;
-  var EVENT_THROTTLE_MS = 40;
+  const SessionlessEvents = new Set(["window-bounds", "window-bounds-preImplementation", "user-agent", "hide-scrollbars"]);
+  const IMMEDIATE = 0;
+  const SHORT_DELAY = 20;
+  const LONG_DELAY = 300;
+  const VERY_LONG_DELAY = 60000;
+  const EVENT_THROTTLE_MS = 40;
   /* 20, 40, 80 */
   // view frame debug
 
-  var latestRequestId = 0;
-  function voodoo(_x, _x2) {
-    return _voodoo.apply(this, arguments);
-  }
-
-  function _voodoo() {
-    _voodoo = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee7(selector, position) {
-      var _ref,
-          _ref$postInstallTasks,
-          postInstallTasks,
-          _ref$preInstallTasks,
-          preInstallTasks,
-          _ref$canvasBondTasks,
-          canvasBondTasks,
-          _ref$bondTasks,
-          bondTasks,
-          _ref$useViewFrame,
-          useViewFrame,
-          _ref$demoMode,
-          demoMode,
-          sessionToken,
-          closed,
-          listeners,
-          lastTarget,
-          _yield,
-          tabs,
-          activeTarget,
-          requestId,
-          funcList,
-          state,
-          updateTabs,
-          taskUrl,
-          queue,
-          plugins,
-          preInstallView,
-          _iterator,
-          _step,
-          task,
-          api,
-          pluginView,
-          poppetView,
-          postInstallView,
-          _iterator2,
-          _step2,
-          _task,
-          runListeners,
-          findTab,
-          activeTab,
-          indicateNoOpenTabs,
-          writeCanvas,
-          writeDocument,
-          clearViewport,
-          sendKey,
-          installTopLevelKeyListeners,
-          installSafariLongTapListener,
-          installZoomListener,
-          H,
-          sizeBrowserToBounds,
-          sizeTab,
-          asyncSizeBrowserToBounds,
-          emulateNavigator,
-          hideScrollbars,
-          activateTab,
-          _activateTab,
-          closeTab,
-          _closeTab,
-          rawUpdateTabs,
-          _rawUpdateTabs,
-          createTab,
-          _createTab,
-          canKeysInput,
-          getFavicon,
-          loadPlugin,
-          addToQueue,
-          requestRender,
-          subscribeToQueue,
-          _args7 = arguments;
-
-      return regenerator.wrap(function _callee7$(_context7) {
-        while (1) {
-          switch (_context7.prev = _context7.next) {
-            case 0:
-              subscribeToQueue = function _subscribeToQueue() {
-                console.warn("Unimplemented");
-              };
-
-              requestRender = function _requestRender() {
-                console.warn("Unimplemented");
-              };
-
-              addToQueue = function _addToQueue() {
-                console.warn("Unimplemented");
-              };
-
-              loadPlugin = function _loadPlugin(plugin) {
-                plugins.set(plugin.name, plugin);
-                plugin.load(pluginView);
-              };
-
-              getFavicon = function _getFavicon() {
-                setTimeout(function () {
-                  queue.send({
-                    type: "getFavicon",
-                    synthetic: true
-                  });
-                }, IMMEDIATE);
-              };
-
-              canKeysInput = function _canKeysInput() {
-                if (state.viewState.viewFrameEl) return;
-                setTimeout(function () {
-                  queue.send({
-                    type: "canKeysInput",
-                    synthetic: true
-                  });
-                }, SHORT_DELAY);
-              };
-
-              _createTab = function _createTab3() {
-                _createTab = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee6(click) {
-                  var url,
-                      _args6 = arguments;
-                  return regenerator.wrap(function _callee6$(_context6) {
-                    while (1) {
-                      switch (_context6.prev = _context6.next) {
-                        case 0:
-                          url = _args6.length > 1 && _args6[1] !== undefined ? _args6[1] : BLANK;
-                          queue.send({
-                            command: {
-                              name: "Target.createTarget",
-                              params: {
-                                url,
-                                enableBeginFrameControl: DEBUG.frameControl
-                              }
-                            }
-                          });
-
-                          if (click) {
-                            click.target.blur();
-                            click.currentTarget.blur();
-                          }
-
-                        case 3:
-                        case "end":
-                          return _context6.stop();
-                      }
-                    }
-                  }, _callee6);
-                }));
-                return _createTab.apply(this, arguments);
-              };
-
-              createTab = function _createTab2(_x10) {
-                return _createTab.apply(this, arguments);
-              };
-
-              _rawUpdateTabs = function _rawUpdateTabs3() {
-                _rawUpdateTabs = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee5() {
-                  var _yield2, tabs, activeTarget, requestId, _task2;
-
-                  return regenerator.wrap(function _callee5$(_context5) {
-                    while (1) {
-                      switch (_context5.prev = _context5.next) {
-                        case 0:
-                          _context5.next = 2;
-                          return demoMode ? fetchDemoTabs() : fetchTabs({
-                            sessionToken
-                          });
-
-                        case 2:
-                          _yield2 = _context5.sent;
-                          tabs = _yield2.tabs;
-                          activeTarget = _yield2.activeTarget;
-                          requestId = _yield2.requestId;
-                          tabs = tabs.filter(function (_ref13) {
-                            var targetId = _ref13.targetId;
-                            return !closed.has(targetId);
-                          });
-
-                          if (!(requestId <= latestRequestId)) {
-                            _context5.next = 11;
-                            break;
-                          }
-
-                          return _context5.abrupt("return");
-
-                        case 11:
-                          latestRequestId = requestId;
-
-                        case 12:
-                          state.tabs = tabs;
-
-                          if (demoMode) {
-                            state.activeTarget = activeTarget;
-                          }
-
-                          state.active = activeTab(); // this ensures we activate the tab
-
-                          if (state.tabs.length == 1) {
-                            setTimeout(function () {
-                              return activateTab(null, state.tabs[0]);
-                            }, LONG_DELAY); //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY));
-                            //updateTabs();
-                            //sizeBrowserToBounds(state.viewState.canvasEl, state.tabs[0].targetId);
-                          } else if (!state.activeTarget || !state.active) {
-                            if (state.tabs.length) {
-                              setTimeout(function () {
-                                return activateTab(null, state.tabs[0]);
-                              }, LONG_DELAY); //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY));
-                              //updateTabs();
-                              //sizeBrowserToBounds(state.viewState.canvasEl, state.tabs[0].targetId);
-                            }
-                          }
-
-                          subviews.Controls(state);
-                          subviews.TabList(state);
-
-                          if (state.tabs.length == 0) {
-                            indicateNoOpenTabs();
-                          }
-
-                          while (state.updateTabsTasks.length) {
-                            _task2 = state.updateTabsTasks.shift();
-
-                            try {
-                              _task2();
-                            } catch (e) {
-                              console.warn("State update tabs task failed", e, _task2);
-                            }
-                          }
-
-                        case 20:
-                        case "end":
-                          return _context5.stop();
-                      }
-                    }
-                  }, _callee5);
-                }));
-                return _rawUpdateTabs.apply(this, arguments);
-              };
-
-              rawUpdateTabs = function _rawUpdateTabs2() {
-                return _rawUpdateTabs.apply(this, arguments);
-              };
-
-              _closeTab = function _closeTab3() {
-                _closeTab = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee4(click, tab, index) {
-                  var targetId, events, newActive;
-                  return regenerator.wrap(function _callee4$(_context4) {
-                    while (1) {
-                      switch (_context4.prev = _context4.next) {
-                        case 0:
-                          targetId = tab.targetId;
-                          closed.add(targetId);
-                          resetLoadingIndicator({
-                            navigated: targetId
-                          }, state);
-                          setTimeout(function () {
-                            return closed.delete(targetId);
-                          }, VERY_LONG_DELAY);
-                          events = [{
-                            command: {
-                              name: "Target.closeTarget",
-                              params: {
-                                targetId
-                              }
-                            }
-                          }];
-                          _context4.next = 7;
-                          return queue.send(events);
-
-                        case 7:
-                          state.tabs.splice(index, 1);
-
-                          if (state.activeTarget == targetId) {
-                            if (state.tabs.length == 0) {
-                              state.activeTarget = null;
-                            } else {
-                              if (index >= state.tabs.length) {
-                                index = state.tabs.length - 1;
-                              }
-
-                              newActive = state.tabs[index];
-                              activateTab(click, newActive);
-                            }
-                          } else {
-                            updateTabs();
-                          }
-
-                          subviews.TabList(state);
-                          subviews.LoadingIndicator(state);
-
-                        case 11:
-                        case "end":
-                          return _context4.stop();
-                      }
-                    }
-                  }, _callee4);
-                }));
-                return _closeTab.apply(this, arguments);
-              };
-
-              closeTab = function _closeTab2(_x7, _x8, _x9) {
-                return _closeTab.apply(this, arguments);
-              };
-
-              _activateTab = function _activateTab3() {
-                _activateTab = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee3(click, tab) {
-                  var targetId;
-                  return regenerator.wrap(function _callee3$(_context3) {
-                    while (1) {
-                      switch (_context3.prev = _context3.next) {
-                        case 0:
-                          if (!(click && click.currentTarget.querySelector('button.close') == click.target)) {
-                            _context3.next = 2;
-                            break;
-                          }
-
-                          return _context3.abrupt("return");
-
-                        case 2:
-                          click && click.preventDefault(); // sometimes we delay the call to activate tab and
-                          // in the meantime the list of tabs can empty
-                          // so we exit if there is no tab to activate
-
-                          if (tab) {
-                            _context3.next = 5;
-                            break;
-                          }
-
-                          return _context3.abrupt("return");
-
-                        case 5:
-                          if (click) {
-                            setTimeout(function () {
-                              return click.target.closest('li').scrollIntoView({
-                                inline: 'center',
-                                behavior: 'smooth'
-                              });
-                            }, LONG_DELAY);
-                          }
-
-                          if (!(state.activeTarget == tab.targetId)) {
-                            _context3.next = 9;
-                            break;
-                          }
-
-                          if (state.viewState.omniBoxInput == state.viewState.lastActive) {
-                            state.viewState.omniBoxInput.focus();
-                          }
-
-                          return _context3.abrupt("return");
-
-                        case 9:
-                          targetId = tab.targetId;
-                          queue.send({
-                            command: {
-                              name: "Target.activateTarget",
-                              params: {
-                                targetId
-                              },
-                              requiresShot: true
-                            }
-                          });
-                          sizeTab();
-                          canKeysInput();
-                          state.lastTarget = state.activeTarget;
-                          state.activeTarget = targetId; // we assume that a listener will call clearviewport
-                          // this returns false if there are no listeners
-
-                          if (!runListeners('activateTab')) {
-                            clearViewport();
-                          }
-
-                          state.active = activeTab();
-                          subviews.TabList(state);
-                          subviews.OmniBox(state);
-                          subviews.LoadingIndicator(state);
-                          sizeBrowserToBounds(state.viewState.canvasEl);
-                          setTimeout(function () {
-                            if (state.active && state.active.url != BLANK) {
-                              canKeysInput();
-                            } else {
-                              /**
-                              writeDocument(`
-                                <!DOCTYPE html>
-                                  <style>
-                                    :root {
-                                      height: 100%;
-                                      background: #${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, 0)};
-                                      color: navy;
-                                      font-family: system-ui;
-                                    }
-                                    h2 {
-                                    }
-                                    strong {
-                                      padding: 0.5rem;
-                                    }
-                                  </style>
-                                  <h2>
-                                    Secure ViewFinder 
-                                  </h2>
-                                  <strong>
-                                    Current time: ${(new Date).toString()}
-                                  </strong>
-                                </html>
-                              `);
-                              **/
-                              writeCanvas("Secure ViewFinder");
-                              state.viewState.omniBoxInput.focus();
-                            }
-                          }, SHORT_DELAY);
-
-                        case 22:
-                        case "end":
-                          return _context3.stop();
-                      }
-                    }
-                  }, _callee3);
-                }));
-                return _activateTab.apply(this, arguments);
-              };
-
-              activateTab = function _activateTab2(_x5, _x6) {
-                return _activateTab.apply(this, arguments);
-              };
-
-              hideScrollbars = function _hideScrollbars() {
-                H({
-                  synthetic: true,
-                  type: "hide-scrollbars"
-                });
-              };
-
-              emulateNavigator = function _emulateNavigator() {
-                var _navigator = navigator,
-                    platform = _navigator.platform,
-                    userAgent = _navigator.userAgent,
-                    acceptLanguage = _navigator.language;
-                H({
-                  synthetic: true,
-                  type: "user-agent",
-                  userAgent,
-                  platform,
-                  acceptLanguage
-                });
-              };
-
-              asyncSizeBrowserToBounds = function _asyncSizeBrowserToBo(el) {
-                setTimeout(function () {
-                  return sizeBrowserToBounds(el), indicateNoOpenTabs();
-                }, 0);
-              };
-
-              sizeTab = function _sizeTab() {
-                return sizeBrowserToBounds(state.viewState.canvasEl);
-              };
-
-              sizeBrowserToBounds = function _sizeBrowserToBounds(el, targetId) {
-                var _el$getBoundingClient = el.getBoundingClientRect(),
-                    width = _el$getBoundingClient.width,
-                    height = _el$getBoundingClient.height;
-
-                width = Math.round(width);
-                height = Math.round(height);
-
-                if (el.width != width || el.height != height) {
-                  el.width = width;
-                  el.height = height;
-                }
-
-                var mobile = deviceIsMobile();
-                H({
-                  synthetic: true,
-                  type: "window-bounds",
-                  width,
-                  height,
-                  targetId: targetId || state.activeTarget
-                });
-                H({
-                  synthetic: true,
-                  type: "window-bounds-preImplementation",
-                  width,
-                  height,
-                  mobile,
-                  targetId: targetId || state.activeTarget
-                });
-                self.ViewportWidth = width;
-                self.ViewportHeight = height;
-              };
-
-              H = function _H(event) {
-                // block if no tabs
-                if (state.tabs.length == 0) {
-                  if (SessionlessEvents.has(event.type)) ; else return;
-                }
-
-                if (event.defaultPrevented) return;
-                var mouseEventOnPointerDevice = event.type.startsWith("mouse") && event.type !== "wheel" && !state.DoesNotSupportPointerEvents;
-                var tabKeyPressForBrowserUI = event.key == "Tab" && !event.vRetargeted;
-                var unnecessaryIfSyncValue = state.convertTypingEventsToSyncValueEvents && CancelWhenSyncValue.has(event.type) && EnsureCancelWhenSyncValue(event);
-                var eventCanBeIgnored = mouseEventOnPointerDevice || tabKeyPressForBrowserUI || unnecessaryIfSyncValue;
-                if (eventCanBeIgnored) return;
-                var pointerEvent = event.type.startsWith("pointer");
-                var mouseWheel = event.type == "wheel";
-                var syntheticNonTypingEventWrapper = event.synthetic && event.type != "typing" && event.event;
-
-                if (mouseWheel) ; else if (pointerEvent) {
-                  state.DoesNotSupportPointerEvents = false;
-                } else if (syntheticNonTypingEventWrapper) {
-                  event.event.preventDefault && event.event.preventDefault();
-                }
-
-                var simulated = event.event && event.event.simulated;
-                var hasTarget = event.event && event.event.target;
-
-                if (event.type == "typing" && hasTarget && !simulated && state.convertTypingEventsToSyncValueEvents) {
-                  event.type = 'typing-syncValue';
-                  event.value = event.event.target.value;
-                  event.contextId = state.contextIdOfFocusedInput;
-                  event.data = "";
-                }
-
-                var isThrottled = ThrottledEvents.has(event.type);
-                var transformedEvent = transformEvent(event);
-
-                if (mouseWheel) {
-                  transformedEvent.contextId = state.viewState.latestScrollContext;
-                }
-
-                if (isThrottled) {
-                  queue.send(transformedEvent);
-                } else {
-                  if (event.type == "keydown" && event.key == "Enter") {
-                    // Note
-                    // We do this to make sure we send composed input data when enter is pressed
-                    // in an input field, if we do not do this, the current composition is not printed
-                    // but only if we are not using sync mode 
-                    // (otherwise we will add an unnecessary bit on the end!)
-                    if (!state.convertTypingEventsToSyncValueEvents) {
-                      if (!!state.latestData && !!event.target.matches('input') && state.latestData.length > 1) {
-                        queue.send(transformEvent({
-                          synthetic: true,
-                          type: 'typing',
-                          data: state.latestData,
-                          event: {
-                            enterKey: true,
-                            simulated: true
-                          }
-                        }));
-                        state.latestCommitData = state.latestData;
-                        state.latestData = "";
-                      }
-                    }
-                  } else if (event.type == "keydown" && event.key == "Backspace") {
-                    state.backspaceFiring = true;
-
-                    if (state.viewState.shouldHaveFocus && !state.convertTypingEventsToSyncValueEvents) {
-                      state.viewState.shouldHaveFocus.value = "";
-                    }
-                  } else if (event.type == "keyup" && event.key == "Backspace") {
-                    state.backspaceFiring = false;
-                  } else if (event.type == "pointerdown" || event.type == "mousedown") {
-                    if (!state.convertTypingEventsToSyncValueEvents) {
-                      //const {timeStamp,type} = event;
-                      var latestData = state.latestData;
-
-                      if (!!state.viewState.shouldHaveFocus && !!latestData && latestData.length > 1 && latestData != state.latestCommitData) {
-                        state.isComposing = false;
-                        var data = latestData;
-                        queue.send(transformEvent({
-                          synthetic: true,
-                          type: 'typing',
-                          data: data,
-                          event: {
-                            pointerDown: true,
-                            simulated: true
-                          }
-                        }));
-                        state.latestCommitData = data;
-                        state.latestData = "";
-                      }
-                    }
-                  } else if (event.type == "pointerup" || event.type == "mouseup") {
-                    if (state.viewState.killNextMouseReleased) {
-                      state.viewState.killNextMouseReleased = false;
-                      return;
-                    }
-                  }
-
-                  queue.send(transformedEvent);
-                }
-              };
-
-              installZoomListener = function _installZoomListener(el) {
-                var FLAGS = {
-                  passive: true
-                };
-                var lastScale = 1.0;
-                var scaling = false;
-                var startDist = 0;
-                var lastDist = 0;
-                var touch;
-                el.addEventListener('touchstart', begin, FLAGS);
-                el.addEventListener('touchmove', move, FLAGS);
-                el.addEventListener('touchend', end, FLAGS);
-                el.addEventListener('touchcancel', end, FLAGS);
-                el.addEventListener('wheel', sendZoom, {
-                  passive: true,
-                  capture: true
-                });
-
-                function sendZoom(event) {
-                  if (event.ctrlKey || event.deltaZ != 0) {
-                    var delta = event.deltaZ || event.deltaY;
-                    var direction = Math.sign(delta);
-                    var multiplier;
-
-                    if (direction > 0) {
-                      multiplier = 1 / 1.25;
-                    } else {
-                      multiplier = 1.25;
-                    }
-
-                    var scale = lastScale * multiplier;
-                    lastScale = scale;
-                    H({
-                      synthetic: true,
-                      type: 'zoom',
-                      scale,
-                      event
-                    });
-                  }
-                }
-
-                function begin(event) {
-                  if (event.touches.length == 2) {
-                    startDist = Math.hypot(event.touches[0].pageX - event.touches[1].pageX, event.touches[0].pageY - event.touches[1].pageY);
-
-                    if (startDist > 8) {
-                      scaling = true;
-                      touch = event.touches[0];
-                    } else {
-                      scaling = false;
-                    }
-                  }
-                }
-
-                function move(event) {
-                  if (scaling) {
-                    var dist = Math.hypot(event.touches[0].pageX - event.touches[1].pageX, event.touches[0].pageY - event.touches[1].pageY);
-                    lastDist = dist;
-                  }
-                }
-
-                function end() {
-                  if (scaling) {
-                    if (lastDist < 8) ; else {
-                      var scale = lastScale * Math.abs(lastDist / startDist);
-                      lastScale = scale;
-                      H({
-                        synthetic: true,
-                        type: 'zoom',
-                        scale,
-                        event: touch
-                      });
-                    }
-
-                    scaling = false;
-                    startDist = 0;
-                    lastDist = 0;
-                    touch = false;
-                  }
-                }
-              };
-
-              installSafariLongTapListener = function _installSafariLongTap(el) {
-                var FLAGS = {
-                  passive: true,
-                  capture: true
-                };
-                var MIN_DURATION = 200;
-                var MAX_MOVEMENT = 20;
-                var lastStart;
-                el.addEventListener('touchstart', function (ts) {
-                  return lastStart = ts;
-                }, FLAGS);
-                el.addEventListener('touchend', triggerContextMenuIfLongEnough, FLAGS);
-                el.addEventListener('touchcancel', triggerContextMenuIfLongEnough, FLAGS);
-
-                function triggerContextMenuIfLongEnough(tf) {
-                  // space 
-                  var touch1 = lastStart.changedTouches[0];
-                  var touch2 = tf.changedTouches[0];
-                  var movement = Math.hypot(touch2.pageX - touch1.pageX, touch2.pageY - touch1.pageY); // time
-
-                  var duration = tf.timeStamp - lastStart.timeStamp;
-
-                  if (duration > MIN_DURATION && movement < MAX_MOVEMENT) {
-                    lastStart.preventDefault();
-                    tf.preventDefault();
-                    var pageX = touch1.pageX,
-                        pageY = touch1.pageY,
-                        clientX = touch1.clientX,
-                        clientY = touch1.clientY;
-                    el.dispatchEvent(new CustomEvent('contextmenu', {
-                      detail: {
-                        pageX,
-                        pageY,
-                        clientX,
-                        clientY
-                      }
-                    }));
-                  }
-                }
-              };
-
-              installTopLevelKeyListeners = function _installTopLevelKeyLi() {
-                if (!deviceIsMobile()) {
-                  self.addEventListener('keydown', sendKey);
-                  self.addEventListener('keypress', sendKey);
-                  self.addEventListener('keyup', sendKey);
-                }
-              };
-
-              sendKey = function _sendKey(keyEvent) {
-                var viewState = state.viewState;
-
-                if (!(viewState.shouldHaveFocus || document.activeElement == viewState.omniBoxInput)) {
-                  var ev = keyEvent;
-
-                  if (ev.key == "Tab" || ev.key == "Enter") ; else {
-                    H(ev);
-                  }
-                }
-              };
-
-              clearViewport = function _clearViewport() {
-                if (state.useViewFrame) {
-                  try {
-                    state.viewState.viewFrameEl.contentDocument.body.innerHTML = "";
-                  } catch (e) {
-                    console.warn(e);
-                  }
-                } else {
-                  var canv = state.viewState.canvasEl;
-                  var ctx = state.viewState.ctx;
-                  ctx.fillStyle = 'white';
-                  ctx.fillRect(0, 0, canv.width, canv.height);
-                }
-              };
-
-              writeDocument = function _writeDocument(html, frameId, sessionId) {
-                queue.send({
-                  type: 'setDocument',
-                  html,
-                  frameId,
-                  sessionId,
-                  synthetic: true
-                });
-              };
-
-              writeCanvas = function _writeCanvas(text) {
-                var canv = state.viewState.canvasEl;
-                var ctx = state.viewState.ctx;
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, canv.width, canv.height);
-                ctx.fillStyle = 'silver';
-                ctx.font = 'italic 3vmax sans-serif';
-                ctx.textAlign = "center";
-                ctx.fillText(text, innerWidth / 2, innerHeight / 2 - 6 * Math.max(innerWidth / 100, innerHeight / 100));
-              };
-
-              indicateNoOpenTabs = function _indicateNoOpenTabs() {
-                if (state.tabs.length == 0) {
-                  clearViewport();
-
-                  if (state.useViewFrame) {
-                    try {
-                      state.viewState.viewFrameEl.contentDocument.body.innerHTML = "\n                <em>".concat(state.factoryMode ? 'Factory Mode' : 'Custom Mode', ". No tabs open.</em>\n              ");
-                    } catch (e) {
-                      console.warn(e);
-                    }
-                  } else {
-                    writeCanvas("No tabs open.");
-                  }
-                }
-              };
-
-              activeTab = function _activeTab() {
-                return state.tabs.length == 1 ? state.tabs[0] : findTab(state.activeTarget) || {};
-              };
-
-              findTab = function _findTab(id) {
-                return state.tabs.find(function (_ref12) {
-                  var targetId = _ref12.targetId;
-                  return id == targetId;
-                });
-              };
-
-              runListeners = function _runListeners(name, data) {
-                var funcList = listeners.get(name);
-                if (!funcList || funcList.length == 0) return false;
-                var score = false;
-
-                var _iterator3 = _createForOfIteratorHelper(funcList),
-                    _step3;
-
-                try {
-                  for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
-                    var func = _step3.value;
-
-                    try {
-                      func(data);
-                      score = score || true;
-                    } catch (e) {
-                      console.log("Listeners func for ".concat(name, " fails: ").concat(func, "\nError: ").concat(e + e.stack));
-                    }
-                  }
-                } catch (err) {
-                  _iterator3.e(err);
-                } finally {
-                  _iterator3.f();
-                }
-
-                return score;
-              };
-
-              _ref = _args7.length > 2 && _args7[2] !== undefined ? _args7[2] : {}, _ref$postInstallTasks = _ref.postInstallTasks, postInstallTasks = _ref$postInstallTasks === void 0 ? [] : _ref$postInstallTasks, _ref$preInstallTasks = _ref.preInstallTasks, preInstallTasks = _ref$preInstallTasks === void 0 ? [] : _ref$preInstallTasks, _ref$canvasBondTasks = _ref.canvasBondTasks, canvasBondTasks = _ref$canvasBondTasks === void 0 ? [] : _ref$canvasBondTasks, _ref$bondTasks = _ref.bondTasks, bondTasks = _ref$bondTasks === void 0 ? [] : _ref$bondTasks, _ref$useViewFrame = _ref.useViewFrame, useViewFrame = _ref$useViewFrame === void 0 ? false : _ref$useViewFrame, _ref$demoMode = _ref.demoMode, demoMode = _ref$demoMode === void 0 ? false : _ref$demoMode;
-              sessionToken = location.hash && location.hash.slice(1);
-              location.hash = '';
-              closed = new Set();
-              listeners = new Map();
-              lastTarget = '[lastTarget]';
-              _context7.next = 39;
-              return demoMode ? fetchDemoTabs() : fetchTabs({
-                sessionToken
-              });
-
-            case 39:
-              _yield = _context7.sent;
-              tabs = _yield.tabs;
-              activeTarget = _yield.activeTarget;
-              requestId = _yield.requestId;
-              latestRequestId = requestId;
-              state = {
-                H,
-                // bandwidth
-                messageDelay: 0,
-                // time it takes to receive an average, non-frame message
-                showBandwidthRate: true,
-                myBandwidth: 0,
-                serverBandwidth: 0,
-                totalBytes: 0,
-                totalServerBytesThisSecond: 0,
-                totalBytesThisSecond: 0,
-                totalBandwidth: 0,
-                frameBandwidth: [],
-                // demo mode
-                demoMode,
-                // if we are using a view frame (instead of canvas)
-                useViewFrame,
-                // for chrome vs firefox and mobile vs desktop to handle
-                // different ways of doing IME input and keypress
-                openKey: '',
-                lastKeypressKey: '',
-                // for firefox because it's IME does not fire inputType
-                // so we have no simple way to handle deleting content backward
-                // this should be FF on MOBILE only probably so that's why it's false
-                convertTypingEventsToSyncValueEvents: deviceIsMobile(),
-                //convertTypingEventsToSyncValueEvents: false,
-                // for safari to detect if pointerevents work
-                DoesNotSupportPointerEvents: true,
-                // safari to keep track of composition
-                isComposing: false,
-                // useful for input events that don't support data
-                // invalidated by the first data prop set
-                DataIsNotSupported: true,
-                sizeBrowserToBounds,
-                asyncSizeBrowserToBounds,
-                emulateNavigator,
-                hideScrollbars,
-                bondTasks,
-                canvasBondTasks,
-                // tabs
-                updateTabsTasks: [],
-                lastTarget,
-                activeTarget,
-                tabs,
-                attached: new Set(),
-                activateTab,
-                closeTab,
-                createTab,
-                activeTab,
-                favicons: new Map(),
-                // timing constants
-                IMMEDIATE,
-                SHORT_DELAY,
-                LONG_DELAY,
-                VERY_LONG_DELAY,
-                EVENT_THROTTLE_MS,
-                viewState: {},
-                clearViewport,
-
-                addListener(name, func) {
-                  funcList = listeners.get(name);
-
-                  if (!funcList) {
-                    funcList = [];
-                    listeners.set(name, funcList);
-                  }
-
-                  funcList.push(func);
-                }
-
-              };
-              updateTabs = debounce(rawUpdateTabs, LONG_DELAY);
-
-              if (state.demoMode) {
-                state.demoEventConsumer = demoZombie;
-              }
-
-              if (location.search.includes("url=")) {
-                try {
-                  taskUrl = decodeURIComponent(location.search.split('&').filter(function (x) {
-                    return x.includes('url=');
-                  })[0].split('=')[1]);
-                } catch (e) {
-                  alert(e);
-                  console.warn(e);
-                  taskUrl = location.search.split('&').filter(function (x) {
-                    return x.includes('url=');
-                  })[0].split('=')[1];
-                }
-
-                postInstallTasks.push( /*#__PURE__*/function () {
-                  var _ref3 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee2(_ref2) {
-                    var queue, completed;
-                    return regenerator.wrap(function _callee2$(_context2) {
-                      while (1) {
-                        switch (_context2.prev = _context2.next) {
-                          case 0:
-                            queue = _ref2.queue;
-                            completed = false;
-                            queue.addMetaListener('changed', /*#__PURE__*/function () {
-                              var _ref4 = asyncToGenerator( /*#__PURE__*/regenerator.mark(function _callee(meta) {
-                                return regenerator.wrap(function _callee$(_context) {
-                                  while (1) {
-                                    switch (_context.prev = _context.next) {
-                                      case 0:
-                                        if (!completed) {
-                                          _context.next = 2;
-                                          break;
-                                        }
-
-                                        return _context.abrupt("return");
-
-                                      case 2:
-                                        if (!(meta.changed.type == 'page' && meta.changed.url.startsWith("https://isolation.site/redirect"))) {
-                                          _context.next = 14;
-                                          break;
-                                        }
-
-                                        _context.next = 5;
-                                        return sleep(500);
-
-                                      case 5:
-                                        _context.next = 7;
-                                        return activateTab(null, meta.changed);
-
-                                      case 7:
-                                        _context.next = 9;
-                                        return sleep(2000);
-
-                                      case 9:
-                                        H({
-                                          synthetic: true,
-                                          type: "url-address",
-                                          event: null,
-                                          url: taskUrl
-                                        });
-                                        completed = true;
-                                        _context.next = 13;
-                                        return sleep(5000);
-
-                                      case 13:
-                                        history.pushState("", "", "/");
-
-                                      case 14:
-                                      case "end":
-                                        return _context.stop();
-                                    }
-                                  }
-                                }, _callee);
-                              }));
-
-                              return function (_x4) {
-                                return _ref4.apply(this, arguments);
-                              };
-                            }());
-                            state.createTab(null, "https://isolation.site/redirect.html");
-
-                          case 4:
-                          case "end":
-                            return _context2.stop();
-                        }
-                      }
-                    }, _callee2);
-                  }));
-
-                  return function (_x3) {
-                    return _ref3.apply(this, arguments);
-                  };
-                }());
-              }
-
-              queue = new EventQueue(state, sessionToken); // plugins 
-
-              plugins = new Map();
-
-              if (state.useViewFrame) {
-                installPlugin$1(state, queue);
-
-                if (location.pathname == "/factory.html") {
-                  installPlugin(state, queue);
-                }
-
-                if (state.demoMode) {
-                  installPlugin$2(state, queue);
-                }
-              }
-
-              if (isSafari()) {
-                queue.send({
-                  type: "isSafari"
-                });
-              } else if (isFirefox()) {
-                queue.send({
-                  type: "isFirefox"
-                });
-              }
-
-              if (deviceIsMobile()) {
-                state.hideScrollbars();
-                queue.send({
-                  type: "isMobile"
-                });
-              } // event handlers
-              // input
-
-
-              queue.addMetaListener('selectInput', function (meta) {
-                return handleSelectMessage(meta, state);
-              });
-              queue.addMetaListener('keyInput', function (meta) {
-                return handleKeysCanInputMessage(meta, state);
-              });
-              queue.addMetaListener('favicon', function (meta) {
-                return handleFaviconMessage(meta, state);
-              });
-              queue.addMetaListener('navigated', function () {
-                return canKeysInput();
-              });
-              queue.addMetaListener('navigated', function (_ref5) {
-                var targetId = _ref5.navigated.targetId;
-                return resetFavicon({
-                  targetId
-                }, state);
-              }); //queue.addMetaListener('navigated', meta => takeShot(meta, state));
-              // element info
-
-              queue.addMetaListener('elementInfo', function (meta) {
-                return handleElementInfo(meta, state);
-              }); // scroll
-
-              queue.addMetaListener('scroll', function (meta) {
-                return handleScrollNotification(meta, state);
-              }); // loading
-
-              queue.addMetaListener('resource', function (meta) {
-                return showLoadingIndicator(meta, state);
-              });
-              queue.addMetaListener('failed', function (meta) {
-                if (meta.failed.params.type == "Document") {
-                  // we also need to make sure the failure happens at the top level document
-                  // rather than writing the top level document for any failure in a sub frame
-                  if (meta.failed.params.errorText && meta.failed.params.errorText.includes("ABORTED")) ; else {
-                    writeDocument("Request failed: ".concat(meta.failed.params.errorText), meta.failed.frameId, meta.failed.sessionId);
-                  }
-                }
-              });
-              queue.addMetaListener('navigated', function (meta) {
-                return resetLoadingIndicator(meta, state);
-              });
-
-
-              queue.addMetaListener('changed', function (_ref6) {
-                var changed = _ref6.changed;
-                var tab = findTab(changed.targetId);
-
-                if (tab) {
-                  Object.assign(tab, changed);
-                  subviews.TabList(state);
-                }
-
-                updateTabs({
-                  changed
-                });
-              }); // tabs
-
-              queue.addMetaListener('created', function (meta) {
-                if (meta.created.type == 'page') {
-                  setTimeout(function () {
-                    return activateTab(null, meta.created);
-                  }, LONG_DELAY); //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
-                  //updateTabs();
-                  //sizeBrowserToBounds(state.viewState.canvasEl, meta.created.targetId);
-                }
-              });
-              queue.addMetaListener('attached', function (meta) {
-                var attached = meta.attached.targetInfo;
-
-                if (attached.type == 'page') {
-                  state.attached.add(attached.targetId);
-
-                  if (state.useViewFrame) {
-                    sizeBrowserToBounds(state.viewState.viewFrameEl, attached.targetId);
-                  } else {
-                    sizeBrowserToBounds(state.viewState.canvasEl, attached.targetId);
-                    emulateNavigator();
-                  }
-
-                  updateTabs();
-                }
-              });
-              queue.addMetaListener('navigated', updateTabs);
-              queue.addMetaListener('detached', updateTabs);
-              queue.addMetaListener('destroyed', function (_ref7) {
-                var destroyed = _ref7.destroyed;
-                closed.delete(destroyed.targetId);
-                updateTabs();
-              });
-              queue.addMetaListener('crashed', updateTabs); //modals
-
-              queue.addMetaListener('modal', function (modalMessage) {
-                return subviews.openModal(modalMessage, state);
-              }); // remote secure downloads
-
-              queue.addMetaListener('download', function (_ref8) {
-                var download = _ref8.download;
-                var sessionId = download.sessionId,
-                    filename = download.filename;
-                var modal = {
-                  sessionId,
-                  type: 'notice',
-                  message: "The file \"".concat(filename, "\" is downloading to a secure location and will be displayed securely momentarily if it is a supported format."),
-                  otherButton: {
-                    title: 'Get License',
-                    onclick: function onclick() {
-                      return window.open('mailto:cris@dosycorp.com?Subject=ViewFinder+License+Support+Inquiry&body=Hi%20Cris', "_blank");
-                    }
-                  },
-                  title: "SecureView\u2122 Enabled"
-                };
-                subviews.openModal({
-                  modal
-                }, state);
-              });
-              queue.addMetaListener('secureview', function (_ref9) {
-                var secureview = _ref9.secureview;
-                var url = secureview.url;
-
-                if (url) {
-                  createTab(null, url);
-                }
-              }); // HTTP auth
-
-              queue.addMetaListener('authRequired', function (_ref10) {
-                var authRequired = _ref10.authRequired;
-                var requestId = authRequired.requestId;
-                var modal = {
-                  requestId,
-                  type: 'auth',
-                  message: "Provide credentials to continue",
-                  title: "HTTP Auth"
-                };
-                subviews.openModal({
-                  modal
-                }, state);
-              }); // File chooser 
-
-              queue.addMetaListener('fileChooser', function (_ref11) {
-                var fileChooser = _ref11.fileChooser;
-                var sessionId = fileChooser.sessionId,
-                    mode = fileChooser.mode,
-                    accept = fileChooser.accept,
-                    csrfToken = fileChooser.csrfToken;
-                var modal = {
-                  sessionId,
-                  mode,
-                  accept,
-                  csrfToken,
-                  type: 'filechooser',
-                  message: "Securely send files to the remote page.",
-                  title: "File Chooser"
-                };
-                console.log({
-                  fileChooserModal: modal
-                });
-                subviews.openModal({
-                  modal
-                }, state);
-              }); // make this so we can call it on resize
-
-              window._voodoo_asyncSizeTab = function () {
-                return setTimeout(sizeTab, 0);
-              }; // bond tasks 
-
-
-              canvasBondTasks.push(indicateNoOpenTabs);
-              canvasBondTasks.push(installZoomListener);
-              canvasBondTasks.push(asyncSizeBrowserToBounds);
-              canvasBondTasks.push(rawUpdateTabs);
-
-              if (isSafari()) {
-                canvasBondTasks.push(installSafariLongTapListener);
-              }
-
-              bondTasks.push(canKeysInput);
-              bondTasks.push(getFavicon);
-              bondTasks.push(installTopLevelKeyListeners);
-              preInstallView = {
-                queue
-              };
-              _iterator = _createForOfIteratorHelper(preInstallTasks);
-
-              try {
-                for (_iterator.s(); !(_step = _iterator.n()).done;) {
-                  task = _step.value;
-
-                  try {
-                    task(preInstallView);
-                  } catch (e) {
-                    console.error("Task ".concat(task, " failed with ").concat(e));
-                  }
-                }
-              } catch (err) {
-                _iterator.e(err);
-              } finally {
-                _iterator.f();
-              }
-
-              component(state).to(selector, position);
-              api = {
-                back: function back() {
-                  return 1;
-                },
-                forward: function forward() {
-                  return 1;
-                },
-                reload: function reload() {
-                  return 1;
-                },
-                stop: function stop() {
-                  return 1;
-                },
-                mouse: function mouse() {
-                  return 1;
-                },
-                touch: function touch() {
-                  return 1;
-                },
-                scroll: function scroll() {
-                  return 1;
-                },
-                key: function key() {
-                  return 1;
-                },
-                type: function type() {
-                  return 1;
-                },
-                omni: function omni() {
-                  return 1;
-                },
-                newTab: function newTab() {
-                  return 1;
-                },
-                closeTab: function closeTab() {
-                  return 1;
-                },
-                switchTab: function switchTab() {
-                  return 1;
-                }
-              };
-              pluginView = {
-                addToQueue,
-                subscribeToQueue,
-                requestRender,
-                api
-              };
-              poppetView = {
-                loadPlugin,
-                api
-              };
-              postInstallView = {
-                queue
-              };
-              _context7.next = 96;
-              return sleep(0);
-
-            case 96:
-              _iterator2 = _createForOfIteratorHelper(postInstallTasks);
-
-              try {
-                for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
-                  _task = _step2.value;
-
-                  try {
-                    _task(postInstallView);
-                  } catch (e) {
-                    console.error("Task ".concat(_task, " failed with ").concat(e));
-                  }
-                }
-              } catch (err) {
-                _iterator2.e(err);
-              } finally {
-                _iterator2.f();
-              }
-
-              if (activeTarget) {
-                setTimeout(function () {
-                  return activateTab(null, {
-                    targetId: activeTarget
-                  });
-                }, LONG_DELAY); //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, {targetId:activeTarget}), LONG_DELAY));
-                //updateTabs();
-                //sizeBrowserToBounds(state.viewState.canvasEl, activeTarget);
-              }
-
-              return _context7.abrupt("return", poppetView);
-
-            case 100:
-            case "end":
-              return _context7.stop();
+  let latestRequestId = 0;
+  async function voodoo(selector, position) {
+    let {
+      postInstallTasks = [],
+      preInstallTasks = [],
+      canvasBondTasks = [],
+      bondTasks = [],
+      useViewFrame = false,
+      demoMode = false
+    } = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+    const sessionToken = location.hash && location.hash.slice(1);
+    location.hash = '';
+    const closed = new Set();
+    const listeners = new Map();
+    const lastTarget = '[lastTarget]';
+    const {
+      tabs,
+      activeTarget,
+      requestId
+    } = await (demoMode ? fetchDemoTabs() : fetchTabs({
+      sessionToken
+    }));
+    latestRequestId = requestId;
+    const state = {
+      H,
+      // bandwidth
+      messageDelay: 0,
+      // time it takes to receive an average, non-frame message
+      showBandwidthRate: true,
+      myBandwidth: 0,
+      serverBandwidth: 0,
+      totalBytes: 0,
+      totalServerBytesThisSecond: 0,
+      totalBytesThisSecond: 0,
+      totalBandwidth: 0,
+      frameBandwidth: [],
+      // demo mode
+      demoMode,
+      // if we are using a view frame (instead of canvas)
+      useViewFrame,
+      // for chrome vs firefox and mobile vs desktop to handle
+      // different ways of doing IME input and keypress
+      openKey: '',
+      lastKeypressKey: '',
+      // for firefox because it's IME does not fire inputType
+      // so we have no simple way to handle deleting content backward
+      // this should be FF on MOBILE only probably so that's why it's false
+      convertTypingEventsToSyncValueEvents: deviceIsMobile(),
+      //convertTypingEventsToSyncValueEvents: false,
+      // for safari to detect if pointerevents work
+      DoesNotSupportPointerEvents: true,
+      // safari to keep track of composition
+      isComposing: false,
+      // useful for input events that don't support data
+      // invalidated by the first data prop set
+      DataIsNotSupported: true,
+      sizeBrowserToBounds,
+      asyncSizeBrowserToBounds,
+      emulateNavigator,
+      hideScrollbars,
+      bondTasks,
+      canvasBondTasks,
+      // tabs
+      updateTabsTasks: [],
+      lastTarget,
+      activeTarget,
+      tabs,
+      attached: new Set(),
+      activateTab,
+      closeTab,
+      createTab,
+      activeTab,
+      favicons: new Map(),
+      // timing constants
+      IMMEDIATE,
+      SHORT_DELAY,
+      LONG_DELAY,
+      VERY_LONG_DELAY,
+      EVENT_THROTTLE_MS,
+      viewState: {},
+      clearViewport,
+
+      addListener(name, func) {
+        let funcList = listeners.get(name);
+
+        if (!funcList) {
+          funcList = [];
+          listeners.set(name, funcList);
+        }
+
+        funcList.push(func);
+      }
+
+    };
+    const updateTabs = debounce(rawUpdateTabs, LONG_DELAY);
+
+    if (state.demoMode) {
+      state.demoEventConsumer = demoZombie;
+    }
+
+    if (location.search.includes("url=")) {
+      let taskUrl;
+
+      try {
+        taskUrl = decodeURIComponent(location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1]);
+      } catch (e) {
+        alert(e);
+        console.warn(e);
+        taskUrl = location.search.split('&').filter(x => x.includes('url='))[0].split('=')[1];
+      }
+
+      postInstallTasks.push(async _ref => {
+        let {
+          queue
+        } = _ref;
+        let completed = false;
+        queue.addMetaListener('changed', async meta => {
+          if (completed) return;
+
+          if (meta.changed.type == 'page' && meta.changed.url.startsWith("https://isolation.site/redirect")) {
+            await sleep(500);
+            await activateTab(null, meta.changed);
+            await sleep(2000);
+            H({
+              synthetic: true,
+              type: "url-address",
+              event: null,
+              url: taskUrl
+            });
+            completed = true;
+            await sleep(5000);
+            history.pushState("", "", "/");
+          }
+        });
+        state.createTab(null, "https://isolation.site/redirect.html");
+      });
+    }
+
+    const queue = new EventQueue(state, sessionToken); // plugins 
+
+    const plugins = new Map();
+
+    if (state.useViewFrame) {
+      installPlugin$1(state, queue);
+
+      if (location.pathname == "/factory.html") {
+        installPlugin(state, queue);
+      }
+
+      if (state.demoMode) {
+        installPlugin$2(state, queue);
+      }
+    }
+
+    if (isSafari()) {
+      queue.send({
+        type: "isSafari"
+      });
+    } else if (isFirefox()) {
+      queue.send({
+        type: "isFirefox"
+      });
+    }
+
+    if (deviceIsMobile()) {
+      state.hideScrollbars();
+      queue.send({
+        type: "isMobile"
+      });
+    } // event handlers
+    // input
+
+
+    queue.addMetaListener('selectInput', meta => handleSelectMessage(meta, state));
+    queue.addMetaListener('keyInput', meta => handleKeysCanInputMessage(meta, state));
+    queue.addMetaListener('favicon', meta => handleFaviconMessage(meta, state));
+    queue.addMetaListener('navigated', () => canKeysInput());
+    queue.addMetaListener('navigated', _ref2 => {
+      let {
+        navigated: {
+          targetId
+        }
+      } = _ref2;
+      return resetFavicon({
+        targetId
+      }, state);
+    }); //queue.addMetaListener('navigated', meta => takeShot(meta, state));
+    // element info
+
+    queue.addMetaListener('elementInfo', meta => handleElementInfo(meta, state)); // scroll
+
+    queue.addMetaListener('scroll', meta => handleScrollNotification(meta, state)); // loading
+
+    queue.addMetaListener('resource', meta => showLoadingIndicator(meta, state));
+    queue.addMetaListener('failed', meta => {
+      if (meta.failed.params.type == "Document") {
+        // we also need to make sure the failure happens at the top level document
+        // rather than writing the top level document for any failure in a sub frame
+        if (meta.failed.params.errorText && meta.failed.params.errorText.includes("ABORTED")) ; else {
+          writeDocument("Request failed: ".concat(meta.failed.params.errorText), meta.failed.frameId, meta.failed.sessionId);
+        }
+      }
+    });
+    queue.addMetaListener('navigated', meta => resetLoadingIndicator(meta, state));
+
+
+    queue.addMetaListener('changed', _ref3 => {
+      let {
+        changed
+      } = _ref3;
+      const tab = findTab(changed.targetId);
+
+      if (tab) {
+        Object.assign(tab, changed);
+        subviews.TabList(state);
+      }
+
+      updateTabs({
+        changed
+      });
+    }); // tabs
+
+    queue.addMetaListener('created', meta => {
+      if (meta.created.type == 'page') {
+        setTimeout(() => activateTab(null, meta.created), LONG_DELAY); //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, meta.created), LONG_DELAY));
+        //updateTabs();
+        //sizeBrowserToBounds(state.viewState.canvasEl, meta.created.targetId);
+      }
+    });
+    queue.addMetaListener('attached', meta => {
+      const attached = meta.attached.targetInfo;
+
+      if (attached.type == 'page') {
+        state.attached.add(attached.targetId);
+
+        if (state.useViewFrame) {
+          sizeBrowserToBounds(state.viewState.viewFrameEl, attached.targetId);
+        } else {
+          sizeBrowserToBounds(state.viewState.canvasEl, attached.targetId);
+          emulateNavigator();
+        }
+
+        updateTabs();
+      }
+    });
+    queue.addMetaListener('navigated', updateTabs);
+    queue.addMetaListener('detached', updateTabs);
+    queue.addMetaListener('destroyed', _ref4 => {
+      let {
+        destroyed
+      } = _ref4;
+      closed.delete(destroyed.targetId);
+      updateTabs();
+    });
+    queue.addMetaListener('crashed', updateTabs); //modals
+
+    queue.addMetaListener('modal', modalMessage => subviews.openModal(modalMessage, state)); // remote secure downloads
+
+    queue.addMetaListener('download', _ref5 => {
+      let {
+        download
+      } = _ref5;
+      const {
+        sessionId,
+        filename
+      } = download;
+      const modal = {
+        sessionId,
+        type: 'notice',
+        message: "The file \"".concat(filename, "\" is downloading to a secure location and will be displayed securely momentarily if it is a supported format."),
+        otherButton: {
+          title: 'Get License',
+          onclick: () => window.open('mailto:cris@dosycorp.com?Subject=ViewFinder+License+Support+Inquiry&body=Hi%20Cris', "_blank")
+        },
+        title: "SecureView\u2122 Enabled"
+      };
+      subviews.openModal({
+        modal
+      }, state);
+    });
+    queue.addMetaListener('secureview', _ref6 => {
+      let {
+        secureview
+      } = _ref6;
+      const {
+        url
+      } = secureview;
+
+      if (url) {
+        createTab(null, url);
+      }
+    }); // HTTP auth
+
+    queue.addMetaListener('authRequired', _ref7 => {
+      let {
+        authRequired
+      } = _ref7;
+      const {
+        requestId
+      } = authRequired;
+      const modal = {
+        requestId,
+        type: 'auth',
+        message: "Provide credentials to continue",
+        title: "HTTP Auth"
+      };
+      subviews.openModal({
+        modal
+      }, state);
+    }); // File chooser 
+
+    queue.addMetaListener('fileChooser', _ref8 => {
+      let {
+        fileChooser
+      } = _ref8;
+      const {
+        sessionId,
+        mode,
+        accept,
+        csrfToken
+      } = fileChooser;
+      const modal = {
+        sessionId,
+        mode,
+        accept,
+        csrfToken,
+        type: 'filechooser',
+        message: "Securely send files to the remote page.",
+        title: "File Chooser"
+      };
+      console.log({
+        fileChooserModal: modal
+      });
+      subviews.openModal({
+        modal
+      }, state);
+    }); // make this so we can call it on resize
+
+    window._voodoo_asyncSizeTab = () => setTimeout(sizeTab, 0); // bond tasks 
+
+
+    canvasBondTasks.push(indicateNoOpenTabs);
+    canvasBondTasks.push(installZoomListener);
+    canvasBondTasks.push(asyncSizeBrowserToBounds);
+    canvasBondTasks.push(rawUpdateTabs);
+
+    if (isSafari()) {
+      canvasBondTasks.push(installSafariLongTapListener);
+    }
+
+    bondTasks.push(canKeysInput);
+    bondTasks.push(getFavicon);
+    bondTasks.push(installTopLevelKeyListeners);
+    const preInstallView = {
+      queue
+    };
+
+    for (const task of preInstallTasks) {
+      try {
+        task(preInstallView);
+      } catch (e) {
+        console.error("Task ".concat(task, " failed with ").concat(e));
+      }
+    }
+
+    component(state).to(selector, position);
+    const api = {
+      back: () => 1,
+      forward: () => 1,
+      reload: () => 1,
+      stop: () => 1,
+      mouse: () => 1,
+      touch: () => 1,
+      scroll: () => 1,
+      key: () => 1,
+      type: () => 1,
+      omni: () => 1,
+      newTab: () => 1,
+      closeTab: () => 1,
+      switchTab: () => 1
+    };
+    const pluginView = {
+      addToQueue,
+      subscribeToQueue,
+      requestRender,
+      api
+    };
+    const poppetView = {
+      loadPlugin,
+      api
+    };
+    const postInstallView = {
+      queue
+    };
+    await sleep(0);
+
+    for (const task of postInstallTasks) {
+      try {
+        task(postInstallView);
+      } catch (e) {
+        console.error("Task ".concat(task, " failed with ").concat(e));
+      }
+    }
+
+    if (activeTarget) {
+      setTimeout(() => activateTab(null, {
+        targetId: activeTarget
+      }), LONG_DELAY); //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, {targetId:activeTarget}), LONG_DELAY));
+      //updateTabs();
+      //sizeBrowserToBounds(state.viewState.canvasEl, activeTarget);
+    }
+
+    return poppetView; // closures
+
+    /*function doShot() {
+      setTimeout(() => {
+        queue.send({
+          type: "doShot",
+          synthetic: true
+        });
+      }, SHORT_DELAY);
+    }*/
+
+    function runListeners(name, data) {
+      const funcList = listeners.get(name);
+      if (!funcList || funcList.length == 0) return false;
+      let score = false;
+
+      for (const func of funcList) {
+        try {
+          func(data);
+          score = score || true;
+        } catch (e) {
+          console.log("Listeners func for ".concat(name, " fails: ").concat(func, "\nError: ").concat(e + e.stack));
+        }
+      }
+
+      return score;
+    }
+
+    function findTab(id) {
+      return state.tabs.find(_ref9 => {
+        let {
+          targetId
+        } = _ref9;
+        return id == targetId;
+      });
+    }
+
+    function activeTab() {
+      return state.tabs.length == 1 ? state.tabs[0] : findTab(state.activeTarget) || {};
+    }
+
+    function indicateNoOpenTabs() {
+      if (state.tabs.length == 0) {
+        clearViewport();
+
+        if (state.useViewFrame) {
+          try {
+            state.viewState.viewFrameEl.contentDocument.body.innerHTML = "\n                <em>".concat(state.factoryMode ? 'Factory Mode' : 'Custom Mode', ". No tabs open.</em>\n              ");
+          } catch (e) {
+            console.warn(e);
+          }
+        } else {
+          writeCanvas("No tabs open.");
+        }
+      }
+    }
+
+    function writeCanvas(text) {
+      const canv = state.viewState.canvasEl;
+      const ctx = state.viewState.ctx;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canv.width, canv.height);
+      ctx.fillStyle = 'silver';
+      ctx.font = 'italic 3vmax sans-serif';
+      ctx.textAlign = "center";
+      ctx.fillText(text, innerWidth / 2, innerHeight / 2 - 6 * Math.max(innerWidth / 100, innerHeight / 100));
+    }
+
+    function writeDocument(html, frameId, sessionId) {
+      queue.send({
+        type: 'setDocument',
+        html,
+        frameId,
+        sessionId,
+        synthetic: true
+      });
+    }
+
+    function clearViewport() {
+      if (state.useViewFrame) {
+        try {
+          state.viewState.viewFrameEl.contentDocument.body.innerHTML = "";
+        } catch (e) {
+          console.warn(e);
+        }
+      } else {
+        const canv = state.viewState.canvasEl;
+        const ctx = state.viewState.ctx;
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canv.width, canv.height);
+      }
+    }
+
+    function sendKey(keyEvent) {
+      const {
+        viewState
+      } = state;
+
+      if (!(viewState.shouldHaveFocus || document.activeElement == viewState.omniBoxInput)) {
+        let ev = keyEvent;
+
+        if (ev.key == "Tab" || ev.key == "Enter") ; else {
+          H(ev);
+        }
+      }
+    }
+
+    function installTopLevelKeyListeners() {
+      if (!deviceIsMobile()) {
+        self.addEventListener('keydown', sendKey);
+        self.addEventListener('keypress', sendKey);
+        self.addEventListener('keyup', sendKey);
+      }
+    }
+
+    function installSafariLongTapListener(el) {
+      const FLAGS = {
+        passive: true,
+        capture: true
+      };
+      const MIN_DURATION = 200;
+      const MAX_MOVEMENT = 20;
+      let lastStart;
+      el.addEventListener('touchstart', ts => lastStart = ts, FLAGS);
+      el.addEventListener('touchend', triggerContextMenuIfLongEnough, FLAGS);
+      el.addEventListener('touchcancel', triggerContextMenuIfLongEnough, FLAGS);
+
+      function triggerContextMenuIfLongEnough(tf) {
+        // space 
+        const touch1 = lastStart.changedTouches[0];
+        const touch2 = tf.changedTouches[0];
+        const movement = Math.hypot(touch2.pageX - touch1.pageX, touch2.pageY - touch1.pageY); // time
+
+        const duration = tf.timeStamp - lastStart.timeStamp;
+
+        if (duration > MIN_DURATION && movement < MAX_MOVEMENT) {
+          lastStart.preventDefault();
+          tf.preventDefault();
+          const {
+            pageX,
+            pageY,
+            clientX,
+            clientY
+          } = touch1;
+          el.dispatchEvent(new CustomEvent('contextmenu', {
+            detail: {
+              pageX,
+              pageY,
+              clientX,
+              clientY
+            }
+          }));
+        }
+      }
+    }
+
+    function installZoomListener(el) {
+      const FLAGS = {
+        passive: true
+      };
+      let lastScale = 1.0;
+      let scaling = false;
+      let startDist = 0;
+      let lastDist = 0;
+      let touch;
+      el.addEventListener('touchstart', begin, FLAGS);
+      el.addEventListener('touchmove', move, FLAGS);
+      el.addEventListener('touchend', end, FLAGS);
+      el.addEventListener('touchcancel', end, FLAGS);
+      el.addEventListener('wheel', sendZoom, {
+        passive: true,
+        capture: true
+      });
+
+      function sendZoom(event) {
+        if (event.ctrlKey || event.deltaZ != 0) {
+          const delta = event.deltaZ || event.deltaY;
+          const direction = Math.sign(delta);
+          let multiplier;
+
+          if (direction > 0) {
+            multiplier = 1 / 1.25;
+          } else {
+            multiplier = 1.25;
+          }
+
+          const scale = lastScale * multiplier;
+          lastScale = scale;
+          H({
+            synthetic: true,
+            type: 'zoom',
+            scale,
+            event
+          });
+        }
+      }
+
+      function begin(event) {
+        if (event.touches.length == 2) {
+          startDist = Math.hypot(event.touches[0].pageX - event.touches[1].pageX, event.touches[0].pageY - event.touches[1].pageY);
+
+          if (startDist > 8) {
+            scaling = true;
+            touch = event.touches[0];
+          } else {
+            scaling = false;
           }
         }
-      }, _callee7);
-    }));
-    return _voodoo.apply(this, arguments);
-  }
+      }
 
+      function move(event) {
+        if (scaling) {
+          const dist = Math.hypot(event.touches[0].pageX - event.touches[1].pageX, event.touches[0].pageY - event.touches[1].pageY);
+          lastDist = dist;
+        }
+      }
+
+      function end() {
+        if (scaling) {
+          if (lastDist < 8) ; else {
+            const scale = lastScale * Math.abs(lastDist / startDist);
+            lastScale = scale;
+            H({
+              synthetic: true,
+              type: 'zoom',
+              scale,
+              event: touch
+            });
+          }
+
+          scaling = false;
+          startDist = 0;
+          lastDist = 0;
+          touch = false;
+        }
+      }
+    }
+
+    function H(event) {
+      // block if no tabs
+      if (state.tabs.length == 0) {
+        if (SessionlessEvents.has(event.type)) ; else return;
+      }
+
+      if (event.defaultPrevented) return;
+      const mouseEventOnPointerDevice = event.type.startsWith("mouse") && event.type !== "wheel" && !state.DoesNotSupportPointerEvents;
+      const tabKeyPressForBrowserUI = event.key == "Tab" && !event.vRetargeted;
+      const unnecessaryIfSyncValue = state.convertTypingEventsToSyncValueEvents && CancelWhenSyncValue.has(event.type) && EnsureCancelWhenSyncValue(event);
+      const eventCanBeIgnored = mouseEventOnPointerDevice || tabKeyPressForBrowserUI || unnecessaryIfSyncValue;
+      if (eventCanBeIgnored) return;
+      const pointerEvent = event.type.startsWith("pointer");
+      const mouseWheel = event.type == "wheel";
+      const syntheticNonTypingEventWrapper = event.synthetic && event.type != "typing" && event.event;
+
+      if (mouseWheel) ; else if (pointerEvent) {
+        state.DoesNotSupportPointerEvents = false;
+      } else if (syntheticNonTypingEventWrapper) {
+        event.event.preventDefault && event.event.preventDefault();
+      }
+
+      const simulated = event.event && event.event.simulated;
+      const hasTarget = event.event && event.event.target;
+
+      if (event.type == "typing" && hasTarget && !simulated && state.convertTypingEventsToSyncValueEvents) {
+        event.type = 'typing-syncValue';
+        event.value = event.event.target.value;
+        event.contextId = state.contextIdOfFocusedInput;
+        event.data = "";
+      }
+
+      const isThrottled = ThrottledEvents.has(event.type);
+      const transformedEvent = transformEvent(event);
+
+      if (mouseWheel) {
+        transformedEvent.contextId = state.viewState.latestScrollContext;
+      }
+
+      if (isThrottled) {
+        queue.send(transformedEvent);
+      } else {
+        if (event.type == "keydown" && event.key == "Enter") {
+          // Note
+          // We do this to make sure we send composed input data when enter is pressed
+          // in an input field, if we do not do this, the current composition is not printed
+          // but only if we are not using sync mode 
+          // (otherwise we will add an unnecessary bit on the end!)
+          if (!state.convertTypingEventsToSyncValueEvents) {
+            if (!!state.latestData && !!event.target.matches('input') && state.latestData.length > 1) {
+              queue.send(transformEvent({
+                synthetic: true,
+                type: 'typing',
+                data: state.latestData,
+                event: {
+                  enterKey: true,
+                  simulated: true
+                }
+              }));
+              state.latestCommitData = state.latestData;
+              state.latestData = "";
+            }
+          }
+        } else if (event.type == "keydown" && event.key == "Backspace") {
+          state.backspaceFiring = true;
+
+          if (state.viewState.shouldHaveFocus && !state.convertTypingEventsToSyncValueEvents) {
+            state.viewState.shouldHaveFocus.value = "";
+          }
+        } else if (event.type == "keyup" && event.key == "Backspace") {
+          state.backspaceFiring = false;
+        } else if (event.type == "pointerdown" || event.type == "mousedown") {
+          if (!state.convertTypingEventsToSyncValueEvents) {
+            //const {timeStamp,type} = event;
+            const {
+              latestData
+            } = state;
+
+            if (!!state.viewState.shouldHaveFocus && !!latestData && latestData.length > 1 && latestData != state.latestCommitData) {
+              state.isComposing = false;
+              const data = latestData;
+              queue.send(transformEvent({
+                synthetic: true,
+                type: 'typing',
+                data: data,
+                event: {
+                  pointerDown: true,
+                  simulated: true
+                }
+              }));
+              state.latestCommitData = data;
+              state.latestData = "";
+            }
+          }
+        } else if (event.type == "pointerup" || event.type == "mouseup") {
+          if (state.viewState.killNextMouseReleased) {
+            state.viewState.killNextMouseReleased = false;
+            return;
+          }
+        }
+
+        queue.send(transformedEvent);
+      }
+    }
+
+    function sizeBrowserToBounds(el, targetId) {
+      let {
+        width,
+        height
+      } = el.getBoundingClientRect();
+      width = Math.round(width);
+      height = Math.round(height);
+
+      if (el.width != width || el.height != height) {
+        el.width = width;
+        el.height = height;
+      }
+
+      const mobile = deviceIsMobile();
+      H({
+        synthetic: true,
+        type: "window-bounds",
+        width,
+        height,
+        targetId: targetId || state.activeTarget
+      });
+      H({
+        synthetic: true,
+        type: "window-bounds-preImplementation",
+        width,
+        height,
+        mobile,
+        targetId: targetId || state.activeTarget
+      });
+      self.ViewportWidth = width;
+      self.ViewportHeight = height;
+    }
+
+    function sizeTab() {
+      return sizeBrowserToBounds(state.viewState.canvasEl);
+    }
+
+    function asyncSizeBrowserToBounds(el) {
+      setTimeout(() => (sizeBrowserToBounds(el), indicateNoOpenTabs()), 0);
+    }
+
+    function emulateNavigator() {
+      const {
+        platform,
+        userAgent,
+        language: acceptLanguage
+      } = navigator;
+      H({
+        synthetic: true,
+        type: "user-agent",
+        userAgent,
+        platform,
+        acceptLanguage
+      });
+    }
+
+    function hideScrollbars() {
+      H({
+        synthetic: true,
+        type: "hide-scrollbars"
+      });
+    }
+
+    async function activateTab(click, tab) {
+      // don't activate if the click was a close click from our tab
+      if (click && click.currentTarget.querySelector('button.close') == click.target) return;
+      click && click.preventDefault(); // sometimes we delay the call to activate tab and
+      // in the meantime the list of tabs can empty
+      // so we exit if there is no tab to activate
+
+      if (!tab) return;
+
+      if (click) {
+        setTimeout(() => click.target.closest('li').scrollIntoView({
+          inline: 'center',
+          behavior: 'smooth'
+        }), LONG_DELAY);
+      }
+
+      if (state.activeTarget == tab.targetId) {
+        if (state.viewState.omniBoxInput == state.viewState.lastActive) {
+          state.viewState.omniBoxInput.focus();
+        }
+
+        return;
+      }
+
+      const {
+        targetId
+      } = tab;
+      queue.send({
+        command: {
+          name: "Target.activateTarget",
+          params: {
+            targetId
+          },
+          requiresShot: true
+        }
+      });
+      sizeTab();
+      canKeysInput();
+      state.lastTarget = state.activeTarget;
+      state.activeTarget = targetId; // we assume that a listener will call clearviewport
+      // this returns false if there are no listeners
+
+      if (!runListeners('activateTab')) {
+        clearViewport();
+      }
+
+      state.active = activeTab();
+      subviews.TabList(state);
+      subviews.OmniBox(state);
+      subviews.LoadingIndicator(state);
+      sizeBrowserToBounds(state.viewState.canvasEl);
+      setTimeout(() => {
+        if (state.active && state.active.url != BLANK) {
+          canKeysInput();
+        } else {
+          /**
+          writeDocument(`
+            <!DOCTYPE html>
+              <style>
+                :root {
+                  height: 100%;
+                  background: #${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, 0)};
+                  color: navy;
+                  font-family: system-ui;
+                }
+                h2 {
+                }
+                strong {
+                  padding: 0.5rem;
+                }
+              </style>
+              <h2>
+                Secure ViewFinder 
+              </h2>
+              <strong>
+                Current time: ${(new Date).toString()}
+              </strong>
+            </html>
+          `);
+          **/
+          writeCanvas("Secure ViewFinder");
+          state.viewState.omniBoxInput.focus();
+        }
+      }, SHORT_DELAY);
+    }
+
+    async function closeTab(click, tab, index) {
+      const {
+        targetId
+      } = tab;
+      closed.add(targetId);
+      resetLoadingIndicator({
+        navigated: targetId
+      }, state);
+      setTimeout(() => closed.delete(targetId), VERY_LONG_DELAY);
+      const events = [{
+        command: {
+          name: "Target.closeTarget",
+          params: {
+            targetId
+          }
+        }
+      }];
+      await queue.send(events);
+      state.tabs.splice(index, 1);
+
+      if (state.activeTarget == targetId) {
+        if (state.tabs.length == 0) {
+          state.activeTarget = null;
+        } else {
+          if (index >= state.tabs.length) {
+            index = state.tabs.length - 1;
+          }
+
+          const newActive = state.tabs[index];
+          activateTab(click, newActive);
+        }
+      } else {
+        updateTabs();
+      }
+
+      subviews.TabList(state);
+      subviews.LoadingIndicator(state);
+    }
+
+    async function rawUpdateTabs() {
+      let {
+        tabs,
+        activeTarget,
+        requestId
+      } = await (demoMode ? fetchDemoTabs() : fetchTabs({
+        sessionToken
+      }));
+      tabs = tabs.filter(_ref10 => {
+        let {
+          targetId
+        } = _ref10;
+        return !closed.has(targetId);
+      });
+
+      if (requestId <= latestRequestId) {
+        return;
+      } else {
+        latestRequestId = requestId;
+      }
+
+      state.tabs = tabs;
+
+      if (demoMode) {
+        state.activeTarget = activeTarget;
+      }
+
+      state.active = activeTab(); // this ensures we activate the tab
+
+      if (state.tabs.length == 1) {
+        setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY); //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY));
+        //updateTabs();
+        //sizeBrowserToBounds(state.viewState.canvasEl, state.tabs[0].targetId);
+      } else if (!state.activeTarget || !state.active) {
+        if (state.tabs.length) {
+          setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY); //state.updateTabsTasks.push(() => setTimeout(() => activateTab(null, state.tabs[0]), LONG_DELAY));
+          //updateTabs();
+          //sizeBrowserToBounds(state.viewState.canvasEl, state.tabs[0].targetId);
+        }
+      }
+
+      subviews.Controls(state);
+      subviews.TabList(state);
+
+      if (state.tabs.length == 0) {
+        indicateNoOpenTabs();
+      }
+
+      while (state.updateTabsTasks.length) {
+        const task = state.updateTabsTasks.shift();
+
+        try {
+          task();
+        } catch (e) {
+          console.warn("State update tabs task failed", e, task);
+        }
+      }
+    }
+
+    async function createTab(click) {
+      let url = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : BLANK;
+      queue.send({
+        command: {
+          name: "Target.createTarget",
+          params: {
+            url,
+            enableBeginFrameControl: DEBUG.frameControl
+          }
+        }
+      });
+
+      if (click) {
+        click.target.blur();
+        click.currentTarget.blur();
+      }
+    }
+
+    function canKeysInput() {
+      if (state.viewState.viewFrameEl) return;
+      setTimeout(() => {
+        queue.send({
+          type: "canKeysInput",
+          synthetic: true
+        });
+      }, SHORT_DELAY);
+    }
+
+    function getFavicon() {
+      setTimeout(() => {
+        queue.send({
+          type: "getFavicon",
+          synthetic: true
+        });
+      }, IMMEDIATE);
+    }
+
+    function loadPlugin(plugin) {
+      plugins.set(plugin.name, plugin);
+      plugin.load(pluginView);
+    }
+
+    function
+      /*...events*/
+    addToQueue() {
+      console.warn("Unimplemented");
+    }
+
+    function
+      /*pluginRenderedView*/
+    requestRender() {
+      console.warn("Unimplemented");
+    }
+
+    function
+      /*name, listener*/
+    subscribeToQueue() {
+      console.warn("Unimplemented");
+    }
+  }
   function cloneKeyEvent(event, vRetargeted) {
     return {
       type: event.type,
@@ -13904,18 +10665,16 @@
   }
 
   function Voodoo() {
-    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-        api = _ref.api,
-        translator = _ref.translator,
-        image = _ref.image,
-        _ref$useViewFrame = _ref.useViewFrame,
-        useViewFrame = _ref$useViewFrame === void 0 ? false : _ref$useViewFrame,
-        _ref$demoMode = _ref.demoMode,
-        demoMode = _ref$demoMode === void 0 ? false : _ref$demoMode;
-
-    var selector = arguments.length > 1 ? arguments[1] : undefined;
-    var position = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'beforeEnd';
-    var root;
+    let {
+      api,
+      translator,
+      image,
+      useViewFrame = false,
+      demoMode = false
+    } = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    let selector = arguments.length > 1 ? arguments[1] : undefined;
+    let position = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'beforeEnd';
+    let root;
 
     if (!selector) {
       //console.warn(`Did not specify a root to attach to. Assuming it's the first found from either the body tag, or the document element.`);
@@ -13956,29 +10715,25 @@
 
     if (!translator) {
       //console.warn(`Did not specify a translator, will send RAW Voodoo commands to API`);
-      translator = function translator(e) {
-        return e;
-      };
+      translator = e => e;
     }
 
     return voodoo(root, position, {
       useViewFrame,
       demoMode,
-      preInstallTasks: [function (poppet) {
-        return poppet.queue.addSubscriber(api, translator, image);
-      }],
+      preInstallTasks: [poppet => poppet.queue.addSubscriber(api, translator, image)],
       postInstallTasks: []
     });
   }
 
-  var sessionToken = location.hash && location.hash.slice(1);
+  const sessionToken = location.hash && location.hash.slice(1);
   function getAPI() {
-    var api = new URL(location);
+    const api = new URL(location);
     api.hash = '';
     api.search = "session_token=".concat(sessionToken);
     api.protocol = api.protocol == 'https:' ? 'wss:' : 'ws:';
-    var url = api.href + '';
-    var hashIndex = url.indexOf('#');
+    let url = api.href + '';
+    const hashIndex = url.indexOf('#');
 
     if (hashIndex >= 0) {
       url = url.slice(0, hashIndex);
@@ -13989,39 +10744,16 @@
 
   start_app();
 
-  function start_app() {
-    return _start_app.apply(this, arguments);
-  }
-
-  function _start_app() {
-    _start_app = _asyncToGenerator$1( /*#__PURE__*/regenerator$1.mark(function _callee() {
-      var useViewFrame, translator$1, voodoo;
-      return regenerator$1.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              useViewFrame = false;
-              translator$1 = translator;
-              _context.next = 4;
-              return Voodoo({
-                api: getAPI(),
-                translator: translator$1,
-                useViewFrame
-              });
-
-            case 4:
-              voodoo = _context.sent;
-              self.voodoo = voodoo;
-              return _context.abrupt("return", voodoo);
-
-            case 7:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, _callee);
-    }));
-    return _start_app.apply(this, arguments);
+  async function start_app() {
+    const useViewFrame = false;
+    const translator$1 = translator;
+    const voodoo = await Voodoo({
+      api: getAPI(),
+      translator: translator$1,
+      useViewFrame
+    });
+    self.voodoo = voodoo;
+    return voodoo;
   }
 
 })();
