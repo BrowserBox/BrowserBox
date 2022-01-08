@@ -166,7 +166,7 @@ But in the ideal case, yes, it can be done, and you can embed your legacy Flash 
 
 **Can I download files form the web using VF?**
 
-By default VF does not permit downloading of files to the local device, and instead downloads them to the remote server. In VF Pro, the built-in secure document viewer then processes and displays them if they are of a supported format. However, both Pro and Regular tracks can be configured to provide a download link to get the file to the local device, although that is not recommended in security applications, at least not without proper scanning or CDR.
+By default VF does not permit downloading of files to the local device, and instead downloads them to the remote server. In VF Pro, the built-in secure document viewer then processes and displays them if they are of a supported format. However, both Pro and Regular lines can be configured to provide a download link to get the file to the local device, although that is not recommended in security applications, at least not without proper scanning or CDR.
 
 **Can VF integrate with our existing secure document viewer or download scanning?**
 
@@ -201,12 +201,13 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
 ## Licensing
 
-*Coming soon* 
+**VF Regular**
+  VF Regular (this repository) is licensed under the Polyform Noncommercial License 1.0 (NC license). Any previous licensed versions are also relicensed under this license. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE.md). In essence this license permits any use case besides those which are for a commercial purpose or anticipated commercial application. Explicitly, *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
+  I only ask that if you're using it under the NC license, you consider donating to assist and ensure continued development of the VF Regular line. And I also ask that if you have extensive modifications or custom requirements you seriously consider engaging the services of Dosyago Corporation to consult for you on that. [Reach out to me](mailto:cris@dosycorp.com?subject=NC%20VF%20Inquiry&body=Hi%20Cris) for service.
+
+**VF Pro**
+  VF Pro (closed-sourced) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreemetn with Dosyago Corporation. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE-Pro.md). In essence this license permits any use case besides those which compete with Dosyago Corporation (or the rightsholders of VF).
 
 ## Copyright
 
-This project copyright Cris Stringfellow & The Dosyago Corporation 2022
-
-
-
-
+This project copyright The Rightsholders (currently Cris Stringfellow & The Dosyago Corporation) 2022
