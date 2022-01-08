@@ -83,10 +83,10 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Mobile pinch-zoom
 - [:heavy_check_mark:] `mailto:`, `tel:`, `sktype:` and other [app and protocol links](quora.com/What-are-tel-SMS-mailto-and-geo-in-URLs/answer/Matthew-Cox-33)
 - [:heavy_check_mark:] Multiple select 
-- [✖️] Multi-touch on mobile
-- [✖️] Bookmarks
-- [✖️] Displayable history
-- [:heavy_multiplication_x:] Webcam and microphone support
+- [:hourglass_flowing_sand:] Multi-touch on mobile
+- [:hourglass_flowing_sand:] Bookmarks
+- [:hourglass_flowing_sand:] Displayable history
+- [:hourglass_flowing_sand:] Webcam and microphone support
 
 **Security Features**
 - [:heavy_check_mark:] RBI [browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) security model
@@ -107,8 +107,8 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Run sandboxed puppeteer scripts ⭐
 - [:heavy_check_mark:] Skinnable browser UI ⭐
 - [:heavy_check_mark:] Kiosk mode (*no UI controls*) ⭐
-- [:heavy_multiplication_x:] Sync browser cookies & settings from other browser (or, for example, Google account)
-- [:heavy_multiplication_x:] Chrome extensions API (or cloned functionality)
+- [:hourglass_flowing_sand:] Sync browser cookies & settings from other browser (or, for example, Google account)
+- [:hourglass_flowing_sand:] Chrome extensions API (or cloned functionality)
 
 **Development and Deployment Features**
 - [:heavy_check_mark:] Fully Dockerized / Dockerizable + reproducible startup and install scripts
@@ -122,8 +122,8 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 - [:heavy_check_mark:] Bandwidth, CPU and memory limiting for resource abuse detection and prevention ⭐
 - [:heavy_check_mark:] Simple API ⭐
 - [:heavy_check_mark:] Fully white-labelable
-- [:heavy_multiplication_x:] White-labeling API
-- [:heavy_multiplication_x:] Fully scriptable with comprehensive API 
+- [:hourglass_flowing_sand:] White-labeling API
+- [:hourglass_flowing_sand:] Fully scriptable with comprehensive API 
 
 ## Pro or Regular? 
 
