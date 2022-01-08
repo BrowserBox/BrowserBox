@@ -20,7 +20,7 @@ More information on these [commercial options](#commercial-options) is below, an
 | Themeable browser UI                          | :heavy_check_mark: | :heavy_check_mark: |
 | Docker image                                  | :heavy_check_mark: | :heavy_check_mark: |
 | Cloud and platform agnostic                   | :heavy_check_mark: | :heavy_check_mark: |
-| Multi-session security features               |                    | :heavy_check_mark: |
+| Multi-user security features                  |                    | :heavy_check_mark: |
 | Auto scaling and resource control             |                    | :heavy_check_mark: |
 | Advanced viewport streaming and lag reduction |                    | :heavy_check_mark: |
 | Built-in cobrowsing and instant messaging     |                    | :heavy_check_mark: |
