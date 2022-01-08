@@ -209,8 +209,6 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
   In essence this license permits any use case besides those which are for a commercial purpose or anticipated commercial application. Explicitly, *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
 
-  I only ask that if you're using it under the NC license, you [consider donating to assist and ensure continued development](https://github.com/i5ik/Viewfinder/blob/boss/docs/DONATIONS.md) of the VF Regular line. And I also ask that if you have extensive modifications or custom requirements you seriously consider engaging the services of Dosyago Corporation to consult for you on that. [Reach out to me](mailto:cris@dosycorp.com?subject=NC%20VF%20Inquiry&body=Hi%20Cris) for service.
-
 **VF Pro**
 
   VF Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreemetn with Dosyago Corporation. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE-Pro.md). 
