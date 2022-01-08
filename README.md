@@ -30,23 +30,25 @@
 
 ## Installation
 
-**Clone the repo:**
+**Clone the repo and install dependencies:**
 
 ```shell
 $ git clone https://github.com/i5ik/Viewfinder.git
 $ cd Viewfinder
+$ npm i 
 ```
 
-or, **install it from NPM:**
+or, **install it from NPM either as a package or a global:**
 
 ```shell
 $ npm i --save viewfinder-regular
+$ npm i -g viewfinder-regular
 ```
 
 or, **pull it off DockerHub:**
 
 ```shell
-$ docker pull dosyago:viewfinder
+$ docker pull dosyago:viewfinder-regular
 ```
 
 ## Applications
