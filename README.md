@@ -235,7 +235,7 @@ You can also link up your own secure document viewer with VF Regular.
 
 **Can you rush legacy Flash applications?**
 
-There's a customized version of Viewfind Pro with Flash support via two separate paths: Legacy Chrome (pre [Chrome 88+ - Jan 2021](https://www.chromium.org/flash-roadmap#TOC-Flash-Support-Removed-from-Chromium-Target:-Chrome-88---Jan-2021-)) with [xvfb](https://www.x.org/releases/X11R7.7/doc/man/man1/Xvfb.1.xhtml), and using latest Chrome with [ruffle](https://github.com/ruffle-rs/ruffle). 
+There's a customized version of Viewfind Pro with Flash support via two separate paths: Legacy Chrome (pre [Chrome 88 ~ Jan 2021](https://www.chromium.org/flash-roadmap#TOC-Flash-Support-Removed-from-Chromium-Target:-Chrome-88---Jan-2021-)) with [xvfb](https://www.x.org/releases/X11R7.7/doc/man/man1/Xvfb.1.xhtml), and using latest Chrome with [ruffle](https://github.com/ruffle-rs/ruffle). 
 
 **However**, there's no guaruntee that your particular application will work, because ruffle still has many missing features and bugs, and because streaming your app over the network in a virtual browser may introduce other issues for your application, or simply be not suitable in your case.
 
