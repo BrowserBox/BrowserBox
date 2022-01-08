@@ -1,17 +1,18 @@
 #!/bin/bash
 
-rm ViewFinder.js
-rm ViewFinder.*
-rm *.node
+rm ./build/ViewFinder.js
+rm ./dist/ViewFinder.*
 rm -rf typetests
 rm -rf node_modules
-cd zombie-lord 
+cd ./src/zombie-lord 
 rm -rf node_modules
-cd ../public/voodoo
+cd ../../
+cd ./src/public/voodoo
 rm -rf node_modules
-cd ../../public
+cd ../../../
+cd ./src/public
 rm -f *bundle*.js
-cd ../zombie-lord/custom-launcher
+cd ../../
+cd ./src/zombie-lord/custom-launcher
 rm -rf node_modules
-
 

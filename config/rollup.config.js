@@ -17,7 +17,7 @@ export default {
     resolve(),
     babel({
       "babelrc": false,
-      "exclude": ['node_modules/@babel/runtime/**', 'public/voodoo/node_modules/@babel/runtime/**'],
+      "exclude": ['node_modules/@babel/runtime/**', 'src/public/voodoo/node_modules/@babel/runtime/**'],
       "babelHelpers": "runtime",
       "plugins": [
         "@babel/plugin-transform-runtime"
@@ -27,7 +27,7 @@ export default {
           "@babel/preset-env",
           {
             targets: {
-              browsers: [ "safari >= 9" ]
+              browsers: [ "safari >= 11" ]
             }
           }
         ]

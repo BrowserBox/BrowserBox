@@ -2,10 +2,10 @@ const path = require('path');
 const webpack = require('webpack');
 
 module.exports = {
-  entry: "./server.js",
+  entry: "./src/server.js",
   output: {
-    path: path.resolve(__dirname),
-    filename: "ViewFinder.js"
+    path: path.resolve(__dirname, 'dist'),
+    filename: "Viewfinder.js"
   },
   target: "node",
   node: {
