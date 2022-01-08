@@ -4,7 +4,7 @@ const webpack = require('webpack');
 module.exports = {
   entry: "./src/server.js",
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, '..', 'dist'),
     filename: "Viewfinder.js"
   },
   target: "node",
