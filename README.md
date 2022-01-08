@@ -17,17 +17,17 @@ More information on these [commercial options](#commercial-options) is below, an
 | Browser features                              | :heavy_check_mark: | :heavy_check_mark: |
 | Security features                             | :heavy_check_mark: | :heavy_check_mark: |
 | Privacy features                              | :heavy_check_mark: | :heavy_check_mark: |
+| Themeable browser UI                          | :heavy_check_mark: | :heavy_check_mark: |
 | Docker image                                  | :heavy_check_mark: | :heavy_check_mark: |
-| themeable browser UI                          | :heavy_check_mark: | :heavy_check_mark: |
 | Cloud and platform agnostic                   | :heavy_check_mark: | :heavy_check_mark: |
 | Multi-session security features               |                    | :heavy_check_mark: |
-| automatic scaling and control                 |                    | :heavy_check_mark: |
-| advanced viewport streaming and lag reduction |                    | :heavy_check_mark: |
-| co-browsing and instant messaging             |                    | :heavy_check_mark: |
-| run sandboxed puppeteer scripts               |                    | :heavy_check_mark: |
-| embed in iframe                               |                    | :heavy_check_mark: |
-| kiosk mode                                    |                    | :heavy_check_mark: |
-| simple API                                    |                    | :heavy_check_mark: |
+| Auto scaling and resource control             |                    | :heavy_check_mark: |
+| Advanced viewport streaming and lag reduction |                    | :heavy_check_mark: |
+| Built-in cobrowsing and instant messaging     |                    | :heavy_check_mark: |
+| Run sandboxed puppeteer scripts               |                    | :heavy_check_mark: |
+| `<iframe>` embeddable                         |                    | :heavy_check_mark: |
+| Kiosk mode                                    |                    | :heavy_check_mark: |
+| Simple API                                    |                    | :heavy_check_mark: |
 
 
 ## Commercial Options
