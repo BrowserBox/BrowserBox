@@ -1,7 +1,7 @@
 {
   "name": "remoteview",
   "version": "2.40.0",
-  "description": "Fly a browser remotely from your browser? Yes.",
+  "description": "Remote isolated browser platform by Dosyago",
   "main": "index.js",
   "type": "module",
   "bin": {
@@ -34,7 +34,7 @@
     "remote-isolated-browser",
     "rbi",
     "cbii",
-    "secure-document-viewer"
+    "secure-document-viewer",
     "browser",
     "headless",
     "automation",
