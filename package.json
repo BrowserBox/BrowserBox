@@ -1,6 +1,6 @@
 {
   "name": "viewfinder-regular",
-  "version": "3.2.3",
+  "version": "3.2.4",
   "description": "Remote isolated browser platform by Dosyago",
   "main": "index.js",
   "type": "module",
