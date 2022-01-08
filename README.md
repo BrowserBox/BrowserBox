@@ -98,7 +98,8 @@ It's kind of a long road but--hey--we've come so far already, we're gonna keep g
 **Security Features**
 - [x] RBI [browser isolation](https://en.wikipedia.org/wiki/Browser_isolation) security model
 - [x] Fully clientless, embeds straight into a web page, zero download required for front-end
-- [x] [Evades](https://github.com/paulirish/headless-cat-n-mouse) [headless](https://github.com/infosimples/detect-headless) [detection](https://github.com/azerpas/detect-headless) with a customizable browser-fingerprinting cross-section
+- [x] [Evades](https://github.com/paulirish/headless-cat-n-mouse) [headless](https://github.com/infosimples/detect-headless) [detection](https://github.com/azerpas/detect-headless) 
+- [x] Customizable browser-fingerprinting cross-section
 - [x] Works with proxies and Tor
 - [x] DevTools (*currently only works on Chrome clients*) ⭐
 - [x] Integrates with PDF/DOCX/XLSX secure document viewer ([CDR](https://en.wikipedia.org/wiki/Content_Disarm_%26_Reconstruction)) (built-in only in Pro ⭐)
