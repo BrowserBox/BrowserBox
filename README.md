@@ -1,6 +1,6 @@
 <p align=center><a href=https://dosyago.com target=_blank><img src=https://github.com/i5ik/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=61.8%></a></p>
 
-# [Viewfinder](https://github.com/i5ik/Viewfinder) Regular · [![Source Lines of Code](https://sloc.xyz/github/i5ik/Viewfinder)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/remoteview)](https://npmjs.com/package/remoteview) [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) 
+# [Viewfinder](https://github.com/i5ik/Viewfinder) Regular · [![Source Lines of Code](https://sloc.xyz/github/i5ik/Viewfinder)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/viewfinder-regular)](https://npmjs.com/package/remoteview) [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) 
 
 **Viewfinder** is a component for a browser that runs on a remote server, with a UI you can embed on the web.
 
@@ -46,10 +46,11 @@ $ npm i -g viewfinder-regular
 $ npm i --save viewfinder-regular
 ```
 
-or, **pull it off DockerHub:**
+or, **pull it off DockerHub** (and use the `run_docker.sh` script in the repo to run it):
 
 ```shell
 $ docker pull dosyago/viewfinder-regular:latest
+$ git clone https://github.com/i5ik/Viewfinder.git
 $ cd Viewfinder/
 $ ./scripts/run_docker.sh
 ```
@@ -197,13 +198,15 @@ More information on these [commercial options](#commercial-options) is below, an
 
 ## Commercial Options
 
-If you want to use VF commercially your main option is to purchase an [S license](#licensing), which permits non-competing uses. If you'd like to license VF for purposes that competete with us, we'll have to negotiate agreements. [Reach out to me](mailto:cris@dosycorp.com?subject=VF%20Negotiation&body=Dear%20Cris) if that's the case.
-
 Viewfinder Pro is provided by the [Dosyago Corporation](https://github.com/dosyago) as a commercial offering in two flavors: individual, and self-hosted.
 
 **Self-hosted**
 
-Includes the provision of the VF Pro software, an S license and various tiers of service. The basic cost principle is established on time (not scale): time you want the license for, time of the latest update you want, and time it takes us to service your deployment. Targeted at SMBs up to Enterprise. 
+The self-hosted track includes the provision of the VF Pro software, an S license and various tiers of service. The basic cost principle is established on time (not scale): time you want the license for, time of the latest update you want, and time it takes us to service your deployment. Targeted at SMBs up to Enterprise. 
+
+If you want to use VF commercially self-hosted is your main option.
+
+To use the self-hosted track, you need to purchase an [S license](#balance_scale-licensing) for a self-hosted deployment, which permits non-competing uses. I'll have a new price list up here soon, so stay tuned to this repository or [contact me](mailto?cris@dosycorp.com&subject=VF%20S%20License&body=Dear%20Cris) if you'd like first dibs on the new prices. Here's a general overview of where this will go:
 
 - Various configurable packages available with either perpetual or yearly licensing, and included service and consulting. 
 - Starts at USD6,700 a year for non-perpetual single year license plus minimal service. 
@@ -211,13 +214,15 @@ Includes the provision of the VF Pro software, an S license and various tiers of
 - Invoiceable service and consulting also available.
 - BYO cloud or data-center, or on-prem are all available.
 
-Prices and buy links for Self-hosted tiers are *coming soon!* In the meantime, <a href="mailto:cris@dosycorp.com?subject=VF%20Pro%20Packages&body=Hi%20Cris" target=_blank>email me</a> to ask a question.
+If you'd like to license VF for purposes that competete with us, we'll have to negotiate agreements. [Reach out to me](mailto:cris@dosycorp.com?subject=VF%20Negotiation&body=Dear%20Cris) if that's the case.
+
+Just a reminder that prices and buy links for self-hosted tiers are *being published here soon!* In the meantime, <a href="mailto:cris@dosycorp.com?subject=VF%20Pro%20Packages&body=Hi%20Cris" target=_blank>email me</a> to ask a question.
 
 **Individual**
 
 Includes provision of a geographically located server wherever you want (or as close to it as possible for us), installed software, credentials to access, and various tiers of service. The basic cost principle is founded on performance (CPU cores, memory, network speed and bandwidth amount). 
 
-See the current [prices and tiers for the Individual track.](https://personal.dosyago.com)
+See the current [prices and tiers for the Individual track.](https://individual.dosyago.com)
 
 ## Motivation
 
@@ -230,6 +235,45 @@ I originally created this in 2018 as a layer for a collaborative zero-download c
 - **Years in development:** 3
 
 ## FAQ
+
+**In plain language how would you describe what makes this browser stand-out?**
+
+You can have multiple people browsing at once, in sync (cobrowsing). It also can be faster than your normal connection (because the server + its network is very fast). You can consider it more secure, because it only runs web content in the cloud, not on your device.
+
+**What is VF Individual?**
+
+<strong>VF Individual</strong>&mdash;your remote browser in the cloud, powered by <a href=https://github.com/i5ik/Viewfinder#comparison-table>Viewfinder Pro</a>.
+<p>
+You can also bring 4 other people to cobrowse simultaneously with you on the same session.
+<p>
+  
+<strong>Why do I want a remote browser?</strong>
+<ul>
+<li>
+<em>Security and privacy</em>&ndash;The <a href=https://www.mcafee.com/enterprise/en-us/security-awareness/cloud/what-is-browser-isolation.html>RBI</a> security model offers many
+advantages.
+</li>
+<li>
+<em>Cobrowsing and collaboration</em>&ndash;Watch and interact with the page in sync with others.
+</li>
+<li>
+<em>Bandwidth arbitrage</em>&ndash;Hop over slow networks with a faster node.
+
+</li>
+<li>
+<em>Research and vulnerability testing</em>&ndash;If you work for a public institution or non-profit you may be able to use <a href=https://github.com/i5ik/Viewfinder>Viewfinder Regular</a> in your work for free.
+</li>
+</ul>
+<p>
+<strong>Where do I get the code for this?</strong>
+<br>
+Unfortunately this demo uses a version of <strong>VF Pro</strong>:
+a closed-source fork of VF Regular.
+The Pro code is only available under a commerical license.
+<a href=mailto:cris@dosycorp.com?subject=VF%20Pro&body=Hi%20Cris>Email me</a> to discuss
+or keep appraised of <a href=https://github.com/i5ik/Viewfinder>our GitHub repository</a>
+for upcoming new prices.
+<p>
 
 
 **Can I download files form the web using VF?**
