@@ -236,6 +236,10 @@ I originally created this in 2018 as a layer for a collaborative zero-download c
 
 ## FAQ
 
+**In plain language how would you describe what makes this browser stand-out?**
+
+You can have multiple people browsing at once, in sync (cobrowsing). It also can be faster than your normal connection (because the server + its network is very fast). You can consider it more secure, because it only runs web content in the cloud, not on your device.
+
 **What is VF Individual?**
 
 <strong>VF Individual</strong>&mdash;your remote browser in the cloud, powered by <a href=https://github.com/i5ik/Viewfinder#comparison-table>Viewfinder Pro</a>.
