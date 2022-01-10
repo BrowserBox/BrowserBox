@@ -46,10 +46,11 @@ $ npm i -g viewfinder-regular
 $ npm i --save viewfinder-regular
 ```
 
-or, **pull it off DockerHub:**
+or, **pull it off DockerHub** (and use the `run_docker.sh` script in the repo to run it):
 
 ```shell
 $ docker pull dosyago/viewfinder-regular:latest
+$ git clone https://github.com/i5ik/Viewfinder.git
 $ cd Viewfinder/
 $ ./scripts/run_docker.sh
 ```
