@@ -236,6 +236,41 @@ I originally created this in 2018 as a layer for a collaborative zero-download c
 
 ## FAQ
 
+**What is VF Individual?**
+
+<strong>VF Individual</strong>&mdash;your remote browser in the cloud, powered by <a href=https://github.com/i5ik/Viewfinder#comparison-table>Viewfinder Pro</a>.
+<p>
+You can also bring 4 other people to cobrowse simultaneously with you on the same session.
+<p>
+  
+<strong>Why do I want a remote browser?</strong>
+<ul>
+<li>
+<em>Security and privacy</em>&ndash;The <a href=https://www.mcafee.com/enterprise/en-us/security-awareness/cloud/what-is-browser-isolation.html>RBI</a> security model offers many
+advantages.
+</li>
+<li>
+<em>Cobrowsing and collaboration</em>&ndash;Watch and interact with the page in sync with others.
+</li>
+<li>
+<em>Bandwidth arbitrage</em>&ndash;Hop over slow networks with a faster node.
+
+</li>
+<li>
+<em>Research and vulnerability testing</em>&ndash;If you work for a public institution or non-profit you may be able to use <a href=https://github.com/i5ik/Viewfinder>Viewfinder Regular</a> in your work for free.
+</li>
+</ul>
+<p>
+<strong>Where do I get the code for this?</strong>
+<br>
+Unfortunately this demo uses a version of <strong>VF Pro</strong>:
+a closed-source fork of VF Regular.
+The Pro code is only available under a commerical license.
+<a href=mailto:cris@dosycorp.com?subject=VF%20Pro&body=Hi%20Cris>Email me</a> to discuss
+or keep appraised of <a href=https://github.com/i5ik/Viewfinder>our GitHub repository</a>
+for upcoming new prices.
+<p>
+
 
 **Can I download files form the web using VF?**
 
