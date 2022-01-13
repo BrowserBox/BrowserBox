@@ -1,18 +1,6 @@
 #!/bin/bash
 
-echo 
-echo
-read -p "Want to run setup_machine script? (you only need to do this the first time you install BG, or when you update new version) y/n " -n 1 -r
-echo
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]
-then
-  echo "Not running full setup...Just doing npm install..."
-else 
-  echo "Running full setup..."
-  ./scripts/setup_machine.sh
-fi
-
+./scripts/setup_machine.sh
 
 cd ./src/zombie-lord 
 npm i --no-optional &> /dev/null   
@@ -26,7 +14,4 @@ cd ../../../
 cd ./src/parec-server
 npm i --no-optional &> /dev/null   
 cd ../../
-
-./scripts/make_bundle.sh 
-
 
