@@ -3,6 +3,7 @@
   "version": "3.4.0",
   "description": "Remote isolated browser platform by Dosyago",
   "main": "./dist/Viewfinder.js",
+  "type": "module",
   "module": "./src/server.js",
   "bin": {
     "vf": "./dist/Viewfinder.js"
@@ -82,9 +83,9 @@
     "@babel/cli": "latest",
     "@babel/core": "^7.16.7",
     "@babel/plugin-external-helpers": "^7.16.7",
-    "@babel/plugin-transform-runtime": "^7.16.7",
+    "@babel/plugin-transform-runtime": "^7.16.8",
     "@babel/polyfill": "^7.12.1",
-    "@babel/preset-env": "^7.16.7",
+    "@babel/preset-env": "^7.16.8",
     "@babel/runtime": "^7.16.7",
     "@rollup/plugin-babel": "^5.2.1",
     "@rollup/plugin-commonjs": "^15.1.0",
