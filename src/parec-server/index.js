@@ -68,9 +68,9 @@ let certsFound = false;
 if ( DEBUG.goSecure ) {
   try {
   Object.assign(SSL_OPTS, {
-    cert: fs.readFileSync(`../sslcert/${sslBranch}/fullchain.pem`),
-    key: fs.readFileSync(`../sslcert/${sslBranch}/privkey.pem`),
-    ca: fs.readFileSync(`../sslcert/${sslBranch}/chain.pem`),
+    cert: fs.readFileSync(`../../sslcert/${sslBranch}/fullchain.pem`),
+    key: fs.readFileSync(`../../sslcert/${sslBranch}/privkey.pem`),
+    ca: fs.readFileSync(`../../sslcert/${sslBranch}/chain.pem`),
   });
   certsFound = true;
   } catch(e) {
