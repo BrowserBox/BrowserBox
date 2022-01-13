@@ -1,15 +1,13 @@
 #!/bin/bash
 
 echo "Install requires sudo."
-sudo apt install -y apt-utils wget curl
+sudo apt install -y apt-utils 
 cd ./src/zombie-lord
 sudo ./audio.deps
 sudo ./deb.deps
 sudo ./font.deps
 sudo ./dlchrome.sh
 cd ../../
-./scripts/install_bundle_deps.sh
-./scripts/global_install_bundle_deps.sh
 echo "Installing pulse audio scripts..."
 sudo cp -r ./src/parec-server/pulse/* /etc/pulse/
 echo "Adding browsers group..."
