@@ -70,13 +70,21 @@ $ cd Viewfinder/
 $ ./scripts/run_docker.sh
 ```
 
+**In general**
+
 In all the above cases you can connect to the following address in a regular browser:
 
 `http://<host_ip>:8002/login?token=<token>`
 
 For the Docker image, the token is `token2` for the NPM and repository copies, the token is `bhvNDh6XYZ`
 
-You can enable `https://` by adding certificates (such as from LetsEncrypt) into the `$HOME/sslcerts/` directory.
+You can enable `https://` by adding certificates (such as from LetsEncrypt) into the `$HOME/sslcerts/` directory if running via Node. 
+
+If you want to enable https while using Docker, you'll need to either rebuild a Docker image that copies your certs, or run HTTPS on a reverse-proxy.
+
+To rebuild a Docker image that copies your certs into the correct $HOME/sslcerts/ direcotry, you need to use the script to rebuild docker, which is: `./scripts/build_docker.sh`. You'll need to modify the Dockerfile to copy your certs. 
+
+Alternately you can put a HTTPS reverse-proxy such as nginx in front of your Docker instance, and handle the certs outside the container.
 
 ## Applications
 
