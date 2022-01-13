@@ -21,5 +21,7 @@ BGPID1=$!
 cd ../../
 
 echo "Starting main process, viewfinder, in foreground"
+echo "Token: bhvNDh6XYZ"
 $node ./src/server.js 5002 8002 xxxcookie $username bhvNDh6XYZ
+
 

@@ -2,6 +2,7 @@
 'use strict';
 
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import childProcess from 'child_process';
 import http from 'http';
@@ -50,7 +51,6 @@ const encoderType = 'mp3';
 let parec = undefined;
 let encoder = undefined;
 
-const sslBranch = 'master'
 const SSL_OPTS = {};
 const COOKIE_OPTS = {
   secure: true,
@@ -67,14 +67,14 @@ let certsFound = false;
 
 if ( DEBUG.goSecure ) {
   try {
-  Object.assign(SSL_OPTS, {
-    cert: fs.readFileSync(`../../sslcert/${sslBranch}/fullchain.pem`),
-    key: fs.readFileSync(`../../sslcert/${sslBranch}/privkey.pem`),
-    ca: fs.readFileSync(`../../sslcert/${sslBranch}/chain.pem`),
-  });
-  certsFound = true;
+    Object.assign(SSL_OPTS, {
+      cert: fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'fullchain.pem')),
+      key: fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'privkey.pem')),
+      ca: fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'chain.pem')),
+    });
+    certsFound = true;
   } catch(e) {
-  DEBUG.val && console.warn(e);
+    DEBUG.val && console.warn(e);
   }
   DEBUG.val && console.log(SSL_OPTS, {GO_SECURE});
 }

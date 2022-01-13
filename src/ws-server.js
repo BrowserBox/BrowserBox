@@ -15,7 +15,7 @@
   import {pluginsDemoPage} from './public/plugins/demo/page.js';
   import zl from './zombie-lord/api.js';
   import {start_mode} from './args.js';
-  import {version, APP_ROOT, BRANCH, COOKIENAME, GO_SECURE, DEBUG} from './common.js';
+  import {version, APP_ROOT, COOKIENAME, GO_SECURE, DEBUG} from './common.js';
   import {timedSend, eventSendLoop} from './server.js';
 
   export const fileChoosers = new Map();
@@ -72,13 +72,12 @@
     // determine if we use secure
       let latestMessageId = 0;
 
-      const sslBranch = BRANCH == 'master' ? 'master' : 'staging';
       const secure_options = {};
       try {
         const sec = {
-          cert: fs.readFileSync(`./sslcert/${sslBranch}/fullchain.pem`),
-          key: fs.readFileSync(`./sslcert/${sslBranch}/privkey.pem`),
-          ca: fs.readFileSync(`./sslcert/${sslBranch}/chain.pem`),
+          cert: fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'fullchain.pem')),
+          key: fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'privkey.pem')),
+          ca: fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'chain.pem')),
         };
         Object.assign(secure_options, sec);
       } catch(e) {
