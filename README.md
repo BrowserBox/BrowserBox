@@ -30,6 +30,10 @@
 
 ## Installation
 
+VF is most easily deployed on Debian flavors like Debian and Ubuntu. It can be used on many other systems (including Windows and Darwin/Macos), but requires configuration. Configuration is required not so much for the NodeJS dependencies, as for the Google Chrome / Chromium dependencies--and so in that sense it's much like getting puppeteer running on those systems. If you first manage to set up puppeteer and then install viewfinder-regular, you typically should have no problems. 
+
+If you're on a Debian flavor then just dive right in below.
+
 **Clone the repo and install dependencies:**
 
 ```shell
