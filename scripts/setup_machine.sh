@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 echo "Install requires sudo."
 sudo apt install -y apt-utils 
@@ -15,6 +15,8 @@ sudo groupadd browsers
 echo "(if you're not on a linux system don't worry about this step)"
 echo "You need to edit sudoers file with visudo to add"
 echo "ALL ALL=(:browsers) NOPASSWD:ALL"
-read -p "Press enter to continue to visudo "
-sudo visudo
+echo "Adding automatically"
+sudo grep "ALL ALL=(:browsers) NOPASSWD:ALL" /etc/sudoers || sudo tee -a /etc/sudoers > /dev/null <<EOT
+ALL ALL=(:browsers) NOPASSWD:ALL
+EOT
 echo "Done"

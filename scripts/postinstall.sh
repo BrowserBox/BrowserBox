@@ -1,7 +1,5 @@
 #!/bin/bash
 
-./scripts/setup_machine.sh
-
 echo Running npm install for backend, front-end, chrome-launcher and sound server...
 cd ./src/zombie-lord 
 npm i
