@@ -1,6 +1,6 @@
 {
   "name": "viewfinder-regular",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "description": "Remote isolated browser platform by Dosyago",
   "main": "./dist/Viewfinder.js",
   "module": "./src/server.js",
