@@ -61,7 +61,7 @@ In all the above cases you can connect to the following address in a regular bro
 
 For the Docker image, the token is `token2` for the NPM and repository copies, the token is `bhvNDh6XYZ`
 
-You can enable `https://` by adding certificates (such as from LetsEncrypt) into the `$APP/sslcert/master/` directory where $APP is the source directory of Viewfinder that contains the `server.js` file (i.e ./Viewfinder/src/ in the repository copy).
+You can enable `https://` by adding certificates (such as from LetsEncrypt) into the `$HOME/sslcerts/` directory.
 
 ## Applications
 
