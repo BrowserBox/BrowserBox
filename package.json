@@ -24,8 +24,7 @@
     "check": "rm -f ./src/public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
     "pack": "npx webpack ./src/server.js --config ./config/webpack.config.js",
     "package": "npx pkg --compress Brotli .",
-    "build": "npm run pack && npm run package",
-    "old-pack": "upx || : && echo 'upx may not work with pkg'"
+    "build": "npm run pack && npm run package"
   },
   "repository": {
     "type": "git",
