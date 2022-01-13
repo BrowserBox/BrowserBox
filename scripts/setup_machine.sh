@@ -19,4 +19,4 @@ echo "You need to edit sudoers file with visudo to add"
 echo "ALL ALL=(:browsers) NOPASSWD:ALL"
 read -p "Press enter to continue to visudo "
 sudo visudo
-
+echo "Done"
