@@ -30,7 +30,15 @@
 
 ## Installation
 
-VF is most easily deployed on Debian flavors like Debian and Ubuntu. It can be used on many other systems (including Windows and Darwin/Macos), but requires configuration. Configuration is required not so much for the NodeJS dependencies, as for the Google Chrome / Chromium dependencies--and so in that sense it's much like getting puppeteer running on those systems. If you first manage to set up puppeteer and then install viewfinder-regular, you typically should have no problems. 
+**With containers**
+
+If you want to use Docker, the VF docker hub image is your best bet.
+
+**Without containers**
+
+VF is most easily deployed from source or NPM on Debian flavors like Debian and Ubuntu. 
+
+It can be used on many other systems (including Windows and Darwin/Macos), but requires configuration. Configuration is required not so much for the NodeJS dependencies, as for the Google Chrome / Chromium dependencies--and so in that sense it's much like getting puppeteer running on those systems. If you first manage to set up puppeteer and then install viewfinder-regular, you typically should have no problems. 
 
 If you're on a Debian flavor then just dive right in below.
 
@@ -42,13 +50,16 @@ $ cd Viewfinder
 $ npm i 
 ```
 
-or, **run**, **install** or **depend** on it from NPM:
+or, **run**, **depend on** or **globally install** it from NPM:
 
 ```shell
 $ npx viewfinder-regular@latest
-$ npm i -g viewfinder-regular
 $ npm i --save viewfinder-regular
+$ npm i -g viewfinder-regular
+$ vf
 ```
+
+*Note the vf NPM global binary is called 'vf'*
 
 or, **pull it off DockerHub** (and use the `run_docker.sh` script in the repo to run it):
 
