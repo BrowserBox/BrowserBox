@@ -4,14 +4,14 @@
 
 echo Running npm install for backend, front-end, chrome-launcher and sound server...
 cd ./src/zombie-lord 
-npm i --no-optional &> /dev/null   
+npm i
 cd ../../
 cd ./src/public/voodoo
-npm i --no-optional &> /dev/null  
+npm i 
 cd ../../../
 cd ./src/zombie-lord/custom-launcher
-npm i --no-optional &> /dev/null   
+npm i 
 cd ../../../
 cd ./src/parec-server
-npm i --no-optional &> /dev/null   
+npm i 
 cd ../../
