@@ -85,7 +85,7 @@
     "@babel/polyfill": "^7.12.1",
     "@babel/preset-env": "^7.16.8",
     "@babel/runtime": "^7.16.7",
-    "@rollup/plugin-babel": "^5.2.1",
+    "@rollup/plugin-babel": "^5.3.0",
     "@rollup/plugin-commonjs": "^15.1.0",
     "@rollup/plugin-node-resolve": "latest",
     "@types/body-parser": "^1.19.0",
