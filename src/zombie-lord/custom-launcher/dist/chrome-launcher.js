@@ -176,11 +176,13 @@ class Launcher {
                     this.port = yield random_port_1.getRandomPort();
                 }
                 log.verbose('ChromeLauncher', `Launching with command:\n"${execPath}" ${this.flags.join(' ')}`);
-                const script = `
-#!/bin/bash
-
-sudo -g browsers ${execPath} ${this.flags.join(' ')}
-                `
+                const isWin = os.platform() === 'win32';
+                const script = `${isWin ? '"' : 
+                    `#!/bin/bash
+                      
+                    sudo -g browsers `
+                  }${execPath}${isWin ? '"' : ''} ${this.flags.join(' ')}
+                `;
                 console.log({script});
                 const scriptPath = path.resolve(os.homedir(), 'startc.sh'); 
                 fs.writeFileSync(scriptPath, script);
