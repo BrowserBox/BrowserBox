@@ -1,7 +1,7 @@
 #!/bin/bash
 
-rm ./build/ViewFinder.js
-rm ./dist/ViewFinder.*
+rm ./build/*
+rm ./dist/*
 rm -rf typetests
 rm -rf node_modules
 cd ./src/zombie-lord 
