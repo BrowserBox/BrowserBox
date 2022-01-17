@@ -177,17 +177,22 @@ class Launcher {
                 }
                 log.verbose('ChromeLauncher', `Launching with command:\n"${execPath}" ${this.flags.join(' ')}`);
                 const isWin = os.platform() === 'win32';
-                const script = `${isWin ? '"' : 
-                    `#!/bin/bash
-                      
-                    sudo -g browsers `
-                  }${execPath}${isWin ? '"' : ''} ${this.flags.join(' ')}
-                `;
+                const script = `#!/bin/bash
+                  sudo -g browsers ${
+                    execPath
+                  } ${
+                    this.flags.join(' ')
+                }`;
                 console.log({script});
-                const scriptPath = path.resolve(os.homedir(), 'startc.sh'); 
-                fs.writeFileSync(scriptPath, script);
-                fs.chmodSync(scriptPath, 0o777);
-                const chrome = this.spawn(path.resolve(os.homedir(), 'startc.sh'), { detached: true, stdio: ['ignore', this.outFile, this.errFile], env: this.envVars });
+                let chrome;
+                if ( !isWin ) {
+                  const scriptPath = path.resolve(os.homedir(), 'startc.sh'); 
+                  fs.writeFileSync(scriptPath, script);
+                  fs.chmodSync(scriptPath, 0o777);
+                  chrome = this.spawn(path.resolve(os.homedir(), 'startc.sh'), { detached: true, stdio: ['ignore', this.outFile, this.errFile], env: this.envVars });
+                } else {
+                  chrome = this.spawn(execPath, this.flags, { detached: true, stdio: ['ignore', this.outFile, this.errFile], env: this.envVars }); 
+                }
                 this.chrome = chrome;
                 this.fs.writeFileSync(this.pidFile, chrome.pid.toString());
                 log.verbose('ChromeLauncher', `Chrome running with pid ${chrome.pid} on port ${this.port}.`);

@@ -22,8 +22,8 @@ export const DEBUG = {
 };
 
 // test for webpack
-//export const APP_ROOT = path.resolve(__dirname, '..', 'src');
-export const APP_ROOT = path.dirname(fileURLToPath(import.meta.url));
+export const APP_ROOT = path.resolve(__dirname, '..', 'src');
+//export const APP_ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const GO_SECURE = fs.existsSync(path.resolve(os.homedir(), 'sslcerts', 'privkey.pem'));
 export const version = 'v1';
 export const COOKIENAME = `litewait-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
