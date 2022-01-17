@@ -254,8 +254,6 @@ I originally created this in 2018 as a layer for a collaborative zero-download c
 ## Stats
 
 - **Visits:** [![visits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visits%20since%2027%2f10%2f2020&edge_flat=false)](https://hits.seeyoufarm.com) 
-- **Lines of code:** 40,000
-- **Years in development:** 3
 
 ## FAQ
 
