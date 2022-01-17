@@ -32,15 +32,19 @@
 
 **With containers**
 
-If you want to use Docker, the VF docker hub image is your best bet.
+If you want to use Docker, the VF docker hub image is your best bet. 
 
 **Without containers**
 
-VF is most easily deployed from source or NPM on Debian flavors like Debian and Ubuntu. 
+You can use a [binary release](https://github.com/i5ik/Viewfinder/releases/tag/v3.8.2) or the [NPM package](https://www.npmjs.com/package/viewfinder-regular) and either require/import it or install as a global, or source.
 
-It can be used on many other systems (including Windows and Darwin/Macos), but requires configuration. Configuration is required not so much for the NodeJS dependencies, as for the Google Chrome / Chromium dependencies--and so in that sense it's much like getting puppeteer running on those systems. If you first manage to set up puppeteer and then install viewfinder-regular, you typically should have no problems. 
+Binary releases are best for a local machine, because they don't support sending sound over the network, so you'll only hear sound if you run it locally and Chrome headless is sending sound to your local machine speakers directly.
 
-If you're on a Debian flavor then just dive right in below.
+If you want to run it on a remote machine, the [Docker image](https://hub.docker.com/r/dosyago/viewfinder-regular) is the easier way to get set up, since it requires no configuration or install (but it's best to run it with the run_docker script indicated below to ensure the correct run settings). 
+
+You can also easily run it from cloning and installing the repository or via NPM, but those options are going to be easiest on a Debian flavor distribution as VF mostly uses apt to install dependencies.
+
+So you're on a Debian flavor then just dive right in below.
 
 **Clone the repo and install dependencies:**
 
@@ -254,8 +258,6 @@ I originally created this in 2018 as a layer for a collaborative zero-download c
 ## Stats
 
 - **Visits:** [![visits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visits%20since%2027%2f10%2f2020&edge_flat=false)](https://hits.seeyoufarm.com) 
-- **Lines of code:** 40,000
-- **Years in development:** 3
 
 ## FAQ
 
