@@ -24,7 +24,7 @@
     "tsc-check": "./scripts/tsc-check.sh",
     "check": "rm -f ./src/public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
     "pack": "npx webpack ./src/server.js --config ./config/webpack.config.js",
-    "package": "npx pkg --compress GZip .",
+    "package": "npx pkg --compress Brotli .",
     "build": "npm run pack && npm run package"
   },
   "repository": {
