@@ -204,7 +204,7 @@ The final main differenece you might want to be aware of is that while VF Regula
 
 More information on these [commercial options](#commercial-options) is below, and take a look at the table of feature comparison between Regular and Pro.
 
-<b id=comparison-table>VF Pro vs Regular &mdash; Comparison Table</b>
+### VF Pro vs Regular &mdash; Comparison Table
 
 | Feature                                       | Regular            | Pro                |
 |-----------------------------------------------|--------------------|--------------------|
