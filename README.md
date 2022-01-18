@@ -337,6 +337,12 @@ Yes of course. With the proper license this is most definitely a possible use ca
 **Where can I get more information on your services, available licenses or pricing?**
 
 Eventually I intend to most of that information here, but for now you may [email me](mailto:cris@dosycorp.com?subject=VF%20Info&body=Hi%20Cris). The reason is I'm currently revising a lot of positioning, licensing and prices. If you let me know you prefer a voice call that's also available. 
+ 
+ **Can I donate to support development?**
+ 
+ Yes of course. You can see various contribution links on the [VF Donations page](https://github.com/i5ik/Viewfinder/blob/boss/docs/DONATIONS.md). When you donate to VF specifically, send me [an email](mailto:cris@dosycorp.com?subject=I%20Just%20Donated!&body=Hi%20Cris) if you'd like to be added to the **Backers Hall of Fame**.
+ 
+ Alternately, you may [donate to DosyagoCorp](https://buy.stripe.com/bIY5lw7hL2Ur6LS3cM) in general to support development across many Dosyago products. Thanks! 😍
 
 ## Other resources 
 
