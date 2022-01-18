@@ -146,7 +146,8 @@ Viewfinder aims for feature-parity with desktop and mobile browsers, but also to
 - [:heavy_check_mark:] Mobile pinch-zoom
 - [:heavy_check_mark:] `mailto:`, `tel:`, `sktype:` and other [app and protocol links](quora.com/What-are-tel-SMS-mailto-and-geo-in-URLs/answer/Matthew-Cox-33)
 - [:heavy_check_mark:] Multiple select 
-- [:heavy_check_mark:] Silky smooth variable-bitrate rendering performance ⭐
+- [:heavy_check_mark:] Variable-bitrate rendering ⭐
+- [:heavy_check_mark:] Flash player (via [Ruffle](https://github.com/ruffle-rs/ruffle)) ⭐
 - [:hourglass_flowing_sand:] Multi-touch on mobile
 - [:hourglass_flowing_sand:] Bookmarks
 - [:hourglass_flowing_sand:] Displayable history
@@ -159,7 +160,7 @@ Viewfinder aims for feature-parity with desktop and mobile browsers, but also to
 - [:heavy_check_mark:] Customizable browser-fingerprinting cross-section
 - [:heavy_check_mark:] Works with proxies and Tor
 - [:heavy_check_mark:] DevTools (*currently only works on Chrome clients*) ⭐
-- [:heavy_check_mark:] Integrates with PDF/DOCX/XLSX secure document viewer ([CDR](https://en.wikipedia.org/wiki/Content_Disarm_%26_Reconstruction)) (built-in only in Pro ⭐)
+- [:heavy_check_mark:] Secure document viewer ([CDR](https://en.wikipedia.org/wiki/Content_Disarm_%26_Reconstruction)) ⭐
 - [:heavy_check_mark:] [`cgroups`](https://man7.org/linux/man-pages/man7/cgroups.7.html) resource control sandboxing ⭐
 - [:heavy_check_mark:] 1 temporary user account per browser session ⭐
 - [:heavy_check_mark:] Clean-slate profile directory per browser session ⭐
