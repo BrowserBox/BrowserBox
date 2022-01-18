@@ -53,6 +53,8 @@ So you're on a Debian flavor then just dive right in below.
 $ git clone https://github.com/i5ik/Viewfinder.git
 $ cd Viewfinder
 $ npm i 
+$ ./scripts/setup_machine.sh
+$ npm test
 ```
 
 or, **run**, **depend on** or **globally install** it from NPM:
