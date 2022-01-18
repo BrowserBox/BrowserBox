@@ -17,6 +17,7 @@
 - [Applications](#applications)
 - [Progress & Roadmap](#progress--roadmap)
 - [Pro or Regular?](#pro-or-regular)
+  * [Pro vs Regular Comparison Table](#vf-pro-vs-regular--comparison-table)
 - [Commercial Options](#commercial-options)
 - [Motivation](#motivation)
 - [Stats](#stats)
