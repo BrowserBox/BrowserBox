@@ -31,6 +31,10 @@
 
 ## Installation
 
+**Pre-install Requirements**
+
+You need to have Chrome installed, and whatever dependencies your system needs for that. A good way to ensure you're starting from a good place is to install [puppeteer](https://github.com/puppeteer/puppeteer).
+
 **With containers**
 
 If you want to use Docker, the VF docker hub image is your best bet. 
@@ -92,6 +96,10 @@ If you want to enable https while using Docker, you'll need to either rebuild a 
 To rebuild a Docker image that copies your certs into the correct $HOME/sslcerts/ direcotry, you need to use the script to rebuild docker, which is: `./scripts/build_docker.sh`. You'll need to modify the Dockerfile to copy your certs. 
 
 Alternately you can put a HTTPS reverse-proxy such as nginx in front of your Docker instance, and handle the certs outside the container.
+
+## Installation Troubleshooting
+
+If you encounter problems try running the `./scripts/setup_machine.sh` script, and try again.
 
 ## Applications
 
