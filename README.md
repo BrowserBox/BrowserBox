@@ -217,9 +217,10 @@ More information on these [commercial options](#commercial-options) is below, an
 | Cloud and platform agnostic                   | :heavy_check_mark: | :heavy_check_mark: |
 | Multi-user security features                  |                    | :heavy_check_mark: |
 | Auto scaling and resource control             |                    | :heavy_check_mark: |
-| WebRTC/WebSocket viewport streaming and multi-path lag reduction |                  | :heavy_check_mark: |
+| WebRTC/WebSocket viewport streaming           |                    | :heavy_check_mark: |
+| Fastest-path lag reduction                    |                    | :heavy_check_mark: |
 | Built-in cobrowsing and instant messaging     |                    | :heavy_check_mark: |
-| Run sandboxed puppeteer scripts               |                    | :heavy_check_mark: |
+| Puppeteer scripting REPL console              |                    | :heavy_check_mark: |
 | `<iframe>` embeddable                         |                    | :heavy_check_mark: |
 | Kiosk mode                                    |                    | :heavy_check_mark: |
 | Simple API                                    |                    | :heavy_check_mark: |
