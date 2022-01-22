@@ -9,7 +9,7 @@
     "vf": "./dist/Viewfinder.js"
   },
   "scripts": {
-    "test": "bash ./scripts/run-test.sh",
+    "test": "pm2 start ./scripts/run-test.sh",
     "devtest": "bash ./scripts/devtest.sh",
     "dev": "node-dev --inspect=127.0.0.1:8111 ./src/index.js",
     "start": "bash ./scripts/dstart.sh",
