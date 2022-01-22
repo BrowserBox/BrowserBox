@@ -7,6 +7,7 @@ import {FRAME_CONTROL} from './public/translateVoodooCRDP.js';
 export const DEBUG = {
   mode: 'prod',
   goSecure: true,
+  frameLimit: false,
   noAudio: false,
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
     whether created with createTarget or simply spawning, 
