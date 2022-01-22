@@ -118,7 +118,7 @@
           },
           reportOnly: false,  
         },
-        frameGuard: DEBUG.frameLimit
+        frameguard: DEBUG.frameLimit
       }));
       app.use(RateLimiter);
       app.use(bodyParser.urlencoded({extended:true}));
