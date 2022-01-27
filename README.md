@@ -2,7 +2,7 @@
 
 # [Viewfinder](https://github.com/i5ik/Viewfinder) Regular · [![Source Lines of Code](https://sloc.xyz/github/i5ik/Viewfinder)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/viewfinder-regular)](https://npmjs.com/package/viewfinder-regular) [![npm](https://img.shields.io/npm/dt/viewfinder-regular)](https://npmjs.com/package/viewfinder-regular) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/viewfinder-regular)](https://hub.docker.com/r/dosyago/viewfinder-regular) [![Binary downloads](https://img.shields.io/github/downloads/i5ik/Viewfinder/total?label=binary%20downloads)](https://github.com/i5ik/Viewfinder/releases/latest)
 
-**Viewfinder** is a component for a browser that runs on a remote server, with a UI you can embed on the web.
+**Viewfinder** is a full-stack component for a web browser that runs on a remote server, with a UI you can embed on the web.
 
 - **Powerful:** Viewfinder lets your provide controllable access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. 
 - **General:** Build [applications](#applications) that need cross-origin access, while delivering complex user stories that benefit from an encapsulated browser abstraction. Since the whole stack is written in JavaScript you can easily extend it to suit your needs.
