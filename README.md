@@ -1,6 +1,6 @@
-<p align=center><a href=https://dosyago.com target=_blank><img src=https://github.com/i5ik/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=61.8%></a></p>
+<p align=center><a href=https://dosyago.com target=_blank><img src=https://github.com/crisdosyago/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=61.8%></a></p>
 
-# [Viewfinder](https://github.com/i5ik/Viewfinder) Regular · [![Source Lines of Code](https://sloc.xyz/github/i5ik/Viewfinder)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/viewfinder-regular)](https://npmjs.com/package/viewfinder-regular) [![npm](https://img.shields.io/npm/dt/viewfinder-regular)](https://npmjs.com/package/viewfinder-regular) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/viewfinder-regular)](https://hub.docker.com/r/dosyago/viewfinder-regular) [![Binary downloads](https://img.shields.io/github/downloads/i5ik/Viewfinder/total?label=binary%20downloads)](https://github.com/i5ik/Viewfinder/releases/latest)
+# [Viewfinder](https://github.com/crisdosyago/Viewfinder) Regular · [![Source Lines of Code](https://sloc.xyz/github/crisdosyago/Viewfinder)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/crisdosyago/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/viewfinder-regular)](https://npmjs.com/package/viewfinder-regular) [![npm](https://img.shields.io/npm/dt/viewfinder-regular)](https://npmjs.com/package/viewfinder-regular) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/viewfinder-regular)](https://hub.docker.com/r/dosyago/viewfinder-regular) [![Binary downloads](https://img.shields.io/github/downloads/crisdosyago/Viewfinder/total?label=binary%20downloads)](https://github.com/crisdosyago/Viewfinder/releases/latest)
 
 **Viewfinder** is a full-stack component for a web browser that runs on a remote server, with a UI you can embed on the web.
 
@@ -41,7 +41,7 @@ If you want to use Docker, the VF docker hub image is your best bet.
 
 **Without containers**
 
-You can use a [binary release](https://github.com/i5ik/Viewfinder/releases/tag/v3.8.2) or the [NPM package](https://www.npmjs.com/package/viewfinder-regular) and either require/import it or install as a global, or source.
+You can use a [binary release](https://github.com/crisdosyago/Viewfinder/releases/tag/v3.8.2) or the [NPM package](https://www.npmjs.com/package/viewfinder-regular) and either require/import it or install as a global, or source.
 
 Binary releases are best for a local machine, because they don't support sending sound over the network, so you'll only hear sound if you run it locally and Chrome headless is sending sound to your local machine speakers directly.
 
@@ -54,7 +54,7 @@ So you're on a Debian flavor then just dive right in below.
 **Clone the repo and install dependencies:**
 
 ```shell
-$ git clone https://github.com/i5ik/Viewfinder.git
+$ git clone https://github.com/crisdosyago/Viewfinder.git
 $ cd Viewfinder
 $ npm i 
 $ ./scripts/setup_machine.sh
@@ -76,7 +76,7 @@ or, **pull it off DockerHub** (and use the `run_docker.sh` script in the repo to
 
 ```shell
 $ docker pull dosyago/viewfinder-regular:latest
-$ git clone https://github.com/i5ik/Viewfinder.git
+$ git clone https://github.com/crisdosyago/Viewfinder.git
 $ cd Viewfinder/
 $ ./scripts/run_docker.sh
 ```
@@ -280,7 +280,7 @@ You can have multiple people browsing at once, in sync (cobrowsing). It also can
 
 **What is VF Individual?**
 
-<strong>VF Individual</strong>&mdash;your remote browser in the cloud, powered by <a href=https://github.com/i5ik/Viewfinder#comparison-table>Viewfinder Pro</a>.
+<strong>VF Individual</strong>&mdash;your remote browser in the cloud, powered by <a href=https://github.com/crisdosyago/Viewfinder#comparison-table>Viewfinder Pro</a>.
 <p>
 You can also bring 4 other people to cobrowse simultaneously with you on the same session.
 <p>
@@ -299,7 +299,7 @@ advantages.
 
 </li>
 <li>
-<em>Research and vulnerability testing</em>&ndash;If you work for a public institution or non-profit you may be able to use <a href=https://github.com/i5ik/Viewfinder>Viewfinder Regular</a> in your work for free.
+<em>Research and vulnerability testing</em>&ndash;If you work for a public institution or non-profit you may be able to use <a href=https://github.com/crisdosyago/Viewfinder>Viewfinder Regular</a> in your work for free.
 </li>
 </ul>
 <p>
@@ -309,7 +309,7 @@ Unfortunately this demo uses a version of <strong>VF Pro</strong>:
 a closed-source fork of VF Regular.
 The Pro code is only available under a commerical license.
 <a href=mailto:cris@dosycorp.com?subject=VF%20Pro&body=Hi%20Cris>Email me</a> to discuss
-or keep appraised of <a href=https://github.com/i5ik/Viewfinder>our GitHub repository</a>
+or keep appraised of <a href=https://github.com/crisdosyago/Viewfinder>our GitHub repository</a>
 for upcoming new prices.
 <p>
 
@@ -350,7 +350,7 @@ Eventually I intend to most of that information here, but for now you may [email
  
  **Can I donate to support development?**
  
- Yes of course. You can see various contribution links on the [VF Donations page](https://github.com/i5ik/Viewfinder/blob/boss/docs/DONATIONS.md). When you donate to VF specifically, send me [an email](mailto:cris@dosycorp.com?subject=I%20Just%20Donated!&body=Hi%20Cris) if you'd like to be added to the **Backers Hall of Fame**.
+ Yes of course. You can see various contribution links on the [VF Donations page](https://github.com/crisdosyago/Viewfinder/blob/boss/docs/DONATIONS.md). When you donate to VF specifically, send me [an email](mailto:cris@dosycorp.com?subject=I%20Just%20Donated!&body=Hi%20Cris) if you'd like to be added to the **Backers Hall of Fame**.
  
  Alternately, you may [donate to DosyagoCorp](https://buy.stripe.com/bIY5lw7hL2Ur6LS3cM) in general to support development across many Dosyago products. Thanks! 😍
 
@@ -358,7 +358,7 @@ Eventually I intend to most of that information here, but for now you may [email
 
 - Click to deploy on GCP, AWS, Heroku
 - Planned: StackScript for Linode, Vultr Marketplace entry
-- Learn and solve issues together at the [community discussion page](https://github.com/i5ik/Viewfinder/discussions).
+- Learn and solve issues together at the [community discussion page](https://github.com/crisdosyago/Viewfinder/discussions).
 
 ## Contributing
 
@@ -372,15 +372,15 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
   The NC license permits *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
 
-  [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE.md).
+  [Read the license](https://github.com/crisdosyago/Viewfinder/blob/boss/LICENSE.md).
 
 **VF Pro**
 
-  VF Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreement with The Dosyago Corporation. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE-Pro.md). 
+  VF Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreement with The Dosyago Corporation. [Read the license](https://github.com/crisdosyago/Viewfinder/blob/boss/LICENSE-Pro.md). 
 
   In essence this license permits any use case besides those which compete with Dosyago Corporation (or the rightsholders of VF).
 
-  If you'd like to purchase a Pro S license, [see the price list here](https://github.com/i5ik/Viewfinder/blob/boss/docs/PRICELIST.md)
+  If you'd like to purchase a Pro S license, [see the price list here](https://github.com/crisdosyago/Viewfinder/blob/boss/docs/PRICELIST.md)
 
 ## &copy; Copyright 
 

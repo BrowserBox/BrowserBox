@@ -30,7 +30,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/i5ik/Viewfinder.git"
+    "url": "git+https://github.com/crisdosyago/Viewfinder.git"
   },
   "keywords": [
     "remote-browser",
@@ -57,9 +57,9 @@
   "author": "@dosy",
   "license": "Polyform Noncommercial 1.0",
   "bugs": {
-    "url": "https://github.com/i5ik/Viewfinder/discussions"
+    "url": "https://github.com/crisdosyago/Viewfinder/discussions"
   },
-  "homepage": "https://gitlab.com/i5ik/Viewfinder#readme",
+  "homepage": "https://gitlab.com/crisdosyago/Viewfinder#readme",
   "dependencies": {
     "body-parser": "^1.18.3",
     "brutalist-web": "^2.3.0",

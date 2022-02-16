@@ -1,6 +1,6 @@
-<p align=center><a href=https://dosyago.com target=_blank><img src=https://github.com/i5ik/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=61.8%></a></p>
+<p align=center><a href=https://dosyago.com target=_blank><img src=https://github.com/crisdosyago/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=61.8%></a></p>
 
-# [Viewfinder](https://github.com/i5ik/Viewfinder) · [![Source Lines of Code](https://sloc.xyz/github/i5ik/Viewfinder)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/i5ik/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/remoteview)](https://npmjs.com/package/remoteview) [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) 
+# [Viewfinder](https://github.com/crisdosyago/Viewfinder) · [![Source Lines of Code](https://sloc.xyz/github/crisdosyago/Viewfinder)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/crisdosyago/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/remoteview)](https://npmjs.com/package/remoteview) [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) 
 
 **Viewfinder** is a component for a browser that runs on a remote server, with a UI you can embed on the web.
 
@@ -33,7 +33,7 @@
 **Clone the repo and install dependencies:**
 
 ```shell
-$ git clone https://github.com/i5ik/Viewfinder.git
+$ git clone https://github.com/crisdosyago/Viewfinder.git
 $ cd Viewfinder
 $ npm i 
 ```
@@ -260,7 +260,7 @@ Eventually I intend to most of that information here, but for now you may [email
 
 - Click to deploy on GCP, AWS, Heroku
 - Planned: StackScript for Linode, Vultr Marketplace entry
-- Learn and solve issues together at the [community discussion page](https://github.com/i5ik/Viewfinder/discussions).
+- Learn and solve issues together at the [community discussion page](https://github.com/crisdosyago/Viewfinder/discussions).
 
 ## Contributing
 
@@ -274,15 +274,15 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
   The NC license permits *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
 
-  [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE.md).
+  [Read the license](https://github.com/crisdosyago/Viewfinder/blob/boss/LICENSE.md).
 
 **VF Pro**
 
-  VF Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreement with The Dosyago Corporation. [Read the license](https://github.com/i5ik/Viewfinder/blob/boss/LICENSE-Pro.md). 
+  VF Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreement with The Dosyago Corporation. [Read the license](https://github.com/crisdosyago/Viewfinder/blob/boss/LICENSE-Pro.md). 
 
   In essence this license permits any use case besides those which compete with Dosyago Corporation (or the rightsholders of VF).
 
-  If you'd like to purchase a Pro S license, [see the price list here](https://github.com/i5ik/Viewfinder/blob/boss/docs/PRICELIST.md)
+  If you'd like to purchase a Pro S license, [see the price list here](https://github.com/crisdosyago/Viewfinder/blob/boss/docs/PRICELIST.md)
 
 ## &copy; Copyright 
 

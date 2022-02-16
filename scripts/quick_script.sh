@@ -17,7 +17,7 @@ nvm install --lts
 echo Install latest Node Package Manager
 npm i -g npm
 echo Setup ViewFinderJS
-git clone https://github.com/i5ik/ViewFinderJS.git
+git clone https://github.com/crisdosyago/ViewFinderJS.git
 cd ViewFinderJS
 npm i
 } # script got #
