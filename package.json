@@ -1,6 +1,6 @@
 {
   "name": "browserbox.club",
-  "version": "3.8.5",
+  "version": "3.8.6",
   "description": "Remote isolated browser platform by Dosyago",
   "main": "./dist/Viewfinder.js",
   "type": "module",
