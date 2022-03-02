@@ -37,7 +37,7 @@ You need to have Chrome installed, and whatever dependencies your system needs f
 
 **With containers**
 
-If you want to use Docker, the VF docker hub image is your best bet. 
+If you want to use Docker, the BB docker hub image is your best bet. 
 
 **Without containers**
 
@@ -47,7 +47,7 @@ Binary releases are best for a local machine, because they don't support sending
 
 If you want to run it on a remote machine, the [Docker image](https://hub.docker.com/r/dosyago/viewfinder-regular) is the easier way to get set up, since it requires no configuration or install (but it's best to run it with the run_docker script indicated below to ensure the correct run settings). 
 
-You can also easily run it from cloning and installing the repository or via NPM, but those options are going to be easiest on a Debian flavor distribution as VF mostly uses apt to install dependencies.
+You can also easily run it from cloning and installing the repository or via NPM, but those options are going to be easiest on a Debian flavor distribution as BB mostly uses apt to install dependencies.
 
 So you're on a Debian flavor then just dive right in below.
 
@@ -203,19 +203,19 @@ BrowserBox aims for feature-parity with desktop and mobile browsers, but also to
 
 ## Pro or Regular? 
 
-**What's the difference between VF Pro and Regular?**
+**What's the difference between BB Pro and Regular?**
 
-The main differences are that VF Pro has more advanced features and more frequent updates than VF Regular.
+The main differences are that BB Pro has more advanced features and more frequent updates than BB Regular.
 
 For example, Pro has much better rendering, higher quality graphics and lower lag than Regular, as a result of many advanced streaming and variable bitrate innovations incorporated there.
 
-Many Pro features are eventually sent down to Regular, but some will likely remain exclusive to Pro. Pro is updated weekly, with major updates shipped every quarter, whereas VF Regular follows a much slower and more haphazard release cycle. 
+Many Pro features are eventually sent down to Regular, but some will likely remain exclusive to Pro. Pro is updated weekly, with major updates shipped every quarter, whereas BB Regular follows a much slower and more haphazard release cycle. 
 
-The final main differenece you might want to be aware of is that while VF Regular is source-available (and is the sourcecode in this repository), VF Pro is currently closed-source proprietary software only available commercially, for either use in an Individual server, or for deployment in a Self-hosted package. 
+The final main differenece you might want to be aware of is that while BB Regular is source-available (and is the sourcecode in this repository), BB Pro is currently closed-source proprietary software only available commercially, for either use in an Individual server, or for deployment in a Self-hosted package. 
 
 More information on these [commercial options](#commercial-options) is below, and take a look at the table of feature comparison between Regular and Pro.
 
-### VF Pro vs Regular &mdash; Comparison Table
+### BB Pro vs Regular &mdash; Comparison Table
 
 | Feature                                       | Regular            | Pro                |
 |-----------------------------------------------|--------------------|--------------------|
@@ -242,11 +242,11 @@ BrowserBox Pro is provided by the [Dosyago Corporation](https://github.com/dosya
 
 **Self-hosted**
 
-The self-hosted track includes the provision of the VF Pro software, an S license and various tiers of service. The basic cost principle is established on time (not scale): time you want the license for, time of the latest update you want, and time it takes us to service your deployment. Targeted at SMBs up to Enterprise. 
+The self-hosted track includes the provision of the BB Pro software, an S license and various tiers of service. The basic cost principle is established on time (not scale): time you want the license for, time of the latest update you want, and time it takes us to service your deployment. Targeted at SMBs up to Enterprise. 
 
-If you want to use VF commercially self-hosted is your main option.
+If you want to use BB commercially self-hosted is your main option.
 
-To use the self-hosted track, you need to purchase an [S license](#balance_scale-licensing) for a self-hosted deployment, which permits non-competing uses. I'll have a new price list up here soon, so stay tuned to this repository or [contact me](mailto?cris@dosycorp.com&subject=VF%20S%20License&body=Dear%20Cris) if you'd like first dibs on the new prices. Here's a general overview of where this will go:
+To use the self-hosted track, you need to purchase an [S license](#balance_scale-licensing) for a self-hosted deployment, which permits non-competing uses. I'll have a new price list up here soon, so stay tuned to this repository or [contact me](mailto?cris@dosycorp.com&subject=BB%20S%20License&body=Dear%20Cris) if you'd like first dibs on the new prices. Here's a general overview of where this will go:
 
 - Various configurable packages available with either perpetual or yearly licensing, and included service and consulting. 
 - Starts at USD6,700 a year for non-perpetual single year license plus minimal service. 
@@ -254,9 +254,9 @@ To use the self-hosted track, you need to purchase an [S license](#balance_scale
 - Invoiceable service and consulting also available.
 - BYO cloud or data-center, or on-prem are all available.
 
-If you'd like to license VF for purposes that competete with us, we'll have to negotiate agreements. [Reach out to me](mailto:cris@dosycorp.com?subject=VF%20Negotiation&body=Dear%20Cris) if that's the case.
+If you'd like to license BB for purposes that competete with us, we'll have to negotiate agreements. [Reach out to me](mailto:cris@dosycorp.com?subject=BB%20Negotiation&body=Dear%20Cris) if that's the case.
 
-Just a reminder that prices and buy links for self-hosted tiers are *being published here soon!* In the meantime, <a href="mailto:cris@dosycorp.com?subject=VF%20Pro%20Packages&body=Hi%20Cris" target=_blank>email me</a> to ask a question.
+Just a reminder that prices and buy links for self-hosted tiers are *being published here soon!* In the meantime, <a href="mailto:cris@dosycorp.com?subject=BB%20Pro%20Packages&body=Hi%20Cris" target=_blank>email me</a> to ask a question.
 
 **Individual**
 
@@ -278,9 +278,9 @@ I originally created this in 2018 as a layer for a collaborative zero-download c
 
 You can have multiple people browsing at once, in sync (cobrowsing). It also can be faster than your normal connection (because the server + its network is very fast). You can consider it more secure, because it only runs web content in the cloud, not on your device.
 
-**What is VF Individual?**
+**What is BB Individual?**
 
-<strong>VF Individual</strong>&mdash;your remote browser in the cloud, powered by <a href=https://github.com/crisdosyago/BrowserBox#comparison-table>BrowserBox Pro</a>.
+<strong>BB Individual</strong>&mdash;your remote browser in the cloud, powered by <a href=https://github.com/crisdosyago/BrowserBox#comparison-table>BrowserBox Pro</a>.
 <p>
 You can also bring 4 other people to cobrowse simultaneously with you on the same session.
 <p>
@@ -305,20 +305,20 @@ advantages.
 <p>
 <strong>Where do I get the code for this?</strong>
 <br>
-Unfortunately this demo uses a version of <strong>VF Pro</strong>:
-a closed-source fork of VF Regular.
+Unfortunately this demo uses a version of <strong>BB Pro</strong>:
+a closed-source fork of BB Regular.
 The Pro code is only available under a commerical license.
-<a href=mailto:cris@dosycorp.com?subject=VF%20Pro&body=Hi%20Cris>Email me</a> to discuss
+<a href=mailto:cris@dosycorp.com?subject=BB%20Pro&body=Hi%20Cris>Email me</a> to discuss
 or keep appraised of <a href=https://github.com/crisdosyago/BrowserBox>our GitHub repository</a>
 for upcoming new prices.
 <p>
 
 
-**Can I download files form the web using VF?**
+**Can I download files form the web using BB?**
 
-By default, for security, VF does not permit downloading of files to the local device, and instead downloads them to the remote server. In VF Pro, the built-in secure document viewer then processes and displays them if they are of a supported format. However, both Pro and Regular lines can be configured to provide a download link to get the file to the local device, although that is not recommended in security applications, at least not without proper scanning or CDR.
+By default, for security, BB does not permit downloading of files to the local device, and instead downloads them to the remote server. In BB Pro, the built-in secure document viewer then processes and displays them if they are of a supported format. However, both Pro and Regular lines can be configured to provide a download link to get the file to the local device, although that is not recommended in security applications, at least not without proper scanning or CDR.
 
-You can also link up your own secure document viewer with VF Regular. 
+You can also link up your own secure document viewer with BB Regular. 
 
 **Can you rush legacy Flash applications?**
 
@@ -326,31 +326,31 @@ There's a customized version of Viewfind Pro with Flash support via two separate
 
 **However**, there's no guaruntee that your particular application will work, because ruffle still has many missing features and bugs, and because streaming your app over the network in a virtual browser may introduce other issues for your application, or simply be not suitable in your case.
 
-But in the ideal case, yes, it can be done, and you can embed your legacy Flash player app in a VF Pro iframe and put it on your site.
+But in the ideal case, yes, it can be done, and you can embed your legacy Flash player app in a BB Pro iframe and put it on your site.
 
-**Can VF integrate with our existing secure document viewer or download scanning?**
+**Can BB integrate with our existing secure document viewer or download scanning?**
 
-Not out of the box but VF Pro can be configured to pass requests for document viewing to a 3rd-party application and to serve downloaded files. In short, VF can be configured to send downloads to your secure document viewer or download scanner. In the case where VF is configured to allow downloads to the local device, it should not effect your normal download scanners and endpoint protection software. 
+Not out of the box but BB Pro can be configured to pass requests for document viewing to a 3rd-party application and to serve downloaded files. In short, BB can be configured to send downloads to your secure document viewer or download scanner. In the case where BB is configured to allow downloads to the local device, it should not effect your normal download scanners and endpoint protection software. 
 
 **What sort of multi-profile or "fake profile" privacy options are available to defeat fingerprinting and tracking?**
 
-By default VF Pro runs with a clean slate every session, so there are no tracking cookies or data retained from any other session of VF. Even if persistent sessions are enabled, VF can still be configured to transmit various phoney profile information (such as installed plugins, geolocation, platform, device, browser version and so on) in order to attempt to defeat fingerprinting and tracking. However, even with the added layer of protection of an additional remote browser, a separate IP address, and forged browser identification, there's no guaruntee of 100% effectiveness. If someone logs in to an account linked to their other profiles or identities, it may still be possible to track them, even if they are using VF. Technology can only go so far, people must also take sensible precautions in their choices. 
+By default BB Pro runs with a clean slate every session, so there are no tracking cookies or data retained from any other session of BB. Even if persistent sessions are enabled, BB can still be configured to transmit various phoney profile information (such as installed plugins, geolocation, platform, device, browser version and so on) in order to attempt to defeat fingerprinting and tracking. However, even with the added layer of protection of an additional remote browser, a separate IP address, and forged browser identification, there's no guaruntee of 100% effectiveness. If someone logs in to an account linked to their other profiles or identities, it may still be possible to track them, even if they are using BB. Technology can only go so far, people must also take sensible precautions in their choices. 
 
-**Can you white-label VF as the tech for our internal RBI product?**
+**Can you white-label BB as the tech for our internal RBI product?**
 
-Not us, but you can do it and we can help you. VF can most definitely be fully whitelabelled and customized with a variety of themes, splash pages, styles, design systems, brand look and assets.
+Not us, but you can do it and we can help you. BB can most definitely be fully whitelabelled and customized with a variety of themes, splash pages, styles, design systems, brand look and assets.
 
-**Can I use VF tech to make my own commercial RBI product and sell that?**
+**Can I use BB tech to make my own commercial RBI product and sell that?**
 
-Yes of course. With the proper license this is most definitely a possible use case for VF, and we encourage you to do so.
+Yes of course. With the proper license this is most definitely a possible use case for BB, and we encourage you to do so.
 
 **Where can I get more information on your services, available licenses or pricing?**
 
-Eventually I intend to most of that information here, but for now you may [email me](mailto:cris@dosycorp.com?subject=VF%20Info&body=Hi%20Cris). The reason is I'm currently revising a lot of positioning, licensing and prices. If you let me know you prefer a voice call that's also available. 
+Eventually I intend to most of that information here, but for now you may [email me](mailto:cris@dosycorp.com?subject=BB%20Info&body=Hi%20Cris). The reason is I'm currently revising a lot of positioning, licensing and prices. If you let me know you prefer a voice call that's also available. 
  
  **Can I donate to support development?**
  
- Yes of course. You can see various contribution links on the [VF Donations page](https://github.com/crisdosyago/BrowserBox/blob/boss/docs/DONATIONS.md). When you donate to VF specifically, send me [an email](mailto:cris@dosycorp.com?subject=I%20Just%20Donated!&body=Hi%20Cris) if you'd like to be added to the **Backers Hall of Fame**.
+ Yes of course. You can see various contribution links on the [BB Donations page](https://github.com/crisdosyago/BrowserBox/blob/boss/docs/DONATIONS.md). When you donate to BB specifically, send me [an email](mailto:cris@dosycorp.com?subject=I%20Just%20Donated!&body=Hi%20Cris) if you'd like to be added to the **Backers Hall of Fame**.
  
  Alternately, you may [donate to DosyagoCorp](https://buy.stripe.com/bIY5lw7hL2Ur6LS3cM) in general to support development across many Dosyago products. Thanks! 😍
 
@@ -366,19 +366,19 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
 ## :balance_scale: Licensing
 
-**VF Regular**
+**BB Regular**
 
-  VF Regular (this repository) is licensed under the Polyform Noncommercial License 1.0 (NC license). Any previous licensed versions are also relicensed under this license.  
+  BB Regular (this repository) is licensed under the Polyform Noncommercial License 1.0 (NC license). Any previous licensed versions are also relicensed under this license.  
 
   The NC license permits *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
 
   [Read the license](https://github.com/crisdosyago/BrowserBox/blob/boss/LICENSE.md).
 
-**VF Pro**
+**BB Pro**
 
-  VF Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreement with The Dosyago Corporation. [Read the license](https://github.com/crisdosyago/BrowserBox/blob/boss/LICENSE-Pro.md). 
+  BB Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreement with The Dosyago Corporation. [Read the license](https://github.com/crisdosyago/BrowserBox/blob/boss/LICENSE-Pro.md). 
 
-  In essence this license permits any use case besides those which compete with Dosyago Corporation (or the rightsholders of VF).
+  In essence this license permits any use case besides those which compete with Dosyago Corporation (or the rightsholders of BB).
 
   If you'd like to purchase a Pro S license, [see the price list here](https://github.com/crisdosyago/BrowserBox/blob/boss/docs/PRICELIST.md)
 
