@@ -1,5 +1,5 @@
 {
-  "name": "browserbox",
+  "name": "browserbox.club",
   "version": "3.8.5",
   "description": "Remote isolated browser platform by Dosyago",
   "main": "./dist/Viewfinder.js",
