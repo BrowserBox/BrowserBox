@@ -1,6 +1,6 @@
 {
   "name": "browserbox.club",
-  "version": "3.8.6",
+  "version": "3.8.7",
   "description": "Remote isolated browser platform by Dosyago",
   "main": "./dist/BrowserBox.js",
   "type": "module",
