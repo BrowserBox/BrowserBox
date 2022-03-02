@@ -1,6 +1,6 @@
 build/*
-ViewFinder
-ViewFinder*
+BrowserBox
+BrowserBox*
 typetests
 vim.exe.stackdump
 *.stackdump

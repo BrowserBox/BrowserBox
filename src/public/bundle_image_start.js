@@ -9860,7 +9860,7 @@
         message: "The file \"".concat(filename, "\" is downloading to a secure location and will be displayed securely momentarily if it is a supported format."),
         otherButton: {
           title: 'Get License',
-          onclick: () => window.open('mailto:cris@dosycorp.com?Subject=ViewFinder+License+Support+Inquiry&body=Hi%20Cris', "_blank")
+          onclick: () => window.open('mailto:cris@dosycorp.com?Subject=BrowserBox+License+Support+Inquiry&body=Hi%20Cris', "_blank")
         },
         title: "SecureView\u2122 Enabled"
       };
@@ -10478,7 +10478,7 @@
                 }
               </style>
               <h2>
-                Secure ViewFinder 
+                Secure BrowserBox 
               </h2>
               <strong>
                 Current time: ${(new Date).toString()}
@@ -10486,7 +10486,7 @@
             </html>
           `);
           **/
-          writeCanvas("Secure ViewFinder");
+          writeCanvas("Secure BrowserBox");
           state.viewState.omniBoxInput.focus();
         }
       }, SHORT_DELAY);

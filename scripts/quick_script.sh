@@ -16,8 +16,8 @@ echo Install latest NodeJS
 nvm install --lts
 echo Install latest Node Package Manager
 npm i -g npm
-echo Setup ViewFinderJS
-git clone https://github.com/crisdosyago/ViewFinderJS.git
-cd ViewFinderJS
+echo Setup BrowserBoxJS
+git clone https://github.com/crisdosyago/BrowserBoxJS.git
+cd BrowserBoxJS
 npm i
 } # script got #

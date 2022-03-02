@@ -18,7 +18,7 @@ sudo apt update
 
 sudo apt install -y docker-ce
 
-git clone https://github.com/dosyago/ViewFinder
-cd ViewFinder
+git clone https://github.com/dosyago/BrowserBox
+cd BrowserBox
 ./build_docker.sh
 ./run_docker.sh

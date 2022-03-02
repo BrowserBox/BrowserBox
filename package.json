@@ -2,11 +2,11 @@
   "name": "browserbox.club",
   "version": "3.8.6",
   "description": "Remote isolated browser platform by Dosyago",
-  "main": "./dist/Viewfinder.js",
+  "main": "./dist/BrowserBox.js",
   "type": "module",
   "module": "./src/server.js",
   "bin": {
-    "vf": "./dist/Viewfinder.js"
+    "vf": "./dist/BrowserBox.js"
   },
   "scripts": {
     "test": "pm2 start ./scripts/run-test.sh",
@@ -30,7 +30,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/crisdosyago/Viewfinder.git"
+    "url": "git+https://github.com/crisdosyago/BrowserBox.git"
   },
   "keywords": [
     "remote-browser",
@@ -57,9 +57,9 @@
   "author": "@dosy",
   "license": "Polyform Noncommercial 1.0",
   "bugs": {
-    "url": "https://github.com/crisdosyago/Viewfinder/discussions"
+    "url": "https://github.com/crisdosyago/BrowserBox/discussions"
   },
-  "homepage": "https://gitlab.com/crisdosyago/Viewfinder#readme",
+  "homepage": "https://gitlab.com/crisdosyago/BrowserBox#readme",
   "dependencies": {
     "body-parser": "^1.18.3",
     "brutalist-web": "^2.3.0",

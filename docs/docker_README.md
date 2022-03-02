@@ -1,14 +1,14 @@
-<p align=center><a href=https://dosyago.com target=_blank><img src=https://github.com/crisdosyago/ViewFinder/raw/boss/.github/26881_DOSY_PP-01.png width=61.8%></a></p>
+<p align=center><a href=https://dosyago.com target=_blank><img src=https://github.com/crisdosyago/BrowserBox/raw/boss/.github/26881_DOSY_PP-01.png width=61.8%></a></p>
 
-# [Viewfinder](https://github.com/crisdosyago/Viewfinder) · [![Source Lines of Code](https://sloc.xyz/github/crisdosyago/Viewfinder)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/crisdosyago/Viewfinder/pulls) [![npm](https://img.shields.io/npm/v/remoteview)](https://npmjs.com/package/remoteview) [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) 
+# [BrowserBox](https://github.com/crisdosyago/BrowserBox) · [![Source Lines of Code](https://sloc.xyz/github/crisdosyago/BrowserBox)](https://sloc.xyz) [![PRs welcome](https://camo.githubusercontent.com/b0ad703a46e8b249ef2a969ab95b2cb361a2866ecb8fe18495a2229f5847102d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f5052732d77656c636f6d652d627269676874677265656e2e737667)](https://github.com/crisdosyago/BrowserBox/pulls) [![npm](https://img.shields.io/npm/v/remoteview)](https://npmjs.com/package/remoteview) [![npm](https://img.shields.io/npm/dt/remoteview)](https://npmjs.com/package/remoteview) [![Docker Pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) 
 
-**Viewfinder** is a component for a browser that runs on a remote server, with a UI you can embed on the web.
+**BrowserBox** is a component for a browser that runs on a remote server, with a UI you can embed on the web.
 
-- **Powerful:** Viewfinder lets your provide controllable access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. 
+- **Powerful:** BrowserBox lets your provide controllable access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. 
 - **General:** Build [applications](#applications) that need cross-origin access, while delivering complex user stories that benefit from an encapsulated browser abstraction. Since the whole stack is written in JavaScript you can easily extend it to suit your needs.
 - **Unprecendented:** The technology that puts unrestricted browser capabilities within reach of a web app has never before existed in the open. 
 
-[Get ideas for how you can use Viewfinder in your own project](#applications).
+[Get ideas for how you can use BrowserBox in your own project](#applications).
 
 --------------------------------------
 # Table of contents
@@ -33,8 +33,8 @@
 **Clone the repo and install dependencies:**
 
 ```shell
-$ git clone https://github.com/crisdosyago/Viewfinder.git
-$ cd Viewfinder
+$ git clone https://github.com/crisdosyago/BrowserBox.git
+$ cd BrowserBox
 $ npm i 
 ```
 
@@ -49,7 +49,7 @@ or, **pull it off DockerHub:**
 
 ```shell
 $ docker pull dosyago/viewfinder-regular:latest
-$ cd Viewfinder/
+$ cd BrowserBox/
 $ ./scripts/run_docker.sh
 ```
 
@@ -59,11 +59,11 @@ In all the above cases you can connect to the following address in a regular bro
 
 For the Docker image, the token is `token2` for the NPM and repository copies, the token is `bhvNDh6XYZ`
 
-You can enable `https://` by adding certificates (such as from LetsEncrypt) into the `$APP/sslcert/master/` directory where $APP is the source directory of Viewfinder that contains the `server.js` file (i.e ./Viewfinder/src/ in the repository copy).
+You can enable `https://` by adding certificates (such as from LetsEncrypt) into the `$APP/sslcert/master/` directory where $APP is the source directory of BrowserBox that contains the `server.js` file (i.e ./BrowserBox/src/ in the repository copy).
 
 ## Applications
 
-Viewfinder enables a number of different applications depending on your problem space:
+BrowserBox enables a number of different applications depending on your problem space:
 
 **Product space**
 - Remote browser isolation for security, risk mitigation and privacy
@@ -92,7 +92,7 @@ Viewfinder enables a number of different applications depending on your problem 
 
 ## Progress & Roadmap 
 
-Viewfinder aims for feature-parity with desktop and mobile browsers, but also to push the limits of this technology with extra features like co-browsing. The list below shows our progress toward those goals. Please note that ⭐ features are only available in Viewfinder Pro.
+BrowserBox aims for feature-parity with desktop and mobile browsers, but also to push the limits of this technology with extra features like co-browsing. The list below shows our progress toward those goals. Please note that ⭐ features are only available in BrowserBox Pro.
 
 **Browser Features**
 - [✔️] Back and forward history buttons 
@@ -194,7 +194,7 @@ More information on these [commercial options](#commercial-options) is below, an
 
 If you want to use VF commercially your main option is to purchase an [S license](#licensing), which permits non-competing uses. If you'd like to license VF for purposes that competete with us, we'll have to negotiate agreements. [Reach out to me](mailto:cris@dosycorp.com?subject=VF%20Negotiation&body=Dear%20Cris) if that's the case.
 
-Viewfinder Pro is provided by the [Dosyago Corporation](https://github.com/dosyago) as a commercial offering in two flavors: individual, and self-hosted.
+BrowserBox Pro is provided by the [Dosyago Corporation](https://github.com/dosyago) as a commercial offering in two flavors: individual, and self-hosted.
 
 **Self-hosted**
 
@@ -220,7 +220,7 @@ I originally created this in 2018 as a layer for a collaborative zero-download c
 
 ## Stats
 
-- **Visits:** [![visits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FViewFinder&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visits%20since%2027%2f10%2f2020&edge_flat=false)](https://hits.seeyoufarm.com) 
+- **Visits:** [![visits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fc9fe%2FBrowserBox&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visits%20since%2027%2f10%2f2020&edge_flat=false)](https://hits.seeyoufarm.com) 
 - **Lines of code:** 40,000
 - **Years in development:** 3
 
@@ -260,7 +260,7 @@ Eventually I intend to most of that information here, but for now you may [email
 
 - Click to deploy on GCP, AWS, Heroku
 - Planned: StackScript for Linode, Vultr Marketplace entry
-- Learn and solve issues together at the [community discussion page](https://github.com/crisdosyago/Viewfinder/discussions).
+- Learn and solve issues together at the [community discussion page](https://github.com/crisdosyago/BrowserBox/discussions).
 
 ## Contributing
 
@@ -274,15 +274,15 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
   The NC license permits *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
 
-  [Read the license](https://github.com/crisdosyago/Viewfinder/blob/boss/LICENSE.md).
+  [Read the license](https://github.com/crisdosyago/BrowserBox/blob/boss/LICENSE.md).
 
 **VF Pro**
 
-  VF Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreement with The Dosyago Corporation. [Read the license](https://github.com/crisdosyago/Viewfinder/blob/boss/LICENSE-Pro.md). 
+  VF Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreement with The Dosyago Corporation. [Read the license](https://github.com/crisdosyago/BrowserBox/blob/boss/LICENSE-Pro.md). 
 
   In essence this license permits any use case besides those which compete with Dosyago Corporation (or the rightsholders of VF).
 
-  If you'd like to purchase a Pro S license, [see the price list here](https://github.com/crisdosyago/Viewfinder/blob/boss/docs/PRICELIST.md)
+  If you'd like to purchase a Pro S license, [see the price list here](https://github.com/crisdosyago/BrowserBox/blob/boss/docs/PRICELIST.md)
 
 ## &copy; Copyright 
 

@@ -1,6 +1,6 @@
 Copyright Dosyago Corporation & Cris Stringfellow 2022 (https://dosaygo.com)
 
-Viewfinder and all previously released versions, including binaries, NPM packages, and
+BrowserBox and all previously released versions, including binaries, NPM packages, and
 Docker images (including all named BrowserGapCE, RemoteView, and all other previous names)
 is re-licensed under the following PolyForm Noncommercial License 1.0.0 and all previous licenses are now invalid.
 

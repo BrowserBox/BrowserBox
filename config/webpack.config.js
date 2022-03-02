@@ -5,7 +5,7 @@ module.exports = {
   entry: "./src/server.js",
   output: {
     path: path.resolve(__dirname, '..', 'dist'),
-    filename: "Viewfinder.js"
+    filename: "BrowserBox.js"
   },
   target: "node",
   node: {
