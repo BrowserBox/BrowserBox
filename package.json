@@ -1,5 +1,5 @@
 {
-  "name": "viewfinder-regular",
+  "name": "browserbox",
   "version": "3.8.3",
   "description": "Remote isolated browser platform by Dosyago",
   "main": "./dist/Viewfinder.js",
