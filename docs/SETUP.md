@@ -35,6 +35,8 @@
 
 You need to have Chrome installed, and whatever dependencies your system needs for that. A good way to ensure you're starting from a good place is to install [puppeteer](https://github.com/puppeteer/puppeteer).
 
+*Also just a note: don't try installing it using the root user as some of the tools that we use such as pm2 do not work reliably with root.*
+
 **With containers**
 
 If you want to use Docker, the BB docker hub image is your best bet. 
@@ -52,6 +54,8 @@ You can also easily run it from cloning and installing the repository or via NPM
 So you're on a Debian flavor then just dive right in below.
 
 **Clone the repo and install dependencies:**
+
+*Also just a note: don't try installing it using the root user as some of the tools that we use such as pm2 do not work reliably with root.*
 
 ```shell
 $ git clone https://github.com/crisdosyago/BrowserBox.git
