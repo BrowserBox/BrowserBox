@@ -35,6 +35,12 @@
 
 You need to have Chrome installed, and whatever dependencies your system needs for that. A good way to ensure you're starting from a good place is to install [puppeteer](https://github.com/puppeteer/puppeteer).
 
+```shell
+pip install puppeteer
+```
+
+注意： 安装完chrome后需要重启，否则会报错，原因未知。
+
 **With containers**
 
 If you want to use Docker, the BB docker hub image is your best bet. 
@@ -53,6 +59,13 @@ So you're on a Debian flavor then just dive right in below.
 
 **Clone the repo and install dependencies:**
 
+可以在程序中修改，使用xvfb-run来代替--headless，所以需要额外安装xvfb
+好处是可以运行完整的chrome, 似乎--headless会导致某些功能（比如扩展）失效，如果需要使用扩展，那么这种方式是可行的。
+
+```shell
+sudo apt install xvfb
+```
+
 ```shell
 $ git clone https://github.com/crisdosyago/BrowserBox.git
 $ cd BrowserBox
@@ -60,6 +73,8 @@ $ npm i
 $ ./scripts/setup_machine.sh
 $ npm test
 ```
+
+启动后，访问http://ip:8002/login?token=bhvNDh6XYZ&ran={}，进行登录后访问
 
 or, **run**, **depend on** or **globally install** it from NPM:
 
@@ -385,3 +400,4 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 ## &copy; Copyright 
 
 This project copyright The Rightsholders (currently Cris Stringfellow & The Dosyago Corporation) 2022
+
