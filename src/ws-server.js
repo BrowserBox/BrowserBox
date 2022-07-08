@@ -65,6 +65,9 @@
   export async function start_ws_server(
       port, zombie_port, allowed_user_cookie, session_token, 
   ) {
+
+    
+    
     DEBUG.val && console.log(`Starting websocket server on ${port}`);
     const app = express();
     const server_port = port;
@@ -141,22 +144,27 @@
       }
       app.get("/login", (req,res) => {
         const {token,ran,url:Url} = req.query; 
-        if ( token == session_token ) {
-          res.cookie(COOKIENAME+port, allowed_user_cookie, COOKIE_OPTS);
-          let url;
-          url = `/?ran=${ran||Math.random()}#${session_token}`;
-          if ( !! Url ) {
-            url = `/?url=${encodeURIComponent(Url)}&ran=${ran||Math.random()}#${session_token}`;
-          }
-          res.redirect(url);
-        } else {
-          res.type("html");
-          if ( session_token == 'token2' ) {
-            res.end(`Incorrect token, not token2. <a href=/login?token=token2>Try again.</a>`);
-          } else {
-            res.end(`Incorrect token. <a href=${secure ? 'https' : 'http'}://${req.hostname}/>Try again.</a>`);
-          }
+
+        // 为了屏蔽掉login的流程，这里绕过校验过程
+        // if ( token == session_token ) {
+
+        res.cookie(COOKIENAME+port, allowed_user_cookie, COOKIE_OPTS);
+        let url;
+        url = `/?ran=${ran||Math.random()}#${session_token}`;
+        if ( !! Url ) {
+          url = `/?url=${encodeURIComponent(Url)}&ran=${ran||Math.random()}#${session_token}`;
         }
+        res.redirect(url);
+
+        // } 
+        // else {
+        //   res.type("html");
+        //   if ( session_token == 'token2' ) {
+        //     res.end(`Incorrect token, not token2. <a href=/login?token=token2>Try again.</a>`);
+        //   } else {
+        //     res.end(`Incorrect token. <a href=${secure ? 'https' : 'http'}://${req.hostname}/>Try again.</a>`);
+        //   }
+        // }
       }); 
     }
     app.use(express.static(path.resolve(APP_ROOT,'public')));
