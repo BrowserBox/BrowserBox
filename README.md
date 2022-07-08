@@ -36,7 +36,7 @@
 You need to have Chrome installed, and whatever dependencies your system needs for that. A good way to ensure you're starting from a good place is to install [puppeteer](https://github.com/puppeteer/puppeteer).
 
 ```shell
-pip install puppeteer
+npm i puppeteer
 ```
 
 注意： 安装完chrome后需要重启，否则会报错，原因未知。

@@ -33,13 +33,14 @@ const launcher_api = {
       '--enable-aggressive-domstorage-flushing',
       '--restore-last-session',
       '--disk-cache-size=2750000000',
-      `--profile-directory="${upd}"`
+      `--profile-directory="Default"`
     ];
     chromeNumber += 1;
     DEBUG.val && console.log(`Chrome Number: ${chromeNumber}, Executing chrome-launcher`);
     const CHROME_FLAGS = Array.from(DEFAULT_FLAGS);
     if (!process.env.DEBUG_SKATEBOARD) {
-      CHROME_FLAGS.push('--headless'); 
+      // CHROME_FLAGS.push('--headless'); 
+      CHROME_FLAGS.push('--no-sandbox'); 
     } else {
       CHROME_FLAGS.push('--no-sandbox'); 
     }
@@ -57,7 +58,9 @@ const launcher_api = {
       handleSIGINT: false,
       userDataDir: path.resolve(os.homedir(), 'chrome-browser'),
       logLevel: 'verbose',
-      chromeFlags: CHROME_FLAGS
+      chromeFlags: CHROME_FLAGS,
+
+      chromePath: 'xvfb-run google-chrome-stable'
     };
     DEBUG.val && console.log(CHROME_OPTS, CHROME_FLAGS);
     const zomb = await ChromeLauncher(CHROME_OPTS);

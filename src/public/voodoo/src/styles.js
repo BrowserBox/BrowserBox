@@ -142,6 +142,7 @@ export const dss = {
     `;
   }
 
+  // display: inline-block;
   function styleTabSelector(/*el, state*/) {
     return `
       li.tab-selector {
