@@ -49,7 +49,7 @@
 
   const RateLimiter = rateLimit({
     windowMs: 1000 * 60 * 3,
-    max: DEBUG.mode == 'dev' ? 1000 : 50
+    max: DEBUG.mode == 'dev' ? 1000 : 1000
   });
 
   export let LatestCSRFToken = '';

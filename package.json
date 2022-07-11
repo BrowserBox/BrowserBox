@@ -14,6 +14,7 @@
     "dev": "node-dev --inspect=127.0.0.1:8111 ./src/index.js",
     "start": "bash ./scripts/dstart.sh",
     "docker_start": "bash ./scripts/docker_start.sh",
+    "docker_chrome_start": "bash ./scripts/docker_chrome_start.sh",
     "preinstall": "bash ./scripts/setup_machine.sh",
     "postinstall": "bash ./scripts/postinstall.sh",
     "bundle": "./scripts/make_bundle.sh",

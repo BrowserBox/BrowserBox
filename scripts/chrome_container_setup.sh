@@ -1,7 +1,8 @@
 #!/bin/bash
 
-sudo apt install -y apt-utils wget curl apt-utils xvfb
-# sudo ./scripts/dpkg_dlchrome.sh,（因为已经包含了puppeteer，所以不需要再次安装chrome了
+sudo apt install -y apt-utils wget curl apt-utils xvfb 
+# sudo ./scripts/dpkg_dlchrome.sh
+npm i puppeteer
 cd ./src/zombie-lord
 sudo ./audio.deps
 sudo ./deb.deps

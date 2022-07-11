@@ -87,6 +87,17 @@ $ vf
 
 *Note the vf NPM global binary is called 'vf'*
 
+or, **重新构建docker** (and use the `run_local_docker.sh` script in the repo to run it):
+
+run_local_docker.sh中的端口号可以进行更改。
+
+```shell
+$ docker build -t viewfinder-regular:base -f BaseDockerfile .
+$ docker build -t viewfinder-regular:wangyi -f Dockerfile .
+$ ./scripts/run_local_docker.sh
+```
+
+
 or, **pull it off DockerHub** (and use the `run_docker.sh` script in the repo to run it):
 
 ```shell
