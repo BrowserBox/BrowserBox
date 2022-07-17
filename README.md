@@ -67,7 +67,7 @@ sudo apt install xvfb
 ```
 
 ```shell
-$ git clone https://github.com/crisdosyago/BrowserBox.git
+$ git clone https://github.com/wangyi160/BrowserBox.git
 $ cd BrowserBox
 $ npm i 
 $ ./scripts/setup_machine.sh
@@ -87,26 +87,15 @@ $ vf
 
 *Note the vf NPM global binary is called 'vf'*
 
-<<<<<<< HEAD
 or, **重新构建docker** (and use the `run_local_docker.sh` script in the repo to run it):
 
 run_local_docker.sh中的端口号可以进行更改。
 
 ```shell
 $ docker build -t viewfinder-regular:base -f BaseDockerfile .
+$ docker build -t viewfinder-regular:base2 -f BaseDockerfile2 .
 $ docker build -t viewfinder-regular:wangyi -f Dockerfile .
 $ ./scripts/run_local_docker.sh
-=======
-or, make docker build
-
-```shell
-
-docker build -t viewfinder-regular:base -f BaseDockerFile . (可以删掉)
-docker build -t viewfinder-regular:base2 -f BaseDockerFile2 .
-docker build -t viewfinder-regular:wangyi -f DockerFile .
-
-
->>>>>>> 修改了一点，支持中文输入
 ```
 
 
