@@ -1,0 +1,6 @@
+FROM viewfinder-regular:base
+WORKDIR /usr/src/app
+RUN npm install
+# EXPOSE 8000 8002
+
+# CMD ["npm", "run", "docker_start"]

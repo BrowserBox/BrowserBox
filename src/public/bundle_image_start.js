@@ -2244,6 +2244,10 @@
   }
 
   function keyEvent(e) {
+    // console.log(e.key)
+    // console.log(e.code)
+    // console.log(String.fromCharCode(e.keyCode))
+    
     let modifiers = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
     let SYNTHETIC = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
     const id = e.key && e.key.length > 1 ? e.key : e.code;
@@ -2260,6 +2264,16 @@
       type = "keyUp";
     }
 
+    var sendCode
+    var sendKey
+    if(def) {
+      sendCode = def.code
+      sendKey = def.key
+    } else {
+      sendCode = "Unidentified"
+      sendKey = "Unidentified"
+    }
+
     const retVal = {
       command: {
         name: "Input.dispatchKeyEvent",
@@ -2267,8 +2281,8 @@
           type,
           text,
           unmodifiedText: text,
-          code: def.code,
-          key: def.key,
+          code: sendCode,
+          key: sendKey,
           windowsVirtualKeyCode: e.keyCode,
           modifiers
         },
@@ -5715,7 +5729,9 @@
               transformedEvent.key = event.key;
               transformedEvent.code = event.code;
               transformedEvent.keyCode = event.keyCode;
-            } else if (event.code == "Unidentified" || event.key == "Unidentified") {
+            } else 
+            
+            if (event.code == "Unidentified" || event.key == "Unidentified") {
               transformedEvent.key = event.key;
               transformedEvent.code = event.code;
             } else {

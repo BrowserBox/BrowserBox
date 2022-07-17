@@ -87,6 +87,7 @@ $ vf
 
 *Note the vf NPM global binary is called 'vf'*
 
+<<<<<<< HEAD
 or, **重新构建docker** (and use the `run_local_docker.sh` script in the repo to run it):
 
 run_local_docker.sh中的端口号可以进行更改。
@@ -95,10 +96,22 @@ run_local_docker.sh中的端口号可以进行更改。
 $ docker build -t viewfinder-regular:base -f BaseDockerfile .
 $ docker build -t viewfinder-regular:wangyi -f Dockerfile .
 $ ./scripts/run_local_docker.sh
+=======
+or, make docker build
+
+```shell
+
+docker build -t viewfinder-regular:base -f BaseDockerFile . (可以删掉)
+docker build -t viewfinder-regular:base2 -f BaseDockerFile2 .
+docker build -t viewfinder-regular:wangyi -f DockerFile .
+
+
+>>>>>>> 修改了一点，支持中文输入
 ```
 
 
 or, **pull it off DockerHub** (and use the `run_docker.sh` script in the repo to run it):
+
 
 ```shell
 $ docker pull dosyago/viewfinder-regular:latest
