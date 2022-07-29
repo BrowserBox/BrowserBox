@@ -19,7 +19,7 @@ Now known as BrowserBox.
 
 **BrowserBox** is a full-stack component for a web browser that runs on a remote server, with a UI you can embed on the web.
 
-- **Powerful:** BrowserBox lets your provide controllable access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. 
+- **Powerful:** BrowserBox lets you provide controllable access to web resources in a way that's both more sandboxed than, and less restricted than, traditional web `<iframe>` elements. 
 - **General:** Build [applications](#applications) that need cross-origin access, while delivering complex user stories that benefit from an encapsulated browser abstraction. Since the whole stack is written in JavaScript you can easily extend it to suit your needs.
 - **Unprecendented:** The technology that puts unrestricted browser capabilities within reach of a web app has never before existed in the open. 
 
