@@ -72,7 +72,6 @@ So you're on a Debian flavor then just dive right in below.
 $ git clone https://github.com/crisdosyago/BrowserBox.git
 $ cd BrowserBox
 $ npm i 
-$ ./scripts/setup_machine.sh
 $ npm test
 ```
 
@@ -104,7 +103,7 @@ In all the above cases you can connect to the following address in a regular bro
 
 For the Docker image, the token is `token2` for the NPM and repository copies, the token is `bhvNDh6XYZ`
 
-You can enable `https://` by adding certificates (such as from LetsEncrypt) into the `$HOME/sslcerts/` directory if running via Node. 
+You can enable `https://` by adding certificates (such as from LetsEncrypt or mkcert for localhost) into the `$HOME/sslcerts/` directory if running via Node. 
 
 If you want to enable https while using Docker, you'll need to either rebuild a Docker image that copies your certs, or run HTTPS on a reverse-proxy.
 

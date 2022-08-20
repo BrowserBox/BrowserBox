@@ -178,9 +178,9 @@ class Launcher {
                 log.verbose('ChromeLauncher', `Launching with command:\n"${execPath}" ${this.flags.join(' ')}`);
                 const isWin = os.platform() === 'win32';
                 const script = `#!/bin/bash
-                  sudo -g browsers ${
+                  ${process.env.BROWSERS_GROUP ? 'sudo -g browsers' : ''} "${
                     execPath
-                  } ${
+                  }" ${
                     this.flags.join(' ')
                 }`;
                 console.log({script});

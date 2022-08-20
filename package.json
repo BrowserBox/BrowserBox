@@ -9,7 +9,8 @@
     "vf": "./dist/BrowserBox.js"
   },
   "scripts": {
-    "test": "pm2 start ./scripts/run-test.sh",
+    "test": "(npm run stop || :) && pm2 start ./scripts/run-test.sh",
+    "stop": "pm2 delete run-test",
     "devtest": "bash ./scripts/devtest.sh",
     "dev": "node-dev --inspect=127.0.0.1:8111 ./src/index.js",
     "start": "bash ./scripts/dstart.sh",
@@ -24,8 +25,8 @@
     "tsc-public": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System ./src/public/*.js ./src/decs.d.ts",
     "tsc-check": "./scripts/tsc-check.sh",
     "check": "rm -f ./src/public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
-    "pack": "npx webpack ./src/server.js --config ./config/webpack.config.js",
-    "package": "npx pkg --compress Brotli .",
+    "pack": "npx webpack ./src/server.js --config ./config/webpack.config.cjs",
+    "package": "npx pkg --compress Gzip .",
     "build": "npm run pack && npm run package"
   },
   "repository": {
@@ -101,7 +102,7 @@
     "eslint": "^7.10.0",
     "node-dev": "^7.1.0",
     "node-loader": "^1.0.1",
-    "pkg": "^5.5.1",
+    "pkg": "^5.8.0",
     "rollup": "^2.39.0",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.1.0",

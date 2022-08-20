@@ -77,13 +77,16 @@
         const sec = {
           cert: fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'fullchain.pem')),
           key: fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'privkey.pem')),
-          ca: fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'chain.pem')),
+          ca: fs.existsSync(path.resolve(os.homedir(), 'sslcerts', 'chain.pem')) ? 
+              fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'chain.pem')) 
+            :
+              undefined
         };
         Object.assign(secure_options, sec);
       } catch(e) {
         console.warn(`No certs found so will use insecure no SSL.`); 
       }
-      const secure = secure_options.cert && secure_options.ca && secure_options.key || false;
+      const secure = secure_options.cert && secure_options.key || false;
 
     // set up express
       app.use(helmet({

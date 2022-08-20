@@ -907,7 +907,7 @@ function isFileURL(url) {
 }
 
 async function makeZombie({port:port = 9222} = {}) {
-  const {webSocketDebuggerUrl} = await fetch(`http://localhost:${port}/json/version`).then(r => r.json());
+  const {webSocketDebuggerUrl} = await fetch(`http://127.0.0.1:${port}/json/version`).then(r => r.json());
   const socket = new ws(webSocketDebuggerUrl);
   const Zombie = {
     disconnected: true
