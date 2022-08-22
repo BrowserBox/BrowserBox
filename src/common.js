@@ -22,6 +22,9 @@ export const DEBUG = {
   high: 5
 };
 
+// config
+const SLEEP_MAX = 20000;  // ms
+
 // test for webpack
 //export const APP_ROOT = path.resolve(__dirname, '..', 'src');
 export const APP_ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -37,6 +40,7 @@ export async function throwAfter(ms, command, port) {
 }
 
 export async function sleep(ms) {
+  ms = Math.min(ms, SLEEP_MAX);
   return new Promise(res => setTimeout(res, ms));
 }
 
