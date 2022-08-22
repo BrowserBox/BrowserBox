@@ -12,7 +12,6 @@
   import helmet from 'helmet';
   import rateLimit from 'express-rate-limit';
   import csrf from 'csurf';
-  import {pluginsDemoPage} from './public/plugins/demo/page.js';
   import zl from './zombie-lord/api.js';
   import {start_mode} from './args.js';
   import {version, APP_ROOT, COOKIENAME, GO_SECURE, DEBUG} from './common.js';
@@ -163,14 +162,6 @@
       }); 
     }
     app.use(express.static(path.resolve(APP_ROOT,'public')));
-    app.post('/current/:current/event/:event', wrap(async (req, res) => {
-      const actualUri = 'https://' + req.headers.host + ':8001' + req.url;
-      const resp = await fetch(actualUri, {method: 'POST', body: JSON.stringify(req.body), 
-        headers: {
-          'Content-Type': 'application/json' 
-        }}).then(r => r.text());
-      res.end(pluginsDemoPage({body:resp}));
-    }));
 
     const server = protocol.createServer.apply(protocol, GO_SECURE && secure ? [secure_options, app] : [app]);
     const wss = new WebSocket.Server({server});
