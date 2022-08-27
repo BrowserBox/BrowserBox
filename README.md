@@ -11,6 +11,16 @@ Coming here for the first time, or don't know what remote browser isolation is?
 - A `<WebView>` tag (a la Electron, et al) for the open web
 - A super-powerful unrestricted `<iframe>` tag that can be used to embed any web content, inside any other web content, in a security isolated manner, without restriction, in effect providing a browser within a browser.
 
+## Some other products that this is similar to:
+
+- CloudFlare remote browsers (formerly S2)
+- Menlo Security Web and Browser isolation platform
+- Hyperbeam embeddable multiplayer browsers and apps
+- McAfee browser isolation (formerly Light Point)
+- Ericom browser isolation
+- Zscaler zero trust web browsing 
+- Symantec Browser isolation (formerly FireGlass)
+
 ----
 
 **Former version:**  [:camera: ViewFinder](https://github.com/cris691/ViewFinder) [![docker pulls](https://img.shields.io/docker/pulls/dosyago/browsergapce)](https://hub.docker.com/r/dosyago/browsergapce) ![version](https://img.shields.io/npm/v/remoteview) [![npm downloads](https://img.shields.io/npm/dt/remoteview)](https://www.npmjs.com/package/remoteview) 
