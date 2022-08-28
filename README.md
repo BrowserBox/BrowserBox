@@ -13,9 +13,9 @@ Coming here for the first time, or don't know what remote browser isolation is?
 
 ## Some other products that this is similar to:
 
+- [Hyperbeam](https://hyperbeam.com) embeddable multiplayer browsers and apps
 - CloudFlare remote browsers (formerly S2)
 - Menlo Security Web and Browser isolation platform
-- Hyperbeam embeddable multiplayer browsers and apps
 - McAfee browser isolation (formerly Light Point)
 - Ericom browser isolation
 - Zscaler zero trust web browsing 
