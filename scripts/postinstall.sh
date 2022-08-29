@@ -13,3 +13,4 @@ cd ../../../
 cd ./src/parec-server
 npm i 
 cd ../../
+npm run bundle

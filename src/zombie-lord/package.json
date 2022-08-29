@@ -6,15 +6,11 @@
   "main": "index.js",
   "type": "module",
   "dependencies": {
-    "child_process": "^1.0.2",
-    "esm": "^3.2.25",
-    "fs": "0.0.1-security",
-    "hasha": "^5.1.0",
-    "is-docker": "^2.0.0",
-    "node-fetch": "^2.6.1",
-    "path": "^0.12.7",
-    "url": "^0.11.0",
-    "ws": "^8.0.0"
+    "esm": "latest",
+    "hasha": "latest",
+    "is-docker": "latest",
+    "node-fetch": "latest",
+    "ws": "latest"
   },
   "scripts": {
     "start": "node index.js",
@@ -32,6 +28,6 @@
   "homepage": "https://gitlab.com/dosycorp/zombie-lord#readme",
   "_id": "@dosy-private/zombie-lord@1.0.0",
   "devDependencies": {
-    "eslint": "^8.6.0"
+    "eslint": "latest"
   }
 }
