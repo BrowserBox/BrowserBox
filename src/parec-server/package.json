@@ -10,6 +10,6 @@
   "author": "@dosy, forked and modified from work by original author, Jerko Steiner",
   "license": "AGPL-3.0",
   "dependencies": {
-    "compression": "^1.7.4"
+    "compression": "latest"
   }
 }
