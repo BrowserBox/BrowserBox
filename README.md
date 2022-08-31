@@ -258,6 +258,7 @@ More information on these [commercial options](#commercial-options) is below, an
 | `<iframe>` embeddable                         |                    | :heavy_check_mark: |
 | Kiosk mode                                    |                    | :heavy_check_mark: |
 | Simple API                                    |                    | :heavy_check_mark: |
+| Tunnel connection over SSH                    |                    | :heavy_check_mark: |
 
 
 ## Commercial Options
