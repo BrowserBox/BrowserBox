@@ -199,6 +199,7 @@ BrowserBox aims for feature-parity with desktop and mobile browsers, but also to
 - [:heavy_check_mark:] [`cgroups`](https://man7.org/linux/man-pages/man7/cgroups.7.html) resource control sandboxing ⭐
 - [:heavy_check_mark:] 1 temporary user account per browser session ⭐
 - [:heavy_check_mark:] Clean-slate profile directory per browser session ⭐
+- [:heavy_check_mark:] Tunnel browser video and audio connection over SSH ⭐
 
 **Application Features**
 - [:heavy_check_mark:] Built-in AdBlocker
