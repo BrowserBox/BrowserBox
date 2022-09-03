@@ -23,10 +23,16 @@
   function install() {
     self.addEventListener('click', monitorSelectEvents, {capture: true});
     self.addEventListener('keydown', monitorSelectEvents, {capture: true});
+    console.log(JSON.stringify({install:{selectDropDownEvents:true}}));
   }
 
   function monitorSelectEvents(e) {
-    const {target} = e;
+    let {target} = e;
+    if ( target.shadowRoot ) {
+      // contains a shadow, so will not be the actual event target
+      // but this will be
+      target = e.path[0];
+    }
     const condition = !!target && target.matches && target.matches('select:not([multiple])');
     if ( ! condition ) return;
 
@@ -56,7 +62,7 @@
 
   function open(selectEl) {
     closed = false;
-    s({selectOpen:true, values:getSelectInside(selectEl)});
+    s({selectOpen:true, values:getSelectInside(selectEl), selected: selectEl.selectedIndex});
     self.setSelectValue = makeValueSetter(selectEl);
   }
 
@@ -66,7 +72,12 @@
   }
 
   function getSelectInside(selectEl) {
-    return selectEl.innerHTML;  
+    return Array.from(selectEl.options).map(el => {
+      const opt = document.createElement('option');
+      opt.value = el.value;
+      opt.innerText = el.innerText || el.value;
+      return opt.outerHTML;
+    }).join('');
   }
 
   function makeValueSetter(selectEl) {

@@ -5,7 +5,8 @@
     let {
       selectInput: {
         selectOpen,
-        values
+        values,
+        selected
       },
       executionContextId
     } = _ref;
@@ -13,19 +14,22 @@
     if (state.ignoreSelectInputEvents) return;
     toggleSelect({
       selectOpen,
-      values
+      values,
+      selected
     });
   }
 
   function toggleSelect(_ref2) {
     let {
       selectOpen,
-      values
+      values,
+      selected
     } = _ref2;
     const input = document.querySelector('#selectinput');
 
     if (selectOpen) {
       input.innerHTML = values;
+      input.selectedIndex = selected;
       input.classList.add('open'); //input.focus();
     } else {
       input.classList.remove('open');
