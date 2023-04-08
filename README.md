@@ -275,27 +275,15 @@ BrowserBox Pro is provided by the [Dosyago Corporation](https://github.com/dosya
 
 **Self-hosted**
 
-The self-hosted track includes the provision of the BB Pro software, an S license and various tiers of service. The basic cost principle is established on time (not scale): time you want the license for, time of the latest update you want, and time it takes us to service your deployment. Targeted at SMBs up to Enterprise. 
+The self-hosted track includes the provision of the BB Pro software object-files, with an option for source-code access if you need that. This is targeted at SMBs up to Enterprise. 
 
 If you want to use BB commercially self-hosted is your main option.
 
-To use the self-hosted track, you need to purchase an [S license](#balance_scale-licensing) for a self-hosted deployment, which permits non-competing uses. I'll have a new price list up here soon, so stay tuned to this repository or [contact me](mailto?cris@dosycorp.com&subject=BB%20S%20License&body=Dear%20Cris) if you'd like first dibs on the new prices. Here's a general overview of where this will go:
+To use the self-hosted track, you need a commercial license. Right now we are only offering perpetual licenses. See the prices at [our website](https://dosyago.com).
 
-- Various configurable packages available with either perpetual or yearly licensing, and included service and consulting. 
-- Starts at USD6,700 a year for non-perpetual single year license plus minimal service. 
-- Mid-tier options cost 10K - 16K yearly with a variety of options including perpetual or annual licenses.
-- Invoiceable service and consulting also available.
-- BYO cloud or data-center, or on-prem are all available.
+**Personal Pro**
 
-If you'd like to license BB for purposes that competete with us, we'll have to negotiate agreements. [Reach out to me](mailto:cris@dosycorp.com?subject=BB%20Negotiation&body=Dear%20Cris) if that's the case.
-
-Just a reminder that prices and buy links for self-hosted tiers are *being published here soon!* In the meantime, <a href="mailto:cris@dosycorp.com?subject=BB%20Pro%20Packages&body=Hi%20Cris" target=_blank>email me</a> to ask a question.
-
-**Individual**
-
-Includes provision of a geographically located server wherever you want (or as close to it as possible for us), installed software, credentials to access, and various tiers of service. The basic cost principle is founded on performance (CPU cores, memory, network speed and bandwidth amount). 
-
-See the current [prices and tiers for the Individual track.](https://individual.dosyago.com)
+A flexible solution tailored to your specific personal needs. May include provision of a geographically located server wherever you want (or as close to it as possible for us), or installed software, and various tiers of service. See the [Personal Pro section](https://dosyago.com) at the bottom, or, what's easier, just [email us](mailto:support@dosycorp.com?subject=PersonalPro).
 
 ## Motivation
 
