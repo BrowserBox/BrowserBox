@@ -20,7 +20,7 @@ Coming here for the first time, or don't know what remote browser isolation is?
 ## Some other products that this is similar to:
 
 - CloudFlare remote browsers (formerly S2)
-- The wonderful [neko](https://github.com/m1k1o/neko) project: self hosted-virtual browser that runs in docker and uses WebRTC.
+- The strange and weird [neko](https://github.com/m1k1o/neko) project: self hosted-virtual browser that runs in docker and uses WebRTC.
 - Menlo Security Web and Browser isolation platform
 - Hyperbeam embeddable multiplayer browsers and apps
 - McAfee browser isolation (formerly Light Point)
