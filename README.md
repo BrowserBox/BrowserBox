@@ -4,6 +4,10 @@
 
 # Latest News 
 
+- May 2023: 
+ - BrowserBox is now AGPL-3.0
+ - [BrowserBox Pro](https://github.com/dosyago/BrowserBoxPro) is now source-available and free for non-commercial use.
+ 
 - February 2023: [30-minute resource usage stress test of Pro version](https://youtu.be/CaOnMCqVmTQ)
 
 # WTF is this?
