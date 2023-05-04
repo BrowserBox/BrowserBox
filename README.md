@@ -394,19 +394,11 @@ Contributions welcome! But please sign the CLA first. Don't worry, if you open a
 
 **BB Regular**
 
-  BB Regular (this repository) is licensed under the Polyform Noncommercial License 1.0 (NC license). Any previous licensed versions are also relicensed under this license.  
-
-  The NC license permits *"use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding."* 
-
-  [Read the license](https://github.com/crisdosyago/BrowserBox/blob/boss/LICENSE.md).
+  BB Regular (this repository) is licensed AGPL-3.0
 
 **BB Pro**
 
-  BB Pro (closed-source) is available under the Polyform Shield License 1.0.0 (S license), via a licensing agreement with The Dosyago Corporation. [Read the license](https://github.com/crisdosyago/BrowserBox/blob/boss/LICENSE-Pro.md). 
-
-  In essence this license permits any use case besides those which compete with Dosyago Corporation (or the rightsholders of BB).
-
-  If you'd like to purchase a Pro S license, [see the price list here](https://github.com/crisdosyago/BrowserBox/blob/boss/docs/PRICELIST.md)
+  [BB Pro](https://github.com/dosyago/BrowserBoxPro) (source-available) is provided under the Polyform Noncommercial License 1.0.0, or via a licensing agreement with The Dosyago Corporation. [Read the license](https://github.com/dosyago/BrowserBoxPro/blob/bbpro/LICENSE.md). 
 
 ## &copy; Copyright 
 
