@@ -31,9 +31,9 @@
 - [Contributing](#contributing)
 - [:balance_scale: Licensing](#balance_scale-licensing)
 
-For detailed information and progress updates, please refer to the [official documentation](https://github.com/crisdosyago/BrowserBox).
+For detailed information and progress updates, please refer to the [official documentation](https://github.com/dosyago/BrowserBox).
 
-# Part 2/n: Installation and Features Guide
+# Installation and Features Guide
 
 ## Setup Guide
 
@@ -60,7 +60,7 @@ If you're using a Debian-based system, follow the instructions below.
 ### Cloning the Repository and Installing Dependencies:
 
 ```shell
-$ git clone https://github.com/crisdosyago/BrowserBox.git
+$ git clone https://github.com/dosyago/BrowserBox.git
 $ cd BrowserBox
 $ npm i 
 $ npm test
@@ -81,7 +81,7 @@ $ vf
 
 ```shell
 $ docker pull dosyago/viewfinder-regular:latest
-$ git clone https://github.com/crisdosyago/BrowserBox.git
+$ git clone https://github.com/dosyago/BrowserBox.git
 $ cd BrowserBox/
 $ ./scripts/run_docker.sh
 ```
@@ -178,7 +178,7 @@ For more details on these [commercial options](#commercial-options), continue re
 | Fastest-path lag reduction                    |                    | :heavy_check_mark: |
 | Built-in multiplayer mode with chat           |                    | :heavy_check_mark: |
 | Puppeteer scripting REPL console              |                    | :heavy_check_mark: |
-| Embeddable inside `<iframe>                   |                    | :heavy_check_mark: |
+| Embeddable inside `<iframe>`                  |                    | :heavy_check_mark: |
 | Kiosk mode                                    |                    | :heavy_check_mark: |
 | Adobe Flash Player compatibility              |                    | :heavy_check_mark: |
 | User-friendly API                             |                    | :heavy_check_mark: |
