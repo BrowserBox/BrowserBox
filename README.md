@@ -1,95 +1,196 @@
-# BrowserBoxPro Setup Guide
+# BrowserBoxPro
 
-**Clones per month:** 130
+BrowserBoxPro is a powerful application that provides advanced streaming capabilities and a superior feature set for an enhanced browsing experience. With BrowserBoxPro, you can enjoy the benefits of pro features in every usage scenario. This guide provides step-by-step instructions for installing and running BrowserBoxPro, along with system requirements and troubleshooting tips.
 
-**🌟 Video Installation Guide for Pro: https://youtu.be/cGUJCCPDWNE**
+## Key Features
 
-## Overview
+- **Advanced Streaming**: BrowserBoxPro offers advanced streaming capabilities, allowing you to seamlessly browse websites, stream videos, and access web applications with superior performance.
+- **Enhanced Feature Set**: Enjoy a wide range of enhanced features that enhance your browsing experience, including improved security, customizable settings, and optimized resource management.
+- **Superior Performance**: BrowserBoxPro delivers exceptional performance, ensuring smooth and responsive browsing even for resource-intensive websites and applications.
+- **Flexible Usage**: Whether you are a non-commercial user or using BrowserBoxPro for commercial purposes, you can benefit from the full range of pro features to enhance your browsing capabilities.
 
-This guide provides step-by-step instructions to install and run the BrowserBoxPro application, as well as detailed system requirements and troubleshooting tips. The installation process should be executed from bash (bourne shell). While other shells may work, they could potentially disrupt some install scripts.
+## Installation and Features Guide
 
-## Troubleshooting
+**🌟 Video Installation Guide for Pro: [https://youtu.be/cGUJCCPDWNE](https://youtu.be/cGUJCCPDWNE)**
 
-If you have trouble with the setup or installation, the first step is always the following:
+For detailed information and progress updates, please refer to the [official documentation](https://github.com/dosyago/BrowserBox).
 
-1. `./deploy-scripts/troubleshoot.sh` (reset any running BB instances) 
-2. `./deploy-scripts/globall_install.sh <domain name>` (run installation again)
- 
-Ensure you're present for the whole install and respond to any prompts (responses need to be Y or yes when asked Y/n for a successful install). You can normally ignore any errors that occur during install. If you still have trouble or something really unusual occurs, email us at: help@dosyago.com. Some helpful output to provide is the output of the install process, as well as the output from running "setup_bbpro --port 8080; bbpro; pm2 logs"
+## Table of Contents
 
-## Initial Machine Setup
+- [Installation](#installation)
+- [Applications and Features](#applications-and-features)
+- [Pro Features](#pro-or-regular)
+- [Commercial Options](#commercial-options)
+- [Contributing](#contributing)
+- [:balance_scale: Licensing](#balance_scale-licensing)
 
-Below is a sample setup process on Debian, which includes upgrading your packages, setting up a sudo user, and installing necessary tools (git, curl, wget).
+## Installation
 
-As `root` user, execute the following commands:
+Follow these instructions to install BrowserBoxPro on your system.
 
-1. `adduser pro` - Create a user to operate BrowserBoxPro.
-2. `usermod -L pro` - Disable the password for the newly created user.
-3. `addgroup sudoers` - Create a new group for sudo privileges.
-4. `visudo` - Add `%sudoers ALL=(ALL) NOPASSWD:ALL` to the sudoers file to avoid entering a password for sudo operations.
-5. `usermod -G sudoers pro` - Grant sudo privileges to the user.
+### Initial Machine Setup
 
-Now, switch to the newly created user with `sudo -u pro bash`, then perform the following:
+Before installing BrowserBoxPro, ensure that your system meets the following requirements:
 
-1. `sudo apt update && sudo apt -y upgrade` - Update and upgrade your packages.
-2. `sudo apt install git curl wget` - Install git, curl, and wget tools.
+- Debian VPS with 2 cores, 4 GB RAM, and 100 GB SSD
+- At least 10 Mbps internet connection
+- A public hostname with a DNS A record pointing to your VPS's IP address
 
-The next step is to open **a TCP port block** around your main port. In this example, we'll use port `8080` as your main browser service port.
+Perform the initial machine setup by following these steps:
 
-Each browser instance operates 3 services (audio, devtools, and browser), each requiring a port. However, for redundancy, we use a block of 5 ports. These services run on distinct ports:
+1. Create a new user to operate BrowserBoxPro:
+   ```
+   adduser pro
+   ```
 
-- Main browser service: input port (e.g., 8080)
-- Audio service: browser service port - 2 (e.g., 8078)
-- Devtools service: browser service port + 1 (e.g., 8081)
+2. Disable the password for the newly created user:
+   ```
+   usermod -L pro
+   ```
 
-This configuration allows the main browser service to run on the middle port of the block, providing space for two supplementary services on either side. Consequently, you should open a block of 5 ports centered on 8080, i.e., open TCP ports 8078 through 8082.
+3. Create a new group for sudo privileges:
+   ```
+   addgroup sudoers
+   ```
 
-At this point, your machine is set up and ready for BrowserBoxPro installation.
+4. Add the following line to the sudoers file to avoid entering a password for sudo operations:
+   ```
+   %sudoers ALL=(ALL) NOPASSWD:ALL
+   ```
+   Use the `visudo` command to edit the sudoers file.
 
-## Installation Process
+5. Grant sudo privileges to the user:
+   ```
+   usermod -G sudoers pro
+   ```
 
-**:warning: Caution:** Be sure to install from a non-`root` user with `sudo` permissions (for instance, the `pro` user from the previous example). Some components may not function correctly if installed as root, although they do require `sudo` for installation.
+Switch to the `pro` user by executing the following command:
+```
+sudo -u pro bash
+```
 
-ℹ️ Set up your hostname DNS records for your VPS before installing, as LetsEncrypt certificates are used for the web application. This refers to `domain_name` in step 3 below.
+### Installation Process
 
-During the installation, you will need to respond to several prompts with "Y", so please ensure to follow through without letting the process time out.
+Follow these steps to install BrowserBoxPro:
 
-Execute the following commands:
+1. Clone the BrowserBoxPro repository:
+   ```
+   git clone https://github.com/dosyago/BrowserBoxPro
+   ```
 
-1. `git clone https://github.com/dosyago/BrowserBoxPro`
-2. `cd BrowserBoxPro`
-3. `./deploy-scripts/global_install.sh <domain_name>` (the domain name that points to the machine you're doing this setup on)
-4. `setup_bbpro --port 8080` - This command starts the main service on port 8080 and generates the login link.
-5. `bbpro`
+2. Navigate to the cloned repository:
+   ```
+   cd BrowserBoxPro
+   ```
 
-Finally, use the login link generated in step 4 to connect to the virtual browser (via a regular mobile or desktop browser). 
+3. Run the global installation script, replacing `<domain_name>` with your domain name that points to the machine you're setting up:
+   ```
+   ./deploy-scripts/global_install.sh <domain_name>
+   ```
 
-ℹ️ You may encounter some errors during the installation. As long as the installation completes, these errors can be ignored; they typically arise due to variations in operating systems.
+4. Start the main service on port 8080 and generate the login link:
+   ```
+   setup_bbpro --port 8080
+   ```
 
-## Recommended System Requirements
+5. Launch BrowserBoxPro:
+   ```
+   bbpro
+   ```
 
-- Debian VPS with 2 core, 4 GB RAM, and 100 GB SSD
-- At least 10 Mbps connection
-- A public hostname with a DNS A record pointing to your VPS's IP. We use this to provision a TLS certificate, which forms part of the login link.
+During
 
-The actual requirements may vary depending on your browsing needs. However, the above configuration should provide satisfactory performance for a range of browsing tasks. If you require better performance, consider upgrading your hardware.
+ the installation process, BrowserBoxPro will automatically install the required dependencies and configure the necessary settings.
 
-To minimize lag and boost framerate, locate the server as close to you as possible. Round-trip time (RTT) significantly influences performance, since remote browser isolation is essentially a real-time interactive video streaming application.
+## Applications and Features
 
-## MacOS Troubleshooting
+BrowserBoxPro offers a wide array of features and potential applications, making it versatile for various use cases. Here are some of the applications and features provided by BrowserBoxPro:
 
-If you intend to run BrowserBoxPro locally on MacOS, ensure it is launched from a terminal under Rosetta due to some native libraries used by node dependencies. Also, switch to a node version installed under a Rosetta terminal (such that `node -p process.arch` returns x86 or x64).
+### Product Space Applications:
 
-## Running Locally
+- Remote browser isolation for enhanced security, risk mitigation, and privacy.
+- Co-browsing with zero download requirements for collaborative and social interaction.
+- A delivery platform for a zero-download web scraping app compatible with any device format.
+- An alternative platform for browser extensions with an associated app store.
+- A secure online "internet cafe" with advanced privacy features.
+- An alternate solution to VPNs and DNS blocklists.
+- Mitigation of email attachment threats via Content Disarm & Reconstruction (CDR) and automatic opening of links and attachments in the remote browser or its included secure document viewer (Pro only).
+- A user-friendly UI that allows clients to perform 3rd-party processes without leaving your website.
+- A fully customizable online hosted web browser that provides an alternative to downloadable browsers.
+- The ability to record web app interactions to document bugs by capturing the event stream and viewport.
+- A mechanism to create visual "How-To" guides illustrating key user stories.
 
-⚠️ Note: Performance tends to be poorer when running locally (client and browser on the same machine) compared to operating across a network link.
+### Internal Tooling Applications:
 
-Before running `bbpro`, ensure Chrome is entirely shut down, as it needs to start in headless mode for BrowserBoxPro.
+- A tool for human-in-the-loop intervention to resolve stuck browser automation jobs and identify "selector drift" and script-page mismatch issues.
+- A robust web proxy to seamlessly integrate 3rd-party processes lacking APIs.
+- An interactive console to inspect, observe, and interact with browser automation tasks.
+- A browser that can be automated, offering effective evasion of bot detection mechanisms that target pure headless Chrome.
+- A scriptable console and interactive simulator for automation tasks, creating an intuitive feedback loop.
 
-## Shutting Down
+### Tech and Framework Applications:
 
-To terminate the running BrowserBoxPro services, type `pm2 delete all` in the terminal.
+- An open web `<WebView>` tag.
+- An `<iframe>` without cross-origin restrictions.
+- A 'head' for headless browsers.
 
-## License
+For a comprehensive list of features and their availability in BrowserBoxPro, refer to the feature table below.
 
-This code is free for non-commercial use, including by governments or public institutions as per [the Polyform Non-commercial License 1.0](LICENSE)
+## Features of BrowserBox Pro
+
+BrowserBox Pro offers an array of advanced features that set it apart from other versions. With frequent updates and cutting-edge technology, BrowserBox Pro provides an enhanced browsing experience with superior rendering, top-tier graphics, and minimal lag. Here are the key features of BrowserBox Pro:
+
+- Advanced streaming technology and variable bitrate innovations for smoother browsing experience
+- Superior rendering and graphics capabilities
+- Structured, weekly update schedule with quarterly major improvements
+- Exclusive advanced features not available in other versions
+- Commercial use availability with Individual server and Self-hosted options
+- Advanced security mechanisms and privacy safeguards
+- Customizable browser UI
+- Docker image compatibility for easy deployment
+- Cloud and platform independence
+- Multi-user security features (Pro exclusive)
+- Auto-scaling and resource control (Pro exclusive)
+- WebRTC/WebSocket viewport streaming (Pro exclusive)
+- Fastest-path lag reduction (Pro exclusive)
+- Built-in multiplayer mode with chat (Pro exclusive)
+- Puppeteer scripting REPL console (Pro exclusive)
+- Embeddable inside `<iframe>` (Pro exclusive)
+- Kiosk mode (Pro exclusive)
+- Adobe Flash Player compatibility (Pro exclusive)
+- User-friendly API (Pro exclusive)
+- SSH tunneling (Pro exclusive)
+
+These features make BrowserBox Pro the ideal choice for businesses and organizations looking to enhance their cybersecurity, privacy, and browsing capabilities.
+
+For more information about commercial options and licensing, please refer to the relevant sections below.
+
+## Licensing
+
+BrowserBox Pro offers flexible licensing options to cater to different usage scenarios. The software is available for free for non-commercial use under the PolyForm NonCommercial license. This allows individuals and non-profit organizations to enjoy the benefits of BrowserBox Pro without any licensing fees. The PolyForm NonCommercial license ensures that the software is used strictly for non-commercial purposes.
+
+For commercial use, BrowserBox Pro offers commercial licenses that can be purchased through the Dosyago website at [https://dosyago.com](https://dosyago.com). These commercial licenses provide businesses with the rights to fully customize and integrate BrowserBox Pro into their operations, as well as incorporate it into customer-facing products.
+
+When acquiring a commercial license, customers have the option to choose from different licensing models, including perpetual or yearly licenses. Dosyago offers volume discounts for larger purchases, enabling businesses to scale their usage of BrowserBox Pro according to their needs. The specific details of minimum volumes and pricing can be obtained by contacting sales@dosyago.com.
+
+By obtaining a commercial license, businesses gain the freedom to tailor BrowserBox Pro to their specific requirements and integrate it seamlessly into their workflows. This empowers organizations to leverage the advanced features and capabilities of BrowserBox Pro while maintaining full control over its customization and usage.
+
+Whether it's for non-commercial or commercial purposes, BrowserBox Pro provides a range of licensing options to accommodate different user needs and ensure a secure and powerful browsing experience.
+
+## Elevate Your Cybersecurity with BrowserBoxPro
+
+BrowserBoxPro is more than just a web browser. It's a security fortress, a vanguard for your data, and an ally to your privacy. Whether you are a cybersecurity professional, part of an IT department in a large corporation, or a government entity, BrowserBoxPro can help you safeguard sensitive data in an interconnected digital landscape.
+
+What sets BrowserBoxPro apart is its cutting-edge technology, superior browsing experience, advanced security features, customization capabilities, and regular updates to protect against emerging threats. With its proprietary software and scalable infrastructure, BrowserBoxPro can adapt to the unique needs of your organization, regardless of its size or industry.
+
+Our dedicated support and maintenance team is committed to ensuring your satisfaction. BrowserBoxPro delivers not just a product, but a partnership.
+
+Maximize your investment with our commercial options and unlock the full potential of BrowserBoxPro. Whether you are an individual server operator or a large corporation seeking a self-hosted solution, we have you covered. As part of our commercial package, you gain access to the premium features exclusive to BrowserBoxPro, along with the option for source-code access if required.
+
+Take the next step in fortifying your cybersecurity. Visit our website today to secure your commercial license and start your journey with BrowserBoxPro. Let's navigate the challenging cybersecurity landscape together.
+
+## Copyright
+
+This project is copyright The Dosyago Corporation and Cris Stringfellow 2023. All rights reserved.
+
+For detailed information and progress updates, please refer to the [official documentation](https://github.com/dosyago/BrowserBox).
