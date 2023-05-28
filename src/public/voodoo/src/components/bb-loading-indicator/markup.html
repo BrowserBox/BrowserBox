@@ -1,0 +1,9 @@
+<aside class="loading-indicator" stylist="styleLoadingIndicator">
+  <meter ${_host?.loading?.isLoading?'':'hidden'} name=loading 
+    min=0 
+    max=${_host?.loading?.waiting + _host?.loading?.complete} value=${_host?.loading?.complete} 
+    low=${_host?.low} 
+    high=${_host?.high}
+    optimum=${_host?.optimum}
+  ></meter>
+</aside>

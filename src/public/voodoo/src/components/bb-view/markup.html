@@ -1,0 +1,78 @@
+<main class="voodoo ${state.chromeUI ? '' : 'no-chrome'}"
+  bond=${bondTasks} stylist="styleVoodooMain">
+  ${state.chromeUI ? F`<bb-top-bar state=bbpro></bb-top-bar>` : F`<!-- top bar -->`}
+  ${state.chromeUI ? F`<bb-tabs state=bbpro></bb-tabs>` : F`<!-- tab list -->`}
+  ${state.CONFIG.magicBar && !state.chromeUI ? F`<bb-bar state=bbpro></bb-bar>` : F`<!-- magic bar -->`}
+  <bb-ctrl state=bbpro></bb-ctrl>
+  <article class=tab-viewport stylist="styleTabViewport styleContextMenu" role=region>
+    <bb-loading-indicator state=${{
+      state: _top,
+    }}></bb-loading-indicator>
+    <canvas
+      tabindex=1
+      role=tabpanel
+      click=${[
+        elogit,
+        () => {
+          if ( viewState.shouldHaveFocus && document.deepActiveElement != viewState.shouldHaveFocus ) {
+            viewState.shouldHaveFocus.focus(); 
+          }
+        }
+      ]}
+      bond=${[c => saveCanvas(c, _self), emulateNavigator, ...canvasBondTasks, async el => {
+        const bbView = el.getRootNode().host;
+        state.viewState.bbView = bbView;
+      }]}
+      b:passive:touchstart=${[elogit,/*H, */ /*retargetTouchScroll */ e => retargetTouchScrollToRemote(e,H,viewState)]}
+      touchmove=${[
+        e => e.preventDefault(), 
+        elogit,
+        /*H,*/
+        throttle(e => retargetTouchScrollToRemote(e,H,viewState), state.EVENT_THROTTLE_MS)
+      ]}
+      b:passive:wheel=${throttle(H, state.EVENT_THROTTLE_MS)}
+      b:passive:mousemove=${[elogit, throttle(H, state.EVENT_THROTTLE_MS)]}         
+      mousedown=${[elogit,H]}         
+      mouseup=${[elogit,H]}         
+      b:passive:pointermove=${[elogit, throttle(H, state.EVENT_THROTTLE_MS)]}         
+      pointerdown=${[
+        deviceIsMobile() ? e => startTimer(e, state.viewState) : iden,
+        elogit,
+        H
+      ]}         
+      pointerup=${[
+        deviceIsMobile() ? e => endTimer(e, state.viewState) : iden,
+        elogit,
+        H
+      ]}         
+      contextmenu=${[elogit, contextMenuEvent => {
+        contextMenuEvent.preventDefault();
+        state.contextMenuActive = true; 
+        state.contextMenuEvent = contextMenuEvent;
+        setState('bbpro', state);
+      }]}
+    ></canvas>
+    ${contextMenuActive ? F`<bb-context-menu state=${{}} click=close(event) ></bb-context-menu>` : F`<!-- context menu -->`}
+    <select id=selectinput stylist="styleSelectInput"
+      input=${e => (console.log({e}), H({
+        synthetic: true,
+        type: "select",
+        state,
+        event: e
+      }))}
+      >
+      <option value="" disabled>Select an option</option>
+    </select>
+  </article>
+  <bb-modals bond=${el => viewState.modalComponent = el} state=bbpro class="${viewState.currentModal ? 'open' : ''}"></bb-modals>
+</main>
+${DEBUG.useStraightAudioStream ? 
+  F`<video autoplay preload=auto id=audio playsinline></video>` 
+  : 
+  DEBUG.includeAudioElementAnyway ? 
+    F`<audio autoplay preload=auto loop id=audio playsinline></audio>` 
+    :
+    F`<!-- audio element superceded by stream -->`
+}
+<iframe id=audio-login src=${audio_login_url}></iframe>
+${DEBUG.pluginsMenu && state.chromeUI ? subviews.PluginsMenu(state) : F`<!-- plugins menu -->`}

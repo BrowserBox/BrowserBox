@@ -1,0 +1,55 @@
+{
+  "name": "@dosy-private/livesnapdragon",
+  "private": true,
+  "type": "module",
+  "version": "1.0.3",
+  "description": "simple chat app",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "nodemon index.js 8004 xxxcookie token2",
+    "tests": "nodemon tests.js",
+    "tscheck-client": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/client.js --module System public/src/app.js",
+    "tscheck-server": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System index.js",
+    "tscheck": "npm run tscheck-server && npm run tscheck-client",
+    "lint": "npx eslint index.js && npx eslint public/src/app.js",
+    "clean": "rm -rf typetests && rm -rf node_modules && npm i",
+    "check": "npm run tscheck && npm run lint",
+    "prepublishOnly": "echo 'do not publish this' && false"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cris691/bulgogi.git"
+  },
+  "keywords": [
+    "non-framework",
+    "render",
+    "functions",
+    "bulgogi",
+    "dosy"
+  ],
+  "author": "@dosy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cris691/bulgogi/issues"
+  },
+  "homepage": "https://github.com/cris691/bulgogi#readme",
+  "dependencies": {
+    "compression": "latest",
+    "cookie-parser": "latest",
+    "csurf": "latest",
+    "exit-on-epipe": "^1.0.1",
+    "express": "latest",
+    "express-rate-limit": "latest",
+    "helmet": "latest",
+    "ws": "^7.5.4"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.6",
+    "@types/helmet": "0.0.47",
+    "@types/node": "^14.0.13",
+    "@types/ws": "^7.2.5",
+    "eslint": "^7.2.0",
+    "nodemon": "^2.0.4"
+  }
+}

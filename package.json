@@ -1,0 +1,122 @@
+{
+  "name": "@dosy-private/bbpro",
+  "private": true,
+  "type": "module",
+  "version": "3.0.1",
+  "description": "Fly a browser remotely from your browser? Yes.",
+  "main": "./src/server.js",
+  "targets": {
+    "main": false
+  },
+  "bin": {
+    "bb": "./dist/BrowserBox.cjs"
+  },
+  "parcelIgnore": [
+    ".*/bang.js",
+    ".*vanillaview.js"
+  ],
+  "pkg": {
+    "scripts": "dist/*.js",
+    "assets": [
+      "dist/**/*"
+    ],
+    "outputPath": "build/"
+  },
+  "scripts": {
+    "compile": "npm run parcel && npm run build && npm run package",
+    "parcel": "(rm -rf .parcel-cache/ dist/ || :) && (mkdir dist/ || :) && cp -r src/public/* dist/ && rm dist/image.html &&CONFIG_DIR=./config/ npx parcel build src/public/image.html --config=./config/parcelrc && cp -r src/public/voodoo/node_modules dist/node_modules",
+    "no-x-parcel": "(rm -rf .parcel-cache/ dist/ || :) && (mkdir dist/ || :) && cp -r src/public/* dist/ && rm dist/image.html &&CONFIG_DIR=./config/ parcel build src/public/image.html --config=./config/parcelrc && cp -r src/public/voodoo/node_modules dist/node_modules",
+    "test": "(npm run stop || :) && bash ./scripts/run-test.sh",
+    "stop": "bash ./scripts/stop-test.sh",
+    "start-share": "nohup bash ./share-test.sh > $HOME/.vf.nohup.$(date +\"%y_%m_%d_%H_%M\").out &",
+    "start-single": "(bash ./kill-pm2.sh || :) && bash ./pm2-run.sh",
+    "dev": "node-dev --inspect=127.0.0.1:8111 index.js",
+    "devtest": "bash ./scripts/devtest.sh",
+    "bundle": "bash ./scripts/make_bundle.sh",
+    "start": "bash ./scripts/dstart.sh",
+    "docker_start": "bash ./scripts/docker_start.sh",
+    "x64i": "TARGET_ARCH=x64 npm install",
+    "postinstall": "bash ./scripts/postinstall.sh",
+    "init": "bash ./reinit_after_restart.sh",
+    "clean": "./scripts/clean.sh || :",
+    "lint": "./scripts/gglint.sh",
+    "tsc-server": "tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System ./src/server.js ./src/decs.d.ts",
+    "tsc-inject": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System ./src/zombie-lord/injections/**/*.js ./src/decs.d.ts",
+    "tsc-public": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System ./src/public/*.js ./src/decs.d.ts",
+    "tsc-check": "./scripts/tsc-check.sh",
+    "check": "rm -f ./src/public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
+    "build": "bash ./scripts/only_build.sh",
+    "package": "npx pkg --compress GZip . && codesign -vvvv --timestamp -s 'Developer ID Application' --force build/bbpro-macos -i com.DOSYAGO.BBPro",
+    "mac-build": "TARGET_ARCH=x64 npm run clean &&TARGET_ARCH=x64 npm i && npm run parcel && npm run pack && npx pkg --compress GZip --targets=x64 .",
+    "package-small": "npx pkg --compress Brotli .",
+    "release": "npm run parcel && npm run build && npm run package",
+    "prepublishOnly": "echo 'do not publish this' && fail"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/i5ik/vf.git"
+  },
+  "keywords": [
+    "browser",
+    "headless",
+    "automation",
+    "chrome",
+    "viewfinder",
+    "browsergap",
+    "supreme-architect",
+    "oni",
+    "remoteview",
+    "groundcontrol",
+    "chromescreen",
+    "chrome controller"
+  ],
+  "author": "@dosy",
+  "bugs": {
+    "url": "https://github.com/crisdosyago/bbpro/issues"
+  },
+  "homepage": "https://github.com/crisdosyago/bbpro",
+  "dependencies": {
+    "@dosy/ws": "^8.11.6",
+    "bang.html": "latest",
+    "body-parser": "latest",
+    "compression": "latest",
+    "cookie-parser": "latest",
+    "cors": "latest",
+    "csurf": "latest",
+    "entities": "latest",
+    "esbuild": "0.17.3",
+    "esm": "latest",
+    "exit-on-epipe": "latest",
+    "express": "latest",
+    "express-rate-limit": "latest",
+    "helmet": "latest",
+    "multer": "latest",
+    "pm2": "^5.2.2",
+    "simple-peer": "latest",
+    "spdy": "latest",
+    "wrtc": "latest",
+    "ws": "latest"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.12",
+    "@mapbox/node-pre-gyp": "latest",
+    "@parcel/packager-raw-url": "latest",
+    "@parcel/transformer-webmanifest": "latest",
+    "@types/body-parser": "latest",
+    "@types/cookie-parser": "latest",
+    "@types/current-git-branch": "latest",
+    "@types/esm": "latest",
+    "@types/form-data": "latest",
+    "@types/is-docker": "latest",
+    "@types/multer": "latest",
+    "@types/node-fetch": "latest",
+    "@types/ws": "latest",
+    "@vertx/core": "latest",
+    "eslint": "latest",
+    "node-loader": "latest",
+    "parcel": "latest",
+    "parcel-resolver-ignore": "latest",
+    "pkg": "latest",
+    "whatwg-fetch": "^3.6.2"
+  }
+}

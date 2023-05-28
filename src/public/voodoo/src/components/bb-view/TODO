@@ -1,0 +1,1 @@
+// convert all function properties of R templates into functions on the BB class. Becauase otherwise bang will execute the function immediately and pass in State as argument

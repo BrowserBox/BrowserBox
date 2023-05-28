@@ -1,0 +1,18 @@
+IMproved setup 
+
+Automate this later
+
+
+1. install latest node for debian from node source
+2. install pm2 globally with sudo
+
+thereby avoid the need of installing nvm for everyone
+
+---
+
+Automate the installation
+
+so running
+
+1. bbpro/deploy-scripts/global_install.sh  (and)
+2. <here>/scripts/setup.sh

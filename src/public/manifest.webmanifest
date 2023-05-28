@@ -1,0 +1,12 @@
+{
+  "name": "Puppeteer Console",
+  "short_name": "PC",
+  "theme_color": "#1e90ff",
+  "background_color": "#1e90ff",
+  "display": "standalone",
+  "Scope": "/",
+  "start_url": "/",
+  "icons": [
+  ],
+  "splash_pages": null
+}

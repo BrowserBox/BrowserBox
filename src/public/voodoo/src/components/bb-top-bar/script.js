@@ -1,0 +1,3 @@
+class BBTopBar extends Base {
+
+}

@@ -1,0 +1,4 @@
+node_modules
+.*.swp
+assets/icons/*.svg
+

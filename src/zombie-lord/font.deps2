@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+sudo apt-get -y --no-install-recommends install fonts-liberation \
+fonts-roboto \
+fonts-noto-color-emoji \
+fonts-noto-cjk \
+fonts-ipafont-gothic \
+fonts-wqy-zenhei \
+fonts-kacst \
+fonts-freefont-ttf \
+fonts-thai-tlwg \
+fonts-indic \
+fonts-noto ttf-dejavu \
+fontconfig 
+
+sudo cp ./fonts.conf /etc/fonts/fonts.conf

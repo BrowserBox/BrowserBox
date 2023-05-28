@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html stylist="styleDocument" lang="en-US">
+  <head>
+    <meta charset=utf8>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name=theme-color content=dodgerblue>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="dodgerblue">
+    <meta name="msapplication-TileColor" content="#1e90ff">
+    <title>BB Pro</title>
+    <link rel="icon" href="favicon.svg">
+    <link rel=manifest href=./manifest.webmanifest>
+    <link rel=stylesheet href=style.css>
+    <link rel=stylesheet href=voodoo/src/components/style.css>
+    <script src=simplepeer.min.js></script>
+    <script type=module src=resize_helper.js></script>
+    <script type=module src=error_catchers.js></script>
+    <script type=module src=prod/setup-service-worker.js></script>
+    <script type=module src=prod/ask-before-unload.js></script>
+    <script type=application/javascript src=voodoo/node_modules/bang.html/src/bang.js></script>
+    <link rel=stylesheet href=voodoo/node_modules/bang.html/src/style.css></script>
+    <link rel=stylesheet no-href=styles/splash.css>
+  </head>
+  <body>
+    <div tabindex=-1 id=debugBox></div>
+    <script type=module src=image-start-app.js?fdh234324></script>
+    <script type=module src=load-bang.js></script>
+    <bb-view state=bbpro></bb-view>
+  </body>
+</html>

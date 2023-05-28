@@ -1,0 +1,21 @@
+{
+  "name": "@dosy-private/crdp-secure-proxy-server",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node-dev index.js 8003 xxxcookie token2",
+    "prepublishOnly": "echo 'do not publish this' && fail"
+  },
+  "author": "@dosy",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "compression": "^1.7.4",
+    "cookie-parser": "latest",
+    "exit-on-epipe": "^1.0.1",
+    "express": "latest",
+    "ws": "^7.5.4"
+  }
+}

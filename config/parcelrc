@@ -1,0 +1,9 @@
+{
+  "extends": "@parcel/config-default",
+  "optimizers": {
+    "*.js": [
+      /*"@rbf/parcel-optimizer-javascript-obfuscator", "..."*/
+    ]
+  },
+  "resolvers": ["parcel-resolver-ignore", "..."]
+}

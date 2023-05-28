@@ -1,0 +1,36 @@
+{
+  "name": "@dosy-private/voodoo",
+  "type": "module",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A browser API for performing actions on a bitmap representation of a browser tab, and viewing the changes.",
+  "main": "index.js",
+  "scripts": {
+    "test": "serve -p 8080",
+    "postinstall": "cp node_modules/simple-peer/simplepeer.min.js src/ && cp node_modules/lucide-static/icons/*.svg assets/icons/",
+    "postinstall-win": "copy node_modules/simple-peer/simplepeer.min.js src/ && mkdir -p ./assets/icons && copy node_modules/lucide-static/icons/*.svg assets/icons/",
+    "prepublishOnly": "echo 'do not publish this' && fail"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/dosycorp/voodoo.git"
+  },
+  "author": "@dosy",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://gitlab.com/dosycorp/voodoo/issues"
+  },
+  "homepage": "https://gitlab.com/dosycorp/voodoo#readme",
+  "dependencies": {
+    "bang.html": "^6.0.0",
+    "dumbass": "^2.7.0",
+    "lucide-static": "^0.101.0",
+    "maskingtape.css": "^1.11.4",
+    "style.dss": "latest",
+    "vanillatype": "latest"
+  },
+  "devDependencies": {
+    "@babel/runtime": "latest",
+    "simple-peer": "latest"
+  }
+}

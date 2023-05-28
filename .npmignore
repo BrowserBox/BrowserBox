@@ -1,0 +1,15 @@
+public/assets/ruffle
+public/assets/flash/*.swf
+public/assets/flash/*.as
+public/assets/flash/*.fla
+public/assets/flash/*.jsfl
+BrowsreBox.exe
+BrowsreBox.win*
+BrowsreBox.nix*
+BrowsreBox.mac*
+typetests
+public/fonts
+public/old
+public/images/3rd-party/undraw
+sslcert
+

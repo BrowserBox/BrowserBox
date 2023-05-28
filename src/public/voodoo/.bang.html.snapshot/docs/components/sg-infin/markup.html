@@ -1,0 +1,26 @@
+${{key}}
+<sg-frame state=${_self} resize>
+  <div class=box b:passive:scroll=UpdatePosition>
+    <table>
+      <colgroup>
+        <col class="row-header" name="top-left">
+        ${columnNames.map(name => F`${{key:`${key}col${name}`}}
+        <col name=${name} width=101px>
+        `)}
+      </colgroup>
+      <tbody>
+        ${schedule(rowNames, async rowName =>  await F`${{key:`${key}row${rowName}`}} 
+        <tr class=sc-item>
+          ${schedule(columnNames, async colName => {
+            const cellKey = `${key}:${colName}${rowName}`;
+            return await F`${{key:cellKey}}
+          <td class=sc-item>
+            <!sg-cell data-key=${cellKey} state=${cell[cellKey]} />
+          </td>
+          `}, {batchSize: 5})}
+        </tr>
+      `, {batchSize: 1})
+      }</tbody>
+    </table>
+  </div>
+</sg-frame>

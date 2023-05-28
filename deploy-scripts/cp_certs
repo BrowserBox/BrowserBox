@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+if [[ -z "$1" ]]; then
+  echo "no domain in first position. failing"
+  exit 1
+fi
+
+if [[ -z "$2" ]]; then
+  echo "no destination directory in second position. failing"
+  exit 1
+fi
+
+cp -r -L /etc/letsencrypt/live/$1/* $2

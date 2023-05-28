@@ -1,0 +1,5 @@
+@import url("themes/blank.css");
+
+textarea:focus {
+  outline: thin solid dodgerblue;
+}

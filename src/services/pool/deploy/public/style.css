@@ -1,0 +1,58 @@
+:root {
+  font-family: system-ui, sans-serif;
+}
+
+main {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+footer, main header h1 {
+  text-align: center;
+}
+
+iframe {
+  border: 0;
+  width: 100%;
+}
+
+iframe.short {
+  height: 3rem;
+}
+
+iframe.full {
+  height: 50%;
+  min-height: 200px;
+}
+
+footer, i {
+  color: gray;
+}
+
+footer, .small {
+  font-size: smaller;
+}
+
+summary {
+  cursor: pointer;
+}
+
+.inline {
+  display: inline;
+}
+
+.no-list {
+  list-style-type: none;
+}
+
+.top-gap {
+  margin-top: 1em;
+}
+
+.invisible {
+  display: none;
+}
+
+form.message button {
+  vertical-align: top;
+}

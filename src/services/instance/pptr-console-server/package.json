@@ -1,0 +1,27 @@
+{
+  "name": "@dosy-private/pptr-console-server",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "server for pptr console for vf",
+  "main": "index.js",
+  "scripts": {
+    "test": "nodemon index.js 8001 xxxcookie token2",
+    "prepublishOnly": "echo 'do not publish this' && fail"
+  },
+  "author": "@dosy",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "compression": "latest",
+    "cookie-parser": "latest",
+    "csurf": "latest",
+    "exit-on-epipe": "^1.0.1",
+    "express": "latest",
+    "express-rate-limit": "latest",
+    "helmet": "latest",
+    "puppeteer": "latest"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
+}

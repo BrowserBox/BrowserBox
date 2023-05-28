@@ -1,0 +1,76 @@
+#!/bin/bash
+
+echo 
+echo
+read -p "Want to run setup_machine script? (you only need to do this the first time you install BG, or when you update new version) y/n " -n 1 -r
+echo
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+  echo "Not running full setup...Just doing npm install..."
+else 
+  echo "Running full setup..."
+  bash ./scripts/setup_machine.sh
+fi
+
+mkdir -p src/public/voodoo/assets/icons
+
+
+echo "Installing packages for zombie lord..."
+cd src/zombie-lord 
+npm i    
+npm audit fix
+echo "Installing packages for client..."
+cd ../public/voodoo
+npm i    
+npm audit fix
+# cd ../../endbacker
+# npm i    
+echo "Installing packages for custom chrome launcher..."
+cd ../../zombie-lord/custom-launcher
+npm i    
+npm audit fix
+cd ../../
+
+echo "Installing packages for audio service..."
+cd services/instance/parec-server
+npm i    
+npm audit fix
+cd ../
+
+echo "Installing packages for pptr console service..."
+cd pptr-console-server
+export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=True
+npm i    
+npm audit fix
+
+rm -rf node_modules/puppeteer/.local-chromium
+
+echo "Installing packages for real time chat service..."
+cd websocket_chat_app_homework
+npm i
+npm audit fix
+cd ../
+cd ../
+
+echo "Installing packages for remote devtools service..."
+cd ../pool/crdp-secure-proxy-server
+npm i
+npm audit fix
+cd ../../../../
+
+DEBUG_FLASH=$(node -p "import('./src/common.js').then(({DEBUG}) => console.log(DEBUG.useFlashEmu));");
+USE_FLASH=$(echo $DEBUG_FLASH | tail -n 1)
+if [[ $USE_FLASH != "false" ]]; then
+  brew install jq
+  ./scripts/download_ruffle.sh
+fi
+
+which pm2 || npm i -g pm2
+npm i --save-exact esbuild
+
+npm audit fix
+
+echo Done post install
+
+

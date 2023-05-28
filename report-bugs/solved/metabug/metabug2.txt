@@ -1,0 +1,52 @@
+BROKEN PATH func/ws-server:474 -> screenshotAck/controller:72 -> send/controller:505
+
+accessing meta [{"vm":{"paused":false}},{"modal":{"url":"https://javascript.info/alert-prompt-confirm","message":"true","type":"alert","hasBrowserHandler":false,"defaultPrompt":"","sessionId":"74A1C774EB735C6050CFBE42914EB9B3"}}] Error
+    at Object.get (file:///home/cris/vfpro/src/zombie-lord/connection.js:232:61)
+    at Object.send (file:///home/cris/vfpro/src/zombie-lord/controller.js:505:20)
+    at Object.screenshotAck (file:///home/cris/vfpro/src/zombie-lord/controller.js:72:26)
+    at func (file:///home/cris/vfpro/src/ws-server.js:474:24)
+    at runMessageQueue (file:///home/cris/vfpro/src/ws-server.js:787:9)
+    at WebSocket.<anonymous> (file:///home/cris/vfpro/src/ws-server.js:581:13)
+    at WebSocket.emit (node:events:520:28)
+    at Receiver.receiverOnMessage (/home/cris/vfpro/node_modules/ws/lib/websocket.js:1137:20)
+    at Receiver.emit (node:events:520:28)
+    at Receiver.dataMessage (/home/cris/vfpro/node_modules/ws/lib/receiver.js:528:14)
+
+
+{"sendResult":{"data":{"vmPaused":true},"totalBandwidth":797524}}
+
+WORKING PATH func/ws-server:492 -> eventSendLoop/server:112 -> timedSend/server:87 -> send/controller:505
+
+accessing meta [{"resource":{"waiting":4,"complete":25,"targetId":"C2DD5B8C3FCEC8ABD3308BD4401C7B4C"}},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":2},{"modal":{"url":"https://javascript.info/alert-prompt-confirm","message":"Are you the boss?","type":"confirm","hasBrowserHandler":false,"defaultPrompt":"","sessionId":"74A1C774EB735C6050CFBE42914EB9B3"}}] Error
+    at Object.get (file:///home/cris/vfpro/src/zombie-lord/connection.js:232:61)
+    at Object.send (file:///home/cris/vfpro/src/zombie-lord/controller.js:505:20)
+    at timedSend (file:///home/cris/vfpro/src/server.js:87:21)
+    at eventSendLoop (file:///home/cris/vfpro/src/server.js:112:34)
+    at func (file:///home/cris/vfpro/src/ws-server.js:492:23)
+    at runMessageQueue (file:///home/cris/vfpro/src/ws-server.js:787:9)
+    at WebSocket.<anonymous> (file:///home/cris/vfpro/src/ws-server.js:581:13)
+    at WebSocket.emit (node:events:520:28)
+    at Receiver.receiverOnMessage (/home/cris/vfpro/node_modules/ws/lib/websocket.js:1137:20)
+    at Receiver.emit (node:events:520:28)
+Sending 4 meta.
+{"sendResult":{"data":{"vmPaused":true},"meta":[{"resource":{"waiting":4,"complete":25,"targetId":"C2DD5B8C3FCEC8ABD3308BD4401C7B4C"}},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":2},{"modal":{"url":"https://javascript.info/alert-prompt-confirm","message":"Are you the boss?","type":"confirm","hasBrowserHandler":false,"defaultPrompt":"","sessionId":"74A1C774EB735C6050CFBE42914EB9B3"}}],"totalBandwidth":797524}}
+
+---
+
+The above paths are also why this bug only really happens using Screencast, because if we are not screencasting we do not use the screenshotAck path. 
+
+
+--- Yay
+
+Fucking solved it.
+
+----
+
+So the next steps for resolution are:
+
+1. Identify logic in lines in the code path that's broken, and
+2. Patch that logic to pass back the required meta and so on so that we can send it throught to the client rather than dropping it.
+
+WORKING PATH func/ws-server:492 -> eventSendLoop/server:112 -> timedSend/server:87 -> send/controller:505
+
+BROKEN PATH func/ws-server:474 -> screenshotAck/controller:72 -> send/controller:505

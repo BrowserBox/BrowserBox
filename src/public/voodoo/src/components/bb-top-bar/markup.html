@@ -1,0 +1,7 @@
+<header class=topbar stylist=styleTopBar>
+  <span class=online-count>${state.onlineCount || 1} online</span>
+  <span class="network-status ${globalThis.navigator.onLine ? '' : 'offline'}">${globalThis.navigator.onLine ? '' : 'offline'}</span>
+  <span class="connection-status">${state.serverConnected ? '' : 'server disconnected'}</span>
+  <span class="webrtc-status">${_top.OPTIONS.showWebRTCStatus && state.webrtcConnected ? 'webrtc' : ''}</span>
+  <span class="audio-status">${_top.OPTIONS.showAudioStatus && state.audioConnected ? 'audio' : ''}</span>
+</header>

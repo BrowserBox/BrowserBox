@@ -1,0 +1,5 @@
+https://dev.to/ingun37/running-gpu-accelerated-webgl-application-in-headless-chrome-in-ec2-446f
+
+sudo chromium-browser --no-sandbox --headless --use-gl=egl 'https://benchmarking.system'
+
+

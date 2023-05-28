@@ -1,0 +1,20 @@
+language,filename,blank,comment,code,"github.com/AlDanial/cloc v 1.81  T=0.02 s (806.6 files/s, 63673.6 lines/s)"
+JavaScript,./public/src/app.js,73,49,275
+JavaScript,./public/src/views.js,23,13,205
+CSS,./public/style.css,28,11,125
+JavaScript,./index.js,29,24,107
+JavaScript,./public/src/helpers.js,19,28,77
+CSS,./public/theme.css,13,8,50
+JavaScript,./public/tests/loadTest.js,20,3,48
+Markdown,./README.md,16,0,41
+JavaScript,./public/tests/messageTest.js,15,1,34
+JavaScript,./public/tests/testAll.js,5,0,22
+JavaScript,./public/tests/renderTest.js,7,0,12
+Bourne Shell,./deployutils/listportredirects.sh,3,0,9
+HTML,./public/runtests.html,0,0,7
+HTML,./public/index.html,0,0,6
+JavaScript,./public/src/config.js,1,2,5
+Bourne Shell,./deployutils/run.sh,1,0,2
+Bourne Shell,./deployutils/portredirect.sh,1,0,2
+JavaScript,./public/tests/helpers.js,0,0,1
+SUM,,254,139,1028

@@ -1,0 +1,5 @@
+@import url("themes/blank.css");
+
+video#audio {
+  display: none;
+}
