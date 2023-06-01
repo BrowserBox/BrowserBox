@@ -105,9 +105,7 @@ Follow these steps to install BrowserBoxPro:
    bbpro
    ```
 
-During
-
- the installation process, BrowserBoxPro will automatically install the required dependencies and configure the necessary settings.
+During the installation process, BrowserBoxPro will automatically install the required dependencies and configure the necessary settings.
 
 ## Applications and Features
 
