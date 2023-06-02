@@ -24,6 +24,32 @@ install_nvm() {
   fi
 }
 
+echo -e "\n\n"
+echo "Welcome to the BrowserBox Pro installation."
+echo "Before proceeding, please note the following:"
+echo -e "\n"
+echo "Without a commercial license, this product is only valid for noncommercial use."
+echo "By proceeding with this installation, you confirm your agreement to the terms and conditions contained within the LICENSE file (https://github.com/dosyago/BrowserBoxPro/blob/boss/LICENSE), as well as the terms at https://dosyago.com/terms.txt and https://dosyago.com/privacy.txt."
+echo -e "\n"
+echo "If you foresee using BrowserBoxPro for commercial purposes, you must purchase a license."
+echo "Small volume licenses can be purchased on GumRoad (yearly or perpetual): https://dosy.gumroad.com/"
+echo "For large volume purchases, please visit our website: https://dosyago.com"
+echo -e "\n"
+echo "For other inquiries, you may contact sales@dosyago.com."
+echo -e "\n"
+read -p "By proceeding with the installation, you confirm your acceptance of these terms and conditions and that you have purchased a license if your use of BrowserBoxPro is intended for commercial applications. Do you agree to these terms? (yes/no): " answer
+
+case ${answer:0:1} in
+    y|Y )
+        echo "You have agreed to the terms. Proceeding with the installation..."
+    ;;
+    * )
+        echo "You did not agree to the terms. Exiting the installation..."
+        exit 1
+    ;;
+esac
+
+
 if [ "$(os_type)" == "Linux" ]; then
   sudo apt -y install net-tools ufw
   sudo ufw disable
