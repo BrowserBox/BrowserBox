@@ -43,7 +43,15 @@ Before installing BrowserBoxPro, ensure that your system meets the following req
 - At least 10 Mbps internet connection
 - A public hostname with a DNS A record pointing to your VPS's IP address
 
-Perform the initial machine setup by following these steps:
+First, update your distribution:
+
+`apt update && apt -y upgrade`
+
+And install a few basic tools:
+
+`apt install curl git wget`
+
+Now, prepare the machine by following these steps:
 
 1. Create a new user to operate BrowserBoxPro:
    ```
