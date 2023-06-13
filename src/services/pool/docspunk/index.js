@@ -55,44 +55,46 @@ const storage = multer.diskStorage({
 
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 // adapted from code at source: https://stackoverflow.com/a/22907134/10283964
-const download = async function(url, dest) {
-  let resolve, reject;
-  const pr = new Promise((res,rej) => (resolve = res, reject = rej));
-  const pro = url.startsWith('https') ? https : http;
-  const file = fs.createWriteStream(dest);
-  let newFilename;
-  const request = pro.get(url, function(response) {
-    try {
-      response.pipe(file);
-      newFilename = response.headers['content-disposition'];
-      if ( newFilename ) {
-        newFilename = newFilename.split('filename=').pop();
-        if ( newFilename.startsWith('"') ) {
-          newFilename = newFilename.replace(/^"/,'').replace(/"$/,'');
-        } else if ( newFilename.startsWith("'") ) {
-          newFilename = newFilename.replace(/^'/,'').replace(/'$/,'');
+/**
+  const download = async function(url, dest) {
+    let resolve, reject;
+    const pr = new Promise((res,rej) => (resolve = res, reject = rej));
+    const pro = url.startsWith('https') ? https : http;
+    const file = fs.createWriteStream(dest);
+    let newFilename;
+    const request = pro.get(url, function(response) {
+      try {
+        response.pipe(file);
+        newFilename = response.headers['content-disposition'];
+        if ( newFilename ) {
+          newFilename = newFilename.split('filename=').pop();
+          if ( newFilename.startsWith('"') ) {
+            newFilename = newFilename.replace(/^"/,'').replace(/"$/,'');
+          } else if ( newFilename.startsWith("'") ) {
+            newFilename = newFilename.replace(/^'/,'').replace(/'$/,'');
+          }
+          newFilename = newFilename.trim();
+          if ( newFilename === path.basename(url) ) {
+            newFilename = undefined;
+          } else {
+            newFilename = nextFileName(path.extname(newFilename));
+          }
         }
-        newFilename = newFilename.trim();
-        if ( newFilename === path.basename(url) ) {
-          newFilename = undefined;
-        } else {
-          newFilename = nextFileName(path.extname(newFilename));
-        }
+        file.on('finish', function() {
+          file.close(() => resolve(newFilename));  // close() is async, call cb after close completes.
+        });
+      } catch(e) {
+        console.warn(e);
       }
-      file.on('finish', function() {
-        file.close(() => resolve(newFilename));  // close() is async, call cb after close completes.
-      });
-    } catch(e) {
-      console.warn(e);
-    }
-  }).on('error', function(err) { // Handle errors
-    fs.unlink(dest); // Delete the file async. (But we don't check the result)
-    reject(err.message);
-  });
-  const result = Promise.race([pr, sleep(MAX_FILE_DL_TIME).then(() => reject('timed out'))]);
-  result.catch(err => (fs.unlink(dest), err));
-  return result;
-};
+    }).on('error', function(err) { // Handle errors
+      fs.unlink(dest); // Delete the file async. (But we don't check the result)
+      reject(err.message);
+    });
+    const result = Promise.race([pr, sleep(MAX_FILE_DL_TIME).then(() => reject('timed out'))]);
+    result.catch(err => (fs.unlink(dest), err));
+    return result;
+  };
+**/
 const DEBUG = true;
 const PORT = process.env.PORT || (secure ? (process.argv[2] || 8080) : 8080);
 const uploadPath = path.join(__dirname, 'public', 'uploads');
@@ -121,46 +123,50 @@ app.post('/very-secure-manifest-convert', upload.single('pdf'), async (req, res)
     log(req, {file:pdf && pdf.path, docUrl});
 
   if ( docUrl ) {
-    let ext = path.extname(docUrl);
-    if ( ! ext ) {
-      ext = '.tempdownload';
-    }
-    const filename = nextFileName(ext);
-    pdf = {
-      path: path.resolve(uploadPath, filename),
-      filename
-    };
-    try {
-      let newFilename = await download(docUrl, pdf.path);
-      if ( newFilename ) { // from content-disposition
-        const newPath = path.resolve(uploadPath, newFilename);
-        console.log({newPath1:newPath});
-        fs.renameSync(pdf.path, newPath);
-        pdf.path = newPath;
-        pdf.filename = newFilename;
-      } else if ( ext === '.tempdownload' ) { // need to get it
-        try {
-          ext = undefined;
-          ext = execSync(`file --mime-type ${pdf.path}`).split('/').pop();
-        } catch(e) {
-          console.warn(`Error trying to get mime filetype extension for ${pdf.path}`, e);
-        } finally {
-          // fudge it, it's a PDF, it's always PDFs
-          if ( ! ext ) {
-            ext = '.pdf';
-          }
-        }
-        newFilename = nextFileName(ext);
-        const newPath = path.resolve(uploadPath, newFilename);
-        console.log({newPath});
-        fs.renameSync(pdf.path, newPath);
-        pdf.path = newPath;
+    // not supported in this integration 
+    res.abort(401);
+    /*
+      let ext = path.extname(docUrl);
+      if ( ! ext ) {
+        ext = '.tempdownload';
       }
-    } catch(e) {
-      const msg = `Error on download file ${docUrl}: ${e}`;
-      console.log(msg, e);
-      return res.status(500).send(msg);
-    }
+      const filename = nextFileName(ext);
+      pdf = {
+        path: path.resolve(uploadPath, filename),
+        filename
+      };
+      try {
+        let newFilename = await download(docUrl, pdf.path);
+        if ( newFilename ) { // from content-disposition
+          const newPath = path.resolve(uploadPath, newFilename);
+          console.log({newPath1:newPath});
+          fs.renameSync(pdf.path, newPath);
+          pdf.path = newPath;
+          pdf.filename = newFilename;
+        } else if ( ext === '.tempdownload' ) { // need to get it
+          try {
+            ext = undefined;
+            ext = execSync(`file --mime-type ${pdf.path}`).split('/').pop();
+          } catch(e) {
+            console.warn(`Error trying to get mime filetype extension for ${pdf.path}`, e);
+          } finally {
+            // fudge it, it's a PDF, it's always PDFs
+            if ( ! ext ) {
+              ext = '.pdf';
+            }
+          }
+          newFilename = nextFileName(ext);
+          const newPath = path.resolve(uploadPath, newFilename);
+          console.log({newPath});
+          fs.renameSync(pdf.path, newPath);
+          pdf.path = newPath;
+        }
+      } catch(e) {
+        const msg = `Error on download file ${docUrl}: ${e}`;
+        console.log(msg, e);
+        return res.status(500).send(msg);
+      }
+    */
   }
   
   if ( pdf ) { 
