@@ -655,7 +655,11 @@ export default start;
     }));
 
     app.post('/control-browsers', glove(async (req, res) => {
-      const {id: pid, message} = req.body;
+      const {id, message} = req.body;
+      let pid = Number(id);
+      if ( Number.isNaN(pid) || !State.browsers.has(pid) ) {
+        return res.abort(401);
+      }
       switch(req.body.do) {
         case 'kill': {
           execSync(`sudo killuser.sh ${State.browsers.get(pid).username}`);
