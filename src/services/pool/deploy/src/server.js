@@ -15,6 +15,7 @@
     import cookieParser from 'cookie-parser';
     import basicAuth from 'express-basic-auth';
     import bodyParser from 'body-parser';
+    import rateLimit from 'express-rate-limit';
 
   // config and commandline args
     import {
@@ -55,6 +56,12 @@
   // global variables (state)
     const LoadNotifiers = new Map();
     const KILL_JOBS = [];
+    const limiter = rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+      standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+      legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    });
 
   // RBI app config
     const testShort = false;
@@ -364,6 +371,7 @@ export default start;
   }
 
   function addMiddlewear(app, {PORT,COOKIE,TOKEN,BA_PASSWD,BA_USER,State}) {
+    app.use(limiter);
     app.use(bodyParser.urlencoded({extended:true}));
     app.use((req, res, next) => {
       const newOrigin = `${req.protocol}://${req.get('host')}`;
