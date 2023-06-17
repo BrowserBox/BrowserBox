@@ -1,6 +1,6 @@
 # BrowserBoxPro
 
-BrowserBoxPro is a powerful application that provides advanced streaming capabilities and a superior feature set for an enhanced browsing experience. With BrowserBoxPro, you can enjoy the benefits of professional remote browser isolation features in every usage scenario. This guide provides step-by-step instructions for installing and running BrowserBoxPro, along with system requirements and troubleshooting tips.
+BrowserBoxPro is a powerful RBI (remote browser isolation) multiplayer (co-browsing) application that provides advanced streaming capabilities and a superior feature set for an enhanced browsing experience. With BrowserBoxPro, you can enjoy the benefits of professional remote browser isolation features in every usage scenario. This guide provides step-by-step instructions for installing and running BrowserBoxPro, along with system requirements and troubleshooting tips.
 
 ## Latest News
 
@@ -40,9 +40,9 @@ Follow these instructions to install BrowserBoxPro on your system.
 
 Before installing BrowserBoxPro, ensure that your system meets the following requirements:
 
-- Debian VPS with 2 cores, 4 GB RAM, and 100 GB SSD
-- At least 10 Mbps internet connection
-- A public hostname with a DNS A record pointing to your VPS's IP address
+- Debian VPS with 1 cores, 1 GB RAM, and 25 GB SSD (e.g. Nanode from Linode)
+- At least 5 Mbps internet connection
+- A public hostname with a DNS A record pointing to your VPS's IP address, or localhost certificates installed on your local machine (for example using [mkcert](https://github.com/FiloSottile/mkcert)
 
 First, update your distribution:
 
