@@ -205,6 +205,14 @@ Maximize your investment with our commercial options and unlock the full potenti
 
 Take the next step in fortifying your cybersecurity. Visit our website today to secure your commercial license and start your journey with BrowserBoxPro. Let's navigate the challenging cybersecurity landscape together.
 
+## Hardware Appliance (OEM) Licensing
+
+Are you an OEM and want to deploy BBPro on a hardware device that you sell to your customers? Contact us for special access to Appliance License pricing with Volume Discounts. This pricing sheet and terms are tailored to suit OEM's delivering security products for business and industry. Please note that if you are supplying government or other non-commercial users you cannot "pass through" DOSYAGO's non-commercial license to your customers without licensing a Commercial license from us. The reason is because even tho your end-user is a non-commercial user, you are engaged in a commercial relationship or commercial transaction with them and must therefore procure a [BrowserBox Pro Commercial License](https://dosyago.com). 
+
+## Sanctions Compliance
+
+Unfotunately if you or your customers are an OFAC sanctioned entity or other sanctioned entity (e.g. designated on OFAC's SDN List, BIS's DPL or Entity List, DDTC's DPL, or on the FBI's various lists, among others) we are unable to offer you a license of any form.
+
 ## Copyright
 
 This project is copyright The Dosyago Corporation and Cris Stringfellow 2023. All rights reserved.
