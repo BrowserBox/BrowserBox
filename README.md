@@ -6,6 +6,7 @@ BrowserBoxPro is a powerful application that provides advanced streaming capabil
 
 Check out the latest articles about BrowserBox, web automation and RBI from our [Company Blog](https://blog.dosyago.com):
 
+- [Tunnelling over SSH - You're guide to using Localhost Certificates and SSH port-forwarding to run BrowserBox Pro on a remote machine without a domain name, using SSH tunneling](https://blog.dosyago.com/2023/06/17/tunneling-browserbox-pro-over-SSH-complete-guide-to-using-port-forwarding-to-run-RBI-on-a-router.md)
 - [Dosyago's BrowserBox - A Revolutionary Leap in Web Security](https://blog.dosyago.com/2023/05/29/future-proofing-online-security-with-dosyago-browserbox.html)
 - [Dispelling the Falsehoods - The Dawn of BrowserBox and Contemporary Web Safety](https://blog.dosyago.com/2023/05/29/dispelling-falsehoods-dawn-of-browserbox-and-true-corporate-web-safety.html)
 
@@ -151,7 +152,7 @@ For a comprehensive list of features and their availability in BrowserBoxPro, re
 
 ## Features of BrowserBox Pro
 
-BrowserBox Pro offers an array of advanced features that set it apart from other versions. With frequent updates and cutting-edge technology, BrowserBox Pro provides an enhanced browsing experience with superior rendering, top-tier graphics, and minimal lag. Here are the key features of BrowserBox Pro:
+BrowserBox Pro offers an array of advanced features that set it apart from other versions of remote browser isolation. With fully open source-code, non-commercial use for free, frequent updates and cutting-edge technology, BrowserBox Pro provides an enhanced browsing experience with superior rendering, top-tier graphics, and minimal lag. Here are the key features of BrowserBox Pro:
 
 - Advanced streaming technology and variable bitrate innovations for smoother browsing experience
 - Superior rendering and graphics capabilities
@@ -180,11 +181,13 @@ For more information about commercial options and licensing, please refer to the
 
 ## Licensing
 
-BrowserBox Pro offers flexible licensing options to cater to different usage scenarios. The software is available for free for non-commercial use under the PolyForm NonCommercial license. This allows individuals and non-profit organizations to enjoy the benefits of BrowserBox Pro without any licensing fees. The PolyForm NonCommercial license ensures that the software is used strictly for non-commercial purposes.
+BrowserBox Pro is a commercial product that generates revenue for US-based DOSYAGO corporation via the sale of Commercial Licenses and Bespoke Customizations and Deployments (see [this page for single licenses](https://dosy.gumroad.com) and [this pages for discounts on volume purchases](https://dosyago.com). However, you can use BrowserBox Pro for free for non-commercial use cases. Government and public institutions, non-profits, private researchers and individuals are covered by this protection when their use is done without any anticipation of commercial application. From time to time, our non-commercial users may desire an license arrangement different to the one provided by the standard [Polyform Non-Commercial License 1.0](LICENSE.md) to suit their needs both now and in future, and such terms may be approved and negotiated on a case-by-case basis typically for a fee or other remunerative or protective arrangement. 
 
-For commercial use, BrowserBox Pro offers commercial licenses that can be purchased through the Dosyago website at [https://dosyago.com](https://dosyago.com). These commercial licenses provide businesses with the rights to fully customize and integrate BrowserBox Pro into their operations, as well as incorporate it into customer-facing products.
+BrowserBox Pro offers flexible licensing options to cater to different usage scenarios. As previously mentioned, BBPro software is available for free for non-commercial use under the PolyForm NonCommercial license. This allows individuals and non-profit organizations to enjoy the benefits of BrowserBox Pro without any licensing fees when using the software without any participation in or anticipation of commercial application. The PolyForm NonCommercial license ensures that the software is used strictly for non-commercial purposes.
 
-When acquiring a commercial license, customers have the option to choose from different licensing models, including perpetual or yearly licenses. Dosyago offers volume discounts for larger purchases, enabling businesses to scale their usage of BrowserBox Pro according to their needs. The specific details of minimum volumes and pricing can be obtained by contacting sales@dosyago.com.
+In most cases, for commercial use, DOSYAGO offers commercial BrowserBox Pro licenses that can be purchased through the Dosyago website at [https://dosyago.com](https://dosyago.com) - *please note that we cannot transact with sanctioned countries, entities or individuals.* These commercial licenses provide businesses around the world with the rights to fully customize and integrate BrowserBox Pro into their operations, as well as incorporate it into customer-facing products, on a seat-per-role, or seat-per-customer basis.
+
+When acquiring a commercial license, customers have the option to choose from different licensing models, including perpetual or yearly licenses. Dosyago offers volume discounts for larger purchases, enabling businesses to scale their usage of BrowserBox Pro according to their needs. The specific details of minimum volumes and pricing can be obtained [on our website](https://dosyago.com).
 
 By obtaining a commercial license, businesses gain the freedom to tailor BrowserBox Pro to their specific requirements and integrate it seamlessly into their workflows. This empowers organizations to leverage the advanced features and capabilities of BrowserBox Pro while maintaining full control over its customization and usage.
 
