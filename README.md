@@ -2,6 +2,27 @@
 
 BrowserBoxPro is a powerful RBI (remote browser isolation) multiplayer (co-browsing) application that provides advanced streaming capabilities and a superior feature set for an enhanced browsing experience. With BrowserBoxPro, you can enjoy the benefits of professional remote browser isolation features in every usage scenario. This guide provides step-by-step instructions for installing and running BrowserBoxPro, along with system requirements and troubleshooting tips.
 
+## Table of Contents
+
+- [BrowserBoxPro](#browserboxpro)
+  - [Latest News](#latest-news)
+  - [Key Features](#key-features)
+  - [Installation and Features Guide](#installation-and-features-guide)
+  - [Installation](#installation)
+    - [Initial Machine Setup](#initial-machine-setup)
+    - [Installation Process](#installation-process)
+  - [Applications and Features](#applications-and-features)
+    - [Product Space Applications](#product-space-applications)
+    - [Internal Tooling Applications](#internal-tooling-applications)
+    - [Tech and Framework Applications](#tech-and-framework-applications)
+  - [Features of BrowserBox Pro](#features-of-browserbox-pro)
+  - [Licensing](#licensing)
+  - [Elevate Your Cybersecurity with BrowserBoxPro](#elevate-your-cybersecurity-with-browserboxpro)
+  - [Hardware Appliance (OEM) Licensing](#hardware-appliance-oem-licensing)
+  - [Sanctions Compliance](#sanctions-compliance)
+  - [Copyright](#copyright)
+
+
 ## Latest News
 
 Check out the latest articles about BrowserBox, web automation and RBI from our [Company Blog](https://blog.dosyago.com):
@@ -22,15 +43,6 @@ Check out the latest articles about BrowserBox, web automation and RBI from our 
 **🌟 Video Installation Guide for Pro: [https://youtu.be/cGUJCCPDWNE](https://youtu.be/cGUJCCPDWNE)**
 
 For detailed information and progress updates, please refer to the [official documentation](https://github.com/dosyago/BrowserBox).
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Applications and Features](#applications-and-features)
-- [Pro Features](#pro-or-regular)
-- [Commercial Options](#commercial-options)
-- [Contributing](#contributing)
-- [:balance_scale: Licensing](#balance_scale-licensing)
 
 ## Installation
 
@@ -207,7 +219,7 @@ Take the next step in fortifying your cybersecurity. Visit our website today to 
 
 ## Hardware Appliance (OEM) Licensing
 
-Are you an OEM and want to deploy BBPro on a hardware device that you sell to your customers? Contact us for special access to Appliance License pricing with Volume Discounts. This pricing sheet and terms are tailored to suit OEM's delivering security products for business and industry. Please note that if you are supplying government or other non-commercial users you cannot "pass through" DOSYAGO's non-commercial license to your customers without licensing a Commercial license from us. The reason is because even tho your end-user is a non-commercial user, you are engaged in a commercial relationship or commercial transaction with them and must therefore procure a [BrowserBox Pro Commercial License](https://dosyago.com). 
+Are you an OEM and want to deploy BBPro on a hardware device that you sell to your customers? [Contact us for special access to Appliance License pricing with Volume Discounts](mailto:sales@dosyago.com?subject=OEM%20License). This pricing sheet and terms are tailored to suit OEM's delivering security products for business and industry. Please note that if you are supplying government or other non-commercial users you cannot "pass through" DOSYAGO's non-commercial license to your customers without licensing a Commercial license from us. The reason is because even tho your end-user is a non-commercial user, you are engaged in a commercial relationship or commercial transaction with them and must therefore procure a [BrowserBox Pro Commercial License](https://dosyago.com). 
 
 ## Sanctions Compliance
 
