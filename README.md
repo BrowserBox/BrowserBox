@@ -54,7 +54,7 @@ Before installing BrowserBoxPro, ensure that your system meets the following req
 
 - Debian VPS with 1 cores, 1 GB RAM, and 25 GB SSD (e.g. Nanode from Linode)
 - At least 5 Mbps internet connection
-- A public hostname with a DNS A record pointing to your VPS's IP address, or localhost certificates installed on your local machine (for example using [mkcert](https://github.com/FiloSottile/mkcert)
+- A public hostname with a DNS A record pointing to your VPS's IP address, or localhost certificates installed on your local and remote machine (for example using [mkcert](https://github.com/FiloSottile/mkcert)
 
 First, update your distribution:
 
@@ -111,7 +111,7 @@ Follow these steps to install BrowserBoxPro:
    cd BrowserBoxPro
    ```
 
-3. Run the global installation script, replacing `<domain_name>` with your domain name that points to the machine you're setting up:
+3. Run the global installation script, replacing `<domain_name>` with your domain name that points to the machine you're setting up (if you want to use it without a domain name, just use localhost here for the domain name, but you'll still need to copy the correct mkcert localsthost certificates to $HOME/sslcerts later):
    ```
    ./deploy-scripts/global_install.sh <domain_name>
    ```
