@@ -159,10 +159,24 @@ class BBModal extends Base {
     this.state = state;
     setTimeout(async () => {
       if ( type == 'copy' ) {
-        await this.untilLoaded();
-        await state._top.untilTrue(() => this.copyBoxTextarea.innerHTML.length >= msg.length, 300, 20);
+        await state._top.untilTrue(() => this.copyBoxTextarea.value == msg, 300, 20);
         this.copyBoxTextarea.select();
-        console.log("OK");
+        navigator.clipboard.writeText(this.copyBoxTextarea.value);
+        const currentModal = {
+          type, csrfToken, mode, 
+          highlight, 
+          requestId, 
+          msg,
+          el:ModalRef[type], 
+          sessionId, 
+          otherButton, 
+          link,
+          title: title + ' - Copied to Clipboard!', 
+          url
+        };
+        state.viewState.currentModal = currentModal;
+        this.prepareState(currentModal);
+        this.state = state;
       }
     }, 0);
   }
@@ -174,7 +188,7 @@ class BBModal extends Base {
     const response = click.target.value || 'close';
     const data = click.target.closest('form')?.response?.value || '';
 
-    const {sessionId} = state.viewState.currentModal;
+    const {sessionId, type} = state.viewState.currentModal;
 
     state.viewState.lastModal = state.viewState.currentModal;
     state.viewState.lastModal.modalResponse = response;

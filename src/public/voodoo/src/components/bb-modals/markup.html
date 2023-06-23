@@ -114,11 +114,7 @@
           </h1>
         </legend>
         <p>
-          <textarea onbond=${(el) => {
-              _host.infoboxTextarea = el;
-              console.log(_host.infoboxTextarea);
-            }}
-            readonly class=message value=message rows=${Math.ceil(msg.length/25)+1}
+          <textarea readonly class=message value=message rows=${Math.ceil(msg.length/25)+1}
           >${msg}</textarea>
         </p>
         <p>
@@ -159,7 +155,7 @@
         <legend>
           <h1>
             <img src="voodoo/assets/icons/bell.svg">
-            ${title || 'Copy'}
+            <span onbond=${el => _host.copyBoxTitle = el} class=title>${title || 'Copy'}</span>
           </h1>
         </legend>
         <p>
