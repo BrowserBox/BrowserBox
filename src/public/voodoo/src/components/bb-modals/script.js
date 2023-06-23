@@ -157,6 +157,14 @@ class BBModal extends Base {
     (DEBUG.debugModal || (DEBUG.val >= DEBUG.med)) && console.log(`Will display modal ${type} with ${msg} on el:`, state.viewState.currentModal.el);
 
     this.state = state;
+    setTimeout(async () => {
+      if ( type == 'copy' ) {
+        await this.untilLoaded();
+        await state._top.untilTrue(() => this.copyBoxTextarea.innerHTML.length >= msg.length, 300, 20);
+        this.copyBoxTextarea.select();
+        console.log("OK");
+      }
+    }, 0);
   }
 
   closeModal(click) {

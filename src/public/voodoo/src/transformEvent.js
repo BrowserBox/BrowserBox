@@ -291,7 +291,7 @@ export function getBitmapCoordinates(event, scale = 1, bounds) {
       y: Math.max(0,Math.min(localViewport.y, bounds.y))
     }
 
-    console.log({localViewport, remoteViewport, scale});
+    DEBUG.debugBitmapCoordConversion && console.log({localViewport, remoteViewport, scale});
 
     coordinates = {
       bitmapX: remoteViewport.x,

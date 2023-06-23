@@ -114,17 +114,12 @@
           </h1>
         </legend>
         <p>
-          <textarea 
+          <textarea onbond=${(el) => {
+              _host.infoboxTextarea = el;
+              console.log(_host.infoboxTextarea);
+            }}
             readonly class=message value=message rows=${Math.ceil(msg.length/25)+1}
           >${msg}</textarea>
-          ${(() => {
-            const me = _host?.shadowRoot?.querySelector('article.infobox form textarea');
-            if ( me && highlight ) {
-              _host.untilLoaded().then(() => {
-                me.select();
-              });
-            }
-          })()}
         </p>
         <p>
           <button type=submit class=ok title="Got it" value=ok>Dismiss</button>
@@ -145,6 +140,32 @@
         </legend>
         <p>
         <p class=message value=message>${msg||'Empty notice'}</p>
+        <p>
+          ${link ?
+            F`<a title="${link.title}" target=${link.target} href=${link.href}>${link.title}</a>` 
+            :
+            F`<!-- link -->`
+          }
+          <button type=submit class=ok title=Acknowledge value=ok>OK</button>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.copy = el} class="copy ${
+      viewState?.currentModal?.el === viewState.ModalRef.copy ? 'open' : '' 
+    }">
+    <form method=dialog>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/bell.svg">
+            ${title || 'Copy'}
+          </h1>
+        </legend>
+        <p>
+        <textarea cols=80 rows=5 onbond=${(el) => {
+            _host.copyBoxTextarea = el; 
+          }} readonly class=message value=message>${msg||'No text to copy'}</textarea>
         <p>
           ${link ?
             F`<a title="${link.title}" target=${link.target} href=${link.href}>${link.title}</a>` 
