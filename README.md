@@ -193,15 +193,57 @@ For more information about commercial options and licensing, please refer to the
 
 ## Licensing
 
-BrowserBox Pro is a commercial product that generates revenue for US-based DOSYAGO corporation via the sale of Commercial Licenses and Bespoke Customizations and Deployments (see [this page for single licenses](https://dosy.gumroad.com) and [this pages for discounts on volume purchases](https://dosyago.com). However, you can use BrowserBox Pro for free for non-commercial use cases. Government and public institutions, non-profits, private researchers and individuals are covered by this protection when their use is done without any anticipation of commercial application. From time to time, our non-commercial users may desire an license arrangement different to the one provided by the standard [Polyform Non-Commercial License 1.0](LICENSE.md) to suit their needs both now and in future, and such terms may be approved and negotiated on a case-by-case basis typically for a fee or other remunerative or protective arrangement. 
+### For open-source use
+
+If you are creating an open source application under a license compatible with the [GNU GPL license v3](https://www.gnu.org/licenses/gpl-3.0.html), you may use BrowserBox Pro under the terms of the GPLv3.
+
+### For non-commercial use
+
+You can use BrowserBox Pro for free for non-commercial use cases. 
+
+This means government and public institutions, non-profits, private researchers and individuals are covered by this protection when their use is done without any anticipation of commercial application. This is provided under the terms of the [Polyform Non-Commercial License 1.0](LICENSE.md).
+
+From time to time, our non-commercial users may desire an license arrangement different to the one provided by the standard [Polyform Non-Commercial License 1.0](LICENSE.md) to suit their needs both now and in future, and such terms may be approved and negotiated on a case-by-case basis typically for a fee or other remunerative or protective arrangement. 
+
+### For commercial, closed-source, non-GPL or other proprietary use
+
+The commercial license is designed to for you to use BrowserBox Pro in commercial products and applications, without the provisions of the GPLv3. With the commercial license, your code is kept propietary. If you want to use BrowserBox Pro to develop commercial sites, sercvices, projects, and applications, the commercial license is the appropriate license.
+
+### Purchasing a commercial license
+
+Purchasing takes a minute. Our purchasing form accepts credit cards, bank transfers and many other forms of payment. Once purchased, you’ll receive a commercial license PDF and you will be all set to use BrowserBox Pro in your commercial applications. With the purchase of a commercial license:
+
+- You may use BrowserBox Pro in as many commercial applications you like.
+- You may use BrowserBox Pro in your own commercial applications and products. For example: premium VPN services, RBI systems, system integration portals, web automation and scraping products, educational platforms, and other products and apps.
+- Customers and users of your products do not need to purchase their own license — so long as they are not developing their own commercial products with BrowserBox Pro.
+
+*Please note that we cannot transact with sanctioned countries, entities or individuals.* 
+
+Commercial Licenses are priced per seat. A seat is someone who uses the BrowserBox Pro system, either in an internal application (like secure email attachment viewing), or an external customer-facing application (such as a customer of your remote browser isolation product). Commercial Licenses come in two flavors:
+
+- **Perpetual License** This is a license to use the version of BrowserBox Pro you purchase forever. The version can be updated to the latest via purchase of yearly licenses.
+- **Yearly License** This is a license to use the latest version available within the 12-months from your purchase. It can be manually renewed every year, or you can subscribe so it renews automatically.
+
+Commercial Licenses are available in two sizes:
+
+- **Individual License** Purchasable at [our GumRoad site](https://dosyo.gumroad.com). This is suitable for individuals or small teams working on commercial projects who don't want to use the GPLv3.
+- **License Pack** Available in multiple sizes, from the small to the truly epic, with commensurately epic discounts at scale. These are purchasable at [our main website](https://dosyago.com).
+
+By obtaining a commercial license, you gain the freedom to tailor BrowserBox Pro to your specific requirements and integrate it seamlessly into your workflow. This empowers organizations to leverage the advanced features and capabilities of BrowserBox Pro while maintaining full control over its customization and usage. 
+
+Support tiers and customization may be separately negotiated and purchased. To discuss your needs, please [reach out to our helpful support team here](mailto:support@dosyago.com?subject=BrowserBox%20Pro).
+
+### Hardware Appliance (OEM) Licensing
+
+Are you an OEM and want to deploy BBPro on a hardware device that you sell to your customers? [Contact us for special access to Appliance License pricing with Volume Discounts](mailto:sales@dosyago.com?subject=OEM%20License). This pricing sheet and terms are tailored to suit OEM's delivering security products for business and industry. Please note that if you are supplying government or other non-commercial users you cannot "pass through" DOSYAGO's non-commercial license to your customers without licensing a Commercial license from us. 
+
+### Sanctions Compliance
+
+Unfotunately if you or your company are an OFAC sanctioned entity or other entity sanctioned by the US Government (e.g. designated on OFAC's SDN List, BIS's DPL or Entity List, DDTC's DPL, or on the FBI's various lists, among others) we are unable to offer you a license of any form. Please note that in some cases we may conduct necessary checks to ensure sanctions compliance. 
+
+### Licensing Summary 
 
 BrowserBox Pro offers flexible licensing options to cater to different usage scenarios. As previously mentioned, BBPro software is available for free for non-commercial use under the PolyForm NonCommercial license. This allows individuals and non-profit organizations to enjoy the benefits of BrowserBox Pro without any licensing fees when using the software without any participation in or anticipation of commercial application. The PolyForm NonCommercial license ensures that the software is used strictly for non-commercial purposes.
-
-In most cases, for commercial use, DOSYAGO offers commercial BrowserBox Pro licenses that can be purchased through the Dosyago website at [https://dosyago.com](https://dosyago.com) - *please note that we cannot transact with sanctioned countries, entities or individuals.* These commercial licenses provide businesses around the world with the rights to fully customize and integrate BrowserBox Pro into their operations, as well as incorporate it into customer-facing products, on a seat-per-role, or seat-per-customer basis.
-
-When acquiring a commercial license, customers have the option to choose from different licensing models, including perpetual or yearly licenses. Dosyago offers volume discounts for larger purchases, enabling businesses to scale their usage of BrowserBox Pro according to their needs. The specific details of minimum volumes and pricing can be obtained [on our website](https://dosyago.com).
-
-By obtaining a commercial license, businesses gain the freedom to tailor BrowserBox Pro to their specific requirements and integrate it seamlessly into their workflows. This empowers organizations to leverage the advanced features and capabilities of BrowserBox Pro while maintaining full control over its customization and usage.
 
 Whether it's for non-commercial or commercial purposes, BrowserBox Pro provides a range of licensing options to accommodate different user needs and ensure a secure and powerful browsing experience.
 
@@ -216,14 +258,6 @@ Our dedicated support and maintenance team is committed to ensuring your satisfa
 Maximize your investment with our commercial options and unlock the full potential of BrowserBoxPro. Whether you are an individual server operator or a large corporation seeking a self-hosted solution, we have you covered. As part of our commercial package, you gain access to the premium features exclusive to BrowserBoxPro, along with the option for source-code access if required.
 
 Take the next step in fortifying your cybersecurity. Visit our website today to secure your commercial license and start your journey with BrowserBoxPro. Let's navigate the challenging cybersecurity landscape together.
-
-## Hardware Appliance (OEM) Licensing
-
-Are you an OEM and want to deploy BBPro on a hardware device that you sell to your customers? [Contact us for special access to Appliance License pricing with Volume Discounts](mailto:sales@dosyago.com?subject=OEM%20License). This pricing sheet and terms are tailored to suit OEM's delivering security products for business and industry. Please note that if you are supplying government or other non-commercial users you cannot "pass through" DOSYAGO's non-commercial license to your customers without licensing a Commercial license from us. The reason is because even tho your end-user is a non-commercial user, you are engaged in a commercial relationship or commercial transaction with them and must therefore procure a [BrowserBox Pro Commercial License](https://dosyago.com). 
-
-## Sanctions Compliance
-
-Unfotunately if you or your customers are an OFAC sanctioned entity or other sanctioned entity (e.g. designated on OFAC's SDN List, BIS's DPL or Entity List, DDTC's DPL, or on the FBI's various lists, among others) we are unable to offer you a license of any form.
 
 ## Copyright
 
