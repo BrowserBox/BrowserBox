@@ -17,6 +17,21 @@ BrowserBoxPro is a powerful RBI (remote browser isolation) multiplayer (co-brows
     - [Tech and Framework Applications](#tech-and-framework-applications)
   - [Features of BrowserBox Pro](#features-of-browserbox-pro)
   - [Licensing](#licensing)
+    - [For Open-Source Use](#for-open-source-use)
+    - [For Non-Commercial Use](#for-non-commercial-use)
+        - [Case-by-Case Arrangements](#case-by-case-arrangements)
+    - [For Commercial, Closed-Source, Non-GPL or Other Proprietary Use](#for-commercial-use)
+        - [Purchasing a Commercial License](#purchasing-a-commercial-license)
+            - [License Types](#license-types)
+                - [Perpetual License](#perpetual-license)
+                - [Yearly License](#yearly-license)
+            - [License Sizes](#license-sizes)
+                - [Individual License](#individual-license)
+                - [License Pack](#license-pack)
+            - [Support and Customization](#support-and-customization)
+    - [Hardware Appliance (OEM) Licensing](#hardware-appliance-oem-licensing)
+    - [Sanctions Compliance](#sanctions-compliance)
+    - [Licensing Summary](#licensing-summary)
   - [Elevate Your Cybersecurity with BrowserBoxPro](#elevate-your-cybersecurity-with-browserboxpro)
   - [Hardware Appliance (OEM) Licensing](#hardware-appliance-oem-licensing)
   - [Sanctions Compliance](#sanctions-compliance)
@@ -27,6 +42,8 @@ BrowserBoxPro is a powerful RBI (remote browser isolation) multiplayer (co-brows
 
 Check out the latest articles about BrowserBox, web automation and RBI from our [Company Blog](https://blog.dosyago.com):
 
+- [BrowserBox Pro Goes Open Source with Multiple Licenses
+](https://blog.dosyago.com/2023/06/26/browserbox-pro-goes-open-source-with-multiple-licenses.html)
 - [Tunnelling over SSH - You're guide to using Localhost Certificates and SSH port-forwarding to run BrowserBox Pro on a remote machine without a domain name, using SSH tunneling](https://blog.dosyago.com/tutorials/2023/06/17/tunneling-browserbox-pro-over-SSH-complete-guide-to-using-port-forwarding-to-run-RBI-on-a-router.html)
 - [Dosyago's BrowserBox - A Revolutionary Leap in Web Security](https://blog.dosyago.com/2023/05/29/future-proofing-online-security-with-dosyago-browserbox.html)
 - [Dispelling the Falsehoods - The Dawn of BrowserBox and Contemporary Web Safety](https://blog.dosyago.com/2023/05/29/dispelling-falsehoods-dawn-of-browserbox-and-true-corporate-web-safety.html)
