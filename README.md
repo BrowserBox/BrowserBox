@@ -25,6 +25,7 @@ BrowserBoxPro is a powerful RBI (remote browser isolation) multiplayer (co-brows
         - [Volume Discounts](#volume-discounts)
         - [Support and Customization](#support-and-customization)
     - [Hardware Appliance (OEM) Licensing](#hardware-appliance-oem-licensing)
+  - [Pricing](#pricing)
   - [Elevate Your Cybersecurity with BrowserBoxPro](#elevate-your-cybersecurity-with-browserboxpro)
   - [Hardware Appliance (OEM) Licensing](#hardware-appliance-oem-licensing)
   - [Sanctions Compliance](#sanctions-compliance)
