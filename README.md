@@ -257,6 +257,27 @@ BrowserBox Pro offers flexible licensing options to cater to different usage sce
 
 Whether it's for non-commercial or commercial purposes, BrowserBox Pro provides a range of licensing options to accommodate different user needs and ensure a secure and powerful browsing experience.
 
+## Pricing
+
+See [our website](https://dosyago.com) and [our GumRoad](https://dosy.gumroad.com) for accurate latest pricing or [reach out to us](mailto:sales@dosyago.com?subject=Pricing), but here is a summary below:
+
+| License Type                     | Quantity      | Total Cost per Unit  | Cost per License       | Flat Amount    |
+|----------------------------------|---------------|----------------------|------------------------|----------------|
+| Single License (Yearly)          | 1             | USD 583/year         | USD 583/year/license   |                |
+| Small Pack License (Yearly)      | 10            | USD 5,000/year       | USD 500/year/license   |                |
+| Medium Pack License (Yearly)     | 50            | USD 20,000/year      | USD 400/year/license   |                |
+| Large Pack License (Yearly)      | 250           | USD 75,000/year      | USD 300/year/license   |                |
+| Bulk License (Yearly)            | 1000          | USD 40,000/year      | USD 40/year/license    |                |
+| Single Perpetual License         | 1             | USD 2,915/license    | USD 2,915/license      |                |
+| Small Perpetual License          | 10            | USD 8,000            | USD 800/license        |                |
+| Medium Perpetual License         | 20            | USD 15,000           | USD 750/license        |                |
+| Large Perpetual License          | 40            | USD 34,000           | USD 850/license        |                |
+| Bulk License x1000 (1-3 units)   | 1000-3000     | USD 40,000/unit      | USD 40/year/license    |                |
+| Bulk License x1000 (4-19 units)  | 4000-19000    | USD 30,000/unit      | USD 30/year/license    |                |
+| Bulk License x1000 (20-40 units) | 20000-40000   | USD 18,750/unit      | USD 18.75/year/license |                |
+| Bulk License x1000 (41+ units)   | 41000+        | USD 12,500/unit      | USD 12.50/year/license |                |
+
+
 ## Elevate Your Cybersecurity with BrowserBoxPro
 
 BrowserBoxPro is more than just a web browser. It's a security fortress, a vanguard for your data, and an ally to your privacy. Whether you are a cybersecurity professional, part of an IT department in a large corporation, or a government entity, BrowserBoxPro can help you safeguard sensitive data in an interconnected digital landscape.
