@@ -6,7 +6,7 @@ Required Notice: Copyright Dosyago Corporation & Contributors 2023 (https://dosy
 
 ### For open-source use
 
-If you are creating an open source application under a license compatible with the [GNU GPL license v3](https://www.gnu.org/licenses/gpl-3.0.html), you may use BrowserBox Pro under the terms of the GPLv3.
+If you are creating an open source application under a license compatible with the [GNU AGPL license v3](https://www.gnu.org/licenses/agpl-3.0.html), you may use BrowserBox Pro under the terms of the AGPLv3.
 
 ### For non-commercial use
 
@@ -16,9 +16,9 @@ This means government and public institutions, non-profits, private researchers 
 
 From time to time, our non-commercial users may desire an license arrangement different to the one provided by the standard [Polyform Non-Commercial License 1.0](LICENSE.md#noncommercial-license) to suit their needs both now and in future, and such terms may be approved and negotiated on a case-by-case basis typically for a fee or other remunerative or protective arrangement. 
 
-### For commercial, closed-source, non-GPL or other proprietary use
+### For commercial, closed-source, non-AGPL or other proprietary use
 
-The commercial license is designed to for you to use BrowserBox Pro in commercial products and applications, without the provisions of the GPLv3. With the commercial license, your code is kept propietary. If you want to use BrowserBox Pro to develop commercial sites, sercvices, projects, and applications, the commercial license is the appropriate license.
+The commercial license is designed to for you to use BrowserBox Pro in commercial products and applications, without the provisions of the AGPLv3. With the commercial license, your code is kept propietary. If you want to use BrowserBox Pro to develop commercial sites, sercvices, projects, and applications, the commercial license is the appropriate license.
 
 ### Purchasing a commercial license
 
@@ -37,7 +37,7 @@ Commercial Licenses are priced per seat. A seat is someone who uses the BrowserB
 
 Commercial Licenses are available in two sizes:
 
-- **Individual License** Purchasable at [our GumRoad site](https://dosyo.gumroad.com). This is suitable for individuals or small teams working on commercial projects who don't want to use the GPLv3.
+- **Individual License** Purchasable at [our GumRoad site](https://dosyo.gumroad.com). This is suitable for individuals or small teams working on commercial projects who don't want to use the AGPLv3.
 - **License Pack** Available in multiple sizes, from the small to the truly epic, with commensurately epic discounts at scale. These are purchasable at [our main website](https://dosyago.com).
 
 By obtaining a commercial license, you gain the freedom to tailor BrowserBox Pro to your specific requirements and integrate it seamlessly into your workflow. This empowers organizations to leverage the advanced features and capabilities of BrowserBox Pro while maintaining full control over its customization and usage. 
