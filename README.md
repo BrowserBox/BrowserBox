@@ -203,29 +203,38 @@ For more information about commercial options and licensing, please refer to the
 
 ## Licensing
 
-### For open-source use
+BrowserBoxPro is licensed separately under the following licenses:
 
-If you are creating an open source application under a license compatible with the [GNU GPL license v3](https://www.gnu.org/licenses/gpl-3.0.html), you may use BrowserBox Pro under the terms of the GPLv3.
+- [GNU Affero General Public License v3 (or later)](LICENSES/AGPL-3.0.txt)
+- [Polyform Non-Commercial License 1.0](LICENSES/PolyForm-Noncommercial-1.0.0.txt)
+- [BrowserBox Pro perpetual commercial license](LICENSES/LicenseRef-BBP-Commercial-Perpetual.txt)
+- [BrowserBox Pro subscription commercial license](LICENSES/LicenseRef-BBP-Commercial-Subscription.txt)
 
-### For non-commercial use
+#### What does this mean for me?
 
-You can use BrowserBox Pro for free for non-commercial use cases. 
+##### Are you using BrowserBox Pro as it ships?
 
-This means government and public institutions, non-profits, private researchers and individuals are covered by this protection when their use is done without any anticipation of commercial application. This is provided under the terms of the [Polyform Non-Commercial License 1.0](LICENSE.md).
+  You may use BrowserBox Pro under the terms of the AGPLv3 (or later).
 
-From time to time, our non-commercial users may desire an license arrangement different to the one provided by the standard [Polyform Non-Commercial License 1.0](LICENSE.md) to suit their needs both now and in future, and such terms may be approved and negotiated on a case-by-case basis typically for a fee or other remunerative or protective arrangement. 
+##### Are you modifying BrowserBox Pro or developing software that uses BrowserBox Pro and willing to license those changes under the AGPL?
 
-### For commercial, closed-source, non-GPL or other proprietary use
+  You may use BrowserBox Pro under the terms of the AGPLv3 (or later).
 
-The commercial license is designed to for you to use BrowserBox Pro in commercial products and applications, without the provisions of the GPLv3. With the commercial license, your code is kept propietary. If you want to use BrowserBox Pro to develop commercial sites, sercvices, projects, and applications, the commercial license is the appropriate license.
+##### Are you using BrowserBox Pro, modifying BrowserBox Pro, or developing software that uses BrowserBox Pro in a non-commercial capacity but do not wish to comply with the license terms of the AGPLv3?
+
+  You may use BrowserBox Pro under the terms of the Polyform Non-Commercial License 1.0.0.
+
+##### Are you using BrowserBox Pro, modifying BrowserBox Pro, or developing software that uses BrowserBox Pro in a commercial capacity but do not wish to comply with the license terms of the AGPLv3?
+
+  You may purchase a [perpetual or subscription based commercial license](#purchasing-a-commercial-license).
 
 ### Purchasing a commercial license
 
-Purchasing takes a minute. Our purchasing form accepts credit cards, bank transfers and many other forms of payment. Once purchased, you’ll receive a commercial license PDF and you will be all set to use BrowserBox Pro in your commercial applications. With the purchase of a commercial license:
+Purchasing takes a minute. Our purchasing form accepts credit cards, bank transfers and many other forms of payment. Once purchased, you‚Äôll receive a commercial license PDF including your agreement and valid Order receipt and you will be all set to use BrowserBox Pro in your commercial applications. With the purchase of a commercial license:
 
 - You may use BrowserBox Pro in as many commercial applications you like.
 - You may use BrowserBox Pro in your own commercial applications and products. For example: premium VPN services, RBI systems, system integration portals, web automation and scraping products, educational platforms, and other products and apps.
-- Customers and users of your products do not need to purchase their own license — so long as they are not developing their own commercial products with BrowserBox Pro.
+- Customers and users of your products do not need to purchase their own license ‚Äî so long as they are not developing their own commercial products with BrowserBox Pro.
 
 *Please note that we cannot transact with sanctioned countries, entities or individuals.* 
 
@@ -236,7 +245,7 @@ Commercial Licenses are priced per seat. A seat is someone who uses the BrowserB
 
 Commercial Licenses are available in two sizes:
 
-- **Individual License** Purchasable at [our GumRoad site](https://dosyo.gumroad.com). This is suitable for individuals or small teams working on commercial projects who don't want to use the GPLv3.
+- **Individual License** Purchasable at [our GumRoad site](https://dosyo.gumroad.com). This is suitable for individuals or small teams working on commercial projects who don't want to use the AGPLv3.
 - **License Pack** Available in multiple sizes, from the small to the truly epic, with commensurately epic discounts at scale. These are purchasable at [our main website](https://dosyago.com).
 
 By obtaining a commercial license, you gain the freedom to tailor BrowserBox Pro to your specific requirements and integrate it seamlessly into your workflow. This empowers organizations to leverage the advanced features and capabilities of BrowserBox Pro while maintaining full control over its customization and usage. 
@@ -256,6 +265,8 @@ Unfotunately if you or your company are an OFAC sanctioned entity or other entit
 BrowserBox Pro offers flexible licensing options to cater to different usage scenarios. As previously mentioned, BBPro software is available for free for non-commercial use under the PolyForm NonCommercial license. This allows individuals and non-profit organizations to enjoy the benefits of BrowserBox Pro without any licensing fees when using the software without any participation in or anticipation of commercial application. The PolyForm NonCommercial license ensures that the software is used strictly for non-commercial purposes.
 
 Whether it's for non-commercial or commercial purposes, BrowserBox Pro provides a range of licensing options to accommodate different user needs and ensure a secure and powerful browsing experience.
+
+-----
 
 ## Pricing
 
