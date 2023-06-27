@@ -230,11 +230,11 @@ BrowserBoxPro is licensed separately under the following licenses:
 
 ### Purchasing a commercial license
 
-Purchasing takes a minute. Our purchasing form accepts credit cards, bank transfers and many other forms of payment. Once purchased, you‚Äôll receive a commercial license PDF including your agreement and valid Order receipt and you will be all set to use BrowserBox Pro in your commercial applications. With the purchase of a commercial license:
+Purchasing takes a minute. Our purchasing form accepts credit cards, bank transfers and many other forms of payment. Once purchased, you'll receive a commercial license PDF including your agreement and valid Order receipt and you will be all set to use BrowserBox Pro in your commercial applications. With the purchase of a commercial license:
 
 - You may use BrowserBox Pro in as many commercial applications you like.
 - You may use BrowserBox Pro in your own commercial applications and products. For example: premium VPN services, RBI systems, system integration portals, web automation and scraping products, educational platforms, and other products and apps.
-- Customers and users of your products do not need to purchase their own license ‚Äî so long as they are not developing their own commercial products with BrowserBox Pro.
+- Customers and users of your products do not need to purchase their own license &mdash; so long as they are not developing their own commercial products with BrowserBox Pro.
 
 *Please note that we cannot transact with sanctioned countries, entities or individuals.* 
 
