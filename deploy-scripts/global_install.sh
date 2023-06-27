@@ -28,16 +28,16 @@ echo -e "\n\n"
 echo "Welcome to the BrowserBox Pro installation."
 echo "Before proceeding, please note the following:"
 echo -e "\n"
-echo "Without a commercial license, this product is only valid for noncommercial use."
-echo "By proceeding with this installation, you confirm your agreement to the terms and conditions contained within the LICENSE file (https://github.com/dosyago/BrowserBoxPro/blob/boss/LICENSE), as well as the terms at https://dosyago.com/terms.txt and https://dosyago.com/privacy.txt."
+echo "Summary: without a validly purchased and current commercial license, this product is only valid for noncommercial use or under the terms of the AGPL."
+echo "By proceeding with this installation, you confirm your agreement to the terms and conditions contained within the LICENSE file (https://github.com/dosyago/BrowserBoxPro/blob/boss/LICENSE.md), as well as the terms at https://dosyago.com/terms.txt and https://dosyago.com/privacy.txt."
 echo -e "\n"
-echo "If you foresee using BrowserBoxPro for commercial purposes, you must purchase a license."
+echo "If you foresee using BrowserBoxPro for commercial purposes without complying with AGPL, you must purchase a license."
 echo "Small volume licenses can be purchased on GumRoad (yearly or perpetual): https://dosy.gumroad.com/"
 echo "For large volume purchases, please visit our website: https://dosyago.com"
 echo -e "\n"
 echo "For other inquiries, you may contact sales@dosyago.com."
 echo -e "\n"
-read -p "By proceeding with the installation, you confirm your acceptance of these terms and conditions and that you have purchased a license if your use of BrowserBoxPro is intended for commercial applications. Do you agree to these terms? (yes/no): " answer
+read -p "By proceeding with the installation, you confirm your acceptance of these terms and conditions and that you have purchased a license if your use of BrowserBoxPro is intended for commercial applications that do not comply with AGPL-3.0. Do you agree to these terms? (yes/no): " answer
 
 case ${answer:0:1} in
     y|Y )
