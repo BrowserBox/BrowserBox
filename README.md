@@ -206,9 +206,9 @@ For more information about commercial options and licensing, please refer to the
 BrowserBoxPro is licensed separately under the following licenses:
 
 - [GNU Affero General Public License v3 (or later)](LICENSES/AGPL-3.0.txt)
-- [Polyform Non-Commercial License 1.0](LICENSES/PolyForm-Noncommercial-1.0.0.txt)
-- [BrowserBox Pro perpetual commercial license](LICENSES/LicenseRef-BBP-Commercial-Perpetual.txt)
-- [BrowserBox Pro subscription commercial license](LICENSES/LicenseRef-BBP-Commercial-Subscription.txt)
+- [Polyform Non-Commercial License 1.0](LICENSES/PolyForm-Noncommercial-1.0.0.md)
+- [BrowserBox Pro perpetual commercial license](LICENSES/LicenseRef-BBP-Commercial-Perpetual.md)
+- [BrowserBox Pro subscription commercial license](LICENSES/LicenseRef-BBP-Commercial-Subscription.md)
 
 #### What does this mean for me?
 
