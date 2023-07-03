@@ -1,4 +1,4 @@
-SPDX-License-Identifier: GPL-3.0-or-later OR PolyForm-Noncommercial-1.0.0 OR BBP-Commercial-Perpetual OR BBP-Commercial-Subscription
+SPDX-License-Identifier: AGPL-3.0-or-later OR PolyForm-Noncommercial-1.0.0 OR BBP-Commercial-Perpetual OR BBP-Commercial-Subscription
 
 Required Notice: Copyright Dosyago Corporation & Contributors 2023 (https://dosyago.com)
 
