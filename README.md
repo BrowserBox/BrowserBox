@@ -35,6 +35,7 @@ BrowserBoxPro is a powerful RBI (remote browser isolation) multiplayer (co-brows
 
 Check out the latest articles about BrowserBox, web automation and RBI from our [Company Blog](https://blog.dosyago.com):
 
+- [Updated Pricing](https://dosyago.com) - now with even more tiers for smaller use cases!
 - [BrowserBox Pro Goes Open Source with Multiple Licenses
 ](https://blog.dosyago.com/2023/06/26/browserbox-pro-goes-open-source-with-multiple-licenses.html)
 - [Tunnelling over SSH - You're guide to using Localhost Certificates and SSH port-forwarding to run BrowserBox Pro on a remote machine without a domain name, using SSH tunneling](https://blog.dosyago.com/tutorials/2023/06/17/tunneling-browserbox-pro-over-SSH-complete-guide-to-using-port-forwarding-to-run-RBI-on-a-router.html)
