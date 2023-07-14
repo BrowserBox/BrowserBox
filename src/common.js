@@ -17,7 +17,7 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   logFileCommands: false,
-  showTodos: true,
+  showTodos: false,
   showViewportChanges: false,
   logRestartCast: false,
   showErrorSources: false,
