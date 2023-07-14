@@ -139,12 +139,14 @@ export const CONFIG = Object.freeze({
   sslcerts: process.env.SSLCERTS_DIR ? process.env.SSLCERTS_DIR : 'sslcerts',
   reniceValue: process.env.RENICE_VALUE || -15,
   sleepMax: 20000,
+  maxTimers: 800,
   FORBIDDEN: new Set([
     'javascript:',
     'file:',
     'vbscript:'
   ])
 });
+const Timers = new Set(); 
 
 if ( ! DEBUG.useWebRTC ) {
   console.warn(`Warning!! Not using web rtc`);
@@ -170,7 +172,6 @@ export const COMMAND_MAX_WAIT = DEBUG.waitLonger ?
 
 // test for webpack
 export const APP_ROOT = app_root;
-console.log({APP_ROOT});
 
 if ( DEBUG.noSecurityHeaders ) {
   console.warn(`Security headers are switched off! Audio will fail.`);
@@ -213,16 +214,24 @@ export function consolelog(...args) {
 }
 
 export async function sleep(ms, Aborter) {
+  if ( Timers.size > CONFIG.maxTimers ) {
+    throw new Error(`Too many timers created!`);
+  }
   let timer;
   ms = Math.min(ms, CONFIG.sleepMax);
   const pr = new Promise(res => timer = setTimeout(() => {
     if ( Aborter ) {
       Aborter.do = () => void 0;
     }
+    Timers.delete(pr);
     res();
   }, ms));
+  Timers.add(pr);
   if ( Aborter ) {
-    Aborter.do = () => clearTimeout(timer);
+    Aborter.do = () => {
+      clearTimeout(timer);
+      Timers.delete(pr);
+    };
   }
   return pr;
 }

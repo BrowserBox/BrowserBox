@@ -38,18 +38,18 @@
     "compression": "latest",
     "cookie-parser": "latest",
     "csurf": "latest",
-    "exit-on-epipe": "^1.0.1",
+    "exit-on-epipe": "latest",
     "express": "latest",
     "express-rate-limit": "latest",
     "helmet": "latest",
-    "ws": "^7.5.4"
+    "ws": "latest"
   },
   "devDependencies": {
-    "@types/express": "^4.17.6",
-    "@types/helmet": "0.0.47",
-    "@types/node": "^14.0.13",
-    "@types/ws": "^7.2.5",
-    "eslint": "^7.2.0",
-    "nodemon": "^2.0.4"
+    "@types/express": "latest",
+    "@types/helmet": "latest",
+    "@types/node": "latest",
+    "@types/ws": "latest",
+    "eslint": "latest",
+    "nodemon": "latest"
   }
 }

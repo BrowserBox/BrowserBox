@@ -59,18 +59,17 @@ npm i
 npm audit fix
 cd ../../../../
 
-DEBUG_FLASH=$(node -p "import('./src/common.js').then(({DEBUG}) => console.log(DEBUG.useFlashEmu));");
-USE_FLASH=$(echo $DEBUG_FLASH | tail -n 1)
+USE_FLASH=$(node ./src/show_useflash.js);
 if [[ $USE_FLASH != "false" ]]; then
-  brew install jq
+  which apt-get && sudo apt-get install jq || winget install jq || brew install jq
   ./scripts/download_ruffle.sh
 fi
 
-which pm2 || npm i -g pm2
-npm i --save-exact esbuild
+which pm2 || npm i -g pm2@latest
+
+npm i --save-exact esbuild@latest
 
 npm audit fix
 
 echo Done post install
-
 

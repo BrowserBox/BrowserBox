@@ -15,13 +15,13 @@
     "compression": "latest",
     "cookie-parser": "latest",
     "csurf": "latest",
-    "exit-on-epipe": "^1.0.1",
+    "exit-on-epipe": "latest",
     "express": "latest",
     "express-rate-limit": "latest",
     "helmet": "latest",
     "puppeteer": "latest"
   },
   "devDependencies": {
-    "nodemon": "^2.0.15"
+    "nodemon": "latest"
   }
 }
