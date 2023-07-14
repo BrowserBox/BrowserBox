@@ -76,7 +76,6 @@
   },
   "homepage": "https://github.com/crisdosyago/bbpro",
   "dependencies": {
-    "@dosy/ws": "^8.11.6",
     "bang.html": "latest",
     "body-parser": "latest",
     "compression": "latest",
@@ -84,21 +83,20 @@
     "cors": "latest",
     "csurf": "latest",
     "entities": "latest",
-    "esbuild": "0.17.3",
+    "esbuild": "0.18.12",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "latest",
     "express-rate-limit": "latest",
     "helmet": "latest",
     "multer": "latest",
-    "pm2": "^5.2.2",
     "simple-peer": "latest",
     "spdy": "latest",
     "wrtc": "latest",
     "ws": "latest"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.12",
+    "@babel/core": "latest",
     "@mapbox/node-pre-gyp": "latest",
     "@parcel/packager-raw-url": "latest",
     "@parcel/transformer-webmanifest": "latest",
@@ -117,6 +115,6 @@
     "parcel": "latest",
     "parcel-resolver-ignore": "latest",
     "pkg": "latest",
-    "whatwg-fetch": "^3.6.2"
+    "whatwg-fetch": "latest"
   }
 }

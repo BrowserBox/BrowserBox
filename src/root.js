@@ -6,7 +6,7 @@ let File;
 let esm = false;
 
 try {
-  console.log(__dirname, __filename);
+  const x = __dirname + __filename;
 } catch(e) {
   esm = true;
 }
@@ -19,9 +19,6 @@ if ( ! esm ) {
   root = path.dirname(File);
 }
 
-console.log({root, File});
-
 export const APP_ROOT = root;
 export const dir = APP_ROOT;
 export const file = File;
-

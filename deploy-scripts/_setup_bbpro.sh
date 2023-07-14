@@ -20,7 +20,26 @@ is_port_free() {
 
 echo -n "Parsing command line args..." >&2
 
-OPTS=`getopt -o p:t:c: --long port:,token:,cookie: -n 'parse-options' -- "$@"`
+# determine if running on MacOS
+if [[ $(uname) == "Darwin" ]]; then
+  # check if brew is installed
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "Error: Homebrew is not installed. Please install Homebrew first."
+    echo "Visit https://brew.sh for installation instructions."
+    exit 1
+  fi
+
+  # if gnu-getopt is not installed, install it
+  if ! brew --prefix gnu-getopt > /dev/null 2>&1; then
+    brew install gnu-getopt
+  fi
+  getopt=$(brew --prefix gnu-getopt)/bin/getopt
+else
+  # else use regular getopt
+  getopt="/usr/bin/getopt"
+fi
+
+OPTS=`$getopt -o p:t:c: --long port:,token:,cookie: -n 'parse-options' -- "$@"`
 
 if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; exit 1 ; fi
 

@@ -1445,7 +1445,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         Object.assign(connection.bounds, command.params.bounds);
         SCREEN_OPTS.maxWidth = connection.bounds.width;
         SCREEN_OPTS.maxHeight = connection.bounds.height;
-        console.log("Screen opts at set window boudns", SCREEN_OPTS);
+        DEBUG.debugViewportDimensions && console.log("Screen opts at set window bounds", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
 
         const thisChange = JSON.stringify(command.params,null,2);
@@ -1490,7 +1490,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         if ( command.params.mobile ) {
           DEVICE_FEATURES.mobile = command.params.mobile;
         } 
-        console.log("Screen opts at device metric override", SCREEN_OPTS);
+        DEBUG.debugViewportDimensions && console.log("Screen opts at device metric override", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
 
         DEBUG.showTodos && console.log(`Make V Changes sessionId linked (issue #351)`);
