@@ -273,22 +273,21 @@ Whether it's for non-commercial or commercial purposes, BrowserBox Pro provides 
 
 See [our website](https://dosyago.com) and [our GumRoad](https://dosy.gumroad.com) for accurate latest pricing or [reach out to us](mailto:sales@dosyago.com?subject=Pricing), but here is a summary below:
 
-| License Type                     | Quantity      | Total Cost per Unit  | Cost per License       | Flat Amount    |
-|----------------------------------|---------------|----------------------|------------------------|----------------|
-| Single License (Yearly)          | 1             | USD 583/year         | USD 583/year/license   |                |
-| Small Pack License (Yearly)      | 10            | USD 5,000/year       | USD 500/year/license   |                |
-| Medium Pack License (Yearly)     | 50            | USD 20,000/year      | USD 400/year/license   |                |
-| Large Pack License (Yearly)      | 250           | USD 75,000/year      | USD 300/year/license   |                |
-| Bulk License (Yearly)            | 1000          | USD 40,000/year      | USD 40/year/license    |                |
-| Single Perpetual License         | 1             | USD 2,915/license    | USD 2,915/license      |                |
-| Small Perpetual License          | 10            | USD 8,000            | USD 800/license        |                |
-| Medium Perpetual License         | 20            | USD 15,000           | USD 750/license        |                |
-| Large Perpetual License          | 40            | USD 34,000           | USD 850/license        |                |
-| Bulk License x1000 (1-3 units)   | 1000-3000     | USD 40,000/unit      | USD 40/year/license    |                |
-| Bulk License x1000 (4-19 units)  | 4000-19000    | USD 30,000/unit      | USD 30/year/license    |                |
-| Bulk License x1000 (20-40 units) | 20000-40000   | USD 18,750/unit      | USD 18.75/year/license |                |
-| Bulk License x1000 (41+ units)   | 41000+        | USD 12,500/unit      | USD 12.50/year/license |                |
+| License Type | Quantity | Price Per Unit/Pack | Includes |
+| :----------: | :------: | :-----------------: | :------ |
+| Yearly | Up to 1 | $84/seat/year | <ul><li>Purchase from 1 to 1 million licenses</li><li>Each license is valid for 1 year</li><li>Volume discounts for multiple licenses</li><li>Source code access</li><li>Use in customer-facing products or internally</li><li>Email support</li><li>Additional support tiers purchasable</li><li>Customize yourself or contract us</li></ul> |
+| Yearly | 2-50 | $64.92 | Same as above |
+| Yearly | 51-500 | $46.25 | Same as above |
+| Yearly | 501-5000 | $35.58 | Same as above |
+| Yearly | 5001-100000 | $10.67 | Same as above |
+| Yearly | 100001+ | $9.99 | Same as above |
+| Perpetual | 10-pack | $1,947.60 | <ul><li>Use forever</li><li>Email support for 1 year</li><li>Optionally buy more support</li><li>Use in customer-facing products or internally</li><li>Customize source code yourself, or contract us</li></ul> |
+| Perpetual | 100-pack | $13,875.00 | Same as above |
+| Perpetual | 10,000-pack | $320,100.00 | Same as above |
 
+**Notes:**
+- *Perpetual Packs contain multiple seats. For example, the 10-pack contains 10 licenses.*
+- *Each 'seat' represents a concurrent user.*
 
 ## Elevate Your Cybersecurity with BrowserBoxPro
 
