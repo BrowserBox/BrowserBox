@@ -1,5 +1,7 @@
 # BrowserBoxPro
 
+[Прочти меня](translated-READMEs/README-ru.md)
+
 BrowserBoxPro is a powerful RBI (remote browser isolation) multiplayer (co-browsing) application that provides advanced streaming capabilities and a superior feature set for an enhanced browsing experience. With BrowserBoxPro, you can enjoy the benefits of professional remote browser isolation features in every usage scenario. This guide provides step-by-step instructions for installing and running BrowserBoxPro, along with system requirements and troubleshooting tips.
 
 ## Table of Contents
