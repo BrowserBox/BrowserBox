@@ -94,6 +94,14 @@
         Too many requests from this IP. Please try again in a little while.
       `
     });
+    
+    const ConstrainedRateLimiter = rateLimit({
+      windowMs: 10000,
+      max: 1,
+      message: `
+        Too many requests from this IP. Please try again in a little while.
+      `
+    });
 
   // Safari special cookie loader
     let SAFARI_PERMISSION_LOADER_HTML = `<h1>Safari not supported...</h1>`;
@@ -873,7 +881,7 @@
           <iframe style=display:none name=results>
         `);
       });
-      app.post("/restart_app", (req, res) => {
+      app.post("/restart_app", ConstrainedRateLimiter, (req, res) => {
          /**
             1. queue a restart task
             2. add an exit handler
@@ -924,7 +932,7 @@
         });
         return res.status(200).send("requested");
       });
-      app.post("/stop_app", (req, res) => {
+      app.post("/stop_app", ConstrainedRateLimiter, (req, res) => {
         /**
           call process.exit() if pm2 not running us.
           if pm2 running us, call pm2 delete (our name)
@@ -933,7 +941,7 @@
         setTimeout(() => console.log('Exiting...'), 5000);
         console.log(process.env, process.argv, process.title);
         if ( process.env.PM2_USAGE && process.env.name ) {
-          DEBUG.debugRestart && console.log(`Is pm2. Deleting pm2 name`);
+          DEBUG.debugRestart && console.log(`Is pm2. Deleting pm2 name`, process.env.name);
           try {
             console.log(child_process.execSync(`pm2 delete ${process.env.name}`).toString());
           } catch(e) {
