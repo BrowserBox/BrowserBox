@@ -10,4 +10,5 @@ if [[ -z "$2" ]]; then
   exit 1
 fi
 
+mkdir -p $2
 cp -r -L /etc/letsencrypt/live/$1/* $2
