@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [ humanless-deploy ]
+  pull_request:
+    branches: [ boss ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libnss3 libnspr4 libasound2 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0
+
+    - name: Install ngrok
+      run: npm install ngrok -g
+
+    - name: Configure ngrok
+      run: ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+
+    - name: Install application
+      run: yes | ./deploy-scripts/global_install.sh localhost
+
+    - name: Configure application
+      run: setup_bbpro --port 8080
+
+    - name: Start server & ngrok tunnel
+      run: |
+        bbpro &
+        sleep 5
+        ngrok http https://localhost:8080 &
+        sleep 5
+
+    - name: Get ngrok public URL
+      id: ngrok
+      run: |
+        url=$(curl http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+        echo "::set-output name=url::$url"
+        echo $url
+
+    - name: Print ngrok URL
+      run: echo "The ngrok public URL is ${{ steps.ngrok.outputs.url }}"
+
+    - name: Keep alive
+      run: sleep 300
+
