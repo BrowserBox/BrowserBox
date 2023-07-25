@@ -49,6 +49,19 @@ case ${answer:0:1} in
     ;;
 esac
 
+#!/bin/bash
+
+# If on macOS
+if [[ "$(uname)" == "Darwin" ]]; then
+    # Check the machine architecture
+    ARCH="$(uname -m)"
+    if [[ "$ARCH" == "arm64" ]]; then
+        echo "This script is not compatible with the ARM architecture at this time"
+        echo "due to some dependencies having no pre-built binaries for this architecture."
+        echo "Please re-run this script under Rosetta."
+        exit 1
+    fi
+fi
 
 if [ "$(os_type)" == "Linux" ]; then
   sudo apt -y install net-tools ufw
@@ -63,12 +76,18 @@ if [ "$#" -eq 1 ]; then
       if [ "$(os_type)" == "macOS" ]; then
         brew install mkcert
       else
+        sudo apt -y install libnss3-tools
         curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
         chmod +x mkcert-v*-linux-amd64
         sudo cp mkcert-v*-linux-amd64 /usr/local/bin/mkcert
       fi
     fi
     mkcert -install
+    mkdir -p $HOME/sslcerts
+    pwd=$(pwd)
+    cd $HOME/sslcerts
+    mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
+    cd $pwd
   else
     ip=$(getent hosts "$hostname" | awk '{ print $1 }')
 
