@@ -1,3 +1,17 @@
+# Preamble
+# Hello GitHub Folken - if this is violating the terms of service and you work for GitHub, 
+#  please let me know and I will remove this action ASAP!
+#  to make any automated removal easy I add the following pseudo key metadata
+# _meta_action_id: dosyago/BrowserBoxPro/tech-prototype/july-2023
+# Do not remove this preamble
+# Purpose
+# Run BrowserBox Pro on GitHub Actions Runner to Integration Test
+#  This is intended as a useful technology prototype showing the ability to run the BrowserBoxPro remote browser
+#  on GitHub Actions Runners. This makes it easy to see if the application is working correctly, and to test 
+#  any modifications you make. This is not an endorsement or encouragement to utilize GitHub Actions in a way that violates
+#  the terms of service, as using this in excess may do that. Don't abuse the power and benevolence of the platform.
+# End preamble
+
 name: CI
 
 on:
