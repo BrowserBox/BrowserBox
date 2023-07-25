@@ -16,7 +16,7 @@ name: CI
 
 on:
   push:
-    branches: [ humanless-deploy ]
+    branches: [ boss ]
   pull_request:
     branches: [ boss ]
 
