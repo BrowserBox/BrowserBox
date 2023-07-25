@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # check if running with sudo privileges and exit if not
 if [ $(id -u) != 0 ]
 then
@@ -9,7 +11,7 @@ then
 fi
 
 # Generate a random string
-random_string=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1`
+random_string=$(LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | head -c 8 ; echo)
 
 # Set the username to "user" followed by the random string
 username="user$random_string"
@@ -34,8 +36,7 @@ fi
 filesystem=$(mount | grep " on / " | awk '{print $1}')
 
 # Generate a random password
-password=`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 16 | head -n 1`
-
+password=$(LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | head -c 16 ; echo)
 
 # Create the user
 useradd -m -s /usr/sbin/nologin $username >&2

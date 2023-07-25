@@ -28,7 +28,7 @@ while [ $step -lt $maxwaitsteps ]; do
   let step=step+1
 done
 
-file=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13)
+file=$(LC_ALL=C head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13 ; echo)
 curl -F secret="$secret" -F pdf=@"$filename" $provider > $file
 stdbuf --output=0 echo $(cat $file)
 rm $file
