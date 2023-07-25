@@ -28,7 +28,10 @@ jobs:
       run: yes | ./deploy-scripts/global_install.sh localhost
 
     - name: Configure application
-      run: setup_bbpro --port 8080
+      id: setup
+      run: |
+        output=$(setup_bbpro --port 8080)
+        echo "::set-output name=suffix::${output#*https://localhost:8080}"
 
     - name: Start server & ngrok tunnel
       run: |
@@ -41,11 +44,13 @@ jobs:
       id: ngrok
       run: |
         url=$(curl http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
-        echo "::set-output name=url::$url"
-        echo $url
+        suffix=${{ steps.setup.outputs.suffix }}
+        complete_url="${url}${suffix}"
+        echo "::set-output name=url::$complete_url"
+        echo $complete_url
 
     - name: Print ngrok URL
-      run: echo "The ngrok public URL is ${{ steps.ngrok.outputs.url }}"
+      run: echo "The complete ngrok URL is ${{ steps.ngrok.outputs.url }}"
 
     - name: Keep alive
       run: sleep 300

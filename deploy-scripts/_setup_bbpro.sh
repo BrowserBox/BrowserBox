@@ -24,8 +24,8 @@ echo -n "Parsing command line args..." >&2
 if [[ $(uname) == "Darwin" ]]; then
   # check if brew is installed
   if ! command -v brew >/dev/null 2>&1; then
-    echo "Error: Homebrew is not installed. Please install Homebrew first."
-    echo "Visit https://brew.sh for installation instructions."
+    echo "Error: Homebrew is not installed. Please install Homebrew first." >&2
+    echo "Visit https://brew.sh for installation instructions." >&2
     exit 1
   fi
 
