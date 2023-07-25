@@ -76,12 +76,18 @@ if [ "$#" -eq 1 ]; then
       if [ "$(os_type)" == "macOS" ]; then
         brew install mkcert
       else
+        sudo apt -y install libnss3-tools
         curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
         chmod +x mkcert-v*-linux-amd64
         sudo cp mkcert-v*-linux-amd64 /usr/local/bin/mkcert
       fi
     fi
     mkcert -install
+    mkdir -p $HOME/sslcerts
+    pwd=$(pwd)
+    cd $HOME/sslcerts
+    mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
+    cd $pwd
   else
     ip=$(getent hosts "$hostname" | awk '{ print $1 }')
 
