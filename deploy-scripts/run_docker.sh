@@ -21,6 +21,8 @@ docker cp $CONTAINER_ID:/home/bbpro/bbpro/login_link.txt artefacts/
 # Print the contents of login_link.txt
 login_link=$(cat ./artefacts/login_link.txt)
 
+echo $login_link
+
 docker exec -it $CONTAINER_ID bash
 
 echo $login_link
