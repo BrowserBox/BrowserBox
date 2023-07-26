@@ -1,3 +1,4 @@
+# By using this Dockerfile or a container that runs BrowserBoxPro you are agreeing to the terms in the BrowserBoxPro License.
 # base image
 FROM node:18-bookworm
 
@@ -54,4 +55,5 @@ RUN echo $(setup_bbpro --port 8080) > login_link.txt
 
 # run the application
 CMD ["bbpro"]
+CMD ["tail", "-f", "/dev/null"]
 
