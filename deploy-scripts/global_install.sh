@@ -20,7 +20,7 @@ install_nvm() {
     echo "Installing nvm..."
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
     source ~/.nvm/nvm.sh
-    nvm install node
+    nvm install --lts
   fi
 }
 
@@ -122,7 +122,11 @@ cd $INSTALL_DIR
 
 install_nvm
 npm i
-npm run parcel
+if [ -n "$DOCKER_CONTAINER" ]; then
+  echo "In docker, not running parcel (it hangs sometimes!)
+else 
+  npm run parcel
+fi
 
 if [ "$(os_type)" == "macOS" ]; then
   if brew install gnu-getopt; then

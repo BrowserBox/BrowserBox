@@ -1,6 +1,6 @@
 # By using this Dockerfile or a container that runs BrowserBoxPro you are agreeing to the terms in the BrowserBoxPro License.
 # base image
-FROM ubuntu:focal
+FROM ubuntu:jammy
 
 # install dependencies
 RUN apt-get update
@@ -48,12 +48,12 @@ RUN chown -R bbpro:bbpro $HOME/bbpro/
 USER bbpro
 
 # install application
-RUN yes | ./deploy-scripts/global_install.sh localhost
+#RUN yes | ./deploy-scripts/global_install.sh localhost
 
 # extract the login link using setup_bbpro and save it to a file
-RUN echo $(setup_bbpro --port 8080) > login_link.txt
+#RUN echo $(setup_bbpro --port 8080) > login_link.txt
 
 # run the application
-CMD ["bbpro"]
+#CMD ["bbpro"]
 CMD ["tail", "-f", "/dev/null"]
 
