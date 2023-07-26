@@ -71,23 +71,29 @@ fi
 if [ "$#" -eq 1 ]; then
   hostname="$1"
 
+  amd64=$(dpkg --print-architecture || uname -m)
+
   if [ "$hostname" == "localhost" ]; then
     if ! command -v mkcert &>/dev/null; then
       if [ "$(os_type)" == "macOS" ]; then
         brew install mkcert
       else
         sudo apt -y install libnss3-tools
-        curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
-        chmod +x mkcert-v*-linux-amd64
-        sudo cp mkcert-v*-linux-amd64 /usr/local/bin/mkcert
+        curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
+        chmod +x mkcert-v*-linux-$amd64
+        sudo cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
       fi
     fi
     mkcert -install
-    mkdir -p $HOME/sslcerts
-    pwd=$(pwd)
-    cd $HOME/sslcerts
-    mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
-    cd $pwd
+    if [[ ! -f "$HOME/sslcerts/privkey.pem" || ! -f "$HOME/sslcerts/fullchain.pem" ]]; then
+      mkdir -p $HOME/sslcerts
+      pwd=$(pwd)
+      cd $HOME/sslcerts
+      mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
+      cd $pwd
+    else 
+      echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We are not overwriting them."
+    fi
   else
     ip=$(getent hosts "$hostname" | awk '{ print $1 }')
 
