@@ -122,8 +122,8 @@ cd $INSTALL_DIR
 
 install_nvm
 npm i
-if [ -n "$DOCKER_CONTAINER" ]; then
-  echo "In docker, not running parcel (it hangs sometimes!)
+if [ -f /.dockerenv ]; then
+  echo "In docker, not running parcel (it hangs sometimes!)"
 else 
   npm run parcel
 fi
