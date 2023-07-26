@@ -65,7 +65,7 @@ if [[ $USE_FLASH != "false" ]]; then
   ./scripts/download_ruffle.sh
 fi
 
-which pm2 || npm i -g pm2@latest
+which pm2 || npm i -g pm2@latest || sudo npm i -g pm2@latest
 
 npm i --save-exact esbuild@latest
 
