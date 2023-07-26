@@ -2,7 +2,7 @@
 
 npm run clean
 npm i
-if [ -f /.dockerenv ]; then
+if [ "$IS_DOCKER_BUILD" = "true" ]; then
   echo "Not running parcel, you are in docker."
 else
   npm run parcel

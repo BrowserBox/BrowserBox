@@ -2,6 +2,9 @@
 # base image
 FROM ubuntu:jammy
 
+ARG IS_DOCKER_BUILD=true
+ENV IS_DOCKER_BUILD=$IS_DOCKER_BUILD
+
 # install dependencies
 RUN apt-get update
 RUN apt-get install -y \
@@ -54,5 +57,5 @@ RUN yes | ./deploy-scripts/global_install.sh localhost
 RUN echo $(setup_bbpro --port 8080) > login_link.txt
 
 # run the application
-CMD bbpro && tail -f /dev/null
+CMD (bbpro || :) && tail -f /dev/null
 
