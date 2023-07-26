@@ -1,6 +1,6 @@
 # By using this Dockerfile or a container that runs BrowserBoxPro you are agreeing to the terms in the BrowserBoxPro License.
 # base image
-FROM node:18-bookworm
+FROM ubuntu:focal
 
 # install dependencies
 RUN apt-get update
