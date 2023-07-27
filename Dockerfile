@@ -1,9 +1,12 @@
 # By using this Dockerfile or a container that runs BrowserBoxPro you are agreeing to the terms in the BrowserBoxPro License.
 # base image
-FROM ubuntu:jammy
+LABEL org.opencontainers.image.source https://github.com/dosyago/BrowserBoxPro
 
 ARG IS_DOCKER_BUILD=true
 ENV IS_DOCKER_BUILD=$IS_DOCKER_BUILD
+
+# current base
+FROM ubuntu:jammy
 
 # install dependencies
 RUN apt-get update
