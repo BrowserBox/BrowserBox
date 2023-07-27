@@ -156,6 +156,8 @@ const launcher_api = {
         '--use-gl=swiftshader',
         '--use-angle=default',
       ] : []),
+
+      ...(DEBUG.ALL_FLAGS ? MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY : []),
     ];
     chromeNumber += 1;
     DEBUG.val && console.log(`Chrome Number: ${chromeNumber}, Executing chrome-launcher`);
@@ -168,7 +170,17 @@ const launcher_api = {
     if (isDocker()) {
       console.log("We are in docker");
       CHROME_FLAGS.push('--remote-debugging-address=0.0.0.0');
-      //CHROME_FLAGS.push('--no-sandbox'); 
+      CHROME_FLAGS.push('--no-first-run');
+      CHROME_FLAGS.push('--start-maximized');
+      CHROME_FLAGS.push('--bwsi');
+      CHROME_FLAGS.push('--disable-file-system');
+      CHROME_FLAGS.push('--enable-features=Vulkan,UseSkiaRenderer,VaapiVideoEncoder,VaapiVideoDecoder,CanvasOopRasterization');
+      CHROME_FLAGS.push('--ignore-gpu-blocklist');
+      CHROME_FLAGS.push('--disable-seccomp-filter-sandbox');
+      CHROME_FLAGS.push('--use-gl=egl');
+      CHROME_FLAGS.push('--disable-software-rasterizer');
+      CHROME_FLAGS.push('--disable-dev-shm-usage');
+      CHROME_FLAGS.push('--window-position=0,0');
     }
     if ( DEBUG.noAudio ) {
       CHROME_FLAGS.push('--mute-audio');

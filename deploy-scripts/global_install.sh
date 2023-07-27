@@ -20,7 +20,7 @@ install_nvm() {
     echo "Installing nvm..."
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
     source ~/.nvm/nvm.sh
-    nvm install node
+    nvm install --lts
   fi
 }
 
@@ -82,6 +82,7 @@ if [ "$#" -eq 1 ]; then
         curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
         chmod +x mkcert-v*-linux-$amd64
         sudo cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
+        rm mkcert-v*
       fi
     fi
     mkcert -install
@@ -122,7 +123,11 @@ cd $INSTALL_DIR
 
 install_nvm
 npm i
-npm run parcel
+if [ "$IS_DOCKER_BUILD" = "true" ]; then
+  echo "In docker, not running parcel (it hangs sometimes!)"
+else 
+  npm run parcel
+fi
 
 if [ "$(os_type)" == "macOS" ]; then
   if brew install gnu-getopt; then

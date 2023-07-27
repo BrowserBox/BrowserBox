@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 
-curl -fsSL https://deb.nodesource.com/setup_19.x | sudo -E bash - 
-sudo apt-get install -y nodejs
+if which node; then
+  echo "node installed"
+else
+  curl -fsSL https://deb.nodesource.com/setup_19.x | sudo -E bash - 
+  sudo apt-get install -y nodejs
+fi
+
 sudo which pm2 || bash -c "sudo npm i -g pm2@latest"
+
 echo -n "Set up quota user to have 5G 5G and 2m 2m block and inode limit."
 read -p " Enter to continue "
 sudo cp ./scripts/commands/* /usr/local/bin/
