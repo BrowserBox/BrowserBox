@@ -76,7 +76,7 @@ if [ "$#" -eq 1 ]; then
   if [ "$hostname" == "localhost" ]; then
     if ! command -v mkcert &>/dev/null; then
       if [ "$(os_type)" == "macOS" ]; then
-        brew install mkcert
+        brew install nss mkcert
       else
         sudo apt -y install libnss3-tools
         curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
