@@ -42,7 +42,9 @@ const sigintListener = () => __awaiter(this, void 0, void 0, function* () {
     }
   }
 });
-function launch(opts = {}) {
+async function launch(opts = {}) {
+  const common = await import("../../../common.js");
+  const {DEBUG} = common;
   return __awaiter(this, void 0, void 0, function* () {
     opts.handleSIGINT = utils_1.defaults(opts.handleSIGINT, true);
     const instance = new Launcher(opts);
@@ -61,7 +63,14 @@ function launch(opts = {}) {
       return instance.kill();
     });
     /* eslint-ensable require-yield */
-    return { pid: instance.pid, port: instance.port, kill, process: instance.chrome };
+    if ( DEBUG.allowExternalChrome ) {
+      // we just shim the pids etc (and they become useless) as we can't easily obtain a 
+      // process object for an already running process
+      // if a chrome is already running
+      return { pid: instance.pid || process.pid, port: instance.port, kill, process: instance.chrome || process };
+    } else {
+      return { pid: instance.pid, port: instance.port, kill, process: instance.chrome };
+    }
   });
 }
 exports.launch = launch;
@@ -207,14 +216,16 @@ class Launcher {
     const {DEBUG, CONFIG} = await import("../../../common.js");
     const port = parseInt(this.port);
     console.log({port});
+    let browser;
     try {
-      const browser = execSync(`curl -s http://localhost:${port}/json/version`);
+      browser = execSync(`curl -s http://localhost:${port}/json/version`);
       console.log('browser', browser.toString());
     } catch(e) {
       DEBUG.val && console.info("Browser error", e);
       throw e;
     }
     DEBUG.val && console.info("Browser OK");
+    return browser;
   }
   // resolves when debugger is ready, rejects after 10 polls
   async waitUntilReady() {
