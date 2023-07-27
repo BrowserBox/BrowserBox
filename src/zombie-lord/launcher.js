@@ -156,6 +156,8 @@ const launcher_api = {
         '--use-gl=swiftshader',
         '--use-angle=default',
       ] : []),
+
+      ...(DEBUG.ALL_FLAGS ? MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY : []),
     ];
     chromeNumber += 1;
     DEBUG.val && console.log(`Chrome Number: ${chromeNumber}, Executing chrome-launcher`);
