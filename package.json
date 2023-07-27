@@ -83,7 +83,7 @@
     "cors": "latest",
     "csurf": "latest",
     "entities": "latest",
-    "esbuild": "0.18.16",
+    "esbuild": "0.18.17",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "latest",

@@ -15,7 +15,6 @@ else
 	exit 1
 fi
 cd ../..
-sudo npm i -g node-dev nodemon
 sudo apt install -y libvips libjpeg-dev
 ./scripts/install_bundle_deps.sh
 ./scripts/install_global_bundle_deps.sh
@@ -34,5 +33,5 @@ sudo groupadd browsers
 sudo groupadd scripters
 
 sudo ufw disable
-npm i -g pm2@latest
+which pm2 || npm i -g pm2@latest || sudo npm i -g pm2@latest
 sudo setcap 'cap_net_bind_service=+ep' $(which node)

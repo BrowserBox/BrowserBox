@@ -1,6 +1,9 @@
 # By using this Dockerfile or a container that runs BrowserBoxPro you are agreeing to the terms in the BrowserBoxPro License.
 # base image
-FROM ubuntu:focal
+FROM ubuntu:jammy
+
+ARG IS_DOCKER_BUILD=true
+ENV IS_DOCKER_BUILD=$IS_DOCKER_BUILD
 
 # install dependencies
 RUN apt-get update
@@ -54,6 +57,5 @@ RUN yes | ./deploy-scripts/global_install.sh localhost
 RUN echo $(setup_bbpro --port 8080) > login_link.txt
 
 # run the application
-CMD ["bbpro"]
-CMD ["tail", "-f", "/dev/null"]
+CMD (bbpro || :) && tail -f /dev/null
 
