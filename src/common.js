@@ -16,6 +16,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  allowExternalChrome: true,
   logFileCommands: false,
   showTodos: false,
   showViewportChanges: false,
