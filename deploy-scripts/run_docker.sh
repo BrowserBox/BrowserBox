@@ -52,9 +52,11 @@ PORT=$1
 
 # Validate that PORT is a number
 if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
-    echo "Error: PORT must be a number."
-    echo "Usage: " $0 "<PORT>"
-    exit 1
+  echo "Error: PORT must be a number."
+  echo "Usage: " $0 "<PORT>"
+  exit 1
+else
+  echo "Setting main port to: $PORT"
 fi
 
 # Run the container with the appropriate port mappings and capture the container ID

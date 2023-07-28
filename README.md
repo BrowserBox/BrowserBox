@@ -2,6 +2,21 @@
 
 BrowserBoxPro is a powerful RBI (remote browser isolation) multiplayer (co-browsing) application that provides advanced streaming capabilities and a superior feature set for an enhanced browsing experience. With BrowserBoxPro, you can enjoy the benefits of professional remote browser isolation features in every usage scenario. This guide provides step-by-step instructions for installing and running BrowserBoxPro, along with system requirements and troubleshooting tips.
 
+## Running BrowserBoxPro with Docker
+
+Setting up and running BrowserBoxPro with Docker is straightforward with the following steps:
+
+1. Grab the latest Docker container for BrowserBoxPro from our [packages page](https://github.com/dosyago/BrowserBoxPro/pkgs/container/browserboxpro) on GitHub Container Registry.
+
+2. Deploy the Docker container using our streamlined run script. Choose a primary port number (`$PORT`) ensuring two extra ports are free both preceding and succeeding `$PORT`. Initiate the deployment by running:
+
+```console
+PORT=8080 # or select your preferred port
+bash <(curl -s https://raw.githubusercontent.com/dosyago/BrowserBoxPro/f85790018d7be1a1bd0ecce6c3f38bb4a953d53d/deploy-scripts/run_docker.sh) $PORT
+```
+
+Voila! BrowserBoxPro should be operational on your machine. Should you encounter any issues, we're here to help at sales@dosyago.com. To purchase licenses, head over to our website: https://dosaygo.com.
+
 ## Table of Contents
 
 - [BrowserBoxPro](#browserboxpro)
