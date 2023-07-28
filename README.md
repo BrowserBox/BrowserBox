@@ -12,7 +12,7 @@ Setting up and running BrowserBoxPro with Docker is straightforward with the fol
 
 ```console
 PORT=8080 # or select your preferred port
-bash <(curl -s https://raw.githubusercontent.com/dosyago/BrowserBoxPro/f85790018d7be1a1bd0ecce6c3f38bb4a953d53d/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/dosyago/BrowserBoxPro/95ff1acb13a70ec0daad888e25205defb7a0bb36/deploy-scripts/run_docker.sh) $PORT
 ```
 
 Voila! BrowserBoxPro should be operational on your machine. Should you encounter any issues, we're here to help at sales@dosyago.com. To purchase licenses, head over to our website: https://dosaygo.com.
