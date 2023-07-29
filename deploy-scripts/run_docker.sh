@@ -60,10 +60,11 @@ else
 fi
 
 # Run the container with the appropriate port mappings and capture the container ID
-CONTAINER_ID=$(docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:8080 -p $(($PORT-2)):8078 -p $(($PORT-1)):8079 -p $(($PORT+1)):8081 -p $(($PORT+2)):8082 --cap-add=SYS_ADMIN bbpro-v4)
+CONTAINER_ID=$(docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:8080 -p $(($PORT-2)):8078 -p $(($PORT-1)):8079 -p $(($PORT+1)):8081 -p $(($PORT+2)):8082 --cap-add=SYS_ADMIN ghcr.io/dosyago/browserboxpro:v4)
 
 # Wait for a few seconds to make sure the container is up and running
-sleep 1
+echo "Waiting a few seconds for container to start..."
+sleep 3
 
 # Copy login_link.txt from the container to the current directory
 mkdir -p artefacts
