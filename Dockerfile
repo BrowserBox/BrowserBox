@@ -4,6 +4,7 @@ LABEL org.opencontainers.image.source https://github.com/dosyago/BrowserBoxPro
 
 ARG IS_DOCKER_BUILD=true
 ENV IS_DOCKER_BUILD=$IS_DOCKER_BUILD
+ENV DEBIAN_FRONTEND=noninteractive
 
 # current base
 FROM ubuntu:jammy
