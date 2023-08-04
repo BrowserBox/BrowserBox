@@ -35,6 +35,10 @@ print_instructions() {
 # Check if certificate and key files exist
 if [ -d "$certDir" ]; then
     if [ -f "$certFile" ] && [ -f "$keyFile" ]; then
+        # the read permission is so the key file can be used by the application
+        # inside the container
+        # otherwise HTTPS won't work and that breaks the app
+        chmod 644 $certDir/*.pem
         echo "Great job! Your SSL/TLS/HTTPS certificates are all set up correctly. You're ready to go!"
     else
         echo "Almost there! Your 'sslcerts' directory exists, but it seems you're missing some certificate files."
