@@ -86,9 +86,9 @@ echo $login_link
 echo "Container id:" $CONTAINER_ID
 
 # Ask the user if they want to stop the container
-read -p "Do you want to stop the container? (yes/y to stop, any other key to cancel): " user_response
+read -p "Do you want to keep running the container? (no/n to stop, any other key to leave running): " user_response
 
-if [[ $user_response == "yes" || $user_response == "y" ]]; then
+if [[ $user_response == "no" || $user_response == "n" ]]; then
   # Stop the container with time=1
   echo "Stopping container..."
   docker stop --time 1 "$CONTAINER_ID"
