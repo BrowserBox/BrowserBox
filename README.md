@@ -14,7 +14,7 @@ Then setting up and running BrowserBoxPro with Docker is straightforward with th
 
 ```console
 PORT=8080 # or select your preferred port
-bash <(curl -s https://raw.githubusercontent.com/dosyago/BrowserBoxPro/ade4d56879863a710b37ea9f0309fcc6c3166d10/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/dosyago/BrowserBoxPro/453fdd5afcffd9ae517435a3df3e71ce7f80f94d/deploy-scripts/run_docker.sh) $PORT
 ```
 
 Voila! BrowserBoxPro should be operational on your machine. This script will emit a login link of the form `https://<your-host>:$PORT/login?token=<random token>`. Just open that in a browser to connect to your BrowserBox-in-docker remote browser!
