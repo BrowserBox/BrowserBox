@@ -1,65 +1,48 @@
-# BrowserBoxPro
+# BrowserBoxPro: Zero Trust Browsing
 
-BrowserBoxPro is a powerful RBI (remote browser isolation) multiplayer (co-browsing) application that provides advanced streaming capabilities and a superior feature set for an enhanced browsing experience. With BrowserBoxPro, you can enjoy the benefits of professional remote browser isolation features in every usage scenario. This guide provides step-by-step instructions for installing and running BrowserBoxPro, along with system requirements and troubleshooting tips.
+BrowserBoxPro is a leading-edge solution in the Zero Trust landscape, ensuring that every web interaction is treated as potentially hostile. By leveraging the principles of Remote Browser Isolation (RBI) and co-browsing, BrowserBoxPro ensures that no web content directly interacts with the end user's device. This guide will walk you through the seamless integration of BrowserBoxPro into your Zero Trust architecture.
 
-## Running BrowserBoxPro with Docker
+Here's a markdown Table of Contents (ToC) for your README:
 
-First make sure you have [docker](https://www.docker.com/) installed! 
+# Table of Contents
 
-Then setting up and running BrowserBoxPro with Docker is straightforward with the following steps:
-
-1. Grab the latest Docker container for BrowserBoxPro from our [packages page](https://github.com/dosyago/BrowserBoxPro/pkgs/container/browserboxpro) on GitHub Container Registry.
-
-2. Deploy the Docker container using our streamlined run script. Choose a primary port number (`$PORT`) ensuring two extra ports are free both preceding and succeeding `$PORT`. Initiate the deployment by running:
-
-```console
-PORT=8080 # or select your preferred port
-bash <(curl -s https://raw.githubusercontent.com/dosyago/BrowserBoxPro/7461dd1edb5e9e5b4f44da8961228e66cdcdf276/deploy-scripts/run_docker.sh) $PORT
-```
-
-Voila! BrowserBoxPro should be operational on your machine. This script will emit a login link of the form `https://<your-host>:$PORT/login?token=<random token>`. Just open that in a browser to connect to your BrowserBox-in-docker remote browser!
-
-Should you encounter any issues, we're here to help at sales@dosyago.com. To purchase licenses, head over to our website: https://dosaygo.com.
-
-## Table of Contents
-
-- [BrowserBoxPro](#browserboxpro)
-  - [Latest News](#latest-news)
+- [BrowserBoxPro: Zero Trust Browsing](#browserboxpro-zero-trust-browsing)
+  - [Embracing Zero Trust with BrowserBoxPro](#embracing-zero-trust-with-browserboxpro)
   - [Key Features](#key-features)
-  - [Installation and Features Guide](#installation-and-features-guide)
+  - [Deploying BrowserBoxPro in a Zero Trust Environment with Docker](#deploying-browserboxpro-in-a-zero-trust-environment-with-docker)
+  - [Zero Trust Installation Guide](#zero-trust-installation-guide)
   - [Installation](#installation)
     - [Initial Machine Setup](#initial-machine-setup)
     - [Installation Process](#installation-process)
-  - [Applications and Features](#applications-and-features)
+  - [Applications in a Zero Trust Framework](#applications-in-a-zero-trust-framework)
     - [Product Space Applications](#product-space-applications)
+    - [Creative Ways that Clients are Using BrowserBox](#creative-ways-that-clients-are-using-browserbox)
     - [Internal Tooling Applications](#internal-tooling-applications)
     - [Tech and Framework Applications](#tech-and-framework-applications)
-  - [Features of BrowserBox Pro](#features-of-browserbox-pro) 
-  - [Licensing](#licensing)
-    - [For open-source use](#for-open-source-use)
-    - [For non-commercial use](#for-non-commercial-use)
-    - [For commercial use](#for-commercial-use)
+  - [Features of BrowserBox Pro in a Zero Trust Environment](#features-of-browserbox-pro-in-a-zero-trust-environment)
+  - [Licensing for Zero Trust](#licensing-for-zero-trust)
     - [Purchasing a commercial license](#purchasing-a-commercial-license)
-        - [Perpetual or Yearly](#perpetual-or-yearly)
-        - [Volume Discounts](#volume-discounts)
-        - [Support and Customization](#support-and-customization)
     - [Hardware Appliance (OEM) Licensing](#hardware-appliance-oem-licensing)
+    - [Sanctions Compliance](#sanctions-compliance)
+    - [Licensing Summary](#licensing-summary)
   - [Pricing](#pricing)
-  - [Elevate Your Cybersecurity with BrowserBoxPro](#elevate-your-cybersecurity-with-browserboxpro)
-  - [Sanctions Compliance](#sanctions-compliance)
+  - [Elevate Your Zero Trust Strategy with BrowserBoxPro](#elevate-your-zero-trust-strategy-with-browserboxpro)
   - [Copyright](#copyright)
 
+## Embracing Zero Trust with BrowserBoxPro
 
-## Latest News
+In the evolving cybersecurity landscape, the Zero Trust model has emerged as a cornerstone. By assuming no trust by default and verifying every access request irrespective of its source, Zero Trust ensures robust security. BrowserBoxPro is at the forefront of this paradigm shift, offering:
 
-Check out the latest articles about BrowserBox, web automation and RBI from our [Company Blog](https://blog.dosyago.com):
+- **Web Isolation**: Every web session is isolated, ensuring malicious content doesn't reach the end-user's device.
+- **Co-Browsing**: Collaborative browsing without compromising security.
+- **Zero Trust Integration**: Easily integrates into your existing Zero Trust infrastructure.
+
+For the latest on how BrowserBoxPro is shaping the Zero Trust landscape, visit our [Company Blog](https://blog.dosyago.com).
 
 - [Updated Pricing](https://dosyago.com) - now with even more tiers for smaller use cases!
 - [BrowserBox Pro Goes Open Source with Multiple Licenses
 ](https://blog.dosyago.com/2023/06/26/browserbox-pro-goes-open-source-with-multiple-licenses.html)
 - [Tunnelling over SSH - You're guide to using Localhost Certificates and SSH port-forwarding to run BrowserBox Pro on a remote machine without a domain name, using SSH tunneling](https://blog.dosyago.com/tutorials/2023/06/17/tunneling-browserbox-pro-over-SSH-complete-guide-to-using-port-forwarding-to-run-RBI-on-a-router.html)
-- [Dosyago's BrowserBox - A Revolutionary Leap in Web Security](https://blog.dosyago.com/2023/05/29/future-proofing-online-security-with-dosyago-browserbox.html)
-- [Dispelling the Falsehoods - The Dawn of BrowserBox and Contemporary Web Safety](https://blog.dosyago.com/2023/05/29/dispelling-falsehoods-dawn-of-browserbox-and-true-corporate-web-safety.html)
 
 ## Key Features
 
@@ -68,7 +51,26 @@ Check out the latest articles about BrowserBox, web automation and RBI from our 
 - **Superior Performance**: BrowserBoxPro delivers exceptional performance, ensuring smooth and responsive browsing even for resource-intensive websites and applications.
 - **Flexible Usage**: Whether you are a non-commercial user or using BrowserBoxPro for commercial purposes, you can benefit from the full range of pro features to enhance your browsing capabilities.
 
-## Installation and Features Guide
+## Deploying BrowserBoxPro in a Zero Trust Environment with Docker
+
+Before diving in, ensure you have [docker](https://www.docker.com/) installed!
+
+Deploying BrowserBoxPro within a Zero Trust framework is straightforward:
+
+1. Obtain the latest Docker container for BrowserBoxPro from our [packages page](https://github.com/dosyago/BrowserBoxPro/pkgs/container/browserboxpro) on GitHub Container Registry.
+
+2. Deploy the Docker container using our Zero Trust compliant run script. Choose a primary port number (`$PORT`) ensuring two extra ports are free both preceding and succeeding `$PORT`. Deploy by running:
+
+```console
+PORT=8080 # or your preferred port
+bash <(curl -s https://raw.githubusercontent.com/dosyago/BrowserBoxPro/7461dd1edb5e9e5b4f44da8961228e66cdcdf276/deploy-scripts/run_docker.sh) $PORT
+```
+
+Upon successful deployment, BrowserBoxPro will be operational, reinforcing your Zero Trust strategy. Access the browser using the provided login link: `https://<your-host>:$PORT/login?token=<random token>`.
+
+For support or to purchase licenses, connect with us at sales@dosyago.com or visit: https://dosaygo.com.
+
+## Zero Trust Installation Guide
 
 **🌟 Video Installation Guide for Pro: [https://youtu.be/cGUJCCPDWNE](https://youtu.be/cGUJCCPDWNE)**
 
@@ -158,19 +160,20 @@ Follow these steps to install BrowserBoxPro:
 
 During the installation process, BrowserBoxPro will automatically install the required dependencies and configure the necessary settings.
 
-## Applications and Features
+## Applications in a Zero Trust Framework
 
-BrowserBoxPro offers a wide array of features and potential applications, making it versatile for various use cases. Here are some of the applications and features provided by BrowserBoxPro:
+BrowserBoxPro isn't just a tool; it's a comprehensive solution designed to fit seamlessly into a Zero Trust architecture. Here's how:
 
 ### Product Space Applications:
 
-- Remote browser isolation for enhanced security, risk mitigation, and privacy.
-- Co-browsing with zero download requirements for collaborative and social interaction.
-- A delivery platform for a zero-download web scraping app compatible with any device format.
-- An alternative platform for browser extensions with an associated app store.
-- A secure online "internet cafe" with advanced privacy features.
-- An alternate solution to VPNs and DNS blocklists.
-- Mitigation of email attachment threats via Content Disarm & Reconstruction (CDR) and automatic opening of links and attachments in the remote browser or its included secure document viewer (Pro only).
+- **Remote Browser Isolation**: Fundamental to Zero Trust, ensuring no direct content interaction with user devices.
+- **Co-Browsing**: Collaborate without compromising on security.
+- **VPN Alternatives**: A more secure solution than traditional VPNs.
+- **Email Threat Mitigation**: Content Disarm & Reconstruction (CDR) ensures safe email attachments.
+- **Secure Web Interaction**: A user-friendly UI for secure third-party processes.
+
+### Creative Ways that Clients are Using BrowserBox 
+
 - A user-friendly UI that allows clients to perform 3rd-party processes without leaving your website.
 - A fully customizable online hosted web browser that provides an alternative to downloadable browsers.
 - The ability to record web app interactions to document bugs by capturing the event stream and viewport.
@@ -192,7 +195,7 @@ BrowserBoxPro offers a wide array of features and potential applications, making
 
 For a comprehensive list of features and their availability in BrowserBoxPro, refer to the feature table below.
 
-## Features of BrowserBox Pro
+## Features of BrowserBox Pro in a Zero Trust Environment
 
 BrowserBox Pro offers an array of advanced features that set it apart from other versions of remote browser isolation. With fully open source-code, non-commercial use for free, frequent updates and cutting-edge technology, BrowserBox Pro provides an enhanced browsing experience with superior rendering, top-tier graphics, and minimal lag. Here are the key features of BrowserBox Pro:
 
@@ -221,7 +224,7 @@ These features make BrowserBox Pro the ideal choice for businesses and organizat
 
 For more information about commercial options and licensing, please refer to the relevant sections below.
 
-## Licensing
+## Licensing for Zero Trust
 
 BrowserBoxPro is licensed separately under the following licenses:
 
@@ -308,17 +311,13 @@ See [our website](https://dosyago.com) and [our GumRoad](https://dosy.gumroad.co
 - *Perpetual Packs contain multiple seats. For example, the 10-pack contains 10 licenses.*
 - *Each 'seat' represents a concurrent user.*
 
-## Elevate Your Cybersecurity with BrowserBoxPro
+## Elevate Your Zero Trust Strategy with BrowserBoxPro
 
-BrowserBoxPro is more than just a web browser. It's a security fortress, a vanguard for your data, and an ally to your privacy. Whether you are a cybersecurity professional, part of an IT department in a large corporation, or a government entity, BrowserBoxPro can help you safeguard sensitive data in an interconnected digital landscape.
+In the modern digital landscape, Zero Trust isn't just a model; it's a necessity. BrowserBoxPro stands as a testament to this, offering an unparalleled browsing experience while ensuring every interaction is verified, validated, and secure.
 
-What sets BrowserBoxPro apart is its cutting-edge technology, superior browsing experience, advanced security features, customization capabilities, and regular updates to protect against emerging threats. With its proprietary software and scalable infrastructure, BrowserBoxPro can adapt to the unique needs of your organization, regardless of its size or industry.
+Our commitment goes beyond just providing a product. We offer a partnership, ensuring that as the cybersecurity landscape evolves, so do our solutions. With BrowserBoxPro, you're not just adopting a tool; you're embracing a future where every interaction is secure.
 
-Our dedicated support and maintenance team is committed to ensuring your satisfaction. BrowserBoxPro delivers not just a product, but a partnership.
-
-Maximize your investment with our commercial options and unlock the full potential of BrowserBoxPro. Whether you are an individual server operator or a large corporation seeking a self-hosted solution, we have you covered. As part of our commercial package, you gain access to the premium features exclusive to BrowserBoxPro, along with the option for source-code access if required.
-
-Take the next step in fortifying your cybersecurity. Visit our website today to secure your commercial license and start your journey with BrowserBoxPro. Let's navigate the challenging cybersecurity landscape together.
+Join us in navigating the Zero Trust landscape. Secure your commercial license today and fortify your cybersecurity strategy with BrowserBoxPro.
 
 ## Copyright
 
