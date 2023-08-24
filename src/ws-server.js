@@ -111,6 +111,12 @@
       SAFARI_PERMISSION_LOADER_HTML
     ;
 
+  // Integrity check
+    const integrityFilePath = path.resolve(os.homedir(), 'BBPRO.INTEGRITY');
+    const INTEGRITY_FILE_CONTENT = fs.existsSync(integrityFilePath) ? 
+      fs.readFileSync(integrityFilePath).toString('utf8') : 'null-integrity-check';
+    DEBUG.debugIntegrity && console.log({integrityFileContent: INTEGRITY_FILE_CONTENT});
+
   // keep tabs organized
   const TabNumbers = new Map();
 
@@ -427,14 +433,8 @@
 
     wss.on('connection', async (ws, req) => {
       const connectionId = Math.random().toString(36) + (+ new Date).toString(36);
-      const qp = req.url.includes('?') ? 
-        req.url.slice(req.url.indexOf('?') + 1)
-        .split('&')
-        .filter(p => p.includes("session_token"))[0]
-        .split('=')[1]
-        
-        :
-        undefined;
+      const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
+      const qp = url.searchParams.get('session_token');
       const cookie = req.headers.cookie;
       const IP = req.connection.remoteAddress;
       let closed = false;
@@ -443,9 +443,7 @@
 
       zl.act.saveIP(IP);
 
-      const validAuth = DEBUG.dev || 
-        allowed_user_cookie == 'cookie' || 
-        (cookie && cookie.includes(`${COOKIENAME+port}=${allowed_user_cookie}`)) ||
+      const validAuth = (cookie && cookie.includes(`${COOKIENAME+port}=${allowed_user_cookie}`)) ||
         (qp && qp == session_token);
 
       if( validAuth ) {
@@ -758,211 +756,239 @@
     return server;
 
     function addHandlers() {
-      app.get(`/api/${version}/tabs`, wrap(async (req, res) => {
-        const cookie = req.cookies[COOKIENAME+port];
-        DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
-        DEBUG.debugCookie && console.log('all cookies', req.cookies);
-        if ( !DEBUG.dev && allowed_user_cookie !== 'cookie' &&
-          (cookie !== allowed_user_cookie) ) {
-          return res.status(401).send('{"err":"forbidden"}');
-        }
-        requestId++;
-        res.type('json');
-
-        let targets, vmPaused, modal;
-
-        try {
-          ({data:{targetInfos:targets, vmPaused, modal}} = await timedSend({
-            name: "Target.getTargets",
-            params: {
-              filter: [
-                {type: 'page'}
-              ]
-            },
-          }, zombie_port));
-
-          if ( targets ) {
-            if ( targets?.length === 1 ) {
-              zl.act.setHiddenTarget(targets[0].targetId, zombie_port);
-            }
-            targets = targets.filter(({targetId,type}) => { 
-              if ( type !== 'page' ) return false;
-              if ( ! zl.act.hasSession(targetId, zombie_port) ) return false;
-              return true;
-            });
-            targets = targets.map(t => {
-              if ( !TabNumbers.has(t.targetId) ) {
-                TabNumber++;
-                TabNumbers.set(t.targetId, TabNumber);
-              }
-              t.number = TabNumbers.get(t.targetId);
-              return t;
-            });
-            targets.sort(({number:A}, {number:B}) => A - B);
-
-            const activeTarget = zl.act.getActiveTarget(zombie_port);
-            zl.act.addTargets(targets, zombie_port);
-            res.end(JSON.stringify({tabs:targets,activeTarget,requestId,vmPaused, modal}));
-          } else {
-            res.end(JSON.stringify({vmPaused, modal}));
+      // core app interface functions
+        app.get(`/api/${version}/tabs`, wrap(async (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port];
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          if ( (cookie !== allowed_user_cookie) ) {
+            return res.status(401).send('{"err":"forbidden"}');
           }
-        } catch(e) {
-          console.warn('No target data from chrome. Normally means the VM is paused or Chrome is not open.', e);
-          /*throw e;*/
-        }
-      }));
-      app.post("/file", async (req,res) => {
-        const cookie = req.cookies[COOKIENAME+port];
-        if ( !DEBUG.dev && allowed_user_cookie !== 'cookie' &&
-          (cookie !== allowed_user_cookie) ) { 
-          return res.status(401).send('{"err":"forbidden"}');
-        }
-        const {files} = req;
-        const {sessionid:sessionId} = req.body;
-        const backendNodeId = fileChoosers.get(sessionId);
-        const action = ! files || files.length == 0 ? 'cancel' : 'accept';
-        /**
-        const fileInputResult = await zl.act.send({
-          name:"Runtime.evaluate",
-          params: {
-            expression: "self.zombieDosyLastClicked.fileInput"
-          }, 
-          definitelyWait: true,
-          sessionId
-        }, zombie_port);
-        console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
-        const objectId = fileInputResult.data.result.objectId;
-        **/
-        const command = {
-          name: "DOM.setFileInputFiles",
-          params: {
-            files: files && files.map(({path}) => path),
-            backendNodeId
-          },
-          sessionId
-        };
-        DEBUG.val > DEBUG.med && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
-        let result;
-        
-        try {
-          result = await zl.act.send(command, zombie_port);
-        } catch(e) {
-          console.log("Error sending file input command", e);
-        }
+          requestId++;
+          res.type('json');
 
-        DEBUG.val > DEBUG.med && console.log({fileResult:result});
+          let targets, vmPaused, modal;
 
-        if ( !result || result.error ) {
-          res.status(500).send(JSON.stringify({error:'there was an error attaching the files'}));
-        } else {
-          result = {
-            success: true,
-            files: files.map(({originalname,size}) => ({name:originalname,size}))
-          };
-          DEBUG.val > DEBUG.med && console.log("Sent files to file input", result, files);
-          res.json(result);
-        }
-      }); 
-      app.get("/settings_modal", (req, res) => {
-        const cookie = req.cookies[COOKIENAME+port];
-        if ( !DEBUG.dev && allowed_user_cookie !== 'cookie' &&
-          (cookie !== allowed_user_cookie) ) { 
-          return res.status(401).send('{"err":"forbidden"}');
-        }
-        res.status(200).send(` 
-          <form method=POST target=results>
-            <input type=hidden name=_csrf value=${LatestCSRFToken}>
-            <fieldset>
-              <button formaction=/restart_app>Restart app</button>
-              <button formaction=/stop_app>Stop app</button>
-              <button formaction=/stop_browser>Stop browser</button>
-            </fieldset>
-          </form>
-          <iframe style=display:none name=results>
-        `);
-      });
-      app.post("/restart_app", ConstrainedRateLimiter, (req, res) => {
-         /**
-            1. queue a restart task
-            2. add an exit handler
-              a. in exit handler check if pm2 is running us
-              process.env.PM2_USAGE && process.env.name exists
-              b. then call child_process.spawn
-            3. call process exit.
-            That's it
-         **/
-        if ( DEBUG.ensureUptimeBeforeRestart && process.uptime() < T2_MINUTES ) {
-          DEBUG.debugRestart && console.info(`Denying restart request, reason: app is up for less than 2 minutes`);
-          return res.status(403).send("deny");
-        }
-        let norestart = false;
-        DEBUG.debugRestart && console.info(`Queueing restart task...`);
-				timer = setTimeout(function () {
-					// Listen for the 'exit' event.
-					// This is emitted when our app exits.
-          DEBUG.debugRestart && console.info(`Adding exit handler`);
-					process.on("exit", function () {
-            if ( process.env.PM2_USAGE && process.env.name ) {
-              DEBUG.debugRestart && console.info(`pm2 is running us, switching off restart and just exiting,
-                as pm2 will restart us.`);
-              norestart = true;
-            }
-            if ( norestart ) {
-              DEBUG.debugRestart && console.info(`Not restarting this time.`);
-            }
-            DEBUG.debugRestart && console.info(`Spawning new process`, process.argv);
-						child_process.spawn(
-							process.argv.shift(),
-							process.argv,
-							{
-								cwd: process.cwd(),
-								detached: true,
-								stdio: "inherit"
-							}
-						);
-					});
-          DEBUG.debugRestart && console.info(`Exiting parent process`);
-					process.exit();
-				}, 1000);
-        DEBUG.debugRestart && console.info(`Adding SIGINT restart interrupt handler...`);
-        process.on('SIGINT', () => {
-          DEBUG.debugRestart && console.info(`Got SIGINT during restart cycle. Not restarting...`);
-          clearTimeout(timer);
-          norestart = true;
-        });
-        return res.status(200).send("requested");
-      });
-      app.post("/stop_app", ConstrainedRateLimiter, (req, res) => {
-        /**
-          call process.exit() if pm2 not running us.
-          if pm2 running us, call pm2 delete (our name)
-        **/
-        // queue a task to provide some time for jobs to complete on exit
-        setTimeout(() => console.log('Exiting...'), 5000);
-        console.log(process.env, process.argv, process.title);
-        if ( process.env.PM2_USAGE && process.env.name ) {
-          DEBUG.debugRestart && console.log(`Is pm2. Deleting pm2 name`, process.env.name);
           try {
-            console.log(child_process.execSync(`pm2 delete ${process.env.name}`).toString());
+            ({data:{targetInfos:targets, vmPaused, modal}} = await timedSend({
+              name: "Target.getTargets",
+              params: {
+                filter: [
+                  {type: 'page'}
+                ]
+              },
+            }, zombie_port));
+
+            if ( targets ) {
+              if ( targets?.length === 1 ) {
+                zl.act.setHiddenTarget(targets[0].targetId, zombie_port);
+              }
+              targets = targets.filter(({targetId,type}) => { 
+                if ( type !== 'page' ) return false;
+                if ( ! zl.act.hasSession(targetId, zombie_port) ) return false;
+                return true;
+              });
+              targets = targets.map(t => {
+                if ( !TabNumbers.has(t.targetId) ) {
+                  TabNumber++;
+                  TabNumbers.set(t.targetId, TabNumber);
+                }
+                t.number = TabNumbers.get(t.targetId);
+                return t;
+              });
+              targets.sort(({number:A}, {number:B}) => A - B);
+
+              const activeTarget = zl.act.getActiveTarget(zombie_port);
+              zl.act.addTargets(targets, zombie_port);
+              res.end(JSON.stringify({tabs:targets,activeTarget,requestId,vmPaused, modal}));
+            } else {
+              res.end(JSON.stringify({vmPaused, modal}));
+            }
           } catch(e) {
-            console.warn(e);
+            console.warn('No target data from chrome. Normally means the VM is paused or Chrome is not open.', e);
+            /*throw e;*/
           }
-        } else {
-          DEBUG.debugRestart && console.log(`Is not pm2. Exiting process`);
-          process.exit(0);
-        }
-      });
-      app.post("/stop_browser", async (req, res) => {
-        /**
-          kill the browser zombie from its pid file
-        **/
-        await zl.life.kill(zombie_port);
-      });
-      app.post("/start_browser", (req, res) => {
-        /**
-          launch a new browser (if one is not running)
-        **/
-      });
+        }));
+        app.post("/file", async (req,res) => {
+          const cookie = req.cookies[COOKIENAME+port];
+          if ( (cookie !== allowed_user_cookie) ) { 
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          const {files} = req;
+          const {sessionid:sessionId} = req.body;
+          const backendNodeId = fileChoosers.get(sessionId);
+          const action = ! files || files.length == 0 ? 'cancel' : 'accept';
+          /**
+          const fileInputResult = await zl.act.send({
+            name:"Runtime.evaluate",
+            params: {
+              expression: "self.zombieDosyLastClicked.fileInput"
+            }, 
+            definitelyWait: true,
+            sessionId
+          }, zombie_port);
+          console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
+          const objectId = fileInputResult.data.result.objectId;
+          **/
+          const command = {
+            name: "DOM.setFileInputFiles",
+            params: {
+              files: files && files.map(({path}) => path),
+              backendNodeId
+            },
+            sessionId
+          };
+          DEBUG.val > DEBUG.med && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
+          let result;
+          
+          try {
+            result = await zl.act.send(command, zombie_port);
+          } catch(e) {
+            console.log("Error sending file input command", e);
+          }
+
+          DEBUG.val > DEBUG.med && console.log({fileResult:result});
+
+          if ( !result || result.error ) {
+            res.status(500).send(JSON.stringify({error:'there was an error attaching the files'}));
+          } else {
+            result = {
+              success: true,
+              files: files.map(({originalname,size}) => ({name:originalname,size}))
+            };
+            DEBUG.val > DEBUG.med && console.log("Sent files to file input", result, files);
+            res.json(result);
+          }
+        }); 
+        app.get("/settings_modal", (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port];
+          if ( (cookie !== allowed_user_cookie) ) { 
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          res.status(200).send(` 
+            <form method=POST target=results>
+              <input type=hidden name=_csrf value=${LatestCSRFToken}>
+              <fieldset>
+                <button formaction=/restart_app>Restart app</button>
+                <button formaction=/stop_app>Stop app</button>
+                <button formaction=/stop_browser>Stop browser</button>
+              </fieldset>
+            </form>
+            <iframe style=display:none name=results>
+          `);
+        });
+      // app meta controls
+        app.post("/restart_app", ConstrainedRateLimiter, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port];
+          const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
+          const qp = url.searchParams.get('session_token');
+          if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+           /**
+              1. queue a restart task
+              2. add an exit handler
+                a. in exit handler check if pm2 is running us
+                process.env.PM2_USAGE && process.env.name exists
+                b. then call child_process.spawn
+              3. call process exit.
+              That's it
+           **/
+          if ( DEBUG.ensureUptimeBeforeRestart && process.uptime() < T2_MINUTES ) {
+            DEBUG.debugRestart && console.info(`Denying restart request, reason: app is up for less than 2 minutes`);
+            return res.status(403).send("deny");
+          }
+          let norestart = false;
+          DEBUG.debugRestart && console.info(`Queueing restart task...`);
+          timer = setTimeout(function () {
+            // Listen for the 'exit' event.
+            // This is emitted when our app exits.
+            DEBUG.debugRestart && console.info(`Adding exit handler`);
+            process.on("exit", function () {
+              if ( process.env.PM2_USAGE && process.env.name ) {
+                DEBUG.debugRestart && console.info(`pm2 is running us, switching off restart and just exiting,
+                  as pm2 will restart us.`);
+                norestart = true;
+              }
+              if ( norestart ) {
+                DEBUG.debugRestart && console.info(`Not restarting this time.`);
+              }
+              DEBUG.debugRestart && console.info(`Spawning new process`, process.argv);
+              child_process.spawn(
+                process.argv.shift(),
+                process.argv,
+                {
+                  cwd: process.cwd(),
+                  detached: true,
+                  stdio: "inherit"
+                }
+              );
+            });
+            DEBUG.debugRestart && console.info(`Exiting parent process`);
+            process.exit();
+          }, 1000);
+          DEBUG.debugRestart && console.info(`Adding SIGINT restart interrupt handler...`);
+          process.on('SIGINT', () => {
+            DEBUG.debugRestart && console.info(`Got SIGINT during restart cycle. Not restarting...`);
+            clearTimeout(timer);
+            norestart = true;
+          });
+          return res.status(200).send("requested");
+        });
+        app.post("/stop_app", ConstrainedRateLimiter, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port];
+          const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
+          const qp = url.searchParams.get('session_token');
+          if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          /**
+            call process.exit() if pm2 not running us.
+            if pm2 running us, call pm2 delete (our name)
+          **/
+          // queue a task to provide some time for jobs to complete on exit
+          setTimeout(() => console.log('Exiting...'), 5000);
+          console.log(process.env, process.argv, process.title);
+          if ( process.env.PM2_USAGE && process.env.name ) {
+            DEBUG.debugRestart && console.log(`Is pm2. Deleting pm2 name`, process.env.name);
+            try {
+              console.log(child_process.execSync(`pm2 delete ${process.env.name}`).toString());
+            } catch(e) {
+              console.warn(e);
+            }
+          } else {
+            DEBUG.debugRestart && console.log(`Is not pm2. Exiting process`);
+            process.exit(0);
+          }
+        });
+        app.post("/stop_browser", async (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port];
+          const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
+          const qp = url.searchParams.get('session_token');
+          if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          /**
+            kill the browser zombie from its pid file
+          **/
+          await zl.life.kill(zombie_port);
+        });
+        app.post("/start_browser", (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port];
+          const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
+          const qp = url.searchParams.get('session_token');
+          if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          /**
+            launch a new browser (if one is not running)
+          **/
+        });
+      // app integrity check
+        app.get("/integrity", ConstrainedRateLimiter, (req, res) => {
+          res.type('text');
+          res.status(200).send(INTEGRITY_FILE_CONTENT);
+        });
       // error handling middleware
         app.use('*', (err, req, res, next) => {
           try {
