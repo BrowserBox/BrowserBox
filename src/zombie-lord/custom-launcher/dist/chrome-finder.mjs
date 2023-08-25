@@ -5,6 +5,7 @@
  */
 'use strict';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import child_process_2 from 'child_process';
 import log from 'lighthouse-logger';
@@ -80,7 +81,7 @@ export function linux() {
     }
     // 2. Look into the directories where .desktop are saved on gnome based distro's
     const desktopInstallationFolders = [
-        path.join(require('os').homedir(), '.local/share/applications/'),
+        path.join(os.homedir(), '.local/share/applications/'),
         '/usr/share/applications/',
     ];
     desktopInstallationFolders.forEach(folder => {
