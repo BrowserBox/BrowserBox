@@ -284,7 +284,7 @@
     app.use(upload.array("files", 10));
     app.use(csrf({cookie: {sameSite: 'None', secure:true}}));
     app.use((req, res, next) => {
-      const newOrigin = `${req.protocol}://${req.get('host')}`;
+      const newOrigin = `${req.protocol}://${req.headers.host}`;
       if ( newOrigin !== serverOrigin ) {
         serverOrigin = newOrigin;
         DEBUG.showOrigin && console.log({serverOrigin});
@@ -433,7 +433,7 @@
 
     wss.on('connection', async (ws, req) => {
       const connectionId = Math.random().toString(36) + (+ new Date).toString(36);
-      const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
+      const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
       const qp = url.searchParams.get('session_token');
       const cookie = req.headers.cookie;
       const IP = req.connection.remoteAddress;
@@ -880,7 +880,7 @@
       // app meta controls
         app.post("/restart_app", ConstrainedRateLimiter, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port];
-          const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
+          const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
           const qp = url.searchParams.get('session_token');
           if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
             return res.status(401).send('{"err":"forbidden"}');
@@ -937,7 +937,7 @@
         });
         app.post("/stop_app", ConstrainedRateLimiter, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port];
-          const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
+          const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
           const qp = url.searchParams.get('session_token');
           if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
             return res.status(401).send('{"err":"forbidden"}');
@@ -963,7 +963,7 @@
         });
         app.post("/stop_browser", async (req, res) => {
           const cookie = req.cookies[COOKIENAME+port];
-          const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
+          const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
           const qp = url.searchParams.get('session_token');
           if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
             return res.status(401).send('{"err":"forbidden"}');
@@ -975,7 +975,7 @@
         });
         app.post("/start_browser", (req, res) => {
           const cookie = req.cookies[COOKIENAME+port];
-          const url = new URL(req.url, `${req.protocol}://${req.get('host')}`);
+          const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
           const qp = url.searchParams.get('session_token');
           if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
             return res.status(401).send('{"err":"forbidden"}');
