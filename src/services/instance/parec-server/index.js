@@ -27,7 +27,7 @@ import {
 } from '../../../common.js';
 const DEBUG = {
   showAllData: false,
-  showDroppedSilents: true,
+  showDroppedSilents: false,
   showPrimeFilter: false,
   showPrimeChecks: false,
   showAllMessages: false,
