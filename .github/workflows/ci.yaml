@@ -77,15 +77,19 @@ jobs:
         base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oP 'https?://[^/]+')
         token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oP 'token=\K[^&]+') # Extract the token parameter
         integrity_url="${base_url}/integrity?session_token=${token}" # Construct the integrity URL
-        integrity_content=$(curl -L -o /dev/null -s "$integrity_url")
         integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
-        echo "base url: $base_url" 
-        echo "token: $token" 
-        echo "iurl: $integrity_url" 
-        echo "ic: $integrity_content" 
-        echo "ifc: $integrity_file_content"
-        if [[ "$integrity_content" != "$integrity_file_content" ]]; then
-          echo "Error: Integrity check failed for application."
+        success=0
+        for i in {1..10}; do
+          echo "Attempt $i to check integrity..."
+          integrity_content=$(curl -L -o /dev/null -s "$integrity_url")
+          if [[ "$integrity_content" == "$integrity_file_content" ]]; then
+            success=1
+            break
+          fi
+          sleep 7
+        done
+        if [[ "$success" -eq 0 ]]; then
+          echo "Error: Integrity check failed for application after 10 attempts."
           exit 1
         fi
 
