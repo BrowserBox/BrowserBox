@@ -27,13 +27,13 @@ import {
 } from '../../../common.js';
 const DEBUG = {
   showAllData: false,
-  showDroppedSilents: false,
+  showDroppedSilents: true,
   showPrimeFilter: false,
   showPrimeChecks: false,
   showAllMessages: false,
   showAcks: false,
   showConnections: true,
-  val: 0,
+  val: 1,
   showFormat: true,
   mode: 'dev',
   goSecure: true

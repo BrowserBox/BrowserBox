@@ -17,6 +17,7 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
+  showFlags: true,
   allowExternalChrome: true,
   logFileCommands: false,
   showTodos: false,

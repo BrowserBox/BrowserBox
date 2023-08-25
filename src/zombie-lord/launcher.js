@@ -185,6 +185,7 @@ const launcher_api = {
     if ( DEBUG.noAudio ) {
       CHROME_FLAGS.push('--mute-audio');
     }
+    DEBUG.showFlags && console.log({chromeFlags: CHROME_FLAGS});
     const CHROME_OPTS = {
       port,
       ignoreDefaultFlags: true,
