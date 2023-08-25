@@ -43,7 +43,7 @@ export const DEBUG = Object.freeze({
   HFUNCTION: false,
   debugCopyPaste: false,
   trackLoading: true,
-  debugAudioAck: true,
+  debugAudioAck: false,
   debugFastest: false,
   useStraightAudioStream: false,
   get includeAudioElementAnyway() {
@@ -56,7 +56,7 @@ export const DEBUG = Object.freeze({
   showCollect: false,
   debugFocus: false,
   debugAuth: false,
-  debugAudio: true,
+  debugAudio: false,
   debugModal: false,
   get debugMeta() {
     return  (this.debugFavicon > 1) || 0;

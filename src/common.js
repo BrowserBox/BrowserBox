@@ -17,7 +17,7 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
-  showFlags: true,
+  showFlags: false,
   allowExternalChrome: true,
   logFileCommands: false,
   showTodos: false,
@@ -72,7 +72,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
+  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: true,
   useFlashEmu: false,
   showFlash: false, /* debug flash */
