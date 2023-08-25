@@ -4,7 +4,7 @@ import {EventEmitter} from 'node:events';
 import os from 'os';
 import fs from 'fs';
 import isDocker from 'is-docker';
-import {launch as ChromeLauncher} from './custom-launcher/dist/chrome-launcher.js';
+import {launch as ChromeLauncher} from './custom-launcher/dist/chrome-launcher.mjs';
 import {sleep, DEBUG, CONFIG, untilForever} from '../common.js';
 import {COMMON_FORMAT} from './screenShots.js';
 

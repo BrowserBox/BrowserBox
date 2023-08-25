@@ -4,15 +4,16 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
 'use strict';
-Object.defineProperty(exports, "__esModule", { value: true });
-const fs = require('fs');
-const path = require('path');
-const execSync = require('child_process').execSync;
-const execFileSync = require('child_process').execFileSync;
-const log = require('lighthouse-logger');
-const utils_1 = require("./utils");
+import fs from 'fs';
+import path from 'path';
+import child_process_2 from 'child_process';
+import log from 'lighthouse-logger';
+import * as utils_1 from './utils.mjs';
+
+const {execSync, execFileSync} = child_process_2;
+
 const newLineRegex = /\r?\n/;
-function darwin() {
+export function darwin() {
     const suffixes = ['/Contents/MacOS/Google Chrome Canary', '/Contents/MacOS/Google Chrome'];
     const LSREGISTER = '/System/Library/Frameworks/CoreServices.framework' +
         '/Versions/A/Frameworks/LaunchServices.framework' +
@@ -54,7 +55,6 @@ function darwin() {
     // clang-format on
     return sort(installations, priorities);
 }
-exports.darwin = darwin;
 function resolveChromePath() {
     if (canAccess(`${process.env.CHROME_PATH}`)) {
         return process.env.CHROME_PATH;
@@ -71,7 +71,7 @@ function resolveChromePath() {
  * 2. Look into the directories where .desktop are saved on gnome based distro's
  * 3. Look for google-chrome-stable & google-chrome executables by using the which command
  */
-function linux() {
+export function linux() {
     let installations = [];
     // 1. Look into CHROME_PATH env variable
     const customChromePath = resolveChromePath();
@@ -122,16 +122,14 @@ function linux() {
     }
     return sort(uniq(installations.filter(Boolean)), priorities);
 }
-exports.linux = linux;
-function wsl() {
+export function wsl() {
     // Manually populate the environment variables assuming it's the default config
     process.env.LOCALAPPDATA = utils_1.getLocalAppDataPath(`${process.env.PATH}`);
     process.env.PROGRAMFILES = '/mnt/c/Program Files';
     process.env['PROGRAMFILES(X86)'] = '/mnt/c/Program Files (x86)';
     return win32();
 }
-exports.wsl = wsl;
-function win32() {
+export function win32() {
     const installations = [];
     const suffixes = [
         `${path.sep}Google${path.sep}Chrome SxS${path.sep}Application${path.sep}chrome.exe`,
@@ -152,7 +150,6 @@ function win32() {
     }));
     return installations;
 }
-exports.win32 = win32;
 function sort(installations, priorities) {
     const defaultPriority = 10;
     return installations
