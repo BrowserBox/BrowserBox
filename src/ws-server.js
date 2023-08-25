@@ -986,6 +986,12 @@
         });
       // app integrity check
         app.get("/integrity", ConstrainedRateLimiter, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port];
+          const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
+          const qp = url.searchParams.get('session_token');
+          if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
+            return res.status(401).send('{"err":"forbidden"}');
+          }
           res.type('text');
           res.status(200).send(INTEGRITY_FILE_CONTENT);
         });
