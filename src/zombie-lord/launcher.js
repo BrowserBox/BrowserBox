@@ -129,13 +129,15 @@ const launcher_api = {
         I added this after running local development on my MacBook and seeing my YouTube downloads disappear
         I don't know if they are connected, but they could be, so removing these to be sure :) ;p xxx;p 
       */
+      /*
       ...(
-        process.platform === "darwin" ? [
+        process.platform !== "darwin" ? [
           '--profiling-flush=1',
           '--enable-aggressive-domstorage-flushing',
           '--disk-cache-size=2750000000',
         ] : []
       ),
+      */
 
       /**
         webgl and 3d api related (
