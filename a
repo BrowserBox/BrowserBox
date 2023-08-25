@@ -82,11 +82,6 @@ jobs:
         for i in {1..10}; do
           echo "Attempt $i to check integrity..."
           integrity_content=$(curl -L -s "$integrity_url")
-          echo "base url: $base_url" 
-          echo "token: $token" 
-          echo "iurl: $integrity_url" 
-          echo "ic: $integrity_content" 
-          echo "ifc: $integrity_file_content"
           if [[ "$integrity_content" == "$integrity_file_content" ]]; then
             success=1
             break
