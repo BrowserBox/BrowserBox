@@ -51,6 +51,11 @@ jobs:
         output=$(setup_bbpro --port 8080)
         echo "::set-output name=suffix::${output#*https://localhost:8080}"
 
+    - name: Create BBPRO.INTEGRITY file
+      run: |
+        random_string=$(openssl rand -base64 32) # Generate a random string
+        echo "$random_string" > $HOME/BBPRO.INTEGRITY
+
     - name: Start server & ngrok tunnel
       run: |
         bbpro &
@@ -66,6 +71,16 @@ jobs:
         complete_url="${url}${suffix}"
         echo "::set-output name=url::$complete_url"
         echo $complete_url
+
+    - name: Check integrity route
+      run: |
+        url="${{ steps.ngrok.outputs.url }}/integrity?session_token=$(echo '${{ steps.ngrok.outputs.url }}' | grep -oP 'token=\K[^&]+')"
+        integrity_content=$(curl -L -o /dev/null -s "$url")
+        integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
+        if [[ "$integrity_content" != "$integrity_file_content" ]]; then
+          echo "Error: Integrity check failed for application."
+          exit 1
+        fi
 
     - name: Print ngrok URL
       run: echo "The complete ngrok URL is ${{ steps.ngrok.outputs.url }}"
