@@ -4,7 +4,7 @@ import {EventEmitter} from 'node:events';
 import os from 'os';
 import fs from 'fs';
 import isDocker from 'is-docker';
-import {launch as ChromeLauncher} from './custom-launcher/dist/chrome-launcher.js';
+import {launch as ChromeLauncher} from './custom-launcher/dist/chrome-launcher.mjs';
 import {sleep, DEBUG, CONFIG, untilForever} from '../common.js';
 import {COMMON_FORMAT} from './screenShots.js';
 
@@ -129,13 +129,15 @@ const launcher_api = {
         I added this after running local development on my MacBook and seeing my YouTube downloads disappear
         I don't know if they are connected, but they could be, so removing these to be sure :) ;p xxx;p 
       */
+      /*
       ...(
-        process.platform === "darwin" ? [
+        process.platform !== "darwin" ? [
           '--profiling-flush=1',
           '--enable-aggressive-domstorage-flushing',
           '--disk-cache-size=2750000000',
         ] : []
       ),
+      */
 
       /**
         webgl and 3d api related (
@@ -185,6 +187,7 @@ const launcher_api = {
     if ( DEBUG.noAudio ) {
       CHROME_FLAGS.push('--mute-audio');
     }
+    DEBUG.showFlags && console.log({chromeFlags: CHROME_FLAGS});
     const CHROME_OPTS = {
       port,
       ignoreDefaultFlags: true,

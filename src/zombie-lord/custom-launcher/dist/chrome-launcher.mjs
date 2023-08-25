@@ -4,6 +4,23 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
 'use strict';
+
+import childProcess from "child_process";
+import fs from "fs";
+import os from "os";
+import path from "path";
+import net from "net";
+import rimraf from "rimraf";
+import * as chromeFinder from "./chrome-finder.mjs";
+import * as random_port_1 from "./random-port.mjs";
+import * as flags_1 from "./flags.js";
+import * as utils_1 from "./utils.mjs";
+import log from 'lighthouse-logger';
+
+const { spawn, execSync } = childProcess;
+const isWsl = utils_1.getPlatform() === 'wsl';
+const isWindows = utils_1.getPlatform() === 'win32';
+
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
   return new (P || (P = Promise))(function (resolve, reject) {
     function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12,22 +29,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-const childProcess = require("child_process");
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
-const net = require("net");
-const rimraf = require("rimraf");
-const chromeFinder = require("./chrome-finder");
-const random_port_1 = require("./random-port");
-const flags_1 = require("./flags");
-const utils_1 = require("./utils");
-const log = require('lighthouse-logger');
-const spawn = childProcess.spawn;
-const execSync = childProcess.execSync;
-const isWsl = utils_1.getPlatform() === 'wsl';
-const isWindows = utils_1.getPlatform() === 'win32';
+
 const _SIGINT = 'SIGINT';
 //const _SIGINT_EXIT_CODE = 130;
 const _SUPPORTED_PLATFORMS = new Set(['darwin', 'linux', 'win32', 'wsl']);
@@ -42,7 +44,7 @@ const sigintListener = () => __awaiter(this, void 0, void 0, function* () {
     }
   }
 });
-async function launch(opts = {}) {
+export async function launch(opts = {}) {
   const common = await import("../../../common.js");
   const {DEBUG} = common;
   return __awaiter(this, void 0, void 0, function* () {
@@ -73,8 +75,7 @@ async function launch(opts = {}) {
     }
   });
 }
-exports.launch = launch;
-class Launcher {
+export default class Launcher {
   constructor(opts = {}, moduleOverrides = {}) {
     this.opts = opts;
     this.tmpDirandPidFileReady = false;
@@ -305,6 +306,4 @@ class Launcher {
     });
   }
 }
-exports.Launcher = Launcher;
 
-exports.default = Launcher;

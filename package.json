@@ -83,7 +83,7 @@
     "cors": "latest",
     "csurf": "latest",
     "entities": "latest",
-    "esbuild": "0.18.17",
+    "esbuild": "0.19.2",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "latest",
@@ -115,6 +115,6 @@
     "parcel": "latest",
     "parcel-resolver-ignore": "latest",
     "pkg": "latest",
-    "whatwg-fetch": "latest"
+    "whatwg-fetch": "^3.6.17"
   }
 }

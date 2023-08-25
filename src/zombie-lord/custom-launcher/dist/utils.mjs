@@ -4,6 +4,12 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
  */
 'use strict';
+
+import path from 'path';
+import fs from 'fs';
+import isWsl from 'is-wsl';
+import child_process_1 from 'child_process';
+
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -12,22 +18,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-Object.defineProperty(exports, "__esModule", { value: true });
-const path_1 = require("path");
-const child_process_1 = require("child_process");
-const fs = require("fs");
-const isWsl = require('is-wsl');
-function defaults(val, def) {
+
+export function defaults(val, def) {
     return typeof val === 'undefined' ? def : val;
 }
-exports.defaults = defaults;
-function delay(time) {
+export function delay(time) {
     return __awaiter(this, void 0, void 0, function* () {
         return new Promise(resolve => setTimeout(resolve, time));
     });
 }
-exports.delay = delay;
-class LauncherError extends Error {
+export class LauncherError extends Error {
     constructor(message = 'Unexpected error', code) {
         super();
         this.message = message;
@@ -36,44 +36,38 @@ class LauncherError extends Error {
         return this;
     }
 }
-exports.LauncherError = LauncherError;
-class ChromePathNotSetError extends LauncherError {
+export class ChromePathNotSetError extends LauncherError {
     constructor() {
         super(...arguments);
         this.message = 'The environment variable CHROME_PATH must be set to executable of a build of Chromium version 54.0 or later.';
         this.code = "ERR_LAUNCHER_PATH_NOT_SET" /* ERR_LAUNCHER_PATH_NOT_SET */;
     }
 }
-exports.ChromePathNotSetError = ChromePathNotSetError;
-class InvalidUserDataDirectoryError extends LauncherError {
+export class InvalidUserDataDirectoryError extends LauncherError {
     constructor() {
         super(...arguments);
         this.message = 'userDataDir must be false or a path.';
         this.code = "ERR_LAUNCHER_INVALID_USER_DATA_DIRECTORY" /* ERR_LAUNCHER_INVALID_USER_DATA_DIRECTORY */;
     }
 }
-exports.InvalidUserDataDirectoryError = InvalidUserDataDirectoryError;
-class UnsupportedPlatformError extends LauncherError {
+export class UnsupportedPlatformError extends LauncherError {
     constructor() {
         super(...arguments);
         this.message = `Platform ${getPlatform()} is not supported.`;
         this.code = "ERR_LAUNCHER_UNSUPPORTED_PLATFORM" /* ERR_LAUNCHER_UNSUPPORTED_PLATFORM */;
     }
 }
-exports.UnsupportedPlatformError = UnsupportedPlatformError;
-class ChromeNotInstalledError extends LauncherError {
+export class ChromeNotInstalledError extends LauncherError {
     constructor() {
         super(...arguments);
         this.message = 'No Chrome installations found.';
         this.code = "ERR_LAUNCHER_NOT_INSTALLED" /* ERR_LAUNCHER_NOT_INSTALLED */;
     }
 }
-exports.ChromeNotInstalledError = ChromeNotInstalledError;
-function getPlatform() {
+export function getPlatform() {
     return isWsl ? 'wsl' : process.platform;
 }
-exports.getPlatform = getPlatform;
-function makeTmpDir() {
+export function makeTmpDir() {
     switch (getPlatform()) {
         case 'darwin':
         case 'linux':
@@ -87,8 +81,7 @@ function makeTmpDir() {
             throw new UnsupportedPlatformError();
     }
 }
-exports.makeTmpDir = makeTmpDir;
-function toWinDirFormat(dir = '') {
+export function toWinDirFormat(dir = '') {
     const results = /\/mnt\/([a-z])\//.exec(dir);
     if (!results) {
         return dir;
@@ -97,14 +90,12 @@ function toWinDirFormat(dir = '') {
     return dir.replace(`/mnt/${driveLetter}/`, `${driveLetter.toUpperCase()}:\\`)
         .replace(/\//g, '\\');
 }
-exports.toWinDirFormat = toWinDirFormat;
-function getLocalAppDataPath(path) {
+export function getLocalAppDataPath(path) {
     const userRegExp = /\/mnt\/([a-z])\/Users\/([^\/:]+)\/AppData\//;
     const results = userRegExp.exec(path) || [];
     return `/mnt/${results[1]}/Users/${results[2]}/AppData/Local`;
 }
-exports.getLocalAppDataPath = getLocalAppDataPath;
-function makeUnixTmpDir() {
+export function makeUnixTmpDir() {
     return child_process_1.execSync('mktemp -d -t lighthouse.XXXXXXX').toString().trim();
 }
 function makeWin32TmpDir() {
