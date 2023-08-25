@@ -5,8 +5,8 @@ echo "Starting viewfinder service cluster as $username"
 
 get_install_dir() {
   echo "Finding bbpro installation..."
-  install_path1=$(find /usr/local/share -name .bbpro_install_dir -print -quit 2>/dev/null)
-  install_path2=$(find $HOME -name .bbpro_install_dir -print -quit 2>/dev/null)
+  install_path1=$(find $HOME -name .bbpro_install_dir -print -quit 2>/dev/null)
+  install_path2=$(find /usr/local/share -name .bbpro_install_dir -print -quit 2>/dev/null)
   install_dir=$(dirname $install_path1)
   if [ -z "$install_dir" ]; then 
     install_dir=$(dirname $install_path2)
