@@ -176,24 +176,28 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
         mediaSrc: [
           "'self'",
           "https://localhost:*",
-          "https://*.dosyago.com:*"
+          "https://*.dosyago.com:*",
+          "https://*.browserbox.pro:*"
         ],
         frameSrc: [
           "'self'",
           `https://*.dosyago.com:${PORT+1}`,
           `https://*.dosyago.com:${PORT+2}`,
           `https://*.dosyago.com:${PORT+3}`,
+          "https://*.browserbox.pro:*",
           ...ALLOWED_3RD_PARTY_EMBEDDERS
         ],
         frameAncestors: [
           "'self'",
           "https://*.dosyago.com:*",
+          "https://*.browserbox.pro:*",
           ...ALLOWED_3RD_PARTY_EMBEDDERS
         ],
         connectSrc: [
           "'self'",
           "wss://*.dosyago.com:*",
-          `https://*.dosyago.com:${PORT+1}`
+          `https://*.dosyago.com:${PORT+1}`,
+          "wss://*.browserbox.pro:*"
         ],
         styleSrc: [
           "'self'", 
