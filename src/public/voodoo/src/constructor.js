@@ -1157,7 +1157,7 @@
                 console.warn(e);
               }
             } else {
-              writeCanvas("");
+              //writeCanvas("");
               //writeCanvas("\u{1f608}", {Y:y => y + 50, noClear: true})
             }
           }
@@ -1741,7 +1741,7 @@
                   </html>
                 `);
                 **/
-                writeCanvas("");
+                //writeCanvas("");
                 if ( ! state.viewState.omniBoxInput ) {
                   console.warn(`No omni box found yet.`);
                   return;
