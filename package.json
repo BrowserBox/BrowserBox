@@ -115,6 +115,6 @@
     "parcel": "latest",
     "parcel-resolver-ignore": "latest",
     "pkg": "latest",
-    "whatwg-fetch": "^3.6.17"
+    "whatwg-fetch": "^3.6.18"
   }
 }

@@ -1133,7 +1133,7 @@
           const {canvasEl: canvas, ctx} = this.state.viewState;
           if ( false && clearNextFrame ) {
             clearNextFrame = false;
-            ctx.clearRect(0,0,canvas.width,canvas.height);
+            //ctx.clearRect(0,0,canvas.width,canvas.height);
             clearInterval(this[$].clearInterval);
             //this[$].clearInterval = setTimeout(() => clearNextFrame = true, 1001);
           }

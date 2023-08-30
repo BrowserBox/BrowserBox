@@ -1193,6 +1193,7 @@
         }
 
         function clearViewport() {
+	  return;
           if ( state.useViewFrame ) {
             try {
               state.viewState.viewFrameEl.contentDocument.body.innerHTML = ``;
