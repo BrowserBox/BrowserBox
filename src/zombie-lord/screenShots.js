@@ -38,13 +38,13 @@ export const MAX_FRAMES = 2; /* 1, 2, 4 */
 const MIN_JPG_QUAL = 25;
 const MAX_JPG_QUAL = 78;
 const MAX_NTH_FRAME = 3;
-export const MIN_TIME_BETWEEN_SHOTS = 50; /* 20, 40, 100, 250, 500 */
-export const MIN_TIME_BETWEEN_TAIL_SHOTS = 250;
-export const MAX_TIME_BETWEEN_TAIL_SHOTS = 3000;
-export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 200;
+export const MIN_TIME_BETWEEN_SHOTS = 40; /* 20, 40, 100, 250, 500 */
+export const MIN_TIME_BETWEEN_TAIL_SHOTS = 175;
+export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
+export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
 export const MAX_ROUNDTRIP = 325;
 export const MIN_ROUNDTRIP = 125;
-export const MIN_SPOT_ROUNDTRIP = 180;
+export const MIN_SPOT_ROUNDTRIP = 125;
 export const BUF_SEND_TIMEOUT = 415;
 const NOIMAGE = {img: '', frame:0};
 const KEYS = [
@@ -84,7 +84,6 @@ export function makeCamera(connection) {
   let tailShot, tailShotDelay = MIN_TIME_BETWEEN_TAIL_SHOTS;
 
   const nextTailShot = async () => {
-    return;
     DEBUG.shotDebug && console.log("Tail shot");
     tailShotDelay *= 1.618;
     if ( tailShotDelay < MAX_TIME_BETWEEN_TAIL_SHOTS ) {
