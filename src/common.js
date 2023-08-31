@@ -66,7 +66,7 @@ export const DEBUG = Object.freeze({
   useLoopbackIP: true,
   debugAuth: false,
   pausedDebug: false,
-  useWebRTC: true,
+  useWebRTC: false,
   binaryFrames: true,
   sendImmediate: true,
   chooseFastest: true,
@@ -78,7 +78,7 @@ export const DEBUG = Object.freeze({
   showFlash: false, /* debug flash */
   loadSPLFreshEachLogin: false,
   frameDebug: false,
-  adaptiveImagery: true,
+  adaptiveImagery: false,
   debugAdaptiveImagery: false,
   useGL: true,
   disableGL: false,

@@ -115,10 +115,11 @@ const launcher_api = {
     if ( chrome_started ) {
       DEBUG.val && console.log(`Ignoring launch request as chrome already started.`);
     }
-    const DEFAULT_FLAGS = [
+    const DEFAULT_FLAGS = process.platform == 'darwin' ? [
+      
+    ] : [
       `--window-size=${COMMON_FORMAT.width},${COMMON_FORMAT.height}`,
       `--crash-dumps-dir=${crashDir}`,
-      '--restore-last-session',
       `--profile-directory="${upd}"`,
       ...(
         CONFIG.forceContentDarkMode ? [
@@ -165,7 +166,7 @@ const launcher_api = {
     DEBUG.val && console.log(`Chrome Number: ${chromeNumber}, Executing chrome-launcher`);
     const CHROME_FLAGS = Array.from(DEFAULT_FLAGS);
     if (!process.env.DEBUG_SKATEBOARD) {
-      CHROME_FLAGS.push('--headless'); 
+      CHROME_FLAGS.push('--headless=new'); 
     } else {
       CHROME_FLAGS.push('--no-sandbox'); 
     }
@@ -192,11 +193,13 @@ const launcher_api = {
       port,
       ignoreDefaultFlags: true,
       handleSIGINT: false,
-      userDataDir: path.resolve(CONFIG.baseDir, 'browser-cache'),
+      userDataDir: process.platform == 'darwin' ? false : path.resolve(CONFIG.baseDir, 'browser-cache'),
       logLevel: 'verbose',
       chromeFlags: CHROME_FLAGS
     };
-    fs.mkdirSync(CHROME_OPTS.userDataDir, {recursive:true});
+    if ( CHROME_OPTS.userDataDir ) {
+      fs.mkdirSync(CHROME_OPTS.userDataDir, {recursive:true});
+    }
     DEBUG.val && console.log(CHROME_OPTS, CHROME_FLAGS);
     const zomb = await ChromeLauncher(CHROME_OPTS);
 
