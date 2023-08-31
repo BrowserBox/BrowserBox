@@ -1011,7 +1011,7 @@
     }
 
     checkForBufferedFrames(events) {
-      if ( DEBUG.regularFrameCheck ) return;
+      if ( !DEBUG.regularFrameCheck ) return;
       if ( this.willCollectBufferedFrame ) {
         clearTimeout(this.willCollectBufferedFrame);
         this.willCollectBufferedFrame = false;
@@ -1021,7 +1021,7 @@
     }
 
     maybeCheckForBufferedFrames(events) {
-      if ( DEBUG.regularFrameCheck ) return;
+      if ( !DEBUG.regularFrameCheck ) return;
       if ( meetsCollectBufferedFrameCondition(this.publics.queue, events) ) {
         if ( this.willCollectBufferedFrame ) {
           clearTimeout(this.willCollectBufferedFrame);
