@@ -34,42 +34,57 @@ const FORCE_SOFTWARE_GL_FLAGS = [
 // (some people's puppeteer, low resource usage flags)
 // found i don't need
 const PUPPETEER_RESOURCE_SAVING_FLAGS = [
-  '--disable-dev-shm-usage',
-  '--disable-accelerated-2d-canvas',
-  '--disable-gpu',
+  '--no-experiments',
+  '--no-crash-upload',
+  '--no-pings',
+  '--no-proxy-server',
+  '--no-report-upload',
+  '--no-vr-runtime',
+  '--no-service-autorun',
+  '--force-launch-browser',
+  /*'--disable-dev-shm-usage',*/
+  /*'--disable-accelerated-2d-canvas',*/
+  /*'--disable-gpu',*/
   '--window-position=0,0',
   '--disable-renderer-backgrounding',
-  '--disable-background-networking',
+  /*'--disable-background-networking',*/
+  /*'--disable-webgl2',*/
+  /*'--disable-webgl',*/
+  /*'--disable-3d-apis',*/
+  '--disable-backgrounding-occluded-windows',
+  '--disable-features=CalculateNativeWinOcclusion',
 ];
 
 // disabled (some people's puppeteer stability flags)
 // found i don't need
 const PUPPETEER_STABILITY_FLAGS = [
-          '--enable-features=NetworkService,NetworkServiceInProcess',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-breakpad',
-          '--disable-client-side-phishing-detection',
-          '--disable-component-extensions-with-background-pages',
-          '--disable-default-apps',
-          '--disable-dev-shm-usage',
-          '--disable-extensions',
-          '--disable-features=Translate',
-          '--disable-hang-monitor',
-          '--disable-ipc-flooding-protection',
-          '--disable-popup-blocking',
-          '--disable-prompt-on-repost',
-          '--disable-renderer-backgrounding',
-          '--disable-sync',
-          '--force-color-profile=srgb',
-          '--metrics-recording-only',
-          '--no-first-run',
-          '--enable-automation',
-          '--password-store=basic',
-          '--use-mock-keychain',
-          // TODO(sadym): remove '--enable-blink-features=IdleDetection'
-          // once IdleDetection is turned on by default.
-          '--enable-blink-features=IdleDetection',
+  '--enable-features=NetworkService,NetworkServiceInProcess',
+  '--disable-background-timer-throttling',
+  '--disable-backgrounding-occluded-windows',
+  '--disable-breakpad',
+  '--disable-client-side-phishing-detection',
+  '--disable-component-extensions-with-background-pages',
+  '--disable-default-apps',
+  /*'--disable-dev-shm-usage',*/
+  '--disable-extensions',
+  '--disable-features=Translate',
+  '--disable-hang-monitor',
+  /*'--disable-ipc-flooding-protection',*/
+  '--disable-popup-blocking',
+  '--disable-prompt-on-repost',
+  '--disable-renderer-backgrounding',
+  '--disable-sync',
+  '--force-color-profile=srgb',
+  '--metrics-recording-only',
+  '--no-first-run',
+  '--disable-features=InterestFeedContentSuggestions',
+  '--enable-automation',
+  '--password-store=basic',
+  '--use-mock-keychain',
+  '--no-default-browser-check',
+  // TODO(sadym): remove '--enable-blink-features=IdleDetection'
+  // once IdleDetection is turned on by default.
+  '--enable-blink-features=IdleDetection',
 ];
 
 // I don't use these and have only seen them mentioned to reduce crashes
@@ -103,7 +118,6 @@ const MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY = [
   '--metrics-recording-only',
 ];
 
-
 const launcher_api = {
   async newZombie({port, /*username*/}) {
     const crashDir = path.resolve(CONFIG.baseDir, 'browser-crashes');
@@ -116,7 +130,8 @@ const launcher_api = {
       DEBUG.val && console.log(`Ignoring launch request as chrome already started.`);
     }
     const DEFAULT_FLAGS = process.platform == 'darwin' ? [
-      
+      ... PUPPETEER_STABILITY_FLAGS,
+      ... PUPPETEER_RESOURCE_SAVING_FLAGS,
     ] : [
       `--window-size=${COMMON_FORMAT.width},${COMMON_FORMAT.height}`,
       `--crash-dumps-dir=${crashDir}`,
@@ -166,7 +181,7 @@ const launcher_api = {
     DEBUG.val && console.log(`Chrome Number: ${chromeNumber}, Executing chrome-launcher`);
     const CHROME_FLAGS = Array.from(DEFAULT_FLAGS);
     if (!process.env.DEBUG_SKATEBOARD) {
-      CHROME_FLAGS.push('--headless=new'); 
+      CHROME_FLAGS.push('--headless'); 
     } else {
       CHROME_FLAGS.push('--no-sandbox'); 
     }

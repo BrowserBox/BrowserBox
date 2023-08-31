@@ -1,7 +1,7 @@
 //import {CWebp} from 'cwebp';
 import {DEBUG, sleep, CONFIG} from '../common.js';
 
-export const JPEG_QUAL = 32;
+export const JPEG_QUAL = 80;
 export const MAX_ACK_BUFFER = 2;
 export const COMMON_FORMAT = Object.freeze({
   width: 1920,

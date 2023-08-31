@@ -192,7 +192,7 @@ function removeSession(id) {
 
   1 Connect call per client would require a translation table among targetIds and sessionIds
 **/
-export default async function Connect({port}, {adBlock:adBlock = true, demoBlock: demoBlock = false} = {}) {
+export default async function Connect({port}, {adBlock:adBlock = false, demoBlock: demoBlock = false} = {}) {
   AD_BLOCK_ON = adBlock;
 
   LOG_FILE.Commands = new Set([
@@ -1180,6 +1180,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         const castInfo = casts.get(targetId);
         if ( !castInfo || ! castInfo.castSessionId ) {
           updateCast(sessionId, {started:true}, 'start');
+          console.log("SCREENCAST", SCREEN_OPTS);
           await send("Page.startScreencast", SCREEN_OPTS, sessionId);
         } else {
           if ( ! sessionId ) {
