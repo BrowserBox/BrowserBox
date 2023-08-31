@@ -492,7 +492,7 @@ export default async function Connect({port}, {adBlock:adBlock = false, demoBloc
     }
   );
   
-  async function sendFrameToClient({message, sessionId}) {
+  function sendFrameToClient({message, sessionId}) {
     const {sessionId: castSessionId, data, metadata} = message.params;
     const {timestamp} = metadata;
     const {frameId} = updateCast(sessionId, {castSessionId}, 'frame');
@@ -508,7 +508,7 @@ export default async function Connect({port}, {adBlock:adBlock = false, demoBloc
       if ( ! sessionId ) {
         console.warn(`1 No sessionId for screencast ack`);
       }
-      setTimeout(() => send("Page.screencastFrameAck", {sessionId: frameId}, sessionId), 30);
+      setTimeout(() => send("Page.screencastFrameAck", {sessionId: frameId}, sessionId), 5);
       return;
     }
     latestTimestamp = timestamp;

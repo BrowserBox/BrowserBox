@@ -2,7 +2,7 @@
 import {DEBUG, sleep, CONFIG} from '../common.js';
 
 export const JPEG_QUAL = 80;
-export const MAX_ACK_BUFFER = 2;
+export const MAX_ACK_BUFFER = 3;
 export const COMMON_FORMAT = Object.freeze({
   width: 1920,
   height: 1080,
@@ -33,7 +33,7 @@ export const MIN_HEIGHT = 300;
 export const WEBP_QUAL = 32;
 export const JPEG_WEBP_QUAL = 79;
 // these can be tuned UP on better bandwidth and DOWN on lower bandwidth
-export const ACK_COUNT = 2; // 5 with ack every 3 in client
+export const ACK_COUNT = 3; // 5 with ack every 3 in client
 export const MAX_FRAMES = 2; /* 1, 2, 4 */
 const MIN_JPG_QUAL = 25;
 const MAX_JPG_QUAL = 78;
@@ -45,7 +45,7 @@ export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
 export const MAX_ROUNDTRIP = 325;
 export const MIN_ROUNDTRIP = 125;
 export const MIN_SPOT_ROUNDTRIP = 125;
-export const BUF_SEND_TIMEOUT = 415;
+export const BUF_SEND_TIMEOUT = 50;
 const NOIMAGE = {img: '', frame:0};
 const KEYS = [
   1, 11, 13, 629, 1229, 2046, 17912, 37953, 92194, 151840
@@ -85,6 +85,7 @@ export function makeCamera(connection) {
 
   const nextTailShot = async () => {
     DEBUG.shotDebug && console.log("Tail shot");
+    return;
     tailShotDelay *= 1.618;
     if ( tailShotDelay < MAX_TIME_BETWEEN_TAIL_SHOTS ) {
       if ( tailShot ) {
@@ -337,7 +338,7 @@ export function makeCamera(connection) {
 
             if ( DEBUG.bufSend ) {
               ack.buffer.length = 0;
-              ack.bufSend = false;
+              //ack.bufSend = false;
               clearTimeout(ack.debounceBufSend);
               ack.debounceBufSend = setTimeout(() => ack.bufSend = true, BUF_SEND_TIMEOUT);
             }
