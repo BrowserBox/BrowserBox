@@ -35,15 +35,14 @@ echo "Install dir: " $INSTALL_DIR >&2
 
 cd $INSTALL_DIR
 
-if !has_renice_cap "$USER"; 
+if !has_renice_cap "$USER"; then
   echo "This user ($USER) cannot run renice."
   echo "The ability to run renice (by belonging to the renice group created by BBPRO) is necessary for proper audio functioning."
   echo "Trying to add renice capability for $USER..."
 
   if sudo -n true 2>/dev/null; then
     echo "The user has sudo access." >&2
-    if ! sudo grep -q "%renice ALL=(ALL) NOPASSWD:" /etc/sudoers;
-    then
+    if ! sudo grep -q "%renice ALL=(ALL) NOPASSWD:" /etc/sudoers; then
       sudo groupadd renice >&2
       echo "%renice ALL=NOPASSWD: /usr/bin/renice, /usr/bin/loginctl, /usr/bin/id" | sudo tee -a /etc/sudoers >&2
     fi
