@@ -217,6 +217,7 @@
     display: block;
     position: relative;
     overscroll-behavior: none;
+    overflow: hidden;
   }
 
   body {
