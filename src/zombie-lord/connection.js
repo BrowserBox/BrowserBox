@@ -192,7 +192,7 @@ function removeSession(id) {
 
   1 Connect call per client would require a translation table among targetIds and sessionIds
 **/
-export default async function Connect({port}, {adBlock:adBlock = false, demoBlock: demoBlock = false} = {}) {
+export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, demoBlock: demoBlock = false} = {}) {
   AD_BLOCK_ON = adBlock;
 
   LOG_FILE.Commands = new Set([

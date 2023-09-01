@@ -42,15 +42,14 @@ const PUPPETEER_RESOURCE_SAVING_FLAGS = [
   '--no-vr-runtime',
   '--no-service-autorun',
   '--force-launch-browser',
-  /*'--disable-dev-shm-usage',*/
-  /*'--disable-accelerated-2d-canvas',*/
-  /*'--disable-gpu',*/
+  '--disable-accelerated-2d-canvas',
+  '--disable-gpu',
   '--window-position=0,0',
   '--disable-renderer-backgrounding',
-  /*'--disable-background-networking',*/
-  /*'--disable-webgl2',*/
-  /*'--disable-webgl',*/
-  /*'--disable-3d-apis',*/
+  '--disable-background-networking',
+  '--disable-webgl2',
+  '--disable-webgl',
+  '--disable-3d-apis',
   '--disable-backgrounding-occluded-windows',
   '--disable-features=CalculateNativeWinOcclusion',
 ];
@@ -74,13 +73,10 @@ const PUPPETEER_STABILITY_FLAGS = [
   '--disable-prompt-on-repost',
   '--disable-renderer-backgrounding',
   '--disable-sync',
-  '--force-color-profile=srgb',
-  '--metrics-recording-only',
   '--no-first-run',
   '--disable-features=InterestFeedContentSuggestions',
   '--enable-automation',
   '--password-store=basic',
-  '--use-mock-keychain',
   '--no-default-browser-check',
   // TODO(sadym): remove '--enable-blink-features=IdleDetection'
   // once IdleDetection is turned on by default.

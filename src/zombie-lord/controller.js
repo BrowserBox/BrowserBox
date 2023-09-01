@@ -12,7 +12,7 @@ const connections = new Map();
 
 // Connection options
 const Options = {
-  adBlock: CONFIG.adBlock,
+  adBlock: DEBUG.adBlock,
   demoBlock: false
 };
 
