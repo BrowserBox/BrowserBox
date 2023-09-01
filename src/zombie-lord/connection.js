@@ -1180,7 +1180,7 @@ export default async function Connect({port}, {adBlock:adBlock = false, demoBloc
         const castInfo = casts.get(targetId);
         if ( !castInfo || ! castInfo.castSessionId ) {
           updateCast(sessionId, {started:true}, 'start');
-          console.log("SCREENCAST", SCREEN_OPTS);
+          DEBUG.shotDebug && console.log("SCREENCAST", SCREEN_OPTS);
           await send("Page.startScreencast", SCREEN_OPTS, sessionId);
         } else {
           if ( ! sessionId ) {

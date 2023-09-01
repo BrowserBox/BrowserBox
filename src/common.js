@@ -112,7 +112,7 @@ export const DEBUG = Object.freeze({
   get dontShowFetchDomain() {
     return this.commands && true;
   },
-  shotDebug: true,
+  shotDebug: false,
   noShot: false,
   dev: false,
   val: 0,
