@@ -191,7 +191,11 @@ export const SECURE_VIEW_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 
 
 fs.mkdirSync(CONFIG.baseDir, {recursive: true});
 fs.mkdirSync(SignalNotices, {recursive:true});
-execSync(`chmod 757 ${SignalNotices}`);
+try {
+  execSync(`chmod 757 ${SignalNotices}`);
+} catch(e) {
+  console.warn(`Running chmod on notices file failed.`);
+}
 
 export async function throwAfter(ms, command, port, Aborter) {
   // could make this sleep cancellable
