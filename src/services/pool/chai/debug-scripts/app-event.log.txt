@@ -1,0 +1,158 @@
+0|run-docspark  | File ext .pdf
+0|run-docspark  | {
+0|run-docspark  |   date: 2023-09-04T07:27:40.155Z,
+0|run-docspark  |   address: [],
+0|run-docspark  |   ip: '::ffff:111.71.38.200',
+0|run-docspark  |   path: '/very-secure-manifest-convert',
+0|run-docspark  |   file: '/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf',
+0|run-docspark  |   docUrl: ''
+0|run-docspark  | }
+0|run-docspark  | {
+0|run-docspark  |   hash: 'f9ed7fceed8331d1082f836a962e8439039e8b204dcecc3ae1234e76708fc568cb285e75899e2c762e584b911d52f50d4ad5ae0a7776bf630a5f67236083fb90'
+0|run-docspark  | }
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf
+0|run-docspark  | 'gs' -sstdout=%stderr -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 '-sDEVICE=pngalpha' -dTextAlphaBits=4 -dGraphicsAlphaBits=4 '-r120x120'  '-sOutputFile=/tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG%d' '-f/tmp/magick-MWuluEgOOeDdUeYSqEklYHTUV2hNtr8I' '-f/tmp/magick-cUGo6RtZ3xWX-nRfyz9PheSodZnkQCuI'
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG1 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 120090B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG2 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 146007B 0.020u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG3 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 113604B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG4 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 152420B 0.010u 0:00.017
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG5 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 148106B 0.030u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG6 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 125425B 0.020u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG7 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 107433B 0.010u 0:00.020
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG8 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 106982B 0.020u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG9 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 114932B 0.020u 0:00.021
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG10 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 99855B 0.020u 0:00.021
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG11 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 148443B 0.020u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG12 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 145402B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG13 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 118154B 0.020u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG14 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 133252B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG15 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 113431B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG16 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 106082B 0.020u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG17 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 156031B 0.010u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG18 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 148295B 0.030u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG19 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 87693B 0.020u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG20 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 148780B 0.010u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG21 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 121750B 0.020u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG22 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 107630B 0.020u 0:00.017
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG23 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 118955B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG24 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 146646B 0.020u 0:00.017
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG25 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 101553B 0.010u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG26 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 133291B 0.010u 0:00.017
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG27 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 118944B 0.020u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG28 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 128315B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG29 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 114354B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG30 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 136575B 0.020u 0:00.016
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG31 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 158290B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG32 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 145377B 0.010u 0:00.016
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG33 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 129933B 0.020u 0:00.016
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG34 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 159286B 0.010u 0:00.017
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG35 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 144847B 0.030u 0:00.016
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG36 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 89801B 0.010u 0:00.017
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG37 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 105370B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG38 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 112023B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG39 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 186811B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG40 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 170121B 0.010u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG41 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 183904B 0.030u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG42 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 177740B 0.020u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG43 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 183589B 0.010u 0:00.018
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG44 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 175250B 0.020u 0:00.019
+0|run-docspark  | /tmp/magick-5NHnjP4kycujxw2kovEZzkNWN46UwsaG45 PNG 1020x1320 1020x1320+0+0 8-bit sRGB 130570B 0.020u 0:00.018
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[0] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 120090B 0.830u 0:00.830
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[1] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 146007B 0.810u 0:00.811
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[2] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 113604B 0.790u 0:00.792
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[3] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 152420B 0.780u 0:00.774
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[4] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 148106B 0.750u 0:00.755
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[5] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 125425B 0.730u 0:00.735
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[6] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 107433B 0.720u 0:00.714
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[7] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 106982B 0.690u 0:00.695
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[8] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 114932B
+0|run-docspark  | 0.670u 0:00.673
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[9] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 99855B 0.650u 0:00.652
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[10] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 148443B 0.630u 0:00.632
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[11] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 145402B 0.610u 0:00.613
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[12] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 118154B 0.590u 0:00.593
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[13] PDF 1020x1320
+0|run-docspark  | 1020x1320+0+0 16-bit sRGB 133252B 0.580u 0:00.574
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[14] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 113431B 0.560u 0:00.556
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[15] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 106082B 0.540u 0:00.536
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[16] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 156031B 0.530u 0:00.516
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[17] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 148295B
+0|run-docspark  | 0.500u 0:00.498
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[18] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 87693B 0.480u 0:00.478
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[19] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 148780B 0.470u 0:00.459
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[20] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 121750B 0.450u 0:00.440
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[21] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 107630B 0.430u 0:00.422
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[22] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 118955B 0.410u 0:00.403
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[23] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 146646B 0.390u 0:00.386
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[24] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 101553B 0.380u 0:00.367
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[25] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 133291B 0.360u 0:00.349
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[26] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 118944B 0.340u 0:00.330
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[27] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 128315B 0.320u 0:00.311
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[28] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 114354B 0.300u 0:00.293
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[29] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 136575B 0.280u 0:00.277
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[30] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 158290B 0.260u 0:00.258
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[31] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 145377B 0.250u 0:00.241
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[32] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 129933B 0.230u 0:00.224
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[33] PDF
+0|run-docspark  | 1020x1320 1020x1320+0+0 16-bit sRGB 159286B 0.220u 0:00.207
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[34] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 144847B 0.190u 0:00.190
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[35] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 89801B 0.180u 0:00.172
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[36] PDF 1020x1320 1020x1320+0+0 16-bit sRGB
+0|run-docspark  | 105370B 0.160u 0:00.154
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[37] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 112023B 0.140u 0:00.135
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[38] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 186811B 0.120u 0:00.115
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[39] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 170121B 0.110u 0:00.096
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[40] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 183904B 0.080u 0:00.078
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[41] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 177740B 0.060u 0:00.059
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[42] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 183589B 0.050u 0:00.041
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[43] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 175250B 0.030u 0:00.021
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf[44] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 130570B 0.010u 0:00.003
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0000.jpeg[0] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 191412B 0.740u 0:00.202
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0001.jpeg[1] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 273275B 0.770u 0:00.231
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0002.jpeg[2] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 178887B 0.800u 0:00.254
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0003.jpeg[3] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 285472B 0.820u 0:00.282
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0004.jpeg[4] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 266509B 0.850u 0:00.309
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0005.jpeg[5] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 209676B 0.880u 0:00.335
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0006.jpeg[6] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 135216B 0.900u 0:00.355
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0007.jpeg[7] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 155175B 0.920u 0:00.375
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0008.jpeg[8] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 153911B 0.940u 0:00.396
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0009.jpeg[9] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 131878B 0.960u 0:00.415
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0010.jpeg[10] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 262049B 0.980u 0:00.441
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0011.jpeg[11] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 266791B 1.010u 0:00.467
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0012.jpeg[12] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 187276B 1.030u 0:00.487
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0013.jpeg[13] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 227451B 1.040u 0:00.512
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0014.jpeg[14] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 172434B 1.060u 0:00.533
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0015.jpeg[15] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 173209B 1.080u 0:00.555
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0016.jpeg[16] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 283976B 1.110u 0:00.583
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0017.jpeg[17] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 260429B
+0|run-docspark  | 1.140u 0:00.610
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0018.jpeg[18] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 109163B 1.160u 0:00.628
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0019.jpeg[19] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 257211B 1.180u 0:00.653
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0020.jpeg[20] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 179798B 1.200u 0:00.675
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0021.jpeg[21] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 164039B 1.220u 0:00.695
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0022.jpeg[22] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 183185B 1.240u 0:00.716
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0023.jpeg[23] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 273711B 1.270u 0:00.740
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0024.jpeg[24] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 153017B 1.290u 0:00.758
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0025.jpeg[25] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 233523B 1.320u 0:00.783
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0026.jpeg[26] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 179414B 1.340u 0:00.803
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0027.jpeg[27] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 200517B 1.360u 0:00.826
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0028.jpeg[28] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 192142B 1.380u 0:00.848
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0029.jpeg[29] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 246525B 1.410u 0:00.874
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0030.jpeg[30] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 293804B 1.430u 0:00.902
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0031.jpeg[31] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 268935B 1.460u 0:00.931
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0032.jpeg[32] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 262052B 1.480u 0:00.957
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0033.jpeg[33] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 295271B 1.510u 0:00.985
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0034.jpeg[34] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 280716B 1.540u 0:01.012
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0035.jpeg[35] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 136015B 1.560u 0:01.032
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0036.jpeg[36] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 102374B 1.580u 0:01.049
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0037.jpeg[37] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 182834B 1.610u 0:01.072
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0038.jpeg[38] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 173740B 1.630u 0:01.094
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0039.jpeg[39] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 243707B 1.650u 0:01.120
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0040.jpeg[40] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 261663B 1.680u 0:01.147
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0041.jpeg[41] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 239968B 1.700u 0:01.172
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0042.jpeg[42] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 257497B 1.730u 0:01.199
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0043.jpeg[43] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 244994B 1.760u 0:01.225
+0|run-docspark  | /home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf=>/home/cris/documentspark/public/uploads/file6zpt.z941y98.pdf-0044.jpeg[44] PDF 1020x1320 1020x1320+0+0 16-bit sRGB 178686B 1.780u 0:01.246
+0|run-docspark  | /home/cris/documentspark/scripts/convert.sh exited
+
+

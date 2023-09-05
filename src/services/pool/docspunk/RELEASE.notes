@@ -1,6 +1,0 @@
-September 30, 2021 - New release
-
-** Changes **
-
-- sslcerts will no longer be a repo subdirectory but will instead be expected as a folder in
-the process user's home directory. See index.js for the changes.
