@@ -8,7 +8,6 @@ scripts/*.jp*
 scripts/*.svg
 pdfs/*
 public/uploads/file*.*
-secrets/*.js*
 
 sslcerts/*.pem
 
