@@ -9,4 +9,5 @@ brew install --cask tex-live-utility
 brew install latexml
 brew install mactex
 brew install libreoffice
+brew install pandoc
 

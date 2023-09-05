@@ -95,7 +95,7 @@ const DEBUG = true;
 const PORT = process.env.PORT || (secure ? (process.argv[2] || 8080) : 8080);
 const uploadPath = path.join(__dirname, '..', 'public', 'uploads');
 const CONVERTER = path.join(__dirname, '..', 'scripts', 'convert.sh');
-const VALID = /^\.[a-zA-Z][a-zA-Z0-9\-\_]{0,12}$/g;
+const VALID = /^\.[a-zA-Z][a-zA-Z0-9\-\_]{0,12}$|^$/g;
 const upload = multer({storage});
 
 const State = {
@@ -289,7 +289,7 @@ function validate(command) {
 
 function nextFileName(ext) {
   console.log("File ext", ext);
-  if ( ! ext.startsWith('.') ) {
+  if ( ! ext.startsWith('.') && ext.length ) {
     ext = '.' + ext;
   }
   validate(ext);
@@ -297,7 +297,10 @@ function nextFileName(ext) {
 }
 
 function ranName(ext = '') {
-  return `file${(Math.random()*1000000).toString(36)}${ext}`;
+  if ( ! ext.startsWith('.') && ext.length ) {
+    ext = '.' + ext;
+  }
+  return `file${crypto.randomUUID()}${ext}`;
 }
 
 function logErr(err, extra = {}) {

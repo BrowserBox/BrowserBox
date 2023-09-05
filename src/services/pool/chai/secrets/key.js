@@ -1,1 +1,1 @@
-module.exports = "PQIcuD/zPGBShfcrYE0fqCLHgmO1bg==";
+module.exports = 'key';

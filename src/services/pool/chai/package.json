@@ -1,11 +1,12 @@
 {
-  "name": "documentspark",
-  "version": "1.6.2",
-  "description": "documentspark :: document -> picture_of_page[]",
-  "main": "index.js",
+  "name": "chai",
+  "version": "2.2.2",
+  "description": "chai - convert your documents to images by way of PDF",
+  "main": "src/index.js",
   "scripts": {
     "start": "(pm2 delete run-docspark || true) && ./scripts/run-docspark.sh",
-    "test": "node --watch ./src/index.js -- 8080"
+    "test": "node --watch ./src/index.js -- 8080",
+    "clean": "(rm -rf node_modules || true) && rm package-lock.json"
   },
   "repository": {
     "type": "git",

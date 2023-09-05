@@ -1,15 +1,19 @@
 # app specific
 pid.txt
-log
 
+log
 scripts/*.pdf
 scripts/*.png
 scripts/*.jp*
 scripts/*.svg
 pdfs/*
+public/uploads/file*
 public/uploads/file*.*
+secrets/*.js*
 
 sslcerts/*.pem
+
+tmp.*
 
 .*.swp
 # Logs

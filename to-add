@@ -1,5 +1,7 @@
 - fix test for menu open on mobile
 
+- refine adaptive tests and change cast seldom
+
 - fix clipboard write on Safari https://developer.apple.com/forums/thread/691873
 
 - if you restart your browser, you probably expect tabs to come back up, so we likely need to save a list of tabs. saved in a file under home, like
