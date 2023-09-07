@@ -4,7 +4,7 @@ username=$(whoami)
 echo "Starting viewfinder service cluster as $username"
 
 get_install_dir() {
-  echo "Finding bbpro installation..."
+  echo "Finding bbpro installation..." >&2
   install_path1=$(find $HOME -name .bbpro_install_dir -print -quit 2>/dev/null)
   install_path2=$(find /usr/local/share -name .bbpro_install_dir -print -quit 2>/dev/null)
   install_dir=$(dirname $install_path1)
@@ -12,10 +12,10 @@ get_install_dir() {
     install_dir=$(dirname $install_path2)
   fi
   if [ -z "$install_dir" ]; then
-    echo "Could not find bppro. Purchase a license and run deploy-scripts/global_install.sh first"
+    echo "Could not find bppro. Purchase a license and run deploy-scripts/global_install.sh first" >&2
     exit 1
   fi
-  echo "Found bbpro at: $install_dir"
+  echo "Found bbpro at: $install_dir" >&2
 
   echo $install_dir
 }
@@ -28,7 +28,8 @@ echo Using $node
 pm2 start ./scripts/global/start_audio.sh -- $1
 
 echo "Starting main process, viewfinder, in foreground"
-cd $INSTALL_DIR
+echo "Install dir: $INSTALL_DIR"
+cd "$INSTALL_DIR"
 pm2 start ./scripts/basic-bb-main-service.sh -- $1
 
 echo "Starting crdp-secure-proxy-server"

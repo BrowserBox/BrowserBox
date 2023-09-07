@@ -1011,7 +1011,7 @@
     }
 
     checkForBufferedFrames(events) {
-      if ( DEBUG.regularFrameCheck ) return;
+      if ( !DEBUG.regularFrameCheck ) return;
       if ( this.willCollectBufferedFrame ) {
         clearTimeout(this.willCollectBufferedFrame);
         this.willCollectBufferedFrame = false;
@@ -1021,7 +1021,7 @@
     }
 
     maybeCheckForBufferedFrames(events) {
-      if ( DEBUG.regularFrameCheck ) return;
+      if ( !DEBUG.regularFrameCheck ) return;
       if ( meetsCollectBufferedFrameCondition(this.publics.queue, events) ) {
         if ( this.willCollectBufferedFrame ) {
           clearTimeout(this.willCollectBufferedFrame);
@@ -1131,9 +1131,9 @@
         };
         imageEl.addEventListener('load', () => {
           const {canvasEl: canvas, ctx} = this.state.viewState;
-          if ( clearNextFrame ) {
+          if ( false && clearNextFrame ) {
             clearNextFrame = false;
-            ctx.clearRect(0,0,canvas.width,canvas.height);
+            //ctx.clearRect(0,0,canvas.width,canvas.height);
             clearInterval(this[$].clearInterval);
             //this[$].clearInterval = setTimeout(() => clearNextFrame = true, 1001);
           }

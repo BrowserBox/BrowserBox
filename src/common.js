@@ -17,6 +17,7 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
+  adBlock: true,
   showFlags: false,
   allowExternalChrome: true,
   logFileCommands: false,
@@ -78,7 +79,7 @@ export const DEBUG = Object.freeze({
   showFlash: false, /* debug flash */
   loadSPLFreshEachLogin: false,
   frameDebug: false,
-  adaptiveImagery: true,
+  adaptiveImagery: false,
   debugAdaptiveImagery: false,
   useGL: true,
   disableGL: false,
@@ -190,7 +191,11 @@ export const SECURE_VIEW_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 
 
 fs.mkdirSync(CONFIG.baseDir, {recursive: true});
 fs.mkdirSync(SignalNotices, {recursive:true});
-execSync(`chmod 757 ${SignalNotices}`);
+try {
+  execSync(`chmod 757 ${SignalNotices}`);
+} catch(e) {
+  console.warn(`Running chmod on notices file failed.`);
+}
 
 export async function throwAfter(ms, command, port, Aborter) {
   // could make this sleep cancellable

@@ -10,6 +10,7 @@ os_type() {
   case "$(uname -s)" in
     Darwin*) echo "macOS";;
     Linux*)  echo "Linux";;
+    MING*)   echo "win";;
     *)       echo "unknown";;
   esac
 }
@@ -23,6 +24,12 @@ install_nvm() {
     nvm install --lts
   fi
 }
+
+SUDO=""
+
+if command -v sudo; then
+  SUDO="sudo"
+fi
 
 echo -e "\n\n"
 echo "Welcome to the BrowserBox Pro installation."
@@ -64,25 +71,28 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 if [ "$(os_type)" == "Linux" ]; then
-  sudo apt update && sudo apt -y upgrade
-  sudo apt -y install net-tools ufw
-  sudo ufw disable
+  $SUDO apt update && $SUDO apt -y upgrade
+  $SUDO apt -y install net-tools ufw
+  $SUDO ufw disable
 fi
 
 if [ "$#" -eq 1 ]; then
   hostname="$1"
 
-  amd64=$(dpkg --print-architecture || uname -m)
+  amd64=""
 
   if [ "$hostname" == "localhost" ]; then
     if ! command -v mkcert &>/dev/null; then
       if [ "$(os_type)" == "macOS" ]; then
         brew install nss mkcert
+      elif [ "$(os_type)" == "win" ]; then
+        choco install mkcert || scoop bucket add extras && scoop install mkcert
       else
-        sudo apt -y install libnss3-tools
+        amd64=$(dpkg --print-architecture || uname -m)
+        $SUDO apt -y install libnss3-tools
         curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
         chmod +x mkcert-v*-linux-$amd64
-        sudo cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
+        $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
         rm mkcert-v*
       fi
     fi
@@ -137,8 +147,8 @@ if [ "$(os_type)" == "macOS" ]; then
 else
   if ! command -v getopt &>/dev/null; then
     echo "Installing gnu-getopt for Linux..."
-    sudo apt-get update
-    sudo apt-get install -y gnu-getopt
+    $SUDO apt-get update
+    $SUDO apt-get install -y gnu-getopt
   fi
 fi
 
@@ -146,51 +156,52 @@ read -p "Continue?"
 
 echo "Fully installed!"
 
-echo -n "Copying bbpro application files to /usr/local/share/dosyago/ ..."
-sudo mkdir -p /usr/local/share/dosyago
 
-sudo cp -r $INSTALL_DIR /usr/local/share/dosyago
+echo -n "Copying bbpro application files to /usr/local/share/dosyago/ ..."
+$SUDO mkdir -p /usr/local/share/dosyago
+
+$SUDO cp -r $INSTALL_DIR /usr/local/share/dosyago
 INSTALL_NAME=$(basename $INSTALL_DIR)
-sudo rm -rf /usr/local/share/dosyago/$INSTALL_NAME/.git
+$SUDO rm -rf /usr/local/share/dosyago/$INSTALL_NAME/.git
 
 echo "Copied!"
 
 echo -n "Setting correct permissions for installation ... "
 
-sudo chmod -R 755 /usr/local/share/dosyago/*
+$SUDO chmod -R 755 /usr/local/share/dosyago/*
 
 echo "Permissions set!"
 
 echo -n "Copying bbpro command to /usr/local/bin/ ..."
 
-sudo cp $INSTALL_DIR/deploy-scripts/_bbpro.sh /usr/local/bin/bbpro
+$SUDO cp $INSTALL_DIR/deploy-scripts/_bbpro.sh /usr/local/bin/bbpro
 
 echo "Copied!"
 
 echo -n "Copying setup_bbpro command to /usr/local/bin/ ..."
 
-sudo cp $INSTALL_DIR/deploy-scripts/_setup_bbpro.sh /usr/local/bin/setup_bbpro
+$SUDO cp $INSTALL_DIR/deploy-scripts/_setup_bbpro.sh /usr/local/bin/setup_bbpro
 
 echo "Copied!"
 
 echo -n "Copying monitoring commands to /usr/local/bin/ ..."
 
-sudo cp $INSTALL_DIR/monitor-scripts/* /usr/local/bin/
+$SUDO cp $INSTALL_DIR/monitor-scripts/* /usr/local/bin/
 
 echo "Copied!"
 
 echo -n "Copying sslcerts to /usr/local/share/dosyago/sslcerts ..."
 
-sudo mkdir -p /usr/local/share/dosyago/sslcerts/
-sudo rm -rf /usr/local/share/dosaygo/sslcerts/*
-sudo cp $HOME/sslcerts/* /usr/local/share/dosyago/sslcerts/
-sudo chmod -R 555 /usr/local/share/dosyago/sslcerts/*
+$SUDO mkdir -p /usr/local/share/dosyago/sslcerts/
+$SUDO rm -rf /usr/local/share/dosaygo/sslcerts/*
+$SUDO cp $HOME/sslcerts/* /usr/local/share/dosyago/sslcerts/
+$SUDO chmod -R 755 /usr/local/share/dosyago/sslcerts/*
 
 echo "Copied!"
 
 echo -n "Setting up deploy system ..."
 
-cd $INSTALL_DIR/deploy/
+cd $INSTALL_DIR/src/services/pool/
 ./scripts/setup.sh
 
 echo "Install complete!"

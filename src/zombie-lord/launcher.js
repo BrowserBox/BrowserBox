@@ -34,42 +34,53 @@ const FORCE_SOFTWARE_GL_FLAGS = [
 // (some people's puppeteer, low resource usage flags)
 // found i don't need
 const PUPPETEER_RESOURCE_SAVING_FLAGS = [
-  '--disable-dev-shm-usage',
+  '--no-experiments',
+  '--no-crash-upload',
+  '--no-pings',
+  '--no-proxy-server',
+  '--no-report-upload',
+  '--no-vr-runtime',
+  '--no-service-autorun',
+  '--force-launch-browser',
   '--disable-accelerated-2d-canvas',
   '--disable-gpu',
   '--window-position=0,0',
   '--disable-renderer-backgrounding',
   '--disable-background-networking',
+  '--disable-webgl2',
+  '--disable-webgl',
+  '--disable-3d-apis',
+  '--disable-backgrounding-occluded-windows',
+  '--disable-features=CalculateNativeWinOcclusion',
 ];
 
 // disabled (some people's puppeteer stability flags)
 // found i don't need
 const PUPPETEER_STABILITY_FLAGS = [
-          '--enable-features=NetworkService,NetworkServiceInProcess',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-breakpad',
-          '--disable-client-side-phishing-detection',
-          '--disable-component-extensions-with-background-pages',
-          '--disable-default-apps',
-          '--disable-dev-shm-usage',
-          '--disable-extensions',
-          '--disable-features=Translate',
-          '--disable-hang-monitor',
-          '--disable-ipc-flooding-protection',
-          '--disable-popup-blocking',
-          '--disable-prompt-on-repost',
-          '--disable-renderer-backgrounding',
-          '--disable-sync',
-          '--force-color-profile=srgb',
-          '--metrics-recording-only',
-          '--no-first-run',
-          '--enable-automation',
-          '--password-store=basic',
-          '--use-mock-keychain',
-          // TODO(sadym): remove '--enable-blink-features=IdleDetection'
-          // once IdleDetection is turned on by default.
-          '--enable-blink-features=IdleDetection',
+  '--enable-features=NetworkService,NetworkServiceInProcess',
+  '--disable-background-timer-throttling',
+  '--disable-backgrounding-occluded-windows',
+  '--disable-breakpad',
+  '--disable-client-side-phishing-detection',
+  '--disable-component-extensions-with-background-pages',
+  '--disable-default-apps',
+  /*'--disable-dev-shm-usage',*/
+  '--disable-extensions',
+  '--disable-features=Translate',
+  '--disable-hang-monitor',
+  /*'--disable-ipc-flooding-protection',*/
+  '--disable-popup-blocking',
+  '--disable-prompt-on-repost',
+  '--disable-renderer-backgrounding',
+  '--disable-sync',
+  '--no-first-run',
+  '--disable-features=InterestFeedContentSuggestions',
+  '--enable-automation',
+  '--password-store=basic',
+  '--no-default-browser-check',
+  // TODO(sadym): remove '--enable-blink-features=IdleDetection'
+  // once IdleDetection is turned on by default.
+  '--enable-blink-features=IdleDetection',
 ];
 
 // I don't use these and have only seen them mentioned to reduce crashes
@@ -103,7 +114,6 @@ const MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY = [
   '--metrics-recording-only',
 ];
 
-
 const launcher_api = {
   async newZombie({port, /*username*/}) {
     const crashDir = path.resolve(CONFIG.baseDir, 'browser-crashes');
@@ -115,10 +125,12 @@ const launcher_api = {
     if ( chrome_started ) {
       DEBUG.val && console.log(`Ignoring launch request as chrome already started.`);
     }
-    const DEFAULT_FLAGS = [
+    const DEFAULT_FLAGS = process.platform == 'darwin' ? [
+      ... PUPPETEER_STABILITY_FLAGS,
+      ... PUPPETEER_RESOURCE_SAVING_FLAGS,
+    ] : [
       `--window-size=${COMMON_FORMAT.width},${COMMON_FORMAT.height}`,
       `--crash-dumps-dir=${crashDir}`,
-      '--restore-last-session',
       `--profile-directory="${upd}"`,
       ...(
         CONFIG.forceContentDarkMode ? [
@@ -192,11 +204,13 @@ const launcher_api = {
       port,
       ignoreDefaultFlags: true,
       handleSIGINT: false,
-      userDataDir: path.resolve(CONFIG.baseDir, 'browser-cache'),
+      userDataDir: process.platform == 'darwin' ? false : path.resolve(CONFIG.baseDir, 'browser-cache'),
       logLevel: 'verbose',
       chromeFlags: CHROME_FLAGS
     };
-    fs.mkdirSync(CHROME_OPTS.userDataDir, {recursive:true});
+    if ( CHROME_OPTS.userDataDir ) {
+      fs.mkdirSync(CHROME_OPTS.userDataDir, {recursive:true});
+    }
     DEBUG.val && console.log(CHROME_OPTS, CHROME_FLAGS);
     const zomb = await ChromeLauncher(CHROME_OPTS);
 

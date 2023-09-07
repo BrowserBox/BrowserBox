@@ -143,11 +143,13 @@
       mediaSrc: [
         "'self'",
         "https://localhost:*",
-        "https://*.dosyago.com:*"
+        "https://*.dosyago.com:*",
+        "https://*.browserbox.pro:*",
       ],
       frameSrc: [
         "'self'",
         "https://localhost:*",
+        "https://*.browserbox.pro:*",
         "https://*.dosyago.com:*"
       ],
       connectSrc: [
@@ -156,6 +158,8 @@
         "wss://localhost:*",
         `https://*.dosyago.com:${server_port-1}`,
         `https://*.dosyago.com:${server_port+1}`,
+        "https://*.browserbox.pro:*",
+        "wss://*.browserbox.pro:*",
         `https://localhost:${server_port-1}`,
         `https://localhost:${server_port+1}`
       ],
@@ -175,6 +179,7 @@
         "'self'", 
         "'unsafe-eval'",
         "'unsafe-inline'",
+        "https://*.browserbox.pro:*",
         "https://*.dosyago.com:*"
       ],
       scriptSrcAttr: [
@@ -183,6 +188,7 @@
       ],
       frameAncestors: [
         "'self'",
+        "https://*.browserbox.pro:*",
         "https://*.dosyago.com:*",
         ...ALLOWED_3RD_PARTY_EMBEDDERS
       ],

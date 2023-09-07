@@ -192,7 +192,7 @@ function removeSession(id) {
 
   1 Connect call per client would require a translation table among targetIds and sessionIds
 **/
-export default async function Connect({port}, {adBlock:adBlock = true, demoBlock: demoBlock = false} = {}) {
+export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, demoBlock: demoBlock = false} = {}) {
   AD_BLOCK_ON = adBlock;
 
   LOG_FILE.Commands = new Set([
@@ -492,7 +492,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
     }
   );
   
-  async function sendFrameToClient({message, sessionId}) {
+  function sendFrameToClient({message, sessionId}) {
     const {sessionId: castSessionId, data, metadata} = message.params;
     const {timestamp} = metadata;
     const {frameId} = updateCast(sessionId, {castSessionId}, 'frame');
@@ -508,7 +508,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
       if ( ! sessionId ) {
         console.warn(`1 No sessionId for screencast ack`);
       }
-      setTimeout(() => send("Page.screencastFrameAck", {sessionId: frameId}, sessionId), 30);
+      setTimeout(() => send("Page.screencastFrameAck", {sessionId: frameId}, sessionId), 5);
       return;
     }
     latestTimestamp = timestamp;
@@ -1180,6 +1180,7 @@ export default async function Connect({port}, {adBlock:adBlock = true, demoBlock
         const castInfo = casts.get(targetId);
         if ( !castInfo || ! castInfo.castSessionId ) {
           updateCast(sessionId, {started:true}, 'start');
+          DEBUG.shotDebug && console.log("SCREENCAST", SCREEN_OPTS);
           await send("Page.startScreencast", SCREEN_OPTS, sessionId);
         } else {
           if ( ! sessionId ) {

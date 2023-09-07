@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<title>View Document</title>
+<meta charset=utf-8>
+<meta name=viewport content=width=device-width,initial-scale=1>
+<style>
+  :root {
+    background: whitesmoke;
+    font-family: system-ui, Arial, Times;
+  }
+
+  body {
+    margin: 4.5rem 0;
+  }
+
+  img {
+    display: block;
+    box-shadow: 0 1px 2px silver;
+    margin: 3em auto;
+    width: 61.8%;
+  }
+
+  header {
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-between;
+    zoom: reset;
+    background: white;
+    padding: 0.25em;
+    box-shadow: 0 1px 1px silver;
+  }
+  
+  header nav {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  header div.download {
+    text-align: right;
+  }
+
+  header div.download a {
+    font-size: smaller;
+  }
+
+  header, .controls {
+    font-size: 16pt;
+  }
+
+  section.document * {
+    font-size: 14pt;
+  }
+
+  header button {
+  }
+
+  header button strong {
+    display: block;
+  }
+
+  header button strong.pop {
+
+  }
+
+  nav .zoomer {
+    cursor: zoom-in !important;
+  }
+
+  strong.flip {
+  }
+
+  #loading {
+    margin-top: 1.5rem;
+    cursor: wait !important;
+    text-align: center;
+  }
+
+  nav section {
+    display: flex;
+    align-items: center;
+  }
+
+  nav section > * {
+    margin: 0 0.15rem;
+  }
+
+  #download-link {
+    display: inline-block;
+    margin-top: 3.5px;
+  }
+
+  .download {
+    cursor: pointer !important;
+  }
+
+  .download a {
+    text-decoration: none;
+    color: dodgerblue;
+  }
+
+  .download a .link-text {
+    text-decoration: underline;
+  }
+
+  .download strong {
+    vertical-align: sub;
+  }
+
+  section.controls * {
+    font-size: 16pt;
+  }
+
+  button {
+    text-align: center;
+    color: dodgerblue;
+    font-weight: bold;
+  }
+
+  .controls span.rot {
+    transform: rotate(80deg) translate(0, -2px);
+    display: block;
+  }
+
+  nav {
+    padding: 0.5rem 0.5rem 0.5rem 0.25rem;
+  }
+
+  input[type="range"] {
+    margin-left: 0.45rem;
+    accent-color: dodgerblue;
+    max-width: 30%;
+  }
+
+  ::-webkit-slider-runnable-track {
+    background: whitesmoke;
+    border: 1px solid gray;
+    height: 0.5rem;
+    border-radius: 0.5rem;
+  }
+
+  ::-webkit-slider-thumb {
+    transform: translate(0,-30%);
+    accent-color: dodgerblue;
+  }
+
+  ::-moz-range-track {
+    background: whitesmoke;
+    border: 1px solid gray;
+    height: 0.5rem;
+    border-radius: 0.5rem;
+  }
+
+  ::-moz-range-thumb {
+    background: dodgerblue;
+    border-radius: 1rem;
+    border-color: dodgerblue;
+    height: 1rem;
+    width: 1rem;
+  }
+
+  @media screen and (max-width: 375px) {
+    nav .link-text {
+      display: none;
+    }
+  }
+
+  :is(button, input, a):focus {
+    outline-color: dodgerblue;
+  }
+</style>
+<header>
+  <nav>
+    <section class=controls>
+      <button id=prev title="Previous page"> 
+        &lt;
+      </button>
+      <button id=next title="Next page">
+        &gt;
+      </button>
+      <button id=rotate title="Rotate page">
+        <span class=rot>
+          &circlearrowright;
+        </span>
+      </button>
+      <span id=pagenumber></span>
+      <input type="range" id="resizeSlider" min="15" max="200" value="61.8" style="max-width: 30vw;" title="Zoom" class=zoomer>
+    </section>
+    <section class=document>
+      <div class=download>
+        <a id=download-link title="Download original" rel=canonical download href=#download>
+          <span class=link-text>Download</span>
+          <strong>&#xFE3E;</strong>
+        </a>
+      </div>
+    </section>
+  </nav>
+</header>
+<p id=loading>
+  Converting&hellip;
+</p>
+<img id=page>
+<script>
+  const path = location.pathname;
+  const imgUrl = i => path.replace(/\.html$/,`-${i.toString().padStart(4,'0')}.jpeg`);
+  const documentFileName = path.replace(/\.html$/, '');
+  console.log({documentFileName});
+  const anchor = document.querySelector('#download-link');
+  anchor.setAttribute('href', documentFileName);
+  const CRAM_WAIT = 349;
+  const MAX_TIME_TO_WAIT_FOR_CONVERSION = 10*60*1000; // ten minutes
+  let noCram = false;
+  let succeeded = false;
+  let failed = false;
+  let pageNumber = 0;
+  let ang = 0;
+  page.onerror = () => {
+    setTimeout(checkFirstPage, 1001);
+  }
+  page.onload = () => {
+    succeeded = true;
+    loading.innerText = ''; 
+    pagenumber.innerText = `page ${(pageNumber + 1)}`;
+    page.onerror = checkFirstPage;
+  }
+  checkFirstPage();
+  prev.onclick = () => {
+    const nextUrl = imgUrl(--pageNumber);
+    if ( noCram ) {
+      clearTimeout(noCram);
+      noCram = setTimeout(() => {
+        noCram = false;
+        page.src = nextUrl;
+      }, CRAM_WAIT);
+    } else {
+      page.src = nextUrl;
+    }
+    if ( pageNumber >= 0 ) {
+      pagenumber.innerText = `page ${(pageNumber + 1)}`;
+    }
+  };
+  next.onclick = () => {
+    const nextUrl = imgUrl(++pageNumber);
+    if ( noCram ) {
+      clearTimeout(noCram);
+      noCram = setTimeout(() => {
+        noCram = false;
+        page.src = nextUrl;
+      }, CRAM_WAIT);
+    } else {
+      page.src = nextUrl;
+    }
+    pagenumber.innerText = `page ${(pageNumber + 1)}`;
+  }
+  rotate.onclick = () => {
+    ang = (ang + 90) % 360;
+    page.style.transform = `rotate(${ang}deg)`;
+  }
+
+  function checkFirstPage() {
+    if ( failed ) {
+      loading.innerText = 'No such file, or conversion failed.';
+      return;
+    }
+    pageNumber = 0;
+    page.src = imgUrl(pageNumber);
+    loading.innerHTML = 'Converting&hellip;';
+  }
+
+  setTimeout(() => {
+    if ( ! succeeded ) {
+      failed = true;
+    }
+  }, MAX_TIME_TO_WAIT_FOR_CONVERSION);
+
+    // Function to resize image based on slider value
+  function resizeImage() {
+    const slider = document.getElementById("resizeSlider");
+    const image = document.getElementById("page");
+    const zoomLevel = slider.value;
+    image.style.width = zoomLevel + "%";
+  }
+
+  // Add event listener to the slider
+  document.addEventListener("DOMContentLoaded", function() {
+    const slider = document.getElementById("resizeSlider");
+    slider.addEventListener("input", resizeImage);
+  });
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const downloadLink = document.getElementById("download-link"); // Replace with the actual ID of your Download anchor link
+
+    downloadLink.addEventListener("click", function(event) {
+      const userConfirmed = confirm("This file could harm your computer. Are you sure you want to download?");
+      if (!userConfirmed) {
+        event.preventDefault();
+      }
+    });
+  });
+</script>

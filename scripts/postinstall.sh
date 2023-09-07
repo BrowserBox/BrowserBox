@@ -38,25 +38,32 @@ npm i
 npm audit fix
 cd ../
 
-echo "Installing packages for pptr console service..."
-cd pptr-console-server
-export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=True
-npm i    
-npm audit fix
-
-rm -rf node_modules/puppeteer/.local-chromium
-
-echo "Installing packages for real time chat service..."
-cd websocket_chat_app_homework
-npm i
-npm audit fix
-cd ../
-cd ../
+#Not installing pptr console and websocket chat 
+  #echo "Installing packages for pptr console service..."
+  #cd pptr-console-server
+  #export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=True
+  #npm i    
+  #npm audit fix
+  #
+  #rm -rf node_modules/puppeteer/.local-chromium
+  #
+  #echo "Installing packages for real time chat service..."
+  #cd websocket_chat_app_homework
+  #npm i
+  #npm audit fix
+  #cd ../
+  #cd ../
 
 echo "Installing packages for remote devtools service..."
 cd ../pool/crdp-secure-proxy-server
 npm i
 npm audit fix
+
+echo "Installing packages for secure document viewer..."
+cd ../pool/chai
+npm i
+npm audit fix
+
 cd ../../../../
 
 USE_FLASH=$(node ./src/show_useflash.js);
