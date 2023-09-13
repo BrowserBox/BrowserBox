@@ -25,15 +25,22 @@ INSTALL_DIR=$(get_install_dir)
 node=$(which node)
 echo Using $node
 
+echo "Starting audio service..."
 pm2 start ./scripts/global/start_audio.sh -- $1
 
-echo "Starting main process, viewfinder, in foreground"
+echo "Starting main bbpro service..."
 echo "Install dir: $INSTALL_DIR"
 cd "$INSTALL_DIR"
 pm2 start ./scripts/basic-bb-main-service.sh -- $1
 
-echo "Starting crdp-secure-proxy-server"
+echo "Starting secure remote devtools service..."
 cd src/services/pool/crdp-secure-proxy-server
 pm2 start ./devtools-server.sh -- $1
+
+echo "Starting secure document viewer service..."
+cd "$INSTALL_DIR"
+cd src/services/pool/chai
+./scripts/restart.sh $1
+
 
 
