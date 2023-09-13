@@ -26,7 +26,7 @@
     "compile": "npm run parcel && npm run build && npm run package",
     "parcel": "bash ./scripts/parcel.sh",
     "no-x-parcel": "(rm -rf .parcel-cache/ dist/ || :) && (mkdir dist/ || :) && cp -r src/public/* dist/ && rm dist/image.html &&CONFIG_DIR=./config/ parcel build src/public/image.html --config=./config/parcelrc && cp -r src/public/voodoo/node_modules dist/node_modules",
-    "test": "npm run stop && bash ./scripts/run-test.sh'",
+    "test": "npm run stop && bash ./scripts/run-test.sh",
     "stop": "bash ./scripts/stop-test.sh",
     "start-share": "nohup bash ./share-test.sh > $HOME/.vf.nohup.$(date +\"%y_%m_%d_%H_%M\").out &",
     "start-single": "(bash ./kill-pm2.sh || :) && bash ./pm2-run.sh",

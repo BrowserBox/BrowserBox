@@ -1,5 +1,6 @@
 // code
   const compression = require('compression');
+  const crypto = require('crypto');
   const hasha = require('hasha');
   const fs = require('fs');
   const exploreDirectories = require('serve-index');

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-provider="https://$(gethostname):$PORT/very-secure-manifest-convert"
+provider="https://users.dosyago.com/very-secure-manifest-convert"
 username=$1
 filename=$2
 secret=$3
