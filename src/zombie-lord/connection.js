@@ -23,7 +23,7 @@ import {WorldName} from '../public/translateVoodooCRDP.js';
 import {RACE_SAMPLE, makeCamera, COMMON_FORMAT, DEVICE_FEATURES, SCREEN_OPTS, MAX_ACK_BUFFER, MIN_WIDTH, MIN_HEIGHT} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
 import {getInjectableAssetPath, LatestCSRFToken, fileChoosers} from '../ws-server.js';
-import docViewerSecret from '../../config/secrets/docViewer.js';
+import docViewerSecret from '../services/pool/chai/secrets/key.js';
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
 

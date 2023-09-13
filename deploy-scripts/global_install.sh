@@ -201,7 +201,7 @@ echo "Copied!"
 
 echo -n "Setting up deploy system ..."
 
-cd $INSTALL_DIR/src/services/pool/
+cd $INSTALL_DIR/src/services/pool/deploy/
 ./scripts/setup.sh
 
 echo "Install complete!"
