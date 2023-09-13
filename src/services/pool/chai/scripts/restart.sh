@@ -10,7 +10,7 @@ fi
 pm2=$(which pm2)
 
 ./public/uploads/clean.sh
-sleep 5
+sleep 2
 $pm2 stop ./scripts/run-docspark.sh
 $pm2 delete run-docspark
 killall node npm

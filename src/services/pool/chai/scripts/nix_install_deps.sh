@@ -8,4 +8,5 @@ sudo apt -y install texlive-lang-japanese texlive-latex-recommended texlive-late
 sudo apt -y install imagemagick
 sudo apt -y install libreoffice
 sudo apt -y install pandoc
+sudo apt -y install coreutils
 

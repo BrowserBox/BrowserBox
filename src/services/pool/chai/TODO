@@ -1,0 +1,6 @@
+# TODO
+
+- Add multithreaded option to gs (if possible)
+- Add optional startup script to compile ImageMagick with multicore support 
+
+
