@@ -39,7 +39,7 @@ else
   getopt="/usr/bin/getopt"
 fi
 
-OPTS=`$getopt -o p:t:c: --long port:,token:,cookie: -n 'parse-options' -- "$@"`
+OPTS=`$getopt -o p:t:c: --long port:,token:,cookie:,doc-key: -n 'parse-options' -- "$@"`
 
 if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; exit 1 ; fi
 
@@ -58,6 +58,7 @@ while true; do
     ;;
     -t | --token ) TOKEN="$2"; shift 2;;
     -c | --cookie ) COOKIE="$2"; shift 2;;
+    -d | --doc-key ) DOC_API_KEY="$2"; shift 2;;
     -- ) shift; break;;
     * ) echo "Invalid option: $1" >&2; exit 1;;
   esac
@@ -77,6 +78,9 @@ elif ! is_port_free $(($PORT - 2)); then
 elif ! is_port_free $(($PORT + 1)); then
   echo "Error: the suggested port range (devtools) is already in use" >&2
   exit 1
+elif ! is_port_free $(($PORT - 1)); then
+  echo "Error: the suggested port range (doc viewer) is already in use" >&2
+  exit 1
 fi
 
 if [ -z "$TOKEN" ]; then
@@ -89,6 +93,12 @@ if [ -z "$COOKIE" ]; then
   echo -n "Cookie not provided, so will generate...">&2
   COOKIE=$(openssl rand -hex 16)
   echo "Generated cookie: $COOKIE">&2
+fi
+
+if [ -z "$DOC_API_KEY" ]; then
+  echo -n "Doc API key not provided, so will generate...">&2
+  DOC_API_KEY=$(openssl rand -hex 16)
+  echo "Generated doc API key: $DOC_API_KEY">&2
 fi
 
 DT_PORT=$((PORT + 1))
@@ -120,6 +130,7 @@ export LOGIN_TOKEN=$TOKEN
 export COOKIE_VALUE=$COOKIE
 export DEVTOOLS_PORT=$DT_PORT
 export DOCS_PORT=$SV_PORT
+export DOCS_KEY=$DOC_API_KEY
 
 # true runs within a 'browsers' group
 #export BB_POOL=true

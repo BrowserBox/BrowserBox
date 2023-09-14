@@ -2,8 +2,8 @@
 
 . "$HOME/.nvm/nvm.sh"
 
-if [ ! -f ./secrets/key.js ]; then
-  echo "You need to fill in ./secrets/key.js to set your app secret."
+if [ -z "${DOCS_KEY}" ]; then
+  echo "You need to set the DOCS_KEY environment variable"
   exit 1
 fi
 

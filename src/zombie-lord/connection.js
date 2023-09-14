@@ -23,7 +23,6 @@ import {WorldName} from '../public/translateVoodooCRDP.js';
 import {RACE_SAMPLE, makeCamera, COMMON_FORMAT, DEVICE_FEATURES, SCREEN_OPTS, MAX_ACK_BUFFER, MIN_WIDTH, MIN_HEIGHT} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
 import {getInjectableAssetPath, LatestCSRFToken, fileChoosers} from '../ws-server.js';
-import docViewerSecret from '../services/pool/chai/secrets/key.js';
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
 
@@ -65,6 +64,7 @@ const pageContextInjectionsScroll = `(function () {
 const templatedInjections = {
 };
 
+const docViewerSecret = process.env.DOCS_KEY;
 const MAX_TRIES_TO_LOAD = 10;
 const TAB_LOAD_WAIT = 300;
 const RECONNECT_MS = 5000;

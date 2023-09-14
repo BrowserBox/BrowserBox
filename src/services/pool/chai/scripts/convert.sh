@@ -86,6 +86,7 @@ convert_via_libreoffice() {
 convert_to_pdf_if_needed() {
   # Extract the file extension
   file_extension="${1##*.}"
+  file_extension="${file_extension,,}"
   pandoc_options=""
 
   echo "File ext: ${file_extension}" >&2
