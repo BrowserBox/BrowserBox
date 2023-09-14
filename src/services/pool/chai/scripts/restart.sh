@@ -15,4 +15,3 @@ $pm2 stop ./scripts/run-docspark.sh
 $pm2 delete run-docspark
 killall node npm
 $pm2 start ./scripts/run-docspark.sh
-$pm2 logs run-docspark
