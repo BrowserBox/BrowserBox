@@ -68,7 +68,7 @@ bash <(curl -s https://raw.githubusercontent.com/dosyago/BrowserBoxPro/7461dd1ed
 
 Upon successful deployment, BrowserBoxPro will be operational, reinforcing your Zero Trust strategy. Access the browser using the provided login link: `https://<your-host>:$PORT/login?token=<random token>`.
 
-For support or to purchase licenses, connect with us at sales@dosyago.com or visit: https://dosaygo.com.
+For support or to purchase licenses, connect with us at sales@dosyago.com or visit: https://dosyago.com.
 
 ## Zero Trust Installation Guide
 
