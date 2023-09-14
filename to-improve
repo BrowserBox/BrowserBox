@@ -1,0 +1,6 @@
+- fix heredoc computation of domain name in sourced config script
+
+- set up secrets/key.js or make it an env variable (better idea) for the API_KEY for the doc viewer service
+
+- probably create that api key to exist in the config script
+
