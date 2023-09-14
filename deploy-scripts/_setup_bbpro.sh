@@ -92,6 +92,7 @@ if [ -z "$COOKIE" ]; then
 fi
 
 DT_PORT=$((PORT + 1))
+SV_PORT=$((PORT - 1))
 
 echo "Received port $PORT and token $TOKEN and cookie $COOKIE">&2
 
@@ -108,11 +109,17 @@ echo "Done!">&2
 
 echo -n "Creating test.env...">&2
 
+sslcerts="$HOME/sslcerts"
+cert_file="${sslcerts}/fullchain.pem"
+sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g')
+HOST=$(echo $sans | awk '{print $1}')
+
 cat > $CONFIG_DIR/test.env <<EOF
 export APP_PORT=$PORT
 export LOGIN_TOKEN=$TOKEN
 export COOKIE_VALUE=$COOKIE
 export DEVTOOLS_PORT=$DT_PORT
+export DOCS_PORT=$SV_PORT
 
 # true runs within a 'browsers' group
 #export BB_POOL=true
@@ -126,6 +133,10 @@ export RENICE_VALUE=-19
 # use localhost certs (need export from access machine, can then block firewall ports and not expose connection to internet
 # for truly private browser)
 # export SSLCERTS_DIR=$HOME/localhost-sslcerts
+export SSLCERTS_DIR=$sslcerts
+
+# compute the domain from the cert file
+export DOMAIN="$HOST"
 
 # for extra security (but may reduce performance somewhat)
 # set the following variables.
@@ -143,10 +154,7 @@ echo "Done!">&2
 
 echo "The login link for this instance will be:">&2
 
-cert_file="$HOME/sslcerts/fullchain.pem"
-sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g')
-DOMAIN=$(echo $sans | awk '{print $1}')
-
+DOMAIN=$HOST
 
 echo https://$DOMAIN:$PORT/login?token=$TOKEN > $CONFIG_DIR/login.link
 echo https://$DOMAIN:$PORT/login?token=$TOKEN

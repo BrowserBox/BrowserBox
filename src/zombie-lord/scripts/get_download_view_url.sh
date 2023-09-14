@@ -1,6 +1,7 @@
 #!/bin/bash
 
-provider="https://users.dosyago.com/very-secure-manifest-convert"
+provider="https://${DOMAIN}:${DOCS_PORT}/very-secure-manifest-convert"
+
 username=$1
 filename=$2
 secret=$3

@@ -1,6 +1,7 @@
 #!/bin/sh
 
-port=$1
+port="${1:-$DOCS_PORT}"
+
 if [ -z $port ]; then
   port=443
   echo "Supply port, defaulting to 443"
