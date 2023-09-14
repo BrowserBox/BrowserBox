@@ -2,6 +2,8 @@
 
 - refine adaptive tests and change cast seldom
 
+- add screen reset on tab change ( otherwise the prior tab lingers a little too long )
+
 - fix clipboard write on Safari https://developer.apple.com/forums/thread/691873
 
 - if you restart your browser, you probably expect tabs to come back up, so we likely need to save a list of tabs. saved in a file under home, like
@@ -14,6 +16,6 @@ updated every tab change (not on every scroll). * indicates active tab. Nice, si
 
 - factor out get_install_dir and other funcs into something we can source into all the scripts that use it
 
-- add check for node_modules in bbpro install dir
+- add check for node_modules in bbpro install dir (otherwise we may try to launch of one that hasn't been installed!)
 
 - attach to any restored tabs.
