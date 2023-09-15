@@ -1,3 +1,5 @@
+- put chai state files (pid.txt, pdfs/**, etc...) into user config directory $HOME/.config/... because we need perms to write them and in current set up chai is trying to write within the install directory which is root permed and so fails
+
 - fix test for menu open on mobile
 
 - refine adaptive tests and change cast seldom
