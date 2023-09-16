@@ -21,9 +21,10 @@
   const SECRET = process.env.DOCS_KEY;
   const MAX_FILE_DL_TIME = 147*1000; // time to allow a download before rejecting ~ 2.5 mins
   const WAIT_NEW_FILES_BEFORE_DISK_SYNC = 3;
-  const PIDFILE = Path.join(__dirname, '..', 'pid.txt');
-  const HASH_FILE = Path.join(__dirname, '..', 'pdfs', 'hashes.json');
-  const LINK_FILE = Path.join(__dirname, '..', 'pdfs', 'links.json');
+  const CHAI_STATE_PATH = Path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro')
+  const PIDFILE = Path.join(CHAI_STATE_PATH, 'chai-pid.txt');
+  const HASH_FILE = Path.join(CHAI_STATE_PATH, 'pdfs', 'hashes.json');
+  const LINK_FILE = Path.join(CHAI_STATE_PATH, 'pdfs', 'links.json');
   const ArchivesDir = Path.resolve('archives');
   const jobs = {};
   const Files = new Map();

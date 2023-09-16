@@ -1,6 +1,10 @@
 #!/bin/sh
 
+
+. ./scripts/config.sh
+
 # delete all view pages and images older than 3 days
+PID_DIR=$HOME/.config/dosyago/bbpro
 cd ./public/uploads
 
 # old one
@@ -15,7 +19,7 @@ find ./ -name 'file*' -type f -mmin +4319 -delete
 
 # delete all original documents older than 3 days
 
-cd ../../pdfs
+cd "$pdfs"
 
 # old one
   # remove all files older than 3 days
@@ -33,4 +37,4 @@ cd ../
 ./src/rebuild_hashes.js
 
 # notify the process that the hashes have been rebuilt
-sudo kill -s ALRM $(cat pid.txt) > /dev/null 2>&1 || echo "Could not notify process of restart. Perhaps it is not running?"
+sudo kill -s ALRM $(cat $PID_DIR/chai-pid.txt) > /dev/null 2>&1 || echo "Could not notify process of restart. Perhaps it is not running?"
