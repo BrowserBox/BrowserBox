@@ -1,0 +1,24 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f0f0f0;
+}
+
+.container {
+  position: relative;
+}
+
+.logo {
+  width: 200px;
+  height: 200px;
+}
+
+#ring {
+  transform-origin: center;
+}
+
+
