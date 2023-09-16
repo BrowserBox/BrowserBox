@@ -1,6 +1,12 @@
+- put chai state files (pid.txt, pdfs/**, etc...) into user config directory $HOME/.config/... because we need perms to write them and in current set up chai is trying to write within the install directory which is root permed and so fails
+
+- also chai uses a sudo command and the bb users do not have this capability so we need to reconfig those parts. maybe it's a cap? or maybe we won't need sudo if we move the state files? look at
+
 - fix test for menu open on mobile
 
 - refine adaptive tests and change cast seldom
+
+- add screen reset on tab change ( otherwise the prior tab lingers a little too long )
 
 - fix clipboard write on Safari https://developer.apple.com/forums/thread/691873
 
@@ -14,6 +20,6 @@ updated every tab change (not on every scroll). * indicates active tab. Nice, si
 
 - factor out get_install_dir and other funcs into something we can source into all the scripts that use it
 
-- add check for node_modules in bbpro install dir
+- add check for node_modules in bbpro install dir (otherwise we may try to launch of one that hasn't been installed!)
 
 - attach to any restored tabs.
