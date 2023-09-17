@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 
+export NODE_OPTIONS=--openssl-legacy-provider
 rm -rf .build-temp/
 rm -rf dist/ 
 mkdir -p dist/
