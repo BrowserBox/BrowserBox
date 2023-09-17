@@ -64,6 +64,9 @@ cd ../chai
 npm i
 npm audit fix
 
+echo "Installing OS dependencies for secure document viewer..."
+./scripts/setup.sh
+
 cd ../../../../
 
 USE_FLASH=$(node ./src/show_useflash.js);
