@@ -35,6 +35,7 @@ if [ ! -f "${pdfs}/links.json" ]; then
 fi
 
 npm i
+
 if ! command -v pm2 &>/dev/null; then
   npm i -g pm2
   if ! command -v pm2 &>/dev/null; then
@@ -43,8 +44,4 @@ if ! command -v pm2 &>/dev/null; then
   fi
 fi
 
-if [ ! -f ./secrets/key.js ]; then
-  echo "You need to fill in ./secrets/key.js to set your app secret."
-  exit 1
-fi
 
