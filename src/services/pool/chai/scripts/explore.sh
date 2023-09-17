@@ -16,6 +16,8 @@ trap 'handle_error' ERR
 : "${MAX_EXECUTION_TIME:=30}"
 : "${EXTRACTION_ROOT:=${CHAI_PATH}/archives}"
 
+mkdir -p "$EXTRACTION_ROOT"
+
 # Function to check and install required utilities
 install_guard() {
   local utility_name="$1" 
@@ -102,7 +104,7 @@ extract_securely() {
 
   # Estimate the uncompressed size and exit if too large
   local estimated_size=$(estimate_uncompressed_size "$archive_path")
-  if [ "$estimated_size" -gt "$MAX_ARCHIVE_SIZE" ]; then
+  if [[ "$estimated_size" -gt "$MAX_ARCHIVE_SIZE" ]]; then
     echo "Error: Estimated uncompressed size exceeds maximum limit." >&2
     exit 1
   fi
