@@ -1,13 +1,13 @@
-# BrowserBoxPro: Zero Trust Browsing
+# BrowserBox: Zero Trust Browsing
 
-BrowserBoxPro is a leading-edge solution in the Zero Trust landscape, ensuring that every web interaction is treated as potentially hostile. By leveraging the principles of Remote Browser Isolation (RBI) and co-browsing, BrowserBoxPro ensures that no web content directly interacts with the end user's device. This guide will walk you through the seamless integration of BrowserBoxPro into your Zero Trust architecture.
+BrowserBox is a leading-edge solution in the Zero Trust landscape, ensuring that every web interaction is treated as potentially hostile. By leveraging the principles of Remote Browser Isolation (RBI) and co-browsing, BrowserBoxPro ensures that no web content directly interacts with the end user's device. This guide will walk you through the seamless integration of BrowserBoxPro into your Zero Trust architecture.
 
 Here's a markdown Table of Contents (ToC) for your README:
 
 # Table of Contents
 
-- [BrowserBoxPro: Zero Trust Browsing](#browserboxpro-zero-trust-browsing)
-  - [Embracing Zero Trust with BrowserBoxPro](#embracing-zero-trust-with-browserboxpro)
+- [BrowserBox: Zero Trust Browsing](#browserbox-zero-trust-browsing)
+  - [Embracing Zero Trust with BrowserBox](#embracing-zero-trust-with-browserbox)
   - [Key Features](#key-features)
   - [Deploying BrowserBoxPro in a Zero Trust Environment with Docker](#deploying-browserboxpro-in-a-zero-trust-environment-with-docker)
   - [Zero Trust Installation Guide](#zero-trust-installation-guide)
@@ -29,7 +29,7 @@ Here's a markdown Table of Contents (ToC) for your README:
   - [Elevate Your Zero Trust Strategy with BrowserBoxPro](#elevate-your-zero-trust-strategy-with-browserboxpro)
   - [Copyright](#copyright)
 
-## Embracing Zero Trust with BrowserBoxPro
+## Embracing Zero Trust with BrowserBox
 
 In the evolving cybersecurity landscape, the Zero Trust model has emerged as a cornerstone. By assuming no trust by default and verifying every access request irrespective of its source, Zero Trust ensures robust security. BrowserBoxPro is at the forefront of this paradigm shift, offering:
 
@@ -37,7 +37,7 @@ In the evolving cybersecurity landscape, the Zero Trust model has emerged as a c
 - **Co-Browsing**: Collaborative browsing without compromising security.
 - **Zero Trust Integration**: Easily integrates into your existing Zero Trust infrastructure.
 
-For the latest on how BrowserBoxPro is shaping the Zero Trust landscape, visit our [Company Blog](https://blog.dosyago.com).
+For the latest on how BrowserBox is shaping the Zero Trust landscape, visit our [Company Blog](https://blog.dosyago.com).
 
 - [Updated Pricing](https://dosyago.com) - now with even more tiers for smaller use cases!
 - [BrowserBox Pro Goes Open Source with Multiple Licenses
