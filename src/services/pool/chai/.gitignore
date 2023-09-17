@@ -2,9 +2,6 @@
 log
 pdfs
 pdfs/**/*
-archives
-archives/**/*
-
 
 scripts/*.pdf
 scripts/*.png

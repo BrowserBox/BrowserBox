@@ -11,6 +11,7 @@ fi
 pm2=$(which pm2)
 
 cp -r ./public/* "$STATIC_DIR"
+cp -r ./archives/* "$ARCH_DIR"
 
 "${STATIC_DIR}/uploads/clean.sh"
 sleep 2
