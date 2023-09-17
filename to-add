@@ -17,5 +17,3 @@ updated every tab change (not on every scroll). * indicates active tab. Nice, si
 - factor out get_install_dir and other funcs into something we can source into all the scripts that use it
 
 - add check for node_modules in bbpro install dir (otherwise we may try to launch of one that hasn't been installed!)
-
-- attach to any restored tabs.
