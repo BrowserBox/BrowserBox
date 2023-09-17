@@ -159,7 +159,7 @@
       // prevent the repreated requests for first page to blow the cache
       // as in browser will eventually think ti doesn't exist and just serve no exist for ever
       // rather than make request
-    const fileSystemPath = Path.join(uploadPath, Path.basename(req.originalUrl));
+    const fileSystemPath = Path.join(uploadPath, Path.basename(sanitizeUrl(req.originalUrl)));
     console.log('Not found yet', fileSystemPath);
     if ( fs.existsSync(fileSystemPath) ) {
       res.send(fileSystemPath);
@@ -203,9 +203,12 @@
 
   app.post('/very-secure-manifest-convert(*)', upload.single('pdf'), async (req, res) => {
     let {file:pdf} = req;
-    const {secret, url:docUrl} = req.body;
+    const {secret, url:rawDocUrl} = req.body;
 
-    const ext = Path.extname(req.originalUrl);
+    const docUrl = sanitizeUrl(rawDocUrl);
+    pdf.path = sanitizeFilePath(pdf.path);
+
+    let ext = Path.extname(req.originalUrl);
 
     const redirectToUrl = ext == '.html'; 
 
@@ -218,8 +221,8 @@
     // logging 
       log(req, {file:pdf && pdf.path, docUrl});
 
-    if ( docUrl ) {
-      let ext = Path.extname(docUrl);
+    if ( docUrl && ! pdf ) {
+      ext = Path.extname(docUrl);
       if ( ! ext ) {
         ext = '.tempdownload';
       }
@@ -239,7 +242,7 @@
         } else if ( ext === '.tempdownload' ) { // need to get it
           try {
             ext = undefined;
-            ext = execSync(`file --mime-type ${pdf.path}`).split('/').pop();
+            ext = execSync(`file --mime-type "${pdf.path}"`).split('/').pop();
           } catch(e) {
             console.warn(`Error trying to get mime filetype extension for ${pdf.path}`, e);
           } finally {
@@ -259,9 +262,7 @@
         console.log(msg, e);
         return res.status(500).send(msg);
       }
-    }
-    
-    if ( pdf ) { 
+    } else if ( pdf ) {
       return await convertIt({res, pdf, redirectToUrl});
     } else {
       res.end(`Please provide a file or a URL`);
@@ -543,4 +544,33 @@
 
   function savePID() {
     return fs.promises.writeFile(PIDFILE, process.pid+'');
+  }
+
+  function sanitizeFilePath(filePath) {
+    // List of characters that need to be escaped in shell commands
+    const shellSpecialChars = [' ', '&', ';', '<', '>', '(', ')', '$', '|', '`', '\\', '"', "'"];
+    
+    // Escape each special character with a backslash
+    let sanitizedPath = filePath.split('').map((char) => {
+      return shellSpecialChars.includes(char) ? `\\\\${char}` : char;
+    }).join('');
+    
+    return sanitizedPath;
+  }
+
+  function sanitizeUrl(urlString) {
+    let url;
+    
+    // Validate the URL
+    try {
+      url = new URL(urlString);
+    } catch (error) {
+      throw new Error('Invalid URL');
+    }
+
+    // URL class will take care of encoding special characters,
+    // making it safe for use in shell commands
+    const sanitizedURL = url.toString();
+    
+    return sanitizedURL;
   }
