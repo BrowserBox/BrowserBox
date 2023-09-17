@@ -193,7 +193,7 @@
     }
 
     // logging 
-      log(req, {file:pdf && pdf.path, docUrl});
+      log(req, {file:pdf && pdf.path});
 
     if ( pdf ) {
       return await convertIt({res, pdf, redirectToUrl});
