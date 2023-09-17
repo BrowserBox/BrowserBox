@@ -37,4 +37,4 @@ cd ../
 ./src/rebuild_hashes.js
 
 # notify the process that the hashes have been rebuilt
-sudo kill -s ALRM $(cat $PID_DIR/chai-pid.txt) > /dev/null 2>&1 || echo "Could not notify process of restart. Perhaps it is not running?"
+kill -s ALRM $(cat $PID_DIR/chai-pid.txt) > /dev/null 2>&1 || echo "Could not notify process of restart. Perhaps it is not running?"
