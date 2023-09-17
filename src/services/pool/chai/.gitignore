@@ -1,13 +1,12 @@
 # app specific
-pid.txt
 log
-
+pdfs
+pdfs/**/*
 
 scripts/*.pdf
 scripts/*.png
 scripts/*.jp*
 scripts/*.svg
-pdfs/*
 public/uploads/file*
 public/uploads/file*.*
 secrets/*.js*

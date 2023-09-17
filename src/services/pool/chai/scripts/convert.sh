@@ -1,12 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
-# Check if xelatex is installed and set Pandoc options accordingly
-if command -v xelatex > /dev/null 2>&1; then
-  pandoc_options="--pdf-engine=xelatex"
-else
-  echo "xelatex is not installed, proceeding without it." >&2
-  pandoc_options=""
-fi
+. ./scripts/config.sh
+
+echo "$1"
+
+base="$2"
+format="$3"
 
 # Verify if a file path is provided
 if [ -z "$1" ]; then
@@ -20,15 +19,12 @@ if [ ! -f "$1" ]; then
   exit 1
 fi
 
-echo "$1"
-
-base="$2"
-format="$3"
-
 # Set default format to png if none is provided
 if [ -z "$format" ]; then
   format="png"
 fi
+
+#cp "$base/index.html" "$1.html"
 
 convert_to_pdf() {
   local input_file="$1"
@@ -74,9 +70,26 @@ TAO
   mv "${latex}/file.pdf" "${output_file}"
 }
 
+convert_via_libreoffice() {
+  local input_file="$1"
+  local output_file="$2"
+  cmd="soffice"
+  if ! command -v "$cmd" > /dev/null 2>&1; then
+    cmd="libreoffice"
+    if ! command -v "$cmd" > /dev/null 2>&1; then
+      echo "Error: cannot find libreoffice" >&2
+      exit 1
+    fi
+  fi
+
+  "$cmd" --headless --convert-to pdf "$input_file" --outdir "$(dirname "$input_file")" 1>&2
+}
+
 convert_to_pdf_if_needed() {
   # Extract the file extension
   file_extension="${1##*.}"
+  file_extension="${file_extension,,}"
+  pandoc_options=""
 
   echo "File ext: ${file_extension}" >&2
 
@@ -84,35 +97,69 @@ convert_to_pdf_if_needed() {
     file_extension=""
   fi
 
-  iconv -c -t utf-8//IGNORE "$1"  | sed 's/[^[:print:]\t]//g' > "${1}.utf8"
-  mv "${1}.utf8" "$1"
-
   # Output file name (same as input but with .pdf extension)
   output_file="${1%.*}.pdf"
 
   # Convert files based on their extension
   case "$file_extension" in
+    "123"|"602"|"abw"|"agd"|"ase"|"bmp"|"cdr"|"cgm"|"cmx"|"csv"|"cwk"|"dbf"|"dif"|"dxf"|"emf"|"eps"|"fb2"|"fhd"|"gif"|"gnm"|"gnumeric"|"hwp"|"htm"|"html"|"jpe"|"jpeg"|"jpg"|"jtd"|"jtt"|"key"|"kth"|"mml"|"met"|"pdb"|"pl"|"plt"|"png"|"pm3"|"pm4"|"pm5"|"pm6"|"pmd"|"p65"|"pot"|"pps"|"psd"|"psw"|"pub"|"pxl"|"qxp"|"ras"|"rlf"|"rtf"|"sgf"|"sgv"|"slk"|"svg"|"svm"|"swf"|"tga"|"tif"|"tiff"|"uof"|"uop"|"uos"|"uot"|"wb2"|"wks"|"wk1"|"wk3"|"wk4"|"wps"|"wpd"|"wq1"|"wq2"|"wmf"|"xbm"|"xml"|"xpm"|"xlw"|"xlt"|"zabw"|"zmf"|"xls"|"doc"|"ppt"|"xlsx"|"docx"|"pptx"|"pages")
+      echo "Converting Office files to PDF using LibreOffice..." >&2
+      convert_via_libreoffice "$1" "$output_file"
+      ;;
     "rst")
       echo "Converting RST to PDF..." >&2
+
+      # Check if xelatex is installed and set Pandoc options accordingly
+      if command -v xelatex > /dev/null 2>&1; then
+        pandoc_options="--pdf-engine=xelatex"
+      else
+        echo "xelatex is not installed, proceeding without it." >&2
+        pandoc_options=""
+      fi
+
       options_array=(--from=rst $pandoc_options)
+
+      iconv -c -t utf-8//IGNORE "$1"  | awk '{gsub(/[^[:print:]\t]/, ""); print}' > "${1}.utf8"
+      mv "${1}.utf8" "$1"
+
       convert_to_pdf "$1" "$output_file" "${options_array[@]}"
       ;;
     "json"|"conf"|"yaml"|"sh"|"text"|"txt"|"c"|"js"|"cpp"|"h"|"tpp"|"hpp"|"py"|"pl"|"m"|"java"|"go"|"cjs"|"mjs"|"css"|"")
       echo "Converting Text files to PDF via LaTeX..." >&2
+
+      iconv -c -t utf-8//IGNORE "$1"  | awk '{gsub(/[^[:print:]\t]/, ""); print}' > "${1}.utf8"
+      mv "${1}.utf8" "$1"
+
       convert_via_latex "$1" "${1%.*}.pdf"
       ;;
     "me"|"md")
       echo "Converting Markdown (GFM) to PDF..." >&2
+
+      # Check if xelatex is installed and set Pandoc options accordingly
+      if command -v xelatex > /dev/null 2>&1; then
+        pandoc_options="--pdf-engine=xelatex"
+      else
+        echo "xelatex is not installed, proceeding without it." >&2
+        pandoc_options=""
+      fi
+
       options_array=(--from=gfm $pandoc_options)
+
+      iconv -c -t utf-8//IGNORE "$1"  | awk '{gsub(/[^[:print:]\t]/, ""); print}' > "${1}.utf8"
+      mv "${1}.utf8" "$1"
+
       convert_to_pdf "$1" "$output_file" "${options_array[@]}"
       ;;
-    "htm"|"html")
-      echo "Converting HTML to PDF..." >&2
-      options_array=($pandoc_options)
-      convert_to_pdf "$1" "$output_file" "${options_array[@]}"
+    "3fr"|"aai"|"arw"|"avi"|"avif"|"bmp"|"cin"|"cr2"|"cr3"|"crw"|"cur"|"dcm"|"dcr"|"dcx"|"dng"|"dpx"|"eps"|"erf"|"fax"|"fits"|"fpx"|"gif"|"gray"|"hdr"|"heic"|"heif"|"ico"|"jbg"|"jbig"|"jng"|"jp2"|"jpeg"|"jpg"|"k25"|"kdc"|"mat"|"miff"|"mkv"|"mng"|"mov"|"mp4"|"mpc"|"mpeg"|"mpg"|"mrw"|"msl"|"nef"|"nrf"|"orf"|"pam"|"pbm"|"pcd"|"pef"|"pes"|"pfa"|"pfb"|"pfm"|"pgm"|"png"|"pnm"|"ppm"|"ps"|"psb"|"psd"|"ptif"|"raf"|"ras"|"raw"|"rgb"|"rgba"|"rla"|"rle"|"rw2"|"sfw"|"sgi"|"sr2"|"srf"|"sun"|"svg"|"svgz"|"tga"|"tiff"|"ttf"|"ubrl"|"vda"|"viff"|"vips"|"vst"|"wbmp"|"webm"|"webp"|"wmv"|"wpg"|"x3f"|"xbm"|"xcf"|"xpm"|"xv"|"yuv"|"pdf")
+      echo "This format is recognized by ImageMagick so we leave it alone (for now, mwhoahaha)..." >&2
+      output_file="$1"
       ;;
     *)
       echo "Converting unknown types to PDF via LaTeX..." >&2
+
+      iconv -c -t utf-8//IGNORE "$1"  | awk '{gsub(/[^[:print:]\t]/, ""); print}' > "${1}.utf8"
+      mv "${1}.utf8" "$1"
+
       convert_via_latex "$1" "${1%.*}.pdf"
       ;;
   esac
@@ -121,15 +168,10 @@ convert_to_pdf_if_needed() {
 }
 
 # Main Script Execution
+
 converted_file=$(convert_to_pdf_if_needed "$1")
-cp "$base/index.html" "$1.html"
 
-echo "converted file: $converted_file"
-echo "format: $format"
-echo "1: $1"
-echo "base: $base"
+convert -verbose -density 127 -background ivory -alpha remove -alpha off -quality 77% -strip -interlace Plane "${converted_file}" +adjoin "${1}-%04d.${format}" || (mutool draw -i -o "${1}-%04d.${format}" "${converted_file}" && "${INSTALL_DIR}/chai/scripts/rename_1_based.sh" "${1}" "$format")
 
-convert -verbose -density 120 -background ivory -alpha remove -alpha off -quality 75% -strip -interlace Plane "${converted_file}" +adjoin "${1}-%04d.${format}" || (mutool draw -i -o "${1}-%04d.${format}" "${converted_file}" && "$base/../../scripts/rename_1_based.sh" "${1}" "$format")
-
-cp "$1" "$base/../../pdfs/"
+cp "$1" "${pdfs}/"
 

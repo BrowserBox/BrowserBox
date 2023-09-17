@@ -1,6 +1,12 @@
+- add check for node_modules in bbpro install dir (otherwise we may try to launch of one that hasn't been installed!)
+
+- factor out get_install_dir and other funcs into something we can source into all the scripts that use it
+
 - fix test for menu open on mobile
 
 - refine adaptive tests and change cast seldom
+
+- add screen reset on tab change ( otherwise the prior tab lingers a little too long ) (and on navigate to url picked up by secureview)
 
 - fix clipboard write on Safari https://developer.apple.com/forums/thread/691873
 
@@ -12,8 +18,4 @@ url,yscroll
 
 updated every tab change (not on every scroll). * indicates active tab. Nice, simple format. 
 
-- factor out get_install_dir and other funcs into something we can source into all the scripts that use it
 
-- add check for node_modules in bbpro install dir
-
-- attach to any restored tabs.

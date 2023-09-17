@@ -13,7 +13,9 @@ else
   $SUDO apt-get install -y nodejs
 fi
 
-$SUDO which pm2 || bash -c "$SUDO npm i -g pm2@latest"
+if ! command -v pm2; then
+  $SUDO bash -c "source ~/.nvm/nvm.sh; npm i -g pm2@latest"
+fi
 
 echo -n "Set up quota user to have 5G 5G and 2m 2m block and inode limit."
 read -p " Enter to continue "

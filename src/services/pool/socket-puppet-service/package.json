@@ -1,6 +1,6 @@
 {
   "name": "@dosy-private/socket-puppet-service",
-  "version": "1.0.0",
+  "version": "1.2.3",
   "private": true,
   "type": "module",
   "description": "SocketPuppet service",
@@ -25,11 +25,11 @@
   },
   "homepage": "https://github.com/crisdosyago/socket-puppet-service#readme",
   "dependencies": {
-    "body-parser": "^1.19.2",
-    "cookie-parser": "^1.4.6",
-    "cors": "^2.8.5",
-    "express": "^4.17.3",
-    "express-basic-auth": "^1.2.1",
-    "helmet": "^5.0.2"
+    "body-parser": "latest",
+    "cookie-parser": "latest",
+    "cors": "latest",
+    "express": "latest",
+    "express-basic-auth": "latest",
+    "helmet": "latest"
   }
 }

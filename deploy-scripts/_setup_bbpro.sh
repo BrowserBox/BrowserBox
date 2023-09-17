@@ -39,7 +39,7 @@ else
   getopt="/usr/bin/getopt"
 fi
 
-OPTS=`$getopt -o p:t:c: --long port:,token:,cookie: -n 'parse-options' -- "$@"`
+OPTS=`$getopt -o p:t:c: --long port:,token:,cookie:,doc-key: -n 'parse-options' -- "$@"`
 
 if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; exit 1 ; fi
 
@@ -58,6 +58,7 @@ while true; do
     ;;
     -t | --token ) TOKEN="$2"; shift 2;;
     -c | --cookie ) COOKIE="$2"; shift 2;;
+    -d | --doc-key ) DOC_API_KEY="$2"; shift 2;;
     -- ) shift; break;;
     * ) echo "Invalid option: $1" >&2; exit 1;;
   esac
@@ -77,6 +78,9 @@ elif ! is_port_free $(($PORT - 2)); then
 elif ! is_port_free $(($PORT + 1)); then
   echo "Error: the suggested port range (devtools) is already in use" >&2
   exit 1
+elif ! is_port_free $(($PORT - 1)); then
+  echo "Error: the suggested port range (doc viewer) is already in use" >&2
+  exit 1
 fi
 
 if [ -z "$TOKEN" ]; then
@@ -91,7 +95,14 @@ if [ -z "$COOKIE" ]; then
   echo "Generated cookie: $COOKIE">&2
 fi
 
+if [ -z "$DOC_API_KEY" ]; then
+  echo -n "Doc API key not provided, so will generate...">&2
+  DOC_API_KEY=$(openssl rand -hex 16)
+  echo "Generated doc API key: $DOC_API_KEY">&2
+fi
+
 DT_PORT=$((PORT + 1))
+SV_PORT=$((PORT - 1))
 
 echo "Received port $PORT and token $TOKEN and cookie $COOKIE">&2
 
@@ -108,11 +119,18 @@ echo "Done!">&2
 
 echo -n "Creating test.env...">&2
 
+sslcerts="$HOME/sslcerts"
+cert_file="${sslcerts}/fullchain.pem"
+sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g')
+HOST=$(echo $sans | awk '{print $1}')
+
 cat > $CONFIG_DIR/test.env <<EOF
 export APP_PORT=$PORT
 export LOGIN_TOKEN=$TOKEN
 export COOKIE_VALUE=$COOKIE
 export DEVTOOLS_PORT=$DT_PORT
+export DOCS_PORT=$SV_PORT
+export DOCS_KEY=$DOC_API_KEY
 
 # true runs within a 'browsers' group
 #export BB_POOL=true
@@ -126,6 +144,10 @@ export RENICE_VALUE=-19
 # use localhost certs (need export from access machine, can then block firewall ports and not expose connection to internet
 # for truly private browser)
 # export SSLCERTS_DIR=$HOME/localhost-sslcerts
+export SSLCERTS_DIR=$sslcerts
+
+# compute the domain from the cert file
+export DOMAIN="$HOST"
 
 # for extra security (but may reduce performance somewhat)
 # set the following variables.
@@ -143,10 +165,7 @@ echo "Done!">&2
 
 echo "The login link for this instance will be:">&2
 
-cert_file="$HOME/sslcerts/fullchain.pem"
-sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g')
-DOMAIN=$(echo $sans | awk '{print $1}')
-
+DOMAIN=$HOST
 
 echo https://$DOMAIN:$PORT/login?token=$TOKEN > $CONFIG_DIR/login.link
 echo https://$DOMAIN:$PORT/login?token=$TOKEN

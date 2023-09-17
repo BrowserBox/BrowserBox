@@ -2,7 +2,7 @@
 
 count=$1
 #IFS=$'\n';
-base=https://secureview.isolation.site/uploads/
+base=https://$(./scripts/get_hostname.sh)/uploads/
 
 if [ -z $count ]; then
   count=10

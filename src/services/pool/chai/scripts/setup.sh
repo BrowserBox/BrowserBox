@@ -2,6 +2,8 @@
 
 . ~/.nvm/nvm.sh
 
+. ./scripts/config.sh
+
 OS=$(uname)
 if [ "$OS" = "Darwin" ]; then
   # Mac OS X
@@ -20,20 +22,26 @@ else
   sudo cp policy.xml /etc/ImageMagick-*/
   sudo apt-get update
   sudo apt-get install libcap2-bin
-  sudo setcap 'cap_net_bind_service=+ep' $(command -v node)
+  sudo setcap 'cap_net_bind_service=+ep' "$(command -v node)"
 fi
 
 
-mkdir -p pdfs
-if [ ! -f "pdfs/hashes.json" ]; then
-  echo "[]" > pdfs/hashes.json
+mkdir -p "${pdfs}"
+if [ ! -f "${pdfs}/hashes.json" ]; then
+  echo "[]" > "${pdfs}/hashes.json"
+fi
+if [ ! -f "${pdfs}/links.json" ]; then
+  echo "[]" > "${pdfs}/links.json"
 fi
 
 npm i
-which pm2 || npm i -g pm2
 
-if [ ! -f ./secrets/key.js ]; then
-  echo "You need to fill in ./secrets/key.js to set your app secret."
-  exit 1
+if ! command -v pm2 &>/dev/null; then
+  npm i -g pm2
+  if ! command -v pm2 &>/dev/null; then
+    echo "Error: could not install pm2" >&2
+    exit 1
+  fi
 fi
+
 

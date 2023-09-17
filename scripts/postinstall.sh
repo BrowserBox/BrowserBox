@@ -60,9 +60,12 @@ npm i
 npm audit fix
 
 echo "Installing packages for secure document viewer..."
-cd ../pool/chai
+cd ../chai
 npm i
 npm audit fix
+
+echo "Installing OS dependencies for secure document viewer..."
+./scripts/setup.sh
 
 cd ../../../../
 

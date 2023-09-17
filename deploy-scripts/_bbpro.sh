@@ -27,7 +27,7 @@ has_renice_cap() {
   fi
 }
 
-INSTALL_DIR=$(get_install_dir)
+export INSTALL_DIR=$(get_install_dir)
 
 echo Running bbpro for user $USER... >&2
 
