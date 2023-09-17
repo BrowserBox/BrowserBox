@@ -138,7 +138,7 @@ export const CONFIG = Object.freeze({
   screencastOnly: true,
   baseDir: path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro'),
   darkMode: true, 
-  forceContentDarkMode: true,
+  forceContentDarkMode: false,
   audioDropPossiblySilentFrames: true,
   sslcerts: process.env.SSLCERTS_DIR ? process.env.SSLCERTS_DIR : 'sslcerts',
   reniceValue: process.env.RENICE_VALUE || -15,
