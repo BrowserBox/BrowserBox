@@ -14,7 +14,7 @@ trap 'handle_error' ERR
 # Default environment variable values
 : "${MAX_ARCHIVE_SIZE:=104857600}"
 : "${MAX_EXECUTION_TIME:=30}"
-: "${EXTRACTION_ROOT:=./archives}"
+: "${EXTRACTION_ROOT:=${CHAI_PATH}/archives}"
 
 # Function to check and install required utilities
 install_guard() {
