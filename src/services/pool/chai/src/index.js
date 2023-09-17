@@ -174,7 +174,7 @@
   app.get(/^\/archives\/file[^\/]+\/.+/, async (req, res) => {
     // decodeURIComponent is here necessary for paths with spaces
     const pathElements = decodeURIComponent(req.path).split(/\//g).filter(e => e.length);
-    const path = Path.resolve(...pathElements);
+    const path = Path.resolve(CHAI_STATE_PATH, ...pathElements);
     let newPath;
     let newFilename;
     if ( !State.Links.has(path) ) {
