@@ -10,6 +10,7 @@
     execSync
   } = child_process;
   const express = require('express');
+  const rateLimit = require('express-rate-limit');
   const https = require('https');
   const http = require('http');
   const multer = require('multer');
@@ -27,6 +28,22 @@
   const LINK_FILE = Path.join(CHAI_STATE_PATH, 'pdfs', 'links.json');
   const STATIC_DIR = process.env.STATIC_DIR || Path.join(CHAI_STATE_PATH, 'public');
   const ArchivesDir = Path.resolve(CHAI_STATE_PATH, 'archives');
+  const RateLimiter = rateLimit({
+    // 1000 requests every 3 minutes
+    windowMs: 1000 * 60 * 3,
+    max: 1000,
+    message: `
+      Too many requests from this IP. Please try again in a little while.
+    `
+  });
+  const SmallRateLimiter = rateLimit({
+    // 200 requests every 3 minutes
+    windowMs: 1000 * 60 * 3,
+    max: 200,
+    message: `
+      Too many requests from this IP. Please try again in a little while.
+    `
+  });
   const jobs = {};
   const Files = new Map();
   const Links = new Map();
@@ -61,48 +78,6 @@
 
   const sleep = ms => new Promise(res => setTimeout(res, ms));
   // adapted from code at source: https://stackoverflow.com/a/22907134/10283964
-  const download = async function(url, dest) {
-    let resolve, reject;
-    const pr = new Promise((res,rej) => (resolve = res, reject = rej));
-    const pro = url.startsWith('https') ? https : http;
-    const file = fs.createWriteStream(dest);
-    let newFilename;
-    const request = pro.get(url, function(response) {
-      try {
-        response.pipe(file);
-        newFilename = response.headers['content-disposition'];
-        if ( newFilename ) {
-          newFilename = newFilename.split('filename=').pop();
-          if ( newFilename.startsWith('"') ) {
-            newFilename = newFilename.replace(/^"/,'').replace(/"$/,'');
-          } else if ( newFilename.startsWith("'") ) {
-            newFilename = newFilename.replace(/^'/,'').replace(/'$/,'');
-          }
-          newFilename = newFilename.trim();
-          if ( newFilename === Path.basename(url) ) {
-            newFilename = undefined;
-          } else {
-            newFilename = nextFileName(Path.extname(newFilename));
-          }
-        }
-        file.on('finish', function() {
-          file.close(() => resolve(newFilename));  // close() is async, call cb after close completes.
-        });
-      } catch(e) {
-        console.warn(e);
-      }
-    }).on('error', function(err) { // Handle errors
-      console.log('Deleting the file', dest, 'because of error', err);
-      fs.unlink(dest); // Delete the file async. (But we don't check the result)
-      reject(err.message);
-    });
-    const result = Promise.race([pr, sleep(MAX_FILE_DL_TIME).then(() => reject('timed out'))]);
-    result.catch(err => {
-      console.log('Deleting the file', dest, 'because of error', err);
-      fs.unlink(dest);
-    });
-    return result;
-  };
   const DEBUG = {
     showHash: false
   };
@@ -154,7 +129,7 @@
     }
   }))
 
-  app.use('/uploads/file*0000.jpeg', (req, res) => {
+  app.use('/uploads/file*0000.jpeg', RateLimiter, (req, res) => {
     // save browser cache from getting tired of this not existing while conversion is in progress
       // prevent the repreated requests for first page to blow the cache
       // as in browser will eventually think ti doesn't exist and just serve no exist for ever
@@ -171,7 +146,7 @@
     }
   });
 
-  app.get(/^\/archives\/file[^\/]+\/.+/, async (req, res) => {
+  app.get(/^\/archives\/file[^\/]+\/.+/, SmallRateLimiter, async (req, res) => {
     // decodeURIComponent is here necessary for paths with spaces
     const pathElements = decodeURIComponent(req.path).split(/\//g).filter(e => e.length);
     const path = Path.resolve(CHAI_STATE_PATH, ...pathElements);
@@ -201,11 +176,10 @@
     res.redirect(301, redirTo);
   });
 
-  app.post('/very-secure-manifest-convert(*)', upload.single('pdf'), async (req, res) => {
+  app.post('/very-secure-manifest-convert(*)', SmallRateLimiter, upload.single('pdf'), async (req, res) => {
     let {file:pdf} = req;
-    const {secret, url:rawDocUrl} = req.body;
+    const {secret} = req.body;
 
-    const docUrl = sanitizeUrl(rawDocUrl);
     pdf.path = sanitizeFilePath(pdf.path);
 
     let ext = Path.extname(req.originalUrl);
@@ -221,48 +195,7 @@
     // logging 
       log(req, {file:pdf && pdf.path, docUrl});
 
-    if ( docUrl && ! pdf ) {
-      ext = Path.extname(docUrl);
-      if ( ! ext ) {
-        ext = '.tempdownload';
-      }
-      const filename = nextFileName(ext);
-      pdf = {
-        path: Path.resolve(uploadPath, filename),
-        filename
-      };
-      try {
-        let newFilename = await download(docUrl, pdf.path);
-        if ( newFilename ) { // from content-disposition
-          const newPath = Path.resolve(uploadPath, newFilename);
-          console.log({newPath1:newPath});
-          fs.renameSync(pdf.path, newPath);
-          pdf.path = newPath;
-          pdf.filename = newFilename;
-        } else if ( ext === '.tempdownload' ) { // need to get it
-          try {
-            ext = undefined;
-            ext = execSync(`file --mime-type "${pdf.path}"`).split('/').pop();
-          } catch(e) {
-            console.warn(`Error trying to get mime filetype extension for ${pdf.path}`, e);
-          } finally {
-            // fudge it, it's a PDF, it's always PDFs
-            if ( ! ext ) {
-              ext = '.pdf';
-            }
-          }
-          newFilename = nextFileName(ext);
-          const newPath = Path.resolve(uploadPath, newFilename);
-          console.log({newPath});
-          fs.renameSync(pdf.path, newPath);
-          pdf.path = newPath;
-        }
-      } catch(e) {
-        const msg = `Error on download file ${docUrl}: ${e}`;
-        console.log(msg, e);
-        return res.status(500).send(msg);
-      }
-    } else if ( pdf ) {
+    if ( pdf ) {
       return await convertIt({res, pdf, redirectToUrl});
     } else {
       res.end(`Please provide a file or a URL`);
@@ -376,9 +309,10 @@
         console.log(`Redirecting to`, viewUrl);
         res.redirect(viewUrl);
       } else if ( sendURL ) {
+        res.type('text/plain');
         res.end(viewUrl);
       }
-      return viewUrl;
+      return sanitizeUrl(viewUrl);
   }
 
   app.use((err, req, res, next) => {
@@ -573,4 +507,16 @@
     const sanitizedURL = url.toString();
     
     return sanitizedURL;
+  }
+
+  function sanitizeHtml(htmlString) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+
+    return htmlString.replace(/[&<>"']/g, (char) => map[char]);
   }

@@ -24,6 +24,7 @@
   "dependencies": {
     "compression": "latest",
     "express": "latest",
+    "express-rate-limit": "^7.0.1",
     "hasha": "latest",
     "multer": "latest",
     "pm2": "latest",
