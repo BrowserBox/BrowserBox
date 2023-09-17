@@ -1,5 +1,7 @@
 # app specific
 log
+pdfs
+pdfs/**/*
 
 
 scripts/*.pdf
