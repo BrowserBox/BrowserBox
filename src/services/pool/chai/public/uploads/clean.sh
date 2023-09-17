@@ -3,9 +3,11 @@
 
 . ./scripts/config.sh
 
+PWD="$(pwd)"
+
 # delete all view pages and images older than 3 days
-PID_DIR=$HOME/.config/dosyago/bbpro
-cd ./public/uploads
+PID_DIR="$CHAI_PATH"
+cd "${STATIC_DIR}/uploads"
 
 # old one
   # remove all files older than 3 days
@@ -31,7 +33,7 @@ cd "$pdfs"
 find ./ -name 'file*' -type f -mmin +4319 -delete
 
 
-cd ../
+cd "$PWD"
 
 # rebuild the hashes of the files that are left
 ./src/rebuild_hashes.js

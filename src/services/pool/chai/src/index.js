@@ -21,11 +21,12 @@
   const SECRET = process.env.DOCS_KEY;
   const MAX_FILE_DL_TIME = 147*1000; // time to allow a download before rejecting ~ 2.5 mins
   const WAIT_NEW_FILES_BEFORE_DISK_SYNC = 3;
-  const CHAI_STATE_PATH = Path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro')
+  const CHAI_STATE_PATH = Path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro', 'chai')
   const PIDFILE = Path.join(CHAI_STATE_PATH, 'chai-pid.txt');
   const HASH_FILE = Path.join(CHAI_STATE_PATH, 'pdfs', 'hashes.json');
   const LINK_FILE = Path.join(CHAI_STATE_PATH, 'pdfs', 'links.json');
-  const ArchivesDir = Path.resolve('archives');
+  const STATIC_DIR = Path.join(CHAI_STATE_PATH, 'public');
+  const ArchivesDir = Path.resolve(CHAI_STATE_PATH, 'archives');
   const jobs = {};
   const Files = new Map();
   const Links = new Map();
@@ -106,7 +107,7 @@
     showHash: false
   };
   const PORT = process.env.PORT || (secure ? (process.argv[2] || 8080) : 8080);
-  const uploadPath = Path.join(__dirname, '..', 'public', 'uploads');
+  const uploadPath = Path.join(STATIC_DIR, 'uploads');
   const CONVERTER = Path.join(__dirname, '..', 'scripts', 'convert.sh');
   const EXPLORER = Path.join(__dirname, '..', 'scripts', 'explore.sh');
   const ARCHIVES = new Set([
