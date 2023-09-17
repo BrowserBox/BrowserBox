@@ -1,5 +1,3 @@
-- secure doc server port seems to be calculated wrong sometimes (e.g. main block at 9874 client tried 9101 for secure view which was weird)
-
 - fix test for menu open on mobile
 
 - refine adaptive tests and change cast seldom

@@ -6,10 +6,10 @@
   const {execSync} = require('child_process');
   const path = require('path');
 
-  const CHAI_STATE_PATH = Path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro')
-  const FILES = Path.join(CHAI_STATE_PATH, 'pdfs');
-  const HASH_FILE = Path.join(FILES, 'hashes.json');
-  const LINK_FILE = Path.join(FILES, 'links.json');
+  const CHAI_STATE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro')
+  const FILES = path.join(CHAI_STATE_PATH, 'pdfs');
+  const HASH_FILE = path.join(FILES, 'hashes.json');
+  const LINK_FILE = path.join(FILES, 'links.json');
   const VIEW_PAGE = /^file.*$/;
 
   buildHashes();
