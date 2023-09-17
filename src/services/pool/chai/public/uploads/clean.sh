@@ -35,6 +35,9 @@ find ./ -name 'file*' -type f -mmin +4319 -delete
 
 cd "$PWD"
 
+echo "saved pwd: $PWD"
+echo "current pwd: $(pwd)"
+
 # rebuild the hashes of the files that are left
 ./src/rebuild_hashes.js
 
