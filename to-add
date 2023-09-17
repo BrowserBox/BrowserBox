@@ -1,3 +1,5 @@
+- put chai public uploads in the $HOME/.config dir too
+
 - put chai state files (pid.txt, pdfs/**, etc...) into user config directory $HOME/.config/... because we need perms to write them and in current set up chai is trying to write within the install directory which is root permed and so fails
 
 - also chai uses a sudo command and the bb users do not have this capability so we need to reconfig those parts. maybe it's a cap? or maybe we won't need sudo if we move the state files? look at

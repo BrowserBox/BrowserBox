@@ -467,7 +467,7 @@
     const error = {
       err: err+'', ...extra
     }
-    fs.appendFileSync('log', JSON.stringify({error})+'\n');
+    fs.appendFileSync(Path.resolve(CHAI_STATE_PATH, 'chai-log'), JSON.stringify({error})+'\n');
   }
 
   function log(req, extra = {}) {
@@ -479,7 +479,7 @@
     };
     Object.assign(data, extra);
     console.log(data);
-    fs.appendFileSync('log', JSON.stringify(data)+'\n');
+    fs.appendFileSync(Path.resolve(CHAI_STATE_PATH, 'chai-log'), JSON.stringify(data)+'\n');
   }
 
   async function syncHashes(hashesMap, linksMap) {

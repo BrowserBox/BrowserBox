@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-INSTALL_DIR="${1:-.}"
+INSTALL_DIR="${1:-$(pwd)}"
 
 SUDO=""
 
@@ -8,6 +8,7 @@ if command -v sudo; then
   SUDO="sudo"
 fi
 
+echo "INSTALL_DIR: $INSTALL_DIR"
 echo -n "Copying bbpro application files to /usr/local/share/dosyago/ ..."
 $SUDO mkdir -p /usr/local/share/dosyago
 
