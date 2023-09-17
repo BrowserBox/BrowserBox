@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 . ./scripts/config.sh
 
 echo "$1"
@@ -172,7 +171,7 @@ convert_to_pdf_if_needed() {
 
 converted_file=$(convert_to_pdf_if_needed "$1")
 
-convert -verbose -density 127 -background ivory -alpha remove -alpha off -quality 77% -strip -interlace Plane "${converted_file}" +adjoin "${1}-%04d.${format}" || (mutool draw -i -o "${1}-%04d.${format}" "${converted_file}" && "$base/../../scripts/rename_1_based.sh" "${1}" "$format")
+convert -verbose -density 127 -background ivory -alpha remove -alpha off -quality 77% -strip -interlace Plane "${converted_file}" +adjoin "${1}-%04d.${format}" || (mutool draw -i -o "${1}-%04d.${format}" "${converted_file}" && "${INSTALL_DIR}/chai/scripts/rename_1_based.sh" "${1}" "$format")
 
 cp "$1" "${pdfs}/"
 

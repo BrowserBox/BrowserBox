@@ -1,9 +1,7 @@
 #!/bin/sh
 
 
-. ./scripts/config.sh
-
-PWD="$(pwd)"
+. "${INSTALL_DIR}/chai/scripts/config.sh"
 
 # delete all view pages and images older than 3 days
 PID_DIR="$CHAI_PATH"
@@ -33,13 +31,8 @@ cd "$pdfs"
 find ./ -name 'file*' -type f -mmin +4319 -delete
 
 
-cd "$PWD"
-
-echo "saved pwd: $PWD"
-echo "current pwd: $(pwd)"
-
 # rebuild the hashes of the files that are left
-./src/rebuild_hashes.js
+"${INSTALL_DIR}/chai/src/rebuild_hashes.js"
 
 # notify the process that the hashes have been rebuilt
-kill -s ALRM $(cat $PID_DIR/chai-pid.txt) > /dev/null 2>&1 || echo "Could not notify process of restart. Perhaps it is not running?"
+kill -s ALRM $(cat "${PID_DIR}/chai-pid.txt") > /dev/null 2>&1 || echo "Could not notify process of restart. Perhaps it is not running?"
