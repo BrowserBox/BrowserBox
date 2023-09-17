@@ -204,6 +204,7 @@
 
   async function convertIt({res, pdf, sendURL = true, redirectToUrl = false}) {
     // hash check for duplicate files
+      pdf.path = sanitizeFilePath(pdf.path);
       const hash = hasha.fromFileSync(pdf.path);
       let viewUrl;
       let mime;
