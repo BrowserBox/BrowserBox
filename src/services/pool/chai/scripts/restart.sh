@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 . "${HOME}/.nvm/nvm.sh"
 . ./scripts/config.sh

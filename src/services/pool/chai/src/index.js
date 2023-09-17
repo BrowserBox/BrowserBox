@@ -106,7 +106,7 @@
   const DEBUG = {
     showHash: false
   };
-  const PORT = process.env.PORT || (secure ? (process.argv[2] || 8080) : 8080);
+  const PORT = process.env.DOCS_PORT || (secure ? (process.argv[2] || 8080) : 8080);
   const uploadPath = Path.join(STATIC_DIR, 'uploads');
   const CONVERTER = Path.join(__dirname, '..', 'scripts', 'convert.sh');
   const EXPLORER = Path.join(__dirname, '..', 'scripts', 'explore.sh');
