@@ -1,4 +1,4 @@
-# BrowserBox: Zero Trust Browsing
+# BrowserBox: Zero Trust Remote Browser Isolation and Secure Document Gateway
 
 BrowserBox is a leading-edge solution in the Zero Trust landscape, ensuring that every web interaction is treated as potentially hostile. By leveraging the principles of Remote Browser Isolation (RBI) and co-browsing, BrowserBoxPro ensures that no web content directly interacts with the end user's device. This guide will walk you through the seamless integration of BrowserBoxPro into your Zero Trust architecture.
 
