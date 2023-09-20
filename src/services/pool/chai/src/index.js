@@ -153,7 +153,7 @@
       // prevent the repreated requests for first page to blow the cache
       // as in browser will eventually think ti doesn't exist and just serve no exist for ever
       // rather than make request
-    const fullPath = `${req.scheme}://${req.get('host')}${req.originalUrl}`;
+    const fullPath = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
     const fileSystemPath = Path.join(uploadPath, Path.basename(sanitizeUrl(fullPath)));
     console.log('Not found yet', fileSystemPath);
     if ( fs.existsSync(fileSystemPath) ) {
