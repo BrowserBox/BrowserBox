@@ -95,6 +95,25 @@
     "application/x-lz4",
     "application/x-rar",
     "application/x-tar",
+    "application/java-archive",
+    "application/x-ipynb+json",
+    "application/x-cpio",
+    "application/vnd.sun.xml.calc",
+    "application/x-chrome-extension",
+    "application/vnd.google-earth.kmz",
+    "application/x-silverlight-app",
+    "application/vnd.android.package-archive",
+  ]);
+  const DOCUMENTS_THAT_ARE_ARCHIVES = new Set([
+    ".numbers",
+    ".pages",
+    ".docx",
+    ".xlsx",
+    ".pptx",
+    ".odt",
+    ".odt",
+    ".epub",
+    ".mobi",
   ]);
   const VALID = /^\.[a-zA-Z0-9\-\_]{0,12}$|^$/g;
   const upload = multer({storage});
@@ -134,7 +153,8 @@
       // prevent the repreated requests for first page to blow the cache
       // as in browser will eventually think ti doesn't exist and just serve no exist for ever
       // rather than make request
-    const fileSystemPath = Path.join(uploadPath, Path.basename(sanitizeUrl(req.originalUrl)));
+    const fullPath = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+    const fileSystemPath = Path.join(uploadPath, Path.basename(sanitizeUrl(fullPath)));
     console.log('Not found yet', fileSystemPath);
     if ( fs.existsSync(fileSystemPath) ) {
       res.send(fileSystemPath);
@@ -172,6 +192,7 @@
       res, 
       pdf,
       sendURL: false,
+      ext: Path.extname(pdf.filename)
     });
     res.redirect(301, redirTo);
   });
@@ -196,13 +217,13 @@
       log(req, {file:pdf && pdf.path});
 
     if ( pdf ) {
-      return await convertIt({res, pdf, redirectToUrl});
+      return await convertIt({res, pdf, redirectToUrl, ext});
     } else {
       res.end(`Please provide a file or a URL`);
     }
   });
 
-  async function convertIt({res, pdf, sendURL = true, redirectToUrl = false}) {
+  async function convertIt({res, pdf, sendURL = true, redirectToUrl = false, ext}) {
     // hash check for duplicate files
       pdf.path = sanitizeFilePath(pdf.path);
       const hash = hasha.fromFileSync(pdf.path);
@@ -214,7 +235,7 @@
         console.warn(`Error getting mime type`, e);
         mime = false;
       }
-      if ( mime && ARCHIVES.has(mime) ) {
+      if ( mime && ARCHIVES.has(mime) && ! DOCUMENTS_THAT_ARE_ARCHIVES.has(ext) ) {
         viewUrl = `${State.Protocol}://${State.Host}/archives/${pdf.filename}/`;
       } else {
         viewUrl = `${State.Protocol}://${State.Host}/uploads/${pdf.filename}.html`;
@@ -246,7 +267,7 @@
     let resolve;
     let pr;
 
-    if ( mime && ARCHIVES.has(mime) ) {
+    if ( mime && ARCHIVES.has(mime) && ! DOCUMENTS_THAT_ARE_ARCHIVES.has(ext) ) {
       isArchive = true;
       pr = new Promise(res => resolve = res);
       SCRIPT = EXPLORER;
@@ -500,7 +521,7 @@
     try {
       url = new URL(urlString);
     } catch (error) {
-      throw new Error('Invalid URL');
+      throw new Error(`Invalid URL: ${urlString}`);
     }
 
     // URL class will take care of encoding special characters,
