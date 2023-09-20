@@ -1,0 +1,28 @@
+
+	Instalation
+
+1) Just copy file httpd.awk to /usr/local/bin directory
+
+# cp -a httpd.awk /usr/local/bin
+
+2) Add the following line to your /etc/inetd.conf file:
+
+80      stream  tcp     nowait  nobody.nogroup    /usr/sbin/tcpd        /usr/local/bin/httpd.awk
+
+3) Restart inetd
+
+# killall -1 inetd
+
+	Configuration
+	
+  Just edit httpd.awk file, and edit values of:
+  
+document_root=	your server document root
+users_webdir= user web directory
+
+
+	Author
+
+  Marek Zelem <marek@fornax.elf.stuba.sk>
+  http://fornax.elf.stuba.sk/~marek/
+
