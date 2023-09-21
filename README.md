@@ -8,6 +8,8 @@ By leveraging the principles of Remote Browser Isolation (RBI), real-time stream
 
 This guide will walk you through the seamless integration of BrowserBoxPro into your Zero Trust architecture.
 
+***NOTE: If you are installing on MacOS please be aware that performance will be very slow because headless Chrome on MacOS is ['fake headless' (just a hidden window) because of limitations of the MacOS ecosystem faced by the Chrome authors](https://github.com/puppeteer/puppeteer/issues/3938#issuecomment-469332659).***
+
 # Table of Contents
 
 - [BrowserBox: Zero Trust Browsing](#browserbox-zero-trust-browsing)
