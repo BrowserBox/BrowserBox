@@ -61,7 +61,7 @@ jobs:
             message = `### Hey @${actor}! :wave:\n\nWe noticed you haven't set up your ngrok Authtoken yet. Please follow these steps:\n\n1. Go to [ngrok website](https://ngrok.com/) and sign up or log in.\n2. Navigate to the [Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken) section to find your token.\n3. Copy and paste the token to your repository secrets, name it \`NGROK_AUTH_TOKEN\` [Go to repository settings](../settings/secrets/actions).\n\nOnce done, reopen the issue to try again. :smiley: :cyclone:`;
             shouldClose = true;
           } else {
-            message = `### Awesome @${actor}! :tada:\n\nYour ngrok token is set up, and your job is starting! You are good to go for the next steps.\n\nDon't go away! Your login link will appear here after setup completes.\n\nEnhance your calm, set up will take about **6 minutes** from here. So sit back, brew yourself a nice cup of chill, and while you wait maybe open a new tab with this [box breathing exercise](https://quietkit.com/box-breathing/).\n\nWhen you come back, keep an eye out for further instructions.`;
+            message = `### Awesome @${actor}! :tada:\n\nYour ngrok token is set up, and your job is starting! You are good to go for the next steps.\n\nDon't go away! Your login link will appear here after setup completes.\n\nEnhance your calm, as set up will take about **6 minutes** from here. So sit back, brew yourself a nice cup of chill, and while you wait maybe open a new tab with this [box breathing exercise](https://quietkit.com/box-breathing/).\n\nWhen you come back, keep an eye out for further instructions.`;
           }
 
           github.rest.issues.createComment({
