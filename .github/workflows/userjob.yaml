@@ -190,7 +190,9 @@ jobs:
           const issue_number = context.issue.number;
           const actor = context.actor;
           const url = `${{ steps.ngrok.outputs.url }}`;  // Output URL from previous steps
-          const commentBody = `Hey @${actor}, your private ephemeral VPN is ready!\n\nIt will be open for 8 minutes. Open the following link to access it:\n\n${url}`;
+          const bigUrl = new URL(url);
+          bigUrl.searchParams.set('url', JSON.stringify(['https://github.com', 'https://bing.com']));
+          const commentBody = `Hey @${actor}, your private ephemeral VPN is ready!\n\nIt will be open for 8 minutes. Open the following link to access it:\n\n${bigUrl}`;
           github.rest.issues.createComment({
             issue_number: issue_number,
             owner: context.repo.owner,
