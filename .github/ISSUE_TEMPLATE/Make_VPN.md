@@ -15,5 +15,9 @@ Your [BrowserBox](https://github.com/BrowserBox/BrowserBox) ephemeral private VP
 
 The next comment will show up below soon after you click "Submit New Issue"
 
+---
+
+*BrowserBox is created by [DOSYAGO](https://dosyago.com)*
+
 
 
