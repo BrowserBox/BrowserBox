@@ -208,14 +208,14 @@ jobs:
       with:
         script: |
             github.rest.issues.createComment({
-              issue_number: issue_number,
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `Your [BrowserBox](https://github.com/BrowserBox/BrowserBox) VPN has closed! Re-open the issue to turn it on again!\n\n**P.S.** Did you have fun? If so you may like to purchase a license at [our website](https://dosyago.com)`
             });
 
             github.rest.issues.update({
-              issue_number: issue_number,
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "closed"
