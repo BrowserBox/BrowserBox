@@ -128,7 +128,7 @@ jobs:
         script: |
           const issue_number = context.issue.number;
           const ngrokFailedOutput = process.env.NGROK_FAILED_OUTPUT.replace(/%0A/g, '\n');
-          const commentBody = `Oops! Something went wrong with ngrok. Here's the output for debugging:\n\`\`\`${ngrokFailedOutput}\`\`\``;
+          const commentBody = `Oops! Something went wrong with ngrok. Try fixing this and reopening the issue to make your [BrowserBox](https://github.com/BrowserBox/BrowserBox) VPN again. Here's the output for debugging:\n\`\`\`${ngrokFailedOutput}\`\`\``;
           github.rest.issues.createComment({
             issue_number: issue_number,
             owner: context.repo.owner,
@@ -209,7 +209,7 @@ jobs:
               issue_number: issue_number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Your BrowserBox VPN has closed! Re-open the issue to turn it on again!`
+              body: `Your [BrowserBox](https://github.com/BrowserBox/BrowserBox) VPN has closed! Re-open the issue to turn it on again!\n\n**P.S.** Did you have fun? If so you may like to purchase a license at [our website](https://dosyago.com)`
             });
 
             github.rest.issues.update({
