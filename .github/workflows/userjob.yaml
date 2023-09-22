@@ -37,7 +37,7 @@ jobs:
 
     - name: Check if ngrok secret exists
       run: |
-        if [[ -z "${{ secrets.NGROK_API_KEY }}" ]]; then
+        if [[ -z "${{ secrets.NGROK_AUTH_TOKEN }}" ]]; then
           echo "NGROK_API_KEY_MISSING=true" >> $GITHUB_ENV
         else
           echo "NGROK_API_KEY_MISSING=false" >> $GITHUB_ENV
