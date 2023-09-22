@@ -1,3 +1,19 @@
+# *Special Event!* 🤙 Create a private ephemeral VPN by opening an issue on this repo
+
+**HOLD UP** You need to [fork](../../fork) or [generate](../../generate) this repo first, so you have your own copy. Then open an issue and you will be guided through the process (1 manual step, rest is automatic), while your browser VPN is created. 
+
+By default they remain open for 5 minutes, but you can make that longer by editing the workflow YAML file. Each minute used counts against your GitHub actions quota. Also, don't do anything abusive with this, remember you are browsing the web from inside GitHub's infrastructure (actions runners), so treat them with respect!
+
+Limitations: no audio, no DevTools, no docviewer (Because the ports are not accesible, although the services are running)
+
+***DOSY***
+
+**P.S** want a real VPN? Then check out [Mullvad](https://mullvad.net) (no affiliation). They also have a Mullvad Browser!
+
+*regular README starts below this line*
+
+---
+
 # BrowserBox
 
 # Web application virtualization via Zero Trust Remote Browser Isolation and Secure Document Gateway
