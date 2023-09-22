@@ -22,6 +22,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+
 jobs:
   create_vpn:
     runs-on: ubuntu-latest
@@ -35,16 +36,13 @@ jobs:
           echo "ACTOR_IS_NOT_OWNER_OR_ME=false" >> $GITHUB_ENV
 
     - name: Check if ngrok secret exists
-      id: check-secret
       run: |
         if [[ -z "${{ secrets.NGROK_API_KEY }}" ]]; then
           echo "NGROK_API_KEY_MISSING=true" >> $GITHUB_ENV
         else
           echo "NGROK_API_KEY_MISSING=false" >> $GITHUB_ENV
-      env:
-        NGROK_API_KEY: ${{ secrets.NGROK_API_KEY }}
 
-    - name: Comment on the issue
+    - name: Comment and potentially close the issue
       uses: actions/github-script@v5
       with:
         script: |
@@ -53,11 +51,14 @@ jobs:
           const actorIsNotOwnerOrMe = process.env.ACTOR_IS_NOT_OWNER_OR_ME;
           const missing = process.env.NGROK_API_KEY_MISSING;
           let message;
+          let shouldClose = false;
 
           if (actorIsNotOwnerOrMe === "true") {
-            message = `### Hey @${actor}! :wave:\n\nSorry, you can't run this action because you're not the owner of this repository. Please fork or generate a copy under your own account.`;
+            message = `### Hey @${actor}! :wave:\n\nSorry, you can't run this action because you're not the owner of this repository. Please fork or generate a copy under your own account. Reopen the issue to try again.`;
+            shouldClose = true;
           } else if (missing === "true") {
-            message = `### Hey @${actor}! :wave:\n\nWe noticed you haven't set up your ngrok API key yet. Please follow these steps:\n\n1. Go to [ngrok website](https://ngrok.com/) and sign up or log in.\n2. Navigate to the API Keys section to find your API key.\n3. Add the API key to your repository secrets. [Go to repository settings](../settings/secrets/actions).\n\nOnce done, comment **"Done"** here. :smiley:`;
+            message = `### Hey @${actor}! :wave:\n\nWe noticed you haven't set up your ngrok API key yet. Please follow these steps:\n\n1. Go to [ngrok website](https://ngrok.com/) and sign up or log in.\n2. Navigate to the API Keys section to find your API key.\n3. Add the API key to your repository secrets. [Go to repository settings](../settings/secrets/actions).\n\nOnce done, comment **"Done"** here. :smiley: Reopen the issue to try again.`;
+            shouldClose = true;
           } else {
             message = `### Awesome @${actor}! :tada:\n\nYour ngrok API key is set up. You're good to go for the next steps. Keep an eye out for further instructions.`;
           }
@@ -68,6 +69,16 @@ jobs:
             repo: context.repo.repo,
             body: message
           });
+
+          if (shouldClose) {
+            github.rest.issues.update({
+              issue_number: issue_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "closed"
+            });
+            process.exit(1);
+          }
 
     - name: Checkout code
       uses: actions/checkout@v2
