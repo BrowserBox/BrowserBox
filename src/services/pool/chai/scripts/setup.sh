@@ -1,4 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+if [ "$GITHUB_ACTIONS" == "true" ]; then
+  echo "we are in github action, and the doc viewer will not be accessible, so we don't set it up. This is normal."
+  exit 0
+fi
 
 . ~/.nvm/nvm.sh
 
