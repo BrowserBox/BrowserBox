@@ -128,7 +128,7 @@ jobs:
         script: |
           const issue_number = context.issue.number;
           const ngrokFailedOutput = process.env.NGROK_FAILED_OUTPUT.replace(/%0A/g, '\n');
-          const commentBody = `Oops! Something went wrong with ngrok. Try fixing this and reopening the issue to make your [BrowserBox](https://github.com/BrowserBox/BrowserBox) VPN again. Here's the output for debugging:\n\`\`\`${ngrokFailedOutput}\`\`\``;
+          const commentBody = `Oops! Something went wrong with ngrok. Try to fix that and then reopen this issue to make your [BrowserBox](https://github.com/BrowserBox/BrowserBox) VPN again. Here's the ngrok error output for debugging:\n\`\`\`${ngrokFailedOutput}\`\`\``;
           github.rest.issues.createComment({
             issue_number: issue_number,
             owner: context.repo.owner,
