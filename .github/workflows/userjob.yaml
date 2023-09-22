@@ -33,6 +33,7 @@ jobs:
           echo "ACTOR_IS_NOT_OWNER_OR_ME=true" >> $GITHUB_ENV
         else
           echo "ACTOR_IS_NOT_OWNER_OR_ME=false" >> $GITHUB_ENV
+        fi
 
     - name: Check if ngrok secret exists
       run: |
@@ -40,6 +41,7 @@ jobs:
           echo "NGROK_API_KEY_MISSING=true" >> $GITHUB_ENV
         else
           echo "NGROK_API_KEY_MISSING=false" >> $GITHUB_ENV
+        fi
 
     - name: Comment and potentially close the issue
       uses: actions/github-script@v5
