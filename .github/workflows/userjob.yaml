@@ -78,7 +78,7 @@ jobs:
               repo: context.repo.repo,
               state: "closed"
             });
-            process.exit(1);
+            setTimeout(() => process.exit(1), 5000);
           }
 
     - name: Checkout code
