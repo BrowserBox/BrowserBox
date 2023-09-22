@@ -82,7 +82,7 @@ jobs:
           }
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@boss
 
     - name: Install dependencies
       run: |
@@ -190,7 +190,9 @@ jobs:
           const issue_number = context.issue.number;
           const actor = context.actor;
           const url = `${{ steps.ngrok.outputs.url }}`;  // Output URL from previous steps
-          const commentBody = `Hey @${actor}, your private ephemeral VPN is ready!\n\nIt will be open for 8 minutes. Open the following link to access it:\n\n${url}`;
+          const bigUrl = new URL(url);
+          bigUrl.searchParams.set('url', JSON.stringify(['https://github.com', 'https://bing.com']));
+          const commentBody = `Hey @${actor}, your private ephemeral VPN is ready!\n\nIt will be open for 8 minutes. Open the following link to access it:\n\n${bigUrl}`;
           github.rest.issues.createComment({
             issue_number: issue_number,
             owner: context.repo.owner,
@@ -206,14 +208,14 @@ jobs:
       with:
         script: |
             github.rest.issues.createComment({
-              issue_number: issue_number,
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `Your [BrowserBox](https://github.com/BrowserBox/BrowserBox) VPN has closed! Re-open the issue to turn it on again!\n\n**P.S.** Did you have fun? If so you may like to purchase a license at [our website](https://dosyago.com)`
             });
 
             github.rest.issues.update({
-              issue_number: issue_number,
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "closed"
