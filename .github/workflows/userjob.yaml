@@ -44,7 +44,7 @@ jobs:
         fi
 
     - name: Comment and potentially close the issue
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       with:
         script: |
           const issue_number = context.issue.number;
@@ -154,7 +154,7 @@ jobs:
       run: echo "The complete ngrok URL is ${{ steps.ngrok.outputs.url }}"
     
     - name: Comment on issue with output URL and tag owner/actor
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       with:
         script: |
           const issue_number = context.issue.number;
@@ -172,7 +172,7 @@ jobs:
       run: sleep 300
 
     - name: Close issue
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       with:
         script: |
             github.issues.createComment({
