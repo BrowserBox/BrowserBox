@@ -151,7 +151,41 @@ jobs:
 
     - name: Print ngrok URL
       run: echo "The complete ngrok URL is ${{ steps.ngrok.outputs.url }}"
+    
+    - name: Comment on issue with output URL and tag owner/actor
+      uses: actions/github-script@v5
+      with:
+        script: |
+          const issue_number = context.issue.number;
+          const actor = context.actor;
+          const url = `${{ steps.ngrok.outputs.url }}`;  // Output URL from previous steps
+          const commentBody = `Hey @${actor}, your private ephemeral VPN is ready! Open the following link to access it: ${url}`;
+          github.issues.createComment({
+            issue_number: issue_number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: commentBody
+          });
 
     - name: Keep alive
       run: sleep 300
 
+    - name: Close issue
+      uses: actions/github-script@v5
+      with:
+        script: |
+            github.issues.createComment({
+              issue_number: issue_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Your BrowserBox VPN has closed! Re-open the issue to turn it on again!`
+            });
+
+            github.rest.issues.update({
+              issue_number: issue_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "closed"
+            });
+
+            process.exit(1);
