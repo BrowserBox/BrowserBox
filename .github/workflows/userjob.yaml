@@ -61,7 +61,7 @@ jobs:
             message = `### Hey @${actor}! :wave:\n\nWe noticed you haven't set up your ngrok Authtoken yet. Please follow these steps:\n\n1. Go to [ngrok website](https://ngrok.com/) and sign up or log in.\n2. Navigate to the [Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken) section to find your token.\n3. Copy and paste the token to your repository secrets, name it \`NGROK_AUTH_TOKEN\` [Go to repository settings](../settings/secrets/actions).\n\nOnce done, reopen the issue to try again. :smiley: :cyclone:`;
             shouldClose = true;
           } else {
-            message = `### Awesome @${actor}! :tada:\n\nYour ngrok token is set up. You're good to go for the next steps. Sit back, brew yourself a nice cup of chill, and maybe check out this [box breathing exercise](https://quietkit.com/box-breathing/). Enhance your calm. Set up will take about 6 minutes.\n\nDon't go away! Your login link will appear here after setup completes. Keep an eye out for further instructions.`;
+            message = `### Awesome @${actor}! :tada:\n\nYour ngrok token is set up. You're good to go for the next steps.\n\nDon't go away! Your login link will appear here after setup completes.\n\nEnhance your calm, set up will take about 6 minutes from here. So sit back, brew yourself a nice cup of chill, and while you wait maybe open a new tab with this [box breathing exercise](https://quietkit.com/box-breathing/).\n\nWhen you come back, keep an eye out for further instructions.`;
           }
 
           github.rest.issues.createComment({
@@ -129,7 +129,7 @@ jobs:
           const issue_number = context.issue.number;
           const ngrokFailedOutput = process.env.NGROK_FAILED_OUTPUT.replace(/%0A/g, '\n');
           const commentBody = `Oops! Something went wrong with ngrok. Here's the output for debugging:\n\`\`\`${ngrokFailedOutput}\`\`\``;
-          github.issues.createComment({
+          github.rest.issues.createComment({
             issue_number: issue_number,
             owner: context.repo.owner,
             repo: context.repo.repo,
@@ -191,7 +191,7 @@ jobs:
           const actor = context.actor;
           const url = `${{ steps.ngrok.outputs.url }}`;  // Output URL from previous steps
           const commentBody = `Hey @${actor}, your private ephemeral VPN is ready! It will be open for 8 minutes. Open the following link to access it: ${url}`;
-          github.issues.createComment({
+          github.rest.issues.createComment({
             issue_number: issue_number,
             owner: context.repo.owner,
             repo: context.repo.repo,
@@ -205,7 +205,7 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
-            github.issues.createComment({
+            github.rest.issues.createComment({
               issue_number: issue_number,
               owner: context.repo.owner,
               repo: context.repo.repo,
