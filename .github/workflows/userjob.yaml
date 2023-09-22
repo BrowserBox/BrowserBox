@@ -37,7 +37,7 @@ jobs:
 
     - name: Check if ngrok secret exists
       run: |
-        if [[ -z "${{ secrets.NGROK_API_KEY }}" ]]; then
+        if [[ -z "${{ secrets.NGROK_AUTH_TOKEN }}" ]]; then
           echo "NGROK_API_KEY_MISSING=true" >> $GITHUB_ENV
         else
           echo "NGROK_API_KEY_MISSING=false" >> $GITHUB_ENV
@@ -58,7 +58,7 @@ jobs:
             message = `### Hey @${actor}! :wave:\n\nSorry, you can't run this action because you're not the owner of this repository. Please fork or generate a copy under your own account. Reopen the issue to try again.`;
             shouldClose = true;
           } else if (missing === "true") {
-            message = `### Hey @${actor}! :wave:\n\nWe noticed you haven't set up your ngrok API key yet. Please follow these steps:\n\n1. Go to [ngrok website](https://ngrok.com/) and sign up or log in.\n2. Navigate to the API Keys section to find your API key.\n3. Add the API key to your repository secrets. [Go to repository settings](../settings/secrets/actions).\n\nOnce done, comment **"Done"** here. :smiley: Reopen the issue to try again.`;
+            message = `### Hey @${actor}! :wave:\n\nWe noticed you haven't set up your ngrok Authtoken yet. Please follow these steps:\n\n1. Go to [ngrok website](https://ngrok.com/) and sign up or log in.\n2. Navigate to the [Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken) section to find your token.\n3. Copy and paste the token to your repository secrets, name it `NGROK_AUTH_TOKEN` [Go to repository settings](../settings/secrets/actions).\n\nOnce done, reopen the issue to try again. :smiley: :cyclone:`;
             shouldClose = true;
           } else {
             message = `### Awesome @${actor}! :tada:\n\nYour ngrok API key is set up. You're good to go for the next steps. Keep an eye out for further instructions.`;
