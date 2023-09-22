@@ -1,4 +1,4 @@
-# Special Event: Create a private ephemeral VPN by opening an issue on this repo
+# *Special Event!* 🤙 Create a private ephemeral VPN by opening an issue on this repo
 
 **HOLD UP** You need to [fork](../../fork) or [generate](../../generate) this repo first, so you have your own copy. Then open an issue and you will be guided through the process (1 manual step, rest is automatic), while your browser VPN is created. 
 
@@ -7,6 +7,8 @@ By default they remain open for 5 minutes, but you can make that longer by editi
 Limitations: no audio, no DevTools, no docviewer (Because the ports are not accesible, although the services are running)
 
 ***DOSY***
+
+**P.S** want a real VPN? Then check out [Mullvad](https://mullvad.net) (no affiliation). They also have a Mullvad Browser!
 
 *regular README starts below this line*
 
