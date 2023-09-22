@@ -29,6 +29,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Check if actor is repository owner or me
+      run: |
+        if [[ "${{ github.actor }}" != "00000o1" ]]; then
+          echo "Actor is not me. Not running CI"
+          exit 1
+        fi
+
     - name: Checkout code
       uses: actions/checkout@v2
 
