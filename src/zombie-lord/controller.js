@@ -1,6 +1,6 @@
 import Connect from './connection.js';
 import {getViewport} from './connection.js';
-import {CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, DEBUG} from '../common.js';
+import {CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
 import {MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
 import fs from 'fs';
 
@@ -19,6 +19,9 @@ const Options = {
 //const TAIL_START = 100;
 //let lastTailShot = false;
 //let lastHash;
+const goLowRes = throttle((connection, ...args) => connection.shrinkImagery(...args), 10000);
+const goHighRes = throttle((connection, ...args) => connection.growImagery(...args), 10000); 
+
 
 const controller_api = {
   zombieIsDead(port) {
@@ -122,7 +125,7 @@ const controller_api = {
           const sentAt = ack.sent.get(frameId);
           if ( sentAt ) {
             ack.sent.delete(frameId);
-            const roundtripTime = (ack.receivedAt - sentAt)/2;
+            const roundtripTime = (ack.receivedAt - sentAt);
             DEBUG.debugAdaptiveImagery && console.log({rtt:roundtripTime});
             ack.times.push(roundtripTime);
             ack.timeSum += roundtripTime;
@@ -133,9 +136,9 @@ const controller_api = {
             const avgRoundtrip = ack.timeSum / ack.times.length;
             DEBUG.debugAdaptiveImagery && console.log(`Average roundtrip time: ${avgRoundtrip}ms, actual: ${roundtripTime}ms`);
             if ( avgRoundtrip > MAX_ROUNDTRIP /*|| roundtripTime > MAX_ROUNDTRIP */ ) {
-              connection.shrinkImagery();
+              goLowRes(connection);
             } else if ( avgRoundtrip < MIN_ROUNDTRIP /*|| roundtripTime < MIN_SPOT_ROUNDTRIP */) {
-              connection.growImagery();
+              goHighRes(connection);
             }
           }
         }
@@ -488,10 +491,12 @@ const controller_api = {
           }
           case "Connection.resampleImagery": {
             const {down, up, averageBw} = command.params;
-            if ( down ) {
-              connection.shrinkImagery({averageBw});
-            } else if ( up ) {
-              connection.growImagery({averageBw});
+            if ( DEBUG.adaptiveImagery ) {
+              if ( down ) {
+                goLowRes(connection, {averageBw});
+              } else if ( up ) {
+                goHighRes(connection, {averageBw});
+              }
             }
           }
           break;
