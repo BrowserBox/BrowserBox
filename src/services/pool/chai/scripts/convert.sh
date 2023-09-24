@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 . ./scripts/config.sh
 
 echo "$1"
@@ -88,7 +90,7 @@ convert_via_libreoffice() {
 convert_to_pdf_if_needed() {
   # Extract the file extension
   file_extension="${1##*.}"
-  file_extension="${file_extension,,}"
+  file_extension=$(echo "$file_extension" | awk '{print tolower($0)}')
   pandoc_options=""
 
   echo "File ext: ${file_extension}" >&2

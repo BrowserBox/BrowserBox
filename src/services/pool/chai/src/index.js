@@ -85,6 +85,7 @@
   const uploadPath = Path.join(STATIC_DIR, 'uploads');
   const CONVERTER = Path.join(__dirname, '..', 'scripts', 'convert.sh');
   const EXPLORER = Path.join(__dirname, '..', 'scripts', 'explore.sh');
+  const RUNNER = Path.join(__dirname, '..', 'scripts', 'flexbashrunner.sh');
   const ARCHIVES = new Set([
     "application/gzip",
     "application/x-bzip2",
@@ -279,7 +280,7 @@
     } else {
       SCRIPT = CONVERTER;
       fs.copyFileSync(Path.join(uploadPath, 'index.html'), Path.join(uploadPath, `${Path.basename(pdf.path)}.html`));
-      subshell = spawn(SCRIPT, [pdf.path, uploadPath, 'jpeg']);
+      subshell = spawn(RUNNER, [SCRIPT, pdf.path, uploadPath, 'jpeg']);
     }
 
     // subshell clean up handling
