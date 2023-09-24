@@ -1,4 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  if [[ "$(arch)" != "i386" ]]; then
+    >&2 echo "Please run this script under Rosetta (i386 architecture)."
+    exit 1
+  fi
+fi
 
 echo 
 echo
@@ -64,6 +71,13 @@ cd ../chai
 npm i
 npm audit fix
 
+read -p "Are you sure you want to install the secure document viewer? This takes a while because of all the fonts and TeX related packages. (y/n) " -n 1 -r
+echo    # Move to a new line
+
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  echo "Installation aborted."
+  exit 1
+fi
 echo "Installing OS dependencies for secure document viewer..."
 ./scripts/setup.sh
 
