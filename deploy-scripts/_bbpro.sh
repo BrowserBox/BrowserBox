@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  if [[ "$(arch)" != "i386" ]]; then
+    >&2 echo "Please run this script under Rosetta (i386 architecture)."
+    exit 1
+  fi
+fi
+
 get_install_dir() {
   echo "Finding bbpro installation..." >&2
   install_path1=$(find /usr/local/share -name .bbpro_install_dir -print -quit 2>/dev/null)
