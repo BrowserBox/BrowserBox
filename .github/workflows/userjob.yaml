@@ -24,6 +24,7 @@ concurrency:
 
 jobs:
   create_vpn:
+    if: github.event.issue.title == 'Make VPN'
     runs-on: ubuntu-latest
 
     steps:
