@@ -38,8 +38,9 @@ else
   # If on macOS
   bash_location=$(command -v bash)
   if is_rosetta; then
+    echo "Rosetta on Mac so executing with right arch" >&2
     # If running under Rosetta, switch to arm64
-    arch -arm64 "${bash_location}" "${original_script}" "$@"
+    arch -arm64 "${bash_location}" -c "source $HOME/.bashrc; source $HOME/.profile; \"${original_script}\" \"$@\""
   else
     # Otherwise, run normally
     "${original_script}" "$@"
