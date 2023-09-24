@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #npm cache clean --force
+rm -rf .parcel-cache/dist/ 
 rm BrowserBox.js
 rm BrowserBox.*
 rm *.node

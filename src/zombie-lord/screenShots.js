@@ -31,18 +31,18 @@ const getScreenshotViewport = () => ({
 export const MIN_WIDTH = 300;
 export const MIN_HEIGHT = 300;
 export const WEBP_QUAL = 32;
-export const JPEG_WEBP_QUAL = 79;
+export const JPEG_WEBP_QUAL = 80;
 // these can be tuned UP on better bandwidth and DOWN on lower bandwidth
 export const ACK_COUNT = process.platform == 'darwin' ? 1 : 2; // how many frames per ack? this should be adapted per link capacity
 export const MAX_FRAMES = 2; /* 1, 2, 4 */
-const MIN_JPG_QUAL = 25;
-const MAX_JPG_QUAL = 78;
-const MAX_NTH_FRAME = 3;
+const MIN_JPG_QUAL = 21;
+const MAX_JPG_QUAL = 80;
+const MAX_NTH_FRAME = 5;
 export const MIN_TIME_BETWEEN_SHOTS = 40; /* 20, 40, 100, 250, 500 */
 export const MIN_TIME_BETWEEN_TAIL_SHOTS = 175;
 export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
 export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
-export const MAX_ROUNDTRIP = 325;
+export const MAX_ROUNDTRIP = 1000;
 export const MIN_ROUNDTRIP = 125;
 export const MIN_SPOT_ROUNDTRIP = 125;
 export const BUF_SEND_TIMEOUT = 50;
@@ -147,8 +147,8 @@ export function makeCamera(connection) {
   }
 
   async function shrinkImagery() {
-    SAFARI_SHOT.command.params.quality -= 2;
-    SCREEN_OPTS.quality -= 2;
+    SAFARI_SHOT.command.params.quality -= 20;
+    SCREEN_OPTS.quality -= 20;
     if ( SAFARI_SHOT.command.params.quality < MIN_JPG_QUAL ) {
       SAFARI_SHOT.command.params.quality = MIN_JPG_QUAL;
     }
@@ -175,16 +175,13 @@ export function makeCamera(connection) {
   }
 
   async function growImagery() {
-    SAFARI_SHOT.command.params.quality += 2;
-    SCREEN_OPTS.quality += 2;
+    SAFARI_SHOT.command.params.quality = 80;
+    SCREEN_OPTS.quality = 80;
     if ( SAFARI_SHOT.command.params.quality > MAX_JPG_QUAL ) {
       SAFARI_SHOT.command.params.quality = MAX_JPG_QUAL;
     }
-    if ( SCREEN_OPTS.everyNthFrame > 1 ) {
-      SCREEN_OPTS.everyNthFrame -= 2;
-      if ( SCREEN_OPTS.everyNthFrame < 1 ) {
-        SCREEN_OPTS.everyNthFrame = 1;
-      }
+    if ( SCREEN_OPTS.everyNthFrame != 1 ) {
+      SCREEN_OPTS.everyNthFrame = 1;
       DEBUG.debugAdaptiveImagery && console.log(`Will now send every ${SCREEN_OPTS.everyNthFrame}th frame`);
     }
     if ( SCREEN_OPTS.quality > MAX_JPG_QUAL ) {

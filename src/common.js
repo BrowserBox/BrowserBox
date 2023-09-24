@@ -79,8 +79,8 @@ export const DEBUG = Object.freeze({
   showFlash: false, /* debug flash */
   loadSPLFreshEachLogin: false,
   frameDebug: false,
-  adaptiveImagery: false,
-  debugAdaptiveImagery: false,
+  adaptiveImagery: true,
+  debugAdaptiveImagery: true,
   useGL: true,
   disableGL: false,
   disable3D: process.platform == 'linux',
@@ -167,6 +167,7 @@ export const SignalNotices = path.resolve(CONFIG.baseDir, 'notices');
 export const NoticeFile = 'text';
 export const noticeFilePath = path.resolve(SignalNotices, NoticeFile);
 export const NOTICE_SIGNAL = 'SIGPIPE';
+export const CONNECTION_ID_URL = "data:text,DoNotDeleteMe";
 export const MAX_TABS = 15;
 const MIN_HEIGHT = 300;
 const MIN_WAIT = 10;
@@ -280,4 +281,26 @@ export async function untilForever(pred, waitOverride = 5000) {
   }
 }
 
-export const CONNECTION_ID_URL = "data:text,DoNotDeleteMe";
+export function throttle(func, wait) {
+  let timerId;
+  let lastExecuted = 0;
+
+  return function(...args) {
+    const context = this;
+    const elapsed = Date.now() - lastExecuted;
+
+    const execute = () => {
+      lastExecuted = Date.now();
+      func.apply(context, args);
+    };
+
+    clearTimeout(timerId);
+
+    if (elapsed > wait) {
+      execute();
+    } else {
+      timerId = setTimeout(execute, wait - elapsed);
+    }
+  };
+}
+
