@@ -27,7 +27,8 @@
     version, APP_ROOT, 
     COOKIENAME, GO_SECURE, DEBUG,
     CONFIG,
-    ALLOWED_3RD_PARTY_EMBEDDERS
+    ALLOWED_3RD_PARTY_EMBEDDERS,
+    throttle,
   } from './common.js';
   import {timedSend, eventSendLoop} from './server.js';
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
