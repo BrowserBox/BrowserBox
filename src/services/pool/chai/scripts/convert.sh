@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 . ./scripts/config.sh
 
 echo "$1"

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 # Wrapper script to run another script with its arguments
 # If on macOS and running under Rosetta, switch to native arm64
 

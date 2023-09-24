@@ -2,7 +2,7 @@
 
 provider="https://${DOMAIN}:${DOCS_PORT}/very-secure-manifest-convert"
 
-username=$1
+username=$(whoami)
 filename=$2
 secret=$3
 downloading="crdownload"
@@ -16,7 +16,7 @@ step=0
 echo $username $filename >> ../dl.log.txt
 
 # would be good to get this programmatically (maybe node -p "some node script to get the value from common.js"?)
-cd /home/$username/.config/dosyago/bbpro/browser-downloads/
+cd $HOME/.config/dosyago/bbpro/browser-downloads/
 
 while [ $step -lt $maxwaitsteps ]; do
   if [ -f "$filename.$downloading" ]; then
