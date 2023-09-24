@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 which pm2 || npm i -g pm2@latest
 
 envFile=""
