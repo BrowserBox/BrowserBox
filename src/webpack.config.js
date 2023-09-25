@@ -6,7 +6,7 @@ module.exports = {
   entry: "./server.js",
   output: {
     path: path.resolve(common.APP_ROOT),
-    filename: "BrowsreBox.js"
+    filename: "BrowserBox.js"
   },
   target: "node",
   node: {

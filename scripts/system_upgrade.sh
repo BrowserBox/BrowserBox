@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 echo
-echo Reinstalling BrowsreBox and dependencies...
+echo Reinstalling BrowserBox and dependencies...
 echo
 echo
 echo Upgrading system...
@@ -10,11 +10,11 @@ sudo apt update && sudo apt -y upgrade
 echo
 echo System upgraded!
 echo
-echo Upgrading BrowsreBox dependencies...
+echo Upgrading BrowserBox dependencies...
 echo
 ./upgrade.sh
 echo 
-echo BrowsreBox dependencies upgraded!
+echo BrowserBox dependencies upgraded!
 echo
 echo
 echo Everything reinstalled and updated!

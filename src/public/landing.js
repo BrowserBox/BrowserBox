@@ -40,7 +40,7 @@ export default function Landing(state) {
               <div class=story>
                 <h1>More Private. More Secure. More Control.</h1>
                 <p>
-                  BrowsreBox never runs any JavaScript, applets, CSS or HTML from the remote page on your machine or network. By totally isolating your infrastructure form the risks of the web, it means that malware, exploits, ransomware, adware and other web risks cannot harm you operations.
+                  BrowserBox never runs any JavaScript, applets, CSS or HTML from the remote page on your machine or network. By totally isolating your infrastructure form the risks of the web, it means that malware, exploits, ransomware, adware and other web risks cannot harm you operations.
                 </p>
               </div>
               <div class=graphic>
@@ -54,7 +54,7 @@ export default function Landing(state) {
               <div class=story>
                 <h1>The Highest Security. Complete Isolation.</h1>
                 <p>
-                  BrowsreBox never runs any remote code on your machine. Ever. We never run any JavaScript, applets, CSS and not even one tag of HTML on your machine that comes from the remote browser. Our platform is the only browser isolation system that can run on any device, and never runs any code on your machine. We provide a fully interactive image of the remote web page, that looks and feels just like browsing on your favorite consumer browser, but without any of the regular risks associated with that. 
+                  BrowserBox never runs any remote code on your machine. Ever. We never run any JavaScript, applets, CSS and not even one tag of HTML on your machine that comes from the remote browser. Our platform is the only browser isolation system that can run on any device, and never runs any code on your machine. We provide a fully interactive image of the remote web page, that looks and feels just like browsing on your favorite consumer browser, but without any of the regular risks associated with that. 
                 </p>
               </div>
             </section>
@@ -73,7 +73,7 @@ export default function Landing(state) {
             </section>
             <section class=introduction tabindex=0>
               <div class=points>
-                <h1>What is BrowsreBox?</h1>
+                <h1>What is BrowserBox?</h1>
                 <ul>
                   <li>Secure browsing, familiar interface. 
                   <li>Browser isolation vendor
@@ -92,15 +92,15 @@ export default function Landing(state) {
                 <img src=/images/3rd-party/undraw/helpfulsign.svg>
               </div>
               <div class=story>
-                <h1>BrowsreBox. The difference is the way it works.</h1>
+                <h1>BrowserBox. The difference is the way it works.</h1>
                 <p>
-                  BrowsreBox is just one of many browser isolation vendors. You should pick the best vendor for your particular needs. BrowsreBox focuses on providing excellent customer support, and the most similar user interface and experience to a regular insecure browser, without the risks. 
+                  BrowserBox is just one of many browser isolation vendors. You should pick the best vendor for your particular needs. BrowserBox focuses on providing excellent customer support, and the most similar user interface and experience to a regular insecure browser, without the risks. 
                 </p>
               </div>
             </section>
             <section class=security tabindex=0>
               <div class=points>
-                <h1>How does BrowsreBox protect my privacy and security?</h1>
+                <h1>How does BrowserBox protect my privacy and security?</h1>
                 <ul>
                   <li>Remote cloud browsers
                   <li>Complete browser isolation
@@ -128,7 +128,7 @@ export default function Landing(state) {
             </section>
             <section class=protection tabindex=0>
               <div class=points>
-                <h1>What does BrowsreBox stop?</h1>
+                <h1>What does BrowserBox stop?</h1>
                 <ul>
                   <li>Zero-day exploits
                   <li>Malicious websites and webapps
@@ -150,13 +150,13 @@ export default function Landing(state) {
               <div class=story>
                 <h1>Looks and feels just like a normal browser.</h1>
                 <p>
-                  BrowsreBox provides a fully interactive image of the remote web page, that looks and feels just like browsing on your favorite consumer browser, but without any of the regular risks associated with that. You can easily open new tabs, watch video (at a reduced frame rate), download files and even play audio.
+                  BrowserBox provides a fully interactive image of the remote web page, that looks and feels just like browsing on your favorite consumer browser, but without any of the regular risks associated with that. You can easily open new tabs, watch video (at a reduced frame rate), download files and even play audio.
                 </p>
               </div>
             </section>
             <section class=reliability tabindex=0>
               <div class=points>
-                <h1>How high-maintenance is BrowsreBox?</h1>
+                <h1>How high-maintenance is BrowserBox?</h1>
                 <ul>
                   <li>Fully managed
                   <li>Fully hosted
