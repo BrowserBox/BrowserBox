@@ -2,7 +2,7 @@ export const BLOCKED_CODE = 200;
 export const BLOCKED_BODY = Buffer.from(`
   <style>:root { font-family: system-ui, monospace; }</style>
   <h1>Request blocked</h1>
-  <p>This navigation was prevented by the BrowsreBox ad blocker.</p>
+  <p>This navigation was prevented by the BrowserBox ad blocker.</p>
   <details>
     <summary>Not an ad?</summary>
     <p>

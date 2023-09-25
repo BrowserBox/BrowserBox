@@ -1734,7 +1734,7 @@
                       }
                     </style>
                     <h2>
-                      Secure BrowsreBox 
+                      Secure BrowserBox 
                     </h2>
                     <strong>
                       Current time: ${(new Date).toString()}
