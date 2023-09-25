@@ -29,9 +29,9 @@ You agree to notify Dosyago of any facts or circumstances of which you become aw
 
 ## Signing Info
 
-`Full name `       :  
-`Email address`    :  
-`GitHub Username`  :  
-`Date signed`      :
+`Full name `       :  Sushil Rana  
+`Email address`    :  ranasushil026@gmail.com  
+`GitHub Username`  :  sushil026
+`Date signed`      :  25 September, 2023
 
 -- Adapted from: https://www.docracy.com/0pmrhl5zsdf/individual-contributor-license-agreement-template-cla (http://archive.is/wip/SV3Ls)
