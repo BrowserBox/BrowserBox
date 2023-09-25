@@ -237,7 +237,7 @@ class BBContextMenu extends Base {
         if ( ! noSuchElement ) {
           state.elementInfoContinuation = null;
           state.viewState.modalComponent.openModal({modal:{
-            type:'notice', 
+            type: 'copy', 
             message: attributes.href, 
             highlight: true,
             title: 'Link from Page'
