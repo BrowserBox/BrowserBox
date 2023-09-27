@@ -19,8 +19,8 @@ const Options = {
 //const TAIL_START = 100;
 //let lastTailShot = false;
 //let lastHash;
-const goLowRes = throttle((connection, ...args) => connection.shrinkImagery(...args), 10000);
-const goHighRes = throttle((connection, ...args) => connection.growImagery(...args), 10000); 
+const goLowRes = throttle((connection, ...args) => connection.shrinkImagery(...args), 8000);
+const goHighRes = throttle((connection, ...args) => connection.growImagery(...args), 8000); 
 
 const controller_api = {
   zombieIsDead(port) {
