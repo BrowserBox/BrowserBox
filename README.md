@@ -6,6 +6,14 @@ By default they remain open for 5 minutes, but you can make that longer by editi
 
 Limitations: no audio, no DevTools, no docviewer (Because the ports are not accesible, although the services are running)
 
+## Troubleshooting
+
+### Resource not accessible by integration error
+
+To fix this you need to go to your repository settings and change Workflow Permissions to be Read and Write. 
+
+Please see here: https://github.com/MSEdgeLord/EdgeLord/issues/3
+
 ***DOSY***
 
 **P.S** want a real VPN? Then check out [Mullvad](https://mullvad.net) (no affiliation). They also have a Mullvad Browser!
