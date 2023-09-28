@@ -87,7 +87,7 @@ Before diving in, ensure you have [docker](https://www.docker.com/) installed!
 
 Deploying BrowserBoxPro within a Zero Trust framework is straightforward:
 
-1. Obtain the latest Docker container for BrowserBoxPro from our [packages page](https://github.com/dosyago/BrowserBoxPro/pkgs/container/browserboxpro) on GitHub Container Registry.
+1. Obtain the latest Docker container for BrowserBoxPro from our [packages page](https://github.com/orgs/dosyago/packages/container/package/browserboxpro) on GitHub Container Registry.
 
 2. Deploy the Docker container using our Zero Trust compliant run script. Choose a primary port number (`$PORT`) ensuring two extra ports are free both preceding and succeeding `$PORT`. Deploy by running:
 
