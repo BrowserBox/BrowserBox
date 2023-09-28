@@ -4,8 +4,6 @@
 
 - fix test for menu open on mobile
 
-- refine adaptive tests and change cast seldom
-
 - add screen reset on tab change ( otherwise the prior tab lingers a little too long ) (and on navigate to url picked up by secureview)
 
 - fix clipboard write on Safari https://developer.apple.com/forums/thread/691873

@@ -35,15 +35,15 @@ export const JPEG_WEBP_QUAL = 80;
 // these can be tuned UP on better bandwidth and DOWN on lower bandwidth
 export const ACK_COUNT = process.platform == 'darwin' ? 1 : 2; // how many frames per ack? this should be adapted per link capacity
 export const MAX_FRAMES = 2; /* 1, 2, 4 */
-const MIN_JPG_QUAL = 21;
+const MIN_JPG_QUAL = 0;
 const MAX_JPG_QUAL = 80;
-const MAX_NTH_FRAME = 5;
+const MAX_NTH_FRAME = 8;
 export const MIN_TIME_BETWEEN_SHOTS = 40; /* 20, 40, 100, 250, 500 */
 export const MIN_TIME_BETWEEN_TAIL_SHOTS = 175;
 export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
 export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
 export const MAX_ROUNDTRIP = 1000;
-export const MIN_ROUNDTRIP = 125;
+export const MIN_ROUNDTRIP = 825;
 export const MIN_SPOT_ROUNDTRIP = 125;
 export const BUF_SEND_TIMEOUT = 50;
 const NOIMAGE = {img: '', frame:0};
@@ -147,6 +147,10 @@ export function makeCamera(connection) {
   }
 
   async function shrinkImagery() {
+    if ( SCREEN_OPTS.everyNthFrame >= MAX_NTH_FRAME && SCREEN_OPTS.quality <= MIN_JPG_QUAL ) {
+      // we don't go any lower
+      return;
+    }
     SAFARI_SHOT.command.params.quality -= 20;
     SCREEN_OPTS.quality -= 20;
     if ( SAFARI_SHOT.command.params.quality < MIN_JPG_QUAL ) {
@@ -154,10 +158,9 @@ export function makeCamera(connection) {
     }
     if ( SCREEN_OPTS.quality < MIN_JPG_QUAL ) {
       SCREEN_OPTS.quality = MIN_JPG_QUAL;
-      SCREEN_OPTS.everyNthFrame += 1;
+      SCREEN_OPTS.everyNthFrame += 2;
       if ( SCREEN_OPTS.everyNthFrame > MAX_NTH_FRAME ) {
         SCREEN_OPTS.everyNthFrame = MAX_NTH_FRAME;
-        return;
       }
       DEBUG.debugAdaptiveImagery && console.log(`Will only send every ${SCREEN_OPTS.everyNthFrame}th frame`);
     }
@@ -175,6 +178,11 @@ export function makeCamera(connection) {
   }
 
   async function growImagery() {
+    if ( SCREEN_OPTS.quality >= MAX_JPG_QUAL ) {
+      // we don't go any higher
+      return;
+    }
+
     SAFARI_SHOT.command.params.quality = 80;
     SCREEN_OPTS.quality = 80;
     if ( SAFARI_SHOT.command.params.quality > MAX_JPG_QUAL ) {
@@ -186,7 +194,6 @@ export function makeCamera(connection) {
     }
     if ( SCREEN_OPTS.quality > MAX_JPG_QUAL ) {
       SCREEN_OPTS.quality = MAX_JPG_QUAL;
-      return;
     }
     if ( DEBUG.debugAdaptiveImagery ) {
       console.log(`Growing JPEG quality to ${SAFARI_SHOT.command.params.quality}`);
