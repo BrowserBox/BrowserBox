@@ -617,7 +617,7 @@ const controller_api = {
   notifyBandwidthIssue(port, {issue}) {
     const connection = connections.get(port);
     if ( connection ) {
-      connection.meta.push({bandwidthIssue: issue});
+      connection.meta.push({bandwidthIssue: 'yes'});
     }
   },
 

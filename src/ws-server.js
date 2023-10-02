@@ -585,9 +585,11 @@
               if ( screenshotAck ) {
                 DEBUG.acks && console.log('client sent screenshot ack', messageId, screenshotAck);
                 const {bandwidthIssue} = zl.act.screenshotAck(connectionId, zombie_port, screenshotAck, {Data, Frames, Meta, State, receivesFrames: false, messageId});
+                DEBUG.debugAdaptiveImagery && console.log({bandwidthIssue});
+                notifyBandwidthIssue(true);
                 if ( bandwidthIssue != BANDWIDTH_ISSUE_STATE ) {
                   BANDWIDTH_ISSUE_STATE = bandwidthIssue;
-                  notifyBandwidthIssue(bandwidthIssue);
+                  //notifyBandwidthIssue(bandwidthIssue);
                 }
               }
               if ( zombie ) {
