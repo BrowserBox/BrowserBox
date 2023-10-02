@@ -941,6 +941,10 @@
             }
           });
 
+          queue.addMetaListener('bandwidthIssue', ({bandwidthIssue}) => {
+            console.log({bandwidthIssue});
+          });
+
           queue.addMetaListener('flashplayer', ({flashplayer}) => {
             const {url} = flashplayer;
             if ( url ) {

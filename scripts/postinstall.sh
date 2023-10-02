@@ -75,11 +75,11 @@ read -p "Are you sure you want to install the secure document viewer? This takes
 echo    # Move to a new line
 
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-  echo "Installation aborted."
-  exit 1
+  echo "Skipping doc viewer install"
+else
+  echo "Installing OS dependencies for secure document viewer..."
+  ./scripts/setup.sh
 fi
-echo "Installing OS dependencies for secure document viewer..."
-./scripts/setup.sh
 
 cd ../../../../
 
