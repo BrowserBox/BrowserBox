@@ -35,7 +35,7 @@ export const JPEG_WEBP_QUAL = 80;
 // these can be tuned UP on better bandwidth and DOWN on lower bandwidth
 export const ACK_COUNT = process.platform == 'darwin' ? 1 : 2; // how many frames per ack? this should be adapted per link capacity
 export const MAX_FRAMES = 2; /* 1, 2, 4 */
-const MIN_JPG_QUAL = 0;
+const MIN_JPG_QUAL = 4;
 const MAX_JPG_QUAL = 80;
 const MAX_NTH_FRAME = 8;
 export const MIN_TIME_BETWEEN_SHOTS = 40; /* 20, 40, 100, 250, 500 */
