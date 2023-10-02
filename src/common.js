@@ -281,26 +281,17 @@ export async function untilForever(pred, waitOverride = 5000) {
   }
 }
 
-export function throttle(func, wait = 5000) {
-  let timerId;
-  let lastExecuted = 0;
+// leading edge throttle
+export function throttle(func, wait) {
+  let timeout;
 
-  return function(...args) {
-    const context = this;
-    const elapsed = Date.now() - lastExecuted;
-
-    const execute = () => {
-      lastExecuted = Date.now();
-      func.apply(context, args);
-    };
-
-    clearTimeout(timerId);
-
-    if (elapsed > wait) {
-      execute();
-    } else {
-      timerId = setTimeout(execute, wait - elapsed);
+  const throttled = (...args) => {
+    if ( ! timeout ) {
+      timeout = setTimeout(() => timeout = false, wait);
+      return func(...args);
     }
-  };
+  }
+
+  return throttled;
 }
 
