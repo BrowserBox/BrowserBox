@@ -202,10 +202,7 @@
     const websockets = new Set();
     const peers = new Set();
     const notifyBandwidthIssue = throttle(function (bandwidthIssue) {
-      zl.act.fanOut(
-        socket => so(socket, {bandwidthIssue}), 
-        zombie_port
-      );
+      zl.act.notifyBandwidthIssue(zombie_port, {issue: bandwidthIssue});
     });
 
     let latestMessageId = 0;
