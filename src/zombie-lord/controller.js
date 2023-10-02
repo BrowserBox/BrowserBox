@@ -614,6 +614,13 @@ const controller_api = {
     return retVal;
   },
 
+  notifyBandwidthIssue(port, {issue}) {
+    const connection = connections.get(port);
+    if ( connection ) {
+      connection.meta.push({bandwidthIssue: issue});
+    }
+  },
+
   saveIP(ip_address) {
     this.ip_address = ip_address;
     console.log("Connect from", ip_address);

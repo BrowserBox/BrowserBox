@@ -281,7 +281,7 @@ export async function untilForever(pred, waitOverride = 5000) {
   }
 }
 
-export function throttle(func, wait) {
+export function throttle(func, wait = 5000) {
   let timerId;
   let lastExecuted = 0;
 
