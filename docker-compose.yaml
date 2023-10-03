@@ -1,0 +1,8 @@
+version: '3.3'
+services:
+    BrowserBox:
+        restart: always
+        ports:
+            - '8080:8080'             # 8090可以改成任意服务器没有使用过的端口，8182不要修改
+        container_name: BrowserBox
+        image: 'niruix/sshwifty:latest'
