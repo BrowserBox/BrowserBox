@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+set -x
+
+unset npm_config_prefix
+
 if [[ "$(uname -s)" == "Darwin" ]]; then
   if [[ "$(arch)" != "i386" ]]; then
     >&2 echo "Please run this script under Rosetta (i386 architecture)."

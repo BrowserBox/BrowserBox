@@ -1,9 +1,49 @@
 #!/usr/bin/env bash
 
+set -x
+
+unset npm_config_prefix
+
 get_install_dir() {
-  install_path=$(find $HOME -name .bbpro_install_dir -print -quit 2>/dev/null)
-  install_dir=$(dirname $install_path)
-  echo $install_dir
+  # Find potential directories containing .bbpro_install_dir
+  pwd="$(pwd)"
+  install_path1=$(find $pwd -name .bbpro_install_dir -print 2>/dev/null)
+  current_version=$(jq -r '.version' ./package.json)
+
+  # Loop through each found path to check if node_modules also exists in the same directory
+  IFS=$'\n'  # Change Internal Field Separator to newline for iteration
+  for path in $install_path1; do
+    dir=$(dirname $path)
+    if [ -d "$dir/node_modules" ]; then
+      # Get the version of the found directory's package.json
+      found_version=$(jq -r '.version' "${dir}/package.json")
+
+      # Check if the found version is the same or later than the current version
+      if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then
+        echo "$dir"
+        return 0
+      fi
+    fi
+  done
+
+  install_path2=$(find $HOME -name .bbpro_install_dir -print 2>/dev/null)
+  IFS=$'\n'  # Change Internal Field Separator to newline for iteration
+  for path in $install_path2; do
+    dir=$(dirname $path)
+    if [ -d "$dir/node_modules" ]; then
+      # Get the version of the found directory's package.json
+      found_version=$(jq -r '.version' "${dir}/package.json")
+
+      # Check if the found version is the same or later than the current version
+      if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then
+        echo "$dir"
+        return 0
+      fi
+    fi
+  done
+
+  echo "No valid install directory found."
+  return 1
 }
 
 os_type() {
@@ -128,12 +168,21 @@ INSTALL_DIR=$(get_install_dir)
 
 echo "Found bbpro at: $INSTALL_DIR"
 
+read -p "GO?"
+
 echo "Ensuring fully installed..."
 
 cd $INSTALL_DIR
 
+echo "Ensuring nvm installed..."
 install_nvm
+
+echo "Running npm install..."
+
 npm i
+
+echo "npm install complete"
+
 if [ "$IS_DOCKER_BUILD" = "true" ]; then
   echo "In docker, not running parcel (it hangs sometimes!)"
 else 

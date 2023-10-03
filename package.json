@@ -2,7 +2,7 @@
   "name": "@dosy-private/bbpro",
   "private": true,
   "type": "module",
-  "version": "3.0.1",
+  "version": "3.1.1",
   "description": "Fly a browser remotely from your browser? Yes.",
   "main": "./src/server.js",
   "targets": {
@@ -36,7 +36,7 @@
     "start": "bash ./scripts/dstart.sh",
     "docker_start": "bash ./scripts/docker_start.sh",
     "x64i": "TARGET_ARCH=x64 npm install",
-    "postinstall": "bash ./scripts/postinstall.sh",
+    "postinstall": "bash -x ./scripts/postinstall.sh",
     "init": "bash ./reinit_after_restart.sh",
     "clean": "./scripts/clean.sh || echo 'clean failed'",
     "lint": "./scripts/gglint.sh",

@@ -24,7 +24,7 @@
   "dependencies": {
     "bang.html": "^6.0.0",
     "dumbass": "^2.7.0",
-    "lucide-static": "^0.101.0",
+    "lucide-static": "latest",
     "maskingtape.css": "^1.11.4",
     "style.dss": "latest",
     "vanillatype": "latest"
