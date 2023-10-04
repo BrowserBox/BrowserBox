@@ -19,8 +19,17 @@ const Options = {
 //const TAIL_START = 100;
 //let lastTailShot = false;
 //let lastHash;
+let BANDWIDTH_ISSUE_STATE = false;
 const goLowRes = throttle((connection, ...args) => connection.shrinkImagery(...args), 8000);
 const goHighRes = throttle((connection, ...args) => connection.growImagery(...args), 8000); 
+const notifyBandwidthIssue = throttle(function (zombie_port, bandwidthIssue) {
+  DEBUG.debugAdaptiveImagery && console.log('Maybe notifying bwissue on ack', {bandwidthIssue});
+  if ( bandwidthIssue != BANDWIDTH_ISSUE_STATE ) {
+    controller_api.notifyBandwidthIssue(zombie_port, {issue: bandwidthIssue});
+    BANDWIDTH_ISSUE_STATE = bandwidthIssue;
+    DEBUG.debugAdaptiveImagery && console.log('Notified BW Issue');
+  }
+}, 1000);
 
 const controller_api = {
   zombieIsDead(port) {
@@ -136,11 +145,11 @@ const controller_api = {
             const avgRoundtrip = ack.timeSum / ack.times.length;
             DEBUG.debugAdaptiveImagery && console.log(`Average roundtrip time: ${avgRoundtrip}ms, actual: ${roundtripTime}ms`);
             if ( avgRoundtrip > MAX_ROUNDTRIP /*|| roundtripTime > MAX_ROUNDTRIP */ ) {
-              goLowRes(connection);
               bandwidthIssue = true;
+              goLowRes(connection);
             } else if ( avgRoundtrip < MIN_ROUNDTRIP /*|| roundtripTime < MIN_SPOT_ROUNDTRIP */) {
-              goHighRes(connection);
               bandwidthIssue = false;
+              goHighRes(connection);
             }
           }
         }
@@ -195,7 +204,7 @@ const controller_api = {
         console.warn('screenshotAck error', e);
         ack.sending = false;
       }
-      return {bandwidthIssue};
+      notifyBandwidthIssue(port, bandwidthIssue);
     } else {
       throw new TypeError(`No connection on port ${port}`);
     }
@@ -617,7 +626,7 @@ const controller_api = {
   notifyBandwidthIssue(port, {issue}) {
     const connection = connections.get(port);
     if ( connection ) {
-      connection.meta.push({bandwidthIssue: 'yes'});
+      connection.meta.push({bandwidthIssue: issue ? 'yes' : 'no'});
     }
   },
 

@@ -122,8 +122,6 @@
   const TabNumbers = new Map();
 
   export let LatestCSRFToken = '';
-  let notifyBandwidthIssue;
-  let BANDWIDTH_ISSUE_STATE = false;
   let serverOrigin;
   let messageQueueRunning = false;
   let requestId = 0;
@@ -201,9 +199,6 @@
     const sockets = new Set();
     const websockets = new Set();
     const peers = new Set();
-    notifyBandwidthIssue = throttle(function (bandwidthIssue) {
-      zl.act.notifyBandwidthIssue(zombie_port, {issue: bandwidthIssue});
-    }, 5000);
 
     let latestMessageId = 0;
 
@@ -584,13 +579,7 @@
               } 
               if ( screenshotAck ) {
                 DEBUG.acks && console.log('client sent screenshot ack', messageId, screenshotAck);
-                const {bandwidthIssue} = zl.act.screenshotAck(connectionId, zombie_port, screenshotAck, {Data, Frames, Meta, State, receivesFrames: false, messageId});
-                DEBUG.debugAdaptiveImagery && console.log({bandwidthIssue});
-                notifyBandwidthIssue(true);
-                if ( bandwidthIssue != BANDWIDTH_ISSUE_STATE ) {
-                  BANDWIDTH_ISSUE_STATE = bandwidthIssue;
-                  //notifyBandwidthIssue(bandwidthIssue);
-                }
+                zl.act.screenshotAck(connectionId, zombie_port, screenshotAck, {Data, Frames, Meta, State, receivesFrames: false, messageId});
               }
               if ( zombie ) {
                 const {events} = zombie;

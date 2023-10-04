@@ -157,6 +157,7 @@
           showIMEUI,
 
           // bandwidth
+          showBandwidthIssue: false,
           messageDelay: 0,          // time it takes to receive an average, non-frame message
           showBandwidthRate: true,
           myBandwidth: 0,
@@ -942,7 +943,12 @@
           });
 
           queue.addMetaListener('bandwidthIssue', ({bandwidthIssue}) => {
-            console.log({bandwidthIssue});
+            const showBandwidthIssue = bandwidthIssue == 'yes';
+            if ( state.showBandwidthIssue != showBandwidthIssue ) {
+              DEBUG.logBandwidthIssueChanges && console.log({bandwidthIssue});
+              state.showBandwidthIssue = showBandwidthIssue;
+              setState('bbpro', state);
+            }
           });
 
           queue.addMetaListener('flashplayer', ({flashplayer}) => {
@@ -1044,6 +1050,7 @@
           use('bb-top-bar');
           use('bb-modals');
           use('bb-resize-button');
+          use('bb-bw-spinner');
           use('bb-settings-button');
           const bb = document.querySelector('bb-view');
           if ( !bb.shadowRoot ) {

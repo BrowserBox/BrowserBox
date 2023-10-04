@@ -80,7 +80,7 @@ export const DEBUG = Object.freeze({
   loadSPLFreshEachLogin: false,
   frameDebug: false,
   adaptiveImagery: true,
-  debugAdaptiveImagery: true,
+  debugAdaptiveImagery: false,
   useGL: true,
   disableGL: false,
   disable3D: process.platform == 'linux',
