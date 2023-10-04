@@ -1,5 +1,3 @@
-- add final check for node_modules in bbpro install dir (otherwise we may try to launch of one that hasn't been installed!) in run-pm2 code
-
 - factor out get_install_dir and other funcs into something we can source into all the scripts that use it
 
 - fix test for menu open on mobile
