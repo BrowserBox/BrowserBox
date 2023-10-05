@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
 
-set -x
+#set -x
 
 unset npm_config_prefix
 
-get_install_dir() {
+# flush any partial
+read -p "Enter to continue" -r
+REPLY=""
+
+read_input() {
+  if [ -t 0 ]; then  # Check if it's running interactively
+    read -p "$1" -r REPLY
+  else
+    read -r REPLY
+    REPLY=${REPLY:0:1}  # Take the first character of the piped input
+  fi
+  echo  # Add a newline for readability
+  echo
+}
+
+get_latest_dir() {
   # Find potential directories containing .bbpro_install_dir
   pwd="$(pwd)"
   install_path1=$(find $pwd -name .bbpro_install_dir -print 2>/dev/null)
@@ -14,7 +29,6 @@ get_install_dir() {
   IFS=$'\n'  # Change Internal Field Separator to newline for iteration
   for path in $install_path1; do
     dir=$(dirname $path)
-    if [ -d "$dir/node_modules" ]; then
       # Get the version of the found directory's package.json
       found_version=$(jq -r '.version' "${dir}/package.json")
 
@@ -23,14 +37,12 @@ get_install_dir() {
         echo "$dir"
         return 0
       fi
-    fi
   done
 
   install_path2=$(find $HOME -name .bbpro_install_dir -print 2>/dev/null)
   IFS=$'\n'  # Change Internal Field Separator to newline for iteration
   for path in $install_path2; do
     dir=$(dirname $path)
-    if [ -d "$dir/node_modules" ]; then
       # Get the version of the found directory's package.json
       found_version=$(jq -r '.version' "${dir}/package.json")
 
@@ -39,10 +51,9 @@ get_install_dir() {
         echo "$dir"
         return 0
       fi
-    fi
   done
 
-  echo "No valid install directory found."
+  echo "No valid install directory found." >&2
   return 1
 }
 
@@ -84,9 +95,9 @@ echo "For large volume purchases, please visit our website: https://dosyago.com"
 echo -e "\n"
 echo "For other inquiries, you may contact sales@dosyago.com."
 echo -e "\n"
-read -p "By proceeding with the installation, you confirm your acceptance of these terms and conditions and that you have purchased a license if your use of BrowserBoxPro is intended for commercial applications that do not comply with AGPL-3.0. Do you agree to these terms? (yes/no): " answer
+read_input "By proceeding with the installation, you confirm your acceptance of these terms and conditions and that you have purchased a license if your use of BrowserBoxPro is intended for commercial applications that do not comply with AGPL-3.0. Do you agree to these terms? (yes/no): " 
 
-case ${answer:0:1} in
+case ${REPLY:0:1} in
     y|Y )
         echo "You have agreed to the terms. Proceeding with the installation..."
     ;;
@@ -100,14 +111,14 @@ esac
 
 # If on macOS
 if [[ "$(uname)" == "Darwin" ]]; then
-    # Check the machine architecture
-    ARCH="$(uname -m)"
-    if [[ "$ARCH" == "arm64" ]]; then
-        echo "This script is not compatible with the MacOS ARM architecture at this time"
-        echo "due to some dependencies having no pre-built binaries for this architecture."
-        echo "Please re-run this script under Rosetta."
-        exit 1
-    fi
+  # Check the machine architecture
+  ARCH="$(uname -m)"
+  if [[ "$ARCH" == "arm64" ]]; then
+      echo "This script is not compatible with the MacOS ARM architecture at this time"
+      echo "due to some dependencies having no pre-built binaries for this architecture."
+      echo "Please re-run this script under Rosetta."
+      exit 1
+  fi
 fi
 
 if [ "$(os_type)" == "Linux" ]; then
@@ -116,8 +127,9 @@ if [ "$(os_type)" == "Linux" ]; then
   $SUDO ufw disable
 fi
 
-if [ "$#" -eq 1 ]; then
+if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
   hostname="$1"
+  export BB_USER_EMAIL="$2"
 
   amd64=""
 
@@ -157,18 +169,27 @@ if [ "$#" -eq 1 ]; then
     fi
   fi
 else
-  echo "Usage: $0 <hostname>"
-  echo "Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible."
+  if [[ "$1" = "localhost" ]]; then
+    echo ""
+    echo "Usage: $0 <hostname>"
+    echo "Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
+    echo "Note that user email is not required as 2nd parameter when using localhost as we do not use Letsencrypt in that case." >&2
+  else 
+    echo ""
+    echo "Usage: $0 <hostname> <your_email>"
+    echo "Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
+    echo "Please provide an email as argument. This email will be used to agree to the Letsencrypt TOS for cert provisioning" >&2
+  fi
   exit 1
 fi
 
 echo -n "Finding bbpro directory..."
 
-INSTALL_DIR=$(get_install_dir)
+INSTALL_DIR=$(get_latest_dir)
 
 echo "Found bbpro at: $INSTALL_DIR"
 
-read -p "GO?"
+read_input "GO?"
 
 echo "Ensuring fully installed..."
 
@@ -201,7 +222,7 @@ else
   fi
 fi
 
-read -p "Continue?"
+read_input "Continue?"
 
 echo "Fully installed!"
 

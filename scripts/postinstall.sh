@@ -1,8 +1,24 @@
 #!/usr/bin/env bash
 
-set -x
+#set -x
 
 unset npm_config_prefix
+
+# flush any partial
+read -p "Enter to continue" -r
+REPLY=""
+
+read_input() {
+  if [ -t 0 ]; then  # Check if it's running interactively
+    read -p "$1" -r REPLY
+  else
+    read -r REPLY
+    REPLY=${REPLY:0:1}  # Take the first character of the piped input
+  fi
+  echo  # Add a newline for readability
+  echo
+}
+
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
   if [[ "$(arch)" != "i386" ]]; then
@@ -13,10 +29,10 @@ fi
 
 echo 
 echo
-read -p "Want to run setup_machine script? (you only need to do this the first time you install BG, or when you update new version) y/n " -n 1 -r
+read_input "Want to run setup_machine script? (you only need to do this the first time you install BG, or when you update new version) y/n " 
 echo
 echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]
+if [[ ! $REPLY =~ ^[Yy]$ ]];
 then
   echo "Not running full setup...Just doing npm install..."
 else 
@@ -25,7 +41,6 @@ else
 fi
 
 mkdir -p src/public/voodoo/assets/icons
-
 
 echo "Installing packages for zombie lord..."
 cd src/zombie-lord 
@@ -75,10 +90,10 @@ cd ../chai
 npm i
 npm audit fix
 
-read -p "Are you sure you want to install the secure document viewer? This takes a while because of all the fonts and TeX related packages. (y/n) " -n 1 -r
-echo    # Move to a new line
+echo
+read_input "Do you want to skip the secure document viewer? (lengthy install because of all the fonts and TeX related packages) y/n "
 
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+if [[ "$IS_DOCKER_BUILD" = "true" ]] || [[ "$REPLY" =~ ^[Yy]$ ]]; then
   echo "Skipping doc viewer install"
 else
   echo "Installing OS dependencies for secure document viewer..."

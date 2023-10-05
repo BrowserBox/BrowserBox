@@ -36,7 +36,7 @@
     "start": "bash ./scripts/dstart.sh",
     "docker_start": "bash ./scripts/docker_start.sh",
     "x64i": "TARGET_ARCH=x64 npm install",
-    "postinstall": "bash -x ./scripts/postinstall.sh",
+    "postinstall": "bash ./scripts/postinstall.sh",
     "init": "bash ./reinit_after_restart.sh",
     "clean": "./scripts/clean.sh || echo 'clean failed'",
     "lint": "./scripts/gglint.sh",
@@ -76,6 +76,7 @@
   },
   "homepage": "https://github.com/crisdosyago/bbpro",
   "dependencies": {
+    "@roamhq/wrtc": "latest",
     "bang.html": "latest",
     "body-parser": "latest",
     "compression": "latest",
@@ -92,7 +93,6 @@
     "multer": "latest",
     "simple-peer": "latest",
     "spdy": "latest",
-    "wrtc": "latest",
     "ws": "latest"
   },
   "devDependencies": {

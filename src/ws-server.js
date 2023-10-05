@@ -10,7 +10,7 @@
   import multer from 'multer';
   import {WebSocketServer, WebSocket} from 'ws';
   import Peer from 'simple-peer';
-  import WRTC from 'wrtc';
+  import WRTC from '@roamhq/wrtc';
 
   import bodyParser from 'body-parser';
   import cookieParser from 'cookie-parser';
