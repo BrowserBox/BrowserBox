@@ -52,6 +52,7 @@
         setState('bbpro', state);
       }]}
     ></canvas>
+    ${state.showBandwidthIssue ? F`<bb-bw-spinner state=bbpro></bb-bw-spinner>` : F`<!-- bandwidth issue spinner -->`}
     ${contextMenuActive ? F`<bb-context-menu state=${{}} click=close(event) ></bb-context-menu>` : F`<!-- context menu -->`}
     <select id=selectinput stylist="styleSelectInput"
       input=${e => (console.log({e}), H({

@@ -1,0 +1,3 @@
+class BBBandwidthSpinner extends Base {
+
+}

@@ -15,6 +15,7 @@ const MIN_WAIT = 50;
 const MAX_WAITS = 200;
 
 export const OPTIONS = {
+  showBWStatus: true,
   showAudioStatus: true,
   showWebRTCStatus: true,
   useSystemColorScheme: true,
@@ -22,6 +23,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  logBandwidthIssueChanges: false,
   debugSafariWebRTC: false,
   debugSetup: false,
   /* debug connections */

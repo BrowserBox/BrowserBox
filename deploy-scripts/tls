@@ -4,11 +4,17 @@
 which certbot || sudo apt -y install certbot curl
 
 if [[ -z "$1" ]]; then
-  echo "Supply a domain name as first argument"
+  echo "Supply a domain name as first argument" >&2
   exit 1
 fi
 
-sudo certbot certonly --standalone -d $1 --agree-tos -m cris7fe@outlook.com --no-eff-email
+if [[ -z "${BB_USER_EMAIL}" ]]; then
+  echo "Supply BB_USER_EMAIL environment variable" >&2
+  exit 1
+fi
+
+
+sudo certbot certonly --standalone --keep -d $1 --agree-tos -m "${BB_USER_EMAIL}" --no-eff-email
 mkdir -p $HOME/sslcerts
 sudo -u root ./deploy-scripts/cp_certs $1 $HOME/sslcerts/
 sudo chown $USER:$USER $HOME/sslcerts/*
