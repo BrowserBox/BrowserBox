@@ -15,13 +15,14 @@ get_install_dir() {
   if [ -z "$install_dir" ]; then
     install_dir=$(dirname $install_path2)
   fi
-  if [ -z "$install_dir" ]; then
+
+  if [[ -z "$install_dir" ]] || [[ ! -d "$install_dir/node_modules" ]]; then
     echo "Could not find bppro. Purchase a license and run deploy-scripts/global_install.sh first">&2
     exit 1
   fi
-  echo "Found bbpro at: $install_dir">&2
 
-  echo $install_dir
+  echo "Found bbpro at: $install_dir">&2
+  echo "$install_dir"
 }
 
 has_renice_cap() {
@@ -42,7 +43,7 @@ echo "Install dir: " $INSTALL_DIR >&2
 
 cd $INSTALL_DIR
 
-if !has_renice_cap "$USER"; then
+if ! has_renice_cap "$USER"; then
   echo "This user ($USER) cannot run renice."
   echo "The ability to run renice (by belonging to the renice group created by BBPRO) is necessary for proper audio functioning."
   echo "Trying to add renice capability for $USER..."

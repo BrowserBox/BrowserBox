@@ -4,20 +4,45 @@ username=$(whoami)
 echo "Starting viewfinder service cluster as $username"
 
 get_install_dir() {
-  echo "Finding bbpro installation..." >&2
-  install_path1=$(find $HOME -name .bbpro_install_dir -print -quit 2>/dev/null)
-  install_path2=$(find /usr/local/share -name .bbpro_install_dir -print -quit 2>/dev/null)
-  install_dir=$(dirname $install_path1)
-  if [ -z "$install_dir" ]; then 
-    install_dir=$(dirname $install_path2)
-  fi
-  if [ -z "$install_dir" ]; then
-    echo "Could not find bppro. Purchase a license and run deploy-scripts/global_install.sh first" >&2
-    exit 1
-  fi
-  echo "Found bbpro at: $install_dir" >&2
+  # Find potential directories containing .bbpro_install_dir
+  pwd="$(pwd)"
+  install_path1=$(find $pwd -name .bbpro_install_dir -print 2>/dev/null)
+  current_version=$(jq -r '.version' ./package.json)
 
-  echo $install_dir
+  # Loop through each found path to check if node_modules also exists in the same directory
+  IFS=$'\n'  # Change Internal Field Separator to newline for iteration
+  for path in $install_path1; do
+    dir=$(dirname $path)
+    if [ -d "$dir/node_modules" ]; then
+      # Get the version of the found directory's package.json
+      found_version=$(jq -r '.version' "${dir}/package.json")
+
+      # Check if the found version is the same or later than the current version
+      if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then
+        echo "$dir"
+        return 0
+      fi
+    fi
+  done
+
+  install_path2=$(find $HOME -name .bbpro_install_dir -print 2>/dev/null)
+  IFS=$'\n'  # Change Internal Field Separator to newline for iteration
+  for path in $install_path2; do
+    dir=$(dirname $path)
+    if [ -d "$dir/node_modules" ]; then
+      # Get the version of the found directory's package.json
+      found_version=$(jq -r '.version' "${dir}/package.json")
+
+      # Check if the found version is the same or later than the current version
+      if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then
+        echo "$dir"
+        return 0
+      fi
+    fi
+  done
+
+  echo "No valid install directory found."
+  return 1
 }
 
 INSTALL_DIR=$(get_install_dir)

@@ -4,4 +4,5 @@
   <span class="connection-status">${state.serverConnected ? '' : 'server disconnected'}</span>
   <span class="webrtc-status">${_top.OPTIONS.showWebRTCStatus && state.webrtcConnected ? 'webrtc' : ''}</span>
   <span class="audio-status">${_top.OPTIONS.showAudioStatus && state.audioConnected ? 'audio' : ''}</span>
+  <span class="bw-status">${_top.OPTIONS.showBWStatus && state.showBandwidthIssue ? 'bandwidth issue' : ''}</span>
 </header>

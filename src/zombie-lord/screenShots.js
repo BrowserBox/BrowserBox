@@ -44,6 +44,9 @@ export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
 export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
 export const MAX_ROUNDTRIP = 1000;
 export const MIN_ROUNDTRIP = 825;
+// local testing values haha
+//export const MAX_ROUNDTRIP = 3;
+//export const MIN_ROUNDTRIP = 2;
 export const MIN_SPOT_ROUNDTRIP = 125;
 export const BUF_SEND_TIMEOUT = 50;
 const NOIMAGE = {img: '', frame:0};
