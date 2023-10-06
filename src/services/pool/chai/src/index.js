@@ -280,7 +280,7 @@
     } else {
       SCRIPT = CONVERTER;
       fs.copyFileSync(Path.join(uploadPath, 'index.html'), Path.join(uploadPath, `${Path.basename(pdf.path)}.html`));
-      subshell = spawn(RUNNER, [SCRIPT, pdf.path, uploadPath, 'jpeg']);
+      subshell = spawn(RUNNER, [SCRIPT, `${pdf.path}`, `${uploadPath}`, `jpeg`]);
     }
 
     // subshell clean up handling

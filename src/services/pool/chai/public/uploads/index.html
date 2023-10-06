@@ -207,7 +207,7 @@
 <img id=page>
 <script>
   const path = location.pathname;
-  const imgUrl = i => path.replace(/\.html$/,`-${i.toString().padStart(4,'0')}.jpeg`);
+  const imgUrl = i => path.replace(/\.html$/,`-${i.toString().padStart(4,'0')}.png`);
   const documentFileName = path.replace(/\.html$/, '');
   console.log({documentFileName});
   const anchor = document.querySelector('#download-link');

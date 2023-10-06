@@ -111,7 +111,6 @@ esac
 
 # If on macOS
 if [[ "$(uname)" == "Darwin" ]]; then
-<<<<<<< HEAD
     # Check the machine architecture
     ARCH="$(uname -m)"
     if [[ "$ARCH" == "arm64" ]]; then
@@ -120,16 +119,6 @@ if [[ "$(uname)" == "Darwin" ]]; then
         echo "Please re-run this script under Rosetta."
         #exit 1
     fi
-=======
-  # Check the machine architecture
-  ARCH="$(uname -m)"
-  if [[ "$ARCH" == "arm64" ]]; then
-      echo "This script is not compatible with the MacOS ARM architecture at this time"
-      echo "due to some dependencies having no pre-built binaries for this architecture."
-      echo "Please re-run this script under Rosetta."
-      exit 1
-  fi
->>>>>>> 89b98c6d8b02b1ee9fe43bc81221d36a72bb0708
 fi
 
 if [ "$(os_type)" == "Linux" ]; then

@@ -29,6 +29,11 @@ is_rosetta() {
 # Check platform
 platform=$(get_platform)
 
+echo "1: $1" >&2
+echo "2: $2" >&2
+echo "3: $3" >&2 
+echo "4: $4" >&2
+
 # Original script and its arguments
 original_script="$1"
 shift  # Remove the first argument to get only the remaining arguments
@@ -42,7 +47,7 @@ else
   if is_rosetta; then
     echo "Rosetta on Mac so executing with right arch" >&2
     # If running under Rosetta, switch to arm64
-    arch -arm64 "${bash_location}" -c "source $HOME/.bashrc; source $HOME/.profile; \"${original_script}\" \"$@\""
+    arch -arm64 "${bash_location}" -c "source $HOME/.bashrc; source $HOME/.profile; \"${original_script}\" $@"
   else
     # Otherwise, run normally
     "${original_script}" "$@"
