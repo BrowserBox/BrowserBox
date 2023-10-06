@@ -1,13 +1,13 @@
 #!/bin/bash
 
-set -x
+#set -x
 
 . ./scripts/config.sh
 
 echo "$1"
 
 base="$2"
-format="$3"
+format="${3:-png}"
 
 # Verify if a file path is provided
 if [ -z "$1" ]; then
@@ -20,13 +20,6 @@ if [ ! -f "$1" ]; then
   echo "File does not exist. Exiting." >&2
   exit 1
 fi
-
-# Set default format to png if none is provided
-if [ -z "$format" ]; then
-  format="png"
-fi
-
-#cp "$base/index.html" "$1.html"
 
 convert_to_pdf() {
   local input_file="$1"

@@ -20,6 +20,7 @@
   const app = express();
 
   const SECRET = process.env.DOCS_KEY;
+  const FORMAT = 'png';
   const MAX_FILE_DL_TIME = 147*1000; // time to allow a download before rejecting ~ 2.5 mins
   const WAIT_NEW_FILES_BEFORE_DISK_SYNC = 3;
   const CHAI_STATE_PATH = process.env.CHAI_PATH || Path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro', 'chai')
@@ -149,7 +150,7 @@
     }
   }))
 
-  app.use('/uploads/file*0000.jpeg', RateLimiter, (req, res) => {
+  app.use(`/uploads/file*0000.${FORMAT}`, RateLimiter, (req, res) => {
     // save browser cache from getting tired of this not existing while conversion is in progress
       // prevent the repreated requests for first page to blow the cache
       // as in browser will eventually think ti doesn't exist and just serve no exist for ever
@@ -280,7 +281,14 @@
     } else {
       SCRIPT = CONVERTER;
       fs.copyFileSync(Path.join(uploadPath, 'index.html'), Path.join(uploadPath, `${Path.basename(pdf.path)}.html`));
-      subshell = spawn(RUNNER, [SCRIPT, pdf.path, uploadPath, 'jpeg']);
+      const sourceFilePath = Path.join(uploadPath, 'index.html');
+      const destinationFilePath = Path.join(uploadPath, `${Path.basename(pdf.path)}.html`);
+
+      let fileContent = fs.readFileSync(sourceFilePath, 'utf8');
+      fileContent = fileContent.replace(/\$\$FORMAT\$\$/g, FORMAT);
+      fs.writeFileSync(destinationFilePath, fileContent);
+
+      subshell = spawn(RUNNER, [SCRIPT, `${pdf.path}`, `${uploadPath}`, `${FORMAT}`]);
     }
 
     // subshell clean up handling
