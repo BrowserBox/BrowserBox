@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -x
+#set -x
 
 # Wrapper script to run another script with its arguments
 # If on macOS and running under Rosetta, switch to native arm64
@@ -35,7 +35,7 @@ shift  # Remove the first argument to get only the remaining arguments
 
 if [[ "${platform}" != "Mac" ]]; then
   # If not on macOS, just execute the original script with its arguments
-  "${original_script}" "$@"
+  "${original_script}" "$1" "$2" "$3"
 else
   # If on macOS
   bash_location=$(command -v bash)

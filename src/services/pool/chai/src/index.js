@@ -269,81 +269,86 @@
     let resolve;
     let pr;
 
-    if ( mime && ARCHIVES.has(mime) && ! DOCUMENTS_THAT_ARE_ARCHIVES.has(ext) ) {
-      isArchive = true;
-      pr = new Promise(res => resolve = res);
-      SCRIPT = EXPLORER;
-      const destPath = Path.join(uploadPath, pdf.filename);
-      if ( pdf.path != destPath ) {
-        fs.copyFileSync(pdf.path, destPath);
+    try {
+      if ( mime && ARCHIVES.has(mime) && ! DOCUMENTS_THAT_ARE_ARCHIVES.has(ext) ) {
+        isArchive = true;
+        pr = new Promise(res => resolve = res);
+        SCRIPT = EXPLORER;
+        const destPath = Path.join(uploadPath, pdf.filename);
+        if ( pdf.path != destPath ) {
+          fs.copyFileSync(pdf.path, destPath);
+        }
+        subshell = spawn(SCRIPT, [pdf.path]);
+      } else {
+        SCRIPT = CONVERTER;
+        fs.copyFileSync(Path.join(uploadPath, 'index.html'), Path.join(uploadPath, `${Path.basename(pdf.path)}.html`));
+        const sourceFilePath = Path.join(uploadPath, 'index.html');
+        const destinationFilePath = Path.join(uploadPath, `${Path.basename(pdf.path)}.html`);
+
+        let fileContent = fs.readFileSync(sourceFilePath, 'utf8');
+        fileContent = fileContent.replace(/\$\$FORMAT\$\$/g, FORMAT);
+        fs.writeFileSync(destinationFilePath, fileContent);
+
+        subshell = spawn(RUNNER, [SCRIPT, `${pdf.path}`, `${uploadPath}`, `${FORMAT}`]);
       }
-      subshell = spawn(SCRIPT, [pdf.path]);
-    } else {
-      SCRIPT = CONVERTER;
-      fs.copyFileSync(Path.join(uploadPath, 'index.html'), Path.join(uploadPath, `${Path.basename(pdf.path)}.html`));
-      const sourceFilePath = Path.join(uploadPath, 'index.html');
-      const destinationFilePath = Path.join(uploadPath, `${Path.basename(pdf.path)}.html`);
 
-      let fileContent = fs.readFileSync(sourceFilePath, 'utf8');
-      fileContent = fileContent.replace(/\$\$FORMAT\$\$/g, FORMAT);
-      fs.writeFileSync(destinationFilePath, fileContent);
+      // subshell clean up handling
+      {
+        const myJobId = jobid;
+        let killed = false;
+        jobs[myJobId] = {jobid,subshell,killit,path:pdf.path};
+        jobid++;
 
-      subshell = spawn(RUNNER, [SCRIPT, `${pdf.path}`, `${uploadPath}`, `${FORMAT}`]);
+        subshell.stdout.pipe(process.stdout);
+        subshell.stderr.pipe(process.stderr);
+
+        subshell.stdout.on('end', () => {
+          killit();
+        });
+        subshell.on('error', (err) => {
+          console.warn(err);
+          killit();
+        });
+        subshell.on('close', (code) => {
+          if ( code != 0 ) {
+            console.warn(`${SCRIPT} exited with code ${code}`);
+            logErr(`${SCRIPT} exited with code ${code}`);
+          } else {
+            console.log(`${SCRIPT} exited`);
+          }
+          if ( isArchive && resolve ) {
+            resolve();
+          }
+        });
+
+        function killit() {
+          if ( killed ) return;
+          killed = true;
+          delete jobs[myJobId];
+          subshell.stdin.pause();
+          subshell.stdout.pause();
+          subshell.stderr.pause();
+          subshell.kill();
+        }
+      }
+
+      // give the view url
+          if ( isArchive && pr ) {
+            // we need to wait for extract for the directory to be visible
+            await pr;
+          }
+        if ( redirectToUrl ) {
+          console.log(`Redirecting to`, viewUrl);
+          res.redirect(viewUrl);
+        } else if ( sendURL ) {
+          res.type('text/plain');
+          res.end(viewUrl);
+        }
+        return sanitizeUrl(viewUrl);
+    } catch(e) {
+      console.warn(e);
+      throw new Error(`Error during convert: ${e}`);
     }
-
-    // subshell clean up handling
-    {
-      const myJobId = jobid;
-      let killed = false;
-      jobs[myJobId] = {jobid,subshell,killit,path:pdf.path};
-      jobid++;
-
-      subshell.stdout.pipe(process.stdout);
-      subshell.stderr.pipe(process.stderr);
-
-      subshell.stdout.on('end', () => {
-        killit();
-      });
-      subshell.on('error', (err) => {
-        console.warn(err);
-        killit();
-      });
-      subshell.on('close', (code) => {
-        if ( code != 0 ) {
-          console.warn(`${SCRIPT} exited with code ${code}`);
-          logErr(`${SCRIPT} exited with code ${code}`);
-        } else {
-          console.log(`${SCRIPT} exited`);
-        }
-        if ( isArchive && resolve ) {
-          resolve();
-        }
-      });
-
-      function killit() {
-        if ( killed ) return;
-        killed = true;
-        delete jobs[myJobId];
-        subshell.stdin.pause();
-        subshell.stdout.pause();
-        subshell.stderr.pause();
-        subshell.kill();
-      }
-    }
-
-    // give the view url
-        if ( isArchive && pr ) {
-          // we need to wait for extract for the directory to be visible
-          await pr;
-        }
-      if ( redirectToUrl ) {
-        console.log(`Redirecting to`, viewUrl);
-        res.redirect(viewUrl);
-      } else if ( sendURL ) {
-        res.type('text/plain');
-        res.end(viewUrl);
-      }
-      return sanitizeUrl(viewUrl);
   }
 
   app.use((err, req, res, next) => {
