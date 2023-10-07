@@ -427,6 +427,13 @@
             subviews.UnreadBadge(state);
           });
           queue.addMetaListener('multiplayer', meta => handleMultiplayerMessage(meta, state));
+        
+        // download progress
+          queue.addMetaListener('downloPro', ({downloPro}) => {
+            console.log(JSON.stringify({downloPro}, null, 2));
+            const {receivedBytes, totalBytes, done, state} = downloPro;
+            console.log(`Download: ${(receivedBytes/totalBytes*100.0).toFixed(1)}% complete`);
+          });
 
         // should go in bb-view script.js 
         // (so we can use el.shadowRoot instead of document)
