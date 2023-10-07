@@ -430,9 +430,24 @@
         
         // download progress
           queue.addMetaListener('downloPro', ({downloPro}) => {
-            console.log(JSON.stringify({downloPro}, null, 2));
+            let comment = '';
+            DEBUG.debugDownloadProgress && console.log(JSON.stringify({downloPro}, null, 2));
             const {receivedBytes, totalBytes, done, state} = downloPro;
-            console.log(`Download: ${(receivedBytes/totalBytes*100.0).toFixed(1)}% complete`);
+            console.clear();
+            if ( state == 'canceled' ) {
+              throw new Error(`Download ${guid} cancelled after ${totalBytes} bytes received.`);
+            }
+            if ( totalBytes == 0 ) {
+              if ( state == 'completed' || done ) {
+                comment = '- 100.0%'
+              }
+              console.log(`Download: ${Math.max(0.1, (receivedBytes/(1024*1024))).toFixed(1)}MiB so far ${comment}`);
+            } else {
+              if ( state == 'completed' || done ) {
+                comment = ` ( ${Math.max(0.1, (receivedBytes/(1024*1024))).toFixed(1)}MiB )`;
+              }
+              console.log(`Download: ${(receivedBytes/(totalBytes)*100.0).toFixed(1)}% complete ${comment}`);
+            } 
           });
 
         // should go in bb-view script.js 
