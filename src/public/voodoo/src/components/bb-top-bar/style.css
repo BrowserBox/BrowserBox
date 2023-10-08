@@ -1,1 +1,52 @@
 @import url("themes/blank.css");
+
+.status-bar {
+  vertical-align: super;
+  height: 15px;
+  max-height: 16px;
+  max-width: 350px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.download-count, .download-mb {
+  font-size: 10px;
+}
+
+.download-meter {
+  flex-grow: 1;
+  max-width: 100%;
+  height: 12px;
+  border: none;
+}
+
+@media screen and (max-width: 768px) {
+  .status-bar {
+    max-width: 38vw;
+  }
+  .download-count, .download-mb {
+    display: none;
+  }
+}
+
+/* Shimmer effect */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.shimmering {
+  animation: shimmer 1.5s ease infinite;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1));
+  background-size: 200% 100%;
+}
+
+/* Cursor */
+.status-bar:hover {
+  cursor: progress; /* or 'wait' */
+}
+

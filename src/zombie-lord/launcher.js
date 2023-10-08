@@ -177,7 +177,11 @@ const launcher_api = {
     DEBUG.val && console.log(`Chrome Number: ${chromeNumber}, Executing chrome-launcher`);
     const CHROME_FLAGS = Array.from(DEFAULT_FLAGS);
     if (!process.env.DEBUG_SKATEBOARD) {
-      CHROME_FLAGS.push('--headless'); 
+      if ( DEBUG.useNewAsgardHeadless ) {
+        CHROME_FLAGS.push('--headless=new'); 
+      } else {
+        CHROME_FLAGS.push('--headless'); 
+      }
     } else {
       CHROME_FLAGS.push('--no-sandbox'); 
     }

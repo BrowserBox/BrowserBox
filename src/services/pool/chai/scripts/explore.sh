@@ -1,5 +1,9 @@
 #!/bin/bash
-set -euo pipefail
+
+#set -euo pipefail
+
+set -x
+
 IFS=$'\n\t'
 
 # Cleanup and error message in case of unexpected errors

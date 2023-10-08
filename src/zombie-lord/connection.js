@@ -684,14 +684,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     }
   }
 
-  async function progressDownload({receivedBytes, totalBytes, guid, state}) {
+  async function progressDownload({receivedBytes, totalBytes, guid, state, done}) {
     try {
       const amountToAddToServerData = Math.max(receivedBytes, totalBytes, 1);
       
       if ( Number.isInteger(amountToAddToServerData) ) {
         connection.totalBandwidth += amountToAddToServerData;
       }
-      connection.meta.push({dl_progress:{receivedBytes, totalBytes, guid, state}});
+      connection.meta.push({downloPro:{receivedBytes, totalBytes, guid, state, done}});
     } catch(e) {
       console.warn(e);
     }

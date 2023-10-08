@@ -5,4 +5,19 @@
   <span class="webrtc-status">${_top.OPTIONS.showWebRTCStatus && state.webrtcConnected ? 'webrtc' : ''}</span>
   <span class="audio-status">${_top.OPTIONS.showAudioStatus && state.audioConnected ? 'audio' : ''}</span>
   <span class="bw-status">${_top.OPTIONS.showBWStatus && state.showBandwidthIssue ? 'bandwidth issue' : ''}</span>
+  ${!_host.vanish ? F`
+    <div id="download-status-bar" class="status-bar" title="${_host.downloadState.activeDownloads} active download${_host.plural ? "s" : ""}">
+      ${_host.plural ? F`
+        ${_host.downloadState.completedDownloads}/${_host.downloadState.activeDownloads} <span class=wide-word>downloaded</span>
+      ` : F`
+        <span class=wide-word>1 download</span>
+      `}
+      <meter class="download-meter" 
+        min=0 
+        max="${_host.downloadState.activeDownloads}"
+        value="${_host.progressValue}"
+      ></meter> ${_host.megabytesReceived} MB
+      <span class="download-mb"></span>
+    </div>` : F`<!-- download progress -->`
+  }
 </header>
