@@ -24,7 +24,7 @@ export const DEBUG = Object.freeze({
   showTodos: false,
   showViewportChanges: false,
   logRestartCast: false,
-  showErrorSources: false,
+  showErrorSources: true,
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,
   debugCast: false,
@@ -60,7 +60,7 @@ export const DEBUG = Object.freeze({
   enableClientsToSetURL: true,
   debugModals: false,
   debugSendResult: false,
-  metaDebug: false,
+  metaDebug: true,
   channelDebug: false,
   debugCookie: false,
   waitLonger: true,
@@ -87,13 +87,13 @@ export const DEBUG = Object.freeze({
   // this logs resize related data, probably rename resizeDebug or logResize
   resize: false,          
   logFastest: false,
-  showConsoleMessages: false,
+  showConsoleMessages: true,
   get debugConsoleMessages() {
     /* || other condition || some other condition ... etc ... */
     return this.debugFavicon || this.showConsoleMessages; 
   },
   debugFavicon: false,
-  worldDebug: false,
+  worldDebug: true,
   bufSend: true,
   acks: false,          // actually this doesn't "turn on" acks. They are on by default
                         // this flag just turns on acks logging. It should probably be called
@@ -108,14 +108,14 @@ export const DEBUG = Object.freeze({
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
     whether created with createTarget or simply spawning, 
     we must use legacy shots */
-  commands: false,
+  commands: true,
   get dontShowFetchDomain() {
     return this.commands && true;
   },
   shotDebug: false,
   noShot: false,
-  dev: false,
-  val: 0,
+  dev: true,
+  val: 1,
   low: 1,
   med: 3,
   high: 5
