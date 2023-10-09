@@ -29,18 +29,27 @@ class BBTopBar extends Base {
       this.vanish = false;
     }
 
-    if (state === 'completed' || state === 'canceled') {
-      this.downloadState.completedDownloads++;
-      this.downloadState.activeDownloads--;
-      this.downloadState.progressData[guid].complete = true;
+    if (state === 'completed' || state === 'canceled' || ((receivedBytes >= totalBytes) && totalBytes > 0 )) {
+      if ( !this.downloadState.progressData[guid].completed ) {
+        this.downloadState.completedDownloads++;
+        if ( this.downloadState.progressData[guid].wasActive ) {
+          this.downloadState.activeDownloads--;
+          if ( this.downloadState.activeDownloads < 0 ) {
+            this.downloadState.activeDownloads = 0;
+          }
+        }
+        this.downloadState.progressData[guid].completed = true;
+      }
     } else if ( newStart ) {
       this.downloadState.activeDownloads++;
+      this.downloadState.progressData[guid].wasActive = true;
     }
 
     Object.assign(this.downloadState.progressData[guid], {receivedBytes, totalBytes});
 
     this.plural = this.downloadState.activeDownloads > 1;
-    this.progressValue = this.downloadState.completedDownloads;
+    this.progressValue = 0;
+    this.totalFiles = this.downloadState.activeDownloads + this.downloadState.completedDownloads;
 
     let totalBytesReceived = 0;
 
@@ -55,32 +64,26 @@ class BBTopBar extends Base {
 
     const megabytesReceived = (totalBytesReceived / (2 ** 20)).toFixed(2);
     this.megabytesReceived = megabytesReceived;
-    let htmlStr = `Download: <meter min="0" max="${Math.max(1,this.downloadState.activeDownloads)}" value="${this.progressValue}"></meter> ${megabytesReceived} MB`;
-    if (this.downloadState.activeDownloads > 1) {
-      htmlStr = `${this.downloadState.completedDownloads} out of ${this.downloadState.activeDownloads} downloaded ` + htmlStr;
-    }
   
     // hopefully trigger repaint
     data.downloadState = this.downloadState;
     this.state = data;
 
     if ( this.downloadState.activeDownloads == 0 ) {
-      this.vanishTimer = setTimeout(() => this.vanish = true, 45000);
+      this.vanishTimer = setTimeout(() => {
+        this.vanish = true; 
+        this.state = this.state;
+      }, 5000);
     }
-
-    return htmlStr;
   }
 
   resetDownloads() {
-    const {state:data} = this;
     this.downloadState = {
       activeDownloads: 0,
       completedDownloads: 0,
       totalBytesReceived: 0,
       progressData: {}
     };
-    data.downloadsState = this.downloadState;
-    this.state = data;
   }
 }
 

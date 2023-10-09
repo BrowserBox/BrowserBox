@@ -23,7 +23,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  debugDownloadProgress: true,
+  debugDownloadProgress: false,
   logBandwidthIssueChanges: false,
   debugSafariWebRTC: false,
   debugSetup: false,
