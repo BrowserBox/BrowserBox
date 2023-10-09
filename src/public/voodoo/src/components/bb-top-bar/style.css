@@ -9,6 +9,10 @@
   align-items: center;
 }
 
+.status-bar.progress {
+  cursor: progress;
+}
+
 .download-count, .download-mb {
   font-size: 10px;
 }
@@ -43,10 +47,5 @@
   animation: shimmer 1.5s ease infinite;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1));
   background-size: 200% 100%;
-}
-
-/* Cursor */
-.status-bar:hover {
-  cursor: progress; /* or 'wait' */
 }
 

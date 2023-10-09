@@ -430,23 +430,11 @@
         
         // download progress
           queue.addMetaListener('downloPro', ({downloPro}) => {
-            let comment = '';
             DEBUG.debugDownloadProgress && console.log(JSON.stringify({downloPro}, null, 2));
             const {receivedBytes, totalBytes, done, state: dlState} = downloPro;
-            console.clear();
             if ( dlState == 'canceled' ) {
-              throw new Error(`Download ${guid} cancelled after ${totalBytes} bytes received.`);
-            }
-            if ( totalBytes == 0 ) {
-              if ( dlState == 'completed' || done ) {
-                comment = '- 100.0%'
-              }
-              console.log(`Download: ${Math.max(0.1, (receivedBytes/(1024*1024))).toFixed(1)}MiB so far ${comment}`);
-            } else {
-              if ( dlState == 'completed' || done ) {
-                comment = ` ( ${Math.max(0.1, (receivedBytes/(1024*1024))).toFixed(1)}MiB )`;
-              }
-              console.log(`Download: ${(receivedBytes/(totalBytes)*100.0).toFixed(1)}% complete ${comment}`);
+              const {guid, receivedBytes} = downloPro;
+              console.warn(`Download ${guid} cancelled after ${receivedBytes} bytes received.`);
             } 
             state.topBarComponent.updateDownloadStatus(downloPro);
           });

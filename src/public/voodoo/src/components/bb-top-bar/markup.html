@@ -6,15 +6,16 @@
   <span class="audio-status">${_top.OPTIONS.showAudioStatus && state.audioConnected ? 'audio' : ''}</span>
   <span class="bw-status">${_top.OPTIONS.showBWStatus && state.showBandwidthIssue ? 'bandwidth issue' : ''}</span>
   ${!_host.vanish ? F`
-    <div id="download-status-bar" class="status-bar" title="${_host.downloadState.activeDownloads} active download${_host.plural ? "s" : ""}">
-      ${_host.plural ? F`
-        ${_host.downloadState.completedDownloads}/${_host.downloadState.activeDownloads} <span class=wide-word>downloaded</span>
+    <div id="download-status-bar" class="status-bar ${_host.downloadState.activeDownloads ? "progress" : "done"}" title="${_host.downloadState.completedDownloads} completed download${_host.plural ? "s" : ""}">
+      ${_host.totalFiles > 1 ? F`
+        ${_host.downloadState.completedDownloads}/${_host.totalFiles} <span class=wide-word>&nbsp;downloaded</span>
       ` : F`
         <span class=wide-word>1 download</span>
       `}
       <meter class="download-meter" 
         min=0 
-        max="${_host.downloadState.activeDownloads}"
+        step=0.01
+        max="${Math.max(_host.totalFiles, 1)}"
         value="${_host.progressValue}"
       ></meter> ${_host.megabytesReceived} MB
       <span class="download-mb"></span>
