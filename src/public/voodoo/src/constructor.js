@@ -433,11 +433,11 @@
             let comment = '';
             DEBUG.debugDownloadProgress && console.log(JSON.stringify({downloPro}, null, 2));
             const {receivedBytes, totalBytes, done, state: dlState} = downloPro;
-            console.clear();
+            !DEBUG.debugDownloadProgress && console.clear();
             if ( dlState == 'canceled' ) {
-              throw new Error(`Download ${guid} cancelled after ${totalBytes} bytes received.`);
-            }
-            if ( totalBytes == 0 ) {
+              const {guid, receivedBytes} = downloPro;
+              console.warn(`Download ${guid} cancelled after ${receivedBytes} bytes received.`);
+            } else if ( totalBytes == 0 ) {
               if ( dlState == 'completed' || done ) {
                 comment = '- 100.0%'
               }

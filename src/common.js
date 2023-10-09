@@ -74,7 +74,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: true,
   useFlashEmu: false,
   showFlash: false, /* debug flash */
@@ -138,8 +138,8 @@ export const FLASH_FORMATS = new Set([
 export const CONFIG = Object.freeze({
   screencastOnly: true,
   baseDir: path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro'),
-  darkMode: true, 
-  forceContentDarkMode: false,
+  darkMode: false, 
+  forceDarkContentMode: false,
   audioDropPossiblySilentFrames: true,
   sslcerts: process.env.SSLCERTS_DIR ? process.env.SSLCERTS_DIR : 'sslcerts',
   reniceValue: process.env.RENICE_VALUE || -15,

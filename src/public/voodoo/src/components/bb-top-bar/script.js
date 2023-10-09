@@ -19,7 +19,7 @@ class BBTopBar extends Base {
     const {state: data } = this;
     const { guid, state, receivedBytes, totalBytes } = event;
   
-    if (state === 'completed' || state === 'cancelled') {
+    if (state === 'completed' || state === 'canceled') {
       this.downloadState.completedDownloads++;
       this.downloadState.activeDownloads--;
       delete this.downloadState.progressData[guid];
@@ -56,7 +56,7 @@ class BBTopBar extends Base {
     this.state = data;
 
     if ( this.downloadState.activeDownloads == 0 ) {
-      this.vanishTimer = setTimeout(() => this.resetDownloads(), 1500);
+      this.vanishTimer = setTimeout(() => this.resetDownloads(), 11500);
     }
 
     return htmlStr;
