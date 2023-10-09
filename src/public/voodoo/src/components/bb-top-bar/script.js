@@ -18,35 +18,44 @@ class BBTopBar extends Base {
     clearTimeout(this.vanishTimer);
     const {state: data } = this;
     const { guid, state, receivedBytes, totalBytes } = event;
-  
+    let newStart = false;
+
+    if ( !this.downloadState.progressData[guid] ) {
+      if ( this.downloadState.activeDownloads == 0 ) {
+        this.resetDownloads();
+      }
+      this.downloadState.progressData[guid] = {};
+      newStart = true;
+      this.vanish = false;
+    }
+
     if (state === 'completed' || state === 'canceled') {
       this.downloadState.completedDownloads++;
       this.downloadState.activeDownloads--;
-      delete this.downloadState.progressData[guid];
-    } else if ( !this.downloadState.progressData[guid] ) {
+      this.downloadState.progressData[guid].complete = true;
+    } else if ( newStart ) {
       this.downloadState.activeDownloads++;
-      this.vanish = false;
     }
-    this.downloadState.progressData[guid] = { receivedBytes, totalBytes };
+
+    Object.assign(this.downloadState.progressData[guid], {receivedBytes, totalBytes});
 
     this.plural = this.downloadState.activeDownloads > 1;
     this.progressValue = this.downloadState.completedDownloads;
+
     let totalBytesReceived = 0;
-    for (const key in this.downloadState.progressData) {
-      const data = this.downloadState.progressData[key];
-      totalBytesReceived += data.receivedBytes;
-      if (data.totalBytes > 0) {
-        this.progressValue += data.receivedBytes / data.totalBytes;
+
+    for (const download of Object.values(this.downloadState.progressData)) {
+      totalBytesReceived += download.receivedBytes;
+      if (download.totalBytes > 0) {
+        this.progressValue += download.receivedBytes / download.totalBytes;
       } else {
         this.progressValue += 1; // For shimmering effect
       }
     }
-  
-    this.downloadState.totalBytesReceived = totalBytesReceived;
-  
+
     const megabytesReceived = (totalBytesReceived / (2 ** 20)).toFixed(2);
     this.megabytesReceived = megabytesReceived;
-    let htmlStr = `Download: <meter min="0" max="${this.downloadState.activeDownloads}" value="${this.progressValue}"></meter> ${megabytesReceived} MB`;
+    let htmlStr = `Download: <meter min="0" max="${Math.max(1,this.downloadState.activeDownloads)}" value="${this.progressValue}"></meter> ${megabytesReceived} MB`;
     if (this.downloadState.activeDownloads > 1) {
       htmlStr = `${this.downloadState.completedDownloads} out of ${this.downloadState.activeDownloads} downloaded ` + htmlStr;
     }
@@ -56,7 +65,7 @@ class BBTopBar extends Base {
     this.state = data;
 
     if ( this.downloadState.activeDownloads == 0 ) {
-      this.vanishTimer = setTimeout(() => this.resetDownloads(), 11500);
+      this.vanishTimer = setTimeout(() => this.vanish = true, 45000);
     }
 
     return htmlStr;
@@ -70,7 +79,6 @@ class BBTopBar extends Base {
       totalBytesReceived: 0,
       progressData: {}
     };
-    this.vanish = true;
     data.downloadsState = this.downloadState;
     this.state = data;
   }
