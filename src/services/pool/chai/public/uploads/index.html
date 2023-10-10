@@ -193,6 +193,14 @@
     </section>
     <section class=document>
       <div class=download>
+        <a id=hex-view-link title="View hex of original" href=#hex-view>
+          <span class=link-text>HexView</span>
+          <strong>&#11042;</strong>
+        </a>
+      </div>
+    </section>
+    <section class=document>
+      <div class=download>
         <a id=download-link title="Download original" rel=canonical download href=#download>
           <span class=link-text>Download</span>
           <strong>&#xFE3E;</strong>
@@ -208,6 +216,7 @@
 <script>
   const FORMAT = `$$FORMAT$$`;
   const path = location.pathname;
+  const noConvertUrl = path + '.noconvert';
   const imgUrl = i => path.replace(/\.html$/,`-${i.toString().padStart(4,'0')}.${FORMAT}`);
   const documentFileName = path.replace(/\.html$/, '');
   console.log({documentFileName});
@@ -220,7 +229,10 @@
   let failed = false;
   let pageNumber = 0;
   let ang = 0;
+  let stopCheck = false;
+
   page.onerror = () => {
+    if ( stopCheck ) return;
     setTimeout(checkFirstPage, 1001);
   }
   page.onload = () => {
@@ -267,7 +279,10 @@
     if ( failed ) {
       loading.innerText = 'No such file, or conversion failed.';
       return;
+    } else if ( stopCheck ) {
+      return;
     }
+    checkNoConvert();
     pageNumber = 0;
     page.src = imgUrl(pageNumber);
     loading.innerHTML = 'Converting&hellip;';
@@ -303,4 +318,18 @@
       }
     });
   });
+
+  async function checkNoConvert() {
+    console.log(noConvertUrl);
+    const resp = await fetch(noConvertUrl);
+    if ( resp.ok ) {
+      const reason = await resp.text() || 'reasons unkown';
+      console.warn(`File did not convert. Reason: ${reason}`);
+      console.log(`Stopping checking for the first page...`);
+      stopCheck = true;
+      clearTimeout(noCram);
+      console.log(`Stopped.`);
+      loading.innerHTML = `Document did not convert. Please see the hex viewer if you want to review its contents.`;
+    }
+  }
 </script>
