@@ -251,7 +251,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         title: "System Notice",
         message: notice,
       };
-      connection.meta.push({modal});
+      connection.forceMeta({modal});
       const randomName = path.resolve(SignalNotices, 'old' + Math.random().toString(36) + performance.now());
       fs.renameSync(noticeFilePath, randomName);
       fs.unlinkSync(randomName);
@@ -344,7 +344,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const {targetId} = targetInfo;
     targets.add(targetId);
     tabs.set(targetId,targetInfo);
-    connection.meta.push({created:targetInfo,targetInfo});
+    connection.forceMeta({created:targetInfo,targetInfo});
     if ( targetInfo.type == "page" && !DEBUG.attachImmediately ) {
       await send("Target.attachToTarget", {targetId, flatten:true});
     }
@@ -660,7 +660,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             // trim any whitespace added by the shell echo in the script
             const secureview = {url};
             DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
-            connection.meta.push({secureview});
+            connection.forceMeta({secureview});
           } else if ( code == undefined ) {
             console.log(`No code. Probably STDOUT end event.`, url);
 
@@ -673,7 +673,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             const secureview = {url};
             DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
             console.log("Send secure view", secureview);
-            connection.meta.push({secureview});
+            connection.forceMeta({secureview});
           } else {
             console.warn(`Secure View subshell exited with code ${code}`);
           }
@@ -792,7 +792,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             if ( faviconDataUrl ) {
               if ( oldUrl !== faviconDataUrl ) {
                 favicons.set(targetId, faviconDataUrl);
-                connection.meta.push(Message);
+                connection.forceMeta(Message);
                 DEBUG.debugFavicon && console.log(`FROM PAGE: Setting favicon for ${targetId}`, {Message});
               }
             } else if ( faviconURL?.startsWith?.('http') ) {
@@ -801,7 +801,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                 if ( oldUrl !== faviconDataUrl ) {
                   favicons.set(targetId, faviconDataUrl);
                   const Message = {favicon:{targetId, faviconDataUrl}, executionContextId};
-                  connection.meta.push(Message);
+                  connection.forceMeta(Message);
                   DEBUG.debugFavicon && console.log(`FROM SERVER CACHE (from FETCH): Setting favicon for ${targetId}`, {Message});
                 }
               } else {
@@ -831,7 +831,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                           if ( oldUrl !== faviconDataUrl ) {
                             favicons.set(targetId, faviconDataUrl);
                             const Message = {favicon:{targetId, faviconDataUrl}, executionContextId};
-                            connection.meta.push(Message);
+                            connection.forceMeta(Message);
                             DEBUG.debugFavicon && console.log(`FROM FETCH: Setting favicon for ${targetId}`, {Message});
                           }
                         });
@@ -848,7 +848,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               }
             }
           } else {
-            connection.meta.push(Message);
+            connection.forceMeta(Message);
           }
         } catch(e) {
           DEBUG.debugFavicon && firstArg.type === 'string' && firstArg.value.includes('favicon') &&
@@ -894,7 +894,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const {params:modal} = message;
       modal.sessionId = sessionId;
       (DEBUG.val || DEBUG.debugModals ) && console.log(JSON.stringify({modal}));
-      connection.meta.push({modal});
+      connection.forceMeta({modal});
       connection.vmPaused = true;
       connection.modal = modal;
     } else if ( message.method == "Page.frameNavigated" ) {
@@ -920,7 +920,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         favicons.delete(targetId);
         DEBUG.debugFavicon && console.log(`Deleted favicon for targetId ${targetId} upon navigation`);
 
-        connection.meta.push({favicon: {useDefaultFavicon: true}});
+        connection.forceMeta({favicon: {useDefaultFavicon: true}});
         connection.meta.push({navigated});
         // this is strangely necessary to not avoid the situation where the layer tree is not updated
         // on page navigation, meaning that layerPainted events stop firing after a couple of navigations
@@ -984,7 +984,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       fileChooser.csrfToken = LatestCSRFToken;
 
       DEBUG.val && console.log('notify client', fileChooser);
-      connection.meta.push({fileChooser});
+      connection.forceMeta({fileChooser});
     } else if ( message.method == "Network.requestWillBeSent" ) {
       const resource = startLoading(sessionId);
       const {requestId,frameId, request:{url}} = message.params;
@@ -1033,7 +1033,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               }ms`);
             } else {
               connection.lastIntentPromptAt = now;
-              connection.meta.push({modal});
+              connection.forceMeta({modal});
             }
           } else {
             setTimeout(() => {
@@ -1070,7 +1070,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.pausing.set(request.url, requestId);
       const authRequired = {authChallenge, requestId, resourceType};
       (DEBUG.debugAuth || DEBUG.val) && console.log({authRequired});
-      connection.meta.push({authRequired});
+      connection.forceMeta({authRequired});
     } else if ( message.method && ( message.method.startsWith("LayerTree") || message.method.startsWith("Page") || message.method.startsWith("Network")) ) {
       // ignore
     } else { 
@@ -1580,7 +1580,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugModals && console.log({command});
         command.requiresTask = () => {
           connection.modal = null;
-          connection.meta.push({vm:{paused:false}});
+          connection.forceMeta({vm:{paused:false}});
         };
       }; break;
     }

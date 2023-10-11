@@ -1,3 +1,5 @@
+- fix file upload
+
 - factor out get_install_dir and other funcs into something we can source into all the scripts that use it
 
 - fix test for menu open on mobile
