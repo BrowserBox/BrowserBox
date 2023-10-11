@@ -212,7 +212,6 @@ class BBModal extends Base {
   }
 
   onlyCloseModal() {
-    console.log('ONLY CLOSE CALLED');
     const {state} = this;
 
     state.viewState.currentModal = null;
@@ -309,9 +308,6 @@ class BBModal extends Base {
       method: form.method,
       body
     };
-    console.log(state, state.viewState.currentModal);
-    globalThis.Xstate = state;
-    globalThis.XstateViewState = state.viewState;
     Object.assign(state.viewState.currentModal, {
       submitText: 'Uploading...',
       working: true
@@ -324,7 +320,7 @@ class BBModal extends Base {
         alert(resp.error);
       } else {
         DEBUG.val && console.log(`Success attached files`, resp); 
-        console.log({resp});
+        DEBUG.val && console.log({resp});
       }
     } catch(e) {
       console.warn("Error on file upload", e);
