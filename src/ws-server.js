@@ -846,7 +846,7 @@
             console.log("Error sending file input command", e);
           }
 
-          DEBUG.debugFileUpload && console.log({fileResult:result});
+          DEBUG.debugFileUpload && console.log(JSON.stringify({fileResult:result}, null, 2));
 
           if ( !result || result.error ) {
             res.status(500).send(JSON.stringify({error:'there was an error attaching the files'}));

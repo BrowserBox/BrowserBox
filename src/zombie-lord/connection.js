@@ -196,11 +196,18 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   AD_BLOCK_ON = adBlock;
 
   LOG_FILE.Commands = new Set([
-    "Emulation.setDeviceMetricsOverride",
-    "Browser.setWindowBounds",
-    "Page.startScreencast",
-    "Page.stopScreencast",
-    "Page.captureScreenshot"
+    ...(DEBUG.debugFileUpload ? [
+      'DOM.setFileInputFiles',
+      'Page.fileChooserOpened',
+      'Page.setInterceptFileChooserDialog',
+    ] : []),
+    ...(DEBUG.debugCast ? [
+      "Emulation.setDeviceMetricsOverride",
+      "Browser.setWindowBounds",
+      "Page.startScreencast",
+      "Page.stopScreencast",
+      "Page.captureScreenshot"
+    ] : []),
   ]);
 
   if ( demoBlock ) {
@@ -698,6 +705,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   }
 
   async function receiveMessage({message, sessionId}) {
+    if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
+      console.info(`Logging`, message);
+      fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
+        timestamp: (new Date).toISOString(),
+        message,
+      },null,2)+"\n");
+    }
     if ( message.method == "Network.dataReceived" ) {
       const {encodedDataLength, dataLength} = message.params;
       connection.totalBandwidth += (encodedDataLength || dataLength);
@@ -1884,7 +1898,7 @@ async function makeZombie({port:port = 9222} = {}) {
       }
     }
     if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
-      DEBUG.val && console.info(`Logging`, message);
+      console.info(`Logging`, message);
       fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
         timestamp: (new Date).toISOString(),
         message,
