@@ -1,4 +1,4 @@
-<aside class="modals ${viewState.currentModal ? 'active' : ''}" stylist="styleModals" b:capture:click=${click => _host.closeModal(click)}>
+<aside class="modals ${viewState.currentModal ? 'active' : ''}" stylist="styleModals" b:click=${click => _host.closeModal(click)}>
   <article role=dialog bond=${el => viewState.ModalRef.alert = el} class="alert ${
       viewState?.currentModal?.el === viewState.ModalRef.alert ? 'open' : '' 
     }">

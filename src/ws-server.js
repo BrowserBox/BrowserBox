@@ -455,20 +455,13 @@
 
       if( validAuth ) {
         DEBUG.debugConnect && console.log(`Check 1`);
-        await zl.act.addLink(so, {connectionId, fastest: null, peer: null, socket:ws}, zombie_port);
+        await zl.act.addLink({so, forceMeta}, {connectionId, fastest: null, peer: null, socket:ws}, zombie_port);
         DEBUG.debugConnect && console.log(`Check 2`);
-        zl.act.fanOut(socket => so(
-          socket,
-          {
-            meta:[
-              {
-                multiplayer: {
-                  onlineCount: zl.act.linkStats(zombie_port).onlineCount
-                }
-              }
-            ]
+        forceMeta({
+          multiplayer: {
+            onlineCount: zl.act.linkStats(zombie_port).onlineCount
           }
-        ), zombie_port);
+        });
         DEBUG.debugConnect && console.log(`Check 3`);
         let peer;
         if ( DEBUG.useWebRTC ) {
@@ -490,7 +483,7 @@
               if ( peer ) {
                 peers.delete(peer);
                 peer = null;
-                zl.act.addLink(so, {connectionId, peer: null, socket:ws}, zombie_port);
+                zl.act.addLink({so, forceMeta}, {connectionId, peer: null, socket:ws}, zombie_port);
                 if ( ws?.readyState < WebSocket.CLOSING ) {
                   setTimeout(connectPeer, PEER_RECONNECT_MS);
                 }
@@ -501,7 +494,7 @@
               if ( peer ) {
                 peers.delete(peer);
                 peer = null;
-                zl.act.addLink(so, {connectionId, peer: null, socket:ws}, zombie_port);
+                zl.act.addLink({so, forceMeta}, {connectionId, peer: null, socket:ws}, zombie_port);
                 if ( ws?.readyState < WebSocket.CLOSING ) {
                   setTimeout(connectPeer, PEER_RECONNECT_MS);
                 }
@@ -509,8 +502,8 @@
             });
             peer.on('connect', () => {
               DEBUG.cnx && console.log('peer connected');
-              //setTimeout(() => zl.act.addLink(so, {connectionId, peer, socket:ws}, zombie_port), 15000);
-              zl.act.addLink(so, {connectionId, peer, socket:ws}, zombie_port);
+              //setTimeout(() => zl.act.addLink({so, forceMeta}, {connectionId, peer, socket:ws}, zombie_port), 15000);
+              zl.act.addLink({so, forceMeta}, {connectionId, peer, socket:ws}, zombie_port);
             });
             peer.on('signal', data => {
               DEBUG.cnx && console.log(`have webrtc signal data. sending to client`, data);
@@ -531,7 +524,7 @@
           ws = null;
           peer && peer.destroy(new Error(`Main communication WebSocket closed.`));
           peer = null;
-          zl.act.addLink(so, {connectionId, peer: null, socket:null}, zombie_port);
+          zl.act.addLink({so, forceMeta}, {connectionId, peer: null, socket:null}, zombie_port);
           zl.act.deleteLink({connectionId}, zombie_port);
           zl.act.fanOut(socket => so(
             socket,
@@ -568,10 +561,10 @@
                 if ( DEBUG.chooseFastest ) { 
                   if ( fastestChannel.websocket ) {
                     DEBUG.logFastest && console.log(`Fastest is websocket`);
-                    zl.act.addLink(so, {connectionId, fastest: ws, peer, socket:ws}, zombie_port);
+                    zl.act.addLink({so, forceMeta}, {connectionId, fastest: ws, peer, socket:ws}, zombie_port);
                   } else if ( fastestChannel.webrtcpeer ) {
                     DEBUG.logFastest && console.log(`Fastest is webrtc`);
-                    zl.act.addLink(so, {connectionId, fastest: peer, peer, socket:ws}, zombie_port);
+                    zl.act.addLink({so, forceMeta}, {connectionId, fastest: peer, peer, socket:ws}, zombie_port);
                   } else {
                     console.warn(`Unknown fastest channel`, fastestChannel);
                   }
@@ -819,13 +812,13 @@
         app.post("/file", async (req,res) => {
           const cookie = req.cookies[COOKIENAME+port];
           if ( (cookie !== allowed_user_cookie) ) { 
+            DEBUG.debugFileUpload && console.log(`Request for file upload forbidden.`, req.files);
             return res.status(401).send('{"err":"forbidden"}');
           }
           const {files} = req;
           const {sessionid:sessionId} = req.body;
           const backendNodeId = fileChoosers.get(sessionId);
           const action = ! files || files.length == 0 ? 'cancel' : 'accept';
-          /**
           const fileInputResult = await zl.act.send({
             name:"Runtime.evaluate",
             params: {
@@ -834,9 +827,8 @@
             definitelyWait: true,
             sessionId
           }, zombie_port);
-          console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
+          DEBUG.debugFileInput && console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
           const objectId = fileInputResult.data.result.objectId;
-          **/
           const command = {
             name: "DOM.setFileInputFiles",
             params: {
@@ -845,7 +837,7 @@
             },
             sessionId
           };
-          DEBUG.val > DEBUG.med && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
+          DEBUG.debugFileUpload && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
           let result;
           
           try {
@@ -854,7 +846,7 @@
             console.log("Error sending file input command", e);
           }
 
-          DEBUG.val > DEBUG.med && console.log({fileResult:result});
+          DEBUG.debugFileUpload && console.log(JSON.stringify({fileResult:result}, null, 2));
 
           if ( !result || result.error ) {
             res.status(500).send(JSON.stringify({error:'there was an error attaching the files'}));
@@ -1021,6 +1013,17 @@
             next();
           }
         });
+    }
+
+    function forceMeta(...metas) {
+      zl.act.fanOut(socket => so(
+        socket,
+        {
+          meta:[
+            ...metas
+          ]
+        }
+      ), zombie_port);
     }
 
     function so(socket, message) {

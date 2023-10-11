@@ -314,12 +314,16 @@ class BBModal extends Base {
     });
     this.prepareState(state.viewState.currentModal);
     this.state = state;
-    const resp = await fetch(form.action, request).then(r => r.json());
-    if ( resp.error ) {
-      alert(resp.error);
-    } else {
-      DEBUG.val && console.log(`Success attached files`, resp); 
-      console.log({resp});
+    try {
+      const resp = await fetch(form.action, request).then(r => r.json());
+      if ( resp.error ) {
+        alert(resp.error);
+      } else {
+        DEBUG.val && console.log(`Success attached files`, resp); 
+        DEBUG.val && console.log({resp});
+      }
+    } catch(e) {
+      console.warn("Error on file upload", e);
     }
     this.onlyCloseModal(click);
   }
