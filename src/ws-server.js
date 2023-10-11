@@ -812,13 +812,13 @@
         app.post("/file", async (req,res) => {
           const cookie = req.cookies[COOKIENAME+port];
           if ( (cookie !== allowed_user_cookie) ) { 
+            DEBUG.debugFileUpload && console.log(`Request for file upload forbidden.`, req.files);
             return res.status(401).send('{"err":"forbidden"}');
           }
           const {files} = req;
           const {sessionid:sessionId} = req.body;
           const backendNodeId = fileChoosers.get(sessionId);
           const action = ! files || files.length == 0 ? 'cancel' : 'accept';
-          /**
           const fileInputResult = await zl.act.send({
             name:"Runtime.evaluate",
             params: {
@@ -827,9 +827,8 @@
             definitelyWait: true,
             sessionId
           }, zombie_port);
-          console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
+          DEBUG.debugFileInput && console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
           const objectId = fileInputResult.data.result.objectId;
-          **/
           const command = {
             name: "DOM.setFileInputFiles",
             params: {
@@ -838,7 +837,7 @@
             },
             sessionId
           };
-          DEBUG.val > DEBUG.med && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
+          DEBUG.debugFileUpload && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
           let result;
           
           try {
@@ -847,7 +846,7 @@
             console.log("Error sending file input command", e);
           }
 
-          DEBUG.val > DEBUG.med && console.log({fileResult:result});
+          DEBUG.debugFileUpload && console.log({fileResult:result});
 
           if ( !result || result.error ) {
             res.status(500).send(JSON.stringify({error:'there was an error attaching the files'}));

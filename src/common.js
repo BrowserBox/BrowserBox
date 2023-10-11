@@ -11,17 +11,22 @@ export * from './args.js';
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 
 export const LOG_FILE = {
-  Commands: new Set(),
+  Commands: new Set([
+    'DOM.setFileInputFiles',
+    'Page.fileChooserOpened',
+    'Page.setInterceptFileChooserDialog',
+  ]),
   FileHandle: null
 };
 
 export const DEBUG = Object.freeze({
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
+  debugFileUpload: true,
   useNewAsgardHeadless: false,
   adBlock: true,
   showFlags: false,
   allowExternalChrome: true,
-  logFileCommands: false,
+  logFileCommands: true,
   showTodos: false,
   showViewportChanges: false,
   logRestartCast: false,
@@ -109,14 +114,14 @@ export const DEBUG = Object.freeze({
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
     whether created with createTarget or simply spawning, 
     we must use legacy shots */
-  commands: false,
+  commands: true,
   get dontShowFetchDomain() {
     return this.commands && true;
   },
   shotDebug: false,
   noShot: false,
-  dev: false,
-  val: 0,
+  dev: true,
+  val: 1,
   low: 1,
   med: 3,
   high: 5
