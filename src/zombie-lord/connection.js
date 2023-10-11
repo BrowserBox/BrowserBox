@@ -691,7 +691,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( Number.isInteger(amountToAddToServerData) ) {
         connection.totalBandwidth += amountToAddToServerData;
       }
-      connection.meta.push({downloPro:{receivedBytes, totalBytes, guid, state, done}});
+      connection.forceMeta({downloPro:{receivedBytes, totalBytes, guid, state, done}});
     } catch(e) {
       console.warn(e);
     }

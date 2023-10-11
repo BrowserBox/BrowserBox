@@ -210,7 +210,7 @@ const controller_api = {
     }
   },
 
-  async addLink(so, {connectionId, peer, socket, fastest}, port) {
+  async addLink({so, forceMeta}, {connectionId, peer, socket, fastest}, port) {
     await untilTrue(() => connections.has(port), 100, 1000);
     const connection = connections.get(port);
     if ( connection ) {
@@ -266,6 +266,9 @@ const controller_api = {
       }
       if ( ! connection.so ) {
         connection.so = so;
+      }
+      if ( ! connection.forceMeta ) {
+        connection.forceMeta = forceMeta;
       }
       connection.doShot({forceFrame:true});
     } else {
