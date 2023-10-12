@@ -13,6 +13,7 @@
   height: 100%;
   width: 100%;
   position: absolute;
+  background: rgba(244, 244, 244, 0.3);
 }
 
 .loader {
