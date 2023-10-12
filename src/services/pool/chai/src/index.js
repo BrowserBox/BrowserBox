@@ -17,6 +17,7 @@
   const url = require('url');
   const Path = require('path');
   const os = require('os');
+
   const app = express();
 
   const SECRET = process.env.DOCS_KEY;
@@ -366,6 +367,10 @@
         console.warn(err);
         throw err;
       }
+      const Hex = await import('./hexServer.mjs');
+      const HexRouter = express.Router();
+      Hex.applyHandlers(HexRouter);
+      app.use('/hex', HexRouter);
       await syncHashes(State.Files, State.Links);
       await savePID();
       console.log(JSON.stringify({listening:{port:PORT,at:new Date}}));
