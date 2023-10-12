@@ -225,6 +225,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     browserTargetId: null,
     loadingCount: 0,
     totalBandwidth: 0,
+    downloaded: {},
     record: {},
     frameBuffer: [],
     pausing: new Map(),
@@ -561,17 +562,16 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   async function beginDownload(dl) {
     try {
-      DEBUG.debugDownloads && console.log({dl});
+      DEBUG.debugFileDownload && console.log({dl});
       const {suggestedFilename, guid, url: dlURL} = dl;
       const downloadFileName = suggestedFilename || getFileFromURL(dlURL);
       const download = {suggestedFilename, guid, url: dlURL};
       download.filename = downloadFileName;
 
-      DEBUG.val && console.log({download});
-      DEBUG.val && console.log({suggestedFilename});
+      DEBUG.debugFileDownload && console.log({download});
+      DEBUG.debugFileDownload && console.log({suggestedFilename});
 
       // notification
-        connection.meta.push({download});
         connection.lastDownloadFileName = downloadFileName;
 
       // do only once
@@ -579,18 +579,27 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.lastDownloadGUID = download.guid;
 
       // logging 
-        DEBUG.val > DEBUG.med && console.log({downloadFileName,SECURE_VIEW_SCRIPT,username});
+        DEBUG.debugFileDownload && console.log({downloadFileName,SECURE_VIEW_SCRIPT,username});
 
       const ext = downloadFileName.split('.').pop();
       const guidFile = path.resolve(DownloadPath, guid);
       const originalFile = path.resolve(DownloadPath, downloadFileName); 
-      let isGuidFile = false;
 
-      await untilTrue(() => isGuidFile = fs.existsSync(guidFile), 150, 40);
+      connection.forceMeta({download});
 
-      if ( isGuidFile ) {
+      DEBUG.debugFileDownload && console.log(`File ${downloadFileName} is downloading`);
+
+      await untilTrue(() => !!connection.downloaded?.[guid], 1001, 3*3600); // wait 3 hours for a download
+
+      DEBUG.debugFileDownload && console.log(`File ${downloadFileName} has downloaded`);
+
+      await sleep(1001);
+      
+      // if the file is named with a guid copy it to original name
+      if ( fs.existsSync(guidFile) ) {
         try {
           fs.linkSync(guidFile, originalFile);
+          DEBUG.debugFileDownload && console.log(`GUID file name`, originalFile );
         } catch(e) {
           DEBUG.showFlash && console.info(`Could not create link from guid file`, e);
         } finally {
@@ -600,8 +609,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             console.warn(`Could not delete guid file`, guidFile, downloadFileName);
           }
         }
+      } else if ( fs.existsSync(originalFile) ) {
+        DEBUG.debugFileDownload && console.log(`Original file name`, originalFile );
       } else {
-        await untilTrue(() => fs.existsSync(originalFile), 150, 40);
+        console.warn(`Cannot find download`, download);
       }
 
       if ( FLASH_FORMATS.has(ext) ) {
@@ -615,8 +626,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             encodeURIComponent(downloadFileName)
         }&ran=${Math.random()}`;
         const flashplayer = {url};
-        connection.meta.push({flashplayer});
-        DEBUG.val > DEBUG.med && console.log("Send secure view", flashplayer);
+        connection.forceMeta({flashplayer});
         DEBUG.showFlash && console.log("Send flash player", flashplayer);
 
         const linkToFile = path.resolve(APP_ROOT, 'public', 'assets', 'flash', downloadFileName);
@@ -666,7 +676,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
             // trim any whitespace added by the shell echo in the script
             const secureview = {url};
-            DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
+            DEBUG.debugfiledownload && console.log("Send secure view", secureview);
             connection.forceMeta({secureview});
           } else if ( code == undefined ) {
             console.log(`No code. Probably STDOUT end event.`, url);
@@ -678,8 +688,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
             // trim any whitespace added by the shell echo in the script
             const secureview = {url};
-            DEBUG.val > DEBUG.med && console.log("Send secure view", secureview);
-            console.log("Send secure view", secureview);
+            DEBUG.debugFileDownload && console.log("Send secure view", secureview);
             connection.forceMeta({secureview});
           } else {
             console.warn(`Secure View subshell exited with code ${code}`);
@@ -699,6 +708,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         connection.totalBandwidth += amountToAddToServerData;
       }
       connection.forceMeta({downloPro:{receivedBytes, totalBytes, guid, state, done}});
+      if ( done || state == 'completed' || (receivedBytes >= totalBytes && totalBytes > 0) ) {
+        if ( ! connection.downloaded ) {
+          connection.downloaded = {};
+        }
+        connection.downloaded[guid] = true;
+      }
     } catch(e) {
       console.warn(e);
     }
