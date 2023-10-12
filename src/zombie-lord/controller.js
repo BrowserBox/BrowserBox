@@ -48,7 +48,7 @@ const controller_api = {
       const meta = [...connection.favicons.entries()].map(([targetId, faviconDataUrl]) => ({favicon:{targetId, faviconDataUrl}}));
       if ( connection.modal ) {
         const {modal} = connection;
-        meta.push({modal});
+        connection.forceMeta({modal});
       }
       DEBUG.debugFaviconsSend && console.log(`Will send favicons`, meta);
       send({meta});
@@ -416,7 +416,7 @@ const controller_api = {
             DEBUG.debugFavicon && console.log('Received message to Get Favicon', 
               {targetId, faviconDataUrl}, connection.favicons, command, connection.sessions);
             if ( faviconDataUrl ) {
-              connection.meta.push({
+              connection.forceMeta({
                 favicon: {
                   targetId,
                   faviconDataUrl
@@ -517,14 +517,14 @@ const controller_api = {
           }
           break;
           case "Connection.closeModal": {
-            connection.meta.push({
+            connection.forceMeta({
               closeModal: command.params
             });
             DEBUG.val && console.log(`received close modal and sent to clients`, command);
           }
           break;
           case "Connection.activateTarget": {
-            connection.meta.push({
+            connection.forceMeta({
               activateTarget: command.params
             });
             DEBUG.val && console.log(`received activateTarget and sent to clients`, command);
@@ -559,7 +559,7 @@ const controller_api = {
           );
           **/
           if ( response?.meta ) {
-            connection.meta.push(...response.meta);
+            connection.forceMeta(...response.meta);
           } else if ( response ) {
             retVal.data = response;
           } else {
@@ -629,7 +629,7 @@ const controller_api = {
   notifyBandwidthIssue(port, {issue}) {
     const connection = connections.get(port);
     if ( connection ) {
-      connection.meta.push({bandwidthIssue: issue ? 'yes' : 'no'});
+      connection.forceMeta({bandwidthIssue: issue ? 'yes' : 'no'});
     }
   },
 
