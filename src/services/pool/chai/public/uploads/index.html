@@ -41,11 +41,11 @@
     justify-content: space-between;
   }
 
-  header div.download {
+  header div {
     text-align: right;
   }
 
-  header div.download a {
+  header div a {
     font-size: smaller;
   }
 
@@ -90,11 +90,6 @@
     margin: 0 0.15rem;
   }
 
-  #download-link {
-    display: inline-block;
-    margin-top: 3.5px;
-  }
-
   .download {
     cursor: pointer !important;
   }
@@ -104,12 +99,27 @@
     color: dodgerblue;
   }
 
-  .download a .link-text {
+  * a {
+    text-decoration: none;
+  }
+
+  a .link-text {
     text-decoration: underline;
+    display: inline-block;
+  }
+
+  a strong {
+    display: inline-block;
+    height: 1.5em;
   }
 
   .download strong {
-    vertical-align: sub;
+    transform: translate(0,9%);
+  }
+
+  .hex-view strong {
+    transform: translate(0,-11%) scale(1.168);
+    margin-left: 1.5px;
   }
 
   section.controls * {
@@ -192,7 +202,7 @@
       <input type="range" id="resizeSlider" min="15" max="200" value="61.8" style="max-width: 30vw;" title="Zoom" class=zoomer>
     </section>
     <section class=document>
-      <div class=download>
+      <div class=hex-view>
         <a id=hex-view-link title="View hex of original" href=#hex-view>
           <span class=link-text>HexView</span>
           <strong>&#11042;</strong>
