@@ -2,14 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${fileName} | HexView</title>
+  <title>${filePath} | HexView</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/svg+xml" href="hex-favicon.svg">
-  <script>
-    function submitForm() { 
-      document.querySelector('#hexForm').submit();
-    }
-  </script>
   <style>
     /* Global Styles */
       :root {
@@ -73,8 +68,13 @@
         border-radius: 3px;
         transition: background 0.3s;
       }
-      button:hover {
+      button:not([disabled]):hover {
         background-color: #555;
+      }
+      button[disabled], button:disabled {
+        filter: grayscale(1.0);
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
     /* Number input */
@@ -103,6 +103,9 @@
         padding: 15px;
         border-radius: 5px;
         overflow-x: auto;
+        width: 70ch;
+        max-width: 99vw;
+        margin: 0 auto;
       }
 
     /* overrides and pixel perfect alignment */
@@ -129,7 +132,7 @@
   </style>
 </head>
 <body>
-  <header role="banner" title="${fileName}">
+  <header role="banner" title="${filePath}">
     <span class="hex-icon">
       <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 105 100">
         <polygon points="52.5 5 100 30 100 70 52.5 95 5 70 5 30 52.5 5" style="fill:#0f0; stroke:#000; stroke-width:1" />
@@ -137,25 +140,47 @@
     </span>
     <span class="text">HexView &ndash;</span>
     <span class="file-icon">📁</span>
-    <span class="file-name">${fileName}</span>
+    <span class="file-name">${filePath}</span>
     <span class="search-icon">🔍</span>
   </header>
   <main role="main">
     <nav role="navigation">
       <form id="hexForm" action="/hex/command" method="post">
-        <input required type="hidden" name="csrfToken" value="${csrfToken}">
-        <input required type="hidden" name="fileName" value="${fileName}">
+        <input required type="hidden" name="_csrf" value="${csrfToken}">
+        <input required type="hidden" name="filePath" value="${filePath}">
         
-        <button type="submit" name="command" value="prev" aria-label="Previous Page">⬅️ Previous Page</button>
+        <button type="submit" name="command" value="prev" aria-label="Previous Page" ${cursor == 0 ? "disabled" : ""}>⬅️ Previous Page</button>
         
         <!-- Numeric input spinner -->
-        <input type="number" name="cursor" value="${cursor}" min="1" onchange="submitForm();" aria-label="Go to page">
+        <input autofocus type="number" name="cursor" value="${cursor}" min="0" onchange="submitForm(event);" aria-label="Go to page">
         
-        <button type="submit" name="command" value="next" aria-label="Next Page">Next Page ➡️</button>
+        <button type="submit" name="command" value="next" aria-label="Next Page" ${done ? "disabled": ""}>Next Page ➡️</button>
       </form>
     </nav>
     <pre role="presentation">${escapeHTML(hexData)}</pre>
   </main>
+  <script>
+    const form = document.querySelector('#hexForm');
+    const previousValue = parseInt(form.cursor.value);
+
+    function submitForm(event) { 
+      const prevButton = form.command[0];
+      const nextButton = form.command[1];
+      const currentValue = form.cursor.value;
+      const delta = Math.sign(currentValue - previousValue);
+      if ( delta > 0 ) {
+        form.cursor.value = parseInt(form.cursor.value) - 1;
+        if ( !nextButton.disabled ) {
+          nextButton.click();
+        }
+      } else {
+        form.cursor.value = parseInt(form.cursor.value) + 1;
+        if ( !prevButton.disabled ) {
+          prevButton.click();
+        }
+      }
+    }
+  </script>
 </body>
 </html>
 

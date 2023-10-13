@@ -22,18 +22,21 @@ const readPage = async (page) => {
   try {
     const buffer = Buffer.alloc(PAGE_SIZE);
     let totalBytesRead = 0;
+    let done = false;
     let position = PAGE_SIZE * page; // Calculating the starting position of this page
 
     while (totalBytesRead < PAGE_SIZE) {
       const { bytesRead } = await fd.read(buffer, totalBytesRead, PAGE_SIZE - totalBytesRead, position + totalBytesRead);
       if (bytesRead === 0) {
         // EOF reached
+        done = true;
+        page -= 1;
         break;
       }
       totalBytesRead += bytesRead;
     }
 
-    return { hexData: buffer.slice(0, totalBytesRead).toString('hex'), position };
+    return { hexData: buffer.slice(0, totalBytesRead).toString('hex'), position, pageNumber: page, done };
   } catch (err) {
     throw new Error(`Unable to read page: ${err.message}`);
   }
@@ -84,10 +87,10 @@ const executeCommand = async (message) => {
         return;
     }
 
-    const { hexData, position } = await readPage(currentPage);
-    process.send({ hexData: formatHexData( hexData, position ) });
+    const { hexData, position, pageNumber, done } = await readPage(currentPage);
+    process.send({ hexData: formatHexData( hexData, position, ), pageNumber, done });
   } catch (err) {
-    process.send({ error: err.message });
+    process.send({ error: err.message, pageNumber: message.cursor });
   }
 };
 
@@ -105,7 +108,7 @@ const processIPC = async () => {
 const main = async (filePath) => {
   try {
     fd = await fs.open(filePath, 'r');
-    const initialHexData = await readPage(currentPage);
+    const { hexData : initialHexData, pageNumber } = await readPage(currentPage);
     processIPC();  // Activate the IPC listener
   } catch (err) {
     console.error('An error occurred:', err);

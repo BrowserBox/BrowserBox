@@ -5,38 +5,39 @@ import { fork } from 'child_process';
 import express from 'express';
 
 // In-memory mapping of session to worker
-const sessionToWorker = {};
+const sessionToWorker = new Map();
+let wid = 0;
 
-const TemplateText = fs.readFileSync(path.resolve('templates', 'hexview.html'));
+const TemplateText = fs.readFileSync(path.resolve('src', 'templates', 'hexview.html'));
 const renderTemplate = ({
   hexData = '', 
   csrfToken = '', 
   cursor = 0,
-  fileName = ''
+  filePath = '',
+  done = false,
 }) => render(
   TemplateText, 
   {
     hexData, 
     csrfToken, 
     cursor,
-    fileName,
-    escapeHTML
+    filePath,
+    escapeHTML,
+    done
   }
 );
 
 export function applyHandlers(app) {
-  app.use(express.urlencoded({ extended: true }));
-
   app.get('/command', (req, res) => {
     const { command, filePath, csrfToken, cursor } = req.query;
 
-    runWorker({req, command, filePath, csrfToken, cursor});
+    runWorker({req, res, command, filePath, csrfToken, cursor});
   });
 
   app.post('/command', (req, res) => {
     const { command, filePath, csrfToken, cursor } = req.body;
 
-    runWorker({req, command, filePath, csrfToken, cursor});
+    runWorker({req, res, command, filePath, csrfToken, cursor});
   });
 }
 
@@ -51,15 +52,18 @@ if ( import.meta.url === `file://${process.argv[1]}` ) {
   });
 }
 
-function runWorker({req, command, filePath, csrfToken, cursor}) {
-  let worker = req.session?.[filePath]?.worker;
+function runWorker({req, res, command, filePath, csrfToken, cursor}) {
+  let workerId = req.session?.[filePath]?.workerId;
+  let worker = sessionToWorker.get(workerId);
 
-  if (!worker) {
-    worker = fork(path.join('.', 'hexReader.mjs'));
+  if (!workerId || !worker) {
+    worker = fork(path.join('src', 'hexReader.mjs'));
     if ( ! req.session[filePath] ) {
       req.session[filePath] = {};
     }
-    req.session[filePath].worker = worker;
+    workerId = nextId();
+    sessionToWorker.set(workerId, worker);
+    req.session[filePath].workerId = workerId;
 
     // Initialize worker
     worker.send({ command: 'openFile', filePath });
@@ -70,6 +74,8 @@ function runWorker({req, command, filePath, csrfToken, cursor}) {
         console.error(`Worker error: ${message.error}`);
       }
     });
+  } else {
+    worker = sessionToWorker.get(workerId);
   }
 
   // Send the command to the worker
@@ -79,15 +85,18 @@ function runWorker({req, command, filePath, csrfToken, cursor}) {
     if (message.error) {
       res.send(renderTemplate({
         csrfToken: req.csrfToken(),
+        cursor: message.pageNumber,
+        filePath,
         hexData: `Error: ${message.error}`
       }));
     } else {
-      const {hexData} = message;
+      const {hexData, pageNumber, done} = message;
       res.send(renderTemplate({
         hexData,
         filePath, 
         csrfToken: req.csrfToken(),
-        cursor: 0
+        cursor: pageNumber,
+        done,
       }));
     }
   });
@@ -103,6 +112,10 @@ function escapeHTML(str) {
   };
 
   return str.replace(/[<>&"']/g, (char) => escapeChars[char]);
+}
+
+function nextId() {
+  return `worker${wid++}`;
 }
 
 function render(template, context = globalThis) {

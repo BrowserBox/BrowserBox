@@ -136,6 +136,8 @@
 
   app.use(compression());
 
+  app.use(express.urlencoded({ extended: true }));
+
   app.use(Session({
     name: `secureview-docsview-hex-${PORT}`,
     secret: SECRET,
