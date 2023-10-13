@@ -15,7 +15,6 @@
   const Session = require('express-session');
   const rateLimit = require('express-rate-limit');
   const multer = require('multer');
-  const csurf = require('csurf');
 
   const {
     spawn,
@@ -23,7 +22,6 @@
   } = child_process;
 
   const app = express();
-  const csrf = csurf();
 
   const SECRET = process.env.DOCS_KEY;
   const FORMAT = 'png';
@@ -148,8 +146,6 @@
       sameSite: 'lax'
     }
   }));
-
-  app.use(csrf);
 
   app.use((req, res, next) => {
     State.Protocol = req.protocol;
