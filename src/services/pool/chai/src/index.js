@@ -10,6 +10,7 @@
     execSync
   } = child_process;
   const express = require('express');
+  const Session = require('express-session');
   const rateLimit = require('express-rate-limit');
   const https = require('https');
   const http = require('http');
@@ -50,6 +51,7 @@
   const Files = new Map();
   const Links = new Map();
   const SSL_OPTS = {};
+  const Sessions = {};
   let jobid = 1;
   let newFiles = 0;
   let syncing = false;
@@ -129,6 +131,17 @@
   };
 
   app.use(compression());
+
+  app.use(Session({
+    name: `secureview-docsview-hex-${PORT}`,
+    secret: SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+      secure: true,
+      sameSite: 'lax'
+    }
+  }));
 
   app.use((req, res, next) => {
     State.Protocol = req.protocol;

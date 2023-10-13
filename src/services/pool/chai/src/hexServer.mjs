@@ -9,17 +9,15 @@ import express from 'express';
 const sessionToWorker = {};
 
 const TemplateText = fs.readFileSync(path.resolve('templates', 'hexview.html'));
-const renderTemplate = (
+const renderTemplate = ({
   hexData = '', 
-  sessionId = '', 
   csrfToken = '', 
   cursor = 0,
   fileName = ''
-) => render(
+}) => render(
   TemplateText, 
   {
     hexData, 
-    sessionId, 
     csrfToken, 
     cursor,
     fileName,
@@ -31,8 +29,15 @@ export function applyHandlers(app) {
   app.use(express.urlencoded({ extended: true }));
 
   app.get('/', (req, res) => {
-    const sessionId = Date.now(); // For simplicity, we're using timestamp as session ID
-    res.send(renderTemplate('', sessionId));
+    const fileName = 'abc.123';
+    const csrfToken = '123.abc';
+    req.session.fileName = fileName;
+    res.send(renderTemplate({
+      hexData: '', 
+      fileName, 
+      csrfToken,
+      cursor: 0
+    }));
   });
 
   app.post('/command', (req, res) => {
