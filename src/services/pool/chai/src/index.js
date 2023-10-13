@@ -1,25 +1,29 @@
 // code
-  const compression = require('compression');
   const crypto = require('crypto');
-  const hasha = require('hasha');
   const fs = require('fs');
-  const exploreDirectories = require('serve-index');
   const child_process = require('child_process');
-  const {
-    spawn,
-    execSync
-  } = child_process;
-  const express = require('express');
-  const Session = require('express-session');
-  const rateLimit = require('express-rate-limit');
   const https = require('https');
   const http = require('http');
-  const multer = require('multer');
   const url = require('url');
   const Path = require('path');
   const os = require('os');
 
+  const exploreDirectories = require('serve-index');
+  const compression = require('compression');
+  const hasha = require('hasha');
+  const express = require('express');
+  const Session = require('express-session');
+  const rateLimit = require('express-rate-limit');
+  const multer = require('multer');
+  const csurf = require('csurf');
+
+  const {
+    spawn,
+    execSync
+  } = child_process;
+
   const app = express();
+  const csrf = csurf();
 
   const SECRET = process.env.DOCS_KEY;
   const FORMAT = 'png';
@@ -142,6 +146,8 @@
       sameSite: 'lax'
     }
   }));
+
+  app.use(csrf);
 
   app.use((req, res, next) => {
     State.Protocol = req.protocol;

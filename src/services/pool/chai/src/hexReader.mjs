@@ -43,9 +43,25 @@ const executeCommand = async (message) => {
   try {
     switch (message.command) {
       case 'next':
+        if ( ! fd ) {
+          isFileOpening = true;
+          fd = await fs.open(message.filePath, 'r');
+          currentPage = -1;
+          isFileOpening = false;
+          processQueue();
+        }
+        currentPage = message.cursor || currentPage || 0;
         currentPage++;
         break;
       case 'prev':
+        if ( ! fd ) {
+          isFileOpening = true;
+          fd = await fs.open(message.filePath, 'r');
+          currentPage = -1;
+          isFileOpening = false;
+          processQueue();
+        }
+        currentPage = message.cursor || currentPage || 0;
         if (currentPage > 0) currentPage--;
         break;
       case 'openFile':
@@ -57,7 +73,14 @@ const executeCommand = async (message) => {
         processQueue();
         return;
       default:
-        process.send({ error: 'Unknown command' });
+        let msgString = '';
+        try {
+          msgString = JSON.stringify({message}, null, 2);
+        } catch(json_e) {
+          console.warn(`Could not stringify message. Failed with error: ${json_e}`);
+          throw json_e;
+        }
+        process.send({ error: 'Unknown command: ${command}\n\nmessage:\n\n${msgString}' });
         return;
     }
 
