@@ -1,28 +1,31 @@
-import express from 'express';
-import { fork } from 'child_process';
+import fs from 'fs';
 import path from 'path';
+import { fork } from 'child_process';
+
+import express from 'express';
 
 
 // In-memory mapping of session to worker
 const sessionToWorker = {};
 
-const renderTemplate = (hexData = '', sessionId = '') => `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <title>Hex Reader</title>
-  </head>
-  <body>
-    <form action="/hex/command" method="post">
-      <input required type="hidden" name="sessionId" value="${sessionId}">
-      <input name=filePath value="">
-      <button type="submit" name="command" value="next">Next Page</button>
-      <button type="submit" name="command" value="prev">Previous Page</button>
-    </form>
-    <pre>${escapeHTML(hexData)}</pre>
-  </body>
-  </html>
-`;
+const TemplateText = fs.readFileSync(path.resolve('templates', 'hexview.html'));
+const renderTemplate = (
+  hexData = '', 
+  sessionId = '', 
+  csrfToken = '', 
+  cursor = 0,
+  fileName = ''
+) => render(
+  TemplateText, 
+  {
+    hexData, 
+    sessionId, 
+    csrfToken, 
+    cursor,
+    fileName,
+    escapeHTML
+  }
+);
 
 export function applyHandlers(app) {
   app.use(express.urlencoded({ extended: true }));
@@ -88,4 +91,7 @@ function escapeHTML(str) {
   return str.replace(/[<>&"']/g, (char) => escapeChars[char]);
 }
 
+function render(template, context = globalThis) {
+  return new Function("with(this) return `" + template + "`;").call(context);
+}
 
