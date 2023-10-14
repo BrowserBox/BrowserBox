@@ -148,7 +148,7 @@
       <form id="hexForm" action="/hex/command" method="post">
         <input required type="hidden" name="filePath" value="${filePath}">
         
-        <button type="submit" name="command" value="prev" aria-label="Previous Page" ${cursor == 0 ? "disabled" : ""}>⬅️ Previous Page</button>
+        <button type="submit" name="command" value="prev" aria-label="Previous Page" ${cursor <= 0 ? "disabled" : ""}>⬅️ Previous Page</button>
         
         <!-- Numeric input spinner -->
         <input autofocus type="number" name="cursor" value="${cursor}" min="0" onchange="submitForm(event);" aria-label="Go to page">

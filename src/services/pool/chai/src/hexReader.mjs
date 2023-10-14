@@ -31,6 +31,9 @@ const readPage = async (page) => {
         // EOF reached
         done = true;
         page -= 1;
+        if ( page < 0 ) {
+          page = 0;
+        }
         break;
       }
       totalBytesRead += bytesRead;

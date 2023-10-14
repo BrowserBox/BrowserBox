@@ -63,7 +63,7 @@ decompress_anything() {
     "application/zip")
       install_guard "unzip"
       unzip -tq "$archive_path" || { echo "Error: Archive integrity check failed."; exit 1; }
-      unzip -d "$extraction_directory" "$archive_path"
+      unzip -o -d "$extraction_directory" "$archive_path"
       ;;
     "application/x-xz")
       install_guard "xz"

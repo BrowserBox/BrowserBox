@@ -226,9 +226,9 @@
 <script>
   const FORMAT = `$$FORMAT$$`;
   const path = location.pathname;
-  const noConvertUrl = path + '.noconvert';
   const imgUrl = i => path.replace(/\.html$/,`-${i.toString().padStart(4,'0')}.${FORMAT}`);
   const documentFileName = path.replace(/\.html$/, '');
+  const noConvertUrl = documentFileName + '.noconvert';
   console.log({documentFileName});
   const hexView = document.querySelector('#hex-view-link');
   const anchor = document.querySelector('#download-link');
@@ -347,6 +347,8 @@
       clearTimeout(noCram);
       console.log(`Stopped.`);
       loading.innerHTML = `Document did not convert. Please see the hex viewer if you want to review its contents.`;
+      // remove the image element used to display the current page
+      globalThis?.page?.remove?.();
     }
   }
 </script>
