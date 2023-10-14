@@ -1,22 +1,26 @@
 // code
-  const compression = require('compression');
   const crypto = require('crypto');
-  const hasha = require('hasha');
   const fs = require('fs');
-  const exploreDirectories = require('serve-index');
   const child_process = require('child_process');
+  const https = require('https');
+  const http = require('http');
+  const url = require('url');
+  const Path = require('path');
+  const os = require('os');
+
+  const exploreDirectories = require('serve-index');
+  const compression = require('compression');
+  const hasha = require('hasha');
+  const express = require('express');
+  const Session = require('express-session');
+  const rateLimit = require('express-rate-limit');
+  const multer = require('multer');
+
   const {
     spawn,
     execSync
   } = child_process;
-  const express = require('express');
-  const rateLimit = require('express-rate-limit');
-  const https = require('https');
-  const http = require('http');
-  const multer = require('multer');
-  const url = require('url');
-  const Path = require('path');
-  const os = require('os');
+
   const app = express();
 
   const SECRET = process.env.DOCS_KEY;
@@ -49,6 +53,7 @@
   const Files = new Map();
   const Links = new Map();
   const SSL_OPTS = {};
+  const Sessions = {};
   let jobid = 1;
   let newFiles = 0;
   let syncing = false;
@@ -128,6 +133,19 @@
   };
 
   app.use(compression());
+
+  app.use(express.urlencoded({ extended: true }));
+
+  app.use(Session({
+    name: `secureview-docsview-hex-${PORT}`,
+    secret: SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { 
+      secure: true,
+      sameSite: 'lax'
+    }
+  }));
 
   app.use((req, res, next) => {
     State.Protocol = req.protocol;
@@ -366,6 +384,10 @@
         console.warn(err);
         throw err;
       }
+      const Hex = await import('./hexServer.mjs');
+      const HexRouter = express.Router();
+      Hex.applyHandlers(HexRouter, STATIC_DIR);
+      app.use('/hex', HexRouter);
       await syncHashes(State.Files, State.Links);
       await savePID();
       console.log(JSON.stringify({listening:{port:PORT,at:new Date}}));

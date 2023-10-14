@@ -22,18 +22,21 @@ const readPage = async (page) => {
   try {
     const buffer = Buffer.alloc(PAGE_SIZE);
     let totalBytesRead = 0;
+    let done = false;
     let position = PAGE_SIZE * page; // Calculating the starting position of this page
 
     while (totalBytesRead < PAGE_SIZE) {
       const { bytesRead } = await fd.read(buffer, totalBytesRead, PAGE_SIZE - totalBytesRead, position + totalBytesRead);
       if (bytesRead === 0) {
         // EOF reached
+        done = true;
+        page -= 1;
         break;
       }
       totalBytesRead += bytesRead;
     }
 
-    return { hexData: buffer.slice(0, totalBytesRead).toString('hex'), position };
+    return { hexData: buffer.slice(0, totalBytesRead).toString('hex'), position, pageNumber: page, done };
   } catch (err) {
     throw new Error(`Unable to read page: ${err.message}`);
   }
@@ -43,28 +46,51 @@ const executeCommand = async (message) => {
   try {
     switch (message.command) {
       case 'next':
+        if ( ! fd ) {
+          isFileOpening = true;
+          fd = await fs.open(message.fileFullPath, 'r');
+          currentPage = -1;
+          isFileOpening = false;
+          processQueue();
+        }
+        currentPage = message.cursor || currentPage || 0;
         currentPage++;
         break;
       case 'prev':
+        if ( ! fd ) {
+          isFileOpening = true;
+          fd = await fs.open(message.fileFullPath, 'r');
+          currentPage = -1;
+          isFileOpening = false;
+          processQueue();
+        }
+        currentPage = message.cursor || currentPage || 0;
         if (currentPage > 0) currentPage--;
         break;
       case 'openFile':
         isFileOpening = true;
         if (fd) await fd.close();
-        fd = await fs.open(message.filePath, 'r');
+        fd = await fs.open(message.fileFullPath, 'r');
         currentPage = -1;
         isFileOpening = false;
         processQueue();
         return;
       default:
-        process.send({ error: 'Unknown command' });
+        let msgString = '';
+        try {
+          msgString = JSON.stringify({message}, null, 2);
+        } catch(json_e) {
+          console.warn(`Could not stringify message. Failed with error: ${json_e}`);
+          throw json_e;
+        }
+        process.send({ error: 'Unknown command: ${command}\n\nmessage:\n\n${msgString}' });
         return;
     }
 
-    const { hexData, position } = await readPage(currentPage);
-    process.send({ hexData: formatHexData( hexData, position ) });
+    const { hexData, position, pageNumber, done } = await readPage(currentPage);
+    process.send({ hexData: formatHexData( hexData, position, ), pageNumber, done });
   } catch (err) {
-    process.send({ error: err.message });
+    process.send({ error: err.message, pageNumber: message.cursor });
   }
 };
 
@@ -82,7 +108,7 @@ const processIPC = async () => {
 const main = async (filePath) => {
   try {
     fd = await fs.open(filePath, 'r');
-    const initialHexData = await readPage(currentPage);
+    const { hexData : initialHexData, pageNumber } = await readPage(currentPage);
     processIPC();  // Activate the IPC listener
   } catch (err) {
     console.error('An error occurred:', err);

@@ -203,7 +203,7 @@
     </section>
     <section class=document>
       <div class=hex-view>
-        <a id=hex-view-link title="View hex of original" href=#hex-view>
+        <a id=hex-view-link title="View hex of original" href="/hex/command" target=_blank>
           <span class=link-text>HexView</span>
           <strong>&#11042;</strong>
         </a>
@@ -230,6 +230,7 @@
   const imgUrl = i => path.replace(/\.html$/,`-${i.toString().padStart(4,'0')}.${FORMAT}`);
   const documentFileName = path.replace(/\.html$/, '');
   console.log({documentFileName});
+  const hexView = document.querySelector('#hex-view-link');
   const anchor = document.querySelector('#download-link');
   anchor.setAttribute('href', documentFileName);
   const CRAM_WAIT = 349;
@@ -240,6 +241,12 @@
   let pageNumber = 0;
   let ang = 0;
   let stopCheck = false;
+
+  let hexLink = new URL(hexView.href);
+  hexLink.searchParams.set('filePath', documentFileName);
+  hexLink.searchParams.set('command', 'next');
+  hexView.href = hexLink;
+  hexView.target = btoa(documentFileName);
 
   page.onerror = () => {
     if ( stopCheck ) return;
