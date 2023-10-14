@@ -299,9 +299,9 @@
         subshell = spawn(SCRIPT, [pdf.path]);
       } else {
         SCRIPT = CONVERTER;
-        fs.copyFileSync(Path.join(uploadPath, 'index.html'), Path.join(uploadPath, `${Path.basename(pdf.path)}.html`));
         const sourceFilePath = Path.join(uploadPath, 'index.html');
         const destinationFilePath = Path.join(uploadPath, `${Path.basename(pdf.path)}.html`);
+        fs.copyFileSync(sourceFilePath, destinationFilePath);
 
         let fileContent = fs.readFileSync(sourceFilePath, 'utf8');
         fileContent = fileContent.replace(/\$\$FORMAT\$\$/g, FORMAT);

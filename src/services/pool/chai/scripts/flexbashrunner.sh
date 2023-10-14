@@ -24,6 +24,28 @@ is_rosetta() {
   fi
 }
 
+file_checks() {
+  file_path="$1"
+  # Check file size (assuming file size is in bytes)
+  file_size=$(stat -c "%s" "${file_path}") # For Linux
+  [[ "$(get_platform)" == "Mac" ]] && file_size=$(stat -f "%z" "${file_path}") # For macOS
+
+  if [[ ${file_size} -gt 104857600 ]]; then  # 100MB = 104857600 bytes
+    echo "File is larger than 100MB. Exiting." >&2
+    exit 0
+  fi
+
+  # Check file type based on extension
+  file_ext="${file_path##*.}"
+  disallowed_types=("exe" "com" "apk" "deb" "rpm" "msi" "dmg" "jar" "iso" "bin")
+  for ext in "${disallowed_types[@]}"; do
+    if [[ "${file_ext}" == "${ext}" ]]; then
+      echo "File type ${file_ext} is not allowed. Exiting." >&2
+      exit 0
+    fi
+  done
+}
+
 # Main part of the script
 
 # Check platform
