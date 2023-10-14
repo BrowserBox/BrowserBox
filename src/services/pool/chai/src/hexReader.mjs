@@ -48,7 +48,7 @@ const executeCommand = async (message) => {
       case 'next':
         if ( ! fd ) {
           isFileOpening = true;
-          fd = await fs.open(message.filePath, 'r');
+          fd = await fs.open(message.fileFullPath, 'r');
           currentPage = -1;
           isFileOpening = false;
           processQueue();
@@ -59,7 +59,7 @@ const executeCommand = async (message) => {
       case 'prev':
         if ( ! fd ) {
           isFileOpening = true;
-          fd = await fs.open(message.filePath, 'r');
+          fd = await fs.open(message.fileFullPath, 'r');
           currentPage = -1;
           isFileOpening = false;
           processQueue();
@@ -70,7 +70,7 @@ const executeCommand = async (message) => {
       case 'openFile':
         isFileOpening = true;
         if (fd) await fd.close();
-        fd = await fs.open(message.filePath, 'r');
+        fd = await fs.open(message.fileFullPath, 'r');
         currentPage = -1;
         isFileOpening = false;
         processQueue();

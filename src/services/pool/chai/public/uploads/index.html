@@ -243,10 +243,10 @@
   let stopCheck = false;
 
   let hexLink = new URL(hexView.href);
-  hexLink.searchParams.set('filePath', path);
+  hexLink.searchParams.set('filePath', documentFileName);
   hexLink.searchParams.set('command', 'next');
   hexView.href = hexLink;
-  hexView.target = btoa(path);
+  hexView.target = btoa(documentFileName);
 
   page.onerror = () => {
     if ( stopCheck ) return;

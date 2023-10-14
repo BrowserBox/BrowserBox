@@ -386,7 +386,7 @@
       }
       const Hex = await import('./hexServer.mjs');
       const HexRouter = express.Router();
-      Hex.applyHandlers(HexRouter);
+      Hex.applyHandlers(HexRouter, STATIC_DIR);
       app.use('/hex', HexRouter);
       await syncHashes(State.Files, State.Links);
       await savePID();

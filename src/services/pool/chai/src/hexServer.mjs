@@ -28,20 +28,20 @@ const renderTemplate = ({
   }
 );
 
-export function applyHandlers(app) {
+export function applyHandlers(app, STATIC_DIR) {
   const csrf = csurf();
   app.use(csrf);
 
   app.get('/command', (req, res) => {
     const { command, filePath, csrfToken, cursor } = req.query;
 
-    runWorker({req, res, command, filePath, csrfToken, cursor});
+    runWorker({req, res, command, filePath, csrfToken, cursor}, STATIC_DIR);
   });
 
   app.post('/command', (req, res) => {
     const { command, filePath, csrfToken, cursor } = req.body;
 
-    runWorker({req, res, command, filePath, csrfToken, cursor});
+    runWorker({req, res, command, filePath, csrfToken, cursor}, STATIC_DIR);
   });
 }
 
@@ -56,7 +56,16 @@ if ( import.meta.url === `file://${process.argv[1]}` ) {
   });
 }
 
-function runWorker({req, res, command, filePath, csrfToken, cursor}) {
+function runWorker({req, res, command, filePath, csrfToken, cursor}, STATIC_DIR) {
+  const file = filePath.split(/\//g);
+
+  if ( file[0] === 'archives' ) {
+    file[0] = 'uploads';
+  } 
+
+  const fileFullPath = path.resolve(STATIC_DIR, ...file);
+  console.log({fileFullPath});
+
   let workerId = req.session?.[filePath]?.workerId;
   let worker = sessionToWorker.get(workerId);
 
@@ -70,7 +79,7 @@ function runWorker({req, res, command, filePath, csrfToken, cursor}) {
     req.session[filePath].workerId = workerId;
 
     // Initialize worker
-    worker.send({ command: 'openFile', filePath });
+    worker.send({ command: 'openFile', fileFullPath });
 
     // Listen for messages from worker
     worker.on('message', (message) => {
@@ -83,7 +92,7 @@ function runWorker({req, res, command, filePath, csrfToken, cursor}) {
   }
 
   // Send the command to the worker
-  worker.send({ command, cursor });
+  worker.send({ command, cursor, fileFullPath });
 
   worker.once('message', (message) => {
     if (message.error) {
