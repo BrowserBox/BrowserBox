@@ -59,7 +59,6 @@ function runWorker({req, res, command, filePath, cursor}, STATIC_DIR) {
   } 
 
   const fileFullPath = constructSafePath(STATIC_DIR, ...file);
-  console.log({fileFullPath});
 
   let workerId = req.session?.[filePath]?.workerId;
   let worker = sessionToWorker.get(workerId);
