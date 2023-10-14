@@ -12,7 +12,6 @@ let wid = 0;
 const TemplateText = fs.readFileSync(path.resolve('src', 'templates', 'hexview.html'));
 const renderTemplate = ({
   hexData = '', 
-  csrfToken = '', 
   cursor = 0,
   filePath = '',
   done = false,
@@ -20,7 +19,6 @@ const renderTemplate = ({
   TemplateText, 
   {
     hexData, 
-    csrfToken, 
     cursor,
     filePath,
     escapeHTML,
@@ -29,19 +27,16 @@ const renderTemplate = ({
 );
 
 export function applyHandlers(app, STATIC_DIR) {
-  const csrf = csurf();
-  app.use(csrf);
-
   app.get('/command', (req, res) => {
-    const { command, filePath, csrfToken, cursor } = req.query;
+    const { command, filePath, cursor } = req.query;
 
-    runWorker({req, res, command, filePath, csrfToken, cursor}, STATIC_DIR);
+    runWorker({req, res, command, filePath, cursor}, STATIC_DIR);
   });
 
   app.post('/command', (req, res) => {
-    const { command, filePath, csrfToken, cursor } = req.body;
+    const { command, filePath, cursor } = req.body;
 
-    runWorker({req, res, command, filePath, csrfToken, cursor}, STATIC_DIR);
+    runWorker({req, res, command, filePath, cursor}, STATIC_DIR);
   });
 }
 
@@ -56,14 +51,14 @@ if ( import.meta.url === `file://${process.argv[1]}` ) {
   });
 }
 
-function runWorker({req, res, command, filePath, csrfToken, cursor}, STATIC_DIR) {
+function runWorker({req, res, command, filePath, cursor}, STATIC_DIR) {
   const file = filePath.split(/\//g);
 
   if ( file[0] === 'archives' ) {
     file[0] = 'uploads';
   } 
 
-  const fileFullPath = path.resolve(STATIC_DIR, ...file);
+  const fileFullPath = constructSafePath(STATIC_DIR, ...file);
   console.log({fileFullPath});
 
   let workerId = req.session?.[filePath]?.workerId;
@@ -97,7 +92,6 @@ function runWorker({req, res, command, filePath, csrfToken, cursor}, STATIC_DIR)
   worker.once('message', (message) => {
     if (message.error) {
       res.send(renderTemplate({
-        csrfToken: req.csrfToken(),
         cursor: message.pageNumber,
         filePath,
         hexData: `Error: ${message.error}`
@@ -107,7 +101,6 @@ function runWorker({req, res, command, filePath, csrfToken, cursor}, STATIC_DIR)
       res.send(renderTemplate({
         hexData,
         filePath, 
-        csrfToken: req.csrfToken(),
         cursor: pageNumber,
         done,
       }));
@@ -133,5 +126,10 @@ function nextId() {
 
 function render(template, context = globalThis) {
   return new Function("with(this) return `" + template + "`;").call(context);
+}
+
+function constructSafePath(basePath, ...userInput) {
+  const normalizedInput = path.normalize(path.join(...userInput)).replace(/^(\.\.[\\/])+/, '');
+  return path.join(basePath, normalizedInput);
 }
 
