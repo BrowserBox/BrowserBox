@@ -52,6 +52,13 @@
   const jobs = {};
   const Files = new Map();
   const Links = new Map();
+  const FORBIDDEN_CONVERSIONS = new Set(
+    [
+      'exe', 'com', 'apk', 'deb', 'rpm', 'msi', 'dmg', 'jar', 'iso', 'bin', 'dll', 'so', 'dylib', 
+      'db', 'sqlite', 'mdb', 'accdb', 'fp7', 'gdb', 'fdb',
+      'dat', 'bson', 'sst', 'sdf'
+    ]
+  );
   const SSL_OPTS = {};
   const Sessions = {};
   let jobid = 1;
@@ -296,22 +303,33 @@
         if ( pdf.path != destPath ) {
           fs.copyFileSync(pdf.path, destPath);
         }
-        subshell = spawn(SCRIPT, [pdf.path]);
+        subshell = spawn(RUNNER, [SCRIPT, `${pdf.path}`]);
       } else {
         SCRIPT = CONVERTER;
         const sourceFilePath = Path.join(uploadPath, 'index.html');
         const destinationFilePath = Path.join(uploadPath, `${Path.basename(pdf.path)}.html`);
-        fs.copyFileSync(sourceFilePath, destinationFilePath);
+        const noConvertFilePath = Path.join(uploadPath, `${Path.basename(pdf.path)}.noconvert`);
+        let noConvertReason = null;
 
         let fileContent = fs.readFileSync(sourceFilePath, 'utf8');
         fileContent = fileContent.replace(/\$\$FORMAT\$\$/g, FORMAT);
         fs.writeFileSync(destinationFilePath, fileContent);
 
-        subshell = spawn(RUNNER, [SCRIPT, `${pdf.path}`, `${uploadPath}`, `${FORMAT}`]);
+        if ( fs.statSync(pdf.path).size > 158*(1<<20) ) {
+          noConvertReason = 'File too big. Larger than 158 MB.';
+        } else if ( FORBIDDEN_CONVERSIONS.has( Path.extname(pdf.path).slice(1) ) ) {
+          noConvertReason = 'File is of a type we do not convert.';
+        }
+
+        if ( noConvertReason ) {
+          fs.writeFileSync(noConvertFilePath, noConvertReason );
+        } else {
+          subshell = spawn(RUNNER, [SCRIPT, `${pdf.path}`, `${uploadPath}`, `${FORMAT}`]);
+        }
       }
 
       // subshell clean up handling
-      {
+      if ( subshell ) {
         const myJobId = jobid;
         let killed = false;
         jobs[myJobId] = {jobid,subshell,killit,path:pdf.path};
@@ -331,6 +349,7 @@
           if ( code != 0 ) {
             console.warn(`${SCRIPT} exited with code ${code}`);
             logErr(`${SCRIPT} exited with code ${code}`);
+            fs.writeFileSync(noConvertFilePath, 'noConvert');
           } else {
             console.log(`${SCRIPT} exited`);
           }
@@ -351,16 +370,16 @@
       }
 
       // give the view url
-          if ( isArchive && pr ) {
-            // we need to wait for extract for the directory to be visible
-            await pr;
-          }
+        if ( isArchive && pr ) {
+          // we need to wait for extract for the directory to be visible
+          await pr;
+        }
         if ( redirectToUrl ) {
           console.log(`Redirecting to`, viewUrl);
-          res.redirect(viewUrl);
+          res.redirect(sanitizeUrl(viewUrl));
         } else if ( sendURL ) {
           res.type('text/plain');
-          res.end(viewUrl);
+          res.end(sanitizeUrl(viewUrl));
         }
         return sanitizeUrl(viewUrl);
     } catch(e) {

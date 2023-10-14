@@ -938,7 +938,7 @@
               */
               title: "SecureView\u2122 Enabled",
             };
-            state.viewState.modalComponent.openModal({modal});
+            CONFIG.showModalOnFileDownload && state.viewState.modalComponent.openModal({modal});
           });
 
           queue.addMetaListener('secureview', ({secureview}) => {

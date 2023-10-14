@@ -146,6 +146,7 @@ export const CONFIG = Object.freeze({
     }
     return OPTIONS.useDarkMode;
   }, 
+  showModalOnFileDownload: false,
   settingsButton: false,
   useBlankWindowForProtocolLaunch: false,
   removeAudioStartHandlersAfterFirstStart: false, 
