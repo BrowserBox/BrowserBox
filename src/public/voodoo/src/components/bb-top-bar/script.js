@@ -16,6 +16,7 @@ class BBTopBar extends Base {
 
   updateDownloadStatus(event) {
     clearTimeout(this.vanishTimer);
+    this.animateProgress();
     const {state: data } = this;
     const { guid, state, receivedBytes, totalBytes } = event;
     let newStart = false;
@@ -74,6 +75,45 @@ class BBTopBar extends Base {
         this.vanish = true; 
         this.state = this.state;
       }, 500000);
+    }
+  }
+
+  animateProgress() {
+    if ( ! this.shadowRoot ) return;
+
+    const progress = this.shadowRoot.querySelector('progress');
+
+    if ( !progress || progress.animating ) return;
+
+    progress.animating = true;
+
+    const positionStep = 2;
+    const rotationStep = 1;
+    let position = 0;
+    let rotation = 0;
+
+    // Start the animation
+    requestAnimationFrame(animate);
+
+    function animate() {
+      // Update the position and rotation
+      position += positionStep;
+      rotation += rotationStep;
+
+      if (position >= 200) {
+        position = -100; // Reset position
+      }
+      
+      if (rotation >= 360) {
+        rotation = 0; // Reset rotation
+      }
+
+      // Update CSS variables
+      progress.style.setProperty('--position', `${position}%`);
+      progress.style.setProperty('--rotation', `${rotation}deg`);
+
+      // Schedule the next frame
+      requestAnimationFrame(animate);
     }
   }
 

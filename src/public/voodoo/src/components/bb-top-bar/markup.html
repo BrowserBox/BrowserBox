@@ -15,12 +15,12 @@
       ` : F`
         <span class=wide-word>1&nbsp;download</span>
       `}
-      <meter class="download-meter" 
+      <progress class="download-meter" 
         min=0 
         step=0.01
         max="${Math.max(_host.totalFiles, 1)}"
         value="${_host.progressValue}"
-      ></meter>       
+      ></progress>       
       <span class="download-mb">
         ${_host.megabytesReceived} MB
       </span>

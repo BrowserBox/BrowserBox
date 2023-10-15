@@ -18,23 +18,37 @@
 }
 
 .download-meter {
-  flex: 1;
+  flex-grow: 1;
   max-width: 100%;
-  height: 8px;
-  max-height: 8px;
-  border: none;
-  padding: 0;
-  margin: 0;
-  -webkit-appearance: none;
+  width: 100px;
 }
 
-meter::-webkit-meter-optimum-value {
-  max-height: 8px;
+progress {
+  appearance: none;
   -webkit-appearance: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  background: green;
+  width: 100%;
+  height: 0.8rem;
+  line-height: 1.3;
+  background: none;
+  --position: 0%;
+  --rotation: 45deg;
+}
+
+/* Chrome */
+progress::-webkit-progress-bar {
+  background: transparent;
+}
+
+progress::-webkit-progress-value {
+  background: linear-gradient(var(--rotation), rgba(255,255,255,0), rgba(255,255,255,0.5), rgba(255,255,255,0));
+  background-size: 200% 100%;
+  background-position: var(--position) 0;
+}
+
+progress::-moz-progress-bar {
+  background: linear-gradient(var(--rotation), rgba(255,255,255,0), rgba(255,255,255,0.5), rgba(255,255,255,0));
+  background-size: 200% 100%;
+  background-position: var(--position) 0;
 }
 
 @media screen and (max-width: 600px) {
@@ -50,19 +64,4 @@ meter::-webkit-meter-optimum-value {
   }
 }
 
-/* Shimmer effect */
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.shimmering {
-  animation: shimmer 1.5s ease infinite;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1));
-  background-size: 200% 100%;
-}
 
