@@ -73,7 +73,7 @@ class BBTopBar extends Base {
       this.vanishTimer = setTimeout(() => {
         this.vanish = true; 
         this.state = this.state;
-      }, 5000);
+      }, 500000);
     }
   }
 

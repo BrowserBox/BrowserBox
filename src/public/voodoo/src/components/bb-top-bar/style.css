@@ -20,8 +20,21 @@
 .download-meter {
   flex: 1;
   max-width: 100%;
-  height: 12px;
+  height: 8px;
+  max-height: 8px;
   border: none;
+  padding: 0;
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+meter::-webkit-meter-optimum-value {
+  max-height: 8px;
+  -webkit-appearance: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: green;
 }
 
 @media screen and (max-width: 600px) {
@@ -30,11 +43,10 @@
     max-height: 16px;
     overflow: hidden;
   }
-  .download-count, .download-mb {
-    display: none;
-  }
   .wide-word {
     display: none;
+  }
+  .download-count, .download-mb {
   }
 }
 

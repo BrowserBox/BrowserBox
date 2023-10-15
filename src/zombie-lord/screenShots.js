@@ -43,8 +43,8 @@ export const MIN_TIME_BETWEEN_TAIL_SHOTS = 175;
 export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
 export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
 // local testing values so small haha
-export const MAX_ROUNDTRIP = DEBUG.localTestRTT ? 40 : 725;
-export const MIN_ROUNDTRIP = DEBUG.localTestRTT ? 17 : 600;
+export const MAX_ROUNDTRIP = DEBUG.localTestRTT ? 100 : 725;
+export const MIN_ROUNDTRIP = DEBUG.localTestRTT ? 80 : 600;
 export const MIN_SPOT_ROUNDTRIP = 125;
 export const BUF_SEND_TIMEOUT = 50;
 const NOIMAGE = {img: '', frame:0};
