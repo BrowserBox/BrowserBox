@@ -18,17 +18,22 @@
 }
 
 .download-meter {
-  flex-grow: 1;
+  flex: 1;
   max-width: 100%;
   height: 12px;
   border: none;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 600px) {
   .status-bar {
     max-width: 38vw;
+    max-height: 16px;
+    overflow: hidden;
   }
   .download-count, .download-mb {
+    display: none;
+  }
+  .wide-word {
     display: none;
   }
 }

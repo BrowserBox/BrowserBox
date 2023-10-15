@@ -8,17 +8,25 @@
   ${!_host.vanish ? F`
     <div id="download-status-bar" class="status-bar ${_host.downloadState.activeDownloads ? "progress" : "done"}" title="${_host.downloadState.completedDownloads} completed download${_host.plural ? "s" : ""}">
       ${_host.totalFiles > 1 ? F`
-        ${_host.downloadState.completedDownloads}/${_host.totalFiles} <span class=wide-word>&nbsp;downloaded</span>
+        <span class=download-count>
+          ${_host.downloadState.completedDownloads}/${_host.totalFiles}
+        </span>
+        <span class=wide-word>&nbsp;downloaded</span>
       ` : F`
-        <span class=wide-word>1 download</span>
+        <span class=download-count>
+          1
+        </span>
+        <span class=wide-word>&nbsp;download</span>
       `}
       <meter class="download-meter" 
         min=0 
         step=0.01
         max="${Math.max(_host.totalFiles, 1)}"
         value="${_host.progressValue}"
-      ></meter> ${_host.megabytesReceived} MB
-      <span class="download-mb"></span>
+      ></meter>       
+      <span class="download-mb">
+        ${_host.megabytesReceived} MB
+      </span>
     </div>` : F`<!-- download progress -->`
   }
 </header>
