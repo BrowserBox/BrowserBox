@@ -946,7 +946,9 @@
             const {url} = secureview;
             if ( url ) {
               if ( DEBUG.useWindowOpenForSecureView ) {
+                console.log(`Trying to open window`, url);
                 window.top.open(url);
+                alert(`Window should be open to: ${url}`);
               } else {
                 createTab(null, url);
               }

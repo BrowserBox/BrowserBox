@@ -33,7 +33,7 @@ export const MIN_HEIGHT = 300;
 export const WEBP_QUAL = 32;
 export const JPEG_WEBP_QUAL = 80;
 // these can be tuned UP on better bandwidth and DOWN on lower bandwidth
-export const ACK_COUNT = process.platform == 'darwin' ? 1 : 2; // how many frames per ack? this should be adapted per link capacity
+export const ACK_COUNT = process.platform == 'darwin' ? 2 : 2; // how many frames per ack? this should be adapted per link capacity
 export const MAX_FRAMES = 2; /* 1, 2, 4 */
 const MIN_JPG_QUAL = 4;
 const MAX_JPG_QUAL = 80;
@@ -43,8 +43,8 @@ export const MIN_TIME_BETWEEN_TAIL_SHOTS = 175;
 export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
 export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
 // local testing values so small haha
-export const MAX_ROUNDTRIP = DEBUG.localTestRTT ? 3 : 725;
-export const MIN_ROUNDTRIP = DEBUG.localTestRTT ? 2 : 600;
+export const MAX_ROUNDTRIP = DEBUG.localTestRTT ? 40 : 725;
+export const MIN_ROUNDTRIP = DEBUG.localTestRTT ? 17 : 600;
 export const MIN_SPOT_ROUNDTRIP = 125;
 export const BUF_SEND_TIMEOUT = 50;
 const NOIMAGE = {img: '', frame:0};

@@ -55,7 +55,9 @@ export const DEBUG = Object.freeze({
   scaleImage: true,       // scaleImage: false centers the remote image if it's smaller than local viewport (large screens))
   dontEnforceOnlineCheck: true,
   newUI: true,
-  useWindowOpenForSecureView: true,
+  get useWindowOpenForSecureView() {
+    return true && ! deviceIsMobile();
+  },
   showCollect: false,
   debugFocus: false,
   debugAuth: false,

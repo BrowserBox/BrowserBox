@@ -57,6 +57,7 @@ const PUPPETEER_RESOURCE_SAVING_FLAGS = [
 // disabled (some people's puppeteer stability flags)
 // found i don't need
 const PUPPETEER_STABILITY_FLAGS = [
+  '--ignore-certificate-errors',
   '--enable-features=NetworkService,NetworkServiceInProcess',
   '--disable-background-timer-throttling',
   '--disable-backgrounding-occluded-windows',
