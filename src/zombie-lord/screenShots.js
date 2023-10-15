@@ -1,7 +1,10 @@
 //import {CWebp} from 'cwebp';
 import {DEBUG, sleep, CONFIG} from '../common.js';
 
-export const JPEG_QUAL = 80;
+const MIN_JPG_QUAL = 5;
+const MAX_JPG_QUAL = 80;
+const MAX_NTH_FRAME = 8;
+export const JPEG_QUAL = MAX_JPG_QUAL;
 export const MAX_ACK_BUFFER = 3;
 export const COMMON_FORMAT = Object.freeze({
   width: 1920,
@@ -31,13 +34,10 @@ const getScreenshotViewport = () => ({
 export const MIN_WIDTH = 300;
 export const MIN_HEIGHT = 300;
 export const WEBP_QUAL = 32;
-export const JPEG_WEBP_QUAL = 80;
+export const JPEG_WEBP_QUAL = MAX_JPG_QUAL;
 // these can be tuned UP on better bandwidth and DOWN on lower bandwidth
 export const ACK_COUNT = process.platform == 'darwin' ? 2 : 2; // how many frames per ack? this should be adapted per link capacity
 export const MAX_FRAMES = 2; /* 1, 2, 4 */
-const MIN_JPG_QUAL = 4;
-const MAX_JPG_QUAL = 80;
-const MAX_NTH_FRAME = 8;
 export const MIN_TIME_BETWEEN_SHOTS = 40; /* 20, 40, 100, 250, 500 */
 export const MIN_TIME_BETWEEN_TAIL_SHOTS = 175;
 export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
