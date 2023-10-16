@@ -75,7 +75,7 @@ export const DEBUG = Object.freeze({
   debugFrameDrops: false,
   logFrameIds: false,
   dropFramesWhenDrawing: false,
-  ensureScroll: true,
+  ensureScroll: false,
   useDataURL: false,
   noCollect: false, /* do not do buffered frame collection */
   mobileUIDefault: true,  /* mobile UI defaults to true (visible) or false (not visible) */
