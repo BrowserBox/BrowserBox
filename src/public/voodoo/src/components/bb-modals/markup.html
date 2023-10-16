@@ -155,7 +155,7 @@
         <legend>
           <h1>
             <img src="voodoo/assets/icons/bell.svg">
-            <span onbond=${el => _host.copyBoxTitle = el} class=title>${title || 'Copy'}</span>
+            <span onbond=${el => _host.copyBoxTitle = el} class=title>${state.title || 'Copy'}</span>
           </h1>
         </legend>
         <p>
@@ -167,6 +167,11 @@
             F`<a title="${link.title}" target=${link.target} href=${link.href}>${link.title}</a>` 
             :
             F`<!-- link -->`
+          }
+          ${otherButton ?
+            Fskip(otherButton)
+            :
+            F`<!-- other button -->`
           }
           <button type=submit class=ok title=Acknowledge value=ok>OK</button>
         </p>
@@ -310,6 +315,8 @@
         <button type=submit value=ok>Save</button>
       </p>
     </form>
-    ${Fskip(await fetch('/settings_modal').then(r => r.text()))}
+    ${viewState?.currentModal?.el === viewState.ModalRef.settings ? 
+      Fskip(await fetch('/settings_modal').then(r => r.text())) : F`<!-- settings modal spot -->`
+    }
   </article>
 </aside>

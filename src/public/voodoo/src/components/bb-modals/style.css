@@ -8,5 +8,4 @@ article.copy textarea {
   max-width: 80vw;
   max-height: 80vh;
   min-height: 3em;
-  word-break: keep-all;
 }

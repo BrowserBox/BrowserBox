@@ -121,10 +121,13 @@ class BBModal extends Base {
     const state = this.state;
     const {ModalRef} = state.viewState;
     const {
-      sessionId, mode, requestId, title, type, message:msg, defaultPrompt, url, otherButton,
+      sessionId, mode, requestId, title, type, message:msg, defaultPrompt, url, 
       link,
       highlight,
       csrfToken,
+    } = modal;
+    let {
+      otherButton,
     } = modal;
     if ( !ModalRef[type] ) { 
       DEBUG.debugModal && console.warn(`Waiting until modal type ${type} has its element loaded...`);
@@ -161,7 +164,16 @@ class BBModal extends Base {
       if ( type == 'copy' ) {
         await state._top.untilTrue(() => this.copyBoxTextarea.value == msg, 300, 20);
         this.copyBoxTextarea.select();
-        navigator.clipboard.writeText(this.copyBoxTextarea.value);
+        let secondTitle = '';
+        try {
+          await navigator.clipboard.writeText(this.copyBoxTextarea.value);
+          DEBUG.debugClipboard && console.info(`Copied to clipboard`);
+          secondTitle = ' - Copied to Clipboard!';
+        } catch(e) {
+          DEBUG.debugClipboard && console.warn(`Could not copy to clipboard`, title);
+          this.latestCopyValue = this.copyBoxTextarea.value;
+          otherButton = `<button onclick="copyToClipboard">Copy</button>`
+        }
         const currentModal = {
           type, csrfToken, mode, 
           highlight, 
@@ -171,14 +183,27 @@ class BBModal extends Base {
           sessionId, 
           otherButton, 
           link,
-          title: title + ' - Copied to Clipboard!', 
+          title: title + secondTitle,
           url
         };
         state.viewState.currentModal = currentModal;
         this.prepareState(currentModal);
         this.state = state;
+        // weird hack don't know why we need this
+        this.copyBoxTitle.innerText = title + secondTitle;
       }
     }, 0);
+  }
+
+  copyToClipboard(event) {
+    // stop the modal from being closed by clicking this
+    event.stopPropagation();
+    // try to copy to clipboard
+    navigator.clipboard.writeText(this.latestCopyValue).then(
+      () => this.copyBoxTitle.innerText = 'Copied to Clipboard!'
+    ).catch(
+      () => this.copyBoxTitle.innerText = 'Copy failed. Please manually copy.'
+    );
   }
 
   closeModal(click) {

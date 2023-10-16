@@ -1195,13 +1195,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         },
         sessionId
       );
-      await send(
-        "Emulation.setDefaultBackgroundColorOverride",
-        {
-          color: { r: 120, g: 120, b: 120, a: 0.8 }
-        },
-        sessionId
-      );
+      if ( CONFIG.setAlternateBackgroundColor ) {
+        await send(
+          "Emulation.setDefaultBackgroundColorOverride",
+          {
+            color: { r: 120, g: 120, b: 120, a: 0.8 }
+          },
+          sessionId
+        );
+      }
 
       await send("Page.enable", {}, sessionId);
 

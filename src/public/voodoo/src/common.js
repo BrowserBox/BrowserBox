@@ -55,7 +55,9 @@ export const DEBUG = Object.freeze({
   scaleImage: true,       // scaleImage: false centers the remote image if it's smaller than local viewport (large screens))
   dontEnforceOnlineCheck: true,
   newUI: true,
-  useWindowOpenForSecureView: true,
+  get useWindowOpenForSecureView() {
+    return true && ! deviceIsMobile();
+  },
   showCollect: false,
   debugFocus: false,
   debugAuth: false,
@@ -73,7 +75,7 @@ export const DEBUG = Object.freeze({
   debugFrameDrops: false,
   logFrameIds: false,
   dropFramesWhenDrawing: false,
-  ensureScroll: true,
+  ensureScroll: false,
   useDataURL: false,
   noCollect: false, /* do not do buffered frame collection */
   mobileUIDefault: true,  /* mobile UI defaults to true (visible) or false (not visible) */
@@ -139,6 +141,7 @@ export const CONFIG = Object.freeze({
   /* making this true means we don't check audio start on every tap or click BUT
    it does seem to interfere with audio restarting in the case it stops
   */
+  centerContextMenuOnMobile: true,
   get darkMode() {
     if ( OPTIONS.useSystemColorScheme ) {
       const isDark = globalThis.window.top.matchMedia("screen and (prefers-color-scheme: dark)");

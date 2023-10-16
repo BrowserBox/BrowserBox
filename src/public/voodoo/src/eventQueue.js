@@ -637,33 +637,21 @@
                           throw new Error(`ModalComponent did not load in time.`);
                         }
 
+                        // wait for any other modals to clear
                         await untilHuman(() => !state?.viewState.currentModal);
 
                         if ( !state?.viewState.currentModal ) {
-                          state.viewState.modalComponent.openModal({modal:{
-                            type:'notice',
-                            message: `Due to a bug in Safari, we need your permission 
-                              to access your microphone or camera for improved BrowserBox streaming. 
-                              We do not collect or use any of your data, and you can stop the active 
-                              camera or mic after granting the permission and streaming will remain enhanced.
-                              To stop the camera or mic, click the red symbol in the Safari address bar.
-                              If you prefer, you can just deny the permission and BrowserBox will still work, 
-                              though the streaming may not be as good. Thank you for your understanding.`
-                            ,
-                            title: `Permissions for Safari`,
-                            link: {
-                              title: 'View Bug',
-                              target: "_blank",
-                              href: "https://bugs.webkit.org/show_bug.cgi?id=189503"
-                            }
-                          }}, state);
-                          DEBUG.debugSafariWebRTC && console.log(`Waiting for explainer to open`);
-                          await untilTrue(() => state?.viewState?.currentModal);
-                          DEBUG.debugSafariWebRTC && console.log(`Waiting for explainer close`);
-                          await untilHuman(() => state.viewState && !state.viewState.currentModal);
-                          DEBUG.debugSafariWebRTC && console.log(`Waiting for 309 ms`);
-                          await sleep(309);
                           DEBUG.debugSafariWebRTC && console.log(`Requesting media permissions`);
+                          const [{state: state1}, {state: state2}] = (await Promise.all([
+                            navigator.permissions.query({ name: 'microphone' }),
+                            navigator.permissions.query({ name: 'camera' })
+                          ]));
+                          if (state1 === 'granted' || state2 === 'granted') {
+                            // Skip the pre-request explainer
+                            DEBUG.debugSafariWebRTC && console.log(`We already have permissions, no need to explain a request!`);
+                          } else {
+                            await showExplainer();
+                          }
                           if ( deviceIsMobile() ) {
                             await navigator.mediaDevices.getUserMedia({audio: true});
                           } else {
@@ -1198,6 +1186,25 @@
       }
       typeList.splice(typeList.indexOf(func), 1);
     }
+  }
+
+  async function showExplainer() {
+    state.viewState.modalComponent.openModal({modal:{
+      type:'notice',
+      message: `We need your permission for better BrowserBox streaming due to a Safari bug. We don't collect your data and you can turn off the camera or mic anytime by clicking the red symbol in the address bar. Denying permission won't break BrowserBox, but may reduce streaming quality. To skip this request in the future, select 'Always Allow' from the recording icon in the address bar. Thanks for understanding`,
+      title: `Permissions for Safari`,
+      link: {
+        title: 'View Bug',
+        target: "_blank",
+        href: "https://bugs.webkit.org/show_bug.cgi?id=189503"
+      }
+    }}, state);
+    DEBUG.debugSafariWebRTC && console.log(`Waiting for explainer to open`);
+    await untilTrue(() => state?.viewState?.currentModal);
+    DEBUG.debugSafariWebRTC && console.log(`Waiting for explainer close`);
+    await untilHuman(() => state.viewState && !state.viewState.currentModal);
+    DEBUG.debugSafariWebRTC && console.log(`Waiting for 309 ms`);
+    await sleep(309);
   }
 
   function normalizeUrl(url) {

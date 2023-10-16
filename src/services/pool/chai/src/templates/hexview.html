@@ -130,6 +130,25 @@
       }
     }
   </style>
+  <script>
+    setTimeout(syncURLParams, 3457);
+
+    function syncURLParams() {
+      const filePath = "${filePath}";
+      const cursor = ${cursor};
+      const command = "next";
+      const url = new URL(location.href);
+      url.searchParams.set('filePath', filePath);
+      url.searchParams.set('cursor', cursor);
+      url.searchParams.set('command', command);
+      history.replaceState({filePath, cursor, command}, "", url.href);
+    }
+  </script>
+  <script>
+    function isMobile() {
+      return /windows phone|android|iPad|iPhone|iPod/i.test(navigator.userAgent);
+    }
+  </script>
 </head>
 <body>
   <header role="banner" title="${filePath}">
@@ -151,7 +170,14 @@
         <button type="submit" name="command" value="prev" aria-label="Previous Page" ${cursor <= 0 ? "disabled" : ""}>⬅️ Previous Page</button>
         
         <!-- Numeric input spinner -->
-        <input autofocus type="number" name="cursor" value="${cursor}" min="0" onchange="submitForm(event);" aria-label="Go to page">
+        <input autofocus 
+          required
+          type="number" name="cursor" 
+          value="${cursor}" min="0" 
+          onkeydown="if ( event.key == 'Enter' ) { event.preventDefault(); event.stopPropagation(); this.blur(); this.focus(); }"
+          onfocus="if ( isMobile() ) this.blur(); else this.select();"
+          onchange="submitForm(event);" aria-label="Go to page"
+         >
         
         <button type="submit" name="command" value="next" aria-label="Next Page" ${done ? "disabled": ""}>Next Page ➡️</button>
       </form>
@@ -165,15 +191,15 @@
     function submitForm(event) { 
       const prevButton = form.command[0];
       const nextButton = form.command[1];
-      const currentValue = form.cursor.value;
+      const currentValue = parseInt(form.cursor.value);
       const delta = Math.sign(currentValue - previousValue);
       if ( delta > 0 ) {
-        form.cursor.value = parseInt(form.cursor.value) - 1;
+        form.cursor.value = currentValue - 1;
         if ( !nextButton.disabled ) {
           nextButton.click();
         }
       } else {
-        form.cursor.value = parseInt(form.cursor.value) + 1;
+        form.cursor.value = currentValue + 1;
         if ( !prevButton.disabled ) {
           prevButton.click();
         }

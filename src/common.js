@@ -139,6 +139,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  setAlternateBackgroundColor: false,
   screencastOnly: true,
   baseDir: path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro'),
   darkMode: false, 

@@ -159,6 +159,7 @@ class BBContextMenu extends Base {
     }
 
     close(_, delay = true) {
+      DEBUG.debugContextMenu && console.log((new Error(`Tracking close event`)).stack);
       const state = this.state;
       const {_top} = this.state;
       if ( delay ) {
@@ -166,14 +167,16 @@ class BBContextMenu extends Base {
           if ( _top.viewState.contextMenu ) {
             _top.viewState.contextMenu = null;
             _top.contextMenuActive = false;
-            _top.contextMenuEvent = null;
+            //_top.contextMenuEvent = null;
+            this.state = state;
+            setState('bbpro', _top);
           }
         }, this.constructor.CLOSE_DELAY);
       } else {
         if ( _top.viewState.contextMenu ) {
           _top.viewState.contextMenu = null;
           _top.contextMenuActive = false;
-          _top.contextMenuEvent = null;
+          //_top.contextMenuEvent = null;
         }
       }
       this.state = state;
@@ -314,8 +317,10 @@ class BBContextMenu extends Base {
       let pageX, pageY, clientX, clientY;
       if ( contextClick?.detail?.pageX ) {
         ({pageX,pageY,clientX,clientY} = contextClick.detail);
-      } else {
+      } else if ( contextClick ) {
         ({pageX,pageY,clientX,clientY} = contextClick);
+      } else {
+        console.warn(`NO data for context menu event`);
       }
       const {H} = state;
       // we need to get the URL of the target link 

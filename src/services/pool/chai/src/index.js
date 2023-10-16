@@ -24,7 +24,7 @@
   const app = express();
 
   const SECRET = process.env.DOCS_KEY;
-  const FORMAT = 'png';
+  const FORMAT = 'jpeg';
   const MAX_FILE_DL_TIME = 147*1000; // time to allow a download before rejecting ~ 2.5 mins
   const WAIT_NEW_FILES_BEFORE_DISK_SYNC = 3;
   const CHAI_STATE_PATH = process.env.CHAI_PATH || Path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro', 'chai')
