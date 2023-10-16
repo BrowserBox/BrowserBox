@@ -1254,6 +1254,7 @@
           const FLAGS = {passive:true, capture:true};
           const MIN_DURATION = CTX_MENU_THRESHOLD;
           const MAX_MOVEMENT = 20;
+          let maxMovement = 0;
           let lastStart;
           let lastE;
           el.addEventListener('touchstart', ts => {
@@ -1266,6 +1267,14 @@
           }, FLAGS);
           el.addEventListener('touchmove', tm => {
             lastE = tm;
+            const touch1 = lastStart.changedTouches[0];
+            const touch2 = tm.changedTouches[0];
+            const movement = Math.hypot(
+              touch2.pageX - touch1.pageX,
+              touch2.pageY - touch1.pageY
+            );
+
+            maxMovement = Math.max(maxMovement, movement);
             triggerContextMenuIfLongEnough(tm);
           }, FLAGS);
           el.addEventListener('touchend', triggerContextMenuIfLongEnough, FLAGS);
@@ -1285,7 +1294,7 @@
             // time
               duration = tf.timeStamp - lastStart.timeStamp;
 
-            if ( duration >= MIN_DURATION && movement <= MAX_MOVEMENT ) {
+            if ( duration >= MIN_DURATION && movement <= MAX_MOVEMENT && maxMovement <= MAX_MOVEMENT ) {
               /**
               lastStart.preventDefault();
               tf && tf.preventDefault();
