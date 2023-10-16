@@ -9,9 +9,15 @@ LABEL org.opencontainers.image.source https://github.com/BrowserBox/BrowserBox
 ARG IS_DOCKER_BUILD=true
 ENV IS_DOCKER_BUILD=$IS_DOCKER_BUILD
 ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/New_York
 
 # install dependencies
 RUN apt-get update
+RUN apt-get update && \
+    apt-get install -y tzdata && \
+    ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && \
+    dpkg-reconfigure --frontend noninteractive tzdata && \
+    apt-get clean
 RUN apt-get install -y \
     libx11-xcb1 \
     libxcomposite1 \
