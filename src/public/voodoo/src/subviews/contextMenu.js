@@ -26,7 +26,6 @@ export const makeContextMenuBondTasks = state => [
         DEBUG.debugContextMenu && console.log(`Removing context menu global click closer`);
         self.removeEventListener('click', remove, {capture: true});
         state.contextMenuGlobalClick = false;
-        console.log(state);
         if ( state._top.viewState.contextMenu ) {
           DEBUG.debugContextMenu && console.log(`Closing context menu because it is open`);
           state._top.viewState.contextMenu.close(state, false);
