@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+USER="${USER:-$(whoami)}"
+
 if [[ "$(uname -s)" == "Darwin" ]]; then
   if [[ "$(arch)" != "i386" ]]; then
     >&2 echo "Please run this script under Rosetta (i386 architecture)."
