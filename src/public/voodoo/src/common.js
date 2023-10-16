@@ -32,7 +32,7 @@ export const DEBUG = Object.freeze({
   debugIntentPrompts: false,
   allowContextMenuOnContextMenu: true,
   debugTabs: false,
-  debugContextMenu: false,
+  debugContextMenu: true,
   debugQdEs: false, /* QdEs == QueuedEvents */
   debugConnect: false,
   debugBetterModals: false,
@@ -141,6 +141,7 @@ export const CONFIG = Object.freeze({
   /* making this true means we don't check audio start on every tap or click BUT
    it does seem to interfere with audio restarting in the case it stops
   */
+  centerContextMenuOnMobile: true,
   get darkMode() {
     if ( OPTIONS.useSystemColorScheme ) {
       const isDark = globalThis.window.top.matchMedia("screen and (prefers-color-scheme: dark)");

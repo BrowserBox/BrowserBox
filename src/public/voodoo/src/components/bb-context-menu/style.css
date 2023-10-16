@@ -1,2 +1,12 @@
 @import url("themes/blank.css");
 
+@media screen and (max-width: 600px) {
+  :host(bb-context-menu) {
+    border-radius: 1em !important;
+    box-shadow: 3px 3px 3px gray !important;
+  }
+  aside {
+    font-size: larger;    
+  }
+}
+
