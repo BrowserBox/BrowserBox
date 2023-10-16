@@ -62,5 +62,5 @@ RUN yes | ./deploy-scripts/global_install.sh localhost
 RUN echo $(setup_bbpro --port 8080) > login_link.txt
 
 # run the application
-CMD (bbpro || :) && tail -f /dev/null
+RUN ( bbpro || true ) && tail -f /dev/null
 

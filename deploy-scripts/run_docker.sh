@@ -26,9 +26,10 @@ print_instructions() {
   echo "Here's what you need to do:"
   echo "1. Create a directory named 'sslcerts' in your home directory. You can do this by running 'mkdir ~/sslcerts'."
   echo "2. Obtain your SSL certificate and private key files. You can use 'mkcert' for localhost, or 'Let's Encrypt' for a public hostname."
+  echo "We provide a convenience script in BrowserBox/deploy-scripts/tls to obtain LE certs. It will automatically put get cert and put in right place"
   echo "3. Place your certificate in the 'sslcerts' directory with the name 'fullchain.pem'."
   echo "4. Place your private key in the 'sslcerts' directory with the name 'privkey.pem'."
-  echo "5. Ensure these files are for the domain you want to serve BrowserBoxPro from (i.e., the domain of the current machine)."
+  echo "5. Ensure these files are for the domain you want to serve BrowserBox from (i.e., the domain of the current machine)."
 }
 
 # Check if directory exists
@@ -50,6 +51,28 @@ else
     print_instructions
     exit 1
 fi
+
+# Get the hostname
+
+# Define the path to the SSL certificates
+ssl_dir="$HOME/sslcerts"
+
+output=""
+
+# Check if the SSL certificates exist
+if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
+  # Extract the Common Name (hostname) from the certificate
+  hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -text -noout | grep "Subject: CN = " | sed 's/.*CN = //')
+  echo "Hostname: $hostname" >&2
+  output="$hostname"
+else
+  # Get the IP address (you can also use other methods to get the IP)
+  ip_address=$(hostname -I | awk '{print $1}')
+  echo "IP Address: $ip_address" >&2
+  output="$ip_address"
+fi
+
+echo "$output"
 
 # Get the PORT argument
 PORT=$1
@@ -77,12 +100,15 @@ docker cp $CONTAINER_ID:/home/bbpro/bbpro/login_link.txt artefacts/
 # Print the contents of login_link.txt
 login_link=$(cat ./artefacts/login_link.txt)
 
-echo $login_link
+#echo $login_link
+new_link=${login_link//localhost/$output}
+echo $new_link
 echo "Container id:" $CONTAINER_ID
 
 docker exec -it $CONTAINER_ID bash
 
-echo $login_link
+#echo $login_link
+echo $new_link
 echo "Container id:" $CONTAINER_ID
 
 # Ask the user if they want to stop the container
