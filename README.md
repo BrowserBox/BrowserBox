@@ -93,7 +93,7 @@ Deploying BrowserBoxPro within a Zero Trust framework is straightforward:
 
 ```console
 PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/dosyago/BrowserBoxPro/7461dd1edb5e9e5b4f44da8961228e66cdcdf276/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/dosyago/BrowserBoxPro/b38ea2e9bd87e935d66ca6a36b7b2e40e55ab1ce/deploy-scripts/run_docker.sh) $PORT
 ```
 
 Upon successful deployment, BrowserBoxPro will be operational, reinforcing your Zero Trust strategy. Access the browser using the provided login link: `https://<your-host>:$PORT/login?token=<random token>`.
