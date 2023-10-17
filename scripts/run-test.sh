@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 source ~/.nvm/nvm.sh
 nvm install stable
 if ! command -v pm2; then
