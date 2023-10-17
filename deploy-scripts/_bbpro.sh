@@ -1,6 +1,9 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 set -x
+
+. ~/.nvm/nvm.sh
+nvm install stable
 
 USER="${USER:-$(whoami)}"
 
