@@ -8,7 +8,7 @@ ssl_dir="$HOME/sslcerts"
 # Check if the SSL certificates exist
 if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
   # Extract the Common Name (hostname) from the certificate
-  hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g')
+  hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
   echo "Hostname: $hostname" >&2
   output="$hostname"
 else
@@ -19,6 +19,8 @@ else
 fi
 
 provider="https://${output}:${DOCS_PORT}/very-secure-manifest-convert"
+
+echo "provider: $provider" >&2
 
 username=$(whoami)
 filename=$2
