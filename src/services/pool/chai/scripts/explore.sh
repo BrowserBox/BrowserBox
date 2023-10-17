@@ -2,7 +2,7 @@
 
 #set -euo pipefail
 
-set -x
+#set -x
 
 IFS=$'\n\t'
 

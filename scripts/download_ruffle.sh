@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#set -x
+##set -x
 
 # source: @digitalcircuit's comment on GitHub (ruffle#3053):
 # https://github.com/ruffle-rs/ruffle/issues/3053#issuecomment-772997511

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+#set -x
 
 source ~/.nvm/nvm.sh
 #nvm install stable

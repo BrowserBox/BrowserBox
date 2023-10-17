@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+#set -x
 
 unset npm_config_prefix
 
