@@ -4,6 +4,8 @@
 # current base
 FROM ubuntu:jammy
 
+SHELL ["/bin/bash", "-c"]
+
 LABEL org.opencontainers.image.source https://github.com/BrowserBox/BrowserBox
 
 ARG IS_DOCKER_BUILD=true
@@ -71,7 +73,5 @@ RUN yes | ./deploy-scripts/global_install.sh localhost
 RUN echo $(setup_bbpro --port 8080) > login_link.txt
 
 # run the application
-RUN bbpro 
-
-CMD tail -f /dev/null
+CMD ( bbpro || true ) && tail -f /dev/null
 
