@@ -1,6 +1,10 @@
 #!/bin/bash
 
-which pm2 || npm i -g pm2@latest
+source ~/.nvm/nvm.sh
+nvm install stable
+if ! command -v pm2; then
+  npm i -g pm2@latest
+fi
 
 envFile=""
 CONFIG_DIR=""

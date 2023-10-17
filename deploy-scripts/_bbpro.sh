@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 USER="${USER:-$(whoami)}"
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
