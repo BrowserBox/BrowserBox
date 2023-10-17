@@ -87,7 +87,7 @@ else
 fi
 
 # Run the container with the appropriate port mappings and capture the container ID
-CONTAINER_ID=$(docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:8080 -p $(($PORT-2)):8078 -p $(($PORT-1)):8079 -p $(($PORT+1)):8081 -p $(($PORT+2)):8082 --cap-add=SYS_ADMIN ghcr.io/browserbox/browserbox:v5)
+CONTAINER_ID=$(docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:8080 -p $(($PORT-2)):8078 -p $(($PORT-1)):8079 -p $(($PORT+1)):8081 -p $(($PORT+2)):8082 --cap-add=SYS_ADMIN ghcr.io/browserbox/browserbox:v5 bash -c '(bbpro || true ) && tail -f /dev/null')
 
 # Wait for a few seconds to make sure the container is up and running
 echo "Waiting a few seconds for container to start..."
@@ -122,4 +122,3 @@ if [[ $user_response == "no" || $user_response == "n" ]]; then
 else
   echo "Container not stopped."
 fi
-
