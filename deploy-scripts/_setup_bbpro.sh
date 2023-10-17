@@ -121,7 +121,7 @@ echo -n "Creating test.env...">&2
 
 sslcerts="$HOME/sslcerts"
 cert_file="${sslcerts}/fullchain.pem"
-sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g')
+sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
 HOST=$(echo $sans | awk '{print $1}')
 
 cat > $CONFIG_DIR/test.env <<EOF

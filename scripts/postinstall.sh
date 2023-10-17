@@ -1,8 +1,14 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 #set -x
 
 unset npm_config_prefix
+
+if ! command -v pm2; then
+  source ~/.nvm/nvm.sh;
+  nvm install stable
+  npm i -g pm2@latest
+fi
 
 # flush any partial
 read -p "Enter to continue" -r
@@ -93,7 +99,7 @@ npm audit fix
 echo
 read_input "Do you want to skip the secure document viewer? (lengthy install because of all the fonts and TeX related packages) y/n "
 
-if [[ "$IS_DOCKER_BUILD" = "true" ]] || [[ "$REPLY" =~ ^[Yy]$ ]]; then
+if [[ "$IS_DOCKER_BUILD" != "true" ]] && [[ "$REPLY" =~ ^[Yy]$ ]]; then
   echo "Skipping doc viewer install"
 else
   echo "Installing OS dependencies for secure document viewer..."

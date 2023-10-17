@@ -62,7 +62,7 @@ output=""
 # Check if the SSL certificates exist
 if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
   # Extract the Common Name (hostname) from the certificate
-  hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -text -noout | grep "Subject: CN = " | sed 's/.*CN = //')
+  hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
   echo "Hostname: $hostname" >&2
   output="$hostname"
 else
@@ -87,11 +87,11 @@ else
 fi
 
 # Run the container with the appropriate port mappings and capture the container ID
-CONTAINER_ID=$(docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:8080 -p $(($PORT-2)):8078 -p $(($PORT-1)):8079 -p $(($PORT+1)):8081 -p $(($PORT+2)):8082 --cap-add=SYS_ADMIN ghcr.io/browserbox/browserbox:v5)
+CONTAINER_ID=$(docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:8080 -p $(($PORT-2)):8078 -p $(($PORT-1)):8079 -p $(($PORT+1)):8081 -p $(($PORT+2)):8082 --cap-add=SYS_ADMIN ghcr.io/browserbox/browserbox bash -c 'echo $(setup_bbpro --port 8080) > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
 
 # Wait for a few seconds to make sure the container is up and running
 echo "Waiting a few seconds for container to start..."
-sleep 3
+sleep 7
 
 # Copy login_link.txt from the container to the current directory
 mkdir -p artefacts
@@ -122,4 +122,3 @@ if [[ $user_response == "no" || $user_response == "n" ]]; then
 else
   echo "Container not stopped."
 fi
-

@@ -4,14 +4,22 @@
 # current base
 FROM ubuntu:jammy
 
+SHELL ["/bin/bash", "-c"]
+
 LABEL org.opencontainers.image.source https://github.com/BrowserBox/BrowserBox
 
 ARG IS_DOCKER_BUILD=true
 ENV IS_DOCKER_BUILD=$IS_DOCKER_BUILD
 ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/New_York
 
 # install dependencies
 RUN apt-get update
+RUN apt-get update && \
+    apt-get install -y tzdata && \
+    ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && \
+    dpkg-reconfigure --frontend noninteractive tzdata && \
+    apt-get clean
 RUN apt-get install -y \
     libx11-xcb1 \
     libxcomposite1 \
@@ -31,15 +39,18 @@ RUN apt-get install -y \
     jq \
     vim 
 
-# install Node.js v19
-RUN curl -fsSL https://deb.nodesource.com/setup_19.x | bash -
-RUN apt-get install -y nodejs
 
 # Create a non-root user 'bbpro' and give it sudo permissions
 RUN useradd -ms /bin/bash bbpro && \
     apt-get update && \
     apt-get install -y sudo && \
     echo "bbpro ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# install Node.js
+# RUN apt-get install -y nodejs
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | sudo -E bash -
+RUN . ~/.nvm/nvm.sh; nvm install stable
 
 # Define HOME and WORKDIR
 ENV HOME=/home/bbpro
@@ -58,9 +69,6 @@ USER bbpro
 # install application
 RUN yes | ./deploy-scripts/global_install.sh localhost
 
-# extract the login link using setup_bbpro and save it to a file
-RUN echo $(setup_bbpro --port 8080) > login_link.txt
-
 # run the application
-RUN ( bbpro || true ) && tail -f /dev/null
+CMD bash -c 'echo $(setup_bbpro --port 8080) > login_link.txt; ( bbpro || true ) && tail -f /dev/null'
 
