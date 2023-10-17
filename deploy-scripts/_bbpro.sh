@@ -3,7 +3,7 @@
 set -x
 
 . ~/.nvm/nvm.sh
-nvm install stable
+#nvm install stable
 
 USER="${USER:-$(whoami)}"
 
