@@ -30,7 +30,7 @@ while [ $step -lt $maxwaitsteps ]; do
 done
 
 file=$(LC_ALL=C head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13 ; echo)
-curl -F secret="$secret" -F pdf=@"$filename" $provider > $file
+curl -k -F secret="$secret" -F pdf=@"$filename" $provider > $file
 stdbuf --output=0 echo $(cat $file)
 rm $file
 #curl -s -F pdf=@"$filename" $provider
