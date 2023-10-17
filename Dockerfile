@@ -37,9 +37,11 @@ RUN apt-get install -y \
     jq \
     vim 
 
-# install Node.js v19
-RUN curl -fsSL https://deb.nodesource.com/setup_19.x | bash -
-RUN apt-get install -y nodejs
+# install Node.js
+# RUN apt-get install -y nodejs
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | sudo -E bash -
+RUN source ~/.nvm/nvm.sh; nvm install stable
 
 # Create a non-root user 'bbpro' and give it sudo permissions
 RUN useradd -ms /bin/bash bbpro && \
