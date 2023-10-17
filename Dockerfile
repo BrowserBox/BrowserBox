@@ -69,9 +69,6 @@ USER bbpro
 # install application
 RUN yes | ./deploy-scripts/global_install.sh localhost
 
-# extract the login link using setup_bbpro and save it to a file
-RUN echo $(setup_bbpro --port 8080) > login_link.txt
-
 # run the application
-CMD bash -c '( bbpro || true ) && tail -f /dev/null'
+CMD bash -c 'echo $(setup_bbpro --port 8080) > login_link.txt; ( bbpro || true ) && tail -f /dev/null'
 
