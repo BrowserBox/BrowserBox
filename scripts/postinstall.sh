@@ -1,8 +1,14 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-#set -x
+set -x
 
 unset npm_config_prefix
+
+if ! command -v pm2; then
+  source ~/.nvm/nvm.sh;
+  nvm install stable
+  npm i -g pm2@latest
+fi
 
 # flush any partial
 read -p "Enter to continue" -r
