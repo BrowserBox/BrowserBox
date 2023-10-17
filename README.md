@@ -7,7 +7,7 @@
 2. Once your certificates are set up, run the following (this will pull the correct images and start them in the right way by mapping your $HOME/sslcerts directory and the right ports):
 ```console
 PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/cbd6a1ecf8306c3c607a43a7dec9ade59e3727bb/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/e851e12f95830cd535dc34b4cc9ef4eeb94e4ad7/deploy-scripts/run_docker.sh) $PORT
 ```
 
 That's it! The script will emit a link that you can send open in any web browser. 
