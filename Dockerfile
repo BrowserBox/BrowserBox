@@ -37,17 +37,18 @@ RUN apt-get install -y \
     jq \
     vim 
 
-# install Node.js
-# RUN apt-get install -y nodejs
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | sudo -E bash -
-RUN source ~/.nvm/nvm.sh; nvm install stable
 
 # Create a non-root user 'bbpro' and give it sudo permissions
 RUN useradd -ms /bin/bash bbpro && \
     apt-get update && \
     apt-get install -y sudo && \
     echo "bbpro ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# install Node.js
+# RUN apt-get install -y nodejs
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | sudo -E bash -
+RUN . ~/.nvm/nvm.sh; nvm install stable
 
 # Define HOME and WORKDIR
 ENV HOME=/home/bbpro

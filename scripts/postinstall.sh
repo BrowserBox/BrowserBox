@@ -99,7 +99,7 @@ npm audit fix
 echo
 read_input "Do you want to skip the secure document viewer? (lengthy install because of all the fonts and TeX related packages) y/n "
 
-if [[ "$IS_DOCKER_BUILD" = "true" ]] || [[ "$REPLY" =~ ^[Yy]$ ]]; then
+if [[ "$IS_DOCKER_BUILD" != "true" ]] && [[ "$REPLY" =~ ^[Yy]$ ]]; then
   echo "Skipping doc viewer install"
 else
   echo "Installing OS dependencies for secure document viewer..."
