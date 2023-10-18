@@ -28,6 +28,8 @@ convert_to_pdf() {
   shift
   local options=("$@")
 
+  echo "Using pandoc options: ${options[@]}" >&2
+
   pandoc "${options[@]}" "$input_file" -o "$output_file"
 }
 
@@ -106,7 +108,8 @@ convert_to_pdf_if_needed() {
 
       # Check if xelatex is installed and set Pandoc options accordingly
       if command -v xelatex > /dev/null 2>&1; then
-        pandoc_options="--pdf-engine=xelatex"
+        echo "Using xelatex" >&2
+        pandoc_options="--pdf-engine=xelatex --pdf-engine-opt=-no-shell-escape"
       else
         echo "xelatex is not installed, proceeding without it." >&2
         pandoc_options=""
@@ -132,7 +135,8 @@ convert_to_pdf_if_needed() {
 
       # Check if xelatex is installed and set Pandoc options accordingly
       if command -v xelatex > /dev/null 2>&1; then
-        pandoc_options="--pdf-engine=xelatex"
+        echo "Using xelatex" >&2
+        pandoc_options="--pdf-engine=xelatex --pdf-engine-opt=-no-shell-escape"
       else
         echo "xelatex is not installed, proceeding without it." >&2
         pandoc_options=""
