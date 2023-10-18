@@ -103,7 +103,7 @@ sleep 7
 
 # Copy login_link.txt from the container to the current directory
 mkdir -p artefacts
-docker cp $CONTAINER_ID:/home/bbpro/bbpro/login_link.txt artefacts/
+sudo docker cp $CONTAINER_ID:/home/bbpro/bbpro/login_link.txt artefacts/
 
 # Print the contents of login_link.txt
 login_link=$(cat ./artefacts/login_link.txt)
@@ -113,7 +113,7 @@ new_link=${login_link//localhost/$output}
 echo $new_link
 echo "Container id:" $CONTAINER_ID
 
-docker exec -it $CONTAINER_ID bash
+sudo docker exec -it $CONTAINER_ID bash
 
 #echo $login_link
 echo $new_link
@@ -125,7 +125,7 @@ read -p "Do you want to keep running the container? (no/n to stop, any other key
 if [[ $user_response == "no" || $user_response == "n" ]]; then
   # Stop the container with time=1
   echo "Stopping container..."
-  docker stop --time 1 "$CONTAINER_ID"
+  sudo docker stop --time 1 "$CONTAINER_ID"
   echo "Container stopped."
 else
   echo "Container not stopped."
