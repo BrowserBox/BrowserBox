@@ -1,6 +1,14 @@
 #!/bin/bash
 
-# Do not remove this file
+# Check for root or sudo capabilities
+if [[ $EUID -eq 0 ]]; then
+  echo "Running as root."
+elif sudo -n true 2>/dev/null; then
+  echo "Has sudo capabilities."
+else
+  echo "This script requires root privileges or sudo capabilities." 1>&2
+  exit 1
+fi
 
 # User agreement prompt
 echo "By using this container, you agree to the terms and license at the following locations:"
@@ -87,7 +95,7 @@ else
 fi
 
 # Run the container with the appropriate port mappings and capture the container ID
-CONTAINER_ID=$(docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:8080 -p $(($PORT-2)):8078 -p $(($PORT-1)):8079 -p $(($PORT+1)):8081 -p $(($PORT+2)):8082 --cap-add=SYS_ADMIN ghcr.io/browserbox/browserbox bash -c 'echo $(setup_bbpro --port 8080) > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
+CONTAINER_ID=$(sudo docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:8080 -p $(($PORT-2)):8078 -p $(($PORT-1)):8079 -p $(($PORT+1)):8081 -p $(($PORT+2)):8082 --cap-add=SYS_ADMIN ghcr.io/browserbox/browserbox:v5 bash -c 'echo $(setup_bbpro --port 8080) > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
 
 # Wait for a few seconds to make sure the container is up and running
 echo "Waiting a few seconds for container to start..."

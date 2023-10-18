@@ -7,7 +7,7 @@
 2. Once your certificates are set up, run the following (this will pull the correct images and start them in the right way by mapping your $HOME/sslcerts directory and the right ports):
 ```console
 PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/e851e12f95830cd535dc34b4cc9ef4eeb94e4ad7/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/b3da3f5321321766b438ca5b1bd06da3fb58dbd7/deploy-scripts/run_docker.sh) $PORT
 ```
 
 That's it! The script will emit a link that you can send open in any web browser. 
@@ -109,7 +109,7 @@ Deploying BrowserBoxPro within a Zero Trust framework is straightforward:
 
 ```console
 PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/e851e12f95830cd535dc34b4cc9ef4eeb94e4ad7/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/b3da3f5321321766b438ca5b1bd06da3fb58dbd7/deploy-scripts/run_docker.sh) $PORT
 ```
 
 Upon successful deployment, BrowserBoxPro will be operational, reinforcing your Zero Trust strategy. Access the browser using the provided login link: `https://<your-host>:$PORT/login?token=<random token>`.
