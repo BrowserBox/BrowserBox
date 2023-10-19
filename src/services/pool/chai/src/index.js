@@ -281,10 +281,7 @@
         return existingViewUrl;
       } else {
         newFiles += 1;
-        State.Files.set(hash, viewUrl);
-        if ( newFiles % WAIT_NEW_FILES_BEFORE_DISK_SYNC == 0 ) {
-          syncHashes(State.Files, State.Links);
-        }
+        setViewUrl = true;
       }
 
     // job start
@@ -343,10 +340,12 @@
         });
         subshell.on('error', (err) => {
           console.warn(err);
+          setViewUrl = false;
           killit();
         });
         subshell.on('close', (code) => {
           if ( code != 0 ) {
+            setViewUrl = false;
             console.warn(`${SCRIPT} exited with code ${code}`);
             logErr(`${SCRIPT} exited with code ${code}`);
             fs.writeFileSync(noConvertFilePath, 'noConvert');
@@ -381,11 +380,18 @@
           res.type('text/plain');
           res.end(sanitizeUrl(viewUrl));
         }
+        if ( setViewUrl ) {
+          State.Files.set(hash, viewUrl);
+          if ( newFiles % WAIT_NEW_FILES_BEFORE_DISK_SYNC == 0 ) {
+            syncHashes(State.Files, State.Links);
+          }
+        }
         return sanitizeUrl(viewUrl);
     } catch(e) {
       console.warn(e);
       throw new Error(`Error during convert: ${e}`);
     }
+
   }
 
   app.use((err, req, res, next) => {
