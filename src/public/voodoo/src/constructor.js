@@ -1129,14 +1129,14 @@
           queue.checkResults();
         }
 
-        /*function doShot() {
+        function doShot() {
           setTimeout(() => {
             queue.send({
               type: "doShot",
               synthetic: true
             });
           }, SHORT_DELAY);
-        }*/
+        }
 
         function runUpdateTabs() {
           DEBUG.debugTabs && console.log(`Run update tabs called`);
@@ -1218,7 +1218,7 @@
         }
 
         function clearViewport() {
-	  return;
+          //return;
           if ( state.useViewFrame ) {
             try {
               state.viewState.viewFrameEl.contentDocument.body.innerHTML = ``;
@@ -1749,12 +1749,14 @@
             // and save this current tab's frame for when we swtich back to it
             const lastFrame = state.viewState.canvasEl?.toDataURL();
             LastFrames.set(state.activeTarget, lastFrame);
-            clearViewport();
             const nextFrame = LastFrames.get(targetId);
             if ( nextFrame ) {
               const imageEl = queue.getImageEl();
               imageEl.oldSrc = imageEl.src;
               imageEl.src = nextFrame;
+            } else {
+              clearViewport();
+              doShot(); 
             }
 
             queue.send({
