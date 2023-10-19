@@ -18,6 +18,8 @@ export const LOG_FILE = {
 export const DEBUG = Object.freeze({
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
   localTestRTT: process.platform == "darwin" && true,
+  debugCast: true,
+  showTargetSessionMap: true,
   debugFileDownload: false,
   debugFileUpload: false,
   useNewAsgardHeadless: false,
@@ -31,7 +33,6 @@ export const DEBUG = Object.freeze({
   showErrorSources: false,
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,
-  debugCast: true,
   coords: false,
   scrollbars: true,
   get ensureUptimeBeforeRestart() {
@@ -139,6 +140,8 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  alwaysRestartCast: true,
+  blockAllCaptureScreenshots: false,
   setAlternateBackgroundColor: false,
   screencastOnly: true,
   baseDir: path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro'),

@@ -1622,13 +1622,18 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       sessionId = command.params.sessionId || that.sessionId;
     } else if ( command.name == "Target.activateTarget" ) {
       that.sessionId = sessions.get(targetId); 
-      if ( ! that.sessionId ) { 
-        console.warn(`!! No sessionId at Target.activateTarget`);
-      }
       that.targetId = targetId; 
       sessionId = that.sessionId;
+
+      if ( ! that.sessionId ) { 
+        console.error(`!! No sessionId at Target.activateTarget`);
+      } else if ( DEBUG.showTargetSessionMap ) {
+        console.log({targetId, sessionId});
+      }
+
       const worlds = connection.worlds.get(sessionId);
-      DEBUG.val && console.log('worlds at session send', worlds);
+      DEBUG.showWorlds && console.log('worlds at session send', worlds);
+
       if ( ! worlds ) {
         DEBUG.val && console.log("reloading because no worlds we can access yet");
         await send("Page.reload", {}, sessionId);
@@ -1925,7 +1930,9 @@ async function makeZombie({port:port = 9222} = {}) {
     }
     if ( message.method == "Page.captureScreenshot" ) {
       DEBUG.showBlockedCaptureScreenshots && console.info("Blocking page capture screenshot");
-      return Promise.resolve(true);
+      if ( CONFIG.blockAllCaptureScreenshots ) {
+        return Promise.resolve(true);
+      }
     }
     try {
       socket.send(JSON.stringify(message));

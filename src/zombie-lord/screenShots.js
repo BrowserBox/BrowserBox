@@ -124,6 +124,10 @@ export function makeCamera(connection) {
         restart = true;
       }
     }
+    if ( CONFIG.alwaysRestartCast ) {
+      restart = true;
+      DEBUG.logRestartCast && console.log(`ALWAYS restarting cast.`);
+    }
     if ( restart ) {
       DEBUG.logRestartCast && console.log(`Restarting cast`);
       await connection.sessionSend({
