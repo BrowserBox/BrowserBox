@@ -235,6 +235,7 @@
           },
 
           clearViewport,
+          doShot,
 
           addListener(name, func) {
             let funcList = listeners.get(name); 
@@ -314,7 +315,6 @@
           },
 
           latestRequestId: 0
-
         });
 
       // variables
@@ -1744,6 +1744,7 @@
             }
 
             const {targetId} = tab;
+            let needsShot = false;
 
             // grab the last cached frame of the new active, 
             // and save this current tab's frame for when we swtich back to it
@@ -1756,7 +1757,7 @@
               imageEl.src = nextFrame;
             } else {
               clearViewport();
-              doShot(); 
+              needsShot = true;
             }
 
             queue.send({
@@ -1781,6 +1782,10 @@
             state.active = activeTab();
 
             setState('bbpro', state);
+
+            if ( needsShot ) {
+              DEBUG.debugActivate && console.warn(`Needs shot`, state.active);
+            }
 
             const now = new Date;
             const delta = now - lastTime;
