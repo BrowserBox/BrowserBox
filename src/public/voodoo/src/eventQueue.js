@@ -1080,6 +1080,14 @@
         }
       });
     }
+    sendAck() {
+      messageId++;
+      this.state.screenshotReceived = {
+        frameId: this.state.latestFrameReceived, 
+        castSessionId: this.state.latestCastSession
+      };
+      this[$].senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: this[$].screenshotReceived});
+    }
     send( event ) {
       if ( event.immediate ) {
         event.immediate = undefined;

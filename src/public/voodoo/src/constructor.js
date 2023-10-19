@@ -368,6 +368,8 @@
       DEBUG.val && console.log({queue});
       if ( DEBUG.fullScope ) {
         globalThis.queue = queue;
+      } else {
+        globalThis.queue = queue;
       }
 
       // plugins 

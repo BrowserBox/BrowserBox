@@ -407,7 +407,7 @@ const controller_api = {
           break;
           case "Connection.doShot": {
             DEBUG.val && console.log("Calling do shot");
-            connection.doShot();
+            connection.doShot({forceFrame:true});
           }
           break;
           case "Connection.getFavicon": {
