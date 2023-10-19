@@ -1643,18 +1643,20 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.activeTarget = targetId;
 
       if ( CONFIG.screencastOnly ) {
-        const castInfo = casts.get(targetId);
+        let castInfo = casts.get(targetId);
         if ( !castInfo || ! castInfo.castSessionId ) {
           updateCast(sessionId, {started:true}, 'start');
           await send("Page.startScreencast", SCREEN_OPTS, sessionId);
+          castInfo = casts.get(targetId);
         } else {
           if ( ! sessionId ) {
-            console.warn(`3 No sessionId for screencast ack`);
+            console.error(`3 No sessionId for screencast ack`);
           }
-          await send("Page.screencastFrameAck", {
-            sessionId: castInfo.castSessionId
-          }, sessionId);
         }
+        // ALWAYS send an ack on activate
+        await send("Page.screencastFrameAck", {
+          sessionId: castInfo.castSessionId
+        }, sessionId);
       }
     }
     if ( command.name.startsWith("Target") || ! sessionId ) {
@@ -1930,8 +1932,11 @@ async function makeZombie({port:port = 9222} = {}) {
     }
     if ( message.method == "Page.captureScreenshot" ) {
       DEBUG.showBlockedCaptureScreenshots && console.info("Blocking page capture screenshot");
-      if ( CONFIG.blockAllCaptureScreenshots ) {
+      if ( CONFIG.blockAllCaptureScreenshots && message.blockExempt != true ) {
         return Promise.resolve(true);
+      }
+      if ( message.blockExempt ) {
+        DEBUG.debugCast && console.log(`NOT blocking this screenshot as it is blockExempt`);
       }
     }
     try {

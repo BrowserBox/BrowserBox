@@ -243,6 +243,9 @@ export function makeCamera(connection) {
     let response;
     //const ShotCommand = ((connection.isSafari || connection.isFirefox) ? SAFARI_SHOT : WEBP_SHOT).command;
     const ShotCommand = SAFARI_SHOT.command;
+    if ( opts.blockExempt ) {
+      ShotCommand.blockExempt = true;
+    }
     DEBUG.shotDebug && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
     response = await Promise.race([
       connection.sessionSend(ShotCommand),
@@ -365,13 +368,13 @@ export function makeCamera(connection) {
       }
     }
 
-    queueTailShot();
+    if ( CONFIG.tailShots ) queueTailShot();
 
     DEBUG.shotDebug && console.log({framesWaiting:connection.frameBuffer.length, now: Date.now()});
   }
 
   async function doShot(opts = {}) {
-    if ( !(opts.ignoreHash || opts.forceFrame) && (nextShot || shooting) ) {
+    if ( !(opts.ignoreHash || opts.forceFrame || opts.blockExempt) && (nextShot || shooting) ) {
       DEBUG.shotDebug && DEBUG.val > DEBUG.low && console.log(`Dropping shot`, opts.ignoreHash, opts.forceFrame, nextShot, shooting);
       return;
     }

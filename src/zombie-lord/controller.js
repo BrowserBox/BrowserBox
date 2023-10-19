@@ -577,7 +577,7 @@ const controller_api = {
       }
       if ( command.requiresShot || command.forceFrame ) {
         DEBUG.frameDebug && console.log({forceFrame:{command}});
-        await connection.doShot({ignoreHash: command.ignoreHash || command.forceFrame});
+        await connection.doShot({ignoreHash: command.ignoreHash || command.forceFrame, blockExempt: command.name == "Target.activateTarget"});
       }
       if ( command.requiresTailShot ) {
         connection.queueTailShot({ignoreHash: command.ignoreHash});
