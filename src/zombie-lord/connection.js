@@ -1698,6 +1698,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           sessionId: castInfo.castSessionId
         }, sessionId);
       }
+      if ( DEBUG.dontSendActivate ) {
+        return {};
+      }
     }
     if ( command.name.startsWith("Target") || ! sessionId ) {
       if ( command.name.startsWith("Page") || command.name.startsWith("Runtime") || command.name.startsWith("Emulation") ) {

@@ -18,7 +18,8 @@ export const DEVICE_FEATURES = {
   mobile: COMMON_FORMAT.mobile,
 };
 export const SCREEN_OPTS = {
-  format: 'jpeg',
+  //format: 'jpeg',
+  format: 'png',
   quality: JPEG_QUAL,
   maxWidth: COMMON_FORMAT.width,
   maxHeight: COMMON_FORMAT.height,
@@ -58,7 +59,8 @@ export const RACE_SAMPLE = 0.74;
     format: "png"
   };
   const SAFARI_FORMAT = {
-    format: "jpeg",
+    //format: "jpeg",
+    format: "png",
     quality: JPEG_QUAL 
   };
   const SAFARI_SHOT = {
