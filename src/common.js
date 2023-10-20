@@ -140,6 +140,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  SHORT_TIMEOUT: 30,
   tailShots: false,
   alwaysRestartCast: false,
   blockAllCaptureScreenshots: true,
