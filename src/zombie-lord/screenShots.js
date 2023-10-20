@@ -112,6 +112,7 @@ export function makeCamera(connection) {
   };
 
   async function restartCast() {
+    return;
     let restart = true;
     if ( lastScreenOpts ) {
       restart = false;
@@ -172,14 +173,7 @@ export function makeCamera(connection) {
     if ( DEBUG.debugAdaptiveImagery ) {
       console.log(`Shrinking JPEG quality to ${SAFARI_SHOT.command.params.quality}`);
     }
-    await connection.sessionSend({
-      name: "Page.stopScreencast",
-      params: {}
-    });
-    await connection.sessionSend({
-      name: "Page.startScreencast",
-      params: SCREEN_OPTS
-    });
+    restartCast();
   }
 
   async function growImagery() {
@@ -203,14 +197,7 @@ export function makeCamera(connection) {
     if ( DEBUG.debugAdaptiveImagery ) {
       console.log(`Growing JPEG quality to ${SAFARI_SHOT.command.params.quality}`);
     }
-    await connection.sessionSend({
-      name: "Page.stopScreencast",
-      params: {}
-    });
-    await connection.sessionSend({
-      name: "Page.startScreencast",
-      params: SCREEN_OPTS
-    });
+    restartCast();
   }
 
   function queueTailShot() {
