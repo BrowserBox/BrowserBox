@@ -206,15 +206,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Browser.setWindowBounds",
       "Page.startScreencast",
       "Page.stopScreencast",
-<<<<<<< Updated upstream
-      "Page.captureScreenshot",
+      //"Page.captureScreenshot",
       "Target.activateTarget",
       "Connection.activateTarget",
-=======
-      "Page.captureScreenshot"
-      "Page.screenshotAck",
-      "Page.screecastFrame",
->>>>>>> Stashed changes
+      "Page.screencastFrameAck",
+      "Page.screencastFrame",
     ] : []),
   ]);
 
@@ -509,6 +505,16 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   );
   
   function sendFrameToClient({message, sessionId}) {
+    if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
+      const {params: {data, metadata}, method, sessionId} = message;
+      console.info(`Logging`, {method, params: {metadata, data:'img data...'}, sessionId});
+      setTimeout(() => {
+        fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
+          timestamp: (new Date).toISOString(),
+          message,
+        },null,2)+"\n");
+      }, 5);
+    }
     const {sessionId: castSessionId, data, metadata} = message.params;
     const {timestamp} = metadata;
     const {frameId} = updateCast(sessionId, {castSessionId}, 'frame');
@@ -1490,7 +1496,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         const thisChange = JSON.stringify(command.params,null,2);
         const changes = lastWChange !== thisChange;
-        DEBUG.showViewportChanges && console.log({lastWChange, thisChange});
+        DEBUG.showViewportChanges && console.log(`lastWChange: ${lastWChange}`);
+        DEBUG.showViewportChanges && console.log(`thisChange: ${thisChange}`);
         if ( changes ) {
           lastWChange = thisChange;
           setTimeout(() => connection.restartCast(), 0);

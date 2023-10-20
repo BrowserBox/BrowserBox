@@ -89,6 +89,12 @@ const controller_api = {
       }
       const {ack} = channels;
 
+      if ( receivedFrameId.requiresCastId ) {
+        receivedFrameId.requiresCastId = undefined;
+        // TODO: update this to ensure correct cast session for target
+        receivedFrameId.castSessionId = connection.latestCastId;
+      }
+
       try {
         ack.received = receivedFrameId;
         ack.count = ACK_COUNT;
@@ -161,7 +167,7 @@ const controller_api = {
           await sleep(10);
 
           while ( ack.count && DEBUG.bufSend && ack.bufSend && ack.buffer.length ) {
-            DEBUG.acks && console.log(`Got ack from ${connectionId} and have buffered unsent frame. Will send now.`);
+            (DEBUG.debugCast || DEBUG.acks) && console.log(`Got ack from ${connectionId} and have buffered unsent frame. Will send now.`);
 
             const {peer, socket, fastest} = channels;
             const channel = DEBUG.chooseFastest && fastest ? fastest : 
