@@ -1534,6 +1534,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( command.params.deviceScaleFactor ) {
           DEVICE_FEATURES.deviceScaleFactor = command.params.deviceScaleFactor;
         } 
+        if ( command.params.screenOrientation ) {
+          DEVICE_FEATURES.screenOrientation = command.params.screenOrientation;
+        }
         if ( command.params.mobile ) {
           DEVICE_FEATURES.mobile = command.params.mobile;
         } 
@@ -1543,7 +1546,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.showTodos && console.log(`Make V Changes sessionId linked (issue #351)`);
         const thisChange = JSON.stringify(command.params,null,2)+(command.params.sessionId||command.sessionId||that.sessionId);
         const changes = lastVChange !== thisChange;
-        DEBUG.showViewportChanges && console.log({lastVChange, thisChange});
+        DEBUG.showViewportChanges && console.log(`lastVChange: ${lastVChange}`);
+        DEBUG.showViewportChanges && console.log(`thisChange: ${thisChange}`);
         if ( changes ) {
           lastVChange = thisChange;
           setTimeout(() => connection.restartCast(), 0);
