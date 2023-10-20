@@ -41,7 +41,7 @@ export const DEBUG = Object.freeze({
   debugFavicon: false,
   debugElementInfo: false,
   coords: false,
-  debugBitmapCoordConversion: false,
+  debugBitmapCoordConversion: true,
   debugEventChains: false,
   debugEventQueue: false,
   HFUNCTION: false,

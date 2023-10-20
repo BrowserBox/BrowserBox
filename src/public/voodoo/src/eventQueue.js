@@ -1145,7 +1145,8 @@
             state.viewState.scaleX = scaleX;
             state.viewState.scaleY = scaleY;
             const scale = Math.min(scaleX,scaleY);
-            state.viewState.scale = scale;
+            //state.viewState.scale = scale;
+            state.viewState.scale = 1;
 
             /*
             console.log({scale});

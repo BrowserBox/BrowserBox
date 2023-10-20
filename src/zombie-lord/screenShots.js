@@ -1,6 +1,7 @@
 //import {CWebp} from 'cwebp';
 import {DEBUG, sleep, CONFIG} from '../common.js';
 
+const FORMAT = "jpeg"; // "png"
 const MIN_JPG_QUAL = 5;
 const MAX_JPG_QUAL = 80;
 const MAX_NTH_FRAME = 8;
@@ -18,8 +19,7 @@ export const DEVICE_FEATURES = {
   mobile: COMMON_FORMAT.mobile,
 };
 export const SCREEN_OPTS = {
-  //format: 'jpeg',
-  format: 'png',
+  format: FORMAT,
   quality: JPEG_QUAL,
   maxWidth: COMMON_FORMAT.width,
   maxHeight: COMMON_FORMAT.height,
@@ -56,11 +56,10 @@ export const RACE_SAMPLE = 0.74;
 
 // image formats for capture depend on what the client can accept
   const WEBP_FORMAT = {
-    format: "png"
+    format: FORMAT,
   };
   const SAFARI_FORMAT = {
-    //format: "jpeg",
-    format: "png",
+    format: FORMAT,
     quality: JPEG_QUAL 
   };
   const SAFARI_SHOT = {
@@ -137,14 +136,15 @@ export function makeCamera(connection) {
         name: "Page.stopScreencast",
         params: {}
       });
-      await connection.sessionSend({
-        name: "Page.startScreencast",
-        params: SCREEN_OPTS
-      });
       const {
+        format,
         quality, everyNthFrame,
         maxWidth, maxHeight
       } = SCREEN_OPTS;
+      await connection.sessionSend({
+        name: "Page.startScreencast",
+        params: {format, quality, everyNthFrame, maxWidth, maxHeight}
+      });
       lastScreenOpts = {
         quality, everyNthFrame,
         maxWidth, maxHeight,

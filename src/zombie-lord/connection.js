@@ -206,6 +206,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Browser.setWindowBounds",
       "Page.startScreencast",
       "Page.stopScreencast",
+      "Input.dispatchMouseEvent",
+      "Input.emulateTouchFromMouseEvent",
       //"Page.captureScreenshot",
       "Runtime.evaluate",
       "Target.activateTarget",
@@ -1227,7 +1229,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( !castInfo || ! castInfo.castSessionId ) {
           updateCast(sessionId, {started:true}, 'start');
           DEBUG.shotDebug && console.log("SCREENCAST", SCREEN_OPTS);
-          await send("Page.startScreencast", SCREEN_OPTS, sessionId);
+          const {
+            format,
+            quality, everyNthFrame,
+            maxWidth, maxHeight
+          } = SCREEN_OPTS;
+          await send("Page.startScreencast", {
+            format, quality, everyNthFrame, maxWidth, maxHeight,
+          }, sessionId);
         } else {
           if ( ! sessionId ) {
             console.warn(`2 No sessionId for screencast ack`);
@@ -1666,7 +1675,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
          
         if ( !castInfo || ! castInfo.castSessionId ) {
           updateCast(sessionId, {started:true}, 'start');
-          await send("Page.startScreencast", SCREEN_OPTS, sessionId);
+          const {
+            format,
+            quality, everyNthFrame,
+            maxWidth, maxHeight
+          } = SCREEN_OPTS;
+          await send("Page.startScreencast", {
+            format, quality, everyNthFrame, maxWidth, maxHeight,
+          }, sessionId);
           castInfo = casts.get(targetId);
         } else {
           if ( ! sessionId ) {
