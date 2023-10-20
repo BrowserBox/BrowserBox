@@ -206,9 +206,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Browser.setWindowBounds",
       "Page.startScreencast",
       "Page.stopScreencast",
+<<<<<<< Updated upstream
       "Page.captureScreenshot",
       "Target.activateTarget",
       "Connection.activateTarget",
+=======
+      "Page.captureScreenshot"
+      "Page.screenshotAck",
+      "Page.screecastFrame",
+>>>>>>> Stashed changes
     ] : []),
   ]);
 
