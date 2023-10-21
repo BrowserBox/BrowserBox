@@ -1341,11 +1341,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         console.warn("Demo block disabled.");
         //await blockSites(connection.zombie, sessionId);
       }
-      await send(
-        "LayerTree.enable", 
-        {},
-        sessionId
-      );
+      if ( CONFIG.useLayerTreeDomain ) {
+        await send(
+          "LayerTree.enable", 
+          {},
+          sessionId
+        );
+      }
       if ( waitingForDebugger ) {
         await send("Runtime.runIfWaitingForDebugger", {}, sessionId);
       }

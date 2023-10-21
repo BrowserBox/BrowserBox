@@ -145,6 +145,7 @@ export const FLASH_FORMATS = new Set([
 ]);
 export const CONFIG = Object.freeze({
   SHORT_TIMEOUT: 30,
+  useLayerTreeDomain: false,
   tailShots: false,
   alwaysRestartCast: false,
   blockAllCaptureScreenshots: true,
