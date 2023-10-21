@@ -17,7 +17,7 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   noCastMaxDims: false,
-  allowAckBlastOnStart: false,
+  allowAckBlastOnStart: true,
   dontSendActivate: false,
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
   localTestRTT: process.platform == "darwin" && true,

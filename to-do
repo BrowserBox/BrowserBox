@@ -1,0 +1,3 @@
+- inspect node process and put breakpoint on navigate to see what's occuring
+- minimal repro example of slow Page.navigate (subsequent events)
+
