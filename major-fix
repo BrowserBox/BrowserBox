@@ -1,0 +1,2 @@
+- sending acks until we get frame on activate destroys most of the delay
+
