@@ -143,7 +143,14 @@ export function makeCamera(connection) {
       } = SCREEN_OPTS;
       await connection.sessionSend({
         name: "Page.startScreencast",
-        params: {format, quality, everyNthFrame, maxWidth, maxHeight}
+        params: {
+          format, quality, everyNthFrame, 
+          ...(DEBUG.noCastMaxDims ? 
+            {}
+            : 
+            {maxWidth, maxHeight}
+          ),
+        }
       });
       lastScreenOpts = {
         quality, everyNthFrame,

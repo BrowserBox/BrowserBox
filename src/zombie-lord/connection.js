@@ -1243,7 +1243,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             maxWidth, maxHeight
           } = SCREEN_OPTS;
           await send("Page.startScreencast", {
-            format, quality, everyNthFrame, maxWidth, maxHeight,
+            format, quality, everyNthFrame, 
+            ...(DEBUG.noCastMaxDims ? 
+              {}
+              : 
+              {maxWidth, maxHeight}
+            ),
           }, sessionId);
           castStarting.delete(targetId);
         } else {
@@ -1696,7 +1701,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             maxWidth, maxHeight
           } = SCREEN_OPTS;
           await send("Page.startScreencast", {
-            format, quality, everyNthFrame, maxWidth, maxHeight,
+            format, quality, everyNthFrame, 
+            ...(DEBUG.noCastMaxDims ? 
+              {}
+              : 
+              {maxWidth, maxHeight}
+            ),
           }, sessionId);
           castInfo = casts.get(targetId);
           castStarting.delete(targetId);
