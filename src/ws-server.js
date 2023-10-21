@@ -577,12 +577,14 @@
                   (DEBUG.debugCast || DEBUG.acks) && console.log('client sent screenshot no frame received code');
                   screenshotAck = { frameId: 1, requiresCastId: true }
                 } 
-                zl.act.screenshotAck(
-                  connectionId, 
-                  zombie_port, 
-                  screenshotAck, 
-                  {Data, Frames, Meta, State, receivesFrames: false, messageId}
-                );
+                if ( !screenshotAck.requiresCastId || DEBUG.allowAckBlastOnStart ) {
+                  zl.act.screenshotAck(
+                    connectionId, 
+                    zombie_port, 
+                    screenshotAck, 
+                    {Data, Frames, Meta, State, receivesFrames: false, messageId}
+                  );
+                }
               }
               if ( zombie ) {
                 const {events} = zombie;

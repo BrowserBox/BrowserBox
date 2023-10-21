@@ -126,7 +126,7 @@ const launcher_api = {
     if ( chrome_started ) {
       DEBUG.val && console.log(`Ignoring launch request as chrome already started.`);
     }
-    const DEFAULT_FLAGS = process.platform == 'darwin' ? [
+    const DEFAULT_FLAGS = process.platform == 'xdarwin' ? [
       ... PUPPETEER_STABILITY_FLAGS,
       ... PUPPETEER_RESOURCE_SAVING_FLAGS,
     ] : [

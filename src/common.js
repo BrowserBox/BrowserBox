@@ -16,6 +16,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  allowAckBlastOnStart: false,
   dontSendActivate: false,
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
   localTestRTT: process.platform == "darwin" && true,
@@ -50,7 +51,7 @@ export const DEBUG = Object.freeze({
   debugNoticeSignal: false,
   throttleIntentPrompts: false,
   showMousePosition: true,
-  debugConnect: false,
+  debugConnect: true,
   debugCommandResponses: false,
   dataDebug: false,
   debugHistory: false,
@@ -114,7 +115,7 @@ export const DEBUG = Object.freeze({
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
     whether created with createTarget or simply spawning, 
     we must use legacy shots */
-  commands: false,
+  commands: true,
   get dontShowFetchDomain() {
     return this.commands && true;
   },
@@ -128,10 +129,11 @@ export const DEBUG = Object.freeze({
 });
 
 export const ALLOWED_3RD_PARTY_EMBEDDERS = [
-  "https://dev.dosyago.com",
-  "https://freebrowsers.dosyago.com",
-  "https://sboard.co",
-  "https://*.sboard.co",
+  "https://users.dosyago.com",
+  "https://cloudtabs.net",
+  "https://*.cloudtabs.net",
+  "https://browserbox.pro",
+  "https://*.browserbox.pro",
   "https://localhost:*",
 ];
 export const FLASH_FORMATS = new Set([

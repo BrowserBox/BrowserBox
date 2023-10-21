@@ -132,6 +132,7 @@ const targets = new Set();
 //const waiting = new Map();
 const sessions = new Map();
 const casts = new Map();
+const castStarting = new Map();
 const loadings = new Map();
 const tabs = new Map();
 const favicons = new Map();
@@ -1225,8 +1226,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       await send("Page.enable", {}, sessionId);
 
       if ( CONFIG.screencastOnly ) {
-        const castInfo = casts.get(targetId);
+        let castInfo;
+        if ( castStarting.get(targetId) ) {
+          await untilTrue(() => casts.get(targetId)?.started, 200, 500);
+          castInfo = casts.get(targetId);
+        } else {
+          castInfo = casts.get(targetId);
+        }
         if ( !castInfo || ! castInfo.castSessionId ) {
+          castStarting.set(targetId, true);
           updateCast(sessionId, {started:true}, 'start');
           DEBUG.shotDebug && console.log("SCREENCAST", SCREEN_OPTS);
           const {
@@ -1237,6 +1245,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           await send("Page.startScreencast", {
             format, quality, everyNthFrame, maxWidth, maxHeight,
           }, sessionId);
+          castStarting.delete(targetId);
         } else {
           if ( ! sessionId ) {
             console.warn(`2 No sessionId for screencast ack`);
@@ -1671,7 +1680,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.activeTarget = targetId;
 
       if ( CONFIG.screencastOnly ) {
-        let castInfo = casts.get(targetId);
+        let castInfo;
+        if ( castStarting.get(targetId) ) {
+          await untilTrue(() => casts.get(targetId)?.started, 200, 500);
+          castInfo = casts.get(targetId);
+        } else {
+          castInfo = casts.get(targetId);
+        }
          
         if ( !castInfo || ! castInfo.castSessionId ) {
           updateCast(sessionId, {started:true}, 'start');
@@ -1684,32 +1699,35 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             format, quality, everyNthFrame, maxWidth, maxHeight,
           }, sessionId);
           castInfo = casts.get(targetId);
+          castStarting.delete(targetId);
         } else {
           if ( ! sessionId ) {
             console.error(`3 No sessionId for screencast ack`);
           }
         }
 
-        const [contextId] = [...worlds];
-        send("Runtime.evaluate", {
-          expression: `document.querySelector('my-cursor').style.borderRadius = 0;`,
-          includeCommandLineAPI: false,
-          userGesture: true,
-          contextId,
-          timeout: CONFIG.SHORT_TIMEOUT
-        }, sessionId);
+        if ( worlds ) {
+          const [contextId] = [...worlds];
+          send("Runtime.evaluate", {
+            expression: `document.querySelector('my-cursor').style.borderRadius = 0;`,
+            includeCommandLineAPI: false,
+            userGesture: true,
+            contextId,
+            timeout: CONFIG.SHORT_TIMEOUT
+          }, sessionId);
+          send("Page.screencastFrameAck", {
+            sessionId: castInfo.castSessionId
+          }, sessionId);
+          await sleep(200);
+          send("Runtime.evaluate", {
+            expression: `document.querySelector('my-cursor').style.borderRadius = '20px';`,
+            includeCommandLineAPI: false,
+            userGesture: true,
+            contextId,
+            timeout: CONFIG.SHORT_TIMEOUT
+          }, sessionId);
+        }
         // ALWAYS send an ack on activate
-        send("Page.screencastFrameAck", {
-          sessionId: castInfo.castSessionId
-        }, sessionId);
-        await sleep(200);
-        send("Runtime.evaluate", {
-          expression: `document.querySelector('my-cursor').style.borderRadius = '20px';`,
-          includeCommandLineAPI: false,
-          userGesture: true,
-          contextId,
-          timeout: CONFIG.SHORT_TIMEOUT
-        }, sessionId);
         send("Page.screencastFrameAck", {
           sessionId: castInfo.castSessionId
         }, sessionId);
