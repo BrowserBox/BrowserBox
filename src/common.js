@@ -24,6 +24,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  adBlock: false,
   noCastMaxDims: false,
   allowAckBlastOnStart: true,
   dontSendActivate: false,
@@ -34,7 +35,6 @@ export const DEBUG = Object.freeze({
   debugFileDownload: false,
   debugFileUpload: false,
   useNewAsgardHeadless: false,
-  adBlock: true,
   showFlags: false,
   allowExternalChrome: true,
   logFileCommands: true,
