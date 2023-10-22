@@ -27,6 +27,7 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   adBlock: true,
+  debugInterception: false,
   noCastMaxDims: false,
   allowAckBlastOnStart: true,
   dontSendActivate: false,
