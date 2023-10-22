@@ -1,11 +1,3 @@
-slow macos first page.navigate on first tab
-- inspect node process and put breakpoint on navigate to see what's occuring
-  - nothing appears to be happening that's unusual
-- add event log to inspect
-  - seems delay comes after requestPaused. This makes sense. Perhaps it is first load of our requestPaused handling code? I could try a preload somehow, this could be a NodeJS compile cache issue.
-  - found! problem confirmed to be with adblock code, but only on first request. My guess is compilation of the regexp.
-- minimal repro example of slow Page.navigate (subsequent events)
-
 switch tab cast delay
 - check to see if we are getting and dropping frames from the old tab
 - check to see if we are continuing to ack frames from the old tab (or send other messages to old tab after activation)
