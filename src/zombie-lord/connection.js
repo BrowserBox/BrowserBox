@@ -7,6 +7,7 @@ import path from 'path';
 import {URL} from 'url';
 import {unescape} from 'querystring';
 import {
+  EXPEDITE,
   LOG_FILE,
   SignalNotices,
   NoticeFile,
@@ -1761,7 +1762,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }
       } else {
         DEBUG.val > DEBUG.med && console.log({zombieNoSessionCommand:command});
-        return await send(command.name, command.params); 
+        if ( EXPEDITE.has(command.name) ) {
+          console.log("EXPEDITE", command.name);
+          return send(command.name, command.params);
+        } else {
+          return await send(command.name, command.params); 
+        }
       }
     } else {
       if ( command.name !== "Page.screencastFrameAck" ) {
@@ -2045,7 +2051,7 @@ async function makeZombie({port:port = 9222} = {}) {
     const {id, result, error} = message;
 
     if ( error ) {
-      if ( DEBUG.showErrorSources ) {
+      if ( DEBUG.errors || DEBUG.showErrorSources ) {
         console.warn("\nBrowser backend Error message", message);
         const key = `${sessionId||ROOT_SESSION}:${id}`;
         const originalCommand = Resolvers?.[key]?._originalCommand;
@@ -2070,6 +2076,14 @@ async function makeZombie({port:port = 9222} = {}) {
         }
       }
     } else if ( method ) {
+      if ( DEBUG.events ) {
+        const img = message.params.data;
+        if ( method == "Page.screencastFrame" ) {
+          message.params.data = "... img data ...";
+        }
+        console.log(`Event: ${method}\n`, JSON.stringify(message, null, 2));
+        message.params.data = img;
+      }
       const listeners = Handlers[method];
       if ( Array.isArray(listeners) ) {
         for( const func of listeners ) {

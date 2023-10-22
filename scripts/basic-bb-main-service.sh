@@ -10,4 +10,4 @@ let "chrome_port = $app_port - 3000"
 cookie_value=$COOKIE_VALUE
 login_token=$LOGIN_TOKEN
 
-"$node" src/server.js $chrome_port $app_port $cookie_value $username $login_token
+"$node" $NODE_ARGS src/server.js $chrome_port $app_port $cookie_value $username $login_token

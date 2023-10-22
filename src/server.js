@@ -2,18 +2,10 @@
   import express from 'express';
   import zl from './zombie-lord/api.js';
   import {MAX_FRAMES} from './zombie-lord/screenShots.js';
-  import {COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
+  import {EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
   import {start_ws_server} from './ws-server.js';
 
   const BEGIN_AGAIN = 500;
-  const EXPEDITE = new Set([
-    "Page.navigate",
-    "Page.navigateToHistoryEntry",
-    "Runtime.evaluate",
-    "Emulation.setUserAgentOverride",
-    "Input.dispatchMouseEvent",
-  ]);
-
   import {
     chrome_port, app_port, cookie, 
     /*username,*/ token, start_mode

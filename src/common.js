@@ -10,6 +10,14 @@ export * from './args.js';
 
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 
+export const EXPEDITE = new Set([
+  "Page.navigate",
+  "Page.navigateToHistoryEntry",
+  "Runtime.evaluate",
+  "Emulation.setUserAgentOverride",
+  "Input.dispatchMouseEvent",
+]);
+
 export const LOG_FILE = {
   Commands: new Set(),
   FileHandle: null
@@ -116,6 +124,7 @@ export const DEBUG = Object.freeze({
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
     whether created with createTarget or simply spawning, 
     we must use legacy shots */
+  events: true,
   commands: true,
   get dontShowFetchDomain() {
     return this.commands && true;
