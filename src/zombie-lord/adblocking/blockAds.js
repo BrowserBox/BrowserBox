@@ -1,6 +1,6 @@
 import {URL} from 'url';
 import BLOCKING from './blocking.js';
-import {CONFIG} from '../../common.js';
+import {sleep, CONFIG} from '../../common.js';
 import {BLOCKED_BODY, BLOCKED_CODE, BLOCKED_HEADERS} from './blockedResponse.js';
 
 const {FORBIDDEN} = CONFIG;
@@ -11,6 +11,7 @@ export async function blockAds(/*zombie, sessionId*/) {
 }
 
 export async function onInterceptRequest({sessionId, message}, zombie) {
+  console.log(`Request paused`);
   try {
     if ( message.method == "Fetch.requestPaused" ) {
       const {request:{url}, requestId, resourceType, responseErrorReason} = message.params;
@@ -19,7 +20,9 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       const uri = new URL(url);
       const {host,protocol} = uri;
       let blocked = false;
+      let ri = 0;
       for( const regex of BLOCKING ) {
+        console.log(`Testing regex`, ++ri);
         if ( regex.test(host) ) {
           try {
             if ( isNavigationRequest ) {
@@ -46,8 +49,11 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
             console.warn("Issue with intercepting request", e);
           }
         }
+        console.log(`Regex ${ri}: ${regex.test(host)}`);
       }
       blocked = blocked || FORBIDDEN.has(protocol);
+      console.log(`Is blocked ${blocked}`);
+      //await sleep(3000);
       if ( blocked ) return;
       // responseErrorReason never appears to be set, regardless of interception stage 
       //console.log({responseErrorReason,requestId, url, resourceType});
@@ -56,6 +62,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       // and if we have a failed error then we fail the request
       if ( !isFont && responseErrorReason ) {
         if ( isNavigationRequest ) {
+          console.log(`Fulfill request`);
           await zombie.send("Fetch.fulfillRequest", {
               requestId,
               responseHeaders: BLOCKED_HEADERS,
@@ -64,6 +71,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
             },
             sessionId
           );
+          console.log(`Fulfill request complete`);
         } else {
           await zombie.send("Fetch.failRequest", {
               requestId,
@@ -74,11 +82,13 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
         }
       } else {
         try {
+          console.log(`Continue request`);
           await zombie.send("Fetch.continueRequest", {
               requestId,
             },
             sessionId
           );
+          console.log(`Continue request complete`);
         } catch(e) {
           console.warn("Issue with continuing request", e, message);
         }
