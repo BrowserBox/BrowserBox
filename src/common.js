@@ -4,6 +4,8 @@ import path from 'path';
 import {execSync} from 'child_process';
 import {fileURLToPath} from 'url';
 
+import isDocker from 'is-docker';
+
 import {FRAME_CONTROL} from './public/voodoo/src/common.js';
 import {APP_ROOT as app_root} from './root.js';
 export * from './args.js';
@@ -24,7 +26,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  adBlock: false,
+  adBlock: true,
   noCastMaxDims: false,
   allowAckBlastOnStart: true,
   dontSendActivate: false,
@@ -174,6 +176,20 @@ export const CONFIG = Object.freeze({
     'vbscript:'
   ])
 });
+export const localBlockList = process.platform == 'darwin' 
+  || 
+  process.env.GITHUB_ACTIONS 
+  || 
+  isDocker() ? [] : [
+    /^localhost/,
+    /^::1/,
+    /^127.0/,
+    /^192.168./,
+    /^169.254./,
+    /^10./,
+    /^172.(1[6-9]|2[0-9]|3[01])./,
+];
+
 const Timers = new Set(); 
 
 if ( ! DEBUG.useWebRTC ) {
