@@ -1785,6 +1785,18 @@
 
             setState('bbpro', state);
 
+            if ( CONFIG.doAckBlast ) {
+              clearInterval(state.currentAckBlastInterval);
+              const startTime = Date.now();
+              state.currentAckBlastInterval = setInterval(() => {
+                if ( (Date.now() - startTime) > CONFIG.ACK_BLAST_LENGTH ) {
+                  clearInterval(state.currentAckBlastInterval);
+                } else {
+                  queue.sendAck();
+                }
+              }, 200);
+            }
+
             if ( needsShot ) {
               DEBUG.debugActivate && console.warn(`Needs shot`, state.active);
             }

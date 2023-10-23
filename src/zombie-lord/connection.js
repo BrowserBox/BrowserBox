@@ -1453,17 +1453,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     /* here connection is a connection to a browser backend */
     const that = this || connection;
     let sessionId;
+    let isActivate = false;
     const {connectionId} = command;
     command.connectionId = null;
-    const {targetId} = command.params;
-    // FIXME: I want THIS kind of debug. Cool.
-    //DEBUG.has("commands") && console.log(JSON.stringify(command));
-    // NOTE POSSIBLE BUG: MOVED this ABOVE below block
-    // BEFORE IT WAS AFTER Network.set....ide"
-      if ( !! targetId && !targets.has(targetId) ) {
-        DEBUG.val && console.log("Blocking as target does not exist.", targetId);
-        return {};
-      }
+    let {targetId} = command.params;
+    if ( !! targetId && !targets.has(targetId) ) {
+      DEBUG.val && console.log("Blocking as target does not exist.", targetId);
+      return {};
+    }
     switch( command.name ) {
       case "Page.navigate": {
         let {url} = command.params;
@@ -1630,6 +1627,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         const tSessionId = sessions.get(targetId);
         if ( sessions.get(that.sessionId) == targetId ) {
           that.sessionId = null;
+          that.currentCast = null;
         }
         if ( that.activeTarget === targetId ) {
           that.activeTarget = null;
@@ -1666,6 +1664,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       sessionId = command.params.sessionId || that.sessionId;
     } 
     if ( command.name == "Target.activateTarget" ) {
+      isActivate = true;
       that.sessionId = sessions.get(targetId); 
       that.targetId = targetId; 
       sessionId = that.sessionId;
@@ -1717,6 +1716,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           if ( ! sessionId ) {
             console.error(`3 No sessionId for screencast ack`);
           }
+          that.currentCast = castInfo;
         }
 
         if ( worlds ) {
@@ -1762,12 +1762,31 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }
       } else {
         DEBUG.val > DEBUG.med && console.log({zombieNoSessionCommand:command});
-        if ( EXPEDITE.has(command.name) ) {
-          console.log("EXPEDITE", command.name);
-          return send(command.name, command.params);
-        } else {
-          return await send(command.name, command.params); 
+        const resp = await send(command.name, command.params); 
+
+        if ( isActivate && CONFIG.doAckBlast ) {
+          let castInfo = casts.get(targetId);
+          castInfo.sessionHasReceivedFrame = false;
+          let ac = 0;
+
+          DEBUG.debugAckBlast && console.log(`Starting ack blast on activate`);
+
+          untilTrue(async () => {
+            if ( ! castInfo.sessionHasReceivedFrame ) {
+              ac++;
+              await send("Page.screencastFrameAck", {
+                sessionId: castInfo?.castSessionId || 1
+              }, sessionId);
+              DEBUG.debugAckBlast && console.log(`Sent ack #${ac} for targetId ${targetId}`);
+            } else {
+              DEBUG.debugAckBlast && console.log(`Stopping ack blast after ${ac} acks because we have frame`);
+            }
+            DEBUG.debugAckBlast && console.log({castInfo});
+            return castInfo.sessionHasReceivedFrame;
+          }, 100, 200); // or until 20 seconds
         }
+
+        return resp;
       }
     } else {
       if ( command.name !== "Page.screencastFrameAck" ) {

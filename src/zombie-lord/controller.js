@@ -133,7 +133,12 @@ const controller_api = {
               DEBUG.channelDebug && console.log((new Error).stack);
             }
           })
-          //DEBUG.debugCast && console.log("Sent ack");
+          const castInfo = connection.currentCast;
+          if ( castInfo ) {
+            DEBUG.debugAckBlast && console.log(`Setting session has received frame`);
+            castInfo.sessionHasReceivedFrame = true; 
+          }
+          DEBUG.debugCast && console.log("Sent ack");
         }
 
         if ( DEBUG.adaptiveImagery ) {
