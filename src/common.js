@@ -31,7 +31,7 @@ export const DEBUG = Object.freeze({
   adBlock: true,
   debugInterception: false,
   noCastMaxDims: false,
-  debugAckBlast: true,
+  debugAckBlast: false,
   allowAckBlastOnStart: true,
   dontSendActivate: false,
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
@@ -96,7 +96,7 @@ export const DEBUG = Object.freeze({
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
   mode: 'prod', // prod or dev (whether to bundle frontend code or not)
-  showOrigin: true,
+  showOrigin: false,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
   loadSPLFreshEachLogin: false,
@@ -157,11 +157,12 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  castSyncsWithActive: true,
   doAckBlast: false,
   SHORT_TIMEOUT: 30,
   useLayerTreeDomain: false,
   tailShots: false,
-  alwaysRestartCast: false,
+  alwaysRestartCast: true,
   blockAllCaptureScreenshots: true,
   setAlternateBackgroundColor: false,
   screencastOnly: true,
