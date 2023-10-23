@@ -309,12 +309,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   });
 
   {
-    const {doShot, queueTailShot, shrinkImagery, growImagery, restartCast} = makeCamera(connection);
+    const {doShot, queueTailShot, shrinkImagery, growImagery, restartCast, stopCast, startCast} = makeCamera(connection);
     connection.doShot = doShot;
     connection.queueTailShot = queueTailShot;
     connection.shrinkImagery = shrinkImagery;
     connection.growImagery = growImagery;
     connection.restartCast = restartCast;
+    connection.stopCast = stopCast;
+    connection.startCast = startCast;
   }
 
   if ( DEBUG.useFlashEmu ) {
@@ -1658,97 +1660,101 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           connection.forceMeta({vm:{paused:false}});
         };
       }; break;
+      case "Target.activateTarget": {
+        if ( CONFIG.screencastOnly && CONFIG.castSyncsWithActive ) {
+          await connection.stopCast();
+        }
+        isActivate = true;
+        that.sessionId = sessions.get(targetId); 
+        that.targetId = targetId; 
+        sessionId = that.sessionId;
+
+        if ( ! that.sessionId ) { 
+          console.error(`!! No sessionId at Target.activateTarget`);
+        } else if ( DEBUG.showTargetSessionMap ) {
+          console.log({targetId, sessionId});
+        }
+
+        const worlds = connection.worlds.get(sessionId);
+        DEBUG.showWorlds && console.log('worlds at session send', worlds);
+
+        if ( ! worlds ) {
+          DEBUG.val && console.log("reloading because no worlds we can access yet");
+          await send("Page.reload", {}, sessionId);
+        } else {
+          DEBUG.val && console.log("Tab is loaded",sessionId);
+        }
+        connection.activeTarget = targetId;
+
+        if ( CONFIG.screencastOnly ) {
+          let castInfo;
+          if ( castStarting.get(targetId) ) {
+            await untilTrue(() => casts.get(targetId)?.started, 200, 500);
+            castInfo = casts.get(targetId);
+          } else {
+            castInfo = casts.get(targetId);
+          }
+           
+          if ( !castInfo || ! castInfo.castSessionId || CONFIG.castSyncsWithActive ) {
+            updateCast(sessionId, {started:true}, 'start');
+            const {
+              format,
+              quality, everyNthFrame,
+              maxWidth, maxHeight
+            } = SCREEN_OPTS;
+            await send("Page.startScreencast", {
+              format, quality, everyNthFrame, 
+              ...(DEBUG.noCastMaxDims ? 
+                {}
+                : 
+                {maxWidth, maxHeight}
+              ),
+            }, sessionId);
+            castInfo = casts.get(targetId);
+            castStarting.delete(targetId);
+          } else {
+            if ( ! sessionId ) {
+              console.error(`3 No sessionId for screencast ack`);
+            }
+            that.currentCast = castInfo;
+          }
+
+          if ( worlds ) {
+            const [contextId] = [...worlds];
+            send("Runtime.evaluate", {
+              expression: `document.querySelector('my-cursor').style.borderRadius = 0;`,
+              includeCommandLineAPI: false,
+              userGesture: true,
+              contextId,
+              timeout: CONFIG.SHORT_TIMEOUT
+            }, sessionId);
+            send("Page.screencastFrameAck", {
+              sessionId: castInfo.castSessionId
+            }, sessionId);
+            await sleep(200);
+            send("Runtime.evaluate", {
+              expression: `document.querySelector('my-cursor').style.borderRadius = '20px';`,
+              includeCommandLineAPI: false,
+              userGesture: true,
+              contextId,
+              timeout: CONFIG.SHORT_TIMEOUT
+            }, sessionId);
+          }
+          // ALWAYS send an ack on activate
+          await sleep(50);
+          send("Page.screencastFrameAck", {
+            sessionId: castInfo.castSessionId
+          }, sessionId);
+        }
+        if ( DEBUG.dontSendActivate ) {
+          return {};
+        }
+      }
     }
 
     if ( !command.name.startsWith("Target") && !(command.name.startsWith("Browser") && command.name != "Browser.getWindowForTarget") ) {
       sessionId = command.params.sessionId || that.sessionId;
     } 
-    if ( command.name == "Target.activateTarget" ) {
-      isActivate = true;
-      that.sessionId = sessions.get(targetId); 
-      that.targetId = targetId; 
-      sessionId = that.sessionId;
-
-      if ( ! that.sessionId ) { 
-        console.error(`!! No sessionId at Target.activateTarget`);
-      } else if ( DEBUG.showTargetSessionMap ) {
-        console.log({targetId, sessionId});
-      }
-
-      const worlds = connection.worlds.get(sessionId);
-      DEBUG.showWorlds && console.log('worlds at session send', worlds);
-
-      if ( ! worlds ) {
-        DEBUG.val && console.log("reloading because no worlds we can access yet");
-        await send("Page.reload", {}, sessionId);
-      } else {
-        DEBUG.val && console.log("Tab is loaded",sessionId);
-      }
-      connection.activeTarget = targetId;
-
-      if ( CONFIG.screencastOnly ) {
-        let castInfo;
-        if ( castStarting.get(targetId) ) {
-          await untilTrue(() => casts.get(targetId)?.started, 200, 500);
-          castInfo = casts.get(targetId);
-        } else {
-          castInfo = casts.get(targetId);
-        }
-         
-        if ( !castInfo || ! castInfo.castSessionId ) {
-          updateCast(sessionId, {started:true}, 'start');
-          const {
-            format,
-            quality, everyNthFrame,
-            maxWidth, maxHeight
-          } = SCREEN_OPTS;
-          await send("Page.startScreencast", {
-            format, quality, everyNthFrame, 
-            ...(DEBUG.noCastMaxDims ? 
-              {}
-              : 
-              {maxWidth, maxHeight}
-            ),
-          }, sessionId);
-          castInfo = casts.get(targetId);
-          castStarting.delete(targetId);
-        } else {
-          if ( ! sessionId ) {
-            console.error(`3 No sessionId for screencast ack`);
-          }
-          that.currentCast = castInfo;
-        }
-
-        if ( worlds ) {
-          const [contextId] = [...worlds];
-          send("Runtime.evaluate", {
-            expression: `document.querySelector('my-cursor').style.borderRadius = 0;`,
-            includeCommandLineAPI: false,
-            userGesture: true,
-            contextId,
-            timeout: CONFIG.SHORT_TIMEOUT
-          }, sessionId);
-          send("Page.screencastFrameAck", {
-            sessionId: castInfo.castSessionId
-          }, sessionId);
-          await sleep(200);
-          send("Runtime.evaluate", {
-            expression: `document.querySelector('my-cursor').style.borderRadius = '20px';`,
-            includeCommandLineAPI: false,
-            userGesture: true,
-            contextId,
-            timeout: CONFIG.SHORT_TIMEOUT
-          }, sessionId);
-        }
-        // ALWAYS send an ack on activate
-        send("Page.screencastFrameAck", {
-          sessionId: castInfo.castSessionId
-        }, sessionId);
-      }
-      if ( DEBUG.dontSendActivate ) {
-        return {};
-      }
-    }
     if ( command.name.startsWith("Target") || ! sessionId ) {
       if ( command.name.startsWith("Page") || command.name.startsWith("Runtime") || command.name.startsWith("Emulation") ) {
         sessionId = that.sessionId;

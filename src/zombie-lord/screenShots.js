@@ -109,11 +109,44 @@ export function makeCamera(connection) {
     doShot, 
     shrinkImagery, 
     growImagery, 
-    restartCast
+    restartCast,
+    stopCast,
+    startCast,
   };
 
+  async function stopCast() {
+    DEBUG.logRestartCast && console.log(`Stopping cast`);
+    await connection.sessionSend({
+      name: "Page.stopScreencast",
+      params: {}
+    });
+  }
+
+  async function startCast() {
+    DEBUG.logRestartCast && console.log(`Starting cast`);
+    const {
+      format,
+      quality, everyNthFrame,
+      maxWidth, maxHeight
+    } = SCREEN_OPTS;
+    await connection.sessionSend({
+      name: "Page.startScreencast",
+      params: {
+        format, quality, everyNthFrame, 
+        ...(DEBUG.noCastMaxDims ? 
+          {}
+          : 
+          {maxWidth, maxHeight}
+        ),
+      }
+    });
+    lastScreenOpts = {
+      quality, everyNthFrame,
+      maxWidth, maxHeight,
+    };
+  }
+
   async function restartCast() {
-    return;
     let restart = true;
     if ( lastScreenOpts ) {
       restart = false;
