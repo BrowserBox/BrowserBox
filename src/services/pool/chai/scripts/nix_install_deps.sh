@@ -10,3 +10,5 @@ sudo apt -y install libreoffice
 sudo apt -y install pandoc
 sudo apt -y install coreutils
 sudo apt -y install texlive-fonts-extra 
+sudo apt-get -y install librsvg2-bin
+

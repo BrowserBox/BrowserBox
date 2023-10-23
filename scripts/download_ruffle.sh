@@ -11,6 +11,7 @@ echo "Latest selfhosted.zip is at: $LATEST_SELFHOSTED_URL"
 #
 # For example…
 wget "$LATEST_SELFHOSTED_URL" --output-document="selfhosted.zip"
-unzip -o -d "public/assets/ruffle" selfhosted.zip
+mkdir -p src/public/assets/ruffle
+unzip -o -d "src/public/assets/ruffle" selfhosted.zip
 rm selfhosted.zip
 echo "Updated Ruffle in 'ruffle' directory"

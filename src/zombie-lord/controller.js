@@ -89,6 +89,12 @@ const controller_api = {
       }
       const {ack} = channels;
 
+      if ( receivedFrameId.requiresCastId ) {
+        receivedFrameId.requiresCastId = undefined;
+        // TODO: update this to ensure correct cast session for target
+        receivedFrameId.castSessionId = connection.latestCastId;
+      }
+
       try {
         ack.received = receivedFrameId;
         ack.count = ACK_COUNT;
@@ -127,7 +133,12 @@ const controller_api = {
               DEBUG.channelDebug && console.log((new Error).stack);
             }
           })
-          //DEBUG.debugCast && console.log("Sent ack");
+          const castInfo = connection.currentCast;
+          if ( castInfo ) {
+            DEBUG.debugAckBlast && console.log(`Setting session has received frame`);
+            castInfo.sessionHasReceivedFrame = true; 
+          }
+          DEBUG.debugCast && console.log("Sent ack");
         }
 
         if ( DEBUG.adaptiveImagery ) {
@@ -161,7 +172,7 @@ const controller_api = {
           await sleep(10);
 
           while ( ack.count && DEBUG.bufSend && ack.bufSend && ack.buffer.length ) {
-            DEBUG.acks && console.log(`Got ack from ${connectionId} and have buffered unsent frame. Will send now.`);
+            (DEBUG.debugCast || DEBUG.acks) && console.log(`Got ack from ${connectionId} and have buffered unsent frame. Will send now.`);
 
             const {peer, socket, fastest} = channels;
             const channel = DEBUG.chooseFastest && fastest ? fastest : 
@@ -407,7 +418,7 @@ const controller_api = {
           break;
           case "Connection.doShot": {
             DEBUG.val && console.log("Calling do shot");
-            connection.doShot();
+            connection.doShot({forceFrame:true});
           }
           break;
           case "Connection.getFavicon": {
@@ -577,7 +588,7 @@ const controller_api = {
       }
       if ( command.requiresShot || command.forceFrame ) {
         DEBUG.frameDebug && console.log({forceFrame:{command}});
-        await connection.doShot({ignoreHash: command.ignoreHash || command.forceFrame});
+        await connection.doShot({ignoreHash: command.ignoreHash || command.forceFrame, blockExempt: command.name == "Target.activateTarget"});
       }
       if ( command.requiresTailShot ) {
         connection.queueTailShot({ignoreHash: command.ignoreHash});

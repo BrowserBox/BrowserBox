@@ -7,6 +7,7 @@ import path from 'path';
 import {URL} from 'url';
 import {unescape} from 'querystring';
 import {
+  EXPEDITE,
   LOG_FILE,
   SignalNotices,
   NoticeFile,
@@ -132,6 +133,7 @@ const targets = new Set();
 //const waiting = new Map();
 const sessions = new Map();
 const casts = new Map();
+const castStarting = new Map();
 const loadings = new Map();
 const tabs = new Map();
 const favicons = new Map();
@@ -206,7 +208,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Browser.setWindowBounds",
       "Page.startScreencast",
       "Page.stopScreencast",
-      "Page.captureScreenshot"
+      "Input.dispatchMouseEvent",
+      "Input.emulateTouchFromMouseEvent",
+      //"Page.captureScreenshot",
+      "Runtime.evaluate",
+      "Target.activateTarget",
+      "Connection.activateTarget",
+      "Page.screencastFrameAck",
+      "Page.screencastFrame",
     ] : []),
   ]);
 
@@ -501,6 +510,16 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   );
   
   function sendFrameToClient({message, sessionId}) {
+    if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
+      const {params: {data, metadata}, method, sessionId} = message;
+      console.info(`Logging`, {method, params: {metadata, data:'img data...'}, sessionId});
+      setTimeout(() => {
+        fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
+          timestamp: (new Date).toISOString(),
+          message,
+        },null,2)+"\n");
+      }, 5);
+    }
     const {sessionId: castSessionId, data, metadata} = message.params;
     const {timestamp} = metadata;
     const {frameId} = updateCast(sessionId, {castSessionId}, 'frame');
@@ -1208,11 +1227,31 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       await send("Page.enable", {}, sessionId);
 
       if ( CONFIG.screencastOnly ) {
-        const castInfo = casts.get(targetId);
+        let castInfo;
+        if ( castStarting.get(targetId) ) {
+          await untilTrue(() => casts.get(targetId)?.started, 200, 500);
+          castInfo = casts.get(targetId);
+        } else {
+          castInfo = casts.get(targetId);
+        }
         if ( !castInfo || ! castInfo.castSessionId ) {
+          castStarting.set(targetId, true);
           updateCast(sessionId, {started:true}, 'start');
           DEBUG.shotDebug && console.log("SCREENCAST", SCREEN_OPTS);
-          await send("Page.startScreencast", SCREEN_OPTS, sessionId);
+          const {
+            format,
+            quality, everyNthFrame,
+            maxWidth, maxHeight
+          } = SCREEN_OPTS;
+          await send("Page.startScreencast", {
+            format, quality, everyNthFrame, 
+            ...(DEBUG.noCastMaxDims ? 
+              {}
+              : 
+              {maxWidth, maxHeight}
+            ),
+          }, sessionId);
+          castStarting.delete(targetId);
         } else {
           if ( ! sessionId ) {
             console.warn(`2 No sessionId for screencast ack`);
@@ -1303,11 +1342,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         console.warn("Demo block disabled.");
         //await blockSites(connection.zombie, sessionId);
       }
-      await send(
-        "LayerTree.enable", 
-        {},
-        sessionId
-      );
+      if ( CONFIG.useLayerTreeDomain ) {
+        await send(
+          "LayerTree.enable", 
+          {},
+          sessionId
+        );
+      }
       if ( waitingForDebugger ) {
         await send("Runtime.runIfWaitingForDebugger", {}, sessionId);
       }
@@ -1412,17 +1453,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     /* here connection is a connection to a browser backend */
     const that = this || connection;
     let sessionId;
+    let isActivate = false;
     const {connectionId} = command;
     command.connectionId = null;
-    const {targetId} = command.params;
-    // FIXME: I want THIS kind of debug. Cool.
-    //DEBUG.has("commands") && console.log(JSON.stringify(command));
-    // NOTE POSSIBLE BUG: MOVED this ABOVE below block
-    // BEFORE IT WAS AFTER Network.set....ide"
-      if ( !! targetId && !targets.has(targetId) ) {
-        DEBUG.val && console.log("Blocking as target does not exist.", targetId);
-        return {};
-      }
+    let {targetId} = command.params;
+    if ( !! targetId && !targets.has(targetId) ) {
+      DEBUG.val && console.log("Blocking as target does not exist.", targetId);
+      return {};
+    }
     switch( command.name ) {
       case "Page.navigate": {
         let {url} = command.params;
@@ -1482,7 +1520,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         const thisChange = JSON.stringify(command.params,null,2);
         const changes = lastWChange !== thisChange;
-        DEBUG.showViewportChanges && console.log({lastWChange, thisChange});
+        DEBUG.showViewportChanges && console.log(`lastWChange: ${lastWChange}`);
+        DEBUG.showViewportChanges && console.log(`thisChange: ${thisChange}`);
         if ( changes ) {
           lastWChange = thisChange;
           setTimeout(() => connection.restartCast(), 0);
@@ -1519,6 +1558,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( command.params.deviceScaleFactor ) {
           DEVICE_FEATURES.deviceScaleFactor = command.params.deviceScaleFactor;
         } 
+        if ( command.params.screenOrientation ) {
+          DEVICE_FEATURES.screenOrientation = command.params.screenOrientation;
+        }
         if ( command.params.mobile ) {
           DEVICE_FEATURES.mobile = command.params.mobile;
         } 
@@ -1528,7 +1570,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.showTodos && console.log(`Make V Changes sessionId linked (issue #351)`);
         const thisChange = JSON.stringify(command.params,null,2)+(command.params.sessionId||command.sessionId||that.sessionId);
         const changes = lastVChange !== thisChange;
-        DEBUG.showViewportChanges && console.log({lastVChange, thisChange});
+        DEBUG.showViewportChanges && console.log(`lastVChange: ${lastVChange}`);
+        DEBUG.showViewportChanges && console.log(`thisChange: ${thisChange}`);
         if ( changes ) {
           lastVChange = thisChange;
           setTimeout(() => connection.restartCast(), 0);
@@ -1584,6 +1627,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         const tSessionId = sessions.get(targetId);
         if ( sessions.get(that.sessionId) == targetId ) {
           that.sessionId = null;
+          that.currentCast = null;
         }
         if ( that.activeTarget === targetId ) {
           that.activeTarget = null;
@@ -1618,15 +1662,22 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
     if ( !command.name.startsWith("Target") && !(command.name.startsWith("Browser") && command.name != "Browser.getWindowForTarget") ) {
       sessionId = command.params.sessionId || that.sessionId;
-    } else if ( command.name == "Target.activateTarget" ) {
+    } 
+    if ( command.name == "Target.activateTarget" ) {
+      isActivate = true;
       that.sessionId = sessions.get(targetId); 
-      if ( ! that.sessionId ) { 
-        console.warn(`!! No sessionId at Target.activateTarget`);
-      }
       that.targetId = targetId; 
       sessionId = that.sessionId;
+
+      if ( ! that.sessionId ) { 
+        console.error(`!! No sessionId at Target.activateTarget`);
+      } else if ( DEBUG.showTargetSessionMap ) {
+        console.log({targetId, sessionId});
+      }
+
       const worlds = connection.worlds.get(sessionId);
-      DEBUG.val && console.log('worlds at session send', worlds);
+      DEBUG.showWorlds && console.log('worlds at session send', worlds);
+
       if ( ! worlds ) {
         DEBUG.val && console.log("reloading because no worlds we can access yet");
         await send("Page.reload", {}, sessionId);
@@ -1636,18 +1687,66 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.activeTarget = targetId;
 
       if ( CONFIG.screencastOnly ) {
-        const castInfo = casts.get(targetId);
+        let castInfo;
+        if ( castStarting.get(targetId) ) {
+          await untilTrue(() => casts.get(targetId)?.started, 200, 500);
+          castInfo = casts.get(targetId);
+        } else {
+          castInfo = casts.get(targetId);
+        }
+         
         if ( !castInfo || ! castInfo.castSessionId ) {
           updateCast(sessionId, {started:true}, 'start');
-          await send("Page.startScreencast", SCREEN_OPTS, sessionId);
+          const {
+            format,
+            quality, everyNthFrame,
+            maxWidth, maxHeight
+          } = SCREEN_OPTS;
+          await send("Page.startScreencast", {
+            format, quality, everyNthFrame, 
+            ...(DEBUG.noCastMaxDims ? 
+              {}
+              : 
+              {maxWidth, maxHeight}
+            ),
+          }, sessionId);
+          castInfo = casts.get(targetId);
+          castStarting.delete(targetId);
         } else {
           if ( ! sessionId ) {
-            console.warn(`3 No sessionId for screencast ack`);
+            console.error(`3 No sessionId for screencast ack`);
           }
-          await send("Page.screencastFrameAck", {
+          that.currentCast = castInfo;
+        }
+
+        if ( worlds ) {
+          const [contextId] = [...worlds];
+          send("Runtime.evaluate", {
+            expression: `document.querySelector('my-cursor').style.borderRadius = 0;`,
+            includeCommandLineAPI: false,
+            userGesture: true,
+            contextId,
+            timeout: CONFIG.SHORT_TIMEOUT
+          }, sessionId);
+          send("Page.screencastFrameAck", {
             sessionId: castInfo.castSessionId
           }, sessionId);
+          await sleep(200);
+          send("Runtime.evaluate", {
+            expression: `document.querySelector('my-cursor').style.borderRadius = '20px';`,
+            includeCommandLineAPI: false,
+            userGesture: true,
+            contextId,
+            timeout: CONFIG.SHORT_TIMEOUT
+          }, sessionId);
         }
+        // ALWAYS send an ack on activate
+        send("Page.screencastFrameAck", {
+          sessionId: castInfo.castSessionId
+        }, sessionId);
+      }
+      if ( DEBUG.dontSendActivate ) {
+        return {};
       }
     }
     if ( command.name.startsWith("Target") || ! sessionId ) {
@@ -1663,7 +1762,31 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }
       } else {
         DEBUG.val > DEBUG.med && console.log({zombieNoSessionCommand:command});
-        return await send(command.name, command.params); 
+        const resp = await send(command.name, command.params); 
+
+        if ( isActivate && CONFIG.doAckBlast ) {
+          let castInfo = casts.get(targetId);
+          castInfo.sessionHasReceivedFrame = false;
+          let ac = 0;
+
+          DEBUG.debugAckBlast && console.log(`Starting ack blast on activate`);
+
+          untilTrue(async () => {
+            if ( ! castInfo.sessionHasReceivedFrame ) {
+              ac++;
+              await send("Page.screencastFrameAck", {
+                sessionId: castInfo?.castSessionId || 1
+              }, sessionId);
+              DEBUG.debugAckBlast && console.log(`Sent ack #${ac} for targetId ${targetId}`);
+            } else {
+              DEBUG.debugAckBlast && console.log(`Stopping ack blast after ${ac} acks because we have frame`);
+            }
+            DEBUG.debugAckBlast && console.log({castInfo});
+            return castInfo.sessionHasReceivedFrame;
+          }, 100, 200); // or until 20 seconds
+        }
+
+        return resp;
       }
     } else {
       if ( command.name !== "Page.screencastFrameAck" ) {
@@ -1923,7 +2046,12 @@ async function makeZombie({port:port = 9222} = {}) {
     }
     if ( message.method == "Page.captureScreenshot" ) {
       DEBUG.showBlockedCaptureScreenshots && console.info("Blocking page capture screenshot");
-      return Promise.resolve(true);
+      if ( CONFIG.blockAllCaptureScreenshots && message.blockExempt != true ) {
+        return Promise.resolve(true);
+      }
+      if ( message.blockExempt ) {
+        DEBUG.debugCast && console.log(`NOT blocking this screenshot as it is blockExempt`);
+      }
     }
     try {
       socket.send(JSON.stringify(message));
@@ -1942,7 +2070,7 @@ async function makeZombie({port:port = 9222} = {}) {
     const {id, result, error} = message;
 
     if ( error ) {
-      if ( DEBUG.showErrorSources ) {
+      if ( DEBUG.errors || DEBUG.showErrorSources ) {
         console.warn("\nBrowser backend Error message", message);
         const key = `${sessionId||ROOT_SESSION}:${id}`;
         const originalCommand = Resolvers?.[key]?._originalCommand;
@@ -1967,6 +2095,14 @@ async function makeZombie({port:port = 9222} = {}) {
         }
       }
     } else if ( method ) {
+      if ( DEBUG.events ) {
+        const img = message.params.data;
+        if ( method == "Page.screencastFrame" ) {
+          message.params.data = "... img data ...";
+        }
+        console.log(`Event: ${method}\n`, JSON.stringify(message, null, 2));
+        message.params.data = img;
+      }
       const listeners = Handlers[method];
       if ( Array.isArray(listeners) ) {
         for( const func of listeners ) {

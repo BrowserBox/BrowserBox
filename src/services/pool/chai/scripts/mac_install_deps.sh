@@ -11,4 +11,5 @@ brew install mactex
 brew install libreoffice
 brew install pandoc
 brew install coreutils
+brew install librsvg
 

@@ -1,6 +1,7 @@
 //import {CWebp} from 'cwebp';
 import {DEBUG, sleep, CONFIG} from '../common.js';
 
+const FORMAT = "jpeg"; // "png"
 const MIN_JPG_QUAL = 5;
 const MAX_JPG_QUAL = 80;
 const MAX_NTH_FRAME = 8;
@@ -18,7 +19,7 @@ export const DEVICE_FEATURES = {
   mobile: COMMON_FORMAT.mobile,
 };
 export const SCREEN_OPTS = {
-  format: 'jpeg',
+  format: FORMAT,
   quality: JPEG_QUAL,
   maxWidth: COMMON_FORMAT.width,
   maxHeight: COMMON_FORMAT.height,
@@ -55,10 +56,10 @@ export const RACE_SAMPLE = 0.74;
 
 // image formats for capture depend on what the client can accept
   const WEBP_FORMAT = {
-    format: "png"
+    format: FORMAT,
   };
   const SAFARI_FORMAT = {
-    format: "jpeg",
+    format: FORMAT,
     quality: JPEG_QUAL 
   };
   const SAFARI_SHOT = {
@@ -112,6 +113,7 @@ export function makeCamera(connection) {
   };
 
   async function restartCast() {
+    return;
     let restart = true;
     if ( lastScreenOpts ) {
       restart = false;
@@ -124,20 +126,32 @@ export function makeCamera(connection) {
         restart = true;
       }
     }
+    if ( CONFIG.alwaysRestartCast ) {
+      restart = true;
+      DEBUG.logRestartCast && console.log(`ALWAYS restarting cast.`);
+    }
     if ( restart ) {
       DEBUG.logRestartCast && console.log(`Restarting cast`);
       await connection.sessionSend({
         name: "Page.stopScreencast",
         params: {}
       });
-      await connection.sessionSend({
-        name: "Page.startScreencast",
-        params: SCREEN_OPTS
-      });
       const {
+        format,
         quality, everyNthFrame,
         maxWidth, maxHeight
       } = SCREEN_OPTS;
+      await connection.sessionSend({
+        name: "Page.startScreencast",
+        params: {
+          format, quality, everyNthFrame, 
+          ...(DEBUG.noCastMaxDims ? 
+            {}
+            : 
+            {maxWidth, maxHeight}
+          ),
+        }
+      });
       lastScreenOpts = {
         quality, everyNthFrame,
         maxWidth, maxHeight,
@@ -168,14 +182,7 @@ export function makeCamera(connection) {
     if ( DEBUG.debugAdaptiveImagery ) {
       console.log(`Shrinking JPEG quality to ${SAFARI_SHOT.command.params.quality}`);
     }
-    await connection.sessionSend({
-      name: "Page.stopScreencast",
-      params: {}
-    });
-    await connection.sessionSend({
-      name: "Page.startScreencast",
-      params: SCREEN_OPTS
-    });
+    restartCast();
   }
 
   async function growImagery() {
@@ -199,14 +206,7 @@ export function makeCamera(connection) {
     if ( DEBUG.debugAdaptiveImagery ) {
       console.log(`Growing JPEG quality to ${SAFARI_SHOT.command.params.quality}`);
     }
-    await connection.sessionSend({
-      name: "Page.stopScreencast",
-      params: {}
-    });
-    await connection.sessionSend({
-      name: "Page.startScreencast",
-      params: SCREEN_OPTS
-    });
+    restartCast();
   }
 
   function queueTailShot() {
@@ -239,6 +239,9 @@ export function makeCamera(connection) {
     let response;
     //const ShotCommand = ((connection.isSafari || connection.isFirefox) ? SAFARI_SHOT : WEBP_SHOT).command;
     const ShotCommand = SAFARI_SHOT.command;
+    if ( opts.blockExempt ) {
+      ShotCommand.blockExempt = true;
+    }
     DEBUG.shotDebug && console.log(`XCHK screenShot.js (${ShotCommand.name}) call response`, ShotCommand, response ? JSON.stringify(response).slice(0,140) : response );
     response = await Promise.race([
       connection.sessionSend(ShotCommand),
@@ -361,13 +364,13 @@ export function makeCamera(connection) {
       }
     }
 
-    queueTailShot();
+    if ( CONFIG.tailShots ) queueTailShot();
 
     DEBUG.shotDebug && console.log({framesWaiting:connection.frameBuffer.length, now: Date.now()});
   }
 
   async function doShot(opts = {}) {
-    if ( !(opts.ignoreHash || opts.forceFrame) && (nextShot || shooting) ) {
+    if ( !(opts.ignoreHash || opts.forceFrame || opts.blockExempt) && (nextShot || shooting) ) {
       DEBUG.shotDebug && DEBUG.val > DEBUG.low && console.log(`Dropping shot`, opts.ignoreHash, opts.forceFrame, nextShot, shooting);
       return;
     }

@@ -1,16 +1,16 @@
 import {URL} from 'url';
 import BLOCKING from './blocking.js';
-import {CONFIG} from '../../common.js';
+import {DEBUG, sleep, CONFIG} from '../../common.js';
 import {BLOCKED_BODY, BLOCKED_CODE, BLOCKED_HEADERS} from './blockedResponse.js';
 
 const {FORBIDDEN} = CONFIG;
-
 
 export async function blockAds(/*zombie, sessionId*/) {
   // do nothing
 }
 
 export async function onInterceptRequest({sessionId, message}, zombie) {
+  DEBUG.debugInterception && console.log(`Request paused`);
   try {
     if ( message.method == "Fetch.requestPaused" ) {
       const {request:{url}, requestId, resourceType, responseErrorReason} = message.params;
@@ -19,7 +19,9 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       const uri = new URL(url);
       const {host,protocol} = uri;
       let blocked = false;
+      let ri = 0;
       for( const regex of BLOCKING ) {
+        DEBUG.debugInterception && console.log(`Testing regex`, ++ri);
         if ( regex.test(host) ) {
           try {
             if ( isNavigationRequest ) {
@@ -46,16 +48,20 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
             console.warn("Issue with intercepting request", e);
           }
         }
+        DEBUG.debugInterception && console.log(`Regex ${ri}: ${regex.test(host)}`);
       }
       blocked = blocked || FORBIDDEN.has(protocol);
+      DEBUG.debugInterception && console.log(`Is blocked ${blocked}`);
+      //await sleep(3000);
       if ( blocked ) return;
       // responseErrorReason never appears to be set, regardless of interception stage 
-      //console.log({responseErrorReason,requestId, url, resourceType});
+      //DEBUG.debugInterception && console.log({responseErrorReason,requestId, url, resourceType});
       // we need the font check here, because otherwise fonts will fail to load
       // somehow if a font is intercepted in responseStage (which we do) it will show a failed error
       // and if we have a failed error then we fail the request
       if ( !isFont && responseErrorReason ) {
         if ( isNavigationRequest ) {
+          DEBUG.debugInterception && console.log(`Fulfill request`);
           await zombie.send("Fetch.fulfillRequest", {
               requestId,
               responseHeaders: BLOCKED_HEADERS,
@@ -64,6 +70,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
             },
             sessionId
           );
+          DEBUG.debugInterception && console.log(`Fulfill request complete`);
         } else {
           await zombie.send("Fetch.failRequest", {
               requestId,
@@ -74,11 +81,13 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
         }
       } else {
         try {
+          DEBUG.debugInterception && console.log(`Continue request`);
           await zombie.send("Fetch.continueRequest", {
               requestId,
             },
             sessionId
           );
+          DEBUG.debugInterception && console.log(`Continue request complete`);
         } catch(e) {
           console.warn("Issue with continuing request", e, message);
         }

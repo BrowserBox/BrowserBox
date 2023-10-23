@@ -28,6 +28,8 @@ convert_to_pdf() {
   shift
   local options=("$@")
 
+  echo "Using pandoc options: ${options[@]}" >&2
+
   pandoc "${options[@]}" "$input_file" -o "$output_file"
 }
 
@@ -106,7 +108,8 @@ convert_to_pdf_if_needed() {
 
       # Check if xelatex is installed and set Pandoc options accordingly
       if command -v xelatex > /dev/null 2>&1; then
-        pandoc_options="--pdf-engine=xelatex"
+        echo "Using xelatex" >&2
+        pandoc_options="--pdf-engine=xelatex --pdf-engine-opt=-no-shell-escape"
       else
         echo "xelatex is not installed, proceeding without it." >&2
         pandoc_options=""
@@ -132,7 +135,8 @@ convert_to_pdf_if_needed() {
 
       # Check if xelatex is installed and set Pandoc options accordingly
       if command -v xelatex > /dev/null 2>&1; then
-        pandoc_options="--pdf-engine=xelatex"
+        echo "Using xelatex" >&2
+        pandoc_options="--pdf-engine=xelatex --pdf-engine-opt=-no-shell-escape"
       else
         echo "xelatex is not installed, proceeding without it." >&2
         pandoc_options=""
@@ -166,7 +170,7 @@ convert_to_pdf_if_needed() {
 
 converted_file=$(convert_to_pdf_if_needed "$1")
 
-convert -verbose -density 127 -background ivory -alpha remove -alpha off -quality 77% -strip -interlace Plane "${converted_file}[0-999]" +adjoin "${1}-%04d.${format}" || (mutool draw -F 1 -L 1000 -i -o "${1}-%04d.${format}" "${converted_file}" && "${INSTALL_DIR}/chai/scripts/rename_1_based.sh" "${1}" "$format")
+convert -verbose -density 131 -background ivory -alpha remove -alpha off -quality 77% -strip -interlace Plane "${converted_file}[0-999]" +adjoin "${1}-%04d.${format}" || (mutool draw -F 1 -L 1000 -i -o "${1}-%04d.${format}" "${converted_file}" && "${INSTALL_DIR}/chai/scripts/rename_1_based.sh" "${1}" "$format")
 
 cp "$1" "${pdfs}/"
 

@@ -552,7 +552,8 @@
 
             DEBUG.cnx && console.log(message);
 
-            const {fastestChannel, screenshotAck, copeer, zombie, tabs, messageId} = message;  
+            const {fastestChannel, copeer, zombie, tabs, messageId} = message;  
+            let {screenshotAck} = message;
 
             latestMessageId = messageId;
 
@@ -571,8 +572,19 @@
                 }
               } 
               if ( screenshotAck ) {
-                DEBUG.acks && console.log('client sent screenshot ack', messageId, screenshotAck);
-                zl.act.screenshotAck(connectionId, zombie_port, screenshotAck, {Data, Frames, Meta, State, receivesFrames: false, messageId});
+                (DEBUG.debugCast || DEBUG.acks) && console.log('client sent screenshot ack', screenshotAck);
+                if ( screenshotAck == 1 ) {
+                  (DEBUG.debugCast || DEBUG.acks) && console.log('client sent screenshot no frame received code');
+                  screenshotAck = { frameId: 1, requiresCastId: true }
+                } 
+                if ( !screenshotAck.requiresCastId || DEBUG.allowAckBlastOnStart ) {
+                  zl.act.screenshotAck(
+                    connectionId, 
+                    zombie_port, 
+                    screenshotAck, 
+                    {Data, Frames, Meta, State, receivesFrames: false, messageId}
+                  );
+                }
               }
               if ( zombie ) {
                 const {events} = zombie;

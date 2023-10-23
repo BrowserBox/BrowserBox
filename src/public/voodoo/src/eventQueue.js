@@ -1080,6 +1080,14 @@
         }
       });
     }
+    sendAck() {
+      messageId++;
+      this.state.screenshotReceived = {
+        frameId: this.state.latestFrameReceived, 
+        castSessionId: this.state.latestCastSession
+      };
+      this[$].senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: this[$].screenshotReceived});
+    }
     send( event ) {
       if ( event.immediate ) {
         event.immediate = undefined;
@@ -1137,7 +1145,8 @@
             state.viewState.scaleX = scaleX;
             state.viewState.scaleY = scaleY;
             const scale = Math.min(scaleX,scaleY);
-            state.viewState.scale = scale;
+            //state.viewState.scale = scale;
+            state.viewState.scale = 1;
 
             /*
             console.log({scale});

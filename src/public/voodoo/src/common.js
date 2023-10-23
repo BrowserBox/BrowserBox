@@ -23,6 +23,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  debugActivate: false,
   debugDownloadProgress: false,
   logBandwidthIssueChanges: false,
   debugSafariWebRTC: false,
@@ -40,7 +41,7 @@ export const DEBUG = Object.freeze({
   debugFavicon: false,
   debugElementInfo: false,
   coords: false,
-  debugBitmapCoordConversion: false,
+  debugBitmapCoordConversion: true,
   debugEventChains: false,
   debugEventQueue: false,
   HFUNCTION: false,
@@ -138,6 +139,8 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  ACK_BLAST_LENGTH: 5000,
+  doAckBlast: true,
   /* making this true means we don't check audio start on every tap or click BUT
    it does seem to interfere with audio restarting in the case it stops
   */

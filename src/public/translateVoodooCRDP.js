@@ -489,10 +489,14 @@ function translator(e, handled = {type:'case'}) {
             height,
             mobile: mobile ? true : false,
             deviceScaleFactor:1,
-            screenOrientation: {
-              angle: 90,
-              type: 'landscapePrimary'
-            },
+            /*
+            ...(mobile ? {
+              screenOrientation: {
+                angle: 90,
+                type: 'landscapePrimary'
+              }
+            } : {}),
+            */
             resetRequested, 
           },
           requiresShot: true,

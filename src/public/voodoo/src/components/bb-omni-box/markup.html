@@ -24,9 +24,13 @@
 				type=search
 				value="${_top.activeTab().url == 'about:blank' ? '' : _top.activeTab().url || ''}"
 			>
-			<button ${disabled() ? 'disabled' : ''} title="${
-				disabled()? '(Go) Open a tab first' : 'Navigate, search or reload'
-			}" class=go>
+			<button 
+        ${disabled() ? 'disabled' : ''} 
+        class=go
+        title="${
+          disabled()? '(Go) Open a tab first' : 'Navigate, search or reload'
+        }" 
+      >
         <img src="voodoo/assets/icons/refresh-ccw.svg">
 			</button>
 		</form>

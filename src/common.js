@@ -4,11 +4,21 @@ import path from 'path';
 import {execSync} from 'child_process';
 import {fileURLToPath} from 'url';
 
+import isDocker from 'is-docker';
+
 import {FRAME_CONTROL} from './public/voodoo/src/common.js';
 import {APP_ROOT as app_root} from './root.js';
 export * from './args.js';
 
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
+
+export const EXPEDITE = new Set([
+  "Page.navigate",
+  "Page.navigateToHistoryEntry",
+  "Runtime.evaluate",
+  "Emulation.setUserAgentOverride",
+  "Input.dispatchMouseEvent",
+]);
 
 export const LOG_FILE = {
   Commands: new Set(),
@@ -16,22 +26,30 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  events: false,
+  commands: false,
+  adBlock: true,
+  debugInterception: false,
+  noCastMaxDims: false,
+  debugAckBlast: true,
+  allowAckBlastOnStart: true,
+  dontSendActivate: false,
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
   localTestRTT: process.platform == "darwin" && true,
+  debugCast: false,
+  showTargetSessionMap: true,
   debugFileDownload: false,
   debugFileUpload: false,
   useNewAsgardHeadless: false,
-  adBlock: true,
   showFlags: false,
   allowExternalChrome: true,
-  logFileCommands: true,
+  logFileCommands: false,
   showTodos: false,
-  showViewportChanges: false,
-  logRestartCast: false,
+  showViewportChanges: true,
+  logRestartCast: true,
   showErrorSources: false,
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,
-  debugCast: false,
   coords: false,
   scrollbars: true,
   get ensureUptimeBeforeRestart() {
@@ -48,7 +66,7 @@ export const DEBUG = Object.freeze({
   debugNoticeSignal: false,
   throttleIntentPrompts: false,
   showMousePosition: true,
-  debugConnect: false,
+  debugConnect: true,
   debugCommandResponses: false,
   dataDebug: false,
   debugHistory: false,
@@ -79,7 +97,7 @@ export const DEBUG = Object.freeze({
   noSecurityHeaders: false,
   mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: true,
-  useFlashEmu: false,
+  useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
   loadSPLFreshEachLogin: false,
   frameDebug: false,
@@ -112,7 +130,6 @@ export const DEBUG = Object.freeze({
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
     whether created with createTarget or simply spawning, 
     we must use legacy shots */
-  commands: false,
   get dontShowFetchDomain() {
     return this.commands && true;
   },
@@ -126,10 +143,11 @@ export const DEBUG = Object.freeze({
 });
 
 export const ALLOWED_3RD_PARTY_EMBEDDERS = [
-  "https://dev.dosyago.com",
-  "https://freebrowsers.dosyago.com",
-  "https://sboard.co",
-  "https://*.sboard.co",
+  "https://users.dosyago.com",
+  "https://cloudtabs.net",
+  "https://*.cloudtabs.net",
+  "https://browserbox.pro",
+  "https://*.browserbox.pro",
   "https://localhost:*",
 ];
 export const FLASH_FORMATS = new Set([
@@ -139,6 +157,12 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  doAckBlast: false,
+  SHORT_TIMEOUT: 30,
+  useLayerTreeDomain: false,
+  tailShots: false,
+  alwaysRestartCast: false,
+  blockAllCaptureScreenshots: true,
   setAlternateBackgroundColor: false,
   screencastOnly: true,
   baseDir: path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro'),
@@ -155,6 +179,20 @@ export const CONFIG = Object.freeze({
     'vbscript:'
   ])
 });
+export const localBlockList = process.platform == 'darwin' 
+  || 
+  process.env.GITHUB_ACTIONS 
+  || 
+  isDocker() ? [] : [
+    /^localhost/,
+    /^::1/,
+    /^127.0/,
+    /^192.168./,
+    /^169.254./,
+    /^10./,
+    /^172.(1[6-9]|2[0-9]|3[01])./,
+];
+
 const Timers = new Set(); 
 
 if ( ! DEBUG.useWebRTC ) {
@@ -257,9 +295,9 @@ export async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WA
   setTimeout(checkPred, 0);
   return pr;
 
-  function checkPred() {
+  async function checkPred() {
     DEBUG.debugUntilTrue && console.log('Checking', pred);
-    if ( pred() ) {
+    if ( await pred() ) {
       return resolve(true);
     } else {
       waitCount++;

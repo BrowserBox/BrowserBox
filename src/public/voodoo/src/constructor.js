@@ -235,6 +235,7 @@
           },
 
           clearViewport,
+          doShot,
 
           addListener(name, func) {
             let funcList = listeners.get(name); 
@@ -314,7 +315,6 @@
           },
 
           latestRequestId: 0
-
         });
 
       // variables
@@ -367,6 +367,8 @@
       const queue = new EventQueue(state, sessionToken);
       DEBUG.val && console.log({queue});
       if ( DEBUG.fullScope ) {
+        globalThis.queue = queue;
+      } else {
         globalThis.queue = queue;
       }
 
@@ -1129,14 +1131,14 @@
           queue.checkResults();
         }
 
-        /*function doShot() {
+        function doShot() {
           setTimeout(() => {
             queue.send({
               type: "doShot",
               synthetic: true
             });
           }, SHORT_DELAY);
-        }*/
+        }
 
         function runUpdateTabs() {
           DEBUG.debugTabs && console.log(`Run update tabs called`);
@@ -1218,7 +1220,7 @@
         }
 
         function clearViewport() {
-	  return;
+          //return;
           if ( state.useViewFrame ) {
             try {
               state.viewState.viewFrameEl.contentDocument.body.innerHTML = ``;
@@ -1744,17 +1746,20 @@
             }
 
             const {targetId} = tab;
+            let needsShot = false;
 
             // grab the last cached frame of the new active, 
             // and save this current tab's frame for when we swtich back to it
             const lastFrame = state.viewState.canvasEl?.toDataURL();
             LastFrames.set(state.activeTarget, lastFrame);
-            clearViewport();
             const nextFrame = LastFrames.get(targetId);
             if ( nextFrame ) {
               const imageEl = queue.getImageEl();
               imageEl.oldSrc = imageEl.src;
               imageEl.src = nextFrame;
+            } else {
+              clearViewport();
+              needsShot = true;
             }
 
             queue.send({
@@ -1779,6 +1784,22 @@
             state.active = activeTab();
 
             setState('bbpro', state);
+
+            if ( CONFIG.doAckBlast ) {
+              clearInterval(state.currentAckBlastInterval);
+              const startTime = Date.now();
+              state.currentAckBlastInterval = setInterval(() => {
+                if ( (Date.now() - startTime) > CONFIG.ACK_BLAST_LENGTH ) {
+                  clearInterval(state.currentAckBlastInterval);
+                } else {
+                  queue.sendAck();
+                }
+              }, 200);
+            }
+
+            if ( needsShot ) {
+              DEBUG.debugActivate && console.warn(`Needs shot`, state.active);
+            }
 
             const now = new Date;
             const delta = now - lastTime;
