@@ -139,7 +139,7 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
-  ACK_BLAST_LENGTH: 5000,
+  ACK_BLAST_LENGTH: 1000,
   doAckBlast: false,
   /* making this true means we don't check audio start on every tap or click BUT
    it does seem to interfere with audio restarting in the case it stops
