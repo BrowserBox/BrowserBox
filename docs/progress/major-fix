@@ -1,0 +1,5 @@
+- sending acks until we get frame on activate destroys most of the delay
+- actually turns out this only works locally and occupies too much bandwidth if we are at any remote machine. 
+- better solution is to stop the screencast when we move away from the tab. this works, and start when we activate a tab. this works!
+
+
