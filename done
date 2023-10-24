@@ -1,5 +1,0 @@
-switch tab cast delay
-- check to see if we are getting and dropping frames from the old tab
-- check to see if we are continuing to ack frames from the old tab (or send other messages to old tab after activation)
-- implement new tab act blast until first frame from new tab received to counter delay
-
