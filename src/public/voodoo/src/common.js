@@ -23,13 +23,14 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  debugNetCheck: false,
   debugActivate: false,
   debugDownloadProgress: false,
   logBandwidthIssueChanges: false,
   debugSafariWebRTC: false,
   debugSetup: false,
   /* debug connections */
-  cnx: false,
+  cnx: true,
   debugIntentPrompts: false,
   allowContextMenuOnContextMenu: true,
   debugTabs: false,
@@ -140,6 +141,9 @@ export const DEBUG = Object.freeze({
 
 export const CONFIG = Object.freeze({
   ACK_BLAST_LENGTH: 1000,
+  netCheckTimeout: 6007,
+  netCheckMinGap: 2000,
+  netCheckMaxGap: 7001,
   doAckBlast: false,
   /* making this true means we don't check audio start on every tap or click BUT
    it does seem to interfere with audio restarting in the case it stops
@@ -328,4 +332,48 @@ export async function untilHuman(pred) {
 
 export async function untilTrueOrTimeout(pred, seconds) {
   return untilTrue(pred, 1000, seconds, reject => reject(`Checking predicate (${pred}) timed out after ${seconds} seconds.`));
+}
+
+export function randomInterval(func, minGap, maxGap) {
+  if ( minGap > maxGap ) throw new TypeError(`minGap needs to be less than maxGap for function randomInterval`);
+
+  const controller = new AbortController();
+  const { signal } = controller;
+  let timeoutIdClosure;
+
+  signal.addEventListener('abort', () => clearTimeout(timeoutIdClosure));
+
+  repeater();
+
+  return { 
+    abort() {
+      controller.abort();
+    }
+  };
+
+  async function repeater() {
+    const nextWait = Math.ceil(minGap + Math.random()*(maxGap-minGap));
+
+    if ( signal.aborted ) {
+      return;
+    }
+
+    try {
+      await func();
+    } catch(e) {
+      console.warn(`Error when calling function at randomInterval. Error: ${e}\nFunction: ${func}`);
+    }
+
+    if ( signal.aborted ) {
+      return;
+    }
+
+    timeoutIdClosure = setTimeout(repeater, nextWait);
+  }
+}
+
+export function clearRandom(interval) {
+  if ( typeof interval.abort == "function" ) {
+    interval.abort();
+  }
 }

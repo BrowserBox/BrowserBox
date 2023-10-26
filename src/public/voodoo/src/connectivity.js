@@ -1,8 +1,11 @@
+const StatusSymbol = Symbol(`[[ConnectivityStatus]]`);
+
 export default class InternetChecker {
   constructor(timeout = 5000, debug = false) {
     this.timeout = timeout;
     this.debug = debug;
     this.checkInProgress = false;
+    this[StatusSymbol] = 'issue';
     this.urls = [
       "https://www.google.com",
       "https://www.cloudflare.com",
@@ -38,6 +41,9 @@ export default class InternetChecker {
     const selectedUrls = shuffledUrls.slice(0, 2);
 
     // Execute checks
+    let status = 'issue';
+    let error;
+
     try {
       const results = await Promise.allSettled([
         this.singleCheck(selectedUrls[0]),
@@ -45,7 +51,6 @@ export default class InternetChecker {
       ]);
 
       const successfulChecks = results.filter(r => r.status === 'fulfilled').length;
-      let status = "uncertain";
 
       if (successfulChecks === 2) {
         status = "online";
@@ -55,22 +60,39 @@ export default class InternetChecker {
         this.debug && console.log("You are offline!");
       } else {
         this.debug && console.log("Connection status is ambiguous. You might be experiencing network issues.");
+        status = 'issue';
       }
 
       this.checkInProgress = false;
-      return { status };
-    } catch (error) {
+    } catch (eerr) {
       this.checkInProgress = false;
-      this.debug && console.log("An error occurred while checking the connection.");
-      return { status: "error", error: error.message };
+      this.debug && console.log("An error occurred while checking the connection.", err);
+      error = err;
+      return { status: "error", error };
+    }
+
+    this.status = status;
+
+    return { status, error };
+  }
+
+  get status() {
+    return this[StatusSymbol];
+  }
+
+  set status(value) {
+    switch(value) {
+      case "online":
+      case "offline":
+      case "issue":
+      case "error":
+        this[StatusSymbol] = value;
+        break;
+      default: {
+        throw new TypeError(`Invalid value ${value} for Connectivity status enum`);
+        break;
+      }
     }
   }
 }
-
-// Usage
-//const checker = new InternetChecker(5000, true);  // Set debug flag to true
-//checker.checkInternet().then(result => {
-//  // Handle the result as needed
-//  console.log("Connection Status:", result.status);
-//});
 
