@@ -2,10 +2,19 @@
 
 # Check if the port is available
 is_port_free() {
-  if [[ "$1" =~ ^[0-9]+$ ]] && [ "$1" -ge 1024 ] && [ "$1" -le 65535 ]; then
-    echo "Valid port number." >&2
+  if [[ "$1" =~ ^[0-9]+$ ]] && [ "$1" -ge 4022 ] && [ "$1" -le 65535 ]; then
+    echo "$1" " valid port number." >&2
   else
-    echo "Invalid port number." >&2
+    echo "$1" " invalid port number." >&2
+    echo "" >&2
+    echo "Select a main port between 4024 and 65533." >&2
+    echo "" >&2
+    echo "  Why 4024?" >&2
+    echo "    This is because, by convention the browser runs on the port 3000 below the app's main port, and the first user-space port is 1024." >&2
+    echo "" >&2
+    echo "  Why 65533?" >&2
+    echo "    This is because, each app occupies a slice of 5 consecutive ports, two below, and two above, the app's main port. The highest user-space port is 65535, hence the highest main port the leaves two above it free is 65533." >&2
+    echo "" >&2
     return 1
   fi
 
@@ -70,7 +79,9 @@ if [ -z "$PORT" ]; then
   echo "Error: --port option is required" >&2
   exit 1
 elif ! is_port_free "$PORT"; then
-  echo "Error: the suggested port $PORT is already in use" >&2
+  echo "" >&2
+  echo "Error: the suggested port $PORT is invalid or already in use." >&2
+  echo "" >&2
   exit 1
 elif ! is_port_free $(($PORT - 2)); then
   echo "Error: the suggested port range (audio) is already in use" >&2
