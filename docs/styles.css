@@ -7,6 +7,10 @@ header, nav {
   background-color: #007bff;
 }
 
+nav h1 {
+  margin: 0;
+}
+
 h1, h2, h3, h4, h5, h6 {
   color: #007bff;
 }
@@ -48,6 +52,7 @@ nav {
   top: 0;
   left: 0;
   right: 0;
+  z-index: 10000000;
 }
 
 .logo-container {

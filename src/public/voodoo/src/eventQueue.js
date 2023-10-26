@@ -1,4 +1,5 @@
   import {
+    CONFIG,
     COMMON,
     sleep, isSafari, isFirefox, 
     DEBUG, BLANK, littleEndian,
@@ -6,8 +7,10 @@
     untilHuman,
     untilTrueOrTimeout,
     untilTrue,
-    be2le
+    be2le,
+    randomInterval,
   } from './common.js';
+  import InternetChecker from './connectivity.js';
   import abto64 from './abto64.js';
 
   const $ = Symbol('[[EventQueuePrivates]]');
@@ -37,11 +40,6 @@
   const RACES = new Map();
   const Scores = [];
   const AlreadySent = new Map();
-  let loopCalls = 0;
-  let inFrameCount = 0;
-  let noFrameReceived = 1;
-  let WSScore = 0;
-  let WPScore = 0;
   const SCORE_WINDOW = 11;
   const MIN_DECISION_DATA = 5;
   const ITYPE = true || isSafari() ? 'image/jpeg' : 'image/webp';
@@ -49,6 +47,22 @@
   const OldIncoming = new Map();
   const waiting = new Map();
   const isLE = littleEndian();
+  const Connectivity = {
+    checker: new InternetChecker(CONFIG.netCheckTimeout, DEBUG.netCheckDebug),
+    checkInterval: randomInterval(async () => {
+      await sleep(0);
+      const { status, error } = await Connectivity.checker.checkInternet();
+      if ( status == 'error' ) {
+        console.warn(`Internet connectivity error: ${error}`, error);
+      }
+    }, CONFIG.netCheckMinGap, CONFIG.netCheckMaxGap)
+  };
+
+  let loopCalls = 0;
+  let inFrameCount = 0;
+  let noFrameReceived = 1;
+  let WSScore = 0;
+  let WPScore = 0;
   let connecting;
   let latestReload;
   let latestAlert;
@@ -505,7 +519,7 @@
                   privates.publics.state.webrtcConnected = false;
                   privates.publics.state.setTopState();
                   DEBUG.cnx && console.log('peer closed', c);
-                  if ( navigator.onLine ) {
+                  if ( onLine() ) {
                     setTimeout(connectPeer, PEER_RECONNECT_MS);
                   }
                 });
@@ -921,7 +935,7 @@
                     });
                   }, {once:true});
                 */
-              if ( navigator.onLine ) {
+              if ( onLine() ) {
                 return privates.connectSocket(url);
               }
               resolve(false);
@@ -1071,6 +1085,7 @@
       }
       const queue = [];
       this.state = state;
+      this.state.Connectivity = Connectivity;
       Object.defineProperties(this, {
         queue: {
           get: () => queue
@@ -1395,8 +1410,7 @@
   }*/
 
   function onLine() {
-    if ( DEBUG.dontEnforceOnlineCheck ) return true;
-    return navigator.onLine;
+    return Connectivity.checker.status == 'online';
   }
 
   function talert(msg) {

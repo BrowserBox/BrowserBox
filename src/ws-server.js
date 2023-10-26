@@ -162,7 +162,8 @@
         "https://*.browserbox.pro:*",
         "wss://*.browserbox.pro:*",
         `https://localhost:${server_port-1}`,
-        `https://localhost:${server_port+1}`
+        `https://localhost:${server_port+1}`,
+        ...CONFIG.connectivityTests
       ],
       fontSrc: [
         "'self'", 
@@ -227,7 +228,8 @@
               `https://*.dosyago.com:${server_port-1}`,
               `https://*.dosyago.com:${server_port+1}`,
               `https://localhost:${server_port-1}`,
-              `https://localhost:${server_port+1}`
+              `https://localhost:${server_port+1}`,
+              ...CONFIG.connectivityTests
             ],
             fontSrc: [
               "'self'", 

@@ -178,7 +178,14 @@ export const CONFIG = Object.freeze({
     'javascript:',
     'file:',
     'vbscript:'
-  ])
+  ]),
+  connectivityTests: [
+    "https://www.google.com",
+    "https://www.cloudflare.com",
+    "https://www.amazon.com",
+    "https://www.apple.com",
+    "https://www.microsoft.com"
+  ]
 });
 export const localBlockList = process.platform == 'darwin' 
   || 
