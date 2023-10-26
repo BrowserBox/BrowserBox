@@ -30,7 +30,7 @@ export const DEBUG = Object.freeze({
   debugSafariWebRTC: false,
   debugSetup: false,
   /* debug connections */
-  cnx: true,
+  cnx: false,
   debugIntentPrompts: false,
   allowContextMenuOnContextMenu: true,
   debugTabs: false,
@@ -42,7 +42,7 @@ export const DEBUG = Object.freeze({
   debugFavicon: false,
   debugElementInfo: false,
   coords: false,
-  debugBitmapCoordConversion: true,
+  debugBitmapCoordConversion: false,
   debugEventChains: false,
   debugEventQueue: false,
   HFUNCTION: false,

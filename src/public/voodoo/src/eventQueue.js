@@ -1410,7 +1410,7 @@
   }*/
 
   function onLine() {
-    return 
+    return Connectivity.checker.status == 'online';
   }
 
   function talert(msg) {
