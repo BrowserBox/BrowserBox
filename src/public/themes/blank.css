@@ -273,6 +273,7 @@
   header.topbar {
     font-size: smaller;
     max-height: 100%;
+    color: #555555;
   }
 
   header.topbar span {
