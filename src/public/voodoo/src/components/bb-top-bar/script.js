@@ -18,6 +18,7 @@ class BBTopBar extends Base {
     clearTimeout(this.vanishTimer);
     this.animateProgress();
     const {state: data } = this;
+    const {CONFIG} = data;
     const { guid, state, receivedBytes, totalBytes } = event;
     let newStart = false;
 
@@ -56,6 +57,7 @@ class BBTopBar extends Base {
 
     for (const download of Object.values(this.downloadState.progressData)) {
       totalBytesReceived += download.receivedBytes;
+      DEBUG.debugDownload && console.log(download);
       if (download.totalBytes > 0) {
         this.progressValue += download.receivedBytes / download.totalBytes;
       } else {
@@ -74,7 +76,7 @@ class BBTopBar extends Base {
       this.vanishTimer = setTimeout(() => {
         this.vanish = true; 
         this.state = this.state;
-      }, 5000);
+      }, CONFIG.downloadMeterVanishTimeout);
     }
   }
 
