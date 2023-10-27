@@ -290,12 +290,12 @@
   }
 
   header.topbar span.webrtc-status {
-    color: aqua;
+    color: dodgerblue;
     opacity: 0.8;
   }
 
   header.topbar span.audio-status {
-    color: firebrick;
+    color: purple;
     opacity: 0.8;
   }
 
