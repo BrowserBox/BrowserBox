@@ -1576,7 +1576,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.showViewportChanges && console.log(`thisChange: ${thisChange}`);
         if ( changes ) {
           lastVChange = thisChange;
-          setTimeout(() => connection.restartCast(), 0);
+          setTimeout(async () => { 
+            await connection.restartCast();
+            connection.forceMeta({
+              resize: connection.bounds
+            });
+          }, 0);
         } else {
           return {};
         }

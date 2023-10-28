@@ -431,6 +431,10 @@
             DEBUG.val && console.log({sidebarMenuActive: state.sidebarMenuActive});
             subviews.UnreadBadge(state);
           });
+          queue.addMetaListener('resize', meta => {
+            DEBUG.debugResize && console.log(`resize event`, meta);
+            clearViewport();
+          });
           queue.addMetaListener('multiplayer', meta => handleMultiplayerMessage(meta, state));
         
         // download progress

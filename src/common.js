@@ -37,7 +37,7 @@ export const DEBUG = Object.freeze({
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
   localTestRTT: process.platform == "darwin" && true,
   debugCast: false,
-  showTargetSessionMap: true,
+  showTargetSessionMap: false,
   debugFileDownload: false,
   debugFileUpload: false,
   useNewAsgardHeadless: false,
@@ -45,8 +45,8 @@ export const DEBUG = Object.freeze({
   allowExternalChrome: true,
   logFileCommands: false,
   showTodos: false,
-  showViewportChanges: true,
-  logRestartCast: true,
+  showViewportChanges: false,
+  logRestartCast: false,
   showErrorSources: false,
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,
@@ -95,7 +95,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
