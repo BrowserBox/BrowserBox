@@ -23,7 +23,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  debugResize: true,
+  debugResize: false,
   debugDownload: false,
   debugNetCheck: false,
   debugActivate: false,
