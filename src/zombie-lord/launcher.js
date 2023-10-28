@@ -216,7 +216,7 @@ const launcher_api = {
     if ( CHROME_OPTS.userDataDir ) {
       fs.mkdirSync(CHROME_OPTS.userDataDir, {recursive:true});
     }
-    DEBUG.val && console.log(CHROME_OPTS, CHROME_FLAGS);
+    console.log(CHROME_OPTS, CHROME_FLAGS);
     const zomb = await ChromeLauncher(CHROME_OPTS);
 
     const retVal = {};
@@ -225,7 +225,7 @@ const launcher_api = {
     console.log("Did chrome start?");
 
     if ( zomb.process ) {
-      console.log(zomb.process, zomb.pid);
+      DEBUG.debugChromeStart && console.log(zomb.process, zomb.pid);
       fs.mkdirSync(path.resolve(CONFIG.baseDir, `chrome-${port}`), {recursive:true});
       fs.writeFileSync(zomb.pidFile, zomb.pid.toString());
       chrome_started = true;

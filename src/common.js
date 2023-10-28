@@ -43,6 +43,7 @@ export const DEBUG = Object.freeze({
   useNewAsgardHeadless: false,
   showFlags: false,
   allowExternalChrome: true,
+  debugChromeStart: false,
   logFileCommands: false,
   showTodos: false,
   showViewportChanges: false,
@@ -95,7 +96,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */

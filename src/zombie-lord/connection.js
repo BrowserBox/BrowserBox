@@ -1959,194 +1959,204 @@ function isFileURL(url) {
 }
 
 async function makeZombie({port:port = 9222} = {}) {
-  const {webSocketDebuggerUrl} = await fetch(`http://${
-      DEBUG.useLoopbackIP ? '127.0.0.1' : 'localhost'
-    }:${port}/json/version`).then(r => r.json());
-  const socket = new WebSocket(webSocketDebuggerUrl);
-  const Zombie = {
-    disconnected: true
-  };
-  const Resolvers = {};
-  const Handlers = {};
-  const LAST_COMMANDS_WINDOW = 5;
-  const lastCommands = [];
-  socket.on('message', handle);
-  socket.on('close', () => {
-    Zombie.disconnected = true;
-  });
-  let id = 0;
-
-  let resolve;
-  const promise = new Promise(res => resolve = res);
-
-  socket.on('open', () => {
-    Zombie.disconnected = false;
-    resolve();
-  });
-
-  await promise;
-
-  Object.assign(Zombie, {
-    send,
-    on, ons
-  });
-
-  return Zombie;
-  
-  /* send debugging protocol message to browser */
-  async function send(method, params = {}, sessionId) {
-    if ( Zombie.disconnected ) {
-      Zombie.sendErrorToClient('Our connection to chrome is disconnected. Probably means chrome shut down or crashed.');
-      return;
-    }
-    const message = {
-      method, params, sessionId, 
-      id: ++id
+  try {
+    const {webSocketDebuggerUrl} = await fetch(`http://${
+        DEBUG.useLoopbackIP ? '127.0.0.1' : 'localhost'
+      }:${port}/json/version`).then(r => r.json());
+    const socket = new WebSocket(webSocketDebuggerUrl);
+    const Zombie = {
+      disconnected: true
     };
-    const key = `${sessionId||ROOT_SESSION}:${message.id}`;
+    const Resolvers = {};
+    const Handlers = {};
+    const LAST_COMMANDS_WINDOW = 5;
+    const lastCommands = [];
+    socket.on('message', handle);
+    socket.on('close', () => {
+      Zombie.disconnected = true;
+    });
+    let id = 0;
+
     let resolve;
-    let promise = new Promise(res => resolve = res);
-    if ( DEBUG.debugHistory && method.includes("History") ) {
-      console.log(`History message`, message);
-      const oResolve = resolve;
-      resolve = (...args) => {
-        console.log(`History message reply`, ...args);
-        return oResolve(...args);
+    const promise = new Promise(res => resolve = res);
+
+    socket.on('open', () => {
+      Zombie.disconnected = false;
+      resolve();
+    });
+
+    await promise;
+
+    Object.assign(Zombie, {
+      send,
+      on, ons
+    });
+
+    return Zombie;
+    
+    /* send debugging protocol message to browser */
+    async function send(method, params = {}, sessionId) {
+      if ( Zombie.disconnected ) {
+        Zombie.sendErrorToClient('Our connection to chrome is disconnected. Probably means chrome shut down or crashed.');
+        return;
+      }
+      const message = {
+        method, params, sessionId, 
+        id: ++id
       };
-    }
-    if ( DEBUG.commands ) {
-      const isFetchDomain = message.method.startsWith("Fetch.");
-      const isCaptureScreenshot = message.method == "Page.captureScreenshot";
-      const isScreenshotAck = message.method == "Page.screencastFrameAck";
-      const isNeither = !(isCaptureScreenshot || isScreenshotAck || (isFetchDomain && DEBUG.dontShowFetchDomain));
-      const displayCommand = isNeither || (DEBUG.acks && isScreenshotAck) || (DEBUG.shotDebug && isCaptureScreenshot);
-      if ( displayCommand ) {
-        //console.log({send:message});
-        promise = promise.then(resp => {
-          if ( resp && resp.data ) {
-            if ( resp.data.length < 1000 ) {
-              console.log({message,resp});
+      const key = `${sessionId||ROOT_SESSION}:${message.id}`;
+      let resolve;
+      let promise = new Promise(res => resolve = res);
+      if ( DEBUG.debugHistory && method.includes("History") ) {
+        console.log(`History message`, message);
+        const oResolve = resolve;
+        resolve = (...args) => {
+          console.log(`History message reply`, ...args);
+          return oResolve(...args);
+        };
+      }
+      if ( DEBUG.commands ) {
+        const isFetchDomain = message.method.startsWith("Fetch.");
+        const isCaptureScreenshot = message.method == "Page.captureScreenshot";
+        const isScreenshotAck = message.method == "Page.screencastFrameAck";
+        const isNeither = !(isCaptureScreenshot || isScreenshotAck || (isFetchDomain && DEBUG.dontShowFetchDomain));
+        const displayCommand = isNeither || (DEBUG.acks && isScreenshotAck) || (DEBUG.shotDebug && isCaptureScreenshot);
+        if ( displayCommand ) {
+          //console.log({send:message});
+          promise = promise.then(resp => {
+            if ( resp && resp.data ) {
+              if ( resp.data.length < 1000 ) {
+                console.log({message,resp});
+              } else {
+                console.log(JSON.stringify({message,resp:'[long response]'},null,2));
+              }
             } else {
-              console.log(JSON.stringify({message,resp:'[long response]'},null,2));
+              console.log(JSON.stringify({message,resp: resp || '[no response]'},null,2));
             }
+            return resp;
+          }).catch(err => {
+            console.warn({sendFail:err}); 
+          });
+        }
+      }
+      if ( DEBUG.showErrorSources ) {
+        resolve._originalCommand = message;
+      }
+      Resolvers[key] = resolve; 
+      if ( DEBUG.showErrorSources ) {
+        lastCommands.unshift(message);
+        if ( lastCommands.length > LAST_COMMANDS_WINDOW ) {
+          lastCommands.length = LAST_COMMANDS_WINDOW;
+        }
+      }
+      if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
+        console.info(`Logging`, message);
+        fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
+          timestamp: (new Date).toISOString(),
+          message,
+        },null,2)+"\n");
+      }
+      if ( message.method == "Page.captureScreenshot" ) {
+        DEBUG.showBlockedCaptureScreenshots && console.info("Blocking page capture screenshot");
+        if ( CONFIG.blockAllCaptureScreenshots && message.blockExempt != true ) {
+          return Promise.resolve(true);
+        }
+        if ( message.blockExempt ) {
+          DEBUG.debugCast && console.log(`NOT blocking this screenshot as it is blockExempt`);
+        }
+      }
+      try {
+        socket.send(JSON.stringify(message));
+      } catch(e) {
+        console.warn("Error sending to chrome", e);
+        Zombie.sendErrorToClient(e);
+      }
+      return promise;
+    }
+
+    async function handle(message) {
+      const stringMessage = message;
+      message = JSON.parse(message);
+      const {sessionId} = message;
+      const {method} = message;
+      const {id, result, error} = message;
+
+      if ( error ) {
+        if ( DEBUG.errors || DEBUG.showErrorSources ) {
+          console.warn("\nBrowser backend Error message", message);
+          const key = `${sessionId||ROOT_SESSION}:${id}`;
+          const originalCommand = Resolvers?.[key]?._originalCommand;
+          if ( originalCommand ) {
+            console.log(`Original command that caused error`, originalCommand);
           } else {
-            console.log(JSON.stringify({message,resp: resp || '[no response]'},null,2));
+            console.log(`Can't find original command as no id, but last ${LAST_COMMANDS_WINDOW} commands sent were:`, lastCommands);
           }
-          return resp;
-        }).catch(err => {
-          console.warn({sendFail:err}); 
-        });
-      }
-    }
-    if ( DEBUG.showErrorSources ) {
-      resolve._originalCommand = message;
-    }
-    Resolvers[key] = resolve; 
-    if ( DEBUG.showErrorSources ) {
-      lastCommands.unshift(message);
-      if ( lastCommands.length > LAST_COMMANDS_WINDOW ) {
-        lastCommands.length = LAST_COMMANDS_WINDOW;
-      }
-    }
-    if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
-      console.info(`Logging`, message);
-      fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
-        timestamp: (new Date).toISOString(),
-        message,
-      },null,2)+"\n");
-    }
-    if ( message.method == "Page.captureScreenshot" ) {
-      DEBUG.showBlockedCaptureScreenshots && console.info("Blocking page capture screenshot");
-      if ( CONFIG.blockAllCaptureScreenshots && message.blockExempt != true ) {
-        return Promise.resolve(true);
-      }
-      if ( message.blockExempt ) {
-        DEBUG.debugCast && console.log(`NOT blocking this screenshot as it is blockExempt`);
-      }
-    }
-    try {
-      socket.send(JSON.stringify(message));
-    } catch(e) {
-      console.warn("Error sending to chrome", e);
-      Zombie.sendErrorToClient(e);
-    }
-    return promise;
-  }
-
-  async function handle(message) {
-    const stringMessage = message;
-    message = JSON.parse(message);
-    const {sessionId} = message;
-    const {method} = message;
-    const {id, result, error} = message;
-
-    if ( error ) {
-      if ( DEBUG.errors || DEBUG.showErrorSources ) {
-        console.warn("\nBrowser backend Error message", message);
+          console.log('');
+        }
+      } else if ( id ) {
         const key = `${sessionId||ROOT_SESSION}:${id}`;
-        const originalCommand = Resolvers?.[key]?._originalCommand;
-        if ( originalCommand ) {
-          console.log(`Original command that caused error`, originalCommand);
+        const resolve = Resolvers[key];
+        if ( ! resolve ) {
+          console.warn(`No resolver for key`, key, stringMessage.slice(0,140));
         } else {
-          console.log(`Can't find original command as no id, but last ${LAST_COMMANDS_WINDOW} commands sent were:`, lastCommands);
-        }
-        console.log('');
-      }
-    } else if ( id ) {
-      const key = `${sessionId||ROOT_SESSION}:${id}`;
-      const resolve = Resolvers[key];
-      if ( ! resolve ) {
-        console.warn(`No resolver for key`, key, stringMessage.slice(0,140));
-      } else {
-        Resolvers[key] = undefined;
-        try {
-          await resolve(result);
-        } catch(e) {
-          console.warn(`Resolver failed`, e, key, stringMessage.slice(0,140), resolve);
-        }
-      }
-    } else if ( method ) {
-      if ( DEBUG.events ) {
-        const img = message.params.data;
-        if ( method == "Page.screencastFrame" ) {
-          message.params.data = "... img data ...";
-        }
-        console.log(`Event: ${method}\n`, JSON.stringify(message, null, 2));
-        message.params.data = img;
-      }
-      const listeners = Handlers[method];
-      if ( Array.isArray(listeners) ) {
-        for( const func of listeners ) {
+          Resolvers[key] = undefined;
           try {
-            await func({message, sessionId});
+            await resolve(result);
           } catch(e) {
-            console.warn(`Listener failed`, method, e, func.toString().slice(0,140), stringMessage.slice(0,140));
+            console.warn(`Resolver failed`, e, key, stringMessage.slice(0,140), resolve);
           }
         }
+      } else if ( method ) {
+        if ( DEBUG.events ) {
+          const img = message.params.data;
+          if ( method == "Page.screencastFrame" ) {
+            message.params.data = "... img data ...";
+          }
+          console.log(`Event: ${method}\n`, JSON.stringify(message, null, 2));
+          message.params.data = img;
+        }
+        const listeners = Handlers[method];
+        if ( Array.isArray(listeners) ) {
+          for( const func of listeners ) {
+            try {
+              await func({message, sessionId});
+            } catch(e) {
+              console.warn(`Listener failed`, method, e, func.toString().slice(0,140), stringMessage.slice(0,140));
+            }
+          }
+        }
+      } else {
+        console.warn(`Unknown message on socket`, message);
       }
-    } else {
-      console.warn(`Unknown message on socket`, message);
     }
-  }
 
-  function on(method, handler) {
-    let listeners = Handlers[method]; 
-    if ( ! listeners ) {
-      Handlers[method] = listeners = [];
+    function on(method, handler) {
+      let listeners = Handlers[method]; 
+      if ( ! listeners ) {
+        Handlers[method] = listeners = [];
+      }
+      listeners.push(wrap(handler));
     }
-    listeners.push(wrap(handler));
-  }
 
-  function ons(method, handler) {
-    let listeners = Handlers[method]; 
-    if ( ! listeners ) {
-      Handlers[method] = listeners = [];
+    function ons(method, handler) {
+      let listeners = Handlers[method]; 
+      if ( ! listeners ) {
+        Handlers[method] = listeners = [];
+      }
+      listeners.push(handler);
     }
-    listeners.push(handler);
-  }
 
-  function wrap(fn) {
-    return ({message}) => fn(message.params)
+    function wrap(fn) {
+      return ({message}) => fn(message.params)
+    }
+  } catch(e) {
+    const resp = await fetch(`http://${
+      DEBUG.useLoopbackIP ? '127.0.0.1' : 'localhost'
+    }:${port}/json/version`);
+    console.log(`Error when starting browser: ${e}`, e);
+    console.log(`Response: ${await resp.text()}`);
+    await sleep(1000);
+    process.exit(1);
   }
 }
 

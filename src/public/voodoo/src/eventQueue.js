@@ -1160,8 +1160,8 @@
             state.viewState.scaleX = scaleX;
             state.viewState.scaleY = scaleY;
             const scale = Math.min(scaleX,scaleY);
-            //state.viewState.scale = scale;
-            state.viewState.scale = 1;
+            state.viewState.scale = scale;
+            //state.viewState.scale = 1;
 
             /*
             console.log({scale});
@@ -1180,7 +1180,7 @@
             ctx.drawImage(imageEl, 0, 0, imageEl.width * scale, imageEl.height * scale);
           } else {
             console.warn(`We are not adjusting pointer position for the diff`);
-            if ( canvas.width !== imageEl.width || canvas.height !== imageEl.height ) {
+            if ( DEBUG.centerImage && (canvas.width !== imageEl.width || canvas.height !== imageEl.height) ) {
               const diffW = canvas.width - imageEl.width;
               const diffH = canvas.height - imageEl.height;
               ctx.drawImage(imageEl, diffW/2, diffH/2);

@@ -56,7 +56,8 @@ export const DEBUG = Object.freeze({
   get includeAudioElementAnyway() {
     return isSafari() || deviceIsMobile();
   },
-  scaleImage: true,       // scaleImage: false centers the remote image if it's smaller than local viewport (large screens))
+  scaleImage: false,       // scaleImage: false centers the remote image if it's smaller than local viewport (large screens))
+  centerImage: false,
   dontEnforceOnlineCheck: true,
   newUI: true,
   get useWindowOpenForSecureView() {
