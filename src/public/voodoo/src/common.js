@@ -57,6 +57,7 @@ export const DEBUG = Object.freeze({
     return isSafari() || deviceIsMobile();
   },
   scaleImage: true,       // scaleImage: false centers the remote image if it's smaller than local viewport (large screens))
+  centerImage: false,
   dontEnforceOnlineCheck: true,
   newUI: true,
   get useWindowOpenForSecureView() {

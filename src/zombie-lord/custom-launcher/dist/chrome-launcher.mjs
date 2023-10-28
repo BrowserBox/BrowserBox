@@ -55,6 +55,7 @@ export async function launch(opts = {}) {
       process.on(_SIGINT, sigintListener);
     }
     instances.add(instance);
+    console.log('Launching chrome...');
     yield instance.launch();
     /* eslint-disable require-yield */
     const kill = () => __awaiter(this, void 0, void 0, function* () {
@@ -155,6 +156,7 @@ export default class Launcher {
       this.port = this.requestedPort;
       // If an explict port is passed first look for an open connection...
       try {
+        console.log(`Try debugger...`);
         return await this.isDebuggerReady();
       }
       catch (err) {
@@ -171,10 +173,13 @@ export default class Launcher {
     if (!this.tmpDirandPidFileReady) {
       this.prepare();
     }
+    console.log(`Chrome path: ${this.chromePath}`);
     this.pid = await this.spawnProcess(this.chromePath);
   }
   async spawnProcess(execPath) {
+    console.log('HELLO???');
     const {DEBUG, CONFIG} = await import("../../../common.js");
+    console.log('2222 HELLO???');
     if (this.chrome) {
       log.log('ChromeLauncher', `Chrome already running with pid ${this.chrome.pid}.`);
       return this.chrome.pid;
@@ -219,7 +224,10 @@ export default class Launcher {
     console.log({port});
     let browser;
     try {
-      browser = execSync(`curl -s http://localhost:${port}/json/version`);
+      browser = execSync(`curl -s http://localhost:${port}/json/version`).toString();
+      if ( browser.length == 0 ) {
+        throw new Error(`Browser error`);
+      } 
       console.log('browser', browser.toString());
     } catch(e) {
       DEBUG.val && console.info("Browser error", e);
