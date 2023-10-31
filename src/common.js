@@ -67,7 +67,7 @@ export const DEBUG = Object.freeze({
   debugClicks: false,
   debugNoticeSignal: false,
   throttleIntentPrompts: false,
-  showMousePosition: false,
+  showMousePosition: true,
   debugConnect: false,
   debugCommandResponses: false,
   dataDebug: false,
