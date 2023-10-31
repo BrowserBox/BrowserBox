@@ -47,6 +47,7 @@ export const DEBUG = Object.freeze({
   logFileCommands: false,
   showTodos: false,
   showViewportChanges: false,
+  showResizeEvents: false,
   logRestartCast: false,
   showErrorSources: false,
   showNoSessionIdWarnings: false,
