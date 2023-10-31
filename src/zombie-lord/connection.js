@@ -1575,15 +1575,17 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.showViewportChanges && console.log(`lastVChange: ${lastVChange}`);
         DEBUG.showViewportChanges && console.log(`thisChange: ${thisChange}`);
         if ( changes ) {
+          const _last = lastVChange;
+          const _this = thisChange;
           lastVChange = thisChange;
           setTimeout(async () => { 
-            await connection.restartCast();
-            if ( thisChange.slice(-32) == lastVChange.slice(-32) ) {
-              DEBUG.showResizeEvents && console.log(`Sending resize event as changing viewport dimensins on the current tab`);
+            if ( _this.slice(-32) == _last.slice(-32) ) {
+              DEBUG.showResizeEvents && DEBUG.debugInterception && console.log(`Sending resize event as changing viewport dimensins on the current tab`, _this, _last);
               connection.forceMeta({
                 resize: connection.bounds
               });
             }
+            await connection.restartCast();
           }, 0);
         } else {
           return {};
