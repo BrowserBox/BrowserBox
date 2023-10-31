@@ -1578,9 +1578,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           lastVChange = thisChange;
           setTimeout(async () => { 
             await connection.restartCast();
-            connection.forceMeta({
-              resize: connection.bounds
-            });
+            if ( thisChange.slice(-32) == lastVChange.slice(-32) ) {
+              DEBUG.showResizeEvents && console.log(`Sending resize event as changing viewport dimensins on the current tab`);
+              connection.forceMeta({
+                resize: connection.bounds
+              });
+            }
           }, 0);
         } else {
           return {};
