@@ -146,7 +146,8 @@ let AD_BLOCK_ON = true;
 let DEMO_BLOCK_ON = false;
 let firstSource;
 let latestTimestamp;
-let lastVChange;
+let lastV; 
+let lastVT;
 let lastWChange;
 
 function addSession(targetId, sessionId) {
@@ -1569,26 +1570,32 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log("Screen opts at device metric override", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
 
-        DEBUG.showTodos && console.log(`Make V Changes sessionId linked (issue #351)`);
-        const thisChange = JSON.stringify(command.params,null,2)+(command.params.sessionId||command.sessionId||that.sessionId);
-        const changes = lastVChange !== thisChange;
-        DEBUG.showViewportChanges && console.log(`lastVChange: ${lastVChange}`);
-        DEBUG.showViewportChanges && console.log(`thisChange: ${thisChange}`);
-        if ( changes ) {
-          const _last = lastVChange;
-          const _this = thisChange;
-          lastVChange = thisChange;
-          setTimeout(async () => { 
-            if ( _this.slice(-32) == _last.slice(-32) ) {
-              DEBUG.showResizeEvents && DEBUG.debugInterception && console.log(`Sending resize event as changing viewport dimensins on the current tab`, _this, _last);
-              connection.forceMeta({
-                resize: connection.bounds
-              });
-            }
-            await connection.restartCast();
-          }, 0);
-        } else {
-          return {};
+        {
+          DEBUG.showTodos && console.log(`Make V Changes sessionId linked (issue #351)`);
+          const thisV = JSON.stringify(command.params,null,2);
+          const thisT = (command.params.sessionId||command.sessionId||that.sessionId);
+          const thisVT = thisViewport+thisTab;
+          const tabOrViewportChanged = lastVT != thisVT;
+          const viewportChanged = lastV != thisV;
+          DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
+          DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
+          if ( tabOrViewportChanged  ) {
+            lastVT = thisVT;
+            setTimeout(async () => { 
+              await connection.restartCast();
+              if ( viewportChanged ) {
+                DEBUG.showResizeEvents && console.log(`Sending resize event as viewport changed`, {lastV, thisV});
+                connection.forceMeta({
+                  resize: connection.bounds
+                });
+              }
+            }, 0);
+          }
+          if ( viewportChanged ) {
+            lastV = thisV;
+          } else {
+            return {};
+          }
         }
       }; break;
       case "Emulation.setScrollbarsHidden": {
