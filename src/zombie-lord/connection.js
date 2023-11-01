@@ -1594,6 +1594,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           if ( viewportChanged ) {
             lastV = thisV;
           } else {
+            // if a viewport didn't change we don't need to call Emulation.setDeviceMetricOverride as it will only
+            // cause the screen to flash and be completely redrawn as if it were resized 
+            // when it was not resized at all
             return {};
           }
         }
