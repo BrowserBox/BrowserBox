@@ -1574,7 +1574,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           DEBUG.showTodos && console.log(`Make V Changes sessionId linked (issue #351)`);
           const thisV = JSON.stringify(command.params,null,2);
           const thisT = (command.params.sessionId||command.sessionId||that.sessionId);
-          const thisVT = thisViewport+thisTab;
+          const thisVT = thisV+thisT;
           const tabOrViewportChanged = lastVT != thisVT;
           const viewportChanged = lastV != thisV;
           DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
