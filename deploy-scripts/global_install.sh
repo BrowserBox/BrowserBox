@@ -143,8 +143,8 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 if [ "$(os_type)" == "Linux" ]; then
-  $SUDO apt update && $SUDO apt -y upgrade
-  $SUDO apt -y install net-tools ufw
+  $SUDO $APT update && $SUDO $APT -y upgrade
+  $SUDO $APT -y install net-tools ufw
   $SUDO ufw disable
 fi
 
@@ -162,7 +162,7 @@ if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
         choco install mkcert || scoop bucket add extras && scoop install mkcert
       else
         amd64=$(dpkg --print-architecture || uname -m)
-        $SUDO apt -y install libnss3-tools
+        $SUDO $APT -y install libnss3-tools
         curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
         chmod +x mkcert-v*-linux-$amd64
         $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
