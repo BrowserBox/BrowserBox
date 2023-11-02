@@ -76,7 +76,7 @@
   },
   "homepage": "https://github.com/crisdosyago/bbpro",
   "dependencies": {
-    "@roamhq/wrtc": "latest",
+    "@roamhq/wrtc": "^0.7.1",
     "bang.html": "latest",
     "body-parser": "latest",
     "compression": "latest",
