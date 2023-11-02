@@ -17,6 +17,8 @@ initialize_package_manager() {
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
     sudo dnf config-manager --set-enabled crb
     sudo dnf -y upgrade --refresh
+    sudo dnf install https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
+    sudo dnf install https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
   else
     echo "No supported package manager found. Exiting."
     return 1
