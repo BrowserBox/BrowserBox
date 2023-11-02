@@ -1,2 +1,2 @@
 sudo npm i -g sloc
-sudo apt install cloc
+sudo $APT install cloc

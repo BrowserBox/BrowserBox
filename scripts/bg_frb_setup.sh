@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#sudo apt install -y nodejs npm
+#sudo $APT install -y nodejs npm
 sudo npm i -g npm node-dev serve 
-sudo apt install -y ethtool lshw psmisc htop libvips libjpeg-dev
+sudo $APT install -y ethtool lshw psmisc htop libvips libjpeg-dev
 ./installstats.sh
 ./install_bundle_deps.sh
 ./install_global_bundle_deps.sh
@@ -27,7 +27,7 @@ sudo groupadd browsers
 #echo "ALL ALL=(:browsers) NOPASSWD:ALL"
 #read -p "Press enter to continue to visudo"
 #read | sudo visudo
-sudo apt install cpulimit cgroup-tools
+sudo $APT install cpulimit cgroup-tools
 ./cgroup-create.sh
 ./traffic-control.sh
 ./make_bundle.sh

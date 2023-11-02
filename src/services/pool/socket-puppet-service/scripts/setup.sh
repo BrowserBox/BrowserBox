@@ -34,10 +34,10 @@ if [[ -z "$BRANCH" ]]; then
   return 1
 fi
 echo "Updating system"
-sudo apt update && apt -y upgrade
+sudo $APT update && apt -y upgrade
 
 echo "Installing base tools"
-sudo apt install git curl wget psmisc moreutils
+sudo $APT install git curl wget psmisc moreutils
 
 echo "Creating user"
 addgroup browsers

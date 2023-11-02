@@ -3,7 +3,7 @@
 if ps -C shellinaboxd > /dev/null; then
   echo http://$(curl -s ifconfig.me):13888/htop_app/
 else
-  which shellinaboxd >&2 || sudo apt -y install shellinabox >&2
+  which shellinaboxd >&2 || sudo $APT -y install shellinabox >&2
   sudo killall shellinaboxd
   sudo update-rc.d -f shellinaboxd remove
   sudo update-rc.d -f shellinabox remove

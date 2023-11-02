@@ -29,7 +29,7 @@ install_guard() {
   echo "install name: $install_name"
   if ! command -v "$utility_name" > /dev/null; then
     echo "Error: $utility_name is not installed. Installing..." >&2
-    sudo apt install -y "$install_name"
+    sudo $APT install -y "$install_name"
     if ! command -v "$utility_name" > /dev/null; then
       echo "Error: Could not install $utility_name..." >&2
       exit 1

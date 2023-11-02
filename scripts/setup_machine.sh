@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sudo apt install -y apt-utils wget curl jq unzip bc psmisc psutils
+sudo $APT install -y apt-utils wget curl jq unzip bc psmisc psutils
 cd src/zombie-lord
 sudo ./video.deps
 sudo ./audio.deps
@@ -15,7 +15,7 @@ else
 	exit 1
 fi
 cd ../..
-sudo apt install -y libvips libjpeg-dev
+sudo $APT install -y libvips libjpeg-dev
 ./scripts/install_bundle_deps.sh
 ./scripts/install_global_bundle_deps.sh
 sudo ./scripts/install_webp.sh

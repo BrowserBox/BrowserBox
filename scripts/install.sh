@@ -1,9 +1,9 @@
-sudo apt update && sudo apt -y upgrade
-sudo apt install -y git wget
-sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates
+sudo $APT update && sudo $APT -y upgrade
+sudo $APT install -y git wget
+sudo $APT -y install curl dirmngr apt-transport-https lsb-release ca-certificates
 curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-sudo apt install -y nodejs npm
-sudo apt -y  install gcc g++ make
+sudo $APT install -y nodejs npm
+sudo $APT -y  install gcc g++ make
 git clone https://github.com/dosycorp/browsergap.ce.git
 cd browsergap.ce
 ./setup_machine.sh
