@@ -22,6 +22,10 @@ initialize_package_manager() {
     sudo firewall-cmd --permanent --zone=public --add-service=http
     sudo firewall-cmd --permanent --zone=public --add-service=https
     sudo firewall-cmd --reload
+    mkdir -p $HOME/build/Release
+    echo "Installing Custom Build of WebRTC Node for CentOS 9..."
+    wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/wrtc.node
+    mv wrtc.node $HOME/build/Release/
   else
     echo "No supported package manager found. Exiting."
     return 1
