@@ -8,6 +8,36 @@ unset npm_config_prefix
 read -p "Enter to continue" -r
 REPLY=""
 
+initialize_package_manager() {
+  local package_manager
+
+  if command -v apt >/dev/null; then
+    package_manager=$(command -v apt)
+  elif command -v dnf >/dev/null; then
+    package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
+    sudo dnf config-manager --set-enabled crb
+    sudo dnf -y upgrade --refresh
+    sudo dnf install https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
+    sudo dnf install https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
+    sudo firewall-cmd --permanent --zone=public --add-service=http
+    sudo firewall-cmd --permanent --zone=public --add-service=https
+    sudo firewall-cmd --reload
+    mkdir -p $HOME/build/Release
+    echo "Installing Custom Build of WebRTC Node for CentOS 9..."
+    wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/wrtc.node
+    mv wrtc.node $HOME/build/Release/
+  else
+    echo "No supported package manager found. Exiting."
+    return 1
+  fi
+
+  echo "Using package manager: $package_manager"
+  export APT=$package_manager
+}
+
+# Call the function to initialize and export the APT variable
+initialize_package_manager
+
 read_input() {
   if [ -t 0 ]; then  # Check if it's running interactively
     read -p "$1" -r REPLY
@@ -122,8 +152,8 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 if [ "$(os_type)" == "Linux" ]; then
-  $SUDO apt update && $SUDO apt -y upgrade
-  $SUDO apt -y install net-tools ufw
+  $SUDO $APT update && $SUDO $APT -y upgrade
+  $SUDO $APT -y install net-tools ufw
   $SUDO ufw disable
 fi
 
@@ -141,7 +171,7 @@ if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
         choco install mkcert || scoop bucket add extras && scoop install mkcert
       else
         amd64=$(dpkg --print-architecture || uname -m)
-        $SUDO apt -y install libnss3-tools
+        $SUDO $APT -y install libnss3-tools
         curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
         chmod +x mkcert-v*-linux-$amd64
         $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
@@ -217,8 +247,8 @@ if [ "$(os_type)" == "macOS" ]; then
 else
   if ! command -v getopt &>/dev/null; then
     echo "Installing gnu-getopt for Linux..."
-    $SUDO apt-get update
-    $SUDO apt-get install -y gnu-getopt
+    $SUDO $APT update
+    $SUDO $APT install -y gnu-getopt
   fi
 fi
 

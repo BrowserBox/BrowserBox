@@ -6,7 +6,7 @@ echo
 echo
 echo Upgrading system...
 echo
-sudo apt update && sudo apt -y upgrade
+sudo $APT update && sudo $APT -y upgrade
 echo
 echo System upgraded!
 echo

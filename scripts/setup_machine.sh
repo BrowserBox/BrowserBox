@@ -1,13 +1,20 @@
 #!/bin/bash
 
-sudo apt install -y apt-utils wget curl jq unzip bc psmisc psutils
+if command -v dnf; then
+  sudo $APT install -y wget curl jq unzip bc psmisc psutils
+else
+  sudo $APT install -y apt-utils wget curl jq unzip bc psmisc psutils
+fi
+
+source ~/.nvm/nvm.sh
+
 cd src/zombie-lord
-sudo ./video.deps
-sudo ./audio.deps
-sudo ./deb.deps
-sudo ./font.deps
-sudo ./pptr.deps
-sudo ./dlchrome.sh
+sudo -E ./video.deps
+sudo -E ./audio.deps
+sudo -E ./deb.deps
+sudo -E ./font.deps
+sudo -E ./pptr.deps
+sudo -E ./dlchrome.sh
 if which google-chrome-stable; then
 	echo "chrome installed"
 else
@@ -15,7 +22,7 @@ else
 	exit 1
 fi
 cd ../..
-sudo apt install -y libvips libjpeg-dev
+sudo $APT install -y libvips libjpeg-dev
 ./scripts/install_bundle_deps.sh
 ./scripts/install_global_bundle_deps.sh
 sudo ./scripts/install_webp.sh

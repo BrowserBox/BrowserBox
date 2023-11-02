@@ -7,8 +7,8 @@ if [[ -z "$BRANCH" ]]; then
   echo "Supply branch as first argument"
   return 1
 fi
-sudo apt update && apt -y upgrade
-sudo apt install git curl wget psmisc moreutils
+sudo $APT update && apt -y upgrade
+sudo $APT install git curl wget psmisc moreutils
 addgroup browsers
 addgroup appusers
 addgroup sudoers

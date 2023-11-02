@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
 
+# Open port on CentOS
+open_firewall_port_centos() {
+  local port=$1
+  sudo="$(command -v sudo)"
+  $sudo firewall-cmd --permanent --add-port="${port}/tcp" >&2
+  $sudo firewall-cmd --reload >&2 
+}
+
 # Check if the port is available
 is_port_free() {
   if [[ "$1" =~ ^[0-9]+$ ]] && [ "$1" -ge 4022 ] && [ "$1" -le 65535 ]; then
@@ -114,6 +122,7 @@ fi
 
 DT_PORT=$((PORT + 1))
 SV_PORT=$((PORT - 1))
+AUDIO_PORT=$((PORT - 2))
 
 echo "Received port $PORT and token $TOKEN and cookie $COOKIE">&2
 
@@ -134,6 +143,14 @@ sslcerts="$HOME/sslcerts"
 cert_file="${sslcerts}/fullchain.pem"
 sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
 HOST=$(echo $sans | awk '{print $1}')
+
+if [[ -f /etc/centos-release ]]; then
+  echo "Detected CentOS. Ensuring required ports are open in the firewall..." >&2
+  open_firewall_port_centos "$PORT"
+  open_firewall_port_centos "$DT_PORT"
+  open_firewall_port_centos "$SV_PORT"
+  open_firewall_port_centos "$AUDIO_PORT"
+fi
 
 cat > $CONFIG_DIR/test.env <<EOF
 export APP_PORT=$PORT

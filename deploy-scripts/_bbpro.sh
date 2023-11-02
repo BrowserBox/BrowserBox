@@ -42,6 +42,20 @@ has_renice_cap() {
   fi
 }
 
+function shut_pa {
+  echo "Shutting down PA"
+  pulseaudio -k
+}
+
+function switch_profile {
+  if command -v tuned-adm; then
+    echo "Tuning for low latency high performance..."
+    sudo tuned-adm profile latency-performance
+  else
+    echo "You may wish to instal 'tuned' for even higher performance."
+  fi
+}
+
 export INSTALL_DIR=$(get_install_dir)
 
 echo Running bbpro for user $USER... >&2
@@ -68,6 +82,9 @@ if ! has_renice_cap "$USER"; then
     echo "Manually add $USER to group renice." >&2
   fi
 fi
+
+shut_pa
+switch_profile
 
 bash ./scripts/run-test.sh
 
