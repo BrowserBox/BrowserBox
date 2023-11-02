@@ -238,8 +238,8 @@ if [ "$(os_type)" == "macOS" ]; then
 else
   if ! command -v getopt &>/dev/null; then
     echo "Installing gnu-getopt for Linux..."
-    $SUDO apt-get update
-    $SUDO apt-get install -y gnu-getopt
+    $SUDO $APT update
+    $SUDO $APT install -y gnu-getopt
   fi
 fi
 

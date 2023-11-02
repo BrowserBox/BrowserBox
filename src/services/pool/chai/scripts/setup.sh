@@ -25,8 +25,8 @@ else
   sudo mkdir -p /etc/ImageMagick
   sudo cp policy.xml /etc/ImageMagick/
   sudo cp policy.xml /etc/ImageMagick-*/
-  sudo apt-get update
-  sudo apt-get install libcap2-bin
+  sudo $APT update
+  sudo $APT install libcap2-bin
   sudo setcap 'cap_net_bind_service=+ep' "$(command -v node)"
 fi
 

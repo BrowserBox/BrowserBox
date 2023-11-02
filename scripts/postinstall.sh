@@ -110,7 +110,7 @@ cd ../../../../
 
 USE_FLASH=$(node ./src/show_useflash.js);
 if [[ $USE_FLASH != "false" ]]; then
-  which apt-get && sudo apt-get install jq || winget install jq || brew install jq
+  which $APT && sudo $APT install jq || winget install jq || brew install jq
   ./scripts/download_ruffle.sh
 fi
 
