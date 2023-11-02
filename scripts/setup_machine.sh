@@ -1,6 +1,10 @@
 #!/bin/bash
 
-sudo $APT install -y apt-utils wget curl jq unzip bc psmisc psutils
+if command -v dnf; then
+  sudo $APT install -y wget curl jq unzip bc psmisc psutils
+else
+  sudo $APT install -y apt-utils wget curl jq unzip bc psmisc psutils
+fi
 cd src/zombie-lord
 sudo ./video.deps
 sudo ./audio.deps

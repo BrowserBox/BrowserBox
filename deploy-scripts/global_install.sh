@@ -14,7 +14,7 @@ initialize_package_manager() {
   if command -v apt >/dev/null; then
     package_manager=$(command -v apt)
   elif command -v dnf >/dev/null; then
-    package_manager=$(command -v dnf)
+    package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
     sudo dnf config-manager --set-enabled crb
     sudo dnf -y upgrade --refresh
   else
