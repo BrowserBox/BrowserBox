@@ -1,3 +1,23 @@
+# BrowserBox
+
+```shell
+git clone https://github.com/BrowserBox/BrowserBox.git
+cd BrowserBox
+./deploy-scripts/global_install.sh <my_hostname> <my_email>
+setup_bbpro --port <my_port>
+bbpro
+```
+
+| Install Methods | Supported |
+|-----------------|-----------|
+| Docker          | ✅        |
+| Ubuntu          | ✅        |
+| Debian          | ✅        |
+| CentOS 9        | ✅        |
+| macOS           | ✅        |
+
+----------
+
 # Docker Quick Start :gem: *Version 5*
 
 **October 17 2023**: New version released. Docker image v5.
