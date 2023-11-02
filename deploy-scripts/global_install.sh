@@ -19,6 +19,9 @@ initialize_package_manager() {
     sudo dnf -y upgrade --refresh
     sudo dnf install https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
     sudo dnf install https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
+    sudo firewall-cmd --permanent --zone=public --add-service=http
+    sudo firewall-cmd --permanent --zone=public --add-service=https
+    sudo firewall-cmd --reload
   else
     echo "No supported package manager found. Exiting."
     return 1
