@@ -1,7 +1,30 @@
 #!/usr/bin/env bash
 #/usr/bun/env bash haha
 
-which certbot || sudo apt -y install certbot curl
+sudo="$(command -v sudo)"
+
+initialize_package_manager() {
+  local package_manager
+
+  if command -v apt >/dev/null; then
+    package_manager=$(command -v apt)
+  elif command -v dnf >/dev/null; then
+    package_manager=$(command -v dnf)
+    $sudo dnf config-manager --set-enabled crb
+    $sudo dnf -y upgrade --refresh
+  else
+    echo "No supported package manager found. Exiting."
+    return 1
+  fi
+
+  echo "Using package manager: $package_manager"
+  export APT=$package_manager
+}
+
+# Call the function to initialize and export the APT variable
+initialize_package_manager
+
+command -v certbot || $sudo $APT -y install certbot curl
 
 if [[ -z "$1" ]]; then
   echo "Supply a domain name as first argument" >&2
@@ -14,10 +37,11 @@ if [[ -z "${BB_USER_EMAIL}" ]]; then
 fi
 
 
-sudo certbot certonly --standalone --keep -d $1 --agree-tos -m "${BB_USER_EMAIL}" --no-eff-email
+$sudo certbot certonly --standalone --keep -d $1 --agree-tos -m "${BB_USER_EMAIL}" --no-eff-email
+$sudo systemctl start certbot-renew.timer
 mkdir -p $HOME/sslcerts
-sudo -u root ./deploy-scripts/cp_certs $1 $HOME/sslcerts/
-sudo chown $USER:$USER $HOME/sslcerts/*
+$sudo -u root ./deploy-scripts/cp_certs $1 $HOME/sslcerts/
+$sudo chown $USER:$USER $HOME/sslcerts/*
 
 ./deploy-scripts/auto_cert_renew $1 $USER
 
