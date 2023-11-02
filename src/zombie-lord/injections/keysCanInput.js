@@ -41,7 +41,10 @@
   function monitorActiveElementNextTick(e) {
     let {target} = e || {target:document.activeElement};
     let condition = target == self.focusEl;
-    if ( !condition && e ) {
+    if ( !e.path ) {
+      e.path = e.composedPath();
+    }
+    if ( !condition && e?.path ) {
       target = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
       condition = target == self.focusEl;
     }
@@ -56,7 +59,10 @@
     let {target} = e || {target:document.activeElement};
     if ( ! target || ! target.matches ) return;
     let condition = target.matches(KEYINPUT_ELEMENT);
-    if ( !condition && e ) {
+    if ( !e.path ) {
+      e.path = e.composedPath();
+    }
+    if ( !condition && e?.path ) {
       target = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
       condition = !!target;
     }
