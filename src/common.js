@@ -91,7 +91,7 @@ export const DEBUG = Object.freeze({
   useLoopbackIP: true,
   debugAuth: false,
   pausedDebug: false,
-  useWebRTC: false,
+  useWebRTC: true,
   binaryFrames: true,
   sendImmediate: true,
   chooseFastest: true,
