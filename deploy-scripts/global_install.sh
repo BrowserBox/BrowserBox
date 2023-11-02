@@ -8,6 +8,27 @@ unset npm_config_prefix
 read -p "Enter to continue" -r
 REPLY=""
 
+initialize_package_manager() {
+  local package_manager
+
+  if command -v apt >/dev/null; then
+    package_manager=$(command -v apt)
+  elif command -v dnf >/dev/null; then
+    package_manager=$(command -v dnf)
+    sudo dnf config-manager --set-enabled crb
+    sudo dnf -y upgrade --refresh
+  else
+    echo "No supported package manager found. Exiting."
+    return 1
+  fi
+
+  echo "Using package manager: $package_manager"
+  export APT=$package_manager
+}
+
+# Call the function to initialize and export the APT variable
+initialize_package_manager
+
 read_input() {
   if [ -t 0 ]; then  # Check if it's running interactively
     read -p "$1" -r REPLY
