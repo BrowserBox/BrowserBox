@@ -26,6 +26,8 @@ initialize_package_manager() {
     echo "Installing Custom Build of WebRTC Node for CentOS 9..."
     wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/wrtc.node
     mv wrtc.node $HOME/build/Release/
+    sudo mkdir -p /usr/local/share/dosyago/build/Release
+    sudo cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
   else
     echo "No supported package manager found. Exiting."
     return 1
