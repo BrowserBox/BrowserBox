@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-#/usr/bun/env bash haha
 
 sudo="$(command -v sudo)"
 
 initialize_package_manager() {
   local package_manager
+  local amzn_release_info
 
   if command -v apt >/dev/null; then
     package_manager=$(command -v apt)
@@ -12,6 +12,12 @@ initialize_package_manager() {
     package_manager=$(command -v dnf)
     $sudo dnf config-manager --set-enabled crb
     $sudo dnf -y upgrade --refresh
+  elif command -v yum >/dev/null && [[ -f /etc/system-release ]]; then
+    amzn_release_info=$(cat /etc/system-release)
+    if [[ $amzn_release_info == *"Amazon Linux"* ]]; then
+      package_manager=$(command -v yum)
+      # Additional commands for Amazon Linux here if needed
+    fi
   else
     echo "No supported package manager found. Exiting."
     return 1
@@ -24,7 +30,25 @@ initialize_package_manager() {
 # Call the function to initialize and export the APT variable
 initialize_package_manager
 
-command -v certbot || $sudo $APT -y install certbot curl
+# Check for certbot and install if not found, specific actions for Amazon Linux
+if ! command -v certbot >/dev/null; then
+  if [[ -f /etc/system-release ]]; then
+    amzn_release_info=$(cat /etc/system-release)
+    if [[ $amzn_release_info == *"Amazon Linux"* ]]; then
+      # Install Certbot for Amazon Linux following the provided instructions
+      $sudo yum install -y python3 augeas-libs
+      $sudo python3 -m venv /opt/certbot/
+      $sudo /opt/certbot/bin/pip install --upgrade pip
+      $sudo /opt/certbot/bin/pip install certbot certbot-nginx
+      $sudo ln -sf /opt/certbot/bin/certbot /usr/bin/certbot
+    else
+      # Install Certbot for other distributions
+      $sudo $APT -y install certbot curl
+    fi
+  else
+    $sudo $APT -y install certbot curl
+  fi
+fi
 
 if [[ -z "$1" ]]; then
   echo "Supply a domain name as first argument" >&2

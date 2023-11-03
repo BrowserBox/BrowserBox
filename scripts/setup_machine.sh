@@ -26,7 +26,7 @@ sudo $APT install -y libvips libjpeg-dev
 ./scripts/install_bundle_deps.sh
 ./scripts/install_global_bundle_deps.sh
 sudo ./scripts/install_webp.sh
-sudo ./scripts/audio_setup.sh
+bash ./scripts/audio_setup.sh
 
 echo Installing audio config to /etc/pulse/
 sudo cp -r src/services/instance/parec-server/pulse/* /etc/pulse/

@@ -33,6 +33,9 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
   fi
 fi
 
+echo "Copying custom @roamhq/wrtc/lib/binding.js file..." >&2
+cp ./config/roamhq-wrtc-lib-binding.js ./node_modules/@roamhq/wrtc/lib/binding.js
+
 echo 
 echo
 read_input "Want to run setup_machine script? (you only need to do this the first time you install BG, or when you update new version) y/n " 
