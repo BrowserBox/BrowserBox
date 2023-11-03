@@ -31,7 +31,7 @@ sudo ./scripts/audio_setup.sh
 echo Installing audio config to /etc/pulse/
 sudo cp -r src/services/instance/parec-server/pulse/* /etc/pulse/
 mkdir -p ~/.config/pulse/
-sudo cp -r src/services/instance/parec-server/pulse/* ~/.config/pulse/ 
+cp -r src/services/instance/parec-server/pulse/* ~/.config/pulse/ 
 sudo loginctl enable-linger
 sudo mkdir -p /usr/local/lib/systemd/logind.conf.d
 sudo echo "KillUserProcesses=no" > /usr/local/lib/systemd/logind.conf.d/nokill.conf

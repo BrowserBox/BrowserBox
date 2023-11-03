@@ -470,24 +470,33 @@ function getEncoder() {
   if (encoder) return encoder;
 
   DEBUG.val && console.log('starting encoder');
-  //parec = childProcess.spawn('parec', ['--no-remix', '--process-time-msec=100', '--latency-msec=100', '-d', device]);
-  //parec = childProcess.spawn('pacat', ['-r', '--no-remix', '--process-time-msec=100', '--latency-msec=100', '-d', device]);
-  parec = childProcess.spawn('pacat', [
+  // Notes on args
+    /* 
+      note that the following args break it or are unnecessary
+        '--fix-rate',         // break
+        '--fix-format',       // break
+        '--no-remix',         // unknown if break or unnecessary
+    */
+  const args = [
     '-r',  /* record: the default if run as parec */
     `--rate=${SAMPLE_RATE}`,
     `--format=s${FORMAT_BIT_DEPTH}le`,
     '--channels=1',
-    /* // this breaks it
-      '--fix-rate',
-      '--fix-format',
-    */
-    /*'--no-remix',*/
     '--process-time-msec=100', 
     '--latency-msec=100', 
+    ...(process.platform == 'darwin' ? [] : [
     '-d', device
-  ]);
+    ])
+  ]
+  parec = childProcess.spawn('pacat', args);
   parec.on('spawn', e => {
-    console.log('parec spawned', e, parec.pid);
+    console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
+    try {
+      childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
+      console.log(`reniced parec`);
+    } catch(e) {
+      console.warn(`Error renicing parec`, e);
+    }
   });
   exitOnEpipe(parec.stdout);
   exitOnEpipe(parec.stderr);
@@ -508,11 +517,6 @@ function getEncoder() {
     killAudio();
     //shutDown();
   });
-  try {
-    childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
-  } catch(e) {
-    console.warn(`Error renicing parec`, e);
-  }
 
   const encoderCommand = encoders[encoderType];
 
