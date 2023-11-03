@@ -8,13 +8,14 @@ setup_bbpro --port <my_port>
 bbpro
 ```
 
-| Install Methods | Supported |
-|-----------------|-----------|
-| Docker          | ✅        |
-| Ubuntu          | ✅        |
-| Debian          | ✅        |
-| CentOS 9        | ✅        |
-| macOS           | ✅        |
+| Install Methods          | Supported    |
+|--------------------------|--------------|
+| Docker                   | ✅        |
+| Ubuntu                   | ✅        |
+| Debian                   | ✅        |
+| CentOS 9                 | ✅        |
+| macOS                    | ✅        |
+| Amazon Linux (AWS EC2)   | ✅        |
 
 ----------
 
