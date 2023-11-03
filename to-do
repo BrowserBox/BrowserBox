@@ -1,5 +1,3 @@
-- fix doc viewer startup delay
-
 - check slow webrtc / server start on macos
 
 
