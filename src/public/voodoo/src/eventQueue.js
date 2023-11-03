@@ -455,6 +455,7 @@
               Senders = {so,sa};
               const receivesFrames = !this.publics.state.useViewFrame;
               so({messageId,zombie:{events: [],receivesFrames}});
+              this.publics.state.serverConnected = true;
 
               AssureOpenTask = async () => {
                 this.publics.state.serverConnected = true;
