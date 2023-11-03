@@ -1,5 +1,27 @@
 #!/usr/bin/env bash
 
+#set -x
+
+get_install_dir() {
+  echo "Finding bbpro installation..." >&2
+  install_path1=$(find /usr/local/share -name .bbpro_install_dir -print -quit 2>/dev/null)
+  install_path2=$(find $HOME -name .bbpro_install_dir -print -quit 2>/dev/null)
+  install_dir=$(dirname $install_path1)
+  if [ -z "$install_dir" ]; then
+    install_dir=$(dirname $install_path2)
+  fi
+
+  if [[ -z "$install_dir" ]] || [[ ! -d "$install_dir/node_modules" ]]; then
+    echo "Could not find bppro. Purchase a license and run deploy-scripts/global_install.sh first">&2
+    exit 1
+  fi
+
+  echo "Found bbpro at: $install_dir">&2
+  echo "$install_dir"
+}
+
+export INSTALL_DIR="$(get_install_dir)"
+
 . ./scripts/config.sh
 
 port="${1:-$DOCS_PORT}"

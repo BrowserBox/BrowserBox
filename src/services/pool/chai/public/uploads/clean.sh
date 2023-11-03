@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
+#set -x
 
 . "${INSTALL_DIR}/chai/scripts/config.sh"
 
