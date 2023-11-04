@@ -3,13 +3,13 @@
 # Detect operating system
 OS=$(uname)
 
-# Check if running on macOS
-if [ "$OS" == "Darwin" ]; then
-  echo "WARNING: Running this Docker container is currently not supported on macOS due to a dependency issue."
-  echo "If you would like to star the repo and follow the issue, please visit: https://github.com/WonderInventions/node-webrtc/issues/3"
-  echo "To run on Mac, please follow the regular (non-Docker) instructions at: https://github.com/BrowserBox/BrowserBox"
-  exit 1
-fi
+## Check if running on macOS
+#if [ "$OS" == "Darwin" ]; then
+#  echo "WARNING: Running this Docker container is currently not supported on macOS due to a dependency issue."
+#  echo "If you would like to star the repo and follow the issue, please visit: https://github.com/WonderInventions/node-webrtc/issues/3"
+#  echo "To run on Mac, please follow the regular (non-Docker) instructions at: https://github.com/BrowserBox/BrowserBox"
+#  exit 1
+#fi
 
 # Check for root or sudo capabilities
 if [[ $EUID -eq 0 ]]; then
