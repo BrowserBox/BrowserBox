@@ -2,6 +2,8 @@
 
 **[New Video: Installing BrowserBox on Amazon AWS EC2 Amazon Linux](https://www.youtube.com/watch?v=-YEOHXXid9g)**
 
+General install instructions:
+
 ```shell
 git clone https://github.com/BrowserBox/BrowserBox.git
 cd BrowserBox
@@ -10,14 +12,14 @@ setup_bbpro --port <my_port>
 bbpro
 ```
 
-| Install Methods          | Supported    |
+| Platform                 | Status       |
 |--------------------------|--------------|
-| Docker                   | ✅        |
-| Ubuntu                   | ✅        |
-| Debian                   | ✅        |
-| CentOS 9                 | ✅        |
-| macOS                    | ✅        |
-| Amazon Linux (AWS EC2)   | ✅        |
+| Docker                   | ✅           |
+| Ubuntu                   | ✅           |
+| Debian                   | ✅           |
+| CentOS 9                 | ✅           |
+| macOS                    | ✅           |
+| Amazon Linux (AWS EC2)   | ✅           |
 
 ----------
 
