@@ -19,15 +19,15 @@ bbpro
 
 ----------
 
-# Docker Quick Start :gem: *Version 5*
+# Docker Quick Start :gem: *Version 6*
 
-**October 17 2023**: New version released. Docker image v5.
+**November 4 2023**: New version released. Docker image v6.
 
 First ensure you have docker installed and running! :) Then run:
 
 ```console
 PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/2034ab18fd5410f3cd78b6d1d1ae8d099e8cf9e1/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/734235d3c85ad0c48f0209fcb67474ad05bcffdb/deploy-scripts/run_docker.sh) $PORT
 ```
 
 That's it! Follow the prompts to set up certificates and it will emit a link that you can send open in any web browser. 
