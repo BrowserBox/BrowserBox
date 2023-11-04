@@ -32,7 +32,7 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/734235d3c
 
 That's it! Follow the prompts to set up certificates and it will emit a link that you can send open in any web browser. 
 
-*Please note the Docker image currently does not work on MacOS. For MacOS follow the regular clone and install instructions below. Also note that the script will also log you into the instance. This is so you can explore around if necessary. If you don't need that just type `exit` as soon as you hit the running image prompt.*
+**Update:** Docker image now works on macOS!!! 🎉
 
 # *Special Event!* 🤙 Create a private ephemeral Web Proxy hosted on your GitHub Actions minutes by opening an issue on this repo
 
