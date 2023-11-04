@@ -1,5 +1,7 @@
 # BrowserBox
 
+**[New Video: Installing BrowserBox on Amazon AWS EC2 Amazon Linux](https://www.youtube.com/watch?v=-YEOHXXid9g)**
+
 ```shell
 git clone https://github.com/BrowserBox/BrowserBox.git
 cd BrowserBox
