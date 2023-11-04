@@ -41,24 +41,33 @@ install_chrome() {
   if [[ "$OSTYPE" == "darwin"* ]]; then
     # Check if Google Chrome is already installed
     if [ ! -d "$CHROME_CHECK" ]; then
-      # Run Homebrew update
-      eval "$PM_UPDATE" && eval "$CHROME_INSTALL $CHROME_PACKAGE"
+      # Run Homebrew update and install Google Chrome
+      if ! eval "$PM_UPDATE"; then return 1; fi
+      if ! eval "$CHROME_INSTALL $CHROME_PACKAGE"; then return 1; fi
     else
       echo "Google Chrome is already installed."
-      exit 0
+      return 0
     fi
   else
     # Download Google Chrome for Linux
-    wget "https://dl.google.com/linux/direct/$CHROME_PACKAGE" && \
+    rm -f "$CHROME_PACKAGE"
+    if ! wget "https://dl.google.com/linux/direct/$CHROME_PACKAGE" -O "$CHROME_PACKAGE"; then
+      echo "Failed to download Google Chrome."
+      return 1
+    fi
+    
+    # Install Google Chrome
     if [[ -f "$CHROME_PACKAGE" ]]; then
       if [[ $CHROME_INSTALL == "dpkg -i" ]]; then
-        $sudo $CHROME_INSTALL "$CHROME_PACKAGE" && $sudo $PM_FIX
+        if ! $sudo $CHROME_INSTALL "$CHROME_PACKAGE"; then
+          $sudo $PM_FIX
+        fi
       else
-        $sudo $PM_INSTALL "$CHROME_PACKAGE"
+        if ! $sudo $PM_INSTALL "$CHROME_PACKAGE"; then return 1; fi
       fi
       rm -f "$CHROME_PACKAGE"
     else
-      echo "Failed to download Google Chrome."
+      echo "The Chrome package was not found after download."
       return 1
     fi
   fi
@@ -78,5 +87,11 @@ until install_chrome; do
   fi
   sleep $RETRY_DELAY
 done
-echo "Google Chrome installed successfully."
+
+# Verify the installation was successful
+if [ "$?" -eq 0 ]; then
+  echo "Google Chrome installed successfully."
+else
+  echo "Google Chrome installation failed."
+fi
 
