@@ -21,7 +21,7 @@ is_port_free() {
     echo "    This is because, by convention the browser runs on the port 3000 below the app's main port, and the first user-space port is 1024." >&2
     echo "" >&2
     echo "  Why 65533?" >&2
-    echo "    This is because, each app occupies a slice of 5 consecutive ports, two below, and two above, the app's main port. The highest user-space port is 65535, hence the highest main port the leaves two above it free is 65533." >&2
+    echo "    This is because, each app occupies a slice of 5 consecutive ports, two below, and two above, the app's main port. The highest user-space port is 65535, hence the highest main port that leaves two above it free is 65533." >&2
     echo "" >&2
     return 1
   fi
