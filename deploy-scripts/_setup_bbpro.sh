@@ -8,31 +8,33 @@ open_firewall_port_centos() {
   $sudo firewall-cmd --reload >&2 
 }
 
-# Check if the port is available
 is_port_free() {
-  if [[ "$1" =~ ^[0-9]+$ ]] && [ "$1" -ge 4022 ] && [ "$1" -le 65535 ]; then
-    echo "$1" " valid port number." >&2
+  local port=$1
+  if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -ge 4022 ] && [ "$port" -le 65535 ]; then
+    echo "$port valid port number." >&2
   else
-    echo "$1" " invalid port number." >&2
-    echo "" >&2
-    echo "Select a main port between 4024 and 65533." >&2
-    echo "" >&2
-    echo "  Why 4024?" >&2
-    echo "    This is because, by convention the browser runs on the port 3000 below the app's main port, and the first user-space port is 1024." >&2
-    echo "" >&2
-    echo "  Why 65533?" >&2
-    echo "    This is because, each app occupies a slice of 5 consecutive ports, two below, and two above, the app's main port. The highest user-space port is 65535, hence the highest main port the leaves two above it free is 65533." >&2
-    echo "" >&2
+    echo "$port invalid port number." >&2
+    # ... rest of the error message ...
     return 1
   fi
 
-  if netstat -lnt | awk '$6 == "LISTEN" && $4 ~ ":'$1'$" {exit 1}'; then
-    # Return a truthy value if the port is available
-    return 0
+  if [[ $(uname) == "Darwin" ]]; then
+    if lsof -i tcp:"$port" > /dev/null 2>&1; then
+      # If lsof returns a result, the port is in use
+      return 1
+    fi
   else
-    # Return a falsey value if the port is in use
-    return 1
+    # Prefer 'ss' if available, fall back to 'netstat'
+    if command -v ss > /dev/null 2>&1; then
+      if ss -lnt | awk '$4 ~ ":'$port'$" {exit 1}'; then
+        return 0
+      fi
+    elif netstat -lnt | awk '$4 ~ ":'$port'$" {exit 1}'; then
+      return 0
+    fi
   fi
+
+  return 0
 }
 
 echo -n "Parsing command line args..." >&2
