@@ -8,6 +8,8 @@ if command -v sudo; then
   SUDO="sudo"
 fi
 
+npm run parcel
+
 echo "INSTALL_DIR: $INSTALL_DIR"
 echo -n "Copying bbpro application files to /usr/local/share/dosyago/ ..."
 $SUDO mkdir -p /usr/local/share/dosyago

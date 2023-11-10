@@ -13,8 +13,16 @@ is_port_free() {
   if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -ge 4022 ] && [ "$port" -le 65535 ]; then
     echo "$port valid port number." >&2
   else
-    echo "$port invalid port number." >&2
-    # ... rest of the error message ...
+    echo "$1" " invalid port number." >&2
+    echo "" >&2
+    echo "Select a main port between 4024 and 65533." >&2
+    echo "" >&2
+    echo "  Why 4024?" >&2
+    echo "    This is because, by convention the browser runs on the port 3000 below the app's main port, and the first user-space port is 1024." >&2
+    echo "" >&2
+    echo "  Why 65533?" >&2
+    echo "    This is because, each app occupies a slice of 5 consecutive ports, two below, and two above, the app's main port. The highest user-space port is 65535, hence the highest main port that leaves two above it free is 65533." >&2
+    echo "" >&2
     return 1
   fi
 
