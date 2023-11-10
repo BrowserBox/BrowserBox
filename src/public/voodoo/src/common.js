@@ -24,6 +24,7 @@ export const OPTIONS = {
 
 export const DEBUG = Object.freeze({
   debugResize: false,
+  debugImageRemainderClears: false,
   debugDownload: false,
   debugNetCheck: false,
   debugActivate: false,
@@ -41,7 +42,7 @@ export const DEBUG = Object.freeze({
   debugConnect: false,
   debugBetterModals: false,
   debugHistory: false,
-  debugFavicon: 2,
+  debugFavicon: true,
   debugElementInfo: false,
   coords: false,
   debugBitmapCoordConversion: false,

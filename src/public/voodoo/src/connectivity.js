@@ -21,7 +21,7 @@ export default class InternetChecker {
     });
 
     const fetchPromise = fetch(url, {
-      method: 'HEAD',
+      method: 'GET',
       mode: 'no-cors'
     });
 
