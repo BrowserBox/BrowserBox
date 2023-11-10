@@ -1153,6 +1153,7 @@
           // get the scale
           if ( DEBUG.scaleImage ) {
             const dpi = window.devicePixelRatio;
+            const lastBounds = state.viewState.bounds;
             const {
               width:elementWidth, height:elementHeight
             } = canvas.getBoundingClientRect();
@@ -1162,22 +1163,17 @@
             state.viewState.scaleY = scaleY;
             const scale = Math.min(scaleX,scaleY);
             state.viewState.scale = scale;
-            //state.viewState.scale = 1;
 
-            /*
-            console.log({scale});
-            if ( scale === 1 ) {
-              //console.log(JSON.stringify({elementWidth,elementHeight,w:canvas.width,h:canvas.height,iw:imageEl.width,ih:imageEl.height}));
+            if ( lastBounds ) {
+              if ( imageEl.width != lastBounds.x || imageEl.height != lastBounds.y ) {
+                DEBUG.debugImageRemainderClears && console.log(`Last image and this image differ in size, clearing`, imageEl.width, imageEl.height, lastBounds, Date.now());
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+              }
             }
-            */
-
             state.viewState.bounds = {
               x: imageEl.width,
               y: imageEl.height,
             };
-            //canvas.width = imageEl.width;
-            //canvas.height = imageEl.height;
-            //ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(imageEl, 0, 0, imageEl.width * scale, imageEl.height * scale);
           } else {
             console.warn(`We are not adjusting pointer position for the diff`);
