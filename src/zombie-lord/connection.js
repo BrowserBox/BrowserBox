@@ -132,6 +132,7 @@ const checkSetup = new Map();
 const targets = new Set(); 
 //const waiting = new Map();
 const sessions = new Map();
+const viewports = new Map();
 const casts = new Map();
 const castStarting = new Map();
 const loadings = new Map();
@@ -1553,7 +1554,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           // don't send our custom flag through to the browser
           ensureMinBounds(command.params);
         }
-        delete command.params.resetRequested;
         command.params.mobile = connection.isMobile ? true : false;
         Object.assign(connection.bounds, command.params);
         SCREEN_OPTS.maxWidth = connection.bounds.width;
@@ -1576,7 +1576,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           const thisT = (command.params.sessionId||command.sessionId||that.sessionId);
           const thisVT = thisV+thisT;
           const tabOrViewportChanged = lastVT != thisVT;
-          const viewportChanged = lastV != thisV;
+          const viewportChanged = lastV != thisV || (viewports.has(thisT) ? viewports.get(thisT) != thisV : falsei);
           DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
           DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
           if ( tabOrViewportChanged  ) {
@@ -1591,8 +1591,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               }
             }, 0);
           }
-          if ( viewportChanged ) {
+          if ( viewportChanged || command.params.resetRequested ) {
+            delete command.params.resetRequested;
             lastV = thisV;
+            viewports.set(thisT, thisV);
           } else {
             // if a viewport didn't change we don't need to call Emulation.setDeviceMetricOverride as it will only
             // cause the screen to flash and be completely redrawn as if it were resized 
@@ -1911,6 +1913,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     if ( connection.activeTarget === targetId ) {
       connection.activeTarget = null;
     }
+    viewports.delete(sessionId);
+    loadings.delete(sessionId);
     targets.delete(targetId);
     tabs.delete(targetId);
     removeSession(targetId);
