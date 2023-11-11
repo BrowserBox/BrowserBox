@@ -1576,7 +1576,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           const thisT = (command.params.sessionId||command.sessionId||that.sessionId);
           const thisVT = thisV+thisT;
           const tabOrViewportChanged = lastVT != thisVT;
-          const viewportChanged = lastV != thisV || (viewports.has(thisT) ? viewports.get(thisT) != thisV : falsei);
+          const viewportChanged = lastV != thisV || (viewports.has(thisT) ? viewports.get(thisT) != thisV : false);
           DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
           DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
           if ( tabOrViewportChanged  ) {
