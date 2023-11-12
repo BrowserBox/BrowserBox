@@ -1933,13 +1933,35 @@ export function getViewport(...viewports) {
     } = COMMON_FORMAT;
     return {width, height, deviceScaleFactor};
   }
-  const width = Math.min(...viewports.map(v => v.width));
-  const height = Math.min(...viewports.map(v => v.height));
+  const vals = [...viewports.values()];
+  const W = [...vals.map(v => v.width)];
+  const H = [...vals.map(v => v.height)];
+  const width = Math.min(...W);
+  const height = Math.min(...H);
+  let scale = 1.0;
+  if ( CONFIG.useScaledUpCoViewport ) {
+    const maxWidth = Math.max(...W);
+    const maxHeight = Math.max(...H);
+    if ( CONFIG.useCappedScaling && vals.findIndex(({mobile}) => mobile) ) {
+      scale = Math.min(
+        Math.min(CONFIG.mobileMaxWidth, maxWidth) / width,
+        Math.min(CONFIG.mobileMaxHeight, maxHeight) / height
+      );
+    } else {
+      scale = Math.min(maxWidth/width,maxHeight/height);
+    }
+  }
   const deviceScaleFactor = Math.max(...viewports.map(v => v.deviceScaleFactor));
   const commonViewport = {
-    width, height, deviceScaleFactor
+    width: Math.floor(width*scale), 
+    height: Math.floor(height*scale),
+    deviceScaleFactor
   };
   ensureMinBounds(commonViewport);
+  if ( DEBUG.debugScaledUpCoViewport && CONFIG.useScaledUpCoViewport ) {
+    console.log(vals);
+    console.log({commonViewport});
+  }
   return commonViewport;
 }
 

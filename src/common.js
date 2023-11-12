@@ -29,6 +29,7 @@ export const DEBUG = Object.freeze({
   events: false,
   commands: false,
   adBlock: true,
+  debugScaledUpCoViewport: false,
   debugInterception: false,
   noCastMaxDims: false,
   debugAckBlast: false,
@@ -97,7 +98,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
@@ -160,7 +161,9 @@ export const FLASH_FORMATS = new Set([
 ]);
 export const CONFIG = Object.freeze({
   useScaledUpCoViewport: true,
-  useCappedScaling: false,
+  useCappedScaling: true,
+  mobileMaxWidth: 414, // CSS pixels
+  mobileMaxHeight: 736, // CSS pixels
   castSyncsWithActive: true,
   doAckBlast: false,
   SHORT_TIMEOUT: 30,
