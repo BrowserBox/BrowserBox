@@ -7,9 +7,8 @@ export default class InternetChecker {
     this.checkInProgress = false;
     this[StatusSymbol] = 'issue';
     this.urls = [
-      "https://8.8.8.8",
+      "https://dns.google",
       "https://1.1.1.1",
-      "https://9.9.9.9",
     ];
   }
 

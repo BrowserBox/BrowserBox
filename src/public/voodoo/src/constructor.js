@@ -185,8 +185,7 @@
           // for firefox because it's IME does not fire inputType
           // so we have no simple way to handle deleting content backward
           // this should be FF on MOBILE only probably so that's why it's false
-          convertTypingEventsToSyncValueEvents: deviceIsMobile(),
-          //convertTypingEventsToSyncValueEvents: false,
+          convertTypingEventsToSyncValueEvents: true,
 
           // for safari to detect if pointerevents work
           DoesNotSupportPointerEvents: true,
