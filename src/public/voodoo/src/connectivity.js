@@ -14,8 +14,8 @@ export default class InternetChecker {
   }
 
   async singleCheck(url) {
-    const switch = Math.random();
-    if ( switch > 0.5 ) {
+    const swatch = Math.random();
+    if ( swatch > 0.5 ) {
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Request timed out")), this.timeout);
       });
