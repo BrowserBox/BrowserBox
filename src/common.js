@@ -159,6 +159,8 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  useScaledUpCoViewport: true,
+  useCappedScaling: false,
   castSyncsWithActive: true,
   doAckBlast: false,
   SHORT_TIMEOUT: 30,
