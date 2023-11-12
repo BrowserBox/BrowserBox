@@ -23,6 +23,13 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  // note on: increaseResolutionOfSmallerCanvas
+    // this seems to look clearer on smaller devices when we are using a scaled up co viewport, 
+    // from multiple clients
+    // but it throws off the bitmap calculation for pointer events
+    // so switching off for now
+  increaseResolutionOfSmallerCanvas: false, 
+  debugShrink: false,
   debugResize: false,
   debugImageRemainderClears: false,
   debugDownload: false,
