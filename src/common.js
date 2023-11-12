@@ -165,7 +165,7 @@ export const CONFIG = Object.freeze({
   mobileMaxWidth: 414, // CSS pixels
   mobileMaxHeight: 736, // CSS pixels
   castSyncsWithActive: true,
-  doAckBlast: false,
+  doAckBlast: true,
   SHORT_TIMEOUT: 30,
   useLayerTreeDomain: false,
   tailShots: false,

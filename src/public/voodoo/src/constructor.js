@@ -1797,7 +1797,7 @@
                 } else {
                   queue.sendAck();
                 }
-              }, 200);
+              }, 300);
             }
 
             if ( needsShot ) {
