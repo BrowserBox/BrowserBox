@@ -156,7 +156,7 @@ export const CONFIG = Object.freeze({
   netCheckTimeout: 6007,
   netCheckMinGap: 2000,
   netCheckMaxGap: 7001,
-  doAckBlast: false,
+  doAckBlast: true,
   /* making this true means we don't check audio start on every tap or click BUT
    it does seem to interfere with audio restarting in the case it stops
   */

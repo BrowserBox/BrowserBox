@@ -49,13 +49,6 @@
   const isLE = littleEndian();
   const Connectivity = {
     checker: new InternetChecker(CONFIG.netCheckTimeout, DEBUG.netCheckDebug),
-    checkInterval: randomInterval(async () => {
-      await sleep(0);
-      const { status, error } = await Connectivity.checker.checkInternet();
-      if ( status == 'error' ) {
-        console.warn(`Internet connectivity error: ${error}`, error);
-      }
-    }, CONFIG.netCheckMinGap, CONFIG.netCheckMaxGap)
   };
 
   let loopCalls = 0;
@@ -1086,7 +1079,19 @@
       }
       const queue = [];
       this.state = state;
+
       this.state.Connectivity = Connectivity;
+      Connectivity.checkInterval = randomInterval(async () => {
+        await sleep(0);
+        const { status, error } = await Connectivity.checker.checkInternet();
+        if ( status == 'error' ) {
+          console.warn(`Internet connectivity check error: ${error}`, error);
+        } else if ( status != Connectivity.lastStatus ) {
+          Connectivity.lastStatus = status;
+          setState('bbpro', state);
+        }
+      }, CONFIG.netCheckMinGap, CONFIG.netCheckMaxGap);
+
       Object.defineProperties(this, {
         queue: {
           get: () => queue

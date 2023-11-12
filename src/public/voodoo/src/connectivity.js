@@ -1,31 +1,42 @@
 const StatusSymbol = Symbol(`[[ConnectivityStatus]]`);
 
 export default class InternetChecker {
-  constructor(timeout = 5000, debug = false) {
+  constructor(timeout = 3700, debug = false) {
     this.timeout = timeout;
     this.debug = debug;
     this.checkInProgress = false;
     this[StatusSymbol] = 'issue';
     this.urls = [
-      "https://www.google.com",
-      "https://www.cloudflare.com",
-      "https://www.amazon.com",
-      "https://www.apple.com",
-      "https://www.microsoft.com"
+      "https://1.1.1.1",
+      "https://dns.google",
+      "https://www.akamai.com",
+      "https://www.lumen.com",
+      "https://www.equinix.com",
+      "https://www.f5.com",
+      "https://www.cogentco.com",
+      "https://www.he.net",
+      "https://www.arista.com",
     ];
   }
 
   async singleCheck(url) {
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Request timed out")), this.timeout);
-    });
+    const swatch = Math.random();
+    if ( swatch > 0.8 ) {
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Request timed out")), this.timeout);
+      });
 
-    const fetchPromise = fetch(url, {
-      method: 'GET',
-      mode: 'no-cors'
-    });
+      const fetchPromise = fetch(url, {
+        method: 'GET',
+        mode: 'no-cors'
+      });
 
-    return Promise.race([fetchPromise, timeoutPromise]);
+      return Promise.race([fetchPromise, timeoutPromise]);
+    } else if ( navigator.onLine ) {
+      return true; 
+    } else {
+      throw new Error(`Offline`);
+    }
   }
 
   async checkInternet() {

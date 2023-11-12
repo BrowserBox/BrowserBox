@@ -165,7 +165,7 @@ export const CONFIG = Object.freeze({
   mobileMaxWidth: 414, // CSS pixels
   mobileMaxHeight: 736, // CSS pixels
   castSyncsWithActive: true,
-  doAckBlast: false,
+  doAckBlast: true,
   SHORT_TIMEOUT: 30,
   useLayerTreeDomain: false,
   tailShots: false,
@@ -187,11 +187,15 @@ export const CONFIG = Object.freeze({
     'vbscript:'
   ]),
   connectivityTests: [
-    "https://www.google.com",
-    "https://www.cloudflare.com",
-    "https://www.amazon.com",
-    "https://www.apple.com",
-    "https://www.microsoft.com"
+    "https://1.1.1.1",
+    "https://dns.google",
+    "https://www.akamai.com",
+    "https://www.lumen.com",
+    "https://www.equinix.com",
+    "https://www.f5.com",
+    "https://www.cogentco.com",
+    "https://www.he.net",
+    "https://www.arista.com",
   ]
 });
 export const localBlockList = process.platform == 'darwin' 

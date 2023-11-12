@@ -8,7 +8,11 @@ if command -v sudo; then
   SUDO="sudo"
 fi
 
-npm run parcel
+if [ "$IS_DOCKER_BUILD" = "true" ]; then
+  echo "In docker, not running parcel (it hangs sometimes!)"
+else 
+  npm run parcel
+fi
 
 echo "INSTALL_DIR: $INSTALL_DIR"
 echo -n "Copying bbpro application files to /usr/local/share/dosyago/ ..."

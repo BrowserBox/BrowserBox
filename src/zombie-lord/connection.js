@@ -1811,7 +1811,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             }
             DEBUG.debugAckBlast && console.log({castInfo});
             return castInfo.sessionHasReceivedFrame;
-          }, 100, 200); // or until 20 seconds
+          }, 300, 2); // or until 20 seconds
         }
 
         return resp;

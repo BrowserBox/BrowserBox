@@ -236,12 +236,6 @@ npm i
 
 echo "npm install complete"
 
-if [ "$IS_DOCKER_BUILD" = "true" ]; then
-  echo "In docker, not running parcel (it hangs sometimes!)"
-else 
-  npm run parcel
-fi
-
 if [ "$(os_type)" == "macOS" ]; then
   if brew install gnu-getopt; then
     brew link --force gnu-getopt
