@@ -1161,8 +1161,16 @@
             const scaleY = (canvas.height / imageEl.height);
             state.viewState.scaleX = scaleX;
             state.viewState.scaleY = scaleY;
-            const scale = Math.min(scaleX,scaleY);
+            let scale = Math.min(scaleX,scaleY);
             state.viewState.scale = scale;
+            if ( DEBUG.increaseResolutionOfSmallerCanvas && scale < 1.0 ) {
+              canvas.width /= scale;
+              canvas.height /= scale;
+              scale = 1.0; // for drawing as we've resized the canvas we don't need to resize the image
+              if ( DEBUG.debugShrink ) {
+                console.log(`New canvas dimensions: ${canvas.width} x ${canvas.height}`);
+              }
+            }
 
             if ( lastBounds ) {
               if ( imageEl.width != lastBounds.x || imageEl.height != lastBounds.y ) {

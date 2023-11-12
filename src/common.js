@@ -29,6 +29,7 @@ export const DEBUG = Object.freeze({
   events: false,
   commands: false,
   adBlock: true,
+  debugScaledUpCoViewport: false,
   debugInterception: false,
   noCastMaxDims: false,
   debugAckBlast: false,
@@ -159,6 +160,10 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  useScaledUpCoViewport: true,
+  useCappedScaling: true,
+  mobileMaxWidth: 414, // CSS pixels
+  mobileMaxHeight: 736, // CSS pixels
   castSyncsWithActive: true,
   doAckBlast: false,
   SHORT_TIMEOUT: 30,

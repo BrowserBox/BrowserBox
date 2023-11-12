@@ -1,5 +1,3 @@
-- factor out get_install_dir and other funcs into something we can source into all the scripts that use it
-
 - fix clipboard write on Safari https://developer.apple.com/forums/thread/691873
 
 - if you restart your browser, you probably expect tabs to come back up, so we likely need to save a list of tabs. saved in a file under home, like
@@ -7,6 +5,8 @@
 *url,yscroll
 url,yscroll
 url,yscroll
+
+- factor out get_install_dir and other funcs into something we can source into all the scripts that use it
 
 updated every tab change (not on every scroll). * indicates active tab. Nice, simple format. 
 
