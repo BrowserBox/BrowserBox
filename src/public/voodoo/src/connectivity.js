@@ -7,25 +7,30 @@ export default class InternetChecker {
     this.checkInProgress = false;
     this[StatusSymbol] = 'issue';
     this.urls = [
-      "https://www.google.com",
-      "https://www.cloudflare.com",
-      "https://www.amazon.com",
-      "https://www.apple.com",
-      "https://www.microsoft.com"
+      "https://8.8.8.8",
+      "https://1.1.1.1",
+      "https://9.9.9.9",
     ];
   }
 
   async singleCheck(url) {
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Request timed out")), this.timeout);
-    });
+    const switch = Math.random();
+    if ( switch > 0.5 ) {
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Request timed out")), this.timeout);
+      });
 
-    const fetchPromise = fetch(url, {
-      method: 'GET',
-      mode: 'no-cors'
-    });
+      const fetchPromise = fetch(url, {
+        method: 'GET',
+        mode: 'no-cors'
+      });
 
-    return Promise.race([fetchPromise, timeoutPromise]);
+      return Promise.race([fetchPromise, timeoutPromise]);
+    } else if ( navigator.onLine ) {
+      return true; 
+    } else {
+      throw new Error(`Offline`);
+    }
   }
 
   async checkInternet() {
