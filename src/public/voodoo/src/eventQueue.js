@@ -1153,7 +1153,7 @@
           // get the scale
           if ( DEBUG.scaleImage ) {
             const dpi = window.devicePixelRatio;
-            const {lastBounds} = state.viewState;
+            const lastBounds = state.viewState.bounds;
             const {
               width:elementWidth, height:elementHeight
             } = canvas.getBoundingClientRect();
@@ -1164,10 +1164,12 @@
             const scale = Math.min(scaleX,scaleY);
             state.viewState.scale = scale;
 
-            if ( (imageEl.width < canvas.width || imageEl.height < canvas.height) && state.viewState.unclearedOnChange ) {
-              
+            if ( lastBounds ) {
+              if ( imageEl.width != lastBounds.x || imageEl.height != lastBounds.y ) {
+                DEBUG.debugImageRemainderClears && console.log(`Last image and this image differ in size, clearing`, imageEl.width, imageEl.height, lastBounds, Date.now());
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+              }
             }
-            state.viewState.lastBounds = state.viewState.bounds;
             state.viewState.bounds = {
               x: imageEl.width,
               y: imageEl.height,
