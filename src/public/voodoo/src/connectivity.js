@@ -1,20 +1,27 @@
 const StatusSymbol = Symbol(`[[ConnectivityStatus]]`);
 
 export default class InternetChecker {
-  constructor(timeout = 5000, debug = false) {
+  constructor(timeout = 3700, debug = false) {
     this.timeout = timeout;
     this.debug = debug;
     this.checkInProgress = false;
     this[StatusSymbol] = 'issue';
     this.urls = [
-      "https://dns.google",
       "https://1.1.1.1",
+      "https://dns.google",
+      "https://www.akamai.com",
+      "https://www.lumen.com",
+      "https://www.equinix.com",
+      "https://www.f5.com",
+      "https://www.cogentco.com",
+      "https://www.he.net",
+      "https://www.arista.com",
     ];
   }
 
   async singleCheck(url) {
     const swatch = Math.random();
-    if ( swatch > 0.5 ) {
+    if ( swatch > 0.8 ) {
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Request timed out")), this.timeout);
       });

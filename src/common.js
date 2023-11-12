@@ -98,7 +98,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
@@ -189,6 +189,13 @@ export const CONFIG = Object.freeze({
   connectivityTests: [
     "https://1.1.1.1",
     "https://dns.google",
+    "https://www.akamai.com",
+    "https://www.lumen.com",
+    "https://www.equinix.com",
+    "https://www.f5.com",
+    "https://www.cogentco.com",
+    "https://www.he.net",
+    "https://www.arista.com",
   ]
 });
 export const localBlockList = process.platform == 'darwin' 
