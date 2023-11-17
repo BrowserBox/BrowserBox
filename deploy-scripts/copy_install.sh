@@ -42,6 +42,13 @@ $SUDO cp $INSTALL_DIR/deploy-scripts/_setup_bbpro.sh /usr/local/bin/setup_bbpro
 
 echo "Copied!"
 
+echo -n "Copying torbb command to /usr/local/bin/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/_torbb.sh /usr/local/bin/torbb
+
+echo "Copied!"
+
+
 echo -n "Copying monitoring commands to /usr/local/bin/ ..."
 
 $SUDO cp $INSTALL_DIR/monitor-scripts/* /usr/local/bin/
