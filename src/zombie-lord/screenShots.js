@@ -38,8 +38,8 @@ export const WEBP_QUAL = 32;
 export const JPEG_WEBP_QUAL = MAX_JPG_QUAL;
 // these can be tuned UP on better bandwidth and DOWN on lower bandwidth
 export const ACK_COUNT = process.platform == 'darwin' ? 1 : 2; // how many frames per ack? this should be adapted per link capacity
-export const MAX_FRAMES = 2; /* 1, 2, 4 */
-export const MIN_TIME_BETWEEN_SHOTS = 40; /* 20, 40, 100, 250, 500 */
+export const MAX_FRAMES = process.env.TORBB ? 1 : 2; /* 1, 2, 4 */
+export const MIN_TIME_BETWEEN_SHOTS = process.env.TORBB ? 100 : 40; /* 20, 40, 100, 250, 500 */
 export const MIN_TIME_BETWEEN_TAIL_SHOTS = process.env.TORBB ? 1000 : 175;
 export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
 export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
