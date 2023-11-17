@@ -77,6 +77,11 @@ configure_and_export_tor() {
     local onion_address=$(sudo cat "$hidden_service_dir/hostname")
     export "ADDR_$service_port=$onion_address"
     echo "Exported ADDR_$service_port=$onion_address"
+    # we user scope these certs as the addresses while distinct do not differentiate on ports
+    # and anyway probably a good idea to keep a user's onion addresses private rather than put them in a globally shared location
+    local cert_dir="$HOME/tor-sslcerts/${onion_address}"
+    mkdir -p "${cert_dir}"
+    mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" 
   done
 }
 
