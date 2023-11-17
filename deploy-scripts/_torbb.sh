@@ -107,7 +107,7 @@ manage_firewall() {
 
   detect_os
   command -v tor >/dev/null 2>&1 || install_tor
-  source ~/.config/dosyago/bbpro/test.env || { echo "test.env not found" >&2; exit 1; }
+  source ~/.config/dosyago/bbpro/test.env || { echo "bb environment not found. please run setup_bbpro first." >&2; exit 1; }
   [[ $APP_PORT =~ ^[0-9]+$ ]] || { echo "Invalid APP_PORT" >&2; exit 1; }
 
   [[ $TOR_INSTALLED == true ]] && configure_and_export_tor
