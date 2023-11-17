@@ -4,6 +4,7 @@
 OS_TYPE=""
 TOR_INSTALLED=false
 TORRC=""
+TORDIR=""
 
 os_type() {
   case "$(uname -s)" in
@@ -43,11 +44,14 @@ find_torrc_path() {
   if [[ "$OS_TYPE" == "macos" ]]; then
     prefix=$(brew --prefix tor)
     TORRC=$(node -p "path.resolve('${prefix}/../../etc/tor/torrc')")
+    TORDIR=$(node -p "path.resolve('${prefix}/../../var/lib/tor')")
+    mkdir -p $TORDIR
     if [[ ! -f "$TORRC" ]]; then
       cp "$(dirname $TORRC)/torrc.sample" "$(dirname $TORRC)/torrc" || touch "$TORRC"
     fi
   else
     TORRC="/etc/tor/torrc"  # Default path for Linux distributions
+    TORDIR="/var/lib/tor"
   fi
   echo $TORRC
 }
@@ -125,23 +129,29 @@ configure_and_export_tor() {
   local base_port=$((APP_PORT - 2))
   for i in {0..4}; do
     local service_port=$((base_port + i))
-    local hidden_service_dir="/var/lib/tor/hidden_service_$service_port"
+    local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
     local dirLine="HiddenServiceDir $hidden_service_dir" 
 
-    if grep -qF -- "$dirLine" "$TORRC"; then
+    if grep -qF -- "$dirLine" "$TORRC" || [[ -d "$hidden_service_dir" ]]; then
       sudo rm -rf "$hidden_service_dir"
-    else
-      echo "dirLine" | sudo tee -a "$TORRC"
-      echo "HiddenServicePort 443 127.0.0.1:$service_port" | sudo tee -a "$TORRC"
     fi
 
-    sudo mkdir -p "$hidden_service_dir"
-    sudo chown debian-tor:debian-tor "$hidden_service_dir"
-    sudo chmod 700 "$hidden_service_dir"
+    if [[ "${OS_TYPE}" != "macos" ]]; then
+      sudo mkdir -p "$hidden_service_dir"
+      echo "$dirLine" | sudo tee -a "$TORRC"
+      echo "HiddenServicePort 443 127.0.0.1:$service_port" | sudo tee -a "$TORRC"
+      sudo chown debian-tor:debian-tor "$hidden_service_dir"
+      sudo chmod 700 "$hidden_service_dir"
+    else
+      mkdir -p "$hidden_service_dir"
+      echo "$dirLine" |  tee -a "$TORRC"
+      echo "HiddenServicePort 443 127.0.0.1:$service_port" |  tee -a "$TORRC"
+      chmod 700 "$hidden_service_dir"
+    fi
   done
 
   if [[ "$OS_TYPE" == "macos" ]]; then
-     brew services restart tor
+    brew services restart tor
   else
     sudo systemctl restart tor
   fi
@@ -151,7 +161,7 @@ configure_and_export_tor() {
 
   for i in {0..4}; do
     local service_port=$((base_port + i))
-    local hidden_service_dir="/var/lib/tor/hidden_service_$service_port"
+    local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
     local onion_address=$(sudo cat "$hidden_service_dir/hostname")
     export "ADDR_$service_port=$onion_address"
     echo "Exported ADDR_$service_port=$onion_address"
