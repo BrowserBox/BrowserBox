@@ -132,20 +132,26 @@ configure_and_export_tor() {
     local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
     local dirLine="HiddenServiceDir $hidden_service_dir" 
 
-    if grep -qF -- "$dirLine" "$TORRC" || [[ -d "$hidden_service_dir" ]]; then
+    if [[ -d "$hidden_service_dir" ]]; then
       sudo rm -rf "$hidden_service_dir"
+    fi
+
+    if ! grep -qF -- "$dirLine" "$TORRC"; then
+      if [[ "${OS_TYPE}" != "macos" ]]; then
+        echo "$dirLine" | sudo tee -a "$TORRC"
+        echo "HiddenServicePort 443 127.0.0.1:$service_port" | sudo tee -a "$TORRC"
+      else
+        echo "$dirLine" |  tee -a "$TORRC"
+        echo "HiddenServicePort 443 127.0.0.1:$service_port" |  tee -a "$TORRC"
+      fi
     fi
 
     if [[ "${OS_TYPE}" != "macos" ]]; then
       sudo mkdir -p "$hidden_service_dir"
-      echo "$dirLine" | sudo tee -a "$TORRC"
-      echo "HiddenServicePort 443 127.0.0.1:$service_port" | sudo tee -a "$TORRC"
       sudo chown debian-tor:debian-tor "$hidden_service_dir"
       sudo chmod 700 "$hidden_service_dir"
     else
       mkdir -p "$hidden_service_dir"
-      echo "$dirLine" |  tee -a "$TORRC"
-      echo "HiddenServicePort 443 127.0.0.1:$service_port" |  tee -a "$TORRC"
       chmod 700 "$hidden_service_dir"
     fi
   done
