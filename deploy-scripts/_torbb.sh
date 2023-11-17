@@ -3,6 +3,16 @@
 # Global Variables
 OS_TYPE=""
 TOR_INSTALLED=false
+TORRC=""
+
+os_type() {
+  case "$(uname -s)" in
+    Darwin*) echo "macOS";;
+    Linux*)  echo "Linux";;
+    MING*)   echo "win";;
+    *)       echo "unknown";;
+  esac
+}
 
 find_mkcert_root_ca() {
   local mkcert_dir=""
@@ -29,13 +39,17 @@ find_mkcert_root_ca() {
   fi
 }
 
-os_type() {
-  case "$(uname -s)" in
-    Darwin*) echo "macOS";;
-    Linux*)  echo "Linux";;
-    MING*)   echo "win";;
-    *)       echo "unknown";;
-  esac
+find_torrc_path() {
+  if [[ "$OS_TYPE" == "macos" ]]; then
+    prefix=$(brew --prefix tor)
+    TORRC=$(node -p "path.resolve('${prefix}/../../etc/tor/torrc')")
+    if [[ ! -f "$TORRC" ]]; then
+      cp "$(dirname $TORRC)/torrc.sample" "$(dirname $TORRC)/torrc" || touch "$TORRC"
+    fi
+  else
+    TORRC="/etc/tor/torrc"  # Default path for Linux distributions
+  fi
+  echo $TORRC
 }
 
 setup_mkcert() {
@@ -114,11 +128,11 @@ configure_and_export_tor() {
     local hidden_service_dir="/var/lib/tor/hidden_service_$service_port"
     local dirLine="HiddenServiceDir $hidden_service_dir" 
 
-    if grep -qF -- "$dirLine" /etc/tor/torrc; then
+    if grep -qF -- "$dirLine" "$TORRC"; then
       sudo rm -rf "$hidden_service_dir"
     else
-      echo "dirLine" | sudo tee -a /etc/tor/torrc
-      echo "HiddenServicePort 443 127.0.0.1:$service_port" | sudo tee -a /etc/tor/torrc
+      echo "dirLine" | sudo tee -a "$TORRC"
+      echo "HiddenServicePort 443 127.0.0.1:$service_port" | sudo tee -a "$TORRC"
     fi
 
     sudo mkdir -p "$hidden_service_dir"
@@ -183,6 +197,7 @@ manage_firewall() {
   source ~/.config/dosyago/bbpro/test.env || { echo "bb environment not found. please run setup_bbpro first." >&2; exit 1; }
   [[ $APP_PORT =~ ^[0-9]+$ ]] || { echo "Invalid APP_PORT" >&2; exit 1; }
 
+  find_torrc_path
   [[ $TOR_INSTALLED == true ]] && configure_and_export_tor
   manage_firewall
 
