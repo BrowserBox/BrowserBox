@@ -126,8 +126,13 @@ configure_and_export_tor() {
     sudo chmod 700 "$hidden_service_dir"
   done
 
-  sudo systemctl restart tor
+  if [[ "$OS_TYPE" == "macos" ]]; then
+     brew services restart tor
+  else
+    sudo systemctl restart tor
+  fi
 
+  # should actually wait until all the hostnames exist but hey
   sleep 10
 
   for i in {0..4}; do
