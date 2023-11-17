@@ -145,6 +145,8 @@ export const DEBUG = Object.freeze({
   high: 5
 });
 
+console.log(DEBUG);
+
 export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   "https://users.dosyago.com",
   "https://cloudtabs.net",

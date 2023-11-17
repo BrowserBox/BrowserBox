@@ -43,6 +43,11 @@ CONFIG_DIR=$(get_config_dir)
 echo "Found bbpro at: $CONFIG_DIR"
 
 envFile=$CONFIG_DIR/test.env
+if [[ -z "$TORBB" ]]; then
+  echo "Running in tor..."
+  envFile=$CONFIG_DIR/torbb.env
+fi
+
 
 if [ -f "$envFile" ]; then
   echo "bbpro has been setup. Starting..."
@@ -51,5 +56,4 @@ else
   echo "Please run setup_bbpro before running the first time"
   exit 1
 fi
-
 

@@ -184,16 +184,17 @@ manage_firewall() {
   cert_root=$(find_mkcert_root_ca)
 
   # modify setup file
+  CONFIG_DIR=$HOME/.config/dosyago/bbpro/
+cat > "${CONFIG_DIR}/torbb.env" <<EOF
+source "${CONFIG_DIR}/test.env"
+export TORBB=true
+export TORCA_CERT_ROOT="${cert_root}"
+export SSLCERTS_DIR="${HOME}/tor-sslcerts"
 
-  if ! grep -q "TORBB=" ~/.config/dosyago/bbpro/test.env; then
-    echo 'export TORBB=true' >> ~/.config/dosyago/bbpro/test.env
-  fi
-
-  if ! grep -q "TORCA_CERT_ROOT=" ~/.config/dosyago/bbpro/test.env; then
-    echo 'export TORCA_CERT_ROOT="'${cert_root}'"' >> ~/.config/dosyago/bbpro/test.env
-  fi
+EOF
 } >&2 # Redirect all output to stderr except for onion address export
 
 # Run bbpro
+export TORBB=true
 bbpro
 
