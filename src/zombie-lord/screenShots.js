@@ -2,9 +2,9 @@
 import {DEBUG, sleep, CONFIG} from '../common.js';
 
 const FORMAT = "jpeg"; // "png"
-const MIN_JPG_QUAL = 5;
-const MAX_JPG_QUAL = 80;
-const MAX_NTH_FRAME = 8;
+const MIN_JPG_QUAL = process.env.TORBB ? 25 : 5;
+const MAX_JPG_QUAL = process.env.TORBB ? 75 : 80;
+const MAX_NTH_FRAME = process.env.TORBB ? 17 : 8;
 export const JPEG_QUAL = MAX_JPG_QUAL;
 export const MAX_ACK_BUFFER = 3;
 export const COMMON_FORMAT = Object.freeze({
@@ -40,13 +40,13 @@ export const JPEG_WEBP_QUAL = MAX_JPG_QUAL;
 export const ACK_COUNT = process.platform == 'darwin' ? 1 : 2; // how many frames per ack? this should be adapted per link capacity
 export const MAX_FRAMES = 2; /* 1, 2, 4 */
 export const MIN_TIME_BETWEEN_SHOTS = 40; /* 20, 40, 100, 250, 500 */
-export const MIN_TIME_BETWEEN_TAIL_SHOTS = 175;
+export const MIN_TIME_BETWEEN_TAIL_SHOTS = process.env.TORBB ? 1000 : 175;
 export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
 export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
 // local testing values so small haha
-export const MAX_ROUNDTRIP = DEBUG.localTestRTT ? 100 : 725;
-export const MIN_ROUNDTRIP = DEBUG.localTestRTT ? 80 : 600;
-export const MIN_SPOT_ROUNDTRIP = 125;
+export const MAX_ROUNDTRIP = DEBUG.localTestRTT ? 100 : process.env.TORBB ? 4000 : 725;
+export const MIN_ROUNDTRIP = DEBUG.localTestRTT ? 80 : process.env.TORBB ? 2000 : 600;
+export const MIN_SPOT_ROUNDTRIP = process.env.TORBB ? 600 : 125;
 export const BUF_SEND_TIMEOUT = 50;
 const NOIMAGE = {img: '', frame:0};
 const KEYS = [
