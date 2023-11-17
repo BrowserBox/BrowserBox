@@ -95,6 +95,16 @@ manage_firewall() {
 
 # Main script execution
 {
+  if command -v bbpro >/dev/null 2>&1; then
+    echo "bbpro installed. proceeding..." >&2
+  else
+    echo "bbpro not installed. please run" >&2
+    echo "./deploy-scripts/global_install.sh localhost" >&2
+    echo "before proceeding." >&2
+    echo "exiting now..." >&2
+    exit 1
+  fi
+
   detect_os
   command -v tor >/dev/null 2>&1 || install_tor
   source ~/.config/dosyago/bbpro/test.env || { echo "test.env not found" >&2; exit 1; }
