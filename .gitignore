@@ -5,6 +5,7 @@ core
 build.log
 build/*
 dist/*
+src/public/torca/rootCA.pem
 src/public/assets/ruffle
 src/public/assets/flash/*.swf
 src/public/assets/flash/*.as

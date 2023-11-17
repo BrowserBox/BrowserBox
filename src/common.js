@@ -33,10 +33,10 @@ export const DEBUG = Object.freeze({
   debugInterception: false,
   noCastMaxDims: false,
   debugAckBlast: false,
-  allowAckBlastOnStart: true,
+  allowAckBlastOnStart: !process.env.TORBB && true,
   dontSendActivate: false,
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
-  localTestRTT: process.platform == "darwin" && true,
+  localTestRTT: !process.env.TORBB && process.platform == "darwin" && true,
   debugCast: false,
   showTargetSessionMap: false,
   debugFileDownload: false,
@@ -92,10 +92,10 @@ export const DEBUG = Object.freeze({
   useLoopbackIP: true,
   debugAuth: false,
   pausedDebug: false,
-  useWebRTC: true,
+  useWebRTC: !process.env.TORBB && true,
   binaryFrames: true,
   sendImmediate: true,
-  chooseFastest: true,
+  chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
   mode: 'prod', // prod or dev (whether to bundle frontend code or not)
@@ -145,6 +145,8 @@ export const DEBUG = Object.freeze({
   high: 5
 });
 
+console.log(DEBUG);
+
 export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   "https://users.dosyago.com",
   "https://cloudtabs.net",
@@ -165,7 +167,7 @@ export const CONFIG = Object.freeze({
   mobileMaxWidth: 414, // CSS pixels
   mobileMaxHeight: 736, // CSS pixels
   castSyncsWithActive: true,
-  doAckBlast: true,
+  doAckBlast: !process.env.TORBB && true,
   SHORT_TIMEOUT: 30,
   useLayerTreeDomain: false,
   tailShots: false,

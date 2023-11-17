@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if command -v dnf; then
-  sudo $APT install -y wget curl jq unzip bc psmisc psutils
+  sudo $APT install -y wget curl jq unzip bc psmisc psutils tuned
 else
-  sudo $APT install -y apt-utils wget curl jq unzip bc psmisc psutils
+  sudo $APT install -y apt-utils wget curl jq unzip bc psmisc psutils tuned
 fi
 
 source ~/.nvm/nvm.sh

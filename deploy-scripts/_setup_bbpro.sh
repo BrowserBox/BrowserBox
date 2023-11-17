@@ -162,7 +162,7 @@ if [[ -f /etc/centos-release ]]; then
   open_firewall_port_centos "$AUDIO_PORT"
 fi
 
-cat > $CONFIG_DIR/test.env <<EOF
+cat > "${CONFIG_DIR}/test.env" <<EOF
 export APP_PORT=$PORT
 export LOGIN_TOKEN=$TOKEN
 export COOKIE_VALUE=$COOKIE
