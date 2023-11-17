@@ -118,10 +118,12 @@ configure_and_export_tor() {
     sudo chmod 700 "$hidden_service_dir"
 
     echo "HiddenServiceDir $hidden_service_dir" | sudo tee -a /etc/tor/torrc
-    echo "HiddenServicePort $service_port 127.0.0.1:$service_port" | sudo tee -a /etc/tor/torrc
+    echo "HiddenServicePort 443 127.0.0.1:$service_port" | sudo tee -a /etc/tor/torrc
   done
 
   sudo systemctl restart tor
+
+  sleep 10
 
   for i in {0..4}; do
     local service_port=$((base_port + i))
@@ -163,7 +165,11 @@ manage_firewall() {
   fi
 
   detect_os
-  command -v tor >/dev/null 2>&1 || install_tor
+  if command -v tor >/dev/null 2>&1; then
+    export TOR_INSTALLED=true
+  else
+    install_tor
+  fi
   source ~/.config/dosyago/bbpro/test.env || { echo "bb environment not found. please run setup_bbpro first." >&2; exit 1; }
   [[ $APP_PORT =~ ^[0-9]+$ ]] || { echo "Invalid APP_PORT" >&2; exit 1; }
 
@@ -182,8 +188,6 @@ manage_firewall() {
     echo 'export TORCA_CERT_ROOT="'${cert_root}'"' >> ~/.config/dosyago/bbpro/test.env
   fi
 } >&2 # Redirect all output to stderr except for onion address export
-
-
 
 # Run bbpro
 bbpro
