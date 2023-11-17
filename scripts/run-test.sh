@@ -43,7 +43,7 @@ CONFIG_DIR=$(get_config_dir)
 echo "Found bbpro at: $CONFIG_DIR"
 
 envFile=$CONFIG_DIR/test.env
-if [[ -z "$TORBB" ]]; then
+if [[ -n "$TORBB" ]]; then
   echo "Running in tor..."
   envFile=$CONFIG_DIR/torbb.env
 fi
