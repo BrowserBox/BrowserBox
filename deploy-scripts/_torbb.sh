@@ -4,6 +4,58 @@
 OS_TYPE=""
 TOR_INSTALLED=false
 
+find_mkcert_root_ca() {
+  local mkcert_dir=""
+
+  case "$(uname)" in
+    "Linux")
+      mkcert_dir="$HOME/.local/share/mkcert"
+      ;;
+    "Darwin")
+      mkcert_dir="$HOME/Library/Application Support/mkcert"
+      ;;
+    *)
+      echo "Unsupported OS for mkcert root ca location finding" >&2
+      return 1
+      ;;
+  esac
+
+  if [ -d "$mkcert_dir" ]; then
+    echo "mkcert root CA files in $mkcert_dir:" >&2
+    echo "$mkcert_dir" 
+  else
+    echo "mkcert directory not found in the expected location." >&2
+    return 1
+  fi
+}
+
+os_type() {
+  case "$(uname -s)" in
+    Darwin*) echo "macOS";;
+    Linux*)  echo "Linux";;
+    MING*)   echo "win";;
+    *)       echo "unknown";;
+  esac
+}
+
+setup_mkcert() {
+  if ! command -v mkcert &>/dev/null; then
+    if [ "$(os_type)" == "macOS" ]; then
+      brew install nss mkcert
+    elif [ "$(os_type)" == "win" ]; then
+      choco install mkcert || scoop bucket add extras && scoop install mkcert
+    else
+      amd64=$(dpkg --print-architecture || uname -m)
+      $SUDO $APT -y install libnss3-tools
+      curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
+      chmod +x mkcert-v*-linux-$amd64
+      $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
+      rm mkcert-v*
+    fi
+  fi
+  mkcert -install
+}
+
 # Detect Operating System
 detect_os() {
   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
@@ -118,8 +170,20 @@ manage_firewall() {
   [[ $TOR_INSTALLED == true ]] && configure_and_export_tor
   manage_firewall
 
-  export TORBB=true
+  cert_root=$(find_mkcert_root_ca)
+
+  # modify setup file
+
+  if ! grep -q "TORBB=" ~/.config/dosyago/bbpro/test.env; then
+    echo 'export TORBB=true' >> ~/.config/dosyago/bbpro/test.env
+  fi
+
+  if ! grep -q "TORCA_CERT_ROOT=" ~/.config/dosyago/bbpro/test.env; then
+    echo 'export TORCA_CERT_ROOT="'${cert_root}'"' >> ~/.config/dosyago/bbpro/test.env
+  fi
 } >&2 # Redirect all output to stderr except for onion address export
+
+
 
 # Run bbpro
 bbpro

@@ -47,45 +47,7 @@ get_install_dir() {
   return 1
 }
 
-#!/bin/bash
-
-find_mkcert_root_ca() {
-  local mkcert_dir=""
-
-  case "$(uname)" in
-    "Linux")
-      mkcert_dir="$HOME/.local/share/mkcert"
-      ;;
-    "Darwin")
-      mkcert_dir="$HOME/Library/Application Support/mkcert"
-      ;;
-    *)
-      echo "Unsupported OS for mkcert root ca location finding" >&2
-      return 1
-      ;;
-  esac
-
-  if [ -d "$mkcert_dir" ]; then
-    echo "mkcert root CA files in $mkcert_dir:" >&2
-    echo "$mkcert_dir" 
-  else
-    echo "mkcert directory not found in the expected location." >&2
-    return 1
-  fi
-}
-
 INSTALL_DIR=$(get_install_dir)
-
-if [[ -z "${TORBB}" ]]; then
-  echo "Running in tor..."
-  echo -n "Copying onion address root CA public file to BB static serve folder..."
-  static_ca_root="${INSTALL_DIR}/src/public/torca"
-  mkdir -p "$static_ca_root" || sudo mkdir -p "$static_ca_root"
-  cert_root=$(find_mkcert_root_ca)
-  cp "${cert_root}/rootCA.pem" "${static_ca_root}/" || sudo cp "${cert_root}/rootCA.pem" "${static_ca_root}/"
-  # also copy the document containing the trust guidance and instructions for import / install of this CA to this folder"
-  echo "Copied!"
-fi
 
 node=$(which node)
 echo Using $node
