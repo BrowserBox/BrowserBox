@@ -194,7 +194,7 @@ cat > "${CONFIG_DIR}/torbb.env" <<EOF
 source "${CONFIG_DIR}/test.env"
 export TORBB=true
 export TORCA_CERT_ROOT="${cert_root}"
-export SSLCERTS_DIR="${HOME}/tor-sslcerts"
+#export SSLCERTS_DIR="${HOME}/tor-sslcerts"
 
 EOF
 } >&2 # Redirect all output to stderr except for onion address export
