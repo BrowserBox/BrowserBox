@@ -112,13 +112,18 @@ configure_and_export_tor() {
   for i in {0..4}; do
     local service_port=$((base_port + i))
     local hidden_service_dir="/var/lib/tor/hidden_service_$service_port"
+    local dirLine="HiddenServiceDir $hidden_service_dir" 
+
+    if grep -qF -- "$dirLine" /etc/tor/torrc; then
+      sudo rm -rf "$hidden_service_dir"
+    else
+      echo "dirLine" | sudo tee -a /etc/tor/torrc
+      echo "HiddenServicePort 443 127.0.0.1:$service_port" | sudo tee -a /etc/tor/torrc
+    fi
 
     sudo mkdir -p "$hidden_service_dir"
     sudo chown debian-tor:debian-tor "$hidden_service_dir"
     sudo chmod 700 "$hidden_service_dir"
-
-    echo "HiddenServiceDir $hidden_service_dir" | sudo tee -a /etc/tor/torrc
-    echo "HiddenServicePort 443 127.0.0.1:$service_port" | sudo tee -a /etc/tor/torrc
   done
 
   sudo systemctl restart tor

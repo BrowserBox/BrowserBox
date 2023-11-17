@@ -3,7 +3,7 @@
 #set -x
 
 . ~/.nvm/nvm.sh
-#nvm install stable
+profile="realtime"
 
 USER="${USER:-$(whoami)}"
 
@@ -57,6 +57,12 @@ function switch_profile {
 }
 
 export INSTALL_DIR=$(get_install_dir)
+
+if sudo which tuned-adm >/dev/null 2>&1; then
+  echo -n "Tuning system performance for $profile..." >&2
+  sudo tuned-adm profile $profile
+  echo "Tuned!" >&2
+fi
 
 echo Running bbpro for user $USER... >&2
 
