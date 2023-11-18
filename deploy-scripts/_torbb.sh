@@ -179,10 +179,22 @@ configure_and_export_tor() {
   done
 }
 
+get_ssh_port() {
+  local ssh_port=$(grep -i '^Port ' /etc/ssh/sshd_config | awk '{print $2}')
+
+  # If no port is found, assume the default SSH port
+  if [ -z "$ssh_port" ]; then
+    ssh_port=22
+  fi
+
+  echo "$ssh_port"
+}
+
 # Function to manage the firewall
 manage_firewall() {
   case $OS_TYPE in
     debian | centos)
+      sudo ufw allow $(get_ssh_port)
       sudo ufw enable
       ;;
     macos)
@@ -225,9 +237,15 @@ cat > "${CONFIG_DIR}/torbb.env" <<EOF
 source "${CONFIG_DIR}/test.env"
 export TORBB=true
 export TORCA_CERT_ROOT="${cert_root}"
-#export SSLCERTS_DIR="${HOME}/tor-sslcerts"
+export SSLCERTS_DIR="${HOME}/tor-sslcerts"
 
 EOF
+  base_port=$((APP_PORT - 2))
+  for i in {0..4}; do
+    service_port=$((base_port + i))
+    ref="ADDR_$service_port"
+    echo "export ${ref}=${!ref}" >> "${CONFIG_DIR}/torbb.env"
+  done
 } >&2 # Redirect all output to stderr except for onion address export
 
 # Run bbpro

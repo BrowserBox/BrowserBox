@@ -1,4 +1,6 @@
-- test ssl cert integ
 - export addr_ in torbb.env
+- test ssl cert integ
 - test addr_ integ
 - organize "news" section of readme with its own TOC and add the "tor news"
+- create a stopbb function that sends a "shut down message" to the instance and waits 10 seconds then runs pm2 delete all
+

@@ -179,7 +179,13 @@ export const CONFIG = Object.freeze({
   darkMode: false, 
   forceDarkContentMode: false,
   audioDropPossiblySilentFrames: true,
-  sslcerts: process.env.SSLCERTS_DIR ? process.env.SSLCERTS_DIR : 'sslcerts',
+  sslcerts: port => {
+    if ( process.env.TORBB ) {
+      return path.resolve(process.env.SSLCERTS_DIR, process.env[`ADDR_${port}`]);
+    } else {
+      return process.env.SSLCERTS_DIR ? process.env.SSLCERTS_DIR : 'sslcerts';
+    }
+  },
   reniceValue: process.env.RENICE_VALUE || -15,
   sleepMax: 20000,
   maxTimers: 800,

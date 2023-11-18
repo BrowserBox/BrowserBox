@@ -111,10 +111,10 @@ let certsFound = false;
 if ( DEBUG.goSecure ) {
   try {
     Object.assign(SSL_OPTS, {
-      key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'privkey.pem')),
-      cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'fullchain.pem')),
-      ca: fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'chain.pem')) ? 
-          fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'chain.pem'))
+      key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'privkey.pem')),
+      cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'fullchain.pem')),
+      ca: fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'chain.pem')) ? 
+          fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'chain.pem'))
         :
           undefined
     });
