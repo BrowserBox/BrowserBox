@@ -310,11 +310,13 @@ EOF
 
   # Run bbpro
   export TORBB=true
+  echo -n "Starting bbpro..." >&2
   if ! bbpro &>/dev/null; then
     echo "bbpro failed to start..." >&2
     echo "Exiting..."
     exit 1
   fi
+  echo "Started!" >&2
 } >&2 # Redirect all output to stderr except for onion address export
 
 ref="ADDR_${APP_PORT}"
