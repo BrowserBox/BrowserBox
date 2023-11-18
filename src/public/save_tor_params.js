@@ -14,17 +14,25 @@ saveTorParams();
 function saveTorParams() {
   const uri = new URL(location); 
   const zVal = uri.searchParams.get('z');
-  if ( ! zVal ) {
+  const token = uri.hash.slice(1);
+  if ( ! zVal && ! token ) {
     // no tor params
     return;
   }
 
-  const z = JSON.parse(atob(decodeURIComponent(zVal)));
-  localStorage.setItem(CONFIG.audioServiceFileName, z.x);
-  localStorage.setItem(CONFIG.devtoolsServiceFileName, z.y);
+  if ( zVal ) {
+    const z = JSON.parse(atob(decodeURIComponent(zVal)));
+    localStorage.setItem(CONFIG.audioServiceFileName, z.x);
+    localStorage.setItem(CONFIG.devtoolsServiceFileName, z.y);
 
-  if ( ! z.x || ! z.y ) {
-    console.warn(`Missing tor addresses for services`, z);
+    if ( ! z.x || ! z.y ) {
+      console.warn(`Missing tor addresses for services`, z);
+    }
+  }
+
+  if ( token ) {
+    localStorage.setItem(CONFIG.sessionTokenFileName, token);
+    alert('Set token', token);
   }
 }
 

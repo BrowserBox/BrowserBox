@@ -458,6 +458,11 @@
             AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
             AUDIO.port = CONFIG.isOnion ? 443 : parseInt(location.port) - 2;
             AUDIO.searchParams.set('ran', Math.random());
+            if ( CONFIG.isOnion ) {
+              // due to 3rd-party cookie restrictions in Tor browser we take an easy approach for now
+              // simple logging in to the audio stream using a token every time, avoiding any need for cookies
+              AUDIO.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName));
+            }
             if ( origin === AUDIO.origin ) {
               if ( data.request ) {
                 if ( data.request.login ) {

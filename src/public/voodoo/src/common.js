@@ -178,6 +178,7 @@ export const CONFIG = Object.freeze({
   magicBar: false,
   audioServiceFileName: 'audio.srv',
   devtoolsServiceFileName: 'devtools.srv',
+  sessionTokenFileName: 'session.tkn',
   get isOnion() {
     return location.host.endsWith('.onion')
   }
