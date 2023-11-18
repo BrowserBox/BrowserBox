@@ -1,0 +1,4 @@
+- test ssl cert integ
+- export addr_ in torbb.env
+- test addr_ integ
+- organize "news" section of readme with its own TOC and add the "tor news"
