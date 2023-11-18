@@ -155,6 +155,10 @@ export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   "https://browserbox.pro",
   "https://*.browserbox.pro",
   "https://localhost:*",
+  ...(
+  process.env.DOMAIN ? [
+    `https://${process.env.DOMAIN}:*`,
+  ] : [])
 ];
 export const FLASH_FORMATS = new Set([
   'swf',
