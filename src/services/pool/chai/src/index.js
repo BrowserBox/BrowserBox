@@ -130,6 +130,7 @@
     ".mobi",
   ]);
   const VALID = /^\.[a-zA-Z0-9\-\_]{0,12}$|^$/g;
+  const onionAddress = process.env.TORBB ? process.env[`ADDR_${PORT}`] : undefined;
   const upload = multer({storage});
 
   const State = {
@@ -156,7 +157,7 @@
 
   app.use((req, res, next) => {
     State.Protocol = req.protocol;
-    State.Host = req.get('host');
+    State.Host = onionAddress ? onionAddress : req.get('host');
     next();
   });
 
