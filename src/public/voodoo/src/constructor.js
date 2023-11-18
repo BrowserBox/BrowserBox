@@ -454,8 +454,8 @@
           self.addEventListener('message', ({data, origin, source}) => {
             DEBUG.val && console.log('message for audio', {data,origin,source});
             const AUDIO = new URL(location);
-            AUDIO.pathname = '/stream';
-            AUDIO.port = parseInt(location.port) - 2;
+            AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
+            AUDIO.port = location.host.endsWith('.onion') ? 443 : parseInt(location.port) - 2;
             AUDIO.searchParams.set('ran', Math.random());
             if ( origin === AUDIO.origin ) {
               if ( data.request ) {
@@ -476,8 +476,7 @@
                     const source = document.createElement('source');
                     //source.type = 'audio/mp3';
                     //source.type = 'audio/flac';
-                    source.type = 'audio/wav';
-                    console.warn(`Need to replace this with a websocket and audiocontext from audio-streamer`);
+                    source.type = 'audio/wav'; // wav is lowest latency even tho larger
                     source.src = AUDIO;
                     DEBUG.debugAudio && console.log({'audio?': audio});
                     if ( audio ) {
@@ -524,7 +523,7 @@
                       //source.type = 'audio/mp3';
                       //source.type = 'audio/flac';
                       source.type = 'audio/wav';
-                      source.src = '/silent_half-second.wav';
+                      source.src = '/silent_half-second.wav'; // this is needed to trigger web audio audibility in some browsers
                       if ( audio ) {
                         audio.append(source);
                         audio.addEventListener('playing', () => {

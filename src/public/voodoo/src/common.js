@@ -60,9 +60,11 @@ export const DEBUG = Object.freeze({
   trackLoading: true,
   debugAudioAck: false,
   debugFastest: false,
-  useStraightAudioStream: false,
+  get useStraightAudioStream() {
+    return location.host.endsWith('.onion') || false;
+  },
   get includeAudioElementAnyway() {
-    return isSafari() || deviceIsMobile();
+    return isSafari() || deviceIsMobile() || this.useStraightAudioStream;
   },
   scaleImage: true,       // scaleImage: false centers the remote image if it's smaller than local viewport (large screens))
   centerImage: false,
