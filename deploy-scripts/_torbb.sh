@@ -135,12 +135,19 @@ wait_for_hostnames() {
       local service_port=$((base_port + i))
       local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
 
-      if [[ ! -f "$hidden_service_dir/hostname" ]]; then
-        all_exist=0
-        break
+      # Use sudo for file existence check on Debian and CentOS
+      if [[ "${OS_TYPE}" != "macos" ]]; then
+        if ! sudo test -f "$hidden_service_dir/hostname"; then
+          all_exist=0
+          break
+        fi
+      else
+        if [[ ! -f "$hidden_service_dir/hostname" ]]; then
+          all_exist=0
+          break
+        fi
       fi
     done
-
     if [[ $all_exist -eq 0 ]]; then
       sleep 1  # Wait for a second before checking again
     fi
@@ -156,7 +163,7 @@ configure_and_export_tor() {
     local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
     local dirLine="HiddenServiceDir $hidden_service_dir" 
 
-    if [[ -d "$hidden_service_dir" ]]; then
+    if sudo test -d "$hidden_service_dir"; then
       sudo rm -rf "$hidden_service_dir"
     fi
 

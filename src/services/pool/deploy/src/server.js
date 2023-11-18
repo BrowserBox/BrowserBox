@@ -181,9 +181,9 @@ export default start;
       const SSL_OPTS = {};
       try {
         Object.assign(SSL_OPTS, {
-          key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'privkey.pem')),
-          cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'fullchain.pem')),
-          ca: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'chain.pem')),
+          key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(PORT), 'privkey.pem')),
+          cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(PORT), 'fullchain.pem')),
+          ca: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(PORT), 'chain.pem')),
         });
       } catch(e) {
         console.warn(`Did not find any SSL certificates in ${path.resolve(os.homedir(), CONFIG.sslcerts)}`);
