@@ -127,7 +127,7 @@ export const DEBUG = Object.freeze({
   fontDebug: false,
   useHash: false,
   cwebp: false,
-  sendFramesWhenTheyArrive: true,
+  sendFramesWhenTheyArrive: !process.env.TORBB && true,
   goSecure: true,
   noAudio: false,
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target

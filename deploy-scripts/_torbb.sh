@@ -7,6 +7,25 @@ TORRC=""
 TORDIR=""
 torsslcerts="tor-sslcerts"
 
+ensure_shutdown() {
+  pm2 stop parec-server
+  pm2 stop devtools-server
+  pm2 stop pptr-console-server
+  pm2 stop chat-server
+  pm2 stop main-vf-service
+
+  pm2 delete parec-server
+  pm2 delete devtools-server
+  pm2 delete pptr-console-server
+  pm2 delete chat-server
+  pm2 delete main-vf-service
+
+  sleep 1
+  killall node npm chrome
+  sleep 1
+  killall -9 node npm chrome
+}
+
 os_type() {
   case "$(uname -s)" in
     Darwin*) echo "macOS";;
@@ -33,10 +52,9 @@ find_mkcert_root_ca() {
   esac
 
   if [ -d "$mkcert_dir" ]; then
-    echo "mkcert root CA files in $mkcert_dir:" >&2
     echo "$mkcert_dir" 
   else
-    echo "mkcert directory not found in the expected location." >&2
+    echo "warning: mkcert directory not found in the expected location." >&2
     return 1
   fi
 }
@@ -46,15 +64,15 @@ find_torrc_path() {
     prefix=$(brew --prefix tor)
     TORRC=$(node -p "path.resolve('${prefix}/../../etc/tor/torrc')")
     TORDIR=$(node -p "path.resolve('${prefix}/../../var/lib/tor')")
-    mkdir -p $TORDIR
+    mkdir -p "$TORDIR"
     if [[ ! -f "$TORRC" ]]; then
-      cp "$(dirname $TORRC)/torrc.sample" "$(dirname $TORRC)/torrc" || touch "$TORRC"
+      cp "$(dirname "$TORRC")/torrc.sample" "$(dirname "$TORRC")/torrc" || touch "$TORRC"
     fi
   else
     TORRC="/etc/tor/torrc"  # Default path for Linux distributions
     TORDIR="/var/lib/tor"
   fi
-  echo $TORRC
+  echo "$TORRC"
 }
 
 setup_mkcert() {
@@ -64,15 +82,15 @@ setup_mkcert() {
     elif [ "$(os_type)" == "win" ]; then
       choco install mkcert || scoop bucket add extras && scoop install mkcert
     else
-      amd64=$(dpkg --print-architecture || uname -m)
-      $SUDO $APT -y install libnss3-tools
-      curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
-      chmod +x mkcert-v*-linux-$amd64
-      $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
+      amd64="$(dpkg --print-architecture || uname -m)"
+      $SUDO "$APT" -y install libnss3-tools
+      curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/${amd64}"
+      chmod +x mkcert-v*-linux-"$amd64"
+      $SUDO cp mkcert-v*-linux-"$amd64" /usr/local/bin/mkcert
       rm mkcert-v*
     fi
   fi
-  mkcert -install
+  mkcert -install &>/dev/null
 }
 
 # Detect Operating System
@@ -159,6 +177,7 @@ wait_for_hostnames() {
 # Function to configure Tor and export onion addresses
 configure_and_export_tor() {
   local base_port=$((APP_PORT - 2))
+  echo "Setting up tor hidden services..." >&2
   for i in {0..4}; do
     local service_port=$((base_port + i))
     local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
@@ -188,26 +207,33 @@ configure_and_export_tor() {
     fi
   done
 
+  echo "Restarting tor..." >&2
   if [[ "$OS_TYPE" == "macos" ]]; then
-    brew services restart tor
+    brew services restart tor &> /dev/null
   else
-    sudo systemctl restart tor
+    sudo systemctl restart tor &> /dev/null
   fi
 
-  # should actually wait until all the hostnames exist but hey
+  echo "Waiting for onion services to connect..." >&2
   wait_for_hostnames
 
+  echo "Creating HTTPS TLS certs for onion domains..." >&2
   for i in {0..4}; do
     local service_port=$((base_port + i))
     local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
     local onion_address=$(sudo cat "$hidden_service_dir/hostname")
     export "ADDR_$service_port=$onion_address"
-    echo "Exported ADDR_$service_port=$onion_address"
+
     # we user scope these certs as the addresses while distinct do not differentiate on ports
     # and anyway probably a good idea to keep a user's onion addresses private rather than put them in a globally shared location
+
     local cert_dir="$HOME/${torsslcerts}/${onion_address}"
     mkdir -p "${cert_dir}"
-    mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" 
+    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &> /dev/null; then
+      echo "mkcert failed for $onion_address" >&2
+      echo "mkcert needs to work. exiting..." >&2
+      exit 1
+    fi
   done
 }
 
@@ -224,14 +250,15 @@ get_ssh_port() {
 
 # Function to manage the firewall
 manage_firewall() {
+  echo "Closing firewall (except ssh)..." >&2
   case $OS_TYPE in
     debian | centos)
-      sudo ufw allow $(get_ssh_port)
-      sudo ufw --force enable
+      sudo ufw allow "$(get_ssh_port)" &> /dev/null
+      sudo ufw --force enable &> /dev/null
       ;;
     macos)
       # MacOS firewall configurations are typically done through the GUI
-      echo "Please ensure your firewall is enabled in MacOS Settings."
+      echo "Warning: Please ensure your firewall is enabled in macOS Settings." >&2
       ;;
   esac
 }
@@ -249,7 +276,7 @@ manage_firewall() {
   fi
 
   detect_os
-  if command -v tor >/dev/null 2>&1; then
+  if command -v tor &>/dev/null; then
     export TOR_INSTALLED=true
   else
     install_tor
@@ -260,6 +287,9 @@ manage_firewall() {
   find_torrc_path
   [[ $TOR_INSTALLED == true ]] && configure_and_export_tor
   manage_firewall
+
+  echo "Ensuring any other bbpro $USER was running is shutdown..." >&2
+  ensure_shutdown &>/dev/null
 
   cert_root=$(find_mkcert_root_ca)
 
@@ -280,16 +310,21 @@ EOF
 
   # Run bbpro
   export TORBB=true
-  bbpro
+  if ! bbpro &>/dev/null; then
+    echo "bbpro failed to start..." >&2
+    echo "Exiting..."
+    exit 1
+  fi
 } >&2 # Redirect all output to stderr except for onion address export
 
 ref="ADDR_${APP_PORT}"
 cert_file="$HOME/${torsslcerts}/${!ref}/fullchain.pem"
 sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
-DOMAIN=$(echo $sans | awk '{print $1}')
+DOMAIN=$(echo "$sans" | awk '{print $1}')
 
-# Prepare the login link but do not echo it yet
-LOGIN_LINK="https://${DOMAIN}:${APP_PORT}/login?token=${LOGIN_TOKEN}"
-echo $LOGIN_LINK > $CONFIG_DIR/login.link
-echo $LOGIN_LINK
+# We don't need a port for the TOR link because we've already mapped 1 onion to 1 service port
+LOGIN_LINK="https://${DOMAIN}/login?token=${LOGIN_TOKEN}"
+echo "$LOGIN_LINK" > "${CONFIG_DIR}/login.link"
+echo "Login link for Tor hidden service BB instance:" >&2
+echo "$LOGIN_LINK"
 
