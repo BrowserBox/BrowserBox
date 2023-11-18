@@ -5,6 +5,7 @@ OS_TYPE=""
 TOR_INSTALLED=false
 TORRC=""
 TORDIR=""
+torsslcerts="tor-sslcerts"
 
 os_type() {
   case "$(uname -s)" in
@@ -204,7 +205,7 @@ configure_and_export_tor() {
     echo "Exported ADDR_$service_port=$onion_address"
     # we user scope these certs as the addresses while distinct do not differentiate on ports
     # and anyway probably a good idea to keep a user's onion addresses private rather than put them in a globally shared location
-    local cert_dir="$HOME/tor-sslcerts/${onion_address}"
+    local cert_dir="$HOME/${torsslcerts}/${onion_address}"
     mkdir -p "${cert_dir}"
     mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" 
   done
@@ -263,12 +264,11 @@ manage_firewall() {
   cert_root=$(find_mkcert_root_ca)
 
   # modify setup file
-  CONFIG_DIR=$HOME/.config/dosyago/bbpro/
 cat > "${CONFIG_DIR}/torbb.env" <<EOF
 source "${CONFIG_DIR}/test.env"
 export TORBB=true
 export TORCA_CERT_ROOT="${cert_root}"
-export SSLCERTS_DIR="tor-sslcerts"
+export SSLCERTS_DIR="${torsslcerts}"
 
 EOF
   base_port=$((APP_PORT - 2))
@@ -277,9 +277,19 @@ EOF
     ref="ADDR_$service_port"
     echo "export ${ref}=${!ref}" >> "${CONFIG_DIR}/torbb.env"
   done
+
+  # Run bbpro
+  export TORBB=true
+  bbpro
 } >&2 # Redirect all output to stderr except for onion address export
 
-# Run bbpro
-export TORBB=true
-bbpro
+ref="ADDR_${APP_PORT}"
+cert_file="$HOME/${torsslcerts}/${!ref}/fullchain.pem"
+sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
+DOMAIN=$(echo $sans | awk '{print $1}')
+
+# Prepare the login link but do not echo it yet
+LOGIN_LINK="https://${DOMAIN}:${APP_PORT}/login?token=${LOGIN_TOKEN}"
+echo $LOGIN_LINK > $CONFIG_DIR/login.link
+echo $LOGIN_LINK
 

@@ -179,10 +179,12 @@ export RENICE_VALUE=-19
 # (because of some dependencies with native addons that do not support m1)
 # export TARGET_ARCH=x64
 
+export CONFIG_DIR="${CONFIG_DIR}"
+
 # use localhost certs (need export from access machine, can then block firewall ports and not expose connection to internet
 # for truly private browser)
 # export SSLCERTS_DIR=$HOME/localhost-sslcerts
-export SSLCERTS_DIR=$sslcerts
+export SSLCERTS_DIR="${sslcerts}"
 
 # compute the domain from the cert file
 export DOMAIN="$HOST"
