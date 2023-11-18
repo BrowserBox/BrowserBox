@@ -176,6 +176,8 @@ export const CONFIG = Object.freeze({
   removeAudioStartHandlersAfterFirstStart: false, 
   uiDefaultOff: false,
   magicBar: false,
+  audioServiceFileName: 'audio.srv',
+  devtoolsServiceFileName: 'devtools.srv',
 });
 
 export const CHAR = Object.freeze({

@@ -320,9 +320,19 @@
           DEBUG.debugCookie && console.log('set cookie', COOKIENAME+port, allowed_user_cookie, COOKIE_OPTS);
           let url;
           url = `/?ran=${ran||Math.random()}&ui=${ui}#${session_token}`;
-          if ( !! Url ) {
+          if ( process.env.TORBB ) {
+            const zVal = encodeURIComponent(btoa(JSON.stringify({
+              x: process.env[`ADDR_${server_port-2}`],  // audio port onion service
+              y: process.env[`ADDR_${server_port+1}`],  // devtools port onion service
+            })));
+            if ( !! Url ) {
+              url = `/?url=${encodeURIComponent(Url)}&z=${zVal}&ran=${ran||Math.random()}&ui=${ui}#${session_token}`;
+            } else {
+              url = `/?ran=${ran||Math.random()}&z=${zVal}&ui=${ui}#${session_token}`;
+            }
+          } else if ( !! Url ) {
             url = `/?url=${encodeURIComponent(Url)}&ran=${ran||Math.random()}&ui=${ui}#${session_token}`;
-          } 
+          }
           console.log({url});
           const userAgent = req.headers['user-agent'];
           const isSafari = SafariPlatform.test(userAgent);
