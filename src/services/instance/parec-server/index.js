@@ -106,25 +106,6 @@ const RateLimiter = rateLimit({
   max: DEBUG.mode == 'dev' ? 10000 : 2000
 });
 
-let certsFound = false;
-
-if ( DEBUG.goSecure ) {
-  try {
-    Object.assign(SSL_OPTS, {
-      key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'privkey.pem')),
-      cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'fullchain.pem')),
-      ca: fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'chain.pem')) ? 
-          fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'chain.pem'))
-        :
-          undefined
-    });
-    certsFound = true;
-  } catch(e) {
-    DEBUG.err && console.warn(e);
-  }
-  DEBUG.val && console.log(SSL_OPTS, {GO_SECURE});
-}
-
 function maybeStartEncoderExpiryClock(client) {
   Clients.delete(client);
   hooks--;
@@ -155,6 +136,24 @@ const COOKIE = process.argv[4];
 const TOKEN = process.argv[5];
 DEBUG.val && console.log('starting http server on port', port);
 console.log({ALLOWED_3RD_PARTY_EMBEDDERS});
+let certsFound = false;
+if ( DEBUG.goSecure ) {
+  try {
+    Object.assign(SSL_OPTS, {
+      key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'privkey.pem')),
+      cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'fullchain.pem')),
+      ca: fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'chain.pem')) ? 
+          fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'chain.pem'))
+        :
+          undefined
+    });
+    certsFound = true;
+  } catch(e) {
+    DEBUG.err && console.warn(e);
+  }
+  DEBUG.val && console.log(SSL_OPTS, {GO_SECURE});
+  console.log(SSL_OPTS, {GO_SECURE}, path.resolve(os.homedir(), CONFIG.sslcerts(port), 'privkey.pem'));
+}
 const MODE = certsFound ? https: http;
 const app = express();
 let shuttingDown = false;
