@@ -131,11 +131,9 @@ class BBContextMenu extends Base {
 
       const devtoolsWindow = window.open("about:blank");
 
-      const isOnion = location.host.endsWith('.onion');
+      const url = CONFIG.isOnion ? new URL(localStorage.getItem(CONFIG.devtoolsServiceFileName)) : new URL(location);
 
-      const url = /* isOnion ? relevant onion address */ new URL(location);
-
-      url.port = isOnion ? 443 : parseInt(location.port) + 1;
+      url.port = CONFIG.isOnion ? 443 : parseInt(location.port) + 1;
 
       url.pathname = "login";
       const params = new URLSearchParams();

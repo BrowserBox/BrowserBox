@@ -49,7 +49,7 @@ export const DEBUG = Object.freeze({
   debugConnect: false,
   debugBetterModals: false,
   debugHistory: false,
-  debugFavicon: true,
+  debugFavicon: false,
   debugElementInfo: false,
   coords: false,
   debugBitmapCoordConversion: false,
@@ -178,6 +178,9 @@ export const CONFIG = Object.freeze({
   magicBar: false,
   audioServiceFileName: 'audio.srv',
   devtoolsServiceFileName: 'devtools.srv',
+  get isOnion() {
+    return location.host.endsWith('.onion')
+  }
 });
 
 export const CHAR = Object.freeze({

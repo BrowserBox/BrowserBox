@@ -146,12 +146,19 @@
         "https://localhost:*",
         "https://*.dosyago.com:*",
         "https://*.browserbox.pro:*",
+        ...(process.env.TORBB ? [
+          `https://${process.env[`ADDR_${server_port}`]}:*`, // main service (for data: urls seemingly)
+          `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
+        ] : [])
       ],
       frameSrc: [
         "'self'",
         "https://localhost:*",
         "https://*.browserbox.pro:*",
-        "https://*.dosyago.com:*"
+        "https://*.dosyago.com:*",
+        ...(process.env.TORBB ? [
+          `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
+        ] : [])
       ],
       connectSrc: [
         "'self'",
@@ -163,7 +170,11 @@
         "wss://*.browserbox.pro:*",
         `https://localhost:${server_port-1}`,
         `https://localhost:${server_port+1}`,
-        ...CONFIG.connectivityTests
+        ...CONFIG.connectivityTests,
+        ...(process.env.TORBB ? [
+          `https://${process.env[`ADDR_${server_port}`]}:*`, // main service 
+          `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
+        ] : [])
       ],
       fontSrc: [
         "'self'", 

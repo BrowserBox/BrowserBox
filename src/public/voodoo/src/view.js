@@ -1,4 +1,4 @@
-import {iden,deviceIsMobile, throttle,DEBUG,elogit} from './common.js';
+import {CONFIG, iden, deviceIsMobile, throttle, DEBUG, elogit} from './common.js';
 import {cloneKeyEvent} from './constructor.js';
 import {s as R, c as X} from '../node_modules/bang.html/src/vv/vanillaview.js';
 import * as Subviews from './subviews/index.js';
@@ -13,7 +13,11 @@ const USE_INPUT_MODE = false;
 
 // for bang
 const audio_port = Number(location.port ? location.port : ( location.protocol == 'https' ? 443 : 80 ) ) - 2;
-export const audio_login_url = `${location.protocol}//${location.hostname}:${audio_port}/login`;
+export const audio_login_url = CONFIG.isOnion ? 
+  `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}/login` 
+  : 
+  `${location.protocol}//${location.hostname}:${audio_port}/login`
+;
 
 // MIGRATE
 export function component(state) {

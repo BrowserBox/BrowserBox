@@ -290,7 +290,8 @@
           logitKeyInputEvent,
           runUpdateTabs,
 
-          // for Magic bar
+          // for Magic bar 
+          // and also for Tor
           CONFIG,
 
           // for offline
@@ -453,9 +454,9 @@
         // audio login
           self.addEventListener('message', ({data, origin, source}) => {
             DEBUG.val && console.log('message for audio', {data,origin,source});
-            const AUDIO = new URL(location);
+            const AUDIO = CONFIG.isOnion ? new URL(localStorage.getItem(CONFIG.audioServiceFileName)) : new URL(location);
             AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
-            AUDIO.port = location.host.endsWith('.onion') ? 443 : parseInt(location.port) - 2;
+            AUDIO.port = CONFIG.isOnion ? 443 : parseInt(location.port) - 2;
             AUDIO.searchParams.set('ran', Math.random());
             if ( origin === AUDIO.origin ) {
               if ( data.request ) {
