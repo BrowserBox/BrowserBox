@@ -256,7 +256,7 @@ app.get('/login', (req, res) => {
   }
 });
 
-/*
+if ( process.env.TORBB ) {
   app.get('/', (request, response) => {
     const cookie = request.cookies[COOKIENAME+PORT];
     if ( cookie == COOKIE ) {
@@ -292,7 +292,7 @@ app.get('/login', (req, res) => {
       response.sendStatus(401);
     }
   });
-*/
+}
 
 const server = MODE.createServer(SSL_OPTS, app);
 const socketWaveStreamer = new WebSocketServer({
@@ -441,6 +441,11 @@ server.on('upgrade', (req, socket, head) => {
   const {pathname} = url.parse(req.url);
   switch(pathname) {
     case "/stream": {
+      if ( process.env.TORBB ) {  // reject all audio websocket connections in TOR
+        console.log('Destroying socket as tor mode cannot use webaudio for streaming, need a raw (and laggy) audio tag only)', pathname);
+        sockets.delete(socket);
+        socket.destroy();
+      }
     }; break;
     default: {
       console.log('Destroying socket as wrong path', pathname);
