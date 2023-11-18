@@ -124,6 +124,30 @@ install_tor() {
   esac
 }
 
+wait_for_hostnames() {
+  local base_port=$((APP_PORT - 2))
+  local all_exist=0
+
+  while [ $all_exist -eq 0 ]; do
+    all_exist=1
+
+    for i in {0..4}; do
+      local service_port=$((base_port + i))
+      local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
+
+      if [[ ! -f "$hidden_service_dir/hostname" ]]; then
+        all_exist=0
+        break
+      fi
+    done
+
+    if [[ $all_exist -eq 0 ]]; then
+      sleep 1  # Wait for a second before checking again
+    fi
+  done
+}
+
+
 # Function to configure Tor and export onion addresses
 configure_and_export_tor() {
   local base_port=$((APP_PORT - 2))
@@ -163,7 +187,7 @@ configure_and_export_tor() {
   fi
 
   # should actually wait until all the hostnames exist but hey
-  sleep 10
+  wait_for_hostnames
 
   for i in {0..4}; do
     local service_port=$((base_port + i))
@@ -195,7 +219,7 @@ manage_firewall() {
   case $OS_TYPE in
     debian | centos)
       sudo ufw allow $(get_ssh_port)
-      sudo ufw enable
+      sudo ufw --force enable
       ;;
     macos)
       # MacOS firewall configurations are typically done through the GUI
@@ -237,7 +261,7 @@ cat > "${CONFIG_DIR}/torbb.env" <<EOF
 source "${CONFIG_DIR}/test.env"
 export TORBB=true
 export TORCA_CERT_ROOT="${cert_root}"
-export SSLCERTS_DIR="${HOME}/tor-sslcerts"
+export SSLCERTS_DIR="tor-sslcerts"
 
 EOF
   base_port=$((APP_PORT - 2))

@@ -396,6 +396,7 @@
       Object.assign(secure_options, sec);
     } catch(e) {
       console.warn(`No certs found so will use insecure no SSL.`); 
+      console.log(secure_options, CONFIG.sslcerts(server_port));
     }
 
     const secure = secure_options.cert && secure_options.key;
