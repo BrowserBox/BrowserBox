@@ -467,7 +467,7 @@
             // due to 3rd-party cookie restrictions in Tor browser we take an easy approach for now
             // simple logging in to the audio stream using a token every time, avoiding any need for cookies
             AUDIO.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName));
-            setupAudioElement('audio/mp3');
+            setupAudioElement('audio/wav');
           } else {
             self.addEventListener('message', ({data, origin, source}) => {
               DEBUG.val && console.log('message for audio', {data,origin,source});
@@ -493,8 +493,6 @@
                       if ( DEBUG.includeAudioElementAnyway ) {
                         const audio = Root.querySelector('video#audio');
                         const source = document.createElement('source');
-                        //source.type = 'audio/mp3';
-                        //source.type = 'audio/flac';
                         source.type = 'audio/wav';
                         source.src = '/silent_half-second.wav'; // this is needed to trigger web audio audibility in some browsers
                         if ( audio ) {
@@ -742,6 +740,7 @@
             source.src = AUDIO;
             DEBUG.debugAudio && console.log({'audio?': audio});
             if ( audio ) {
+              let existingTimer = null;
               audio.append(source);
               audio.addEventListener('playing', () => audio.playing = true);
               audio.addEventListener('waiting', () => audio.playing = false);
@@ -783,12 +782,17 @@
               DEBUG.debugAudio && console.log('added handlers', Root, audio);
 
               function startAudioStream() {
+                existingTimer = null;
+                if ( audio.playing ) return;
                 audio.type = type;
                 audio.src = AUDIO;
                 audio.play().catch(async err => {
                   DEBUG.debugAudio && console.warn(`Error when trying to play audio within startAudioStream. Will retry play in 1 second`, err);
                   await sleep(1000); 
-                  setTimeout(startAudioStream, 0);
+                  if ( existingTimer ) return;
+                  else {
+                    existingTimer = setTimeout(startAudioStream, 0);
+                  }
                 });
               }
             } else {

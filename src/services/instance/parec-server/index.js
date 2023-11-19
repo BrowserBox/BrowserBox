@@ -55,19 +55,19 @@ const encoders = {
   mp3: {
     contentType: 'audio/mpeg',
     command: 'lame',
-    /*args: ['-S', '--noreplaygain', '-f', '-r', '-B', '20', '-', '-']*/
+    /*args: ['-S', '--noreplaygain', '-f', '-r', '-B', '20', '-', '-'],*/
     args: ['-S', '-r', '-', '-']
   },
   wav: {
     contentType: 'audio/wav',
-    /*
-    command: () => new Writer({
-        endianness: 'LE', 
-        sampleRate: 44100,
-        bitDepth: 16,
-        channels: 1
-    }),
-    */
+    ...(process.env.TORBB ? {
+      command: () => new Writer({
+          endianness: 'LE', 
+          sampleRate: 44100,
+          bitDepth: 16,
+          channels: 1
+      }),
+    } : {})
   },
   flac: {
     contentType: 'audio/flac',
@@ -84,7 +84,7 @@ const encoders = {
     ]
   }
 };
-const encoderType = process.env.TORBB ? 'mp3' : 'wav';
+const encoderType = process.env.TORBB ? 'wav' : 'wav';
 
 var hooks = 0;
 let parec = undefined;
