@@ -58,6 +58,8 @@ try {
 }
 
 const SOCKETS = new Map();
+//const internalEndpointRegex = /ws=localhost(:\d+)?([^ "'<>,;)}\]`]+)/g;
+const internalEndpointRegex = /ws=localhost(:\d+)?([\/\w.-]+)/g;
 
 const app = express();
 app.use(compression());
@@ -153,14 +155,12 @@ app.get('*', (req, res) => {
     };
 
     DEBUG.debugDevtoolsServer && console.info(`Request authorized`, {resource});
-    const internalEndpointRegex = /ws=localhost(:\d+)?([^ "'<>,;)}\]`]+)/g;
 
     const WSUrl_Raw = req.query.ws || req.query.wss || req.headers['host'].split(':')[0]; 
     const Frame = req.protocol == 'https' ? 'wss:' : 'ws:';
     const WSUrl = new URL(`${Frame}//${WSUrl_Raw}`);
-    WSUrl.searchParams.set('token', TOKEN);
-    const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href)}`;
-    console.log(req.query, WSUrl_Raw, WSUrl, ExternalEndpoint);
+    //WSUrl.searchParams.set('token', TOKEN);
+    const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href.slice(Frame.length+2))}`;
 
     DEBUG.debugDevtoolsServer && console.info({internalEndpointRegex, ExternalEndpoint});
 
