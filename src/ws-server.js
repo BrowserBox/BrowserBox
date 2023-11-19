@@ -131,6 +131,13 @@
   export async function start_ws_server(
       port, zombie_port, allowed_user_cookie, session_token, 
   ) {
+    if ( DEBUG.debugAddr ) {
+      const base = port - 2;
+      for( let i = base; i < base + 5; i++ ) {
+        const key = `ADDR_${i}`;
+        console.log(key, process.env[key]);
+      }
+    }
     DEBUG.val && console.log(`Starting websocket server on ${port}`);
     const app = express();
     const server_port = parseInt(port);

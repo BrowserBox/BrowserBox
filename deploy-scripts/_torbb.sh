@@ -229,7 +229,7 @@ configure_and_export_tor() {
 
     local cert_dir="$HOME/${torsslcerts}/${onion_address}"
     mkdir -p "${cert_dir}"
-    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &> /dev/null; then
+    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address"; then
       echo "mkcert failed for $onion_address" >&2
       echo "mkcert needs to work. exiting..." >&2
       exit 1
@@ -282,14 +282,20 @@ manage_firewall() {
     install_tor
   fi
   source ~/.config/dosyago/bbpro/test.env || { echo "bb environment not found. please run setup_bbpro first." >&2; exit 1; }
+  if [[ -z "${CONFIG_DIR}" ]]; then
+    echo "CONFIG_DIR not set. Run setup_bbpro again before torbb." >&2
+    echo "Exiting..."
+    exit 1
+  fi
+
   [[ $APP_PORT =~ ^[0-9]+$ ]] || { echo "Invalid APP_PORT" >&2; exit 1; }
+
+  echo "Ensuring any other bbpro $USER was running is shutdown..." >&2
+  ensure_shutdown &>/dev/null
 
   find_torrc_path
   [[ $TOR_INSTALLED == true ]] && configure_and_export_tor
   manage_firewall
-
-  echo "Ensuring any other bbpro $USER was running is shutdown..." >&2
-  ensure_shutdown &>/dev/null
 
   cert_root=$(find_mkcert_root_ca)
 

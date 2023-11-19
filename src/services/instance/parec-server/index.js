@@ -257,8 +257,9 @@ app.get('/login', (req, res) => {
 
 if ( process.env.TORBB ) {
   app.get('/', (request, response) => {
+    const {token} = req.query; 
     const cookie = request.cookies[COOKIENAME+PORT];
-    if ( cookie == COOKIE ) {
+    if ( token == TOKEN || cookie == COOKIE ) {
       var contentType = encoders[encoderType].contentType;
       DEBUG.val && console.log('  setting Content-Type to', contentType);
 

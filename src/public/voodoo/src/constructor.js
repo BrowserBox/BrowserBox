@@ -491,7 +491,7 @@
                       let activateAudio;
                       let fetchedData;
                       if ( DEBUG.includeAudioElementAnyway ) {
-                        const audio = Root.querySelector('audio#audio');
+                        const audio = Root.querySelector('video#audio');
                         const source = document.createElement('source');
                         //source.type = 'audio/mp3';
                         //source.type = 'audio/flac';
@@ -533,7 +533,7 @@
                           DEBUG.debugAudio && console.log('added handlers', Root, audio);
                         } else {
                           console.log(Root);
-                          console.warn(`Audio element 'audio#audio' not found.`);
+                          console.warn(`Audio element 'video#audio' not found.`);
                         }
                       }
                       const audios = [];
@@ -729,7 +729,13 @@
             });
           }
 
-          function setupAudioElement() {
+          async function setupAudioElement() {
+            const bb = document.querySelector('bb-view');
+            if ( !bb?.shadowRoot ) {
+              await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot);
+            }
+            Root = document.querySelector('bb-view').shadowRoot;
+            Root = document.querySelector('bb-view').shadowRoot;
             const audio = Root.querySelector('video#audio');
             const source = document.createElement('source');
             //source.type = 'audio/mp3';
@@ -770,7 +776,7 @@
               DEBUG.debugAudio && console.log('added handlers', Root, audio);
             } else {
               console.log(Root);
-              console.warn(`Audio element 'audio#audio' not found.`);
+              console.warn(`Audio element 'video#audio' not found.`);
             }
           }
         }
@@ -1089,7 +1095,7 @@
           use('bb-bw-spinner');
           use('bb-settings-button');
           const bb = document.querySelector('bb-view');
-          if ( !bb.shadowRoot ) {
+          if ( !bb?.shadowRoot ) {
             await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot);
           }
           Root = document.querySelector('bb-view').shadowRoot;
