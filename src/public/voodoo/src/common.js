@@ -87,6 +87,7 @@ export const DEBUG = Object.freeze({
   debugCast: false,
   debugBox: false,
   debugDraw: false,
+  debugDevTools: false,
   debugFrameDrops: false,
   logFrameIds: false,
   dropFramesWhenDrawing: false,

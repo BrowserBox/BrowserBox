@@ -160,7 +160,7 @@ app.get('*', (req, res) => {
     const Frame = req.protocol == 'https' ? 'wss:' : 'ws:';
     const WSUrl = new URL(`${Frame}//${WSUrl_Raw}`);
     //WSUrl.searchParams.set('token', TOKEN);
-    const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href.slice(Frame.length+2))}`;
+    const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href.slice(Frame.length+2))}`.replace(/\/$/, '');
 
     DEBUG.debugDevtoolsServer && console.info({internalEndpointRegex, ExternalEndpoint});
 
@@ -191,7 +191,7 @@ app.get('*', (req, res) => {
             const newVal = Data.body.replace(internalEndpointRegex, (match, port, capturedPart) => {
               console.log('match', match);
               // Construct the new URL using the captured part
-              const result = `${ExternalEndpoint}${capturedPart}&token=${encodeURIComponent(TOKEN)}`;
+              const result = `${ExternalEndpoint}${capturedPart}/${encodeURIComponent(TOKEN)}`;
               console.log('result', result);
               return result;
             }); 
@@ -255,11 +255,13 @@ const wss = new WebSocket.Server({server});
 
 wss.on('connection', (ws, req) => {
   const cookie = req.headers.cookie;
-  const {token} = req.query;
+  const parts = req.url.split('/');
+  const token = parts.pop();
+  const path = parts.join('/');
   const authorized = (cookie && cookie.includes(`${COOKIENAME+PORT}=${COOKIE}`)) || token == TOKEN || NO_AUTH;
   DEBUG.debugDevtoolServer && console.log('connect', {cookie, authorized}, req.path, req.url);
   if ( authorized ) {
-    const url = `ws://127.0.0.1:${CHROME_PORT}${req.url}`;
+    const url = `ws://127.0.0.1:${CHROME_PORT}${path}`;
     try {
       const crdpSocket = new WebSocket(url);
       SOCKETS.set(ws, crdpSocket);
