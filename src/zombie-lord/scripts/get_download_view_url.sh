@@ -35,7 +35,7 @@ step=0
 #groups=$(grep '^Groups' /proc/$$/status)
 #echo $groups > ./file_transfer_groups
 
-echo $username $filename >> ../dl.log.txt
+echo $username $filename >> $HOME/dl.log.txt
 
 # would be good to get this programmatically (maybe node -p "some node script to get the value from common.js"?)
 cd $HOME/.config/dosyago/bbpro/browser-downloads/

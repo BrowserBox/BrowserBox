@@ -132,7 +132,7 @@ class BBContextMenu extends Base {
       const devtoolsWindow = window.open("about:blank");
 
       const url = state.CONFIG.isOnion ? new URL(
-          `${location.protocol}//${localStorage.getItem(CONFIG.devtoolsServiceFileName)}`
+          `${location.protocol}//${localStorage.getItem(state.CONFIG.devtoolsServiceFileName)}`
         ) 
         : 
         new URL(location)
@@ -147,7 +147,14 @@ class BBContextMenu extends Base {
 
       DEBUG.debugInspect && console.log("Login url", url.href);
 
-      await fetch(url, {mode: 'no-cors', credentials: 'include'});
+      // we don't use cookie auth with Tor as Tor browser will block this "3rd-party request"
+      if ( !state.CONFIG.isOnion ) {
+        try {
+          await fetch(url, {mode: 'no-cors', credentials: 'include'});
+        } catch(e) {
+          console.warn(`Issue when attempting to login via token for cookie to devtools service`);
+        }
+      }
 
       url.pathname = `/devtools/inspector.html`
       const inspectParams = new URLSearchParams();
