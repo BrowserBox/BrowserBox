@@ -153,16 +153,15 @@ app.get('*', (req, res) => {
     };
 
     DEBUG.debugDevtoolsServer && console.info(`Request authorized`, {resource});
-    //const InternalEndpoint = /ws=localhost/g;
     const internalEndpointRegex = /ws=localhost([^ "'<>,;)}\]`]+)/g;
 
     const WSUrl_Raw = req.query.ws || req.query.wss || req.headers['host'].split(':')[0]; 
     const Frame = req.protocol == 'https' ? 'wss:' : 'ws:';
     const WSUrl = new URL(`${Frame}//${WSUrl_Raw}`);
     WSUrl.searchParams.set('token', TOKEN);
-    const ExternalEndpoint = `${Frame}=${encodeURIComponent(WSUrl.href)}`;
+    const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href)}`;
 
-    DEBUG.debugDevtoolsServer && console.info({InternalEndpoint, ExternalEndpoint});
+    DEBUG.debugDevtoolsServer && console.info({internalEndpointRegex, ExternalEndpoint});
 
     // CRDP checks that host is localhost
     req.headers['host'] = `${'localhost'}:${PORT}`;
@@ -186,7 +185,7 @@ app.get('*', (req, res) => {
             );
             **/
 
-          if ( InternalEndpoint.test(Data.body) ) {
+          if ( internalEndpointRegex.test(Data.body) ) {
 
             const newVal = Data.body.replace(internalEndpointRegex, (match, capturedPart) => {
               // Construct the new URL using the captured part
