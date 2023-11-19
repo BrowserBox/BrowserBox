@@ -29,6 +29,7 @@ export const DEBUG = Object.freeze({
   events: false,
   commands: false,
   adBlock: true,
+  debugAddr: true,
   debugScaledUpCoViewport: false,
   debugInterception: false,
   noCastMaxDims: false,
@@ -94,11 +95,11 @@ export const DEBUG = Object.freeze({
   pausedDebug: false,
   useWebRTC: !process.env.TORBB && true,
   binaryFrames: true,
-  sendImmediate: true,
+  sendImmediate: !process.env.TORBB && true,
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
@@ -127,7 +128,8 @@ export const DEBUG = Object.freeze({
   fontDebug: false,
   useHash: false,
   cwebp: false,
-  sendFramesWhenTheyArrive: true,
+  sendFramesWhenTheyArrive: !process.env.TORBB && true,
+  onlySendOnAck: process.env.TORBB || false,
   goSecure: true,
   noAudio: false,
   legacyShots: !FRAME_CONTROL,      /* until enableBeginFrameControl can be set for any target
@@ -154,6 +156,10 @@ export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   "https://browserbox.pro",
   "https://*.browserbox.pro",
   "https://localhost:*",
+  ...(
+  process.env.DOMAIN ? [
+    `https://${process.env.DOMAIN}:*`,
+  ] : [])
 ];
 export const FLASH_FORMATS = new Set([
   'swf',
@@ -179,7 +185,14 @@ export const CONFIG = Object.freeze({
   darkMode: false, 
   forceDarkContentMode: false,
   audioDropPossiblySilentFrames: true,
-  sslcerts: process.env.SSLCERTS_DIR ? process.env.SSLCERTS_DIR : 'sslcerts',
+  sslcerts: port => {
+    if ( process.env.TORBB ) {
+      DEBUG.debugAddr && console.log('Cert file for', process.env[`ADDR_${port}`]);
+      return path.join(process.env.SSLCERTS_DIR, process.env[`ADDR_${port}`]);
+    } else {
+      return process.env.SSLCERTS_DIR ? process.env.SSLCERTS_DIR : 'sslcerts';
+    }
+  },
   reniceValue: process.env.RENICE_VALUE || -15,
   sleepMax: 20000,
   maxTimers: 800,
@@ -247,7 +260,7 @@ if ( DEBUG.noSecurityHeaders ) {
 }
 //export const APP_ROOT = APP_ROOT;
 
-export const GO_SECURE = fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'privkey.pem'));
+export const GO_SECURE = fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
 
 export const version = 'v1';
 export const COOKIENAME = `litewait-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;

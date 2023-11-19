@@ -131,6 +131,13 @@
   export async function start_ws_server(
       port, zombie_port, allowed_user_cookie, session_token, 
   ) {
+    if ( DEBUG.debugAddr ) {
+      const base = port - 2;
+      for( let i = base; i < base + 5; i++ ) {
+        const key = `ADDR_${i}`;
+        console.log(key, process.env[key]);
+      }
+    }
     DEBUG.val && console.log(`Starting websocket server on ${port}`);
     const app = express();
     const server_port = parseInt(port);
@@ -142,16 +149,24 @@
         "blob:"
       ],
       mediaSrc: [
+        "data:",
         "'self'",
         "https://localhost:*",
         "https://*.dosyago.com:*",
         "https://*.browserbox.pro:*",
+        ...(process.env.TORBB ? [
+          `https://${process.env[`ADDR_${server_port}`]}:*`, // main service (for data: urls seemingly)
+          `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
+        ] : [])
       ],
       frameSrc: [
         "'self'",
         "https://localhost:*",
         "https://*.browserbox.pro:*",
-        "https://*.dosyago.com:*"
+        "https://*.dosyago.com:*",
+        ...(process.env.TORBB ? [
+          `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
+        ] : [])
       ],
       connectSrc: [
         "'self'",
@@ -163,7 +178,11 @@
         "wss://*.browserbox.pro:*",
         `https://localhost:${server_port-1}`,
         `https://localhost:${server_port+1}`,
-        ...CONFIG.connectivityTests
+        ...CONFIG.connectivityTests,
+        ...(process.env.TORBB ? [
+          `https://${process.env[`ADDR_${server_port}`]}:*`, // main service 
+          `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
+        ] : [])
       ],
       fontSrc: [
         "'self'", 
@@ -320,9 +339,19 @@
           DEBUG.debugCookie && console.log('set cookie', COOKIENAME+port, allowed_user_cookie, COOKIE_OPTS);
           let url;
           url = `/?ran=${ran||Math.random()}&ui=${ui}#${session_token}`;
-          if ( !! Url ) {
+          if ( process.env.TORBB ) {
+            const zVal = encodeURIComponent(btoa(JSON.stringify({
+              x: process.env[`ADDR_${server_port-2}`],  // audio port onion service
+              y: process.env[`ADDR_${server_port+1}`],  // devtools port onion service
+            })));
+            if ( !! Url ) {
+              url = `/?url=${encodeURIComponent(Url)}&z=${zVal}&ran=${ran||Math.random()}&ui=${ui}#${session_token}`;
+            } else {
+              url = `/?ran=${ran||Math.random()}&z=${zVal}&ui=${ui}#${session_token}`;
+            }
+          } else if ( !! Url ) {
             url = `/?url=${encodeURIComponent(Url)}&ran=${ran||Math.random()}&ui=${ui}#${session_token}`;
-          } 
+          }
           console.log({url});
           const userAgent = req.headers['user-agent'];
           const isSafari = SafariPlatform.test(userAgent);
@@ -386,16 +415,17 @@
     const secure_options = {};
     try {
       const sec = {
-        key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'privkey.pem')),
-        cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'fullchain.pem')),
-        ca: fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'chain.pem')) ? 
-            fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts, 'chain.pem'))
+        key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(server_port), 'privkey.pem')),
+        cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(server_port), 'fullchain.pem')),
+        ca: fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts(server_port), 'chain.pem')) ? 
+            fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(server_port), 'chain.pem'))
           :
             undefined
       };
       Object.assign(secure_options, sec);
     } catch(e) {
       console.warn(`No certs found so will use insecure no SSL.`); 
+      console.log(secure_options, CONFIG.sslcerts(server_port));
     }
 
     const secure = secure_options.cert && secure_options.key;

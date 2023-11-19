@@ -1107,7 +1107,15 @@
         frameId: this.state.latestFrameReceived, 
         castSessionId: this.state.latestCastSession
       };
-      this[$].senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: this[$].screenshotReceived});
+      if ( ! this[$].senders )  {
+        /*
+        untilTrue(() => this[$].senders).then(() => {
+          this[$].senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: this[$].screenshotReceived});
+        });
+        */
+      } else {
+        this[$].senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: this[$].screenshotReceived});
+      }
     }
     send( event ) {
       if ( event.immediate ) {

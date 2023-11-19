@@ -49,7 +49,7 @@ export const DEBUG = Object.freeze({
   debugConnect: false,
   debugBetterModals: false,
   debugHistory: false,
-  debugFavicon: true,
+  debugFavicon: false,
   debugElementInfo: false,
   coords: false,
   debugBitmapCoordConversion: false,
@@ -60,9 +60,11 @@ export const DEBUG = Object.freeze({
   trackLoading: true,
   debugAudioAck: false,
   debugFastest: false,
-  useStraightAudioStream: false,
+  get useStraightAudioStream() {
+    return location.host.endsWith('.onion') || false;
+  },
   get includeAudioElementAnyway() {
-    return isSafari() || deviceIsMobile();
+    return isSafari() || deviceIsMobile() || this.useStraightAudioStream;
   },
   scaleImage: true,       // scaleImage: false centers the remote image if it's smaller than local viewport (large screens))
   centerImage: false,
@@ -85,6 +87,7 @@ export const DEBUG = Object.freeze({
   debugCast: false,
   debugBox: false,
   debugDraw: false,
+  debugDevTools: false,
   debugFrameDrops: false,
   logFrameIds: false,
   dropFramesWhenDrawing: false,
@@ -174,6 +177,15 @@ export const CONFIG = Object.freeze({
   removeAudioStartHandlersAfterFirstStart: false, 
   uiDefaultOff: false,
   magicBar: false,
+  audioServiceFileName: 'audio.srv',
+  devtoolsServiceFileName: 'devtools.srv',
+  sessionTokenFileName: 'session.tkn',
+  get isOnion() {
+    return location.host.endsWith('.onion')
+  },
+  get privateConnectivity() {
+    return this.isOnion || true; // on by default now
+  }
 });
 
 export const CHAR = Object.freeze({

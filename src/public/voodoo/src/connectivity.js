@@ -1,12 +1,18 @@
+import {CONFIG} from './common.js';
+
 const StatusSymbol = Symbol(`[[ConnectivityStatus]]`);
 
 export default class InternetChecker {
-  constructor(timeout = 3700, debug = false) {
+  constructor(timeout = (CONFIG.privateConnectivity ? 6000 : 3700), debug = false) {
+    this.biasToVerification = CONFIG.privateConnectivity ? 0.618 : 0.8;
     this.timeout = timeout;
     this.debug = debug;
     this.checkInProgress = false;
     this[StatusSymbol] = 'issue';
-    this.urls = [
+    this.urls = CONFIG.privateConnectivity ? [ 
+      location.origin,
+      location.origin
+    ] : [
       "https://1.1.1.1",
       "https://dns.google",
       "https://www.akamai.com",
@@ -21,7 +27,7 @@ export default class InternetChecker {
 
   async singleCheck(url) {
     const swatch = Math.random();
-    if ( swatch > 0.8 ) {
+    if ( swatch > this.biasToVerification ) {
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Request timed out")), this.timeout);
       });
@@ -46,40 +52,55 @@ export default class InternetChecker {
     }
 
     this.checkInProgress = true;
-
-    // Shuffle and select two URLs
-    const shuffledUrls = this.urls.sort(() => 0.5 - Math.random());
-    const selectedUrls = shuffledUrls.slice(0, 2);
-
-    // Execute checks
     let status = 'issue';
     let error;
 
-    try {
-      const results = await Promise.allSettled([
-        this.singleCheck(selectedUrls[0]),
-        this.singleCheck(selectedUrls[1])
-      ]);
 
-      const successfulChecks = results.filter(r => r.status === 'fulfilled').length;
-
-      if (successfulChecks === 2) {
-        status = "online";
-        this.debug && console.log("You are online!");
-      } else if (successfulChecks === 0) {
-        status = "offline";
-        this.debug && console.log("You are offline!");
-      } else {
-        this.debug && console.log("Connection status is ambiguous. You might be experiencing network issues.");
-        status = 'issue';
+    if ( CONFIG.privateConnectivity ) {
+      try {
+        await this.singleCheck(this.urls[0]);
+        this.checkInProgress = false;
+        status = 'online'
+      } catch(e) {
+        this.checkInProgress = false;
+        this.status = 'offline';
       }
 
-      this.checkInProgress = false;
-    } catch (eerr) {
-      this.checkInProgress = false;
-      this.debug && console.log("An error occurred while checking the connection.", err);
-      error = err;
-      return { status: "error", error };
+      this.status = status;
+      return { status };
+    } else {
+      // Shuffle and select two URLs
+      const shuffledUrls = this.urls.sort(() => 0.5 - Math.random());
+      const selectedUrls = shuffledUrls.slice(0, 2);
+
+      // Execute checks
+      try {
+        const results = await Promise.allSettled([
+          this.singleCheck(selectedUrls[0]),
+          this.singleCheck(selectedUrls[1])
+        ]);
+
+        const successfulChecks = results.filter(r => r.status === 'fulfilled').length;
+
+        if (successfulChecks === 2) {
+          status = "online";
+          this.debug && console.log("You are online!");
+        } else if (successfulChecks === 0) {
+          status = "offline";
+          this.debug && console.log("You are offline!");
+        } else {
+          this.debug && console.log("Connection status is ambiguous. You might be experiencing network issues.");
+          status = 'issue';
+        }
+
+        this.checkInProgress = false;
+      } catch (err) {
+        this.checkInProgress = false;
+        this.debug && console.log("An error occurred while checking the connection.", err);
+        error = err;
+        this.status = 'error';
+        return { status: "error", error };
+      }
     }
 
     this.status = status;

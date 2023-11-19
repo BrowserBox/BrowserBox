@@ -5,6 +5,11 @@ OS_TYPE=""
 TOR_INSTALLED=false
 TORRC=""
 TORDIR=""
+torsslcerts="tor-sslcerts"
+
+ensure_shutdown() {
+  pm2 delete all
+}
 
 os_type() {
   case "$(uname -s)" in
@@ -32,10 +37,9 @@ find_mkcert_root_ca() {
   esac
 
   if [ -d "$mkcert_dir" ]; then
-    echo "mkcert root CA files in $mkcert_dir:" >&2
     echo "$mkcert_dir" 
   else
-    echo "mkcert directory not found in the expected location." >&2
+    echo "warning: mkcert directory not found in the expected location." >&2
     return 1
   fi
 }
@@ -45,15 +49,15 @@ find_torrc_path() {
     prefix=$(brew --prefix tor)
     TORRC=$(node -p "path.resolve('${prefix}/../../etc/tor/torrc')")
     TORDIR=$(node -p "path.resolve('${prefix}/../../var/lib/tor')")
-    mkdir -p $TORDIR
+    mkdir -p "$TORDIR"
     if [[ ! -f "$TORRC" ]]; then
-      cp "$(dirname $TORRC)/torrc.sample" "$(dirname $TORRC)/torrc" || touch "$TORRC"
+      cp "$(dirname "$TORRC")/torrc.sample" "$(dirname "$TORRC")/torrc" || touch "$TORRC"
     fi
   else
     TORRC="/etc/tor/torrc"  # Default path for Linux distributions
     TORDIR="/var/lib/tor"
   fi
-  echo $TORRC
+  echo "$TORRC"
 }
 
 setup_mkcert() {
@@ -63,15 +67,15 @@ setup_mkcert() {
     elif [ "$(os_type)" == "win" ]; then
       choco install mkcert || scoop bucket add extras && scoop install mkcert
     else
-      amd64=$(dpkg --print-architecture || uname -m)
-      $SUDO $APT -y install libnss3-tools
-      curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
-      chmod +x mkcert-v*-linux-$amd64
-      $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
+      amd64="$(dpkg --print-architecture || uname -m)"
+      $SUDO "$APT" -y install libnss3-tools
+      curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/${amd64}"
+      chmod +x mkcert-v*-linux-"$amd64"
+      $SUDO cp mkcert-v*-linux-"$amd64" /usr/local/bin/mkcert
       rm mkcert-v*
     fi
   fi
-  mkcert -install
+  mkcert -install &>/dev/null
 }
 
 # Detect Operating System
@@ -124,15 +128,47 @@ install_tor() {
   esac
 }
 
+wait_for_hostnames() {
+  local base_port=$((APP_PORT - 2))
+  local all_exist=0
+
+  while [ $all_exist -eq 0 ]; do
+    all_exist=1
+
+    for i in {0..4}; do
+      local service_port=$((base_port + i))
+      local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
+
+      # Use sudo for file existence check on Debian and CentOS
+      if [[ "${OS_TYPE}" != "macos" ]]; then
+        if ! sudo test -f "$hidden_service_dir/hostname"; then
+          all_exist=0
+          break
+        fi
+      else
+        if [[ ! -f "$hidden_service_dir/hostname" ]]; then
+          all_exist=0
+          break
+        fi
+      fi
+    done
+    if [[ $all_exist -eq 0 ]]; then
+      sleep 1  # Wait for a second before checking again
+    fi
+  done
+}
+
+
 # Function to configure Tor and export onion addresses
 configure_and_export_tor() {
   local base_port=$((APP_PORT - 2))
+  echo "Setting up tor hidden services..." >&2
   for i in {0..4}; do
     local service_port=$((base_port + i))
     local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
     local dirLine="HiddenServiceDir $hidden_service_dir" 
 
-    if [[ -d "$hidden_service_dir" ]]; then
+    if sudo test -d "$hidden_service_dir"; then
       sudo rm -rf "$hidden_service_dir"
     fi
 
@@ -156,38 +192,58 @@ configure_and_export_tor() {
     fi
   done
 
+  echo "Restarting tor..." >&2
   if [[ "$OS_TYPE" == "macos" ]]; then
-    brew services restart tor
+    brew services restart tor &> /dev/null
   else
-    sudo systemctl restart tor
+    sudo systemctl restart tor &> /dev/null
   fi
 
-  # should actually wait until all the hostnames exist but hey
-  sleep 10
+  echo "Waiting for onion services to connect..." >&2
+  wait_for_hostnames
 
+  echo "Creating HTTPS TLS certs for onion domains..." >&2
   for i in {0..4}; do
     local service_port=$((base_port + i))
     local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
     local onion_address=$(sudo cat "$hidden_service_dir/hostname")
     export "ADDR_$service_port=$onion_address"
-    echo "Exported ADDR_$service_port=$onion_address"
+
     # we user scope these certs as the addresses while distinct do not differentiate on ports
     # and anyway probably a good idea to keep a user's onion addresses private rather than put them in a globally shared location
-    local cert_dir="$HOME/tor-sslcerts/${onion_address}"
+
+    local cert_dir="$HOME/${torsslcerts}/${onion_address}"
     mkdir -p "${cert_dir}"
-    mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" 
+    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
+      echo "mkcert failed for $onion_address" >&2
+      echo "mkcert needs to work. exiting..." >&2
+      exit 1
+    fi
   done
+}
+
+get_ssh_port() {
+  local ssh_port=$(grep -i '^Port ' /etc/ssh/sshd_config | awk '{print $2}')
+
+  # If no port is found, assume the default SSH port
+  if [ -z "$ssh_port" ]; then
+    ssh_port=22
+  fi
+
+  echo "$ssh_port"
 }
 
 # Function to manage the firewall
 manage_firewall() {
+  echo "Closing firewall (except ssh)..." >&2
   case $OS_TYPE in
     debian | centos)
-      sudo ufw enable
+      sudo ufw allow "$(get_ssh_port)" &> /dev/null
+      sudo ufw --force enable &> /dev/null
       ;;
     macos)
       # MacOS firewall configurations are typically done through the GUI
-      echo "Please ensure your firewall is enabled in MacOS Settings."
+      echo "Warning: Please ensure your firewall is enabled in macOS Settings." >&2
       ;;
   esac
 }
@@ -205,13 +261,22 @@ manage_firewall() {
   fi
 
   detect_os
-  if command -v tor >/dev/null 2>&1; then
+  if command -v tor &>/dev/null; then
     export TOR_INSTALLED=true
   else
     install_tor
   fi
   source ~/.config/dosyago/bbpro/test.env || { echo "bb environment not found. please run setup_bbpro first." >&2; exit 1; }
+  if [[ -z "${CONFIG_DIR}" ]]; then
+    echo "CONFIG_DIR not set. Run setup_bbpro again before torbb." >&2
+    echo "Exiting..."
+    exit 1
+  fi
+
   [[ $APP_PORT =~ ^[0-9]+$ ]] || { echo "Invalid APP_PORT" >&2; exit 1; }
+
+  echo "Ensuring any other bbpro $USER was running is shutdown..." >&2
+  ensure_shutdown &>/dev/null
 
   find_torrc_path
   [[ $TOR_INSTALLED == true ]] && configure_and_export_tor
@@ -220,17 +285,39 @@ manage_firewall() {
   cert_root=$(find_mkcert_root_ca)
 
   # modify setup file
-  CONFIG_DIR=$HOME/.config/dosyago/bbpro/
 cat > "${CONFIG_DIR}/torbb.env" <<EOF
 source "${CONFIG_DIR}/test.env"
 export TORBB=true
 export TORCA_CERT_ROOT="${cert_root}"
-#export SSLCERTS_DIR="${HOME}/tor-sslcerts"
+export SSLCERTS_DIR="${torsslcerts}"
 
 EOF
+  base_port=$((APP_PORT - 2))
+  for i in {0..4}; do
+    service_port=$((base_port + i))
+    ref="ADDR_$service_port"
+    echo "export ${ref}=${!ref}" >> "${CONFIG_DIR}/torbb.env"
+  done
+
+  # Run bbpro
+  export TORBB=true
+  echo -n "Starting bbpro..." >&2
+  if ! bbpro &>/dev/null; then
+    echo "bbpro failed to start..." >&2
+    echo "Exiting..."
+    exit 1
+  fi
+  echo "Started!" >&2
 } >&2 # Redirect all output to stderr except for onion address export
 
-# Run bbpro
-export TORBB=true
-bbpro
+ref="ADDR_${APP_PORT}"
+cert_file="$HOME/${torsslcerts}/${!ref}/fullchain.pem"
+sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
+DOMAIN=$(echo "$sans" | awk '{print $1}')
+
+# We don't need a port for the TOR link because we've already mapped 1 onion to 1 service port
+LOGIN_LINK="https://${DOMAIN}/login?token=${LOGIN_TOKEN}"
+echo "$LOGIN_LINK" > "${CONFIG_DIR}/login.link"
+echo "Login link for Tor hidden service BB instance:" >&2
+echo "$LOGIN_LINK"
 

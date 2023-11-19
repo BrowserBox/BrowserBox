@@ -131,9 +131,14 @@ class BBContextMenu extends Base {
 
       const devtoolsWindow = window.open("about:blank");
 
-      const url = new URL(location);
+      const url = state.CONFIG.isOnion ? new URL(
+          `${location.protocol}//${localStorage.getItem(state.CONFIG.devtoolsServiceFileName)}`
+        ) 
+        : 
+        new URL(location)
+      ;
 
-      url.port = parseInt(location.port) + 1;
+      url.port = state.CONFIG.isOnion ? 443 : parseInt(location.port) + 1;
 
       url.pathname = "login";
       const params = new URLSearchParams();
@@ -142,20 +147,40 @@ class BBContextMenu extends Base {
 
       DEBUG.debugInspect && console.log("Login url", url.href);
 
-      await fetch(url, {mode: 'no-cors', credentials: 'include'});
+      // we don't use cookie auth with Tor as Tor browser will block this "3rd-party request"
+      if ( !state.CONFIG.isOnion ) {
+        try {
+          await fetch(url, {mode: 'no-cors', credentials: 'include'});
+        } catch(e) {
+          console.warn(`Issue when attempting to login via token for cookie to devtools service`);
+        }
+      }
 
-      url.pathname = `/devtools/inspector.html`
+      const dtUrl = `${url.host}/devtools/page/${currentTab}`;
+      DEBUG.debugDevTools && console.log({dtUrl});
       const inspectParams = new URLSearchParams();
       inspectParams.set(
         location.protocol.endsWith('https:') ? 'wss' : 'ws', 
-        `${url.host}/devtools/page/${currentTab}`
+        dtUrl
       );
       inspectParams.set('remoteFrontend', 'true');
       url.search = inspectParams;
+      if ( state.CONFIG.isOnion ) {
+        const locationUrl = new URL(url);
+        locationUrl.pathname = `/devtools/inspector.html`
+        const nextUri = locationUrl.href;
 
-      DEBUG.debugInspect && console.log("Inspect url", url.href);
+        url.pathname = '/login';
+        url.searchParams.set('token', localStorage.getItem(state.CONFIG.sessionTokenFileName));
+        url.searchParams.set('nextUri', nextUri);
+        devtoolsWindow.location = url;
+      } else {
+        url.pathname = `/devtools/inspector.html`
 
-      devtoolsWindow.location  = url;
+        DEBUG.debugInspect && console.log("Inspect url", url.href);
+
+        devtoolsWindow.location  = url;
+      }
     }
 
     close(_, delay = true) {

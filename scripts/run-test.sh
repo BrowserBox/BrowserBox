@@ -46,6 +46,7 @@ envFile=$CONFIG_DIR/test.env
 if [[ -n "$TORBB" ]]; then
   echo "Running in tor..."
   envFile=$CONFIG_DIR/torbb.env
+  . $envFile
 fi
 
 

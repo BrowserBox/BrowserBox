@@ -18,6 +18,12 @@ else
   output="$ip_address"
 fi
 
+if [[ -n "${TORBB}" ]]; then
+  output="localhost"
+fi
+
+# we don't need to change this for tor because even if we did curl and node fetch for example
+# cannot call onion addresses hahaha 
 provider="https://${output}:${DOCS_PORT}/very-secure-manifest-convert"
 
 echo "provider: $provider" >&2
@@ -33,7 +39,7 @@ step=0
 #groups=$(grep '^Groups' /proc/$$/status)
 #echo $groups > ./file_transfer_groups
 
-echo $username $filename >> ../dl.log.txt
+echo $username $filename >> $HOME/dl.log.txt
 
 # would be good to get this programmatically (maybe node -p "some node script to get the value from common.js"?)
 cd $HOME/.config/dosyago/bbpro/browser-downloads/
@@ -51,7 +57,7 @@ done
 
 file=$(LC_ALL=C head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13 ; echo)
 curl -k -F secret="$secret" -F pdf=@"$filename" $provider > $file
+# echo the file without buffering so node's child_process definitely gets it
 stdbuf --output=0 echo $(cat $file)
 rm $file
-#curl -s -F pdf=@"$filename" $provider
 
