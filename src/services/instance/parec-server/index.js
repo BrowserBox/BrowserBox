@@ -84,9 +84,7 @@ const encoders = {
     ]
   }
 };
-//const encoderType = 'flac';
-//const encoderType = 'mp3';
-const encoderType = 'wav';
+const encoderType = process.env.TORBB ? 'mp3' : 'wav';
 
 var hooks = 0;
 let parec = undefined;
@@ -282,14 +280,9 @@ if ( process.env.TORBB ) {
 
       exitOnEpipe(response);
      
-      //enc.stdout.on('data', function(buffer) {
-      //  response.write(buffer);
-      //});
-
       request.on('close', function() {
         DEBUG.val && console.log('Request closing');
         response.end();
-        //releaseEncoder();
       });
     } else {
       response.sendStatus(401);

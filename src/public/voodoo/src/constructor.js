@@ -467,7 +467,7 @@
             // due to 3rd-party cookie restrictions in Tor browser we take an easy approach for now
             // simple logging in to the audio stream using a token every time, avoiding any need for cookies
             AUDIO.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName));
-            setupAudioElement();
+            setupAudioElement('audio/mp3');
           } else {
             self.addEventListener('message', ({data, origin, source}) => {
               DEBUG.val && console.log('message for audio', {data,origin,source});
@@ -486,7 +486,7 @@
                     const frame = Root.querySelector('iframe#audio-login');
                     frame?.remove();
                     if ( DEBUG.useStraightAudioStream ) {
-                      setupAudioElement();
+                      setupAudioElement('audio/wav');
                     } else {
                       let activateAudio;
                       let fetchedData;
@@ -729,7 +729,7 @@
             });
           }
 
-          async function setupAudioElement() {
+          async function setupAudioElement(type = 'audio/wav') {
             const bb = document.querySelector('bb-view');
             if ( !bb?.shadowRoot ) {
               await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot, 1000, 600);
@@ -738,9 +738,7 @@
             Root = document.querySelector('bb-view').shadowRoot;
             const audio = Root.querySelector('video#audio');
             const source = document.createElement('source');
-            //source.type = 'audio/mp3';
-            //source.type = 'audio/flac';
-            source.type = 'audio/wav'; // wav is lowest latency even tho larger
+            source.type = type;
             source.src = AUDIO;
             DEBUG.debugAudio && console.log({'audio?': audio});
             if ( audio ) {
@@ -749,12 +747,14 @@
               audio.addEventListener('waiting', () => audio.playing = false);
               audio.addEventListener('ended', () => {
                 audio.playing = false;
+                DEBUG.debugAudio && console.log(`Audio stream ended`);
                 startAudioStream();
-              }
-              audio.addEventListener('error', () => {
+              });
+              audio.addEventListener('error', err => {
                 audio.playing = false;
+                DEBUG.debugAudio && console.log(`Audio stream errored`, err);
                 startAudioStream();
-              }
+              });
               const activateAudio = async () => {
                 DEBUG.debugAudio && console.log('called activate audio');
                 if ( audio.muted || audio.hasAttribute('muted') ) {
@@ -783,11 +783,12 @@
               DEBUG.debugAudio && console.log('added handlers', Root, audio);
 
               function startAudioStream() {
+                audio.type = type;
                 audio.src = AUDIO;
                 audio.play().catch(async err => {
-                  DEBUG.debugAudio && console.warn(`Error when trying to play audio within startAudioStream. Will retry play in 1 second`);
+                  DEBUG.debugAudio && console.warn(`Error when trying to play audio within startAudioStream. Will retry play in 1 second`, err);
                   await sleep(1000); 
-                  startAudioStream();
+                  setTimeout(startAudioStream, 0);
                 });
               }
             } else {
