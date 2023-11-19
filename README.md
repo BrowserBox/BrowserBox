@@ -7,8 +7,8 @@ We're excited to announce that BrowserBox can now run as a hidden service on the
 *Note: Tor Hidden Services for BrowserBox are a working prototype, and in my testing it was often very slow. While your mileage may vary, there's likely much that can still be improved. If you see something, open an issue!*
 
 #### Getting Started with BrowserBox on Tor
-- **Download Mkcert Root CA**: For a smoother experience on Tor, download and install the Mkcert Root CA, unique to each installation, to avoid certificate warnings. [Installation Guide](#rootCA-installation-guidance).
-- **Create Your Hidden Service**: Fork this repository and open an issue using the "Make BB Hidden Service" template. A GitHub action will automatically create your unique .onion link. [Learn more](#github-issue-template).
+- **Download Mkcert Root CA**: For a smoother experience on Tor, download and install the Mkcert Root CA, unique to each installation, to avoid certificate warnings. [Installation Guide](https://github.com/BrowserBox/BrowserBox/blob/boss/src/public/torca/rootca-import-guidance.md), and [Helpful Video Tutorial How-To for macOS](https://youtu.be/ADN26iqtSZ8).
+- **Create Your Hidden Service**: Fork this repository and open an issue using the "Make BB Hidden Service" template. A GitHub action will automatically create your unique .onion link. [Learn more](https://github.com/BrowserBox/BrowserBox/issues/new?assignees=&labels=enhancement&projects=&template=Torbb.md&title=BrowserBox+Tor+Hidden+Service).
 - **Try it now**: Fork or generate this repository, and create an issue from the template to get your BrowserBox running on Tor! [Fork here](../../fork) / [Generate here](../../generate).
 
 ### Table of Contents

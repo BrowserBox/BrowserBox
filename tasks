@@ -1,7 +1,2 @@
-- ensure we are only adding token to ws path in tor browser v
-- switch off connectivity API in tor browser version
-- add a Make Hidden Service issue template and corresponding action
-- update other services to use ADDR_<port> if present
-- organize "news" section of readme with its own TOC and add the "tor news"
 - create a stopbb function that sends a "shut down message" to the instance and waits 10 seconds then runs pm2 delete all
 

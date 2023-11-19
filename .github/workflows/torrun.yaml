@@ -70,12 +70,17 @@ jobs:
     - name: Start server with torbb
       run: torbb > torbb_output.txt
 
-    - name: Retrieve .onion URL
+    - name: Retrieve .onion URL and rootCA.pem download link
       id: tor
       run: |
         onion_url=$(grep -m 1 "http" torbb_output.txt)
         echo "::set-output name=url::$onion_url"
         echo "The .onion URL is: $onion_url"
+
+        onion_origin=$(echo "$onion_url" | awk -F/ '{print $1 "//" $3}')
+        torca_link="${onion_origin}/torca/rootCA.pem"
+        echo "::set-output name=torcaLink::$torca_link"
+        echo "The rootCA.pem download link is: $torca_link"
 
     - name: Comment on issue with output URL and tag owner/actor
       uses: actions/github-script@v6
@@ -84,7 +89,8 @@ jobs:
           const issue_number = context.issue.number;
           const actor = context.actor;
           const url = `${{ steps.tor.outputs.url }}`;  // Output URL from Tor
-          const commentBody = `Hey @${actor}, your ephemeral Tor hidden service running BrowserBox is ready!\n\nAccess it at this .onion address:\n\n${url}`;
+          const torcaLink = `${{ steps.tor.outputs.torcaLink }}`; // Output optional pem DL URL
+          const commentBody = `Hey @${actor}, your personalized BrowserBox Tor hidden service is up and running! 🎉\n\nHere's your unique .onion address:\n\n${url}\n\n**Important**: To ensure full functionality, especially for audio features, please download and trust our \`rootCA.pem\` file. You can find it here: ${torcaLink}.\n\nNeed help importing the certificate on macOS? Check out this [handy video guide](https://youtu.be/ADN26iqtSZ8). For other operating systems, follow our detailed instructions [here](https://github.com/BrowserBox/BrowserBox/blob/boss/src/public/torca/rootca-import-guidance.md).\n\nEnjoy a seamless and secure browsing experience! 🌐`;
           github.rest.issues.createComment({
             issue_number: issue_number,
             owner: context.repo.owner,
@@ -103,7 +109,7 @@ jobs:
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: `Your [BrowserBox](https://github.com/BrowserBox/BrowserBox) Tor hidden service has closed! Re-open the issue to turn it on again!\n\n**P.S.** Did you have fun? If so you may like to purchase a license at [our website](https://dosyago.com)`
+            body: `Your BrowserBox Tor hidden service session has ended. Thank you for using our service! Remember, for future sessions, ensure you've installed our \`rootCA.pem\` for the best experience. Looking forward to seeing you again! 🌟\n\nInterested in more? Consider a license purchase at [our website](https://dosyago.com).`
           });
 
           github.rest.issues.update({
