@@ -267,13 +267,16 @@ if ( process.env.TORBB ) {
       });
 
       const enc = getEncoder();
+      let unpipe;
 
       if ( enc?.stdout ) {
         DEBUG.val  && console.log('Setting encoder stdout to pipe');
         enc.stdout.pipe(response);
+        unpipe = () => enc.stdout.unpipe(resopnse);
       } else if ( enc?.pipe ) {
         DEBUG.val  && console.log('Setting encoder to pipe');
         enc.pipe(response);
+        unpipe = () => enc.unpipe(response);
       } else {
         console.warn(`Encoder has no stdout or pipe properties`);
       }
@@ -282,6 +285,11 @@ if ( process.env.TORBB ) {
      
       request.on('close', function() {
         DEBUG.val && console.log('Request closing');
+        try {
+          unpipe();
+        } catch(e) {
+          console.warn(`Error on unpipe at end of request / resopnse`);
+        }
         response.end();
       });
     } else {
