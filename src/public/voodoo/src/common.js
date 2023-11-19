@@ -182,6 +182,9 @@ export const CONFIG = Object.freeze({
   sessionTokenFileName: 'session.tkn',
   get isOnion() {
     return location.host.endsWith('.onion')
+  },
+  get privateConnectivity() {
+    return this.isOnion || true; // on by default now
   }
 });
 
