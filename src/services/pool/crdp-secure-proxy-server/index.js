@@ -160,7 +160,7 @@ app.get('*', (req, res) => {
     const Frame = req.protocol == 'https' ? 'wss:' : 'ws:';
     const WSUrl = new URL(`${Frame}//${WSUrl_Raw}`);
     //WSUrl.searchParams.set('token', TOKEN);
-    const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href.slice(Frame.length+2))}`.replace(/\/$/, '');
+    const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href.slice(Frame.length+2).replace(/\/$/, ''))}`
 
     DEBUG.debugDevtoolsServer && console.info({internalEndpointRegex, ExternalEndpoint});
 
@@ -254,41 +254,46 @@ const server = (GO_SECURE ? https : http).createServer(SSL_OPTS, app);
 const wss = new WebSocket.Server({server});
 
 wss.on('connection', (ws, req) => {
-  const cookie = req.headers.cookie;
-  const parts = req.url.split('/');
-  const token = parts.pop();
-  const path = parts.join('/');
-  const authorized = (cookie && cookie.includes(`${COOKIENAME+PORT}=${COOKIE}`)) || token == TOKEN || NO_AUTH;
-  DEBUG.debugDevtoolServer && console.log('connect', {cookie, authorized}, req.path, req.url);
-  if ( authorized ) {
-    const url = `ws://127.0.0.1:${CHROME_PORT}${path}`;
-    try {
-      const crdpSocket = new WebSocket(url);
-      SOCKETS.set(ws, crdpSocket);
-      crdpSocket.on('open', () => {
-        DEBUG.debugDevtoolServer && console.log('CRDP Socket open');
-      });
-      crdpSocket.on('message', msg => {
-        //console.log('Browser sends us message', msg);
-        ws.send(msg);
-      });
-      ws.on('message', msg => {
-        //console.log('We send browser message');
-        crdpSocket.send(msg);
-      });
-      ws.on('close', (code, reason) => {
-        SOCKETS.delete(ws);
-        crdpSocket.close(1001, 'client disconnected');
-      });
-      crdpSocket.on('close', (code, reason) => {
-        SOCKETS.delete(ws);
-        crdpSocket.close(1011, 'browser disconnected');
-      });
-    } catch(e) {
-      console.warn('Error on websocket creation', e);
+  try {
+    const cookie = req.headers.cookie;
+    const parts = req.url.split('/');
+    const token = parts.pop();
+    const path = parts.join('/');
+    const authorized = (cookie && cookie.includes(`${COOKIENAME+PORT}=${COOKIE}`)) || token == TOKEN || NO_AUTH;
+    DEBUG.debugDevtoolServer && console.log('connect', {cookie, authorized, token}, req.path, req.url);
+    if ( authorized ) {
+      const url = `ws://127.0.0.1:${CHROME_PORT}${path}`;
+      try {
+        const crdpSocket = new WebSocket(url);
+        SOCKETS.set(ws, crdpSocket);
+        crdpSocket.on('open', () => {
+          DEBUG.debugDevtoolServer && console.log('CRDP Socket open');
+        });
+        crdpSocket.on('message', msg => {
+          //console.log('Browser sends us message', msg);
+          ws.send(msg);
+        });
+        ws.on('message', msg => {
+          //console.log('We send browser message');
+          crdpSocket.send(msg);
+        });
+        ws.on('close', (code, reason) => {
+          SOCKETS.delete(ws);
+          crdpSocket.close(1001, 'client disconnected');
+        });
+        crdpSocket.on('close', (code, reason) => {
+          SOCKETS.delete(ws);
+          crdpSocket.close(1011, 'browser disconnected');
+        });
+      } catch(e) {
+        console.warn('Error on websocket creation', e);
+      }
+    } else {
+      ws.send(JSON.stringify({error:`Not authorized`}));
+      ws.close();
     }
-  } else {
-    ws.send(JSON.stringify({error:`Not authorized`}));
+  } catch(err) {
+    console.warn(`Error during ws connection`, err);
     ws.close();
   }
 });
