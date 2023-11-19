@@ -156,10 +156,12 @@ class BBContextMenu extends Base {
         }
       }
 
+      const dtUrl = `${url.host}/devtools/page/${currentTab}`;
+      console.log({dtUrl});
       const inspectParams = new URLSearchParams();
       inspectParams.set(
         location.protocol.endsWith('https:') ? 'wss' : 'ws', 
-        `${url.host}/devtools/page/${currentTab}`
+        dtUrl
       );
       inspectParams.set('remoteFrontend', 'true');
       url.search = inspectParams;
