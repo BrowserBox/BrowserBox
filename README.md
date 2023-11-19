@@ -2,7 +2,7 @@
 
 ### :rotating_light: Latest News: BrowserBox on Tor!
 
-We're excited to announce that BrowserBox can now run as a hidden service on the Tor network! This significant update brings enhanced privacy and security, allowing you to access BrowserBox with the anonymity of Tor. Check out our [Show HN post: torbb - Now with Tor, run BrowserBox as a hidden service](#Show-HN-Post-Link).
+We're excited to announce that BrowserBox can now run as a hidden service on the Tor network! This significant update brings enhanced privacy and security, allowing you to access BrowserBox with the anonymity of Tor. Check out our [Show HN post: torbb - Now with Tor, run BrowserBox as a hidden service]([#Show-HN-Post-Link](https://news.ycombinator.com/item?id=38336686)).
 
 *Note: Tor Hidden Services for BrowserBox are a working prototype, and in my testing it was often very slow. While your mileage may vary, there's likely much that can still be improved. If you see something, open an issue!*
 
