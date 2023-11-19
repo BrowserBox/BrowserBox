@@ -18,6 +18,10 @@ else
   output="$ip_address"
 fi
 
+if [[ -n "${TORBB}" ]]; then
+  output="localhost"
+fi
+
 # we don't need to change this for tor because even if we did curl and node fetch for example
 # cannot call onion addresses hahaha 
 provider="https://${output}:${DOCS_PORT}/very-secure-manifest-convert"
