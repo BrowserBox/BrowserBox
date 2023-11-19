@@ -142,6 +142,7 @@
         "blob:"
       ],
       mediaSrc: [
+        "data:",
         "'self'",
         "https://localhost:*",
         "https://*.dosyago.com:*",
