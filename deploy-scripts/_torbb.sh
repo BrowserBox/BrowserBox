@@ -8,22 +8,7 @@ TORDIR=""
 torsslcerts="tor-sslcerts"
 
 ensure_shutdown() {
-  pm2 stop parec-server
-  pm2 stop devtools-server
-  pm2 stop pptr-console-server
-  pm2 stop chat-server
-  pm2 stop main-vf-service
-
-  pm2 delete parec-server
-  pm2 delete devtools-server
-  pm2 delete pptr-console-server
-  pm2 delete chat-server
-  pm2 delete main-vf-service
-
-  sleep 1
-  killall node npm chrome
-  sleep 1
-  killall -9 node npm chrome
+  pm2 delete all
 }
 
 os_type() {
@@ -229,7 +214,7 @@ configure_and_export_tor() {
 
     local cert_dir="$HOME/${torsslcerts}/${onion_address}"
     mkdir -p "${cert_dir}"
-    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address"; then
+    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
       echo "mkcert failed for $onion_address" >&2
       echo "mkcert needs to work. exiting..." >&2
       exit 1

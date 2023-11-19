@@ -732,7 +732,7 @@
           async function setupAudioElement() {
             const bb = document.querySelector('bb-view');
             if ( !bb?.shadowRoot ) {
-              await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot);
+              await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot, 1000, 600);
             }
             Root = document.querySelector('bb-view').shadowRoot;
             Root = document.querySelector('bb-view').shadowRoot;
@@ -747,7 +747,14 @@
               audio.append(source);
               audio.addEventListener('playing', () => audio.playing = true);
               audio.addEventListener('waiting', () => audio.playing = false);
-              audio.addEventListener('ended', () => audio.playing = false);
+              audio.addEventListener('ended', () => {
+                audio.playing = false;
+                startAudioStream();
+              }
+              audio.addEventListener('error', () => {
+                audio.playing = false;
+                startAudioStream();
+              }
               const activateAudio = async () => {
                 DEBUG.debugAudio && console.log('called activate audio');
                 if ( audio.muted || audio.hasAttribute('muted') ) {
@@ -756,8 +763,8 @@
                 }
                 if ( !audio.playing ) {
                   try {
-                    await audio.play();
-                    send("ack");
+                    startAudioStream();
+                    //send("ack");
                   } catch(err) {
                     DEBUG.debugAudio && console.info(`Could not yet play audio`, err); 
                     return;
@@ -774,6 +781,15 @@
               Root.addEventListener('touchend', activateAudio);
               Root.addEventListener('click', activateAudio, {once:true});
               DEBUG.debugAudio && console.log('added handlers', Root, audio);
+
+              function startAudioStream() {
+                audio.src = AUDIO;
+                audio.play().catch(async err => {
+                  DEBUG.debugAudio && console.warn(`Error when trying to play audio within startAudioStream. Will retry play in 1 second`);
+                  await sleep(1000); 
+                  startAudioStream();
+                });
+              }
             } else {
               console.log(Root);
               console.warn(`Audio element 'video#audio' not found.`);

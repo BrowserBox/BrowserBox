@@ -257,7 +257,7 @@ app.get('/login', (req, res) => {
 
 if ( process.env.TORBB ) {
   app.get('/', (request, response) => {
-    const {token} = req.query; 
+    const {token} = request.query; 
     const cookie = request.cookies[COOKIENAME+PORT];
     if ( token == TOKEN || cookie == COOKIE ) {
       var contentType = encoders[encoderType].contentType;
@@ -271,8 +271,10 @@ if ( process.env.TORBB ) {
       const enc = getEncoder();
 
       if ( enc?.stdout ) {
+        DEBUG.val  && console.log('Setting encoder stdout to pipe');
         enc.stdout.pipe(response);
       } else if ( enc?.pipe ) {
+        DEBUG.val  && console.log('Setting encoder to pipe');
         enc.pipe(response);
       } else {
         console.warn(`Encoder has no stdout or pipe properties`);
@@ -285,8 +287,9 @@ if ( process.env.TORBB ) {
       //});
 
       request.on('close', function() {
+        DEBUG.val && console.log('Request closing');
         response.end();
-        releaseEncoder();
+        //releaseEncoder();
       });
     } else {
       response.sendStatus(401);
