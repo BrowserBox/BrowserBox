@@ -155,9 +155,10 @@ app.get('*', (req, res) => {
     DEBUG.debugDevtoolsServer && console.info(`Request authorized`, {resource});
     const InternalEndpoint = /ws=localhost/g;
     const WSUrl_Raw = req.query.ws || req.query.wss || req.headers['host'].split(':')[0]; 
-    const WSUrl = new URL(`${req.protocol == 'https:' ? 'wss:' : 'ws:'}//${WSUrl_Raw}`);
+    const Frame = req.protocol == 'https' ? 'wss:' : 'ws:';
+    const WSUrl = new URL(`${Frame}//${WSUrl_Raw}`);
     WSUrl.searchParams.set('token', TOKEN);
-    const ExternalEndpoint = WSUrl.href;
+    const ExternalEndpoint = `${Frame}=${encodeURIComponent(WSUrl.href)}`;
 
     DEBUG.debugDevtoolsServer && console.info({InternalEndpoint, ExternalEndpoint});
 
