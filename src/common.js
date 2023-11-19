@@ -63,7 +63,7 @@ export const DEBUG = Object.freeze({
   debugUntilTrue: false,
   debugUntilForever: false,
   debugViewportDimensions: false,
-  debugDevtoolsServer: true,
+  debugDevtoolsServer: false,
   /* peer and websocket connections */
   cnx: false, 
   debugClicks: false,

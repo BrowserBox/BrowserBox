@@ -59,8 +59,8 @@ try {
 
 const SOCKETS = new Map();
 //const internalEndpointRegex = /ws=localhost(:\d+)?([^ "'<>,;)}\]`]+)/g;
-//const internalEndpointRegex = /ws=localhost(:\d+)?([\/\w.-]+)/g;
-const internalEndpointRegex = /ws=localhost/g;
+const internalEndpointRegex = /ws=localhost(:\d+)?([\/\w.-]+)/g;
+//const internalEndpointRegex = /ws=localhost/g;
 
 const app = express();
 app.use(compression());
@@ -161,8 +161,8 @@ app.get('*', (req, res) => {
     const Frame = req.protocol == 'https' ? 'wss:' : 'ws:';
     const WSUrl = new URL(`${Frame}//${WSUrl_Raw}`);
     //WSUrl.searchParams.set('token', TOKEN);
-    //const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href.slice(Frame.length+2).replace(/\/$/, ''))}`
-    const ExternalEndpoint = req.query.ws || req.query.wss || `wss=${req.headers['host'].split(':')[0]}`;
+    const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href.slice(Frame.length+2).replace(/\/$/, ''))}`
+    //const ExternalEndpoint = req.query.ws || req.query.wss || `wss=${req.headers['host'].split(':')[0]}`;
 
     DEBUG.debugDevtoolsServer && console.info({internalEndpointRegex, ExternalEndpoint});
 
@@ -193,7 +193,8 @@ app.get('*', (req, res) => {
             const newVal = Data.body.replace(internalEndpointRegex, (match, port, capturedPart) => {
               console.log('match', match);
               // Construct the new URL using the captured part
-              const result = `${ExternalEndpoint}`; //${capturedPart}/${encodeURIComponent(TOKEN)}`;
+              //const result = `${ExternalEndpoint}`; //${capturedPart}/${encodeURIComponent(TOKEN)}`;
+              const result = `${ExternalEndpoint}${capturedPart}/${encodeURIComponent(TOKEN)}`;
               console.log('result', result);
               return result;
             }); 
@@ -261,7 +262,7 @@ wss.on('connection', (ws, req) => {
     const cookie = req.headers.cookie;
     const parts = req.url.split('/');
     let token;
-    if ( parts.length == 4 ) {
+    if ( parts.length == 5 ) {
       token = parts.pop();
     }
     const path = parts.join('/');
