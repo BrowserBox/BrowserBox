@@ -32,7 +32,6 @@ function saveTorParams() {
 
   if ( token ) {
     localStorage.setItem(CONFIG.sessionTokenFileName, token);
-    alert('Set token', token);
   }
 }
 
