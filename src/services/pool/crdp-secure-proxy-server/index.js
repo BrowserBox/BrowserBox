@@ -83,7 +83,7 @@ app.get('/login', (req, res) => {
     authorized = (cookie === COOKIE) || NO_AUTH;
   }
   if ( authorized ) {
-    const uri = req.query.nextUri ? decodeURIComponent(req.query.nextUri) : '/';
+    const uri = req.query.nextUri  && ! process.env.TORBB ? decodeURIComponent(req.query.nextUri) : '/';
     res.redirect(uri);
   } else {
     res.end(`
@@ -154,7 +154,10 @@ app.get('*', (req, res) => {
 
     DEBUG.debugDevtoolsServer && console.info(`Request authorized`, {resource});
     const InternalEndpoint = /ws=localhost/g;
-    const ExternalEndpoint = req.query.ws || req.query.wss || `wss=${req.headers['host'].split(':')[0]}`;
+    const WSUrl_Raw = req.query.ws || req.query.wss || req.headers['host'].split(':')[0]; 
+    const WSUrl = new URL(`${req.protocol == 'https:' ? 'wss:' : 'ws:'}//${WSUrl_Raw}`);
+    WSUrl.searchParams.set('token', TOKEN);
+    const ExternalEndpoint = WSUrl.href;
 
     DEBUG.debugDevtoolsServer && console.info({InternalEndpoint, ExternalEndpoint});
 

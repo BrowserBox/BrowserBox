@@ -164,14 +164,14 @@ class BBContextMenu extends Base {
       inspectParams.set('remoteFrontend', 'true');
       url.search = inspectParams;
       if ( state.CONFIG.isOnion ) {
-        const locationUri = new URL(url);
+        const locationUrl = new URL(url);
         locationUrl.pathname = `/devtools/inspector.html`
         const nextUri = locationUrl.href;
 
         url.pathname = '/login';
         url.searchParams.set('token', localStorage.getItem(state.CONFIG.sessionTokenFileName));
         url.searchParams.set('nextUri', nextUri);
-        window.location = url;
+        devtoolsWindow.location = url;
       } else {
         url.pathname = `/devtools/inspector.html`
 
