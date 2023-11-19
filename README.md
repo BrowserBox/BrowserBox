@@ -18,15 +18,6 @@ We're excited to announce that BrowserBox can now run as a hidden service on the
 - [Special Event: Ephemeral Web Proxy](#special-event-ephemeral-web-proxy)
 - [General README](#general-readme)
 
----
-
-### <a id="rootCA-installation-guidance"></a> Root CA Installation Guidance
-(Include detailed instructions or link to a document about installing the Mkcert Root CA here.)
-
-### <a id="github-issue-template"></a> GitHub Issue Template for Hidden Service
-(Instructions on how to create an issue to generate a .onion link, with a direct link to the issue template in your repository.)
-
----
 
 # BrowserBox - AWS EC2 Installation 
 

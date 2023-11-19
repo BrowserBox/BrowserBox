@@ -1,23 +1,25 @@
 ---
 name: Make VPN
-about: Create your ephemeral, private VPN with BrowserBox X GitHub Actions (no affiliation)
+about: Set up an ephemeral, private VPN with BrowserBox via GitHub Actions
 title: Make VPN
 labels: enhancement
 assignees: ''
 
 ---
 
-# You're about to make a VPN!
+# Set Up a VPN
 
-Ensure you have [forked](../fork) or [generated](../generate) this repo to your own account (not an org account) first, and then all you need to do is click the **Submit New Issue** button and follow the steps that show up in the issues comments below.
+Before you start, [fork](../fork) or [generate](../generate) this repo into your personal account (not for organizations).
 
-Your [BrowserBox](https://github.com/BrowserBox/BrowserBox) ephemeral private VPN will then be created. Follow any prompts that arise in the comments here and you'll be soon browsing the web securely and privately!
+Click **Submit New Issue** to initiate the VPN setup. Instructions will follow in the comments.
 
-(*Rest assured, the VPN only kicks in when you, as repo owner, open or reopen the issue. No random person can switch it on and use up your actions minutes. The only exception is my username, which can trigger it solely for the purpose of supporting or debugging any problems you face. Feel free to revoke by editing the `userjob.yaml` workflow if you're concerned about your minutes being misused!*)
+Your private BrowserBox VPN will be ready shortly. Keep an eye on the comments for next steps.
 
-The next comment will show up below soon after you click **Submit New Issue**
+*Note: This VPN activates only for the repo owner when opening or reopening the issue. It's designed to conserve your GitHub Actions minutes. My username has access for support purposes. Adjust `userjob.yaml` if you wish to change this.*
+
+Once you click **Submit New Issue**, follow-up instructions will appear in the comments.
 
 ---
 
-*BrowserBox is created by [DOSYAGO](https://dosyago.com)*
+*Powered by [DOSYAGO](https://dosyago.com)*
 
