@@ -1,4 +1,32 @@
-# BrowserBox
+# BrowserBox News
+
+### :rotating_light: Latest News: BrowserBox on Tor!
+
+We're excited to announce that BrowserBox can now run as a hidden service on the Tor network! This significant update brings enhanced privacy and security, allowing you to access BrowserBox with the anonymity of Tor. Check out our [Show HN post: torbb - Now with Tor, run BrowserBox as a hidden service](#Show-HN-Post-Link).
+
+#### Getting Started with BrowserBox on Tor
+- **Download Mkcert Root CA**: For a smoother experience on Tor, download and install the Mkcert Root CA, unique to each installation, to avoid certificate warnings. [Installation Guide](#rootCA-installation-guidance).
+- **Create Your Hidden Service**: Fork this repository and open an issue using the "Make BB Hidden Service" template. A GitHub action will automatically create your unique .onion link. [Learn more](#github-issue-template).
+- **Try it now**: Fork or generate this repository, and create an issue from the template to get your BrowserBox running on Tor! [Fork here](../../fork) / [Generate here](../../generate).
+
+### Table of Contents
+- [News: BrowserBox on Tor](#latest-news-browserbox-on-tor)
+- [AWS EC2 Installation](#aws-ec2-installation)
+- [Docker Quick Start](#docker-quick-start)
+- [Special Event: Ephemeral Web Proxy](#special-event-ephemeral-web-proxy)
+- [General README](#general-readme)
+
+---
+
+### <a id="rootCA-installation-guidance"></a> Root CA Installation Guidance
+(Include detailed instructions or link to a document about installing the Mkcert Root CA here.)
+
+### <a id="github-issue-template"></a> GitHub Issue Template for Hidden Service
+(Instructions on how to create an issue to generate a .onion link, with a direct link to the issue template in your repository.)
+
+---
+
+# BrowserBox - AWS EC2 Installation 
 
 **[New Video: Installing BrowserBox on Amazon AWS EC2 Amazon Linux](https://www.youtube.com/watch?v=-YEOHXXid9g)**
 
@@ -21,7 +49,7 @@ bbpro
 | macOS                    | ✅           |
 | Amazon Linux (AWS EC2)   | ✅           |
 
-----------
+---
 
 # Docker Quick Start :gem: *Version 6*
 
@@ -38,6 +66,8 @@ That's it! Follow the prompts to set up certificates and it will emit a link tha
 
 **Update:** Docker image now works on macOS!!! 🎉
 
+---
+
 # *Special Event!* 🤙 Create a private ephemeral Web Proxy hosted on your GitHub Actions minutes by opening an issue on this repo
 
 **HOLD UP** You need to [fork](../../fork) or [generate](../../generate) this repo first, so you have your own copy. Then open an issue and you will be guided through the process (1 manual step, rest is automatic), while your browser VPN is created. 
@@ -46,23 +76,9 @@ By default they remain open for 5 minutes, but you can make that longer by editi
 
 Limitations: no audio, no DevTools, no docviewer (Because the ports are not accesible, although the services are running)
 
-## Troubleshooting
-
-### Resource not accessible by integration error
-
-To fix this you need to go to your repository settings and change Workflow Permissions to be Read and Write. 
-
-Please see here: https://github.com/MSEdgeLord/EdgeLord/issues/3
-
-***DOSY***
-
-**P.S** want a real VPN? Then check out [Mullvad](https://mullvad.net) (no affiliation). They also have a Mullvad Browser!
-
-*regular README starts below this line*
-
 ---
 
-# BrowserBox
+# BrowserBox - General README
 
 # Web application virtualization via Zero Trust Remote Browser Isolation and Secure Document Gateway
 
@@ -71,8 +87,6 @@ BrowserBox is a leading-edge solution in the Zero Trust landscape, enabling embe
 By leveraging the principles of Remote Browser Isolation (RBI), real-time streaming and collaborative browserin (co-browsing or "multiplayer browsers"), BrowserBoxPro ensures that no web content directly interacts with the end user's device, while remaining accessible through a shareable, collaborative interface. 
 
 This guide will walk you through the seamless integration of BrowserBoxPro into your Zero Trust architecture.
-
-***NOTE: If you are installing on MacOS please be aware that performance will be very slow because headless Chrome on MacOS is ['fake headless' (just a hidden window) because of limitations of the MacOS ecosystem faced by the Chrome authors](https://github.com/puppeteer/puppeteer/issues/3938#issuecomment-469332659).***
 
 # Table of Contents
 
