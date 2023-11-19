@@ -739,20 +739,21 @@
             source.type = type;
             source.src = AUDIO;
             DEBUG.debugAudio && console.log({'audio?': audio});
+            let existingTimer = null;
+            let waiting = false;
             if ( audio ) {
-              let existingTimer = null;
               audio.append(source);
               audio.addEventListener('playing', () => audio.playing = true);
               audio.addEventListener('waiting', () => audio.playing = false);
               audio.addEventListener('ended', () => {
                 audio.playing = false;
                 DEBUG.debugAudio && console.log(`Audio stream ended`);
-                startAudioStream();
+                existingTimer = setTimeout(startAudioStream, 100);
               });
               audio.addEventListener('error', err => {
                 audio.playing = false;
                 DEBUG.debugAudio && console.log(`Audio stream errored`, err);
-                startAudioStream();
+                //startAudioStream();
               });
               const activateAudio = async () => {
                 DEBUG.debugAudio && console.log('called activate audio');
@@ -775,21 +776,23 @@
                   DEBUG.debugAudio && console.log('Removed audio start handlers');
                 }
               };
-              setTimeout(activateAudio, 0);
               Root.addEventListener('pointerdown', activateAudio);
               Root.addEventListener('touchend', activateAudio);
               Root.addEventListener('click', activateAudio, {once:true});
               DEBUG.debugAudio && console.log('added handlers', Root, audio);
 
-              function startAudioStream() {
-                existingTimer = null;
-                if ( audio.playing ) return;
+              async function startAudioStream() {
+                if ( waiting ) return;
+                if ( audio.playing ) {
+                  existingTimer = null;
+                  return;
+                }
                 audio.type = type;
                 audio.src = AUDIO;
                 audio.play().catch(async err => {
-                  DEBUG.debugAudio && console.warn(`Error when trying to play audio within startAudioStream. Will retry play in 1 second`, err);
-                  await sleep(1000); 
-                  if ( existingTimer ) return;
+                  DEBUG.debugAudio && console.warn(`Error when trying to play audio within startAudioStream. Will retry play in 5 second`, err);
+                  await sleep(5000); 
+                  if ( audio.playing || existingTimer ) return;
                   else {
                     existingTimer = setTimeout(startAudioStream, 0);
                   }
