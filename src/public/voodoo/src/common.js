@@ -76,7 +76,7 @@ export const DEBUG = Object.freeze({
   showCollect: false,
   debugFocus: false,
   debugAuth: false,
-  debugAudio: true,
+  debugAudio: false,
   debugModal: false,
   get debugMeta() {
     return  (this.debugFavicon > 1) || 0;
