@@ -61,6 +61,7 @@
   );
   const SSL_OPTS = {};
   const Sessions = {};
+  const PORT = process.env.DOCS_PORT || (secure ? (process.argv[2] || 8080) : 8080);
   let jobid = 1;
   let newFiles = 0;
   let syncing = false;
@@ -68,8 +69,8 @@
 
   try {
     Object.assign(SSL_OPTS,{
-      key: fs.readFileSync(Path.join(os.homedir(), 'sslcerts', 'privkey.pem')),
-      cert: fs.readFileSync(Path.join(os.homedir(), 'sslcerts', 'fullchain.pem')),
+      key: fs.readFileSync(Path.join(os.homedir(), CONFIG.sslcerts(PORT), 'privkey.pem')),
+      cert: fs.readFileSync(Path.join(os.homedir(), CONFIG.sslcerts(PORT), 'fullchain.pem')),
     });
     secure = true;
   } catch(e) {
@@ -94,7 +95,6 @@
   const DEBUG = {
     showHash: false
   };
-  const PORT = process.env.DOCS_PORT || (secure ? (process.argv[2] || 8080) : 8080);
   const uploadPath = Path.join(STATIC_DIR, 'uploads');
   const CONVERTER = Path.join(__dirname, '..', 'scripts', 'convert.sh');
   const EXPLORER = Path.join(__dirname, '..', 'scripts', 'explore.sh');
