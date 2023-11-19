@@ -45,6 +45,7 @@ const FORMAT_BIT_DEPTH = 16;
 const MAX_DATA_SIZE = 1200; //SAMPLE_RATE * (FORMAT_BIT_DEPTH/8) // we actually only get around 300 bytes per chunk on average, ~ 3 msec;
 const CutOff = {};
 const primeCache = [2, 3, 5];
+let Encoders = new Set();
 let primeSet = new Set(primeCache);
 const SparsePrimes = createSparsePrimes(MAX_DATA_SIZE);
 
@@ -88,7 +89,7 @@ const encoderType = process.env.TORBB ? 'wav' : 'wav';
 
 var hooks = 0;
 let parec = undefined;
-let encoder = undefined;
+let savedEncoder;
 let encoderExpiration;
 const ENCODER_EXPIRY_MS = 13*60*1000; // shut down encoder after 13 minutes of nobody listening
 
@@ -114,7 +115,14 @@ function maybeStartEncoderExpiryClock(client) {
 
 function killAudio() {
   DEBUG.val && console.log('killing encoder because nobody is listening');
-  encoder?.kill && encoder.kill('SIGINT');
+  for( let encoder of Encoders.values()) {
+    try {
+      encoder?.kill && encoder.kill('SIGINT');
+    } catch(e) {
+      console.warn('error killing encoder', e, encoder);
+    }
+  }
+  Encoders = new Set();
   parec?.kill && parec.kill('SIGINT');
   encoder = undefined;
   parec = undefined;
@@ -281,14 +289,15 @@ if ( process.env.TORBB ) {
         console.warn(`Encoder has no stdout or pipe properties`);
       }
 
-      enc._emitHeader();
-
       exitOnEpipe(response);
      
       request.on('close', function() {
         DEBUG.val && console.log('Request closing');
         try {
           unpipe();
+          if ( process.env.TORBB ) {
+            killEncoder(enc);
+          }
         } catch(e) {
           console.warn(`Error on unpipe at end of request / resopnse`);
         }
@@ -478,7 +487,8 @@ console.warn('Shut down buries errors');
 
 function getEncoder() {
   audioProcessShuttingDown = false;
-  if (encoder) return encoder;
+  if (savedEncoder) return savedEncoder;
+  let encoder = undefined;
 
   DEBUG.val && console.log('starting encoder');
   // Notes on args
@@ -488,74 +498,87 @@ function getEncoder() {
         '--fix-format',       // break
         '--no-remix',         // unknown if break or unnecessary
     */
-  const args = [
-    '-r',  /* record: the default if run as parec */
-    `--rate=${SAMPLE_RATE}`,
-    `--format=s${FORMAT_BIT_DEPTH}le`,
-    '--channels=1',
-    '--process-time-msec=100', 
-    '--latency-msec=100', 
-    ...(process.platform == 'darwin' ? [] : [
-    '-d', device
-    ])
-  ]
-  parec = childProcess.spawn('pacat', args);
-  parec.on('spawn', e => {
-    console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
-    try {
-      childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
-      console.log(`reniced parec`);
-    } catch(e) {
-      console.warn(`Error renicing parec`, e);
-    }
-  });
-  exitOnEpipe(parec.stdout);
-  exitOnEpipe(parec.stderr);
-  parec.stderr.pipe(process.stdout);
-  
-  parec.on('error', e => {
-    console.log('parec error', e);
-    killAudio();
-    //shutDown();
-  });
-  parec.on('close', e => {
-    console.log('parec close', e);
-    killAudio();
-    //shutDown();
-  });
-  parec.on('exit', e => { 
-    console.log('parec exit', e);
-    killAudio();
-    //shutDown();
-  });
+  if ( ! parec ) {
+    const args = [
+      '-r',  /* record: the default if run as parec */
+      `--rate=${SAMPLE_RATE}`,
+      `--format=s${FORMAT_BIT_DEPTH}le`,
+      '--channels=1',
+      '--process-time-msec=100', 
+      '--latency-msec=100', 
+      ...(process.platform == 'darwin' ? [] : [
+      '-d', device
+      ])
+    ]
+    parec = childProcess.spawn('pacat', args);
+    parec.on('spawn', e => {
+      console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
+      try {
+        childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
+        console.log(`reniced parec`);
+      } catch(e) {
+        console.warn(`Error renicing parec`, e);
+      }
+    });
+    exitOnEpipe(parec.stdout);
+    exitOnEpipe(parec.stderr);
+    parec.stderr.pipe(process.stdout);
+    
+    parec.on('error', e => {
+      console.log('parec error', e);
+      killAudio();
+      //shutDown();
+    });
+    parec.on('close', e => {
+      console.log('parec close', e);
+      killAudio();
+      //shutDown();
+    });
+    parec.on('exit', e => { 
+      console.log('parec exit', e);
+      killAudio();
+      //shutDown();
+    });
+  }
 
   const encoderCommand = encoders[encoderType];
 
   if ( typeof encoderCommand?.command === "string" ) {
     encoder = childProcess.spawn(encoderCommand.command, encoderCommand.args);
+    Encoders.add(encoder);
     exitOnEpipe(encoder.stdout);
     exitOnEpipe(encoder.stderr);
     encoder.stderr.pipe(process.stdout);
     encoder.on('error', e => {
       console.log('encoder error', e);
-      audioProcessShutDown();
+      killEncoder(encoder);
     });
     encoder.on('close', e => {
       console.log('encoder close', e);
-      audioProcessShutDown();
+      killEncoder(encoder);
     });
     encoder.on('exit', e => { 
       console.log('encoder exit', e);
-      audioProcessShutDown();
+      killEncoder(encoder);
     });
     childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${encoder.pid}`);
 
     parec.stdout.pipe(encoder.stdin);
 
+    if ( ! process.env.TORBB ) {
+      savedEncoder = encoder;
+    }
+
     return encoder;
   } else if ( typeof encoderCommand?.command === "function" ) {
     encoder = encoderCommand.command();
+    Encoders.add(encoder);
     parec.stdout.pipe(encoder);
+
+    if ( ! process.env.TORBB ) {
+      savedEncoder = encoder;
+    }
+
     return encoder;
   } else {
     encoder = parec;
@@ -563,17 +586,33 @@ function getEncoder() {
   }
 }
 
-function audioProcessShutDown() {
-  if ( audioProcessShuttingDown ) return;
-  audioProcessShuttingDown = true;
+function killEncoder(encoder) {
+  console.log('killing encoder');
   if ( encoder ) {
     try {
       encoder?.kill && encoder.kill();
+      Encoders.delete(encoder);
       encoder = null;
     } catch(e) {
       console.log(`Error killing encoder`, e);
     }
   }
+}
+
+function audioProcessShutDown() {
+  if ( audioProcessShuttingDown ) return;
+  audioProcessShuttingDown = true;
+  for( let encoder of Encoders.values()) {
+    if ( encoder ) {
+      try {
+        encoder?.kill && encoder.kill();
+        encoder = null;
+      } catch(e) {
+        console.log(`Error killing encoder`, e);
+      }
+    }
+  }
+  Encoders = new Set();
   if ( parec ) {
     try {
       parec?.kill && parec.kill();
