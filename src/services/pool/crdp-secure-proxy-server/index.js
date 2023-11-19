@@ -153,7 +153,9 @@ app.get('*', (req, res) => {
     };
 
     DEBUG.debugDevtoolsServer && console.info(`Request authorized`, {resource});
-    const InternalEndpoint = /ws=localhost/g;
+    //const InternalEndpoint = /ws=localhost/g;
+    const internalEndpointRegex = /ws=localhost([^ "'<>,;)}\]`]+)/g;
+
     const WSUrl_Raw = req.query.ws || req.query.wss || req.headers['host'].split(':')[0]; 
     const Frame = req.protocol == 'https' ? 'wss:' : 'ws:';
     const WSUrl = new URL(`${Frame}//${WSUrl_Raw}`);
@@ -185,7 +187,11 @@ app.get('*', (req, res) => {
             **/
 
           if ( InternalEndpoint.test(Data.body) ) {
-            const newVal = Data.body.replace(InternalEndpoint, ExternalEndpoint);
+
+            const newVal = Data.body.replace(internalEndpointRegex, (match, capturedPart) => {
+              // Construct the new URL using the captured part
+              return `${ExternalEndpoint}${capturedPart}&token=${encodeURIComponent(TOKEN)}`;
+            }); 
             // update content length
             destinationResponse.headers['content-length'] = newVal.length+'';
             DEBUG.debugDevtoolServer && console.log(destinationResponse.headers, req.url, Data.body.length);
