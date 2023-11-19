@@ -791,7 +791,7 @@
                     return;
                   }
                 }
-                if ( CONFIG.removeAudioStartHandlersAfterFirstStart || CONFIG.isOnion ) {
+                if ( CONFIG.removeAudioStartHandlersAfterFirstStart /*|| CONFIG.isOnion */ ) {
                   Root.removeEventListener('pointerdown', activateAudio);
                   Root.removeEventListener('touchend', activateAudio);
                   DEBUG.debugAudio && console.log('Removed audio start handlers');
@@ -818,7 +818,7 @@
               }
 
               // Reset error state and set the new source
-              audio.error = null;
+              audio.hasError = null;
               audio.src = src;
             }
           }
