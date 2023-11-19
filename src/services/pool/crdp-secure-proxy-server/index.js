@@ -59,7 +59,8 @@ try {
 
 const SOCKETS = new Map();
 //const internalEndpointRegex = /ws=localhost(:\d+)?([^ "'<>,;)}\]`]+)/g;
-const internalEndpointRegex = /ws=localhost(:\d+)?([\/\w.-]+)/g;
+//const internalEndpointRegex = /ws=localhost(:\d+)?([\/\w.-]+)/g;
+const internalEndpointRegex = /ws=localhost/g;
 
 const app = express();
 app.use(compression());
@@ -160,7 +161,8 @@ app.get('*', (req, res) => {
     const Frame = req.protocol == 'https' ? 'wss:' : 'ws:';
     const WSUrl = new URL(`${Frame}//${WSUrl_Raw}`);
     //WSUrl.searchParams.set('token', TOKEN);
-    const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href.slice(Frame.length+2).replace(/\/$/, ''))}`
+    //const ExternalEndpoint = `${Frame.slice(0,-1)}=${encodeURIComponent(WSUrl.href.slice(Frame.length+2).replace(/\/$/, ''))}`
+    const ExternalEndpoint = req.query.ws || req.query.wss || `wss=${req.headers['host'].split(':')[0]}`;
 
     DEBUG.debugDevtoolsServer && console.info({internalEndpointRegex, ExternalEndpoint});
 
@@ -191,7 +193,7 @@ app.get('*', (req, res) => {
             const newVal = Data.body.replace(internalEndpointRegex, (match, port, capturedPart) => {
               console.log('match', match);
               // Construct the new URL using the captured part
-              const result = `${ExternalEndpoint}${capturedPart}/${encodeURIComponent(TOKEN)}`;
+              const result = `${ExternalEndpoint}`; //${capturedPart}/${encodeURIComponent(TOKEN)}`;
               console.log('result', result);
               return result;
             }); 
@@ -253,14 +255,18 @@ const server = (GO_SECURE ? https : http).createServer(SSL_OPTS, app);
 
 const wss = new WebSocket.Server({server});
 
+// we should probably handle upgrade too to stop server crashing on a 404 websocket. weird
 wss.on('connection', (ws, req) => {
   try {
     const cookie = req.headers.cookie;
     const parts = req.url.split('/');
-    const token = parts.pop();
+    let token;
+    if ( parts.length == 4 ) {
+      token = parts.pop();
+    }
     const path = parts.join('/');
     const authorized = (cookie && cookie.includes(`${COOKIENAME+PORT}=${COOKIE}`)) || token == TOKEN || NO_AUTH;
-    DEBUG.debugDevtoolServer && console.log('connect', {cookie, authorized, token}, req.path, req.url);
+    DEBUG.debugDevtoolsServer && console.log('connect', {cookie, authorized, token, path, parts}, req.path, req.url);
     if ( authorized ) {
       const url = `ws://127.0.0.1:${CHROME_PORT}${path}`;
       try {
