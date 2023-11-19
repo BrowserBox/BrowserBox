@@ -29,8 +29,9 @@ function saveTorParams() {
       console.warn(`Missing tor addresses for services`, z);
     } else {
       // pre fetch to warm up cache in case they open it
-      fetch(z.x);
-      fetch(z.y);
+      const OPTS = { method: "GET", mode: "no-cors" };
+      fetch(z.x, OPTS);
+      fetch(z.y, OPTS);
     }
   }
 
