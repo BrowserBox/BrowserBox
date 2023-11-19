@@ -156,7 +156,6 @@ class BBContextMenu extends Base {
         }
       }
 
-      url.pathname = `/devtools/inspector.html`
       const inspectParams = new URLSearchParams();
       inspectParams.set(
         location.protocol.endsWith('https:') ? 'wss' : 'ws', 
@@ -164,10 +163,22 @@ class BBContextMenu extends Base {
       );
       inspectParams.set('remoteFrontend', 'true');
       url.search = inspectParams;
+      if ( state.CONFIG.isOnion ) {
+        const locationUri = new URL(url);
+        locationUrl.pathname = `/devtools/inspector.html`
+        const nextUri = locationUrl.href;
 
-      DEBUG.debugInspect && console.log("Inspect url", url.href);
+        url.pathname = '/login';
+        url.searchParams.set('token', localStorage.getItem(state.CONFIG.sessionTokenFileName));
+        url.searchParams.set('nextUri', nextUri);
+        window.location = url;
+      } else {
+        url.pathname = `/devtools/inspector.html`
 
-      devtoolsWindow.location  = url;
+        DEBUG.debugInspect && console.log("Inspect url", url.href);
+
+        devtoolsWindow.location  = url;
+      }
     }
 
     close(_, delay = true) {

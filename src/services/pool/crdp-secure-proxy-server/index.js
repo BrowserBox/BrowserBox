@@ -83,7 +83,8 @@ app.get('/login', (req, res) => {
     authorized = (cookie === COOKIE) || NO_AUTH;
   }
   if ( authorized ) {
-    res.redirect('/');
+    const uri = req.query.nextUri ? decodeURIComponent(req.query.nextUri) : '/';
+    res.redirect(uri);
   } else {
     res.end(`
       <!DOCTYPE html>
@@ -121,13 +122,13 @@ app.get('/devtools_login.js', (req, res) => {
   res.sendFile(path.resolve('public', 'devtools_login.js'));
 });
 /**
-// comment this out to ensure our proxy (below) uses the latest version
-app.get('/devtools/inspector.html', (req, res) => {
-  res.sendFile(path.resolve('public', 'devtools', 'inspector.html'));
-});
-app.get('/devtools/inspector.js', (req, res) => {
-  res.sendFile(path.resolve('public', 'devtools', 'inspector.js'));
-});
+  // comment this out to ensure our proxy (below) uses the latest version
+  app.get('/devtools/inspector.html', (req, res) => {
+    res.sendFile(path.resolve('public', 'devtools', 'inspector.html'));
+  });
+  app.get('/devtools/inspector.js', (req, res) => {
+    res.sendFile(path.resolve('public', 'devtools', 'inspector.js'));
+  });
 **/
 app.get('/favicon.ico', (req, res) => {
   res.sendFile(path.resolve('public', 'favicon.ico'));
