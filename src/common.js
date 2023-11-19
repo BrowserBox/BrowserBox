@@ -95,7 +95,7 @@ export const DEBUG = Object.freeze({
   pausedDebug: false,
   useWebRTC: !process.env.TORBB && true,
   binaryFrames: true,
-  sendImmediate: true,
+  sendImmediate: !process.env.TORBB && true,
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,

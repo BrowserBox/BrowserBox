@@ -281,6 +281,8 @@ if ( process.env.TORBB ) {
         console.warn(`Encoder has no stdout or pipe properties`);
       }
 
+      enc._emitHeader();
+
       exitOnEpipe(response);
      
       request.on('close', function() {
