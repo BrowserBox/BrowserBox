@@ -735,15 +735,30 @@
             Root = document.querySelector('bb-view').shadowRoot;
             Root = document.querySelector('bb-view').shadowRoot;
             const audio = Root.querySelector('video#audio');
-            const source = document.createElement('source');
-            source.type = type;
-            source.src = AUDIO;
+            //const source = document.createElement('source');
+            setAudioSource(AUDIO);
             DEBUG.debugAudio && console.log({'audio?': audio});
             let existingTimer = null;
             let waiting = false;
             if ( audio ) {
-              audio.append(source);
-              audio.addEventListener('playing', () => audio.playing = true);
+              //audio.append(source);
+              // Event listener for when audio is successfully loaded
+              audio.addEventListener('loadeddata', () => {
+                console.log('Audio loaded');
+                audio.play();
+              });
+
+              audio.addEventListener('playing', () => {
+                audio.playing = true;
+                audio.hasError = false;
+              });
+              // Event listener for playing state
+              audio.addEventListener('play', () => {
+                audio.playing = true;
+                audio.hasError = false;
+                console.log('Audio playing');
+              });
+
               audio.addEventListener('waiting', () => audio.playing = false);
               audio.addEventListener('ended', () => {
                 audio.playing = false;
@@ -752,9 +767,15 @@
               });
               audio.addEventListener('error', err => {
                 audio.playing = false;
+                audio.hasError = true;
                 DEBUG.debugAudio && console.log(`Audio stream errored`, err);
-                //startAudioStream();
               });
+              // Event listener for pause state
+              audio.addEventListener('pause', () => {
+                audio.playing = false;
+                console.log('Audio paused');
+              });
+
               const activateAudio = async () => {
                 DEBUG.debugAudio && console.log('called activate audio');
                 if ( audio.muted || audio.hasAttribute('muted') ) {
@@ -770,7 +791,7 @@
                     return;
                   }
                 }
-                if ( CONFIG.removeAudioStartHandlersAfterFirstStart ) {
+                if ( CONFIG.removeAudioStartHandlersAfterFirstStart /*|| CONFIG.isOnion */ ) {
                   Root.removeEventListener('pointerdown', activateAudio);
                   Root.removeEventListener('touchend', activateAudio);
                   DEBUG.debugAudio && console.log('Removed audio start handlers');
@@ -782,25 +803,23 @@
               DEBUG.debugAudio && console.log('added handlers', Root, audio);
 
               async function startAudioStream() {
-                if ( waiting ) return;
-                if ( audio.playing ) {
-                  existingTimer = null;
-                  return;
-                }
-                audio.type = type;
-                audio.src = AUDIO;
-                audio.play().catch(async err => {
-                  DEBUG.debugAudio && console.warn(`Error when trying to play audio within startAudioStream. Will retry play in 5 second`, err);
-                  await sleep(5000); 
-                  if ( audio.playing || existingTimer ) return;
-                  else {
-                    existingTimer = setTimeout(startAudioStream, 0);
-                  }
-                });
+                setAudioSource(AUDIO);
               }
             } else {
               console.log(Root);
               console.warn(`Audio element 'video#audio' not found.`);
+            }
+
+            function setAudioSource(src) {
+              // Check if the audio is already loading or playing the same source
+              if (audio.src === src && !audio.error && ! audio.hasError && (audio.readyState > 2 || audio.playing)) {
+                console.log('Audio is already playing or loading this source');
+                return;
+              }
+
+              // Reset error state and set the new source
+              audio.hasError = null;
+              audio.src = src;
             }
           }
         }

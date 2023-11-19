@@ -182,6 +182,8 @@
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port}`]}:*`, // main service 
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
+          `https://${process.env[`ADDR_${server_port + 1}`]}:*`, // devtools
+          `https://${process.env[`ADDR_${server_port + 2}`]}:*`, // docs
         ] : [])
       ],
       fontSrc: [

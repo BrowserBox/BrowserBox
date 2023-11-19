@@ -4,6 +4,8 @@
 
 We're excited to announce that BrowserBox can now run as a hidden service on the Tor network! This significant update brings enhanced privacy and security, allowing you to access BrowserBox with the anonymity of Tor. Check out our [Show HN post: torbb - Now with Tor, run BrowserBox as a hidden service](#Show-HN-Post-Link).
 
+*Note: Tor Hidden Services for BrowserBox are a working prototype, and in my testing it was often very slow. While your mileage may vary, there's likely much that can still be improved. If you see something, open an issue!*
+
 #### Getting Started with BrowserBox on Tor
 - **Download Mkcert Root CA**: For a smoother experience on Tor, download and install the Mkcert Root CA, unique to each installation, to avoid certificate warnings. [Installation Guide](#rootCA-installation-guidance).
 - **Create Your Hidden Service**: Fork this repository and open an issue using the "Make BB Hidden Service" template. A GitHub action will automatically create your unique .onion link. [Learn more](#github-issue-template).
@@ -16,15 +18,6 @@ We're excited to announce that BrowserBox can now run as a hidden service on the
 - [Special Event: Ephemeral Web Proxy](#special-event-ephemeral-web-proxy)
 - [General README](#general-readme)
 
----
-
-### <a id="rootCA-installation-guidance"></a> Root CA Installation Guidance
-(Include detailed instructions or link to a document about installing the Mkcert Root CA here.)
-
-### <a id="github-issue-template"></a> GitHub Issue Template for Hidden Service
-(Instructions on how to create an issue to generate a .onion link, with a direct link to the issue template in your repository.)
-
----
 
 # BrowserBox - AWS EC2 Installation 
 

@@ -30,8 +30,8 @@ function saveTorParams() {
     } else {
       // pre fetch to warm up cache in case they open it
       const OPTS = { method: "GET", mode: "no-cors" };
-      fetch(z.x, OPTS);
-      fetch(z.y, OPTS);
+      fetch(`${location.protocol}//${z.x}`, OPTS);
+      fetch(`${location.protocol}//${z.y}`, OPTS);
     }
   }
 

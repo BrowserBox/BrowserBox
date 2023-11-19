@@ -117,15 +117,13 @@ function killAudio() {
   DEBUG.val && console.log('killing encoder because nobody is listening');
   for( let encoder of Encoders.values()) {
     try {
-      encoder?.kill && encoder.kill('SIGINT');
+      encoder?.kill?.('SIGINT');
+      encoder?.parec?.kill?.('SIGINT');
     } catch(e) {
       console.warn('error killing encoder', e, encoder);
     }
   }
   Encoders = new Set();
-  parec?.kill && parec.kill('SIGINT');
-  encoder = undefined;
-  parec = undefined;
 }
 
 function stopEncoderExpiryClock(client) {
@@ -489,62 +487,62 @@ function getEncoder() {
   audioProcessShuttingDown = false;
   if (savedEncoder) return savedEncoder;
   let encoder = undefined;
+  let parec = undefined;
 
   DEBUG.val && console.log('starting encoder');
   // Notes on args
-    /* 
-      note that the following args break it or are unnecessary
-        '--fix-rate',         // break
-        '--fix-format',       // break
-        '--no-remix',         // unknown if break or unnecessary
-    */
-  if ( ! parec ) {
-    const args = [
-      '-r',  /* record: the default if run as parec */
-      `--rate=${SAMPLE_RATE}`,
-      `--format=s${FORMAT_BIT_DEPTH}le`,
-      '--channels=1',
-      '--process-time-msec=100', 
-      '--latency-msec=100', 
-      ...(process.platform == 'darwin' ? [] : [
-      '-d', device
-      ])
-    ]
-    parec = childProcess.spawn('pacat', args);
-    parec.on('spawn', e => {
-      console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
-      try {
-        childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
-        console.log(`reniced parec`);
-      } catch(e) {
-        console.warn(`Error renicing parec`, e);
-      }
-    });
-    exitOnEpipe(parec.stdout);
-    exitOnEpipe(parec.stderr);
-    parec.stderr.pipe(process.stdout);
-    
-    parec.on('error', e => {
-      console.log('parec error', e);
-      killAudio();
-      //shutDown();
-    });
-    parec.on('close', e => {
-      console.log('parec close', e);
-      killAudio();
-      //shutDown();
-    });
-    parec.on('exit', e => { 
-      console.log('parec exit', e);
-      killAudio();
-      //shutDown();
-    });
-  }
+  /* 
+    note that the following args break it or are unnecessary
+      '--fix-rate',         // break
+      '--fix-format',       // break
+      '--no-remix',         // unknown if break or unnecessary
+  */
+  const args = [
+    '-r',  /* record: the default if run as parec */
+    `--rate=${SAMPLE_RATE}`,
+    `--format=s${FORMAT_BIT_DEPTH}le`,
+    '--channels=1',
+    '--process-time-msec=100', 
+    '--latency-msec=100', 
+    ...(process.platform == 'darwin' ? [] : [
+    '-d', device
+    ])
+  ]
+  parec = childProcess.spawn('pacat', args);
+  parec.on('spawn', e => {
+    console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
+    try {
+      childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
+      console.log(`reniced parec`);
+    } catch(e) {
+      console.warn(`Error renicing parec`, e);
+    }
+  });
+  exitOnEpipe(parec.stdout);
+  exitOnEpipe(parec.stderr);
+  parec.stderr.pipe(process.stdout);
+  
+  parec.on('error', e => {
+    console.log('parec error', e);
+    killEncoder(encoder);
+    //shutDown();
+  });
+  parec.on('close', e => {
+    console.log('parec close', e);
+    killEncoder(encoder);
+    //shutDown();
+  });
+  parec.on('exit', e => { 
+    console.log('parec exit', e);
+    killEncoder(encoder);
+    //shutDown();
+  });
 
   const encoderCommand = encoders[encoderType];
 
   if ( typeof encoderCommand?.command === "string" ) {
     encoder = childProcess.spawn(encoderCommand.command, encoderCommand.args);
+    encoder.parec = parec;
     Encoders.add(encoder);
     exitOnEpipe(encoder.stdout);
     exitOnEpipe(encoder.stderr);
@@ -572,6 +570,7 @@ function getEncoder() {
     return encoder;
   } else if ( typeof encoderCommand?.command === "function" ) {
     encoder = encoderCommand.command();
+    encoder.parec = parec;
     Encoders.add(encoder);
     parec.stdout.pipe(encoder);
 
@@ -590,7 +589,8 @@ function killEncoder(encoder) {
   console.log('killing encoder');
   if ( encoder ) {
     try {
-      encoder?.kill && encoder.kill();
+      encoder?.kill?.();
+      encoder?.parec?.kill?.();
       Encoders.delete(encoder);
       encoder = null;
     } catch(e) {
