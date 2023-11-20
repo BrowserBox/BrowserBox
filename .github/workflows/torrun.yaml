@@ -96,7 +96,7 @@ jobs:
             const actor = context.actor;
             const url = `${{ steps.tor.outputs.url }}`;  // Output URL from Tor
             const torcaLink = `${{ steps.tor.outputs.torcaLink }}`; // Output optional pem DL URL
-            const commentBody = `Hey @${actor}, your personalized BrowserBox Tor hidden service is up and running! üéâ\n\nHere's your unique .onion address that you need to open in [**The Tor Browser**](https://www.torproject.org/download/):\n\n${url}\n\n**Important**: To ensure full functionality, especially for audio features, please download and trust our \`rootCA.pem\` file. Keep in mind, you might hesitate to do this due to potential security concerns, and that's absolutely fine ‚Äì it's all about your comfort with the risks. Trusting the certificate eliminates HTTPS warnings in Tor browsers and enables audio streaming functionality. You can find it here: ${torcaLink}.\n\nNeed help importing the certificate on macOS? Check out this [handy video guide](https://youtu.be/ADN26iqtSZ8). For other operating systems, follow our detailed instructions [here](https://github.com/BrowserBox/BrowserBox/blob/boss/src/public/torca/rootca-import-guidance.md).\n\nEnjoy a seamless and secure browsing experience! üåê`;
+            const commentBody = `Hey @${actor}, your personalized BrowserBox Tor hidden service is up and running! :sparkles:\n\nHere's your unique .onion address that you need to open in [**The Tor Browser**](https://www.torproject.org/download/):\n\n${url}\n\n**Important**: To ensure full functionality, especially for audio features, please download and trust our \`rootCA.pem\` file. Keep in mind, you might hesitate to do this due to potential security concerns, and that's absolutely fine :thumbsup: it's all about your comfort with the risks. Trusting the certificate eliminates HTTPS warnings in Tor browsers and enables audio streaming functionality. You can find it here: ${torcaLink}.\n\nNeed help importing the certificate on macOS? Check out this [handy video guide](https://youtu.be/ADN26iqtSZ8). For other operating systems, follow our detailed instructions [here](https://github.com/BrowserBox/BrowserBox/blob/boss/src/public/torca/rootca-import-guidance.md).\n\nEnjoy a seamless and secure browsing experience! :rocket:`;
             github.rest.issues.createComment({
               issue_number: issue_number,
               owner: context.repo.owner,
@@ -115,7 +115,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Your BrowserBox Tor hidden service session has ended. Thank you for using our service! Remember, for future sessions, ensure you've installed our \`rootCA.pem\` for the best experience. Looking forward to seeing you again! üåü\n\nInterested in more? Consider a license purchase at [our website](https://dosyago.com).`
+              body: `Your BrowserBox Tor hidden service session has ended. Thank you for using our service! Remember, for future sessions, ensure you've installed our \`rootCA.pem\` for the best experience. Looking forward to seeing you again! :star2:\n\nInterested in more? Consider a license purchase at [our website](https://dosyago.com).`
             });
 
             github.rest.issues.update({
@@ -126,5 +126,4 @@ jobs:
             });
 
             setTimeout(() => console.log('Done!'), 1234);
-
 
