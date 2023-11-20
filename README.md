@@ -2,7 +2,19 @@
 
 ### :rotating_light: Latest News: BrowserBox on Tor!
 
-We're excited to announce that BrowserBox can now run as a hidden service on the Tor network! This significant update brings enhanced privacy and security, allowing you to access BrowserBox with the anonymity of Tor. Check out our [Show HN post: torbb - Now with Tor, run BrowserBox as a hidden service](https://news.ycombinator.com/item?id=38336686).
+either fork and open an issue from the browserBox Tor Hidden service issue template, for zero configuration GitHub actions instant creation, or use the new **torbb** command:
+
+```shell
+git clone https://github.com/BrowserBox/BrowserBox.git
+cd BrowserBox
+./deploy-scripts/global_install.sh localhost
+setup_bbpro --port <my_port>
+torbb
+```
+
+--
+
+💎 We're excited to announce that BrowserBox can now run as a hidden service on the Tor network! This significant update brings enhanced privacy and security, allowing you to access BrowserBox with the anonymity of Tor. Check out our [Show HN post: torbb - Now with Tor, run BrowserBox as a hidden service](https://news.ycombinator.com/item?id=38336686).
 
 #### Getting Started with BrowserBox on Tor
 - **Download Mkcert Root CA**: For a smoother experience on Tor, download and install the Mkcert Root CA, unique to each installation, to avoid certificate warnings. [Installation Guide](https://github.com/BrowserBox/BrowserBox/blob/boss/src/public/torca/rootca-import-guidance.md), and [Helpful Video Tutorial How-To for macOS](https://youtu.be/ADN26iqtSZ8).
