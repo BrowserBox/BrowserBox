@@ -26,6 +26,7 @@ jobs:
             echo "ACTOR_IS_COLLABORATOR_OR_OWNER=true" >> $GITHUB_ENV
           else
             echo "ACTOR_IS_COLLABORATOR_OR_OWNER=false" >> $GITHUB_ENV
+          fi
 
       - name: Comment and potentially close the issue
         uses: actions/github-script@v6
