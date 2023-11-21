@@ -110,6 +110,13 @@ find_torrc_path() {
 check_tor_installed() {
   if command -v tor >/dev/null 2>&1; then
     echo "Tor is installed." >&2
+    echo -n "Ensuring tor started..." >&2
+    if [[ "$OS_TYPE" == "macos" ]]; then 
+      brew services start tor
+    else 
+      sudo systemctl start tor
+    fi
+    echo "Done." >&2
     return 0
   else
     echo "Tor is not installed." >&2
