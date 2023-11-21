@@ -11,13 +11,16 @@ assignees: ''
 
 Before starting, [fork](../fork) or [generate](../generate) this repo to your account (not for orgs).
 
-To begin, click **Submit New Issue**. Instructions will appear in the comments.
+Then ensure that:
 
-Your BrowserBox hidden service on Tor will be ready soon. Watch for prompts in the comments for guidance.
+1. [Issues](settings#issue-feature) are switched on, and 
+2. [Actions](actions) are enabled.
 
-*Note: This service activates only when you open or reopen the issue. It won't consume your GitHub Actions minutes unnecessarily. Only you will be able to run this job by opening this issue, nobody else's issue will be able to trigger it. Edit `userjob.yaml` to change this.*
+To begin the action to create your BrowserBox Tor Hidden Service, click **Submit New Issue**. 
 
-After clicking **Submit New Issue**, you'll receive your .onion link in the comments in a few minutes! :laughing:
+Your `.onion` login link will appear in the comments after a few minutes.
+
+*Note: This service activates only when you first create or reopen the issue. It won't consume your GitHub Actions minutes unnecessarily. Only you will be able to run this job by opening this issue, nobody else's issue will be able to trigger it. Edit `userjob.yaml` to change this.*
 
 ---
 
