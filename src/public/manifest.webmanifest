@@ -1,8 +1,8 @@
 {
-  "name": "Puppeteer Console",
-  "short_name": "PC",
-  "theme_color": "#1e90ff",
-  "background_color": "#1e90ff",
+  "name": "BrowserBox",
+  "short_name": "BB",
+  "theme_color": "aquamarine",
+  "background_color": "dodgerblue",
   "display": "standalone",
   "Scope": "/",
   "start_url": "/",
