@@ -13,7 +13,9 @@
   },
   "parcelIgnore": [
     ".*/bang.js",
-    ".*vanillaview.js"
+    ".*vanillaview.js",
+    "sw.js",
+    "register_sw.js"
   ],
   "pkg": {
     "scripts": "dist/*.js",

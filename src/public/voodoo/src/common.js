@@ -154,6 +154,7 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  useServiceWorkerToCache: true,
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,
   netCheckTimeout: 6007,
