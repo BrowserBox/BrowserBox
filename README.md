@@ -1,39 +1,14 @@
-# BrowserBox Availability
-
-**Cross-platform status:**
-
-
-| Platform                 | Status       |
-|--------------------------|--------------|
-| Docker                   | ✅           |
-| Ubuntu                   | ✅           |
-| Debian                   | ✅           |
-| CentOS 9                 | ✅           |
-| macOS                    | ✅           |
-| Amazon Linux (AWS EC2)   | ✅           |
-| Windows\*                | ❌           |
-| Windows WSL              | ✅           |
-
-\*Windows support is currently in development
-
-**Content delivery services status:**
-
-
-| Channel                  | Browser Service       | Audio    | Secure Document Viewer | Remote DevTools | WebRTC |
-|--------------------------|-----------------------|----------|------------------------|-----------------|--------|
-| HTTPS/DNS                | ✅                    | ✅        | ✅                     | ✅               | ✅     |
-| Installed Web App (PWA)  | ✅                    | ✅        | ✅                     | ✅               | ✅     |
-| Tor Hidden Service       | ✅                    | ✅        | ✅                     | ✅               | ❌     |
-| SSH Tunnel               | ✅                    | ✅        | ✅                     | ✅               | ✅     |
-| ngrok*                   | ✅                    | ❌        | ❌                     | ❌               | ✅     |
-
-\*audio, doc viewer, remote devtools not currently configured to work with ngrok, but support will be added in future. 
-
 # BrowserBox News
 
-## 🌟 What's New in BrowserBox
+BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for Tor. 
 
-We're thrilled to announce two major updates to BrowserBox that will enhance your user experience and streamline your workflow!
+You can now [browse the web through Tor, when using BrowserBox](#rotating_light-browserbox-on-tor). BrowserBox also supports running itself as a Tor hidden service](#rotating_light-latest-news-browserbox-hidden-services), so you can access your BrowserBox instances over the Tor network.
+
+*[Donate to Tor](https://donate.torproject.org)*
+
+## 🌟 What's New in BrowserBox 
+
+We're thrilled to announce the following major updates to BrowserBox that will enhance your user experience and streamline your workflow!
 
 ### Table of Contents
 
@@ -41,7 +16,7 @@ We're thrilled to announce two major updates to BrowserBox that will enhance you
 - [BrowserBox on Tor](#rotating_light-browserbox-on-tor)
 - [Installable PWAs on Desktop](#-installable-pwas-on-desktop)
 - [Protocol Links Support](#-protocol-links-support)
-- [Latest News: BrowserBox on Tor](#rotating_light-latest-news-browserbox-on-tor)
+- [Latest News: BrowserBox Hidden Services!](#rotating_light-latest-news-browserbox-hidden-services)
 - [AWS EC2 Installation](#browserbox---aws-ec2-installation)
 - [Docker Quick Start](#docker-quick-start-gem-version-6)
 - [Special Event: Ephemeral Web Proxy](#special-event--create-a-private-ephemeral-web-proxy-hosted-on-your-github-actions-minutes-by-opening-an-issue-on-this-repo)
@@ -116,7 +91,7 @@ Stay tuned for more updates, and as always, happy browsing with BrowserBox!
 
 -----
 
-## :rotating_light: Latest News: BrowserBox on Tor!
+## :rotating_light: Latest News: BrowserBox Hidden Services!
 
 ### GitHub Actions Method
 
@@ -198,9 +173,39 @@ Limitations: no audio, no DevTools, no docviewer (Because the ports are not acce
 
 # BrowserBox - General README
 
-# Web application virtualization via Zero Trust Remote Browser Isolation and Secure Document Gateway
-
 BrowserBox is a leading-edge solution in the Zero Trust landscape, enabling embeddable multiplayer browsers in any web page on any device. Our cybersecurity focus is on ensuring that every web interaction is treated as potentially hostile, and isolating it, so that we protect your devices and network from harm. 
+
+## BrowserBox Availability
+
+**Cross-platform support status:**
+
+| Platform                 | Status       |
+|--------------------------|--------------|
+| Docker                   | ✅           |
+| Ubuntu                   | ✅           |
+| Debian                   | ✅           |
+| CentOS 9                 | ✅           |
+| macOS                    | ✅           |
+| Amazon Linux (AWS EC2)   | ✅           |
+| Windows\*                | ❌           |
+| Windows WSL              | ✅           |
+
+\*Windows support is currently in development, but not yet officially supported.
+
+**Content delivery services status:**
+
+
+| Channel                  | Browser Service       | Audio    | Secure Document Viewer | Remote DevTools | WebRTC |
+|--------------------------|-----------------------|----------|------------------------|-----------------|--------|
+| HTTPS/DNS                | ✅                    | ✅        | ✅                     | ✅               | ✅     |
+| Installed Web App (PWA)  | ✅                    | ✅        | ✅                     | ✅               | ✅     |
+| Tor Hidden Service       | ✅                    | ✅        | ✅                     | ✅               | ❌     |
+| SSH Tunnel               | ✅                    | ✅        | ✅                     | ✅               | ✅     |
+| ngrok*                   | ✅                    | ❌        | ❌                     | ❌               | ✅     |
+
+\*audio, doc viewer, remote devtools not currently configured to work with ngrok, but support will be added in future. 
+
+# Web application virtualization via Zero Trust Remote Browser Isolation and Secure Document Gateway
 
 By leveraging the principles of Remote Browser Isolation (RBI), real-time streaming and collaborative browserin (co-browsing or "multiplayer browsers"), BrowserBoxPro ensures that no web content directly interacts with the end user's device, while remaining accessible through a shareable, collaborative interface. 
 
