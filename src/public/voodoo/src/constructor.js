@@ -354,13 +354,16 @@
             try {
               url = new URL(url);
               if ( url.protocol == 'web+bb:' ) {
-                url = url.href.slice(7);
+                //url = url.href.slice(9);
+                url = `${url.pathname}${url.search}${url.hash}`;
               }
               return url+'';
             } catch(e) {
               return new Error(`not a URL`);
             }
           }).filter(thing => !(thing instanceof Error));
+          console.log({urls});
+          alert('ok' + JSON.stringify(urls));
         } catch(e) {
           alert(`Issue with starting URL: ${e}`);
           console.warn(e);
