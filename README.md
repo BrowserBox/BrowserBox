@@ -1,3 +1,29 @@
+# BrowserBox Availability
+
+**Cross-platform status:**
+
+
+| Platform                 | Status       |
+|--------------------------|--------------|
+| Docker                   | ✅           |
+| Ubuntu                   | ✅           |
+| Debian                   | ✅           |
+| CentOS 9                 | ✅           |
+| macOS                    | ✅           |
+| Amazon Linux (AWS EC2)   | ✅           |
+
+**Content delivery services status:**
+
+
+| Channel                  | Browser Service       | Audio    | Secure Document Viewer | Remote DevTools | WebRTC |
+|--------------------------|-----------------------|----------|------------------------|-----------------|--------|
+| HTTPS/DNS                | ✅                    | ✅        | ✅                     | ✅               | ✅     |
+| Tor                      | ✅                    | ✅        | ✅                     | ✅               | ❌     |
+| SSH Tunnel               | ✅                    | ✅        | ✅                     | ✅               | ✅     |
+| Ngrok*                   | ✅                    | ❌        | ❌                     | ❌               | ✅     |
+
+* audio, doc viewer, remote devtools not currently configured to work with ngrok, but support will be added in future. 
+
 # BrowserBox News
 
 ### :rotating_light: Latest News: BrowserBox on Tor!
@@ -42,15 +68,6 @@ cd BrowserBox
 setup_bbpro --port <my_port>
 bbpro
 ```
-
-| Platform                 | Status       |
-|--------------------------|--------------|
-| Docker                   | ✅           |
-| Ubuntu                   | ✅           |
-| Debian                   | ✅           |
-| CentOS 9                 | ✅           |
-| macOS                    | ✅           |
-| Amazon Linux (AWS EC2)   | ✅           |
 
 ---
 
