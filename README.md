@@ -2,7 +2,7 @@
 
 BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for Tor. 
 
-You can now [browse the web through Tor, when using BrowserBox](#rotating_light-browserbox-on-tor). BrowserBox also supports running itself as a Tor hidden service](#rotating_light-latest-news-browserbox-hidden-services), so you can access your BrowserBox instances over the Tor network.
+You can now [browse the web through Tor when using BrowserBox](#rotating_light-browserbox-on-tor). BrowserBox also supports running itself as a [Tor hidden service](#rotating_light-latest-news-browserbox-hidden-services), so you can access your BrowserBox instances over the Tor network.
 
 *[Donate to Tor](https://donate.torproject.org)*
 
