@@ -352,18 +352,17 @@
           }
           urls = urls.map(url => {
             try {
-              url = new URL(url);
+              url = new URL(url.replace(/ /g, '+'));
               if ( url.protocol == 'web+bb:' ) {
                 //url = url.href.slice(9);
-                url = `${url.pathname}${url.search}${url.hash}`;
+                url = `${url.pathname.replace(/\/\//, '')}${url.search}${url.hash}`;
               }
               return url+'';
             } catch(e) {
+              console.warn(e, url);
               return new Error(`not a URL`);
             }
           }).filter(thing => !(thing instanceof Error));
-          console.log({urls});
-          alert('ok' + JSON.stringify(urls));
         } catch(e) {
           alert(`Issue with starting URL: ${e}`);
           console.warn(e);
