@@ -16,6 +16,7 @@ const MAX_WAITS = 200;
 
 export const OPTIONS = {
   showBWStatus: true,
+  showTorStatus: true,
   showAudioStatus: true,
   showWebRTCStatus: true,
   useSystemColorScheme: true,

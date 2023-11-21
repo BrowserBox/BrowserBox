@@ -858,6 +858,39 @@
             /*throw e;*/
           }
         }));
+        app.get(`/isTor`, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port];
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          if ( (cookie !== allowed_user_cookie) ) {
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          res.type('json');
+          const data = {};
+          if ( CONFIG.useTorProxy ) {
+            data.isTor = true;
+          } else {
+            data.isTor = false;
+          }
+          res.end(JSON.stringify(data));
+        });
+        app.get("/settings_modal", (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port];
+          if ( (cookie !== allowed_user_cookie) ) { 
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          res.status(200).send(` 
+            <form method=POST target=results>
+              <input type=hidden name=_csrf value=${LatestCSRFToken}>
+              <fieldset>
+                <button formaction=/restart_app>Restart app</button>
+                <button formaction=/stop_app>Stop app</button>
+                <button formaction=/stop_browser>Stop browser</button>
+              </fieldset>
+            </form>
+            <iframe style=display:none name=results>
+          `);
+        });
         app.post("/file", async (req,res) => {
           const cookie = req.cookies[COOKIENAME+port];
           if ( (cookie !== allowed_user_cookie) ) { 
@@ -908,23 +941,6 @@
             res.json(result);
           }
         }); 
-        app.get("/settings_modal", (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port];
-          if ( (cookie !== allowed_user_cookie) ) { 
-            return res.status(401).send('{"err":"forbidden"}');
-          }
-          res.status(200).send(` 
-            <form method=POST target=results>
-              <input type=hidden name=_csrf value=${LatestCSRFToken}>
-              <fieldset>
-                <button formaction=/restart_app>Restart app</button>
-                <button formaction=/stop_app>Stop app</button>
-                <button formaction=/stop_browser>Stop browser</button>
-              </fieldset>
-            </form>
-            <iframe style=display:none name=results>
-          `);
-        });
       // app meta controls
         app.post("/restart_app", ConstrainedRateLimiter, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port];

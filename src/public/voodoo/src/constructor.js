@@ -386,6 +386,18 @@
         globalThis.queue = queue;
       }
 
+      // check tor status
+        {
+          const isTorAPI = new URL(location.origin);
+          isTorAPI.pathname = '/isTor';
+          fetch(isTorAPI).then(r => r.json()).then(({isTor}) => {
+            state.isTor = isTor;
+            if ( state.isTor ) {
+              setState('bbpro', state);
+            }
+          });
+        }
+
       // plugins 
         /**
         const plugins = new Map;
