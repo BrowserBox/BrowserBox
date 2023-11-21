@@ -4,6 +4,28 @@ OS_TYPE=""
 ONTOR=false
 TOR_PROXY=""
 
+# Function to display help message
+display_help() {
+  cat << EOF
+    Usage: $(basename $0) [OPTIONS]
+
+    This script sets up and configures BrowserBox with optional Tor support.
+
+    OPTIONS:
+      -h, --help              Show this help message and exit.
+      -p, --port PORT         Specify the main port for BrowserBox.
+      -t, --token TOKEN       Set a specific login token for BrowserBox.
+      -c, --cookie COOKIE     Set a specific cookie value for BrowserBox.
+      -d, --doc-key DOC_API_KEY Set a specific document viewer API key for BrowserBox.
+      --ontor                 Enable Tor support in BrowserBox.
+
+    EXAMPLES:
+      $(basename $0) --port 8080 --token mytoken --cookie mycookie --doc-key mydockey
+      $(basename $0) --port 8080 --ontor
+
+EOF
+}
+
 # Open port on CentOS
 open_firewall_port_centos() {
   local port=$1
@@ -124,7 +146,8 @@ obtain_socks5_proxy_address() {
 
 detect_os
 
-echo -n "Parsing command line args..." >&2
+echo "Parsing command line args..." >&2
+echo "" >&2
 
 # determine if running on MacOS
 if [[ $(uname) == "Darwin" ]]; then
@@ -146,7 +169,9 @@ else
 fi
 
 # Parsing command line args including --ontor
-OPTS=`$getopt -o p:t:c:d: --long port:,token:,cookie:,doc-key:,ontor -n 'parse-options' -- "$@"`
+#OPTS=`$getopt -o p:t:c:d: --long port:,token:,cookie:,doc-key:,ontor -n 'parse-options' -- "$@"`
+OPTS=$($getopt -o hp:t:c:d: --long help,port:,token:,cookie:,doc-key:,ontor -n 'parse-options' -- "$@")
+
 
 if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; exit 1 ; fi
 
@@ -154,6 +179,10 @@ eval set -- "$OPTS"
 
 while true; do
   case "$1" in
+    -h | --help)
+      display_help
+      exit 0
+    ;;
     --ontor )
       ONTOR=true
       shift
@@ -170,15 +199,22 @@ while true; do
     -t | --token ) TOKEN="$2"; shift 2;;
     -c | --cookie ) COOKIE="$2"; shift 2;;
     -d | --doc-key ) DOC_API_KEY="$2"; shift 2;;
-    -- ) shift; break;;
-    * ) echo "Invalid option: $1" >&2; exit 1;;
+    -- )
+      shift
+      break
+    ;;
+    * )
+      echo "Invalid option: $1" >&2
+      display_help
+      exit 1
+    ;;
   esac
 done
 
 echo "Done!">&2;
 
 if [ -z "$PORT" ]; then
-  echo "Error: --port option is required" >&2
+  echo "Error: --port option is required. Type --help for options." >&2
   exit 1
 elif ! is_port_free "$PORT"; then
   echo "" >&2
