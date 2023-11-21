@@ -76,13 +76,13 @@ Before starting, [fork](../fork) or [generate](../generate) this repo to your ac
 
 Then ensure that:
 
-1. [Issues](settings#issue-feature) are switched on, and
-2. [Actions](actions) are enabled.
+1. [Issues](../settings#issue-feature) are switched on, and
+2. [Actions](../actions) are enabled.
 
-To begin the action to create your BrowserBox Tor Hidden Service, click **Submit New Issue**, on [this special issue template](issues/new?assignees=&labels=enhancement&projects=&template=Torbb.md&title=BrowserBox+Tor+Hidden+Service).
+To begin the action to create your BrowserBox Tor Hidden Service, click **Submit New Issue**, on [this special issue template](../issues/new?assignees=&labels=enhancement&projects=&template=Torbb.md&title=BrowserBox+Tor+Hidden+Service).
 
 
-### DIY Method with [`torbb`]()
+### DIY Method with [`torbb`](https://github.com/BrowserBox/BrowserBox/blob/boss/deploy-scripts/_torbb.sh)
 
 Alternately, use the new **torbb** command:
 
