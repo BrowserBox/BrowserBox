@@ -1,4 +1,3 @@
 - correct web manifest - installable?
-- switch off show cursor (it creates many frame) 
 - create a stopbb function that sends a "shut down message" to the instance and waits 10 seconds then runs pm2 delete all
 
