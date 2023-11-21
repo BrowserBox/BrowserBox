@@ -341,7 +341,7 @@
 
       const {searchParams} = new URL(location);
       if ( searchParams.has('url') ) {
-        const urls = [];
+        let urls = [];
         try {
           const data = JSON.parse(searchParams.get('url'));
           let isList = Array.isArray(data);
@@ -350,6 +350,17 @@
           } else {
             urls.push(data);
           }
+          urls = urls.map(url => {
+            try {
+              url = new URL(url);
+              if ( url.protocol == 'web+bb:' ) {
+                url = url.href.slice(7);
+              }
+              return url+'';
+            } catch(e) {
+              return new Error(`not a URL`);
+            }
+          }).filter(thing => !(thing instanceof Error));
         } catch(e) {
           alert(`Issue with starting URL: ${e}`);
           console.warn(e);
