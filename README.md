@@ -23,7 +23,7 @@
 |--------------------------|-----------------------|----------|------------------------|-----------------|--------|
 | HTTPS/DNS                | ✅                    | ✅        | ✅                     | ✅               | ✅     |
 | Installed Web App (PWA)  | ✅                    | ✅        | ✅                     | ✅               | ✅     |
-| Tor                      | ✅                    | ✅        | ✅                     | ✅               | ❌     |
+| Tor Hidden Service       | ✅                    | ✅        | ✅                     | ✅               | ❌     |
 | SSH Tunnel               | ✅                    | ✅        | ✅                     | ✅               | ✅     |
 | ngrok*                   | ✅                    | ❌        | ❌                     | ❌               | ✅     |
 
@@ -38,6 +38,7 @@ We're thrilled to announce two major updates to BrowserBox that will enhance you
 ### Table of Contents
 
 - [What's New in BrowserBox](#-whats-new-in-browserbox)
+- [BrowserBox on Tor](#rotating_light-browserbox-on-tor)
 - [Installable PWAs on Desktop](#-installable-pwas-on-desktop)
 - [Protocol Links Support](#-protocol-links-support)
 - [Latest News: BrowserBox on Tor](#rotating_light-latest-news-browserbox-on-tor)
@@ -45,6 +46,49 @@ We're thrilled to announce two major updates to BrowserBox that will enhance you
 - [Docker Quick Start](#docker-quick-start-gem-version-6)
 - [Special Event: Ephemeral Web Proxy](#special-event--create-a-private-ephemeral-web-proxy-hosted-on-your-github-actions-minutes-by-opening-an-issue-on-this-repo)
 - [General README](#browserbox---general-readme)
+
+-----
+
+### :rotating_light: BrowserBox on Tor!
+
+#### 🌍 Enhanced Privacy with Tor Support
+
+We are excited to announce that BrowserBox now supports Tor, providing you with a more private and secure browsing experience. This feature is still in alpha, but we're committed to continuously improving it to match the security level of the Tor Browser over time.
+
+**Key Features:**
+- **Onion Sites Accessibility**: Browse [`.onion`](https://en.wikipedia.org/wiki/.onion) websites seamlessly.
+- **Privacy-First Browsing**: Enhanced encryption for anonymity and security. Tor conceals the IP address of your RBI server.
+- **Socks5 Proxy Integration**: Traffic securely routed over a Socks5 proxy.
+- **Simple Tor Activation**: Easy activation using the `--ontor` flag.
+- **Platform Compatibility**: Tested on macOS and Debian.
+
+#### :gear: Using BrowserBox with Tor
+
+Activate Tor in BrowserBox with this command:
+
+```shell
+$ setup_bbpro <your-normal-args> --ontor
+$ bbpro
+```
+
+*If you want to switch it off again, shut down as normal (`pm2 delete all`), and re-run `setup_bbpro` without the `--ontor` flag.*
+
+Start exploring the web with Tor's added security.
+
+#### :warning: Important Caveats and Commitment to Security
+
+As this Tor integration is in *alpha*, there are several important considerations:
+
+- **Proxy and Tor Escapes**: There's a potential for some requests to bypass the Socks5 Tor proxy or Tor itself, which could impact privacy. We are actively working to identify and mitigate these risks.
+- **Adherence to Tor Guidelines**: We aspire to aligning our Tor integration as closely as possible with the best practices recommended by the Tor Project. This includes careful configuration to prevent leaks and maintaining the anonymity that Tor provides.
+- **Ongoing Security Enhancements**: Our goal is to eventually provide a level of security comparable to the Tor Browser. We'll be regularly updating and improving the Tor functionality in BrowserBox.
+- **Exploring Alternatives**: We are considering the integration of alternative browsers like Brave as the underlying engine for RBI, which may offer a more secure base than Chrome for Tor browsing.
+
+#### :speech_balloon: Your Input is Valuable
+
+Your feedback is crucial for our continuous improvement. Please report any issues or suggestions to enhance the Tor functionality on our GitHub issues page. Contributions, especially those that help achieve parity with Tor Browser's security, are highly appreciated.
+
+Stay tuned for more updates and enhancements in BrowserBox, and as always, enjoy a secure browsing experience!
 
 -----
 
