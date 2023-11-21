@@ -169,6 +169,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  useTorProxy: process.env.TOR_PROXY || false,
   useScaledUpCoViewport: true,
   useCappedScaling: true,
   mobileMaxWidth: 414, // CSS pixels

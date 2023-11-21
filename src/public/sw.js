@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v6.1';
+const CACHE_VERSION = 'v6.1.2';
 const CACHE_NAME = 'my-site-cache-' + CACHE_VERSION;
 
 // Define the patterns to cache as strings

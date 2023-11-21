@@ -9,6 +9,11 @@
   align-items: center;
 }
 
+.tor-status {
+  color: #A420D0; /* purple */
+  font-weight: bold;
+}
+
 .status-bar.progress {
   cursor: progress;
 }

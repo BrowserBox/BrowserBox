@@ -186,6 +186,10 @@ const launcher_api = {
     } else {
       CHROME_FLAGS.push('--no-sandbox'); 
     }
+    if ( CONFIG.useTorProxy ) {
+      CHROME_FLAGS.push(`--proxy-server="${process.env.TOR_PROXY}"`);
+      CHROME_FLAGS.push(`--host-resolver-rules="MAP * 0.0.0.0 , EXCLUDE localhost"`);
+    }
     if (isDocker()) {
       console.log("We are in docker");
       CHROME_FLAGS.push('--remote-debugging-address=0.0.0.0');
