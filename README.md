@@ -70,14 +70,28 @@ Stay tuned for more updates, and as always, happy browsing with BrowserBox!
 
 ## :rotating_light: Latest News: BrowserBox on Tor!
 
-Either fork then open an issue from the browserBox Tor Hidden service issue template, for zero configuration GitHub actions instant creation, or use the new **torbb** command:
+### GitHub Actions Method
+
+Before starting, [fork](../fork) or [generate](../generate) this repo to your account.
+
+Then ensure that:
+
+1. [Issues](settings#issue-feature) are switched on, and
+2. [Actions](actions) are enabled.
+
+To begin the action to create your BrowserBox Tor Hidden Service, click **Submit New Issue**, on [this special issue template](issues/new?assignees=&labels=enhancement&projects=&template=Torbb.md&title=BrowserBox+Tor+Hidden+Service).
+
+
+### DIY Method with [`torbb`]()
+
+Alternately, use the new **torbb** command:
 
 ```shell
-git clone https://github.com/BrowserBox/BrowserBox.git
-cd BrowserBox
-./deploy-scripts/global_install.sh localhost
-setup_bbpro --port <my_port>
-torbb
+$ git clone https://github.com/BrowserBox/BrowserBox.git
+$ cd BrowserBox
+$ yes | ./deploy-scripts/global_install.sh localhost
+$ setup_bbpro --port <my_port>
+$ torbb
 ```
 
 -----
