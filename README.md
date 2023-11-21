@@ -11,6 +11,10 @@
 | CentOS 9                 | ✅           |
 | macOS                    | ✅           |
 | Amazon Linux (AWS EC2)   | ✅           |
+| Windows\*                | ❌           |
+| Windows WSL              | ✅           |
+
+\*Windows support is currently in development
 
 **Content delivery services status:**
 
@@ -21,9 +25,9 @@
 | Installed Web App (PWA)  | ✅                    | ✅        | ✅                     | ✅               | ✅     |
 | Tor                      | ✅                    | ✅        | ✅                     | ✅               | ❌     |
 | SSH Tunnel               | ✅                    | ✅        | ✅                     | ✅               | ✅     |
-| Ngrok*                   | ✅                    | ❌        | ❌                     | ❌               | ✅     |
+| ngrok*                   | ✅                    | ❌        | ❌                     | ❌               | ✅     |
 
-* audio, doc viewer, remote devtools not currently configured to work with ngrok, but support will be added in future. 
+\*audio, doc viewer, remote devtools not currently configured to work with ngrok, but support will be added in future. 
 
 # BrowserBox News
 
@@ -33,14 +37,14 @@ We're thrilled to announce two major updates to BrowserBox that will enhance you
 
 ### Table of Contents
 
-- [What's New in BrowserBox](#whats-new-in-browserbox)
-- [Installable PWAs on Desktop](#installable-pwas-on-desktop)
-- [Protocol Links Support](#protocol-links-support)
-- [Latest News: BrowserBox on Tor](#latest-news-browserbox-on-tor)
-- [AWS EC2 Installation](#aws-ec2-installation)
-- [Docker Quick Start](#docker-quick-start)
-- [Special Event: Ephemeral Web Proxy](#special-event-ephemeral-web-proxy)
-- [General README](#general-readme)
+- [What's New in BrowserBox](#-whats-new-in-browserbox)
+- [Installable PWAs on Desktop](#-installable-pwas-on-desktop)
+- [Protocol Links Support](#-protocol-links-support)
+- [Latest News: BrowserBox on Tor](#rotating_light-latest-news-browserbox-on-tor)
+- [AWS EC2 Installation](#browserbox---aws-ec2-installation)
+- [Docker Quick Start](#docker-quick-start-gem-version-6)
+- [Special Event: Ephemeral Web Proxy](#special-event--create-a-private-ephemeral-web-proxy-hosted-on-your-github-actions-minutes-by-opening-an-issue-on-this-repo)
+- [General README](#browserbox---general-readme)
 
 -----
 
