@@ -4,6 +4,8 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 
 You can now [browse the web through Tor when using BrowserBox](#rotating_light-browserbox-on-tor). BrowserBox also supports running itself as a [Tor hidden service](#rotating_light-latest-news-browserbox-hidden-services), so you can access your BrowserBox instances over the Tor network.
 
+<img width="1192" alt="BrowserBox with --ontor on macOS successfully on the Tor network as checked at https://check.torproject.org" src="https://github.com/BrowserBox/BrowserBox/assets/22254235/5b92a312-4d4e-49e4-bffe-7088f3abe7b1">
+
 *[Donate to Tor](https://donate.torproject.org)*
 
 ## 🌟 What's New in BrowserBox 
