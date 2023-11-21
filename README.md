@@ -18,6 +18,7 @@
 | Channel                  | Browser Service       | Audio    | Secure Document Viewer | Remote DevTools | WebRTC |
 |--------------------------|-----------------------|----------|------------------------|-----------------|--------|
 | HTTPS/DNS                | ✅                    | ✅        | ✅                     | ✅               | ✅     |
+| Installed Web App (PWA)  | ✅                    | ✅        | ✅                     | ✅               | ✅     |
 | Tor                      | ✅                    | ✅        | ✅                     | ✅               | ❌     |
 | SSH Tunnel               | ✅                    | ✅        | ✅                     | ✅               | ✅     |
 | Ngrok*                   | ✅                    | ❌        | ❌                     | ❌               | ✅     |
