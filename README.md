@@ -27,9 +27,50 @@
 
 # BrowserBox News
 
-### :rotating_light: Latest News: BrowserBox on Tor!
+## 🌟 What's New in BrowserBox
 
-either fork and open an issue from the browserBox Tor Hidden service issue template, for zero configuration GitHub actions instant creation, or use the new **torbb** command:
+We're thrilled to announce two major updates to BrowserBox that will enhance your user experience and streamline your workflow!
+
+### Table of Contents
+
+- [What's New in BrowserBox](#whats-new-in-browserbox)
+- [Installable PWAs on Desktop](#installable-pwas-on-desktop)
+- [Protocol Links Support](#protocol-links-support)
+- [Latest News: BrowserBox on Tor](#latest-news-browserbox-on-tor)
+- [AWS EC2 Installation](#aws-ec2-installation)
+- [Docker Quick Start](#docker-quick-start)
+- [Special Event: Ephemeral Web Proxy](#special-event-ephemeral-web-proxy)
+- [General README](#general-readme)
+
+-----
+
+### 🚀 Installable PWAs on Desktop
+
+You can now install BrowserBox as a Progressive Web App (PWA) on your desktop! This means smoother performance, offline capabilities, and a more integrated experience with your operating system. 
+
+**Key Benefits:**
+- **Seamless Integration:** Feel the power of a native app with the flexibility of a web application.
+- **Offline Access:** Access essential features even without an internet connection.
+- **Reduced Resource Usage:** Enjoy a more efficient use of system resources compared to traditional web browsing.
+
+### 🔗 Protocol Links Support
+
+Introducing protocol links support with `web+bb://`. Now, you can open links directly in BrowserBox by prefacing them with `web+bb://`. This feature allows for more efficient navigation and a streamlined process to access web content.
+
+**How it Works:**
+- Simply prefix your URL with `web+bb://`.
+- For example, to open `https://example.com`, use `web+bb://https://example.com`.
+- The link will automatically open in BrowserBox, providing a seamless browsing experience.
+
+This update is part of our ongoing commitment to enhance BrowserBox and make your web experience as efficient and enjoyable as possible. Try out these new features and let us know what you think!
+
+Stay tuned for more updates, and as always, happy browsing with BrowserBox!
+
+-----
+
+## :rotating_light: Latest News: BrowserBox on Tor!
+
+Either fork then open an issue from the browserBox Tor Hidden service issue template, for zero configuration GitHub actions instant creation, or use the new **torbb** command:
 
 ```shell
 git clone https://github.com/BrowserBox/BrowserBox.git
@@ -39,24 +80,18 @@ setup_bbpro --port <my_port>
 torbb
 ```
 
---
+-----
 
 💎 We're excited to announce that BrowserBox can now run as a hidden service on the Tor network! This significant update brings enhanced privacy and security, allowing you to access BrowserBox with the anonymity of Tor. Check out our [Show HN post: torbb - Now with Tor, run BrowserBox as a hidden service](https://news.ycombinator.com/item?id=38336686).
 
-#### Getting Started with BrowserBox on Tor
+### Getting Started with BrowserBox on Tor
 - **Download Mkcert Root CA**: For a smoother experience on Tor, download and install the Mkcert Root CA, unique to each installation, to avoid certificate warnings. [Installation Guide](https://github.com/BrowserBox/BrowserBox/blob/boss/src/public/torca/rootca-import-guidance.md), and [Helpful Video Tutorial How-To for macOS](https://youtu.be/ADN26iqtSZ8).
 - **Create Your Hidden Service**: Fork this repository and open an issue using the "Make BB Hidden Service" template. A GitHub action will automatically create your unique .onion link. [Learn more](https://github.com/BrowserBox/BrowserBox/issues/new?assignees=&labels=enhancement&projects=&template=Torbb.md&title=BrowserBox+Tor+Hidden+Service).
 - **Try it now**: Fork or generate this repository, and create an issue from the template to get your BrowserBox running on Tor! [Fork here](../../fork) / [Generate here](../../generate).
 
-### Table of Contents
-- [News: BrowserBox on Tor](#latest-news-browserbox-on-tor)
-- [AWS EC2 Installation](#aws-ec2-installation)
-- [Docker Quick Start](#docker-quick-start)
-- [Special Event: Ephemeral Web Proxy](#special-event-ephemeral-web-proxy)
-- [General README](#general-readme)
+-----
 
-
-# BrowserBox - AWS EC2 Installation 
+## BrowserBox - AWS EC2 Installation 
 
 **[New Video: Installing BrowserBox on Amazon AWS EC2 Amazon Linux](https://www.youtube.com/watch?v=-YEOHXXid9g)**
 
@@ -70,9 +105,9 @@ setup_bbpro --port <my_port>
 bbpro
 ```
 
----
+-----
 
-# Docker Quick Start :gem: *Version 6*
+## Docker Quick Start :gem: *Version 6*
 
 **November 4 2023**: New version released. Docker image v6.
 
@@ -87,7 +122,7 @@ That's it! Follow the prompts to set up certificates and it will emit a link tha
 
 **Update:** Docker image now works on macOS!!! 🎉
 
----
+-----
 
 # *Special Event!* 🤙 Create a private ephemeral Web Proxy hosted on your GitHub Actions minutes by opening an issue on this repo
 
@@ -97,7 +132,7 @@ By default they remain open for 5 minutes, but you can make that longer by editi
 
 Limitations: no audio, no DevTools, no docviewer (Because the ports are not accesible, although the services are running)
 
----
+-----
 
 # BrowserBox - General README
 
