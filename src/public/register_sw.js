@@ -1,7 +1,7 @@
-import {CONFIG} from './common.js';
+import {CONFIG} from './voodoo/src/common.js';
 
 if (CONFIG.useServiceWorkerToCache && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/path/to/sw.js') // Adjust the path as necessary
+  navigator.serviceWorker.register('/sw.js') // Adjust the path as necessary
     .then(registration => {
       console.log('Service Worker registered with scope:', registration.scope);
     })
