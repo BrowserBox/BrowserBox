@@ -2,6 +2,20 @@
 
 BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for Tor. 
 
+***tor-iframe:***
+```html
+<iframe src="https://mybrowserbox.server.com:9999/login?token=cviuygf3498tysifud&ui=false&url=["https://check.torproject.org"]"
+        style="border:none; width:100%; height:100%;"
+        allowfullscreen
+        scrolling="no">
+</iframe>
+```
+
+On server:
+```bash
+$ IFRAME_LINK=$(setup_bbpro -p 9999 --ontor)
+```
+
 You can now [browse the web through Tor when using BrowserBox](#rotating_light-browserbox-on-tor). BrowserBox also supports running itself as a [Tor hidden service](#rotating_light-latest-news-browserbox-hidden-services), so you can access your BrowserBox instances over the Tor network.
 
 <img width="1192" alt="BrowserBox with --ontor on macOS successfully on the Tor network as checked at https://check.torproject.org" src="https://github.com/BrowserBox/BrowserBox/assets/22254235/5b92a312-4d4e-49e4-bffe-7088f3abe7b1">
