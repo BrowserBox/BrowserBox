@@ -30,6 +30,7 @@ export const DEBUG = Object.freeze({
     // but it throws off the bitmap calculation for pointer events
     // so switching off for now
   increaseResolutionOfSmallerCanvas: false, 
+  debugIMEDetection: true,
   debugShrink: false,
   debugResize: false,
   debugImageRemainderClears: false,

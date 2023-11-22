@@ -2,11 +2,10 @@
   // imports
     import {handleSelectMessage} from './handlers/selectInput.js';
     import {fetchTabs} from './handlers/targetInfo.js';
-    //import {demoZombie, fetchDemoTabs}  from './handlers/demo.js';
+    import {detectIMEInput} from './ime_detection.js';
     import {handleMultiplayerMessage} from './handlers/multiplayer.js';
     import {handleKeysCanInputMessage} from './handlers/keysCanInput.js';
     import {handleElementInfo} from './handlers/elementInfo.js';
-    // MIGRATE
     import {CTX_MENU_THRESHOLD, makeContextMenuBondTasks} from './subviews/contextMenu.js';
     import {handleScrollNotification} from './handlers/scrollNotify.js';
     import {resetLoadingIndicator,showLoadingIndicator} from './handlers/loadingIndicator.js';
@@ -14,7 +13,6 @@
     import DEFAULT_FAVICON from './subviews/faviconDataURL.js';
     import EventQueue from './eventQueue.js';
     import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
-    // MIGRATE
     import {saveClick} from './subviews/controls.js';
     import {
       untilTrue,
@@ -155,9 +153,12 @@
             )
           ),
 
-          // UI
+          // Client IME UI
           hideIMEUI,
           showIMEUI,
+
+          // IME input detection
+          detectIMEInput,
 
           // bandwidth
           showBandwidthIssue: false,
@@ -185,7 +186,11 @@
           // for firefox because it's IME does not fire inputType
           // so we have no simple way to handle deleting content backward
           // this should be FF on MOBILE only probably so that's why it's false
-          convertTypingEventsToSyncValueEvents: true,
+          isMobile: deviceIsMobile(),
+
+          get convertTypingEventsToSyncValueEvents() {
+            return this.isMobile || this.currentInputLanguageUsesIME;
+          },
 
           // for safari to detect if pointerevents work
           DoesNotSupportPointerEvents: true,
@@ -1205,13 +1210,17 @@
       }
 
       window.addEventListener('offline', () => {
-        setState('bbpro', state);
-        writeCanvas("No connection to server");
+        setTimeout(() => {
+          setState('bbpro', state);
+          writeCanvas("No connection to server");
+        },0);
       });
 
       window.addEventListener('online', () => {
-        setState('bbpro', state);
-        writeCanvas("Online. Connecting...");
+        setTimeout(() => {
+          setState('bbpro', state);
+          writeCanvas("Online. Connecting...");
+        }, 0);
       });
 
       if ( activeTarget ) {
