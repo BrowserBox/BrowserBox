@@ -13,7 +13,10 @@ import {DEBUG} from './common.js';
     return ranges.some(([start, end]) => codePoint >= start && codePoint <= end);
   }
 
-  export default function detectIMEInput(inputField, state) {
+  export function detectIMEInput(inputField, state) {
+    const ranges = imeLikelyUnicodeRanges;
+    if ( inputField.imeDetection ) return;
+    inputField.imeDetection = 1;
     let usingIME = false;
 
     inputField.addEventListener('compositionstart', () => {
@@ -28,7 +31,9 @@ import {DEBUG} from './common.js';
       DEBUG.debugIMEDetection && console.log('IME is NOT being used.', {usingIME});
     });
 
+    self.inputField = inputField;
     inputField.addEventListener('input', () => {
+      console.log('hello');
       const lastChar = inputField.value.slice(-1);
 
       // Check if the last character falls within the typical IME Unicode ranges
@@ -43,6 +48,10 @@ import {DEBUG} from './common.js';
       }
 
       state.usingIME = usingIME;
-    });
+      console.log('using ime', state.currentInputLanguageUsesIME, state);
+    }, {capture: true});
+
+    inputField.imeDetection = 2;
+    console.log('installed ime detection');
   }
 

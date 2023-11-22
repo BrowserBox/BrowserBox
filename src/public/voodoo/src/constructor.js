@@ -41,12 +41,14 @@
     ]);
 
     const CancelWhenSyncValue = new Set([
+      /*
       "keydown",
       "keyup",
       "keypress",
       "compositionstart",
       "compositionend",
       "compositionupdate",
+      */
     ]);
 
     const EnsureCancelWhenSyncValue = e => {
@@ -188,6 +190,9 @@
           // this should be FF on MOBILE only probably so that's why it's false
           isMobile: deviceIsMobile(),
 
+          get currentInputLanguageUsesIME() {
+            return this.usingIME;
+          },
           get convertTypingEventsToSyncValueEvents() {
             return this.isMobile || this.currentInputLanguageUsesIME;
           },
