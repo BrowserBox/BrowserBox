@@ -51,7 +51,7 @@
     "mac-build": "TARGET_ARCH=x64 npm run clean &&TARGET_ARCH=x64 npm i && npm run parcel && npm run pack && npx pkg --compress GZip --targets=x64 .",
     "package-small": "npx pkg --compress Brotli .",
     "release": "npm run parcel && npm run build && npm run package",
-    "prepublishOnly": "echo 'do not publish this' && fail"
+    "x-prepublishOnly": "echo 'do not publish this' && fail"
   },
   "repository": {
     "type": "git",
