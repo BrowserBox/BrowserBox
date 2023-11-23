@@ -30,6 +30,7 @@ export const DEBUG = Object.freeze({
     // but it throws off the bitmap calculation for pointer events
     // so switching off for now
   increaseResolutionOfSmallerCanvas: false, 
+  debugIMEDetection: true,
   debugShrink: false,
   debugResize: false,
   debugImageRemainderClears: false,
@@ -155,7 +156,9 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
-  useServiceWorkerToCache: true,
+  get useServiceWorkerToCache() {
+    return location.hostname !== 'localhost' && true;
+  },
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,
   netCheckTimeout: 6007,

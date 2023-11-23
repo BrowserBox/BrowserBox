@@ -1,15 +1,14 @@
 {
-  "name": "@dosy-private/bbpro",
-  "private": true,
+  "name": "bbpro",
   "type": "module",
-  "version": "3.1.1",
-  "description": "Fly a browser remotely from your browser? Yes.",
+  "version": "6.1.5",
+  "description": "BrowserBox - remote browser isolation tool",
   "main": "./src/server.js",
   "targets": {
     "main": false
   },
   "bin": {
-    "bb": "./dist/BrowserBox.cjs"
+    "bb": "./scripts/demo_run.sh"
   },
   "parcelIgnore": [
     ".*/bang.js",
@@ -52,7 +51,7 @@
     "mac-build": "TARGET_ARCH=x64 npm run clean &&TARGET_ARCH=x64 npm i && npm run parcel && npm run pack && npx pkg --compress GZip --targets=x64 .",
     "package-small": "npx pkg --compress Brotli .",
     "release": "npm run parcel && npm run build && npm run package",
-    "prepublishOnly": "echo 'do not publish this' && fail"
+    "x-prepublishOnly": "echo 'do not publish this' && fail"
   },
   "repository": {
     "type": "git",
@@ -74,9 +73,9 @@
   ],
   "author": "@dosy",
   "bugs": {
-    "url": "https://github.com/crisdosyago/bbpro/issues"
+    "url": "https://github.com/BrowserBox/BrowserBox/issues"
   },
-  "homepage": "https://github.com/crisdosyago/bbpro",
+  "homepage": "https://github.com/BrowserBox/BrowserBox",
   "dependencies": {
     "@roamhq/wrtc": "^0.7.1",
     "bang.html": "latest",
@@ -86,7 +85,7 @@
     "cors": "latest",
     "csurf": "latest",
     "entities": "latest",
-    "esbuild": "0.19.5",
+    "esbuild": "0.19.7",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "latest",
