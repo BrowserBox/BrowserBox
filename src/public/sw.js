@@ -8,6 +8,7 @@ const patternsToCache = [
 ];
 const excludedPaths = new Set([
   "/", "/login", "/SPLlogin", "/pptr", "/SPLgenerate", 
+  "/isTor",
   "/torca/rootCA.pem", "/settings_modal", "/restart_app", 
   "/stop_app", "/stop_browser", "/start_browser", "/integrity"
 ]);
