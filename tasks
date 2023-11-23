@@ -1,3 +1,8 @@
 - correct web manifest - installable?
 - create a stopbb function that sends a "shut down message" to the instance and waits 10 seconds then runs pm2 delete all
 
+bunch of issues and problems
+
+- can keys input is not consistent (someone ime detection will not be fired because input is not focused as it should be)
+- getters on state object are not being serialized across on object component states  (so we cannot read these states)
+
