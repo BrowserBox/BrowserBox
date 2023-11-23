@@ -33,7 +33,6 @@ import {DEBUG} from './common.js';
 
     self.inputField = inputField;
     inputField.addEventListener('input', () => {
-      console.log('hello');
       const lastChar = inputField.value.slice(-1);
 
       // Check if the last character falls within the typical IME Unicode ranges
@@ -48,10 +47,10 @@ import {DEBUG} from './common.js';
       }
 
       state.usingIME = usingIME;
-      console.log('using ime', state.currentInputLanguageUsesIME, state);
+      DEBUG.debugIMEDetection && console.log('using ime', state.currentInputLanguageUsesIME, state);
     }, {capture: true});
 
     inputField.imeDetection = 2;
-    console.log('installed ime detection');
+    DEBUG.debugIMEDetection && console.log('installed ime detection');
   }
 

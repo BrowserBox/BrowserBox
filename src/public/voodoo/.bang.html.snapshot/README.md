@@ -1,19 +1,17 @@
 <p align=center>
   <img width=80% 
-    src=https://github.com/crisdosyago/der.Knall.Gerust/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+    src=https://github.com/crisdosyago/good.html/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
   <img width=80% 
     src=https://user-images.githubusercontent.com/22254235/135863650-a0a44bbd-414e-4606-aaf4-64e43f5abcc9.PNG
   >
 </p>
 
-# ***[:gem: BANG!](https://github.com/crisdosyago/dar.Knall.Gerust/)*** ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcrisdosyago%2Fder.Knall.Gerust&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%208%202021&edge_flat=false)](https://hits.seeyoufarm.com)
+# ***[:gem: BANG!](https://github.com/crisdosyago/dar.Knall.Gerust/)*** ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcrisdosyago%2Fgood.html&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%208%202021&edge_flat=false)](https://hits.seeyoufarm.com)
 
 # News
 
-New version coming. V5, builds integration with existing vanillaview API.
-
-Das konzeptionelle „Knall“-Gerüst ist eine Zeichenhilfe, die benutzerdefinierte Elemente druckt, sodass Sie Stilkapselung und komponentenbasierte Wiederverwendbarkeit integriert erhalten. Es hat auch minimale DOM-Unterschiede, JavaScript-Vorlagensyntax, keine Abhängigkeiten und muss querübersetzt werden. Entwickelt mit der Leistungsfähigkeit des Webs in HTML.
+Bang is now know as **GOOD**
 
 Holen Sie es hier, [or on NPM @bang.html](https://npmjs.com/package/bang.html)
 
@@ -62,9 +60,9 @@ Holen Sie es hier, [or on NPM @bang.html](https://npmjs.com/package/bang.html)
 
 ## Demos
 
-- [7GUIs](https://crisdosyago.github.io/der.Knall.Gerust/7guis/)
-- [Spreadsheet Component (*a work in progress*)](https://crisdosyago.github.io/der.Knall.Gerust/cellophane/)
-- [Simple Counter Demo](https://crisdosyago.github.io/der.Knall.Gerust/ctr/)
+- [7GUIs](https://crisdosyago.github.io/good.html/7guis/)
+- [Spreadsheet Component (*a work in progress*)](https://crisdosyago.github.io/good.html/cellophane/)
+- [Simple Counter Demo](https://crisdosyago.github.io/good.html/ctr/)
 
 The page in the Lighthouse shot above has over 10,000 DOM nodes, yet Lighthouse manages to love it, anyway. How is this possible? Mostly through the use of the `lazy` and `super lazy` attributes, particularly on the large 'Cells' spreadsheet component.
 
@@ -72,7 +70,7 @@ The page in the Lighthouse shot above has over 10,000 DOM nodes, yet Lighthouse 
 
 This is ***BANG!***, making a component:
 
-[`components/sg-counter/markup.html`](https://github.com/crisdosyago/der.Knall.Gerust/blob/main/docs/7guis/components/sg-counter/markup.html)
+[`components/sg-counter/markup.html`](https://github.com/crisdosyago/good.html/blob/main/docs/7guis/components/sg-counter/markup.html)
 ```jsx
 <sg-frame state=${_self}> 
   <button id=counter onclick=Increment>Count</button>
@@ -80,7 +78,7 @@ This is ***BANG!***, making a component:
 </sg-frame>
 ```
 
-[`components/sg-counter/script.js`](https://github.com/crisdosyago/der.Knall.Gerust/blob/main/docs/7guis/components/sg-counter/script.js):
+[`components/sg-counter/script.js`](https://github.com/crisdosyago/good.html/blob/main/docs/7guis/components/sg-counter/script.js):
 ```jsx
 class Counter extends Base {
   Increment() {
@@ -91,7 +89,7 @@ class Counter extends Base {
 }
 ```
 
-[`components/sg-counter/style.css`](https://github.com/crisdosyago/der.Knall.Gerust/blob/main/docs/7guis/components/sg-counter/style.css):
+[`components/sg-counter/style.css`](https://github.com/crisdosyago/good.html/blob/main/docs/7guis/components/sg-counter/style.css):
 ```css
 label {
   min-width: 4.5ch;
@@ -139,7 +137,7 @@ For more, the best way is just read the code for the 7GUIs implementation. But y
   >
 </p>
 
-# 🌱 *BANG!* *A zero-dependency, no build-step, no transpilation, JSX-free, good old fashioned HTML and JavaScript Custom Element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcrisdosyago%2Fder.Knall.Gerust&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com)
+# 🌱 *BANG!* *A zero-dependency, no build-step, no transpilation, JSX-free, good old fashioned HTML and JavaScript Custom Element library for the new age.* ![npm](https://img.shields.io/npm/v/bang.html?color=turquoise) ![npm](https://img.shields.io/npm/dt/bang.html) [![visitors+++](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fcrisdosyago%2Fgood.html&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=%28today%2Ftotal%29%20visitors%2B%2B%2B%20since%20Oct%2027%202020&edge_flat=false)](https://hits.seeyoufarm.com)
 
 ***BANG!*** makes your UI work easy, and your syntax beautiful, by pairing **Web Components** with smooth template syntax, minimal DOM updates (*and without VDOM*), lazy loading, async values and **[empty elements](https://developer.mozilla.org/en-US/docs/Glossary/Empty_element)** (*a.k.a void elements / self-closing tags*).
 
@@ -735,7 +733,7 @@ These are just ideas, and I might not do them. :)
 
 <p align=center>
   <img width=80% 
-    src=https://github.com/crisdosyago/der.Knall.Gerust/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
+    src=https://github.com/crisdosyago/good.html/raw/main/.github/BANG!%20logo%20mediumseagreen-mincream.png
   >
 </p>
 

@@ -1,15 +1,14 @@
 {
-  "name": "@dosy-private/bbpro",
-  "private": true,
+  "name": "bbpro",
   "type": "module",
-  "version": "3.1.1",
-  "description": "Fly a browser remotely from your browser? Yes.",
+  "version": "6.1.2",
+  "description": "BrowserBox - remote browser isolation tool",
   "main": "./src/server.js",
   "targets": {
     "main": false
   },
   "bin": {
-    "bb": "./dist/BrowserBox.cjs"
+    "bb": "setup_bbpro --port 8080 && bbpro"
   },
   "parcelIgnore": [
     ".*/bang.js",
@@ -74,9 +73,9 @@
   ],
   "author": "@dosy",
   "bugs": {
-    "url": "https://github.com/crisdosyago/bbpro/issues"
+    "url": "https://github.com/BrowserBox/BrowserBox/issues"
   },
-  "homepage": "https://github.com/crisdosyago/bbpro",
+  "homepage": "https://github.com/BrowserBox/BrowserBox",
   "dependencies": {
     "@roamhq/wrtc": "^0.7.1",
     "bang.html": "latest",
@@ -86,7 +85,7 @@
     "cors": "latest",
     "csurf": "latest",
     "entities": "latest",
-    "esbuild": "0.19.5",
+    "esbuild": "0.19.7",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "latest",

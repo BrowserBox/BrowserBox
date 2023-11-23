@@ -21,7 +21,6 @@
     const EMPTY = '';
     const {stringify:_STR} = JSON;
     const Reserved = new Set(['_self', '_host', '_top']);
-    const JS = o => _STR(o, Replacer, EMPTY);
     const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
     const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
     const POS = 'beforeend';
@@ -54,7 +53,8 @@
       `.split(/\s+/g).filter(s => s.length).map(e => `[on${e}]`).join(','),
       delayFirstPaintUntilLoaded: false,
       capBangRatioAtUnity: false,
-      noHandlerPassthrough: false
+      noHandlerPassthrough: false,
+      useMagicClone: true,
     }
     const History = [];
     const STATE = new Map();
@@ -524,6 +524,7 @@
     }
 
     function bangFig(newConfig = {}) {
+      console.log(newConfig);
       Object.assign(CONFIG, newConfig);
     }
 
@@ -1355,7 +1356,80 @@
     }
 
     function clone(o) {
+      console.log(CONFIG);
+      if ( CONFIG.useMagicClone ) {
+        return magicClone(o);
+      }
       return JSON.parse(JS(o));
+    }
+
+    function magicClone(o) {
+      console.log('using magic clone');
+      // Check if the input is an object. Non-objects (like primitives) are returned as is.
+      if (o === null || typeof o !== 'object') {
+        return o;
+      }
+
+      try {
+        // Create a new object with the same prototype as the original.
+        let clone = Object.create(Object.getPrototypeOf(o));
+
+        // Copy each property (including getters, setters, and regular properties).
+        Object.getOwnPropertyNames(o).forEach(prop => {
+          let descriptor = Object.getOwnPropertyDescriptor(o, prop);
+          Object.defineProperty(clone, prop, descriptor);
+        });
+
+        return clone;
+      } catch (error) {
+        // Handle errors (e.g., non-clonable objects) and possibly log them.
+        console.error('Error in magicClone:', error);
+        return null; // Or any other fallback value as per your error handling strategy.
+      }
+    }
+
+    function JS(o) {
+      if ( CONFIG.useMagicClone ) {
+        return magicStringify(o); 
+      }
+      return _STR(o, Replacer, EMPTY);
+    }
+
+    function magicStringify(obj) {
+      const seenObjects = new WeakSet();
+
+      function serialize(o) {
+        if (o === null || typeof o !== 'object') {
+          return o;
+        }
+
+        // Detect circular references
+        if (seenObjects.has(o)) {
+          return '[Circular]';
+        }
+        seenObjects.add(o);
+
+        if (o?.constructor?.name === 'Object' || Array.isArray(o)) {
+          let plainObj = Array.isArray(o) ? [] : {};
+
+          Object.getOwnPropertyNames(o).forEach(prop => {
+            let descriptor = Object.getOwnPropertyDescriptor(o, prop);
+            plainObj[prop] = (typeof descriptor.value === 'object') ? serialize(descriptor.value) : (descriptor.get ? o[prop] : descriptor.value);
+          });
+
+          return plainObj;
+        } else {
+          // Non-plain objects are returned as is
+          return o;
+        }
+      }
+
+      try {
+        return JSON.stringify(serialize(obj), Replacer, EMPTY);
+      } catch (error) {
+        console.error('Error in magicStringify:', error);
+        return null;
+      }
     }
 
     function Replacer(key, value) {

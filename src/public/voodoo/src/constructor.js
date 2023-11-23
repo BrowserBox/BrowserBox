@@ -138,7 +138,7 @@
         const urlFlags = parseURLFlags(urlParams);
 
       // app state
-        Object.assign(state, {
+        magicAssign(state, {
           H,
           checkResults,
 
@@ -191,10 +191,12 @@
           isMobile: deviceIsMobile(),
 
           get currentInputLanguageUsesIME() {
-            return this.usingIME;
+            //console.log('requested ime use', this, (new Error).stack);
+            self._state = state;
+            return state.usingIME;
           },
           get convertTypingEventsToSyncValueEvents() {
-            return this.isMobile || this.currentInputLanguageUsesIME;
+            return state.isMobile || state.currentInputLanguageUsesIME;
           },
 
           // for safari to detect if pointerevents work
@@ -314,14 +316,14 @@
           },
 
           clearBrowser() {
-            this.tabs = [];
-            this.attached = new Set();
-            this.activeTarget = null;
-            this.lastTarget = null;
-            this.favicons = new Map();
-            this.tabMap = new Map();
-            this.closed = new Set();
-            this.latestRequestId = 0;
+            state.tabs = [];
+            state.attached = new Set();
+            state.activeTarget = null;
+            state.lastTarget = null;
+            state.favicons = new Map();
+            state.tabMap = new Map();
+            state.closed = new Set();
+            state.latestRequestId = 0;
           },
 
           latestRequestId: 0
@@ -1135,7 +1137,8 @@
       }
 
       bangFig({
-        componentsPath: './voodoo/src/components'
+        componentsPath: './voodoo/src/components',
+        useMagicClone: true
       });
       await bangLoaded();
 
@@ -2154,6 +2157,33 @@
         shiftKey: event.shiftKey,
         vRetargeted
       };
+    }
+
+    export function magicAssign(target, ...sources) {
+      sources.forEach(src => {
+        Object.defineProperties(
+          target,
+          Object.getOwnPropertyNames(src).reduce((descriptors, key) => {
+            let originalDescriptor = Object.getOwnPropertyDescriptor(src, key);
+
+            // Rebind getters and setters to the target object
+            if (originalDescriptor.get || originalDescriptor.set) {
+              descriptors[key] = {
+                get: originalDescriptor.get ? originalDescriptor.get.bind(target) : undefined,
+                set: originalDescriptor.set ? originalDescriptor.set.bind(target) : undefined,
+                enumerable: originalDescriptor.enumerable,
+                configurable: originalDescriptor.configurable
+              };
+            } else {
+              descriptors[key] = originalDescriptor;
+            }
+
+            return descriptors;
+          }, {})
+        );
+      });
+
+      return target;
     }
 
     function parseURLFlags(params) {

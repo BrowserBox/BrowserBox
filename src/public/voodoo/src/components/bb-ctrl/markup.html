@@ -19,7 +19,7 @@
         >
       <textarea tabindex=-1 class=control name=textarea_input cols=5 rows=1
         autocomplete=off
-        bond=${el => state.viewState.textarea = el}
+        bond=${[el => state.viewState.textarea = el, el => state.detectIMEInput(el, state)]}
         keydown=${[logitKeyInputEvent,e => state.openKey = e.key, H,limitCursor, e => state.retargetTab(e)]}
         keyup=${[logitKeyInputEvent,() => state.openKey = '', H,e => state.retargetTab(e)]}
         focusin=${[() => clearWord(state), () => state.openKey = '', el => DEBUG.debugFocus && console.log('focusin', el.target)]}
