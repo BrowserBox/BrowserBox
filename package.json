@@ -8,7 +8,7 @@
     "main": false
   },
   "bin": {
-    "bb": "setup_bbpro --port 8080 && bbpro"
+    "bb": "./scripts/demo_run.sh"
   },
   "parcelIgnore": [
     ".*/bang.js",
