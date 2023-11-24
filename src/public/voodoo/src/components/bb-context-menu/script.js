@@ -1,5 +1,5 @@
 class BBContextMenu extends Base {
-  static CLOSE_DELAY = 222;
+  static CLOSE_DELAY = 1222;
 
   static SHORT_CUT = 'Ctrl+Shift+J';
 
@@ -183,28 +183,14 @@ class BBContextMenu extends Base {
       }
     }
 
-    close(_, delay = true) {
+    close(_) {
       DEBUG.debugContextMenu && console.log((new Error(`Tracking close event`)).stack);
-      const state = this.state;
       const {_top} = this.state;
-      if ( delay ) {
-        setTimeout(() => {
-          if ( _top.viewState.contextMenu ) {
-            _top.viewState.contextMenu = null;
-            _top.contextMenuActive = false;
-            //_top.contextMenuEvent = null;
-            this.state = state;
-            setState('bbpro', _top);
-          }
-        }, this.constructor.CLOSE_DELAY);
-      } else {
-        if ( _top.viewState.contextMenu ) {
-          _top.viewState.contextMenu = null;
-          _top.contextMenuActive = false;
-          //_top.contextMenuEvent = null;
-        }
+      if ( _top.viewState.contextMenu ) {
+        _top.viewState.contextMenu = null;
+        _top.contextMenuActive = false;
+        //_top.contextMenuEvent = null;
       }
-      this.state = state;
       setState('bbpro', _top);
     }
 
