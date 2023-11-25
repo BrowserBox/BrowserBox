@@ -69,7 +69,7 @@ fi
 
 # Define Docker image details
 DOCKER_IMAGE="ghcr.io/browserbox/browserbox"
-DOCKER_TAG="v6"
+DOCKER_TAG="v6.1"
 DOCKER_IMAGE_WITH_TAG="${DOCKER_IMAGE}:${DOCKER_TAG}"
 
 # Check if the Docker image is already present
