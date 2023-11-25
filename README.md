@@ -168,7 +168,7 @@ First ensure you have docker installed and running! :) Then run:
 
 ```console
 PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/734235d3c85ad0c48f0209fcb67474ad05bcffdb/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/4000774613af57d2f38fff00d339da58d3d9703c/deploy-scripts/run_docker.sh) $PORT
 ```
 
 That's it! Follow the prompts to set up certificates and it will emit a link that you can send open in any web browser. 
