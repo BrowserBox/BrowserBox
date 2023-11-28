@@ -139,6 +139,8 @@ const loadings = new Map();
 const tabs = new Map();
 const favicons = new Map();
 const Frames = new Map();
+const MainFrames = new Map();
+const PowerSources = new Map();
 const SetupTabs = new Map();
 //const originalMessage = new Map();
 const DownloadPath = path.resolve(CONFIG.baseDir , 'browser-downloads');
@@ -397,6 +399,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         if ( worlds ) {
           const {frameTree} = await send("Page.getFrameTree", {}, sessionId);
+          MainFrames.set(sessionId, frameTree.frame.id);
           const frameList = enumerateFrames(frameTree, worlds.size);
           DEBUG.worldDebug && consolelog('Frames', frameList, 'worlds', worlds);
           missingWorlds = worlds.size < frameList.length;
@@ -951,8 +954,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.modal = modal;
     } else if ( message.method == "Page.frameNavigated" ) {
       const {url, securityOrigin, unreachableUrl, parentId} = message.params.frame;
+      //const navigationType == message.params.type;
       const topFrame = !parentId;
       if ( !!topFrame && (!! url || !! unreachableUrl) ) {
+        MainFrames.set(sessionId, message.params.frame.id);
         clearLoading(sessionId);
         const targetId = sessions.get(sessionId);
         if ( checkSetup.has(targetId) ) {
@@ -1229,6 +1234,18 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }
 
       await send("Page.enable", {}, sessionId);
+
+      if ( CONFIG.createPowerSource ) {
+        const {frameTree: { frame : { id: frameId } }} = await send("Page.getFrameTree", {}, sessionId);
+        MainFrames.set(sessionId, frameId);
+        const {executionContextId} = await send("Page.createIsolatedWorld", {
+          frameId: MainFrames.get(sessionId),
+          worldName: 'POWER Source',
+          grantUniveralAccess: true
+        }, sessionId);
+        console.log(`Created power source. Got context id: ${executionContextId} for sessionId: ${sessionId}`);
+        PowerSources.set(sessionId, executionContextId);
+      }
 
       if ( CONFIG.screencastOnly ) {
         let castInfo;

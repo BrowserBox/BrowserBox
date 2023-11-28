@@ -671,7 +671,8 @@ function translator(e, handled = {type:'case'}) {
         {
           command: {
             name: "Target.createBrowserContext",
-            params: {}
+            params: {
+            },
           }
         },
         ({browserContextId}) => {

@@ -169,6 +169,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  createPowerSource: false,
   useTorProxy: process.env.TOR_PROXY || false,
   // viewport scale up related options
     // note: we are switching this off as the weird seems to break some sites
