@@ -174,7 +174,7 @@ export const CONFIG = Object.freeze({
     // note: we are switching this off as the weird seems to break some sites
     useScaledUpCoViewport: false,
     get useCappedScaling() {
-      return this.useScaledUpCoViewport && true,
+      return this.useScaledUpCoViewport && true;
     },
     mobileMaxWidth: 414, // CSS pixels
     mobileMaxHeight: 736, // CSS pixels
