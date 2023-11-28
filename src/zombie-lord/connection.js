@@ -170,7 +170,11 @@ function startLoading(sessionId) {
 
 function endLoading(sessionId) {
   let loading = loadings.get(sessionId);  
-  if ( ! loading ) throw new Error(`Expected loading for ${sessionId}`);
+  //if ( ! loading ) throw new Error(`Expected loading for ${sessionId}`);
+  if ( ! loading ) {
+    console.warn(`Expected loading for ${sessionId}`);
+    return;
+  }
   loading.waiting--;
   loading.complete++;
   return loading;
@@ -957,7 +961,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       //const navigationType == message.params.type;
       const topFrame = !parentId;
       if ( !!topFrame && (!! url || !! unreachableUrl) ) {
-        MainFrames.set(sessionId, message.params.frame.id);
         clearLoading(sessionId);
         const targetId = sessions.get(sessionId);
         if ( checkSetup.has(targetId) ) {
@@ -1381,6 +1384,23 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           await send("Page.reload", {}, sessionId);
           obj.checking = false;
         } 
+        if ( CONFIG.inspectMode ) {
+          setTimeout(async () => {
+            await send("Overlay.enable", {}, sessionId);
+            await send("Overlay.setInspectMode", {
+              mode: 'searchForNode',
+              highlightConfig: {
+                showInfo: true,
+                showAccessibilityInfo: false,
+                borderColor: { r:0, g:255, b:22 },
+                paddingColor: { r:0, g:255, b:22 },
+                paddingColor: { r:0, g:255, b:22 },
+                eventTargetColor: { r:0, g:255, b:22 },
+              }
+            }, sessionId);
+          }, 300);
+        }
+
         obj.tabSetup = true;
       } else {
         console.warn(`No checsetup entry at end of setuptab`, targetId);
