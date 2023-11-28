@@ -20,7 +20,7 @@
   import csrf from 'csurf';
   //import {CWebp} from 'cwebp';
 
-  import zl from './zombie-lord/api.js';
+  import zl from './zombie-lord/index.js';
   import {start_mode} from './args.js';
   import {
     T2_MINUTES,

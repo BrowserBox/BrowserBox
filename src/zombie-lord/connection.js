@@ -23,6 +23,7 @@ import {username} from '../args.js';
 import {WorldName} from '../public/translateVoodooCRDP.js';
 import {RACE_SAMPLE, makeCamera, COMMON_FORMAT, DEVICE_FEATURES, SCREEN_OPTS, MAX_ACK_BUFFER, MIN_WIDTH, MIN_HEIGHT} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
+import {Document} from './api/document.js';
 import {getInjectableAssetPath, LatestCSRFToken, fileChoosers} from '../ws-server.js';
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
@@ -338,6 +339,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   console.log({port});
   const {send,on, ons} = connection.zombie;
+
+  const document = new Document({send, on, ons});
 
   const {targetInfo:browserTargetInfo} = await send("Target.getTargetInfo", {});
   connection.browserTargetId = browserTargetInfo.targetId;
