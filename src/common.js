@@ -169,7 +169,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
-  BINDING_NAME: 'sendbb'
+  BINDING_NAME: 'sendbb',
   devapi: true,
   inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this
   createPowerSource: false,
