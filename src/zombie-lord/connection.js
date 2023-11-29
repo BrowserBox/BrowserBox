@@ -54,20 +54,19 @@ const devAPIInjection = [
 const injectionsScroll = `(function () {
   if( !self.zanjInstalled ) {
      {
-       ${fileInput + favicon + keysCanInputEvents + scrollNotify + elementInfo + textComposition + selectDropdownEvents}
+       ${[fileInput, favicon, keysCanInputEvents, scrollNotify, elementInfo, textComposition, selectDropdownEvents].join('\n')}
      }
+     ${CONFIG.devapi ? devAPIInjection : ''}
      self.zanjInstalled = true;
   } 
 }())`;
 const manualInjectionsScroll = `(function () {
   ${fileInput + favicon + keysCanInputEvents + scrollNotify + elementInfo + textComposition + selectDropdownEvents}
   ${DEBUG.showMousePosition ? showMousePosition : ''}
-  ${CONFIG.devapi ? devAPIInjection : ''}
 }())`;
 const pageContextInjectionsScroll = `(function () {
   ${botDetectionEvasions}
   ${DEBUG.showMousePosition ? showMousePosition : ''}
-  ${CONFIG.devapi ? devAPIInjection : ''}
 }())`;
 
 const templatedInjections = {
@@ -779,28 +778,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }
       connection.meta.push({detached:message.params});
     } else if ( message.method == "Runtime.bindingCalled" ) {
-      const {name, executionContextId} = message.params;
-      let {payload} = message.params;
-      try {
-        payload = JSON.parse(payload);
-      } catch(e) {console.warn(e)}
-
-      let response;
-      if ( !!payload.method && !! payload.params ) {
-        payload.name = payload.method;
-        payload.params.sessionId = sessionId;
-        response = await sessionSend(payload);
-      }
-      DEBUG.val >= DEBUG.med && console.log(JSON.stringify({bindingCalled:{name,payload,response,executionContextId}}));
-      await send(
-        "Runtime.evaluate", 
-        {
-          expression: `self.${CONFIG.BINDING_NAME}.onmessage(${JSON.stringify({response})})`,
-          contextId: executionContextId,
-          awaitPromise: true
-        },
-        sessionId
-      );
+      // normally we don't pass connection access through to controller (where this func is from)
+      // but just for speed of implementation we do right now
+      await executeBinding({message, sessionId, connection, send, on, ons});
     } else if ( message.method == "Runtime.consoleAPICalled" ) {
       const consoleMessage = message.params;
       const {type,args,executionContextId} = consoleMessage;
@@ -2010,6 +1990,31 @@ export function getViewport(...viewports) {
     console.log({commonViewport});
   }
   return commonViewport;
+}
+
+export async function executeBinding({message, sessionId, connection, send, on, ons}) {
+  const {name, executionContextId} = message.params;
+  let {payload} = message.params;
+  try {
+    payload = JSON.parse(payload);
+  } catch(e) {console.warn(e)}
+
+  let response;
+  if ( !!payload.method && !! payload.params ) { // interpret as Chrome Remote Debugging Protocol message
+    payload.name = payload.method;
+    payload.params.sessionId = sessionId;
+    response = await connection.sessionSend(payload);
+  }
+  DEBUG.val >= DEBUG.med && console.log(JSON.stringify({bindingCalled:{name,payload,response,executionContextId}}));
+  await send(
+    "Runtime.evaluate", 
+    {
+      expression: `self.${CONFIG.BINDING_NAME}.onmessage(${JSON.stringify({response})})`,
+      contextId: executionContextId,
+      awaitPromise: true
+    },
+    sessionId
+  );
 }
 
 function ensureMinBounds(bounds) {
