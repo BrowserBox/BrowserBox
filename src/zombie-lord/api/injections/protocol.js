@@ -1,5 +1,6 @@
 // put send, on, ons in page context
 {
+  const BINDING_NAME = 'bb';
   const DEBUG = true;
   const MAX_INSTALL_TRIES = 300;
   const INSTALL_INTERVAL_MS = 100;
@@ -28,7 +29,7 @@
     setupBinding();
 
     function setupBinding() {
-      const binding = self.bb;
+      const binding = self[BINDING_NAME];
       const failOut = tries++ > MAX_INSTALL_TRIES;
       try {
         if ( failOut ) {
@@ -37,8 +38,8 @@
           throw new Error(`setupBinding: Maximum install tries exceeded.`);
         }
         if ( typeof binding == "function" ) {
-          delete self.bb;
-          Binding = {
+          delete self[BINDING_NAME];
+          const Binding = {
             send: msg => {
               try {
                 return binding(JSON.stringify(msg));
@@ -48,11 +49,13 @@
             },
             addListener,
             _recv: msg => {
-              try {
-                msg = JSON.parse(msg);
-              } catch(e) {
-                console.warn(`<Binding>._recv: parsing msg as JSON failed ${e}`, {msg});
-              }
+              /* we don't actually pass json, we use objects directly
+                try {
+                  msg = JSON.parse(msg);
+                } catch(e) {
+                  console.warn(`<Binding>._recv: parsing msg as JSON failed ${e}`, {msg});
+                }
+              */
               for( const listener of BindingState.listeners.values() ) {
                 try {
                   listener(msg);
@@ -68,13 +71,13 @@
 
               BindingState.resolvers.set(key, returnReply);
 
-              send({method, params, sessionId, key}); 
+              Binding.send({method, params, sessionId, key}); 
 
               return pr;
             }
           };
           Binding.addListener(generalResolver);
-          Object.defineProperty(self, 'bb', { get: () => Binding });
+          Object.defineProperty(self, BINDING_NAME, { get: () => Binding });
           clearInterval(sbInterval);
           sbInterval = false;
           Binding.send({bindingAttached:true});
@@ -87,16 +90,24 @@
       }
     }
 
-    function generalResolver(msg) {
-      console.log(`General resolver received message: ${msg}`, msg);
-      const {key} = msg;
-      if ( ! BindingState.resolvers.has(key) ) {
-        delete msg.key;
+    function generalResolver({response} = {}) {
+      DEBUG && console.log(`General resolver received message: ${response}`, response);
+      if ( ! response ) {
+        DEBUG && console.warn(`No response`); 
+        return;
+      }
+      const {key} = response;
+      if ( !!key && BindingState.resolvers.has(key) ) {
+        delete response.key;
         const replier = BindingState.resolvers.get(key);
         BindingState.resolvers.delete(key);
-        return replier(msg);
+        return replier(response);
       } else {
-        DEBUG && console.info(`No replier for message: ${msg}`, msg);
+        if ( ! key ) {
+          DEBUG && console.info(`No key for message: ${response}`, response);
+        } else {
+          DEBUG && console.info(`No replier for message: ${response}`, response);
+        }
       }
     }
   }

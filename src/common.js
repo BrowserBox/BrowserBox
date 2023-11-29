@@ -26,6 +26,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugBinding: true,
   events: false,
   commands: false,
   adBlock: true,

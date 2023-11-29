@@ -2000,16 +2000,25 @@ export async function executeBinding({message, sessionId, connection, send, on, 
   } catch(e) {console.warn(e)}
 
   let response;
+  let key;
   if ( !!payload.method && !! payload.params ) { // interpret as Chrome Remote Debugging Protocol message
     payload.name = payload.method;
     payload.params.sessionId = payload.sessionId || sessionId;
+    if ( ! payload.key ) {
+      DEBUG.debugBinding && console.warn(`Intended bb.ctl protocol message has no key so response will not get reply.`);
+    } else {
+      ({key} = payload);
+      delete payload.key;
+    }
     response = await connection.sessionSend(payload);
+    response.key = key;
   }
-  DEBUG.val >= DEBUG.med && console.log(JSON.stringify({bindingCalled:{name,payload,response,executionContextId}}));
+  const expression = `self.${CONFIG.BINDING_NAME}._recv(${JSON.stringify({response})})`;
+  DEBUG.debugBinding && console.log(JSON.stringify({bindingCalled:{name,payload,response,executionContextId,expression}}));
   await send(
     "Runtime.evaluate", 
     {
-      expression: `self.${CONFIG.BINDING_NAME}._recv(${JSON.stringify({response})})`,
+      expression,
       contextId: executionContextId,
       awaitPromise: true
     },
