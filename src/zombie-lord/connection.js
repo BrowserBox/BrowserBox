@@ -795,7 +795,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       await send(
         "Runtime.evaluate", 
         {
-          expression: `self.instructZombie.onmessage(${JSON.stringify({response})})`,
+          expression: `self.${CONFIG.BINDING_NAME}.onmessage(${JSON.stringify({response})})`,
           contextId: executionContextId,
           awaitPromise: true
         },
@@ -935,7 +935,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         await send(
           "Runtime.addBinding", 
           {
-            name: "instructZombie",
+            name: CONFIG.BINDING_NAME, 
             executionContextId: contextId
           },
           sessionId
