@@ -2002,14 +2002,14 @@ export async function executeBinding({message, sessionId, connection, send, on, 
   let response;
   if ( !!payload.method && !! payload.params ) { // interpret as Chrome Remote Debugging Protocol message
     payload.name = payload.method;
-    payload.params.sessionId = sessionId;
+    payload.params.sessionId = payload.sessionId || sessionId;
     response = await connection.sessionSend(payload);
   }
   DEBUG.val >= DEBUG.med && console.log(JSON.stringify({bindingCalled:{name,payload,response,executionContextId}}));
   await send(
     "Runtime.evaluate", 
     {
-      expression: `self.${CONFIG.BINDING_NAME}.onmessage(${JSON.stringify({response})})`,
+      expression: `self.${CONFIG.BINDING_NAME}._recv(${JSON.stringify({response})})`,
       contextId: executionContextId,
       awaitPromise: true
     },

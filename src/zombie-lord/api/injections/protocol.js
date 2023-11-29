@@ -5,9 +5,11 @@
   const INSTALL_INTERVAL_MS = 100;
   let notifyReady;
   let notifyFailed;
+  let messageId = 3e7; // avoid conflict with other message ids
   const BindingState = {
     listeners: new Set(),
     isReady: new Promise((res, rej) => (notifyReady = res, notifyFailed = rej)),
+    resolvers: new Map(),
   };
 
   installProtocol();
@@ -39,7 +41,7 @@
           Binding = {
             send: msg => {
               try {
-                binding(JSON.stringify(msg));
+                return binding(JSON.stringify(msg));
               } catch(e) {
                 console.warn(`<Binding>.send failed: ${e}`, {error: e, msg});
               }
@@ -59,7 +61,19 @@
                 }
               }
             },
+            ctl: (method, params, sessionId) => {
+              const key = `binding${messageId++}`;
+              let returnReply;
+              const pr = new Promise(res => returnReply = res);
+
+              BindingState.resolvers.set(key, returnReply);
+
+              send({method, params, sessionId, key}); 
+
+              return pr;
+            }
           };
+          Binding.addListener(generalResolver);
           Object.defineProperty(self, 'bb', { get: () => Binding });
           clearInterval(sbInterval);
           sbInterval = false;
@@ -70,6 +84,19 @@
       } catch(err) {
         console.error(`Binding failed to install: ${err}`, {error: err, tries}); 
         notifyFailed(false);
+      }
+    }
+
+    function generalResolver(msg) {
+      console.log(`General resolver received message: ${msg}`, msg);
+      const {key} = msg;
+      if ( ! BindingState.resolvers.has(key) ) {
+        delete msg.key;
+        const replier = BindingState.resolvers.get(key);
+        BindingState.resolvers.delete(key);
+        return replier(msg);
+      } else {
+        DEBUG && console.info(`No replier for message: ${msg}`, msg);
       }
     }
   }
