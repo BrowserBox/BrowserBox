@@ -43,6 +43,11 @@ const showMousePosition = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'in
 const appMinifier = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'appminifier', 'injections.js')).toString();
 const projector = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'projector', 'injections.js')).toString();
 
+// API injection
+const devAPIInjection = [
+  'protocol.js',
+].map(file => fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'api', 'injections', file)).toString()).join('\n');
+
 // just concatenate the scripts together and do one injection
 // but for debugging better to add each separately
 // we can put in an array, and loop over to add each
@@ -57,10 +62,12 @@ const injectionsScroll = `(function () {
 const manualInjectionsScroll = `(function () {
   ${fileInput + favicon + keysCanInputEvents + scrollNotify + elementInfo + textComposition + selectDropdownEvents}
   ${DEBUG.showMousePosition ? showMousePosition : ''}
+  ${CONFIG.devapi ? devAPIInjection : ''}
 }())`;
 const pageContextInjectionsScroll = `(function () {
   ${botDetectionEvasions}
   ${DEBUG.showMousePosition ? showMousePosition : ''}
+  ${CONFIG.devapi ? devAPIInjection : ''}
 }())`;
 
 const templatedInjections = {

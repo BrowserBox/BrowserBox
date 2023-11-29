@@ -100,7 +100,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
@@ -169,7 +169,8 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
-  inspectMode: true,
+  devapi: true,
+  inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this
   createPowerSource: false,
   useTorProxy: process.env.TOR_PROXY || false,
   // viewport scale up related options
