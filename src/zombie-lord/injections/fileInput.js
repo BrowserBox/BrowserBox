@@ -100,7 +100,7 @@
 
       self.zombieDosyLastClicked = {target};
 
-      const stack = click.path; //expandShadowRoots(Array.from(document.elementsFromPoint(clientX,clientY)), clientX, clientY);
+      const stack = click.path || click?.composedPath?.() || getAncestors(target); //expandShadowRoots(Array.from(document.elementsFromPoint(clientX,clientY)), clientX, clientY);
 
       if ( isFileInput(target) && target ) {
         self.zombieDosyLastClicked.fileInput = target;
@@ -122,6 +122,18 @@
       }
     }
     return result;
+  }
+
+  function getAncestors(el) {
+    const anc = [];
+    while(el?.nodeType == Node.ELEMENT_NODE) {
+      anc.push(el);
+      el = el.parentNode;
+      if ( el?.host ) {
+        el = el.host;
+      }
+    }
+    return anc;
   }
 
   console.log(JSON.stringify({install:"Installed zombieDosyLastClicked with isFileInput support"}));
