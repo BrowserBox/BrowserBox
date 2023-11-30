@@ -48,6 +48,16 @@ const devAPIInjection = [
   'protocol.js',
 ].map(file => fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'api', 'injections', file)).toString()).join('\n');
 
+// Custom Injection
+let customInjection = ''
+if ( process.env.INJECT_SCRIPT ) {
+  try {
+    customInjection = fs.readFileSync(path.resolve(process.env.INJECT_SCRIPT)).toString();
+  } catch(e) {
+    console.warn(`Custom Injection could not be loaded: ${process.env.INJECT_SCRIPT}\nError: ${e}`, e);
+  }
+}
+
 // just concatenate the scripts together and do one injection
 // but for debugging better to add each separately
 // we can put in an array, and loop over to add each
@@ -58,6 +68,8 @@ const injectionsScroll = `(function () {
      }
      ${CONFIG.devapi ? devAPIInjection : ''}
      self.zanjInstalled = true;
+     // custom below this line
+     ${customInjection ? customInjection : ''}
   } 
 }())`;
 const manualInjectionsScroll = `(function () {
