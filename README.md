@@ -4,7 +4,7 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 
 ***tor-iframe:***
 ```html
-<iframe src="https://mybrowserbox.server.com:9999/login?token=cviuygf3498tysifud&ui=false&url=["https://check.torproject.org"]"
+<iframe src="https://mybrowserbox.server.com:9999/login?token=cviuygf3498tysifud&ui=false&url=[&quot;https://check.torproject.org&quot;]"
         style="border:none; width:100%; height:100%;"
         allowfullscreen
         scrolling="no">
