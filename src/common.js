@@ -26,6 +26,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugBinding: false,
   events: false,
   commands: false,
   adBlock: true,
@@ -169,6 +170,10 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  BINDING_NAME: 'bb',
+  devapi: true,
+  inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this
+  createPowerSource: false,
   useTorProxy: process.env.TOR_PROXY || false,
   // viewport scale up related options
     // note: we are switching this off as the weird seems to break some sites

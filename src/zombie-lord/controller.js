@@ -1,5 +1,5 @@
 import Connect from './connection.js';
-import {getViewport} from './connection.js';
+import {executeBinding, getViewport} from './connection.js';
 import {CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
 import {MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
 import fs from 'fs';

@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v6.1.4';
+const CACHE_VERSION = 'v6.1.5';
 const CACHE_NAME = 'my-site-cache-' + CACHE_VERSION;
 
 // Define the patterns to cache as strings
@@ -8,6 +8,7 @@ const patternsToCache = [
 ];
 const excludedPaths = new Set([
   "/", "/login", "/SPLlogin", "/pptr", "/SPLgenerate", 
+  "/image.html",
   "/isTor",
   "/torca/rootCA.pem", "/settings_modal", "/restart_app", 
   "/stop_app", "/stop_browser", "/start_browser", "/integrity"

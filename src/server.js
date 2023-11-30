@@ -1,6 +1,6 @@
   import exitOnExpipe from 'exit-on-epipe';
   import express from 'express';
-  import zl from './zombie-lord/api.js';
+  import zl from './zombie-lord/index.js';
   import {MAX_FRAMES} from './zombie-lord/screenShots.js';
   import {EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
   import {start_ws_server} from './ws-server.js';

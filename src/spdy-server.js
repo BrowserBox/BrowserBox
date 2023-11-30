@@ -1,7 +1,7 @@
   import express from 'express';
   import spdy from 'spdy';
   import fs from 'fs';
-  import zl from './zombie-lord/api.js';
+  import zl from './zombie-lord/index.js';
   import path from 'path';
   import bodyParser from 'body-parser';
   import {timedSend, eventSendLoop} from './server.js';
