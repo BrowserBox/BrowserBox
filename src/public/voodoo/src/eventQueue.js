@@ -720,6 +720,7 @@
                   if ( errors.length ) {
                     DEBUG.val >= DEBUG.low && console.warn(`${errors.length} errors occured.`);
                     DEBUG && console.log(JSON.stringify(errors));
+                    errors.map(err => console.warn(err));
                     if ( errors.some(({error}) => error.hasSession === false)) {
                       console.warn(`Session has been cleared. Let's attempt relogin`, this.sessionToken);
                       if ( COMMON.blockAnotherReset ) return;

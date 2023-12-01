@@ -158,6 +158,7 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  encforceKeyOrdering: true,
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: false,
   get useServiceWorkerToCache() {

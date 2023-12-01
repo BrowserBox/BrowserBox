@@ -1348,7 +1348,7 @@
 
         function sendKey(keyEvent) {
           if ( DEBUG.debugKeyEvents ) {
-            console.info(`[sendKey]: got event: ${keyEvent.key} (${keyEvent.type.slice(3)})`, keyEvent);
+            //console.info(`[sendKey]: got event: ${keyEvent.key} (${keyEvent.type.slice(3)})`, keyEvent);
           }
           const {viewState} = state;
           if ( ! ( viewState.shouldHaveFocus || document.deepActiveElement == viewState.omniBoxInput ) ) {
@@ -1590,7 +1590,7 @@
         function H(event) {
           // block if no tabs
 
-          DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: got key event: ${event.key} (${event.type.slice(3)})`, event);
+          //DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: got key event: ${event.key} (${event.type.slice(3)})`, event);
 
           DEBUG.HFUNCTION && console.log(`H received`, event);
           if (state.tabs.length == 0) {
@@ -1654,7 +1654,7 @@
           } else if ( isThrottled ) {
             DEBUG.HFUNCTION && console.log(`H Sending`, transformedEvent);
             queue.send(transformedEvent);
-            DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`, transformedEvent);
+            DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`);
           } else {
             if ( event.type == "keydown" && event.key == "Enter" ) {
               // Note
@@ -1676,7 +1676,7 @@
                   }, {scale: state.viewState.scale}, state.viewState.bounds);
                   DEBUG.HFUNCTION && console.log(`H Sending`, newEvent);
                   queue.send(newEvent);
-                  DEBUG.debugKeyEvents && console.info(`[H]: sentkey event: ${event.key} (${event.type.slice(3)})`, newEvent);
+                  DEBUG.debugKeyEvents && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`);
                   state.latestCommitData = state.latestData;
                   state.latestData = "";
                 } 
@@ -1715,7 +1715,7 @@
             }
             DEBUG.HFUNCTION && console.log(`H Sending`, transformedEvent);
             queue.send(transformedEvent);
-            DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`, transformedEvent);
+            DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`);
           }
         }
 

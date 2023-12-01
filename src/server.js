@@ -118,6 +118,10 @@
             console.log(`Sending ${JSON.stringify(command)}...`);
           }
         }
+        if ( DEBUG.debugKeyEvents && command?.name?.startsWith?.("Input.dispatchKey") ) {
+          console.info(`[eventSendLoop]: sending ${command.params.key} (${command.params.type.slice(3)})`);
+          //console.log(JSON.stringify(command,null,2));
+        }
         const sendResult = await timedSend(command, chrome_port);
         DEBUG.debugSendResult && console.log(JSON.stringify({sendResult}));
         if ( sendResult ) {
