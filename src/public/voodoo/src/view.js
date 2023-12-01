@@ -85,36 +85,38 @@ export function component(state) {
   });
   
   bondTasks.unshift(el => state.viewState.voodooEl = el);
-  bondTasks.push(() => {
-    document.addEventListener('keydown', event => {
-      if ( !event.target.matches('body') || state.viewState.shouldHaveFocus ) return;
-      if ( event.code == "Space" ) {
-        state.H({
-          type: 'wheel',
-          target: state.viewState.canvasEl,
-          pageX: 0,
-          pageY: 0,
-          clientX: 0,
-          clientY: 0,
-          deltaMode: 2,
-          deltaX: 0, 
-          contextId: state.viewState.latestScrollContext,
-          deltaY: event.shiftKey ? -0.618 : 0.618
-        });
-        //event.preventDefault();
-      } else if ( event.key == "Tab" ) {
-        retargetTab(event);
-      } else if ( event.key == "Enter" ) {
-        H(cloneKeyEvent(event, true));
-      }
+  if ( CONFIG.useTopLevelControlKeyListeners ) {
+    bondTasks.push(() => {
+      document.addEventListener('keydown', event => {
+        if ( !event.target.matches('body') || state.viewState.shouldHaveFocus ) return;
+        if ( event.code == "Space" ) {
+          state.H({
+            type: 'wheel',
+            target: state.viewState.canvasEl,
+            pageX: 0,
+            pageY: 0,
+            clientX: 0,
+            clientY: 0,
+            deltaMode: 2,
+            deltaX: 0, 
+            contextId: state.viewState.latestScrollContext,
+            deltaY: event.shiftKey ? -0.618 : 0.618
+          });
+          //event.preventDefault();
+        } else if ( event.key == "Tab" ) {
+          retargetTab(event);
+        } else if ( event.key == "Enter" ) {
+          H(cloneKeyEvent(event, true));
+        }
+      });
+      document.addEventListener('keyup', event => {
+        if ( !event.target.matches('body') || state.viewState.shouldHaveFocus ) return;
+        if ( event.key == "Enter" ) {
+          H(cloneKeyEvent(event, true));
+        }
+      });
     });
-    document.addEventListener('keyup', event => {
-      if ( !event.target.matches('body') || state.viewState.shouldHaveFocus ) return;
-      if ( event.key == "Enter" ) {
-        H(cloneKeyEvent(event, true));
-      }
-    });
-  });
+  }
   bondTasks.push(() => self._voodoo_resizeAndReport());
 
   return;

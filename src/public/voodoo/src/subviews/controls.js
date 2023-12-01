@@ -155,6 +155,7 @@ export function Controls(state) {
   }
 
   function pressKey(e) {
+    DEBUG.debugKeyEvents && console.info(`[pressKey]: got key event: ${e.key} (${e.type.slice(3)})`, e);
     updateWord(e, state);
     if ( e.key && e.key.length == 1 ) {
       state.lastKeypressKey = e.key;
@@ -165,6 +166,7 @@ export function Controls(state) {
         data: e.key
       });
     } else H(e);
+    DEBUG.debugKeyEvents && console.info(`[pressKey]: sent key event: ${e.key} (${e.type.slice(3)})`, e);
     state.retargetTab(e);
   }
 }
