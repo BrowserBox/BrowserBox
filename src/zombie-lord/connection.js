@@ -23,6 +23,7 @@ import {username} from '../args.js';
 import {WorldName} from '../public/translateVoodooCRDP.js';
 import {RACE_SAMPLE, makeCamera, COMMON_FORMAT, DEVICE_FEATURES, SCREEN_OPTS, MAX_ACK_BUFFER, MIN_WIDTH, MIN_HEIGHT} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
+import {Document} from './api/document.js';
 import {getInjectableAssetPath, LatestCSRFToken, fileChoosers} from '../ws-server.js';
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
@@ -42,15 +43,33 @@ const showMousePosition = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'in
 const appMinifier = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'appminifier', 'injections.js')).toString();
 const projector = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'projector', 'injections.js')).toString();
 
+// API injection
+const devAPIInjection = [
+  'protocol.js',
+].map(file => fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'api', 'injections', file)).toString()).join('\n');
+
+// Custom Injection
+let customInjection = ''
+if ( process.env.INJECT_SCRIPT ) {
+  try {
+    customInjection = fs.readFileSync(path.resolve(process.env.INJECT_SCRIPT)).toString();
+  } catch(e) {
+    console.warn(`Custom Injection could not be loaded: ${process.env.INJECT_SCRIPT}\nError: ${e}`, e);
+  }
+}
+
 // just concatenate the scripts together and do one injection
 // but for debugging better to add each separately
 // we can put in an array, and loop over to add each
 const injectionsScroll = `(function () {
   if( !self.zanjInstalled ) {
      {
-       ${fileInput + favicon + keysCanInputEvents + scrollNotify + elementInfo + textComposition + selectDropdownEvents}
+       ${[fileInput, favicon, keysCanInputEvents, scrollNotify, elementInfo, textComposition, selectDropdownEvents].join('\n')}
      }
+     ${CONFIG.devapi ? devAPIInjection : ''}
      self.zanjInstalled = true;
+     // custom below this line
+     ${customInjection ? customInjection : ''}
   } 
 }())`;
 const manualInjectionsScroll = `(function () {
@@ -139,6 +158,8 @@ const loadings = new Map();
 const tabs = new Map();
 const favicons = new Map();
 const Frames = new Map();
+const MainFrames = new Map();
+const PowerSources = new Map();
 const SetupTabs = new Map();
 //const originalMessage = new Map();
 const DownloadPath = path.resolve(CONFIG.baseDir , 'browser-downloads');
@@ -168,7 +189,11 @@ function startLoading(sessionId) {
 
 function endLoading(sessionId) {
   let loading = loadings.get(sessionId);  
-  if ( ! loading ) throw new Error(`Expected loading for ${sessionId}`);
+  //if ( ! loading ) throw new Error(`Expected loading for ${sessionId}`);
+  if ( ! loading ) {
+    console.warn(`Expected loading for ${sessionId}`);
+    return;
+  }
   loading.waiting--;
   loading.complete++;
   return loading;
@@ -333,6 +358,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   console.log({port});
   const {send,on, ons} = connection.zombie;
 
+  const document = new Document({send, on, ons});
+
   const {targetInfo:browserTargetInfo} = await send("Target.getTargetInfo", {});
   connection.browserTargetId = browserTargetInfo.targetId;
 
@@ -397,6 +424,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         if ( worlds ) {
           const {frameTree} = await send("Page.getFrameTree", {}, sessionId);
+          MainFrames.set(sessionId, frameTree.frame.id);
           const frameList = enumerateFrames(frameTree, worlds.size);
           DEBUG.worldDebug && consolelog('Frames', frameList, 'worlds', worlds);
           missingWorlds = worlds.size < frameList.length;
@@ -762,28 +790,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }
       connection.meta.push({detached:message.params});
     } else if ( message.method == "Runtime.bindingCalled" ) {
-      const {name, executionContextId} = message.params;
-      let {payload} = message.params;
-      try {
-        payload = JSON.parse(payload);
-      } catch(e) {console.warn(e)}
-
-      let response;
-      if ( !!payload.method && !! payload.params ) {
-        payload.name = payload.method;
-        payload.params.sessionId = sessionId;
-        response = await sessionSend(payload);
-      }
-      DEBUG.val >= DEBUG.med && console.log(JSON.stringify({bindingCalled:{name,payload,response,executionContextId}}));
-      await send(
-        "Runtime.evaluate", 
-        {
-          expression: `self.instructZombie.onmessage(${JSON.stringify({response})})`,
-          contextId: executionContextId,
-          awaitPromise: true
-        },
-        sessionId
-      );
+      // normally we don't pass connection access through to controller (where this func is from)
+      // but just for speed of implementation we do right now
+      await executeBinding({message, sessionId, connection, send, on, ons});
     } else if ( message.method == "Runtime.consoleAPICalled" ) {
       const consoleMessage = message.params;
       const {type,args,executionContextId} = consoleMessage;
@@ -918,7 +927,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         await send(
           "Runtime.addBinding", 
           {
-            name: "instructZombie",
+            name: CONFIG.BINDING_NAME, 
             executionContextId: contextId
           },
           sessionId
@@ -951,6 +960,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.modal = modal;
     } else if ( message.method == "Page.frameNavigated" ) {
       const {url, securityOrigin, unreachableUrl, parentId} = message.params.frame;
+      //const navigationType == message.params.type;
       const topFrame = !parentId;
       if ( !!topFrame && (!! url || !! unreachableUrl) ) {
         clearLoading(sessionId);
@@ -1230,6 +1240,18 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
       await send("Page.enable", {}, sessionId);
 
+      if ( CONFIG.createPowerSource ) {
+        const {frameTree: { frame : { id: frameId } }} = await send("Page.getFrameTree", {}, sessionId);
+        MainFrames.set(sessionId, frameId);
+        const {executionContextId} = await send("Page.createIsolatedWorld", {
+          frameId: MainFrames.get(sessionId),
+          worldName: 'POWER Source',
+          grantUniveralAccess: true
+        }, sessionId);
+        console.log(`Created power source. Got context id: ${executionContextId} for sessionId: ${sessionId}`);
+        PowerSources.set(sessionId, executionContextId);
+      }
+
       if ( CONFIG.screencastOnly ) {
         let castInfo;
         if ( castStarting.get(targetId) ) {
@@ -1364,6 +1386,23 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           await send("Page.reload", {}, sessionId);
           obj.checking = false;
         } 
+        if ( CONFIG.inspectMode ) {
+          setTimeout(async () => {
+            await send("Overlay.enable", {}, sessionId);
+            await send("Overlay.setInspectMode", {
+              mode: 'searchForNode',
+              highlightConfig: {
+                showInfo: true,
+                showAccessibilityInfo: false,
+                borderColor: { r:0, g:255, b:22 },
+                paddingColor: { r:0, g:255, b:22 },
+                paddingColor: { r:0, g:255, b:22 },
+                eventTargetColor: { r:0, g:255, b:22 },
+              }
+            }, sessionId);
+          }, 300);
+        }
+
         obj.tabSetup = true;
       } else {
         console.warn(`No checsetup entry at end of setuptab`, targetId);
@@ -1963,6 +2002,40 @@ export function getViewport(...viewports) {
     console.log({commonViewport});
   }
   return commonViewport;
+}
+
+export async function executeBinding({message, sessionId, connection, send, on, ons}) {
+  const {name, executionContextId} = message.params;
+  let {payload} = message.params;
+  try {
+    payload = JSON.parse(payload);
+  } catch(e) {console.warn(e)}
+
+  let response;
+  let key;
+  if ( !!payload.method && !! payload.params ) { // interpret as Chrome Remote Debugging Protocol message
+    payload.name = payload.method;
+    payload.params.sessionId = payload.sessionId || sessionId;
+    if ( ! payload.key ) {
+      DEBUG.debugBinding && console.warn(`Intended bb.ctl protocol message has no key so response will not get reply.`);
+    } else {
+      ({key} = payload);
+      delete payload.key;
+    }
+    response = await connection.sessionSend(payload);
+    response.key = key;
+  }
+  const expression = `self.${CONFIG.BINDING_NAME}._recv(${JSON.stringify({response})})`;
+  DEBUG.debugBinding && console.log(JSON.stringify({bindingCalled:{name,payload,response,executionContextId,expression}}));
+  await send(
+    "Runtime.evaluate", 
+    {
+      expression,
+      contextId: executionContextId,
+      awaitPromise: true
+    },
+    sessionId
+  );
 }
 
 function ensureMinBounds(bounds) {

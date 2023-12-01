@@ -38,11 +38,11 @@
     console.log(JSON.stringify({message:"Defined canKeysInput",targetId:self.targetId}));
   }
 
-  function monitorActiveElementNextTick(e) {
+  function monitorActiveElementNextTick(e = {target:document.activeElement}) {
     let {target} = e || {target:document.activeElement};
     let condition = target == self.focusEl;
     if ( !e.path ) {
-      e.path = e.composedPath();
+      e.path = e?.composedPath?.() || getAncestors(target);
     }
     if ( !condition && e?.path ) {
       target = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
@@ -55,12 +55,12 @@
     }
   }
 
-  function monitorActiveElement(e, {alwaysNotify:alwaysNotify = false} = {}) {
+  function monitorActiveElement(e = {target:document.activeElement}, {alwaysNotify:alwaysNotify = false} = {}) {
     let {target} = e || {target:document.activeElement};
     if ( ! target || ! target.matches ) return;
     let condition = target.matches(KEYINPUT_ELEMENT);
     if ( !e.path ) {
-      e.path = e.composedPath();
+      e.path = e?.composedPath?.() || getAncestors(target);
     }
     if ( !condition && e?.path ) {
       target = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
@@ -86,6 +86,18 @@
 
   function s(o) {
     console.log(JSON.stringify({keyInput:o}));
+  }
+
+  function getAncestors(el) {
+    const anc = [];
+    while(el?.nodeType == Node.ELEMENT_NODE) {
+      anc.push(el);
+      el = el.parentNode;
+      if ( el?.host ) {
+        el = el.host;
+      }
+    }
+    return anc;
   }
 }
 /* eslint-enable no-inner-declarations */

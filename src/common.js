@@ -26,6 +26,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugBinding: false,
   events: false,
   commands: false,
   adBlock: true,
@@ -169,13 +170,22 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  BINDING_NAME: 'bb',
+  devapi: true,
+  inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this
+  createPowerSource: false,
   useTorProxy: process.env.TOR_PROXY || false,
-  useScaledUpCoViewport: true,
-  useCappedScaling: true,
-  mobileMaxWidth: 414, // CSS pixels
-  mobileMaxHeight: 736, // CSS pixels
-  castSyncsWithActive: true,
-  doAckBlast: !process.env.TORBB && true,
+  // viewport scale up related options
+    // note: we are switching this off as the weird seems to break some sites
+    useScaledUpCoViewport: false,
+    get useCappedScaling() {
+      return this.useScaledUpCoViewport && true;
+    },
+    mobileMaxWidth: 414, // CSS pixels
+    mobileMaxHeight: 736, // CSS pixels
+  // speed up cast on switch activated related
+    castSyncsWithActive: true,
+    doAckBlast: !process.env.TORBB && true,
   SHORT_TIMEOUT: 30,
   useLayerTreeDomain: false,
   tailShots: false,

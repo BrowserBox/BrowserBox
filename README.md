@@ -4,7 +4,7 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 
 ***tor-iframe:***
 ```html
-<iframe src="https://mybrowserbox.server.com:9999/login?token=cviuygf3498tysifud&ui=false&url=["https://check.torproject.org"]"
+<iframe src="https://mybrowserbox.server.com:9999/login?token=cviuygf3498tysifud&ui=false&url=[&quot;https://check.torproject.org&quot;]"
         style="border:none; width:100%; height:100%;"
         allowfullscreen
         scrolling="no">
@@ -168,7 +168,7 @@ First ensure you have docker installed and running! :) Then run:
 
 ```console
 PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/4000774613af57d2f38fff00d339da58d3d9703c/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/f2162a8553c0f91068127bd3063eaf2fdc4d005d/deploy-scripts/run_docker.sh) $PORT
 ```
 
 That's it! Follow the prompts to set up certificates and it will emit a link that you can send open in any web browser. 

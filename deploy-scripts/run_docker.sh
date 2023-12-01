@@ -109,7 +109,8 @@ else
 fi
 
 # Run the container with the appropriate port mappings and capture the container ID
-CONTAINER_ID=$(sudo docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:8080 -p $(($PORT-2)):8078 -p $(($PORT-1)):8079 -p $(($PORT+1)):8081 -p $(($PORT+2)):8082 --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'echo $(setup_bbpro --port 8080) > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
+# Run the container with the appropriate port mappings and capture the container ID
+CONTAINER_ID=$(sudo docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
 
 echo "Waiting a few seconds for container to start..."
 sleep 7

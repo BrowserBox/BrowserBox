@@ -3,6 +3,7 @@
 OS_TYPE=""
 ONTOR=false
 TOR_PROXY=""
+INJECT_SCRIPT=""
 
 # Function to display help message
 display_help() {
@@ -18,10 +19,12 @@ display_help() {
       -c, --cookie COOKIE     Set a specific cookie value for BrowserBox.
       -d, --doc-key DOC_API_KEY Set a specific document viewer API key for BrowserBox.
       --ontor                 Enable Tor support in BrowserBox.
+      --inject  PATH          JavaScript file to inject into every browsed page
 
     EXAMPLES:
       $(basename $0) --port 8080 --token mytoken --cookie mycookie --doc-key mydockey
       $(basename $0) --port 8080 --ontor
+      $(basename $0) --port 8080 --inject ~/extension.js
 
 EOF
 }
@@ -177,7 +180,7 @@ fi
 
 # Parsing command line args including --ontor
 #OPTS=`$getopt -o p:t:c:d: --long port:,token:,cookie:,doc-key:,ontor -n 'parse-options' -- "$@"`
-OPTS=$($getopt -o hp:t:c:d: --long help,port:,token:,cookie:,doc-key:,ontor -n 'parse-options' -- "$@")
+OPTS=$($getopt -o hp:t:c:d: --long help,port:,token:,cookie:,doc-key:,ontor,inject: -n 'parse-options' -- "$@")
 
 
 if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; exit 1 ; fi
@@ -193,6 +196,16 @@ while true; do
     --ontor )
       ONTOR=true
       shift
+    ;;
+    --inject )
+      INJECT_SCRIPT="$2"
+      shift 2
+      if [[ -f "$INJECT_SCRIPT" ]]; then
+        echo "Inject script valid." >&2
+      else
+        echo "Inject script does not exist. Exiting..." >&2
+        exit 1
+      fi
     ;;
     -p | --port ) 
       if [[ $2 =~ ^[0-9]+$ ]]; then
@@ -306,6 +319,7 @@ export COOKIE_VALUE=$COOKIE
 export DEVTOOLS_PORT=$DT_PORT
 export DOCS_PORT=$SV_PORT
 export DOCS_KEY=$DOC_API_KEY
+export INJECT_SCRIPT="${INJECT_SCRIPT}"
 
 # true runs within a 'browsers' group
 #export BB_POOL=true
