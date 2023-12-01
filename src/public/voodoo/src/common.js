@@ -24,6 +24,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  mode: 'prod',
   // note on: increaseResolutionOfSmallerCanvas
     // this seems to look clearer on smaller devices when we are using a scaled up co viewport, 
     // from multiple clients
