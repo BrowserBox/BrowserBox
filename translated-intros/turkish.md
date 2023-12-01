@@ -1,6 +1,4 @@
-   ### Farklı Dillerde BrowserBox Tanıtımları
-
-   **BrowserBox: Güvenli ve İzole Web Taramanız için Kapınız**
+   # **BrowserBox: Güvenli ve İzole Web Taramanız için Kapınız**
 
    BrowserBox, sıfır güven uzaktan tarayıcı izolasyonu ve güvenli belge geçidi teknolojisi ile web uygulaması sanallaştırmasında yeni bir dönem başlatıyor. Çok oyunculu tarayıcı özellikleriyle her cihazda kısıtlama olmaksızın web görünümleri yerleştirin.
 
