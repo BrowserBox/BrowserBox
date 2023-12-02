@@ -51,6 +51,7 @@
     checker: new InternetChecker(CONFIG.netCheckTimeout, DEBUG.netCheckDebug),
   };
 
+  let DEBUG_ORDER_ID = 99999;
   let loopCalls = 0;
   let inFrameCount = 0;
   let noFrameReceived = 1;
@@ -298,6 +299,7 @@
       if ( events.length == 0 ) return {meta:[], data:[]};
       this.checkForBufferedFrames(events);
       let protocol;
+      // TODO: FIXME: we should gate this check behind a simpler check to see if URL has changed. Cache the pass in other words
       try {
         url = new URL(url);
         protocol = url.protocol;
@@ -319,6 +321,12 @@
             messageId++;
             let resolve;
             const promise = new Promise(res => resolve = res);
+            if ( DEBUG.debugCommandOrder ) {
+              events = events.map(e => {
+                e.command.debugOrderId = DEBUG_ORDER_ID++;
+                return e;
+              });
+            }
             const sendClosure = senders => senders.so(
               {
                 messageId,
@@ -385,6 +393,9 @@
                   frameId: this.publics.state.latestFrameReceived, 
                   castSessionId: this.publics.state.latestCastSession
                 };
+                if ( DEBUG.debugCommandOrder ) {
+                  BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
+                }
                 this.senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: noFrameReceived || this.screenshotReceived});
                 this.publics.state.screenshotReceived = false;
                 if ( DEBUG.logAcks ) {
@@ -582,6 +593,9 @@
                           castSessionId: privates.publics.state.latestCastSession
                         };
                       }
+                      if ( DEBUG.debugCommandOrder ) {
+                        BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
+                      }
                       privates.senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: noFrameReceived || privates.screenshotReceived});
                       privates.publics.state.screenshotReceived = false;
                       if ( DEBUG.logAcks ) {
@@ -698,6 +712,9 @@
                       };
                     }
 
+                    if ( DEBUG.debugCommandOrder ) {
+                      BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
+                    }
                     this.senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: noFrameReceived || this.screenshotReceived});
                     this.publics.state.screenshotReceived = false;
                     if ( DEBUG.logAcks ) {
@@ -720,6 +737,7 @@
                   if ( errors.length ) {
                     DEBUG.val >= DEBUG.low && console.warn(`${errors.length} errors occured.`);
                     DEBUG && console.log(JSON.stringify(errors));
+                    errors.map(err => console.warn(err));
                     if ( errors.some(({error}) => error.hasSession === false)) {
                       console.warn(`Session has been cleared. Let's attempt relogin`, this.sessionToken);
                       if ( COMMON.blockAnotherReset ) return;
@@ -882,6 +900,9 @@
                           castSessionId: this.publics.state.latestCastSession
                         };
                       }
+                      if ( DEBUG.debugCommandOrder ) {
+                        BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
+                      }
                       this.senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: noFrameReceived || this.screenshotReceived});
                       this.publics.state.screenshotReceived = false;
                       if ( DEBUG.logAcks ) {
@@ -1037,6 +1058,9 @@
     }
 
     singleCheckForResults() {
+      if ( DEBUG.debugCommandOrder ) {
+        BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
+      }
       const bfce = Object.assign({
         },
         BUFFERED_FRAME_EVENT
@@ -1061,6 +1085,9 @@
       }
       DEBUG.val && console.log(this.publics.state.attached);
       if ( noFrameReceived || this.publics.state.attached.size ) {
+        if ( DEBUG.debugCommandOrder ) {
+          BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
+        }
         const bfce = Object.assign({
           },
           BUFFERED_FRAME_EVENT
@@ -1109,11 +1136,17 @@
       };
       if ( ! this[$].senders )  {
         /*
+        if ( DEBUG.debugCommandOrder ) {
+          BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
+        }
         untilTrue(() => this[$].senders).then(() => {
           this[$].senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: this[$].screenshotReceived});
         });
         */
       } else {
+        if ( DEBUG.debugCommandOrder ) {
+          BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
+        }
         this[$].senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: this[$].screenshotReceived});
       }
     }

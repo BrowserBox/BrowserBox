@@ -13,11 +13,14 @@ export * from './args.js';
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 
 export const EXPEDITE = new Set([
+  "Target.activateTarget",
   "Page.navigate",
   "Page.navigateToHistoryEntry",
   "Runtime.evaluate",
   "Emulation.setUserAgentOverride",
   "Input.dispatchMouseEvent",
+  "Input.dispatchKeyEvent",
+  "Input.insertText",
 ]);
 
 export const LOG_FILE = {
@@ -26,6 +29,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugCommandOrder: false,
+  debugKeyEvents: false,
   debugBinding: false,
   events: false,
   commands: false,

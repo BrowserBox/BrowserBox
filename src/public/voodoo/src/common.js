@@ -24,6 +24,9 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  mode: 'prod',
+  debugKeyEvents: false,
+  debugCommandOrder: false,
   // note on: increaseResolutionOfSmallerCanvas
     // this seems to look clearer on smaller devices when we are using a scaled up co viewport, 
     // from multiple clients
@@ -156,6 +159,9 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  encforceKeyOrdering: true,
+  useTopLevelControlKeyListeners: true,
+  useTopLevelSendKeyListeners: false,
   get useServiceWorkerToCache() {
     return location.hostname !== 'localhost' && true;
   },
