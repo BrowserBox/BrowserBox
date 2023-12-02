@@ -13,6 +13,7 @@
 
   const demoBlock = token == 'demotoken';
   let ws_started = false;
+  let lastDebugOrderId = -Infinity;
   let server;
   //let zombie_started = false;
 
@@ -118,9 +119,17 @@
             console.log(`Sending ${JSON.stringify(command)}...`);
           }
         }
-        if ( DEBUG.debugKeyEvents && command?.name?.startsWith?.("Input.dispatchKey") ) {
-          console.info(`[eventSendLoop]: sending ${command.params.key} (${command.params.type.slice(3)})`);
+        if ( DEBUG.debugKeyEvents && command?.name?.startsWith?.("Input.dispatchKey") || command?.name?.startsWith?.("Input.insertText") ) {
+          console.info(`[eventSendLoop]: sending ${command.params.key || command.params.text} (${command.params.type ? command.params.type.slice(3) : 'press -> insert'}) (batch size: ${events.length})`);
           //console.log(JSON.stringify(command,null,2));
+        }
+        if ( DEBUG.debugCommandOrder ) {
+          if ( command.debugOrderId <= lastDebugOrderId ) {
+            console.info(`Command sequence disorder: about to emit ${command.debugOrderId}, but last was ${lastDebugOrderId}`);
+            console.log(command);
+          }
+          lastDebugOrderId = command.debugOrderId;
+          delete command.debugOrderId;
         }
         const sendResult = await timedSend(command, chrome_port);
         DEBUG.debugSendResult && console.log(JSON.stringify({sendResult}));

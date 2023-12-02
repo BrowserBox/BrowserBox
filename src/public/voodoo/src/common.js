@@ -26,6 +26,7 @@ export const OPTIONS = {
 export const DEBUG = Object.freeze({
   mode: 'dev',
   debugKeyEvents: true,
+  debugCommandOrder: true,
   // note on: increaseResolutionOfSmallerCanvas
     // this seems to look clearer on smaller devices when we are using a scaled up co viewport, 
     // from multiple clients
@@ -49,7 +50,7 @@ export const DEBUG = Object.freeze({
   allowContextMenuOnContextMenu: true,
   debugTabs: false,
   debugContextMenu: false,
-  debugQdEs: false, /* QdEs == QueuedEvents */
+  debugQdEs: true, /* QdEs == QueuedEvents */
   debugConnect: false,
   debugBetterModals: false,
   debugHistory: false,
