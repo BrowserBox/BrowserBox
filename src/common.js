@@ -13,11 +13,14 @@ export * from './args.js';
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 
 export const EXPEDITE = new Set([
+  "Target.activateTarget",
   "Page.navigate",
   "Page.navigateToHistoryEntry",
   "Runtime.evaluate",
   "Emulation.setUserAgentOverride",
   "Input.dispatchMouseEvent",
+  "Input.dispatchKeyEvent",
+  "Input.insertText",
 ]);
 
 export const LOG_FILE = {
@@ -26,8 +29,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  debugCommandOrder: true,
-  debugKeyEvents: true,
+  debugCommandOrder: false,
+  debugKeyEvents: false,
   debugBinding: false,
   events: false,
   commands: false,
@@ -103,7 +106,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
+  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */

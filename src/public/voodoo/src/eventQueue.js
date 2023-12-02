@@ -394,7 +394,7 @@
                   castSessionId: this.publics.state.latestCastSession
                 };
                 if ( DEBUG.debugCommandOrder ) {
-                  BUFFERED_FRAME_EVENT.debugOrderId = DEBUG_ORDER_ID++;
+                  BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
                 }
                 this.senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: noFrameReceived || this.screenshotReceived});
                 this.publics.state.screenshotReceived = false;
@@ -594,7 +594,7 @@
                         };
                       }
                       if ( DEBUG.debugCommandOrder ) {
-                        BUFFERED_FRAME_EVENT.debugOrderId = DEBUG_ORDER_ID++;
+                        BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
                       }
                       privates.senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: noFrameReceived || privates.screenshotReceived});
                       privates.publics.state.screenshotReceived = false;
@@ -713,7 +713,7 @@
                     }
 
                     if ( DEBUG.debugCommandOrder ) {
-                      BUFFERED_FRAME_EVENT.debugOrderId = DEBUG_ORDER_ID++;
+                      BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
                     }
                     this.senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: noFrameReceived || this.screenshotReceived});
                     this.publics.state.screenshotReceived = false;
@@ -901,7 +901,7 @@
                         };
                       }
                       if ( DEBUG.debugCommandOrder ) {
-                        BUFFERED_FRAME_EVENT.debugOrderId = DEBUG_ORDER_ID++;
+                        BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
                       }
                       this.senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: noFrameReceived || this.screenshotReceived});
                       this.publics.state.screenshotReceived = false;
@@ -1059,7 +1059,7 @@
 
     singleCheckForResults() {
       if ( DEBUG.debugCommandOrder ) {
-        BUFFERED_FRAME_EVENT.debugOrderId = DEBUG_ORDER_ID++;
+        BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
       }
       const bfce = Object.assign({
         },
@@ -1086,7 +1086,7 @@
       DEBUG.val && console.log(this.publics.state.attached);
       if ( noFrameReceived || this.publics.state.attached.size ) {
         if ( DEBUG.debugCommandOrder ) {
-          BUFFERED_FRAME_EVENT.debugOrderId = DEBUG_ORDER_ID++;
+          BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
         }
         const bfce = Object.assign({
           },
@@ -1137,7 +1137,7 @@
       if ( ! this[$].senders )  {
         /*
         if ( DEBUG.debugCommandOrder ) {
-          BUFFERED_FRAME_EVENT.debugOrderId = DEBUG_ORDER_ID++;
+          BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
         }
         untilTrue(() => this[$].senders).then(() => {
           this[$].senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: this[$].screenshotReceived});
@@ -1145,7 +1145,7 @@
         */
       } else {
         if ( DEBUG.debugCommandOrder ) {
-          BUFFERED_FRAME_EVENT.debugOrderId = DEBUG_ORDER_ID++;
+          BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
         }
         this[$].senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: this[$].screenshotReceived});
       }
