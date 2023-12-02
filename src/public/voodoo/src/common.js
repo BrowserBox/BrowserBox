@@ -50,7 +50,7 @@ export const DEBUG = Object.freeze({
   allowContextMenuOnContextMenu: true,
   debugTabs: false,
   debugContextMenu: false,
-  debugQdEs: true, /* QdEs == QueuedEvents */
+  debugQdEs: false, /* QdEs == QueuedEvents */
   debugConnect: false,
   debugBetterModals: false,
   debugHistory: false,
