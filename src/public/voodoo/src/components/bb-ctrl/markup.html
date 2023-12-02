@@ -4,6 +4,7 @@
       <input tabindex=-1 class=control name=key_input size=5
         autocomplete=off
         bond=${[el => state.viewState.keyinput = el, () => state.showIMEUI(true), el => state.detectIMEInput(el, state)]}
+        keypress=${[logitKeyInputEvent, pressKey]}
         keydown=${[logitKeyInputEvent,e => state.openKey = e.key, H,limitCursor,e => state.retargetTab(e)]}
         keyup=${[logitKeyInputEvent,() => state.openKey = '', H,e => state.retargetTab(e)]}
         focusin=${[() => clearWord(state), () => state.openKey = '', ev => DEBUG.debugFocus && console.log('focusin', ev.target)]}
@@ -11,7 +12,6 @@
         compositionupdate=${[logitKeyInputEvent,updateComposition]}
         compositionend=${[logitKeyInputEvent,endComposition]}
         input=${[logitKeyInputEvent,inputText]}
-        keypress=${[logitKeyInputEvent, pressKey]}
         paste=${e => {
           inputText({type:'paste',data:e.clipboardData.getData('Text')});
         }}
@@ -20,6 +20,7 @@
       <textarea tabindex=-1 class=control name=textarea_input cols=5 rows=1
         autocomplete=off
         bond=${[el => state.viewState.textarea = el, el => state.detectIMEInput(el, state)]}
+        keypress=${[logitKeyInputEvent, pressKey]}
         keydown=${[logitKeyInputEvent,e => state.openKey = e.key, H,limitCursor, e => state.retargetTab(e)]}
         keyup=${[logitKeyInputEvent,() => state.openKey = '', H,e => state.retargetTab(e)]}
         focusin=${[() => clearWord(state), () => state.openKey = '', el => DEBUG.debugFocus && console.log('focusin', el.target)]}
@@ -27,7 +28,6 @@
         compositionupdate=${[logitKeyInputEvent,updateComposition]}
         compositionend=${[logitKeyInputEvent,endComposition]}
         input=${[logitKeyInputEvent,inputText]}
-        keypress=${[logitKeyInputEvent, pressKey]}
         paste=${e => {
           inputText({type:'paste',data:e.clipboardData.getData('Text')});
         }}

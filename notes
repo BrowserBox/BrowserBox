@@ -1,0 +1,3 @@
+- Key out of order does not occur on local (docker or native), only on remote. Think it could be a ping issue. Which makes kind of no sense that events will happen out of order...could it be the way we batch in eventQueue on client or process batches in eventSendLoop on server? Only thing I can think of this we slice stream into batches essentially randomly (owing to microlatency, jitter, ping, etc) and perhaps we are incorrectly processing these tiny batches back to front leading to "123 123 132" like a "stack language stack reversal" error type pattern
+
+
