@@ -1,10 +1,4 @@
-bunch of issues and problems in ime
-
-- getters on state object are not being serialized across on object component states  (so we cannot read these states)
-- can keys input is not consistent (someone ime detection will not be fired because input is not focused as it should be)
-
-other
-
+- can keys input is not consistent if app loads and page already has input focused it seems sometimes we do not set canKeysInput, requiring a click outside the input and back in to set canKeysInput on client. 
 - create a stopbb function that sends a "shut down message" to the instance and waits 10 seconds then runs pm2 delete all
-
+- create a bbup function that will update an installation to latest version if available. you can pick latest tag, latest boss. 
 
