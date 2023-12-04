@@ -896,7 +896,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                     }
                   }).then(resp => {
                     if ( resp.ok ) {
-                      const contentType = resp.headers.get('content-type');
+                      const contentType = resp.headers['content-type'];
                       DEBUG.debugFavicon && console.log("resp", contentType, resp);
                       if ( contentType?.startsWith('image') ) {
                         try {
