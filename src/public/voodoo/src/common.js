@@ -24,7 +24,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  mode: 'prod',
+  mode: 'dev', // 'prod' required for ServiceWorker
   debugKeyEvents: false,
   debugCommandOrder: false,
   // note on: increaseResolutionOfSmallerCanvas
