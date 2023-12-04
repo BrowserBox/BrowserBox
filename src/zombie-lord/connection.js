@@ -160,6 +160,7 @@ const favicons = new Map();
 const Frames = new Map();
 const MainFrames = new Map();
 const PowerSources = new Map();
+const OpenModals = new Map();
 const SetupTabs = new Map();
 //const originalMessage = new Map();
 const DownloadPath = path.resolve(CONFIG.baseDir , 'browser-downloads');
@@ -282,6 +283,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     casts,
     latestCastId: null,
     activeTarget: null,
+    // modals related
+    OpenModals,
   };
 
   process.on(NOTICE_SIGNAL, reportNoticeOnSignal);
@@ -958,6 +961,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.forceMeta({modal});
       connection.vmPaused = true;
       connection.modal = modal;
+      connection.OpenModals.set(sessionId, modal);
     } else if ( message.method == "Page.frameNavigated" ) {
       const {url, securityOrigin, unreachableUrl, parentId} = message.params.frame;
       //const navigationType == message.params.type;
@@ -1714,12 +1718,19 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         connection.pausing.delete(url);
       }; break;
       case "Page.handleJavaScriptDialog": {
-        connection.vmPaused = false;
-        DEBUG.debugModals && console.log({command});
-        command.requiresTask = () => {
-          connection.modal = null;
-          connection.forceMeta({vm:{paused:false}});
-        };
+        const modal = connection.OpenModals.get(command.params.sessionId);
+        if ( ! modal ) {
+          console.warn(`No modal for sessionId ${command.params.sessionId}`);
+        } 
+        connection.OpenModals.delete(command.params.sessionId);
+        if ( connection.OpenModals.size == 0 ) {
+          connection.vmPaused = false;
+          DEBUG.debugModals && console.log({command});
+          command.requiresTask = () => {
+            connection.modal = null;
+            connection.forceMeta({vm:{paused:false}});
+          };
+        }
       }; break;
       case "Target.activateTarget": {
         if ( CONFIG.screencastOnly && CONFIG.castSyncsWithActive ) {

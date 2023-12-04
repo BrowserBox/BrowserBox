@@ -29,6 +29,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugAlerts: false,
+  debugModals: false,
   debugCommandOrder: false,
   debugKeyEvents: false,
   debugBinding: false,
@@ -91,7 +93,6 @@ export const DEBUG = Object.freeze({
   debugCopyPaste: false,
   watchFrameStack: false,
   enableClientsToSetURL: true,
-  debugModals: false,
   debugSendResult: false,
   metaDebug: false,
   channelDebug: false,
