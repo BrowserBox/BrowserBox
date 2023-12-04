@@ -2,6 +2,8 @@
 
 BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for Tor. 
 
+## 🧅 New Feature - Tor Support
+
 ***tor-iframe:***
 ```html
 <iframe src="https://mybrowserbox.server.com:9999/login?token=cviuygf3498tysifud&ui=false&url=[&quot;https://check.torproject.org&quot;]"
@@ -22,7 +24,7 @@ You can now [browse the web through Tor when using BrowserBox](#rotating_light-b
 
 *[Donate to Tor](https://donate.torproject.org)*
 
-## 🌟 What's New in BrowserBox 
+## 🌟 What Else is New in BrowserBox 
 
 We're thrilled to announce the following major updates to BrowserBox that will enhance your user experience and streamline your workflow!
 
