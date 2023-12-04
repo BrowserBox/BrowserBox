@@ -1,11 +1,13 @@
 import {spawn} from 'child_process';
-import {WebSocket} from 'ws';
-/* import fetch from 'node-fetch'; */
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {URL} from 'url';
 import {unescape} from 'querystring';
+
+import {WebSocket} from 'ws';
+import  {SocksProxyAgent} from 'socks-proxy-agent';
+//import fetch from 'node-fetch'; 
 import {
   EXPEDITE,
   LOG_FILE,
@@ -56,6 +58,10 @@ if ( process.env.INJECT_SCRIPT ) {
   } catch(e) {
     console.warn(`Custom Injection could not be loaded: ${process.env.INJECT_SCRIPT}\nError: ${e}`, e);
   }
+}
+
+if ( process.env.?TOR_PROXY?.startsWith?.('socks') ) {
+  globalThis[Symbol.for('undici.globalDispatcher.1')] = new SocksProxyAgent(process.env.TOR_PROXY);
 }
 
 // just concatenate the scripts together and do one injection
@@ -875,6 +881,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                   We can save these headers from a network request. Tho this is complex. But it's the best way.`
                 );
                 DEBUG.debugFavicon && console.info(`Will send request for supposed favicon at url: ${faviconURL}`);
+                const faviconRequest = new Request(faviconURL, {
+
+                });
                 fetch(faviconURL, {
                   method: 'GET',
                   cache: 'force-cache',
