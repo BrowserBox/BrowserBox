@@ -26,6 +26,7 @@
     if ( received || running ) return;
     running = true;
     s({running: "getFaviconElement", targetId});
+    requestReset();
     try {
       const iconURLs = Array.from(
         document.querySelectorAll(
@@ -81,6 +82,10 @@
       Sent.add(o.faviconDataUrl);
     }
     console.log(JSON.stringify({favicon:o}));
+  }
+
+  function requestReset() {
+    console.log(JSON.stringify({resetFavicon:{reset:true, targetId}}));
   }
 
   async function getIcon(iconURL, {withCredentials = false} = {}) {
