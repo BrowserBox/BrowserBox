@@ -31,7 +31,7 @@
         paste=${e => {
           inputText({type:'paste',data:e.clipboardData.getData('Text')});
         }}
-        focusout=${[state.hideIMEUI, el => console.log('focusout/blur', el.target)]}
+        focusout=${[state.hideIMEUI, el => DEBUG.debugFocus && console.log('focusout/blur', el.target)]}
         ></textarea>
     </form>
 </nav>
