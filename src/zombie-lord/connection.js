@@ -60,7 +60,7 @@ if ( process.env.INJECT_SCRIPT ) {
   }
 }
 
-if ( process.env.?TOR_PROXY?.startsWith?.('socks') ) {
+if ( process.env?.TOR_PROXY?.startsWith?.('socks') ) {
   globalThis[Symbol.for('undici.globalDispatcher.1')] = new SocksProxyAgent(process.env.TOR_PROXY);
 }
 
