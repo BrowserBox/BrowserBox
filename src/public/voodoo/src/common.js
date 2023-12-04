@@ -24,7 +24,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  mode: 'dev',
+  mode: 'prod',
   debugKeyEvents: false,
   debugCommandOrder: false,
   // note on: increaseResolutionOfSmallerCanvas
@@ -54,7 +54,7 @@ export const DEBUG = Object.freeze({
   debugConnect: false,
   debugBetterModals: false,
   debugHistory: false,
-  debugFavicon: true,
+  debugFavicon: false,
   debugElementInfo: false,
   coords: false,
   debugBitmapCoordConversion: false,
