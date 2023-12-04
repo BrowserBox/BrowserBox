@@ -21,7 +21,7 @@ To start using the Beta API, follow these steps:
    ./deploy-scripts/copy_install.sh
    ```
 
-4. If you're using Docker, please note that we haven't pushed the Beta API to Docker at this time. However, you can still use it with Docker by running the following commands inside your container:
+4. If you're using Docker, please note that Beta API is only available in 6.2 and above. If you have no updated your container, you can manually upgrade it per container, from inside your container:
    ```
    cd ~/bbpro
    git remote remove origin 
