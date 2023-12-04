@@ -187,7 +187,7 @@ const launcher_api = {
       CHROME_FLAGS.push('--no-sandbox'); 
     }
     if ( CONFIG.useTorProxy ) {
-      CHROME_FLAGS.push(`--proxy-server="${process.env.TOR_PROXY}"`);
+      CHROME_FLAGS.push(`--proxy-server="${process.env.TOR_PROXY.replace('socks5h', 'socks5')}"`);
       CHROME_FLAGS.push(`--host-resolver-rules="MAP * 0.0.0.0 , EXCLUDE localhost"`);
     }
     if (isDocker()) {

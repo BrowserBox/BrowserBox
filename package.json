@@ -93,6 +93,7 @@
     "helmet": "latest",
     "multer": "latest",
     "simple-peer": "latest",
+    "socks-proxy-agent": "^8.0.2",
     "spdy": "latest",
     "ws": "latest"
   },
