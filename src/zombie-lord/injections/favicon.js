@@ -39,10 +39,19 @@
         urlCopy.pathname = "/favicon.ico";
         urlCopy.search = '';
         urlCopy.hash = '';
-        url = urlCopy + '';
+        iconURLs.push(urlCopy+'');
+        urlCopy.pathname = "/favicon.png";
+        iconURLs.push(urlCopy+'');
+        urlCopy.pathname = "/favicon.svg";
+        iconURLs.push(urlCopy+'');
+        urlCopy.pathname = "/favicon.jpg";
+        iconURLs.push(urlCopy+'');
+        urlCopy.pathname = "/favicon.jpeg";
+        iconURLs.push(urlCopy+'');
+        urlCopy.pathname = "/favicon.webp";
+        iconURLs.push(urlCopy+'');
       }
 
-      iconURLs.push(url);
 
       let hasIcon = false;
       for( const iconURL of iconURLs ) {
@@ -58,6 +67,7 @@
             s({getIconWithCredentialsError: e+''});
           }
         }
+        await new Promise(res => setTimeout(res, 300));
       }
     } catch(e) {
       s({e: e+''});
