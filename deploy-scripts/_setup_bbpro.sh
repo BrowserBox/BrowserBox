@@ -147,10 +147,12 @@ obtain_socks5_proxy_address() {
   if grep -q "^SocksPort" "$torrc_path"; then
     # Extract and return the SOCKS5 proxy address from torrc
     socks_port=$(grep "^SocksPort" "$torrc_path" | awk '{print $2}')
-    echo "socks5://127.0.0.1:$socks_port"
+    # use socks5h to pass DNS through tor as well
+    echo "socks5h://127.0.0.1:$socks_port"
   else
     # Default SOCKS5 proxy address
-    echo "socks5://127.0.0.1:9050"
+    # use socks5h to pass DNS through tor as well
+    echo "socks5h://127.0.0.1:9050"
   fi
 }
 
