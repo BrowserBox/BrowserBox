@@ -866,13 +866,8 @@
           queue.addMetaListener('selectInput', meta => console.log({meta}));
           queue.addMetaListener('keyInput', meta => handleKeysCanInputMessage(meta, state));
           queue.addMetaListener('favicon', meta => handleFaviconMessage(meta, state));
-          //queue.addMetaListener('navigated', () => canKeysInput());
-          queue.addMetaListener('navigated', async ({navigated:{targetId}}) => {
-            await resetFavicon({targetId}, state);
-            // reset favicon event to send to remote
-            //initialGetFavicon(targetId);
-            //getFavicon(targetId);
-          });
+          queue.addMetaListener('navigated', () => canKeysInput());
+          queue.addMetaListener('resetFavicon', ({resetFavicon:{targetId}}) => resetFavicon({targetId}, state));
 
         //queue.addMetaListener('navigated', meta => takeShot(meta, state));
 
