@@ -81,7 +81,7 @@ export const DEBUG = Object.freeze({
   debugCommandResponses: false,
   dataDebug: false,
   debugHistory: false,
-  debugFaviconsSend: false,
+  debugFaviconsSend: true,
   neverWait: true, /* for commands */
   attachImmediately: true,
   manuallyInjectIntoEveryCreatedContext: true,
@@ -106,7 +106,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
@@ -125,7 +125,7 @@ export const DEBUG = Object.freeze({
     /* || other condition || some other condition ... etc ... */
     return this.debugFavicon || this.showConsoleMessages; 
   },
-  debugFavicon: false,
+  debugFavicon: true,
   worldDebug: false,
   bufSend: true,
   acks: false,          // actually this doesn't "turn on" acks. They are on by default
