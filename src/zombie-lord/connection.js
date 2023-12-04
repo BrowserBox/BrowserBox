@@ -1,13 +1,15 @@
 import {spawn} from 'child_process';
 import fs from 'fs';
+import https from 'https';
+import http from 'http';
 import os from 'os';
 import path from 'path';
 import {URL} from 'url';
 import {unescape} from 'querystring';
 
 import {WebSocket} from 'ws';
-import  {SocksProxyAgent} from 'socks-proxy-agent';
-//import fetch from 'node-fetch'; 
+import {SocksProxyAgent} from 'socks-proxy-agent';
+
 import {
   EXPEDITE,
   LOG_FILE,
@@ -21,12 +23,14 @@ import {
   consolelog,
   untilTrue
 } from '../common.js';
+
 import {username} from '../args.js';
 import {WorldName} from '../public/translateVoodooCRDP.js';
 import {RACE_SAMPLE, makeCamera, COMMON_FORMAT, DEVICE_FEATURES, SCREEN_OPTS, MAX_ACK_BUFFER, MIN_WIDTH, MIN_HEIGHT} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
 import {Document} from './api/document.js';
 import {getInjectableAssetPath, LatestCSRFToken, fileChoosers} from '../ws-server.js';
+
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
 
@@ -60,8 +64,9 @@ if ( process.env.INJECT_SCRIPT ) {
   }
 }
 
+let customProxy = null;
 if ( process.env?.TOR_PROXY?.startsWith?.('socks') ) {
-  globalThis[Symbol.for('undici.globalDispatcher.1')] = new SocksProxyAgent(process.env.TOR_PROXY);
+  customProxy = new SocksProxyAgent(process.env.TOR_PROXY);
 }
 
 // just concatenate the scripts together and do one injection
@@ -881,43 +886,65 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                   We can save these headers from a network request. Tho this is complex. But it's the best way.`
                 );
                 DEBUG.debugFavicon && console.info(`Will send request for supposed favicon at url: ${faviconURL}`);
-                const faviconRequest = new Request(faviconURL, {
-
-                });
-                fetch(faviconURL, {
-                  method: 'GET',
-                  cache: 'force-cache',
-                  headers: {
-                    'user-agent': connection.navigator.userAgent
-                  }
-                }).then(resp => {
-                  if ( resp.ok ) {
-                    const contentType = resp.headers.get('content-type');
-                    DEBUG.debugFavicon && console.log("resp", contentType, resp);
-                    if ( contentType?.startsWith('image') ) {
-                      try {
-                        resp.arrayBuffer().then(buf => {
-                          const faviconDataUrl = `data:${contentType};base64,${
-                            Buffer.from(buf).toString('base64')
-                          }`;
-                          favicons.set(faviconURL, faviconDataUrl);
-                          if ( oldUrl !== faviconDataUrl ) {
-                            favicons.set(targetId, faviconDataUrl);
-                            const Message = {favicon:{targetId, faviconDataUrl}, executionContextId};
-                            connection.forceMeta(Message);
-                            DEBUG.debugFavicon && console.log(`FROM FETCH: Setting favicon for ${targetId}`, {Message});
-                          }
-                        });
-                      } catch(e) {
-                        console.warn('favicon', e);
-                      }
-                    } else {
-                      DEBUG.debugFavicon && console.warn(`Supposed favicon had incorrect content type: ${contentType}`);
+                if ( customProxy ) {
+                  fetchWithTor(faviconURL, {
+                    customProxy,
+                    method: 'GET',
+                    cache: 'force-cache',
+                    headers: {
+                      'user-agent': connection.navigator.userAgent
                     }
-                  }
-                }).catch(err => {
-                  console.warn('favicon get err', Message, err);
-                });
+                  }).then(resp => {
+                    if ( resp.ok ) {
+                      const contentType = resp.headers.get('content-type');
+                      DEBUG.debugFavicon && console.log("resp", contentType, resp);
+                      if ( contentType?.startsWith('image') ) {
+                        try {
+                          // do something
+                        } catch(e) {
+                          console.warn('favicon', e);
+                        }
+                      } else {
+                        DEBUG.debugFavicon && console.warn(`Supposed favicon had incorrect content type: ${contentType}`);
+                      }
+                    }
+                  });
+                } else {
+                  fetch(faviconURL, {
+                    method: 'GET',
+                    cache: 'force-cache',
+                    headers: {
+                      'user-agent': connection.navigator.userAgent
+                    }
+                  }).then(resp => {
+                    if ( resp.ok ) {
+                      const contentType = resp.headers.get('content-type');
+                      DEBUG.debugFavicon && console.log("resp", contentType, resp);
+                      if ( contentType?.startsWith('image') ) {
+                        try {
+                          resp.arrayBuffer().then(buf => {
+                            const faviconDataUrl = `data:${contentType};base64,${
+                              Buffer.from(buf).toString('base64')
+                            }`;
+                            favicons.set(faviconURL, faviconDataUrl);
+                            if ( oldUrl !== faviconDataUrl ) {
+                              favicons.set(targetId, faviconDataUrl);
+                              const Message = {favicon:{targetId, faviconDataUrl}, executionContextId};
+                              connection.forceMeta(Message);
+                              DEBUG.debugFavicon && console.log(`FROM FETCH: Setting favicon for ${targetId}`, {Message});
+                            }
+                          });
+                        } catch(e) {
+                          console.warn('favicon', e);
+                        }
+                      } else {
+                        DEBUG.debugFavicon && console.warn(`Supposed favicon had incorrect content type: ${contentType}`);
+                      }
+                    }
+                  }).catch(err => {
+                    console.warn('favicon get err', Message, err);
+                  });
+                }
               }
             }
           } else {
@@ -2345,4 +2372,44 @@ function enumerateFrames(tree, max = 0) {
 
 function clone(o) {
   return JSON.parse(JSON.stringify(o));
+}
+
+async function fetchWithTor(url, options = {}) {
+  let agent;
+  if ( options.customProxy ) {
+    agent = options.customProxy;
+    delete options.customProxy;
+  }
+  return new Promise((resolve, reject) => {
+    const protocol = url.startsWith('https') ? https : http;
+
+    const requestOptions = {
+      agent,
+      method: options.method || 'GET',
+      headers: options.headers || {}
+    };
+
+    const request = protocol.request(url, requestOptions, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => {
+        chunks.push(chunk);
+      });
+      res.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        resolve({
+          ok: res.statusCode >= 200 && res.statusCode < 300,
+          headers: res.headers,
+          text: () => Promise.resolve(buffer.toString()),
+          arrayBuffer: () => Promise.resolve(buffer),
+          contentType: res.headers['content-type']
+        });
+      });
+    });
+
+    request.on('error', (error) => {
+      reject(error);
+    });
+
+    request.end();
+  });
 }
