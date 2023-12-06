@@ -1,7 +1,7 @@
 #!/bin/bash
 
 hostname=$1
-timeout=19 # Timeout in seconds (e.g., 900 seconds = 15 minutes)
+timeout=900 # Timeout in seconds (e.g., 900 seconds = 15 minutes)
 interval=10 # Interval in seconds to check the hostname
 
 if [[ -z "$hostname" ]]; then
