@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to deploy BrowserBox with configurable options
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t2.small
+    Description: EC2 instance type
+  VPCId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID where the instance will be deployed
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+  HostName:
+    Type: String
+    Description: Hostname for the BrowserBox installation
+  UserEmail:
+    Type: String
+    Description: User email for the BrowserBox installation
+  AMI:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64'
+    Description: AMI ID for the instance
+
+Resources:
+  BrowserBoxInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMI
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - Ref: BrowserBoxSecurityGroup
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y git
+            git clone https://github.com/BrowserBox/BrowserBox.git || exit 1
+            cd BrowserBox || exit 1
+            ./deploy-scripts/wait_for_hostname.sh ${HostName} || exit 1
+            export INSTALL_DOC_VIEWER=true
+            yes | ./deploy-scripts/global_install.sh ${HostName} ${UserEmail}
+            setup_bbpro --port 8080 || exit 1
+            bbpro || exit 1
+
+  BrowserBoxSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for BrowserBox
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8078
+          ToPort: 8082
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  InstanceId:
+    Description: The Instance ID of the BrowserBox server
+    Value: !Ref BrowserBoxInstance
+  PublicIP:
+    Description: The Public IP address of the EC2 instance
+    Value: !GetAtt BrowserBoxInstance.PublicIp
+
