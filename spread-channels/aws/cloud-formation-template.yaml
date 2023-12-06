@@ -6,22 +6,33 @@ Parameters:
     Type: String
     Default: t2.small
     Description: EC2 instance type
+    AllowedPattern: .+
+
   VPCId:
     Type: AWS::EC2::VPC::Id
     Description: VPC ID where the instance will be deployed
+    AllowedPattern: .+
+
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access
+    AllowedPattern: .+
+
   HostName:
     Type: String
-    Description: Hostname for the BrowserBox installation
+    Description: Hostname for the running BrowserBox instance to serve from
+    AllowedPattern: .+
+
   UserEmail:
     Type: String
-    Description: User email for the BrowserBox installation
+    Description: User email for the BrowserBox installation LetsEncrypt Terms Agreement
+    AllowedPattern: .+
+
   AMI:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64'
     Description: AMI ID for the instance
+    AllowedPattern: .+
 
 Resources:
   BrowserBoxInstance:
@@ -82,6 +93,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
           CidrIp: 0.0.0.0/0
 
 Outputs:
