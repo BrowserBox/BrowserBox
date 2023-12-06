@@ -8,15 +8,13 @@ Parameters:
     Description: EC2 instance type
     AllowedPattern: .+
 
-  VPCId:
-    Type: AWS::EC2::VPC::Id
-    Description: VPC ID where the instance will be deployed
-    AllowedPattern: .+
-
-  KeyName:
-    Type: AWS::EC2::KeyPair::KeyName
-    Description: Name of an existing EC2 KeyPair to enable SSH access
-    AllowedPattern: .+
+  InstallDocViewer:
+    Type: String
+    Description: Whether to install document viewer (true/false)
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
 
   HostName:
     Type: String
@@ -26,6 +24,16 @@ Parameters:
   UserEmail:
     Type: String
     Description: User email for the BrowserBox installation LetsEncrypt Terms Agreement
+    AllowedPattern: .+
+
+  VPCId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID where the instance will be deployed
+    AllowedPattern: .+
+
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access
     AllowedPattern: .+
 
   AMI:
@@ -73,7 +81,7 @@ Resources:
               git clone https://github.com/BrowserBox/BrowserBox.git || exit 1
               cd BrowserBox || exit 1
               ./deploy-scripts/wait_for_hostname.sh ${HostName} || exit 1
-              export INSTALL_DOC_VIEWER=true
+              export INSTALL_DOC_VIEWER=${InstallDocViewer}
               yes | ./deploy-scripts/global_install.sh ${HostName} ${UserEmail}
               setup_bbpro --port 8080 || exit 1
               bbpro || exit 1
