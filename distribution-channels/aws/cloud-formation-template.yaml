@@ -20,7 +20,7 @@ Parameters:
     Description: User email for the BrowserBox installation
   AMI:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64'
     Description: AMI ID for the instance
 
 Resources:
@@ -30,18 +30,21 @@ Resources:
       ImageId: !Ref AMI
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyName
-      SecurityGroups:
+      SecurityGroupIds:
         - Ref: BrowserBoxSecurityGroup
       UserData:
         Fn::Base64:
           !Sub |
             #!/bin/bash
-            apt-get update -y
-            apt-get install -y git
+            yum update -y
+            yum install -y git
             git clone https://github.com/BrowserBox/BrowserBox.git || exit 1
             cd BrowserBox || exit 1
-            ./deploy-scripts/global_install.sh ${HostName} ${UserEmail} || exit 1
+            ./deploy-scripts/wait_for_hostname.sh ${HostName} || exit 1
+            export INSTALL_DOC_VIEWER=true
+            yes | ./deploy-scripts/global_install.sh ${HostName} ${UserEmail}
             setup_bbpro --port 8080 || exit 1
+            bbpro || exit 1
 
   BrowserBoxSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -62,4 +65,7 @@ Outputs:
   InstanceId:
     Description: The Instance ID of the BrowserBox server
     Value: !Ref BrowserBoxInstance
+  PublicIP:
+    Description: The Public IP address of the EC2 instance
+    Value: !GetAtt BrowserBoxInstance.PublicIp
 
