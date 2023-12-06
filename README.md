@@ -2,6 +2,10 @@
 
 BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for Tor. 
 
+## New Feature - AWS CloudFormation Script
+
+We now have an AWS CloudFormation template for creating a BrowserBox instance. 
+
 ## 🧅 New Feature - Tor Support
 
 ***tor-iframe:***
@@ -134,6 +138,8 @@ $ yes | ./deploy-scripts/global_install.sh localhost
 $ setup_bbpro --port <my_port>
 $ torbb
 ```
+
+Please note ensure you set `export INSTALL_DOC_VIEWER=true` before calling the `global_install` script, if you wish to have the Secure Document Viewer installed. It is off by default because the installation takes significantly longer with it installed.
 
 -----
 
