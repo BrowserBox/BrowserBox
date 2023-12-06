@@ -36,15 +36,37 @@ Resources:
         Fn::Base64:
           !Sub |
             #!/bin/bash
-            yum update -y
-            yum install -y git
-            git clone https://github.com/BrowserBox/BrowserBox.git || exit 1
-            cd BrowserBox || exit 1
-            ./deploy-scripts/wait_for_hostname.sh ${HostName} || exit 1
-            export INSTALL_DOC_VIEWER=true
-            yes | ./deploy-scripts/global_install.sh ${HostName} ${UserEmail}
-            setup_bbpro --port 8080 || exit 1
-            bbpro || exit 1
+
+            # Define new user (change as needed)
+            NEW_USER="customuser"
+
+            # Check if ec2-user exists
+            if id "ec2-user" &>/dev/null; then
+              USER="ec2-user"
+            else
+              # Create a new user with sudo privileges if ec2-user doesn't exist
+              USER=$NEW_USER
+              adduser $USER
+              echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+              # Set up user's home directory (optional)
+              su - $USER -c "mkdir -p /home/$USER/.ssh"
+              su - $USER -c "chmod 700 /home/$USER/.ssh"
+            fi
+
+            # Your existing setup script, run as the determined user
+            su - $USER <<'EOF'
+              yum update -y
+              yum install -y git
+              git clone https://github.com/BrowserBox/BrowserBox.git || exit 1
+              cd BrowserBox || exit 1
+              ./deploy-scripts/wait_for_hostname.sh ${HostName} || exit 1
+              export INSTALL_DOC_VIEWER=true
+              yes | ./deploy-scripts/global_install.sh ${HostName} ${UserEmail}
+              setup_bbpro --port 8080 || exit 1
+              bbpro || exit 1
+            EOF
+
 
   BrowserBoxSecurityGroup:
     Type: AWS::EC2::SecurityGroup

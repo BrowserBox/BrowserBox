@@ -81,6 +81,8 @@ detect_os() {
       OS_TYPE="debian"
     elif [ -f /etc/centos-release ]; then
       OS_TYPE="centos"
+    elif [ -f /etc/amazon-linux-release ]; then
+      OS_TYPE="centos"
     else
       echo "Unsupported Linux distribution" >&2
       exit 1
