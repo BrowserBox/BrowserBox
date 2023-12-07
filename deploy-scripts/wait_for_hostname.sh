@@ -32,10 +32,30 @@ flush_dns() {
   esac
 }
 
-# Function to get the current external IP address
+#!/bin/bash
+
+# Function to get the current external IPv4 address
 get_external_ip() {
-  # Using a public service like ifconfig.me to get the external IP
-  curl -s ifconfig.me
+  local ip
+
+  # List of services to try
+  local services=(
+    "https://icanhazip.com"
+    "https://ifconfig.me"
+    "https://api.ipify.org"
+  )
+
+  # Try each service in turn
+  for service in "${services[@]}"; do
+    ip=$(curl -4s --connect-timeout 5 "$service")
+    if [[ -n "$ip" ]]; then
+      echo "$ip"
+      return
+    fi
+  done
+
+  echo "Failed to obtain external IP address" >&2
+  return 1
 }
 
 # Check if hostname is provided
