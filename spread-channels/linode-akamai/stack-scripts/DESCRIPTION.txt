@@ -1,42 +1,82 @@
-Embeddable, multiplayer browser for RBI and applications. 
+BB: Embeddable, multiplayer browser for RBI and web. 
 
-Developers build real-time integrations of remote web content right into their own web app. Cyber professionals use Remote Browser Isolation to add protection to client devices from web-based threats and 0-days exploits. 
+======================================================
+                                  BROWSERBOX STACKSCRIPT
+======================================================
 
-BrowserBox enables you to roll-your-own lightweight VPN for browser virtualization, concealing your real IP and using end-to-end encryption from the site. See our other StackScripts here in future for extended options, such as BrowserBox over Tor. 
+  "Empower Your Web Experience with Secure, Integrated Browsing!"
 
-By continuing for free, you agree to our terms and conditions, which includes the AGPL-3.0. 
-For detailed terms, privacy policy and licenses, see the links below. 
+======================================================
+                                          OVERVIEW
+======================================================
 
-Licenses: 
-  https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md  
+- BBPRO: A gateway to secure, isolated, and integrated web browsing!
+- Ideal for developers integrating web content and cybersecurity pros 
+  seeking robust remote browser isolation (RBI).
+- Protect against web threats and zero-day exploits with innovative tech!
 
-Terms: 
+======================================================
+                                      KEY FEATURES
+======================================================
+
+- Lightweight VPN for Browser Virtualization: Conceal your real IP and 
+  encrypt your connection for privacy and security.
+- Future Expansion: Look forward to BrowserBox over Tor!
+
+======================================================
+                                    AGREEMENT TO TERMS
+======================================================
+
+- Using BrowserBox for free implies agreement to our terms, including 
+  AGPL-3.0 license.
+- Review our detailed terms, privacy policy, and licenses:
+  
+  Licenses:
+  https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md
+  
+  Terms:
   https://dosyago.com/terms.txt
+  
+  Privacy Policy:
+  https://dosyago.com/privacy.txt
 
-Privacy policy: 
-  https://dosyago.com/privacy.txt 
-
-Alternately you may purchase licenses at 
+- Commercial licenses available at 
 
   https://dosyago.com 
 
-or by contacting 
+  or contact 
 
-  sales@dosyago.com. 
+  sales@dosyago.com 
 
-To set up your instance using this stack script, please fill out each required field. Email 
+  for inquiries.
 
-  support@dosyago.com 
+======================================================
+                                       GETTING STARTED
+======================================================
 
-if you have issues, we're happy to help!
+- Fill out all required fields in this StackScript for setup.
+- Assistance needed? Contact support@dosyago.com.
 
-Once your instance is creating and you have its IP address, add an A record at your DNS provider (like GoDaddy, Name.com, or the specific one you use) to point the hostname you fill out below for your BrowserBox instance (HOSTNAME_FIELD) to the IP address of your Linode. Your login link will then be:
+======================================================
+                                      DNS CONFIGURATION
+======================================================
 
-  https://<HOSTNAME_FIELD>:8080/login?token=<TOKEN_FIELD>
+- Post-deployment, link your BrowserBox instance's hostname to Linode's IP:
+  1. Set an A record with your DNS provider.
+  2. Direct HOSTNAME_FIELD to your Linode's IP.
+  3. Your secure login link: 
+     https://<HOSTNAME_FIELD>:8080/login?token=<TOKEN_FIELD>
 
-Anyone with this link can use your remote browser, so guard it well!
+- Handle this link with care; it's your key to remote browsing!
 
-For additional technical details and instructions, see our open-source repository: 
+======================================================
+                                    TECHNICAL DETAILS
+======================================================
+
+- Open-source repository and instructions:
   https://github.com/BrowserBox/BrowserBox
 
-Happy browsing!
+======================================================
+                                "Happy Browsing with BrowserBox!"
+======================================================
+
