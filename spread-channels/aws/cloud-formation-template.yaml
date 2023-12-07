@@ -5,26 +5,30 @@ Parameters:
   InstanceType:
     Type: String
     Default: t2.small
-    Description: EC2 instance type
+    Description: EC2 instance type. Larger instances gives more performance but event the smallest should work. 
     AllowedPattern: .+
-
-  InstallDocViewer:
-    Type: String
-    Description: Whether to install document viewer (true/false)
-    Default: "false"
-    AllowedValues:
-      - "true"
-      - "false"
 
   HostName:
     Type: String
-    Description: Hostname for the running BrowserBox instance to serve from
+    Description: Fully-qualified domain name for the running BrowserBox instance to serve from. Create an A record from there to this EC2 instance's IP address.
     AllowedPattern: .+
 
   UserEmail:
     Type: String
-    Description: User email for the BrowserBox installation LetsEncrypt Terms Agreement
+    Description: Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs. By continuing, you agree to our terms, privacy policy and licensing (https://dosyago.com/terms.txt, https://dosyago.com/privacy.txt, https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md) and LetsEncrypt's terms.
     AllowedPattern: .+
+
+  Token:
+    Type: String
+    Description: A secret token to construction your login link. Leave blank for a random token to be created. If you supply token you can login via https://<HostName>:8080/login?token=<Token> but if you leave blank you need to obtain your login link via SSHing into your instance and running cat ~/.config/dosaygo/bbpro/login.link
+
+  InstallDocViewer:
+    Type: String
+    Description: Whether to install document viewer. Makes install take a lot longer, but gives you a secure viewer for PDFs, DOCX, etc. (true/false)
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
 
   VPCId:
     Type: AWS::EC2::VPC::Id
@@ -39,7 +43,7 @@ Parameters:
   AMI:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64'
-    Description: AMI ID for the instance
+    Description: AMI ID for the instance (by default the latest Amazon Linux 2023)
     AllowedPattern: .+
 
 Resources:
@@ -56,8 +60,38 @@ Resources:
           !Sub |
             #!/bin/bash
 
+            # Function to determine the Linux Distribution
+            get_distro() {
+              if [ -f /etc/os-release ]; then
+                . /etc/os-release
+                echo "$ID"
+              else
+                echo "unknown"
+              fi
+            }
+
+            # Function to add a user non-interactively
+            add_user() {
+              local username=$1
+              local distro="$(get_distro)"
+
+              case $distro in
+                "debian" | "ubuntu")
+                  adduser --gecos "" --disabled-password "$username"
+                  ;;
+                "centos" | "rhel" | "fedora" | "almalinux" | "amzn")
+                  adduser "$username"
+                  passwd -d "$username"
+                  ;;
+                *)
+                  echo "Unsupported distribution: $distro" >&2
+                  return 1
+                  ;;
+              esac
+            }
+
             # Define new user (change as needed)
-            NEW_USER="customuser"
+            NEW_USER="pro"
 
             # Check if ec2-user exists
             if id "ec2-user" &>/dev/null; then
@@ -65,7 +99,7 @@ Resources:
             else
               # Create a new user with sudo privileges if ec2-user doesn't exist
               USER=$NEW_USER
-              adduser $USER
+              add_user "$USER"
               echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
               # Set up user's home directory (optional)
@@ -74,8 +108,8 @@ Resources:
             fi
 
             # Your existing setup script, run as the determined user
-            su - $USER <<'EOF'
-              cd $HOME || cd /home/$USER
+            su - "$USER" <<'EOF'
+              cd "$HOME" || cd "/home/$USER"
               sudo yum update -y
               sudo yum install -y git
               git clone https://github.com/BrowserBox/BrowserBox.git || exit 1
@@ -83,7 +117,12 @@ Resources:
               ./deploy-scripts/wait_for_hostname.sh ${HostName} || exit 1
               export INSTALL_DOC_VIEWER=${InstallDocViewer}
               yes | ./deploy-scripts/global_install.sh ${HostName} ${UserEmail}
-              setup_bbpro --port 8080 || exit 1
+              export TOKEN=${Token}
+              if [[ -z "$TOKEN" ]]; then
+                setup_bbpro --port 8080 || exit 1
+              else
+                setup_bbpro --port 8080 --token "$TOKEN" || exit 1
+              fi
               bbpro || exit 1
             EOF
 

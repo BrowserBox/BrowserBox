@@ -2,9 +2,15 @@
 
 BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for Tor. 
 
-## New Feature - AWS CloudFormation Script
+## :earth_americas: Introducing Our New AWS CloudFormation Template, and Linode StackScript for BrowserBox
 
-We now have an AWS CloudFormation template for creating a BrowserBox instance. 
+We're excited to announce the release of our AWS CloudFormation template, designed to simplify the deployment of BrowserBox instances on AWS. Seamlessly launch your BrowserBox in the cloud with this easy-to-use template.
+
+🚀 **Deploy on AWS**: Ready to launch BrowserBox on AWS EC2? Use our CloudFormation template to get started quickly. [Launch your EC2 instance with the BrowserBox CloudFormation Template](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml).
+
+We've also got you covered on Linode!
+
+🌐 **Linode StackScript**: Prefer Linode as your cloud service provider? Deploy a new Linode instance pre-configured with BrowserBox. [Deploy your BrowserBox on Linode](https://cloud.linode.com/stackscripts/1279678).
 
 ## 🧅 New Feature - Tor Support
 
