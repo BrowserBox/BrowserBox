@@ -1,0 +1,60 @@
+#!/bin/bash
+# <UDF name="signature" oneOf="yes,no" default="no" label="Indicate your agreement with our terms and conditions outlined in the description section of this StackScript">
+# <UDF name="useremail" label="User email for the BrowserBox installation Terms and Conditions agreement">
+# <UDF name="install_doc_viewer" label="Install document viewer (takes a long time but lets you securely view PDFs, DOCX, etc)" oneOf="true,false" default="false">
+# <UDF name="hostname" label="HOSTNAME: Your fully qualified domain name for the BrowserBox instance. You'll need to create an A record pointing this to your Linode once you have its IP address.">
+# <UDF name="token" label="TOKEN: Your unique token for login link construction. Your login link will be https://HOSTNAME:8080/login?token=TOKEN">
+
+# Check if the user has agreed to the terms and conditions
+if [ "$signature" != "yes" ]; then
+    echo "You must agree to the terms and conditions to use this StackScript." >&2
+    shutdown now &
+    exit 1
+fi
+
+# Function to determine the Linux Distribution
+get_distro() {
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    echo "$ID"
+  else
+    echo "Distribution not supported"
+    exit 1
+  fi
+}
+
+# Update and install git
+distro=$(get_distro)
+case $distro in
+  "ubuntu" | "debian")
+    apt-get update && apt-get upgrade -y
+    apt-get install -y git
+    ;;
+  "centos" | "fedora" | "rhel" | "almalinux")
+    yum update -y
+    yum install -y git
+    ;;
+  *)
+    echo "Unsupported distribution: $distro"
+    exit 1
+    ;;
+esac
+
+# Create a new user and add to sudoers
+username="pro"
+if ! id "$username" &>/dev/null; then
+    adduser $username
+    echo "$username ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/$username
+    chmod 0440 /etc/sudoers.d/$username
+fi
+
+# Switch to the new user and run the scripts
+su - $username <<EOF
+    git clone https://github.com/BrowserBox/BrowserBox.git
+    cd BrowserBox
+    ./deploy-scripts/wait_for_hostname.sh $hostname
+    yes | ./deploy-scripts/global_install.sh $hostname $useremail
+    export INSTALL_DOC_VIEWER=$install_doc_viewer
+    setup_bbpro --port 8080 --token $token
+    bbpro
+EOF
