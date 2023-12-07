@@ -30,6 +30,8 @@ We've also got you covered on Linode!
 
 **Remember:** You'll need to create your DNS hostname record to point to your EC2 or Linode instance's IP, after you set it up. Supply the hostname you will use to these templates. The nascent instance will wait up to 1 hour for the hostname to resolve to its IP. 
 
+*Please note: we mostly work with Debian 12, CentOS 9, Amazon Linux, Ubuntu and MacOS, so while BrowserBox should work on other compatible distributions, if it doesn't please let us know. If you encounter any issues at all, then open an issue or email support@dosyago.com and we'll do our best to help you out!*
+
 ## 🧅 New Feature - Tor Support
 
 ***tor-iframe:***
