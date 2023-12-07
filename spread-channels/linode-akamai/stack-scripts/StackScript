@@ -90,7 +90,11 @@ su - "$username" <<EOF
   ./deploy-scripts/wait_for_hostname.sh "$HOSTNAME"
   yes | ./deploy-scripts/global_install.sh "$HOSTNAME" "$USEREMAIL"
   export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
-  setup_bbpro --port 8080 --token "$TOKEN"
+  if [[ -z "$TOKEN" ]]; then
+    setup_bbpro --port 8080 
+  else
+    setup_bbpro --port 8080 --token "$TOKEN"
+  fi
   bbpro
 EOF
 
