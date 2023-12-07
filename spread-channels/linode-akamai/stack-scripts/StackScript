@@ -1,13 +1,27 @@
 #!/bin/bash
-# <UDF name="useremail" label="SIGNATURE EMAIL: I agree to the BrowserBox Terms and Conditions, including LetsEncrypt terms. My email is:" example="jcitizen@website.net">
-# <UDF name="hostname" label="HOSTNAME: The fully-qualified domain name you will put in your DNS A record for this Linode." example="hello.example.com">
-# <UDF name="token" label="TOKEN: a secret for the login link (https://HOSTNAME:8080/login?token=TOKEN). Leave blank to get link with SSH." default="">
-# <UDF name="install_doc_viewer" label="Install document viewer (takes a long time but lets you securely view PDFs, DOCX, etc)" oneOf="true,false" default="false">
+# <UDF name="useremail" label="signature email: I agree to the BrowserBox Terms and Conditions, including LetsEncrypt terms. My email is:" example="jcitizen@website.net" />
+# <UDF name="hostname" label="hostname: The fully-qualified domain name you will put in your DNS A record for this Linode." example="hello.example.com" />
+# <UDF name="token" label="token: A secret for the login link (https://HOSTNAME:8080/login?token=TOKEN). Leave blank to get link with SSH." default="" />
+# <UDF name="install_doc_viewer" label="install document viewer (takes a long time but lets you securely view PDFs, DOCX, etc)" oneOf="true,false" default="false" />
+
+set -xeo pipefail
+
+# Function to determine the Linux Distribution
+get_distro() {
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    echo "$ID"
+  else
+    echo "Distribution not supported" >&2
+    shutdown now &
+    exit 1
+  fi
+}
 
 signature="yes"
 # Check if essential fields are present
-if [ -z "$hostname" ] || [ -z "$useremail" ]; then
-  echo "Both 'hostname' and 'useremail' are required to proceed." >&2
+if [ -z "$HOSTNAME" ] || [ -z "$USEREMAIL" ]; then
+  echo "Both 'HOSTNAME' and 'USEREMAIL' are required to proceed." >&2
   shutdown now &
   exit 1
 fi
@@ -19,33 +33,24 @@ if [ "$signature" != "yes" ]; then
   exit 1
 fi
 
-# Function to determine the Linux Distribution
-get_distro() {
-  if [ -f /etc/os-release ]; then
-  . /etc/os-release
-  echo "$ID"
-  else
-  echo "Distribution not supported"
-  exit 1
-  fi
-}
+sleep 15
 
 # Update and install git non-interactively
 distro=$(get_distro)
 case $distro in
   "ubuntu" | "debian")
-  DEBIAN_FRONTEND=noninteractive apt-get update && apt-get -y upgrade
-  DEBIAN_FRONTEND=noninteractive apt-get install -y git
-  ;;
+    DEBIAN_FRONTEND=noninteractive apt-get update && apt-get -y upgrade
+    DEBIAN_FRONTEND=noninteractive apt-get install -y git
+    ;;
   "centos" | "fedora" | "rhel" | "almalinux")
-  yum update -y
-  yum install -y git
-  ;;
+    yum update -y
+    yum install -y git
+    ;;
   *)
-  echo "Unsupported distribution: $distro"
-  shutdown now & 
-  exit 1
-  ;;
+    echo "Unsupported distribution: $distro"
+    shutdown now & 
+    exit 1
+    ;;
 esac
 
 # Create a new user and add to sudoers
@@ -58,11 +63,14 @@ fi
 
 # Switch to the new user and run the scripts
 su - "$username" <<EOF
+  cd "/home/${username}" || cd "$HOME"
   git clone https://github.com/BrowserBox/BrowserBox.git
   cd BrowserBox
-  ./deploy-scripts/wait_for_hostname.sh "$hostname"
-  yes | ./deploy-scripts/global_install.sh "$hostname" "$useremail"
-  export INSTALL_DOC_VIEWER="$install_doc_viewer"
-  setup_bbpro --port 8080 --token "$token"
+  ./deploy-scripts/wait_for_hostname.sh "$HOSTNAME"
+  yes | ./deploy-scripts/global_install.sh "$HOSTNAME" "$USEREMAIL"
+  export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
+  setup_bbpro --port 8080 --token "$TOKEN"
   bbpro
 EOF
+
+
