@@ -1,7 +1,7 @@
 #!/bin/bash
 
 hostname=$1
-timeout=900 # Timeout in seconds (e.g., 900 seconds = 15 minutes)
+timeout=3600 # Timeout in seconds (e.g., 3600 seconds = 1 hour to set up your DNS)
 interval=10 # Interval in seconds to check the hostname
 
 flush_dns() {
