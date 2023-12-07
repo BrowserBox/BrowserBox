@@ -32,23 +32,37 @@ flush_dns() {
   esac
 }
 
+# Function to get the current external IP address
+get_external_ip() {
+  # Using a public service like ifconfig.me to get the external IP
+  curl -s ifconfig.me
+}
+
+# Check if hostname is provided
 if [[ -z "$hostname" ]]; then
   echo "Requires hostname as first argument" >&2
   exit 1
 fi
 
+external_ip=$(get_external_ip)
+if [[ -z "$external_ip" ]]; then
+  echo "Failed to obtain external IP address" >&2
+  exit 1
+fi
+
 elapsed=0
 while true; do
-  if host "$hostname" > /dev/null 2>&1; then
-    echo "Hostname resolved: $hostname" >&2
+  resolved_ip=$(dig +short "$hostname" @8.8.8.8) # Using Google's DNS for resolution
+  if [[ "$resolved_ip" == "$external_ip" ]]; then
+    echo "Hostname resolved to current IP: $hostname -> $resolved_ip" >&2
     exit 0
   else
-    echo "Waiting for hostname to resolve..." >&2
+    echo "Waiting for hostname to resolve to current IP ($external_ip)..." >&2
     flush_dns
     sleep "$interval"
     elapsed=$((elapsed + interval))
     if [ "$elapsed" -ge "$timeout" ]; then
-      echo "Timeout reached. Hostname not resolved: $hostname" >&2 
+      echo "Timeout reached. Hostname not resolved or not matching current IP: $hostname" >&2
       exit 1
     fi
   fi
