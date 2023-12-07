@@ -43,7 +43,7 @@ case $distro in
     DEBIAN_FRONTEND=noninteractive apt-get update && apt-get -y upgrade
     DEBIAN_FRONTEND=noninteractive apt-get install -y git
     ;;
-  "centos" | "fedora" | "rhel" | "almalinux")
+  "centos" | "fedora" | "rhel" | "almalinux" | "amzn")
     yum update -y
     yum install -y git
     ;;
@@ -54,10 +54,30 @@ case $distro in
     ;;
 esac
 
+# Function to add a user non-interactively
+add_user() {
+  local username=$1
+  local distro=$(get_distro)
+
+  case $distro in
+    "debian" | "ubuntu")
+      adduser --gecos "" --disabled-password "$username"
+      ;;
+    "centos" | "fedora" | "rhel" | "almalinux" | "amzn")
+      adduser "$username"
+      passwd -d "$username"
+      ;;
+    *)
+      echo "Unsupported distribution: $distro" >&2
+      return 1
+      ;;
+  esac
+}
+
 # Create a new user and add to sudoers
 username="pro"
 if ! id "$username" &>/dev/null; then
-  adduser --disabled-password --gecos "" $username
+  add_user "$username"
   echo "$username ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/$username
   chmod 0440 /etc/sudoers.d/$username
 fi
