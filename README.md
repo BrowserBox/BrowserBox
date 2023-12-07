@@ -10,7 +10,27 @@ We're excited to announce the release of our AWS CloudFormation template, design
 
 We've also got you covered on Linode!
 
-🌐 **Linode StackScript**: Prefer Linode as your cloud service provider? Deploy a new Linode instance pre-configured with BrowserBox. [Deploy your BrowserBox on Linode](https://cloud.linode.com/stackscripts/1279678).
+🌐 **Linode StackScript**: Prefer Linode as your cloud service provider? Deploy a new Linode instance pre-configured with BrowserBox. [Deploy your BrowserBox on Linode](https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678).
+
+**Remember:** You'll need to create your DNS hostname record to point to your EC2 or Linode instance's IP, after you set it up. Supply the hostname you will use to these templates. The nascent instance will wait up to 1 hour for the hostname to resolve to its IP. 
+
+
+### One-Click Deploy
+
+<table>
+  <tr>
+    <th></th>
+    <th>AWS</th>
+    <th>Linode</th>
+  </tr>
+  <tr>
+    <td><b>Deploy</b></td>
+    <td align="center"><a href="https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml"><img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/e8ee6839-b760-4e2e-821e-b9e353c037ea" alt="Deploy to AWS!" width=80 height=80><br>Deploy to AWS</a></td>
+    <td align="center"><a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678"><img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/da556db1-8efe-47a4-b6bf-79f271a92b98" alt="Deploy to Linode!" width=80 height=80><br>Deploy to Linode</a></td>
+  </tr>
+</table>
+
+
 
 ## 🧅 New Feature - Tor Support
 
