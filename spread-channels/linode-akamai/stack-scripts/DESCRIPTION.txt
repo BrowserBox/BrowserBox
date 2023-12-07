@@ -53,11 +53,18 @@ BB: Embeddable, multiplayer browser for RBI and web.
 ======================================================
 
 - Complete all required fields in this StackScript for setup.
-- Leave TOKEN blank for a random one. Obtain your login link via SSH:
+- Add a DNS a record from HOSTNAME to your Linode's IP address.
+- If you leave TOKEN blank we'll make a random one, and you 
+  obtain this random login link via SSH:
   ssh root@<your Linode IP> cat /home/pro/.config/dosyago/bbpro/login.link
-  Or compute it as https://HOSTNAME:8080/login?token=TOKEN
+- If you supply token, you can simply compute it as 
+  https://HOSTNAME:8080/login?token=TOKEN
 - Open TCP ports 8078-8082 in any firewall added to the instance.
-- Need help? Email support@dosyago.com for assistance.
+- Need help? Open an issue or discussion at
+  https://github.com/BrowserBox/BrowserBox
+  or Email 
+  support@dosyago.com 
+  for assistance.
 
 ======================================================
                                       DNS CONFIGURATION

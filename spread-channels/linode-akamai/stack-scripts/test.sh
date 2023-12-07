@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # Exporting StackScript UDF variables for local testing
-export signature="yes"
-export useremail="$1"
-export install_doc_viewer="false"
-export hostname="$2"
-export token="sampleToken123"
+export SIGNATURE="yes"
+export USEREMAIL="$1"
+export INSTALL_DOC_VIEWER="false"
+export HOSTNAME="$2"
+export TOKEN="sampleToken123"
 
 echo "Environment variables set for local testing:"
-echo "signature=$signature"
-echo "useremail=$useremail"
-echo "install_doc_viewer=$install_doc_viewer"
-echo "hostname=$hostname"
-echo "token=$token"
+echo "SIGNATURE=$SIGNATURE"
+echo "USEREMAIL=$USEREMAIL"
+echo "INSTALL_DOC_VIEWER=$INSTALL_DOC_VIEWER"
+echo "HOSTNAME=$HOSTNAME"
+echo "TOKEN=$TOKEN"
 

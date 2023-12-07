@@ -14,6 +14,8 @@ flush_dns() {
         sudo service nscd restart
       elif command -v systemctl &>/dev/null && systemctl is-active --quiet dnsmasq; then
         sudo systemctl restart dnsmasq
+      elif [[ -f /etc/init.d/networking ]]; then
+        sudo /etc/init.d/networking restart
       else
         echo "DNS flushing method not found for this Linux distribution"
       fi

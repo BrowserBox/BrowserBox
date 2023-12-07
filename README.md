@@ -6,6 +6,8 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 
 We now have an AWS CloudFormation template for creating a BrowserBox instance. 
 
+And we also have a Linode Stack Script. [Deploy a new Linode from this BrowserBox StackScript](https://cloud.linode.com/stackscripts/1279678)
+
 ## 🧅 New Feature - Tor Support
 
 ***tor-iframe:***
