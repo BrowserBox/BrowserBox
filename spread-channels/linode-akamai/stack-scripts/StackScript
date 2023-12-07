@@ -1,9 +1,9 @@
 #!/bin/bash
-# <UDF name="signature" oneOf="yes,no" default="no" label="Indicate your agreement with our terms and conditions outlined in the description section of this StackScript">
-# <UDF name="useremail" label="User email for the BrowserBox installation Terms and Conditions agreement">
+# <UDF name="signature" oneOf="yes,no" default="no" label="I agree to the terms and conditions outlined in this StackScript's description.">
+# <UDF name="useremail" label="Your email for the BrowserBox installation Terms and Conditions agreement, including LetsEncrypt terms agreement." example="j.citizen@website.net">
+# <UDF name="hostname" label="HOSTNAME: The fully qualified domain name you use in your A record for this instance." example="hello.example.com">
+# <UDF name="token" label="TOKEN: a secret for the login link (https://HOSTNAME:8080/login?token=TOKEN). Leave blank to get link with SSH.">
 # <UDF name="install_doc_viewer" label="Install document viewer (takes a long time but lets you securely view PDFs, DOCX, etc)" oneOf="true,false" default="false">
-# <UDF name="hostname" label="HOSTNAME: Your fully qualified domain name for the BrowserBox instance. You'll need to create an A record pointing this to your Linode once you have its IP address.">
-# <UDF name="token" label="TOKEN: Your unique token for login link construction. Your login link will be https://HOSTNAME:8080/login?token=TOKEN">
 
 # Check if the user has agreed to the terms and conditions
 if [ "$signature" != "yes" ]; then
@@ -23,12 +23,12 @@ get_distro() {
   fi
 }
 
-# Update and install git
+# Update and install git non-interactively
 distro=$(get_distro)
 case $distro in
   "ubuntu" | "debian")
-    apt-get update && apt-get upgrade -y
-    apt-get install -y git
+    DEBIAN_FRONTEND=noninteractive apt-get update && apt-get -y upgrade
+    DEBIAN_FRONTEND=noninteractive apt-get install -y git
     ;;
   "centos" | "fedora" | "rhel" | "almalinux")
     yum update -y
@@ -36,6 +36,7 @@ case $distro in
     ;;
   *)
     echo "Unsupported distribution: $distro"
+    shutdown now & 
     exit 1
     ;;
 esac
@@ -43,18 +44,18 @@ esac
 # Create a new user and add to sudoers
 username="pro"
 if ! id "$username" &>/dev/null; then
-    adduser $username
+    adduser --disabled-password --gecos "" $username
     echo "$username ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/$username
     chmod 0440 /etc/sudoers.d/$username
 fi
 
 # Switch to the new user and run the scripts
-su - $username <<EOF
+su - "$username" <<EOF
     git clone https://github.com/BrowserBox/BrowserBox.git
     cd BrowserBox
-    ./deploy-scripts/wait_for_hostname.sh $hostname
-    yes | ./deploy-scripts/global_install.sh $hostname $useremail
-    export INSTALL_DOC_VIEWER=$install_doc_viewer
-    setup_bbpro --port 8080 --token $token
+    ./deploy-scripts/wait_for_hostname.sh "$hostname"
+    yes | ./deploy-scripts/global_install.sh "$hostname" "$useremail"
+    export INSTALL_DOC_VIEWER="$install_doc_viewer"
+    setup_bbpro --port 8080 --token "$token"
     bbpro
 EOF
