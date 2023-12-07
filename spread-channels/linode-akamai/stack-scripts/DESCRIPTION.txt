@@ -1,4 +1,4 @@
-BB: Embeddable, multiplayer browser for RBI and web. 
+BB: Embeddable, multiplayer browser for RBI and web.
 
 ======================================================
                              BROWSERBOX STACKSCRIPT
@@ -13,7 +13,7 @@ BB: Embeddable, multiplayer browser for RBI and web.
 - BBPRO: A gateway to secure, isolated, and integrated web browsing!
 - Ideal for developers integrating web content and cybersecurity pros 
   seeking robust remote browser isolation (RBI).
-- Protect against web threats and zero-day exploits with innovative tech!
+- Advanced protection against web threats and zero-day exploits.
 
 ======================================================
                                       KEY FEATURES
@@ -21,10 +21,12 @@ BB: Embeddable, multiplayer browser for RBI and web.
 
 - Lightweight VPN for Browser Virtualization: Conceal your real IP and 
   encrypt your connection for privacy and security.
-- Great for investigating and analyzing web malware from a safe distance. Include remote DevTools for page inspection, secure document viewer and hex viewer for downloads. 
-- Essentially a two-way double reverse web proxy, using only pixels!
-- Future StackScript Expansion: Look forward to BrowserBox over Tor, right here in a Linode StackScript!
-- Embed BrowserBox in an iframe to create a super-iframe with no CORS, CSP or X-FRAME-OPTIONS restrictions, or use our upcoming Custom Element Developer API. See our GitHub README for details!
+- Safe investigation of web malware with remote DevTools, secure document 
+  viewer, and hex viewer for downloads.
+- A two-way double reverse web proxy that operates on pixel data.
+- Upcoming Features: BrowserBox over Tor in a future StackScript.
+- Embed BrowserBox in an iframe for super-iframe capabilities, or utilize 
+  our upcoming Custom Element Developer API. Details on GitHub!
 
 ======================================================
                                  AGREEMENT TO TERMS
@@ -43,44 +45,41 @@ BB: Embeddable, multiplayer browser for RBI and web.
   Privacy Policy:
   https://dosyago.com/privacy.txt
 
-- Commercial licenses available at 
-
-  https://dosyago.com 
-
-  or contact 
-
-  sales@dosyago.com 
-
-  for inquiries.
+- For commercial licenses, visit https://dosyago.com 
+  or contact sales@dosyago.com for inquiries.
 
 ======================================================
                                        GETTING STARTED
 ======================================================
 
-- Fill out all required fields in this StackScript for setup.
-- Assistance needed? Contact support@dosyago.com.
+- Complete all required fields in this StackScript for setup.
+- Leave TOKEN blank for a random one. Obtain your login link via SSH:
+  ssh root@<your Linode IP> cat /home/pro/.config/dosyago/bbpro/login.link
+  Or compute it as https://HOSTNAME:8080/login?token=TOKEN
+- Open TCP ports 8078-8082 in any firewall added to the instance.
+- Need help? Email support@dosyago.com for assistance.
 
 ======================================================
                                       DNS CONFIGURATION
 ======================================================
 
-- Post-deployment, link your BrowserBox instance's hostname to Linode's IP:
+- After deployment, configure DNS to connect your instance's hostname 
+  to your Linode's IP:
   1. Set an A record with your DNS provider.
-  2. Direct HOSTNAME_FIELD to your Linode's IP.
+  2. Point HOSTNAME_FIELD to your Linode's IP.
   3. Your secure login link: 
      https://<HOSTNAME_FIELD>:8080/login?token=<TOKEN_FIELD>
 
-- Handle this link with care; it's your key to remote browsing!
+- Secure this link; it's your gateway to remote browsing!
 
 ======================================================
                                     TECHNICAL DETAILS
 ======================================================
 
-- Open-source repository and instructions:
+- Find open-source repository and instructions at:
   https://github.com/BrowserBox/BrowserBox
 
 ======================================================
                            "Happy Browsing with BrowserBox!"
 ======================================================
-
 

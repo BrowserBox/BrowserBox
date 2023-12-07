@@ -14,4 +14,3 @@ echo "install_doc_viewer=$install_doc_viewer"
 echo "hostname=$hostname"
 echo "token=$token"
 
-./StackScript
