@@ -1,31 +1,31 @@
 BB: Embeddable, multiplayer browser for RBI and web. 
 
-======================================================================
+======================================================
                                   BROWSERBOX STACKSCRIPT
-======================================================================
+======================================================
 
   "Empower Your Web Experience with Secure, Integrated Browsing!"
 
-======================================================================
+======================================================
                                           OVERVIEW
-======================================================================
+======================================================
 
 - BBPRO: A gateway to secure, isolated, and integrated web browsing!
 - Ideal for developers integrating web content and cybersecurity pros 
   seeking robust remote browser isolation (RBI).
 - Protect against web threats and zero-day exploits with innovative tech!
 
-======================================================================
+======================================================
                                       KEY FEATURES
-======================================================================
+======================================================
 
 - Lightweight VPN for Browser Virtualization: Conceal your real IP and 
   encrypt your connection for privacy and security.
 - Future Expansion: Look forward to BrowserBox over Tor!
 
-======================================================================
+======================================================
                                     AGREEMENT TO TERMS
-======================================================================
+======================================================
 
 - Using BrowserBox for free implies agreement to our terms, including 
   AGPL-3.0 license.
@@ -50,16 +50,16 @@ BB: Embeddable, multiplayer browser for RBI and web.
 
   for inquiries.
 
-======================================================================
+======================================================
                                        GETTING STARTED
-======================================================================
+======================================================
 
 - Fill out all required fields in this StackScript for setup.
 - Assistance needed? Contact support@dosyago.com.
 
-======================================================================
+======================================================
                                       DNS CONFIGURATION
-======================================================================
+======================================================
 
 - Post-deployment, link your BrowserBox instance's hostname to Linode's IP:
   1. Set an A record with your DNS provider.
@@ -69,14 +69,14 @@ BB: Embeddable, multiplayer browser for RBI and web.
 
 - Handle this link with care; it's your key to remote browsing!
 
-======================================================================
+======================================================
                                     TECHNICAL DETAILS
-======================================================================
+======================================================
 
 - Open-source repository and instructions:
   https://github.com/BrowserBox/BrowserBox
 
-======================================================================
+======================================================
                                 "Happy Browsing with BrowserBox!"
-======================================================================
+======================================================
 
