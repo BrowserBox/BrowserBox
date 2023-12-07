@@ -20,7 +20,7 @@ Parameters:
 
   Token:
     Type: String
-    Description: A secret token to construction your login link. Leave blank for a random token to be created. If you supply token you can login via https://<HostName>:8080/login?token=<Token> but if you leave blank you need to obtain your login link via SSHing into your instance and running: cat ~/.config/dosaygo/bbpro/login.link
+    Description: A secret token to construction your login link. Leave blank for a random token to be created. If you supply token you can login via https://<HostName>:8080/login?token=<Token> but if you leave blank you need to obtain your login link via SSHing into your instance and running cat ~/.config/dosaygo/bbpro/login.link
 
   InstallDocViewer:
     Type: String
@@ -108,8 +108,8 @@ Resources:
             fi
 
             # Your existing setup script, run as the determined user
-            su - $USER <<'EOF'
-              cd "$HOME" || cd "/home/${USER}"
+            su - "$USER" <<'EOF'
+              cd "$HOME" || cd "/home/$USER"
               sudo yum update -y
               sudo yum install -y git
               git clone https://github.com/BrowserBox/BrowserBox.git || exit 1
