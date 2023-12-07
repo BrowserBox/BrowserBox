@@ -15,7 +15,7 @@ Parameters:
 
   UserEmail:
     Type: String
-    Description: Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs.
+    Description: Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs. By continuing, you agree to our terms, privacy policy and licensing (https://dosyago.com/terms.txt, https://dosyago.com/privacy.txt, https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md) and LetsEncrypt's terms.
     AllowedPattern: .+
 
   Token:
