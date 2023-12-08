@@ -4,6 +4,11 @@ hostname=$1
 timeout=3600 # Timeout in seconds (e.g., 3600 seconds = 1 hour to set up your DNS)
 interval=10 # Interval in seconds to check the hostname
 
+# Function to check if a command exists
+command_exists() {
+  command -v "$@" > /dev/null 2>&1
+}
+
 flush_dns() {
   case "$(uname -s)" in
     Linux*)
@@ -113,6 +118,8 @@ if [[ -z "$external_ip" ]]; then
   echo "Failed to obtain external IP address" >&2
   exit 1
 fi
+
+install_host_command
 
 elapsed=0
 while true; do
