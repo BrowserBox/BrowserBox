@@ -47,7 +47,8 @@ install_host_command() {
     if command_exists lsb_release; then
       distro=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
     elif [[ -f /etc/os-release ]]; then
-      distro=$(grep '^ID=' /etc/os-release | cut -d= -f2 | tr '[:upper:]' '[:lower:]')
+      . /etc/os-release
+      distro=$(echo "$ID")
     else
       echo "Cannot determine the distribution. Please install 'host' command manually."
       exit 1
@@ -64,7 +65,7 @@ install_host_command() {
           echo "Package manager (dnf or yum) not found. Cannot install bind-utils."
           exit 1
         fi
-        ;;
+      ;;
       debian|ubuntu)
         echo "Detected Debian/Ubuntu-based distribution."
         if command_exists apt; then
@@ -74,7 +75,7 @@ install_host_command() {
           echo "Package manager (apt) not found. Cannot install dnsutils."
           exit 1
         fi
-        ;;
+      ;;
       *)
         echo "Unsupported distribution: $distro. Please install 'host' command manually."
         exit 1
