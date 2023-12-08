@@ -74,7 +74,7 @@ fi
 
 elapsed=0
 while true; do
-  resolved_ip=$(dig +short "$hostname" @8.8.8.8) # Using Google's DNS for resolution
+  resolved_ip=$(host "$hostname" 8.8.8.8 | awk '/has address/ { print $4 }')
   if [[ "$resolved_ip" == "$external_ip" ]]; then
     echo "Hostname resolved to current IP: $hostname -> $resolved_ip" >&2
     exit 0
