@@ -34,7 +34,49 @@ flush_dns() {
   esac
 }
 
-#!/bin/bash
+install_host_command() {
+  if ! command_exists host; then
+    echo "The 'host' command is not available. Installing necessary package..."
+
+    # Enhanced distribution detection
+    if command_exists lsb_release; then
+      distro=$(lsb_release -is)
+    elif [[ -f /etc/os-release ]]; then
+      distro=$(grep '^ID=' /etc/os-release | cut -d= -f2)
+    else
+      echo "Cannot determine the distribution. Please install 'host' command manually."
+      exit 1
+    fi
+
+    case "$distro" in
+      CentOS|Fedora|RedHatEnterpriseServer)
+        echo "Detected Red Hat-based distribution."
+        if command_exists dnf; then
+          sudo dnf install -y bind-utils
+        elif command_exists yum; then
+          sudo yum install -y bind-utils
+        else
+          echo "Package manager (dnf or yum) not found. Cannot install bind-utils."
+          exit 1
+        fi
+        ;;
+      Debian|Ubuntu)
+        echo "Detected Debian/Ubuntu-based distribution."
+        if command_exists apt; then
+          sudo apt-get update
+          sudo apt-get install -y dnsutils
+        else
+          echo "Package manager (apt) not found. Cannot install dnsutils."
+          exit 1
+        fi
+        ;;
+      *)
+        echo "Unsupported distribution: $distro. Please install 'host' command manually."
+        exit 1
+        ;;
+    esac
+  fi
+}
 
 # Function to get the current external IPv4 address
 get_external_ip() {
