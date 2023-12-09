@@ -22,6 +22,7 @@ initialize_package_manager() {
     sudo firewall-cmd --permanent --zone=public --add-service=http
     sudo firewall-cmd --permanent --zone=public --add-service=https
     sudo firewall-cmd --reload
+    sudo dnf -y install wget tar
     mkdir -p $HOME/build/Release
     echo "Installing Custom Build of WebRTC Node for CentOS 9..."
     wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/wrtc.node
@@ -102,8 +103,10 @@ install_nvm() {
   source ~/.nvm/nvm.sh
   if ! command -v nvm &>/dev/null; then
     echo "Installing nvm..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     source ~/.nvm/nvm.sh
+    nvm install stable
+  else
     nvm install stable
   fi
 }

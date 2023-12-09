@@ -22,7 +22,59 @@ We're excited to announce the release of our AWS CloudFormation template and our
 </table>
 
 
-🚀 **Deploy on AWS**: Ready to launch BrowserBox on AWS EC2? Use our CloudFormation template to get started quickly. [Launch your EC2 instance with the BrowserBox CloudFormation Template](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml).
+🚀 **Deploy on AWS**
+
+Ready to launch BrowserBox on AWS EC2? 
+
+Use our CloudFormation template to get started quickly. 
+
+[![AWS CloudFormation Launch BrowserBox Stack SVG Button](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml)
+
+Or pick your specific region below:
+
+### Get Started on your nearest AWS Region
+
+Click the link below corresponding to your preferred [AWS Region](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/).
+You will be asked a few questions about services like VPC, Hostname, etc; if you have no idea how to answer, reach out at support@dosyago.com and we'll be happy to help.
+
+### 🌎 North America
+| Region       | Launch BrowserBox |
+|--------------|--------|
+| N. Virginia (us-east-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/us-east-1.svg)](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Ohio (us-east-2) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/us-east-2.svg)](https://us-east-2.console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| N. California (us-west-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/us-west-1.svg)](https://us-west-1.console.aws.amazon.com/cloudformation/home?region=us-west-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Oregon (us-west-2) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/us-west-2.svg)](https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+
+### 🌍 Europe
+| Region       | Launch BrowserBox |
+|--------------|--------|
+| Frankfurt (eu-central-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-central-1.svg)](https://eu-central-1.console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Ireland (eu-west-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-west-1.svg)](https://eu-west-1.console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| London (eu-west-2) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-west-2.svg)](https://eu-west-2.console.aws.amazon.com/cloudformation/home?region=eu-west-2#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Paris (eu-west-3) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-west-3.svg)](https://eu-west-3.console.aws.amazon.com/cloudformation/home?region=eu-west-3#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Stockholm (eu-north-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-north-1.svg)](https://eu-north-1.console.aws.amazon.com/cloudformation/home?region=eu-north-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Milan (eu-south-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-south-1.svg)](https://eu-south-1.console.aws.amazon.com/cloudformation/home?region=eu-south-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+
+### 🌏 Asia Pacific
+| Region       | Launch BrowserBox |
+|--------------|--------|
+| Tokyo (ap-northeast-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-northeast-1.svg)](https://ap-northeast-1.console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Seoul (ap-northeast-2) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-northeast-2.svg)](https://ap-northeast-2.console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Osaka (ap-northeast-3) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-northeast-3.svg)](https://ap-northeast-3.console.aws.amazon.com/cloudformation/home?region=ap-northeast-3#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Singapore (ap-southeast-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-southeast-1.svg)](https://ap-southeast-1.console.aws.amazon.com/cloudformation/home?region=ap-southeast-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Sydney (ap-southeast-2) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-southeast-2.svg)](https://ap-southeast-2.console.aws.amazon.com/cloudformation/home?region=ap-southeast-2#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Hong Kong (ap-east-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-east-1.svg)](https://ap-east-1.console.aws.amazon.com/cloudformation/home?region=ap-east-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Mumbai (ap-south-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-south-1.svg)](https://ap-south-1.console.aws.amazon.com/cloudformation/home?region=ap-south-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+
+### 🇧🇷 South America
+| Region       | Launch BrowserBox |
+|--------------|--------|
+| São Paulo (sa-east-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/sa-east-1.svg)](https://sa-east-1.console.aws.amazon.com/cloudformation/home?region=sa-east-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+
+### 🇨🇦 Canada
+| Region       | Launch BrowserBox |
+|--------------|--------|
+| Central (ca-central-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ca-central-1.svg)](https://ca-central-1.console.aws.amazon.com/cloudformation/home?region=ca-central-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
 
 We've also got you covered on Linode!
 
@@ -411,7 +463,7 @@ Follow these steps to install BrowserBoxPro:
    setup_bbpro --port 8080
    ```
 
-5. Launch BrowserBox:
+5. Launch BrowserBox BrowserBox:
    ```
    bbpro
    ```
