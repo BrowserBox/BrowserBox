@@ -1,16 +1,28 @@
 #!/usr/bin/env bash
 
 INSTALL_DIR="${1:-$(pwd)}"
-
 SUDO=""
+COMMAND_DIR=""
 
 if command -v sudo; then
   SUDO="sudo"
 fi
 
+# Check if /usr/local/bin is in the PATH and is writable
+if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && sudo test -w /usr/local/bin; then
+  COMMAND_DIR="/usr/local/bin"
+  $SUDO mkdir -p $COMMAND_DIR
+elif sudo test -w /usr/bin; then
+  COMMAND_DIR="/usr/bin"
+  $SUDO mkdir -p $COMMAND_DIR
+else
+  COMMAND_DIR="$HOME/.local/bin"
+  mkdir -p $COMMAND_DIR
+fi
+
 if [ "$IS_DOCKER_BUILD" = "true" ]; then
   echo "In docker, not running parcel (it hangs sometimes!)"
-else 
+else
   npm run parcel
 fi
 
@@ -30,28 +42,27 @@ $SUDO chmod -R 755 /usr/local/share/dosyago/*
 
 echo "Permissions set!"
 
-echo -n "Copying bbpro command to /usr/local/bin/ ..."
+echo -n "Copying bbpro command to $COMMAND_DIR/ ..."
 
-$SUDO cp $INSTALL_DIR/deploy-scripts/_bbpro.sh /usr/local/bin/bbpro
-
-echo "Copied!"
-
-echo -n "Copying setup_bbpro command to /usr/local/bin/ ..."
-
-$SUDO cp $INSTALL_DIR/deploy-scripts/_setup_bbpro.sh /usr/local/bin/setup_bbpro
+$SUDO cp $INSTALL_DIR/deploy-scripts/_bbpro.sh $COMMAND_DIR/bbpro
 
 echo "Copied!"
 
-echo -n "Copying torbb command to /usr/local/bin/ ..."
+echo -n "Copying setup_bbpro command to $COMMAND_DIR/ ..."
 
-$SUDO cp $INSTALL_DIR/deploy-scripts/_torbb.sh /usr/local/bin/torbb
+$SUDO cp $INSTALL_DIR/deploy-scripts/_setup_bbpro.sh $COMMAND_DIR/setup_bbpro
 
 echo "Copied!"
 
+echo -n "Copying torbb command to $COMMAND_DIR/ ..."
 
-echo -n "Copying monitoring commands to /usr/local/bin/ ..."
+$SUDO cp $INSTALL_DIR/deploy-scripts/_torbb.sh $COMMAND_DIR/torbb
 
-$SUDO cp $INSTALL_DIR/monitor-scripts/* /usr/local/bin/
+echo "Copied!"
+
+echo -n "Copying monitoring commands to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/monitor-scripts/* $COMMAND_DIR/
 
 echo "Copied!"
 
@@ -63,3 +74,4 @@ $SUDO cp $HOME/sslcerts/* /usr/local/share/dosyago/sslcerts/
 $SUDO chmod -R 755 /usr/local/share/dosyago/sslcerts/*
 
 echo "Copied!"
+
