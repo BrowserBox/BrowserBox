@@ -6,6 +6,10 @@ TOR_PROXY=""
 INJECT_SCRIPT=""
 SUDO=""
 
+if command_exists sudo; then
+  SUDO="sudo"
+fi
+
 # Function to display help message
 display_help() {
   cat << EOF
@@ -232,9 +236,6 @@ open_firewall_port_range() {
 }
 
 
-if command_exists sudo; then
-  SUDO="sudo"
-fi
 
 detect_os
 
