@@ -4,6 +4,7 @@ OS_TYPE=""
 ONTOR=false
 TOR_PROXY=""
 INJECT_SCRIPT=""
+SUDO=""
 
 # Function to display help message
 display_help() {
@@ -134,7 +135,7 @@ check_tor_installed() {
     if [[ "$OS_TYPE" == "macos" ]]; then 
       brew services start tor
     else 
-      sudo systemctl start tor
+      $SUDO systemctl start tor
     fi
     echo "Done." >&2
     return 0
@@ -180,20 +181,23 @@ open_firewall_port_range() {
     # Check for firewall-cmd (firewalld)
     if command -v firewall-cmd &> /dev/null; then
         echo "Using firewalld"
-        firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
-        firewall-cmd --reload
+        $SUDO firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
+        $SUDO firewall-cmd --reload
 
     # Check for ufw (Uncomplicated Firewall)
     elif command -v ufw &> /dev/null; then
         echo "Using ufw"
-        ufw allow ${start_port}:${end_port}/tcp
-
+        $SUDO ufw allow ${start_port}:${end_port}/tcp
     else
         echo "No recognized firewall management tool found"
         return 1
     fi
 }
 
+
+if command_exists sudo; then
+  SUDO="sudo"
+fi
 
 detect_os
 
