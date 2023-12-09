@@ -95,7 +95,7 @@ detect_os() {
     fi
 
     case "$distro" in
-      centos|fedora|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific)
+      centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
         OS_TYPE="centos"
       ;;
       debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
