@@ -39,11 +39,11 @@ sleep 15
 # Update and install git non-interactively
 distro=$(get_distro)
 case $distro in
-  "ubuntu" | "debian")
+  debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
     DEBIAN_FRONTEND=noninteractive apt-get update && apt-get -y upgrade
     DEBIAN_FRONTEND=noninteractive apt-get install -y git
     ;;
-  "centos" | "fedora" | "rhel" | "almalinux" | "amzn")
+  centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
     yum update -y
     yum install -y git
     ;;
