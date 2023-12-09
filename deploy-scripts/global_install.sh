@@ -146,18 +146,24 @@ esac
 open_firewall_port_range() {
     local start_port=$1
     local end_port=$2
+    local complete=""
 
     # Check for firewall-cmd (firewalld)
     if command -v firewall-cmd &> /dev/null; then
         echo "Using firewalld"
         $SUDO firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
         $SUDO firewall-cmd --reload
+        complete="true"
+    fi
 
     # Check for ufw (Uncomplicated Firewall)
-    elif command -v ufw &> /dev/null; then
+    if command -v ufw &> /dev/null; then
         echo "Using ufw"
         $SUDO ufw allow ${start_port}:${end_port}/tcp
-    else
+        complete="true"
+    fi
+
+    if [[ -z "$complete" ]]; then
         echo "No recognized firewall management tool found"
         if command -v apt; then
           $SUDO apt -y install ufw 
