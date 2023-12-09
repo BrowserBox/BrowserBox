@@ -5,27 +5,27 @@ Parameters:
   InstanceType:
     Type: String
     Default: t2.small
-    Description: [required] EC2 instance type. Larger instances gives more performance but event the smallest should work. 
+    Description: "[required] EC2 instance type. Larger instances gives more performance but event the smallest should work."
     AllowedPattern: .+
 
   HostName:
     Type: String
-    Description: [required] Fully-qualified domain name for the running BrowserBox instance to serve from. Create an A record from there to this EC2 instance's IP address.
+    Description: "[required] Fully-qualified domain name for the running BrowserBox instance to serve from. Create an A record from there to this EC2 instance's IP address."
     AllowedPattern: .+
 
   UserEmail:
     Type: String
-    Description: [required] Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs. By continuing, you agree to our terms, privacy policy and licensing (https://dosyago.com/terms.txt, https://dosyago.com/privacy.txt, https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md) and LetsEncrypt's terms.
+    Description: "[required] Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs. By continuing, you agree to our terms, privacy policy and licensing (https://dosyago.com/terms.txt, https://dosyago.com/privacy.txt, https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md) and LetsEncrypt's terms."
     AllowedPattern: .+
 
   Token:
     Type: String
-    Description: [optional] A secret token to construction your login link. Leave blank for a random token to be created. If you supply token you can login via https://<HostName>:8080/login?token=<Token> but if you leave blank you need to obtain your login link via SSHing into your instance and running cat ~/.config/dosaygo/bbpro/login.link
+    Description: "[optional] A secret token to construction your login link. Leave blank for a random token to be created. If you supply token you can login via https://<HostName>:8080/login?token=<Token> but if you leave blank you need to obtain your login link via SSHing into your instance and running cat ~/.config/dosaygo/bbpro/login.link"
     Default: ""
 
   InstallDocViewer:
     Type: String
-    Description: [optional] Whether to install document viewer. Makes install take a lot longer, but gives you a secure viewer for PDFs, DOCX, etc. (true/false)
+    Description: "[optional] Whether to install document viewer. Makes install take a lot longer, but gives you a secure viewer for PDFs, DOCX, etc. (true/false)"
     Default: "false"
     AllowedValues:
       - "true"
@@ -33,18 +33,18 @@ Parameters:
 
   VPCId:
     Type: AWS::EC2::VPC::Id
-    Description: [required] VPC ID where the instance will be deployed
+    Description: "[required] VPC ID where the instance will be deployed."
     AllowedPattern: .+
 
   KeyName:
     Type: String
-    Description: [optional] Name of an existing EC2 KeyPair to enable SSH access (optional, but you need SSH access to retrieve your login link if you don't specify Token)
+    Description: "[optional] Name of an existing EC2 KeyPair to enable SSH access (optional, but you need SSH access to retrieve your login link if you don't specify Token)."
     Default: ""
 
   AMI:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64'
-    Description: [required] AMI ID for the instance (by default the latest Amazon Linux 2023)
+    Description: "[required] AMI ID for the instance (by default the latest Amazon Linux 2023)."
     AllowedPattern: .+
 
 Conditions:
@@ -162,12 +162,13 @@ Resources:
           CidrIp: 0.0.0.0/0
 
 Outputs:
-  InstanceId:
-    Description: The Instance ID of the BrowserBox server
-    Value: !Ref BrowserBoxInstance
-  PublicIP:
-    Description: The Public IP address of the EC2 instance
-    Value: !GetAtt BrowserBoxInstance.PublicIp
+  LoginLink:
+    Description: "Login link for the BrowserBox instance."
+    Value: 
+      Fn::If:
+        - TokenProvided
+        - !Sub "https://${HostName}:8080/login?token=${Token}"
+        - "You need to SSH into your instance and run 'cat ~/.config/dosyago/bbpro/login.link' to obtain your login link."
   ValidationOutput:
     Description: "Validates that either KeyName or Token is provided."
     Value: 
@@ -175,5 +176,11 @@ Outputs:
         - EitherKeyNameOrToken
         - "Valid Configuration"
         - Fn::Cidr: ["0.0.0.0/0", 1, 1]  # This will fail if EitherKeyNameOrToken is false
+  PublicIP:
+    Description: The Public IP address of the EC2 instance
+    Value: !GetAtt BrowserBoxInstance.PublicIp
+  InstanceId:
+    Description: The Instance ID of the BrowserBox server
+    Value: !Ref BrowserBoxInstance
 
 
