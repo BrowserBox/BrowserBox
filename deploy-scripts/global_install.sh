@@ -195,8 +195,8 @@ if [ "$(os_type)" == "Linux" ]; then
   $SUDO $APT -y upgrade
   $SUDO $APT -y install net-tools 
   open_firewall_port_range 80 80
-  open_firewall_port_range 80 80
 fi
+open_firewall_port_range 80 80
 
 if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
   hostname="$1"
