@@ -74,25 +74,40 @@ is_port_free() {
   return 0
 }
 
+# Function to check if a command exists
+command_exists() {
+  command -v "$@" > /dev/null 2>&1
+}
+
 # Detect Operating System
 detect_os() {
-  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    if [ -f /etc/debian_version ]; then
-      OS_TYPE="debian"
-    elif [ -f /etc/centos-release ]; then
-      OS_TYPE="centos"
-    elif [ -f /etc/amazon-linux-release ]; then
-      OS_TYPE="centos"
+    if command_exists lsb_release ; then
+      distro=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+    elif [[ -f /etc/os-release ]]; then
+      . /etc/os-release
+      distro=$(echo "$ID")
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+      distro="macos"
     else
-      echo "Unsupported Linux distribution" >&2
+      echo "Cannot determine the distribution. Please email support@dosyago.com."
       exit 1
     fi
-  elif [[ "$OSTYPE" == "darwin"* ]]; then
-    OS_TYPE="macos"
-  else
-    echo "Unsupported Operating System" >&2
-    exit 1
-  fi
+
+    case "$distro" in
+      centos|fedora|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific)
+        OS_TYPE="centos"
+      ;;
+      debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
+        OS_TYPE="debian"
+      ;;
+      macos)
+        OS_TYPE="macos"
+      ;;
+      *)
+        echo "Unsupported Operating System: $distro" >&2
+        exit 1
+        ;;
+    esac
 }
 
 find_torrc_path() {
