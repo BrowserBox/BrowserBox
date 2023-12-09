@@ -206,18 +206,25 @@ open_firewall_port_range() {
     local start_port=$1
     local end_port=$2
 
-    create_selinux_policy_for_ports http_port_t tcp $start_port-$end_port
+    if [[ "$start_port" != "$end_port" ]]; then
+      create_selinux_policy_for_ports http_port_t tcp $start_port-$end_port
+    else
+      create_selinux_policy_for_ports http_port_t tcp $start_port
+    fi
 
     # Check for firewall-cmd (firewalld)
     if command -v firewall-cmd &> /dev/null; then
       echo "Using firewalld"
       $SUDO firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
       $SUDO firewall-cmd --reload
-
     # Check for ufw (Uncomplicated Firewall)
     elif command -v ufw &> /dev/null; then
-        echo "Using ufw"
+      echo "Using ufw"
+      if [[ "$start_port" != "$end_port" ]]; then
         $SUDO ufw allow ${start_port}:${end_port}/tcp
+      else
+        $SUDO ufw allow ${start_port}/tcp
+      fi
     else
         echo "No recognized firewall management tool found"
         return 1
