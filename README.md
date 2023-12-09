@@ -2,6 +2,21 @@
 
 BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for one-click deploy. 
 
+## Supported OS Table
+
+| Distribution     | Compatibility   |
+|------------------|:---------------:|
+| macOS 13         |           ✅ |
+| Fedora 39        |           ✅ |
+| CentOS 9         |           ✅ |
+| Kali             |           ✅ |
+| Almalinux  9     |           ✅ |
+| Debian 12        |           ✅ |
+| Ubuntu 22        |           ✅ |
+| Amazon Linux 2   |           ✅ |
+| Amazon Linux 2023|           ✅ |
+
+
 ## :earth_americas: Deploy BrowserBox Easily
 
 We're excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
