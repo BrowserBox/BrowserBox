@@ -12,6 +12,7 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 | Kali             |           ✅ |
 | Almalinux  9     |           ✅ |
 | Debian 12        |           ✅ |
+| Debian 11        |           ✅ |
 | Ubuntu 22        |           ✅ |
 | Amazon Linux 2   |           ✅ |
 | Amazon Linux 2023|           ✅ |

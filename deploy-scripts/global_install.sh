@@ -24,6 +24,18 @@ initialize_package_manager() {
 
   if command -v apt >/dev/null; then
     package_manager=$(command -v apt)
+    . /etc/os-release
+    # Check if the system is Debian and the version is 11
+    if [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]]; then
+      $SUDO apt -y install wget tar
+      mkdir -p $HOME/build/Release
+      echo "Installing Custom Build of WebRTC Node for Debian 11..."
+      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/debian-11-wrtc.node
+      chmod +x debian-11-wrtc.node
+      mv debian-11-wrtc.node $HOME/build/Release/wrtc.node
+      $SUDO mkdir -p /usr/local/share/dosyago/build/Release
+      $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
+    fi
   elif command -v dnf >/dev/null; then
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
     $SUDO dnf config-manager --set-enabled crb
@@ -36,8 +48,9 @@ initialize_package_manager() {
     $SUDO dnf -y install wget tar
     mkdir -p $HOME/build/Release
     echo "Installing Custom Build of WebRTC Node for CentOS 9..."
-    wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/wrtc.node
-    mv wrtc.node $HOME/build/Release/
+    wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/centos-9-wrtc.node
+    chmod +x centos-9-wrtc.node
+    mv centos-9-wrtc.node $HOME/build/Release/wrtc.node
     $SUDO mkdir -p /usr/local/share/dosyago/build/Release
     $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
   else
