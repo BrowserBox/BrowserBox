@@ -8,6 +8,12 @@ unset npm_config_prefix
 read -p "Enter to continue" -r
 REPLY=""
 
+SUDO=""
+
+if command -v sudo; then
+  SUDO="sudo"
+fi
+
 initialize_package_manager() {
   local package_manager
 
@@ -15,20 +21,20 @@ initialize_package_manager() {
     package_manager=$(command -v apt)
   elif command -v dnf >/dev/null; then
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
-    sudo dnf config-manager --set-enabled crb
-    sudo dnf -y upgrade --refresh
-    sudo dnf install https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
-    sudo dnf install https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
-    sudo firewall-cmd --permanent --zone=public --add-service=http
-    sudo firewall-cmd --permanent --zone=public --add-service=https
-    sudo firewall-cmd --reload
-    sudo dnf -y install wget tar
+    $SUDO dnf config-manager --set-enabled crb
+    $SUDO dnf -y upgrade --refresh
+    $SUDO dnf install https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
+    $SUDO dnf install https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
+    $SUDO firewall-cmd --permanent --zone=public --add-service=http
+    $SUDO firewall-cmd --permanent --zone=public --add-service=https
+    $SUDO firewall-cmd --reload
+    $SUDO dnf -y install wget tar
     mkdir -p $HOME/build/Release
     echo "Installing Custom Build of WebRTC Node for CentOS 9..."
     wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/wrtc.node
     mv wrtc.node $HOME/build/Release/
-    sudo mkdir -p /usr/local/share/dosyago/build/Release
-    sudo cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
+    $SUDO mkdir -p /usr/local/share/dosyago/build/Release
+    $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
   else
     echo "No supported package manager found. Exiting."
     return 1
@@ -111,11 +117,6 @@ install_nvm() {
   fi
 }
 
-SUDO=""
-
-if command -v sudo; then
-  SUDO="sudo"
-fi
 
 echo -e "\n\n"
 echo "Welcome to the BrowserBox Pro installation."
@@ -149,16 +150,20 @@ open_firewall_port_range() {
     # Check for firewall-cmd (firewalld)
     if command -v firewall-cmd &> /dev/null; then
         echo "Using firewalld"
-        firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
-        firewall-cmd --reload
+        $SUDO firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
+        $SUDO firewall-cmd --reload
 
     # Check for ufw (Uncomplicated Firewall)
     elif command -v ufw &> /dev/null; then
         echo "Using ufw"
-        ufw allow ${start_port}:${end_port}/tcp
-
+        $SUDO ufw allow ${start_port}:${end_port}/tcp
     else
         echo "No recognized firewall management tool found"
+        if command -v apt; then
+          $SUDO apt -y install ufw 
+        elif command -v dnf; then
+          $SUDO dnf -y install firewalld
+        fi
         return 1
     fi
 }
@@ -176,8 +181,10 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 if [ "$(os_type)" == "Linux" ]; then
-  $SUDO $APT update && $SUDO $APT -y upgrade
-  $SUDO $APT -y install net-tools ufw
+  $SUDO $APT update
+  $SUDO $APT -y upgrade
+  $SUDO $APT -y install net-tools 
+  open_firewall_port_range 80 80
   open_firewall_port_range 80 80
 fi
 
