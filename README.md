@@ -294,7 +294,7 @@ BrowserBox is a leading-edge solution in the Zero Trust landscape, enabling embe
 
 ## BrowserBox Availability
 
-**Cross-platform support status:**
+**Cross-platform status:**
 
 | Platform                 | Status       |
 |--------------------------|--------------|
