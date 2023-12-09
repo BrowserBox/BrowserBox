@@ -159,7 +159,11 @@ open_firewall_port_range() {
     # Check for ufw (Uncomplicated Firewall)
     if command -v ufw &> /dev/null; then
         echo "Using ufw"
-        $SUDO ufw allow ${start_port}:${end_port}/tcp
+        if [[ "$start_port" != "$end_port" ]]; then
+          $SUDO ufw allow ${start_port}:${end_port}/tcp
+        else
+          $SUDO ufw allow ${start_port}/tcp
+        fi
         complete="true"
     fi
 
