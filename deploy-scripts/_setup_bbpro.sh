@@ -174,20 +174,57 @@ obtain_socks5_proxy_address() {
   fi
 }
 
+function create_selinux_policy_for_ports() {
+  # Check if SELinux is enforcing
+  if [[ "$(getenforce)" != "Enforcing" ]]; then
+    echo "SELinux is not in enforcing mode. Exiting."
+    return
+  fi
+
+  # Parameters: SELinux type, protocol (tcp/udp), port range or single port
+  local SEL_TYPE=$1
+  local PROTOCOL=$2
+  local PORT_RANGE=$3
+
+  if [[ -z "$SEL_TYPE" || -z "$PROTOCOL" || -z "$PORT_RANGE" ]]; then
+    echo "Usage: create_selinux_policy_for_ports SEL_TYPE PROTOCOL PORT_RANGE"
+    return
+  fi
+
+  # Add or modify the port context
+  sudo semanage port -a -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE 2>/dev/null || \
+  sudo semanage port -m -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE
+
+  # Generate and compile a custom policy module if required
+  sudo grep AVC /var/log/audit/audit.log | audit2allow -M my_custom_policy_module
+  sudo semodule -i my_custom_policy_module.pp
+
+  echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE."
+}
+
 open_firewall_port_range() {
     local start_port=$1
     local end_port=$2
 
+    if [[ "$start_port" != "$end_port" ]]; then
+      create_selinux_policy_for_ports http_port_t tcp $start_port-$end_port
+    else
+      create_selinux_policy_for_ports http_port_t tcp $start_port
+    fi
+
     # Check for firewall-cmd (firewalld)
     if command -v firewall-cmd &> /dev/null; then
-        echo "Using firewalld"
-        $SUDO firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
-        $SUDO firewall-cmd --reload
-
+      echo "Using firewalld"
+      $SUDO firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
+      $SUDO firewall-cmd --reload
     # Check for ufw (Uncomplicated Firewall)
     elif command -v ufw &> /dev/null; then
-        echo "Using ufw"
+      echo "Using ufw"
+      if [[ "$start_port" != "$end_port" ]]; then
         $SUDO ufw allow ${start_port}:${end_port}/tcp
+      else
+        $SUDO ufw allow ${start_port}/tcp
+      fi
     else
         echo "No recognized firewall management tool found"
         return 1
