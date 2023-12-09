@@ -173,6 +173,28 @@ obtain_socks5_proxy_address() {
   fi
 }
 
+open_firewall_port_range() {
+    local start_port=$1
+    local end_port=$2
+
+    # Check for firewall-cmd (firewalld)
+    if command -v firewall-cmd &> /dev/null; then
+        echo "Using firewalld"
+        firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
+        firewall-cmd --reload
+
+    # Check for ufw (Uncomplicated Firewall)
+    elif command -v ufw &> /dev/null; then
+        echo "Using ufw"
+        ufw allow ${start_port}:${end_port}/tcp
+
+    else
+        echo "No recognized firewall management tool found"
+        return 1
+    fi
+}
+
+
 detect_os
 
 echo "Parsing command line args..." >&2
@@ -270,6 +292,8 @@ elif ! is_port_free $(($PORT - 1)); then
   echo "Error: the suggested port range (doc viewer) is already in use" >&2
   exit 1
 fi
+
+open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
 
 if $ONTOR; then
   if ! check_tor_installed; then

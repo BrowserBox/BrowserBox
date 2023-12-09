@@ -142,7 +142,26 @@ case ${REPLY:0:1} in
     ;;
 esac
 
-#!/bin/bash
+open_firewall_port_range() {
+    local start_port=$1
+    local end_port=$2
+
+    # Check for firewall-cmd (firewalld)
+    if command -v firewall-cmd &> /dev/null; then
+        echo "Using firewalld"
+        firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
+        firewall-cmd --reload
+
+    # Check for ufw (Uncomplicated Firewall)
+    elif command -v ufw &> /dev/null; then
+        echo "Using ufw"
+        ufw allow ${start_port}:${end_port}/tcp
+
+    else
+        echo "No recognized firewall management tool found"
+        return 1
+    fi
+}
 
 # If on macOS
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -159,7 +178,7 @@ fi
 if [ "$(os_type)" == "Linux" ]; then
   $SUDO $APT update && $SUDO $APT -y upgrade
   $SUDO $APT -y install net-tools ufw
-  $SUDO ufw disable
+  open_firewall_port_range 80 80
 fi
 
 if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
