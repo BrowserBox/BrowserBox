@@ -66,7 +66,7 @@ install_host_command() {
           exit 1
         fi
       ;;
-      debian|ubuntu)
+      debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
         echo "Detected Debian/Ubuntu-based distribution."
         if command_exists apt; then
           sudo apt-get update
