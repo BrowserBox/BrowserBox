@@ -55,7 +55,7 @@ install_host_command() {
     fi
 
     case "$distro" in
-      centos|fedora|redhatenterpriseserver)
+      centos|fedora|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific)
         echo "Detected Red Hat-based distribution."
         if command_exists dnf; then
           sudo dnf install -y bind-utils
