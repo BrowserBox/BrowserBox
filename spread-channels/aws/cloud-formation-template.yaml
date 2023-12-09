@@ -21,6 +21,7 @@ Parameters:
   Token:
     Type: String
     Description: A secret token to construction your login link. Leave blank for a random token to be created. If you supply token you can login via https://<HostName>:8080/login?token=<Token> but if you leave blank you need to obtain your login link via SSHing into your instance and running cat ~/.config/dosaygo/bbpro/login.link
+    Default: ""
 
   InstallDocViewer:
     Type: String
@@ -36,9 +37,9 @@ Parameters:
     AllowedPattern: .+
 
   KeyName:
-    Type: AWS::EC2::KeyPair::KeyName
-    Description: Name of an existing EC2 KeyPair to enable SSH access
-    AllowedPattern: .+
+    Type: String
+    Description: Name of an existing EC2 KeyPair to enable SSH access (optional, but you need SSH access to retrieve your login link if you don't specify Token)
+    Default: ""
 
   AMI:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
@@ -46,19 +47,34 @@ Parameters:
     Description: AMI ID for the instance (by default the latest Amazon Linux 2023)
     AllowedPattern: .+
 
+Conditions:
+  KeyNameProvided: !Not [!Equals [!Ref KeyName, ""]]
+  TokenProvided: !Not [!Equals [!Ref Token, ""]]
+  EitherKeyNameOrToken: !Or [!Not [!Equals [!Ref KeyName, ""]], !Not [!Equals [!Ref Token, ""]]]
+  
 Resources:
   BrowserBoxInstance:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: !Ref AMI
       InstanceType: !Ref InstanceType
-      KeyName: !Ref KeyName
+      KeyName: 
+        Fn::If:
+          - KeyNameProvided
+          - !Ref KeyName
+          - !Ref "AWS::NoValue"
       SecurityGroupIds:
         - Ref: BrowserBoxSecurityGroup
       UserData:
         Fn::Base64:
           !Sub |
             #!/bin/bash
+
+            # Check if both KeyName and Token are not provided
+            if [[ -z "${KeyName}" && -z "${Token}" ]]; then
+              echo "Error: Either KeyName or Token must be provided."
+              exit 1
+            fi
 
             # Function to determine the Linux Distribution
             get_distro() {
@@ -126,7 +142,6 @@ Resources:
               bbpro || exit 1
             EOF
 
-
   BrowserBoxSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -153,4 +168,12 @@ Outputs:
   PublicIP:
     Description: The Public IP address of the EC2 instance
     Value: !GetAtt BrowserBoxInstance.PublicIp
+  ValidationOutput:
+    Description: "Validates that either KeyName or Token is provided."
+    Value: 
+      Fn::If:
+        - EitherKeyNameOrToken
+        - "Valid Configuration"
+        - Fn::Cidr: ["0.0.0.0/0", 1, 1]  # This will fail if EitherKeyNameOrToken is false
+
 
