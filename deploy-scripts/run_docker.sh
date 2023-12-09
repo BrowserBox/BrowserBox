@@ -2,6 +2,11 @@
 
 # Detect operating system
 OS=$(uname)
+ZONE=""
+
+if command -v firewall-cmd; then
+  ZONE="$(sudo firewall-cmd --get-default-zone)"
+fi
 
 ## Check if running on macOS
 #if [ "$OS" == "Darwin" ]; then
@@ -115,7 +120,7 @@ open_firewall_port_range() {
     # Check for firewall-cmd (firewalld)
     if command -v firewall-cmd &> /dev/null; then
         echo "Using firewalld"
-        firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
+        firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
         firewall-cmd --reload
 
     # Check for ufw (Uncomplicated Firewall)

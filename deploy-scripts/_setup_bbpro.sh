@@ -5,9 +5,19 @@ ONTOR=false
 TOR_PROXY=""
 INJECT_SCRIPT=""
 SUDO=""
+ZONE=""
+
+# Function to check if a command exists
+command_exists() {
+  command -v "$@" > /dev/null 2>&1
+}
 
 if command_exists sudo; then
   SUDO="sudo"
+fi
+
+if command_exists firewall-cmd; then
+  ZONE="$(sudo firewall-cmd --get-default-zone)"
 fi
 
 # Function to display help message
@@ -77,11 +87,6 @@ is_port_free() {
   fi
 
   return 0
-}
-
-# Function to check if a command exists
-command_exists() {
-  command -v "$@" > /dev/null 2>&1
 }
 
 # Detect Operating System
@@ -219,7 +224,7 @@ open_firewall_port_range() {
     # Check for firewall-cmd (firewalld)
     if command -v firewall-cmd &> /dev/null; then
       echo "Using firewalld"
-      $SUDO firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
+      $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
       $SUDO firewall-cmd --reload
     # Check for ufw (Uncomplicated Firewall)
     elif command -v ufw &> /dev/null; then

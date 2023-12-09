@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+ZONE=""
 #set -x
 
 unset npm_config_prefix
@@ -14,6 +15,10 @@ if command -v sudo; then
   SUDO="sudo"
 fi
 
+if command -v firewall-cmd; then
+  ZONE="$(sudo firewall-cmd --get-default-zone)"
+fi
+
 initialize_package_manager() {
   local package_manager
 
@@ -25,8 +30,8 @@ initialize_package_manager() {
     $SUDO dnf -y upgrade --refresh
     $SUDO dnf install https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
     $SUDO dnf install https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
-    $SUDO firewall-cmd --permanent --zone=public --add-service=http
-    $SUDO firewall-cmd --permanent --zone=public --add-service=https
+    $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=http
+    $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=https
     $SUDO firewall-cmd --reload
     $SUDO dnf -y install wget tar
     mkdir -p $HOME/build/Release
@@ -185,7 +190,7 @@ open_firewall_port_range() {
   # Check for firewall-cmd (firewalld)
   if command -v firewall-cmd &> /dev/null; then
       echo "Using firewalld"
-      $SUDO firewall-cmd --zone=public --add-port=${start_port}-${end_port}/tcp --permanent
+      $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
       $SUDO firewall-cmd --reload
       complete="true"
   fi
