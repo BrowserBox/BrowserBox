@@ -3,9 +3,9 @@ Description: CloudFormation template to deploy BrowserBox with configurable opti
 
 Parameters:
   InstanceType:
-    Type: AWS::EC2::Instance::InstanceType
+    Type: String
     Default: t2.small
-    Description: "[required] EC2 instance type. Larger instances gives more performance but event the smallest should work."
+    Description: "[required] EC2 instance type. Larger instances gives more performance but event the smallest should work. See available values here: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html#cfn-ec2-instance-instancetype"
     AllowedPattern: .+
 
   HostName:
