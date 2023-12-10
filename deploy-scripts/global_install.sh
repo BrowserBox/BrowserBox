@@ -47,10 +47,17 @@ initialize_package_manager() {
     $SUDO firewall-cmd --reload
     $SUDO dnf -y install wget tar
     mkdir -p $HOME/build/Release
-    echo "Installing Custom Build of WebRTC Node for CentOS 9..."
-    wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/centos-9-wrtc.node
-    chmod +x centos-9-wrtc.node
-    mv centos-9-wrtc.node $HOME/build/Release/wrtc.node
+    if [ "$ID" = "almalinux" ] && [[ "$VERSION_ID" == 8* ]]; then
+      echo "Installing Custom Build of WebRTC Node for Almalinux 8 like..."
+      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/alma-8-wrtc.node
+      chmod +x alma-8-wrtc.node
+      mv alma-8-wrtc.node $HOME/build/Release/wrtc.node
+    else
+      echo "Installing Custom Build of WebRTC Node for CentOS 9 like..."
+      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/centos-9-wrtc.node
+      chmod +x centos-9-wrtc.node
+      mv centos-9-wrtc.node $HOME/build/Release/wrtc.node
+    fi
     $SUDO mkdir -p /usr/local/share/dosyago/build/Release
     $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
   else
