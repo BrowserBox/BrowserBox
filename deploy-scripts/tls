@@ -41,6 +41,10 @@ if ! command -v certbot >/dev/null; then
         $sudo /opt/certbot/bin/pip install --upgrade pip
         $sudo /opt/certbot/bin/pip install certbot certbot-nginx
         $sudo ln -sf /opt/certbot/bin/certbot /usr/bin/certbot
+        if [ "$ID" = "almalinux" ] && [[ "$VERSION_ID" == 8* ]]; then
+          echo "Detected AlmaLinux version starting with 8. Installing certbot and python3-certbot-apache."
+          $sudo dnf install certbot python3-certbot-apache
+        fi
     else
         # Install Certbot for other distributions
         $sudo $APT -y install certbot curl
