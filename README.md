@@ -9,8 +9,10 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 | macOS 13         |           ✅ |
 | Fedora 39        |           ✅ |
 | CentOS 9         |           ✅ |
+| CentOS 8         |           ✅ |
 | Kali             |           ✅ |
 | Almalinux  9     |           ✅ |
+| Almalinux  8     |           ✅ |
 | Debian 12        |           ✅ |
 | Debian 11        |           ✅ |
 | Ubuntu 22        |           ✅ |
