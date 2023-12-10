@@ -25,6 +25,7 @@ initialize_package_manager() {
 
   if command -v apt >/dev/null; then
     package_manager=$(command -v apt)
+    ./deploy-scripts/non-interactive.sh
     # Check if the system is Debian and the version is 11
     if [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]]; then
       $SUDO apt -y install wget tar

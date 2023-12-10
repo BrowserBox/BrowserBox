@@ -40,8 +40,9 @@ sleep 15
 distro=$(get_distro)
 case $distro in
   debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
-    DEBIAN_FRONTEND=noninteractive apt-get update && apt-get -y upgrade
-    DEBIAN_FRONTEND=noninteractive apt-get install -y git
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update && apt-get -y upgrade
+    apt-get install -y git
     ;;
   centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
     yum update -y
@@ -97,4 +98,6 @@ su - "$username" <<EOF
   fi
   bbpro
 EOF
+
+
 
