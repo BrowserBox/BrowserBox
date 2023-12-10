@@ -19,7 +19,7 @@ APT::Get::allow-remove-essential "true";
 APT::Get::allow-change-held-packages "true";
 EOF
 
-sed -i "s/#\$nrconf{kernelhints} = -1;/\$nrconf{kernelhints} = -1;/g" /etc/needrestart/needrestart.conf
+sudo sed -i "s/#\$nrconf{kernelhints} = -1;/\$nrconf{kernelhints} = -1;/g" /etc/needrestart/needrestart.conf
 sudo apt-get -y install debconf-utils
 echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections
 
