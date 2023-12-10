@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: CloudFormation template to deploy BrowserBox with configurable options
+Description: CloudFormation template to deploy BrowserBox with configurable options. After creating your Stack, visit its Outputs tab to find your BrowserBox Login Link and IP address. While setup completes, ensure you add the DNS A Record mapping your HostName to this IP address, using your registrar. Then, wait a few minutes for your instance to be ready.
 
 Parameters:
   InstanceType:
@@ -15,7 +15,7 @@ Parameters:
 
   UserEmail:
     Type: String
-    Description: "[required] Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs. By continuing, you agree to our terms, privacy policy and licensing (https://dosyago.com/terms.txt, https://dosyago.com/privacy.txt, https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md) and LetsEncrypt's terms."
+    Description: "[required] Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs. By continuing, you agree to our terms, privacy policy and licensing (https://dosyago.com/terms.txt, https://dosyago.com/privacy.txt, https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md) and LetsEncrypt's terms. After creating your Stack, visit its Outputs tab to find your BrowserBox Login Link and IP address. While setup completes, ensure you add a DNS A Record mapping your HostName to this IP address, using your registrar. Then, wait a few minutes for your instance to be ready."
     AllowedPattern: .+
 
   Token:
@@ -163,7 +163,7 @@ Resources:
 
 Outputs:
   LoginLink:
-    Description: "Login link for the BrowserBox instance."
+    Description: "Login link for your BrowserBox instance. Wait a few minutes for setup to complete, then click this link to log into it."
     Value: 
       Fn::If:
         - TokenProvided
@@ -177,10 +177,10 @@ Outputs:
         - "Valid Configuration"
         - Fn::Cidr: ["0.0.0.0/0", 1, 1]  # This will fail if EitherKeyNameOrToken is false
   PublicIP:
-    Description: The Public IP address of the EC2 instance
+    Description: The Public IP address of your BrowserBox's EC2 instance. While you wait for setup to complete, please add the DNS A record mapping this IP to your instance's HostName, because BrowserBox requires this record to begin setting up. In order to minimize setup time, we suggest you do this early on.
     Value: !GetAtt BrowserBoxInstance.PublicIp
   InstanceId:
-    Description: The Instance ID of the BrowserBox server
+    Description: The Instance ID of the BrowserBox server. Find and manage your BrowserBox instance's Virtual Machine in your EC2 dashboard with this Instance ID.
     Value: !Ref BrowserBoxInstance
 
 
