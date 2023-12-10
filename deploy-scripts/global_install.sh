@@ -49,9 +49,9 @@ initialize_package_manager() {
     mkdir -p $HOME/build/Release
     if [ "$ID" = "almalinux" ] && [[ "$VERSION_ID" == 8* ]]; then
       echo "Installing Custom Build of WebRTC Node for Almalinux 8 like..."
-      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/alma-8-wrtc.node
-      chmod +x alma-8-wrtc.node
-      mv alma-8-wrtc.node $HOME/build/Release/wrtc.node
+      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/almalinux-8-wrtc.node
+      chmod +x almalinux-8-wrtc.node
+      mv almalinux-8-wrtc.node $HOME/build/Release/wrtc.node
     elif [ "$ID" = "centos" ] && [[ "$VERSION_ID" == 8* ]]; then
       echo "Installing Custom Build of WebRTC Node for CentOS 8..."
       wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/centos-8-wrtc.node
