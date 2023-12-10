@@ -10,6 +10,7 @@ read -p "Enter to continue" -r
 REPLY=""
 
 SUDO=""
+. /etc/os-release
 
 if command -v sudo; then
   SUDO="sudo"
@@ -24,7 +25,6 @@ initialize_package_manager() {
 
   if command -v apt >/dev/null; then
     package_manager=$(command -v apt)
-    . /etc/os-release
     # Check if the system is Debian and the version is 11
     if [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]]; then
       $SUDO apt -y install wget tar
