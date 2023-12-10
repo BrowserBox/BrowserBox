@@ -19,15 +19,15 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 
 ## Supported Client Browser Table
 
-| Browser      | Compatibility |
-|--------------|:-------------:|
-| Firefox      |       ✅      |
-| Chrome       |       ✅      |
-| Safari       |       ✅      |
-| Safari iOS   |       ✅      |
-| Edge         |       ✅      |
-| Brave        |       ✅      |
-| Tor Browser  |       ✅      |
+| Browser      | Compatibility | Desktop | Android | iOS  |
+|--------------|:-------------:|:-------:|:-------:|:----:|
+| Firefox      |       ✅      |    ✅   |    ✅   |  ✅  |
+| Chrome       |       ✅      |    ✅   |    ✅   |  ✅  |
+| Safari       |       ✅      |    ✅   |    N/A  |  ✅  |
+| Edge         |       ✅      |    ✅   |    ✅   |  ✅  |
+| Brave        |       ✅      |    ✅   |    ✅   |  ✅  |
+| Tor Browser  |       ✅      |    ✅   |    ✅   |  ✅  |
+
 
 
 ## :earth_americas: Deploy BrowserBox Easily
