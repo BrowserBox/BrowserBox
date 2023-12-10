@@ -41,6 +41,8 @@ distro=$(get_distro)
 case $distro in
   debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
     export DEBIAN_FRONTEND=noninteractive
+    export NEEDRESTART_SUSPEND=1
+    export NEEDRESTART_MODE=a
     apt-get update && apt-get -y upgrade
     apt-get install -y git
     ;;
