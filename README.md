@@ -1,6 +1,119 @@
 # BrowserBox News
 
-BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for Tor. 
+BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for one-click deploy. 
+
+## Supported Server OS Table
+
+| Distribution     | Compatibility   |
+|------------------|:---------------:|
+| macOS 13         |           ✅ |
+| Fedora 39        |           ✅ |
+| CentOS 9         |           ✅ |
+| CentOS 8         |           ✅ |
+| Kali             |           ✅ |
+| Almalinux  9     |           ✅ |
+| Almalinux  8     |           ✅ |
+| Debian 12        |           ✅ |
+| Debian 11        |           ✅ |
+| Ubuntu 23        |           ✅ |
+| Ubuntu 22        |           ✅ |
+| Amazon Linux 2023|           ✅ |
+| Amazon Linux 2   |           ✅ |
+
+## Supported Client Browser Table
+
+| Browser      | Compatibility | Desktop | Android | iOS  |
+|--------------|:-------------:|:-------:|:-------:|:----:|
+| Firefox      |       ✅      |    ✅   |    ✅   |  ✅  |
+| Chrome       |       ✅      |    ✅   |    ✅   |  ✅  |
+| Safari       |       ✅      |    ✅   |    N/A     |  ✅  |
+| Edge         |       ✅      |    ✅   |    ✅   |  ✅  |
+| Brave        |       ✅      |    ✅   |    ✅   |  ✅  |
+| Tor Browser  |       ✅      |    ✅   |    ✅   |  ✅  |
+
+
+
+## :earth_americas: Deploy BrowserBox Easily
+
+We're excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
+
+### One-Click Deploy
+
+<table>
+  <tr>
+    <th></th>
+    <th>AWS</th>
+    <th>Linode</th>
+  </tr>
+  <tr>
+    <td><b>Deploy</b></td>
+    <td align="center"><a href="https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml"><img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/e8ee6839-b760-4e2e-821e-b9e353c037ea" alt="Deploy to AWS!" width=80 height=80><br>Deploy to AWS</a></td>
+    <td align="center"><a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678"><img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/da556db1-8efe-47a4-b6bf-79f271a92b98" alt="Deploy to Linode!" width=80 height=80><br>Deploy to Linode</a></td>
+  </tr>
+</table>
+
+
+🚀 **Deploy on AWS**
+
+Ready to launch BrowserBox on AWS EC2? 
+
+Use our CloudFormation template to get started quickly. 
+
+[![AWS CloudFormation Launch BrowserBox Stack SVG Button](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml)
+
+Or pick your specific region below:
+
+### Get Started on your nearest AWS Region
+
+Click the link below corresponding to your preferred [AWS Region](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/).
+You will be asked a few questions about services like VPC, Hostname, etc; if you have no idea how to answer, reach out at support@dosyago.com and we'll be happy to help.
+
+### 🌎 North America
+| Region       | Launch BrowserBox |
+|--------------|--------|
+| N. Virginia (us-east-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/us-east-1.svg)](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Ohio (us-east-2) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/us-east-2.svg)](https://us-east-2.console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| N. California (us-west-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/us-west-1.svg)](https://us-west-1.console.aws.amazon.com/cloudformation/home?region=us-west-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Oregon (us-west-2) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/us-west-2.svg)](https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+
+### 🌍 Europe
+| Region       | Launch BrowserBox |
+|--------------|--------|
+| Frankfurt (eu-central-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-central-1.svg)](https://eu-central-1.console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Ireland (eu-west-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-west-1.svg)](https://eu-west-1.console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| London (eu-west-2) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-west-2.svg)](https://eu-west-2.console.aws.amazon.com/cloudformation/home?region=eu-west-2#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Paris (eu-west-3) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-west-3.svg)](https://eu-west-3.console.aws.amazon.com/cloudformation/home?region=eu-west-3#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Stockholm (eu-north-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-north-1.svg)](https://eu-north-1.console.aws.amazon.com/cloudformation/home?region=eu-north-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Milan (eu-south-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/eu-south-1.svg)](https://eu-south-1.console.aws.amazon.com/cloudformation/home?region=eu-south-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+
+### 🌏 Asia Pacific
+| Region       | Launch BrowserBox |
+|--------------|--------|
+| Tokyo (ap-northeast-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-northeast-1.svg)](https://ap-northeast-1.console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Seoul (ap-northeast-2) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-northeast-2.svg)](https://ap-northeast-2.console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Osaka (ap-northeast-3) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-northeast-3.svg)](https://ap-northeast-3.console.aws.amazon.com/cloudformation/home?region=ap-northeast-3#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Singapore (ap-southeast-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-southeast-1.svg)](https://ap-southeast-1.console.aws.amazon.com/cloudformation/home?region=ap-southeast-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Sydney (ap-southeast-2) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-southeast-2.svg)](https://ap-southeast-2.console.aws.amazon.com/cloudformation/home?region=ap-southeast-2#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Hong Kong (ap-east-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-east-1.svg)](https://ap-east-1.console.aws.amazon.com/cloudformation/home?region=ap-east-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+| Mumbai (ap-south-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ap-south-1.svg)](https://ap-south-1.console.aws.amazon.com/cloudformation/home?region=ap-south-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+
+### 🇧🇷 South America
+| Region       | Launch BrowserBox |
+|--------------|--------|
+| São Paulo (sa-east-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/sa-east-1.svg)](https://sa-east-1.console.aws.amazon.com/cloudformation/home?region=sa-east-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+
+### 🇨🇦 Canada
+| Region       | Launch BrowserBox |
+|--------------|--------|
+| Central (ca-central-1) | [![Launch BrowserBox](https://dosypublications.github.io/cloudformation-launch-stack-button-svg/images/ca-central-1.svg)](https://ca-central-1.console.aws.amazon.com/cloudformation/home?region=ca-central-1#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml) |
+
+We've also got you covered on Linode!
+
+🌐 **Linode StackScript**: Prefer Linode as your cloud service provider? Deploy a new Linode instance pre-configured with BrowserBox. [Deploy your BrowserBox on Linode](https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678).
+
+**Remember:** You'll need to create your DNS hostname record to point to your EC2 or Linode instance's IP, after you set it up. Supply the hostname you will use to these templates. The nascent instance will wait up to 1 hour for the hostname to resolve to its IP. 
+
+*Please note: we mostly work with Debian 12, CentOS 9, Amazon Linux, Ubuntu and MacOS, so while BrowserBox should work on other compatible distributions, if it doesn't please let us know. If you encounter any issues at all, then open an issue or email support@dosyago.com and we'll do our best to help you out!*
 
 ## 🧅 New Feature - Tor Support
 
@@ -135,6 +248,8 @@ $ setup_bbpro --port <my_port>
 $ torbb
 ```
 
+Please note ensure you set `export INSTALL_DOC_VIEWER=true` before calling the `global_install` script, if you wish to have the Secure Document Viewer installed. It is off by default because the installation takes significantly longer with it installed.
+
 -----
 
 💎 We're excited to announce that BrowserBox can now run as a hidden service on the Tor network! This significant update brings enhanced privacy and security, allowing you to access BrowserBox with the anonymity of Tor. Check out our [Show HN post: torbb - Now with Tor, run BrowserBox as a hidden service](https://news.ycombinator.com/item?id=38336686).
@@ -170,7 +285,7 @@ First ensure you have docker installed and running! :) Then run:
 
 ```console
 PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/7867ba64f7536b17da1f315aad7639f43ef31acc/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/2e8a085931b719e5cadf24dd2942194433d5ae7f/deploy-scripts/run_docker.sh) $PORT
 ```
 
 That's it! Follow the prompts to set up certificates and it will emit a link that you can send open in any web browser. 
@@ -195,20 +310,21 @@ BrowserBox is a leading-edge solution in the Zero Trust landscape, enabling embe
 
 ## BrowserBox Availability
 
-**Cross-platform support status:**
+**Cross-platform status:**
 
 | Platform                 | Status       |
 |--------------------------|--------------|
 | Docker                   | ✅           |
 | Ubuntu                   | ✅           |
 | Debian                   | ✅           |
-| CentOS 9                 | ✅           |
+| CentOS 9\*               | ✅           |
 | macOS                    | ✅           |
-| Amazon Linux (AWS EC2)   | ✅           |
+| Amazon Linux (AWS EC2)\* | ✅           |
 | Windows\*                | ❌           |
 | Windows WSL              | ✅           |
 
 \*Windows support is currently in development, but not yet officially supported.
+\*Doc Viewer does not currently work on Centos, or Amazon Linux as install script needs to be ported to Centos. 
 
 **Content delivery services status:**
 
@@ -378,7 +494,7 @@ Follow these steps to install BrowserBoxPro:
    setup_bbpro --port 8080
    ```
 
-5. Launch BrowserBox:
+5. Launch BrowserBox BrowserBox:
    ```
    bbpro
    ```

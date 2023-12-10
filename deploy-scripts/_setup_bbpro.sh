@@ -4,6 +4,21 @@ OS_TYPE=""
 ONTOR=false
 TOR_PROXY=""
 INJECT_SCRIPT=""
+SUDO=""
+ZONE=""
+
+# Function to check if a command exists
+command_exists() {
+  command -v "$@" > /dev/null 2>&1
+}
+
+if command_exists sudo; then
+  SUDO="sudo"
+fi
+
+if command_exists firewall-cmd; then
+  ZONE="$(sudo firewall-cmd --get-default-zone)"
+fi
 
 # Function to display help message
 display_help() {
@@ -76,21 +91,33 @@ is_port_free() {
 
 # Detect Operating System
 detect_os() {
-  if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    if [ -f /etc/debian_version ]; then
-      OS_TYPE="debian"
-    elif [ -f /etc/centos-release ]; then
-      OS_TYPE="centos"
+    if command_exists lsb_release ; then
+      distro=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+    elif [[ -f /etc/os-release ]]; then
+      . /etc/os-release
+      distro=$(echo "$ID")
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+      distro="macos"
     else
-      echo "Unsupported Linux distribution" >&2
+      echo "Cannot determine the distribution. Please email support@dosyago.com."
       exit 1
     fi
-  elif [[ "$OSTYPE" == "darwin"* ]]; then
-    OS_TYPE="macos"
-  else
-    echo "Unsupported Operating System" >&2
-    exit 1
-  fi
+
+    case "$distro" in
+      centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
+        OS_TYPE="centos"
+      ;;
+      debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
+        OS_TYPE="debian"
+      ;;
+      macos)
+        OS_TYPE="macos"
+      ;;
+      *)
+        echo "Unsupported Operating System: $distro" >&2
+        exit 1
+        ;;
+    esac
 }
 
 find_torrc_path() {
@@ -117,7 +144,7 @@ check_tor_installed() {
     if [[ "$OS_TYPE" == "macos" ]]; then 
       brew services start tor
     else 
-      sudo systemctl start tor
+      $SUDO systemctl start tor
     fi
     echo "Done." >&2
     return 0
@@ -155,6 +182,65 @@ obtain_socks5_proxy_address() {
     echo "socks5h://127.0.0.1:9050"
   fi
 }
+
+function create_selinux_policy_for_ports() {
+  # Check if SELinux is enforcing
+  if [[ "$(getenforce)" != "Enforcing" ]]; then
+    echo "SELinux is not in enforcing mode. Exiting."
+    return
+  fi
+
+  # Parameters: SELinux type, protocol (tcp/udp), port range or single port
+  local SEL_TYPE=$1
+  local PROTOCOL=$2
+  local PORT_RANGE=$3
+
+  if [[ -z "$SEL_TYPE" || -z "$PROTOCOL" || -z "$PORT_RANGE" ]]; then
+    echo "Usage: create_selinux_policy_for_ports SEL_TYPE PROTOCOL PORT_RANGE"
+    return
+  fi
+
+  # Add or modify the port context
+  sudo semanage port -a -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE 2>/dev/null || \
+  sudo semanage port -m -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE
+
+  # Generate and compile a custom policy module if required
+  sudo grep AVC /var/log/audit/audit.log | audit2allow -M my_custom_policy_module
+  sudo semodule -i my_custom_policy_module.pp
+
+  echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE."
+}
+
+open_firewall_port_range() {
+    local start_port=$1
+    local end_port=$2
+
+    if [[ "$start_port" != "$end_port" ]]; then
+      create_selinux_policy_for_ports http_port_t tcp $start_port-$end_port
+    else
+      create_selinux_policy_for_ports http_port_t tcp $start_port
+    fi
+
+    # Check for firewall-cmd (firewalld)
+    if command -v firewall-cmd &> /dev/null; then
+      echo "Using firewalld"
+      $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
+      $SUDO firewall-cmd --reload
+    # Check for ufw (Uncomplicated Firewall)
+    elif command -v ufw &> /dev/null; then
+      echo "Using ufw"
+      if [[ "$start_port" != "$end_port" ]]; then
+        $SUDO ufw allow ${start_port}:${end_port}/tcp
+      else
+        $SUDO ufw allow ${start_port}/tcp
+      fi
+    else
+        echo "No recognized firewall management tool found"
+        return 1
+    fi
+}
+
+
 
 detect_os
 
@@ -253,6 +339,8 @@ elif ! is_port_free $(($PORT - 1)); then
   echo "Error: the suggested port range (doc viewer) is already in use" >&2
   exit 1
 fi
+
+open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
 
 if $ONTOR; then
   if ! check_tor_installed; then

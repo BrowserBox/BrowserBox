@@ -2,6 +2,11 @@
 
 # Detect operating system
 OS=$(uname)
+ZONE=""
+
+if command -v firewall-cmd; then
+  ZONE="$(sudo firewall-cmd --get-default-zone)"
+fi
 
 ## Check if running on macOS
 #if [ "$OS" == "Darwin" ]; then
@@ -108,7 +113,29 @@ else
   echo "Setting main port to: $PORT"
 fi
 
-# Run the container with the appropriate port mappings and capture the container ID
+open_firewall_port_range() {
+    local start_port=$1
+    local end_port=$2
+
+    # Check for firewall-cmd (firewalld)
+    if command -v firewall-cmd &> /dev/null; then
+        echo "Using firewalld"
+        firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
+        firewall-cmd --reload
+
+    # Check for ufw (Uncomplicated Firewall)
+    elif command -v ufw &> /dev/null; then
+        echo "Using ufw"
+        ufw allow ${start_port}:${end_port}/tcp
+
+    else
+        echo "No recognized firewall management tool found"
+        return 1
+    fi
+}
+
+open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
+
 # Run the container with the appropriate port mappings and capture the container ID
 CONTAINER_ID=$(sudo docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
 

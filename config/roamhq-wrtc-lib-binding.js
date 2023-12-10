@@ -3,6 +3,7 @@
 const os = require('os');
 const Path = require('path');
 const paths_to_try = [
+  Path.resolve(os.homedir(), 'build', 'Release', 'wrtc.node'),
   '../build/wrtc.node',
   '../build/Debug/wrtc.node',
   '../build/Release/wrtc.node',

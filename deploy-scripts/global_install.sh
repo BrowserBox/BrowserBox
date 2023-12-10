@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+ZONE=""
 #set -x
 
 unset npm_config_prefix
@@ -8,26 +9,63 @@ unset npm_config_prefix
 read -p "Enter to continue" -r
 REPLY=""
 
+SUDO=""
+. /etc/os-release
+
+if command -v sudo; then
+  SUDO="sudo"
+fi
+
+if command -v firewall-cmd; then
+  ZONE="$(sudo firewall-cmd --get-default-zone)"
+fi
+
 initialize_package_manager() {
   local package_manager
 
   if command -v apt >/dev/null; then
     package_manager=$(command -v apt)
+    ./deploy-scripts/non-interactive.sh
+    # Check if the system is Debian and the version is 11
+    if [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]]; then
+      $SUDO apt -y install wget tar
+      mkdir -p $HOME/build/Release
+      echo "Installing Custom Build of WebRTC Node for Debian 11..."
+      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/debian-11-wrtc.node
+      chmod +x debian-11-wrtc.node
+      mv debian-11-wrtc.node $HOME/build/Release/wrtc.node
+      $SUDO mkdir -p /usr/local/share/dosyago/build/Release
+      $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
+    fi
   elif command -v dnf >/dev/null; then
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
-    sudo dnf config-manager --set-enabled crb
-    sudo dnf -y upgrade --refresh
-    sudo dnf install https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
-    sudo dnf install https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
-    sudo firewall-cmd --permanent --zone=public --add-service=http
-    sudo firewall-cmd --permanent --zone=public --add-service=https
-    sudo firewall-cmd --reload
+    $SUDO dnf config-manager --set-enabled crb
+    $SUDO dnf -y upgrade --refresh
+    $SUDO dnf install https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
+    $SUDO dnf install https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
+    $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=http
+    $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=https
+    $SUDO firewall-cmd --reload
+    $SUDO dnf -y install wget tar
     mkdir -p $HOME/build/Release
-    echo "Installing Custom Build of WebRTC Node for CentOS 9..."
-    wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/wrtc.node
-    mv wrtc.node $HOME/build/Release/
-    sudo mkdir -p /usr/local/share/dosyago/build/Release
-    sudo cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
+    if [ "$ID" = "almalinux" ] && [[ "$VERSION_ID" == 8* ]]; then
+      echo "Installing Custom Build of WebRTC Node for Almalinux 8 like..."
+      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/almalinux-8-wrtc.node
+      chmod +x almalinux-8-wrtc.node
+      mv almalinux-8-wrtc.node $HOME/build/Release/wrtc.node
+    elif [ "$ID" = "centos" ] && [[ "$VERSION_ID" == 8* ]]; then
+      echo "Installing Custom Build of WebRTC Node for CentOS 8..."
+      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/centos-8-wrtc.node
+      chmod +x centos-8-wrtc.node
+      mv centos-8-wrtc.node $HOME/build/Release/wrtc.node
+    else
+      echo "Installing Custom Build of WebRTC Node for CentOS 9 like..."
+      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/centos-9-wrtc.node
+      chmod +x centos-9-wrtc.node
+      mv centos-9-wrtc.node $HOME/build/Release/wrtc.node
+    fi
+    $SUDO mkdir -p /usr/local/share/dosyago/build/Release
+    $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
   else
     echo "No supported package manager found. Exiting."
     return 1
@@ -102,17 +140,14 @@ install_nvm() {
   source ~/.nvm/nvm.sh
   if ! command -v nvm &>/dev/null; then
     echo "Installing nvm..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     source ~/.nvm/nvm.sh
+    nvm install stable
+  else
     nvm install stable
   fi
 }
 
-SUDO=""
-
-if command -v sudo; then
-  SUDO="sudo"
-fi
 
 echo -e "\n\n"
 echo "Welcome to the BrowserBox Pro installation."
@@ -139,7 +174,74 @@ case ${REPLY:0:1} in
     ;;
 esac
 
-#!/bin/bash
+function create_selinux_policy_for_ports() {
+  # Check if SELinux is enforcing
+  if [[ "$(getenforce)" != "Enforcing" ]]; then
+    echo "SELinux is not in enforcing mode. Exiting."
+    return
+  fi
+
+  # Parameters: SELinux type, protocol (tcp/udp), port range or single port
+  local SEL_TYPE=$1
+  local PROTOCOL=$2
+  local PORT_RANGE=$3
+
+  if [[ -z "$SEL_TYPE" || -z "$PROTOCOL" || -z "$PORT_RANGE" ]]; then
+    echo "Usage: create_selinux_policy_for_ports SEL_TYPE PROTOCOL PORT_RANGE"
+    return
+  fi
+
+  # Add or modify the port context
+  sudo semanage port -a -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE 2>/dev/null || \
+  sudo semanage port -m -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE
+
+  # Generate and compile a custom policy module if required
+  sudo grep AVC /var/log/audit/audit.log | audit2allow -M my_custom_policy_module
+  sudo semodule -i my_custom_policy_module.pp
+
+  echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE."
+}
+
+open_firewall_port_range() {
+  local start_port=$1
+  local end_port=$2
+  local complete=""
+
+  if [[ "$start_port" != "$end_port" ]]; then
+    create_selinux_policy_for_ports http_port_t tcp $start_port-$end_port
+  else
+    create_selinux_policy_for_ports http_port_t tcp $start_port
+  fi
+
+  # Check for firewall-cmd (firewalld)
+  if command -v firewall-cmd &> /dev/null; then
+      echo "Using firewalld"
+      $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
+      $SUDO firewall-cmd --reload
+      complete="true"
+  fi
+
+  # Check for ufw (Uncomplicated Firewall)
+  if command -v ufw &> /dev/null; then
+      echo "Using ufw"
+      if [[ "$start_port" != "$end_port" ]]; then
+        $SUDO ufw allow ${start_port}:${end_port}/tcp
+      else
+        $SUDO ufw allow ${start_port}/tcp
+      fi
+      complete="true"
+  fi
+
+  if [[ -z "$complete" ]]; then
+      echo "No recognized firewall management tool found"
+      if command -v apt; then
+        $SUDO apt -y install ufw 
+      elif command -v dnf; then
+        $SUDO dnf -y install firewalld
+      fi
+      return 1
+  fi
+}
 
 # If on macOS
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -154,10 +256,12 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 if [ "$(os_type)" == "Linux" ]; then
-  $SUDO $APT update && $SUDO $APT -y upgrade
-  $SUDO $APT -y install net-tools ufw
-  $SUDO ufw disable
+  $SUDO $APT update
+  $SUDO $APT -y upgrade
+  $SUDO $APT -y install net-tools 
+  open_firewall_port_range 80 80
 fi
+open_firewall_port_range 80 80
 
 if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
   hostname="$1"
