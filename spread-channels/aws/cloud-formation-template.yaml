@@ -62,7 +62,7 @@ Resources:
         Fn::If:
           - KeyNameProvided
           - !Ref KeyName
-          - !Ref "AWS::NoValue"
+          - !Ref AWS::NoValue
       SecurityGroupIds:
         - Ref: BrowserBoxSecurityGroup
       UserData:
