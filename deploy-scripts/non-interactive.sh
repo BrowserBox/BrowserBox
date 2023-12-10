@@ -19,7 +19,18 @@ APT::Get::allow-remove-essential "true";
 APT::Get::allow-change-held-packages "true";
 EOF
 
-sed -i "s/#\$nrconf{kernelhints} = -1;/\$nrconf{kernelhints} = -1;/g" /etc/needrestart/needrestart.conf
+# Create needrestart custom configuration
+echo "Creating needrestart custom configuration..."
+sudo mkdir -p /etc/needrestart/conf.d
+cat <<EOF | sudo tee /etc/needrestart/conf.d/no-prompt.conf >/dev/null
+\$nrconf{kernelhints} = -1;
+\$nrconf{restart} = 'a';
+EOF
+
+# Perform a non-interactive dist-upgrade
+sudo NEEDRESTART_MODE=a apt-get dist-upgrade --yes
+
+# Install debconf-utils and set it to restart libraries without asking
 sudo apt-get -y install debconf-utils
 echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections
 
