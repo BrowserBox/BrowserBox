@@ -34,7 +34,7 @@ initialize_package_manager
 if ! command -v certbot >/dev/null; then
   if [ -f /etc/os-release ]; then
     . /etc/os-release
-    if [[ $ID == "centos" || $ID == "rhel" || $ID == "fedora" || $ID_LIKE == *"centos"* || $ID_LIKE == *"rhel"* || $ID_LIKE == *"fedora"* ]]; then
+    if [[ $ID == "centos" || $ID == "rhel" || $ID == "fedora" || $ID_LIKE == *"centos"* || $ID_LIKE == *"rhel"* || $ID_LIKE == *"fedora"* || "$ID" == "almalinux" ]]; then
         # Install Certbot for CentOS/RHEL/Fedora based distributions (including Amazon Linux)
         $sudo yum install -y python3 augeas-libs
         $sudo python3 -m venv /opt/certbot/
@@ -43,7 +43,10 @@ if ! command -v certbot >/dev/null; then
         $sudo ln -sf /opt/certbot/bin/certbot /usr/bin/certbot
         if [ "$ID" = "almalinux" ] && [[ "$VERSION_ID" == 8* ]]; then
           echo "Detected AlmaLinux version starting with 8. Installing certbot and python3-certbot-apache."
-          $sudo dnf install certbot python3-certbot-apache
+          $sudo dnf -y install certbot python3-certbot-apache
+        elif [ "$ID" = "centos" ] && [[ "$VERSION_ID" == 8* ]]; then
+          echo "Detected CentOS version starting with 8. Installing certbot and python3-certbot-apache."
+          $sudo dnf -y install certbot python3-certbot-apache
         fi
     else
         # Install Certbot for other distributions
