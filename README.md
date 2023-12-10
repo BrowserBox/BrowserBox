@@ -15,9 +15,10 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 | Almalinux  8     |           ✅ |
 | Debian 12        |           ✅ |
 | Debian 11        |           ✅ |
+| Ubuntu 23        |           ✅ |
 | Ubuntu 22        |           ✅ |
-| Amazon Linux 2   |           ✅ |
 | Amazon Linux 2023|           ✅ |
+| Amazon Linux 2   |           ✅ |
 
 ## Supported Client Browser Table
 
@@ -25,7 +26,7 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 |--------------|:-------------:|:-------:|:-------:|:----:|
 | Firefox      |       ✅      |    ✅   |    ✅   |  ✅  |
 | Chrome       |       ✅      |    ✅   |    ✅   |  ✅  |
-| Safari       |       ✅      |    ✅   |    N/A  |  ✅  |
+| Safari       |       ✅      |    ✅   |    N/A     |  ✅  |
 | Edge         |       ✅      |    ✅   |    ✅   |  ✅  |
 | Brave        |       ✅      |    ✅   |    ✅   |  ✅  |
 | Tor Browser  |       ✅      |    ✅   |    ✅   |  ✅  |
