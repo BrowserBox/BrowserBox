@@ -482,7 +482,6 @@ console.warn('Shut down buries errors');
 //process.on('SIGUSR2', shutDown);
 //process.on('exit', shutDown);
 
-
 function getEncoder() {
   audioProcessShuttingDown = false;
   if (savedEncoder) return savedEncoder;
@@ -581,6 +580,9 @@ function getEncoder() {
     return encoder;
   } else {
     encoder = parec;
+    if ( ! process.env.TORBB ) {
+      savedEncoder = parec;
+    }
     return parec;
   }
 }
