@@ -2,7 +2,7 @@
 
 BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for one-click deploy. 
 
-## Supported OS Table
+## Supported Server OS Table
 
 | Distribution     | Compatibility   |
 |------------------|:---------------:|
@@ -16,6 +16,18 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 | Ubuntu 22        |           ✅ |
 | Amazon Linux 2   |           ✅ |
 | Amazon Linux 2023|           ✅ |
+
+## Supported Client Browser Table
+
+| Browser      | Compatibility |
+|--------------|:-------------:|
+| Firefox      |       ✅      |
+| Chrome       |       ✅      |
+| Safari       |       ✅      |
+| Safari iOS   |       ✅      |
+| Edge         |       ✅      |
+| Brave        |       ✅      |
+| Tor Browser  |       ✅      |
 
 
 ## :earth_americas: Deploy BrowserBox Easily
