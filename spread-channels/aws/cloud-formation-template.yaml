@@ -5,23 +5,25 @@ Parameters:
   InstanceType:
     Type: String
     Default: t2.small
-    Description: "[required] EC2 instance type. Larger instances gives more performance but event the smallest should work."
+    Description: "[required] EC2 instance type. Larger instances gives more performance but event the smallest should work. See available values here: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html#cfn-ec2-instance-instancetype"
     AllowedPattern: .+
 
   HostName:
     Type: String
     Description: "[required] Fully-qualified domain name for the running BrowserBox instance to serve from. Create an A record from there to this EC2 instance's IP address."
     AllowedPattern: .+
+    MaxLength: 300
 
   UserEmail:
     Type: String
     Description: "[required] Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs. By continuing, you agree to our terms, privacy policy and licensing (https://dosyago.com/terms.txt, https://dosyago.com/privacy.txt, https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md) and LetsEncrypt's terms. After creating your Stack, visit its Outputs tab to find your BrowserBox Login Link and IP address. While setup completes, ensure you add a DNS A Record mapping your HostName to this IP address, using your registrar. Then, wait a few minutes for your instance to be ready."
     AllowedPattern: .+
+    MaxLength: 300
 
   Token:
     Type: String
-    Description: "[optional] A secret token to construction your login link. Leave blank for a random token to be created. If you supply token you can login via https://<HostName>:8080/login?token=<Token> but if you leave blank you need to obtain your login link via SSHing into your instance and running cat ~/.config/dosaygo/bbpro/login.link"
-    Default: ""
+    Description: "[conditional: cannot omit both Token and SSHKeyName, one or both must be present] Token is a secret token to construction your login link. Leave blank for a random token to be created. Treat it like a password. If you supply token you can login via https://<HostName>:8080/login?token=<Token> but if you leave blank you need to obtain your login link via SSHing into your instance and running cat ~/.config/dosaygo/bbpro/login.link"
+    MaxLength: 300
 
   InstallDocViewer:
     Type: String
@@ -36,10 +38,11 @@ Parameters:
     Description: "[required] VPC ID where the instance will be deployed."
     AllowedPattern: .+
 
-  KeyName:
+  SSHKeyName:
     Type: String
-    Description: "[optional] Name of an existing EC2 KeyPair to enable SSH access (optional, but you need SSH access to retrieve your login link if you don't specify Token)."
+    Description: "[conditional: cannot omit both SSHKeyName and Token, one or both must be present] SSHKeyName is the name of an existing EC2 KeyPair to enable SSH access to your BrowserBox instance. If you don't set a Token for the login link you'll need SSH access to retrieve your randomly generated login link."
     Default: ""
+    MaxLength: 300
 
   AMI:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
@@ -48,9 +51,9 @@ Parameters:
     AllowedPattern: .+
 
 Conditions:
-  KeyNameProvided: !Not [!Equals [!Ref KeyName, ""]]
+  KeyNameProvided: !Not [!Equals [!Ref SSHKeyName, ""]]
   TokenProvided: !Not [!Equals [!Ref Token, ""]]
-  EitherKeyNameOrToken: !Or [!Not [!Equals [!Ref KeyName, ""]], !Not [!Equals [!Ref Token, ""]]]
+  EitherKeyNameOrToken: !Or [!Not [!Equals [!Ref SSHKeyName, ""]], !Not [!Equals [!Ref Token, ""]]]
   
 Resources:
   BrowserBoxInstance:
@@ -61,8 +64,8 @@ Resources:
       KeyName: 
         Fn::If:
           - KeyNameProvided
-          - !Ref KeyName
-          - !Ref "AWS::NoValue"
+          - !Ref SSHKeyName
+          - !Ref AWS::NoValue
       SecurityGroupIds:
         - Ref: BrowserBoxSecurityGroup
       UserData:
@@ -71,7 +74,7 @@ Resources:
             #!/bin/bash
 
             # Check if both KeyName and Token are not provided
-            if [[ -z "${KeyName}" && -z "${Token}" ]]; then
+            if [[ -z "${SSHKeyName}" && -z "${Token}" ]]; then
               echo "Error: Either KeyName or Token must be provided."
               exit 1
             fi
@@ -163,7 +166,7 @@ Resources:
 
 Outputs:
   LoginLink:
-    Description: "Login link for your BrowserBox instance. Wait a few minutes for setup to complete, then click this link to log into it."
+    Description: "Login link for your BrowserBox instance. Wait a few minutes for setup to complete, then click this link to log into it. While you wait for setup to complete, please add the DNS A record mapping this IP to your instance's HostName, because BrowserBox requires this record to start setting up. In order to minimize setup time, we suggest you add this record now."
     Value: 
       Fn::If:
         - TokenProvided
@@ -182,5 +185,4 @@ Outputs:
   InstanceId:
     Description: The Instance ID of the BrowserBox server. Find and manage your BrowserBox instance's Virtual Machine in your EC2 dashboard with this Instance ID.
     Value: !Ref BrowserBoxInstance
-
 
