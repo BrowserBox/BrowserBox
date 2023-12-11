@@ -1,0 +1,84 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+  "handler": "Microsoft.Azure.CreateUIDef",
+  "version": "0.1.2-preview",
+  "parameters": {
+    "config": {
+      "isWizard": false,
+      "basics": {
+        "description": "This template sets up a [BrowserBox](https://github.com/BrowserBox/BrowserBox) service for instant Remote Browsing from Azure. Want more? [Licenses available on our website](https://dosyago.com)",
+        "subscription": {
+          "constraints": {
+            "validations": [
+              {
+                "isValid": "[not(contains(subscription().displayName, 'Test'))]",
+                "message": "Can't use test subscription."
+              },
+              {
+                "permission": "Microsoft.Compute/virtualMachines/write",
+                "message": "Must have write permission for the virtual machine."
+              },
+              {
+                "permission": "Microsoft.Compute/virtualMachines/extensions/write",
+                "message": "Must have write permission for the extension."
+              }
+            ]
+          },
+          "resourceProviders": [
+            "Microsoft.Compute"
+          ]
+        },
+        "location": {
+          "label": "Pick your nearest location",
+          "toolTip": "The closer your location is to you, the lower your ping and round-trip time and the better your remote browsing with BrowserBox experience!",
+          "resourceTypes": [
+            "Microsoft.Compute/virtualMachines"
+          ],
+          "visible": true
+        }
+      }
+    },
+    "resourceTypes": [ "Microsoft.Computer/virtualMachines" ],
+    "basics": [
+      {
+        "name": "virtualMachineSize",
+        "type": "Microsoft.Compute.SizeSelector",
+        "label": "Virtual Machine Size",
+        "toolTip": "Select the size of the Virtual Machine.",
+        "recommendedSizes": [
+          "Standard_DS1_v2",
+          "Standard_DS2_v2",
+          "Standard_DS3_v2"
+        ],
+        "constraints": {
+          "allowedSizes": []
+        },
+        "options": {
+          "hideDiskTypeFilter": true
+        },
+        "osPlatform": "Linux",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "name": "emailAddress",
+        "type": "Microsoft.Common.TextBox",
+        "label": "Email Address",
+        "toolTip": "Provide your work email address",
+        "constraints": {
+          "required": true,
+          "regex": "^[A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\\.)+[A-Za-z]{2,}$",
+          "validationMessage": "Please enter a valid email address."
+        }
+      }
+    ],
+    "steps": [],
+    "outputs": {
+      "parameters": {
+        "virtualMachineSize": "[basics('virtualMachineSize')]",
+        "emailAddress": "[basics('emailAddress')]"
+      }
+    }
+  }
+}
+
