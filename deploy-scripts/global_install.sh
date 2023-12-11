@@ -59,8 +59,8 @@ initialize_package_manager() {
       wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/almalinux-8-wrtc.node
       chmod +x almalinux-8-wrtc.node
       mv almalinux-8-wrtc.node $HOME/build/Release/wrtc.node
-    elif [ "$ID" = "centos" ] && [[ "$VERSION_ID" == 8* ]]; then
-      echo "Installing Custom Build of WebRTC Node for CentOS 8..."
+    elif ([ "$ID" = "centos" ] || [ "$ID" = "rhel" ]) && [[ "$VERSION_ID" == 8* ]]; then
+      echo "Installing Custom Build of WebRTC Node for CentOS 8 or RedHat Enterprise Linux 8..."
       wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/centos-8-wrtc.node
       chmod +x centos-8-wrtc.node
       mv centos-8-wrtc.node $HOME/build/Release/wrtc.node
