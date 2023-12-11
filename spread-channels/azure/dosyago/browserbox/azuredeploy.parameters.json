@@ -11,11 +11,8 @@
     "dnsNameForPublicIP": {
       "value": "GEN-UNIQUE"
     },
-    "vmSize": {
-      "value": "Standard_DS1_v2"
-    },
-    "linuxDistro": {
-      "value": "UbuntuServer22.04LTS"
+    "virtualMachineSize": {
+      "value": "Standard_D2s_v3"
     },
     "userEmail": {
       "value": "jcitizen@website.net"
@@ -31,6 +28,9 @@
     },
     "understanding": {
       "value": "true"
+    },
+    "imageChoice": {
+      "value": "Ubuntu2204"
     }
   }
 }

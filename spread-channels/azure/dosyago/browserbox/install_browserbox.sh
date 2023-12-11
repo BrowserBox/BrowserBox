@@ -1,5 +1,6 @@
 #!/bin/bash
-set -xeo pipefail
+#set -xeo pipefail
+set -x
 
 # Parameters passed from ARM template
 USEREMAIL=$1
@@ -19,6 +20,26 @@ get_distro() {
   fi
 }
 
+# Function to add a user non-interactively
+add_user() {
+  local username=$1
+  local distro=$(get_distro)
+
+  case $distro in
+    debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
+      adduser --gecos "" --disabled-password "$username"
+      ;;
+    centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
+      adduser "$username"
+      passwd -d "$username"
+      ;;
+    *)
+      echo "Unsupported distribution: $distro" >&2
+      return 1
+      ;;
+  esac
+}
+
 # Check if essential fields are present
 if [ -z "$HOSTNAME" ] || [ -z "$USEREMAIL" ]; then
   echo "Both 'HOSTNAME' and 'USEREMAIL' are required to proceed." >&2
@@ -34,7 +55,9 @@ case $distro in
     apt-get install -y git
     ;;
   centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
-    yum update -y
+    # the following line (exclude) is necessary at least on CentOS because otherwise
+    # the WA agent has an error when the script it is running tries to update the WA agent. :)
+    yum update -y --exclude=WALinuxAgent,WALinuxAgent-udev --skip-broken
     yum install -y git
     ;;
   *)

@@ -2,6 +2,10 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "utcValue": {
+      "type": "string",
+      "defaultValue": "[utcNow()]"
+    },
     "_artifactsLocation": {
       "type": "string",
       "metadata": {
@@ -31,14 +35,7 @@
     "dnsNameForPublicIP": {
       "type": "string",
       "metadata": {
-        "description": "The DNS name label for the Public IP. Must be globally unique."
-      }
-    },
-    "vmSize": {
-      "type": "string",
-      "defaultValue": "Standard_DS1_v2",
-      "metadata": {
-        "description": "The size of the VM to use."
+        "description": "The DNS name label for the Public IP. Must be globally unique. Enter 'uniq' to be assigned a unique value."
       }
     },
     "location": {
@@ -46,6 +43,43 @@
       "defaultValue": "[resourceGroup().location]",
       "metadata": {
         "description": "Location for all resources."
+      }
+    },
+    "userEmail": {
+      "type": "string",
+      "metadata": {
+        "description": "The email address of the user."
+      }
+    },
+    "hostname": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The fully-qualified custom domain name for your BrowserBox instance. Specify if you will add an A record for this custom domain with your DNS provider pointing to this VM's public IP address. Otherwise, leave blank to get a random cloudapp.azure.com hostname that sets up automatically."
+      }
+    },
+    "token": {
+      "type": "string",
+      "metadata": {
+        "description": "A secret for the login link."
+      }
+    },
+    "imageChoice": {
+      "type": "string",
+      "allowedValues": [
+        "CentOS85Gen2",
+        "Ubuntu2204",
+        "RHELRaw8LVMGen2"
+      ],
+      "metadata": {
+        "description": "Choose an OS image"
+      }
+    },
+    "virtualMachineSize": {
+      "type": "string",
+      "defaultValue": "Standard_D2s_v3",
+      "metadata": {
+        "description": "This is the Azure Virtual Machine size, and will affect the cost. If you don't know, just leave the default value."
       }
     },
     "authenticationType": {
@@ -57,32 +91,6 @@
       ],
       "metadata": {
         "description": "Type of authentication to use on the Virtual Machine. SSH key is recommended."
-      }
-    },
-    "linuxDistro": {
-      "type": "string",
-      "defaultValue": "UbuntuServer22.04LTS",
-      "metadata": {
-        "description": "The Linux distribution for the VM. Can be UbuntuServer22.04LTS, Debian11, or RHEL8.7LVM."
-      }
-    },
-    "userEmail": {
-      "type": "string",
-      "metadata": {
-        "description": "The email address of the user."
-      }
-    },
-    "hostname": {
-      "type": "string",
-      "metadata": {
-        "description": "The fully-qualified domain name for the VM."
-      }
-    },
-    "token": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "A secret for the login link."
       }
     },
     "installDocViewer": {
@@ -109,15 +117,42 @@
     }
   },
   "variables": {
-    "networkSecurityGroupName": "BrowserBoxNSG",
-    "publicIPAddressName": "BrowserBoxPublicIP",
-    "virtualNetworkName": "BrowserBoxVNet",
-    "subnetName": "BrowserBoxSubnet",
-    "nicName": "BrowserBoxNIC",
-    "vmName": "BrowserBoxVM",
+    "CentOS85Gen2": {
+      "version": "latest",
+      "publisher": "OpenLogic",
+      "offer": "CentOS",
+      "sku": "8_5-gen2"
+    },
+    "Ubuntu2204": {
+      "version": "latest",
+      "publisher": "Canonical",
+      "offer": "0001-com-ubuntu-server-jammy",
+      "sku": "22_04-lts-gen2"
+    },
+    "RHELRaw8LVMGen2": {
+      "version": "latest",
+      "publisher": "RedHat",
+      "offer": "RHEL",
+      "sku": "8-lvm-gen2"
+    },
+    "uniqueSuffix": "[uniqueString(resourceGroup().id, deployment().name, parameters('utcValue'))]",
+    "publicIPAddressNamePrefix": "BrowserBoxPublicIP",
+    "virtualNetworkNamePrefix": "BrowserBoxVNet",
+    "vmNamePrefix": "BrowserBoxVM",
+    "networkSecurityGroupNamePrefix": "BrowserBoxNSG",
+    "subnetNamePrefix": "BrowserBoxSubnet",
+    "nicNamePrefix": "BrowserBoxNIC",
+    "networkSecurityGroupName": "[concat(variables('networkSecurityGroupNamePrefix'), '-', variables('uniqueSuffix'))]",
+    "subnetName": "[concat(variables('subnetNamePrefix'), '-', variables('uniqueSuffix'))]",
+    "nicName": "[concat(variables('nicNamePrefix'), '-', variables('uniqueSuffix'))]",
+    "publicIPAddressName": "[concat(variables('publicIPAddressNamePrefix'), '-', variables('uniqueSuffix'))]",
+    "virtualNetworkName": "[concat(variables('virtualNetworkNamePrefix'), '-', variables('uniqueSuffix'))]",
+    "vmName": "[concat(variables('vmNamePrefix'), '-', variables('uniqueSuffix'))]",
+    "dnsName": "[concat('bb', variables('uniqueSuffix'))]",
     "addressPrefix": "10.0.0.0/16",
     "subnetPrefix": "10.0.0.0/24",
-    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]"
+    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+    "actualHostname": "[concat(variables('dnsName'), '.', parameters('location'), '.', 'cloudapp.azure.com')]"
   },
   "resources": [
     {
@@ -170,22 +205,13 @@
       }
     },
     {
-      "type": "Microsoft.Network/publicIPAddresses",
-      "apiVersion": "2020-06-01",
-      "name": "[variables('publicIPAddressName')]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "publicIPAllocationMethod": "Dynamic",
-        "dnsSettings": {
-          "domainNameLabel": "[parameters('dnsNameForPublicIP')]"
-        }
-      }
-    },
-    {
       "type": "Microsoft.Network/virtualNetworks",
       "apiVersion": "2020-06-01",
       "name": "[variables('virtualNetworkName')]",
       "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ],
       "properties": {
         "addressSpace": {
           "addressPrefixes": ["[variables('addressPrefix')]"]
@@ -201,6 +227,18 @@
             }
           }
         ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[if(equals(parameters('dnsNameForPublicIP'), 'uniq'), variables('dnsName'), parameters('dnsNameForPublicIP'))]"
+        }
       }
     },
     {
@@ -239,7 +277,7 @@
       ],
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[parameters('vmSize')]"
+          "vmSize": "[parameters('virtualMachineSize')]"
         },
         "osProfile": {
           "computerName": "[variables('vmName')]",
@@ -258,12 +296,7 @@
           }
         },
         "storageProfile": {
-          "imageReference": {
-            "publisher": "Canonical",
-            "offer": "UbuntuServer",
-            "sku": "[parameters('linuxDistro')]",
-            "version": "latest"
-          },
+          "imageReference": "[variables(parameters('imageChoice'))]",
           "osDisk": {
             "createOption": "FromImage",
             "managedDisk": {
@@ -283,7 +316,7 @@
     {
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(variables('vmName'), '/installBrowserBox')]",
-      "apiVersion": "2020-06-01",
+      "apiVersion": "2023-03-01",
       "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
@@ -291,13 +324,13 @@
       "properties": {
         "publisher": "Microsoft.Azure.Extensions",
         "type": "CustomScript",
-        "typeHandlerVersion": "2.0",
+        "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": ["[uri(parameters('_artifactsLocation'), concat('install_browserbox.sh', parameters('_artifactsLocationSasToken')))]"]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('bash install_browserbox.sh ', parameters('userEmail'), ' ', parameters('hostname'), ' ', parameters('token'), ' ', parameters('installDocViewer'), ' ', parameters('understanding'))]"
+          "commandToExecute": "[concat('bash install_browserbox.sh ', parameters('userEmail'), ' ', variables('actualHostname'), ' ', parameters('token'), ' ', parameters('installDocViewer'), ' ', parameters('understanding'))]"
         }
       }
     }
@@ -306,6 +339,10 @@
     "vmPublicIP": {
       "type": "string",
       "value": "[reference(variables('publicIPAddressName')).dnsSettings.fqdn]"
+    },
+    "deploymentOutput": {
+      "type": "object",
+      "value": "[deployment()]"
     }
   }
 }
