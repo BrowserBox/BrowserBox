@@ -3,13 +3,13 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "adminUsername": {
-      "value": "your-username"
+      "value": "GEN-UNIQUE-10"
     },
     "adminPasswordOrKey": {
-      "value": "your-ssh-key-or-password"
+      "value": "GEN-SSH-PUB-KEY"
     },
     "dnsNameForPublicIP": {
-      "value": "your-dns-name"
+      "value": "GEN-UNIQUE"
     },
     "vmSize": {
       "value": "Standard_DS1_v2"
@@ -21,10 +21,10 @@
       "value": "jcitizen@website.net"
     },
     "hostname": {
-      "value": "hello.example.com"
+      "value": "GEN-CUSTOM-FQDN-NAME"
     },
     "token": {
-      "value": "your-secret-token"
+      "value": "GEN-PASSWORD"
     },
     "installDocViewer": {
       "value": "false"
