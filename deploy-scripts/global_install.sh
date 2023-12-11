@@ -10,22 +10,28 @@ read -p "Enter to continue" -r
 REPLY=""
 
 SUDO=""
-. /etc/os-release
-
-if command -v sudo; then
-  SUDO="sudo"
+if [[ -f /etc/os-release ]]; then
+  . /etc/os-release
 fi
 
-if command -v firewall-cmd; then
-  ZONE="$(sudo firewall-cmd --get-default-zone)"
+if command -v sudo &>/dev/null; then
+  export SUDO="sudo"
+fi
+
+if command -v firewall-cmd &>/dev/null; then
+  ZONE="$($SUDO firewall-cmd --get-default-zone)"
 fi
 
 initialize_package_manager() {
   local package_manager
 
-  if command -v apt >/dev/null; then
+  if [[ "$OSTYPE" == darwin* ]]; then
+    package_manager=$(command -v brew)
+  elif command -v apt &>/dev/null; then
     package_manager=$(command -v apt)
-    ./deploy-scripts/non-interactive.sh
+    if command -v apt-get &>/dev/null; then
+      ./deploy-scripts/non-interactive.sh
+    fi
     # Check if the system is Debian and the version is 11
     if [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]]; then
       $SUDO apt -y install wget tar
@@ -74,6 +80,9 @@ initialize_package_manager() {
   echo "Using package manager: $package_manager"
   export APT=$package_manager
 }
+
+# Ensure the disk is optimal
+$SUDO ./deploy-scripts/disk_extend.sh
 
 # Call the function to initialize and export the APT variable
 initialize_package_manager

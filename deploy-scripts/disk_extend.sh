@@ -55,7 +55,7 @@ extend_lvm_filesystems_dynamic() {
 
 # Call the function
 if ! command -v vgs &>/dev/null || ! command -v lvextend &>/dev/null; then
-  echo "No tools to extend filesystems, likely not needed. Will exit..."
+  echo "No tools to extend filesystems, likely not needed."
   exit 0
 fi
 
