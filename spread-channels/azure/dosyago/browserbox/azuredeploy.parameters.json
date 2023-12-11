@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "value": "your-username"
+    },
+    "adminPasswordOrKey": {
+      "value": "your-ssh-key-or-password"
+    },
+    "dnsNameForPublicIP": {
+      "value": "your-dns-name"
+    },
+    "vmSize": {
+      "value": "Standard_DS1_v2"
+    },
+    "linuxDistro": {
+      "value": "UbuntuServer22.04LTS"
+    },
+    "userEmail": {
+      "value": "jcitizen@website.net"
+    },
+    "hostname": {
+      "value": "hello.example.com"
+    },
+    "token": {
+      "value": "your-secret-token"
+    },
+    "installDocViewer": {
+      "value": "false"
+    },
+    "understanding": {
+      "value": "true"
+    }
+  }
+}
+
