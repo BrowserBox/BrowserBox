@@ -12,7 +12,10 @@ if ! brew --prefix coreutils &>/dev/null; then
   brew install coreutils
 fi
 
-az bicep decompile --file ./browserbox/azuredeploy.json --force
+if ! az bicep decompile --file ./browserbox/azuredeploy.json --force; then
+  echo "Error during initial decompilation based validation. Will exit..."
+  exit 1
+fi
 
-
+./az-group-deploy.sh -a browserbox -l eastus
 
