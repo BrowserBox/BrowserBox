@@ -190,6 +190,7 @@
           `https://${process.env[`ADDR_${server_port + 2}`]}:*`, // docs
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ])
       ],
       fontSrc: [
