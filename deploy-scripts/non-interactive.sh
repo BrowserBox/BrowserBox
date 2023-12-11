@@ -2,16 +2,16 @@
 
 # Create dpkg configuration
 echo "Creating dpkg configuration..."
-sudo mkdir -p /etc/dpkg/dpkg.cfg.d/
-cat <<EOF | sudo tee /etc/dpkg/dpkg.cfg.d/force-conf >/dev/null
+$SUDO mkdir -p /etc/dpkg/dpkg.cfg.d/
+cat <<EOF | $SUDO tee /etc/dpkg/dpkg.cfg.d/force-conf >/dev/null
 force-confdef
 force-confnew
 EOF
 
 # Create apt configuration
 echo "Creating apt configuration..."
-sudo mkdir -p /etc/apt/apt.conf.d/
-cat <<EOF | sudo tee /etc/apt/apt.conf.d/99non-interactive >/dev/null
+$SUDO mkdir -p /etc/apt/apt.conf.d/
+cat <<EOF | $SUDO tee /etc/apt/apt.conf.d/99non-interactive >/dev/null
 APT::Get::Assume-Yes "true";
 APT::Get::allow-unauthenticated "true";
 APT::Get::allow-downgrades "true";
@@ -21,18 +21,18 @@ EOF
 
 # Create needrestart custom configuration
 echo "Creating needrestart custom configuration..."
-sudo mkdir -p /etc/needrestart/conf.d
-cat <<EOF | sudo tee /etc/needrestart/conf.d/no-prompt.conf >/dev/null
+$SUDO mkdir -p /etc/needrestart/conf.d
+cat <<EOF | $SUDO tee /etc/needrestart/conf.d/no-prompt.conf >/dev/null
 \$nrconf{kernelhints} = -1;
 \$nrconf{restart} = 'a';
 EOF
 
 # Perform a non-interactive dist-upgrade
-sudo NEEDRESTART_MODE=a apt-get dist-upgrade --yes
+$SUDO NEEDRESTART_MODE=a apt-get dist-upgrade --yes
 
 # Install debconf-utils and set it to restart libraries without asking
-sudo apt-get -y install debconf-utils
-echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections
+$SUDO apt-get -y install debconf-utils
+echo '* libraries/restart-without-asking boolean true' | $SUDO debconf-set-selections
 
 echo "Configurations applied successfully."
 
