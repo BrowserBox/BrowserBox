@@ -55,7 +55,8 @@ We're excited to announce the release of our AWS CloudFormation template and our
     </td>
     <td align="center">
       <a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678">
-        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/da556db1-8efe-47a4-b6bf-79f271a92b98" alt="Deploy to Linode!" width=80 height=80>
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/9102f2f8-6eb4-4088-91c6-ae535a42cdf1"
+          alt="Deploy to Linode!" width=80 height=80>
         <br>Deploy to Linode
       </a>
     </td>
