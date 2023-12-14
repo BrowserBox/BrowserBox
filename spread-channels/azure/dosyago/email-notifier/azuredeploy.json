@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-  "contentVersion": "6.3.0.0",
+  "contentVersion": "6.3.2.9",
   "parameters": {
     "utcValue": {
       "type": "string",
@@ -22,6 +22,7 @@
     },
     "adminUsername": {
       "type": "string",
+      "defaultValue": "cris",
       "metadata": {
         "description": "Administrator username for the Virtual Machine."
       }
@@ -48,6 +49,7 @@
     },
     "userEmail": {
       "type": "string",
+      "defaultValue": "cris@dosyago.com",
       "metadata": {
         "description": "The email address of the user."
       }
@@ -61,12 +63,14 @@
     },
     "token": {
       "type": "string",
+      "defaultValue": "abc123",
       "metadata": {
         "description": "A secret for the login link."
       }
     },
     "imageChoice": {
       "type": "string",
+      "defaultValue": "Ubuntu 22.04 LTS (gen 2)",
       "allowedValues": [
         "CentOS 8.5 (gen 2)",
         "Ubuntu 22.04 LTS (gen 2)",
@@ -149,6 +153,8 @@
     "publicIPAddressName": "[concat(variables('publicIPAddressNamePrefix'), '-', variables('uniqueSuffix'))]",
     "virtualNetworkName": "[concat(variables('virtualNetworkNamePrefix'), '-', variables('uniqueSuffix'))]",
     "vmName": "[concat(variables('vmNamePrefix'), '-', variables('uniqueSuffix'))]",
+    "scriptName": "[concat(variables('vmName'), '/', 'installBrowserBox')]",
+    "scriptRef": "[resourceId('Microsoft.Compute/virtualMachines/extensions', variables('vmName'), 'installBrowserBox')]",
     "dnsName": "[concat('bb', variables('uniqueSuffix'))]",
     "addressPrefix": "10.0.0.0/16",
     "subnetPrefix": "10.0.0.0/24",
@@ -156,6 +162,18 @@
     "actualHostname": "[concat(variables('dnsName'), '.', parameters('location'), '.', 'cloudapp.azure.com')]"
   },
   "resources": [
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[concat('appInsights-', variables('vmName'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "Application_Type": "web",
+        "Flow_Type": "Bluefield",
+        "Request_Source": "rest",
+        "RetentionInDays": 90 
+      }
+    },
     {
       "type": "Microsoft.Network/networkSecurityGroups",
       "apiVersion": "2020-06-01",
@@ -273,6 +291,9 @@
       "apiVersion": "2020-06-01",
       "name": "[variables('vmName')]",
       "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
       ],
@@ -315,12 +336,39 @@
       }
     },
     {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(resourceId('Microsoft.Compute/virtualMachines/', variables('vmName')), 'MonitoringMetricsPublisher')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+      ],
+      "properties": {
+        "roleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+        "principalId": "[reference(variables('vmName'), '2019-03-01', 'Full').identity.principalId]",
+        "scope": "[resourceGroup().id]"
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(resourceId('Microsoft.Compute/virtualMachines/', variables('vmName')), 'MonitoringReader')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+      ],
+      "properties": {
+        "roleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '43d0d8ad-25c7-4714-9337-8ba259a9fe05')]",
+        "principalId": "[reference(variables('vmName'), '2019-03-01', 'Full').identity.principalId]",
+        "scope": "[resourceGroup().id]"
+      }
+    },
+    {
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('vmName'), '/', 'installBrowserBox')]",
+      "name": "[variables('scriptName')]",
       "apiVersion": "2023-03-01",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]"
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('vmName'))]",
+        "[resourceId('Microsoft.Insights/components', concat('appInsights-', variables('vmName')))]"
       ],
       "properties": {
         "publisher": "Microsoft.Azure.Extensions",
@@ -328,10 +376,10 @@
         "typeHandlerVersion": "2.1",
         "autoUpgradeMinorVersion": true,
         "settings": {
-          "fileUris": ["[uri(parameters('_artifactsLocation'), concat('install_browserbox.sh', parameters('_artifactsLocationSasToken')))]"]
+          "fileUris": ["[uri(parameters('_artifactsLocation'), concat('notifier.sh', parameters('_artifactsLocationSasToken')))]"]
         },
         "protectedSettings": {
-          "commandToExecute": "[concat('bash install_browserbox.sh ', parameters('userEmail'), ' ', variables('actualHostname'), ' ', parameters('token'), ' ', parameters('installDocViewer'), ' ', parameters('understanding'))]"
+          "commandToExecute": "[concat('bash notifier.sh ', parameters('adminUsername'), ' ', parameters('location'), ' ', resourceId('Microsoft.Compute/virtualMachines', variables('vmName')), ' ', listKeys(resourceId('Microsoft.Insights/components', concat('appInsights-', variables('vmName'))), '2020-02-02').connectionString)]"
         }
       }
     }
