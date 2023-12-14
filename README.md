@@ -1,6 +1,6 @@
 # BrowserBox News
 
-BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for one-click deploy. 
+BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. We've just integrated support for one-click deploy, and are launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/) soon. Come check us out! 🥇😄
 
 ## Supported Server OS Table
 
