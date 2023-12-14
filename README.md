@@ -45,11 +45,20 @@ We're excited to announce the release of our AWS CloudFormation template and our
     <th>AWS</th>
     <th>Linode</th>
   </tr>
-  <tr>
-    
+  <tr> 
     <td><b>Deploy</b></td>
-    <td align="center"><a href="https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml" alt="Deploy to AWS!" width=80 height=80><br>Deploy to AWS</a></td>
-    <td align="center"><a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678"><img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/da556db1-8efe-47a4-b6bf-79f271a92b98" alt="Deploy to Linode!" width=80 height=80><br>Deploy to Linode</a></td>
+    <td align="center">
+      <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/de7f8908-c00e-4cbc-ac73-c6cfc0203ae3" alt="Deploy to AWS!" width=80 height=80>
+        <br>Deploy to AWS
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/da556db1-8efe-47a4-b6bf-79f271a92b98" alt="Deploy to Linode!" width=80 height=80>
+        <br>Deploy to Linode
+      </a>
+    </td>
   </tr>
 </table>
 
