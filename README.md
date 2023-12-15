@@ -249,6 +249,8 @@ To begin the action to create your BrowserBox Tor Hidden Service, click **Submit
 
 ### DIY Method with [`torbb`](https://github.com/BrowserBox/BrowserBox/blob/boss/deploy-scripts/_torbb.sh)
 
+*Please note you need to install from a non-root sudo-capable user. We recommend adding the appropriate NOPASSWD line to your sudoers file. For instructions [see below](https://github.com/BrowserBox/BrowserBox#initial-machine-setup)*
+
 Alternately, use the new **torbb** command:
 
 ```shell
@@ -275,6 +277,8 @@ Please note ensure you set `export INSTALL_DOC_VIEWER=true` before calling the `
 ## BrowserBox - AWS EC2 Installation 
 
 **[New Video: Installing BrowserBox on Amazon AWS EC2 Amazon Linux](https://www.youtube.com/watch?v=-YEOHXXid9g)**
+
+*Please note you need to install from a non-root sudo-capable user. We recommend adding the appropriate NOPASSWD line to your sudoers file. For instructions [see below](https://github.com/BrowserBox/BrowserBox#initial-machine-setup)*
 
 General install instructions:
 
@@ -434,11 +438,13 @@ Follow these instructions to install BrowserBoxPro on your system.
 
 ### Initial Machine Setup
 
-Before installing BrowserBoxPro, ensure that your system meets the following requirements:
+Before installing BrowserBox, ensure that your system meets the following minimum requirements:
 
-- Debian VPS with 1 cores, 1 GB RAM, and 25 GB SSD (e.g. Nanode from Linode)
+- VPS with 1 cores, 1 GB RAM, and 25 GB SSD (e.g. Nanode from Linode)
 - At least 5 Mbps internet connection
-- A public hostname with a DNS A record pointing to your VPS's IP address, or localhost certificates installed on your local and remote machine (for example using [mkcert](https://github.com/FiloSottile/mkcert))
+- A public hostname with a DNS A record pointing to your VPS's IP address, or localhost certificates installed on your local and remote machine (for example using [mkcert](https://github.com/FiloSottile/mkcert)).
+
+we assume Debian or Ubuntu in the below but the install process works on CentOS, Fedora, Kali, Ubuntu, RedHat, macOS, Almalinux and Amazon Linux. For supported versions of these operating systems see [this table](https://github.com/BrowserBox/BrowserBox#supported-server-os-table).
 
 First, update your distribution:
 
@@ -450,7 +456,7 @@ And install a few basic tools:
 
 Now, prepare the machine by following these steps:
 
-1. Create a new user to operate BrowserBoxPro:
+1. Create a new user to operate BrowserBox:
    ```
    adduser pro
    ```
@@ -473,31 +479,31 @@ Now, prepare the machine by following these steps:
 
 5. Grant sudo privileges to the user:
    ```
-   usermod -G sudoers pro
+   usermod -aG sudoers pro
    ```
 
 Switch to the `pro` user by executing the following command:
 ```
-sudo -u pro bash
+su - pro
 ```
 
 ### Installation Process
 
 Follow these steps to install BrowserBoxPro:
 
-1. Clone the BrowserBoxPro repository:
+1. Clone the BrowserBox repository:
    ```
-   git clone https://github.com/dosyago/BrowserBoxPro
+   git clone https://github.com/BrowserBox/BrowserBox
    ```
 
 2. Navigate to the cloned repository:
    ```
-   cd BrowserBoxPro
+   cd BrowserBox
    ```
 
-3. Run the global installation script, replacing `<domain_name>` with your domain name that points to the machine you're setting up (if you want to use it without a domain name, just use localhost here for the domain name, but you'll still need to copy the correct mkcert localsthost certificates to $HOME/sslcerts later):
+3. Run the global installation script, replacing `<domain_name>` with your domain name that points to the machine you're setting up (if you want to use it without a domain name, just use `localhost` here for the domain name, but you'll still need to copy the correct mkcert localsthost certificates to $HOME/sslcerts later). Use your `<email>` to agree to our terms and the LetsEncrypt terms:
    ```
-   ./deploy-scripts/global_install.sh <domain_name>
+   ./deploy-scripts/global_install.sh <domain_name> <email>
    ```
 
 4. Start the main service on port 8080 and generate the login link:
@@ -505,12 +511,12 @@ Follow these steps to install BrowserBoxPro:
    setup_bbpro --port 8080
    ```
 
-5. Launch BrowserBox BrowserBox:
+5. Launch BrowserBox:
    ```
    bbpro
    ```
 
-During the installation process, BrowserBoxPro will automatically install the required dependencies and configure the necessary settings.
+During the installation process, BrowserBox will automatically install the required dependencies and configure the necessary settings.
 
 ## Applications in a Zero Trust Framework
 
