@@ -249,14 +249,14 @@ To begin the action to create your BrowserBox Tor Hidden Service, click **Submit
 
 ### DIY Method with [`torbb`](https://github.com/BrowserBox/BrowserBox/blob/boss/deploy-scripts/_torbb.sh)
 
-*Please note you need to install from a non-root sudo-capable user. We recommend adding the appropriate NOPASSWD line to your sudoers file. For instructions [see below](https://github.com/BrowserBox/BrowserBox#initial-machine-setup)*
+*Please note you need to install from a non-root sudo-capable user. We recommend adding the appropriate NOPASSWD line to your sudoers file. For instructions [see below](https://github.com/BrowserBox/BrowserBox#initial-machine-setup). Also important is, if not using localhost as your hostname, you need to add your DNS A record for `<hostname>` to point to the IP address of your machine before running your install script.*
 
 Alternately, use the new **torbb** command:
 
 ```shell
 $ git clone https://github.com/BrowserBox/BrowserBox.git
 $ cd BrowserBox
-$ yes | ./deploy-scripts/global_install.sh localhost
+$ yes | ./deploy-scripts/global_install.sh <hostname|'localhost'> <email>
 $ setup_bbpro --port <my_port>
 $ torbb
 ```
@@ -278,14 +278,14 @@ Please note ensure you set `export INSTALL_DOC_VIEWER=true` before calling the `
 
 **[New Video: Installing BrowserBox on Amazon AWS EC2 Amazon Linux](https://www.youtube.com/watch?v=-YEOHXXid9g)**
 
-*Please note you need to install from a non-root sudo-capable user. We recommend adding the appropriate NOPASSWD line to your sudoers file. For instructions [see below](https://github.com/BrowserBox/BrowserBox#initial-machine-setup)*
+*Please note you need to install from a non-root sudo-capable user. We recommend adding the appropriate NOPASSWD line to your sudoers file. For instructions [see below](https://github.com/BrowserBox/BrowserBox#initial-machine-setup). Also important is, if not using localhost as your hostname, you need to add your DNS A record for `<hostname>` to point to the IP address of your machine before running your install script.*
 
 General install instructions:
 
 ```shell
 git clone https://github.com/BrowserBox/BrowserBox.git
 cd BrowserBox
-./deploy-scripts/global_install.sh <my_hostname> <my_email>
+./deploy-scripts/global_install.sh <hostname> <my_email>
 setup_bbpro --port <my_port>
 bbpro
 ```
