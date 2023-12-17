@@ -44,6 +44,7 @@ We're excited to announce the release of our AWS CloudFormation template and our
     <th></th>
     <th>AWS</th>
     <th>Linode</th>
+    <th>Azure</th>
   </tr>
   <tr> 
     <td><b>Deploy</b></td>
@@ -59,6 +60,9 @@ We're excited to announce the release of our AWS CloudFormation template and our
           alt="Deploy to Linode!" width=80 height=80>
         <br>Deploy to Linode
       </a>
+    </td>
+    <td align=center>
+      [![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fblob%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json)
     </td>
   </tr>
 </table>
