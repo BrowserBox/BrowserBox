@@ -35,7 +35,7 @@ BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilita
 
 ## :earth_americas: Deploy BrowserBox Easily
 
-We're excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
+We're excited to announce the release of our Azure Resource Manager (ARM) template! We're also excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
 
 ### One-Click Deploy
 
@@ -71,6 +71,15 @@ We're excited to announce the release of our AWS CloudFormation template and our
   </tr>
 </table>
 
+:gem: **Deploy to Azure**
+
+Ready to tap the awesome power of Azure to run your BrowserBox instances? 
+
+Now you can, simple and easily. 
+
+Use our ARM template to get started quickly.
+
+ [![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fblob%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json)
 
 🚀 **Deploy on AWS**
 
