@@ -1,6 +1,19 @@
 # BrowserBox News
 
-BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. We've just integrated support for one-click deploy, and are launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/) soon. Come check us out! 🥇😄
+BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
+
+We're currently increasing our support for marketplaces and one-click-deploy, and will be launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/) soon. Come check us out! 🥇😄
+
+## Deploy to Azure! 
+
+We've just added support for Azure ARM Templates.
+
+**Give it a try! :pinata:**
+
+- [x] [![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fblob%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json)
+- [x] Unlock tremendous value.
+
+-------
 
 ## Supported Server OS Table
 
@@ -35,7 +48,7 @@ BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilita
 
 ## :earth_americas: Deploy BrowserBox Easily
 
-We're excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
+We're excited to announce the release of our Azure Resource Manager (ARM) template! We're also excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
 
 ### One-Click Deploy
 
@@ -44,6 +57,7 @@ We're excited to announce the release of our AWS CloudFormation template and our
     <th></th>
     <th>AWS</th>
     <th>Linode</th>
+    <th>Azure</th>
   </tr>
   <tr> 
     <td><b>Deploy</b></td>
@@ -60,9 +74,25 @@ We're excited to announce the release of our AWS CloudFormation template and our
         <br>Deploy to Linode
       </a>
     </td>
+    <td align="center" valign="bottom">
+      <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fblob%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json">
+        <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true"
+             alt="Deploy To Azure" width="180">
+        <br>Deploy to Azure
+      </a>
+    </td>
   </tr>
 </table>
 
+:gem: **Deploy to Azure**
+
+Ready to tap the awesome power of Azure to run your BrowserBox instances? 
+
+Now you can, simple and easily. 
+
+Use our ARM template to get started quickly.
+
+ [![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fblob%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json)
 
 🚀 **Deploy on AWS**
 
