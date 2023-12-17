@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-  "contentVersion": "33.33.33.58",
+  "contentVersion": "99.1.2.14",
   "parameters": {
     "utcValue": {
       "type": "string",
@@ -31,7 +31,8 @@
       "type": "securestring",
       "metadata": {
         "description": "SSH Key or password for the Virtual Machine. SSH key is recommended."
-      }
+      },
+      "defaultValue": "[concat('Bb1',uniqueString(newGuid()), '!')]"
     },
     "dnsNameForPublicIP": {
       "type": "string",
@@ -63,7 +64,7 @@
     },
     "token": {
       "type": "string",
-      "defaultValue": "abc123",
+      "defaultValue": "",
       "metadata": {
         "description": "A secret for the login link."
       }
@@ -89,7 +90,7 @@
     },
     "authenticationType": {
       "type": "string",
-      "defaultValue": "sshPublicKey",
+      "defaultValue": "password",
       "allowedValues": [
         "sshPublicKey",
         "password"
@@ -123,6 +124,13 @@
     "randomGUID": {
       "type": "string",
       "defaultValue": "[newGuid()]",
+      "metadata": {
+        "description": "A random GUID value hashed to construct the token if token is not provided."
+      }
+    },
+    "randomPassword": {
+      "type": "string",
+      "defaultValue": "[concat('Bb1',uniqueString(newGuid()), '!')]",
       "metadata": {
         "description": "A random GUID value hashed to construct the token if token is not provided."
       }
@@ -314,6 +322,7 @@
       }
     },
     {
+      "condition": "[equals(parameters('authenticationType'), 'sshPublicKey')]",
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2020-06-01",
       "name": "[variables('vmName')]",
@@ -331,9 +340,8 @@
         "osProfile": {
           "computerName": "[variables('vmName')]",
           "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminPasswordOrKey')]",
           "linuxConfiguration": {
-            "disablePasswordAuthentication": "[equals(parameters('authenticationType'), 'sshPublicKey')]",
+            "disablePasswordAuthentication": true,
             "ssh": {
               "publicKeys": [
                 {
@@ -342,6 +350,48 @@
                 }
               ]
             }
+          }
+        },
+        "storageProfile": {
+          "imageReference": "[variables(parameters('imageChoice'))]",
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "condition": "[equals(parameters('authenticationType'), 'password')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('vmName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('virtualMachineSize')]"
+        },
+        "osProfile": {
+          "computerName": "[variables('vmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[if(equals(parameters('adminPasswordOrKey'), ''), parameters('randomPassword'), parameters('adminPasswordOrKey'))]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": false
           }
         },
         "storageProfile": {
