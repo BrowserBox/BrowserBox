@@ -116,6 +116,7 @@
     "parcel-resolver-ignore": "latest",
     "pkg": "latest",
     "whatwg-fetch": "latest",
-    "@huggingface/inference": "latest"
+    "@huggingface/inference": "latest",
+    "@deezy-inc/web-ai": "latest"
   }
 }
