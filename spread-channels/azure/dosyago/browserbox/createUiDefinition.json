@@ -427,17 +427,17 @@
                 },
                 "infoMessages": [],
                 "visible": true
-                },
-                {
+              },
+              {
                 "name": "publicIpAddressCombo1",
                 "type": "Microsoft.Network.PublicIpAddressCombo",
                 "label": {
-                  "publicIpAddress": "Public IP address",
-                  "domainNameLabel": "Domain name label"
+                  "publicIpAddress": "BYO public IP address",
+                  "domainNameLabel": "Set your own cloudapps hostname"
                 },
                 "toolTip": {
-                  "publicIpAddress": "",
-                  "domainNameLabel": ""
+                  "publicIpAddress": "Use an existing Azure public IP address or create a new one",
+                  "domainNameLabel": "Override the default random unique hostname when using cloudapps.azure.com domain."
                 },
                 "defaultValue": {
                   "publicIpAddressName": "ip01",

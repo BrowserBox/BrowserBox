@@ -28,7 +28,7 @@ This template deploys BrowserBox, a secure browsing environment, on an Ubuntu Se
 ## Features
 - Seamless deployment of BrowserBox on Azure.
 - Compatible with multiple Linux distributions: Ubuntu 22.04 LTS, Debian 11, RHEL 8.7 LVM.
-- Customizable settings to suit different requirements.
+- Customizable optional Advanced Settings to suit different requirements.
 
 ## Prerequisites
 - A valid Azure subscription.
@@ -36,7 +36,7 @@ This template deploys BrowserBox, a secure browsing environment, on an Ubuntu Se
 
 ## Deployment Steps
 1. Click on the "Deploy to Azure" button.
-2. Fill in the required parameters (Admin Username, DNS Name, etc.).
+2. Fill in the required parameters (Resource group, Email).
 3. Review and agree to the terms and conditions.
 4. Click on "Create" to initiate the deployment.
 
