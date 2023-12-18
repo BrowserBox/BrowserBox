@@ -77,7 +77,7 @@
   },
   "homepage": "https://github.com/BrowserBox/BrowserBox",
   "dependencies": {
-    "@roamhq/wrtc": "^0.7.1",
+    "@roamhq/wrtc": "latest",
     "bang.html": "latest",
     "body-parser": "latest",
     "compression": "latest",
@@ -85,7 +85,7 @@
     "cors": "latest",
     "csurf": "latest",
     "entities": "latest",
-    "esbuild": "0.19.8",
+    "esbuild": "latest",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "latest",
@@ -93,11 +93,9 @@
     "helmet": "latest",
     "multer": "latest",
     "simple-peer": "latest",
-    "socks-proxy-agent": "^8.0.2",
+    "socks-proxy-agent": "latest",
     "spdy": "latest",
-    "ws": "latest"
-  },
-  "devDependencies": {
+    "ws": "latest",
     "@babel/core": "latest",
     "@mapbox/node-pre-gyp": "latest",
     "@parcel/packager-raw-url": "latest",
@@ -117,6 +115,6 @@
     "parcel": "latest",
     "parcel-resolver-ignore": "latest",
     "pkg": "latest",
-    "whatwg-fetch": "^3.6.19"
+    "whatwg-fetch": "latest"
   }
 }
