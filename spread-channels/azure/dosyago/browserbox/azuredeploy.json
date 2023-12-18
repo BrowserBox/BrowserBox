@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-  "contentVersion": "99.1.2.14",
+  "contentVersion": "6.3.99.1215",
   "parameters": {
     "utcValue": {
       "type": "string",
@@ -179,7 +179,8 @@
     "roleReader": "[guid(resourceId('Microsoft.Compute/virtualMachines/', variables('vmName')), 'MonitoringReader')]",
     "realToken": "[if(equals(parameters('token'), ''), uniqueString(parameters('randomGUID')), parameters('token'))]",
     "realHostname": "[if(equals(parameters('hostname'), ''), variables('actualHostname'), parameters('hostname'))]",
-    "loginLink": "[concat('https://', variables('realHostname'), ':8080/login?token=', variables('realToken'))]"
+    "loginLink": "[concat('https://', variables('realHostname'), ':8080/login?token=', variables('realToken'))]",
+    "deploymentLink": "[concat('https://portal.azure.com/#view/HubsExtension/DeploymentDetailsBlade/~/outputs/id/%2Fsubscriptions%2F', subscription().subscriptionId, '%2FresourceGroups%2F', resourceGroup().name, '%2Fproviders%2FMicrosoft.Resources%2Fdeployments%2F', deployment().name)]"
   },
   "resources": [
     {
@@ -524,6 +525,10 @@
     }
   ],
   "outputs": {
+    "deploymentLink": {
+      "type": "string",
+      "value": "[variables('deploymentLink')]"
+    },
     "promisedLoginLink": {
       "type": "string",
       "value": "[variables('loginLink')]"
