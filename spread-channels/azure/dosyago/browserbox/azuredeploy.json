@@ -466,7 +466,7 @@
         "[resourceId('Microsoft.Insights/actionGroups', concat('YourBrowserBoxEmailList', variables('uniqueSuffix')))]"
       ],
       "properties": {
-        "description": "[concat('Your BrowserBox is ready! Click your Login Link: [ ', variables('loginLink'), ' ]. For commercial closed-source use please purchase a license: https://dosyago.com and for support, sales and customizations please reach out anytime: sales@dosyago.com -- Thank you for choosing BrowserBox!')]",
+        "description": "[concat('Your BrowserBox is ready! Click your Login Link: [ ', variables('loginLink'), ' ].\n\nFor commercial closed-source use please purchase a license: https://dosyago.com\n\nFor support, sales and customizations please reach out anytime: sales@dosyago.com\n\nTo shut down your BrowserBox or otherwise manage your deployment, visit [ ', variables('deploymentLink'), ' ].\n\nThank you for choosing BrowserBox! Have a safe browse!')]",
         "severity": 3,
         "enabled": true,
         "evaluationFrequency": "PT1M",
