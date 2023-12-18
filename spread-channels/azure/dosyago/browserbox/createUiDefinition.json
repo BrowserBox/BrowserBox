@@ -3,8 +3,8 @@
   "handler": "Microsoft.Azure.CreateUIDef",
   "version": "0.1.2-preview",
   "parameters": {
-		"config": {
-			"isWizard": true,
+    "config": {
+      "isWizard": true,
       "basics": {
         "description": "<h1 style='color:dodgerblue;padding:0;display: flex; align-items: center; border: thin solid;'><img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'>Deploy BrowserBox on Azure</h1>\n\nQuickly set up a [BrowserBox](https://github.com/BrowserBox/BrowserBox) Remote Browser in just 3 steps. After setup, you'll receive an email with your BrowserBox Login Link. By providing your email, you accept [our terms](https://dosyago.com/terms.txt), [privacy policy](https://dosyago.com/privacy.txt), and LetsEncrypt's terms.\n\n**Next Steps Guide**\n\n1. Select or create a <code>Resource group</code> in an [*Azure Region*](https://azure.microsoft.com/en-us/explore/global-infrastructure/geographies/) near you - ***low ping matters!***\n2. Optionally modify the <code>Operating System</code> and <code>Machine Size</code>, and explore *Advanced Settings*.\n3. Finally, enter <code>Your Email</code> and click *Create* to initiate your BrowserBox system.\n\nAzure will set up your resources and send the BrowserBox Login Link within 10-15 minutes.\n\nFor help and support at any time <a href=mailto:support@dosyago.com>email us.</a> To purchase a license visit [our website](https://dosyago.com) or contact us at: <a href=mailto:licenses@dosyago.com>licenses@dosyago.com</a>, or on <a href=https://signal.me/#p/+15039173547>Signal</a> and we'll do our best to help!",
         "subscription": {
@@ -86,7 +86,7 @@
           "visible": true
         }
       }
-		},
+    },
     "resourceTypes": [
       "Microsoft.Authorization/roleAssignments",
       "Microsoft.Compute/virtualMachines",
@@ -130,26 +130,26 @@
       },
       {
         "name": "virtualMachineSize",
-				"type": "Microsoft.Compute.SizeSelector",
-				"label": "Machine Size",
-				"toolTip": "Optionally pick a machine size. Bigger is better but no need to go crazy. Remember you are responsible for any charges you incur as a result of using this template.",
-				"defaultValue": "Standard_D2s",
-				"recommendedSizes": [
-					"Standard_D2s_v3"
-				],
-				"osPlatform": "Linux",
-				"constraints": {
-					"allowedSizes": [],
-					"excludedSizes": [],
-					"numAvailabilityZonesRequired": 3,
-					"zone": "3"
-				},
-				"options": {
-					"hideDiskTypeFilter": false
-				},
-				"count": 1,
-				"visible": true
-		  },
+        "type": "Microsoft.Compute.SizeSelector",
+        "label": "Machine Size",
+        "toolTip": "Optionally pick a machine size. Bigger is better but no need to go crazy. Remember you are responsible for any charges you incur as a result of using this template.",
+        "defaultValue": "Standard_D2s",
+        "recommendedSizes": [
+          "Standard_D2s_v3"
+        ],
+        "osPlatform": "Linux",
+        "constraints": {
+          "allowedSizes": [],
+          "excludedSizes": [],
+          "numAvailabilityZonesRequired": 3,
+          "zone": "3"
+        },
+        "options": {
+          "hideDiskTypeFilter": false
+        },
+        "count": 1,
+        "visible": true
+      },
       {
         "name": "utcValue",
         "type": "Microsoft.Common.TextBox",
@@ -460,7 +460,7 @@
             "visible": "[steps('advanced').show]"
           }
         ]
-	    },
+      },
       {
         "name": "terms",
         "label": "Agree to Terms",
@@ -508,7 +508,7 @@
           }
         ]
       }
-		],
+    ],
     "outputs": {
       "utcValue": "[basics('utcValue')]",
       "_artifactsLocation": "[basics('_artifactsLocation')]",

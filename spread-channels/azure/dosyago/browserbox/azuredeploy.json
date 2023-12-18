@@ -207,7 +207,7 @@
         "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', concat('yourLogAnalyticsWorkspace-', variables('vmName')))]",
         "Flow_Type": "Bluefield",
         "Request_Source": "rest",
-        "RetentionInDays": 90 
+        "RetentionInDays": 90
       }
     },
     {
@@ -253,7 +253,13 @@
               "sourceAddressPrefix": "*",
               "sourcePortRange": "*",
               "destinationAddressPrefix": "*",
-              "destinationPortRanges": ["8078", "8079", "8080", "8081", "8082"]
+              "destinationPortRanges": [
+                "8078",
+                "8079",
+                "8080",
+                "8081",
+                "8082"
+              ]
             }
           }
         ]
@@ -269,7 +275,9 @@
       ],
       "properties": {
         "addressSpace": {
-          "addressPrefixes": ["[variables('addressPrefix')]"]
+          "addressPrefixes": [
+            "[variables('addressPrefix')]"
+          ]
         },
         "subnets": [
           {
@@ -515,7 +523,9 @@
         "forceUpdateTag": true,
         "enableAutomaticUpgrade": false,
         "settings": {
-          "fileUris": ["[uri(parameters('_artifactsLocation'), concat('installBrowserBox_then_notify.sh', parameters('_artifactsLocationSasToken')))]"]
+          "fileUris": [
+            "[uri(parameters('_artifactsLocation'), concat('installBrowserBox_then_notify.sh', parameters('_artifactsLocationSasToken')))]"
+          ]
         },
         "suppressFailures": true,
         "protectedSettings": {
@@ -543,4 +553,3 @@
     }
   }
 }
-
