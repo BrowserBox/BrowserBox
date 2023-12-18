@@ -115,6 +115,7 @@
     "parcel": "latest",
     "parcel-resolver-ignore": "latest",
     "pkg": "latest",
-    "whatwg-fetch": "latest"
+    "whatwg-fetch": "latest",
+    "@huggingface/inference": "latest"
   }
 }
