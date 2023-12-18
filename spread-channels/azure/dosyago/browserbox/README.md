@@ -41,11 +41,13 @@ This template deploys BrowserBox, a secure browsing environment, on an Ubuntu Se
 4. Click on "Create" to initiate the deployment.
 
 ## Post-Deployment Steps
-- Ensure necessary firewall ports (tcp:8078-8082) are open.
-- Configure a DNS A record pointing to the public IP of the deployed VM.
+- If you used a Custom Domain, rather than the default random `bb<random>.<region>.cloudapp.azure.com` domain that will by default be generated for you, ensure you configure a DNS A record pointing to the public IP of the deployed VM. You can configure Custom Domain settings under Advanced Settings. 
+
+Reach out with support questions any time: support@dosyago.com. 
 
 ## License
-This template is provided under standard [license terms](https://link-to-license).
 
-`Tags: Microsoft.Network/publicIPAddresses, Microsoft.Network/networkSecurityGroups, Microsoft.Network/virtualNetworks, Microsoft.Network/networkInterfaces, Microsoft.Compute/virtualMachines, Microsoft.Compute/virtualMachines/extensions, CustomScriptExtension`
+This template is provided under standard open-source [license terms](https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md)
+
+`Tags: Microsoft.Authorization/roleAssignments, Microsoft.Compute/virtualMachines, Microsoft.Compute/virtualMachines/extensions, Microsoft.Insights/components, Microsoft.Insights/actionGroups, Microsoft.Insights/metricAlerts, Microsoft.Network/networkSecurityGroups, Microsoft.Network/virtualNetworks, Microsoft.Network/publicIPAddresses, Microsoft.Network/networkInterfaces, Microsoft.OperationalInsights/workspaces, CustomScriptExtension`
 
