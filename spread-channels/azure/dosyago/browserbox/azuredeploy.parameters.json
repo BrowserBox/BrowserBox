@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "utcValue": {
+      "value": "GEN-UNIQUE"
+    },
+    "_artifactsLocation": {
+      "value": "GEN-UNIQUE"
+    },
+    "_artifactsLocationSasToken": {
+      "value": "GEN-UNIQUE"
+    },
+    "adminUsername": {
+      "value": "GEN-UNIQUE"
+    },
+    "adminPasswordOrKey": {
+      "value": "GEN-PASSWORD"
+    },
+    "dnsNameForPublicIP": {
+      "value": "GEN-UNIQUE-13"
+    },
+    "location": {
+      "value": "GEN-UNIQUE"
+    },
+    "userEmail": {
+      "value": "GEN-UNIQUE@domain.com"
+    },
+    "hostname": {
+      "value": "GEN-UNIQUE.domain.com"
+    },
+    "token": {
+      "value": "GEN-GUID"
+    },
+    "imageChoice": {
+      "value": "Ubuntu 22.04 LTS (gen 2)"  // This can be any of the allowed values
+    },
+    "virtualMachineSize": {
+      "value": "Standard_D2s_v3"  // Adjust as needed
+    },
+    "authenticationType": {
+      "value": "password"  // Or "sshPublicKey", depending on your preference
+    },
+    "installDocViewer": {
+      "value": "false"  // Or "true"
+    },
+    "understanding": {
+      "value": "true"  // Or "false"
+    },
+    "randomGUID": {
+      "value": "GEN-GUID"
+    },
+    "randomPassword": {
+      "value": "GEN-PASSWORD"
+    }
+  }
+}
+
