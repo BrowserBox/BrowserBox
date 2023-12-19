@@ -82,14 +82,14 @@ We're excited to announce the release of our Azure Resource Manager (ARM) templa
     <td><b>Deploy</b></td>
     <td align="center">
       <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml">
-        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/de7f8908-c00e-4cbc-ac73-c6cfc0203ae3" alt="Deploy to AWS!" width=80 height=80>
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/de7f8908-c00e-4cbc-ac73-c6cfc0203ae3" alt="Deploy to AWS!" width=80>
         <br>Deploy to AWS
       </a>
     </td>
     <td align="center">
       <a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678">
         <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/9102f2f8-6eb4-4088-91c6-ae535a42cdf1"
-          alt="Deploy to Linode!" width=80 height=80>
+          alt="Deploy to Linode!" width=80>
         <br>Deploy to Linode
       </a>
     </td>
