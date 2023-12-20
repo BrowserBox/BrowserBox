@@ -122,10 +122,8 @@
               "label": "RedHat 8 LVM (gen 2)",
               "value": "RedHat 8 LVM (gen 2)"
             }
-          ],
-          "validations": []
+          ]
         },
-        "infoMessages": [],
         "visible": true
       },
       {
@@ -139,8 +137,6 @@
         ],
         "osPlatform": "Linux",
         "constraints": {
-          "allowedSizes": [],
-          "excludedSizes": [],
           "numAvailabilityZonesRequired": 3,
           "zone": "3"
         },
@@ -154,32 +150,34 @@
         "name": "utcValue",
         "type": "Microsoft.Common.TextBox",
         "label": "Utc Value",
-        "subLabel": "",
         "defaultValue": "[[utcNow()]",
-        "toolTip": "",
+        "toolTip": "A timestamp reflecting the current time when the deployment occurred.",
         "constraints": {
           "required": false,
-          "regex": "",
-          "validationMessage": "",
-          "validations": []
+          "validations": [
+            {
+              "regex": "^[a-z0-9A-Z]{1,50}$",
+              "message": "Only alphanumeric characters are allowed, and the value must be 1-50 characters long."
+            }
+          ]
         },
-        "infoMessages": [],
         "visible": false
       },
       {
         "name": "_artifactsLocation",
         "type": "Microsoft.Common.TextBox",
         "label": "_artifacts Location",
-        "subLabel": "",
         "defaultValue": "[[deployment().properties.templateLink.uri]",
         "toolTip": "The base URI where artifacts required by this template are located including a trailing '/'",
         "constraints": {
           "required": false,
-          "regex": "",
-          "validationMessage": "",
-          "validations": []
+          "validations": [
+            {
+              "regex": "^.{1,350}$",
+              "message": "Any characters are allowed, and the value must be 1-350 characters long."
+            }
+          ]
         },
-        "infoMessages": [],
         "visible": false
       },
       {
@@ -189,16 +187,9 @@
           "password": "_artifacts Location Sas Token",
           "confirmPassword": "Confirm password"
         },
-        "defaultValue": "",
         "toolTip": "The sasToken required to access _artifactsLocation.  When the template is deployed using the accompanying scripts, a sasToken will be automatically generated. Use the defaultValue if the staging location is not secured.",
         "constraints": {
-          "required": false,
-          "regex": "",
-          "validationMessage": "",
-          "validations": []
-        },
-        "options": {
-          "hideConfirmation": true
+          "required": false
         },
         "visible": false
       },
@@ -206,14 +197,15 @@
         "name": "adminUsername",
         "type": "Microsoft.Common.TextBox",
         "label": "Admin Username",
-        "subLabel": "",
         "defaultValue": "cris",
         "toolTip": "Administrator username for the Virtual Machine.",
         "constraints": {
           "required": false,
-          "regex": "",
-          "validationMessage": "",
           "validations": [
+            {
+              "regex": "^[a-zA-Z][a-z0-9A-Z]{1,35}$",
+              "message": "Starts with a letter, then alphanumeric characters are allowed, and the value must be 1-35 characters long."
+            },
             {
               "isValid": "[or(            or(  empty(basics('adminUsername')),   and(    not(startsWith(basics('adminUsername'), '[[')),     startsWith(basics('adminUsername'), '['), endsWith(basics('adminUsername'), ']'),     greater(indexOf(basics('adminUsername'), '('), -1), greater(indexOf(basics('adminUsername'), ')'), -1)    )  ),            and(              not(regex(basics('adminUsername'), '/[\\\\/\\\"\\\"\\[\\]:|<>+=;,$ ?*@]+/')),               not(endsWith(basics('adminUsername'), '.'))              ),            regex(basics('adminUsername'), '^[a-zA-Z0-9-]+$')            )]",
               "message": "User name cannot contain special characters \\/\\\"[]:|<>+=;,?*@ or end with '.', and must be between 1 and 15 characters."
@@ -224,78 +216,79 @@
             }
           ]
         },
-        "infoMessages": [],
         "visible": false
       },
       {
         "name": "dnsNameForPublicIP",
         "type": "Microsoft.Common.TextBox",
         "label": "Dns Name For Public IP",
-        "subLabel": "",
-        "defaultValue": "",
         "toolTip": "The DNS name label for the Public IP. Must be globally unique. Leave blank to be assigned a unique value.",
+        "defaultValue": "",
         "constraints": {
           "required": false,
-          "regex": "",
-          "validationMessage": "",
-          "validations": []
+          "validations": [
+            {
+              "regex": ".*",
+              "message": "Starts with a letter, then alphanumeric or hyphen characters are allowed, and the value must be 1-35 characters long."
+            }
+          ]
         },
-        "infoMessages": [],
         "visible": false
       },
       {
         "name": "location",
         "type": "Microsoft.Common.TextBox",
         "label": "Location",
-        "subLabel": "",
-        "defaultValue": "[[resourceGroup().location]",
+        "defaultValue": "[resourceGroup().location]",
         "toolTip": "Location for all resources.",
         "constraints": {
           "required": false,
-          "regex": "",
-          "validationMessage": "",
-          "validations": []
+          "validations": [
+            {
+              "regex": ".*",
+              "message": "Anything"
+            }
+          ]
         },
-        "infoMessages": [],
         "visible": false
       },
       {
         "name": "token",
         "type": "Microsoft.Common.TextBox",
         "label": "Token",
-        "subLabel": "",
-        "defaultValue": "",
         "toolTip": "A secret for the login link.",
         "constraints": {
           "required": false,
-          "regex": "",
-          "validationMessage": "",
-          "validations": []
+          "validations": [
+            {
+              "regex": ".*",
+              "message": "Anything"
+            }
+          ]
         },
-        "infoMessages": [],
         "visible": false
       },
       {
         "name": "randomPassword",
         "type": "Microsoft.Common.TextBox",
         "label": "Random Password",
-        "subLabel": "",
         "defaultValue": "[uniqueString(newGuid())]",
         "toolTip": "A random GUID value hashed to construct the token if token is not provided.",
         "constraints": {
           "required": true,
-          "regex": "",
-          "validationMessage": "",
-          "validations": []
+          "validations": [
+            {
+              "regex": ".*",
+              "message": "Anything"
+            }
+          ]
         },
-        "infoMessages": [],
         "visible": false
       },
       {
         "name": "installDocViewer",
         "type": "Microsoft.Common.DropDown",
         "label": "Install Doc Viewer",
-        "subLabel": "",
         "defaultValue": "false",
         "toolTip": "Install document viewer (makes install take longer).",
         "constraints": {
@@ -309,17 +302,14 @@
               "label": "false",
               "value": "false"
             }
-          ],
-          "validations": []
+          ]
         },
-        "infoMessages": [],
         "visible": false
       },
       {
         "name": "understanding",
         "type": "Microsoft.Common.DropDown",
         "label": "Understanding",
-        "subLabel": "",
         "defaultValue": "true",
         "toolTip": "Acknowledgement of reading the guide and setting up DNS and firewall ports.",
         "constraints": {
@@ -333,26 +323,25 @@
               "label": "false",
               "value": "false"
             }
-          ],
-          "validations": []
+          ]
         },
-        "infoMessages": [],
         "visible": false
       },
       {
         "name": "randomGUID",
         "type": "Microsoft.Common.TextBox",
         "label": "Random GUID",
-        "subLabel": "",
         "defaultValue": "[newGuid()]",
         "toolTip": "A random GUID value hashed to construct the token if token is not provided.",
         "constraints": {
           "required": false,
-          "regex": "",
-          "validationMessage": "",
-          "validations": []
+          "validations": [
+            {
+              "regex": ".*",
+              "message": "Anything"
+            }
+          ]
         },
-        "infoMessages": [],
         "visible": false
       }
     ],
@@ -365,6 +354,7 @@
             "name": "show",
             "type": "Microsoft.Common.CheckBox",
             "label": "Use Advanced Settings?",
+            "toolTip": "Do you want to configure Advanced Settings? If so reveal them by clicking here.",
             "constraints": {
               "required": false
             }
@@ -388,7 +378,6 @@
                   "sshPublicKey": "SSH Key for the Virtual Machine."
                 },
                 "defaultValue": {
-                  "sshPublicKey": null,
                   "password": "[concat('Bb1', uniqueString(newGuid()), '!')]",
                   "sshKeyName": "bb-ssh",
                   "generateNewSshKey": true,
@@ -416,45 +405,38 @@
                 "name": "hostname",
                 "type": "Microsoft.Common.TextBox",
                 "label": "Custom Domain",
-                "subLabel": "",
-                "defaultValue": "",
                 "toolTip": "The fully-qualified custom domain name for your BrowserBox instance. Specify if you will add an A record for this custom domain with your DNS provider pointing to this VM's public IP address. Otherwise, leave blank to get a random cloudapp.azure.com hostname that sets up automatically.",
                 "constraints": {
                   "required": false,
-                  "regex": "",
-                  "validationMessage": "",
-                  "validations": []
+                  "validations": [
+                    {
+                      "regex": ".*",
+                      "message": "Anything"
+                    }
+                  ]
                 },
-                "infoMessages": [],
                 "visible": true
               },
               {
-                "name": "publicIpAddressCombo1",
+                "name": "dnsAndPublicIP",
                 "type": "Microsoft.Network.PublicIpAddressCombo",
                 "label": {
-                  "publicIpAddress": "BYO public IP address",
-                  "domainNameLabel": "Set your own cloudapps hostname"
+                  "publicIpAddress": "Public IP Address",
+                  "domainNameLabel": "DNS Prefix"
                 },
                 "toolTip": {
-                  "publicIpAddress": "Use an existing Azure public IP address or create a new one",
-                  "domainNameLabel": "Override the default random unique hostname when using cloudapps.azure.com domain."
+                  "publicIpAddress": "A new or existing Azure IP address",
+                  "domainNameLabel": "Unique DNS Prefix (at .$REGION.cloudapps.azure.com) for the public IP address"
                 },
                 "defaultValue": {
-                  "publicIpAddressName": "ip01",
-                  "domainNameLabel": "mydomain"
-                },
-                "constraints": {
-                  "required": {
-                    "domainNameLabel": true
-                  }
+                  "publicIpAddressName": "[concat('bb', uniqueString(basics('utcValue')), '-ip')]",
+                  "domainNameLabel": "[toLower(concat('bb', uniqueString(basics('utcValue'))))]"
                 },
                 "options": {
-                  "hideNone": true,
-                  "hideDomainNameLabel": false,
+                  "hideNone": false,
                   "hideExisting": false,
-                  "zone": 3
-                },
-                "visible": true
+                  "hideDomainNameLabel": false
+                }
               }
             ],
             "visible": "[steps('advanced').show]"
@@ -496,11 +478,13 @@
                 "toolTip": "Your email address where you will receive your Login Link. By providing this you agree to our terms, privacy policy and LetsEncrypt's terms",
                 "constraints": {
                   "required": true,
-                  "regex": "",
-                  "validationMessage": "",
-                  "validations": []
+                  "validations": [
+                    {
+                      "regex": ".*",
+                      "message": "A valid email address"
+                    }
+                  ]
                 },
-                "infoMessages": [],
                 "visible": true
               }
             ],
@@ -517,7 +501,7 @@
       "adminPasswordOrKey": "[if(equals(steps('advanced').SSHAccess.adminPasswordOrKeyauthenticationType.authenticationType, 'password'), steps('advanced').SSHAccess.adminPasswordOrKeyauthenticationType.password, steps('advanced').SSHAccess.adminPasswordOrKeyauthenticationType.sshPublicKey)]",
       "authenticationType": "[steps('advanced').SSHAccess.adminPasswordOrKeyauthenticationType.authenticationType]",
       "dnsNameForPublicIP": "[basics('dnsNameForPublicIP')]",
-      "location": "[basics('location')]",
+      "location": "[location()]",
       "userEmail": "[steps('terms').legalAgree.userEmail]",
       "hostname": "[steps('advanced').CustomDomain.hostname]",
       "token": "[basics('token')]",
@@ -526,7 +510,9 @@
       "installDocViewer": "[basics('installDocViewer')]",
       "understanding": "[basics('understanding')]",
       "randomPassword": "[basics('randomPassword')]",
-      "randomGUID": "[basics('randomGUID')]"
+      "randomGUID": "[basics('randomGUID')]",
+      "dnsAndPublicIpResourceGroupName": "[steps('advanced').CustomDomain.dnsAndPublicIP.resourceGroup]",
+      "dnsAndPublicIpNewOrExisting": "[steps('advanced').CustomDomain.dnsAndPublicIP.newOrExistingOrNone]"
     }
   }
 }
