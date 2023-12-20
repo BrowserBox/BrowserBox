@@ -5,12 +5,6 @@
     "utcValue": {
       "value": "GEN-UNIQUE"
     },
-    "_artifactsLocation": {
-      "value": "GEN-UNIQUE"
-    },
-    "_artifactsLocationSasToken": {
-      "value": "GEN-UNIQUE"
-    },
     "adminUsername": {
       "value": "GEN-UNIQUE"
     },
@@ -19,9 +13,6 @@
     },
     "dnsNameForPublicIP": {
       "value": "GEN-UNIQUE-13"
-    },
-    "location": {
-      "value": "GEN-UNIQUE"
     },
     "userEmail": {
       "value": "GEN-UNIQUE@domain.com"
@@ -33,25 +24,31 @@
       "value": "GEN-GUID"
     },
     "imageChoice": {
-      "value": "Ubuntu 22.04 LTS (gen 2)"  // This can be any of the allowed values
+      "value": "Ubuntu 22.04 LTS (gen 2)"  
     },
     "virtualMachineSize": {
-      "value": "Standard_D2s_v3"  // Adjust as needed
+      "value": "Standard_D2s_v3" 
     },
     "authenticationType": {
-      "value": "password"  // Or "sshPublicKey", depending on your preference
+      "value": "password"  
     },
     "installDocViewer": {
-      "value": "false"  // Or "true"
+      "value": "false"  
     },
     "understanding": {
-      "value": "true"  // Or "false"
+      "value": "true"  
     },
     "randomGUID": {
       "value": "GEN-GUID"
     },
     "randomPassword": {
       "value": "GEN-PASSWORD"
+    },
+    "dnsAndPublicIpResourceGroupName": {
+      "value": "GEN-UNIQUE"
+    },
+    "dnsAndPublicIpNewOrExisting": {
+      "value": "new"
     }
   }
 }
