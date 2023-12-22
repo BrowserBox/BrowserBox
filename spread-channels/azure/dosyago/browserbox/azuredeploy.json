@@ -22,7 +22,7 @@
     },
     "adminUsername": {
       "type": "string",
-      "defaultValue": "cris",
+      "defaultValue": "pro",
       "metadata": {
         "description": "Administrator username for the Virtual Machine."
       }
@@ -50,7 +50,6 @@
     },
     "userEmail": {
       "type": "string",
-      "defaultValue": "cris@dosyago.com",
       "metadata": {
         "description": "The email address of the user."
       }
