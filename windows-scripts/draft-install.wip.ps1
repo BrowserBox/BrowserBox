@@ -1,15 +1,24 @@
-$Outer={
-Add-Type @"
-  using System;
-  using System.Runtime.InteropServices;
-  public class WinApi {
+$Outer = {
+  try {
+    Add-Type @"
+    using System;
+    using System.Runtime.InteropServices;
+    public class WinApi {
       [DllImport("user32.dll")]
       [return: MarshalAs(UnmanagedType.Bool)]
       public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-  }
+    }
 "@
-	$hwnd = (Get-Process -Id $pid).MainWindowHandle
-	[WinApi]::SetWindowPos($hwnd, [IntPtr]::new(-1), 0, 0, 0, 0, 0x0003)
+    $hwnd = (Get-Process -Id $pid).MainWindowHandle
+    # Set the window position and size: X, Y, Width, Height, and make window always be on top
+    [WinApi]::SetWindowPos($hwnd, [IntPtr]::new(-1), 0, 0, 555, 555, 0x0040)
+  }
+  catch {
+    Write-Host "An error occurred: $_"
+  }
+  finally {
+    Write-Host "Continuing..."
+  }
 
 # Main script flow
 $Main={
@@ -19,23 +28,109 @@ $Main={
   EnsureRunningAsAdministrator
 
   # Call the function to show user agreement dialog
-  $dialogResult = Show-UserAgreementDialog
-  if ($dialogResult -ne [System.Windows.Forms.DialogResult]::Yes) {
-    Write-Host 'You must agree to the terms and conditions to proceed.'
-    Exit
+  try {
+    $dialogResult = Show-UserAgreementDialog
+    if ($dialogResult -ne [System.Windows.Forms.DialogResult]::Yes) {
+      Write-Host 'You must agree to the terms and conditions to proceed.'
+      Exit
+    }
+  } 
+  catch {
+    Read-Host "Do you agree to the terms?"
   }
+
+  Write-Host "Installing preliminairies..."
 
   $currentVersion = CheckWingetVersion
   UpdateWingetIfNeeded $currentVersion
 
   InstallIfNeeded "vim" "vim.vim"
+  AddVimToPath
   InstallIfNeeded "git" "git.git"
+
+  InstallAndSourceNvm
+  nvm install latest
+  nvm use latest
+
+  Write-Host "Installing BrowserBox..."
+
+  git clone https://github.com/BrowserBox/BrowserBox.git
+
+  cd BrowserBox
+
+  npm i
 
   Write-Host "Full install completed. Press any key to exit."
   $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
 
 # Function Definitions
+	function CheckAndSourceNvm {
+		$nvmDirectory = Join-Path -Path $env:APPDATA -ChildPath "nvm"
+		if (Test-Path $nvmDirectory) {
+			Write-Host "NVM is already installed."
+			# Add NVM to the current session's path
+			$env:Path += ";$nvmDirectory"
+			return $true
+		} else {
+			Write-Host "NVM is not installed."
+			return $false
+		}
+	}
+
+	function InstallAndSourceNvm {
+		if (-not (CheckAndSourceNvm)) {
+			InstallNvm
+			# Assuming a successful installation, add NVM to path
+			$nvmDirectory = Join-Path -Path $env:APPDATA -ChildPath "nvm"
+			$env:Path += ";$nvmDirectory"
+			Write-Host "NVM has been installed and added to the path for the current session."
+		}
+	}
+
+	function Get-LatestReleaseDownloadUrl {
+		param (
+			[string]$userRepo = "coreybutler/nvm-windows"
+		)
+
+		try {
+			$apiUrl = "https://api.github.com/repos/$userRepo/releases/latest"
+			$latestRelease = Invoke-RestMethod -Uri $apiUrl
+			$downloadUrl = $latestRelease.assets | Where-Object { $_.name -like "*.exe" } | Select-Object -ExpandProperty browser_download_url
+
+			if ($downloadUrl) {
+				return $downloadUrl
+			} else {
+				throw "Download URL not found."
+			}
+		}
+		catch {
+			Write-Error "An error occurred while fetching the latest release: $_"
+		}
+	}
+
+	function InstallNvm {
+		try {
+			$latestNvmDownloadUrl = Get-LatestReleaseDownloadUrl
+			Write-Host "Downloading NVM from $latestNvmDownloadUrl..."
+
+			# Define the path for the downloaded installer
+			$installerPath = Join-Path -Path $env:TEMP -ChildPath "nvm-setup.exe"
+
+			# Download the installer
+			Invoke-WebRequest -Uri $latestNvmDownloadUrl -OutFile $installerPath
+
+			# Execute the installer
+			Write-Host "Running NVM installer..."
+			Start-Process -FilePath $installerPath -Wait
+
+			Write-Host "NVM installation completed."
+		}
+		catch {
+			Write-Error "Failed to install NVM: $_"
+		}
+	}
+
   function CheckForPowerShellCore {
     $pwshPath = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
     if ($null -ne $pwshPath) {
@@ -50,23 +145,31 @@ $Main={
 
   function EnsureRunningAsAdministrator {
     # Check if the script is running as an Administrator
-    if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-      Write-Host "Not currently Administrator. Upgrading privileges..."
-      # Get the current script path
-      $scriptPath = $($MyInvocation.ScriptName)
+    try {
+      if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+        Write-Host "Not currently Administrator. Upgrading privileges..."
+        # Get the current script path
+        $scriptPath = $($MyInvocation.ScriptName)
 
-      # Relaunch the script with administrative rights using the current PowerShell version
-      $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
-      if ($PSVersionTable.PSVersion.Major -ge 6) {
-          $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
+        # Relaunch the script with administrative rights using the current PowerShell version
+        $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
+        if ($PSVersionTable.PSVersion.Major -ge 6) {
+            $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
+        }
+
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+
+        $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
+        #$process.WaitForExit()
+
+        Exit
       }
-
-      $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
-
-      $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
-      #$process.WaitForExit()
-
-      Exit
+    }
+    catch {
+      Write-Host "An error occurred: $_"
+    }
+    finally {
+      Write-Host "Continuing..."
     }
   }
 
@@ -121,6 +224,25 @@ $Main={
       Remove-Item winget.msixbundle
     } else {
       Write-Host "Winget version ($currentVersion) is already greater than $targetVersion."
+    }
+  }
+
+  function AddVimToPath {
+    # Attempt to locate the Vim executable and add it to the system PATH
+    $vimPaths = @("C:\Program Files (x86)\Vim\vim*\vim.exe", "C:\Program Files\Vim\vim*\vim.exe")
+    $vimExecutable = $null
+    foreach ($path in $vimPaths) {
+      $vimExecutable = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
+      if ($vimExecutable -ne $null) {
+        break
+      }
+    }
+
+    if ($vimExecutable -ne $null) {
+      $vimDirectory = [System.IO.Path]::GetDirectoryName($vimExecutable.FullName)
+      Add-ToSystemPath $vimDirectory
+    } else {
+      Write-Warning "Vim executable not found. Please add Vim to the PATH manually."
     }
   }
 

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 sudo $APT update && sudo $APT -y upgrade
 sudo $APT install -y git wget
 sudo $APT -y install curl dirmngr apt-transport-https lsb-release ca-certificates
