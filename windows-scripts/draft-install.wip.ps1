@@ -108,7 +108,7 @@ $Main={
 		Set-Location $sslCertsDir
 
 		# Generate SSL certificates for localhost
-		mkcert 127.0.0.1 localhost --key-file privkey.pem --cert-file fullchain.pem
+		mkcert 127.0.0.1 localhost -key-file privkey.pem -cert-file fullchain.pem
   }
 
 	function CheckAndSourceNvm {
