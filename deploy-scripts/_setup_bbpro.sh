@@ -46,7 +46,7 @@ EOF
 # Windows command for firewall
 open_firewall_port_windows() {
   local port=$1
-  cmd.exe /c "netsh advfirewall firewall add rule name="Open Port $port" dir=in action=allow protocol=TCP localport=$port"
+  netsh advfirewall firewall add rule name="Open Port $port" dir=in action=allow protocol=TCP localport=$port
 }
 
 is_port_free_windows() {
@@ -61,11 +61,11 @@ is_port_free_windows() {
 ensure_certtools_windows() {
   if ! command -v openssl > /dev/null 2>&1; then
     echo "Installing OpenSSL..."
-    cmd.exe /c "winget install -e --id OpenSSL.OpenSSL"
+    winget install -e --id OpenSSL.OpenSSL
   fi
   if ! command -v mkcert &>/dev/null; then
     echo "Installing mkcert..."
-    cmd.exe /c "winget install -e --id FiloSottile.mkcert"
+    winget install -e --id FiloSottile.mkcert
   fi
 }
 
