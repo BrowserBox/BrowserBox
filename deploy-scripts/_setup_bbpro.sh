@@ -98,6 +98,8 @@ detect_os() {
       distro=$(echo "$ID")
     elif [[ "$OSTYPE" == "darwin"* ]]; then
       distro="macos"
+    elif [[ "$OSTYPE" == "msys"* ]]; then
+      distro="win"
     else
       echo "Cannot determine the distribution. Please email support@dosyago.com."
       exit 1
@@ -112,6 +114,9 @@ detect_os() {
       ;;
       macos)
         OS_TYPE="macos"
+      ;;
+      win)
+        OS_TYPE="win"
       ;;
       *)
         echo "Unsupported Operating System: $distro" >&2
@@ -239,8 +244,6 @@ open_firewall_port_range() {
         return 1
     fi
 }
-
-
 
 detect_os
 
