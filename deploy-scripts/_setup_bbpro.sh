@@ -58,6 +58,12 @@ is_port_free_windows() {
   fi
 }
 
+ensure_openssl_windows() {
+  if ! command -v openssl > /dev/null 2>&1; then
+    echo "Installing OpenSSL..."
+    cmd.exe /c winget install -e --id OpenSSL.OpenSSL
+  fi
+}
 
 # Open port on CentOS
 open_firewall_port_centos() {
@@ -153,6 +159,12 @@ find_torrc_path() {
     if [[ ! -f "$TORRC" ]]; then
       cp "$(dirname "$TORRC")/torrc.sample" "$(dirname "$TORRC")/torrc" || touch "$TORRC"
     fi
+	elif [[ "$OS_TYPE" == "win" ]]; then
+    # Example Windows path, adjust as needed
+    TORRC="/c/Program Files/Tor Browser/Browser/TorBrowser/Data/Tor/torrc"
+    TORDIR="/c/Program Files/Tor Browser/Browser/TorBrowser/Data/Tor"
+    echo "Assuming Tor paths $TORRC and $TORDIR." >&2
+    echo "Update in your test.env file if needed." >&2
   else
     TORRC="/etc/tor/torrc"  # Default path for Linux distributions
     TORDIR="/var/lib/tor"
@@ -265,6 +277,11 @@ open_firewall_port_range() {
 }
 
 detect_os
+
+# Call this function if OS_TYPE is win
+if [[ "$OS_TYPE" == "win" ]]; then
+  ensure_openssl_windows
+fi
 
 echo "Parsing command line args..." >&2
 echo "" >&2
