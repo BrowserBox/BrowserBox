@@ -58,10 +58,14 @@ is_port_free_windows() {
   fi
 }
 
-ensure_openssl_windows() {
+ensure_certtools_windows() {
   if ! command -v openssl > /dev/null 2>&1; then
     echo "Installing OpenSSL..."
     cmd.exe /c winget install -e --id OpenSSL.OpenSSL
+  fi
+  if ! command -v mkcert &>/dev/null; then
+    echo "Installing mkcert..."
+    cmd.exe /c winget install -e --id FiloSottile.mkcert
   fi
 }
 
@@ -116,38 +120,38 @@ is_port_free() {
 
 # Detect Operating System
 detect_os() {
-    if command_exists lsb_release ; then
-      distro=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
-    elif [[ -f /etc/os-release ]]; then
-      . /etc/os-release
-      distro=$(echo "$ID")
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-      distro="macos"
-    elif [[ "$OSTYPE" == "msys"* ]]; then
-      distro="win"
-    else
-      echo "Cannot determine the distribution. Please email support@dosyago.com."
-      exit 1
-    fi
+  if command_exists lsb_release ; then
+    distro=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+  elif [[ -f /etc/os-release ]]; then
+    . /etc/os-release
+    distro=$(echo "$ID")
+  elif [[ "$OSTYPE" == "darwin"* ]]; then
+    distro="macos"
+  elif [[ "$OSTYPE" == "msys"* ]]; then
+    distro="win"
+  else
+    echo "Cannot determine the distribution. Please email support@dosyago.com."
+    exit 1
+  fi
 
-    case "$distro" in
-      centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
-        OS_TYPE="centos"
+  case "$distro" in
+    centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
+      OS_TYPE="centos"
+    ;;
+    debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
+      OS_TYPE="debian"
+    ;;
+    macos)
+      OS_TYPE="macos"
+    ;;
+    win)
+      OS_TYPE="win"
+    ;;
+    *)
+      echo "Unsupported Operating System: $distro" >&2
+      exit 1
       ;;
-      debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
-        OS_TYPE="debian"
-      ;;
-      macos)
-        OS_TYPE="macos"
-      ;;
-      win)
-        OS_TYPE="win"
-      ;;
-      *)
-        echo "Unsupported Operating System: $distro" >&2
-        exit 1
-        ;;
-    esac
+  esac
 }
 
 find_torrc_path() {
@@ -280,7 +284,7 @@ detect_os
 
 # Call this function if OS_TYPE is win
 if [[ "$OS_TYPE" == "win" ]]; then
-  ensure_openssl_windows
+  ensure_certtools_windows
 fi
 
 echo "Parsing command line args..." >&2
