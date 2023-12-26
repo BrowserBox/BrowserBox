@@ -97,7 +97,7 @@ $Main={
 		Move-Item -Path $tempPath -Destination $destPath -Force
 
 		# Run mkcert.exe -install
-		& $destPath -install
+		mkcert -install
 
 		$sslCertsDir = "$HOME\sslcerts"
 		if (-not (Test-Path $sslCertsDir)) {
@@ -108,7 +108,7 @@ $Main={
 		Set-Location $sslCertsDir
 
 		# Generate SSL certificates for localhost
-		mkcert 127.0.0.1 localhost -key-file privkey.pem -cert-file fullchain.pem
+		mkcert -key-file privkey.pem -cert-file fullchain.pem localhost 127.0.0.1 link.local
   }
 
 	function CheckAndSourceNvm {
