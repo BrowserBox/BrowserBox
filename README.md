@@ -1,6 +1,38 @@
 # BrowserBox News
 
-BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote browser isolation) and zero trust protection. We've just integrated support for one-click deploy. 
+BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
+
+We're currently increasing our support for marketplaces and one-click-deploy, and will be launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/) soon. Come check us out! 🥇😄
+
+## Deploy to Azure! 
+
+We've just added support for Azure ARM Templates.
+
+**Give it a try! :pinata:**
+
+<table>
+  <tr>
+    <th>Step</th>
+    <th>Outcome</th>
+    <th>Result</th>
+  </tr>
+  <tr>
+    <td align=center>1</td>
+    <td align=center>
+      <a
+        href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json">
+       <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true" alt="Deploy To Azure"/>
+      </a>
+    </td>
+    <td align=center>✅</td>
+  </tr>
+  <tr>
+    <td align=center>2</td><td align=center>Unlock <b>tremendous</b> value.</td><td align=center>✅</td>
+  </tr>
+</table>
+
+
+-------
 
 ## Supported Server OS Table
 
@@ -35,7 +67,7 @@ BrowserBox is an embeddable, multiplayer browser that facilitates RBI (remote br
 
 ## :earth_americas: Deploy BrowserBox Easily
 
-We're excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
+We're excited to announce the release of our Azure Resource Manager (ARM) template! We're also excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
 
 ### One-Click Deploy
 
@@ -44,14 +76,42 @@ We're excited to announce the release of our AWS CloudFormation template and our
     <th></th>
     <th>AWS</th>
     <th>Linode</th>
+    <th>Azure</th>
   </tr>
-  <tr>
+  <tr> 
     <td><b>Deploy</b></td>
-    <td align="center"><a href="https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml"><img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/e8ee6839-b760-4e2e-821e-b9e353c037ea" alt="Deploy to AWS!" width=80 height=80><br>Deploy to AWS</a></td>
-    <td align="center"><a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678"><img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/da556db1-8efe-47a4-b6bf-79f271a92b98" alt="Deploy to Linode!" width=80 height=80><br>Deploy to Linode</a></td>
+    <td align="center">
+      <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/de7f8908-c00e-4cbc-ac73-c6cfc0203ae3" alt="Deploy to AWS!" width=80>
+        <br>Deploy to AWS
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/9102f2f8-6eb4-4088-91c6-ae535a42cdf1"
+          alt="Deploy to Linode!" width=80>
+        <br>Deploy to Linode
+      </a>
+    </td>
+    <td align="center" valign="bottom">
+     <a
+        href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json">
+       <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true" alt="Deploy To Azure" width=180/>
+        <br>Deploy to Azure
+      </a>
+    </td>
   </tr>
 </table>
 
+:gem: **Deploy to Azure**
+
+Ready to tap the awesome power of Azure to run your BrowserBox instances? 
+
+Now you can, simple and easily. 
+
+Use our ARM template to get started quickly.
+
+ [![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json)
 
 🚀 **Deploy on AWS**
 
@@ -238,12 +298,14 @@ To begin the action to create your BrowserBox Tor Hidden Service, click **Submit
 
 ### DIY Method with [`torbb`](https://github.com/BrowserBox/BrowserBox/blob/boss/deploy-scripts/_torbb.sh)
 
+*Please note you need to install from a non-root sudo-capable user. We recommend adding the appropriate NOPASSWD line to your sudoers file. For instructions [see below](https://github.com/BrowserBox/BrowserBox#initial-machine-setup). Also important is, if not using localhost as your hostname, you need to add your DNS A record for `<hostname>` to point to the IP address of your machine before running your install script.*
+
 Alternately, use the new **torbb** command:
 
 ```shell
 $ git clone https://github.com/BrowserBox/BrowserBox.git
 $ cd BrowserBox
-$ yes | ./deploy-scripts/global_install.sh localhost
+$ yes | ./deploy-scripts/global_install.sh <hostname|'localhost'> <email>
 $ setup_bbpro --port <my_port>
 $ torbb
 ```
@@ -265,12 +327,14 @@ Please note ensure you set `export INSTALL_DOC_VIEWER=true` before calling the `
 
 **[New Video: Installing BrowserBox on Amazon AWS EC2 Amazon Linux](https://www.youtube.com/watch?v=-YEOHXXid9g)**
 
+*Please note you need to install from a non-root sudo-capable user. We recommend adding the appropriate NOPASSWD line to your sudoers file. For instructions [see below](https://github.com/BrowserBox/BrowserBox#initial-machine-setup). Also important is, if not using localhost as your hostname, you need to add your DNS A record for `<hostname>` to point to the IP address of your machine before running your install script.*
+
 General install instructions:
 
 ```shell
 git clone https://github.com/BrowserBox/BrowserBox.git
 cd BrowserBox
-./deploy-scripts/global_install.sh <my_hostname> <my_email>
+./deploy-scripts/global_install.sh <hostname> <my_email>
 setup_bbpro --port <my_port>
 bbpro
 ```
@@ -423,11 +487,13 @@ Follow these instructions to install BrowserBoxPro on your system.
 
 ### Initial Machine Setup
 
-Before installing BrowserBoxPro, ensure that your system meets the following requirements:
+Before installing BrowserBox, ensure that your system meets the following minimum requirements:
 
-- Debian VPS with 1 cores, 1 GB RAM, and 25 GB SSD (e.g. Nanode from Linode)
+- VPS with 1 cores, 1 GB RAM, and 25 GB SSD (e.g. Nanode from Linode)
 - At least 5 Mbps internet connection
-- A public hostname with a DNS A record pointing to your VPS's IP address, or localhost certificates installed on your local and remote machine (for example using [mkcert](https://github.com/FiloSottile/mkcert))
+- A public hostname with a DNS A record pointing to your VPS's IP address, or localhost certificates installed on your local and remote machine (for example using [mkcert](https://github.com/FiloSottile/mkcert)).
+
+we assume Debian or Ubuntu in the below but the install process works on CentOS, Fedora, Kali, Ubuntu, RedHat, macOS, Almalinux and Amazon Linux. For supported versions of these operating systems see [this table](https://github.com/BrowserBox/BrowserBox#supported-server-os-table).
 
 First, update your distribution:
 
@@ -439,7 +505,7 @@ And install a few basic tools:
 
 Now, prepare the machine by following these steps:
 
-1. Create a new user to operate BrowserBoxPro:
+1. Create a new user to operate BrowserBox:
    ```
    adduser pro
    ```
@@ -462,31 +528,31 @@ Now, prepare the machine by following these steps:
 
 5. Grant sudo privileges to the user:
    ```
-   usermod -G sudoers pro
+   usermod -aG sudoers pro
    ```
 
 Switch to the `pro` user by executing the following command:
 ```
-sudo -u pro bash
+su - pro
 ```
 
 ### Installation Process
 
 Follow these steps to install BrowserBoxPro:
 
-1. Clone the BrowserBoxPro repository:
+1. Clone the BrowserBox repository:
    ```
-   git clone https://github.com/dosyago/BrowserBoxPro
+   git clone https://github.com/BrowserBox/BrowserBox
    ```
 
 2. Navigate to the cloned repository:
    ```
-   cd BrowserBoxPro
+   cd BrowserBox
    ```
 
-3. Run the global installation script, replacing `<domain_name>` with your domain name that points to the machine you're setting up (if you want to use it without a domain name, just use localhost here for the domain name, but you'll still need to copy the correct mkcert localsthost certificates to $HOME/sslcerts later):
+3. Run the global installation script, replacing `<domain_name>` with your domain name that points to the machine you're setting up (if you want to use it without a domain name, just use `localhost` here for the domain name, but you'll still need to copy the correct mkcert localsthost certificates to $HOME/sslcerts later). Use your `<email>` to agree to our terms and the LetsEncrypt terms:
    ```
-   ./deploy-scripts/global_install.sh <domain_name>
+   ./deploy-scripts/global_install.sh <domain_name> <email>
    ```
 
 4. Start the main service on port 8080 and generate the login link:
@@ -494,12 +560,12 @@ Follow these steps to install BrowserBoxPro:
    setup_bbpro --port 8080
    ```
 
-5. Launch BrowserBox BrowserBox:
+5. Launch BrowserBox:
    ```
    bbpro
    ```
 
-During the installation process, BrowserBoxPro will automatically install the required dependencies and configure the necessary settings.
+During the installation process, BrowserBox will automatically install the required dependencies and configure the necessary settings.
 
 ## Applications in a Zero Trust Framework
 

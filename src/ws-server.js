@@ -157,7 +157,9 @@
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port}`]}:*`, // main service (for data: urls seemingly)
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
-        ] : [])
+        ] : [
+          `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+        ])
       ],
       frameSrc: [
         "'self'",
@@ -166,7 +168,9 @@
         "https://*.dosyago.com:*",
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
-        ] : [])
+        ] : [
+          `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+        ])
       ],
       connectSrc: [
         "'self'",
@@ -184,7 +188,10 @@
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
           `https://${process.env[`ADDR_${server_port + 1}`]}:*`, // devtools
           `https://${process.env[`ADDR_${server_port + 2}`]}:*`, // docs
-        ] : [])
+        ] : [
+          `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+        ])
       ],
       fontSrc: [
         "'self'", 
