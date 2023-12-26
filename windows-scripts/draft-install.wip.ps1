@@ -57,8 +57,12 @@ $Main={
   git clone https://github.com/BrowserBox/BrowserBox.git
 
   cd BrowserBox
+  git checkout windows-install
 
+  Write-Host "Installing dependencies..."
+  Read-Host "Please be responsive to prompts in the install window. Press any key to continue to install."
   npm i
+  npm run parcel
 
   Write-Host "Full install completed. Press any key to exit."
   $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
