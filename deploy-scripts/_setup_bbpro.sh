@@ -43,6 +43,21 @@ display_help() {
 
 EOF
 }
+# Windows command for firewall
+open_firewall_port_windows() {
+  local port=$1
+  cmd.exe /c netsh advfirewall firewall add rule name="Open Port $port" dir=in action=allow protocol=TCP localport=$port
+}
+
+is_port_free_windows() {
+  local port=$1
+  if netstat -ano | grep -q ":$port "; then
+    return 1
+  else
+    return 0
+  fi
+}
+
 
 # Open port on CentOS
 open_firewall_port_centos() {
@@ -74,6 +89,10 @@ is_port_free() {
     if lsof -i tcp:"$port" > /dev/null 2>&1; then
       # If lsof returns a result, the port is in use
       return 1
+    fi
+	elif [[ "$OS_TYPE" == "win"* ]]; then
+	  if !is_port_free_windows "$PORT" &>/dev/null; then	
+			return 1
     fi
   else
     # Prefer 'ss' if available, fall back to 'netstat'
@@ -403,6 +422,12 @@ if [[ -f /etc/centos-release ]]; then
   open_firewall_port_centos "$DT_PORT"
   open_firewall_port_centos "$SV_PORT"
   open_firewall_port_centos "$AUDIO_PORT"
+elif [[ "$OS_TYPE" == "win" ]]; then
+	echo "Detected Windows. Ensuring required ports are open in the firewall..." >&2
+  open_firewall_port_windows "$PORT"
+  open_firewall_port_windows "$DT_PORT"
+  open_firewall_port_windows "$SV_PORT"
+  open_firewall_port_windows "$AUDIO_PORT"
 fi
 
 cat > "${CONFIG_DIR}/test.env" <<EOF
