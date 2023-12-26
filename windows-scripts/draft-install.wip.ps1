@@ -62,8 +62,8 @@ $Main={
   cd BrowserBox
   git checkout windows-install
 
+  Read-Host "Please be responsive to prompts in the install window. Press Enter key to continue to install."
   Write-Host "Installing dependencies..."
-  Read-Host "Please be responsive to prompts in the install window. Press any key to continue to install."
   npm i
   npm run parcel
 
