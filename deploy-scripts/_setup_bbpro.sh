@@ -63,10 +63,6 @@ ensure_certtools_windows() {
     echo "Installing OpenSSL..."
     winget install -e --id OpenSSL.OpenSSL
   fi
-  if ! command -v mkcert &>/dev/null; then
-    echo "Installing mkcert..."
-    winget install -e --id FiloSottile.mkcert
-  fi
 }
 
 # Open port on CentOS

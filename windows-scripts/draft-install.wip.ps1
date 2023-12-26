@@ -52,6 +52,9 @@ $Main={
   nvm install latest
   nvm use latest
 
+  Write-Host "Setting up certificate..."
+  InstallMkcertAndSetup
+
   Write-Host "Installing BrowserBox..."
 
   git clone https://github.com/BrowserBox/BrowserBox.git
@@ -69,6 +72,45 @@ $Main={
 }
 
 # Function Definitions
+  function InstallMkcertAndSetup {
+		$archMap = @{
+				"0" = "x86";
+				"5" = "arm";
+				"6" = "ia64";
+				"9" = "amd64";
+				"12" = "arm64";
+		}
+		$cpuArch = (Get-WmiObject Win32_Processor).Architecture[0]
+		$arch = $archMap["$cpuArch"]
+
+		# Create the download URL
+		$url = "https://dl.filippo.io/mkcert/latest?for=windows/$arch"
+
+		# Download mkcert.exe to a temporary location
+		$tempPath = [System.IO.Path]::GetTempFileName() + ".exe"
+		Invoke-WebRequest -Uri $url -OutFile $tempPath -UseBasicParsing
+
+		# Define a good location to place mkcert.exe (within the system PATH)
+		$destPath = "C:\Windows\System32\mkcert.exe"
+
+		# Move the downloaded file to the destination
+		Move-Item -Path $tempPath -Destination $destPath -Force
+
+		# Run mkcert.exe -install
+		& $destPath -install
+
+		$sslCertsDir = "$HOME\sslcerts"
+		if (-not (Test-Path $sslCertsDir)) {
+				New-Item -ItemType Directory -Path $sslCertsDir
+		}
+
+		# Change directory to the SSL certificates directory
+		Set-Location $sslCertsDir
+
+		# Generate SSL certificates for localhost
+		mkcert 127.0.0.1 localhost --key-file privkey.pem --cert-file fullchain.pem
+  }
+
 	function CheckAndSourceNvm {
 		$nvmDirectory = Join-Path -Path $env:APPDATA -ChildPath "nvm"
 		if (Test-Path $nvmDirectory) {
