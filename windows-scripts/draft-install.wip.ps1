@@ -74,8 +74,11 @@ $Outer = {
     git pull
 
     Read-Host "Ready to install BrowserBox dependencies. Press enter to continue"
+    Write-Host "Cleaning non-Windows detritus..."
+    npm run clean
     Write-Host "Installing dependencies..."
     npm i
+    Write-Host "Building client..."
     npm run parcel
 
     Write-Host "Full install completed. Press any key to exit."

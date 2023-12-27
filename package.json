@@ -43,7 +43,7 @@
     "x64i": "TARGET_ARCH=x64 npm install",
     "postinstall": "node exec.js \"./scripts/postinstall.sh\"",
     "init": "node exec.js \"./reinit_after_restart.sh\"",
-    "clean": "./scripts/clean.sh || echo 'clean failed'",
+    "clean": "node exec.js \"./scripts/clean.sh\"",
     "lint": "./scripts/gglint.sh",
     "tsc-server": "tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System ./src/server.js ./src/decs.d.ts",
     "tsc-inject": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System ./src/zombie-lord/injections/**/*.js ./src/decs.d.ts",
