@@ -19,6 +19,7 @@ $Outer = {
     $xCoordinate = $screenWidth - $windowWidth
 
     # Set the window position: X, Y, Width, Height
+    # Position at top right, in a square box 555 pixels a side
     [WinApi]::SetWindowPos($hwnd, [IntPtr]::new(-1), $xCoordinate, 0, $windowWidth, 555, 0x0040)
   }
   catch {
@@ -65,6 +66,7 @@ $Outer = {
 
     Write-Host "Installing BrowserBox..."
 
+    Set-Location $HOME
     git clone https://github.com/BrowserBox/BrowserBox.git
 
     cd BrowserBox

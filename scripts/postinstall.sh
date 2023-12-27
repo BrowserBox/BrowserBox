@@ -113,16 +113,16 @@ cd ../../../../
 
 USE_FLASH=$(node ./src/show_useflash.js);
 if [[ $USE_FLASH != "false" ]]; then
-  if command -v $APT &>/dev/null; then
+  if command -v winget &>/dev/null; then
+    winget install -e --id jqlang.jq
+  elif command -v $APT &>/dev/null; then
     sudo $APT install jq
-  elif command -v winget &>/dev/null; then
-    winget install jqlang.jq
   elif command -b brew &>/dev/null; then
     brew install jq
   else 
     echo "Do not know how to install 'jq'. Please install manually." >&2
   fi
-  ./scripts/download_ruffle.sh
+  bash ./scripts/download_ruffle.sh
 fi
 
 if ! command -v pm2 &>/dev/null; then
