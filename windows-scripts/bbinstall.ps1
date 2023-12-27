@@ -1,15 +1,17 @@
 $Outer = {
   try {
-    Add-Type -AssemblyName System.Windows.Forms;
-    Add-Type @"
-      using System;
-      using System.Runtime.InteropServices;
-      public class WinApi {
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-      }
+    if (-not ([System.Management.Automation.PSTypeName]'BBInstallerWindowManagement').Type) {
+      Add-Type -AssemblyName System.Windows.Forms;
+      Add-Type @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class BBInstallWindowManagement {
+          [DllImport("user32.dll")]
+          [return: MarshalAs(UnmanagedType.Bool)]
+          public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+        }
 "@
+    }
     $hwnd = (Get-Process -Id $pid).MainWindowHandle
 
     # Get the screen width and window width
@@ -20,7 +22,7 @@ $Outer = {
     $xCoordinate = $screenWidth - $windowWidth
 
     # Set the window position: X, Y, Width, Height
-    [WinApi]::SetWindowPos($hwnd, [IntPtr]::new(-1), $xCoordinate, 0, $windowWidth, 555, 0x0040)
+    [BBInstallerWindowManagement]::SetWindowPos($hwnd, [IntPtr]::new(-1), $xCoordinate, 0, $windowWidth, 555, 0x0040)
   }
   catch {
     Write-Host "An error occurred during window management: $_"
@@ -28,6 +30,9 @@ $Outer = {
   finally {
     Write-Host "Continuing..."
   }
+
+  # Set the title of the PowerShell window
+  $Host.UI.RawUI.WindowTitle = "BrowserBox Windows Edition Installer"
 
   # Main script flow
   $Main={
