@@ -192,17 +192,24 @@ export default class Launcher {
       this.port = await random_port_1.getRandomPort();
     }
     log.verbose('ChromeLauncher', `Launching with command:\n"${execPath}" ${this.flags.join(' ')}`);
-    const script = `#!/bin/bash
-    exec ${process.env.BB_POOL ? 'sudo -g browsers ' : ''}"${execPath}" ${this.flags.join(' ')}
-    `
-    console.log({script});
     const scriptPath = path.resolve(CONFIG.baseDir, 'scripts', 'startc.sh'); 
     fs.mkdirSync(path.dirname(scriptPath), {recursive: true});
-    fs.writeFileSync(scriptPath, script);
-    fs.chmodSync(scriptPath, 0o777);
+    if ( process.platform == 'win32' ) {
+      const script = `
+      cmd.exe /c "${execPath}" ${this.flags.join(' ')}
+      `
+    } else {
+      const script = `#!/bin/bash
+      exec ${process.env.BB_POOL ? 'sudo -g browsers ' : ''}"${execPath}" ${this.flags.join(' ')}
+      `
+      console.log({script});
+      fs.writeFileSync(scriptPath, script);
+      fs.chmodSync(scriptPath, 0o777);
+    }
     const chrome = this.spawn(scriptPath, { detached: true, stdio: DEBUG.val ? 'inherit' : ['ignore', this.outFile, this.errFile], env: this.envVars });
     this.chrome = chrome;
     DEBUG.val && console.log(this.chrome);
+
     this.fs.writeFileSync(this.pidFile, chrome.pid.toString());
     log.verbose('ChromeLauncher', `Chrome running with pid ${chrome.pid} on port ${this.port}.`);
     const pid = chrome.pid;

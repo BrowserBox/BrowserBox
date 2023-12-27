@@ -1,4 +1,8 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+#set -x
+
+trap 'echo -n "Press enter"; read -r;' EXIT ERR
 
 OS_TYPE=""
 ONTOR=false
@@ -60,7 +64,7 @@ is_port_free_windows() {
 
 ensure_certtools_windows() {
   if ! command -v openssl > /dev/null 2>&1; then
-    echo "Installing OpenSSL..."
+    echo "Installing OpenSSL..." >&2
     winget install -e --id OpenSSL.OpenSSL
   fi
 }
@@ -97,7 +101,7 @@ is_port_free() {
       return 1
     fi
 	elif [[ "$OS_TYPE" == "win"* ]]; then
-	  if !is_port_free_windows "$PORT" &>/dev/null; then	
+	  if ! is_port_free_windows "$PORT" &>/dev/null; then	
 			return 1
     fi
   else
@@ -126,7 +130,7 @@ detect_os() {
   elif [[ "$OSTYPE" == "msys"* ]]; then
     distro="win"
   else
-    echo "Cannot determine the distribution. Please email support@dosyago.com."
+    echo "Cannot determine the distribution. Please email support@dosyago.com." >&2
     exit 1
   fi
 
@@ -270,6 +274,8 @@ open_firewall_port_range() {
       else
         $SUDO ufw allow ${start_port}/tcp
       fi
+    elif command -v netsh &>/dev/null; then
+      echo "Will use netsh later"
     else
         echo "No recognized firewall management tool found"
         return 1
