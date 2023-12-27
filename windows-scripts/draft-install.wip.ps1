@@ -48,7 +48,7 @@ $Main={
   AddVimToPath
   InstallIfNeeded "git" "git.git"
 
-  InstallAndSourceNvm
+  InstallAndLoadNvm
   nvm install latest
   nvm use latest
 
@@ -72,32 +72,54 @@ $Main={
 }
 
 # Function Definitions
+  function CheckMkcert {
+    if (Get-Command mkcert -ErrorAction SilentlyContinue) {
+      Write-Host "Mkcert is already installed."
+      return $true 
+    } else {
+      Write-Host "Mkcert is not installed."
+      return $false
+    }
+  }
+
+  function InstallMkcert {
+    Write-Host "Installing mkcert..."
+    try {
+      $archMap = @{
+          "0" = "x86";
+          "5" = "arm";
+          "6" = "ia64";
+          "9" = "amd64";
+          "12" = "arm64";
+      }
+      $cpuArch = (Get-WmiObject Win32_Processor).Architecture[0]
+      $arch = $archMap["$cpuArch"]
+
+      # Create the download URL
+      $url = "https://dl.filippo.io/mkcert/latest?for=windows/$arch"
+
+      # Download mkcert.exe to a temporary location
+      $tempPath = [System.IO.Path]::GetTempFileName() + ".exe"
+      Invoke-WebRequest -Uri $url -OutFile $tempPath -UseBasicParsing
+
+      # Define a good location to place mkcert.exe (within the system PATH)
+      $destPath = "C:\Windows\System32\mkcert.exe"
+
+      # Move the downloaded file to the destination
+      Move-Item -Path $tempPath -Destination $destPath -Force
+
+      # Run mkcert.exe -install
+      mkcert -install
+    }
+    catch {
+			Write-Error "An error occurred while fetching the latest release: $_"
+    }
+  }
+
   function InstallMkcertAndSetup {
-		$archMap = @{
-				"0" = "x86";
-				"5" = "arm";
-				"6" = "ia64";
-				"9" = "amd64";
-				"12" = "arm64";
-		}
-		$cpuArch = (Get-WmiObject Win32_Processor).Architecture[0]
-		$arch = $archMap["$cpuArch"]
-
-		# Create the download URL
-		$url = "https://dl.filippo.io/mkcert/latest?for=windows/$arch"
-
-		# Download mkcert.exe to a temporary location
-		$tempPath = [System.IO.Path]::GetTempFileName() + ".exe"
-		Invoke-WebRequest -Uri $url -OutFile $tempPath -UseBasicParsing
-
-		# Define a good location to place mkcert.exe (within the system PATH)
-		$destPath = "C:\Windows\System32\mkcert.exe"
-
-		# Move the downloaded file to the destination
-		Move-Item -Path $tempPath -Destination $destPath -Force
-
-		# Run mkcert.exe -install
-		mkcert -install
+    if (-not (CheckMkcert)) {
+      InstallMkcert
+    }
 
 		$sslCertsDir = "$HOME\sslcerts"
 		if (-not (Test-Path $sslCertsDir)) {
@@ -111,12 +133,10 @@ $Main={
 		mkcert -key-file privkey.pem -cert-file fullchain.pem localhost 127.0.0.1 link.local
   }
 
-	function CheckAndSourceNvm {
+	function CheckNvm {
 		$nvmDirectory = Join-Path -Path $env:APPDATA -ChildPath "nvm"
 		if (Test-Path $nvmDirectory) {
 			Write-Host "NVM is already installed."
-			# Add NVM to the current session's path
-			$env:Path += ";$nvmDirectory"
 			return $true
 		} else {
 			Write-Host "NVM is not installed."
@@ -124,15 +144,34 @@ $Main={
 		}
 	}
 
-	function InstallAndSourceNvm {
-		if (-not (CheckAndSourceNvm)) {
+	function InstallAndLoadNvm {
+		if (-not (CheckNvm)) {
+      Write-Host "NVM is not installed."
 			InstallNvm
-			# Assuming a successful installation, add NVM to path
-			$nvmDirectory = Join-Path -Path $env:APPDATA -ChildPath "nvm"
-			$env:Path += ";$nvmDirectory"
+      RestartShell
 			Write-Host "NVM has been installed and added to the path for the current session."
-		}
+		} else {
+      Write-Host "NVM is already installed"
+    }
 	}
+
+  function RestartShell {
+    Read-Host "Need to restart shell to load nvm. Press enter to restart." 
+    Write-Host "Relaunching shell and running this script again..."
+    $scriptPath = $($MyInvocation.ScriptName)
+
+    # Relaunch the script with administrative rights using the current PowerShell version
+    $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+      $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
+    }
+
+    $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+
+    $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
+
+    Exit
+  }
 
 	function Get-LatestReleaseDownloadUrl {
 		param (
@@ -156,6 +195,7 @@ $Main={
 	}
 
 	function InstallNvm {
+    Write-Host "Installing NVM..."
 		try {
 			$latestNvmDownloadUrl = Get-LatestReleaseDownloadUrl
 			Write-Host "Downloading NVM from $latestNvmDownloadUrl..."
