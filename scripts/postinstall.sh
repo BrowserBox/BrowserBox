@@ -113,11 +113,21 @@ cd ../../../../
 
 USE_FLASH=$(node ./src/show_useflash.js);
 if [[ $USE_FLASH != "false" ]]; then
-  which $APT && sudo $APT install jq || winget install jq || brew install jq
+  if command -v $APT &>/dev/null; then
+    sudo $APT install jq
+  elif command -v winget &>/dev/null; then
+    winget install jqlang.jq
+  elif command -b brew &>/dev/null; then
+    brew install jq
+  else 
+    echo "Do not know how to install 'jq'. Please install manually." >&2
+  fi
   ./scripts/download_ruffle.sh
 fi
 
-which pm2 || npm i -g pm2@latest || sudo npm i -g pm2@latest
+if ! command -v pm2 &>/dev/null; then
+  npm i -g pm2@latest || sudo npm i -g pm2@latest
+fi
 
 npm i --save-exact esbuild@latest
 
