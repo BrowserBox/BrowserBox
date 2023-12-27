@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-##set -x
+#set -x
 
 # source: @digitalcircuit's comment on GitHub (ruffle#3053):
 # https://github.com/ruffle-rs/ruffle/issues/3053#issuecomment-772997511
@@ -10,7 +10,19 @@ echo "Latest selfhosted.zip is at: $LATEST_SELFHOSTED_URL"
 # And do whatever processing you want to do
 #
 # For example…
-wget "$LATEST_SELFHOSTED_URL" --output-document="selfhosted.zip"
+if command -v wget &>/dev/null; then
+  wget=$(command -v wget)
+elif command -v wget2 &>/dev/null; then
+  wget=$(command -v wget2)
+else
+  wget=""
+fi
+
+if [[ ! -z $wget ]]; then
+  $wget "$LATEST_SELFHOSTED_URL" --output-document="selfhosted.zip"
+else
+  curl -o "selfhosted.zip" "$LATEST_SELFHOSTED_URL"
+fi
 mkdir -p src/public/assets/ruffle
 unzip -o -d "src/public/assets/ruffle" selfhosted.zip
 rm selfhosted.zip
