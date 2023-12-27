@@ -73,8 +73,8 @@ $Outer = {
     git checkout windows-install
     git pull
 
+    Read-Host "Ready to install BrowserBox dependencies. Press enter to continue"
     Write-Host "Installing dependencies..."
-    Read-Host "Please be responsive to prompts in the install window. Press any key to continue to install."
     npm i
     npm run parcel
 
