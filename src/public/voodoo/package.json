@@ -7,7 +7,7 @@
   "main": "index.js",
   "scripts": {
     "test": "serve -p 8080",
-    "postinstall": "node exec.js \"./save_bang.sh && cp node_modules/simple-peer/simplepeer.min.js src/ && cp node_modules/lucide-static/icons/*.svg assets/icons/\"",
+    "postinstall": "node exec.js \"./expose_externals.sh\"",
     "prepublishOnly": "echo 'do not publish this' && fail"
   },
   "repository": {
