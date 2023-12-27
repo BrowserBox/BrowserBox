@@ -71,6 +71,7 @@ $Outer = {
 
     cd BrowserBox
     git checkout windows-install
+    git pull
 
     Write-Host "Installing dependencies..."
     Read-Host "Please be responsive to prompts in the install window. Press any key to continue to install."
