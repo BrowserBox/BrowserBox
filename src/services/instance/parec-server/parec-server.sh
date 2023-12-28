@@ -2,9 +2,14 @@
 
 echo "starting audio service..."
 
+command -v pulseaudio &>/dev/null;
+export PULSE_INSTALLED=$?
+
 function finish {
   echo "Shutting down PA"
-  pulseaudio -k
+  if [ $PULSE_INSTALLED -eq 0 ]; then
+    pulseaudio -k
+  fi
 }
 
 trap finish EXIT
@@ -48,10 +53,10 @@ cd $HOME
 source $HOME/.nvm/nvm.sh
 source $1
 
-node=$(which node)
+node="$(command -v node)"
 username=$(whoami)
 
-echo "Using node" $(node --version)
+echo "Using node" $("$node" --version)
 
 let "audio_port = $APP_PORT - 2"
 
@@ -87,17 +92,19 @@ else
   traceOptions=""
 fi
 
-echo "Starting pulseaudio (PID file: $pidFile)"
-if pulseaudio --check; then
-  echo "pulse is started already"
-  echo "Not shutting pulse down"
-  #pulseaudio -k
-else 
-  pulseaudio --start --use-pid-file=true --log-level=debug
-  until pulseaudio --check
-  do  
-    sleep 2
-  done
+if [ $PULSE_INSTALLED -eq 0 ]; then
+  echo "Starting pulseaudio (PID file: $pidFile)"
+  if pulseaudio --check; then
+    echo "pulse is started already"
+    echo "Not shutting pulse down"
+    #pulseaudio -k
+  else 
+    pulseaudio --start --use-pid-file=true --log-level=debug
+    until pulseaudio --check
+    do  
+      sleep 2
+    done
+  fi
 fi
 
 pa_pid=$(cat $pidFile || pgrep pulseaudio)
@@ -106,5 +113,5 @@ echo "Pulseaudio (pid: $pa_pid) is reniced to priority $reniceValue"
 
 echo "Starting parec-server"
 cd $INSTALL_DIR/src/services/instance/parec-server
-$node $traceOptions index.js $audio_port rtp.monitor $COOKIE_VALUE $LOGIN_TOKEN
+"$node" $traceOptions index.js $audio_port rtp.monitor $COOKIE_VALUE $LOGIN_TOKEN
 

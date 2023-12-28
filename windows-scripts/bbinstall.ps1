@@ -73,6 +73,7 @@ $Outer = {
 
     Set-Location $HOME
     Write-Host $PWD
+    git config --global core.symlinks true
     git clone https://github.com/BrowserBox/BrowserBox.git
 
     cd BrowserBox

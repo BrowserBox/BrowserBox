@@ -455,6 +455,7 @@ fi
 
 cat > "${CONFIG_DIR}/test.env" <<EOF
 export APP_PORT=$PORT
+export AUDIO_PORT=$AUDIO_PORT
 export LOGIN_TOKEN=$TOKEN
 export COOKIE_VALUE=$COOKIE
 export DEVTOOLS_PORT=$DT_PORT

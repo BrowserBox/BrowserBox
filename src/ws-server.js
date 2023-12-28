@@ -164,6 +164,7 @@
       frameSrc: [
         "'self'",
         "https://localhost:*",
+        "https://link.local:*",
         "https://*.browserbox.pro:*",
         "https://*.dosyago.com:*",
         ...(process.env.TORBB ? [
@@ -176,12 +177,15 @@
         "'self'",
         "wss://*.dosyago.com:*",
         "wss://localhost:*",
+        "wss://link.local:*",
         `https://*.dosyago.com:${server_port-1}`,
         `https://*.dosyago.com:${server_port+1}`,
         "https://*.browserbox.pro:*",
         "wss://*.browserbox.pro:*",
         `https://localhost:${server_port-1}`,
         `https://localhost:${server_port+1}`,
+        `https://link.local:${server_port-1}`,
+        `https://link.local:${server_port+1}`,
         ...CONFIG.connectivityTests,
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port}`]}:*`, // main service 
