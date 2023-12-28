@@ -53,6 +53,9 @@ $Outer = {
       Read-Host "Do you agree to the terms?"
     }
 
+    Write-Host "Attempting to ensure Winget is installed..."
+    Repair-WinGetPackageManager -AllUsers
+
     Write-Host "Installing preliminairies..."
 
     $currentVersion = CheckWingetVersion
