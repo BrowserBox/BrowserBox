@@ -11,7 +11,7 @@ $Outer = {
           public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
         }
 "@
-    }
+   }
     $hwnd = (Get-Process -Id $pid).MainWindowHandle
 
     # Get the screen width and window width
@@ -97,6 +97,19 @@ $Outer = {
   }
 
   # Function Definitions
+    function InstallGoogleChrome {
+			$url = 'https://dl.google.com/tag/s/dl/chrome/install/googlechromestandaloneenterprise64.msi'
+			$destination = Join-Path -Path $env:TEMP -ChildPath "googlechrome.msi"
+
+			Write-Host "Downloading Google Chrome..."
+			DownloadFile $url $destination
+
+			Write-Host "Installing Google Chrome silently..."
+			Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i `"$destination`" /qn /norestart" -Wait -NoNewWindow
+
+			Write-Host "Installation of Google Chrome completed."
+    }
+
     function DownloadFile {
       param (
         [string]$Url,
