@@ -5,7 +5,7 @@ $Outer = {
       Add-Type @"
         using System;
         using System.Runtime.InteropServices;
-        public class BBInstallWindowManagement {
+        public class BBInstallerWindowManagement {
           [DllImport("user32.dll")]
           [return: MarshalAs(UnmanagedType.Bool)]
           public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -38,6 +38,10 @@ $Outer = {
   $Main={
     Write-Host "Running PowerShell version: $($PSVersionTable.PSVersion)"
 
+    # Disabling the progress bar
+    $ProgressPreference = 'SilentlyContinue'
+
+    InstallMSVC
     CheckForPowerShellCore
     EnsureRunningAsAdministrator
 
@@ -52,9 +56,6 @@ $Outer = {
     catch {
       Read-Host "Do you agree to the terms?"
     }
-
-    Write-Host "Attempting to ensure Winget is installed..."
-    Repair-WinGetPackageManager -AllUsers
 
     Write-Host "Installing preliminairies..."
 
@@ -96,6 +97,29 @@ $Outer = {
   }
 
   # Function Definitions
+    function DownloadFile {
+      param (
+        [string]$Url,
+        [string]$Destination
+      )
+      $webClient = New-Object System.Net.WebClient
+      $webClient.DownloadFile($Url, "$Destination")
+    }
+
+    function InstallMSVC {
+      $url = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
+			$destination = Join-Path -Path $env:TEMP -ChildPath "vc_redist.x64.exe"
+
+			Write-Host "Downloading Microsoft Visual C++ Redistributable..."
+			DownloadFile $url $destination
+
+			Write-Host "Installing Microsoft Visual C++ Redistributable silently..."
+
+			Start-Process -FilePath $destination -ArgumentList '/install', '/quiet', '/norestart' -Wait -NoNewWindow
+
+			Write-Host "Installation of Microsoft Visual C++ Redistributable completed."
+    }
+
     function CheckMkcert {
       if (Get-Command mkcert -ErrorAction SilentlyContinue) {
         Write-Host "Mkcert is already installed."
@@ -228,11 +252,11 @@ $Outer = {
         $installerPath = Join-Path -Path $env:TEMP -ChildPath "nvm-setup.exe"
 
         # Download the installer
-        Invoke-WebRequest -Uri $latestNvmDownloadUrl -OutFile $installerPath
+				DownloadFile $latestNvmDownloadUrl $installerPath
 
         # Execute the installer
         Write-Host "Running NVM installer..."
-        Start-Process -FilePath $installerPath -Wait
+        Start-Process -FilePath $installerPath -ArgumentList '/install', '/quiet', '/norestart' -Wait -NoNewWindow
 
         Write-Host "NVM installation completed."
       }
