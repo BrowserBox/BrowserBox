@@ -70,12 +70,12 @@ PLATFORM_IS=$("$node" -p process.platform)
 if [[ $PLATFORM_IS == win* ]]; then
   echo "Windows detected. Downgrading to node19 for audify install..."
   npm run clean
-  nvm install v19
-  nvm use v19
+  winpty nvm install v19
+  winpty nvm use v19
   node="$(command -v node)"
   npm i
   echo "Upgrading back to latest node for running audio service..."
-  nvm use latest
+  winpty nvm use latest
   node="$(command -v node)"
 else
   echo "Using node" $("$node" --version)

@@ -4,9 +4,16 @@
 
 unset npm_config_prefix
 
-if ! command -v pm2; then
+if ! command -v pm2 &>/dev/null; then
   source ~/.nvm/nvm.sh;
-  nvm install stable
+  if [[ $(node -p process.platform) == win* ]]; then
+    if ! winpty nvm install latest; then
+      nvm install latest
+    fi
+    winpty nvm use latest
+  else 
+    nvm install latest
+  fi
   npm i -g pm2@latest
 fi
 
