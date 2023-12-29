@@ -55,36 +55,7 @@ source $1
 
 node="$(command -v node)"
 username=$(whoami)
-
-echo "Using node" $("$node" --version)
-
 let "audio_port = $APP_PORT - 2"
-
-echo "Will run audio on port" $audio_port
-echo "User id" $UID
-
-users_gid=$(sudo id -g $UID | xargs)
-rgid=$(ps -o rgid -p $$ | tail -n +2 | xargs)
-PidFile=/run/user/$UID/pulse/pid
-PidFileGroup=$HOME/.config/pulse/$(hostname)-runtime/pid
-
-echo "Real GID" $rgid
-echo "User GID" $users_gid
-
-if [ $users_gid -eq $rgid ] && [ -f $PidFile ]; then
-  pidFile=$PidFile
-else
-  pidFile=$PidFileGroup
-fi
-
-echo "Pid File" $pidFile
-
-if [[ -z "${RENICE_VALUE}" ]]; then
-  reniceValue=-15
-else
-  reniceValue=$RENICE_VALUE
-fi
-
 
 if [[ -z "${TRACE_WARNINGS}" ]]; then
   traceOptions="--trace-warnings"
@@ -92,24 +63,63 @@ else
   traceOptions=""
 fi
 
-if [ $PULSE_INSTALLED -eq 0 ]; then
-  echo "Starting pulseaudio (PID file: $pidFile)"
-  if pulseaudio --check; then
-    echo "pulse is started already"
-    echo "Not shutting pulse down"
-    #pulseaudio -k
-  else 
-    pulseaudio --start --use-pid-file=true --log-level=debug
-    until pulseaudio --check
-    do  
-      sleep 2
-    done
-  fi
-fi
+PLATFORM_IS=$("$node" -p process.platform)
 
-pa_pid=$(cat $pidFile || pgrep pulseaudio)
-sudo renice -n $reniceValue -p $pa_pid
-echo "Pulseaudio (pid: $pa_pid) is reniced to priority $reniceValue"
+if [[ $PLATFORM_IS == win* ]]; then
+  echo "Windows detected. Downgrading to node19 for audify..."
+  npm run clean
+  nvm install v19
+  nvm use v19
+  node="$(command -v node)"
+  npm i
+else
+  echo "Using node" $("$node" --version)
+
+  echo "Will run audio on port" $audio_port
+  echo "User id" $UID
+
+  users_gid=$(sudo id -g $UID | xargs)
+  rgid=$(ps -o rgid -p $$ | tail -n +2 | xargs)
+  PidFile=/run/user/$UID/pulse/pid
+  PidFileGroup=$HOME/.config/pulse/$(hostname)-runtime/pid
+
+  echo "Real GID" $rgid
+  echo "User GID" $users_gid
+
+  if [ $users_gid -eq $rgid ] && [ -f $PidFile ]; then
+    pidFile=$PidFile
+  else
+    pidFile=$PidFileGroup
+  fi
+
+  echo "Pid File" $pidFile
+
+  if [[ -z "${RENICE_VALUE}" ]]; then
+    reniceValue=-15
+  else
+    reniceValue=$RENICE_VALUE
+  fi
+
+
+  if [ $PULSE_INSTALLED -eq 0 ]; then
+    echo "Starting pulseaudio (PID file: $pidFile)"
+    if pulseaudio --check; then
+      echo "pulse is started already"
+      echo "Not shutting pulse down"
+      #pulseaudio -k
+    else 
+      pulseaudio --start --use-pid-file=true --log-level=debug
+      until pulseaudio --check
+      do  
+        sleep 2
+      done
+    fi
+  fi
+
+  pa_pid=$(cat $pidFile || pgrep pulseaudio)
+  sudo renice -n $reniceValue -p $pa_pid
+  echo "Pulseaudio (pid: $pa_pid) is reniced to priority $reniceValue"
+fi
 
 echo "Starting parec-server"
 cd $INSTALL_DIR/src/services/instance/parec-server
