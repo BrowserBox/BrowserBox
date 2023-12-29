@@ -39,8 +39,9 @@ const DEBUG = {
 }
 const Clients = new Set();
 const sockets = new Set();
-const SAMPLE_RATE = process.platform.startsWith('win') ? 48000 : 44100;
+const SAMPLE_RATE = DEBUG.windowsUses48KAudio && process.platform.startsWith('win') ? 48000 : 44100;
 const FORMAT_BIT_DEPTH = 16;
+const BYTE_ALIGNMENT = FORMAT_BIT_DEPTH >> 3;
 const MAX_DATA_SIZE = 1200; //SAMPLE_RATE * (FORMAT_BIT_DEPTH/8) // we actually only get around 300 bytes per chunk on average, ~ 3 msec;
 const CutOff = {};
 const primeCache = [2, 3, 5];
@@ -364,9 +365,19 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
       totalLength += data.length;
       client.packet.push(data);
       if ( totalLength >= client.DATA_SIZE ) {
-        const packet = Buffer.concat(client.packet, totalLength);
-        totalLength = 0;
+        const misAlignment = totalLength % BYTE_ALIGNMENT;
+        let packet = Buffer.concat(client.packet, totalLength);
         client.packet.length = 0;
+
+        if ( misAlignment != 0 ) {
+          const remainder = Buffer.from(packet, totalLength, misAlignment);
+          totalLength -= misAlignment;  
+          packet = Buffer.concat(packet, 0, totalLength);
+          client.packet.push(remainder);
+        }
+
+        totalLength = 0;
+
         client.buffer.push(packet);
       }
       while ( client.buffer.length > client.BUF_WINDOW ) {
