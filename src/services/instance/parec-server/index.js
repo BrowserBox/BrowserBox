@@ -372,7 +372,7 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
         if ( misAlignment != 0 ) {
           const remainder = Buffer.from(packet, totalLength, misAlignment);
           totalLength -= misAlignment;  
-          packet = Buffer.concat(packet, 0, totalLength);
+          packet = Buffer.from(packet, 0, totalLength);
           client.packet.push(remainder);
         }
 
