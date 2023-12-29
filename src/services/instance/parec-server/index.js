@@ -370,9 +370,9 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
         client.packet.length = 0;
 
         if ( misAlignment != 0 ) {
-          const remainder = Buffer.from(packet, totalLength, misAlignment);
+          const remainder = packet.subarray(totalLength, misAlignment);
           totalLength -= misAlignment;  
-          packet = Buffer.from(packet, 0, totalLength);
+          packet = packet.subarray(0, totalLength);
           client.packet.push(remainder);
           totalLength = misAlignment;
         } else {
@@ -380,6 +380,7 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
         }
 
         client.buffer.push(packet);
+        console.log(`Pushing packet length: ${packet.length}`);
       }
       while ( client.buffer.length > client.BUF_WINDOW ) {
         client.buffer.shift();
