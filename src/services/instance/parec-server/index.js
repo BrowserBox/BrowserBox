@@ -374,9 +374,10 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
           totalLength -= misAlignment;  
           packet = Buffer.from(packet, 0, totalLength);
           client.packet.push(remainder);
+          totalLength = misAlignment;
+        } else {
+          totalLength = 0;
         }
-
-        totalLength = 0;
 
         client.buffer.push(packet);
       }
