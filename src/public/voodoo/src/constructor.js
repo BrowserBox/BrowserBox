@@ -1351,7 +1351,7 @@
             if ( ev.key == "Tab" || ev.key == "Enter" ) {
               // do nothing
             } else{
-              console.info(`[sendKey]: sending event: ${keyEvent.key}`, keyEvent);
+              DEBUG.debugKeyEvents && console.info(`[sendKey]: sending event: ${keyEvent.key}`, keyEvent);
               H(ev);
             }
           }
