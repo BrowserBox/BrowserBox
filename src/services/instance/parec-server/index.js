@@ -177,6 +177,7 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
         ],
         mediaSrc: [
           "'self'",
+          "https://link.local:*",
           "https://localhost:*",
           "https://*.dosyago.com:*",
           "https://*.browserbox.pro:*"
@@ -199,6 +200,8 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
         ],
         connectSrc: [
           "'self'",
+          "wss://*.link.local:*",
+          `https://*.link.local:${PORT+1}`,
           "wss://*.dosyago.com:*",
           `https://*.dosyago.com:${PORT+1}`,
           "wss://*.browserbox.pro:*",

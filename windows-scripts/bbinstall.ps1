@@ -95,7 +95,8 @@ $Outer = {
     Write-Host "Cleaning non-Windows detritus..."
     npm run clean
     Write-Host "Installing dependencies..."
-    npm i
+    #npm i
+    .\\scripts\\autoinstall.sh
     Write-Host "Building client..."
     npm run parcel
 
