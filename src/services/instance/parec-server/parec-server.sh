@@ -17,21 +17,21 @@ trap finish EXIT
 get_install_dir() {
   # Find potential directories containing .bbpro_install_dir
   pwd="$(pwd)"
-  install_path1=$(find $pwd -name .bbpro_install_dir -print 2>/dev/null)
+  install_path1=$(find "$pwd" -name .bbpro_install_dir -print 2>/dev/null)
 
   # Loop through each found path to check if node_modules also exists in the same directory
   IFS=$'\n'  # Change Internal Field Separator to newline for iteration
-  for path in $install_path1; do
-    dir=$(dirname $path)
+  for path in "$install_path1"; do
+    dir="$(dirname $path)"
     if [ -d "$dir/node_modules" ]; then
       echo "$dir"
       return 0
     fi
   done
 
-  install_path2=$(find $HOME -name .bbpro_install_dir -print 2>/dev/null)
+  install_path2=$(find "$HOME" -name .bbpro_install_dir -print 2>/dev/null)
   IFS=$'\n'  # Change Internal Field Separator to newline for iteration
-  for path in $install_path2; do
+  for path in "$install_path2"; do
     dir=$(dirname $path)
     if [ -d "$dir/node_modules" ]; then
       echo "$dir"
@@ -49,8 +49,8 @@ echo "Found bbpro at: $INSTALL_DIR"
 
 echo "starting nvm"
 unset npm_config_prefix
-cd $HOME
-source $HOME/.nvm/nvm.sh
+cd "$HOME"
+source "${HOME}/.nvm/nvm.sh"
 source $1
 
 node="$(command -v node)"
@@ -63,7 +63,7 @@ else
   traceOptions=""
 fi
 
-cd $INSTALL_DIR/src/services/instance/parec-server
+cd "${INSTALL_DIR}/src/services/instance/parec-server"
 
 PLATFORM_IS=$("$node" -p process.platform)
 
