@@ -63,6 +63,8 @@ else
   traceOptions=""
 fi
 
+cd $INSTALL_DIR/src/services/instance/parec-server
+
 PLATFORM_IS=$("$node" -p process.platform)
 
 if [[ $PLATFORM_IS == win* ]]; then
@@ -125,6 +127,5 @@ else
 fi
 
 echo "Starting parec-server"
-cd $INSTALL_DIR/src/services/instance/parec-server
 "$node" $traceOptions index.js $audio_port rtp.monitor $COOKIE_VALUE $LOGIN_TOKEN
 

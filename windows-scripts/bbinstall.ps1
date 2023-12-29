@@ -1,15 +1,15 @@
 $Outer = {
   try {
-    if (-not ([System.Management.Automation.PSTypeName]'BBInstallerWindowManagement').Type) {
-      Add-Type -AssemblyName System.Windows.Forms;
-      Add-Type @"
-        using System;
-        using System.Runtime.InteropServices;
-        public class BBInstallerWindowManagement {
-          [DllImport("user32.dll")]
-          [return: MarshalAs(UnmanagedType.Bool)]
-          public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-        }
+  if (-not ([System.Management.Automation.PSTypeName]'BBInstallerWindowManagement').Type) {
+    Add-Type -AssemblyName System.Windows.Forms;
+    Add-Type @"
+    using System;
+    using System.Runtime.InteropServices;
+    public class BBInstallerWindowManagement {
+      [DllImport("user32.dll")]
+      [return: MarshalAs(UnmanagedType.Bool)]
+      public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+    }
 "@
    }
     $hwnd = (Get-Process -Id $pid).MainWindowHandle
@@ -41,7 +41,6 @@ $Outer = {
     # Disabling the progress bar
     $ProgressPreference = 'SilentlyContinue'
 
-    InstallMSVC
     CheckForPowerShellCore
     EnsureRunningAsAdministrator
 
@@ -59,14 +58,22 @@ $Outer = {
 
     Write-Host "Installing preliminairies..."
 
+    Install-Module -Name Microsoft.WinGet.Client
+    Repair-WinGetPackageManager -AllUsers
     $currentVersion = CheckWingetVersion
     UpdateWingetIfNeeded $currentVersion
-
+    UpdatePowerShell
+    
+    InstallMSVC
+    InstallGoogleChrome
+   
+    InstallIfNeeded "jq" "jqlang.jq"
     InstallIfNeeded "vim" "vim.vim"
     AddVimToPath
     InstallIfNeeded "git" "git.git"
 
     InstallAndLoadNvm
+
     nvm install latest
     nvm use latest
 
@@ -97,23 +104,40 @@ $Outer = {
   }
 
   # Function Definitions
+    function UpdatePowerShell {
+      if ($PSVersionTable.PSVersion.Major -ge 6) {
+      Write-Host "Recent version of PowerShell already installed. Skipping..."
+      } else {
+      Write-Host "Upgrading PowerShell..."
+      winget install -e --id Microsoft.PowerShell
+      RestartEnvironment
+      }
+    }
+
     function InstallGoogleChrome {
-			$url = 'https://dl.google.com/tag/s/dl/chrome/install/googlechromestandaloneenterprise64.msi'
-			$destination = Join-Path -Path $env:TEMP -ChildPath "googlechrome.msi"
+      $chrometest = Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe'
 
-			Write-Host "Downloading Google Chrome..."
-			DownloadFile $url $destination
+      if($chrometest -eq $true){
+         Write-Host "Chrome is installed"
+      }else{
+        Write-Host "Chrome is not installed"
+        $url = 'https://dl.google.com/tag/s/dl/chrome/install/googlechromestandaloneenterprise64.msi' 
+        $destination = Join-Path -Path $env:TEMP -ChildPath "googlechrome.msi"
 
-			Write-Host "Installing Google Chrome silently..."
-			Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i `"$destination`" /qn /norestart" -Wait -NoNewWindow
+        Write-Host "Downloading Google Chrome..."
+        DownloadFile $url $destination
 
-			Write-Host "Installation of Google Chrome completed."
+        Write-Host "Installing Google Chrome silently..."
+        Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i `"$destination`" /qn /norestart" -Wait -NoNewWindow
+
+        Write-Host "Installation of Google Chrome completed."
+      }
     }
 
     function DownloadFile {
       param (
-        [string]$Url,
-        [string]$Destination
+      [string]$Url,
+      [string]$Destination
       )
       $webClient = New-Object System.Net.WebClient
       $webClient.DownloadFile($Url, "$Destination")
@@ -121,70 +145,70 @@ $Outer = {
 
     function InstallMSVC {
       $url = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
-			$destination = Join-Path -Path $env:TEMP -ChildPath "vc_redist.x64.exe"
+      $destination = Join-Path -Path $env:TEMP -ChildPath "vc_redist.x64.exe"
 
-			Write-Host "Downloading Microsoft Visual C++ Redistributable..."
-			DownloadFile $url $destination
+      Write-Host "Downloading Microsoft Visual C++ Redistributable..."
+      DownloadFile $url $destination
 
-			Write-Host "Installing Microsoft Visual C++ Redistributable silently..."
+      Write-Host "Installing Microsoft Visual C++ Redistributable silently..."
 
-			Start-Process -FilePath $destination -ArgumentList '/install', '/quiet', '/norestart' -Wait -NoNewWindow
+      Start-Process -FilePath $destination -ArgumentList '/install', '/silent', '/quiet', '/norestart' -Wait -NoNewWindow
 
-			Write-Host "Installation of Microsoft Visual C++ Redistributable completed."
+      Write-Host "Installation of Microsoft Visual C++ Redistributable completed."
     }
 
     function CheckMkcert {
       if (Get-Command mkcert -ErrorAction SilentlyContinue) {
-        Write-Host "Mkcert is already installed."
-        return $true 
+      Write-Host "Mkcert is already installed."
+      return $true 
       } else {
-        Write-Host "Mkcert is not installed."
-        return $false
+      Write-Host "Mkcert is not installed."
+      return $false
       }
     }
 
     function InstallMkcert {
       Write-Host "Installing mkcert..."
       try {
-        $archMap = @{
-            "0" = "x86";
-            "5" = "arm";
-            "6" = "ia64";
-            "9" = "amd64";
-            "12" = "arm64";
-        }
-        $cpuArch = (Get-WmiObject Win32_Processor).Architecture[0]
-        $arch = $archMap["$cpuArch"]
+      $archMap = @{
+        "0" = "x86";
+        "5" = "arm";
+        "6" = "ia64";
+        "9" = "amd64";
+        "12" = "arm64";
+      }
+      $cpuArch = (Get-WmiObject Win32_Processor).Architecture[0]
+      $arch = $archMap["$cpuArch"]
 
-        # Create the download URL
-        $url = "https://dl.filippo.io/mkcert/latest?for=windows/$arch"
+      # Create the download URL
+      $url = "https://dl.filippo.io/mkcert/latest?for=windows/$arch"
 
-        # Download mkcert.exe to a temporary location
-        $tempPath = [System.IO.Path]::GetTempFileName() + ".exe"
-        Invoke-WebRequest -Uri $url -OutFile $tempPath -UseBasicParsing
+      # Download mkcert.exe to a temporary location
+      $tempPath = [System.IO.Path]::GetTempFileName() + ".exe"
+      Invoke-WebRequest -Uri $url -OutFile $tempPath -UseBasicParsing
 
-        # Define a good location to place mkcert.exe (within the system PATH)
-        $destPath = "C:\Windows\System32\mkcert.exe"
+      # Define a good location to place mkcert.exe (within the system PATH)
+      $destPath = "C:\Windows\System32\mkcert.exe"
 
-        # Move the downloaded file to the destination
-        Move-Item -Path $tempPath -Destination $destPath -Force
+      # Move the downloaded file to the destination
+      Move-Item -Path $tempPath -Destination $destPath -Force
 
-        # Run mkcert.exe -install
-        mkcert -install
+      # Run mkcert.exe -install
+      mkcert -install
       }
       catch {
-        Write-Error "An error occurred while fetching the latest release: $_"
+      Write-Error "An error occurred while fetching the latest release: $_"
       }
     }
 
     function InstallMkcertAndSetup {
       if (-not (CheckMkcert)) {
-        InstallMkcert
+      InstallMkcert
       }
 
       $sslCertsDir = "$HOME\sslcerts"
       if (-not (Test-Path $sslCertsDir)) {
-          New-Item -ItemType Directory -Path $sslCertsDir
+        New-Item -ItemType Directory -Path $sslCertsDir
       }
 
       # Change directory to the SSL certificates directory
@@ -197,22 +221,22 @@ $Outer = {
     function CheckNvm {
       $nvmDirectory = Join-Path -Path $env:APPDATA -ChildPath "nvm"
       if (Test-Path $nvmDirectory) {
-        Write-Host "NVM is already installed."
-        return $true
+	      Write-Host "NVM is already installed."
+	      return $true
       } else {
-        Write-Host "NVM is not installed."
-        return $false
+	      Write-Host "NVM is not installed."
+	      return $false
       }
     }
 
     function InstallAndLoadNvm {
       if (-not (CheckNvm)) {
-        Write-Host "NVM is not installed."
-        InstallNvm
-        RestartShell
-        Write-Host "NVM has been installed and added to the path for the current session."
+      Write-Host "NVM is not installed."
+      InstallNvm
+      RestartEnvironment
+      Write-Host "NVM has been installed and added to the path for the current session."
       } else {
-        Write-Host "NVM is already installed"
+      Write-Host "NVM is already installed"
       }
     }
 
@@ -255,62 +279,99 @@ $Outer = {
       }
     }
 
+    function RestartEnvironment {
+      param (
+        [string]$ScriptPath = $($MyInvocation.ScriptName)
+      )
+
+      # Refresh environment variables
+
+      # Use the user's home directory
+      $homePath = $HOME
+      $cmdScriptPath = Join-Path -Path $homePath -ChildPath "restart_ps.cmd"
+
+      Write-Host "CSP: $cmdScriptPath"
+
+      # Check if the CMD script exists. If it does, delete it and return (this is the restart phase)
+      if (Test-Path -Path $cmdScriptPath) {
+        Remove-Item -Path $cmdScriptPath
+        return
+      }
+      
+      Write-Host "CSP: $cmdScriptPath"
+
+      $cmdContent = @"
+    @echo off
+    echo Waiting for PowerShell to close...
+    timeout /t 3 /nobreak > NUL
+    start pwsh -NoExit -File "$ScriptPath"
+"@
+      # Write the CMD script to disk
+      $cmdContent | Set-Content -Path $cmdScriptPath
+
+      # Launch the CMD script to restart PowerShell
+      Start-Process "cmd.exe" -ArgumentList "/c `"$cmdScriptPath`""
+      
+      # Exit the current PowerShell session
+      Exit
+    }
+
     function InstallNvm {
       Write-Host "Installing NVM..."
       try {
-        $latestNvmDownloadUrl = Get-LatestReleaseDownloadUrl
-        Write-Host "Downloading NVM from $latestNvmDownloadUrl..."
+      $latestNvmDownloadUrl = Get-LatestReleaseDownloadUrl
+      Write-Host "Downloading NVM from $latestNvmDownloadUrl..."
 
-        # Define the path for the downloaded installer
-        $installerPath = Join-Path -Path $env:TEMP -ChildPath "nvm-setup.exe"
+      # Define the path for the downloaded installer
+      $installerPath = Join-Path -Path $env:TEMP -ChildPath "nvm-setup.exe"
 
-        # Download the installer
-				DownloadFile $latestNvmDownloadUrl $installerPath
+      # Download the installer
+      DownloadFile $latestNvmDownloadUrl $installerPath
 
-        # Execute the installer
-        Write-Host "Running NVM installer..."
-        Start-Process -FilePath $installerPath -ArgumentList '/install', '/quiet', '/norestart' -Wait -NoNewWindow
+      # Execute the installer
+      Write-Host "Running NVM installer..."
+      Start-Process -FilePath $installerPath -ArgumentList '/install', '/silent', '/quiet', '/norestart', '/passive'  -Wait -NoNewWindow
 
-        Write-Host "NVM installation completed."
+      Write-Host "NVM installation completed."
       }
       catch {
-        Write-Error "Failed to install NVM: $_"
+      Write-Error "Failed to install NVM: $_"
       }
     }
 
     function CheckForPowerShellCore {
       $pwshPath = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
       if ($null -ne $pwshPath) {
-        if ($PSVersionTable.PSVersion.Major -eq 5) {
-          Write-Host "Running with latest PowerShell version..."
-          Start-Process $pwshPath -ArgumentList "-NoProfile", "-File", $($MyInvocation.ScriptName)
-          Write-Host "Done"
-          Exit
-        }
+      if ($PSVersionTable.PSVersion.Major -eq 5) {
+        Write-Host "Running with latest PowerShell version..."
+        Start-Process $pwshPath -ArgumentList "-NoProfile", "-File", $($MyInvocation.ScriptName)
+        Write-Host "Done"
+        Exit
+      }
       }
     }
 
     function EnsureRunningAsAdministrator {
       # Check if the script is running as an Administrator
       try {
-        if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-          Write-Host "Not currently Administrator. Upgrading privileges..."
-          # Get the current script path
-          $scriptPath = $($MyInvocation.ScriptName)
+      if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+        Write-Host "Not currently Administrator. Upgrading privileges..."
+        # Get the current script path
+        $scriptPath = $($MyInvocation.ScriptName)
 
-          # Relaunch the script with administrative rights using the current PowerShell version
-          $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
-          if ($PSVersionTable.PSVersion.Major -ge 6) {
-              $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
-          }
-
-          $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
-
-          $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
-          #$process.WaitForExit()
-
-          Exit
+        # Relaunch the script with administrative rights using the current PowerShell version
+        $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
+        if ($PSVersionTable.PSVersion.Major -ge 6) {
+          $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
         }
+
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+
+        $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
+        #$process.WaitForExit()
+
+        Exit
+      }
       }
       catch {
         Write-Host "An error occurred: $_"
@@ -365,12 +426,12 @@ $Outer = {
       param ([string]$currentVersion)
       $targetVersion = "1.6"
       if (-not (Is-VersionGreaterThan -currentVersion $currentVersion -targetVersion $targetVersion)) {
-        Write-Host "Updating Winget to a newer version..."
-        Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile winget.msixbundle
-        Add-AppxPackage winget.msixbundle
-        Remove-Item winget.msixbundle
+      Write-Host "Updating Winget to a newer version..."
+      Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile winget.msixbundle
+      Add-AppxPackage winget.msixbundle
+      Remove-Item winget.msixbundle
       } else {
-        Write-Host "Winget version ($currentVersion) is already greater than $targetVersion."
+      Write-Host "Winget version ($currentVersion) is already greater than $targetVersion."
       }
     }
 
@@ -379,24 +440,24 @@ $Outer = {
       $vimPaths = @("C:\Program Files (x86)\Vim\vim*\vim.exe", "C:\Program Files\Vim\vim*\vim.exe")
       $vimExecutable = $null
       foreach ($path in $vimPaths) {
-        $vimExecutable = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($vimExecutable -ne $null) {
-          break
-        }
+      $vimExecutable = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
+      if ($vimExecutable -ne $null) {
+        break
+      }
       }
 
       if ($vimExecutable -ne $null) {
-        $vimDirectory = [System.IO.Path]::GetDirectoryName($vimExecutable.FullName)
-        Add-ToSystemPath $vimDirectory
+      $vimDirectory = [System.IO.Path]::GetDirectoryName($vimExecutable.FullName)
+      Add-ToSystemPath $vimDirectory
       } else {
-        Write-Warning "Vim executable not found. Please add Vim to the PATH manually."
+      Write-Warning "Vim executable not found. Please add Vim to the PATH manually."
       }
     }
 
     function Is-VersionGreaterThan {
       param (
-        [string]$currentVersion,
-        [string]$targetVersion
+      [string]$currentVersion,
+      [string]$targetVersion
       )
       return [Version]$currentVersion -gt [Version]$targetVersion
     }
@@ -404,10 +465,10 @@ $Outer = {
     function Install-PackageViaWinget {
       param ([string]$packageId)
       try {
-        winget install --id $packageId 
-        Write-Host "Successfully installed $packageId"
+      winget install --id $packageId 
+      Write-Host "Successfully installed $packageId"
       } catch {
-        Write-Error "Failed to install $packageId"
+      Write-Error "Failed to install $packageId"
       }
     }
 
@@ -415,39 +476,40 @@ $Outer = {
       param ([string]$pathToAdd)
       $currentPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
       if (-not $currentPath.Contains($pathToAdd)) {
-        $newPath = $currentPath + ";" + $pathToAdd
-        [Environment]::SetEnvironmentVariable("Path", $newPath, [EnvironmentVariableTarget]::Machine)
-        Write-Host "Added $pathToAdd to system PATH."
+      $newPath = $currentPath + ";" + $pathToAdd
+      [Environment]::SetEnvironmentVariable("Path", $newPath, [EnvironmentVariableTarget]::Machine)
+      Write-Host "Added $pathToAdd to system PATH."
       } else {
-        Write-Host "$pathToAdd is already in system PATH."
+      Write-Host "$pathToAdd is already in system PATH."
       }
     }
 
     function InstallIfNeeded {
       param (
-        [string]$packageName,
-        [string]$packageId
+      [string]$packageName,
+      [string]$packageId
       )
       if (-not (Get-Command $packageName -ErrorAction SilentlyContinue)) {
-        Install-PackageViaWinget $packageId
-        # Add additional logic if needed to handle post-installation steps
+      Install-PackageViaWinget $packageId
+      # Add additional logic if needed to handle post-installation steps
       } else {
-        Write-Host "$packageName is already installed."
+      Write-Host "$packageName is already installed."
       }
     }
 
   Write-Host ""
 
   # Executor helper
-    try {
-      & $Main
-    }
-    catch {
-      Write-Host "An error occurred: $_"
-    }
-    finally {
-      Write-Host "Exiting..."
-    }
+  try {
+    & $Main
+  }
+  catch {
+    Write-Host "An error occurred: $_"
+    $Error[0] | Format-List -Force
+  }
+  finally {
+    Write-Host "Exiting..."
+  }
 }
 
 & $Outer
