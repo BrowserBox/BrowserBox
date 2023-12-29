@@ -6,10 +6,9 @@ unset npm_config_prefix
 
 if ! command -v pm2 &>/dev/null; then
   source ~/.nvm/nvm.sh;
-  if [[ $(node -p process.platform) == win* ]]; then
-    if ! winpty nvm install latest; then
-      nvm install latest
-    fi
+  PLAT="$(node -p process.platform)"
+  if [[ $PLAT == win* ]]; then
+    winpty nvm install latest
     winpty nvm use latest
   else 
     nvm install latest
