@@ -58,20 +58,27 @@ $Outer = {
 
     Write-Host "Installing preliminairies..."
 
+    InstallNuGet
+    try {
+	    Repair-WinGetPackageManager -AllUsers
+    } catch {
+	Write-Host "Could not repair WinGet ($_) will try to install instead."
+    }
     Install-Module -Name Microsoft.WinGet.Client
-    Repair-WinGetPackageManager -AllUsers
+    
     $currentVersion = CheckWingetVersion
     UpdateWingetIfNeeded $currentVersion
     UpdatePowerShell
     
     InstallMSVC
+    EnableWindowsAudio
     InstallPulseAudioForWindows
     InstallGoogleChrome
    
     InstallIfNeeded "jq" "jqlang.jq"
     InstallIfNeeded "vim" "vim.vim"
     AddVimToPath
-    InstallIfNeeded "git" "git.git"
+    InstallIfNeeded "git" "Git.Git"
 
     InstallAndLoadNvm
 
@@ -92,12 +99,10 @@ $Outer = {
     git checkout windows-install
     git pull
 
-    Read-Host "Ready to install BrowserBox dependencies. Press enter to continue"
     Write-Host "Cleaning non-Windows detritus..."
     npm run clean
     Write-Host "Installing dependencies..."
-    #npm i
-    .\\scripts\\autoinstall.sh
+    npm i
     Write-Host "Building client..."
     npm run parcel
 
@@ -106,6 +111,10 @@ $Outer = {
   }
 
   # Function Definitions
+    function EnableWindowsAudio {
+      Write-Host "Implement!!"
+    }
+
     function InstallPulseAudioForWindows {
       $pulseRelease = "https://github.com/pgaskin/pulseaudio-win32/releases/download/v5/pasetup.exe"
       $destination = Join-Path -Path $env:TEMP -ChildPath "pasetup.exe"
@@ -126,7 +135,7 @@ $Outer = {
       Write-Host "Recent version of PowerShell already installed. Skipping..."
       } else {
       Write-Host "Upgrading PowerShell..."
-      winget install -e --id Microsoft.PowerShell
+      winget install -e --id Microsoft.PowerShell --accept-source-agreements
       RestartEnvironment
       }
     }
@@ -246,6 +255,21 @@ $Outer = {
       }
     }
 
+function InstallNuGet {
+  Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+  try {
+    Install-Module -Name PackageManagement -Repository PSGallery -Force
+  } catch {
+    Write-Host "Error installing PackageManagement provider: $_"
+  }
+  try {
+    Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+    Import-PackageProvider -Name NuGet -Force
+  } catch {
+    Write-Host "Error installing NuGet provider: $_"
+  }
+}
+
     function InstallAndLoadNvm {
       if (-not (CheckNvm)) {
       Write-Host "NVM is not installed."
@@ -327,9 +351,13 @@ $Outer = {
       $cmdContent | Set-Content -Path $cmdScriptPath
 
       # Launch the CMD script to restart PowerShell
-      Start-Process "cmd.exe" -ArgumentList "/c `"$cmdScriptPath`""
+      Write-Host "$cmdScriptPath"
+      Read-Host "ready?"
+      Start-Process "cmd.exe" -ArgumentList "/k `"$cmdScriptPath`"" 
       
-      # Exit the current PowerShell session
+      # (thoroughly) Exit the current PowerShell session
+      taskkill /f /im "powershell.exe" 
+      taskkill /f /im "pwsh.exe"
       Exit
     }
 
@@ -482,7 +510,7 @@ $Outer = {
     function Install-PackageViaWinget {
       param ([string]$packageId)
       try {
-      winget install --id $packageId 
+      winget install -e --id $packageId --accept-source-agreements
       Write-Host "Successfully installed $packageId"
       } catch {
       Write-Error "Failed to install $packageId"
@@ -530,3 +558,5 @@ $Outer = {
 }
 
 & $Outer
+
+
