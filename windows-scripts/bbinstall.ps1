@@ -112,8 +112,7 @@ $Outer = {
     Write-Host "Building client..."
     npm run parcel
 
-    Write-Host "Full install completed. Press any key to exit."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    Write-Host "Full install completed."
   }
 
   # Function Definitions
@@ -311,7 +310,6 @@ $Outer = {
     }
 
     function RestartShell {
-      Read-Host "Need to restart shell to load nvm. Press enter to restart." 
       Write-Host "Relaunching shell and running this script again..."
       $scriptPath = $($MyInvocation.ScriptName)
 
@@ -381,7 +379,6 @@ start pwsh -NoExit -File "$ScriptPath"
 
       # Launch the CMD script to restart PowerShell
       Write-Host "$cmdScriptPath"
-      Read-Host "ready?"
       Start-Process "cmd.exe" -ArgumentList "/k `"$cmdScriptPath`"" 
       
       # (thoroughly) Exit the current PowerShell session
