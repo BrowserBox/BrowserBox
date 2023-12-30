@@ -7,6 +7,7 @@
   "main": "index.js",
   "scripts": {
     "clean": "node exec.js \"./scripts/clean.sh\"",
+    "postinstall": "node exec.js  \"./scripts/install_config.sh\"",
     "test": "node index.js",
     "prepublishOnly": "echo 'do not publish this' && fail"
   },
