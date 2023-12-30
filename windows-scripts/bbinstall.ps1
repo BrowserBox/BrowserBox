@@ -65,6 +65,7 @@ $Outer = {
     UpdatePowerShell
     
     InstallMSVC
+    InstallPulseAudioForWindows
     InstallGoogleChrome
    
     InstallIfNeeded "jq" "jqlang.jq"
@@ -105,6 +106,21 @@ $Outer = {
   }
 
   # Function Definitions
+    function InstallPulseAudioForWindows {
+      $pulseRelease = "https://github.com/pgaskin/pulseaudio-win32/releases/download/v5/pasetup.exe"
+      $destination = Join-Path -Path $env:TEMP -ChildPath "pasetup.exe"
+
+      Write-Host "Downloading PulseAudio for Windows by Patrick Gaskin..."
+
+      DownloadFile $pulseRelease $destination
+
+      Write-Host "Downloaded. Installing PulseAudio for Windows by Patrick Gaskin..."
+
+      Start-Process -FilePath $destination -ArgumentList '/install', '/silent', '/quiet', '/norestart' -Wait -NoNewWindow
+
+      Write-Host "Installed PulseAudio for Windows by Patrick Gaskin"
+    }
+
     function UpdatePowerShell {
       if ($PSVersionTable.PSVersion.Major -ge 6) {
       Write-Host "Recent version of PowerShell already installed. Skipping..."
