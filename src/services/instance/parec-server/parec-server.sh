@@ -66,21 +66,12 @@ fi
 cd "${INSTALL_DIR}/src/services/instance/parec-server"
 
 PLATFORM_IS=$("$node" -p process.platform)
+echo "Using node" $("$node" --version)
+echo "Will run audio on port" $audio_port
 
 if [[ $PLATFORM_IS == win* ]]; then
-  echo "Windows detected. Downgrading to node19 for audify install..."
-  npm run clean
-  winpty nvm install v19
-  winpty nvm use v19
-  node="$(command -v node)"
-  npm i
-  echo "Upgrading back to latest node for running audio service..."
-  winpty nvm use latest
-  node="$(command -v node)"
+  echo "Windows detected. Not running linux and macos steps..."
 else
-  echo "Using node" $("$node" --version)
-
-  echo "Will run audio on port" $audio_port
   echo "User id" $UID
 
   users_gid=$(sudo id -g $UID | xargs)

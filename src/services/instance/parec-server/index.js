@@ -509,8 +509,7 @@ async function getEncoder() {
   let parec = undefined;
 
   DEBUG.val && console.log('starting encoder');
-  if ( process.platform == 'win32' ) {
-
+  if ( false && process.platform == 'win32' ) {
     encoder = childProcess.fork(path.resolve(serverPath, 'audify-test', 'index.js'), {
       detached: true,
       stdio: 'pipe'
