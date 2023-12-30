@@ -509,18 +509,42 @@ async function getEncoder() {
   let parec = undefined;
 
   DEBUG.val && console.log('starting encoder');
-  if ( false && process.platform == 'win32' ) {
-    encoder = childProcess.fork(path.resolve(serverPath, 'audify-test', 'index.js'), {
-      detached: true,
-      stdio: 'pipe'
-    });
+  if ( process.platform == 'win32' )  {
+	  try {
+		  encoder = childProcess.spawn(path.resolve(serverPath, 'scripts', 'fmedia', 'fmedia.exe'), [
+			  `--channels=mono`, `--rate=44100`, `--format=int16`,
+			  `--notui`,
+			`--record`,
+			  `--out=@stdout.wav`,
+			  `--dev-loopback=1`
+		  ]);
+			exitOnEpipe(encoder.stdout);
+		  exitOnEpipe(encoder.stderr);
+		  encoder.stderr.pipe(process.stdout);
+	    encoder.on('error', e => {
+	      console.log('encoder error', e);
+	      killEncoder(encoder);
+	      //shutDown();
+	    });
+	    encoder.on('close', e => {
+	      console.log('encoder close', e);
+	      killEncoder(encoder);
+	      //shutDown();
+	    });
+	    encoder.on('exit', e => { 
+	      console.log('encoder exit', e);
+	      killEncoder(encoder);
+	      //shutDown();
+	    });
 
-    encoder.unref();
-
-    if ( ! process.env.TORBB ) {
-      savedEncoder = encoder;
-    }
-    return encoder;
+	    if ( ! process.env.TORBB ) {
+	      savedEncoder = encoder;
+	    }
+		  console.log(encoder);
+	    return encoder;
+	  } catch(e) {
+		  console.warn(`error starting encoder`, e);
+	  }
   } else {
     // Notes on args
       /* 

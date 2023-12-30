@@ -396,59 +396,59 @@ start pwsh -NoExit -File "$ScriptPath"
     function InstallNvm {
       Write-Host "Installing NVM..."
       try {
-				$latestNvmDownloadUrl = Get-LatestReleaseDownloadUrl
-				Write-Host "Downloading NVM from $latestNvmDownloadUrl..."
+      $latestNvmDownloadUrl = Get-LatestReleaseDownloadUrl
+      Write-Host "Downloading NVM from $latestNvmDownloadUrl..."
 
-				# Define the path for the downloaded installer
-				$installerPath = Join-Path -Path $env:TEMP -ChildPath "nvm-setup.exe"
+      # Define the path for the downloaded installer
+      $installerPath = Join-Path -Path $env:TEMP -ChildPath "nvm-setup.exe"
 
-				# Download the installer
-				DownloadFile $latestNvmDownloadUrl $installerPath
+      # Download the installer
+      DownloadFile $latestNvmDownloadUrl $installerPath
 
-				# Execute the installer
-				Write-Host "Running NVM installer..."
-				Start-Process -FilePath $installerPath -ArgumentList '/install', '/silent', '/quiet', '/norestart', '/passive'  -Wait -NoNewWindow
+      # Execute the installer
+      Write-Host "Running NVM installer..."
+      Start-Process -FilePath $installerPath -ArgumentList '/install', '/silent', '/quiet', '/norestart', '/passive'  -Wait -NoNewWindow
 
-				Write-Host "NVM installation completed."
+      Write-Host "NVM installation completed."
       }
       catch {
-				Write-Error "Failed to install NVM: $_"
+      Write-Error "Failed to install NVM: $_"
       }
     }
 
     function CheckForPowerShellCore {
       $pwshPath = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
       if ($null -ne $pwshPath) {
-				if ($PSVersionTable.PSVersion.Major -eq 5) {
-					Write-Host "Running with latest PowerShell version..."
-					Start-Process $pwshPath -ArgumentList "-NoProfile", "-File", $($MyInvocation.ScriptName)
-					Write-Host "Done"
-					Exit
-				}
+      if ($PSVersionTable.PSVersion.Major -eq 5) {
+        Write-Host "Running with latest PowerShell version..."
+        Start-Process $pwshPath -ArgumentList "-NoProfile", "-File", $($MyInvocation.ScriptName)
+        Write-Host "Done"
+        Exit
+      }
       }
     }
 
     function EnsureRunningAsAdministrator {
       # Check if the script is running as an Administrator
       try {
-				if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-					Write-Host "Not currently Administrator. Upgrading privileges..."
-					# Get the current script path
-					$scriptPath = $($MyInvocation.ScriptName)
+      if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+        Write-Host "Not currently Administrator. Upgrading privileges..."
+        # Get the current script path
+        $scriptPath = $($MyInvocation.ScriptName)
 
-					# Relaunch the script with administrative rights using the current PowerShell version
-					$psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
-					if ($PSVersionTable.PSVersion.Major -ge 6) {
-						$psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
-					}
+        # Relaunch the script with administrative rights using the current PowerShell version
+        $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
+        if ($PSVersionTable.PSVersion.Major -ge 6) {
+          $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
+        }
 
-					$arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
 
-					$process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
-					#$process.WaitForExit()
+        $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
+        #$process.WaitForExit()
 
-					Exit
-				}
+        Exit
+      }
       }
       catch {
         Write-Host "An error occurred: $_"
@@ -553,8 +553,8 @@ start pwsh -NoExit -File "$ScriptPath"
 
     function Is-VersionGreaterThan {
       param (
-				[string]$currentVersion,
-				[string]$targetVersion
+      [string]$currentVersion,
+      [string]$targetVersion
       )
       return [Version]$currentVersion -gt [Version]$targetVersion
     }
@@ -562,23 +562,22 @@ start pwsh -NoExit -File "$ScriptPath"
     function Install-PackageViaWinget {
       param ([string]$packageId)
       try {
-				winget install -e --id $packageId --accept-source-agreements
-				Write-Host "Successfully installed $packageId"
+      winget install -e --id $packageId --accept-source-agreements
+      Write-Host "Successfully installed $packageId"
       } catch {
-				Write-Error "Failed to install $packageId"
+      Write-Error "Failed to install $packageId"
       }
     }
 
     function Add-ToSystemPath {
       param ([string]$pathToAdd)
       $currentPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
-
       if (-not $currentPath.Contains($pathToAdd)) {
-				$newPath = $currentPath + ";" + $pathToAdd
-				[Environment]::SetEnvironmentVariable("Path", $newPath, [EnvironmentVariableTarget]::Machine)
-				Write-Host "Added $pathToAdd to system PATH."
+      $newPath = $currentPath + ";" + $pathToAdd
+      [Environment]::SetEnvironmentVariable("Path", $newPath, [EnvironmentVariableTarget]::Machine)
+      Write-Host "Added $pathToAdd to system PATH."
       } else {
-				Write-Host "$pathToAdd is already in system PATH."
+      Write-Host "$pathToAdd is already in system PATH."
       }
     }
 
@@ -610,4 +609,3 @@ start pwsh -NoExit -File "$ScriptPath"
 }
 
 & $Outer
-
