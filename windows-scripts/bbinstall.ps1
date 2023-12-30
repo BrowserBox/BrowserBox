@@ -59,10 +59,11 @@ $Outer = {
     Write-Host "Installing preliminairies..."
 
     InstallNuGet
+
     try {
 	    Repair-WinGetPackageManager -AllUsers
     } catch {
-	Write-Host "Could not repair WinGet ($_) will try to install instead."
+      Write-Host "Could not repair WinGet ($_) will try to install instead."
     }
     Install-Module -Name Microsoft.WinGet.Client
     
@@ -71,8 +72,11 @@ $Outer = {
     UpdatePowerShell
     
     InstallMSVC
+
     EnableWindowsAudio
     InstallPulseAudioForWindows
+    AddPulseAudioToPath
+
     InstallGoogleChrome
    
     InstallIfNeeded "jq" "jqlang.jq"
@@ -86,7 +90,9 @@ $Outer = {
     nvm use latest
 
     Write-Host "Setting up certificate..."
+    BeginSecurityWarningAcceptLoop
     InstallMkcertAndSetup
+    EndSecurityWarningAcceptLoop
 
     Write-Host "Installing BrowserBox..."
 
@@ -111,8 +117,31 @@ $Outer = {
   }
 
   # Function Definitions
+    function BeginSecurityWarningAcceptLoop {
+      Write-Host "Implemente!!"
+    }
+
+    function EndSecurityWarningAcceptLoop {
+      Write-Host "Implemente!!"
+    }
+
     function EnableWindowsAudio {
-      Write-Host "Implement!!"
+      Write-Host "Enabling windows audio service..."
+
+      try {
+        Set-Service -Name Audiosrv -StartupType Automatic
+        Start-Service -Name Audiosrv
+      } catch {
+        Write-Host "Error when attempting to enable Windows Audio service: $_"
+      }
+
+      try {
+        Get-PnpDevice | Where-Object { $_.Class -eq 'AudioEndpoint' } | Select-Object Status, Class, FriendlyName
+      } catch {
+        Write-Host "Error when attempting to list sound devices: $_"
+      }
+
+      Write-Host "Completed audio service startup attempt."
     }
 
     function InstallPulseAudioForWindows {
@@ -132,11 +161,11 @@ $Outer = {
 
     function UpdatePowerShell {
       if ($PSVersionTable.PSVersion.Major -ge 6) {
-      Write-Host "Recent version of PowerShell already installed. Skipping..."
+        Write-Host "Recent version of PowerShell already installed. Skipping..."
       } else {
-      Write-Host "Upgrading PowerShell..."
-      winget install -e --id Microsoft.PowerShell --accept-source-agreements
-      RestartEnvironment
+        Write-Host "Upgrading PowerShell..."
+        winget install -e --id Microsoft.PowerShell --accept-source-agreements
+        RestartEnvironment
       }
     }
 
@@ -162,8 +191,8 @@ $Outer = {
 
     function DownloadFile {
       param (
-      [string]$Url,
-      [string]$Destination
+        [string]$Url,
+        [string]$Destination
       )
       $webClient = New-Object System.Net.WebClient
       $webClient.DownloadFile($Url, "$Destination")
@@ -185,51 +214,51 @@ $Outer = {
 
     function CheckMkcert {
       if (Get-Command mkcert -ErrorAction SilentlyContinue) {
-      Write-Host "Mkcert is already installed."
-      return $true 
+        Write-Host "Mkcert is already installed."
+        return $true 
       } else {
-      Write-Host "Mkcert is not installed."
-      return $false
+        Write-Host "Mkcert is not installed."
+        return $false
       }
     }
 
     function InstallMkcert {
       Write-Host "Installing mkcert..."
       try {
-      $archMap = @{
-        "0" = "x86";
-        "5" = "arm";
-        "6" = "ia64";
-        "9" = "amd64";
-        "12" = "arm64";
-      }
-      $cpuArch = (Get-WmiObject Win32_Processor).Architecture[0]
-      $arch = $archMap["$cpuArch"]
+        $archMap = @{
+          "0" = "x86";
+          "5" = "arm";
+          "6" = "ia64";
+          "9" = "amd64";
+          "12" = "arm64";
+        }
+        $cpuArch = (Get-WmiObject Win32_Processor).Architecture[0]
+        $arch = $archMap["$cpuArch"]
 
-      # Create the download URL
-      $url = "https://dl.filippo.io/mkcert/latest?for=windows/$arch"
+        # Create the download URL
+        $url = "https://dl.filippo.io/mkcert/latest?for=windows/$arch"
 
-      # Download mkcert.exe to a temporary location
-      $tempPath = [System.IO.Path]::GetTempFileName() + ".exe"
-      Invoke-WebRequest -Uri $url -OutFile $tempPath -UseBasicParsing
+        # Download mkcert.exe to a temporary location
+        $tempPath = [System.IO.Path]::GetTempFileName() + ".exe"
+        Invoke-WebRequest -Uri $url -OutFile $tempPath -UseBasicParsing
 
-      # Define a good location to place mkcert.exe (within the system PATH)
-      $destPath = "C:\Windows\System32\mkcert.exe"
+        # Define a good location to place mkcert.exe (within the system PATH)
+        $destPath = "C:\Windows\System32\mkcert.exe"
 
-      # Move the downloaded file to the destination
-      Move-Item -Path $tempPath -Destination $destPath -Force
+        # Move the downloaded file to the destination
+        Move-Item -Path $tempPath -Destination $destPath -Force
 
-      # Run mkcert.exe -install
-      mkcert -install
+        # Run mkcert.exe -install
+        mkcert -install
       }
       catch {
-      Write-Error "An error occurred while fetching the latest release: $_"
+        Write-Error "An error occurred while fetching the latest release: $_"
       }
     }
 
     function InstallMkcertAndSetup {
       if (-not (CheckMkcert)) {
-      InstallMkcert
+        InstallMkcert
       }
 
       $sslCertsDir = "$HOME\sslcerts"
@@ -247,37 +276,37 @@ $Outer = {
     function CheckNvm {
       $nvmDirectory = Join-Path -Path $env:APPDATA -ChildPath "nvm"
       if (Test-Path $nvmDirectory) {
-	      Write-Host "NVM is already installed."
-	      return $true
+        Write-Host "NVM is already installed."
+        return $true
       } else {
-	      Write-Host "NVM is not installed."
-	      return $false
+        Write-Host "NVM is not installed."
+        return $false
       }
     }
 
-function InstallNuGet {
-  Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-  try {
-    Install-Module -Name PackageManagement -Repository PSGallery -Force
-  } catch {
-    Write-Host "Error installing PackageManagement provider: $_"
-  }
-  try {
-    Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
-    Import-PackageProvider -Name NuGet -Force
-  } catch {
-    Write-Host "Error installing NuGet provider: $_"
-  }
-}
+    function InstallNuGet {
+      Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+      try {
+        Install-Module -Name PackageManagement -Repository PSGallery -Force
+      } catch {
+        Write-Host "Error installing PackageManagement provider: $_"
+      }
+      try {
+        Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+        Import-PackageProvider -Name NuGet -Force
+      } catch {
+        Write-Host "Error installing NuGet provider: $_"
+      }
+    }
 
     function InstallAndLoadNvm {
       if (-not (CheckNvm)) {
-      Write-Host "NVM is not installed."
-      InstallNvm
-      RestartEnvironment
-      Write-Host "NVM has been installed and added to the path for the current session."
+        Write-Host "NVM is not installed."
+        InstallNvm
+        RestartEnvironment
+        Write-Host "NVM has been installed and added to the path for the current session."
       } else {
-      Write-Host "NVM is already installed"
+        Write-Host "NVM is already installed"
       }
     }
 
@@ -342,10 +371,10 @@ function InstallNuGet {
       Write-Host "CSP: $cmdScriptPath"
 
       $cmdContent = @"
-    @echo off
-    echo Waiting for PowerShell to close...
-    timeout /t 3 /nobreak > NUL
-    start pwsh -NoExit -File "$ScriptPath"
+@echo off
+echo Waiting for PowerShell to close...
+timeout /t 3 /nobreak > NUL
+start pwsh -NoExit -File "$ScriptPath"
 "@
       # Write the CMD script to disk
       $cmdContent | Set-Content -Path $cmdScriptPath
@@ -485,17 +514,36 @@ function InstallNuGet {
       $vimPaths = @("C:\Program Files (x86)\Vim\vim*\vim.exe", "C:\Program Files\Vim\vim*\vim.exe")
       $vimExecutable = $null
       foreach ($path in $vimPaths) {
-      $vimExecutable = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
-      if ($vimExecutable -ne $null) {
-        break
-      }
+        $vimExecutable = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($vimExecutable -ne $null) {
+            break
+        }
       }
 
       if ($vimExecutable -ne $null) {
-      $vimDirectory = [System.IO.Path]::GetDirectoryName($vimExecutable.FullName)
-      Add-ToSystemPath $vimDirectory
+        $vimDirectory = [System.IO.Path]::GetDirectoryName($vimExecutable.FullName)
+        Add-ToSystemPath $vimDirectory
       } else {
-      Write-Warning "Vim executable not found. Please add Vim to the PATH manually."
+        Write-Warning "Vim executable not found. Please add Vim to the PATH manually."
+      }
+    }
+
+    function AddPulseAudioToPath {
+      # Attempt to locate the Vim executable and add it to the system PATH
+      $paPaths = @("C:\Program Files (x86)\PulseAudio\bin\pulseaudio.exe", "C:\Program Files\PulseAudio\bin\pulseaudio.exe")
+      $paExecutable = $null
+      foreach ($path in $paPaths) {
+        $paExecutable = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($paExecutable -ne $null) {
+          break
+        }
+      }
+
+      if ($paExecutable -ne $null) {
+        $paDirectory = [System.IO.Path]::GetDirectoryName($paExecutable.FullName)
+        Add-ToSystemPath $paDirectory
+      } else {
+        Write-Warning "PulseAudio executable not found. Please add PulseAudio to the PATH manually."
       }
     }
 
