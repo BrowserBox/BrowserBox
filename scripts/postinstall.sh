@@ -4,15 +4,16 @@
 
 unset npm_config_prefix
 
-if ! command -v pm2 &>/dev/null; then
+PLAT="$(node -p process.platform)"
+if [[ $PLAT == win* ]]; then
+  winpty nvm install latest
+  winpty nvm use latest
+else 
   source ~/.nvm/nvm.sh;
-  PLAT="$(node -p process.platform)"
-  if [[ $PLAT == win* ]]; then
-    winpty nvm install latest
-    winpty nvm use latest
-  else 
-    nvm install latest
-  fi
+  nvm install latest
+fi
+
+if ! command -v pm2 &>/dev/null; then
   npm i -g pm2@latest
 fi
 
