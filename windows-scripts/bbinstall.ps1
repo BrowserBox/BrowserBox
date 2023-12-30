@@ -43,6 +43,7 @@ $Outer = {
 
     CheckForPowerShellCore
     EnsureRunningAsAdministrator
+    RemoveAnyRestartScript
 
     # Call the function to show user agreement dialog
     try {
@@ -75,7 +76,6 @@ $Outer = {
 
     EnableWindowsAudio
     InstallPulseAudioForWindows
-    AddPulseAudioToPath
 
     InstallGoogleChrome
    
@@ -116,6 +116,16 @@ $Outer = {
   }
 
   # Function Definitions
+    function RemoveAnyRestartScript {
+      $homePath = $HOME
+      $cmdScriptPath = Join-Path -Path $homePath -ChildPath "restart_ps.cmd"
+
+      # Check if the CMD script exists. If it does, delete it and return (this is the restart phase)
+      if (Test-Path -Path $cmdScriptPath) {
+        Remove-Item -Path $cmdScriptPath
+      }
+    }
+
     function BeginSecurityWarningAcceptLoop {
       Write-Host "Implemente!!"
     }
@@ -144,18 +154,23 @@ $Outer = {
     }
 
     function InstallPulseAudioForWindows {
-      $pulseRelease = "https://github.com/pgaskin/pulseaudio-win32/releases/download/v5/pasetup.exe"
-      $destination = Join-Path -Path $env:TEMP -ChildPath "pasetup.exe"
+      if (-not (Get-Command "pulseaudio.exe" -ErrorAction SilentlyContinue) ) { 
+        $pulseRelease = "https://github.com/pgaskin/pulseaudio-win32/releases/download/v5/pasetup.exe"
+        $destination = Join-Path -Path $env:TEMP -ChildPath "pasetup.exe"
 
-      Write-Host "Downloading PulseAudio for Windows by Patrick Gaskin..."
+        Write-Host "Downloading PulseAudio for Windows by Patrick Gaskin..."
 
-      DownloadFile $pulseRelease $destination
+        DownloadFile $pulseRelease $destination
 
-      Write-Host "Downloaded. Installing PulseAudio for Windows by Patrick Gaskin..."
+        Write-Host "Downloaded. Installing PulseAudio for Windows by Patrick Gaskin..."
 
-      Start-Process -FilePath $destination -ArgumentList '/install', '/silent', '/quiet', '/norestart' -Wait -NoNewWindow
+        Start-Process -FilePath $destination -ArgumentList '/install', '/silent', '/quiet', '/norestart' -Wait -NoNewWindow
 
-      Write-Host "Installed PulseAudio for Windows by Patrick Gaskin"
+        Write-Host "Installed PulseAudio for Windows by Patrick Gaskin"
+        AddPulseAudioToPath
+      } else {
+        Write-Host "Pulseaudio is already installed"
+      }
     }
 
     function UpdatePowerShell {
@@ -352,28 +367,19 @@ $Outer = {
         [string]$ScriptPath = $($MyInvocation.ScriptName)
       )
 
-      # Refresh environment variables
+      RemoveAnyRestartScript
 
-      # Use the user's home directory
       $homePath = $HOME
       $cmdScriptPath = Join-Path -Path $homePath -ChildPath "restart_ps.cmd"
-
-      Write-Host "CSP: $cmdScriptPath"
-
-      # Check if the CMD script exists. If it does, delete it and return (this is the restart phase)
-      if (Test-Path -Path $cmdScriptPath) {
-        Remove-Item -Path $cmdScriptPath
-        return
-      }
       
-      Write-Host "CSP: $cmdScriptPath"
-
       $cmdContent = @"
 @echo off
 echo Waiting for PowerShell to close...
-timeout /t 3 /nobreak > NUL
+timeout /t 4 /nobreak > NUL
 start pwsh -NoExit -File "$ScriptPath"
 "@
+      Write-Host "Restarting at $cmdScriptPath with: $cmdContent"
+
       # Write the CMD script to disk
       $cmdContent | Set-Content -Path $cmdScriptPath
 
@@ -390,59 +396,59 @@ start pwsh -NoExit -File "$ScriptPath"
     function InstallNvm {
       Write-Host "Installing NVM..."
       try {
-      $latestNvmDownloadUrl = Get-LatestReleaseDownloadUrl
-      Write-Host "Downloading NVM from $latestNvmDownloadUrl..."
+				$latestNvmDownloadUrl = Get-LatestReleaseDownloadUrl
+				Write-Host "Downloading NVM from $latestNvmDownloadUrl..."
 
-      # Define the path for the downloaded installer
-      $installerPath = Join-Path -Path $env:TEMP -ChildPath "nvm-setup.exe"
+				# Define the path for the downloaded installer
+				$installerPath = Join-Path -Path $env:TEMP -ChildPath "nvm-setup.exe"
 
-      # Download the installer
-      DownloadFile $latestNvmDownloadUrl $installerPath
+				# Download the installer
+				DownloadFile $latestNvmDownloadUrl $installerPath
 
-      # Execute the installer
-      Write-Host "Running NVM installer..."
-      Start-Process -FilePath $installerPath -ArgumentList '/install', '/silent', '/quiet', '/norestart', '/passive'  -Wait -NoNewWindow
+				# Execute the installer
+				Write-Host "Running NVM installer..."
+				Start-Process -FilePath $installerPath -ArgumentList '/install', '/silent', '/quiet', '/norestart', '/passive'  -Wait -NoNewWindow
 
-      Write-Host "NVM installation completed."
+				Write-Host "NVM installation completed."
       }
       catch {
-      Write-Error "Failed to install NVM: $_"
+				Write-Error "Failed to install NVM: $_"
       }
     }
 
     function CheckForPowerShellCore {
       $pwshPath = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
       if ($null -ne $pwshPath) {
-      if ($PSVersionTable.PSVersion.Major -eq 5) {
-        Write-Host "Running with latest PowerShell version..."
-        Start-Process $pwshPath -ArgumentList "-NoProfile", "-File", $($MyInvocation.ScriptName)
-        Write-Host "Done"
-        Exit
-      }
+				if ($PSVersionTable.PSVersion.Major -eq 5) {
+					Write-Host "Running with latest PowerShell version..."
+					Start-Process $pwshPath -ArgumentList "-NoProfile", "-File", $($MyInvocation.ScriptName)
+					Write-Host "Done"
+					Exit
+				}
       }
     }
 
     function EnsureRunningAsAdministrator {
       # Check if the script is running as an Administrator
       try {
-      if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-        Write-Host "Not currently Administrator. Upgrading privileges..."
-        # Get the current script path
-        $scriptPath = $($MyInvocation.ScriptName)
+				if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+					Write-Host "Not currently Administrator. Upgrading privileges..."
+					# Get the current script path
+					$scriptPath = $($MyInvocation.ScriptName)
 
-        # Relaunch the script with administrative rights using the current PowerShell version
-        $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
-        if ($PSVersionTable.PSVersion.Major -ge 6) {
-          $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
-        }
+					# Relaunch the script with administrative rights using the current PowerShell version
+					$psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
+					if ($PSVersionTable.PSVersion.Major -ge 6) {
+						$psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
+					}
 
-        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+					$arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
 
-        $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
-        #$process.WaitForExit()
+					$process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
+					#$process.WaitForExit()
 
-        Exit
-      }
+					Exit
+				}
       }
       catch {
         Write-Host "An error occurred: $_"
@@ -496,13 +502,14 @@ start pwsh -NoExit -File "$ScriptPath"
     function UpdateWingetIfNeeded {
       param ([string]$currentVersion)
       $targetVersion = "1.6"
+
       if (-not (Is-VersionGreaterThan -currentVersion $currentVersion -targetVersion $targetVersion)) {
-      Write-Host "Updating Winget to a newer version..."
-      Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile winget.msixbundle
-      Add-AppxPackage winget.msixbundle
-      Remove-Item winget.msixbundle
+        Write-Host "Updating Winget to a newer version..."
+        Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile winget.msixbundle
+        Add-AppxPackage winget.msixbundle
+        Remove-Item winget.msixbundle
       } else {
-      Write-Host "Winget version ($currentVersion) is already greater than $targetVersion."
+        Write-Host "Winget version ($currentVersion) is already greater than $targetVersion."
       }
     }
 
@@ -546,8 +553,8 @@ start pwsh -NoExit -File "$ScriptPath"
 
     function Is-VersionGreaterThan {
       param (
-      [string]$currentVersion,
-      [string]$targetVersion
+				[string]$currentVersion,
+				[string]$targetVersion
       )
       return [Version]$currentVersion -gt [Version]$targetVersion
     }
@@ -555,35 +562,35 @@ start pwsh -NoExit -File "$ScriptPath"
     function Install-PackageViaWinget {
       param ([string]$packageId)
       try {
-      winget install -e --id $packageId --accept-source-agreements
-      Write-Host "Successfully installed $packageId"
+				winget install -e --id $packageId --accept-source-agreements
+				Write-Host "Successfully installed $packageId"
       } catch {
-      Write-Error "Failed to install $packageId"
+				Write-Error "Failed to install $packageId"
       }
     }
 
     function Add-ToSystemPath {
       param ([string]$pathToAdd)
       $currentPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+
       if (-not $currentPath.Contains($pathToAdd)) {
-      $newPath = $currentPath + ";" + $pathToAdd
-      [Environment]::SetEnvironmentVariable("Path", $newPath, [EnvironmentVariableTarget]::Machine)
-      Write-Host "Added $pathToAdd to system PATH."
+				$newPath = $currentPath + ";" + $pathToAdd
+				[Environment]::SetEnvironmentVariable("Path", $newPath, [EnvironmentVariableTarget]::Machine)
+				Write-Host "Added $pathToAdd to system PATH."
       } else {
-      Write-Host "$pathToAdd is already in system PATH."
+				Write-Host "$pathToAdd is already in system PATH."
       }
     }
 
     function InstallIfNeeded {
       param (
-      [string]$packageName,
-      [string]$packageId
+        [string]$packageName,
+        [string]$packageId
       )
       if (-not (Get-Command $packageName -ErrorAction SilentlyContinue)) {
-      Install-PackageViaWinget $packageId
-      # Add additional logic if needed to handle post-installation steps
+        Install-PackageViaWinget $packageId
       } else {
-      Write-Host "$packageName is already installed."
+        Write-Host "$packageName is already installed."
       }
     }
 
@@ -603,5 +610,4 @@ start pwsh -NoExit -File "$ScriptPath"
 }
 
 & $Outer
-
 
