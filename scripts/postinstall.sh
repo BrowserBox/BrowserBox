@@ -3,8 +3,13 @@
 #set -x
 
 unset npm_config_prefix
+node=$(command -v node)
+if command -v node.exe &>/dev/null; then
+  node=$(command -v node.exe) 
+fi
 
-PLAT="$(node -p process.platform)"
+PLAT="$("$node" -p process.platform)"
+
 if [[ $PLAT == win* ]]; then
   winpty nvm install latest
   winpty nvm use latest
