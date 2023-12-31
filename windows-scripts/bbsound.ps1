@@ -155,17 +155,14 @@ if ([string]::IsNullOrWhiteSpace($password)) {
 
 EnsureWindowsAudioService
 Trust-RDPCertificate
-#SetupRDP -MaxConnections 10
-
+SetupRDP -MaxConnections 10
 echo "Login Link" | clip
-Read-Host "We will now restart the RDP service. You will be disconnected. Your clipboard contains your login link."
-
 #Stop-Service -Name TermService -Force -PassThru
 #WaitForRDPServiceToBe -status "Stopped"
 #Start-Service -Name TermService -Force -PassThru
 #WaitForRDPServiceToBe -status "Running"
-Restart-Service -Name TermService -Force
-Write-Host "Remote Desktop Services Restarted"
+#Restart-Service -Name TermService -Force
+#Write-Host "Remote Desktop Services Restarted"
 InitiateLocalRDPSession -password $password
 
 Write-Host "Operation Completed."
