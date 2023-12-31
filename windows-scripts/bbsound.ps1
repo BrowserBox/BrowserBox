@@ -18,7 +18,7 @@ function Trust-RDPCertificate {
   }
 
   # Export the RDP Certificate
-  $rdpCert = Get-ChildItem -Path Cert:\LocalMachine\RemoteDesktop\Certificates | Select-Object -First 1
+  $rdpCert = Get-ChildItem -Path Cert:\LocalMachine\"Remote Desktop" | Select-Object -First 1
   if ($rdpCert -ne $null) {
     Export-Certificate -Cert $rdpCert -FilePath $certPath
     Write-Host "Certificate exported to $certPath"
@@ -64,7 +64,7 @@ function IsAdmin {
   $currentUser.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function EnableAndConfigureRDP {
+function SetupRDP {
   Param (
     [int]$MaxConnections = 10
   )
@@ -82,24 +82,66 @@ function EnableAndConfigureRDP {
 
   Write-Host "Max RDP Connections set to $MaxConnections"
 
-  Restart-Service -Name TermService -Force
-  Write-Host "Remote Desktop Services Restarted"
 }
 
+function WaitForRDPServiceToBe {
+  param (
+    [Parameter(Mandatory=$true)]
+    [string]$status
+  )
+
+  $maxWaitTime = 60 # maximum wait time in seconds
+  $waitInterval = 5 # interval to check the service status in seconds
+
+  for ($i = 0; $i -lt $maxWaitTime; $i += $waitInterval) {
+    $currentStatus = Get-Service -Name TermService | Select-Object -ExpandProperty Status
+    if ($currentStatus -eq $status) {
+      Write-Host "Remote Desktop Services is $status."
+      return $true
+    } else {
+      Write-Host "Waiting for Remote Desktop Services to be $status..."
+      Start-Sleep -Seconds $waitInterval
+    }
+  }
+  Write-Error "Timeout: Remote Desktop Services did not reach the status '$status' within the expected time."
+  return $false
+}
+
+
 function InitiateLocalRDPSession {
-  Param (
-    [string]$password
+  param (
+    [string]$password,
+    [int]$retryCount = 30,
+    [int]$retryInterval = 5
   )
 
   $username = $env:USERNAME
-  $localComputerName = "localhost"
+  $localComputerName = [System.Environment]::MachineName
 
   cmdkey /generic:TERMSRV/$localComputerName /user:$username /pass:$password
   Write-Host "Credentials Stored for RDP"
 
-  mstsc /v:$localComputerName
-  Write-Host "Initiated RDP Session to $localComputerName"
+  for ($i = 0; $i -lt $retryCount; $i++) {
+    mstsc /v:$localComputerName
+    Start-Sleep -Seconds 5 # Wait a bit for mstsc to possibly initiate
+
+    # Get the list of sessions, excluding the current one
+    $rdpSessions = qwinsta /SERVER:$localComputerName | Where-Object { $_ -notmatch "^>" -and $_ -match "\brdp-tcp\b" } 
+    $activeSession = $rdpSessions | Select-String $username
+
+    if ($activeSession) {
+      Write-Host "RDP Session initiated successfully."
+      return
+    } else {
+      Write-Host "RDP Session failed to initiate. Retrying in $retryInterval seconds..."
+      Start-Sleep -Seconds $retryInterval
+    }
+  }
+
+  Write-Error "Failed to initiate RDP Session after $retryCount attempts."
 }
+
+
 
 if (-not (IsAdmin)) {
   Write-Error "This script must be run as an Administrator. Please rerun the script with administrative privileges."
@@ -112,10 +154,21 @@ if ([string]::IsNullOrWhiteSpace($password)) {
 }
 
 EnsureWindowsAudioService
-EnableAndConfigureRDP -MaxConnections 10
 Trust-RDPCertificate
+#SetupRDP -MaxConnections 10
+
+echo "Login Link" | clip
+Read-Host "We will now restart the RDP service. You will be disconnected. Your clipboard contains your login link."
+
+#Stop-Service -Name TermService -Force -PassThru
+#WaitForRDPServiceToBe -status "Stopped"
+#Start-Service -Name TermService -Force -PassThru
+#WaitForRDPServiceToBe -status "Running"
+Restart-Service -Name TermService -Force
+Write-Host "Remote Desktop Services Restarted"
 InitiateLocalRDPSession -password $password
 
 Write-Host "Operation Completed."
+
 
 
