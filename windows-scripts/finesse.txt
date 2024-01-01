@@ -17,3 +17,13 @@ rdp is not killed / minimized / switched off because vnc connected to it. once t
 9. you can start and stop audio, reload the browserbox etc, and everything still works.
 10. set process priority on fmedia to above normal or high (but not realtime hahaha it will kill everything else even it's a tiny little rpocess hahaha)
 11. not sure but may also be necessary to set that rd minimize reg key.
+
+---
+
+so thinking about how we could automate this:
+
+install tighvnc and activaate - automated
+use a vnc client to connect to machine (maybe able to even use a vnc loopback, easy to automate that), otherwise need a "client side" setup.
+run close.bat - automated
+
+Should be possible. But even we do this who knows how long until ms patches this?
