@@ -2,7 +2,7 @@
 
 #set -x
 
-trap 'echo -n "Press enter"; read -r;' EXIT ERR
+trap 'echo "Exiting..."' EXIT ERR
 
 OS_TYPE=""
 ONTOR=false

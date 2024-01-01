@@ -1,6 +1,9 @@
 param (
-  [string]$password
+  [Parameter(Mandatory=$true)]
+  [string]$UserPassword
 )
+
+$CloseJob=$null
 
 $Outer = {
   try {
@@ -40,6 +43,7 @@ $Outer = {
 
   # Main script flow
   $Main={
+
     Write-Host "Running PowerShell version: $($PSVersionTable.PSVersion)"
 
     # Disabling the progress bar
@@ -64,13 +68,12 @@ $Outer = {
     Write-Host "Installing preliminairies..."
 
     InstallNuGet
-
+    Install-Module -Name Microsoft.WinGet.Client
     try {
-	    Repair-WinGetPackageManager -AllUsers
+      Repair-WinGetPackageManager -AllUsers
     } catch {
       Write-Host "Could not repair WinGet ($_) will try to install instead."
     }
-    Install-Module -Name Microsoft.WinGet.Client
     
     $currentVersion = CheckWingetVersion
     UpdateWingetIfNeeded $currentVersion
@@ -79,8 +82,6 @@ $Outer = {
     InstallMSVC
 
     EnableWindowsAudio
-    InstallPulseAudioForWindows
-
     InstallGoogleChrome
    
     InstallIfNeeded "jq" "jqlang.jq"
@@ -118,8 +119,11 @@ $Outer = {
 
     Write-Host "Full install completed."
     Write-Host "Starting BrowserBox..."
+    ./deploy-scripts/_setup_bbpro.ps1 -p 9999
 
-    EstablishRDPLoopback -Password $password
+    EstablishRDPLoopback -pword $UserPassword
+    npm test    
+
   }
 
   # Function Definitions
@@ -200,7 +204,7 @@ $Outer = {
 
     function InitiateLocalRDPSession {
       param (
-        [string]$password,
+        [string]$Password,
         [int]$retryCount = 30,
         [int]$retryInterval = 5
       )
@@ -208,8 +212,8 @@ $Outer = {
       $username = $env:USERNAME
       $localComputerName = [System.Environment]::MachineName
 
-      cmdkey /generic:TERMSRV/$localComputerName /user:$username /pass:$password
-      Write-Host "Credentials Stored for RDP"
+      cmdkey /generic:TERMSRV/$localComputerName /user:$username /pass:$Password
+      Write-Host "Credentials Stored for RDP. Password: $Password"
 
       for ($i = 0; $i -lt $retryCount; $i++) {
         mstsc /v:$localComputerName
@@ -233,14 +237,14 @@ $Outer = {
 
     function EstablishRDPLoopback {
       param (
-        [string]$password,
+        [string]$pword
       )
       Write-Host "Establishing RDP Loopback for Windows Audio solution..."
       EnsureWindowsAudioService
       Trust-RDPCertificate
       SetupRDP -MaxConnections 10
       echo "Login Link" | clip
-      InitiateLocalRDPSession -password $password
+      InitiateLocalRDPSession -Password $pword
       Write-Host "RDP Loopback created. Audio will persist."
     }
 
@@ -255,11 +259,19 @@ $Outer = {
     }
 
     function BeginSecurityWarningAcceptLoop {
-      Write-Host "Implemente!!"
+      $myshell = New-Object -com "Wscript.Shell"
+      $loop = {
+      while($true) {
+        sleep 2
+        $myshell.AppActivate("Security Warning")
+        $myshell.SendKeys("y")
+      }
+      }
+      $script:CloseJob = Start-Job -ScriptBlock $loop
     }
 
     function EndSecurityWarningAcceptLoop {
-      Write-Host "Implemente!!"
+     Stop-Job -Job $script:CloseJob
     }
 
     function EnableWindowsAudio {
@@ -441,10 +453,15 @@ $Outer = {
       }
     }
 
+    function RefreshPath {
+      $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User") 
+    }
+
     function InstallAndLoadNvm {
       if (-not (CheckNvm)) {
         Write-Host "NVM is not installed."
         InstallNvm
+        RefreshPath
         RestartEnvironment
         Write-Host "NVM has been installed and added to the path for the current session."
       } else {
@@ -452,22 +469,57 @@ $Outer = {
       }
     }
 
-    function RestartShell {
-      Write-Host "Relaunching shell and running this script again..."
-      $scriptPath = $($MyInvocation.ScriptName)
+ 
+function RestartShell {
+   Write-Host "Relaunching shell and running this script again..."
+   $scriptPath = $($MyInvocation.ScriptName)
+   $userPasswordArg = if ($UserPassword) { "-UserPassword `"$UserPassword`"" } else { "" }
 
-      # Relaunch the script with administrative rights using the current PowerShell version
-      $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
-      if ($PSVersionTable.PSVersion.Major -ge 6) {
-        $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
-      }
+   # Relaunch the script with administrative rights using the current PowerShell version
+   $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
+   if ($PSVersionTable.PSVersion.Major -ge 6) {
+     $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
+   }
 
-      $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+   $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $userPasswordArg"
 
-      $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
+   $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
 
-      Exit
-    }
+   Exit
+}
+
+function RestartEnvironment {
+   param (
+     [string]$ScriptPath = $($MyInvocation.ScriptName)
+   )
+
+   RemoveAnyRestartScript
+
+   $homePath = $HOME
+   $cmdScriptPath = Join-Path -Path $homePath -ChildPath "restart_ps.cmd"
+   $userPasswordArg = if ($UserPassword) { "-UserPassword `"$UserPassword`"" } else { "" }
+
+   $cmdContent = @"
+@echo off
+echo Waiting for PowerShell to close...
+timeout /t 4 /nobreak > NUL
+start pwsh -NoExit -File "$ScriptPath" $userPasswordArg
+timeout /t 2
+"@
+Write-Host "Restarting at $cmdScriptPath with: $cmdContent"
+
+  # Write the CMD script to disk
+  $cmdContent | Set-Content -Path $cmdScriptPath
+
+  # Launch the CMD script to restart PowerShell
+  Write-Host "$cmdScriptPath"
+  Start-Process "cmd.exe" -ArgumentList "/c `"$cmdScriptPath`"" 
+  
+  # (thoroughly) Exit the current PowerShell session
+  taskkill /f /im "powershell.exe" 
+  taskkill /f /im "pwsh.exe"
+  Exit
+}
 
     function Get-LatestReleaseDownloadUrl {
       param (
@@ -490,37 +542,7 @@ $Outer = {
       }
     }
 
-    function RestartEnvironment {
-      param (
-        [string]$ScriptPath = $($MyInvocation.ScriptName)
-      )
-
-      RemoveAnyRestartScript
-
-      $homePath = $HOME
-      $cmdScriptPath = Join-Path -Path $homePath -ChildPath "restart_ps.cmd"
-      
-      $cmdContent = @"
-@echo off
-echo Waiting for PowerShell to close...
-timeout /t 4 /nobreak > NUL
-start pwsh -NoExit -File "$ScriptPath"
-"@
-      Write-Host "Restarting at $cmdScriptPath with: $cmdContent"
-
-      # Write the CMD script to disk
-      $cmdContent | Set-Content -Path $cmdScriptPath
-
-      # Launch the CMD script to restart PowerShell
-      Write-Host "$cmdScriptPath"
-      Start-Process "cmd.exe" -ArgumentList "/k `"$cmdScriptPath`"" 
-      
-      # (thoroughly) Exit the current PowerShell session
-      taskkill /f /im "powershell.exe" 
-      taskkill /f /im "pwsh.exe"
-      Exit
-    }
-
+   
     function InstallNvm {
       Write-Host "Installing NVM..."
       try {
@@ -544,47 +566,50 @@ start pwsh -NoExit -File "$ScriptPath"
       }
     }
 
-    function CheckForPowerShellCore {
-      $pwshPath = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
-      if ($null -ne $pwshPath) {
-      if ($PSVersionTable.PSVersion.Major -eq 5) {
-        Write-Host "Running with latest PowerShell version..."
-        Start-Process $pwshPath -ArgumentList "-NoProfile", "-File", $($MyInvocation.ScriptName)
-        Write-Host "Done"
-        Exit
-      }
-      }
-    }
-
-    function EnsureRunningAsAdministrator {
-      # Check if the script is running as an Administrator
-      try {
-      if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-        Write-Host "Not currently Administrator. Upgrading privileges..."
-        # Get the current script path
-        $scriptPath = $($MyInvocation.ScriptName)
-
-        # Relaunch the script with administrative rights using the current PowerShell version
-        $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
-        if ($PSVersionTable.PSVersion.Major -ge 6) {
-          $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
+function CheckForPowerShellCore {
+    $pwshPath = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
+    if ($null -ne $pwshPath) {
+        if ($PSVersionTable.PSVersion.Major -eq 5) {
+            Write-Host "Running with latest PowerShell version..."
+            $scriptPath = $($MyInvocation.ScriptName)
+            $userPasswordArg = if ($UserPassword) { "-UserPassword `"$UserPassword`"" } else { "" }
+            Start-Process $pwshPath -ArgumentList "-NoProfile", "-File", "`"$scriptPath`" $userPasswordArg"
+            Write-Host "Done"
+            Exit
         }
-
-        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
-
-        $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
-        #$process.WaitForExit()
-
-        Exit
-      }
-      }
-      catch {
-        Write-Host "An error occurred: $_"
-      }
-      finally {
-        Write-Host "Continuing..."
-      }
     }
+}
+
+function EnsureRunningAsAdministrator {
+    # Check if the script is running as an Administrator
+    try {
+        if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+            Write-Host "Not currently Administrator. Upgrading privileges..."
+            # Get the current script path
+            $scriptPath = $($MyInvocation.ScriptName)
+            $userPasswordArg = if ($UserPassword) { "-UserPassword `"$UserPassword`"" } else { "" }
+
+            # Relaunch the script with administrative rights using the current PowerShell version
+            $psExecutable = Join-Path -Path $PSHOME -ChildPath "powershell.exe"
+            if ($PSVersionTable.PSVersion.Major -ge 6) {
+                $psExecutable = Join-Path -Path $PSHOME -ChildPath "pwsh.exe"
+            }
+
+            $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $userPasswordArg"
+
+            $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
+            #$process.WaitForExit()
+
+            Exit
+        }
+    }
+    catch {
+        Write-Host "An error occurred: $_"
+    }
+    finally {
+        Write-Host "Continuing..."
+    }
+}
 
     function Show-UserAgreementDialog {
       Add-Type -AssemblyName System.Windows.Forms
@@ -732,8 +757,11 @@ start pwsh -NoExit -File "$ScriptPath"
     $Error[0] | Format-List -Force
   }
   finally {
+    Write-Host "Your login link will be in your clipboard once installation completed."
+    Write-Host "Remember to also keep the inner RDP connection (on the RDP desktop) open to enable BrowserBox Audio"
     Write-Host "Exiting..."
   }
 }
 
 & $Outer
+

@@ -20,11 +20,12 @@ function RestartShellIfNeeded {
   # Restart the script as administrator if not already
   if (-not (Is-Admin)) {
     try {
-      Write-Host $scriptPath
+      Write-Information $scriptPath
       $arguments = "-NoProfile -ExecutionPolicy Bypass -Command Set-Location $PWD; $scriptPath " + ($scriptArgs -Join ' ')
       $process = (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -WorkingDirectory $PWD -PassThru)
       $process.WaitForExit()
-      Get-Content $HOME\.config\dosyago\bbpro\login.link
+      $login_link = (Get-Content "$HOME\.config\dosyago\bbpro\login.link")
+      Write-Output $login_link
       Exit
     }
     catch {
@@ -77,6 +78,7 @@ RestartShellIfNeeded
 # & ".\deploy-scripts\_setup_bbpro.sh" $scriptArgs > abc
 cmd.exe /c .\deploy-scripts\_setup_bbpro.sh $scriptArgs 
 
-Get-Content $HOME\.config\dosyago\bbpro\login.link
+$login_link = (Get-Content $HOME\.config\dosyago\bbpro\login.link)
+Write-Output $login_link
 
 
