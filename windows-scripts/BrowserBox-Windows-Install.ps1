@@ -32,10 +32,10 @@ $Outer = {
     [BBInstallerWindowManagement]::SetWindowPos($hwnd, [IntPtr]::new(-1), $xCoordinate, 0, $windowWidth, 555, 0x0040)
   }
   catch {
-    Write-Information "An error occurred during window management: $_"
+    Write-Output "An error occurred during window management: $_"
   }
   finally {
-    Write-Information "Continuing..."
+    Write-Output "Continuing..."
   }
 
   # Set the title of the PowerShell window
@@ -45,7 +45,7 @@ $Outer = {
   $Main = {
     Guard-CheckAndSaveUserAgreement
 
-    Write-Information "Running PowerShell version: $($PSVersionTable.PSVersion)"
+    Write-Output "Running PowerShell version: $($PSVersionTable.PSVersion)"
 
     # Disabling the progress bar
     $ProgressPreference = 'SilentlyContinue'
@@ -54,7 +54,7 @@ $Outer = {
     EnsureRunningAsAdministrator
     RemoveAnyRestartScript
 
-    Write-Information "Installing preliminairies..."
+    Write-Output "Installing preliminairies..."
 
     EnhancePackageManagers
 
@@ -78,15 +78,15 @@ $Outer = {
     nvm install latest
     nvm use latest
 
-    Write-Information "Setting up certificate..."
+    Write-Output "Setting up certificate..."
     BeginSecurityWarningAcceptLoop
     InstallMkcertAndSetup
     EndSecurityWarningAcceptLoop
 
-    Write-Information "Installing BrowserBox..."
+    Write-Output "Installing BrowserBox..."
 
     Set-Location $HOME
-    Write-Information $PWD
+    Write-Output $PWD
     git config --global core.symlinks true
     git clone https://github.com/BrowserBox/BrowserBox.git
 
@@ -94,15 +94,15 @@ $Outer = {
     git checkout windows-install
     git pull
 
-    Write-Information "Cleaning non-Windows detritus..."
+    Write-Output "Cleaning non-Windows detritus..."
     npm run clean
-    Write-Information "Installing dependencies..."
+    Write-Output "Installing dependencies..."
     npm i
-    Write-Information "Building client..."
+    Write-Output "Building client..."
     npm run parcel
 
-    Write-Information "Full install completed."
-    Write-Information "Starting BrowserBox..."
+    Write-Output "Full install completed."
+    Write-Output "Starting BrowserBox..."
     $loginLink = ./deploy-scripts/_setup_bbpro.ps1 -p 9999
 
     EstablishRDPLoopback -pword $UserPassword
@@ -134,14 +134,14 @@ $Outer = {
     try {
       $dialogResult = Show-UserAgreementDialog
       if ($dialogResult -ne [System.Windows.Forms.DialogResult]::Yes) {
-        Write-Information 'You must agree to the terms and conditions to proceed.'
+        Write-Output 'You must agree to the terms and conditions to proceed.'
         Exit
       }
     }
     catch {
       $userInput = Read-Host "Do you agree to the terms? (Yes/No)"
       if ($userInput -ne 'Yes') {
-        Write-Information 'You must agree to the terms and conditions to proceed.'
+        Write-Output 'You must agree to the terms and conditions to proceed.'
         Exit
       }
     }
@@ -169,7 +169,7 @@ $Outer = {
     $rdpCert = Get-ChildItem -Path Cert:\LocalMachine\"Remote Desktop" | Select-Object -First 1
     if ($rdpCert -ne $null) {
       Export-Certificate -Cert $rdpCert -FilePath $certPath
-      Write-Information "Certificate exported to $certPath"
+      Write-Output "Certificate exported to $certPath"
     }
     else {
       Write-Error "RDP Certificate not found."
@@ -183,7 +183,7 @@ $Outer = {
         $certStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
         $certStore.Add([System.Security.Cryptography.X509Certificates.X509Certificate2]::CreateFromCertFile($certPath))
         $certStore.Close()
-        Write-Information "Certificate added to the Trusted Root Certification Authorities store."
+        Write-Output "Certificate added to the Trusted Root Certification Authorities store."
       }
       catch {
         Write-Error "An error occurred while importing the certificate."
@@ -199,15 +199,15 @@ $Outer = {
 
     # Set service to start automatically
     Set-Service -Name 'Audiosrv' -StartupType Automatic
-    Write-Information "Windows Audio service set to start automatically"
+    Write-Output "Windows Audio service set to start automatically"
 
     # Start the service if it's not running
     if ($audioService.Status -ne 'Running') {
       Start-Service -Name 'Audiosrv'
-      Write-Information "Windows Audio service started"
+      Write-Output "Windows Audio service started"
     }
     else {
-      Write-Information "Windows Audio service is already running"
+      Write-Output "Windows Audio service is already running"
     }
   }
 
@@ -220,14 +220,14 @@ $Outer = {
     if ($rdpStatus.fDenyTSConnections -eq 1) {
       Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
       Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-      Write-Information "RDP Enabled"
+      Write-Output "RDP Enabled"
     }
 
     Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "MaxConnectionAllowed" -Value $MaxConnections
     Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fSingleSessionPerUser" -Value 0
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Name "MaxConnectionCount" -Value 999
 
-    Write-Information "Max RDP Connections set to $MaxConnections"
+    Write-Output "Max RDP Connections set to $MaxConnections"
   }
 
   function InitiateLocalRDPSession {
@@ -241,7 +241,7 @@ $Outer = {
     $localComputerName = [System.Environment]::MachineName
 
     cmdkey /generic:TERMSRV/$localComputerName /user:$username /pass:$Password
-    Write-Information "Credentials Stored for RDP. Password: $Password"
+    Write-Output "Credentials Stored for RDP. Password: $Password"
 
     for ($i = 0; $i -lt $retryCount; $i++) {
       mstsc /v:$localComputerName
@@ -252,11 +252,11 @@ $Outer = {
       $activeSession = $rdpSessions | Select-String $username
 
       if ($activeSession) {
-        Write-Information "RDP Session initiated successfully."
+        Write-Output "RDP Session initiated successfully."
         return
       }
       else {
-        Write-Information "RDP Session failed to initiate. Retrying in $retryInterval seconds..."
+        Write-Output "RDP Session failed to initiate. Retrying in $retryInterval seconds..."
         Start-Sleep -Seconds $retryInterval
       }
     }
@@ -268,12 +268,12 @@ $Outer = {
     param (
       [string]$pword
     )
-    Write-Information "Establishing RDP Loopback for Windows Audio solution..."
+    Write-Output "Establishing RDP Loopback for Windows Audio solution..."
     EnsureWindowsAudioService
     Trust-RDPCertificate
     SetupRDP -MaxConnections 10
     InitiateLocalRDPSession -Password $pword
-    Write-Information "RDP Loopback created. Audio will persist."
+    Write-Output "RDP Loopback created. Audio will persist."
   }
 
   function RemoveAnyRestartScript {
@@ -332,54 +332,62 @@ $Outer = {
   }
 
   function EnableWindowsAudio {
-    Write-Information "Enabling windows audio service..."
+    Write-Output "Enabling windows audio service..."
 
     try {
       Set-Service -Name Audiosrv -StartupType Automatic
       Start-Service -Name Audiosrv
     }
     catch {
-      Write-Information "Error when attempting to enable Windows Audio service: $_"
+      Write-Output "Error when attempting to enable Windows Audio service: $_"
     }
 
     try {
       Get-PnpDevice | Where-Object { $_.Class -eq 'AudioEndpoint' } | Select-Object Status, Class, FriendlyName
     }
     catch {
-      Write-Information "Error when attempting to list sound devices: $_"
+      Write-Output "Error when attempting to list sound devices: $_"
     }
 
-    Write-Information "Completed audio service startup attempt."
+    Write-Output "Completed audio service startup attempt."
   }
 
   function InstallFmedia {
-    $url = "https://github.com/stsaz/fmedia/releases/download/v1.31/fmedia-1.31-windows-x64.zip"
-    $outputDir = Join-Path $env:ProgramFiles "fmedia"
-    $zipPath = Join-Path $env:TEMP "fmedia.zip"
+    if (-not (Get-Command "fmedia.exe" -ErrorAction SilentlyContinue) ) {
+      $url = "https://github.com/stsaz/fmedia/releases/download/v1.31/fmedia-1.31-windows-x64.zip"
+      $outputDir = Join-Path $env:ProgramFiles "fmedia"
+      $zipPath = Join-Path $env:TEMP "fmedia.zip"
 
-    # Download the fmedia zip file
-    Invoke-WebRequest -Uri $url -OutFile $zipPath
+      # Download the fmedia zip file
+      Invoke-WebRequest -Uri $url -OutFile $zipPath
 
-    # Create the output directory if it doesn't exist
-    if (!(Test-Path $outputDir)) {
-      New-Item -Path $outputDir -ItemType Directory
+      # Create the output directory if it doesn't exist
+      if (!(Test-Path $outputDir)) {
+        New-Item -Path $outputDir -ItemType Directory
+      }
+
+      # Extract the zip file
+      Expand-Archive -Path $zipPath -DestinationPath $env:TEMP -Force
+
+      # Move the extracted files to the correct directory
+      $extractedDir = Join-Path $env:TEMP "fmedia"
+      Get-ChildItem -Path "$extractedDir\*" | ForEach-Object {
+        $destPath = Join-Path $outputDir $_.Name
+        if (Test-Path $destPath) {
+          Remove-Item $destPath -Recurse -Force
+        }
+        Move-Item -Path $_.FullName -Destination $outputDir -Force
+      }
+
+      # Install fmedia
+      $fmediaExe = Join-Path $outputDir "fmedia.exe"
+      Add-ToSystemPath $fmediaExe
+
+      & $fmediaExe --install
+
+      # Refresh environment variables in the current session
+      RefreshPath
     }
-
-    # Extract the zip file
-    Expand-Archive -Path $zipPath -DestinationPath $env:TEMP -Force
-
-    # Move the extracted files to the correct directory
-    $extractedDir = Join-Path $env:TEMP "fmedia"
-    Move-Item -Path "$extractedDir\*" -Destination $outputDir -Force
-
-    # Install fmedia
-    $fmediaExe = Join-Path $outputDir "fmedia.exe"
-    Add-ToSystemPath $fmediaExe
-
-    & $fmediaExe --install
-
-    # Refresh environment variables in the current session
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "User")
   }
 
   function InstallPulseAudioForWindows {
@@ -387,28 +395,28 @@ $Outer = {
       $pulseRelease = "https://github.com/pgaskin/pulseaudio-win32/releases/download/v5/pasetup.exe"
       $destination = Join-Path -Path $env:TEMP -ChildPath "pasetup.exe"
 
-      Write-Information "Downloading PulseAudio for Windows by Patrick Gaskin..."
+      Write-Output "Downloading PulseAudio for Windows by Patrick Gaskin..."
 
       DownloadFile $pulseRelease $destination
 
-      Write-Information "Downloaded. Installing PulseAudio for Windows by Patrick Gaskin..."
+      Write-Output "Downloaded. Installing PulseAudio for Windows by Patrick Gaskin..."
 
       Start-Process -FilePath $destination -ArgumentList '/install', '/silent', '/quiet', '/norestart' -Wait -NoNewWindow
 
-      Write-Information "Installed PulseAudio for Windows by Patrick Gaskin"
+      Write-Output "Installed PulseAudio for Windows by Patrick Gaskin"
       AddPulseAudioToPath
     }
     else {
-      Write-Information "Pulseaudio is already installed"
+      Write-Output "Pulseaudio is already installed"
     }
   }
 
   function UpdatePowerShell {
     if ($PSVersionTable.PSVersion.Major -ge 6) {
-      Write-Information "Recent version of PowerShell already installed. Skipping..."
+      Write-Output "Recent version of PowerShell already installed. Skipping..."
     }
     else {
-      Write-Information "Upgrading PowerShell..."
+      Write-Output "Upgrading PowerShell..."
       winget install -e --id Microsoft.PowerShell --accept-source-agreements
       RestartEnvironment
     }
@@ -418,20 +426,20 @@ $Outer = {
     $chrometest = Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe'
 
     if ($chrometest -eq $true) {
-      Write-Information "Chrome is installed"
+      Write-Output "Chrome is installed"
     }
     else {
-      Write-Information "Chrome is not installed"
+      Write-Output "Chrome is not installed"
       $url = 'https://dl.google.com/tag/s/dl/chrome/install/googlechromestandaloneenterprise64.msi'
       $destination = Join-Path -Path $env:TEMP -ChildPath "googlechrome.msi"
 
-      Write-Information "Downloading Google Chrome..."
+      Write-Output "Downloading Google Chrome..."
       DownloadFile $url $destination
 
-      Write-Information "Installing Google Chrome silently..."
+      Write-Output "Installing Google Chrome silently..."
       Start-Process -FilePath 'msiexec.exe' -ArgumentList "/i `"$destination`" /qn /norestart" -Wait -NoNewWindow
 
-      Write-Information "Installation of Google Chrome completed."
+      Write-Output "Installation of Google Chrome completed."
     }
   }
 
@@ -448,29 +456,29 @@ $Outer = {
     $url = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
     $destination = Join-Path -Path $env:TEMP -ChildPath "vc_redist.x64.exe"
 
-    Write-Information "Downloading Microsoft Visual C++ Redistributable..."
+    Write-Output "Downloading Microsoft Visual C++ Redistributable..."
     DownloadFile $url $destination
 
-    Write-Information "Installing Microsoft Visual C++ Redistributable silently..."
+    Write-Output "Installing Microsoft Visual C++ Redistributable silently..."
 
     Start-Process -FilePath $destination -ArgumentList '/install', '/silent', '/quiet', '/norestart' -Wait -NoNewWindow
 
-    Write-Information "Installation of Microsoft Visual C++ Redistributable completed."
+    Write-Output "Installation of Microsoft Visual C++ Redistributable completed."
   }
 
   function CheckMkcert {
     if (Get-Command mkcert -ErrorAction SilentlyContinue) {
-      Write-Information "Mkcert is already installed."
+      Write-Output "Mkcert is already installed."
       return $true
     }
     else {
-      Write-Information "Mkcert is not installed."
+      Write-Output "Mkcert is not installed."
       return $false
     }
   }
 
   function InstallMkcert {
-    Write-Information "Installing mkcert..."
+    Write-Output "Installing mkcert..."
     try {
       $archMap = @{
         "0"  = "x86";
@@ -521,14 +529,13 @@ $Outer = {
   }
 
   function CheckNvm {
-    $nvmDirectory = Join-Path -Path $env:APPDATA -ChildPath "nvm"
-    if (Test-Path $nvmDirectory) {
-      Write-Information "NVM is already installed."
-      return $true
+    if (-not (Get-Command "nvm.exe" -ErrorAction SilentlyContinue) ) {
+      Write-Output "NVM is not installed."
+      return $false
     }
     else {
-      Write-Information "NVM is not installed."
-      return $false
+      Write-Output "NVM is already installed."
+      return $true
     }
   }
 
@@ -539,21 +546,21 @@ $Outer = {
       Import-PackageProvider -Name NuGet -Force
     }
     catch {
-      Write-Information "Error installing NuGet provider: $_"
+      Write-Output "Error installing NuGet provider: $_"
     }
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
     try {
       Install-Module -Name PackageManagement -Repository PSGallery -Force
     }
     catch {
-      Write-Information "Error installing PackageManagement provider: $_"
+      Write-Output "Error installing PackageManagement provider: $_"
     }
     Install-Module -Name Microsoft.WinGet.Client
     try {
       Repair-WinGetPackageManager -AllUsers
     }
     catch {
-      Write-Information "Could not repair WinGet ($_) will try to install instead."
+      Write-Output "Could not repair WinGet ($_) will try to install instead."
     }
   }
 
@@ -563,20 +570,20 @@ $Outer = {
 
   function InstallAndLoadNvm {
     if (-not (CheckNvm)) {
-      Write-Information "NVM is not installed."
+      Write-Output "NVM is not installed."
       InstallNvm
       RefreshPath
       PatchNvmPath
       #RestartEnvironment
-      Write-Information "NVM has been installed and added to the path for the current session."
+      Write-Output "NVM has been installed and added to the path for the current session."
     }
     else {
-      Write-Information "NVM is already installed"
+      Write-Output "NVM is already installed"
     }
   }
 
   function RestartShell {
-    Write-Information "Relaunching shell and running this script again..."
+    Write-Output "Relaunching shell and running this script again..."
     $scriptPath = $($MyInvocation.ScriptName)
     $userPasswordArg = if ($UserPassword) { "-UserPassword `"$UserPassword`"" } else { "" }
 
@@ -611,13 +618,13 @@ timeout /t 4 /nobreak > NUL
 start pwsh -NoExit -File "$ScriptPath" $userPasswordArg
 timeout /t 2
 "@
-    Write-Information "Restarting at $cmdScriptPath with: $cmdContent"
+    Write-Output "Restarting at $cmdScriptPath with: $cmdContent"
 
     # Write the CMD script to disk
     $cmdContent | Set-Content -Path $cmdScriptPath
 
     # Launch the CMD script to restart PowerShell
-    Write-Information "$cmdScriptPath"
+    Write-Output "$cmdScriptPath"
     Start-Process "cmd.exe" -ArgumentList "/c `"$cmdScriptPath`""
 
     # (thoroughly) Exit the current PowerShell session
@@ -649,10 +656,10 @@ timeout /t 2
   }
 
   function InstallNvm {
-    Write-Information "Installing NVM..."
+    Write-Output "Installing NVM..."
     try {
       $latestNvmDownloadUrl = Get-LatestReleaseDownloadUrl
-      Write-Information "Downloading NVM from $latestNvmDownloadUrl..."
+      Write-Output "Downloading NVM from $latestNvmDownloadUrl..."
 
       # Define the path for the downloaded installer
       $installerPath = Join-Path -Path $env:TEMP -ChildPath "nvm-setup.exe"
@@ -661,10 +668,10 @@ timeout /t 2
       DownloadFile $latestNvmDownloadUrl $installerPath
 
       # Execute the installer
-      Write-Information "Running NVM installer..."
+      Write-Output "Running NVM installer..."
       Start-Process -FilePath $installerPath -ArgumentList '/install', '/silent', '/quiet', '/norestart', '/passive'  -Wait -NoNewWindow
 
-      Write-Information "NVM installation completed."
+      Write-Output "NVM installation completed."
     }
     catch {
       Write-Error "Failed to install NVM: $_"
@@ -675,11 +682,11 @@ timeout /t 2
     $pwshPath = (Get-Command pwsh -ErrorAction SilentlyContinue).Source
     if ($null -ne $pwshPath) {
       if ($PSVersionTable.PSVersion.Major -eq 5) {
-        Write-Information "Running with latest PowerShell version..."
+        Write-Output "Running with latest PowerShell version..."
         $scriptPath = $($MyInvocation.ScriptName)
         $userPasswordArg = if ($UserPassword) { "-UserPassword `"$UserPassword`"" } else { "" }
         Start-Process $pwshPath -ArgumentList "-NoProfile", "-File", "`"$scriptPath`" $userPasswordArg"
-        Write-Information "Done"
+        Write-Output "Done"
         Exit
       }
     }
@@ -688,7 +695,7 @@ timeout /t 2
   function EnsureRunningAsAdministrator {
     try {
       if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
-        Write-Information "Not currently Administrator. Upgrading privileges..."
+        Write-Output "Not currently Administrator. Upgrading privileges..."
         # Get the current script path
         $scriptPath = $($MyInvocation.ScriptName)
         $userPasswordArg = if ($UserPassword) { "-UserPassword `"$UserPassword`"" } else { "" }
@@ -707,10 +714,10 @@ timeout /t 2
       }
     }
     catch {
-      Write-Information "An error occurred: $_"
+      Write-Output "An error occurred: $_"
     }
     finally {
-      Write-Information "Continuing..."
+      Write-Output "Continuing..."
     }
   }
 
@@ -760,13 +767,13 @@ timeout /t 2
     $targetVersion = "1.6"
 
     if (-not (Is-VersionGreaterThan -currentVersion $currentVersion -targetVersion $targetVersion)) {
-      Write-Information "Updating Winget to a newer version..."
+      Write-Output "Updating Winget to a newer version..."
       Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile winget.msixbundle
       Add-AppxPackage winget.msixbundle
       Remove-Item winget.msixbundle
     }
     else {
-      Write-Information "Winget version ($currentVersion) is already greater than $targetVersion."
+      Write-Output "Winget version ($currentVersion) is already greater than $targetVersion."
     }
   }
 
@@ -820,7 +827,7 @@ timeout /t 2
     param ([string]$packageId)
     try {
       winget install -e --id $packageId --accept-source-agreements
-      Write-Information "Successfully installed $packageId"
+      Write-Output "Successfully installed $packageId"
     }
     catch {
       Write-Error "Failed to install $packageId"
@@ -833,10 +840,10 @@ timeout /t 2
     if (-not $currentPath.Contains($pathToAdd)) {
       $newPath = $currentPath + ";" + $pathToAdd
       [Environment]::SetEnvironmentVariable("Path", $newPath, [EnvironmentVariableTarget]::Machine)
-      Write-Information "Added $pathToAdd to system PATH."
+      Write-Output "Added $pathToAdd to system PATH."
     }
     else {
-      Write-Information "$pathToAdd is already in system PATH."
+      Write-Output "$pathToAdd is already in system PATH."
     }
   }
 
@@ -849,24 +856,24 @@ timeout /t 2
       Install-PackageViaWinget $packageId
     }
     else {
-      Write-Information "$packageName is already installed."
+      Write-Output "$packageName is already installed."
     }
   }
 
-  Write-Information ""
+  Write-Output ""
 
   # Executor helper
   try {
     & $Main
   }
   catch {
-    Write-Information "An error occurred: $_"
+    Write-Output "An error occurred: $_"
     $Error[0] | Format-List -Force
   }
   finally {
-    Write-Information "Your login link will be in your clipboard once installation completed."
-    Write-Information "Remember to also keep the inner RDP connection (on the RDP desktop) open to enable BrowserBox Audio"
-    Write-Information "Exiting..."
+    Write-Output "Your login link will be in your clipboard once installation completed."
+    Write-Output "Remember to also keep the inner RDP connection (on the RDP desktop) open to enable BrowserBox Audio"
+    Write-Output "Exiting..."
   }
 }
 
