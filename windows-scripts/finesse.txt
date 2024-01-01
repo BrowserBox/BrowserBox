@@ -15,7 +15,7 @@ Steps to get audio to work
 where a console rdp (which will not keep audio alive by itself), is hosting a loopback rdp. but crucially the loopback
 rdp is not killed / minimized / switched off because vnc connected to it. once this has been created it is surprisingly stable.
 9. you can start and stop audio, reload the browserbox etc, and everything still works.
-10. set process priority on fmedia to above normal or high (but not realtime hahaha it will kill everything else even it's a tiny little rpocess hahaha)
+10. set process priority on fmedia to above normal (or high? but high seems to destabilize video streaming) (but not realtime hahaha it will kill everything else even it's a tiny little rpocess hahaha)...normal will make audio lag too far behind. it may be worth trying the fmedia author's other tool 'phiola' which says it uses less resources which could scale easier and maintain less lag. nice!
 11. not sure but may also be necessary to set that rd minimize reg key.
 
 ---
