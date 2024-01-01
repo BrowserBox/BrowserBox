@@ -16,3 +16,4 @@ where a console rdp (which will not keep audio alive by itself), is hosting a lo
 rdp is not killed / minimized / switched off because vnc connected to it. once this has been created it is surprisingly stable.
 9. you can start and stop audio, reload the browserbox etc, and everything still works.
 10. set process priority on fmedia to above normal or high (but not realtime hahaha it will kill everything else even it's a tiny little rpocess hahaha)
+11. not sure but may also be necessary to set that rd minimize reg key.
