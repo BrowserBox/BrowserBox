@@ -287,6 +287,8 @@ $Outer = {
   }
 
 	function PatchNvmPath {
+	  $env:NVM_HOME = "$env:appdata\nvm"
+	  $env:NVM_SYMLINK = "$env:programfiles\nodejs"
 	  $additionalPaths = @(
 	    "$env:NVM_HOME",
 	    "$env:NVM_SYMLINK",
@@ -297,9 +299,7 @@ $Outer = {
 
 	  # Program Files directories
 	  $programFilesPaths = @(
-	    $env:ProgramFiles,
-	    "$env:ProgramFiles(x86)",
-	    $env:ProgramW6432
+	    $env:ProgramFiles
 	  ) | Select-Object -Unique
 
 	  foreach ($path in $programFilesPaths) {
@@ -568,9 +568,20 @@ $Outer = {
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
   }
 
+  function DeleteNodeAndNvm {
+	pm2 delete all
+	taskkill /f /im nvm.exe
+	taskkill /f /im node.exe
+	Remove-Item -Recurse -Force "$env:programfiles\nodejs"
+	Remove-Item -Recurse -Force "${env:ProgramFiles(x86)}\nodejs"
+	Remove-Item -Recurse -Force "$env:ProgramW6432\nodejs"
+	Remove-Item -Recurse -Force "$env:appdata\nvm"
+  }
+
   function InstallAndLoadNvm {
-    if (-not (CheckNvm)) {
+    if (-not (Get-Command "nvm.exe" -ErrorAction SilentlyContinue) ) {
       Write-Output "NVM is not installed."
+      DeleteNodeAndNvm
       InstallNvm
       RefreshPath
       PatchNvmPath
@@ -880,4 +891,4 @@ timeout /t 2
 & $Outer
 
 
-
+ 

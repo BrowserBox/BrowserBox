@@ -1,0 +1,18 @@
+Steps to get audio to work
+
+1 Connect to RDP on Server
+2 Run BrowserBox install (which will create a loopback rdp connection)
+3 Create close.bat on desktop containing
+  echo off
+  Tscon %sessionId% /Dest:console
+
+  where %sessionId% is the rdp session id of the Main (initial, non loopback rdp connection)
+4. Install tightvnc on the server and start it.
+5. use a vnc client to connect to the machine. 
+6. from the main rdp session run close.bat as administrator (this will terminate / disconnect the main rdp session)
+7. the vnc will be connected to the loopback rdp session, and the audio device will remain on.
+8. you can close the vnc now and the audio will continue. this is because essentially you have created a rdp loop, 
+where a console rdp (which will not keep audio alive by itself), is hosting a loopback rdp. but crucially the loopback
+rdp is not killed / minimized / switched off because vnc connected to it. once this has been created it is surprisingly stable.
+9. you can start and stop audio, reload the browserbox etc, and everything still works.
+10. set process priority on fmedia to above normal or high (but not realtime hahaha it will kill everything else even it's a tiny little rpocess hahaha)
