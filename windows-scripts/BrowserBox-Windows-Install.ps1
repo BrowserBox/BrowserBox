@@ -43,6 +43,7 @@ $Outer = {
 
   # Main script flow
   $Main = {
+    Guard-CheckAndSaveUserAgreement
 
     Write-Information "Running PowerShell version: $($PSVersionTable.PSVersion)"
 
@@ -53,28 +54,9 @@ $Outer = {
     EnsureRunningAsAdministrator
     RemoveAnyRestartScript
 
-    # Call the function to show user agreement dialog
-    try {
-      $dialogResult = Show-UserAgreementDialog
-      if ($dialogResult -ne [System.Windows.Forms.DialogResult]::Yes) {
-        Write-Information 'You must agree to the terms and conditions to proceed.'
-        Exit
-      }
-    }
-    catch {
-      Read-Host "Do you agree to the terms?"
-    }
-
     Write-Information "Installing preliminairies..."
 
-    InstallNuGet
-    Install-Module -Name Microsoft.WinGet.Client
-    try {
-      Repair-WinGetPackageManager -AllUsers
-    }
-    catch {
-      Write-Information "Could not repair WinGet ($_) will try to install instead."
-    }
+    EnhancePackageManagers
 
     $currentVersion = CheckWingetVersion
     UpdateWingetIfNeeded $currentVersion
@@ -90,14 +72,16 @@ $Outer = {
     AddVimToPath
     InstallIfNeeded "git" "Git.Git"
 
+    InstallFmedia
     InstallAndLoadNvm
 
     nvm install latest
     nvm use latest
 
     Write-Information "Setting up certificate..."
-    RunCloserFunctionInNewWindow
+    BeginSecurityWarningAcceptLoop
     InstallMkcertAndSetup
+    EndSecurityWarningAcceptLoop
 
     Write-Information "Installing BrowserBox..."
 
@@ -130,8 +114,46 @@ $Outer = {
 
   # Function Definitions
   # it's worth noting that while Remote Sound Device from remote desktop works well,
-  # there is distortion on some sounds, for instance:
+  # there is distortion on some sounds, for instance
   # https://www.youtube.com/watch?v=v0wVRG38IYs
+  #
+
+  function Guard-CheckAndSaveUserAgreement {
+    $configDir = Join-Path $env:USERPROFILE ".config\dosyago\bbpro"
+    $agreementFile = Join-Path $configDir "user_agreement.txt"
+
+    # Check if the agreement file already exists and contains the agreement
+    if (Test-Path $agreementFile) {
+      $agreementData = Get-Content $agreementFile
+      if ($agreementData -match "Agreed") {
+        return
+      }
+    }
+
+    # Show user agreement dialog
+    try {
+      $dialogResult = Show-UserAgreementDialog
+      if ($dialogResult -ne [System.Windows.Forms.DialogResult]::Yes) {
+        Write-Information 'You must agree to the terms and conditions to proceed.'
+        Exit
+      }
+    }
+    catch {
+      $userInput = Read-Host "Do you agree to the terms? (Yes/No)"
+      if ($userInput -ne 'Yes') {
+        Write-Information 'You must agree to the terms and conditions to proceed.'
+        Exit
+      }
+    }
+
+    # Save the user's agreement
+    if (!(Test-Path $configDir)) {
+      New-Item -Path $configDir -ItemType Directory -Force
+    }
+    $userName = [Environment]::UserName
+    $dateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    "$userName,$dateTime,Agreed" | Out-File $agreementFile
+  }
 
   function Trust-RDPCertificate {
     $userHome = [System.Environment]::GetFolderPath('UserProfile')
@@ -264,47 +286,49 @@ $Outer = {
     }
   }
 
+	function PatchNvmPath {
+	  $additionalPaths = @(
+	    "$env:NVM_HOME",
+	    "$env:NVM_SYMLINK",
+	    "$env:LOCALAPPDATA\Microsoft\WindowsApps",
+	    "$env:LOCALAPPDATA\Microsoft\WinGet\Links",
+	    "$env:APPDATA\nvm"
+	  )
+
+	  # Program Files directories
+	  $programFilesPaths = @(
+	    $env:ProgramFiles,
+	    "$env:ProgramFiles(x86)",
+	    $env:ProgramW6432
+	  ) | Select-Object -Unique
+
+	  foreach ($path in $programFilesPaths) {
+	    $nodeJsPath = Join-Path $path "nodejs"
+	    if (Test-Path $nodeJsPath) {
+	      $additionalPaths += $nodeJsPath
+	    }
+	  }
+
+	  # Add paths to PATH environment variable, avoiding duplicates
+	  $currentPath = $env:PATH.Split(';')
+	  $newPath = $currentPath + $additionalPaths | Select-Object -Unique
+	  $env:PATH = $newPath -join ";"
+	}
+
   function BeginSecurityWarningAcceptLoop {
     $myshell = New-Object -com "Wscript.Shell"
-    
-    while ($true) {
-      Start-Sleep -Seconds 2
-      # Check for the presence of the "Security Warning" window
-      if ($myshell.AppActivate("Security Warning")) {
+    $loop = {
+      while ($true) {
+        sleep 2
+        $myshell.AppActivate("Security Warning")
         $myshell.SendKeys("y")
-
-        # Wait a bit for the action to be processed
-        Start-Sleep -Seconds 2
-
-        # Check if the window is still active; if not, break the loop
-        if (-not $myshell.AppActivate("Security Warning")) {
-          break
-        }
       }
     }
+    $script:CloseJob = Start-Job -ScriptBlock $loop
   }
 
-  function RunCloserFunctionInNewWindow {
-    # Get the function definition as a string
-    $functionToRun = $Function:BeginSecurityWarningAcceptLoop.ToString()
-
-    # Script content to write to file
-    $scriptContent = @"
-$functionToRun
-
-# Call the function
-BeginSecurityWarningAcceptLoop
-
-# Delete this script file once done
-Remove-Item -LiteralPath `"$($MyInvocation.MyCommand.Path)`" -Force
-"@
-
-    # Write the script content to a file
-    $scriptPath = ".\AutoAcceptSecurityWarning.ps1"
-    $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8
-
-    # Run the script in a new PowerShell window
-    Start-Process PowerShell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" -WindowStyle Hidden
+  function EndSecurityWarningAcceptLoop {
+    Stop-Job -Job $script:CloseJob
   }
 
   function EnableWindowsAudio {
@@ -326,6 +350,36 @@ Remove-Item -LiteralPath `"$($MyInvocation.MyCommand.Path)`" -Force
     }
 
     Write-Information "Completed audio service startup attempt."
+  }
+
+  function InstallFmedia {
+    $url = "https://github.com/stsaz/fmedia/releases/download/v1.31/fmedia-1.31-windows-x64.zip"
+    $outputDir = Join-Path $env:ProgramFiles "fmedia"
+    $zipPath = Join-Path $env:TEMP "fmedia.zip"
+
+    # Download the fmedia zip file
+    Invoke-WebRequest -Uri $url -OutFile $zipPath
+
+    # Create the output directory if it doesn't exist
+    if (!(Test-Path $outputDir)) {
+      New-Item -Path $outputDir -ItemType Directory
+    }
+
+    # Extract the zip file
+    Expand-Archive -Path $zipPath -DestinationPath $env:TEMP -Force
+
+    # Move the extracted files to the correct directory
+    $extractedDir = Join-Path $env:TEMP "fmedia"
+    Move-Item -Path "$extractedDir\*" -Destination $outputDir -Force
+
+    # Install fmedia
+    $fmediaExe = Join-Path $outputDir "fmedia.exe"
+    Add-ToSystemPath $fmediaExe
+
+    & $fmediaExe --install
+
+    # Refresh environment variables in the current session
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "User")
   }
 
   function InstallPulseAudioForWindows {
@@ -478,7 +532,15 @@ Remove-Item -LiteralPath `"$($MyInvocation.MyCommand.Path)`" -Force
     }
   }
 
-  function InstallNuGet {
+  function EnhancePackageManagers {
+    try {
+      Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+      #Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+      Import-PackageProvider -Name NuGet -Force
+    }
+    catch {
+      Write-Information "Error installing NuGet provider: $_"
+    }
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
     try {
       Install-Module -Name PackageManagement -Repository PSGallery -Force
@@ -486,12 +548,12 @@ Remove-Item -LiteralPath `"$($MyInvocation.MyCommand.Path)`" -Force
     catch {
       Write-Information "Error installing PackageManagement provider: $_"
     }
+    Install-Module -Name Microsoft.WinGet.Client
     try {
-      Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
-      Import-PackageProvider -Name NuGet -Force
+      Repair-WinGetPackageManager -AllUsers
     }
     catch {
-      Write-Information "Error installing NuGet provider: $_"
+      Write-Information "Could not repair WinGet ($_) will try to install instead."
     }
   }
 
@@ -504,7 +566,8 @@ Remove-Item -LiteralPath `"$($MyInvocation.MyCommand.Path)`" -Force
       Write-Information "NVM is not installed."
       InstallNvm
       RefreshPath
-      RestartEnvironment
+      PatchNvmPath
+      #RestartEnvironment
       Write-Information "NVM has been installed and added to the path for the current session."
     }
     else {
@@ -808,5 +871,6 @@ timeout /t 2
 }
 
 & $Outer
+
 
 
