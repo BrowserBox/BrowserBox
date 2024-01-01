@@ -19,3 +19,7 @@ Line |
 The above in new powershell.
 
 nvm restart does not work. We need to figure that out. 
+
+install fmedia
+
+
