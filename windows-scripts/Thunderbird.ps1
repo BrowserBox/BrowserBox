@@ -9,8 +9,8 @@ param (
   $Main = {
     Ensure-Admin
     Integrate-TightVNCWithRDPLoopback -password $UserPassword
-    #RunPasswordEntryFunctionInNewWindow -password $UserPassword 
-    #Start-TightVNCViewer
+    RunPasswordEntryFunctionInNewWindow -password $UserPassword 
+    Start-TightVNCViewer
     Start-Sleep 5
     RedirectMainSessionToConsole
   }
@@ -31,7 +31,7 @@ param (
   }
 
   function Start-TightVNCViewer {
-    $localComputerName = [System.Environment]::MachineName
+    $localComputerName = "localhost" 
     $vncViewerPath = "$env:ProgramFiles\TightVNC\tvnviewer.exe"
 
     if (Test-Path $vncViewerPath) {

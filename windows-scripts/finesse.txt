@@ -1,29 +1,12 @@
-Steps to get audio to work
+Connect to server over RDP
 
-1 Connect to RDP on Server
-2 Run BrowserBox install (which will create a loopback rdp connection)
-3 Create close.bat on desktop containing
-  echo off
-  Tscon %sessionId% /Dest:console
+Initiate loopback RDP connection
 
-  where %sessionId% is the rdp session id of the Main (initial, non loopback rdp connection)
-4. Install tightvnc on the server and start it.
-5. use a vnc client to connect to the machine. 
-6. from the main rdp session run close.bat as administrator (this will terminate / disconnect the main rdp session)
-7. the vnc will be connected to the loopback rdp session, and the audio device will remain on.
-8. you can close the vnc now and the audio will continue. this is because essentially you have created a rdp loop, 
-where a console rdp (which will not keep audio alive by itself), is hosting a loopback rdp. but crucially the loopback
-rdp is not killed / minimized / switched off because vnc connected to it. once this has been created it is surprisingly stable.
-9. you can start and stop audio, reload the browserbox etc, and everything still works.
-10. set process priority on fmedia to above normal (or high? but high seems to destabilize video streaming) (but not realtime hahaha it will kill everything else even it's a tiny little rpocess hahaha)...normal will make audio lag too far behind. it may be worth trying the fmedia author's other tool 'phiola' which says it uses less resources which could scale easier and maintain less lag. nice!
-11. not sure but may also be necessary to set that rd minimize reg key.
+From within the loopback RDP connection
 
----
+1. Start BB
+2. Start loopback VNC
+3. Find the session id of the main rdp connection
+4. As administrator Run tscon sessionId /dest:console 
 
-so thinking about how we could automate this:
-
-install tighvnc and activaate - automated
-use a vnc client to connect to machine (maybe able to even use a vnc loopback, easy to automate that), otherwise need a "client side" setup.
-run close.bat - automated
-
-Should be possible. But even we do this who knows how long until ms patches this?
+You'll be disconnected and the audio will persist
