@@ -1,12 +1,14 @@
-Connect to server over RDP
+Try again
 
-Initiate loopback RDP connection
+Connect Admin Computer to Server (main RDP).
 
-From within the loopback RDP connection
+Connect Server to Itself (Nested RDP).
 
-1. Start BB
-2. Start loopback VNC
-3. Find the session id of the main rdp connection
-4. As administrator Run tscon sessionId /dest:console 
+From nested RDP create BrowserBox.
 
-You'll be disconnected and the audio will persist
+From Main RDP create VNC to itself or from admin computer create vnc to server.
+
+Point main RDP at console using administrator powershell
+
+Audio will persist
+
