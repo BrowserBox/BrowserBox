@@ -133,10 +133,10 @@ Resources:
               sudo yum install -y git
               git clone https://github.com/BrowserBox/BrowserBox.git || exit 1
               cd BrowserBox || exit 1
-              ./deploy-scripts/wait_for_hostname.sh ${HostName} || exit 1
-              export INSTALL_DOC_VIEWER=${InstallDocViewer}
-              yes | ./deploy-scripts/global_install.sh ${HostName} ${UserEmail}
-              export TOKEN=${Token}
+              ./deploy-scripts/wait_for_hostname.sh "${HostName}" 
+              export INSTALL_DOC_VIEWER="${InstallDocViewer}"
+              yes | ./deploy-scripts/global_install.sh "${HostName}" "${UserEmail}"
+              export TOKEN="${Token}"
               if [[ -z "$TOKEN" ]]; then
                 setup_bbpro --port 8080 || exit 1
               else

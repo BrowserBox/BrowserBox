@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ssh_priv_key_file=$1
 ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts

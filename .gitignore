@@ -1,6 +1,8 @@
 .DS_Store
 .parcel-cache
 .parcel-cache/*
+.*.un~
+*~
 core
 build.log
 build/*

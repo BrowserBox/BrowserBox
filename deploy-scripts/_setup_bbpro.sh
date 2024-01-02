@@ -1,4 +1,8 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+#set -x
+
+trap 'echo "Exiting..."' EXIT ERR
 
 OS_TYPE=""
 ONTOR=false
@@ -43,6 +47,27 @@ display_help() {
 
 EOF
 }
+# Windows command for firewall
+open_firewall_port_windows() {
+  local port=$1
+  netsh advfirewall firewall add rule name="Open Port $port" dir=in action=allow protocol=TCP localport=$port
+}
+
+is_port_free_windows() {
+  local port=$1
+  if netstat -ano | grep -q ":$port "; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+ensure_certtools_windows() {
+  if ! command -v openssl > /dev/null 2>&1; then
+    echo "Installing OpenSSL..." >&2
+    winget install -e --id OpenSSL.OpenSSL
+  fi
+}
 
 # Open port on CentOS
 open_firewall_port_centos() {
@@ -75,6 +100,10 @@ is_port_free() {
       # If lsof returns a result, the port is in use
       return 1
     fi
+	elif [[ "$OS_TYPE" == "win"* ]]; then
+	  if ! is_port_free_windows "$PORT" &>/dev/null; then	
+			return 1
+    fi
   else
     # Prefer 'ss' if available, fall back to 'netstat'
     if command -v ss > /dev/null 2>&1; then
@@ -91,33 +120,38 @@ is_port_free() {
 
 # Detect Operating System
 detect_os() {
-    if command_exists lsb_release ; then
-      distro=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
-    elif [[ -f /etc/os-release ]]; then
-      . /etc/os-release
-      distro=$(echo "$ID")
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-      distro="macos"
-    else
-      echo "Cannot determine the distribution. Please email support@dosyago.com."
-      exit 1
-    fi
+  if command_exists lsb_release ; then
+    distro=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+  elif [[ -f /etc/os-release ]]; then
+    . /etc/os-release
+    distro=$(echo "$ID")
+  elif [[ "$OSTYPE" == "darwin"* ]]; then
+    distro="macos"
+  elif [[ "$OSTYPE" == "msys"* ]]; then
+    distro="win"
+  else
+    echo "Cannot determine the distribution. Please email support@dosyago.com." >&2
+    exit 1
+  fi
 
-    case "$distro" in
-      centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
-        OS_TYPE="centos"
+  case "$distro" in
+    centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
+      OS_TYPE="centos"
+    ;;
+    debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
+      OS_TYPE="debian"
+    ;;
+    macos)
+      OS_TYPE="macos"
+    ;;
+    win)
+      OS_TYPE="win"
+    ;;
+    *)
+      echo "Unsupported Operating System: $distro" >&2
+      exit 1
       ;;
-      debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
-        OS_TYPE="debian"
-      ;;
-      macos)
-        OS_TYPE="macos"
-      ;;
-      *)
-        echo "Unsupported Operating System: $distro" >&2
-        exit 1
-        ;;
-    esac
+  esac
 }
 
 find_torrc_path() {
@@ -129,6 +163,12 @@ find_torrc_path() {
     if [[ ! -f "$TORRC" ]]; then
       cp "$(dirname "$TORRC")/torrc.sample" "$(dirname "$TORRC")/torrc" || touch "$TORRC"
     fi
+	elif [[ "$OS_TYPE" == "win" ]]; then
+    # Example Windows path, adjust as needed
+    TORRC="/c/Program Files/Tor Browser/Browser/TorBrowser/Data/Tor/torrc"
+    TORDIR="/c/Program Files/Tor Browser/Browser/TorBrowser/Data/Tor"
+    echo "Assuming Tor paths $TORRC and $TORDIR." >&2
+    echo "Update in your test.env file if needed." >&2
   else
     TORRC="/etc/tor/torrc"  # Default path for Linux distributions
     TORDIR="/var/lib/tor"
@@ -234,15 +274,20 @@ open_firewall_port_range() {
       else
         $SUDO ufw allow ${start_port}/tcp
       fi
+    elif command -v netsh &>/dev/null; then
+      echo "Will use netsh later"
     else
         echo "No recognized firewall management tool found"
         return 1
     fi
 }
 
-
-
 detect_os
+
+# Call this function if OS_TYPE is win
+if [[ "$OS_TYPE" == "win" ]]; then
+  ensure_certtools_windows
+fi
 
 echo "Parsing command line args..." >&2
 echo "" >&2
@@ -400,10 +445,17 @@ if [[ -f /etc/centos-release ]]; then
   open_firewall_port_centos "$DT_PORT"
   open_firewall_port_centos "$SV_PORT"
   open_firewall_port_centos "$AUDIO_PORT"
+elif [[ "$OS_TYPE" == "win" ]]; then
+	echo "Detected Windows. Ensuring required ports are open in the firewall..." >&2
+  open_firewall_port_windows "$PORT"
+  open_firewall_port_windows "$DT_PORT"
+  open_firewall_port_windows "$SV_PORT"
+  open_firewall_port_windows "$AUDIO_PORT"
 fi
 
 cat > "${CONFIG_DIR}/test.env" <<EOF
 export APP_PORT=$PORT
+export AUDIO_PORT=$AUDIO_PORT
 export LOGIN_TOKEN=$TOKEN
 export COOKIE_VALUE=$COOKIE
 export DEVTOOLS_PORT=$DT_PORT

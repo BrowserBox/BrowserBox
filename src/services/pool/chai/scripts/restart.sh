@@ -14,6 +14,5 @@ cp -r ./public/* "$STATIC_DIR"
 cp -r ./archives/* "$ARCH_DIR"
 
 "${STATIC_DIR}/uploads/clean.sh"
-sleep 2
 $pm2 delete run-docspark
 $pm2 start ./scripts/run-docspark.sh
