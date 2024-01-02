@@ -407,7 +407,7 @@ Remove-Item -LiteralPath `"$($MyInvocation.ScriptName)`" -Force
 
       # Install fmedia
       $fmediaExe = Join-Path $outputDir "fmedia.exe"
-      Add-ToSystemPath $fmediaExe
+      Add-ToSystemPath $outputDir
 
       & $fmediaExe --install
 

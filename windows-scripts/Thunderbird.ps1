@@ -153,6 +153,23 @@ param (
     Write-Error "Failed to initiate RDP Session after $retryCount attempts."
   }
 
+  function RefreshPath {
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+  }
+
+  function Add-ToSystemPath {
+    param ([string]$pathToAdd)
+    $currentPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
+    if (-not $currentPath.Contains($pathToAdd)) {
+      $newPath = $currentPath + ";" + $pathToAdd
+      [Environment]::SetEnvironmentVariable("Path", $newPath, [EnvironmentVariableTarget]::Machine)
+      Write-Output "Added $pathToAdd to system PATH."
+    }
+    else {
+      Write-Output "$pathToAdd is already in system PATH."
+    }
+  }
+
   function EstablishRDPLoopback {
     param (
       [string]$pword
@@ -177,13 +194,18 @@ param (
     Write-Output "TightVNC Installer downloaded"
 
     # Install TightVNC Silently
-    Start-Process "msiexec.exe" -ArgumentList "/i `"$installerPath`" /quiet /norestart ADDLOCAL=Server" -Wait
+    Start-Process "msiexec.exe" -ArgumentList "/i `"$installerPath`" /quiet /norestart ADDLOCAL=`"Server,Viewer`" SET_USEVNCAUTHENTICATION=1 VALUE_OF_USEVNCAUTHENTICATION=1 SET_PASSWORD=1 VALUE_OF_PASSWORD=$UserPassword SET_ALLOWLOOPBACK=1 VALUE_OF_ALLOWLOOPBACK=1" -Wait
     Write-Output "TightVNC Installed"
 
     # Set TightVNC Password
-    $setPasswordArgs = "/s /d=`"$password`""
-    Start-Process "$env:ProgramFiles\TightVNC\tvnserver.exe" -ArgumentList $setPasswordArgs -Wait
-    Write-Output "TightVNC Password Set"
+    Add-ToSystemPath "$env:ProgramFiles\TighVNC"
+    RefreshPath
+
+    $installArgs = "-install -silent"
+    $startArgs = "-start -silent"
+    Start-Process "tvnserver.exe" -ArgumentList $installArgs -Wait
+    Start-Process "tvnserver.exe" -ArgumentList $startArgs -Wait
+    Write-Output "TightVNC setup"
 
     # Modify TightVNC Settings for RDP
     Set-ItemProperty -Path "HKLM:\SOFTWARE\TightVNC\Server" -Name "ConnectToRdpSession" -Value 1
