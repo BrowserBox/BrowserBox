@@ -7,7 +7,7 @@ param (
 {}
 
   $Main = {
-    EnsureAdmin
+    Ensure-Admin
     Integrate-TightVNCWithRDPLoopback -password $UserPassword
     RunPasswordEntryFunctionInNewWindow -password $UserPassword 
     Start-TighVNCViewer
