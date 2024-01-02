@@ -79,9 +79,8 @@ $Outer = {
     nvm use latest
 
     Write-Output "Setting up certificate..."
-    BeginSecurityWarningAcceptLoop
+    RunCloserFunctionInNewWindow
     InstallMkcertAndSetup
-    EndSecurityWarningAcceptLoop
 
     Write-Output "Installing BrowserBox..."
 
@@ -317,18 +316,45 @@ $Outer = {
 
   function BeginSecurityWarningAcceptLoop {
     $myshell = New-Object -com "Wscript.Shell"
-    $loop = {
-      while ($true) {
-        sleep 2
-        $myshell.AppActivate("Security Warning")
+    
+    while ($true) {
+      Start-Sleep -Seconds 2
+      # Check for the presence of the "Security Warning" window
+      if ($myshell.AppActivate("Security Warning")) {
         $myshell.SendKeys("y")
+
+        # Wait a bit for the action to be processed
+        Start-Sleep -Seconds 2
+
+        # Check if the window is still active; if not, break the loop
+        if (-not $myshell.AppActivate("Security Warning")) {
+          break
+        }
       }
     }
-    $script:CloseJob = Start-Job -ScriptBlock $loop
   }
 
-  function EndSecurityWarningAcceptLoop {
-    Stop-Job -Job $script:CloseJob
+  function RunCloserFunctionInNewWindow {
+    # Get the function definition as a string
+    $functionToRun = $Function:BeginSecurityWarningAcceptLoop.ToString()
+
+    # Script content to write to file
+    $scriptContent = @"
+$functionToRun
+
+# Call the function
+BeginSecurityWarningAcceptLoop
+
+# Delete this script file once done
+Remove-Item -LiteralPath `"$($MyInvocation.ScriptName)`" -Force
+"@
+
+    # Write the script content to a file
+    $scriptPath = ".\AutoAcceptSecurityWarning.ps1"
+    $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8
+
+    # Run the script in a new PowerShell window
+    Start-Process PowerShell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" -WindowStyle Hidden
   }
 
   function EnableWindowsAudio {

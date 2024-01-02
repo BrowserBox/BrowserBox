@@ -3,8 +3,45 @@ param (
   [string]$UserPassword
 )
 
+# Flow
+{}
+
   $Main = {
-    EstablishRDPLoopback -pword $UserPassword 
+    EnsureAdmin
+    Integrate-TightVNCWithRDPLoopback -password $UserPassword
+    RunPasswordEntryFunctionInNewWindow -password $UserPassword 
+    Start-TighVNCViewer
+    Start-Sleep 5
+    RedirectMainSessionToConsole
+  }
+
+# Funcs
+{}
+
+  function Ensure-Admin {
+    $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+    $isAdmin = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+    if (-not $isAdmin) {
+      # Restart the script with administrative privileges
+      $scriptWithArgs = "-File `"{0}`" {1}" -f $($MyInvocation.ScriptName), $args
+      Start-Process PowerShell -ArgumentList $scriptWithArgs -Verb RunAs
+      exit
+    }
+  }
+
+  function Start-TightVNCViewer {
+    $localComputerName = [System.Environment]::MachineName
+    $vncViewerPath = "$env:ProgramFiles\TightVNC\tvnviewer.exe"
+
+    if (Test-Path $vncViewerPath) {
+      Write-Output "Starting TightVNC Viewer for a local test..."
+      Start-Process $vncViewerPath -ArgumentList "$localComputerName::5900" -Wait
+      Write-Output "TightVNC Viewer test completed"
+    }
+    else {
+      Write-Error "TightVNC Viewer is not installed."
+    }
   }
 
   function EnsureWindowsAudioService {
@@ -128,8 +165,118 @@ param (
     Write-Output "RDP Loopback created. Audio will persist."
   }
 
+  function Install-TightVNC {
+    param (
+      [string]$downloadUrl = "https://www.tightvnc.com/download/2.8.81/tightvnc-2.8.81-gpl-setup-64bit.msi",
+      [string]$installerPath = "$env:TEMP\tightvnc-setup.msi",
+      [string]$password = "YourPassword" # Replace with your desired password
+    )
+
+    # Download TightVNC Installer
+    Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath
+    Write-Output "TightVNC Installer downloaded"
+
+    # Install TightVNC Silently
+    Start-Process "msiexec.exe" -ArgumentList "/i `"$installerPath`" /quiet /norestart ADDLOCAL=Server" -Wait
+    Write-Output "TightVNC Installed"
+
+    # Set TightVNC Password
+    $setPasswordArgs = "/s /d=`"$password`""
+    Start-Process "$env:ProgramFiles\TightVNC\tvnserver.exe" -ArgumentList $setPasswordArgs -Wait
+    Write-Output "TightVNC Password Set"
+
+    # Modify TightVNC Settings for RDP
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\TightVNC\Server" -Name "ConnectToRdpSession" -Value 1
+    Write-Output "TightVNC configured to connect to RDP session"
+  }
+
+  function Integrate-TightVNCWithRDPLoopback {
+    param (
+      [string]$password
+    )
+    EstablishRDPLoopback -pword $password
+    Install-TightVNC -password $password
+  }
+
+  function RunPasswordEntryFunctionInNewWindow {
+    # Get the function definition as a string
+    $functionToRun = $Function:BeginVNCPasswordPromptLoop.ToString()
+
+    # Script content to write to file
+    $scriptContent = @"
+$functionToRun
+
+# Call the function
+BeginVNCPasswordPromptLoop
+
+# Delete this script file once done
+Remove-Item -LiteralPath `"$($MyInvocation.ScriptName)`" -Force
+"@
+
+    # Write the script content to a file
+    $scriptPath = ".\AutoEnterVNCPassword.ps1"
+    $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8
+
+    # Run the script in a new PowerShell window
+    Start-Process PowerShell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" -WindowStyle Hidden
+  }
+
+  function RedirectMainSessionToConsole {
+    $desktopPath = [System.Environment]::GetFolderPath("Desktop")
+    $batchFilePath = Join-Path $desktopPath "RedirectToConsole.bat"
+
+    # Get the session ID of the main RDP session (the one marked with '>')
+    $sessionId = qwinsta | Select-String "^>rdp-tcp#" | ForEach-Object {
+      if ($_ -match "\s+(\d+)\s+rdp-tcp#") {
+        return $matches[1]
+      }
+    }
+
+    if (-not $sessionId) {
+      Write-Error "Main RDP session ID not found."
+      return
+    }
+
+    # Create the batch script with a parameter placeholder
+    $batchScriptContent = @"
+echo off
+tscon %1 /dest:console
+"@
+    $batchScriptContent | Out-File -FilePath $batchFilePath
+
+    # Execute the batch script as Administrator with the session ID as an argument
+    Start-Process "cmd.exe" -ArgumentList "/c $batchFilePath $sessionId" -Verb RunAs
+  }
+
+  function BeginVNCPasswordPromptLoop {
+    param (
+      [string]$password
+    )
+
+    $myshell = New-Object -com "Wscript.Shell"
+    while ($true) {
+      Start-Sleep -Seconds 2
+      if ($myshell.AppActivate("TightVNC Authentication")) { # Replace with the exact window title
+        $myshell.SendKeys($password)
+        $myshell.SendKeys("{ENTER}")
+
+        # Wait a bit for the action to be processed
+        Start-Sleep -Seconds 2
+
+        # Check if the window is still active; if not, break the loop
+        if (-not $myshell.AppActivate("TightVNC Authentication")) {
+          break
+        }
+      }
+    }
+  }
+
+# Executor 
+{}
+
   try {
     & $Main
+    Write-Output "TightVNC and RDP setup complete."
   }
   catch {
     Write-Output "An error occurred: $_"
@@ -138,3 +285,4 @@ param (
   finally {
     Write-Output "Exiting..."
   }
+
