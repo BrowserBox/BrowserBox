@@ -155,6 +155,42 @@ $Outer = {
     "$userName,$dateTime,Agreed" | Out-File $agreementFile
   }
 
+  function EnsureWindowsAudioService {
+    $audioService = Get-Service -Name 'Audiosrv'
+
+    # Set service to start automatically
+    Set-Service -Name 'Audiosrv' -StartupType Automatic
+    Write-Output "Windows Audio service set to start automatically"
+
+    # Start the service if it's not running
+    if ($audioService.Status -ne 'Running') {
+      Start-Service -Name 'Audiosrv'
+      Write-Output "Windows Audio service started"
+    }
+    else {
+      Write-Output "Windows Audio service is already running"
+    }
+  }
+
+  function SetupRDP {
+    Param (
+      [int]$MaxConnections = 10
+    )
+
+    $rdpStatus = Get-ItemProperty 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections"
+    if ($rdpStatus.fDenyTSConnections -eq 1) {
+      Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+      Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+      Write-Output "RDP Enabled"
+    }
+
+    Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "MaxConnectionAllowed" -Value $MaxConnections
+    Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fSingleSessionPerUser" -Value 0
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Name "MaxConnectionCount" -Value 999
+
+    Write-Output "Max RDP Connections set to $MaxConnections"
+  }
+
   function Trust-RDPCertificate {
     $userHome = [System.Environment]::GetFolderPath('UserProfile')
     $certFolder = Join-Path -Path $userHome -ChildPath "RDP_Certificates"
@@ -192,42 +228,6 @@ $Outer = {
     else {
       Write-Error "Exported certificate file not found."
     }
-  }
-
-  function EnsureWindowsAudioService {
-    $audioService = Get-Service -Name 'Audiosrv'
-
-    # Set service to start automatically
-    Set-Service -Name 'Audiosrv' -StartupType Automatic
-    Write-Output "Windows Audio service set to start automatically"
-
-    # Start the service if it's not running
-    if ($audioService.Status -ne 'Running') {
-      Start-Service -Name 'Audiosrv'
-      Write-Output "Windows Audio service started"
-    }
-    else {
-      Write-Output "Windows Audio service is already running"
-    }
-  }
-
-  function SetupRDP {
-    Param (
-      [int]$MaxConnections = 10
-    )
-
-    $rdpStatus = Get-ItemProperty 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections"
-    if ($rdpStatus.fDenyTSConnections -eq 1) {
-      Set-ItemProperty 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
-      Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-      Write-Output "RDP Enabled"
-    }
-
-    Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "MaxConnectionAllowed" -Value $MaxConnections
-    Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fSingleSessionPerUser" -Value 0
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" -Name "MaxConnectionCount" -Value 999
-
-    Write-Output "Max RDP Connections set to $MaxConnections"
   }
 
   function InitiateLocalRDPSession {
