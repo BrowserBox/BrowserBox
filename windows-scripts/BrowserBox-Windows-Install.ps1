@@ -494,11 +494,11 @@ Remove-Item -LiteralPath `"$($MyInvocation.ScriptName)`" -Force
 
   function CheckMkcert {
     if (Get-Command mkcert -ErrorAction SilentlyContinue) {
-      Write-Output "Mkcert is already installed."
+      Write-Host "Mkcert is already installed."
       return $true
     }
     else {
-      Write-Output "Mkcert is not installed."
+      Write-Host "Mkcert is not installed."
       return $false
     }
   }
@@ -556,11 +556,11 @@ Remove-Item -LiteralPath `"$($MyInvocation.ScriptName)`" -Force
 
   function CheckNvm {
     if (-not (Get-Command "nvm.exe" -ErrorAction SilentlyContinue) ) {
-      Write-Output "NVM is not installed."
+      Write-Host "NVM is not installed."
       return $false
     }
     else {
-      Write-Output "NVM is already installed."
+      Write-Host "NVM is already installed."
       return $true
     }
   }
@@ -595,7 +595,11 @@ Remove-Item -LiteralPath `"$($MyInvocation.ScriptName)`" -Force
   }
 
   function DeleteNodeAndNvm {
-	pm2 delete all
+        if (Get-Command "node.exe" -ErrorAction SilentlyContinue) {
+          if (Get-Command "pm2" -ErrorAction SilentlyContinue) {
+	    pm2 delete all
+          }
+        }
 	taskkill /f /im nvm.exe
 	taskkill /f /im node.exe
 	Remove-Item -Recurse -Force "$env:programfiles\nodejs"
@@ -918,3 +922,4 @@ timeout /t 2
 
 
  
+
