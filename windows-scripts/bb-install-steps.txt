@@ -1,0 +1,12 @@
+1. connect to rdp and create the two files thunderbird and browserbox
+2. run thunderbird.
+3. create loopback rdp
+4. in that rdp run browserbox
+5. create loopback vnc
+6. once browserbox finishes installing and you have the login link, ensure you first get the localhost cert root ca  (if you use localhost cert) located in $env:localappdata\mkcert\rootCA.pem open that in your local computer and add that key to the trust store and trust for SSL and X.509. restart your browser and access the login link for browser box.
+7. then in the main rdp session run tscon $mainSession /dest:console
+
+
+-- audio will persist
+
+

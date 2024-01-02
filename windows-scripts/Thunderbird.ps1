@@ -194,7 +194,7 @@ param (
     Write-Output "TightVNC Installer downloaded"
 
     # Install TightVNC Silently
-    Start-Process "msiexec.exe" -ArgumentList "/i `"$installerPath`" /norestart ADDLOCAL=`"Server,Viewer`" SET_USEVNCAUTHENTICATION=1 VALUE_OF_USEVNCAUTHENTICATION=1 SET_PASSWORD=1 VALUE_OF_PASSWORD=`"$UserPassword`" SET_ALLOWLOOPBACK=1 VALUE_OF_ALLOWLOOPBACK=1" -Wait
+    Start-Process "msiexec.exe" -ArgumentList "/i `"$installerPath`" /quiet /norestart ADDLOCAL=`"Server,Viewer`" SET_USEVNCAUTHENTICATION=1 VALUE_OF_USEVNCAUTHENTICATION=1 SET_PASSWORD=1 VALUE_OF_PASSWORD=`"$UserPassword`" SET_ALLOWLOOPBACK=1 VALUE_OF_ALLOWLOOPBACK=1" -Wait
     Write-Output "TightVNC Installed"
 
     # Set TightVNC Password
