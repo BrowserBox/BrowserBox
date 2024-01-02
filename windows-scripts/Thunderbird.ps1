@@ -9,8 +9,8 @@ param (
   $Main = {
     Ensure-Admin
     Integrate-TightVNCWithRDPLoopback -password $UserPassword
-    RunPasswordEntryFunctionInNewWindow -password $UserPassword 
-    Start-TighVNCViewer
+    #RunPasswordEntryFunctionInNewWindow -password $UserPassword 
+    #Start-TightVNCViewer
     Start-Sleep 5
     RedirectMainSessionToConsole
   }
@@ -36,7 +36,7 @@ param (
 
     if (Test-Path $vncViewerPath) {
       Write-Output "Starting TightVNC Viewer for a local test..."
-      Start-Process $vncViewerPath -ArgumentList "$localComputerName::5900" -Wait
+      Start-Process $vncViewerPath -ArgumentList "$localComputerName::5900" 
       Write-Output "TightVNC Viewer test completed"
     }
     else {
@@ -194,11 +194,11 @@ param (
     Write-Output "TightVNC Installer downloaded"
 
     # Install TightVNC Silently
-    Start-Process "msiexec.exe" -ArgumentList "/i `"$installerPath`" /quiet /norestart ADDLOCAL=`"Server,Viewer`" SET_USEVNCAUTHENTICATION=1 VALUE_OF_USEVNCAUTHENTICATION=1 SET_PASSWORD=1 VALUE_OF_PASSWORD=$UserPassword SET_ALLOWLOOPBACK=1 VALUE_OF_ALLOWLOOPBACK=1" -Wait
+    Start-Process "msiexec.exe" -ArgumentList "/i `"$installerPath`" /norestart ADDLOCAL=`"Server,Viewer`" SET_USEVNCAUTHENTICATION=1 VALUE_OF_USEVNCAUTHENTICATION=1 SET_PASSWORD=1 VALUE_OF_PASSWORD=`"$UserPassword`" SET_ALLOWLOOPBACK=1 VALUE_OF_ALLOWLOOPBACK=1" -Wait
     Write-Output "TightVNC Installed"
 
     # Set TightVNC Password
-    Add-ToSystemPath "$env:ProgramFiles\TighVNC"
+    Add-ToSystemPath "$env:ProgramFiles\TightVNC"
     RefreshPath
 
     $installArgs = "-install -silent"
@@ -307,4 +307,5 @@ tscon %1 /dest:console
   finally {
     Write-Output "Exiting..."
   }
+
 
