@@ -511,7 +511,7 @@ async function getEncoder() {
   DEBUG.val && console.log('starting encoder');
   if ( process.platform == 'win32' )  {
 	  try {
-		  encoder = childProcess.spawn(path.resolve(serverPath, 'scripts', 'fmedia', 'fmedia.exe'), [
+		  encoder = childProcess.spawn('fmedia.exe', [
 			  `--channels=mono`, `--rate=44100`, `--format=int16`,
 			  `--notui`,
 			`--record`,
