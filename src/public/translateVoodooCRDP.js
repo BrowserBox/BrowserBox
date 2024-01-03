@@ -829,7 +829,7 @@ function mouseEvent(e, deltaX = 0, deltaY = 0) {
 function keyEvent(e, modifiers = 0, SYNTHETIC = false) {
   const id = e.key && e.key.length > 1 ? e.key : e.code;
   const def = keys[id] || {};
-  const text = e.originalType == "keypress" ? String.fromCharCode(e.keyCode) : undefined;
+  const text = e.originalType == "keypress" ? String.fromCharCode(def.keyCode) : undefined;
   modifiers = modifiers || encodeModifiers(e.originalEvent);
   let type;
   if ( e.originalType == "keydown" ) {
@@ -848,10 +848,10 @@ function keyEvent(e, modifiers = 0, SYNTHETIC = false) {
       params: {
         type,
         text,
-        unmodifiedText: text,
+        //unmodifiedText: text,
         code: def.code,
         key: def.key,
-        windowsVirtualKeyCode: e.keyCode,
+        windowsVirtualKeyCode: def.keyCode,
         modifiers,
       },
       requiresShot: e.key == "Enter" || e.key == "Tab" || e.key == "Delete",

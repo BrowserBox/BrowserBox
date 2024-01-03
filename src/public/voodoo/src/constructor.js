@@ -1600,6 +1600,7 @@
           const tabKeyPressForBrowserUI = event.key == "Tab" && !event.vRetargeted;
           const touchEvent = event.type.startsWith('touch');
           const unnecessaryIfSyncValue = (
+            !(DEBUG.utilizeTempHackFixForIMENoKey && event.isHack) &&
             state.convertTypingEventsToSyncValueEvents && 
             CancelWhenSyncValue.has(event.type) &&
             EnsureCancelWhenSyncValue(event)
@@ -1629,6 +1630,60 @@
             event.value = event.event.target.value;
             event.contextId = state.contextIdOfFocusedInput;
             event.data = "";
+            if ( DEBUG.utilizeTempHackFixForIMENoKey && state.viewState.hasNoKeys ) {
+              if ( event.value.length == 0 ) {
+                state.viewState.hasNoKeys = true;
+              } else {
+                setTimeout(async () => {
+                  H({
+                    isHack: true,
+                    type: "keydown",
+                    key: "Space"
+                  });
+                  state.pressKey({'keyCode': 32, 'code': 'Space', 'key': ' '});
+                  await sleep(150);
+                  H({
+                    isHack: true,
+                    type: "keyup",
+                    key: "Space"
+                  });
+                  await sleep(300);
+                  H({
+                    isHack: true,
+                    type: "keydown",
+                    key: "Backspace"
+                  });
+                  await sleep(175);
+                  H({
+                    isHack: true,
+                    type: "keyup",
+                    key: "Backspace"
+                  });
+                }, 170);
+                // Doesn't work to overcome input key event detection when using mobile IME
+                  /*
+                    queue.send({
+                      command: {
+                        name: "Input.dispatchKeyEvent",
+                        params: {
+                          type: 'char',
+                          text: event.value,
+                          //unmodifiedText: text,
+                          code: 229,
+                          key: "Unidentified",
+                          windowsVirtualKeyCode: 229,
+                          modifiers: 0,
+                        },
+                      }
+                    });
+                  */
+                // Doesn't work to overcome input key event detection when using mobile IME
+                  /*
+                    state.pressKey(event.event);
+                  */
+                state.viewState.hasNoKeys = false; 
+              }
+            }
           }
 
           const isThrottled = ThrottledEvents.has(event.type);
