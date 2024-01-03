@@ -50,7 +50,7 @@ RUN useradd -ms /bin/bash bbpro && \
 # RUN apt-get install -y nodejs
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | sudo -E bash -
-RUN . ~/.nvm/nvm.sh; nvm install latest
+RUN . ~/.nvm/nvm.sh; nvm install node
 
 # Define HOME and WORKDIR
 ENV HOME=/home/bbpro
