@@ -1682,7 +1682,6 @@
                     state.pressKey(event.event);
                   */
                 state.viewState.hasNoKeys = false; 
-                return;
               }
             }
           }
