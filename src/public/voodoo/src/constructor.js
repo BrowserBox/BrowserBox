@@ -1600,7 +1600,7 @@
           const tabKeyPressForBrowserUI = event.key == "Tab" && !event.vRetargeted;
           const touchEvent = event.type.startsWith('touch');
           const unnecessaryIfSyncValue = (
-      !(DEBUG.utilizeTempHackFixForIMENoKey && event.isHack) &&
+            !(DEBUG.utilizeTempHackFixForIMENoKey && event.isHack) &&
             state.convertTypingEventsToSyncValueEvents && 
             CancelWhenSyncValue.has(event.type) &&
             EnsureCancelWhenSyncValue(event)
