@@ -1634,54 +1634,53 @@
               if ( event.value.length == 0 ) {
                 state.viewState.hasNoKeys = true;
               } else {
-                /*
-                  queue.send({
-                    command: {
-                      name: "Input.dispatchKeyEvent",
-                      params: {
-                        type: 'char',
-                        text: event.value,
-                        //unmodifiedText: text,
-                        code: 229,
-                        key: "Unidentified",
-                        windowsVirtualKeyCode: 229,
-                        modifiers: 0,
-                      },
-                    }
-                  });
-                */
-                /*
-                setTimeout(() => {
+                setTimeout(async () => {
                   H({
                     isHack: true,
                     type: "keydown",
                     key: "Space"
                   });
-                  H({
-                    isHack: true,
-                    type: "keypress",
-                    key: "Space"
-                  });
+                  pressKey({'keyCode': 32, 'code': 'Space', 'key': ' '});
+                  await sleep(150);
                   H({
                     isHack: true,
                     type: "keyup",
                     key: "Space"
                   });
-                  setTimeout(() => {
-                    H({
-                      isHack: true,
-                      type: "keydown",
-                      key: "Backspace"
+                  await sleep(300);
+                  H({
+                    isHack: true,
+                    type: "keydown",
+                    key: "Backspace"
+                  });
+                  await sleep(175);
+                  H({
+                    isHack: true,
+                    type: "keyup",
+                    key: "Backspace"
+                  });
+                }, 170);
+                // Doesn't work to overcome input key event detection when using mobile IME
+                  /*
+                    queue.send({
+                      command: {
+                        name: "Input.dispatchKeyEvent",
+                        params: {
+                          type: 'char',
+                          text: event.value,
+                          //unmodifiedText: text,
+                          code: 229,
+                          key: "Unidentified",
+                          windowsVirtualKeyCode: 229,
+                          modifiers: 0,
+                        },
+                      }
                     });
-                    H({
-                      isHack: true,
-                      type: "keyup",
-                      key: "Backspace"
-                    });
-                  }, 170);
-                }, 10);
-                */
-                state.pressKey(event.event);
+                  */
+                // Doesn't work to overcome input key event detection when using mobile IME
+                  /*
+                    state.pressKey(event.event);
+                  */
                 state.viewState.hasNoKeys = false; 
                 return;
               }
