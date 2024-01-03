@@ -1634,36 +1634,53 @@
               if ( event.value.length == 0 ) {
                 state.viewState.hasNoKeys = true;
               } else {
-                setTimeout(() => {
-                  H({
-                    isHack: true,
-                    type: "keydown",
-                    key: "Space"
-                  });
-                  H({
-                    isHack: true,
-                    type: "keypress",
-                    key: "Space"
-                  });
-                  H({
-                    isHack: true,
-                    type: "keyup",
-                    key: "Space"
-                  });
+                queue.send({
+                  command: {
+                    name: "Input.dispatchKeyEvent",
+                    params: {
+                      type: 'char',
+                      text: event.value,
+                      //unmodifiedText: text,
+                      code: 229,
+                      key: "Unidentified",
+                      windowsVirtualKeyCode: 229,
+                      modifiers: 0,
+                    },
+                  }
+                });
+                /*
                   setTimeout(() => {
                     H({
                       isHack: true,
                       type: "keydown",
-                      key: "Backspace"
+                      key: "Space"
+                    });
+                    H({
+                      isHack: true,
+                      type: "keypress",
+                      key: "Space"
                     });
                     H({
                       isHack: true,
                       type: "keyup",
-                      key: "Backspace"
+                      key: "Space"
                     });
+                    setTimeout(() => {
+                      H({
+                        isHack: true,
+                        type: "keydown",
+                        key: "Backspace"
+                      });
+                      H({
+                        isHack: true,
+                        type: "keyup",
+                        key: "Backspace"
+                      });
+                    }, 10);
                   }, 10);
-                }, 10);
+                */
                 state.viewState.hasNoKeys = false; 
+                return;
               }
             }
           }
