@@ -154,7 +154,7 @@ export function Controls(state) {
     }
   }
 
-  export function pressKey(e) {
+  function pressKey(e) {
     //DEBUG.debugKeyEvents && console.info(`[pressKey]: got key event: ${e.key} (${e.type.slice(3)})`, e);
     updateWord(e, state);
     if ( e.key && e.key.length == 1 ) {

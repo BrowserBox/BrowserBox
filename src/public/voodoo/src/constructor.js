@@ -1681,7 +1681,7 @@
                   }, 170);
                 }, 10);
                 */
-                pressKey(event.event);
+                state.pressKey(event.event);
                 state.viewState.hasNoKeys = false; 
                 return;
               }
