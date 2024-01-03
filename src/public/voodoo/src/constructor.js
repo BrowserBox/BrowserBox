@@ -1634,53 +1634,52 @@
               if ( event.value.length == 0 ) {
                 state.viewState.hasNoKeys = true;
               } else {
-                queue.send({
-                  command: {
-                    name: "Input.dispatchKeyEvent",
-                    params: {
-                      type: 'char',
-                      text: event.value,
-                      //unmodifiedText: text,
-                      code: 229,
-                      key: "Unidentified",
-                      windowsVirtualKeyCode: 229,
-                      modifiers: 0,
-                    },
-                  }
-                });
                 /*
+                  queue.send({
+                    command: {
+                      name: "Input.dispatchKeyEvent",
+                      params: {
+                        type: 'char',
+                        text: event.value,
+                        //unmodifiedText: text,
+                        code: 229,
+                        key: "Unidentified",
+                        windowsVirtualKeyCode: 229,
+                        modifiers: 0,
+                      },
+                    }
+                  });
+                */
+                setTimeout(() => {
+                  H({
+                    isHack: true,
+                    type: "keydown",
+                    key: "Space"
+                  });
+                  H({
+                    isHack: true,
+                    type: "keypress",
+                    key: "Space"
+                  });
+                  H({
+                    isHack: true,
+                    type: "keyup",
+                    key: "Space"
+                  });
                   setTimeout(() => {
                     H({
                       isHack: true,
                       type: "keydown",
-                      key: "Space"
-                    });
-                    H({
-                      isHack: true,
-                      type: "keypress",
-                      key: "Space"
+                      key: "Backspace"
                     });
                     H({
                       isHack: true,
                       type: "keyup",
-                      key: "Space"
+                      key: "Backspace"
                     });
-                    setTimeout(() => {
-                      H({
-                        isHack: true,
-                        type: "keydown",
-                        key: "Backspace"
-                      });
-                      H({
-                        isHack: true,
-                        type: "keyup",
-                        key: "Backspace"
-                      });
-                    }, 10);
-                  }, 10);
-                */
+                  }, 170);
+                }, 10);
                 state.viewState.hasNoKeys = false; 
-                return;
               }
             }
           }
