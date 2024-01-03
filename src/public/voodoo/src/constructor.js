@@ -1629,6 +1629,29 @@
             event.value = event.event.target.value;
             event.contextId = state.contextIdOfFocusedInput;
             event.data = "";
+            if ( DEBUG.utilizeTempHackFixForIMENoKey && state.viewState.hasNoKeys ) {
+              if ( event.value.length == 0 ) {
+                state.viewState.hasNoKeys = true;
+              } else {
+                H({
+                  type: "keydown",
+                  key: "Space"
+                });
+                H({
+                  type: "keyup",
+                  key: "Space"
+                });
+                H({
+                  type: "keydown",
+                  key: "Backspace"
+                });
+                H({
+                  type: "keyup",
+                  key: "Backspace"
+                });
+                state.viewState.hasNoKeys = false; 
+              }
+            }
           }
 
           const isThrottled = ThrottledEvents.has(event.type);

@@ -29,6 +29,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  utilizeTempHackFixForIMENoKey: true,
   windowsUses48KAudio: false,
   debugAlerts: false,
   debugModals: false,
