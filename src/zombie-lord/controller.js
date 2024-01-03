@@ -404,7 +404,6 @@ const controller_api = {
       //({Page, Target} = connection.zombie);
       command = command || {};
       if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(command.name) ) {
-        console.info(`Logging`, {command});
         setTimeout(() => {
           fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
             timestamp: (new Date).toISOString(),
