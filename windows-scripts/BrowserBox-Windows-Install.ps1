@@ -75,7 +75,7 @@ $Outer = {
     InstallFmedia
     InstallAndLoadNvm
 
-    nvm install latest
+    nvm install node
     nvm use latest
 
     Write-Output "Setting up certificate..."
