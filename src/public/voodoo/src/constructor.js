@@ -13,7 +13,7 @@
     import DEFAULT_FAVICON from './subviews/faviconDataURL.js';
     import EventQueue from './eventQueue.js';
     import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
-    import {saveClick} from './subviews/controls.js';
+    import {saveClick, pressKey} from './subviews/controls.js';
     import {
       untilTrue,
       logit, sleep, debounce, DEBUG, BLANK, 
@@ -1650,6 +1650,7 @@
                     }
                   });
                 */
+                /*
                 setTimeout(() => {
                   H({
                     isHack: true,
@@ -1679,7 +1680,10 @@
                     });
                   }, 170);
                 }, 10);
+                */
+                pressKey(event.event);
                 state.viewState.hasNoKeys = false; 
+                return;
               }
             }
           }
