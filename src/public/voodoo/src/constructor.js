@@ -1638,17 +1638,25 @@
                   key: "Space"
                 });
                 H({
-                  type: "keyup",
+                  type: "keyspace",
                   key: "Space"
                 });
                 H({
-                  type: "keydown",
-                  key: "Backspace"
-                });
-                H({
                   type: "keyup",
-                  key: "Backspace"
+                  key: "Space"
                 });
+                /*
+                sleep(100).then(() => {
+                  H({
+                    type: "keydown",
+                    key: "Backspace"
+                  });
+                  H({
+                    type: "keyup",
+                    key: "Backspace"
+                  });
+                });
+                */
                 state.viewState.hasNoKeys = false; 
               }
             }
