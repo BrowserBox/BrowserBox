@@ -1640,7 +1640,7 @@
                     type: "keydown",
                     key: "Space"
                   });
-                  pressKey({'keyCode': 32, 'code': 'Space', 'key': ' '});
+                  state.pressKey({'keyCode': 32, 'code': 'Space', 'key': ' '});
                   await sleep(150);
                   H({
                     isHack: true,
