@@ -1600,11 +1600,13 @@
           const tabKeyPressForBrowserUI = event.key == "Tab" && !event.vRetargeted;
           const touchEvent = event.type.startsWith('touch');
           const unnecessaryIfSyncValue = (
+	    !(DEBUG.utilizeTempHackFixForIMENoKey && event.isHack) &&
             state.convertTypingEventsToSyncValueEvents && 
             CancelWhenSyncValue.has(event.type) &&
             EnsureCancelWhenSyncValue(event)
           );
           const eventCanBeIgnored = mouseEventOnPointerDevice || tabKeyPressForBrowserUI || unnecessaryIfSyncValue;
+		if ( event.isHack ) { alert(event.type + ` ignore? ${eventCanBeIgnored}`) }
           
           if ( eventCanBeIgnored ) return;
 
@@ -1633,30 +1635,38 @@
               if ( event.value.length == 0 ) {
                 state.viewState.hasNoKeys = true;
               } else {
-                H({
-                  type: "keydown",
-                  key: "Space"
-                });
-                H({
-                  type: "keyspace",
-                  key: "Space"
-                });
-                H({
-                  type: "keyup",
-                  key: "Space"
-                });
-                /*
-                sleep(100).then(() => {
-                  H({
-                    type: "keydown",
-                    key: "Backspace"
-                  });
-                  H({
-                    type: "keyup",
-                    key: "Backspace"
-                  });
-                });
-                */
+		 setTimeout(() => {
+			 alert('timeout');
+			H({
+				isHack: true,
+			  type: "keydown",
+			  key: "Space"
+			});
+			H({
+				isHack: true,
+			  type: "keypress",
+			  key: "Space"
+			});
+			H({
+				isHack: true,
+			  type: "keyup",
+			  key: "Space"
+			});
+			/*
+			sleep(100).then(() => {
+			  H({
+				isHack: true,
+			    type: "keydown",
+			    key: "Backspace"
+			  });
+			  H({
+				isHack: true,
+			    type: "keyup",
+			    key: "Backspace"
+			  });
+			});
+			*/
+		 }, 2000);
                 state.viewState.hasNoKeys = false; 
               }
             }
@@ -1740,6 +1750,7 @@
               }
             }
             DEBUG.HFUNCTION && console.log(`H Sending`, transformedEvent);
+		  if ( event.isHack ) { alert(`H sending: ${JSON.stringify({transformedEvent})}`) }
             queue.send(transformedEvent);
             DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`);
           }

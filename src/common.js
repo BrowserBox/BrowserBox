@@ -29,6 +29,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+	debugTyping: true,
   utilizeTempHackFixForIMENoKey: true,
   windowsUses48KAudio: false,
   debugAlerts: false,
@@ -56,7 +57,7 @@ export const DEBUG = Object.freeze({
   showFlags: false,
   allowExternalChrome: true,
   debugChromeStart: false,
-  logFileCommands: false,
+  logFileCommands: true,
   showTodos: false,
   showViewportChanges: false,
   showResizeEvents: false,

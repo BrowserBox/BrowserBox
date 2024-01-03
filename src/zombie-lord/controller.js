@@ -1,6 +1,6 @@
 import Connect from './connection.js';
 import {executeBinding, getViewport} from './connection.js';
-import {CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
+import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
 import {MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
 import fs from 'fs';
 
@@ -403,6 +403,15 @@ const controller_api = {
       }
       //({Page, Target} = connection.zombie);
       command = command || {};
+	    if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(command.name) ) {
+	      console.info(`Logging`, {command});
+	      setTimeout(() => {
+		fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
+		  timestamp: (new Date).toISOString(),
+		  command,
+		},null,2)+"\n");
+	      }, 5);
+	    }
       DEBUG.val >= DEBUG.high && !command.isBufferedResultsCollectionOnly && console.log(JSON.stringify(command));
       if ( command.isBufferedResultsCollectionOnly ) {
         DEBUG.frameDebug && process.stdout.write('.');
