@@ -272,6 +272,14 @@ if [ "$(os_type)" == "Linux" ]; then
 fi
 open_firewall_port_range 80 80
 
+
+if [ "$(os_type)" == "macOS" ]; then
+        brew install jq
+else
+        $SUDO $APT -y install jq
+fi
+
+
 if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
   hostname="$1"
   export BB_USER_EMAIL="$2"
@@ -373,4 +381,3 @@ cd $INSTALL_DIR/src/services/pool/deploy/
 ./scripts/setup.sh
 
 echo "Install complete!"
-
