@@ -2,11 +2,11 @@
 
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
 
-We're currently increasing our support for marketplaces and one-click-deploy, and will be launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/) soon. Come check us out! 🥇😄
+We're currently increasing our support for marketplaces and one-click-deploy, we just [launched on Azure Quickstart Templates](https://github.com/Azure/azure-quickstart-templates/tree/master/application-workloads/dosyago/browserbox), and will be launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/) soon. Come check us out! 🥇😄
 
 ## Deploy to Azure! 
 
-We've just added support for Azure ARM Templates.
+We've just added support for Azure ARM Templates. You can also [run it from the Azure Quickstart Repository](https://github.com/Azure/azure-quickstart-templates/tree/master/application-workloads/dosyago/browserbox). Or find it via search in the Quickstart section of the Azure Portal. 
 
 **Give it a try! :pinata:**
 
