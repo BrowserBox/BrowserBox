@@ -45,6 +45,7 @@ We've just added support for Azure ARM Templates. You can also [run it from the 
 |------------------|:---------------:|
 | macOS 13         |           ✅ |
 | Fedora 39        |           ✅ |
+| RHEL 8           |           ✅ |  
 | CentOS 9         |           ✅ |
 | CentOS 8         |           ✅ |
 | Kali             |           ✅ |
