@@ -8,6 +8,8 @@ param (
   [string]$hostname
 )
 
+Write-Host "OK1"
+
 $CloseJob = $null
 
 $Outer = {
@@ -18,9 +20,9 @@ $Outer = {
   using System;
   using System.Runtime.InteropServices;
   public class BBInstallerWindowManagement {
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+  [DllImport("user32.dll")]
+  [return: MarshalAs(UnmanagedType.Bool)]
+  public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
   }
 "@
     }
@@ -50,10 +52,12 @@ $Outer = {
   $Main = {
     Guard-CheckAndSaveUserAgreement ([ref]$acceptTermsEmail) ([ref]$hostname)
 
+    Write-Host $acceptTermsEmail $hostname
 
     if (Validate-NonEmptyParameters -hostname $hostname -acceptTermsEmail $acceptTermsEmail) {
       Write-Output "Inputs look good. Proceeding..."
-    } else {
+    }
+    else {
       Show-Usage
       Exit
     }
@@ -98,7 +102,8 @@ $Outer = {
       OpenFirewallPort -Port 80
       RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
       PersistCerts -Domain $domain
-    } else {
+    }
+    else {
       RunCloserFunctionInNewWindow
       InstallMkcertAndSetup
     }
@@ -133,25 +138,25 @@ $Outer = {
 
 
   # Function Definitions
-    # it's worth noting that while Remote Sound Device from remote desktop works well,
-    # due to RDP audio driver on Windows
-    # there is distortion on some music sounds, for instance
-    # https://www.youtube.com/watch?v=v0wVRG38IYs
+  # it's worth noting that while Remote Sound Device from remote desktop works well,
+  # due to RDP audio driver on Windows
+  # there is distortion on some music sounds, for instance
+  # https://www.youtube.com/watch?v=v0wVRG38IYs
 
   function Show-Usage {
     Write-Host "Usage: BrowserBox-Install-Task.ps1 [-acceptTermsEmail <email> -hostname <hostname>]"
     Write-Host ""
     Write-Host "This script installs and configures BrowserBox on your Windows system."
     Write-Host "Parameters:"
-    Write-Host "  -acceptTermsEmail    The email address used for accepting terms and receiving notifications."
-    Write-Host "                       Optional if not provided, a GUI prompt will request this information."
-    Write-Host "  -hostname            The hostname for the BrowserBox service. This is used for certificate generation."
-    Write-Host "                       Optional if not provided, a GUI prompt will request this information."
+    Write-Host "  -acceptTermsEmail  The email address used for accepting terms and receiving notifications."
+    Write-Host "             Optional if not provided, a GUI prompt will request this information."
+    Write-Host "  -hostname      The hostname for the BrowserBox service. This is used for certificate generation."
+    Write-Host "             Optional if not provided, a GUI prompt will request this information."
     Write-Host ""
     Write-Host "Documentation Links:"
     Write-Host "  Terms of Service: https://dosyago.com/terms.txt"
     Write-Host "  Privacy Policy:   https://dosyago.com/privacy.txt"
-    Write-Host "  License:          https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md"
+    Write-Host "  License:      https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md"
     Write-Host ""
     Write-Host "Example:"
     Write-Host "  .\BrowserBox-Install-Task.ps1 -acceptTermsEmail 'user@example.com' -hostname 'yourhostname.com'"
@@ -227,11 +232,18 @@ $Outer = {
       }
     }
 
+    Write-Host "OK"
+
     # Show user agreement dialog
     try {
       $userInput = Show-UserAgreementDialog -acceptTermsEmail $acceptTermsEmail.Value -hostname $hostname.Value
-      $acceptTermsEmail.Value = $userInput.Email
-      $hostname.Value = $userInput.Hostname
+      if ($userInput) {
+        $acceptTermsEmail.Value = $userInput.Email
+        $hostname.Value = $userInput.Hostname
+      }
+      else {
+        Exit
+      }
     }
     catch {
       $userInput = Read-Host "Do you agree to the terms? (Yes/No)"
@@ -240,6 +252,7 @@ $Outer = {
         Exit
       }
     }
+
 
     # Save the user's agreement along with email and hostname
     if (!(Test-Path $configDir)) {
@@ -309,7 +322,7 @@ $Outer = {
 
   function BeginSecurityWarningAcceptLoop {
     $myshell = New-Object -com "Wscript.Shell"
-    
+  
     while ($true) {
       Start-Sleep -Seconds 2
       # Check for the presence of the "Security Warning" window
@@ -569,8 +582,8 @@ Copy-CertbotCertificates -Domain "$Domain"
 
       # Check for private IP ranges (e.g., 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x)
       if (($bytes[0] -eq 10) -or
-        ($bytes[0] -eq 172 -and $bytes[1] -ge 16 -and $bytes[1] -le 31) -or
-        ($bytes[0] -eq 192 -and $bytes[1] -eq 168)) {
+    ($bytes[0] -eq 172 -and $bytes[1] -ge 16 -and $bytes[1] -le 31) -or
+    ($bytes[0] -eq 192 -and $bytes[1] -eq 168)) {
         return $true
       }
     }
@@ -684,17 +697,17 @@ Copy-CertbotCertificates -Domain "$Domain"
   }
 
   function DeleteNodeAndNvm {
-        if (Get-Command "node.exe" -ErrorAction SilentlyContinue) {
-          if (Get-Command "pm2" -ErrorAction SilentlyContinue) {
-	    pm2 delete all
-          }
-        }
-	taskkill /f /im nvm.exe
-	taskkill /f /im node.exe
-	Remove-Item -Recurse -Force "$env:programfiles\nodejs"
-	Remove-Item -Recurse -Force "${env:ProgramFiles(x86)}\nodejs"
-	Remove-Item -Recurse -Force "$env:ProgramW6432\nodejs"
-	Remove-Item -Recurse -Force "$env:appdata\nvm"
+    if (Get-Command "node.exe" -ErrorAction SilentlyContinue) {
+      if (Get-Command "pm2" -ErrorAction SilentlyContinue) {
+        pm2 delete all
+      }
+    }
+    taskkill /f /im nvm.exe
+    taskkill /f /im node.exe
+    Remove-Item -Recurse -Force "$env:programfiles\nodejs"
+    Remove-Item -Recurse -Force "${env:ProgramFiles(x86)}\nodejs"
+    Remove-Item -Recurse -Force "$env:ProgramW6432\nodejs"
+    Remove-Item -Recurse -Force "$env:appdata\nvm"
   }
 
   function InstallAndLoadNvm {
@@ -725,7 +738,7 @@ Copy-CertbotCertificates -Domain "$Domain"
 
     $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $userPasswordArg"
 
-    (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
+  (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
 
     Exit
   }
@@ -838,7 +851,7 @@ timeout /t 2
 
         $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`" $userPasswordArg"
 
-        (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
+    (Start-Process $psExecutable -Verb RunAs -ArgumentList $arguments -PassThru)
 
         Exit
       }
@@ -899,7 +912,7 @@ timeout /t 2
       $form.Controls.Add($emailTextBox)
     }
 
-     # Add clickable link for Terms of Service
+    # Add clickable link for Terms of Service
     $termsLink = New-Object System.Windows.Forms.LinkLabel
     $termsLink.Text = "Terms of Service"
     $termsLink.AutoSize = $true
@@ -927,12 +940,13 @@ timeout /t 2
     $continueButton.Text = 'Agree & Continue'
     $continueButton.Location = New-Object System.Drawing.Point(200, 200)
     $continueButton.Add_Click({
-      if ($domainTextBox.Text -eq '' -or $emailTextBox.Text -eq '') {
-        [System.Windows.Forms.MessageBox]::Show('Please fill in all required fields')
-      } else {
-        $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
-      }
-    })
+        if ($domainTextBox.Text -eq '' -or $emailTextBox.Text -eq '') {
+          [System.Windows.Forms.MessageBox]::Show('Please fill in all required fields')
+        }
+        else {
+          $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
+        }
+      })
     $form.Controls.Add($continueButton)
 
     $cancelButton = New-Object System.Windows.Forms.Button
@@ -944,15 +958,13 @@ timeout /t 2
     $form.AcceptButton = $continueButton
     $form.CancelButton = $cancelButton
 
-    $form.ShowDialog()
-
-    # Return the user input or the provided parameters
     if ($form.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
       return @{
-        'Email' = if ($acceptTermsEmail) { $acceptTermsEmail } else { $emailInput.Text }
-        'Hostname' = if ($hostname) { $hostname } else { $hostnameInput.Text }
+        'Email'  = if ($acceptTermsEmail) { $acceptTermsEmail } else { $emailTextBox.Text }
+        'Hostname' = if ($hostname) { $hostname } else { $domainTextBox.Text }
       }
-    } else {
+    }
+    else {
       Exit
     }
   }
@@ -1078,4 +1090,6 @@ timeout /t 2
 }
 
 & $Outer
+
+
 
