@@ -870,6 +870,30 @@ timeout /t 2
       $form.Controls.Add($emailTextBox)
     }
 
+     # Add clickable link for Terms of Service
+    $termsLink = New-Object System.Windows.Forms.LinkLabel
+    $termsLink.Text = "Terms of Service"
+    $termsLink.AutoSize = $true
+    $termsLink.Location = New-Object System.Drawing.Point(20, 160)
+    $termsLink.Add_Click({ Start-Process "https://dosyago.com/terms.txt" })
+    $form.Controls.Add($termsLink)
+
+    # Add clickable link for Privacy Policy
+    $privacyLink = New-Object System.Windows.Forms.LinkLabel
+    $privacyLink.Text = "Privacy Policy"
+    $privacyLink.AutoSize = $true
+    $privacyLink.Location = New-Object System.Drawing.Point(20, 180)
+    $privacyLink.Add_Click({ Start-Process "https://dosyago.com/privacy.txt" })
+    $form.Controls.Add($privacyLink)
+
+    # Add clickable link for License
+    $licenseLink = New-Object System.Windows.Forms.LinkLabel
+    $licenseLink.Text = "License"
+    $licenseLink.AutoSize = $true
+    $licenseLink.Location = New-Object System.Drawing.Point(20, 200)
+    $licenseLink.Add_Click({ Start-Process "https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md" })
+    $form.Controls.Add($licenseLink)
+
     $continueButton = New-Object System.Windows.Forms.Button
     $continueButton.Text = 'Agree & Continue'
     $continueButton.Location = New-Object System.Drawing.Point(200, 200)
