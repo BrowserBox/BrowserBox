@@ -30,13 +30,13 @@ $Outer = {
 
     # Get the screen width and window width
     $screenWidth = [System.Windows.Forms.SystemInformation]::VirtualScreen.Width
-    $windowWidth = 555  # Assuming this is your current window width
+    $windowWidth = 600  # Assuming this is your current window width
 
     # Calculate the X coordinate
     $xCoordinate = $screenWidth - $windowWidth
 
     # Set the window position: X, Y, Width, Height
-    [BBInstallerWindowManagement]::SetWindowPos($hwnd, [IntPtr]::new(-1), $xCoordinate, 0, $windowWidth, 555, 0x0040)
+    [BBInstallerWindowManagement]::SetWindowPos($hwnd, [IntPtr]::new(-1), $xCoordinate, 0, $windowWidth, 371, 0x0040)
   }
   catch {
     Write-Output "An error occurred during window management: $_"
