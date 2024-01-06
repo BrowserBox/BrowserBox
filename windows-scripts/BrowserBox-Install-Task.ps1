@@ -48,7 +48,8 @@ $Outer = {
 
   # Main script flow
   $Main = {
-    Guard-CheckAndSaveUserAgreement
+    Guard-CheckAndSaveUserAgreement ([ref]$acceptTermsEmail) ([ref]$hostname)
+
 
     if (Validate-NonEmptyParameters -hostname $hostname -acceptTermsEmail $acceptTermsEmail) {
       Write-Output "Inputs look good. Proceeding..."
@@ -158,6 +159,22 @@ $Outer = {
     Write-Host "Note: Run this script with administrative privileges for proper installation."
   }
 
+
+  function Validate-NonEmptyParameters {
+    param (
+      [string]$hostname,
+      [string]$acceptTermsEmail
+    )
+
+    # Check if either hostname or acceptTermsEmail is empty
+    if ([string]::IsNullOrWhiteSpace($hostname) -or [string]::IsNullOrWhiteSpace($acceptTermsEmail)) {
+      Write-Host "Hostname and Email must both be provided."
+      return $false
+    }
+
+    return $true
+  }
+
   function RequestCertificate {
     param (
       [string]$Domain,
@@ -188,22 +205,33 @@ $Outer = {
   }
 
   function Guard-CheckAndSaveUserAgreement {
+    param (
+      [ref]$acceptTermsEmail,
+      [ref]$hostname
+    )
+
     $configDir = Join-Path $env:USERPROFILE ".config\dosyago\bbpro"
     $agreementFile = Join-Path $configDir "user_agreement.txt"
 
     # Check if the agreement file already exists and contains the agreement
     if (Test-Path $agreementFile) {
       $agreementData = Get-Content $agreementFile
-      if ($agreementData -match "Agreed") {
+      $agreed = $agreementData | Select-String "Agreed" -Quiet
+      $storedEmail = ($agreementData | Select-String "Email:" | Out-String).Trim().Split(":")[1]
+      $storedHostname = ($agreementData | Select-String "Hostname:" | Out-String).Trim().Split(":")[1]
+
+      if ($agreed) {
+        if (-not $acceptTermsEmail.Value) { $acceptTermsEmail.Value = $storedEmail }
+        if (-not $hostname.Value) { $hostname.Value = $storedHostname }
         return
       }
     }
 
     # Show user agreement dialog
     try {
-      $userInput = Show-UserAgreementDialog -acceptTermsEmail $acceptTermsEmail -hostname $hostname
-      $acceptTermsEmail = $userInput.Email
-      $hostname = $userInput.Hostname
+      $userInput = Show-UserAgreementDialog -acceptTermsEmail $acceptTermsEmail.Value -hostname $hostname.Value
+      $acceptTermsEmail.Value = $userInput.Email
+      $hostname.Value = $userInput.Hostname
     }
     catch {
       $userInput = Read-Host "Do you agree to the terms? (Yes/No)"
@@ -213,13 +241,14 @@ $Outer = {
       }
     }
 
-    # Save the user's agreement
+    # Save the user's agreement along with email and hostname
     if (!(Test-Path $configDir)) {
       New-Item -Path $configDir -ItemType Directory -Force
     }
     $userName = [Environment]::UserName
     $dateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    "$userName,$dateTime,Agreed" | Out-File $agreementFile
+    $agreementText = "$userName,$dateTime,Agreed`nEmail:$($acceptTermsEmail.Value)`nHostname:$($hostname.Value)"
+    $agreementText | Out-File $agreementFile
   }
 
   function EnsureWindowsAudioService {
@@ -249,34 +278,34 @@ $Outer = {
     }
   }
 
-	function PatchNvmPath {
-	  $env:NVM_HOME = "$env:appdata\nvm"
-	  $env:NVM_SYMLINK = "$env:programfiles\nodejs"
-	  $additionalPaths = @(
-	    "$env:NVM_HOME",
-	    "$env:NVM_SYMLINK",
-	    "$env:LOCALAPPDATA\Microsoft\WindowsApps",
-	    "$env:LOCALAPPDATA\Microsoft\WinGet\Links",
-	    "$env:APPDATA\nvm"
-	  )
+  function PatchNvmPath {
+    $env:NVM_HOME = "$env:appdata\nvm"
+    $env:NVM_SYMLINK = "$env:programfiles\nodejs"
+    $additionalPaths = @(
+      "$env:NVM_HOME",
+      "$env:NVM_SYMLINK",
+      "$env:LOCALAPPDATA\Microsoft\WindowsApps",
+      "$env:LOCALAPPDATA\Microsoft\WinGet\Links",
+      "$env:APPDATA\nvm"
+    )
 
-	  # Program Files directories
-	  $programFilesPaths = @(
-	    $env:ProgramFiles
-	  ) | Select-Object -Unique
+    # Program Files directories
+    $programFilesPaths = @(
+      $env:ProgramFiles
+    ) | Select-Object -Unique
 
-	  foreach ($path in $programFilesPaths) {
-	    $nodeJsPath = Join-Path $path "nodejs"
-	    if (Test-Path $nodeJsPath) {
-	      $additionalPaths += $nodeJsPath
-	    }
-	  }
+    foreach ($path in $programFilesPaths) {
+      $nodeJsPath = Join-Path $path "nodejs"
+      if (Test-Path $nodeJsPath) {
+        $additionalPaths += $nodeJsPath
+      }
+    }
 
-	  # Add paths to PATH environment variable, avoiding duplicates
-	  $currentPath = $env:PATH.Split(';')
-	  $newPath = $currentPath + $additionalPaths | Select-Object -Unique
-	  $env:PATH = $newPath -join ";"
-	}
+    # Add paths to PATH environment variable, avoiding duplicates
+    $currentPath = $env:PATH.Split(';')
+    $newPath = $currentPath + $additionalPaths | Select-Object -Unique
+    $env:PATH = $newPath -join ";"
+  }
 
   function BeginSecurityWarningAcceptLoop {
     $myshell = New-Object -com "Wscript.Shell"
@@ -1049,7 +1078,4 @@ timeout /t 2
 }
 
 & $Outer
-
-
- 
 
