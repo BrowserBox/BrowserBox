@@ -1,6 +1,3 @@
-
-
-
 # add arguments for -acceptTermsEmail <email@address> -hostname <bb host> that will also be passed through ($args)
 # extend GUI to account for these which will not show if args are provided implying consent
 # add wait for hostname to resolve function and console reminder to add A record
@@ -105,6 +102,7 @@ $Outer = {
     }
     else {
       InstallCertbot
+
       OpenFirewallPort -Port 80
       RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
       PersistCerts -Domain $domain 
@@ -1090,11 +1088,4 @@ timeout /t 2
     Write-Output "Exiting..."
   }
 }
-
-& $Outer
-
-
-
-
-
 
