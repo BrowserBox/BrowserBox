@@ -3,7 +3,9 @@
 # add wait for hostname to resolve function and console reminder to add A record
 # if hostname resolves to a link local address ensure that it points at our machine. How? don't know. But can be done.
 param (
-  [string]$UserPassword
+  [string]$UserPassword,
+  [string]$acceptTermsEmail,
+  [string]$hostname
 )
 
 $CloseJob = $null
@@ -48,6 +50,13 @@ $Outer = {
   $Main = {
     Guard-CheckAndSaveUserAgreement
 
+    if (Validate-NonEmptyParameters -hostname $hostname -acceptTermsEmail $acceptTermsEmail) {
+      Write-Output "Inputs look good. Proceeding..."
+    } else {
+      Show-Usage
+      Exit
+    }
+
     Write-Output "Running PowerShell version: $($PSVersionTable.PSVersion)"
 
     # Disabling the progress bar
@@ -82,8 +91,16 @@ $Outer = {
     nvm use latest
 
     Write-Output "Setting up certificate..."
-    RunCloserFunctionInNewWindow
-    InstallMkcertAndSetup
+    if (Is-HostnameLinkLocal -hostname $hostname) {
+      InstallCertbot
+
+      OpenFirewallPort -Port 80
+      RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
+      PersistCerts -Domain $domain
+    } else {
+      RunCloserFunctionInNewWindow
+      InstallMkcertAndSetup
+    }
 
     Write-Output "Installing BrowserBox..."
 
@@ -113,11 +130,62 @@ $Outer = {
     Write-Output $loginLink
   }
 
+
   # Function Definitions
-  # it's worth noting that while Remote Sound Device from remote desktop works well,
-  # there is distortion on some sounds, for instance
-  # https://www.youtube.com/watch?v=v0wVRG38IYs
-  #
+    # it's worth noting that while Remote Sound Device from remote desktop works well,
+    # due to RDP audio driver on Windows
+    # there is distortion on some music sounds, for instance
+    # https://www.youtube.com/watch?v=v0wVRG38IYs
+
+  function Show-Usage {
+    Write-Host "Usage: BrowserBox-Install-Task.ps1 [-acceptTermsEmail <email> -hostname <hostname>]"
+    Write-Host ""
+    Write-Host "This script installs and configures BrowserBox on your Windows system."
+    Write-Host "Parameters:"
+    Write-Host "  -acceptTermsEmail    The email address used for accepting terms and receiving notifications."
+    Write-Host "                       Optional if not provided, a GUI prompt will request this information."
+    Write-Host "  -hostname            The hostname for the BrowserBox service. This is used for certificate generation."
+    Write-Host "                       Optional if not provided, a GUI prompt will request this information."
+    Write-Host ""
+    Write-Host "Documentation Links:"
+    Write-Host "  Terms of Service: https://dosyago.com/terms.txt"
+    Write-Host "  Privacy Policy:   https://dosyago.com/privacy.txt"
+    Write-Host "  License:          https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md"
+    Write-Host ""
+    Write-Host "Example:"
+    Write-Host "  .\BrowserBox-Install-Task.ps1 -acceptTermsEmail 'user@example.com' -hostname 'yourhostname.com'"
+    Write-Host ""
+    Write-Host "Note: Run this script with administrative privileges for proper installation."
+  }
+
+  function RequestCertificate {
+    param (
+      [string]$Domain,
+      [string]$termsEmail
+    )
+
+    try {
+      # Run the Certbot command
+      certbot certonly --standalone --keep -d $Domain --agree-tos -m $termsEmail --no-eff-email
+    }
+    catch {
+      # Handle errors (if any)
+      Write-Error "An error occurred while requesting the certificate: $_"
+    }
+  }
+
+  function OpenFirewallPort {
+    param (
+      [string]$Port
+    )
+    try {
+      netsh advfirewall firewall add rule name="Open Port $Port" dir=in action=allow protocol=TCP localport=$Port
+      Write-Output "Port $Port opened successfully."
+    }
+    catch {
+      Write-Error "Failed to open port $Port: $_"
+    }
+  }
 
   function Guard-CheckAndSaveUserAgreement {
     $configDir = Join-Path $env:USERPROFILE ".config\dosyago\bbpro"
@@ -133,11 +201,9 @@ $Outer = {
 
     # Show user agreement dialog
     try {
-      $dialogResult = Show-UserAgreementDialog
-      if ($dialogResult -ne [System.Windows.Forms.DialogResult]::Yes) {
-        Write-Output 'You must agree to the terms and conditions to proceed.'
-        Exit
-      }
+      $userInput = Show-UserAgreementDialog -acceptTermsEmail $acceptTermsEmail -hostname $hostname
+      $acceptTermsEmail = $userInput.Email
+      $hostname = $userInput.Hostname
     }
     catch {
       $userInput = Read-Host "Do you agree to the terms? (Yes/No)"
@@ -376,18 +442,114 @@ Remove-Item -LiteralPath `"$($MyInvocation.ScriptName)`" -Force
     $webClient.DownloadFile($Url, "$Destination")
   }
 
+  function PersistCerts {
+    param (
+      [string]$Domain
+    )
+
+    # Call the function to copy the certificates
+    Copy-CertbotCertificates -Domain $Domain
+
+    # Schedule the renewal task
+    Schedule-CertbotRenewalTask -Domain $Domain
+  }
+
+  function Schedule-CertbotRenewalTask {
+    param (
+      [string]$Domain,
+      [string]$ScriptPath = "$env:TEMP\RenewAndCopyCerts.ps1"
+    )
+
+    # Create the PowerShell script using a here-string
+    $scriptContent = @"
+certbot renew --quiet
+
+# Assuming Copy-CertbotCertificates is defined or loaded
+Copy-CertbotCertificates -Domain "$Domain"
+"@
+
+    # Write the script to a file
+    $scriptContent | Out-File -FilePath $ScriptPath -Force
+
+    # Schedule the task
+    $action = New-ScheduledTaskAction -Execute 'Powershell.exe' -Argument "-ExecutionPolicy Bypass -File `"$ScriptPath`""
+    $trigger = New-ScheduledTaskTrigger -Daily -At 3am
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+    $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+
+    Register-ScheduledTask -TaskName "CertbotRenewal" -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force
+  }
+
+  function Copy-CertbotCertificates {
+    param (
+      [string]$Domain
+    )
+    $certbotLivePath = "C:\Certbot\live\$Domain"
+    $destinationPath = Join-Path $HOME "sslcerts"
+
+    # Create sslcerts directory if it doesn't exist
+    if (-not (Test-Path $destinationPath)) {
+      New-Item -Path $destinationPath -ItemType Directory
+    }
+
+    # Copy certificates to the sslcerts directory
+    if (Test-Path $certbotLivePath) {
+      Copy-Item -Path "$certbotLivePath\*" -Destination $destinationPath -Force
+    }
+    else {
+      Write-Error "Certificates for $Domain not found at $certbotLivePath"
+    }
+  }
+
+  function InstallCertbot {
+    $url = "https://github.com/BrowserBox/BrowserBox/releases/download/v7.0/certbot-beta-installer-win_amd64.exe"
+    $destination = Join-Path -Path $env:TEMP -ChildPath "certbot-beta-installer-win_amd64.exe"
+
+    Write-Output "Downloading LetsEncrypt Certbot..."
+    DownloadFile -Url $url -Destination $destination
+
+    Write-Output "Installing LetsEncrypt Certbot silently..."
+    Start-Process -FilePath $destination -ArgumentList '/install', '/silent', '/quiet', '/norestart' -Wait -NoNewWindow
+
+    RefreshPath
+    Write-Output "Installation of LetsEncrypt Certbot completed."
+  }
+
   function InstallMSVC {
     $url = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
     $destination = Join-Path -Path $env:TEMP -ChildPath "vc_redist.x64.exe"
 
     Write-Output "Downloading Microsoft Visual C++ Redistributable..."
-    DownloadFile $url $destination
+    DownloadFile -Url $url -Destination $destination
 
     Write-Output "Installing Microsoft Visual C++ Redistributable silently..."
 
     Start-Process -FilePath $destination -ArgumentList '/install', '/silent', '/quiet', '/norestart' -Wait -NoNewWindow
 
     Write-Output "Installation of Microsoft Visual C++ Redistributable completed."
+  }
+
+  function Is-HostnameLinkLocal {
+    param (
+      [string]$hostname
+    )
+
+    try {
+      $ipAddress = [System.Net.Dns]::GetHostAddresses($hostname) | Select-Object -First 1
+      $bytes = $ipAddress.GetAddressBytes()
+
+      # Check for private IP ranges (e.g., 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x)
+      if (($bytes[0] -eq 10) -or
+        ($bytes[0] -eq 172 -and $bytes[1] -ge 16 -and $bytes[1] -le 31) -or
+        ($bytes[0] -eq 192 -and $bytes[1] -eq 168)) {
+        return $true
+      }
+    }
+    catch {
+      Write-Error "Failed to resolve hostname: $_"
+    }
+
+    return $false
   }
 
   function CheckMkcert {
@@ -661,38 +823,85 @@ timeout /t 2
   }
 
   function Show-UserAgreementDialog {
+    param (
+      [string]$acceptTermsEmail,
+      [string]$hostname
+    )
+
     Add-Type -AssemblyName System.Windows.Forms
 
     $form = New-Object System.Windows.Forms.Form
     $form.Text = 'BrowserBox User Agreement'
     $form.TopMost = $true
     $form.StartPosition = 'CenterScreen'
-    $form.ClientSize = New-Object System.Drawing.Size(333, 185)
+    $form.ClientSize = New-Object System.Drawing.Size(400, 250)
 
     $label = New-Object System.Windows.Forms.Label
-    $label.Text = 'Do you agree to our terms and conditions?'
-    $label.Width = 313  # Set the width to allow for text wrapping within the form width
-    $label.Height = 130  # Adjust height as needed
-    $label.Location = New-Object System.Drawing.Point(32, 32)  # Positioning the label
-    $label.AutoSize = $true  # Disable AutoSize to enable word wrapping
-    $label.MaximumSize = New-Object System.Drawing.Size($label.Width, 0)  # Allow dynamic height
-    $label.TextAlign = 'TopLeft'
-    #$label.WordWrap = $true
+    $label.Text = 'Please enter the required information and agree to our terms to continue.'
+    $label.Width = 360
+    $label.Height = 60
+    $label.Location = New-Object System.Drawing.Point(20, 20)
+    $label.AutoSize = $true
     $form.Controls.Add($label)
 
-    $yesButton = New-Object System.Windows.Forms.Button
-    $yesButton.Text = 'I Agree'
-    $yesButton.DialogResult = [System.Windows.Forms.DialogResult]::Yes
-    $yesButton.Location = New-Object System.Drawing.Point(173, 145)
-    $form.Controls.Add($yesButton)
+    if (-not $hostname ) {
+      $domainLabel = New-Object System.Windows.Forms.Label
+      $domainLabel.Text = 'Domain Name:'
+      $domainLabel.Location = New-Object System.Drawing.Point(20, 90)
+      $domainLabel.AutoSize = $true
+      $form.Controls.Add($domainLabel)
 
-    $noButton = New-Object System.Windows.Forms.Button
-    $noButton.Text = 'No'
-    $noButton.DialogResult = [System.Windows.Forms.DialogResult]::No
-    $noButton.Location = New-Object System.Drawing.Point(253, 145)
-    $form.Controls.Add($noButton)
+      $domainTextBox = New-Object System.Windows.Forms.TextBox
+      $domainTextBox.Location = New-Object System.Drawing.Point(110, 85)
+      $domainTextBox.Size = New-Object System.Drawing.Size(260, 20)
+      $form.Controls.Add($domainTextBox)
+    }
 
-    return $form.ShowDialog()
+    if (-not $acceptTermsEmail) {
+      $emailLabel = New-Object System.Windows.Forms.Label
+      $emailLabel.Text = 'Email:'
+      $emailLabel.Location = New-Object System.Drawing.Point(20, 120)
+      $emailLabel.AutoSize = $true
+      $form.Controls.Add($emailLabel)
+
+      $emailTextBox = New-Object System.Windows.Forms.TextBox
+      $emailTextBox.Location = New-Object System.Drawing.Point(110, 115)
+      $emailTextBox.Size = New-Object System.Drawing.Size(260, 20)
+      $form.Controls.Add($emailTextBox)
+    }
+
+    $continueButton = New-Object System.Windows.Forms.Button
+    $continueButton.Text = 'Agree & Continue'
+    $continueButton.Location = New-Object System.Drawing.Point(200, 200)
+    $continueButton.Add_Click({
+      if ($domainTextBox.Text -eq '' -or $emailTextBox.Text -eq '') {
+        [System.Windows.Forms.MessageBox]::Show('Please fill in all required fields')
+      } else {
+        $form.DialogResult = [System.Windows.Forms.DialogResult]::OK
+      }
+    })
+    $form.Controls.Add($continueButton)
+
+    $cancelButton = New-Object System.Windows.Forms.Button
+    $cancelButton.Text = 'Cancel'
+    $cancelButton.Location = New-Object System.Drawing.Point(280, 200)
+    $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+    $form.Controls.Add($cancelButton)
+
+    $form.AcceptButton = $continueButton
+    $form.CancelButton = $cancelButton
+
+    $form.ShowDialog()
+
+    # Return the user input or the provided parameters
+    if ($form.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+      return @{
+        'Email' = if ($acceptTermsEmail) { $acceptTermsEmail } else { $emailInput.Text }
+        'Hostname' = if ($hostname) { $hostname } else { $hostnameInput.Text }
+      }
+    } else {
+      Exit
+    }
   }
 
   function CheckWingetVersion {
