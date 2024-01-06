@@ -1,3 +1,6 @@
+
+
+
 # add arguments for -acceptTermsEmail <email@address> -hostname <bb host> that will also be passed through ($args)
 # extend GUI to account for these which will not show if args are provided implying consent
 # add wait for hostname to resolve function and console reminder to add A record
@@ -97,15 +100,14 @@ $Outer = {
 
     Write-Output "Setting up certificate..."
     if (Is-HostnameLinkLocal -hostname $hostname) {
-      InstallCertbot
-
-      OpenFirewallPort -Port 80
-      RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
-      PersistCerts -Domain $domain
-    }
-    else {
       RunCloserFunctionInNewWindow
       InstallMkcertAndSetup
+    }
+    else {
+      InstallCertbot
+      OpenFirewallPort -Port 80
+      RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
+      PersistCerts -Domain $domain 
     }
 
     Write-Output "Installing BrowserBox..."
@@ -1090,6 +1092,9 @@ timeout /t 2
 }
 
 & $Outer
+
+
+
 
 
 
