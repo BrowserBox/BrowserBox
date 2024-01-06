@@ -6,12 +6,12 @@ video#audio {
 
 canvas {
   filter: contrast(1.0317) saturate(1.309);
-  image-rendering: pixelated;
+  image-rendering: high-quality;
 }
 
 @media screen and (max-width: 600px) {
   canvas {
     filter: saturate(1.309) contrast(1.309);
-    image-rendering: pixelated;
+    image-rendering: high-quality;
   }
 }
