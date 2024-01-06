@@ -183,7 +183,7 @@ $Outer = {
       Write-Output "Port $Port opened successfully."
     }
     catch {
-      Write-Error "Failed to open port $Port: $_"
+      Write-Error "Failed to open port $Port with error: $_"
     }
   }
 
