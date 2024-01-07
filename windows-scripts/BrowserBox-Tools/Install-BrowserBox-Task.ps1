@@ -1,16 +1,10 @@
-# add arguments for -acceptTermsEmail <email@address> -hostname <bb host> that will also be passed through ($args)
-# extend GUI to account for these which will not show if args are provided implying consent
-# add wait for hostname to resolve function and console reminder to add A record
-# if hostname resolves to a link local address ensure that it points at our machine. How? don't know. But can be done.
 param (
   [string]$UserPassword,
   [string]$acceptTermsEmail,
   [string]$hostname
 )
 
-Write-Host "OK1"
-
-$CloseJob = $null
+. $PSScriptRoot\Utils.ps1
 
 $Outer = {
   try {
@@ -104,20 +98,35 @@ $Outer = {
       InstallCertbot
 
       OpenFirewallPort -Port 80
+
+      Write-Output "Waiting for hostname ($hostname) to resolve to this machine's IP address..."
+      WaitForHostname -hostname $hostname
+      Write-Output "Hostname loaded. Requesting TLS HTTPS certificate from LetsEncrypt..."
       RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
-      PersistCerts -Domain $domain 
+      PersistCerts -Domain $hostname 
     }
 
     Write-Output "Installing BrowserBox..."
 
-    Set-Location $HOME
+    Set-Location $env:USERPROFILE
     Write-Output $PWD
     git config --global core.symlinks true
+    if (Test-Path .\BrowserBox) {
+      if ( Get-Command Stop-BrowserBox ) {
+        Stop-BrowserBox
+      } else {
+        taskkill /f /im node.exe
+      }
+      try {
+        Remove-Item .\BrowserBox -Recurse -Force
+      } catch {
+        Write-Error "Error over-writing current install files: $_"
+        Remove-Item .\BrowserBox -Recurse
+      }
+    }
     git clone https://github.com/BrowserBox/BrowserBox.git
 
     Set-Location BrowserBox
-    git checkout windows-install
-    git pull
 
     Write-Output "Cleaning non-Windows detritus..."
     npm run clean
@@ -126,22 +135,133 @@ $Outer = {
     Write-Output "Building client..."
     npm run parcel
 
+    $globalLocation = Get-DestinationDirectory
+    #Copy-CurrentToDestination
+    Set-Location $env:USERPROFILE
+    $existingGlobal = Join-Path $globalLocation "BrowserBox"
+    if (Test-Path $existingGlobal) {
+      Write-Output "Cleaning existing global install..."
+      Remote-Item $existingGlobal -Recurse -Force
+    }
+    Write-Output "Moving to global location: $globalLocation"
+    mv BrowserBox $globalLocation
+
     Write-Output "Full install completed."
-    Write-Output "Starting BrowserBox..."
-    $loginLink = ./deploy-scripts/_setup_bbpro.ps1 -p 9999
-
-    npm test
-
-    Write-Output $loginLink | clip
-    Write-Output $loginLink
   }
-
 
   # Function Definitions
   # it's worth noting that while Remote Sound Device from remote desktop works well,
   # due to RDP audio driver on Windows
   # there is distortion on some music sounds, for instance
   # https://www.youtube.com/watch?v=v0wVRG38IYs
+
+  function WaitForHostname {
+    param (
+      [Parameter(Mandatory=$true)]
+      [string]$hostname,
+      [int]$timeout = 3600, # 1 hour
+      [int]$interval = 10   # 10 seconds
+    )
+
+    # Function to get the current external IPv4 address
+    function Get-ExternalIp {
+      $services = @("https://icanhazip.com", "https://ifconfig.me", "https://api.ipify.org")
+      foreach ($service in $services) {
+        try {
+          $ip = Invoke-WebRequest -Uri $service -UseBasicParsing -TimeoutSec 5
+          if ($ip) {
+            return $ip.Content.Trim()
+          }
+        } catch {
+          continue
+        }
+      }
+      Write-Error "Failed to obtain external IP address"
+      return $null
+    }
+
+    # Resolve DNS and compare with external IP
+    $externalIp = Get-ExternalIp
+    if (-not $externalIp) {
+      Write-Error "Failed to obtain external IP address"
+      return
+    }
+
+    $elapsed = 0
+    while ($elapsed -lt $timeout) {
+      try {
+        $resolvedIp = Resolve-DnsName $hostname -Server "8.8.8.8" | Where-Object { $_.QueryType -eq "A" } | Select-Object -ExpandProperty IPAddress
+        if ($resolvedIp -eq $externalIp) {
+          Write-Host "Hostname resolved to current IP: $hostname -> $resolvedIp"
+          return
+        } else {
+          Write-Host "Waiting for hostname to resolve to current IP ($externalIp)..."
+          Start-Sleep -Seconds $interval
+          $elapsed += $interval
+        }
+      } catch {
+        Write-Host "DNS resolution failed, retrying..."
+        Start-Sleep -Seconds $interval
+        $elapsed += $interval
+      }
+    }
+
+    Write-Error "Timeout reached. Hostname not resolved or not matching current IP: $hostname"
+  }
+
+  function Add-ModuleToBothProfiles {
+    param (
+      [Parameter(Mandatory=$true)]
+      [string]$ModuleName
+    )
+
+    # Function to add module to the current profile
+    function Add-ModuleToCurrentProfile {
+      param (
+        [string]$ProfilePath,
+        [string]$ModuleName
+      )
+
+      # Create the profile file if it does not exist
+      if (-not (Test-Path $ProfilePath)) {
+        New-Item -ItemType File -Path $ProfilePath -Force | Out-Null
+      }
+
+      # Check if the module import command already exists in the profile
+      $importCommand = "`$env:BrowserBoxSilentImport = `$true`nImport-Module $ModuleName"
+      $profileContent = Get-Content $ProfilePath -ErrorAction SilentlyContinue
+
+      if ($profileContent -notcontains $importCommand) {
+        # Add the import command to the profile
+        Add-Content -Path $ProfilePath -Value $importCommand
+        Write-Host "Module '$ModuleName' has been added to the profile at $ProfilePath."
+      } else {
+        Write-Host "Module '$ModuleName' is already in the profile at $ProfilePath."
+      }
+    }
+
+    # Add module to the current PowerShell profile
+    Add-ModuleToCurrentProfile -ProfilePath $PROFILE -ModuleName $ModuleName
+
+    # Determine the other PowerShell version to execute
+    $otherPowerShell = if ($PSVersionTable.PSEdition -eq "Core") { "powershell" } else { "pwsh" }
+
+    # Check if the other PowerShell version is available
+    if (Get-Command $otherPowerShell -ErrorAction SilentlyContinue) {
+      # Prepare the script block to run in the other PowerShell
+      $scriptBlock = {
+        param($ModuleName, $ProfilePath)
+        Import-Module $ModuleName -ErrorAction SilentlyContinue
+        Add-Content -Path $ProfilePath -Value "`$env:BrowserBoxSilentImport = `$true`nImport-Module $ModuleName"
+      }
+
+      # Execute the script block in the other PowerShell
+      Start-Process $otherPowerShell -ArgumentList "-NoExit", "-Command", $scriptBlock, $ModuleName, $PROFILE
+      Write-Host "Attempting to add module '$ModuleName' to the profile of $otherPowerShell."
+    } else {
+      Write-Host "$otherPowerShell is not available on this system."
+    }
+  }
 
   function Show-Usage {
     Write-Host "Usage: BrowserBox-Install-Task.ps1 [-acceptTermsEmail <email> -hostname <hostname>]"
@@ -163,7 +283,6 @@ $Outer = {
     Write-Host ""
     Write-Host "Note: Run this script with administrative privileges for proper installation."
   }
-
 
   function Validate-NonEmptyParameters {
     param (
@@ -231,8 +350,6 @@ $Outer = {
         return
       }
     }
-
-    Write-Host "OK"
 
     # Show user agreement dialog
     try {
@@ -551,7 +668,7 @@ Copy-CertbotCertificates -Domain "$Domain"
     DownloadFile -Url $url -Destination $destination
 
     Write-Output "Installing LetsEncrypt Certbot silently..."
-    Start-Process -FilePath $destination -ArgumentList '/install', '/silent', '/quiet', '/norestart' -Wait -NoNewWindow
+    Start-Process "msiexec.exe" -ArgumentList "/i `"$destination`" /quiet /norestart" -Wait
 
     RefreshPath
     Write-Output "Installation of LetsEncrypt Certbot completed."
@@ -668,26 +785,33 @@ Copy-CertbotCertificates -Domain "$Domain"
   }
 
   function EnhancePackageManagers {
-    try {
-      Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-      #Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
-      Import-PackageProvider -Name NuGet -Force
-    }
-    catch {
-      Write-Output "Error installing NuGet provider: $_"
+    if ($PSVersionTable.PSEdition -eq "Desktop") {
+      try {
+        Install-PackageProvider -Name NuGet -MinimumVersion 2.9 -Force
+      } catch {
+        Write-Output "Error installing NuGet provider: $_"
+      }
+      try {
+        Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+      } catch {
+        Write-Output "Error installing NuGet provider: $_"
+      }
+      try {
+        Import-PackageProvider -Name NuGet -Force
+      } catch {
+        Write-Output "Error importing NuGet provider: $_"
+      }
     }
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
     try {
       Install-Module -Name PackageManagement -Repository PSGallery -Force
-    }
-    catch {
+    } catch {
       Write-Output "Error installing PackageManagement provider: $_"
     }
     Install-Module -Name Microsoft.WinGet.Client
     try {
       Repair-WinGetPackageManager -AllUsers
-    }
-    catch {
+    } catch {
       Write-Output "Could not repair WinGet ($_) will try to install instead."
     }
   }
@@ -1078,14 +1202,14 @@ timeout /t 2
   # Executor helper
   try {
     & $Main
+    Write-Output "Next steps: Initialize-BrowserBox, then Start-Browserbox"
   }
   catch {
     Write-Output "An error occurred: $_"
     $Error[0] | Format-List -Force
   }
   finally {
-    Write-Output "Your login link will be in your clipboard once installation completed."
-    Write-Output "Exiting..."
+    Write-Output "Install Exiting..."
   }
 }
 

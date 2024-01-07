@@ -490,11 +490,13 @@ server.on('upgrade', (req, socket, head) => {
 
 server.listen(port);
 
-try {
-  childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${process.pid}`);
-} catch(e) {
-  console.info(e);
-  console.warn(`Could not renice node audio service`);
+if ( ! process.platform.startsWith('win') ) {
+  try {
+    childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${process.pid}`);
+  } catch(e) {
+    console.info(e);
+    console.warn(`Could not renice node audio service`);
+  }
 }
 
 console.warn('Shut down buries errors');
@@ -567,11 +569,13 @@ async function getEncoder() {
     parec = childProcess.spawn('pacat', args);
     parec.on('spawn', e => {
       console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
-      try {
-        childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
-        console.log(`reniced parec`);
-      } catch(e) {
-        console.warn(`Error renicing parec`, e);
+      if ( ! process.platform.startsWith('win') ) {
+        try {
+          childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
+          console.log(`reniced parec`);
+        } catch(e) {
+          console.warn(`Error renicing parec`, e);
+        }
       }
     });
     exitOnEpipe(parec.stdout);
@@ -615,7 +619,13 @@ async function getEncoder() {
         console.log('encoder exit', e);
         killEncoder(encoder);
       });
-      childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${encoder.pid}`);
+      if ( ! process.platform.startsWith('win') ) {
+        try {
+          childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${encoder.pid}`);
+        } catch(e) {
+          console.warn(`Error renicing encoder.`, e);
+        }
+      }
 
       parec.stdout.pipe(encoder.stdin);
 

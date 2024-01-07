@@ -2,6 +2,56 @@
 
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
 
+## Windows Support :joy_cat: :tada:
+
+BrowserBox has just landed support for Windows. Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
+
+
+|   Windows Edition   | Compatibility   |
+|---------------------|:---------------:|
+| Windows Server 2022 |           ✅ |
+| Windows 11          |           ✅ |
+
+To install and run on Windows, do the following in PowerShell below:
+
+```posh
+> Install-Module -Name BrowserBox-Tools
+> Import-Module BrowserBox-Tools
+```
+
+Then to full set up BrowserBox, run (substituting another port for 8080 if desired):
+
+```posh
+> Install-BrowserBox
+> Initialize-BrowserBox -Port 8080
+```
+
+At this point you'll have your login link and you'll be ready to start BrowserBox and connect.
+To start 'er up, type:
+
+```posh
+> Start-BrowserBox
+```
+
+And open your login-link in a browser. Note that if you're on Windows Server this step will disconnect your RDP session
+as we perform some voodoo-foo in order to utilize the pre-existing and good RDP Audio Driver in a way that lets us retain 
+an audio stream even when you're not connected to your server.
+
+**Note**
+
+If you have trouble with the initial install module step (message aboutNuGet versions), this is probably a PS issue, so try (elevated):
+
+```posh
+> Install-PackageProvider Nuget -Force
+> Install-Module -Name PowerShellGet -Force
+```
+
+Then restart (close and reopen) your PowerShell session and try again.
+
+Any other issues with the installation on Windows then please [open an issue](issues) or reach out to us at: support@dosyago.com
+
+## 1-Click Deploy!
+
 We're currently increasing our support for marketplaces and one-click-deploy, we've just been included in [Azure Quickstart Samples](https://learn.microsoft.com/en-us/samples/azure/azure-quickstart-templates/browserbox/). 
 
 Soon, we're also launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/). So, come one come all and check us out! 🥇😄
