@@ -12,7 +12,7 @@
 RootModule = 'BrowserBox-Tools.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.3'
+ModuleVersion = '1.1.5'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -30,7 +30,7 @@ CompanyName = 'DOSYAGO'
 Copyright = '(c) DOSYAGO. All rights reserved.'
 
 # Description of the functionality provided by this module
-Description = '[[beta version WIP]] Install and run BrowserBox remote browser isolation on Windows. Windows Server is also supported. Audio even works from Windows Server. As this BrowserBox Windows support is a beta release, some subsystems (including Doc-Viewer and DevTools) are not currently available on Windows.'
+Description = '[[beta version]] Install and run BrowserBox remote browser isolation on Windows. Windows Server is also supported. Audio even works from Windows Server. As BrowserBox Windows support is currently in beta release, some subsystems (that is: Doc-Viewer and DevTools) may not currently work on Windows.'
 
 # Minimum version of the PowerShell engine required by this module
 PowerShellVersion = '5.0'

@@ -785,20 +785,22 @@ Copy-CertbotCertificates -Domain "$Domain"
   }
 
   function EnhancePackageManagers {
-    try {
-      Install-PackageProvider -Name NuGet -MinimumVersion 2.9 -Force
-    } catch {
-      Write-Output "Error installing NuGet provider: $_"
-    }
-    try {
-      Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
-    } catch {
-      Write-Output "Error installing NuGet provider: $_"
-    }
-    try {
-      Import-PackageProvider -Name NuGet -Force
-    } catch {
-      Write-Output "Error importing NuGet provider: $_"
+    if ($PSVersionTable.PSEdition -eq "Desktop") {
+      try {
+        Install-PackageProvider -Name NuGet -MinimumVersion 2.9 -Force
+      } catch {
+        Write-Output "Error installing NuGet provider: $_"
+      }
+      try {
+        Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+      } catch {
+        Write-Output "Error installing NuGet provider: $_"
+      }
+      try {
+        Import-PackageProvider -Name NuGet -Force
+      } catch {
+        Write-Output "Error importing NuGet provider: $_"
+      }
     }
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
     try {
