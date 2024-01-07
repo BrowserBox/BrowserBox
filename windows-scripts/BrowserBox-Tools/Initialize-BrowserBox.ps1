@@ -1,7 +1,7 @@
-function Config-BrowserBox {
-  params(
+function Initialize-BrowserBox {
+  param(
     [string]$Port,
-    [string]$Token,
+    [string]$Token
   )
 
   . $PSScriptRoot\Utils.ps1
