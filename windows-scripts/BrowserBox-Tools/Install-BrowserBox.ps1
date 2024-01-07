@@ -3,6 +3,6 @@
 # add wait for hostname to resolve function and console reminder to add A record
 # if hostname resolves to a link local address ensure that it points at our machine. How? don't know. But can be done.
 function Install-BrowserBox {
-  . $PSScriptPath\Install-BrowserBox-Task.ps1
+  . $PSScriptRoot\Install-BrowserBox-Task.ps1
 }
 
