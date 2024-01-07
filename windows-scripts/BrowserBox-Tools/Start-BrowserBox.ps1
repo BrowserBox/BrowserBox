@@ -1,4 +1,4 @@
-. .\Utils.ps1
+. $PSScriptRoot\Utils.ps1
 
 function Start-BrowserBox {
   Write-Information "Starting BrowserBox..."

@@ -1,8 +1,8 @@
 function ImportTools {
-  . .\Config-BrowserBox.ps1
-  . .\Install-BrowserBox.ps1
-  . .\Start-BrowserBox.ps1
-  . .\Stop-BrowserBox.ps1
+  . $PSScriptRoot\Config-BrowserBox.ps1
+  . $PSScriptRoot\Install-BrowserBox.ps1
+  . $PSScriptRoot\Start-BrowserBox.ps1
+  . $PSScriptRoot\Stop-BrowserBox.ps1
 }
 
 function SayHello {

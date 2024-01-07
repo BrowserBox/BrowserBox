@@ -4,7 +4,7 @@ param (
   [string]$hostname
 )
 
-. .\Utils.ps1
+. $PSScriptRoot\Utils.ps1
 
 $Outer = {
   try {

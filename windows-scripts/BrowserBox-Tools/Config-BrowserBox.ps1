@@ -4,7 +4,7 @@ function Config-BrowserBox {
     [string]$Token,
   )
 
-  . .\Utils.ps1
+  . $PSScriptRoot\Utils.ps1
   $browserBoxGlobalDirectory = Get-DestinationDirectory
   Set-Location $browserboxGlobalDirectory
 
