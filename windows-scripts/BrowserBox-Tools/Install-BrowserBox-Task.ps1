@@ -593,7 +593,7 @@ Copy-CertbotCertificates -Domain "$Domain"
     DownloadFile -Url $url -Destination $destination
 
     Write-Output "Installing LetsEncrypt Certbot silently..."
-    Start-Process -FilePath $destination -ArgumentList '/install', '/silent', '/quiet', '/norestart' -Wait -NoNewWindow
+    Start-Process "msiexec.exe" -ArgumentList "/i `"$destination`" /quiet /norestart -Wait
 
     RefreshPath
     Write-Output "Installation of LetsEncrypt Certbot completed."
