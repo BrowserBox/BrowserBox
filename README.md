@@ -15,22 +15,22 @@ BrowserBox has just landed support for Windows. Including Windows 11 and Windows
 To install and run on Windows, do the following in PowerShell below:
 
 ```posh
-> Install-Module -Name BrowserBox-Tools
-> Import-Module BrowserBox-Tools
+Install-Module -Name BrowserBox-Tools
+Import-Module BrowserBox-Tools
 ```
 
 Then to full set up BrowserBox, run (substituting another port for 8080 if desired):
 
 ```posh
-> Install-BrowserBox
-> Initialize-BrowserBox -Port 8080
+Install-BrowserBox
+Initialize-BrowserBox -Port 8080
 ```
 
 At this point you'll have your login link and you'll be ready to start BrowserBox and connect.
 To start 'er up, type:
 
 ```posh
-> Start-BrowserBox
+Start-BrowserBox
 ```
 
 And open your login-link in a browser. Note that if you're on Windows Server this step will disconnect your RDP session
@@ -42,8 +42,8 @@ an audio stream even when you're not connected to your server.
 If you have trouble with the initial install module step (message aboutNuGet versions), this is probably a PS issue, so try (elevated):
 
 ```posh
-> Install-PackageProvider Nuget -Force
-> Install-Module -Name PowerShellGet -Force
+Install-PackageProvider Nuget -Force
+Install-Module -Name PowerShellGet -Force
 ```
 
 Then restart (close and reopen) your PowerShell session and try again.
