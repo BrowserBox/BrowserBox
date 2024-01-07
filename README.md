@@ -52,13 +52,17 @@ Any other issues with the installation on Windows then please [open an issue](is
 
 ## 1-Click Deploy!
 
-We're currently increasing our support for marketplaces and one-click-deploy, we just [merged in](https://github.com/Azure/azure-quickstart-templates/pull/13679) and [launched on Azure Quickstart Templates!](https://github.com/Azure/azure-quickstart-templates/tree/master/application-workloads/dosyago/browserbox). We'll also will be launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/) soon. Come check us out! 🥇😄
+We're currently increasing our support for marketplaces and one-click-deploy, we've just been included in [Azure Quickstart Samples](https://learn.microsoft.com/en-us/samples/azure/azure-quickstart-templates/browserbox/). 
+
+Soon, we're also launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/). So, come one come all and check us out! 🥇😄
 
 ## Deploy to Azure! 
 
-We've just added support for Azure ARM Templates. You can also [run it from the Azure Quickstart Repository](https://github.com/Azure/azure-quickstart-templates/tree/master/application-workloads/dosyago/browserbox). Or find it via search in the Quickstart section of the Azure Portal. 
+We've just added support for Azure Templates so you can click the *Deploy* buttons below to immediately create your BrowserBox instance. 
 
-**Give it a try! :pinata:**
+Alternately, [find us via Microsoft Code Samples search](https://learn.microsoft.com/en-us/samples/browse/?expanded=azure&products=azure-resource-manager&terms=browserbox) or directly in the [Azure Quickstarts portal](https://learn.microsoft.com/en-us/samples/azure/azure-quickstart-templates/browserbox/).
+
+**Easy Deployment! :pinata:**
 
 <table>
   <tr>
