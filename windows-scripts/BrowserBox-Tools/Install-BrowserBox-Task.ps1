@@ -108,11 +108,21 @@ $Outer = {
 
     Write-Output "Installing BrowserBox..."
 
-    Set-Location $HOME
+    Set-Location $env:USERPROFILE
     Write-Output $PWD
     git config --global core.symlinks true
-    if (Test-Path BrowserBox) {
-      Remove-Item BrowserBox -Recurse -Force
+    if (Test-Path .\BrowserBox) {
+      if ( Get-Command Stop-BrowserBox ) {
+        Stop-BrowserBox
+      } else {
+        taskkill /f /im node.exe
+      }
+      try {
+        Remove-Item .\BrowserBox -Recurse -Force
+      } catch {
+        Write-Error "Error over-writing current install files: $_"
+        Remove-Item .\BrowserBox -Recurse
+      }
     }
     git clone https://github.com/BrowserBox/BrowserBox.git
 
@@ -769,25 +779,30 @@ Copy-CertbotCertificates -Domain "$Domain"
 
   function EnhancePackageManagers {
     try {
-      Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
-      #Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
-      Import-PackageProvider -Name NuGet -Force
-    }
-    catch {
+      Install-PackageProvider -Name NuGet -MinimumVersion 2.9 -Force
+    } catch {
       Write-Output "Error installing NuGet provider: $_"
+    }
+    try {
+      Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
+    } catch {
+      Write-Output "Error installing NuGet provider: $_"
+    }
+    try {
+      Import-PackageProvider -Name NuGet -Force
+    } catch {
+      Write-Output "Error importing NuGet provider: $_"
     }
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
     try {
       Install-Module -Name PackageManagement -Repository PSGallery -Force
-    }
-    catch {
+    } catch {
       Write-Output "Error installing PackageManagement provider: $_"
     }
     Install-Module -Name Microsoft.WinGet.Client
     try {
       Repair-WinGetPackageManager -AllUsers
-    }
-    catch {
+    } catch {
       Write-Output "Could not repair WinGet ($_) will try to install instead."
     }
   }
