@@ -98,6 +98,8 @@ $Outer = {
       InstallCertbot
 
       OpenFirewallPort -Port 80
+
+      WaitForHostname -Domain $hostname
       RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
       PersistCerts -Domain $domain 
     }
@@ -127,12 +129,15 @@ $Outer = {
     Write-Output "Full install completed."
   }
 
-
   # Function Definitions
   # it's worth noting that while Remote Sound Device from remote desktop works well,
   # due to RDP audio driver on Windows
   # there is distortion on some music sounds, for instance
   # https://www.youtube.com/watch?v=v0wVRG38IYs
+
+  function WaitForHostname {
+
+  }
 
   function Add-ModuleToBothProfiles {
     param (
