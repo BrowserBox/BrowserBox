@@ -13,14 +13,14 @@ envFile=""
 CONFIG_DIR=""
 
 get_install_dir() {
-  install_path=$(find $HOME -name .bbpro_install_dir -print -quit 2>/dev/null)
-  install_dir=$(dirname $install_path)
+  install_path="$(find $HOME -name .bbpro_install_dir -print -quit 2>/dev/null)"
+  install_dir="$(dirname $install_path)"
   echo $install_dir
 }
 
 get_config_dir() {
-  config_path=$(find $HOME -name .bbpro_config_dir -print -quit 2>/dev/null)
-  config_dir=$(dirname $config_path)
+  config_path="$(find $HOME -name .bbpro_config_dir -print -quit 2>/dev/null)"
+  config_dir="$(dirname $config_path)"
   echo $config_dir
 }
 
@@ -39,13 +39,13 @@ start_bbpro() {
 
 echo "Finding bbpro config..."
 
-CONFIG_DIR=$(get_config_dir)
+CONFIG_DIR="$(get_config_dir)"
 echo "Found bbpro at: $CONFIG_DIR"
 
 envFile=$CONFIG_DIR/test.env
 if [[ -n "$TORBB" ]]; then
   echo "Running in tor..."
-  envFile=$CONFIG_DIR/torbb.env
+  envFile="${CONFIG_DIR}/torbb.env"
   . $envFile
 fi
 

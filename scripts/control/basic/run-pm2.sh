@@ -49,8 +49,8 @@ get_install_dir() {
 
 INSTALL_DIR=$(get_install_dir)
 
-node=$(which node)
-echo Using $node
+node="$(command -v node)"
+echo Using "$node"
 
 echo "Starting audio service..."
 pm2 start ./scripts/global/start_audio.sh -- $1
