@@ -94,7 +94,7 @@ PrivateData = @{
   PSData = @{
 
     # Tags applied to this module. These help with module discovery in online galleries.
-    Tags = @('web-browser', 'remote browser', 'BrowserBox', 'cybersecurity')
+    Tags = @('web-browser', 'remote-browser', 'BrowserBox', 'cybersecurity')
 
     # A URL to the license for this module.
     LicenseUri = 'https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md'
