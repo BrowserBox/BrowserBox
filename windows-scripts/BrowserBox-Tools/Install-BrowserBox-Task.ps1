@@ -134,6 +134,60 @@ $Outer = {
   # there is distortion on some music sounds, for instance
   # https://www.youtube.com/watch?v=v0wVRG38IYs
 
+  function Add-ModuleToBothProfiles {
+    param (
+      [Parameter(Mandatory=$true)]
+      [string]$ModuleName
+    )
+
+    # Function to add module to the current profile
+    function Add-ModuleToCurrentProfile {
+      param (
+        [string]$ProfilePath,
+        [string]$ModuleName
+      )
+
+      # Create the profile file if it does not exist
+      if (-not (Test-Path $ProfilePath)) {
+        New-Item -ItemType File -Path $ProfilePath -Force | Out-Null
+      }
+
+      # Check if the module import command already exists in the profile
+      $importCommand = "`$env:BrowserBoxSilentImport = `$true`nImport-Module $ModuleName"
+      $profileContent = Get-Content $ProfilePath -ErrorAction SilentlyContinue
+
+      if ($profileContent -notcontains $importCommand) {
+        # Add the import command to the profile
+        Add-Content -Path $ProfilePath -Value $importCommand
+        Write-Host "Module '$ModuleName' has been added to the profile at $ProfilePath."
+      } else {
+        Write-Host "Module '$ModuleName' is already in the profile at $ProfilePath."
+      }
+    }
+
+    # Add module to the current PowerShell profile
+    Add-ModuleToCurrentProfile -ProfilePath $PROFILE -ModuleName $ModuleName
+
+    # Determine the other PowerShell version to execute
+    $otherPowerShell = if ($PSVersionTable.PSEdition -eq "Core") { "powershell" } else { "pwsh" }
+
+    # Check if the other PowerShell version is available
+    if (Get-Command $otherPowerShell -ErrorAction SilentlyContinue) {
+      # Prepare the script block to run in the other PowerShell
+      $scriptBlock = {
+        param($ModuleName, $Profile)
+        Import-Module $ModuleName -ErrorAction SilentlyContinue
+        Add-Content -Path $Profile -Value "`$env:BrowserBoxSilentImport = `$true`nImport-Module $ModuleName"
+      }
+
+      # Execute the script block in the other PowerShell
+      Start-Process $otherPowerShell -ArgumentList "-NoExit", "-Command", $scriptBlock, $ModuleName, $PROFILE
+      Write-Host "Attempting to add module '$ModuleName' to the profile of $otherPowerShell."
+    } else {
+      Write-Host "$otherPowerShell is not available on this system."
+    }
+  }
+
   function Show-Usage {
     Write-Host "Usage: BrowserBox-Install-Task.ps1 [-acceptTermsEmail <email> -hostname <hostname>]"
     Write-Host ""
@@ -154,7 +208,6 @@ $Outer = {
     Write-Host ""
     Write-Host "Note: Run this script with administrative privileges for proper installation."
   }
-
 
   function Validate-NonEmptyParameters {
     param (
