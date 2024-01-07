@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-node=$(which node)
+node="$(command -v node)"
 
-source $1
+source "$1"
 
 cookie=$COOKIE_VALUE
 token=$LOGIN_TOKEN
 port=$DEVTOOLS_PORT
 
-$node index.js $port $cookie $token
+"$node" index.js $port $cookie $token
