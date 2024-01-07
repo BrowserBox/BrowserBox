@@ -136,8 +136,15 @@ $Outer = {
     npm run parcel
 
     $globalLocation = Get-DestinationDirectory
-    Write-Output "Copying to global location: $globalLocation"
-    Copy-CurrentToDestination
+    #Copy-CurrentToDestination
+    Set-Location $env:USERPROFILE
+    $existingGlobal = Join-Path $globalLocation "BrowserBox"
+    if (Test-Path $existingGlobal) {
+      Write-Output "Cleaning existing global install..."
+      Remote-Item $existingGlobal -Recurse -Force
+    }
+    Write-Output "Moving to global location: $globalLocation"
+    mv BrowserBox $globalLocation
 
     Write-Output "Full install completed."
   }
@@ -1193,14 +1200,14 @@ timeout /t 2
   # Executor helper
   try {
     & $Main
+    Write-Output "Next steps: Initialize-BrowserBox, then Start-Browserbox"
   }
   catch {
     Write-Output "An error occurred: $_"
     $Error[0] | Format-List -Force
   }
   finally {
-    Write-Output "Your login link will be in your clipboard once installation completed."
-    Write-Output "Exiting..."
+    Write-Output "Install Exiting..."
   }
 }
 
