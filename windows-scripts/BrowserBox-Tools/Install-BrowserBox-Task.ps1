@@ -103,7 +103,7 @@ $Outer = {
       WaitForHostname -hostname $hostname
       Write-Output "Hostname loaded. Requesting TLS HTTPS certificate from LetsEncrypt..."
       RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
-      PersistCerts -Domain $domain 
+      PersistCerts -Domain $hostname 
     }
 
     Write-Output "Installing BrowserBox..."
