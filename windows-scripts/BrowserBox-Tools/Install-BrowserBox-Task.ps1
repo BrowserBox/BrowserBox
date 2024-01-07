@@ -232,9 +232,9 @@ $Outer = {
     if (Get-Command $otherPowerShell -ErrorAction SilentlyContinue) {
       # Prepare the script block to run in the other PowerShell
       $scriptBlock = {
-        param($ModuleName, $Profile)
+        param($ModuleName, $ProfilePath)
         Import-Module $ModuleName -ErrorAction SilentlyContinue
-        Add-Content -Path $Profile -Value "`$env:BrowserBoxSilentImport = `$true`nImport-Module $ModuleName"
+        Add-Content -Path $ProfilePath -Value "`$env:BrowserBoxSilentImport = `$true`nImport-Module $ModuleName"
       }
 
       # Execute the script block in the other PowerShell
@@ -650,7 +650,7 @@ Copy-CertbotCertificates -Domain "$Domain"
     DownloadFile -Url $url -Destination $destination
 
     Write-Output "Installing LetsEncrypt Certbot silently..."
-    Start-Process "msiexec.exe" -ArgumentList "/i `"$destination`" /quiet /norestart -Wait
+    Start-Process "msiexec.exe" -ArgumentList "/i `"$destination`" /quiet /norestart" -Wait
 
     RefreshPath
     Write-Output "Installation of LetsEncrypt Certbot completed."
