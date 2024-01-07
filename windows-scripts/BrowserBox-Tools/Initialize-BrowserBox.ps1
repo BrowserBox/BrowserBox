@@ -7,6 +7,7 @@ function Initialize-BrowserBox {
 
   . $PSScriptRoot\Utils.ps1
   $browserBoxGlobalDirectory = Get-DestinationDirectory
+  $originalDirectory = Get-Location
   Set-Location $browserboxGlobalDirectory
 
   if (![string]::IsNullOrEmpty($Token)) {
@@ -17,4 +18,5 @@ function Initialize-BrowserBox {
     $loginLink = & ./deploy-scripts/_setup_bbpro.ps1 --port $Port
   }
   Write-Output $loginLink
+  Set-Location $originalDirectory
 }
