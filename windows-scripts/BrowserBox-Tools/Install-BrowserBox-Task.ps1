@@ -99,7 +99,9 @@ $Outer = {
 
       OpenFirewallPort -Port 80
 
+      Write-Output "Waiting for hostname ($hostname) to resolve to this machine's IP address..."
       WaitForHostname -Domain $hostname
+      Write-Output "Hostname loaded. Requesting TLS HTTPS certificate from LetsEncrypt..."
       RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
       PersistCerts -Domain $domain 
     }
@@ -136,7 +138,57 @@ $Outer = {
   # https://www.youtube.com/watch?v=v0wVRG38IYs
 
   function WaitForHostname {
+    param (
+      [Parameter(Mandatory=$true)]
+      [string]$hostname,
+      [int]$timeout = 3600, # 1 hour
+      [int]$interval = 10   # 10 seconds
+    )
 
+    # Function to get the current external IPv4 address
+    function Get-ExternalIp {
+      $services = @("https://icanhazip.com", "https://ifconfig.me", "https://api.ipify.org")
+      foreach ($service in $services) {
+        try {
+          $ip = Invoke-WebRequest -Uri $service -UseBasicParsing -TimeoutSec 5
+          if ($ip) {
+            return $ip.Content.Trim()
+          }
+        } catch {
+          continue
+        }
+      }
+      Write-Error "Failed to obtain external IP address"
+      return $null
+    }
+
+    # Resolve DNS and compare with external IP
+    $externalIp = Get-ExternalIp
+    if (-not $externalIp) {
+      Write-Error "Failed to obtain external IP address"
+      return
+    }
+
+    $elapsed = 0
+    while ($elapsed -lt $timeout) {
+      try {
+        $resolvedIp = Resolve-DnsName $hostname -Server "8.8.8.8" | Where-Object { $_.QueryType -eq "A" } | Select-Object -ExpandProperty IPAddress
+        if ($resolvedIp -eq $externalIp) {
+          Write-Host "Hostname resolved to current IP: $hostname -> $resolvedIp"
+          return
+        } else {
+          Write-Host "Waiting for hostname to resolve to current IP ($externalIp)..."
+          Start-Sleep -Seconds $interval
+          $elapsed += $interval
+        }
+      } catch {
+        Write-Host "DNS resolution failed, retrying..."
+        Start-Sleep -Seconds $interval
+        $elapsed += $interval
+      }
+    }
+
+    Write-Error "Timeout reached. Hostname not resolved or not matching current IP: $hostname"
   }
 
   function Add-ModuleToBothProfiles {
