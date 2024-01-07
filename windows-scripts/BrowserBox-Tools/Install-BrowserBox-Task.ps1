@@ -111,11 +111,12 @@ $Outer = {
     Set-Location $HOME
     Write-Output $PWD
     git config --global core.symlinks true
+    if (Test-Path BrowserBox) {
+      Remove-Item BrowserBox -Recurse -Force
+    }
     git clone https://github.com/BrowserBox/BrowserBox.git
 
     Set-Location BrowserBox
-    git checkout windows-install
-    git pull
 
     Write-Output "Cleaning non-Windows detritus..."
     npm run clean
