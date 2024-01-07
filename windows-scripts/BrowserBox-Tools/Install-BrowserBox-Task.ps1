@@ -1,16 +1,10 @@
-# add arguments for -acceptTermsEmail <email@address> -hostname <bb host> that will also be passed through ($args)
-# extend GUI to account for these which will not show if args are provided implying consent
-# add wait for hostname to resolve function and console reminder to add A record
-# if hostname resolves to a link local address ensure that it points at our machine. How? don't know. But can be done.
 param (
   [string]$UserPassword,
   [string]$acceptTermsEmail,
   [string]$hostname
 )
 
-Write-Host "OK1"
-
-$CloseJob = $null
+. .\Utils.ps1
 
 $Outer = {
   try {
@@ -126,14 +120,11 @@ $Outer = {
     Write-Output "Building client..."
     npm run parcel
 
+    $globalLocation = Get-DestinationDirectory
+    Write-Output "Copying to global location: $globalLocation"
+    Copy-CurrentToDestination
+
     Write-Output "Full install completed."
-    Write-Output "Starting BrowserBox..."
-    $loginLink = ./deploy-scripts/_setup_bbpro.ps1 -p 9999
-
-    npm test
-
-    Write-Output $loginLink | clip
-    Write-Output $loginLink
   }
 
 
@@ -231,8 +222,6 @@ $Outer = {
         return
       }
     }
-
-    Write-Host "OK"
 
     # Show user agreement dialog
     try {
