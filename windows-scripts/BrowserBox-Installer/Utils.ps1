@@ -1,8 +1,7 @@
 function Get-DestinationDirectory {
-  $programFilesPath = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::ProgramFiles)
-  $destinationPath = Join-Path $programFilesPath -ChildPath "DOSYAGO"
+  $destinationPath = "$env:ProgramFiles\DOSYAGO"
   
-  if (-not (Test-Path -Path $destinationPath)) {
+  if (-not (Test-Path $destinationPath)) {
     New-Item -ItemType Directory -Path $destinationPath -Force
   }
 
