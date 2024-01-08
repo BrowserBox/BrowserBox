@@ -77,7 +77,9 @@ $Outer = {
     EnableWindowsAudio
     InstallGoogleChrome
 
-    InstallIfNeeded "jq" "jqlang.jq"
+    if (-not (InstallIfNeeded "jq" "jqlang.jq")) {
+      InstallJqDirectly
+    }
     InstallIfNeeded "vim" "vim.vim"
     AddVimToPath
     InstallIfNeeded "git" "Git.Git"
@@ -165,6 +167,21 @@ $Outer = {
   # due to RDP audio driver on Windows
   # there is distortion on some music sounds, for instance
   # https://www.youtube.com/watch?v=v0wVRG38IYs
+
+  function InstallJqDirectly {
+    $jqDirectory = "$env:ProgramFiles\jq"
+    if (-not (Test-Path $jqDirectory)) {
+      New-Item -ItemType Directory -Path $jqDirectory -Force
+    }
+
+    $downloadUrl = "https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe"
+    $destination = "$jqDirectory\jq.exe"
+    DownloadFile -Url $downloadUrl -Destination $destination
+
+    Add-ToSystemPath $jqDirectory
+    Write-Host "jq has been manually downloaded and added to the system path."
+    RefreshPath
+  }
 
   function WaitForHostname {
     param (
@@ -1171,10 +1188,18 @@ timeout /t 2
     param ([string]$packageId)
     try {
       winget install -e --id $packageId --accept-source-agreements
-      Write-Output "Successfully installed $packageId"
+      if ($?) {
+        Write-Output "Successfully installed $packageId"
+        return $true
+      }
+      else {
+        Write-Error "Failed to install $packageId"
+        return $false
+      }
     }
     catch {
-      Write-Error "Failed to install $packageId"
+      Write-Error "Failed to install $packageId : $_"
+      return $false
     }
   }
 
