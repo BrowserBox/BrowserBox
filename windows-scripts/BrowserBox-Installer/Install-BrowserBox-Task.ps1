@@ -1222,10 +1222,11 @@ timeout /t 2
       [string]$packageId
     )
     if (-not (Get-Command $packageName -ErrorAction SilentlyContinue)) {
-      Install-PackageViaWinget $packageId
+      return Install-PackageViaWinget $packageId
     }
     else {
       Write-Output "$packageName is already installed."
+      return $true
     }
   }
 
