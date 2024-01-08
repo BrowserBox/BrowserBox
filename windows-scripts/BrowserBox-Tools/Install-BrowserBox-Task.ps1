@@ -138,7 +138,7 @@ $Outer = {
     $globalLocation = Get-DestinationDirectory
     #Copy-CurrentToDestination
     Set-Location $env:USERPROFILE
-    $existingGlobal = Join-Path $globalLocation "BrowserBox"
+    $existingGlobal = Join-Path $globalLocation -ChildPath "BrowserBox"
     if (Test-Path $existingGlobal) {
       Write-Output "Cleaning existing global install..."
       Remove-Item $existingGlobal -Recurse -Force
