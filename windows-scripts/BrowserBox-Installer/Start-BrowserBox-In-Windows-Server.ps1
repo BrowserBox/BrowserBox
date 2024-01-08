@@ -19,9 +19,13 @@ function Start-BrowserBox-In-Windows-Server {
     Write-Host "Will run start script at: $ScriptPath using $psPath"
 
     Read-Host "Press enter to continue"
-    $StateDirectory = Join-Path ($env:USERPROFILE) -ChildPath "StateDirectory"
+    $StateDirectory = "$env:USERPROFILE\StateDirectory"
     if (Test-Path $StateDirectory) {
-      Remove-Item $StateDirectory -Recurse -Force
+      try {
+        Remove-Item $StateDirectory -Recurse -Force -ErrorAction SilentlyContinue
+      } catch {
+        # no need to kick up a fuss, on first run we don't expect this to be here
+      }
     }
     & $PSScriptRoot\Thunderbird.ps1 -scriptUrlOrPath $ScriptPath -shell $psPath
   }
