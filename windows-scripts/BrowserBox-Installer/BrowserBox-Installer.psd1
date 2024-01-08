@@ -12,7 +12,7 @@
 RootModule = 'BrowserBox-Installer.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.2.18'
+ModuleVersion = '1.2.20'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
