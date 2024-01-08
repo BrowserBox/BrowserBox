@@ -67,13 +67,12 @@ $Outer = {
 
     Write-Output "Installing preliminairies..."
 
+    InstallMSVC
     EnhancePackageManagers
 
     $currentVersion = CheckWingetVersion
     UpdateWingetIfNeeded $currentVersion
     UpdatePowerShell
-
-    InstallMSVC
 
     EnableWindowsAudio
     InstallGoogleChrome
