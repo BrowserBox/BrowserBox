@@ -4,7 +4,7 @@ BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilita
 
 ## Windows Support :joy_cat: :tada:
 
-BrowserBox has just landed support for Windows and we're on [PSGallery](https://www.powershellgallery.com/packages/BrowserBox-Tools/1.2.0). Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
+BrowserBox has just landed support for Windows and we're on [PSGallery](https://www.powershellgallery.com/packages/BrowserBox-Installer/1.2.18). Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
 
 
 |   Windows Edition   | Compatibility   |
@@ -15,16 +15,21 @@ BrowserBox has just landed support for Windows and we're on [PSGallery](https://
 To install and run on Windows, do the following in PowerShell below:
 
 ```posh
-# you may need the following 2 lines to install from PSGallery
+# you may need the following 2 lines to install from PSGallery 
+# if your package managers need updating
 Install-PackageProvider Nuget -Force
 Install-Module -Name PowerShellGet -Force
-
-# the main part to install BrowserBox installer
-Install-Module -Name BrowserBox-Tools
-Import-Module BrowserBox-Tools
 ```
 
-Then to full set up BrowserBox, run with your desired port:
+Then close and reopen your PowerShell session, and run:
+
+```posh
+# the main part to install BrowserBox installer
+Install-Module -Name BrowserBox-Installer
+Import-Module BrowserBox-Installer
+```
+
+Then, to fully set up BrowserBox, run the following with your desired port:
 
 ```posh
 Install-BrowserBox
@@ -32,13 +37,16 @@ Initialize-BrowserBox -Port 8080
 ```
 
 At this point you'll have your login link and you'll be ready to start BrowserBox and connect.
-To start 'er up, type:
+
+*Note: while we open ports at the OS level, if your cloud uses external firewalls, ensure you open ports PORT-2 through PORT+2 (8078-8082 in the example above) in your control panel.*
+
+Finally, to start 'er up, type:
 
 ```posh
 Start-BrowserBox
 ```
 
-And open your login-link in a browser. Note that if you're on Windows Server this step will disconnect your RDP session
+And open your login-link in any modern browser anywhere. Note that if you're on Windows Server this step will disconnect your RDP session
 as we perform some voodoo-foo in order to utilize the pre-existing and good RDP Audio Driver in a way that lets us retain 
 an audio stream even when you're not connected to your server.
 

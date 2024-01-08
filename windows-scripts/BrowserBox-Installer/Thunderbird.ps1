@@ -2,7 +2,8 @@
     [Parameter(Mandatory = $true)]
     [string]$scriptUrlOrPath,
     [Parameter(Mandatory = $true)]
-    [string]$rdpPassword
+    [string]$rdpPassword,
+    [string]$shell = "powershell.exe"
   )
 
   function ValidateArguments {
@@ -18,8 +19,9 @@
   }
 
   function CheckAdminPermissions {
+    $scriptPath = $($MyInvocation.ScriptName)
     if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-      Start-Process PowerShell -Verb RunAs -ArgumentList "-File `"$PSCommandPath`" `"$scriptUrlOrPath`" `"$rdpPassword`""
+      Start-Process "$shell"  -Verb RunAs -ArgumentList "-File `"$scriptPath`" `"$scriptUrlOrPath`" `"$rdpPassword`" `"$shell`""
       exit
     }
   }
@@ -41,7 +43,7 @@
   function SetLogonScript {
     $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
     $scriptPath = $($MyInvocation.ScriptName)
-    $command = "PowerShell.exe -WindowStyle Hidden -File `"$scriptPath`" -scriptUrlOrPath `"$scriptUrlOrPath`" -rdpPassword `"$rdpPassword`""
+    $command = "`"$shell`" -WindowStyle Hidden -File `"$scriptPath`" -scriptUrlOrPath `"$scriptUrlOrPath`" -rdpPassword `"$rdpPassword`" -shell `"$shell`""
     Set-ItemProperty -Path $regPath -Name "Thunderbird-SoundBridge" -Value $command
   }
 
@@ -239,7 +241,7 @@
       [string]$scriptPath
     )
     # Execute the script
-    Start-Process PowerShell.exe -ArgumentList "-File `"$scriptPath`""
+    Start-Process "$shell" -ArgumentList "-File `"$scriptPath`""
   }
 
   function Install-TightVNC {
@@ -331,7 +333,7 @@
   function RestartSelf {
     $scriptPath = $($MyInvocation.ScriptName)
     Write-Output "Restarting script..."
-    Start-Process PowerShell.exe -ArgumentList "-File `"$scriptPath`" -scriptUrlOrPath `"$scriptUrlOrPath`" -rdpPassword `"$rdpPassword`""
+    Start-Process "$shell" -ArgumentList "-File `"$scriptPath`" -scriptUrlOrPath `"$scriptUrlOrPath`" -rdpPassword `"$rdpPassword`" -shell `"$shell`""
     exit
   }
 

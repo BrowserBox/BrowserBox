@@ -136,15 +136,27 @@ $Outer = {
     npm run parcel
 
     $globalLocation = Get-DestinationDirectory
-    #Copy-CurrentToDestination
+    # Debug: Output the type and value of globalLocation
+    Write-Host "Type of globalLocation: $($globalLocation.GetType().FullName)"
+    Write-Host "Value of globalLocation: $globalLocation"
+
     Set-Location $env:USERPROFILE
-    $existingGlobal = Join-Path $globalLocation "BrowserBox"
+    $existingGlobal = Join-Path $globalLocation -ChildPath "BrowserBox"
     if (Test-Path $existingGlobal) {
       Write-Output "Cleaning existing global install..."
-      Remote-Item $existingGlobal -Recurse -Force
+      Remove-Item $existingGlobal -Recurse -Force
+    } else {
+      Write-Output "No existing global install found at $existingGlobal"
     }
+
     Write-Output "Moving to global location: $globalLocation"
-    mv BrowserBox $globalLocation
+    # Ensure BrowserBox is a valid path
+    $browserBoxPath = Join-Path $env:USERPROFILE -ChildPath "BrowserBox"
+    if (Test-Path $browserBoxPath) {
+      Move-Item $browserBoxPath $globalLocation -Force
+    } else {
+      Write-Output "BrowserBox not found at $browserBoxPath"
+    }
 
     Write-Output "Full install completed."
   }
@@ -207,60 +219,6 @@ $Outer = {
     }
 
     Write-Error "Timeout reached. Hostname not resolved or not matching current IP: $hostname"
-  }
-
-  function Add-ModuleToBothProfiles {
-    param (
-      [Parameter(Mandatory=$true)]
-      [string]$ModuleName
-    )
-
-    # Function to add module to the current profile
-    function Add-ModuleToCurrentProfile {
-      param (
-        [string]$ProfilePath,
-        [string]$ModuleName
-      )
-
-      # Create the profile file if it does not exist
-      if (-not (Test-Path $ProfilePath)) {
-        New-Item -ItemType File -Path $ProfilePath -Force | Out-Null
-      }
-
-      # Check if the module import command already exists in the profile
-      $importCommand = "`$env:BrowserBoxSilentImport = `$true`nImport-Module $ModuleName"
-      $profileContent = Get-Content $ProfilePath -ErrorAction SilentlyContinue
-
-      if ($profileContent -notcontains $importCommand) {
-        # Add the import command to the profile
-        Add-Content -Path $ProfilePath -Value $importCommand
-        Write-Host "Module '$ModuleName' has been added to the profile at $ProfilePath."
-      } else {
-        Write-Host "Module '$ModuleName' is already in the profile at $ProfilePath."
-      }
-    }
-
-    # Add module to the current PowerShell profile
-    Add-ModuleToCurrentProfile -ProfilePath $PROFILE -ModuleName $ModuleName
-
-    # Determine the other PowerShell version to execute
-    $otherPowerShell = if ($PSVersionTable.PSEdition -eq "Core") { "powershell" } else { "pwsh" }
-
-    # Check if the other PowerShell version is available
-    if (Get-Command $otherPowerShell -ErrorAction SilentlyContinue) {
-      # Prepare the script block to run in the other PowerShell
-      $scriptBlock = {
-        param($ModuleName, $ProfilePath)
-        Import-Module $ModuleName -ErrorAction SilentlyContinue
-        Add-Content -Path $ProfilePath -Value "`$env:BrowserBoxSilentImport = `$true`nImport-Module $ModuleName"
-      }
-
-      # Execute the script block in the other PowerShell
-      Start-Process $otherPowerShell -ArgumentList "-NoExit", "-Command", $scriptBlock, $ModuleName, $PROFILE
-      Write-Host "Attempting to add module '$ModuleName' to the profile of $otherPowerShell."
-    } else {
-      Write-Host "$otherPowerShell is not available on this system."
-    }
   }
 
   function Show-Usage {
@@ -668,7 +626,8 @@ Copy-CertbotCertificates -Domain "$Domain"
     DownloadFile -Url $url -Destination $destination
 
     Write-Output "Installing LetsEncrypt Certbot silently..."
-    Start-Process "msiexec.exe" -ArgumentList "/i `"$destination`" /quiet /norestart" -Wait
+    #Start-Process "msiexec.exe" -ArgumentList "/i `"$destination`" /quiet /norestart" -Wait
+    Start-Process "$destination" -ArgumentList "/S" -Wait
 
     RefreshPath
     Write-Output "Installation of LetsEncrypt Certbot completed."
@@ -785,26 +744,24 @@ Copy-CertbotCertificates -Domain "$Domain"
   }
 
   function EnhancePackageManagers {
-    if ($PSVersionTable.PSEdition -eq "Desktop") {
-      try {
-        Install-PackageProvider -Name NuGet -MinimumVersion 2.9 -Force
-      } catch {
-        Write-Output "Error installing NuGet provider: $_"
-      }
-      try {
-        Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
-      } catch {
-        Write-Output "Error installing NuGet provider: $_"
-      }
-      try {
-        Import-PackageProvider -Name NuGet -Force
-      } catch {
-        Write-Output "Error importing NuGet provider: $_"
-      }
+    try {
+      Install-PackageProvider -Name NuGet -MinimumVersion 2.9 -Force -ErrorAction SilentlyContinue
+    } catch {
+      Write-Output "Error installing NuGet provider: $_"
+    }
+    try {
+      Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -ErrorAction SilentlyContinue
+    } catch {
+      Write-Output "Error installing NuGet provider: $_"
+    }
+    try {
+      Import-PackageProvider -Name NuGet -Force -ErrorAction SilentlyContinue
+    } catch {
+      Write-Output "Error importing NuGet provider: $_"
     }
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
     try {
-      Install-Module -Name PackageManagement -Repository PSGallery -Force
+      Install-Module -Name PackageManagement -Repository PSGallery -Force -ErrorAction SilentlyContinue
     } catch {
       Write-Output "Error installing PackageManagement provider: $_"
     }
@@ -1061,8 +1018,10 @@ timeout /t 2
     $form.Controls.Add($licenseLink)
 
     $continueButton = New-Object System.Windows.Forms.Button
-    $continueButton.Text = 'Agree & Continue'
-    $continueButton.Location = New-Object System.Drawing.Point(200, 200)
+    $continueButton = New-Object System.Windows.Forms.Button
+    $continueButton.Text = 'Agree && Continue'  # Fixed ampersand display
+    $continueButton.Width = 150                 # Increased width of the button
+    $continueButton.Location = New-Object System.Drawing.Point(114, 200) # Adjust location if needed
     $continueButton.Add_Click({
         if ($domainTextBox.Text -eq '' -or $emailTextBox.Text -eq '') {
           [System.Windows.Forms.MessageBox]::Show('Please fill in all required fields')
@@ -1081,6 +1040,22 @@ timeout /t 2
 
     $form.AcceptButton = $continueButton
     $form.CancelButton = $cancelButton
+ 
+     # Add the SetForegroundWindow function using P/Invoke
+    Add-Type @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class NativeMethods {
+            [DllImport("user32.dll")]
+            public static extern bool SetForegroundWindow(IntPtr hWnd);
+        }
+"@
+
+    # After the form is initialized, bring it to the foreground
+    $form.Add_Shown({
+        $form.Activate()
+        [NativeMethods]::SetForegroundWindow($form.Handle)
+    })
 
     if ($form.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
       return @{
