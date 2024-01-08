@@ -2,7 +2,7 @@ function Get-DestinationDirectory {
   $destinationPath = "$env:ProgramFiles\DOSYAGO"
   
   if (-not (Test-Path $destinationPath)) {
-    New-Item -ItemType Directory -Path $destinationPath -Force
+    New-Item -ItemType Directory -Path $destinationPath -Force | Out-Null
   }
 
   return $destinationPath

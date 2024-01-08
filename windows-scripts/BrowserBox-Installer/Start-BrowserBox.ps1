@@ -14,7 +14,7 @@ function Start-BrowserBox {
   $browserboxGlobalDirectory = Get-DestinationDirectory
   Set-Location "${browserboxGlobalDirectory}\BrowserBox"
 
-  $os = Get-WmiObject -Class Win32_OperatingSystem
+  $os = Get-CimInstance -ClassName Win32_OperatingSystem
   if (-not $NoBranch -and ($os.ProductType -eq 2 -or $os.ProductType -eq 3)) {
     Write-Host "Detected Windows Server. Running BrowserBox for Windows Server..."
     . $PSScriptRoot\Start-BrowserBox-In-Windows-Server.ps1

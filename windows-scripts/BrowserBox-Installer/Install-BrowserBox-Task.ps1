@@ -49,14 +49,14 @@ $Outer = {
     Write-Host $acceptTermsEmail $hostname
 
     if (Validate-NonEmptyParameters -hostname $hostname -acceptTermsEmail $acceptTermsEmail) {
-      Write-Output "Inputs look good. Proceeding..."
+      Write-Host "Inputs look good. Proceeding..."
     }
     else {
       Show-Usage
       Exit
     }
 
-    Write-Output "Running PowerShell version: $($PSVersionTable.PSVersion)"
+    Write-Host "Running PowerShell version: $($PSVersionTable.PSVersion)"
 
     # Disabling the progress bar
     $ProgressPreference = 'SilentlyContinue'
@@ -65,7 +65,7 @@ $Outer = {
     EnsureRunningAsAdministrator
     RemoveAnyRestartScript
 
-    Write-Output "Installing preliminairies..."
+    Write-Host "Installing preliminairies..."
 
     InstallMSVC
     EnhancePackageManagers
@@ -88,7 +88,7 @@ $Outer = {
     nvm install node
     nvm use latest
 
-    Write-Output "Setting up certificate..."
+    Write-Host "Setting up certificate..."
     if (Is-HostnameLinkLocal -hostname $hostname) {
       RunCloserFunctionInNewWindow
       InstallMkcertAndSetup
@@ -98,17 +98,17 @@ $Outer = {
 
       OpenFirewallPort -Port 80
 
-      Write-Output "Waiting for hostname ($hostname) to resolve to this machine's IP address..."
+      Write-Host "Waiting for hostname ($hostname) to resolve to this machine's IP address..."
       WaitForHostname -hostname $hostname
-      Write-Output "Hostname loaded. Requesting TLS HTTPS certificate from LetsEncrypt..."
+      Write-Host "Hostname loaded. Requesting TLS HTTPS certificate from LetsEncrypt..."
       RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
       PersistCerts -Domain $hostname 
     }
 
-    Write-Output "Installing BrowserBox..."
+    Write-Host "Installing BrowserBox..."
 
     Set-Location $env:USERPROFILE
-    Write-Output $PWD
+    Write-Host $PWD
     git config --global core.symlinks true
     if (Test-Path .\BrowserBox) {
       if ( Get-Command Stop-BrowserBox ) {
@@ -127,14 +127,14 @@ $Outer = {
 
     Set-Location BrowserBox
 
-    Write-Output "Cleaning non-Windows detritus..."
+    Write-Host "Cleaning non-Windows detritus..."
     npm run clean
-    Write-Output "Installing dependencies..."
+    Write-Host "Installing dependencies..."
     npm i
-    Write-Output "Building client..."
+    Write-Host "Building client..."
     npm run parcel
 
-    $globalLocation = Get-DestinationDirectory
+    $globalLocation = [string]Get-DestinationDirectory
     # Debug: Output the type and value of globalLocation
     Write-Host "Type of globalLocation: $($globalLocation.GetType().FullName)"
     Write-Host "Value of globalLocation: $globalLocation"
@@ -142,22 +142,22 @@ $Outer = {
     Set-Location $env:USERPROFILE
     $existingGlobal = Join-Path $globalLocation -ChildPath "BrowserBox"
     if (Test-Path $existingGlobal) {
-      Write-Output "Cleaning existing global install..."
+      Write-Host "Cleaning existing global install..."
       Remove-Item $existingGlobal -Recurse -Force
     } else {
-      Write-Output "No existing global install found at $existingGlobal"
+      Write-Host "No existing global install found at $existingGlobal"
     }
 
-    Write-Output "Moving to global location: $globalLocation"
+    Write-Host "Moving to global location: $globalLocation"
     # Ensure BrowserBox is a valid path
     $browserBoxPath = Join-Path $env:USERPROFILE -ChildPath "BrowserBox"
     if (Test-Path $browserBoxPath) {
       Move-Item $browserBoxPath $globalLocation -Force
     } else {
-      Write-Output "BrowserBox not found at $browserBoxPath"
+      Write-Host "BrowserBox not found at $browserBoxPath"
     }
 
-    Write-Output "Full install completed."
+    Write-Host "Full install completed."
   }
 
   # Function Definitions
