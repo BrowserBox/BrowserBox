@@ -2,7 +2,7 @@
     [Parameter(Mandatory = $true)]
     [string]$scriptUrlOrPath,
     [Parameter(Mandatory = $true)]
-    [string]$rdpPassword
+    [string]$rdpPassword,
     [string]$shell = "powershell.exe"
   )
 
