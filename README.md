@@ -15,10 +15,14 @@ BrowserBox has just landed support for Windows and we're on [PSGallery](https://
 To install and run on Windows, do the following in PowerShell below:
 
 ```posh
-# you may need the following 2 lines to install from PSGallery
+# you may need the following 2 lines to install from PSGallery if you're package managers need updating
 Install-PackageProvider Nuget -Force
 Install-Module -Name PowerShellGet -Force
+```
 
+Then close and reopen your PowerShell session, and run:
+
+```posh
 # the main part to install BrowserBox installer
 Install-Module -Name BrowserBox-Tools
 Import-Module BrowserBox-Tools
@@ -32,13 +36,13 @@ Initialize-BrowserBox -Port 8080
 ```
 
 At this point you'll have your login link and you'll be ready to start BrowserBox and connect.
-To start 'er up, type:
+Finally, to start 'er up, type:
 
 ```posh
 Start-BrowserBox
 ```
 
-And open your login-link in a browser. Note that if you're on Windows Server this step will disconnect your RDP session
+And open your login-link in any modern browser anywhere. Note that if you're on Windows Server this step will disconnect your RDP session
 as we perform some voodoo-foo in order to utilize the pre-existing and good RDP Audio Driver in a way that lets us retain 
 an audio stream even when you're not connected to your server.
 
