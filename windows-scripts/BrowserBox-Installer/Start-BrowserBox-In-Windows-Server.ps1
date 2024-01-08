@@ -6,7 +6,8 @@ function Start-BrowserBox-In-Windows-Server {
   if ($userResponse -eq 'yes' -or $userResponse -eq 'y') {
     $ScriptPath = Join-Path (Get-DestinationDirectory) "BrowserBox" "windows-scripts" "Start.ps1"
     Write-Host "Will run start script at: $ScriptPath"
-    . $PSScriptRoot\Thunderbird.ps1 -scriptUrlOrPath $ScriptPath
+    Read-Host "Press enter to continue"
+    & $PSScriptRoot\Thunderbird.ps1 -scriptUrlOrPath $ScriptPath
   }
   elseif ($userResponse -eq 'no' -or $userResponse -eq 'n') {
     Write-Host "Please copy your BrowserBox login link and then run this command again."
