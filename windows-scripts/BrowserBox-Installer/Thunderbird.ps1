@@ -43,7 +43,7 @@
   function SetLogonScript {
     $regPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
     $scriptPath = $($MyInvocation.ScriptName)
-    $command = "`"$shell`" -WindowStyle Hidden -File `"$scriptPath`" -scriptUrlOrPath `"$scriptUrlOrPath`" -rdpPassword `"$rdpPassword`" -shell `"$shell`""
+    $command = "$shell -WindowStyle Hidden -File `"$scriptPath`" -scriptUrlOrPath `"$scriptUrlOrPath`" -rdpPassword `"$rdpPassword`" -shell $shell"
     Set-ItemProperty -Path $regPath -Name "Thunderbird-SoundBridge" -Value $command
   }
 
