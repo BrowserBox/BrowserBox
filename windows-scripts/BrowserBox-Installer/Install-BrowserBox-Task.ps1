@@ -49,14 +49,14 @@ $Outer = {
     Write-Host $acceptTermsEmail $hostname
 
     if (Validate-NonEmptyParameters -hostname $hostname -acceptTermsEmail $acceptTermsEmail) {
-      Write-Output "Inputs look good. Proceeding..."
+      Write-Host "Inputs look good. Proceeding..."
     }
     else {
       Show-Usage
       Exit
     }
 
-    Write-Output "Running PowerShell version: $($PSVersionTable.PSVersion)"
+    Write-Host "Running PowerShell version: $($PSVersionTable.PSVersion)"
 
     # Disabling the progress bar
     $ProgressPreference = 'SilentlyContinue'
@@ -65,20 +65,21 @@ $Outer = {
     EnsureRunningAsAdministrator
     RemoveAnyRestartScript
 
-    Write-Output "Installing preliminairies..."
+    Write-Host "Installing preliminairies..."
 
+    InstallMSVC
     EnhancePackageManagers
 
     $currentVersion = CheckWingetVersion
     UpdateWingetIfNeeded $currentVersion
     UpdatePowerShell
 
-    InstallMSVC
-
     EnableWindowsAudio
     InstallGoogleChrome
 
-    InstallIfNeeded "jq" "jqlang.jq"
+    if (-not (InstallIfNeeded "jq" "jqlang.jq")) {
+      InstallJqDirectly
+    }
     InstallIfNeeded "vim" "vim.vim"
     AddVimToPath
     InstallIfNeeded "git" "Git.Git"
@@ -89,7 +90,7 @@ $Outer = {
     nvm install node
     nvm use latest
 
-    Write-Output "Setting up certificate..."
+    Write-Host "Setting up certificate..."
     if (Is-HostnameLinkLocal -hostname $hostname) {
       RunCloserFunctionInNewWindow
       InstallMkcertAndSetup
@@ -99,17 +100,17 @@ $Outer = {
 
       OpenFirewallPort -Port 80
 
-      Write-Output "Waiting for hostname ($hostname) to resolve to this machine's IP address..."
+      Write-Host "Waiting for hostname ($hostname) to resolve to this machine's IP address..."
       WaitForHostname -hostname $hostname
-      Write-Output "Hostname loaded. Requesting TLS HTTPS certificate from LetsEncrypt..."
+      Write-Host "Hostname loaded. Requesting TLS HTTPS certificate from LetsEncrypt..."
       RequestCertificate -Domain $hostname -TermsEmail $acceptTermsEmail
       PersistCerts -Domain $hostname 
     }
 
-    Write-Output "Installing BrowserBox..."
+    Write-Host "Installing BrowserBox..."
 
     Set-Location $env:USERPROFILE
-    Write-Output $PWD
+    Write-Host $PWD
     git config --global core.symlinks true
     if (Test-Path .\BrowserBox) {
       if ( Get-Command Stop-BrowserBox ) {
@@ -128,11 +129,11 @@ $Outer = {
 
     Set-Location BrowserBox
 
-    Write-Output "Cleaning non-Windows detritus..."
+    Write-Host "Cleaning non-Windows detritus..."
     npm run clean
-    Write-Output "Installing dependencies..."
+    Write-Host "Installing dependencies..."
     npm i
-    Write-Output "Building client..."
+    Write-Host "Building client..."
     npm run parcel
 
     $globalLocation = Get-DestinationDirectory
@@ -143,22 +144,22 @@ $Outer = {
     Set-Location $env:USERPROFILE
     $existingGlobal = Join-Path $globalLocation -ChildPath "BrowserBox"
     if (Test-Path $existingGlobal) {
-      Write-Output "Cleaning existing global install..."
+      Write-Host "Cleaning existing global install..."
       Remove-Item $existingGlobal -Recurse -Force
     } else {
-      Write-Output "No existing global install found at $existingGlobal"
+      Write-Host "No existing global install found at $existingGlobal"
     }
 
-    Write-Output "Moving to global location: $globalLocation"
+    Write-Host "Moving to global location: $globalLocation"
     # Ensure BrowserBox is a valid path
     $browserBoxPath = Join-Path $env:USERPROFILE -ChildPath "BrowserBox"
     if (Test-Path $browserBoxPath) {
       Move-Item $browserBoxPath $globalLocation -Force
     } else {
-      Write-Output "BrowserBox not found at $browserBoxPath"
+      Write-Host "BrowserBox not found at $browserBoxPath"
     }
 
-    Write-Output "Full install completed."
+    Write-Host "Full install completed."
   }
 
   # Function Definitions
@@ -166,6 +167,21 @@ $Outer = {
   # due to RDP audio driver on Windows
   # there is distortion on some music sounds, for instance
   # https://www.youtube.com/watch?v=v0wVRG38IYs
+
+  function InstallJqDirectly {
+    $jqDirectory = "$env:ProgramFiles\jq"
+    if (-not (Test-Path $jqDirectory)) {
+      New-Item -ItemType Directory -Path $jqDirectory -Force
+    }
+
+    $downloadUrl = "https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe"
+    $destination = "$jqDirectory\jq.exe"
+    DownloadFile -Url $downloadUrl -Destination $destination
+
+    Add-ToSystemPath $jqDirectory
+    Write-Host "jq has been manually downloaded and added to the system path."
+    RefreshPath
+  }
 
   function WaitForHostname {
     param (
@@ -550,13 +566,36 @@ Remove-Item -LiteralPath `"$($MyInvocation.ScriptName)`" -Force
     }
   }
 
-  function DownloadFile {
-    param (
-      [string]$Url,
-      [string]$Destination
-    )
-    $webClient = New-Object System.Net.WebClient
-    $webClient.DownloadFile($Url, "$Destination")
+  function EnsureWinGet {
+    # Create WinGet Folder
+    New-Item -Path C:\WinGet -ItemType directory -ErrorAction SilentlyContinue
+
+    # Install VCLibs
+    Invoke-WebRequest -Uri https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -OutFile "C:\WinGet\Microsoft.VCLibs.x64.14.00.Desktop.appx"
+    Add-AppxPackage "C:\WinGet\Microsoft.VCLibs.x64.14.00.Desktop.appx"
+
+    # Install Microsoft.UI.Xaml from NuGet
+    Invoke-WebRequest -Uri https://www.nuget.org/api/v2/package/Microsoft.UI.Xaml/2.7.3 -OutFile "C:\WinGet\Microsoft.UI.Xaml.2.7.3.zip"
+    Expand-Archive "C:\WinGet\Microsoft.UI.Xaml.2.7.3.zip" -DestinationPath "C:\WinGet\Microsoft.UI.Xaml.2.7.3"
+    Add-AppxPackage "C:\WinGet\Microsoft.UI.Xaml.2.7.3\tools\AppX\x64\Release\Microsoft.UI.Xaml.2.7.appx"
+
+    # Install latest WinGet from GitHub
+    Invoke-WebRequest -Uri https://github.com/microsoft/winget-cli/releases/latest/download/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle -OutFile "C:\WinGet\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+    Add-AppxPackage "C:\WinGet\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+
+    # Fix Permissions
+    TAKEOWN /F "C:\Program Files\WindowsApps" /R /A /D Y
+    ICACLS "C:\Program Files\WindowsApps" /grant Administrators:F /T
+
+    # Add Environment Path
+    $ResolveWingetPath = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe"
+    if ($ResolveWingetPath) {
+      $WingetPath = $ResolveWingetPath[-1].Path
+    }
+    $ENV:PATH += ";$WingetPath"
+    $SystemEnvPath = [System.Environment]::GetEnvironmentVariable('PATH', [System.EnvironmentVariableTarget]::Machine)
+    $SystemEnvPath += ";$WingetPath;"
+    setx /M PATH "$SystemEnvPath"
   }
 
   function PersistCerts {
@@ -647,19 +686,27 @@ Copy-CertbotCertificates -Domain "$Domain"
     Write-Output "Installation of Microsoft Visual C++ Redistributable completed."
   }
 
-  function Is-HostnameLinkLocal {
+	function Is-HostnameLinkLocal {
     param (
       [string]$hostname
     )
 
     try {
-      $ipAddress = [System.Net.Dns]::GetHostAddresses($hostname) | Select-Object -First 1
+      $ipAddresses = [System.Net.Dns]::GetHostAddresses($hostname) | Where-Object { $_.AddressFamily -eq 'InterNetwork' }
+      if ($ipAddresses.Count -eq 0) {
+        Write-Error "No IPv4 address found for $hostname"
+        return $false
+      }
+
+      $ipAddress = $ipAddresses[0]
       $bytes = $ipAddress.GetAddressBytes()
 
-      # Check for private IP ranges (e.g., 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x)
-      if (($bytes[0] -eq 10) -or
-    ($bytes[0] -eq 172 -and $bytes[1] -ge 16 -and $bytes[1] -le 31) -or
-    ($bytes[0] -eq 192 -and $bytes[1] -eq 168)) {
+      # Check for private IP ranges (e.g., 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x, 127.x.x.x)
+      if (($bytes[0] -eq 127) -or
+        ($bytes[0] -eq 10) -or
+        ($bytes[0] -eq 172 -and $bytes[1] -ge 16 -and $bytes[1] -le 31) -or
+        ($bytes[0] -eq 192 -and $bytes[1] -eq 168)
+      ) {
         return $true
       }
     }
@@ -770,6 +817,7 @@ Copy-CertbotCertificates -Domain "$Domain"
       Repair-WinGetPackageManager -AllUsers
     } catch {
       Write-Output "Could not repair WinGet ($_) will try to install instead."
+      EnsureWinGet
     }
   }
 
@@ -1138,11 +1186,19 @@ timeout /t 2
   function Install-PackageViaWinget {
     param ([string]$packageId)
     try {
-      winget install -e --id $packageId --accept-source-agreements
-      Write-Output "Successfully installed $packageId"
+      $null = winget install -e --id $packageId --accept-source-agreements 2>&1
+      if ($?) {
+        Write-Output "Successfully installed $packageId"
+        return $true
+      }
+      else {
+        Write-Error "Failed to install $packageId"
+        return $false
+      }
     }
     catch {
-      Write-Error "Failed to install $packageId"
+      Write-Error "Failed to install $packageId : $_"
+      return $false
     }
   }
 
@@ -1159,16 +1215,26 @@ timeout /t 2
     }
   }
 
+  function DownloadFile {
+    param (
+      [string]$Url,
+      [string]$Destination
+    )
+    $webClient = New-Object System.Net.WebClient
+    $webClient.DownloadFile($Url, "$Destination")
+  }
+
   function InstallIfNeeded {
     param (
       [string]$packageName,
       [string]$packageId
     )
     if (-not (Get-Command $packageName -ErrorAction SilentlyContinue)) {
-      Install-PackageViaWinget $packageId
+      return Install-PackageViaWinget $packageId
     }
     else {
       Write-Output "$packageName is already installed."
+      return $true
     }
   }
 

@@ -611,7 +611,7 @@
                           sampleRate: sample_rate
                         });
                         gain = ctx.createGain();
-                        gain.gain.value = 1.618;
+                        gain.gain.value = 1.414;
                         gain.connect( ctx.destination );
 
                         connectAudio();
