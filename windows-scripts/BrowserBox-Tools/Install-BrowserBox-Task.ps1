@@ -141,7 +141,7 @@ $Outer = {
     $existingGlobal = Join-Path $globalLocation "BrowserBox"
     if (Test-Path $existingGlobal) {
       Write-Output "Cleaning existing global install..."
-      Remote-Item $existingGlobal -Recurse -Force
+      Remove-Item $existingGlobal -Recurse -Force
     }
     Write-Output "Moving to global location: $globalLocation"
     mv BrowserBox $globalLocation
@@ -786,26 +786,24 @@ Copy-CertbotCertificates -Domain "$Domain"
   }
 
   function EnhancePackageManagers {
-    if ($PSVersionTable.PSEdition -eq "Desktop") {
-      try {
-        Install-PackageProvider -Name NuGet -MinimumVersion 2.9 -Force
-      } catch {
-        Write-Output "Error installing NuGet provider: $_"
-      }
-      try {
-        Install-PackageProvider -Name NuGet -Force -Scope CurrentUser
-      } catch {
-        Write-Output "Error installing NuGet provider: $_"
-      }
-      try {
-        Import-PackageProvider -Name NuGet -Force
-      } catch {
-        Write-Output "Error importing NuGet provider: $_"
-      }
+    try {
+      Install-PackageProvider -Name NuGet -MinimumVersion 2.9 -Force -ErrorAction SilentlyContinue
+    } catch {
+      Write-Output "Error installing NuGet provider: $_"
+    }
+    try {
+      Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -ErrorAction SilentlyContinue
+    } catch {
+      Write-Output "Error installing NuGet provider: $_"
+    }
+    try {
+      Import-PackageProvider -Name NuGet -Force -ErrorAction SilentlyContinue
+    } catch {
+      Write-Output "Error importing NuGet provider: $_"
     }
     Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
     try {
-      Install-Module -Name PackageManagement -Repository PSGallery -Force
+      Install-Module -Name PackageManagement -Repository PSGallery -Force -ErrorAction SilentlyContinue
     } catch {
       Write-Output "Error installing PackageManagement provider: $_"
     }
@@ -1062,8 +1060,10 @@ timeout /t 2
     $form.Controls.Add($licenseLink)
 
     $continueButton = New-Object System.Windows.Forms.Button
-    $continueButton.Text = 'Agree & Continue'
-    $continueButton.Location = New-Object System.Drawing.Point(200, 200)
+    $continueButton = New-Object System.Windows.Forms.Button
+    $continueButton.Text = 'Agree && Continue'  # Fixed ampersand display
+    $continueButton.Width = 150                 # Increased width of the button
+    $continueButton.Location = New-Object System.Drawing.Point(114, 200) # Adjust location if needed
     $continueButton.Add_Click({
         if ($domainTextBox.Text -eq '' -or $emailTextBox.Text -eq '') {
           [System.Windows.Forms.MessageBox]::Show('Please fill in all required fields')
@@ -1082,6 +1082,22 @@ timeout /t 2
 
     $form.AcceptButton = $continueButton
     $form.CancelButton = $cancelButton
+ 
+     # Add the SetForegroundWindow function using P/Invoke
+    Add-Type @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class NativeMethods {
+            [DllImport("user32.dll")]
+            public static extern bool SetForegroundWindow(IntPtr hWnd);
+        }
+"@
+
+    # After the form is initialized, bring it to the foreground
+    $form.Add_Shown({
+        $form.Activate()
+        [NativeMethods]::SetForegroundWindow($form.Handle)
+    })
 
     if ($form.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
       return @{
