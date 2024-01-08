@@ -6,9 +6,9 @@ function Initialize-BrowserBox {
   )
 
   . $PSScriptRoot\Utils.ps1
-  $browserBoxGlobalDirectory = Get-DestinationDirectory
+  $browserboxGlobalDirectory = Get-DestinationDirectory
   $originalDirectory = Get-Location
-  Set-Location "${browserboxGlobalDirectory|\BrowserBox"
+  Set-Location "${browserboxGlobalDirectory}\BrowserBox"
 
   if (![string]::IsNullOrEmpty($Token)) {
     # If Token is provided, include it in the command
