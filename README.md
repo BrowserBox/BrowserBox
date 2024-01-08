@@ -37,9 +37,7 @@ Then run the install process:
 Install-BrowserBox
 ```
 
-When prompted enter the `Domain name` that will point to your Windows instance, and your `Email address` for agreeing to our terms, and LetsEncrypt terms. Then, to fully set up BrowserBox, run the following with your desired port:
-
-And finally configure your BrowserBox instance (`-Port` and optionally `-Token` for the login link):
+When prompted enter the `Domain name` that will point to your Windows instance, and your `Email address` for agreeing to our terms, and LetsEncrypt terms. Then, configure your BrowserBox instance (`-Port` and optionally `-Token` for the login link):
 
 ```posh
 Initialize-BrowserBox -Port 8080
