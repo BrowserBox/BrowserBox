@@ -686,19 +686,27 @@ Copy-CertbotCertificates -Domain "$Domain"
     Write-Output "Installation of Microsoft Visual C++ Redistributable completed."
   }
 
-  function Is-HostnameLinkLocal {
+	function Is-HostnameLinkLocal {
     param (
       [string]$hostname
     )
 
     try {
-      $ipAddress = [System.Net.Dns]::GetHostAddresses($hostname) | Select-Object -First 1
+      $ipAddresses = [System.Net.Dns]::GetHostAddresses($hostname) | Where-Object { $_.AddressFamily -eq 'InterNetwork' }
+      if ($ipAddresses.Count -eq 0) {
+        Write-Error "No IPv4 address found for $hostname"
+        return $false
+      }
+
+      $ipAddress = $ipAddresses[0]
       $bytes = $ipAddress.GetAddressBytes()
 
-      # Check for private IP ranges (e.g., 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x)
-      if (($bytes[0] -eq 10) -or
-    ($bytes[0] -eq 172 -and $bytes[1] -ge 16 -and $bytes[1] -le 31) -or
-    ($bytes[0] -eq 192 -and $bytes[1] -eq 168)) {
+      # Check for private IP ranges (e.g., 192.168.x.x, 10.x.x.x, 172.16.x.x - 172.31.x.x, 127.x.x.x)
+      if (($bytes[0] -eq 127) -or
+        ($bytes[0] -eq 10) -or
+        ($bytes[0] -eq 172 -and $bytes[1] -ge 16 -and $bytes[1] -le 31) -or
+        ($bytes[0] -eq 192 -and $bytes[1] -eq 168)
+      ) {
         return $true
       }
     }
