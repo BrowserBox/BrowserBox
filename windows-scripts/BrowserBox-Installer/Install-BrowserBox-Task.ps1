@@ -566,15 +566,6 @@ Remove-Item -LiteralPath `"$($MyInvocation.ScriptName)`" -Force
     }
   }
 
-  function DownloadFile {
-    param (
-      [string]$Url,
-      [string]$Destination
-    )
-    $webClient = New-Object System.Net.WebClient
-    $webClient.DownloadFile($Url, "$Destination")
-  }
-
   function EnsureWinGet {
     # Create WinGet Folder
     New-Item -Path C:\WinGet -ItemType directory -ErrorAction SilentlyContinue
@@ -1187,7 +1178,7 @@ timeout /t 2
   function Install-PackageViaWinget {
     param ([string]$packageId)
     try {
-      winget install -e --id $packageId --accept-source-agreements
+      $null = winget install -e --id $packageId --accept-source-agreements 2>&1
       if ($?) {
         Write-Output "Successfully installed $packageId"
         return $true
@@ -1214,6 +1205,15 @@ timeout /t 2
     else {
       Write-Output "$pathToAdd is already in system PATH."
     }
+  }
+
+  function DownloadFile {
+    param (
+      [string]$Url,
+      [string]$Destination
+    )
+    $webClient = New-Object System.Net.WebClient
+    $webClient.DownloadFile($Url, "$Destination")
   }
 
   function InstallIfNeeded {
