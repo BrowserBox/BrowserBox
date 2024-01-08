@@ -4,7 +4,7 @@ BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilita
 
 ## Windows Support :joy_cat: :tada:
 
-BrowserBox has just landed support for Windows. Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
+BrowserBox has just landed support for Windows and we're on [PSGallery](https://www.powershellgallery.com/packages/BrowserBox-Tools/1.2.0). Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
 
 
 |   Windows Edition   | Compatibility   |
@@ -15,11 +15,16 @@ BrowserBox has just landed support for Windows. Including Windows 11 and Windows
 To install and run on Windows, do the following in PowerShell below:
 
 ```posh
+# you may need the following 2 lines to install from PSGallery
+Install-PackageProvider Nuget -Force
+Install-Module -Name PowerShellGet -Force
+
+# the main part to install BrowserBox installer
 Install-Module -Name BrowserBox-Tools
 Import-Module BrowserBox-Tools
 ```
 
-Then to full set up BrowserBox, run (substituting another port for 8080 if desired):
+Then to full set up BrowserBox, run with your desired port:
 
 ```posh
 Install-BrowserBox
