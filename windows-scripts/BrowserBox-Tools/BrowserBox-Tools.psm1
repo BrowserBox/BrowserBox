@@ -22,10 +22,10 @@ function AddToBothProfiles {
   # Check if the other PowerShell version is available
   if (Get-Command $otherPowerShell -ErrorAction SilentlyContinue) {
     # Prepare the command to run in the other PowerShell
-    $command = ". `"$utilsPath`"; Add-ModuleToCurrentProfile -ProfilePath `$PROFILE -ModuleName `"$ModuleName`""
+    $scriptPath = Join-Path $PSScriptRoot "Auto-Import-BrowserBox.ps1"
 
     # Execute the command in the other PowerShell
-    Start-Process $otherPowerShell -ArgumentList "-NoExit", "-Command", $command
+    Start-Process $otherPowerShell -ArgumentList "-File", "`"$scriptPath`""
     Write-Host "Attempting to add module '$ModuleName' to the profile of $otherPowerShell."
   } else {
     Write-Host "$otherPowerShell is not available on this system."
