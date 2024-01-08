@@ -10,6 +10,7 @@ BrowserBox has just landed support for Windows and we're on [PSGallery](https://
 |   Windows Edition   | Compatibility   |
 |---------------------|:---------------:|
 | Windows Server 2022 |           ✅ |
+| Windows Server 2019 |           ✅ |
 | Windows 11          |           ✅ |
 
 To install and run on Windows, do the following in PowerShell below:
