@@ -46,7 +46,7 @@ Initialize-BrowserBox -Port 8080
 ```
 
 > [!NOTE]
-> While BrowserBox opens ports on the operating system, if your cloud uses external firewalls, ensure ports PORT-2 through PORT+2 (8078-8082 in the example above) are opened in your control panel.*
+> While BrowserBox opens ports on the operating system, if your cloud uses external firewalls, ensure ports PORT-2 through PORT+2 (8078-8082 in the example above) are opened in your control panel.
 
 After running `Initialize-Browserbox` you'll have your login link and you'll be ready to start BrowserBox and connect.
 
@@ -70,6 +70,8 @@ Install-Module -Name PowerShellGet -Force
 ```
 
 Then restart (close and reopen) your PowerShell session and try again.
+
+-----
 
 Any other issues with the installation on Windows then please [open an issue](issues) or reach out to us at anytime at [email](mailto:support@dosyago.com) or [Signal](https://signal.me/#p/+15039173547)
 
