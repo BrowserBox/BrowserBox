@@ -4,7 +4,7 @@ function Start-BrowserBox-In-Windows-Server {
   $userResponse = Read-Host "This will disconnect you from your RDP session. Do you have your BrowserBox login link? (yes/no or y/n)"
 
   if ($userResponse -eq 'yes' -or $userResponse -eq 'y') {
-    $ScriptPath = Join-Path (Get-DestinationDirectory) "windows-scripts" "Start.ps1"
+    $ScriptPath = Join-Path (Get-DestinationDirectory) "BrowserBox" "windows-scripts" "Start.ps1"
     . $PSScriptRoot\Thunderbird.ps1 -scriptPathOrUrl $ScriptPath
   }
   elseif ($userResponse -eq 'no' -or $userResponse -eq 'n') {
