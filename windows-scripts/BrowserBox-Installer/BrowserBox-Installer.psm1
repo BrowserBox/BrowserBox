@@ -36,10 +36,10 @@ if ( $env:BrowserBoxSilentImport ) {
   # don't display every time
 } else {
   try {
-    Write-Host "BrowserBox-Tools is imported"
+    Write-Host "BrowserBox-Installer is imported"
     Write-Host "Available commands: Install-BrowserBox, Initialize-BrowserBox, Start-BrowserBox and Stop-BrowserBox"
     Write-Host "They should be run in that order."
-    #AddToBothProfiles -ModuleName BrowserBox-Tools
+    #AddToBothProfiles -ModuleName BrowserBox-Installer
     #Write-Host "Added to all PowerShell profiles for current user."
   } catch {
     # No need to do anything

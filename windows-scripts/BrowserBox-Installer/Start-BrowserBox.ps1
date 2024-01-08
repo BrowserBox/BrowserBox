@@ -12,7 +12,7 @@ function Start-BrowserBox {
 
   Write-Information "Starting BrowserBox..."
   $browserboxGlobalDirectory = Get-DestinationDirectory
-  Set-Location "$browserboxGlobalDirectory}\BrowserBox"
+  Set-Location "${browserboxGlobalDirectory}\BrowserBox"
 
   $os = Get-WmiObject -Class Win32_OperatingSystem
   if (-not $NoBranch -and ($os.ProductType -eq 2 -or $os.ProductType -eq 3)) {
