@@ -23,5 +23,7 @@ function Start-BrowserBox {
   } else {
     npm test
   }
+
+  Set-Location $env:USERPROFILE
 }
 

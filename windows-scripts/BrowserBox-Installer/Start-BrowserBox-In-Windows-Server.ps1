@@ -16,6 +16,10 @@ function Start-BrowserBox-In-Windows-Server {
     Write-Host "Will run start script at: $ScriptPath using $psPath"
 
     Read-Host "Press enter to continue"
+    $StateDirectory = Join-Path ($env:USERPROFILE) -ChildPath "StateDirectory"
+    if (Test-Path $StateDirectory) {
+      Remove-Item $StateDirectory -Recurse -Force
+    }
     & $PSScriptRoot\Thunderbird.ps1 -scriptUrlOrPath $ScriptPath -shell $psPath
   }
   elseif ($userResponse -eq 'no' -or $userResponse -eq 'n') {
@@ -25,6 +29,4 @@ function Start-BrowserBox-In-Windows-Server {
     Write-Host "Invalid response. Please answer 'yes'/'no' or 'y'/'n' next time."
   }
 }
-
-
 
