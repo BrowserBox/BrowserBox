@@ -136,15 +136,27 @@ $Outer = {
     npm run parcel
 
     $globalLocation = Get-DestinationDirectory
-    #Copy-CurrentToDestination
+    # Debug: Output the type and value of globalLocation
+    Write-Host "Type of globalLocation: $($globalLocation.GetType().FullName)"
+    Write-Host "Value of globalLocation: $globalLocation"
+
     Set-Location $env:USERPROFILE
     $existingGlobal = Join-Path $globalLocation -ChildPath "BrowserBox"
     if (Test-Path $existingGlobal) {
       Write-Output "Cleaning existing global install..."
       Remove-Item $existingGlobal -Recurse -Force
+    } else {
+      Write-Output "No existing global install found at $existingGlobal"
     }
+
     Write-Output "Moving to global location: $globalLocation"
-    mv BrowserBox $globalLocation
+    # Ensure BrowserBox is a valid path
+    $browserBoxPath = Join-Path $env:USERPROFILE -ChildPath "BrowserBox"
+    if (Test-Path $browserBoxPath) {
+      Move-Item $browserBoxPath $globalLocation -Force
+    } else {
+      Write-Output "BrowserBox not found at $browserBoxPath"
+    }
 
     Write-Output "Full install completed."
   }

@@ -4,7 +4,10 @@ function Start-BrowserBox-In-Windows-Server {
   $userResponse = Read-Host "This will disconnect you from your RDP session. Do you have your BrowserBox login link? (yes/no or y/n)"
 
   if ($userResponse -eq 'yes' -or $userResponse -eq 'y') {
-    $ScriptPath = Join-Path (Get-DestinationDirectory) "BrowserBox" "windows-scripts" "Start.ps1"
+    $destinationDirectory = Get-DestinationDirectory
+    $scriptPath = Join-Path $destinationDirectory "BrowserBox"
+    $scriptPath = Join-Path $scriptPath "windows-scripts"
+    $scriptPath = Join-Path $scriptPath "Start.ps1"
     $psPath = ""
     if ($PSVersionTable.PSEdition -eq "Core") {
       # PowerShell Core
