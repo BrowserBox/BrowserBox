@@ -31,16 +31,24 @@ Install-Module -Name BrowserBox-Installer
 Import-Module BrowserBox-Installer
 ```
 
-Then, to fully set up BrowserBox, run the following with your desired port:
+Then run the install process:
 
 ```posh
 Install-BrowserBox
+```
+
+When prompted enter the `Domain name` that will point to your Windows instance, and your `Email address` for agreeing to our terms, and LetsEncrypt terms. Then, to fully set up BrowserBox, run the following with your desired port:
+
+And finally configure your BrowserBox instance (`-Port` and optionally `-Token` for the login link):
+
+```posh
 Initialize-BrowserBox -Port 8080
 ```
 
-At this point you'll have your login link and you'll be ready to start BrowserBox and connect.
+> [!NOTE]
+> While BrowserBox opens ports on the operating system, if your cloud uses external firewalls, ensure ports PORT-2 through PORT+2 (8078-8082 in the example above) are opened in your control panel.*
 
-*Note: while we open ports at the OS level, if your cloud uses external firewalls, ensure you open ports PORT-2 through PORT+2 (8078-8082 in the example above) in your control panel.*
+After running `Initialize-Browserbox` you'll have your login link and you'll be ready to start BrowserBox and connect.
 
 Finally, to start 'er up, type:
 
@@ -52,9 +60,9 @@ And open your login-link in any modern browser anywhere. Note that if you're on 
 as we perform some voodoo-foo in order to utilize the pre-existing and good RDP Audio Driver in a way that lets us retain 
 an audio stream even when you're not connected to your server.
 
-**Note**
 
-If you have trouble with the initial install module step (message aboutNuGet versions), this is probably a PS issue, so try (elevated):
+> [!TIP]
+> If you have trouble with the initial install module step (message aboutNuGet versions), this is probably a PS issue, so try (elevated):
 
 ```posh
 Install-PackageProvider Nuget -Force
@@ -63,7 +71,7 @@ Install-Module -Name PowerShellGet -Force
 
 Then restart (close and reopen) your PowerShell session and try again.
 
-Any other issues with the installation on Windows then please [open an issue](issues) or reach out to us at: support@dosyago.com
+Any other issues with the installation on Windows then please [open an issue](issues) or reach out to us at anytime at [email](mailto:support@dosyago.com) or [Signal](https://signal.me/#p/+15039173547)
 
 ## 1-Click Deploy!
 
