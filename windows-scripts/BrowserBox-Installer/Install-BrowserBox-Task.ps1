@@ -134,7 +134,7 @@ $Outer = {
     Write-Host "Building client..."
     npm run parcel
 
-    $globalLocation = [string]Get-DestinationDirectory
+    $globalLocation = Get-DestinationDirectory
     # Debug: Output the type and value of globalLocation
     Write-Host "Type of globalLocation: $($globalLocation.GetType().FullName)"
     Write-Host "Value of globalLocation: $globalLocation"
