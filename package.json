@@ -1,10 +1,11 @@
 {
-  "name": "bbpro",
+  "name": "@dosyago/browserbox",
   "type": "module",
-  "version": "6.1.5",
+  "version": "7.0.0",
   "description": "BrowserBox - remote browser isolation tool",
   "main": "./src/server.js",
   "default": "dist/image.html",
+  "license": "(AGPL-3.0-or-later OR PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
   "targets": {
     "main": false,
     "default": {
