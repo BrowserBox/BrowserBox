@@ -463,14 +463,12 @@ BrowserBox is a leading-edge solution in the Zero Trust landscape, enabling embe
 | Docker                   | ✅           |
 | Ubuntu                   | ✅           |
 | Debian                   | ✅           |
-| CentOS 9\*               | ✅           |
+| CentOS 9                | ✅           |
 | macOS                    | ✅           |
-| Amazon Linux (AWS EC2)\* | ✅           |
-| Windows\*                | ❌           |
+| Amazon Linux (AWS EC2).  | ✅           |
+| Windows                    | ✅           |
 | Windows WSL              | ✅           |
 
-\*Windows support is currently in development, but not yet officially supported.
-\*Doc Viewer does not currently work on Centos, or Amazon Linux as install script needs to be ported to Centos. 
 
 **Content delivery services status:**
 
