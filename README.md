@@ -44,7 +44,7 @@ Initialize-BrowserBox -Port 8080
 ```
 
 > [!NOTE]
-> While BrowserBox opens ports on the operating system, if your cloud uses external firewalls, ensure ports PORT-2 through PORT+2 (8078-8082 in the example above) are opened in your control panel.
+> While BrowserBox opens ports on the operating system, if your cloud uses external firewalls, ensure ports `Port-2` through `Port+2` (8078-8082 in the example above) are opened in your control panel.
 
 After running `Initialize-Browserbox` you'll have your login link and you'll be ready to start BrowserBox and connect.
 
@@ -54,7 +54,7 @@ Finally, to start 'er up, type:
 Start-BrowserBox
 ```
 
-And open your login-link in any modern browser anywhere. Note that if you're on Windows Server this step will disconnect your RDP session
+And open your login-link in any modern browser anywhere. Note that if you're connected over RDP this step will disconnect your RDP session
 as we perform some voodoo-foo in order to utilize the pre-existing and good RDP Audio Driver in a way that lets us retain 
 an audio stream even when you're not connected to your server.
 
