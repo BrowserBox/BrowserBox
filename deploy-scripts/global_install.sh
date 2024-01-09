@@ -315,6 +315,7 @@ if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
     ip=$(getent hosts "$hostname" | awk '{ print $1 }')
 
     if [ -n "$ip" ]; then
+      ./deploy-scripts/wait_for_hostname.sh "$hostname"
       ./deploy-scripts/tls "$hostname"
     else
       echo "The provided hostname could not be resolved. Please ensure that you've added a DNS A/AAAA record pointing from the hostname to this machine's public IP address."
