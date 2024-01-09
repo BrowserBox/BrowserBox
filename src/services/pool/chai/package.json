@@ -1,6 +1,6 @@
 {
   "name": "chai",
-  "version": "2.5",
+  "version": "2.5.7",
   "description": "chai - convert your documents to images by way of PDF",
   "main": "src/index.js",
   "scripts": {
