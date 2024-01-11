@@ -237,6 +237,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   AD_BLOCK_ON = adBlock;
 
   LOG_FILE.Commands = new Set([
+  ...(DEBUG.debugTyping ? [
+
+	"Input.dispatchKeyEvent",
+	  "Input.insertText",
+  ] : []),
     ...(DEBUG.debugFileUpload ? [
       'DOM.setFileInputFiles',
       'Page.fileChooserOpened',

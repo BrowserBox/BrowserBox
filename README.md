@@ -2,13 +2,90 @@
 
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
 
-We're currently increasing our support for marketplaces and one-click-deploy, and will be launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/) soon. Come check us out! 🥇😄
+## Windows Support :joy_cat: :tada:
+
+BrowserBox has just landed support for Windows and we're on [PSGallery](https://www.powershellgallery.com/packages/BrowserBox-Installer). Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
+
+
+|   Windows Edition   | Compatibility   |
+|---------------------|:---------------:|
+| Windows Server 2022 |           ✅ |
+| Windows Server 2019 |           ✅ |
+| Windows 11          |           ✅ |
+| Windows 10          |           ✅ |
+
+To install and run on Windows, first do the following in PowerShell:
+
+```posh
+# you may need the following 2 lines to install from PSGallery 
+# if your package managers need updating
+Install-PackageProvider Nuget -Force
+Install-Module -Name PowerShellGet -Force
+```
+
+Then **close and reopen** your PowerShell session, and run:
+
+```posh
+# the main part to install BrowserBox installer
+Install-Module -Name BrowserBox-Installer
+Import-Module BrowserBox-Installer
+```
+
+Then run the install process:
+
+```posh
+Install-BrowserBox
+```
+
+When prompted enter the `Domain name` that will point to your Windows instance, and your `Email address` for agreeing to our terms, and LetsEncrypt terms. Then, configure your BrowserBox instance (`-Port` and optionally `-Token` for the login link):
+
+```posh
+Initialize-BrowserBox -Port 8080
+```
+
+> [!NOTE]
+> While BrowserBox opens ports on the operating system, if your cloud uses external firewalls, ensure ports `Port-2` through `Port+2` (8078-8082 in the example above) are opened in your control panel.
+
+After running `Initialize-Browserbox` you'll have your login link and you'll be ready to start BrowserBox and connect.
+
+Finally, to start 'er up, type:
+
+```posh
+Start-BrowserBox
+```
+
+And open your login-link in any modern browser anywhere. Note that if you're connected over RDP this step will disconnect your RDP session
+as we perform some voodoo-foo in order to utilize the pre-existing and good RDP Audio Driver in a way that lets us retain 
+an audio stream even when you're not connected to your server.
+
+
+> [!TIP]
+> If you have trouble with the initial install module step (message aboutNuGet versions), this is probably a PS issue, so try (elevated):
+
+```posh
+Install-PackageProvider Nuget -Force
+Install-Module -Name PowerShellGet -Force
+```
+
+Then restart (close and reopen) your PowerShell session and try again.
+
+-----
+
+Any other issues with the installation on Windows then please [open an issue](issues) or reach out to us at anytime at [email](mailto:support@dosyago.com) or [Signal](https://signal.me/#p/+15039173547)
+
+## 1-Click Deploy!
+
+We're currently increasing our support for marketplaces and one-click-deploy, we've just been included in [Azure Quickstart Samples](https://learn.microsoft.com/en-us/samples/azure/azure-quickstart-templates/browserbox/). 
+
+Soon, we're also launching on the [Vultr Marketplace](https://www.vultr.com/marketplace/). So, come one come all and check us out! 🥇😄
 
 ## Deploy to Azure! 
 
-We've just added support for Azure ARM Templates.
+We've just added support for Azure Templates so you can click the *Deploy* buttons below to immediately create your BrowserBox instance. 
 
-**Give it a try! :pinata:**
+Alternately, [find us via Microsoft Code Samples search](https://learn.microsoft.com/en-us/samples/browse/?expanded=azure&products=azure-resource-manager&terms=browserbox) or directly in the [Azure Quickstarts portal](https://learn.microsoft.com/en-us/samples/azure/azure-quickstart-templates/browserbox/).
+
+**Easy Deployment! :pinata:**
 
 <table>
   <tr>
@@ -21,13 +98,18 @@ We've just added support for Azure ARM Templates.
     <td align=center>
       <a
         href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json">
-       <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true" alt="Deploy To Azure"/>
+       <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true" alt="Deploy To Azure" style="max-width:100%"/>
+      </a>
+      <br>or<br>
+      <a
+        href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json">
+       <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazuregov.svg?sanitize=true" alt="Deploy To Azure US Gov" style="max-width: 100%;"/>
       </a>
     </td>
     <td align=center>✅</td>
   </tr>
   <tr>
-    <td align=center>2</td><td align=center>Unlock <b>tremendous</b> value.</td><td align=center>✅</td>
+    <td align=center>2</td><td align=center>then<br>Unlock <b>tremendous</b> value.</td><td align=center>✅</td>
   </tr>
 </table>
 
@@ -40,6 +122,7 @@ We've just added support for Azure ARM Templates.
 |------------------|:---------------:|
 | macOS 13         |           ✅ |
 | Fedora 39        |           ✅ |
+| RHEL 8           |           ✅ |  
 | CentOS 9         |           ✅ |
 | CentOS 8         |           ✅ |
 | Kali             |           ✅ |
@@ -76,7 +159,7 @@ We're excited to announce the release of our Azure Resource Manager (ARM) templa
     <th></th>
     <th>AWS</th>
     <th>Linode</th>
-    <th>Azure</th>
+    <th>Azure Quickstart</th>
   </tr>
   <tr> 
     <td><b>Deploy</b></td>
@@ -93,13 +176,12 @@ We're excited to announce the release of our Azure Resource Manager (ARM) templa
         <br>Deploy to Linode
       </a>
     </td>
-    <td align="center" valign="bottom">
-     <a
-        href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FBrowserBox%2FBrowserBox%2Fboss%2Fspread-channels%2Fazure%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json">
-       <img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true" alt="Deploy To Azure" width=180/>
-        <br>Deploy to Azure
-      </a>
-    </td>
+     <td align=center valign=bottom>
+       <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json" rel="nofollow"><img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true" alt="Deploy To Azure" style="max-width: 100%;"></a>
+       <br>
+       <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json" rel="nofollow"><img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazuregov.svg?sanitize=true" alt="Deploy To Azure US Gov" style="max-width: 100%;"></a>
+       <br><a href=https://github.com/Azure/azure-quickstart-templates/tree/master/application-workloads/dosyago/browserbox>Quickstart Template</a>
+      </td>
   </tr>
 </table>
 
@@ -381,14 +463,12 @@ BrowserBox is a leading-edge solution in the Zero Trust landscape, enabling embe
 | Docker                   | ✅           |
 | Ubuntu                   | ✅           |
 | Debian                   | ✅           |
-| CentOS 9\*               | ✅           |
+| CentOS 9                | ✅           |
 | macOS                    | ✅           |
-| Amazon Linux (AWS EC2)\* | ✅           |
-| Windows\*                | ❌           |
+| Amazon Linux (AWS EC2).  | ✅           |
+| Windows                    | ✅           |
 | Windows WSL              | ✅           |
 
-\*Windows support is currently in development, but not yet officially supported.
-\*Doc Viewer does not currently work on Centos, or Amazon Linux as install script needs to be ported to Centos. 
 
 **Content delivery services status:**
 

@@ -1,4 +1,4 @@
-SPDX-License-Identifier: AGPL-3.0-or-later OR PolyForm-Noncommercial-1.0.0 OR BBP-Commercial-Perpetual OR BBP-Commercial-Subscription
+SPDX-License-Identifier: AGPL-3.0-or-later OR PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later
 
 Required Notice: Copyright Dosyago Corporation & Contributors 2023 (https://dosyago.com)
 
@@ -48,4 +48,3 @@ Unfotunately if you or your company are an OFAC sanctioned entity or other entit
 BrowserBox Pro offers flexible licensing options to cater to different usage scenarios. As previously mentioned, BBPro software is available for free for non-commercial use under the PolyForm NonCommercial license. This allows individuals and non-profit organizations to enjoy the benefits of BrowserBox Pro without any licensing fees when using the software without any participation in or anticipation of commercial application. The PolyForm NonCommercial license ensures that the software is used strictly for non-commercial purposes.
 
 Whether it's for non-commercial or commercial purposes, BrowserBox Pro provides a range of licensing options to accommodate different user needs and ensure a secure and powerful browsing experience.
-

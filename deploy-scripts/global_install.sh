@@ -151,9 +151,9 @@ install_nvm() {
     echo "Installing nvm..."
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     source ~/.nvm/nvm.sh
-    nvm install stable
+    nvm install node
   else
-    nvm install stable
+    nvm install node
   fi
 }
 
@@ -272,6 +272,14 @@ if [ "$(os_type)" == "Linux" ]; then
 fi
 open_firewall_port_range 80 80
 
+
+if [ "$(os_type)" == "macOS" ]; then
+        brew install jq
+else
+        $SUDO $APT -y install jq
+fi
+
+
 if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
   hostname="$1"
   export BB_USER_EMAIL="$2"
@@ -307,6 +315,7 @@ if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
     ip=$(getent hosts "$hostname" | awk '{ print $1 }')
 
     if [ -n "$ip" ]; then
+      ./deploy-scripts/wait_for_hostname.sh "$hostname"
       ./deploy-scripts/tls "$hostname"
     else
       echo "The provided hostname could not be resolved. Please ensure that you've added a DNS A/AAAA record pointing from the hostname to this machine's public IP address."
@@ -373,4 +382,3 @@ cd $INSTALL_DIR/src/services/pool/deploy/
 ./scripts/setup.sh
 
 echo "Install complete!"
-

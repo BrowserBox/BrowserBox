@@ -15,13 +15,14 @@
 name: CI
 
 on:
-  push:
-    branches: [ boss ]
   pull_request:
-    branches: [ boss ]
+    types: [synchronize, opened, reopened]
+  push:
+    branches:
+      - boss
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.repository }}-ci
   cancel-in-progress: true
 
 jobs:

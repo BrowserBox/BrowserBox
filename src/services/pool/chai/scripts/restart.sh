@@ -8,12 +8,11 @@ if [ -z "${DOCS_KEY}" ]; then
   exit 1
 fi
 
-pm2=$(which pm2)
+pm2="$(command -v pm2)"
 
 cp -r ./public/* "$STATIC_DIR"
 cp -r ./archives/* "$ARCH_DIR"
 
 "${STATIC_DIR}/uploads/clean.sh"
-sleep 2
-$pm2 delete run-docspark
-$pm2 start ./scripts/run-docspark.sh
+"$pm2" delete run-docspark
+"$pm2" start ./scripts/run-docspark.sh

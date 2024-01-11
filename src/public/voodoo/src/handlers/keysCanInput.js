@@ -5,6 +5,7 @@ export function handleKeysCanInputMessage({keyInput:{
     }, executionContextId}, state) {
   if ( state.ignoreKeysCanInputMessage ) return;
   if ( keysCanInput ) {
+    state.viewState.hasNoKeys = true;
     state.contextIdOfFocusedInput = executionContextId;
     if ( ! state.dontFocusControlInputs ) {
       if ( isTextareaOrContenteditable ) {

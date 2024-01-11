@@ -5,5 +5,5 @@
       /*"@rbf/parcel-optimizer-javascript-obfuscator", "..."*/
     ]
   },
-  "resolvers": ["parcel-resolver-ignore", "..."]
+  "resolvers": ["parcel-resolver-ignore", "..."],
 }

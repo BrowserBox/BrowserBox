@@ -3,7 +3,7 @@ IMproved setup
 Automate this later
 
 
-1. install latest node for debian from node source
+1. install node node for debian from node source
 2. install pm2 globally with sudo
 
 thereby avoid the need of installing nvm for everyone

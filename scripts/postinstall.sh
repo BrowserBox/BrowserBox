@@ -3,28 +3,45 @@
 #set -x
 
 unset npm_config_prefix
+node=$(command -v node)
+if command -v node.exe &>/dev/null; then
+  node=$(command -v node.exe) 
+fi
 
-if ! command -v pm2; then
+PLAT="$("$node" -p process.platform)"
+
+if [[ $PLAT == win* ]]; then
+  winpty nvm install node
+  winpty nvm use latest
+else 
   source ~/.nvm/nvm.sh;
-  nvm install stable
+  nvm install node
+fi
+
+if ! command -v pm2 &>/dev/null; then
   npm i -g pm2@latest
 fi
 
 # flush any partial
-read -p "Enter to continue" -r
+if [[ $PLAT != win* ]]; then
+  read -p "Enter to continue" -r
+fi
 REPLY=""
 
 read_input() {
-  if [ -t 0 ]; then  # Check if it's running interactively
-    read -p "$1" -r REPLY
-  else
-    read -r REPLY
-    REPLY=${REPLY:0:1}  # Take the first character of the piped input
+  if [[ $PLAT != win* ]]; then
+    if [ -t 0 ]; then  # Check if it's running interactively
+      read -p "$1" -r REPLY
+    else
+      read -r REPLY
+      REPLY=${REPLY:0:1}  # Take the first character of the piped input
+    fi
+    echo  # Add a newline for readability
+    echo
+  else 
+    REPLY="y"
   fi
-  echo  # Add a newline for readability
-  echo
 }
-
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
   if [[ "$(arch)" != "i386" ]]; then
@@ -38,15 +55,18 @@ cp ./config/roamhq-wrtc-lib-binding.js ./node_modules/@roamhq/wrtc/lib/binding.j
 
 echo 
 echo
-read_input "Want to run setup_machine script? (you only need to do this the first time you install BG, or when you update new version) y/n " 
-echo
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]];
-then
-  echo "Not running full setup...Just doing npm install..."
-else 
-  echo "Running full setup..."
-  bash ./scripts/setup_machine.sh
+
+if [[ $PLAT != win* ]]; then
+  read_input "Want to run setup_machine script? (you only need to do this the first time you install BG, or when you update new version) y/n " 
+  echo
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]];
+  then
+    echo "Not running full setup...Just doing npm install..."
+  else 
+    echo "Running full setup..."
+    bash ./scripts/setup_machine.sh
+  fi
 fi
 
 mkdir -p src/public/voodoo/assets/icons
@@ -59,8 +79,7 @@ echo "Installing packages for client..."
 cd ../public/voodoo
 npm i    
 npm audit fix
-# cd ../../endbacker
-# npm i    
+
 echo "Installing packages for custom chrome launcher..."
 cd ../../zombie-lord/custom-launcher
 npm i    
@@ -99,29 +118,43 @@ cd ../chai
 npm i
 npm audit fix
 
-echo
-read_input "Do you want to skip the secure document viewer? (lengthy install because of all the fonts and TeX related packages) y/n "
+if [[ $PLAT != win* ]]; then
+  echo
+  read_input "Do you want to skip the secure document viewer? (lengthy install because of all the fonts and TeX related packages) y/n "
 
-if ([[ "$IS_DOCKER_BUILD" != "true" ]] && [[ "$INSTALL_DOC_VIEWER" != "true" ]]) && [[ "$REPLY" =~ ^[Yy]$ ]]; then
-  echo "Skipping doc viewer install"
-else
-  echo "Installing OS dependencies for secure document viewer..."
-  ./scripts/setup.sh
+  if ([[ "$IS_DOCKER_BUILD" != "true" ]] && [[ "$INSTALL_DOC_VIEWER" != "true" ]]) && [[ "$REPLY" =~ ^[Yy]$ ]]; then
+    echo "Skipping doc viewer install"
+  else
+    echo "Installing OS dependencies for secure document viewer..."
+    ./scripts/setup.sh
+  fi
 fi
 
 cd ../../../../
 
 USE_FLASH=$(node ./src/show_useflash.js);
 if [[ $USE_FLASH != "false" ]]; then
-  which $APT && sudo $APT install jq || winget install jq || brew install jq
+  if ! command -v jq &>/dev/null; then
+    if command -v winget &>/dev/null; then
+      winget install -e --id jqlang.jq
+    elif command -v $APT &>/dev/null; then
+      sudo $APT install jq
+    elif command -b brew &>/dev/null; then
+      brew install jq
+    else 
+      echo "Do not know how to install 'jq'. Please install manually." >&2
+    fi
+  fi
   ./scripts/download_ruffle.sh
 fi
 
-which pm2 || npm i -g pm2@latest || sudo npm i -g pm2@latest
+if ! command -v pm2 &>/dev/null; then
+  npm i -g pm2@latest || sudo npm i -g pm2@latest
+fi
 
 npm i --save-exact esbuild@latest
 
 npm audit fix
 
-echo Done post install
+echo Dependency install complete.
 

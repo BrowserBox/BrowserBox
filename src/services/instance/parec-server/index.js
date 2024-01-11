@@ -17,7 +17,6 @@ import csrf from 'csurf';
 import express from 'express';
 import exitOnEpipe from 'exit-on-epipe';
 import {WebSocket,WebSocketServer} from 'ws';
-import {PassThrough} from 'node:stream';
 import {Reader,Writer} from '@dosy/wav';
 
 import {
@@ -40,8 +39,9 @@ const DEBUG = {
 }
 const Clients = new Set();
 const sockets = new Set();
-const SAMPLE_RATE = 44100;
+const SAMPLE_RATE = DEBUG.windowsUses48KAudio && process.platform.startsWith('win') ? 48000 : 44100;
 const FORMAT_BIT_DEPTH = 16;
+const BYTE_ALIGNMENT = FORMAT_BIT_DEPTH >> 3;
 const MAX_DATA_SIZE = 1200; //SAMPLE_RATE * (FORMAT_BIT_DEPTH/8) // we actually only get around 300 bytes per chunk on average, ~ 3 msec;
 const CutOff = {};
 const primeCache = [2, 3, 5];
@@ -64,8 +64,8 @@ const encoders = {
     ...(process.env.TORBB ? {
       command: () => new Writer({
           endianness: 'LE', 
-          sampleRate: 44100,
-          bitDepth: 16,
+          sampleRate: SAMPLE_RATE,
+          bitDepth: FORMAT_BIT_DEPTH,
           channels: 1
       }),
     } : {})
@@ -77,8 +77,8 @@ const encoders = {
       '-0',
       '--endian=little',
       '--sign=signed',
-      '--sample-rate=44100',
-      '--bps=16',
+      `--sample-rate=${SAMPLE_RATE}`,
+      `--bps=${FORMAT_BIT_DEPTH}`,
       '--channels=2',
       '--silent',
       '-'
@@ -178,6 +178,7 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
         ],
         mediaSrc: [
           "'self'",
+          "https://link.local:*",
           "https://localhost:*",
           "https://*.dosyago.com:*",
           "https://*.browserbox.pro:*"
@@ -192,12 +193,16 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
         ],
         frameAncestors: [
           "'self'",
+          "https://localhost:*",
+          "https://link.local:*",
           "https://*.dosyago.com:*",
           "https://*.browserbox.pro:*",
           ...ALLOWED_3RD_PARTY_EMBEDDERS
         ],
         connectSrc: [
           "'self'",
+          "wss://*.link.local:*",
+          `https://*.link.local:${PORT+1}`,
           "wss://*.dosyago.com:*",
           `https://*.dosyago.com:${PORT+1}`,
           "wss://*.browserbox.pro:*",
@@ -230,6 +235,7 @@ app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
 app.use(csrf({cookie:{sameSite:'None', secure:true}}));
 const staticPath = path.resolve(APP_ROOT, 'services', 'instance', 'parec-server', 'public');
+const serverPath = path.resolve(APP_ROOT, 'services', 'instance', 'parec-server');
 console.log({staticPath});
 app.use(express.static(staticPath));
 app.use((req,res,next) => {
@@ -262,7 +268,7 @@ app.get('/login', (req, res) => {
 });
 
 if ( process.env.TORBB ) {
-  app.get('/', (request, response) => {
+  app.get('/', async (request, response) => {
     const {token} = request.query; 
     const cookie = request.cookies[COOKIENAME+PORT];
     if ( token == TOKEN || cookie == COOKIE ) {
@@ -274,7 +280,7 @@ if ( process.env.TORBB ) {
         'Content-Type': contentType
       });
 
-      const enc = getEncoder();
+      const enc = await getEncoder();
       let unpipe;
 
       if ( enc?.stdout ) {
@@ -315,7 +321,7 @@ const socketWaveStreamer = new WebSocketServer({
   perMessageDeflate: false,
 });
 
-socketWaveStreamer.on('connection',  (ws, req) => {
+socketWaveStreamer.on('connection',  async (ws, req) => {
   cookieParser()(req, {}, () => console.log('cookie parsed'));
   const cookie = req.cookies[COOKIENAME+PORT];
   console.log({cookie});
@@ -329,7 +335,7 @@ socketWaveStreamer.on('connection',  (ws, req) => {
   }
   const client = {
     ACK_VALUE: 3,
-    DATA_SIZE: 44100,
+    DATA_SIZE: SAMPLE_RATE,
     BUF_WINDOW: 4,
     ackReceived: 0,
     firstAck: true,
@@ -342,7 +348,7 @@ socketWaveStreamer.on('connection',  (ws, req) => {
   try {
     DEBUG.val && console.log('ws (wave header + pcm stream) connection (server #2)');
 
-    const reader = getEncoder().stdout;
+    const reader = (await getEncoder()).stdout;
     ws.send("give me ack");
 
     let totalLength = 0;
@@ -359,10 +365,22 @@ socketWaveStreamer.on('connection',  (ws, req) => {
       totalLength += data.length;
       client.packet.push(data);
       if ( totalLength >= client.DATA_SIZE ) {
-        const packet = Buffer.concat(client.packet, totalLength);
-        totalLength = 0;
+        const misAlignment = totalLength % BYTE_ALIGNMENT;
+        let packet = Buffer.concat(client.packet, totalLength);
         client.packet.length = 0;
+
+        if ( misAlignment != 0 ) {
+          const remainder = packet.subarray(totalLength, misAlignment);
+          totalLength -= misAlignment;  
+          packet = packet.subarray(0, totalLength);
+          client.packet.push(remainder);
+          totalLength = misAlignment;
+        } else {
+          totalLength = 0;
+        }
+
         client.buffer.push(packet);
+        console.log(`Pushing packet length: ${packet.length}`);
       }
       while ( client.buffer.length > client.BUF_WINDOW ) {
         client.buffer.shift();
@@ -472,11 +490,13 @@ server.on('upgrade', (req, socket, head) => {
 
 server.listen(port);
 
-try {
-  childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${process.pid}`);
-} catch(e) {
-  console.info(e);
-  console.warn(`Could not renice node audio service`);
+if ( ! process.platform.startsWith('win') ) {
+  try {
+    childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${process.pid}`);
+  } catch(e) {
+    console.info(e);
+    console.warn(`Could not renice node audio service`);
+  }
 }
 
 console.warn('Shut down buries errors');
@@ -484,108 +504,154 @@ console.warn('Shut down buries errors');
 //process.on('SIGUSR2', shutDown);
 //process.on('exit', shutDown);
 
-function getEncoder() {
+async function getEncoder() {
   audioProcessShuttingDown = false;
   if (savedEncoder) return savedEncoder;
   let encoder = undefined;
   let parec = undefined;
 
   DEBUG.val && console.log('starting encoder');
-  // Notes on args
-  /* 
-    note that the following args break it or are unnecessary
-      '--fix-rate',         // break
-      '--fix-format',       // break
-      '--no-remix',         // unknown if break or unnecessary
-  */
-  const args = [
-    '-r',  /* record: the default if run as parec */
-    `--rate=${SAMPLE_RATE}`,
-    `--format=s${FORMAT_BIT_DEPTH}le`,
-    '--channels=1',
-    '--process-time-msec=100', 
-    '--latency-msec=100', 
-    ...(process.platform == 'darwin' ? [] : [
-    '-d', device
-    ])
-  ]
-  parec = childProcess.spawn('pacat', args);
-  parec.on('spawn', e => {
-    console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
-    try {
-      childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
-      console.log(`reniced parec`);
-    } catch(e) {
-      console.warn(`Error renicing parec`, e);
-    }
-  });
-  exitOnEpipe(parec.stdout);
-  exitOnEpipe(parec.stderr);
-  parec.stderr.pipe(process.stdout);
-  
-  parec.on('error', e => {
-    console.log('parec error', e);
-    killEncoder(encoder);
-    //shutDown();
-  });
-  parec.on('close', e => {
-    console.log('parec close', e);
-    killEncoder(encoder);
-    //shutDown();
-  });
-  parec.on('exit', e => { 
-    console.log('parec exit', e);
-    killEncoder(encoder);
-    //shutDown();
-  });
+  if ( process.platform == 'win32' )  {
+	  try {
+		  encoder = childProcess.spawn('fmedia.exe', [
+			  `--channels=mono`, `--rate=44100`, `--format=int16`,
+			  `--notui`,
+			`--record`,
+			  `--out=@stdout.wav`,
+			  `--dev-loopback=1`
+		  ]);
+			exitOnEpipe(encoder.stdout);
+		  exitOnEpipe(encoder.stderr);
+		  encoder.stderr.pipe(process.stdout);
+	    encoder.on('error', e => {
+	      console.log('encoder error', e);
+	      killEncoder(encoder);
+	      //shutDown();
+	    });
+	    encoder.on('close', e => {
+	      console.log('encoder close', e);
+	      killEncoder(encoder);
+	      //shutDown();
+	    });
+	    encoder.on('exit', e => { 
+	      console.log('encoder exit', e);
+	      killEncoder(encoder);
+	      //shutDown();
+	    });
 
-  const encoderCommand = encoders[encoderType];
-
-  if ( typeof encoderCommand?.command === "string" ) {
-    encoder = childProcess.spawn(encoderCommand.command, encoderCommand.args);
-    encoder.parec = parec;
-    Encoders.add(encoder);
-    exitOnEpipe(encoder.stdout);
-    exitOnEpipe(encoder.stderr);
-    encoder.stderr.pipe(process.stdout);
-    encoder.on('error', e => {
-      console.log('encoder error', e);
-      killEncoder(encoder);
-    });
-    encoder.on('close', e => {
-      console.log('encoder close', e);
-      killEncoder(encoder);
-    });
-    encoder.on('exit', e => { 
-      console.log('encoder exit', e);
-      killEncoder(encoder);
-    });
-    childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${encoder.pid}`);
-
-    parec.stdout.pipe(encoder.stdin);
-
-    if ( ! process.env.TORBB ) {
-      savedEncoder = encoder;
-    }
-
-    return encoder;
-  } else if ( typeof encoderCommand?.command === "function" ) {
-    encoder = encoderCommand.command();
-    encoder.parec = parec;
-    Encoders.add(encoder);
-    parec.stdout.pipe(encoder);
-
-    if ( ! process.env.TORBB ) {
-      savedEncoder = encoder;
-    }
-
-    return encoder;
+	    if ( ! process.env.TORBB ) {
+	      savedEncoder = encoder;
+	    }
+		  console.log(encoder);
+	    return encoder;
+	  } catch(e) {
+		  console.warn(`error starting encoder`, e);
+	  }
   } else {
-    encoder = parec;
-    if ( ! process.env.TORBB ) {
-      savedEncoder = parec;
+    // Notes on args
+      /* 
+        note that the following args break it or are unnecessary
+          '--fix-rate',         // break
+          '--fix-format',       // break
+          '--no-remix',         // unknown if break or unnecessary
+      */
+    const args = [
+      '-r',  /* record: the default if run as parec */
+      `--rate=${SAMPLE_RATE}`,
+      `--format=s${FORMAT_BIT_DEPTH}le`,
+      '--channels=1',
+      '--process-time-msec=100', 
+      '--latency-msec=100', 
+      ...(process.platform == 'darwin' ? [] : [
+      '-d', device
+      ])
+    ]
+    parec = childProcess.spawn('pacat', args);
+    parec.on('spawn', e => {
+      console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
+      if ( ! process.platform.startsWith('win') ) {
+        try {
+          childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
+          console.log(`reniced parec`);
+        } catch(e) {
+          console.warn(`Error renicing parec`, e);
+        }
+      }
+    });
+    exitOnEpipe(parec.stdout);
+    exitOnEpipe(parec.stderr);
+    parec.stderr.pipe(process.stdout);
+    
+    parec.on('error', e => {
+      console.log('parec error', e);
+      killEncoder(encoder);
+      //shutDown();
+    });
+    parec.on('close', e => {
+      console.log('parec close', e);
+      killEncoder(encoder);
+      //shutDown();
+    });
+    parec.on('exit', e => { 
+      console.log('parec exit', e);
+      killEncoder(encoder);
+      //shutDown();
+    });
+
+    const encoderCommand = encoders[encoderType];
+
+    if ( typeof encoderCommand?.command === "string" ) {
+      encoder = childProcess.spawn(encoderCommand.command, encoderCommand.args);
+      encoder.parec = parec;
+      Encoders.add(encoder);
+      exitOnEpipe(encoder.stdout);
+      exitOnEpipe(encoder.stderr);
+      encoder.stderr.pipe(process.stdout);
+      encoder.on('error', e => {
+        console.log('encoder error', e);
+        killEncoder(encoder);
+      });
+      encoder.on('close', e => {
+        console.log('encoder close', e);
+        killEncoder(encoder);
+      });
+      encoder.on('exit', e => { 
+        console.log('encoder exit', e);
+        killEncoder(encoder);
+      });
+      if ( ! process.platform.startsWith('win') ) {
+        try {
+          childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${encoder.pid}`);
+        } catch(e) {
+          console.warn(`Error renicing encoder.`, e);
+        }
+      }
+
+      parec.stdout.pipe(encoder.stdin);
+
+      if ( ! process.env.TORBB ) {
+        savedEncoder = encoder;
+      }
+
+      return encoder;
+    } else if ( typeof encoderCommand?.command === "function" ) {
+      encoder = encoderCommand.command();
+      encoder.parec = parec;
+      Encoders.add(encoder);
+      parec.stdout.pipe(encoder);
+
+      if ( ! process.env.TORBB ) {
+        savedEncoder = encoder;
+      }
+
+      return encoder;
+    } else {
+      encoder = parec;
+      if ( ! process.env.TORBB ) {
+        savedEncoder = parec;
+      }
+      return parec;
     }
-    return parec;
   }
 }
 

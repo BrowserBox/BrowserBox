@@ -6,7 +6,7 @@
   "description": "landing page for socket puppet demo and signup",
   "main": "index.html",
   "scripts": {
-    "test": "serve -p 8080"
+    "test": "npx serve -p 8080"
   },
   "repository": {
     "type": "git",
@@ -20,8 +20,5 @@
   "bugs": {
     "url": "https://github.com/crisdosyago/socket-puppet-landing/issues"
   },
-  "homepage": "https://github.com/crisdosyago/socket-puppet-landing#readme",
-  "devDependencies": {
-    "serve": "^13.0.2"
-  }
+  "homepage": "https://github.com/crisdosyago/socket-puppet-landing#readme"
 }

@@ -24,6 +24,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  utilizeTempHackFixForIMENoKey: true,
   mode: 'prod',
   debugKeyEvents: false,
   debugCommandOrder: false,
