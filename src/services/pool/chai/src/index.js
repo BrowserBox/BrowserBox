@@ -265,7 +265,7 @@
         if ( ! hasha ) {
           hasha = await import('hasha');
         }
-        const hash = hasha.fromFileSync(pdf.path);
+        const hash = hasha.hashFileSync(pdf.path);
         let viewUrl;
         let mime;
         try {
