@@ -4,20 +4,27 @@ BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilita
 
 ## New Docker Release v7.1
 
-```shell
+```console
 docker pull ghcr.io/browserbox/browserbox:v7.1
 ```
 
 or simply run very easily with:
 
-```shell
-PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/e300055d5dc3e6c6edc1c89d6221792ab08286de/deploy-scripts/run_docker.sh) $PORT
+```console
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/e300055/deploy-scripts/run_docker.sh) 8080 # or the port you want
 ```
 
 The v7.1 release includes all the updates from the latest [7-series major release](https://github.com/BrowserBox/BrowserBox/releases/tag/v7.0) plus a few more. 
 
-### v7.1 notes
+-------
+**Key points on the v7.1 release are below:**
+
+## Secure Document Viewer enabled by default!
+
+BrowserBox's secure document viewer for content-disarm and reconstruction-based secure viewing of all PDFs, DOCX, XLS, and many other document formats, right in the browser!
+
+> [!TIP]
+> Once the document has downloaded, a popup window will open where you can see the conversion status and eventually view the document. If that doesn't happen, look for a warning about "popup blocked", in which case you'll need to "allow popups" on your browser in order to see it. If this happens, click the download link again to give the doc viewer window another chance to reopen.
 
 Due to customer requests, BrowserBox's Secure Document Viewer is now enabled by default! Please note that this will cause installation to take longer as many font packages are installed to ensure the correct display of a variety of document formats including: PDF, DOCX and more!
 
