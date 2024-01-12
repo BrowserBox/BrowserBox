@@ -1,9 +1,10 @@
 #!/bin/bash
 
-#set -x
+set -x
 
 unset npm_config_prefix
 node=$(command -v node)
+SUDO=$(command -v sudo)
 if command -v node.exe &>/dev/null; then
   node=$(command -v node.exe) 
 fi
@@ -148,10 +149,10 @@ if [[ $USE_FLASH != "false" ]]; then
   if ! command -v jq &>/dev/null; then
     if command -v winget &>/dev/null; then
       winget install -e --id jqlang.jq
-    elif command -v $APT &>/dev/null; then
-      sudo $APT install jq
-    elif command -b brew &>/dev/null; then
+    elif command -v brew &>/dev/null; then
       brew install jq
+    elif command -v $APT &>/dev/null; then
+      $SUDO $APT install jq
     else 
       echo "Do not know how to install 'jq'. Please install manually." >&2
     fi
@@ -160,7 +161,7 @@ if [[ $USE_FLASH != "false" ]]; then
 fi
 
 if ! command -v pm2 &>/dev/null; then
-  npm i -g pm2@latest || sudo npm i -g pm2@latest
+  npm i -g pm2@latest 
 fi
 
 npm i --save-exact esbuild@latest
