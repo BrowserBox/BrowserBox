@@ -1,6 +1,6 @@
 {
   "name": "chai",
-  "version": "2.5.7",
+  "version": "2.5.8",
   "description": "chai - convert your documents to images by way of PDF",
   "main": "src/index.js",
   "scripts": {
@@ -32,7 +32,7 @@
     "express": "latest",
     "express-rate-limit": "latest",
     "express-session": "latest",
-    "hasha": "latest",
+    "hasha": "6.0.0",
     "multer": "latest",
     "serve-index": "latest"
   },
