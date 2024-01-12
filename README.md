@@ -442,9 +442,13 @@ That's it! Follow the prompts to set up certificates and it will emit a link tha
 
 # *Special Event!* 🤙 Create a private ephemeral Web Proxy hosted on your GitHub Actions minutes by opening an issue on this repo
 
-**HOLD UP** You need to [fork](../../fork) or [generate](../../generate) this repo first, so you have your own copy. Then open an issue and you will be guided through the process (1 manual step, rest is automatic), while your browser VPN is created. 
+**Steps:**
 
-By default they remain open for 5 minutes, but you can make that longer by editing the workflow YAML file. Each minute used counts against your GitHub actions quota. Also, don't do anything abusive with this, remember you are browsing the web from inside GitHub's infrastructure (actions runners), so treat them with respect!
+1. [fork](../../fork) or [generate](../../generate) this repo to your own account, come back to these steps in your own repo!
+2. Switch on [actions](../../actions)
+3. In your fork, open the [Make VPN issue](../../issues/new?assignees=&labels=enhancement&projects=&template=Make_VPN.md&title=Make+VPN)
+   
+By default the remain open for 5 minutes, but you can make that longer by editing the workflow YAML file. Each minute used counts against your GitHub actions quota. Also, don't do anything abusive with this, remember you are browsing the web from inside GitHub's infrastructure (actions runners), so treat them with respect!
 
 Limitations: no audio, no DevTools, no docviewer (Because the ports are not accesible, although the services are running)
 
