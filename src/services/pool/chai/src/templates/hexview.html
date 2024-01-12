@@ -167,7 +167,7 @@
       <form id="hexForm" action="/hex/command" method="post">
         <input required type="hidden" name="filePath" value="${filePath}">
         
-        <button type="submit" name="command" value="prev" aria-label="Previous Page" ${cursor <= 0 ? "disabled" : ""}>⬅️ Previous Page</button>
+        <button type="submit" name="command" value="prev" aria-label="Previous Chunk" ${cursor <= 0 ? "disabled" : ""}>⬅️ Previous Chunk</button>
         
         <!-- Numeric input spinner -->
         <input autofocus 
@@ -179,7 +179,7 @@
           onchange="submitForm(event);" aria-label="Go to page"
          >
         
-        <button type="submit" name="command" value="next" aria-label="Next Page" ${done ? "disabled": ""}>Next Page ➡️</button>
+        <button type="submit" name="command" value="next" aria-label="Next Chunk" ${done ? "disabled": ""}>Next Chunk ➡️</button>
       </form>
     </nav>
     <pre role="presentation">${escapeHTML(hexData)}</pre>
