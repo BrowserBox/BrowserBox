@@ -120,13 +120,24 @@ npm audit fix
 
 if [[ $PLAT != win* ]]; then
   echo
-  read_input "Do you want to skip the secure document viewer? (lengthy install because of all the fonts and TeX related packages) y/n "
+  yes_docs="false"
 
-  if ([[ "$IS_DOCKER_BUILD" != "true" ]] && [[ "$INSTALL_DOC_VIEWER" != "true" ]]) && [[ "$REPLY" =~ ^[Yy]$ ]]; then
-    echo "Skipping doc viewer install"
+  if ([[ "$IS_DOCKER_BUILD" == "true" ]] && [[ "$INSTALL_DOC_VIEWER" == "true" ]]); then
+    yes_docs="true"
   else
+    read_input "Do you want to add the secure document viewer for PDFs, DOCX and more? (lengthy install because of all the fonts and TeX related packages) y/n "
+    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+      yes_docs="true"
+    else
+      yes_docs="false"
+    fi
+  fi
+
+  if [[ "$yes_docs" != "false" ]]; then
     echo "Installing OS dependencies for secure document viewer..."
     ./scripts/setup.sh
+  else
+    echo "Skipping doc viewer install"
   fi
 fi
 
