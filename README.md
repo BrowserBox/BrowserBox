@@ -2,6 +2,25 @@
 
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
 
+## New Docker Release v7.1
+
+```shell
+docker pull ghcr.io/browserbox/browserbox:v7.1
+```
+
+or simply run very easily with:
+
+```shell
+PORT=8080 # or your preferred port
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/e300055d5dc3e6c6edc1c89d6221792ab08286de/deploy-scripts/run_docker.sh) $PORT
+```
+
+The v7.1 release includes all the updates from the latest [7-series major release](https://github.com/BrowserBox/BrowserBox/releases/tag/v7.0) plus a few more. 
+
+### v7.1 notes
+
+Due to customer requests, BrowserBox's Secure Document Viewer is now enabled by default! Please note that this will cause installation to take longer as many font packages are installed to ensure the correct display of a variety of document formats including: PDF, DOCX and more!
+
 ## Windows Support :joy_cat: :tada:
 
 BrowserBox has just landed support for Windows and we're on [PSGallery](https://www.powershellgallery.com/packages/BrowserBox-Installer). Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
@@ -431,7 +450,7 @@ First ensure you have docker installed and running! :) Then run:
 
 ```console
 PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/2e8a085931b719e5cadf24dd2942194433d5ae7f/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/e300055d5dc3e6c6edc1c89d6221792ab08286de/deploy-scripts/run_docker.sh) $PORT
 ```
 
 That's it! Follow the prompts to set up certificates and it will emit a link that you can send open in any web browser. 
