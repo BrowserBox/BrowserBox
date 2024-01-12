@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ZONE=""
-set -x
+#set -x
 
 unset npm_config_prefix
 
