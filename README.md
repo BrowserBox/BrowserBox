@@ -445,7 +445,7 @@ That's it! Follow the prompts to set up certificates and it will emit a link tha
 **Steps:**
 
 1. [fork](../../fork) or [generate](../../generate) this repo to your own account, come back to these steps in your own repo!
-2. Switch on [actions](../../actions)
+2. Switch on [actions](../../actions) and [issues](../../settings#issue-feature) 
 3. In your fork, open the [Make VPN issue](../../issues/new?assignees=&labels=enhancement&projects=&template=Make_VPN.md&title=Make+VPN)
    
 By default the remain open for 5 minutes, but you can make that longer by editing the workflow YAML file. Each minute used counts against your GitHub actions quota. Also, don't do anything abusive with this, remember you are browsing the web from inside GitHub's infrastructure (actions runners), so treat them with respect!
