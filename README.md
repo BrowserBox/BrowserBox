@@ -1,6 +1,11 @@
-# BrowserBox News
+
+|  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1 style=width:100%>BrowserBox</h1> |
+|------|------|
+
 
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
+
+# Latest News
 
 ## New Docker Release v7.1
 
