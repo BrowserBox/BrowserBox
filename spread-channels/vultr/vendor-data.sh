@@ -10,9 +10,9 @@ install_cloud_init latest
 ################################################
 ## BrowserBox Specific Stuff, Starts Here! :)
 
-export HOSTNAME="$(curl -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/hostname)"
-export TOKEN="$(curl -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/token)"
-export EMAIL="$(curl -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/email)"
+export HOSTNAME="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-hostname)"
+export TOKEN="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-token)"
+export EMAIL="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-email)"
 
 get_distro() {
   if [ -f /etc/os-release ]; then
