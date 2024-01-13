@@ -82,92 +82,70 @@ su - "$username" <<EOF
   yes | ./deploy-scripts/global_install.sh "localhost" "vultr-marketplace-setup@dosyago.com"
 EOF
 
+su - "$username" <<EOF2 
+  wait_for() {
+    local command_to_check=\$1
+    local max_wait=120  # Maximum wait time in seconds
+    local interval=5  # Interval between checks in seconds
 
-# Create setup-per-instance.sh with nested heredoc to run as our BrowserBox power user
-cat <<EOF_OUTER > /root/setup-per-instance.sh
-  #!/bin/bash
-  # Switch to the new user and run the scripts
-  su - "$username" <<'EOF2'  
-		wait_for() {
-			local command_to_check=\$1
-			local max_wait=120  # Maximum wait time in seconds
-			local interval=5  # Interval between checks in seconds
+    # Start timer
+    local start_time=\$(date +%s)
 
-			# Start timer
-			local start_time=\$(date +%s)
+    echo "Waiting for \$command_to_check to become available..."
 
-			echo "Waiting for \$command_to_check to become available..."
+    # Wait for the command to become available
+    while true; do
+      if command -v \$command_to_check >/dev/null 2>&1; then
+        echo "\$command_to_check is available now."
+        break
+      else
+        local current_time=\$(date +%s)
+        local elapsed=\$((current_time - start_time))
 
-			# Wait for the command to become available
-			while true; do
-				if command -v \$command_to_check >/dev/null 2>&1; then
-					echo "\$command_to_check is available now."
-					break
-				else
-					local current_time=\$(date +%s)
-					local elapsed=\$((current_time - start_time))
+        if [ \$elapsed -ge \$max_wait ]; then
+          echo "Timeout waiting for \$command_to_check to become available."
+          exit 1
+        fi
 
-					if [ \$elapsed -ge \$max_wait ]; then
-						echo "Timeout waiting for \$command_to_check to become available."
-						exit 1
-					fi
+        # Wait for a specified interval before checking again
+        sleep \$interval
+      fi
+    done
+  }
 
-					# Wait for a specified interval before checking again
-					sleep \$interval
-				fi
-			done
-		}
+  source "/home/${username}/.nvm/nvm.sh"
+  cd "/home/${username}" || cd "\$HOME"
+  cd BrowserBox
+  export BB_USER_EMAIL="$EMAIL"
+  ./deploy-scripts/wait_for_hostname.sh "$HOSTNAME"
+  ./deploy-scripts/tls "$HOSTNAME"
+  mkdir -p "/home/${username}/sslcerts"
+  sudo ./deploy-scripts/cp_certs "$HOSTNAME" "/home/${username}/sslcerts"
+  wait_for setup_bbpro
+  wait_for bbpro
+  setup_bbpro --port 8080 --token "$TOKEN"
+  bbpro
+  pm2 save
 
-    source "/home/${username}/.nvm/nvm.sh"
-    cd "/home/${username}" || cd "\$HOME"
-    cd BrowserBox
-    export BB_USER_EMAIL="$EMAIL"
-    ./deploy-scripts/wait_for_hostname.sh "$HOSTNAME"
-    ./deploy-scripts/tls "$HOSTNAME"
-    mkdir -p "/home/${username}/sslcerts"
-    sudo ./deploy-scripts/cp_certs "$HOSTNAME" "/home/${username}/sslcerts"
-    wait_for setup_bbpro
-    wait_for bbpro
-    setup_bbpro --port 8080 --token "$TOKEN"
-    bbpro
-    pm2 save
+  # Function to extract the 'sudo env' line from pm2 startup command output
+  extract_pm2_startup_command() {
+    local output=\$(pm2 startup)
+    local sudo_line=\$(echo "\$output" | grep -v '^\[PM2\]' | awk '/^sudo env/')
+    echo "\$sudo_line"
+  }
 
-    # Function to extract the 'sudo env' line from pm2 startup command output
-    extract_pm2_startup_command() {
-      local output=\$(pm2 startup)
-      local sudo_line=\$(echo "\$output" | grep -v '^\[PM2\]' | awk '/^sudo env/')
-      echo "\$sudo_line"
-    }
+  # Extract the command
+  command_line=\$(extract_pm2_startup_command)
 
-    # Main script execution
-    # Extract the command
-    command_line=\$(extract_pm2_startup_command)
-
-    if [ -n "\$command_line" ]; then
-      echo "Executing: \$command_line"
-      # Execute the extracted command
-      eval \$command_line
-      echo "BrowserBox installed to be 'always on' and run every startup"
-    else
-      echo "No command line found to execute."
-    fi
+  if [ -n "\$command_line" ]; then
+    echo "Executing: \$command_line"
+    # Execute the extracted command
+    eval \$command_line
+    echo "BrowserBox installed to be 'always on' and run every startup"
+  else
+    echo "No command line found to execute."
+  fi
 EOF2
-EOF_OUTER
 
-################################################
-## Install provisioning scripts
-mkdir -p /var/lib/cloud/scripts/per-boot/
-mkdir -p /var/lib/cloud/scripts/per-instance/
-
-#mv /root/setup-per-boot.sh /var/lib/cloud/scripts/per-boot/setup-per-boot.sh
-mv /root/setup-per-instance.sh /var/lib/cloud/scripts/per-instance/setup-per-instance.sh
-
-#chmod +x /var/lib/cloud/scripts/per-boot/setup-per-boot.sh
-chmod +x /var/lib/cloud/scripts/per-instance/setup-per-instance.sh
-
-################################################
-## Prepare server for Marketplace snapshot
-
-clean_system
 exit 0
 
