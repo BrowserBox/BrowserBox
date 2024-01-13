@@ -88,6 +88,37 @@ cat <<EOF_OUTER > /root/setup-per-instance.sh
   #!/bin/bash
   # Switch to the new user and run the scripts
   su - "$username" <<'EOF2'  
+		wait_for() {
+			local command_to_check=\$1
+			local max_wait=120  # Maximum wait time in seconds
+			local interval=5  # Interval between checks in seconds
+
+			# Start timer
+			local start_time=\$(date +%s)
+
+			echo "Waiting for \$command_to_check to become available..."
+
+			# Wait for the command to become available
+			while true; do
+				if command -v \$command_to_check >/dev/null 2>&1; then
+					echo "\$command_to_check is available now."
+					break
+				else
+					local current_time=\$(date +%s)
+					local elapsed=\$((current_time - start_time))
+
+					if [ \$elapsed -ge \$max_wait ]; then
+						echo "Timeout waiting for \$command_to_check to become available."
+						exit 1
+					fi
+
+					# Wait for a specified interval before checking again
+					sleep \$interval
+				fi
+			done
+		}
+
+    source "/home/${username}/.nvm/nvm.sh"
     cd "/home/${username}" || cd "\$HOME"
     cd BrowserBox
     export BB_USER_EMAIL="$EMAIL"
@@ -95,6 +126,8 @@ cat <<EOF_OUTER > /root/setup-per-instance.sh
     ./deploy-scripts/tls "$HOSTNAME"
     mkdir -p "/home/${username}/sslcerts"
     sudo ./deploy-scripts/cp_certs "$HOSTNAME" "/home/${username}/sslcerts"
+    wait_for setup_bbpro
+    wait_for bbpro
     setup_bbpro --port 8080 --token "$TOKEN"
     bbpro
     pm2 save
@@ -118,7 +151,7 @@ cat <<EOF_OUTER > /root/setup-per-instance.sh
     else
       echo "No command line found to execute."
     fi
-  EOF2
+EOF2
 EOF_OUTER
 
 ################################################
