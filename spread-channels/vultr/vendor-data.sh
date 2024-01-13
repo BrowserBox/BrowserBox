@@ -169,3 +169,5 @@ chmod +x /var/lib/cloud/scripts/per-instance/setup-per-instance.sh
 ## Prepare server for Marketplace snapshot
 
 clean_system
+exit 0
+

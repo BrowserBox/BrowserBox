@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-  const hasha = require('hasha');
   const fs = require('fs');
   const os = require('os');
   const {execSync} = require('child_process');
@@ -11,6 +10,7 @@
   const HASH_FILE = path.join(FILES, 'hashes.json');
   const LINK_FILE = path.join(FILES, 'links.json');
   const VIEW_PAGE = /^file.*$/;
+  let hasha;
 
   buildHashes();
 
@@ -33,8 +33,11 @@
 
       const filepath = path.join(FILES,file);
       const stat = await fs.promises.stat(filepath);
+      if ( ! hasha ) {
+        hasha = await import('hasha');
+      }
       if ( stat.isFile() ) {
-        const hash = await hasha.fromFile(filepath);
+        const hash = await hasha.hashFileSync(filepath);
         const viewUrl = `${scheme}://${host_or_address}/uploads/${file}.html`;
         latestHashes.set(hash,viewUrl);
       }
