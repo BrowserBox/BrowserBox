@@ -9,7 +9,7 @@ BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilita
 
 ## Vultr Marketplace
 
-We just launched on the [Vultr Marketplace!](https://www.vultr.com/marketplace/)
+We just launched on the [Vultr Marketplace!](https://www.vultr.com/marketplace/apps/dosyago-browserbox)
 
 [Vultr](https://www.vultr.com/) is a cloud services provider offering a wide range of scalable, high-performance computing resources and solutions for businesses and developers, with affordable prices in over 30 regions around the globe. They have a burgeoning marketplace with around 100 vetted vendors and apps. 
 
