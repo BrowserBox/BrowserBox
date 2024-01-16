@@ -35,7 +35,7 @@ Due to customer requests, BrowserBox's Secure Document Viewer is now enabled by 
 
 ## Windows Support :joy_cat: :tada:
 
-BrowserBox has just landed support for Windows and we're on [PSGallery](https://www.powershellgallery.com/packages/BrowserBox-Installer). Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
+BrowserBox has just landed support for Windows and we're on [PowerShell Gallery](https://www.powershellgallery.com/packages/BrowserBox-Installer/1.5.8.20). Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
 
 
 |   Windows Edition   | Compatibility   |
