@@ -7,6 +7,58 @@ BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilita
 
 # Latest News
 
+## Vultr Marketplace
+
+We just launched on the [Vultr Marketplace!](https://www.vultr.com/marketplace/)
+
+[Vultr](https://www.vultr.com/) is a cloud services provider offering a wide range of scalable, high-performance computing resources and solutions for businesses and developers, with affordable prices in over 30 regions around the globe. They have a burgeoning marketplace with around 100 vetted vendors and apps. 
+
+[Launch BrowserBox on Vultr](https://www.vultr.com/marketplace/apps/dosyago-browserbox)
+
+-----
+
+### One-Click Deploy
+
+<table>
+  <tr>
+    <th></th>
+    <th>Vultr</th>
+    <th>AWS</th>
+    <th>Linode</th>
+    <th>Azure Quickstart</th>
+  </tr>
+  <tr> 
+    <td><b>Deploy</b></td>
+    <td align=center>
+      <a href="https://my.vultr.com/deploy?marketplace_app=browserbox&marketplace_vendor_username=DOSYAGO&_gl=1*66yk24*_ga*NDY0MTUzODIzLjE2OTM0Nzg4MDA.*_ga_K6536FHN4D*MTcwNTM3NzY0NS40NC4xLjE3MDUzNzgyMzMuMjguMC4w">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/806c0846-a11d-4b41-bee1-98782b392fcf" alt="Deploy to Vultr!" width=100>
+        <br>Deploy to Vultr
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/de7f8908-c00e-4cbc-ac73-c6cfc0203ae3" alt="Deploy to AWS!" width=80>
+        <br>Deploy to AWS
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/9102f2f8-6eb4-4088-91c6-ae535a42cdf1"
+          alt="Deploy to Linode!" width=80>
+        <br>Deploy to Linode
+      </a>
+    </td>
+     <td align=center valign=bottom>
+       <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json" rel="nofollow"><img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true" alt="Deploy To Azure" style="max-width: 100%;"></a>
+       <br>
+       <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json" rel="nofollow"><img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazuregov.svg?sanitize=true" alt="Deploy To Azure US Gov" style="max-width: 100%;"></a>
+       <br><a href=https://github.com/Azure/azure-quickstart-templates/tree/master/application-workloads/dosyago/browserbox>Quickstart Template</a>
+      </td>
+  </tr>
+</table>
+
+------
+
 ## New Docker Release v7.1
 
 ```console
@@ -183,17 +235,26 @@ Alternately, [find us via Microsoft Code Samples search](https://learn.microsoft
 
 We're excited to announce the release of our Azure Resource Manager (ARM) template! We're also excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
 
+------
+
 ### One-Click Deploy
 
 <table>
   <tr>
     <th></th>
+    <th>Vultr</th>
     <th>AWS</th>
     <th>Linode</th>
     <th>Azure Quickstart</th>
   </tr>
   <tr> 
     <td><b>Deploy</b></td>
+    <td align=center>
+      <a href="https://my.vultr.com/deploy?marketplace_app=browserbox&marketplace_vendor_username=DOSYAGO&_gl=1*66yk24*_ga*NDY0MTUzODIzLjE2OTM0Nzg4MDA.*_ga_K6536FHN4D*MTcwNTM3NzY0NS40NC4xLjE3MDUzNzgyMzMuMjguMC4w">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/806c0846-a11d-4b41-bee1-98782b392fcf" alt="Deploy to Vultr!" width=100>
+        <br>Deploy to Vultr
+      </a>
+    </td>
     <td align="center">
       <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml">
         <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/de7f8908-c00e-4cbc-ac73-c6cfc0203ae3" alt="Deploy to AWS!" width=80>
@@ -216,6 +277,7 @@ We're excited to announce the release of our Azure Resource Manager (ARM) templa
   </tr>
 </table>
 
+------
 :gem: **Deploy to Azure**
 
 Ready to tap the awesome power of Azure to run your BrowserBox instances? 
