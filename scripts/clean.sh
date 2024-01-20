@@ -23,5 +23,14 @@ rm -rf package-lock*
 cd ../zombie-lord/custom-launcher
 rm -rf node_modules
 rm -rf package-lock*
+cd ../../../
+cd audio/
+rm -rf node_modules
+rm -rf package-lock*
+cd ../
+cd chai/
+rm -rf node_modules
+rm -rf package-lock*
+
 
 

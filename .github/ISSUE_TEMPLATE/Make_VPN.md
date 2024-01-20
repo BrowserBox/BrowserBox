@@ -13,7 +13,7 @@ Before starting, [fork](../fork) or [generate](../generate) this repo to your ac
 
 Then ensure that:
 
-1. [Issues](settings#issue-feature) are switched on, and 
+1. [Issues](../settings#issue-feature) are switched on, and 
 2. [Actions](actions) are enabled.
 
 To begin the action to create your BrowserBox Tor Hidden Service, click **Submit New Issue**. 

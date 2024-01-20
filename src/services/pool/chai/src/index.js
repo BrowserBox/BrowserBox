@@ -10,11 +10,14 @@
 
   const exploreDirectories = require('serve-index');
   const compression = require('compression');
-  const hasha = require('hasha');
   const express = require('express');
   const Session = require('express-session');
   const rateLimit = require('express-rate-limit');
   const multer = require('multer');
+  //hash gone ESM cannot require it
+  //will replace with rainbow hash soon
+  //const hasha = require('hasha');
+  let hasha;
 
   const {
     spawn,
@@ -259,7 +262,10 @@
     async function convertIt({res, pdf, sendURL = true, redirectToUrl = false, ext}) {
       // hash check for duplicate files
         pdf.path = sanitizeFilePath(pdf.path);
-        const hash = hasha.fromFileSync(pdf.path);
+        if ( ! hasha ) {
+          hasha = await import('hasha');
+        }
+        const hash = hasha.hashFileSync(pdf.path);
         let viewUrl;
         let mime;
         try {

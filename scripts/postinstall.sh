@@ -4,6 +4,7 @@
 
 unset npm_config_prefix
 node=$(command -v node)
+SUDO=$(command -v sudo)
 if command -v node.exe &>/dev/null; then
   node=$(command -v node.exe) 
 fi
@@ -11,11 +12,11 @@ fi
 PLAT="$("$node" -p process.platform)"
 
 if [[ $PLAT == win* ]]; then
-  winpty nvm install node
+  winpty nvm install v21
   winpty nvm use latest
 else 
   source ~/.nvm/nvm.sh;
-  nvm install node
+  nvm install v21
 fi
 
 if ! command -v pm2 &>/dev/null; then
@@ -120,13 +121,24 @@ npm audit fix
 
 if [[ $PLAT != win* ]]; then
   echo
-  read_input "Do you want to skip the secure document viewer? (lengthy install because of all the fonts and TeX related packages) y/n "
+  yes_docs="false"
 
-  if ([[ "$IS_DOCKER_BUILD" != "true" ]] && [[ "$INSTALL_DOC_VIEWER" != "true" ]]) && [[ "$REPLY" =~ ^[Yy]$ ]]; then
-    echo "Skipping doc viewer install"
+  if ([[ "$IS_DOCKER_BUILD" == "true" ]] && [[ "$INSTALL_DOC_VIEWER" == "true" ]]); then
+    yes_docs="true"
   else
+    read_input "Do you want to add the secure document viewer for PDFs, DOCX and more? (lengthy install because of all the fonts and TeX related packages) y/n "
+    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+      yes_docs="true"
+    else
+      yes_docs="false"
+    fi
+  fi
+
+  if [[ "$yes_docs" != "false" ]]; then
     echo "Installing OS dependencies for secure document viewer..."
     ./scripts/setup.sh
+  else
+    echo "Skipping doc viewer install"
   fi
 fi
 
@@ -137,10 +149,10 @@ if [[ $USE_FLASH != "false" ]]; then
   if ! command -v jq &>/dev/null; then
     if command -v winget &>/dev/null; then
       winget install -e --id jqlang.jq
-    elif command -v $APT &>/dev/null; then
-      sudo $APT install jq
-    elif command -b brew &>/dev/null; then
+    elif command -v brew &>/dev/null; then
       brew install jq
+    elif command -v $APT &>/dev/null; then
+      $SUDO $APT install jq
     else 
       echo "Do not know how to install 'jq'. Please install manually." >&2
     fi
@@ -149,7 +161,7 @@ if [[ $USE_FLASH != "false" ]]; then
 fi
 
 if ! command -v pm2 &>/dev/null; then
-  npm i -g pm2@latest || sudo npm i -g pm2@latest
+  npm i -g pm2@latest 
 fi
 
 npm i --save-exact esbuild@latest

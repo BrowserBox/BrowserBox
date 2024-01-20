@@ -1,10 +1,93 @@
-# BrowserBox News
+
+|  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1 style=width:100%>BrowserBox</h1> |
+|------|------|
+
 
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
 
+# Latest News
+
+## Vultr Marketplace
+
+We just launched on the [Vultr Marketplace!](https://www.vultr.com/marketplace/apps/dosyago-browserbox)
+
+[Vultr](https://www.vultr.com/) is a cloud services provider offering a wide range of scalable, high-performance computing resources and solutions for businesses and developers, with affordable prices in over 30 regions around the globe. The [Vultr Marketplace](https://www.vultr.com/marketplace/) is a burgeoning cloud marketplace with around 100 vetted vendors and apps. 
+
+[Launch BrowserBox on Vultr](https://www.vultr.com/marketplace/apps/dosyago-browserbox)
+
+-----
+
+### One-Click Deploy
+
+<table>
+  <tr>
+    <th></th>
+    <th>Vultr</th>
+    <th>AWS</th>
+    <th>Linode</th>
+    <th>Azure Quickstart</th>
+  </tr>
+  <tr> 
+    <td><b>Deploy</b></td>
+    <td align=center>
+      <a href="https://my.vultr.com/deploy?marketplace_app=browserbox&marketplace_vendor_username=DOSYAGO&_gl=1*66yk24*_ga*NDY0MTUzODIzLjE2OTM0Nzg4MDA.*_ga_K6536FHN4D*MTcwNTM3NzY0NS40NC4xLjE3MDUzNzgyMzMuMjguMC4w">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/806c0846-a11d-4b41-bee1-98782b392fcf" alt="Deploy to Vultr!" width=100>
+        <br>Deploy to Vultr
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/de7f8908-c00e-4cbc-ac73-c6cfc0203ae3" alt="Deploy to AWS!" width=80>
+        <br>Deploy to AWS
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/9102f2f8-6eb4-4088-91c6-ae535a42cdf1"
+          alt="Deploy to Linode!" width=80>
+        <br>Deploy to Linode
+      </a>
+    </td>
+     <td align=center valign=bottom>
+       <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json" rel="nofollow"><img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true" alt="Deploy To Azure" style="max-width: 100%;"></a>
+       <br>
+       <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json" rel="nofollow"><img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazuregov.svg?sanitize=true" alt="Deploy To Azure US Gov" style="max-width: 100%;"></a>
+       <br><a href=https://github.com/Azure/azure-quickstart-templates/tree/master/application-workloads/dosyago/browserbox>Quickstart Template</a>
+      </td>
+  </tr>
+</table>
+
+------
+
+## New Docker Release v7.1
+
+```console
+docker pull ghcr.io/browserbox/browserbox:v7.1
+```
+
+or simply run very easily with:
+
+```console
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/e300055/deploy-scripts/run_docker.sh) 8080 # or the port you want
+```
+
+The v7.1 release includes all the updates from the latest [7-series major release](https://github.com/BrowserBox/BrowserBox/releases/tag/v7.0) plus a few more. 
+
+-------
+**Key points on the v7.1 release are below:**
+
+## Secure Document Viewer enabled by default!
+
+BrowserBox's secure document viewer for content-disarm and reconstruction-based secure viewing of all PDFs, DOCX, XLS, and many other document formats, right in the browser!
+
+> [!TIP]
+> Once the document has downloaded, a popup window will open where you can see the conversion status and eventually view the document. If that doesn't happen, look for a warning about "popup blocked", in which case you'll need to "allow popups" on your browser in order to see it. If this happens, click the download link again to give the doc viewer window another chance to reopen.
+
+Due to customer requests, BrowserBox's Secure Document Viewer is now enabled by default! Please note that this will cause installation to take longer as many font packages are installed to ensure the correct display of a variety of document formats including: PDF, DOCX and more!
+
 ## Windows Support :joy_cat: :tada:
 
-BrowserBox has just landed support for Windows and we're on [PSGallery](https://www.powershellgallery.com/packages/BrowserBox-Installer). Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
+BrowserBox has just landed support for Windows and we're on [PowerShell Gallery](https://www.powershellgallery.com/packages/BrowserBox-Installer/1.5.8.20). Including Windows 11 and Windows Server 2022. Other platforms will be rolled out as they are tested. See the table below:
 
 
 |   Windows Edition   | Compatibility   |
@@ -152,17 +235,26 @@ Alternately, [find us via Microsoft Code Samples search](https://learn.microsoft
 
 We're excited to announce the release of our Azure Resource Manager (ARM) template! We're also excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
 
+------
+
 ### One-Click Deploy
 
 <table>
   <tr>
     <th></th>
+    <th>Vultr</th>
     <th>AWS</th>
     <th>Linode</th>
     <th>Azure Quickstart</th>
   </tr>
   <tr> 
     <td><b>Deploy</b></td>
+    <td align=center>
+      <a href="https://my.vultr.com/deploy?marketplace_app=browserbox&marketplace_vendor_username=DOSYAGO&_gl=1*66yk24*_ga*NDY0MTUzODIzLjE2OTM0Nzg4MDA.*_ga_K6536FHN4D*MTcwNTM3NzY0NS40NC4xLjE3MDUzNzgyMzMuMjguMC4w">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/806c0846-a11d-4b41-bee1-98782b392fcf" alt="Deploy to Vultr!" width=100>
+        <br>Deploy to Vultr
+      </a>
+    </td>
     <td align="center">
       <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml">
         <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/de7f8908-c00e-4cbc-ac73-c6cfc0203ae3" alt="Deploy to AWS!" width=80>
@@ -185,6 +277,7 @@ We're excited to announce the release of our Azure Resource Manager (ARM) templa
   </tr>
 </table>
 
+------
 :gem: **Deploy to Azure**
 
 Ready to tap the awesome power of Azure to run your BrowserBox instances? 
@@ -431,7 +524,7 @@ First ensure you have docker installed and running! :) Then run:
 
 ```console
 PORT=8080 # or your preferred port
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/2e8a085931b719e5cadf24dd2942194433d5ae7f/deploy-scripts/run_docker.sh) $PORT
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/e300055d5dc3e6c6edc1c89d6221792ab08286de/deploy-scripts/run_docker.sh) $PORT
 ```
 
 That's it! Follow the prompts to set up certificates and it will emit a link that you can send open in any web browser. 
@@ -442,9 +535,13 @@ That's it! Follow the prompts to set up certificates and it will emit a link tha
 
 # *Special Event!* 🤙 Create a private ephemeral Web Proxy hosted on your GitHub Actions minutes by opening an issue on this repo
 
-**HOLD UP** You need to [fork](../../fork) or [generate](../../generate) this repo first, so you have your own copy. Then open an issue and you will be guided through the process (1 manual step, rest is automatic), while your browser VPN is created. 
+**Steps:**
 
-By default they remain open for 5 minutes, but you can make that longer by editing the workflow YAML file. Each minute used counts against your GitHub actions quota. Also, don't do anything abusive with this, remember you are browsing the web from inside GitHub's infrastructure (actions runners), so treat them with respect!
+1. [fork](../../fork) or [generate](../../generate) this repo to your own account, come back to these steps in your own repo!
+2. Switch on [actions](../../actions) and [issues](../../settings#issue-feature) 
+3. In your fork, open the [Make VPN issue](../../issues/new?assignees=&labels=enhancement&projects=&template=Make_VPN.md&title=Make+VPN)
+   
+By default the remain open for 5 minutes, but you can make that longer by editing the workflow YAML file. Each minute used counts against your GitHub actions quota. Also, don't do anything abusive with this, remember you are browsing the web from inside GitHub's infrastructure (actions runners), so treat them with respect!
 
 Limitations: no audio, no DevTools, no docviewer (Because the ports are not accesible, although the services are running)
 

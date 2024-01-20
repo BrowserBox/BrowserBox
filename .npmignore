@@ -1,3 +1,4 @@
+node_modules
 public/assets/ruffle
 public/assets/flash/*.swf
 public/assets/flash/*.as
