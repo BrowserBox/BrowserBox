@@ -57,6 +57,15 @@ We just launched on the [Vultr Marketplace!](https://www.vultr.com/marketplace/a
   </tr>
 </table>
 
+*If you have issues with your deployment, it's a good idea check the cloud provider status page:*
+
+- [Azure Status](https://azure.status.microsoft/en-us/status)
+- [Vultr Status](https://status.vultr.com/)
+- [AWS Status](https://health.aws.amazon.com/health/status)
+- [Linode Akamai Status](https://status.linode.com/)
+
+It's also a great idea to check cloud ping test (internet speed and round-trip time) sites before you create your 1-click deployment to create in the cloud region with the lowest ping for you. 
+
 ------
 
 ## New Docker Release v7.1
