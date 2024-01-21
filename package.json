@@ -96,6 +96,7 @@
     "express": "latest",
     "express-rate-limit": "latest",
     "helmet": "latest",
+    "is-docker": "^3.0.0",
     "multer": "latest",
     "simple-peer": "latest",
     "socks-proxy-agent": "^8.0.2",
@@ -122,6 +123,6 @@
     "parcel": "latest",
     "parcel-resolver-ignore": "latest",
     "pkg": "latest",
-    "whatwg-fetch": "^3.6.19"
+    "whatwg-fetch": "^3.6.20"
   }
 }

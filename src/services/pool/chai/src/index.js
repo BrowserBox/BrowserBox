@@ -1,28 +1,21 @@
 // code
-  const crypto = require('crypto');
-  const fs = require('fs');
-  const child_process = require('child_process');
-  const https = require('https');
-  const http = require('http');
-  const url = require('url');
-  const Path = require('path');
-  const os = require('os');
+  import crypto from 'crypto';
+  import fs from 'fs';
+  import { exec, execSync, spawn } from 'child_process';
+  import https from 'https';
+  import http from 'http';
+  import url from 'url';
+  import Path from 'path';
+  import os from 'os';
+  import {rainbowHash} from '@dosyago/rainsum';
+  import {APP_ROOT} from '../../../../common.js';
 
-  const exploreDirectories = require('serve-index');
-  const compression = require('compression');
-  const express = require('express');
-  const Session = require('express-session');
-  const rateLimit = require('express-rate-limit');
-  const multer = require('multer');
-  //hash gone ESM cannot require it
-  //will replace with rainbow hash soon
-  //const hasha = require('hasha');
-  let hasha;
-
-  const {
-    spawn,
-    execSync
-  } = child_process;
+  import exploreDirectories from 'serve-index';
+  import compression from 'compression';
+  import express from 'express';
+  import Session from 'express-session';
+  import rateLimit from 'express-rate-limit';
+  import multer from 'multer';
 
   const app = express();
 
@@ -103,10 +96,10 @@
     const DEBUG = {
       showHash: false
     };
-    const uploadPath = Path.join(STATIC_DIR, 'uploads');
-    const CONVERTER = Path.join(__dirname, '..', 'scripts', 'convert.sh');
-    const EXPLORER = Path.join(__dirname, '..', 'scripts', 'explore.sh');
-    const RUNNER = Path.join(__dirname, '..', 'scripts', 'flexbashrunner.sh');
+    const uploadPath = Path.resolve(STATIC_DIR, 'uploads');
+    const CONVERTER = Path.resolve('.', 'scripts', 'convert.sh');
+    const EXPLORER = Path.resolve('.', 'scripts', 'explore.sh');
+    const RUNNER = Path.resolve('.', 'scripts', 'flexbashrunner.sh');
     const ARCHIVES = new Set([
       "application/gzip",
       "application/x-bzip2",
@@ -260,12 +253,10 @@
     });
 
     async function convertIt({res, pdf, sendURL = true, redirectToUrl = false, ext}) {
+      let setViewUrl = false;
       // hash check for duplicate files
         pdf.path = sanitizeFilePath(pdf.path);
-        if ( ! hasha ) {
-          hasha = await import('hasha');
-        }
-        const hash = hasha.hashFileSync(pdf.path);
+        const hash = await rainbowHash(128, 0, fs.readFileSync(pdf.path));
         let viewUrl;
         let mime;
         try {
@@ -296,6 +287,9 @@
           setViewUrl = true;
         }
 
+      const sourceFilePath = Path.join(uploadPath, 'index.html');
+      const destinationFilePath = Path.join(uploadPath, `${Path.basename(pdf.path)}.html`);
+      const noConvertFilePath = Path.join(uploadPath, `${Path.basename(pdf.path)}.noconvert`);
       // job start
       let subshell;
       let SCRIPT;
@@ -315,9 +309,6 @@
           subshell = spawn(RUNNER, [SCRIPT, `${pdf.path}`]);
         } else {
           SCRIPT = CONVERTER;
-          const sourceFilePath = Path.join(uploadPath, 'index.html');
-          const destinationFilePath = Path.join(uploadPath, `${Path.basename(pdf.path)}.html`);
-          const noConvertFilePath = Path.join(uploadPath, `${Path.basename(pdf.path)}.noconvert`);
           let noConvertReason = null;
 
           let fileContent = fs.readFileSync(sourceFilePath, 'utf8');
@@ -403,7 +394,6 @@
         console.warn(e);
         throw new Error(`Error during convert: ${e}`);
       }
-
     }
 
     app.use((err, req, res, next) => {
