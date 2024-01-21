@@ -19,13 +19,23 @@ We just launched on the [Vultr Marketplace!](https://www.vultr.com/marketplace/a
 
 ### One-Click Deploy
 
+**Deploy BrowserBox to the cloud instantly!** 
+
+There's no licensing fees for personal use so all you pay are your own cloud costs. Just use one of the cloud providers below to start browsing the web *from a safe distance!*
+
+What are you waiting for? Give it a try now!
+
 <table>
   <tr>
     <th></th>
     <th>Vultr</th>
     <th>AWS</th>
     <th>Linode</th>
-    <th>Azure Quickstart</th>
+    <th>
+      Azure Quickstart
+      <br>
+      <strong>(recommended*)</strong>
+    </th>
   </tr>
   <tr> 
     <td><b>Deploy</b></td>
@@ -64,7 +74,9 @@ We just launched on the [Vultr Marketplace!](https://www.vultr.com/marketplace/a
 - [AWS Status](https://health.aws.amazon.com/health/status)
 - [Linode Akamai Status](https://status.linode.com/)
 
-It's also a great idea to check cloud ping test (internet speed and round-trip time) sites before you create your 1-click deployment to create in the cloud region with the lowest ping for you. 
+It's also a great idea to check cloud ping test (internet speed and round-trip time) sites before you create your 1-click deployment to create in the cloud region with the lowest ping for you.
+
+\* Azure is our recommended option because it makes deployment easieset: no need to add a separate DNS record for your instance; and Azure even emails you when the deployment is complete! 
 
 ------
 
