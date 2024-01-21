@@ -42,5 +42,6 @@ if [ ! -f "${pdfs}/links.json" ]; then
   echo "[]" > "${pdfs}/links.json"
 fi
 
+echo "Install dir: $INSTALL_DIR"
 "${STATIC_DIR}/uploads/clean.sh"
 node src/index.js $port

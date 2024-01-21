@@ -29,6 +29,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  showDebug: false,
   utilizeTempHackFixForIMENoKey: true,
   debugTyping: false,
   logFileCommands: false,
@@ -158,7 +159,7 @@ export const DEBUG = Object.freeze({
   high: 5
 });
 
-console.log(DEBUG);
+DEBUG.showDebug && console.log(DEBUG);
 
 export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   "https://users.dosyago.com",
