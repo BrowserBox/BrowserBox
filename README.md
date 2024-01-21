@@ -118,26 +118,27 @@ BrowserBox has just landed support for Windows and we're on [PowerShell Gallery]
 | Windows 11          |           ✅ |
 | Windows 10          |           ✅ |
 
-To install and run on Windows, first do the following in PowerShell:
+To install and run on Windows, first do the following in PowerShell as **Administrator**:
 
 ```posh
 # you may need the following 2 lines to install from PSGallery 
 # if your package managers need updating
-Install-PackageProvider Nuget -Force
+Set-ExecutionPolicy Bypass
+Install-PackageProvider Nuget -Force 
 Install-Module -Name PowerShellGet -Force
 ```
 
-Then **close and reopen** your PowerShell session, and run:
+Then **close and reopen** your PowerShell session, and run as regular user:
 
 ```posh
 # the main part to install BrowserBox installer
 Install-Module -Name BrowserBox-Installer
-Import-Module BrowserBox-Installer
 ```
 
-Then run the install process:
+Then
 
 ```posh
+Import-Module BrowserBox-Installer
 Install-BrowserBox
 ```
 
