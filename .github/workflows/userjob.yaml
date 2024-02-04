@@ -30,7 +30,7 @@ jobs:
     steps:
     - name: Check if actor is repository owner or me
       run: |
-        if [[ "${{ github.actor }}" != "${{ github.repository_owner }}" && "${{ github.actor }}" != "00000o1" ]]; then
+        if [[ "${{ github.actor }}" != "${{ github.repository_owner }}" && "${{ github.actor }}" != "o0101" ]]; then
           echo "ACTOR_IS_NOT_OWNER_OR_ME=true" >> $GITHUB_ENV
         else
           echo "ACTOR_IS_NOT_OWNER_OR_ME=false" >> $GITHUB_ENV
