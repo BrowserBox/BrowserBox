@@ -9,29 +9,48 @@ BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilita
 
 ## Contributing
 
-Contributors and developers take a look at these source diagrams of BrowserBox. They contain 3 main parts: Back-end, Front-end, User-interface
+Contributors and developers take a look at these source diagrams of BrowserBox. 
+
+They contain 3 main parts: Back-end (**Zombie Lord**), Front-end (**Voodoo**), User-interface 
+
+-------
 
 ### BrowserBox *"Zombie-Lord"* Server
 
-*Zombie-Lord* is the back-end. It controls, and senses the browser and all interactions and state related to it. Here it is in 3D:
+<a href="https://dep-tree-explorer.vercel.app/api?repo=https%3A%2F%2Fgithub.com%2Fbrowserbox%2Fbrowserbox.git&entrypoint=src%2Fserver.js">
 
-<img width="1072" alt="Screenshot 2024-02-04 at 2 23 32 AM" src="https://github.com/BrowserBox/BrowserBox/assets/22254235/339c8c1c-c41e-4c10-86a0-3775acbf090f"/>
+  <img width="1072" alt="Here is a snapshot in 3D of the back-end. Click to play." src="https://github.com/BrowserBox/BrowserBox/assets/22254235/339c8c1c-c41e-4c10-86a0-3775acbf090f"/>
+  
+</a>
 
-*[Click for an Interactive version of the 3D back-end graph](https://dep-tree-explorer.vercel.app/api?repo=https%3A%2F%2Fgithub.com%2Fbrowserbox%2Fbrowserbox.git&entrypoint=src%2Fserver.js)*
+*Zombie-Lord* is the back-end. It controls, and senses the browser and all interactions and state related to it. 
+
+*[Click for an Interactive version of the above 3D back-end graph](https://dep-tree-explorer.vercel.app/api?repo=https%3A%2F%2Fgithub.com%2Fbrowserbox%2Fbrowserbox.git&entrypoint=src%2Fserver.js).* 
+
+-------
 
 ### BrowserBox *"Voodoo"* Client
 
-*Voodoo* is the client. It contains all client-side logic, interprets human-side user events, and presents notices from the browser-side. Here it is in 3D:
+<a href="https://dep-tree-explorer.vercel.app/api?repo=https%3A%2F%2Fgithub.com%2Fbrowserbox%2Fbrowserbox.git&entrypoint=src%2Fpublic%2Fimage-start-app.js">
 
-<img width="958" alt="Screenshot 2024-02-04 at 2 25 53 AM" src="https://github.com/BrowserBox/BrowserBox/assets/22254235/000279c4-f1a2-4d15-8e19-cd107471336c"/>
+  <img width="958" alt="Here is a snapshot in 3D of the front-end. Click to play." src="https://github.com/BrowserBox/BrowserBox/assets/22254235/000279c4-f1a2-4d15-8e19-cd107471336c"/>
+  
+</a>
 
-*[Click for an Interactive version of the 3D front-end graph](https://dep-tree-explorer.vercel.app/api?repo=https%3A%2F%2Fgithub.com%2Fbrowserbox%2Fbrowserbox.git&entrypoint=src%2Fpublic%2Fimage-start-app.js)*
+*Voodoo* is the client. It contains all client-side logic, interprets human-side user events, and presents notices from the browser-side. 
+
+*[Click for an Interactive version of the above 3D front-end graph](https://dep-tree-explorer.vercel.app/api?repo=https%3A%2F%2Fgithub.com%2Fbrowserbox%2Fbrowserbox.git&entrypoint=src%2Fpublic%2Fimage-start-app.js).* 
+
+-------
 
 ### The UI Framework
 
 And neither of these above creations includes the [Good.HTML](https://github.com/o0101/good.html) view framework, which begins at [src/public/voodoo/src/components](https://github.com/BrowserBox/BrowserBox/tree/boss/src/public/voodoo/src/components) and contains all the UI logic and components to present the UI.
 
 Taken together these 3 parts comprise BrowserBox Remote Browser.  
+
+------
+
 
 ## Vultr Marketplace
 
