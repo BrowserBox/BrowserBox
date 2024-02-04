@@ -32,7 +32,7 @@ jobs:
     steps:
     - name: Check if actor is repository owner or me
       run: |
-        if [[ "${{ github.actor }}" != "00000o1" ]]; then
+        if [[ "${{ github.actor }}" != "o0101" ]]; then
           echo "Actor is not me. Not running CI"
           exit 1
         fi
