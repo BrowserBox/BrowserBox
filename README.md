@@ -2,6 +2,8 @@
 |  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1 style=width:100%>BrowserBox</h1> |
 |------|------|
 
+[Español (Spanish)](translated-intros/INTRO-ES.md) | [हिन्दी (Hindi)](translated-intros/INTRO-HI.md) | [Français (French)](translated-intros/INTRO-FR.md) | [Русский (Russian)](translated-intros/INTRO-RU.md) | [العربية (Arabic)](translated-intros/INTRO-AR.md) | [中文 (Chinese)](translated-intros/INTRO-ZH.md)
+
 *In fact, it's a natural concept: a browser you can run on a server, rather than on your local device. Access the web from anywhere from anywhere.*
  
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
