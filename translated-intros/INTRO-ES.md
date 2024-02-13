@@ -38,5 +38,5 @@ Despliega BrowserBox con facilidad en tu plataforma en la nube preferida:
 
 BrowserBox es más que una solución de navegación; representa un nuevo paradigma en seguridad y colaboración web. Adecuado para una variedad de necesidades, desde la seguridad personal hasta la implementación a nivel empresarial, BrowserBox ofrece una versatilidad, seguridad y funcionalidad sin paralelo. Inicia tu viaje de navegación segura con BrowserBox hoy mismo y únete a una comunidad dedicada a redefinir la interacción web.
 
-*[README Principal (Inglés)](https://github.com/BrowserBox/BrowserBox*
+*[README Principal (Inglés)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox)*
 

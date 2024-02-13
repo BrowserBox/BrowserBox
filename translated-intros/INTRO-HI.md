@@ -40,5 +40,5 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/depl
 
 BrowserBox केवल एक ब्राउज़िंग समाधान से अधिक है; यह वेब सुरक्षा और सहयोग में एक नई प्रवृत्ति का प्रतिनिधित्व करता है। व्यक्तिगत सुरक्षा आवश्यकताओं से लेकर उद्यम-स्तरीय तैनाती तक की विभिन्न आवश्यकताओं के लिए उपयुक्त, BrowserBox अद्वितीय बहुमुखी प्रतिभा, सुरक्षा, और कार्यक्षमता प्रदान करता है। आज ही BrowserBox के साथ अपनी सुरक्षित ब्राउज़िंग यात्रा शुरू करें और वेब इंटरैक्शन को पुनः परिभाषित करने के लिए समर्पित एक समुदाय में शामिल हों।
 
-*[मुख्य README (अंग्रेज़ी)](https://github.com/BrowserBox/BrowserBox)*
+*[मुख्य README (अंग्रेज़ी)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox)*
 
