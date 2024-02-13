@@ -38,3 +38,5 @@ Déployez BrowserBox facilement sur votre plateforme cloud préférée :
 
 BrowserBox est bien plus qu'une solution de navigation ; il représente un nouveau paradigme dans la sécurité et la collaboration sur le web. Adapté à une variété de besoins, de la sécurité individuelle au déploiement à l'échelle de l'entreprise, BrowserBox offre une polyvalence, une sécurité et une fonctionnalité inégalées. Commencez votre voyage de navigation sécurisée avec BrowserBox aujourd'hui et rejoignez une communauté dédiée à redéfinir l'interaction sur le web.
 
+*[README Principal (Anglais)](https://github.com/BrowserBox/BrowserBox)*
+
