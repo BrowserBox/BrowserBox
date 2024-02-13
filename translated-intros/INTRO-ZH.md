@@ -29,10 +29,10 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/depl
 
 在您偏好的云平台上轻松部署 BrowserBox：
 
-- **Vultr**：[在 Vultr 上部署！](https://my.vultr.com/deploy)
-- **AWS**：[在 AWS 上部署！](https://aws.amazon.com/cloudformation)
-- **Linode**：[在 Linode 上部署！](https://cloud.linode.com/linodes/create)
-- **Azure 快速启动**（推荐）：[在 Azure 上部署！](https://portal.azure.com/#create/Microsoft.Template)
+- **Vultr**：[在 Vultr 上部署！](https://my.vultr.com/deploy?marketplace_app=browserbox&marketplace_vendor_username=DOSYAGO&_gl=1*66yk24*_ga*NDY0MTUzODIzLjE2OTM0Nzg4MDA.*_ga_K6536FHN4D*MTcwNTM3NzY0NS40NC4xLjE3MDUzNzgyMzMuMjguMC4w)
+- **AWS**：[在 AWS 上部署！](https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml)
+- **Linode**：[在 Linode 上部署！](https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678)
+- **Azure 快速启动**（推荐）：[在 Azure 上部署！](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json)
 
 ## 结论
 

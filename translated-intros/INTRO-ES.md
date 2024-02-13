@@ -29,10 +29,10 @@ Explora más a fondo BrowserBox con nuestra extensa documentación e introduccio
 
 Despliega BrowserBox con facilidad en tu plataforma en la nube preferida:
 
-- **Vultr**: [¡Despliega en Vultr!](https://my.vultr.com/deploy)
-- **AWS**: [¡Despliega en AWS!](https://aws.amazon.com/cloudformation)
-- **Linode**: [¡Despliega en Linode!](https://cloud.linode.com/linodes/create)
-- **Inicio Rápido en Azure** (Recomendado): [¡Despliega en Azure!](https://portal.azure.com/#create/Microsoft.Template)
+- **Vultr**: [¡Despliega en Vultr!](https://my.vultr.com/deploy?marketplace_app=browserbox&marketplace_vendor_username=DOSYAGO&_gl=1*66yk24*_ga*NDY0MTUzODIzLjE2OTM0Nzg4MDA.*_ga_K6536FHN4D*MTcwNTM3NzY0NS40NC4xLjE3MDUzNzgyMzMuMjguMC4w)
+- **AWS**: [¡Despliega en AWS!](https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml)
+- **Linode**: [¡Despliega en Linode!](https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678)
+- **Inicio Rápido en Azure** (Recomendado): [¡Despliega en Azure!](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json)
 
 ## Conclusión
 

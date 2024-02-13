@@ -31,10 +31,10 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/depl
 
 अपने पसंदीदा क्लाउड प्लेटफॉर्म पर आसानी से BrowserBox तैनात करें:
 
-- **Vultr**: [Vultr में तैनात करें!](https://my.vultr.com/deploy)
-- **AWS**: [AWS में तैनात करें!](https://aws.amazon.com/cloudformation)
-- **Linode**: [Linode में तैनात करें!](https://cloud.linode.com/linodes/create)
-- **Azure Quickstart** (अनुशंसित): [Azure में तैनात करें!](https://portal.azure.com/#create/Microsoft.Template)
+- **Vultr**: [Vultr में तैनात करें!](https://my.vultr.com/deploy?marketplace_app=browserbox&marketplace_vendor_username=DOSYAGO&_gl=1*66yk24*_ga*NDY0MTUzODIzLjE2OTM0Nzg4MDA.*_ga_K6536FHN4D*MTcwNTM3NzY0NS40NC4xLjE3MDUzNzgyMzMuMjguMC4w)
+- **AWS**: [AWS में तैनात करें!](https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml)
+- **Linode**: [Linode में तैनात करें!](https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678)
+- **Azure Quickstart** (अनुशंसित): [Azure में तैनात करें!](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json)
 
 ## निष्कर्ष
 
