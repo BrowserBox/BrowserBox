@@ -1,4 +1,5 @@
-# BrowserBox 介绍
+| <img style="width:80px; height:80px;" src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg" alt="BrowserBox Logo 2023"> | <h1>BrowserBox 介绍</h1> |
+|------|------|
 
 BrowserBox 是一款运行在服务器上的网络浏览器，而不是您的本地设备上。为了安全、隐私等更多需求。从任何地方访问网络 —— 无论您身在何处！
 
@@ -38,5 +39,5 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/depl
 
 BrowserBox 不仅仅是一个浏览解决方案；它代表了网络安全和协作的新范式。无论是满足个人安全需求、团队项目还是企业级部署，BrowserBox 都提供了无与伦比的多功能性、安全性和功能性。今天就开始使用 BrowserBox 进行安全浏览，并加入致力于重新定义网络互动的社区。
 
-*[主要 README (英文)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox)*
+*[主要 README (英文)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox-)*
 

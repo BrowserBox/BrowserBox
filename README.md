@@ -980,4 +980,4 @@ Join us in navigating the Zero Trust landscape. Secure your commercial license t
 
 This project is copyright The Dosyago Corporation 2018-2023. All rights reserved.
 
-For detailed information and progress updates, please refer to the [official documentation](https://github.com/dosyago/BrowserBox).
+For detailed information and progress updates, please refer to: https://github.com/dosyago/BrowserBox.

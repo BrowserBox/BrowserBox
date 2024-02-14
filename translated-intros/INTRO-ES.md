@@ -1,4 +1,5 @@
-# Introducción a BrowserBox
+| <img style="width:80px; height:80px;" src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg" alt="BrowserBox Logo 2023"> | <h1>Introducción a BrowserBox</h1> |
+|------|------|
 
 BrowserBox es un navegador web que se ejecuta en un servidor, en lugar de en tu dispositivo personal. Ofrece seguridad, privacidad y mucho más. ¡Accede a la web desde cualquier lugar y en cualquier momento!
 
@@ -38,5 +39,5 @@ Despliega BrowserBox con facilidad en tu plataforma en la nube preferida:
 
 BrowserBox es más que una solución de navegación; representa un nuevo paradigma en seguridad y colaboración web. Adecuado para una variedad de necesidades, desde la seguridad personal hasta la implementación a nivel empresarial, BrowserBox ofrece una versatilidad, seguridad y funcionalidad sin paralelo. Inicia tu viaje de navegación segura con BrowserBox hoy mismo y únete a una comunidad dedicada a redefinir la interacción web.
 
-*[README Principal (Inglés)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox)*
+*[README Principal (Inglés)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox-)*
 
