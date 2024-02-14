@@ -1,4 +1,5 @@
-# Введение в BrowserBox
+| <img style="width:80px; height:80px;" src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg" alt="BrowserBox Logo 2023"> | <h1 dir="rtl">مقدمة في BrowserBox</h1> |
+|------|------|
 
 BrowserBox — это веб-браузер, который вы запускаете на сервере, а не на вашем локальном устройстве. Для безопасности, конфиденциальности и многого другого. Получите доступ к вебу откуда угодно — из любого места!
 

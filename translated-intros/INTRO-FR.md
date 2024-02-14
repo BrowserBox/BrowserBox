@@ -1,4 +1,5 @@
-# Introduction à BrowserBox
+| <img style="width:80px; height:80px;" src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg" alt="BrowserBox Logo 2023"> | <h1>Introduction à BrowserBox</h1> |
+|------|------|
 
 BrowserBox est un navigateur web que vous exécutez sur un serveur, plutôt que sur votre appareil local. Pour la sécurité, la confidentialité et plus encore. Accédez au web de n'importe où -- depuis n'importe où !
 

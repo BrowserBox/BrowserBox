@@ -1,5 +1,5 @@
-
-# הקדמה ל-BrowserBox
+| <img style="width:80px; height:80px;" src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg" alt="BrowserBox Logo 2023"> | <h1>הקדמה ל-BrowserBox</h1> |
+|------|------|
 
 BrowserBox הוא דפדפן אינטרנט שמופעל מעל שרת, ולא מהמכשיר האישי שלך. לצורכי אבטחה, פרטיות ועוד. גש לאינטרנט מכל מקום - מכל מקום!
 

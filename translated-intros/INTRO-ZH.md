@@ -1,4 +1,5 @@
-# BrowserBox 介绍
+| <img style="width:80px; height:80px;" src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg" alt="BrowserBox Logo 2023"> | <h1>BrowserBox 介绍</h1> |
+|------|------|
 
 BrowserBox 是一款运行在服务器上的网络浏览器，而不是您的本地设备上。为了安全、隐私等更多需求。从任何地方访问网络 —— 无论您身在何处！
 

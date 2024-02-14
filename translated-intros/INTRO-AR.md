@@ -1,6 +1,7 @@
 <div dir="rtl">
 
-# مقدمة في BrowserBox
+| <img style="width:80px; height:80px;" src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg" alt="BrowserBox Logo 2023"> | <h1 dir="rtl">مقدمة في BrowserBox</h1> |
+|------|------|
 
 BrowserBox هو متصفح ويب تقوم بتشغيله على الخادم بدلاً من جهازك المحلي. للأمان، الخصوصية، والمزيد. ادخل إلى الويب من أي مكان - من أي مكان!
 

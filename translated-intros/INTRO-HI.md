@@ -1,4 +1,5 @@
-# BrowserBox का परिचय
+| <img style="width:80px; height:80px;" src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg" alt="BrowserBox Logo 2023"> | <h1>BrowserBox परिचय</h1> |
+|------|------|
 
 BrowserBox एक वेब ब्राउज़र है जिसे आप अपने व्यक्तिगत उपकरण के बजाय एक सर्वर पर चलाते हैं। यह सुरक्षा, गोपनीयता और बहुत कुछ प्रदान करता है। कहीं से भी - कहीं से भी वेब तक पहुंचें!
 
