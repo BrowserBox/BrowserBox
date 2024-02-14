@@ -43,6 +43,6 @@ BrowserBox ليس مجرد
 
  حل للتصفح؛ إنه يمثل نموذجًا جديدًا في أمان الويب والتعاون. سواء كان ذلك لتلبية احتياجات الأمان الشخصية، مشاريع الفريق، أو النشر على مستوى الشركة، يقدم BrowserBox تنوعًا لا مثيل له، أمانًا، ووظائف. ابدأ رحلتك في التصفح الآمن مع BrowserBox اليوم وانضم إلى مجتمع ملتزم بإعادة تعريف التفاعل على الويب.
 
-*[المستند الرئيسي README (إنجليزي)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox)*
+*[المستند الرئيسي README (إنجليزي)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox-)*
 
 </div>

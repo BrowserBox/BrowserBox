@@ -41,5 +41,5 @@ BrowserBox — это не просто решение для браузинга
 
 фингу с BrowserBox уже сегодня и присоединитесь к сообществу, стремящемуся переопределить взаимодействие в вебе.
 
-*[Основной README (Английский)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox)*
+*[Основной README (Английский)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox-)*
 

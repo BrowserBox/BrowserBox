@@ -38,6 +38,6 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/depl
 
 מידע נוסף. ניתן לרכוש תמיכה בפיתוח באמצעות support@dosyago.com, ומידע מפורט נמצא ב[README הראשי](https://github.com/BrowserBox/BrowserBox) שלנו.
 
-*[README ראשי (אנגלית)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox)*
+*[README ראשי (אנגלית)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox-)*
 
 </div>
