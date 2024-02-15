@@ -12,11 +12,11 @@ fi
 PLAT="$("$node" -p process.platform)"
 
 if [[ $PLAT == win* ]]; then
-  winpty nvm install v21
+  winpty nvm install v20
   winpty nvm use latest
 else 
   source ~/.nvm/nvm.sh;
-  nvm install v21
+  nvm install v20
 fi
 
 if ! command -v pm2 &>/dev/null; then

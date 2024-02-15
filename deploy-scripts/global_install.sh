@@ -174,9 +174,9 @@ install_nvm() {
     echo "Installing nvm..."
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
     source ~/.nvm/nvm.sh
-    nvm install v21
+    nvm install v20
   else
-    nvm install v21
+    nvm install v20
   fi
 }
 
