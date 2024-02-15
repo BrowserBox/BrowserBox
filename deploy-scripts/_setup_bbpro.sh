@@ -10,6 +10,7 @@ TOR_PROXY=""
 INJECT_SCRIPT=""
 SUDO=""
 ZONE=""
+HAVE_SUDO=""
 
 # Function to check if a command exists
 command_exists() {
@@ -17,11 +18,37 @@ command_exists() {
 }
 
 if command_exists sudo; then
-  SUDO="sudo"
+  # we set -n here because setup_bbpro is designed to be used both non-interactively and by non-privileged users
+  SUDO="sudo -n"
+fi
+
+check_sudo() {
+  # Attempt to run a simple command using sudo that requires no real action
+  # Redirect both stdout and stderr to /dev/null to suppress output
+  if sudo -n true 2>/dev/null; then
+    # If the command succeeds, sudo is available passwordlessly
+    HAVE_SUDO="true"
+  else
+    # If the command fails, sudo either isn't available or requires a password
+    HAVE_SUDO=""
+  fi
+}
+
+# Call the function to check for passwordless sudo
+check_sudo
+
+if [ -n "$HAVE_SUDO" ]; then
+  echo "Passwordless sudo is available." >&2
+  SUDO="$SUDO"
+else
+  echo "Passwordless sudo is not available. Some things may not work, such as starting tor or opening the required ports on an internal firewall. Configure your user to possess passwordless sudo privileges if you need this, or ensure your user's BrowserBox ports are already open before running setup_bbpro." >&2
+  # empty out sudo so we don't try to run stuff with it
+  # in other words we try running the stuff without sudo, which may or may not work, depending on your system
+  SUDO=""
 fi
 
 if command_exists firewall-cmd; then
-  ZONE="$(sudo firewall-cmd --get-default-zone)"
+  ZONE="$($SUDO firewall-cmd --get-default-zone)"
 fi
 
 # Function to display help message
@@ -72,9 +99,8 @@ ensure_certtools_windows() {
 # Open port on CentOS
 open_firewall_port_centos() {
   local port=$1
-  sudo="$(command -v sudo)"
-  $sudo firewall-cmd --permanent --add-port="${port}/tcp" >&2
-  $sudo firewall-cmd --reload >&2 
+  $SUDO firewall-cmd --permanent --add-port="${port}/tcp" >&2
+  $SUDO firewall-cmd --reload >&2 
 }
 
 is_port_free() {
@@ -241,12 +267,12 @@ function create_selinux_policy_for_ports() {
   fi
 
   # Add or modify the port context
-  sudo semanage port -a -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE 2>/dev/null || \
-  sudo semanage port -m -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE
+  $SUDO semanage port -a -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE 2>/dev/null || \
+  $SUDO semanage port -m -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE
 
   # Generate and compile a custom policy module if required
-  sudo grep AVC /var/log/audit/audit.log | audit2allow -M my_custom_policy_module
-  sudo semodule -i my_custom_policy_module.pp
+  $SUDO grep AVC /var/log/audit/audit.log | audit2allow -M my_custom_policy_module
+  $SUDO semodule -i my_custom_policy_module.pp
 
   echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE."
 }
@@ -434,8 +460,15 @@ echo "Done!">&2
 
 echo -n "Creating test.env...">&2
 
-sslcerts="sslcerts"
-cert_file="$HOME/${sslcerts}/fullchain.pem"
+sslcerts="${HOME}/sslcerts"
+if [[ ! -d $sslcerts ]]; then
+  sslcerts="/usr/local/share/dosyago/sslcerts"
+fi
+cert_file="${sslcerts}/fullchain.pem"
+if [[ ! -f $cert_file ]]; then 
+  echo "Warning: SSL certificates are not installed in $HOME/sslcerts or /usr/local/share/dosyago/sslcerts. Things will not work." >&2
+fi
+
 sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
 HOST=$(echo $sans | awk '{print $1}')
 
