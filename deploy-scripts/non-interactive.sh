@@ -1,5 +1,15 @@
 #!/bin/bash
 
+SUDO=""
+if command -v sudo &>/dev/null; then
+  SUDO="sudo -n"
+fi
+export NEEDRESTART_MODE=a
+export DEBIAN_FRONTEND=noninteractive
+unset UCF_FORCE_CONFOLD
+export UCF_FORCE_CONFNEW=YES
+$SUDO ucf --purge /boot/grub/menu.lst
+
 # Create dpkg configuration
 echo "Creating dpkg configuration..."
 $SUDO mkdir -p /etc/dpkg/dpkg.cfg.d/
@@ -28,8 +38,7 @@ cat <<EOF | $SUDO tee /etc/needrestart/conf.d/no-prompt.conf >/dev/null
 EOF
 
 # Perform a non-interactive dist-upgrade
-export NEEDRESTART_MODE=a
-$SUDO apt-get dist-upgrade --yes
+#$SUDO apt-get dist-upgrade -o Dpkg::Options::="--force-confnew" --yes -yqq
 
 # Install debconf-utils and set it to restart libraries without asking
 $SUDO apt-get -y install debconf-utils
