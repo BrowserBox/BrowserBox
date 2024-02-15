@@ -41,7 +41,7 @@ if [ -n "$HAVE_SUDO" ]; then
   echo "Passwordless sudo is available." >&2
   SUDO="$SUDO"
 else
-  echo "Passwordless sudo is not available. Some things may not work, such as starting tor or opening the required ports on an internal firewall. Configure your user to possess passwordless sudo privileges if you need this, or ensure your user's BrowserBox ports are already open before running setup_bbpro." >&2
+  echo "Passwordless sudo is not available. Some things may not work, such as starting tor or opening the required ports on an internal firewall. Configure your user to possess passwordless sudo privileges if you need this, or ensure your user's BrowserBox ports are already open before running setup_bbpro. One way to do this is to run setup_bbpro $@ again from a sudo-privileged user to ensure the ports are open." >&2
   # empty out sudo so we don't try to run stuff with it
   # in other words we try running the stuff without sudo, which may or may not work, depending on your system
   SUDO=""
@@ -273,6 +273,7 @@ function create_selinux_policy_for_ports() {
   # Generate and compile a custom policy module if required
   $SUDO grep AVC /var/log/audit/audit.log | audit2allow -M my_custom_policy_module
   $SUDO semodule -i my_custom_policy_module.pp
+  rm my_custom_policy_module.*
 
   echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE."
 }

@@ -122,7 +122,6 @@
     "node-loader": "latest",
     "parcel": "latest",
     "parcel-resolver-ignore": "latest",
-    "pkg": "latest",
     "whatwg-fetch": "^3.6.20"
   }
 }

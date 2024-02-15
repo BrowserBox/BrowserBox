@@ -1,11 +1,11 @@
 #!/bin/bash
-# <UDF name="useremail" label="signature email: I agree to the BrowserBox Terms and Conditions, including LetsEncrypt terms. My email is:" example="jcitizen@website.net" />
-# <UDF name="hostname" label="hostname: The fully-qualified domain name you will put in your DNS A record for this Linode." example="hello.example.com" />
-# <UDF name="token" label="token: A secret for the login link (https://HOSTNAME:8080/login?token=TOKEN). Leave blank to get link with SSH." default="" />
-# <UDF name="install_doc_viewer" label="Install doc viewer? Makes install take a LOT longer, but gives you a document viewer to securely view PDFs, DOCX, etc" oneOf="true,false" default="false" />
-# <UDF name="understanding" label="You got this? I have read the guide and will open firewall ports tcp:8078-8082 and add a DNS A record" oneOf="true,false" default="true" />
+# <UDF name="useremail" label="signature email: I agree to the T&Cs" example="jcitizen@website.net" />
+# <UDF name="hostname" label="hostname:  FQDN you will point to this host in your DNS." example="hello.example.com" />
+# <UDF name="token" label="Token: Login with HOSTNAME:8080/login?token=TOKEN" />
+# <UDF name="install_doc_viewer" label="Install doc viewer for PDFs? Takes longer" oneOf="true,false" default="false" />
+# <UDF name="understanding" label="I will open ports tcp:8078-8082 and add DNS A record" oneOf="true,false" default="true" />
 
-set -xeo pipefail
+set -x
 
 # Function to determine the Linux Distribution
 get_distro() {
@@ -100,6 +100,4 @@ su - "$username" <<EOF
   fi
   bbpro
 EOF
-
-
 

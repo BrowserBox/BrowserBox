@@ -181,12 +181,12 @@ export default start;
       const SSL_OPTS = {};
       try {
         Object.assign(SSL_OPTS, {
-          key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(PORT), 'privkey.pem')),
-          cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(PORT), 'fullchain.pem')),
-          ca: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(PORT), 'chain.pem')),
+          key: fs.readFileSync(path.resolve(CONFIG.sslcerts(PORT), 'privkey.pem')),
+          cert: fs.readFileSync(path.resolve(CONFIG.sslcerts(PORT), 'fullchain.pem')),
+          ca: fs.readFileSync(path.resolve(CONFIG.sslcerts(PORT), 'chain.pem')),
         });
       } catch(e) {
-        console.warn(`Did not find any SSL certificates in ${path.resolve(os.homedir(), CONFIG.sslcerts)}`);
+        console.warn(`Did not find any SSL certificates in ${path.resolve(CONFIG.sslcerts)}`);
         console.info(`No using TLS/HTTPS/WSS for the external-proxy`);
         GO_SECURE = false;
       }
