@@ -428,10 +428,10 @@
     const secure_options = {};
     try {
       const sec = {
-        key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(server_port), 'privkey.pem')),
-        cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(server_port), 'fullchain.pem')),
-        ca: fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts(server_port), 'chain.pem')) ? 
-            fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(server_port), 'chain.pem'))
+        key: fs.readFileSync(path.resolve(CONFIG.sslcerts(server_port), 'privkey.pem')),
+        cert: fs.readFileSync(path.resolve(CONFIG.sslcerts(server_port), 'fullchain.pem')),
+        ca: fs.existsSync(path.resolve(CONFIG.sslcerts(server_port), 'chain.pem')) ? 
+            fs.readFileSync(path.resolve(CONFIG.sslcerts(server_port), 'chain.pem'))
           :
             undefined
       };

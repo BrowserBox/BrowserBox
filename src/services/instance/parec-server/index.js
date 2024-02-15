@@ -144,10 +144,10 @@ let certsFound = false;
 if ( DEBUG.goSecure ) {
   try {
     Object.assign(SSL_OPTS, {
-      key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'privkey.pem')),
-      cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'fullchain.pem')),
-      ca: fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'chain.pem')) ? 
-          fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(port), 'chain.pem'))
+      key: fs.readFileSync(path.resolve(CONFIG.sslcerts(port), 'privkey.pem')),
+      cert: fs.readFileSync(path.resolve(CONFIG.sslcerts(port), 'fullchain.pem')),
+      ca: fs.existsSync(path.resolve(CONFIG.sslcerts(port), 'chain.pem')) ? 
+          fs.readFileSync(path.resolve(CONFIG.sslcerts(port), 'chain.pem'))
         :
           undefined
     });
@@ -156,7 +156,7 @@ if ( DEBUG.goSecure ) {
     DEBUG.err && console.warn(e);
   }
   DEBUG.val && console.log(SSL_OPTS, {GO_SECURE});
-  console.log(SSL_OPTS, {GO_SECURE}, path.resolve(os.homedir(), CONFIG.sslcerts(port), 'privkey.pem'));
+  console.log(SSL_OPTS, {GO_SECURE}, path.resolve(CONFIG.sslcerts(port), 'privkey.pem'));
 }
 const MODE = certsFound ? https: http;
 const app = express();

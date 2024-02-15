@@ -7,7 +7,8 @@
   import {rainbowHash} from '@dosyago/rainsum';
   import {APP_ROOT} from '../../../../common.js';
 
-  const CHAI_STATE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro', 'chai')
+  const BBPRO_CONF = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro');
+  const CHAI_STATE_PATH = path.resolve(BBPRO_CONF, 'chai')
   const FILES = path.join(CHAI_STATE_PATH, 'pdfs');
   const HASH_FILE = path.join(FILES, 'hashes.json');
   const LINK_FILE = path.join(FILES, 'links.json');
@@ -24,7 +25,12 @@
       fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'privkey.pem'));
       fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'fullchain.pem'));
     } catch(e) {
-      GO_SECURE = false;
+      try {
+        fs.readFileSync(path.resolve('/usr', 'local', 'share', 'dosyago', 'sslcerts', 'privkey.pem'));
+        fs.readFileSync(path.resolve('/usr', 'local', 'share', 'dosyago', 'sslcerts', 'fullchain.pem'));
+      } catch(e) {
+        GO_SECURE = false;
+      }
     }
     const scheme = GO_SECURE ? 'https' : 'http';
     const host_or_address = execSync(path.resolve(APP_ROOT, '..', 'chai', 'scripts', 'get_hostname.sh')).toString('utf8').trim();

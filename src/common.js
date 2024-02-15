@@ -282,7 +282,7 @@ if ( DEBUG.noSecurityHeaders ) {
 }
 //export const APP_ROOT = APP_ROOT;
 
-export const GO_SECURE = fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
+export const GO_SECURE = fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
 
 export const version = 'v1';
 export const COOKIENAME = `litewait-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;

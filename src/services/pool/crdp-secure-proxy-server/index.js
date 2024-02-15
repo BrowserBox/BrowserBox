@@ -45,10 +45,10 @@ const SSL_OPTS = {};
 let GO_SECURE = true;
 try {
   Object.assign(SSL_OPTS, {
-    key: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(PORT), 'privkey.pem')),
-    cert: fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(PORT), 'fullchain.pem')),
-    ca: fs.existsSync(path.resolve(os.homedir(), CONFIG.sslcerts(PORT), 'chain.pem')) ? 
-      fs.readFileSync(path.resolve(os.homedir(), CONFIG.sslcerts(PORT), 'chain.pem')) 
+    key: fs.readFileSync(path.resolve(CONFIG.sslcerts(PORT), 'privkey.pem')),
+    cert: fs.readFileSync(path.resolve(CONFIG.sslcerts(PORT), 'fullchain.pem')),
+    ca: fs.existsSync(path.resolve(CONFIG.sslcerts(PORT), 'chain.pem')) ? 
+      fs.readFileSync(path.resolve(CONFIG.sslcerts(PORT), 'chain.pem')) 
       : 
       undefined,
   });
