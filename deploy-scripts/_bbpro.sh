@@ -2,6 +2,20 @@
 
 #set -x
 
+install_nvm() {
+  source ~/.nvm/nvm.sh
+  if ! command -v nvm &>/dev/null; then
+    echo "Installing nvm..."
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    source ~/.nvm/nvm.sh
+    nvm install v21
+  else
+    nvm install v21
+  fi
+}
+
+install_nvm
+
 . ~/.nvm/nvm.sh
 profile="realtime"
 
@@ -12,6 +26,43 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     >&2 echo "Please run this script under Rosetta (i386 architecture)."
     #exit 1
   fi
+fi
+
+HAVE_SUDO=""
+
+# Function to check if a command exists
+command_exists() {
+  command -v "$@" > /dev/null 2>&1
+}
+
+if command_exists sudo; then
+  # we set -n here because setup_bbpro is designed to be used both non-interactively and by non-privileged users
+  SUDO="sudo -n"
+fi
+
+check_sudo() {
+  # Attempt to run a simple command using sudo that requires no real action
+  # Redirect both stdout and stderr to /dev/null to suppress output
+  if sudo -n true 2>/dev/null; then
+    # If the command succeeds, sudo is available passwordlessly
+    HAVE_SUDO="true"
+  else
+    # If the command fails, sudo either isn't available or requires a password
+    HAVE_SUDO=""
+  fi
+}
+
+# Call the function to check for passwordless sudo
+check_sudo
+
+if [ -n "$HAVE_SUDO" ]; then
+  echo "Passwordless sudo is available." >&2
+  SUDO="$SUDO"
+else
+  echo "Passwordless sudo is not available. Some things may not work, such as starting tor or opening the required ports on an internal firewall. Configure your user to possess passwordless sudo privileges if you need this, or ensure your user's BrowserBox ports are already open before running setup_bbpro." >&2
+  # empty out sudo so we don't try to run stuff with it
+  # in other words we try running the stuff without sudo, which may or may not work, depending on your system
+  SUDO=""
 fi
 
 get_install_dir() {
@@ -50,7 +101,7 @@ function shut_pa {
 function switch_profile {
   if command -v tuned-adm; then
     echo "Tuning for low latency high performance..."
-    sudo tuned-adm profile latency-performance
+    $SUDO tuned-adm profile latency-performance
   else
     echo "You may wish to instal 'tuned' for even higher performance."
   fi
@@ -58,9 +109,9 @@ function switch_profile {
 
 export INSTALL_DIR=$(get_install_dir)
 
-if sudo which tuned-adm >/dev/null 2>&1; then
+if $SUDO which tuned-adm >/dev/null 2>&1; then
   echo -n "Tuning system performance for $profile..." >&2
-  sudo tuned-adm profile $profile || switch_profile
+  $SUDO tuned-adm profile $profile || switch_profile
   echo "Tuned!" >&2
 fi
 
@@ -75,16 +126,16 @@ if ! has_renice_cap "$USER"; then
   echo "The ability to run renice (by belonging to the renice group created by BBPRO) is necessary for proper audio functioning."
   echo "Trying to add renice capability for $USER..."
 
-  if sudo -n true 2>/dev/null; then
-    echo "The user has sudo access." >&2
-    if ! sudo grep -q "%renice ALL=(ALL) NOPASSWD:" /etc/sudoers; then
-      sudo groupadd renice >&2
-      echo "%renice ALL=NOPASSWD: /usr/bin/renice, /usr/bin/loginctl, /usr/bin/id" | sudo tee -a /etc/sudoers >&2
+  if $SUDO -n true 2>/dev/null; then
+    echo "The user has $SUDO access." >&2
+    if ! $SUDO grep -q "%renice ALL=(ALL) NOPASSWD:" /etc/sudoers; then
+      $SUDO groupadd renice >&2
+      echo "%renice ALL=NOPASSWD: /usr/bin/renice, /usr/bin/loginctl, /usr/bin/id" | $SUDO tee -a /etc/sudoers >&2
     fi
-    sudo usermod -aG renice $USER
+    $SUDO usermod -aG renice $USER
     echo "You may need to log out and log in again, or restart your shell/terminal, for renice capability take effect."
   else
-    echo "The user does not have sudo access. We cannot add renice capability for this user." >&2
+    echo "The user does not have $SUDO access. We cannot add renice capability for this user." >&2
     echo "Manually add $USER to group renice." >&2
   fi
 fi

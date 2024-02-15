@@ -4,8 +4,10 @@ INSTALL_DIR="${1:-$(pwd)}"
 SUDO=""
 COMMAND_DIR=""
 
-if command -v sudo; then
-  SUDO="sudo"
+source ~/.nvm/nvm.sh
+
+if command -v sudo &> /dev/null; then
+  SUDO="sudo -n"
 fi
 
 # Check if /usr/local/bin is in the PATH and is writable
