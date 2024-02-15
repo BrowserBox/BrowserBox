@@ -68,8 +68,8 @@
 
     try {
       Object.assign(SSL_OPTS,{
-        key: fs.readFileSync(path.resolve(CONFIG.sslcerts(process.env.DOCS_PORT), 'privkey.pem')),
-        cert: fs.readFileSync(path.resolve(CONFIG.sslcerts(process.env.DOCS_PORT), 'fullchain.pem')),
+        key: fs.readFileSync(Path.resolve(CONFIG.sslcerts(process.env.DOCS_PORT), 'privkey.pem')),
+        cert: fs.readFileSync(Path.resolve(CONFIG.sslcerts(process.env.DOCS_PORT), 'fullchain.pem')),
       });
       secure = true;
     } catch(e) {
