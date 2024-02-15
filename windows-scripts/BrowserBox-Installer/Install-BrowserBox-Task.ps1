@@ -87,7 +87,7 @@ $Outer = {
     InstallFmedia
     InstallAndLoadNvm
 
-    nvm install v21
+    nvm install v20
     nvm use latest
 
     Write-Host "Setting up certificate..."
