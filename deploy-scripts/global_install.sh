@@ -53,7 +53,7 @@ initialize_package_manager() {
   elif command -v apt &>/dev/null; then
     package_manager=$(command -v apt)
     if command -v apt-get &>/dev/null; then
-      ./deploy-scripts/non-interactive.sh
+      source ./deploy-scripts/non-interactive.sh
     fi
     # Check if the system is Debian and the version is 11
     if [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]]; then
@@ -377,7 +377,12 @@ install_nvm
 
 echo "Running npm install..."
 
-npm i
+if ! npm i; then
+  # attempt to save node weirdness
+  npm run clean
+  $SUDO $APT install -y build-essential
+  npm i
+fi
 
 echo "npm install complete"
 
