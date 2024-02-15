@@ -28,7 +28,8 @@ cat <<EOF | $SUDO tee /etc/needrestart/conf.d/no-prompt.conf >/dev/null
 EOF
 
 # Perform a non-interactive dist-upgrade
-$SUDO NEEDRESTART_MODE=a apt-get dist-upgrade --yes
+export NEEDRESTART_MODE=a
+$SUDO apt-get dist-upgrade --yes
 
 # Install debconf-utils and set it to restart libraries without asking
 $SUDO apt-get -y install debconf-utils
