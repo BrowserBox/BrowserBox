@@ -38,7 +38,7 @@ cat <<EOF | $SUDO tee /etc/needrestart/conf.d/no-prompt.conf >/dev/null
 EOF
 
 # Perform a non-interactive dist-upgrade
-$SUDO apt-get dist-upgrade -o Dpkg::Options::="--force-confnew" --yes -yqq
+#$SUDO apt-get dist-upgrade -o Dpkg::Options::="--force-confnew" --yes -yqq
 
 # Install debconf-utils and set it to restart libraries without asking
 $SUDO apt-get -y install debconf-utils
