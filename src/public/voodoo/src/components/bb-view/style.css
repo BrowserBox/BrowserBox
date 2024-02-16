@@ -9,9 +9,4 @@ canvas {
   image-rendering: high-quality;
 }
 
-@media screen and (max-width: 600px) {
-  canvas {
-    filter: saturate(1.309) contrast(1.309);
-    image-rendering: high-quality;
-  }
-}
+
