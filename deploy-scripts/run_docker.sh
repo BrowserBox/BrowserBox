@@ -3,9 +3,14 @@
 # Detect operating system
 OS=$(uname)
 ZONE=""
+SUDO=""
+if command -v sudo &>/dev/null; then
+  echo "Using passwordless sudo. Ensure sudo is already unlocked with a password or use NOPASSWD in sudoers, which can be edited using visudo." >&2 
+  SUDO="sudo -n"
+fi
 
 if command -v firewall-cmd; then
-  ZONE="$(sudo firewall-cmd --get-default-zone)"
+  ZONE="$($SUDO firewall-cmd --get-default-zone)"
 fi
 
 ## Check if running on macOS
@@ -16,13 +21,13 @@ fi
 #  exit 1
 #fi
 
-# Check for root or sudo capabilities
+# Check for root or $SUDO capabilities
 if [[ $EUID -eq 0 ]]; then
   echo "Running as root."
-elif sudo -n true 2>/dev/null; then
-  echo "Has sudo capabilities."
+elif $SUDO -n true 2>/dev/null; then
+  echo "Has $SUDO capabilities."
 else
-  echo "This script requires root privileges or sudo capabilities." 1>&2
+  echo "This script requires root privileges or $SUDO capabilities." 1>&2
   exit 1
 fi
 
@@ -78,9 +83,9 @@ DOCKER_TAG="latest"
 DOCKER_IMAGE_WITH_TAG="${DOCKER_IMAGE}:${DOCKER_TAG}"
 
 # Check if the Docker image is already present
-if ! sudo docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^${DOCKER_IMAGE_WITH_TAG}$"; then
+if ! $SUDO docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^${DOCKER_IMAGE_WITH_TAG}$"; then
   echo "Docker image not found locally. Pulling from repository..."
-  sudo docker pull "${DOCKER_IMAGE_WITH_TAG}"
+  $SUDO docker pull "${DOCKER_IMAGE_WITH_TAG}"
 else
   echo "Docker image already exists locally."
 fi
@@ -124,10 +129,9 @@ open_firewall_port_range() {
         firewall-cmd --reload
 
     # Check for ufw (Uncomplicated Firewall)
-    elif command -v ufw &> /dev/null; then
+    elif $SUDO bash -c 'command -v ufw' &> /dev/null; then
         echo "Using ufw"
-        ufw allow ${start_port}:${end_port}/tcp
-
+        $SUDO ufw allow ${start_port}:${end_port}/tcp
     else
         echo "No recognized firewall management tool found"
         return 1
@@ -137,20 +141,20 @@ open_firewall_port_range() {
 open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
 
 # Run the container with the appropriate port mappings and capture the container ID
-CONTAINER_ID=$(sudo docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
+CONTAINER_ID=$($SUDO docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
 
 echo "Waiting a few seconds for container to start..."
 sleep 7
 
 mkdir -p artefacts
-sudo docker cp $CONTAINER_ID:/home/bbpro/bbpro/login_link.txt artefacts/
+$SUDO docker cp $CONTAINER_ID:/home/bbpro/bbpro/login_link.txt artefacts/
 login_link=$(cat ./artefacts/login_link.txt)
 
 new_link=${login_link//localhost/$output}
 echo $new_link
 echo "Container id:" $CONTAINER_ID
 
-sudo docker exec -it $CONTAINER_ID bash
+$SUDO docker exec -it $CONTAINER_ID bash
 
 echo $new_link
 echo "Container id:" $CONTAINER_ID
@@ -159,7 +163,7 @@ read -p "Do you want to keep running the container? (no/n to stop, any other key
 
 if [[ $user_response == "no" || $user_response == "n" ]]; then
   echo "Stopping container..."
-  sudo docker stop --time 1 "$CONTAINER_ID"
+  $SUDO docker stop --time 1 "$CONTAINER_ID"
   echo "Container stopped."
 else
   echo "Container not stopped."
