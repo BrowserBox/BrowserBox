@@ -13,6 +13,12 @@ BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilita
 
 # Latest News
 
+## v7.1.2 Maintenance Release
+
+Our new maintenance release has just landed and includes a range of minor improvements to stability across the diverse OS platforms supported by BrowserBox, including 1-Click deploy. Of note are the support of unprivileged users, and a drastic speedup of install times for the full (including doc viewer) install. [Read more here](https://github.com/BrowserBox/BrowserBox/releases/tag/v7.1.2)
+
+We've also translated a brief README introduction to BrowserBox into a new languages. See the links at the top of the README for a version that might be in your preferred language.
+
 ## Contributing
 
 Contributors and developers take a look at these source diagrams of BrowserBox. 
