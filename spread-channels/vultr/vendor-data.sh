@@ -75,10 +75,13 @@ fi
 
 # Switch to the new user and run the scripts
 su - "$username" <<EOF
-  cd "/home/${username}" || cd "$HOME"
+  cd "/home/${username}" || cd "\$HOME"
   git clone https://github.com/BrowserBox/BrowserBox.git
   cd BrowserBox
   export INSTALL_DOC_VIEWER="true"
+  # just trigger the install of the tls related tools so they are not needed to be installed later when we are running a background 
+  # install task for doc viewer
+  ./deploy-scripts/tls "$HOSTNAME"
   yes | ./deploy-scripts/global_install.sh "localhost" "vultr-marketplace-setup@dosyago.com"
 EOF
 
@@ -121,6 +124,8 @@ su - "$username" <<EOF2
   ./deploy-scripts/tls "$HOSTNAME"
   mkdir -p "/home/${username}/sslcerts"
   sudo ./deploy-scripts/cp_certs "$HOSTNAME" "/home/${username}/sslcerts"
+  sudo mkdir -p "/usr/local/share/dosyago/sslcerts"
+  sudo ./deploy-scripts/cp_certs "$HOSTNAME" "/usr/local/share/dosaygo/sslcerts"
   wait_for setup_bbpro
   wait_for bbpro
   setup_bbpro --port 8080 --token "$TOKEN"

@@ -294,7 +294,7 @@ open_firewall_port_range() {
       $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
       $SUDO firewall-cmd --reload
     # Check for ufw (Uncomplicated Firewall)
-    elif command -v ufw &> /dev/null; then
+    elif $SUDO bash -c 'command -v ufw' &> /dev/null; then
       echo "Using ufw"
       if [[ "$start_port" != "$end_port" ]]; then
         $SUDO ufw allow ${start_port}:${end_port}/tcp
