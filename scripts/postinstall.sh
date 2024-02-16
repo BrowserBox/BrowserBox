@@ -137,8 +137,18 @@ if [[ $PLAT != win* ]]; then
   fi
 
   if [[ "$yes_docs" != "false" ]]; then
-    echo "Installing OS dependencies for secure document viewer..."
-    ./scripts/setup.sh
+    # Change to background install to speed things up
+    # this means you will need to wait a bit for documents to convert. And likely have to retry them
+    # by reclicking on the link to them in the remote browser, to trigger the convert process again
+    # at least until this background install process for the doc viewer and its dependencies
+    # is completed. This can take a while, due to all the tex and font packages! 
+    # It can take 30 minutes or more to complete depending on the machines speed and bandwidth.
+    echo "Installing OS dependencies for secure document viewer in the background..."
+    if command -v nohup &>/dev/null; then
+      nohup bash -c 'yes | ./scripts/setup.sh' &> $HOME/docviewer-install-nohup.out &
+    else
+      bash -c 'yes | ./scripts/setup.sh' &> $HOME/docviewer-install-nohup.out &
+    fi
   else
     echo "Skipping doc viewer install"
   fi
