@@ -10,6 +10,25 @@ unset UCF_FORCE_CONFOLD
 export UCF_FORCE_CONFNEW=YES
 $SUDO ucf --purge /boot/grub/menu.lst
 
+set_grub_install_device() {
+  # Use findmnt to directly get the root device
+  ROOT_DEVICE=$(findmnt -n -o SOURCE /)
+
+  # Ensure the device is not empty
+  if [ -z "$ROOT_DEVICE" ]; then
+    echo "Unable to find the root device for GRUB installation."
+    return 1
+  fi
+
+  # Set the device for GRUB installation using debconf-set-selections
+  echo "grub-pc grub-pc/install_devices string $ROOT_DEVICE" | sudo debconf-set-selections
+
+  echo "If grub is updated, it will be installed on: $ROOT_DEVICE"
+}
+
+# Call the function
+set_grub_install_device
+
 # Create dpkg configuration
 echo "Creating dpkg configuration..."
 $SUDO mkdir -p /etc/dpkg/dpkg.cfg.d/
@@ -38,7 +57,7 @@ cat <<EOF | $SUDO tee /etc/needrestart/conf.d/no-prompt.conf >/dev/null
 EOF
 
 # Perform a non-interactive dist-upgrade
-#$SUDO apt-get dist-upgrade -o Dpkg::Options::="--force-confnew" --yes -yqq
+$SUDO apt-get dist-upgrade -o Dpkg::Options::="--force-confnew" --yes -yqq
 
 # Install debconf-utils and set it to restart libraries without asking
 $SUDO apt-get -y install debconf-utils
