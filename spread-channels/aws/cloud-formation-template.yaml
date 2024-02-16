@@ -35,7 +35,7 @@ Parameters:
 
   VPCId:
     Type: AWS::EC2::VPC::Id
-    Description: "[required] VPC ID where the instance will be deployed."
+    Description: "[required] VPC ID where the instance will be deployed. It MUST be your accounts Default VPC ID created with an Admin user. If you know how to make CF EC2 instance creation work with any VPC, even non-default, please reach out to us at opensource@dosyago.com or contribute on https://github.com/BrowserBox/BrowserBox"
     AllowedPattern: .+
 
   SSHKeyName:
