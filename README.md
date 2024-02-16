@@ -966,7 +966,7 @@ See [our website](https://dosyago.com) and [our GumRoad](https://dosy.gumroad.co
 
 **Notes:**
 - *Perpetual Packs contain multiple seats. For example, the 10-pack contains 10 licenses.*
-- *Each 'seat' represents a concurrent user.*
+- *Each 'seat' represents a named user.*
 
 ## Elevate Your Zero Trust Strategy with BrowserBoxPro
 
