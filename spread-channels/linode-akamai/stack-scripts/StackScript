@@ -91,8 +91,8 @@ su - "$username" <<EOF
   git clone https://github.com/BrowserBox/BrowserBox.git
   cd BrowserBox
   ./deploy-scripts/wait_for_hostname.sh "$HOSTNAME"
-  yes | ./deploy-scripts/global_install.sh "$HOSTNAME" "$USEREMAIL"
   export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
+  yes | ./deploy-scripts/global_install.sh "$HOSTNAME" "$USEREMAIL"
   if [[ -z "$TOKEN" ]]; then
     setup_bbpro --port 8080 
   else
@@ -100,4 +100,3 @@ su - "$username" <<EOF
   fi
   bbpro
 EOF
-
