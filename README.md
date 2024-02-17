@@ -2,7 +2,7 @@
 |  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1>　BrowserBox 　</h1> |
 |------|------|
 
-#  　 　*web made 　 meta* 　 　
+#  　 　*meta web browser* 　  　 　
 
 [Español (Spanish)](translated-intros/INTRO-ES.md) | [עברית (Hebrew)](translated-intros/INTRO-HE.md) | [हिन्दी (Hindi)](translated-intros/INTRO-HI.md) | [Français (French)](translated-intros/INTRO-FR.md) | [Русский (Russian)](translated-intros/INTRO-RU.md) | [العربية (Arabic)](translated-intros/INTRO-AR.md) | [中文 (Chinese)](translated-intros/INTRO-ZH.md)
 
