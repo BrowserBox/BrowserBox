@@ -6,7 +6,7 @@
 
 [Español (Spanish)](translated-intros/INTRO-ES.md) | [עברית (Hebrew)](translated-intros/INTRO-HE.md) | [हिन्दी (Hindi)](translated-intros/INTRO-HI.md) | [Français (French)](translated-intros/INTRO-FR.md) | [Русский (Russian)](translated-intros/INTRO-RU.md) | [العربية (Arabic)](translated-intros/INTRO-AR.md) | [中文 (Chinese)](translated-intros/INTRO-ZH.md)
 
-> *It's a natural concept: a browser you can run on a server, rather than your local device. So the web **browser** becomes a web **app**. Abstract your web content. Secure your network. Program across sites. Access the web from anywhere, anywhere!*
+> *BrowserBox: a browser you run on a server, rather than your local device. The web **browser** becomes a web **app**. Abstract your web content. Secure your network. Program across sites. Access the web from anywhere, anywhere!*
  
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
 
