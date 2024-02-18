@@ -4,7 +4,7 @@
 
 #  　 　*meta web browser* 　  　 　
 
-[Español (Spanish)](translated-intros/INTRO-ES.md) | [עברית (Hebrew)](translated-intros/INTRO-HE.md) | [हिन्दी (Hindi)](translated-intros/INTRO-HI.md) | [Français (French)](translated-intros/INTRO-FR.md) | [Русский (Russian)](translated-intros/INTRO-RU.md) | [العربية (Arabic)](translated-intros/INTRO-AR.md) | [中文 (Chinese)](translated-intros/INTRO-ZH.md)
+[Español&nbsp;(Spanish)](translated-intros/INTRO-ES.md) | [עברית&nbsp;(Hebrew)](translated-intros/INTRO-HE.md) | [हिन्दी&nbsp;(Hindi)](translated-intros/INTRO-HI.md) | [Français&nbsp;(French)](translated-intros/INTRO-FR.md) | [Русский&nbsp;(Russian)](translated-intros/INTRO-RU.md) | [العربية&nbsp;(Arabic)](translated-intros/INTRO-AR.md) | [中文&nbsp;(Chinese)](translated-intros/INTRO-ZH.md)
 
 > *BrowserBox: a browser you run on a server, rather than your local device. The web **browser** becomes a web **app**. Abstract your web content. Secure your network. Program across sites. Access the web from anywhere, anywhere!*
  
