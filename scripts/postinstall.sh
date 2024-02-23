@@ -137,6 +137,7 @@ if [[ $PLAT != win* ]]; then
   fi
 
   if [[ "$yes_docs" != "false" ]]; then
+    # Unless we are in docker then
     # Change to background install to speed things up
     # this means you will need to wait a bit for documents to convert. And likely have to retry them
     # by reclicking on the link to them in the remote browser, to trigger the convert process again
@@ -144,10 +145,14 @@ if [[ $PLAT != win* ]]; then
     # is completed. This can take a while, due to all the tex and font packages! 
     # It can take 30 minutes or more to complete depending on the machines speed and bandwidth.
     echo "Installing OS dependencies for secure document viewer in the background..."
-    if command -v nohup &>/dev/null; then
-      nohup bash -c 'yes | ./scripts/setup.sh' &> $HOME/docviewer-install-nohup.out &
-    else
-      bash -c 'yes | ./scripts/setup.sh' &> $HOME/docviewer-install-nohup.out &
+    if [[ "$IS_DOCKER_BUILD" == "true" ]]; then
+      yes | ./scripts/setup.sh
+    else 
+      if command -v nohup &>/dev/null; then
+        nohup bash -c 'yes | ./scripts/setup.sh' &> $HOME/docviewer-install-nohup.out &
+      else
+        bash -c 'yes | ./scripts/setup.sh' &> $HOME/docviewer-install-nohup.out &
+      fi
     fi
   else
     echo "Skipping doc viewer install"
