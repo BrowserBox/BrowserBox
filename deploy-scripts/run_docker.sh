@@ -46,9 +46,9 @@ fi
 echo "Your use is an agreement to the terms, privacy policy and license."
 
 # Define directory and file paths
-certDir="$HOME/sslcerts"
-certFile="$certDir/fullchain.pem"
-keyFile="$certDir/privkey.pem"
+certDir="${HOME}/sslcerts"
+certFile="${certDir}/fullchain.pem"
+keyFile="${certDir}/privkey.pem"
 
 # Function to print instructions
 print_instructions() {
@@ -64,12 +64,12 @@ print_instructions() {
 # Check if directory exists and if certificate and key files exist
 if [ -d "$certDir" ]; then
     if [ -f "$certFile" ] && [ -f "$keyFile" ]; then
-        chmod 644 $certDir/*.pem
-        echo "Great job! Your SSL/TLS/HTTPS certificates are all set up correctly. You're ready to go!"
+      chmod 644 "$certDir"/*.pem
+      echo "Great job! Your SSL/TLS/HTTPS certificates are all set up correctly. You're ready to go!"
     else
-        echo "Almost there! Your 'sslcerts' directory exists, but it seems you're missing some certificate files."
-        print_instructions
-        exit 1
+      echo "Almost there! Your 'sslcerts' directory exists, but it seems you're missing some certificate files."
+      print_instructions
+      exit 1
     fi
 else
     echo "Looks like you're missing the 'sslcerts' directory."
@@ -112,30 +112,30 @@ PORT=$1
 # Validate that PORT is a number
 if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
   echo "Error: PORT must be a number."
-  echo "Usage: " $0 "<PORT>"
+  echo "Usage: " "$0" "<PORT>"
   exit 1
 else
   echo "Setting main port to: $PORT"
 fi
 
 open_firewall_port_range() {
-    local start_port=$1
-    local end_port=$2
+  local start_port=$1
+  local end_port=$2
 
-    # Check for firewall-cmd (firewalld)
-    if command -v firewall-cmd &> /dev/null; then
-        echo "Using firewalld"
-        firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
-        firewall-cmd --reload
+  # Check for firewall-cmd (firewalld)
+  if command -v firewall-cmd &> /dev/null; then
+      echo "Using firewalld"
+      firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
+      firewall-cmd --reload
 
-    # Check for ufw (Uncomplicated Firewall)
-    elif $SUDO bash -c 'command -v ufw' &> /dev/null; then
-        echo "Using ufw"
-        $SUDO ufw allow ${start_port}:${end_port}/tcp
-    else
-        echo "No recognized firewall management tool found"
-        return 1
-    fi
+  # Check for ufw (Uncomplicated Firewall)
+  elif $SUDO bash -c 'command -v ufw' &> /dev/null; then
+      echo "Using ufw"
+      $SUDO ufw allow ${start_port}:${end_port}/tcp
+  else
+      echo "No recognized firewall management tool found"
+      return 1
+  fi
 }
 
 open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
@@ -143,6 +143,8 @@ open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
 # Run the container with the appropriate port mappings and capture the container ID
 CONTAINER_ID=$($SUDO docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
 
+echo "We will now Log You In to your container..."
+echo "[Remember: you can get out of your container anytime by typing 'exit'.]"
 echo "Waiting a few seconds for container to start..."
 sleep 7
 
@@ -151,21 +153,38 @@ $SUDO docker cp $CONTAINER_ID:/home/bbpro/bbpro/login_link.txt artefacts/
 login_link=$(cat ./artefacts/login_link.txt)
 
 new_link=${login_link//localhost/$output}
+echo ""
+echo "Your Login Link"
+echo "==========================================="
 echo $new_link
+echo "==========================================="
+echo ""
 echo "Container id:" $CONTAINER_ID
 
 $SUDO docker exec -it $CONTAINER_ID bash
 
+echo ""
+echo "Your Login Link"
+echo "==========================================="
 echo $new_link
+echo "==========================================="
+echo ""
 echo "Container id:" $CONTAINER_ID
+echo "You are now Logged Out of your container."
+echo "[Remember: you can get back in anytime from your command prompt by typing: docker exec -it $CONTAINER_ID bash]"
+echo "You can stop your container with docker stop $CONTAINER_ID"
+echo "Or by answering 'no' to the question below."
 
-read -p "Do you want to keep running the container? (no/n to stop, any other key to leave running): " user_response
+read -p "Do you want to keep the container running? [no/n to stop, any other key to leave running]: " user_response
 
-if [[ $user_response == "no" || $user_response == "n" ]]; then
-  echo "Stopping container..."
-  $SUDO docker stop --time 1 "$CONTAINER_ID"
+if [[ "$user_response" == "no" || "$user_response" == "n" ]]; then
+  echo "Stopping container (waiting up to 3 seconds)..."
+  $SUDO docker stop --time 3 "$CONTAINER_ID"
   echo "Container stopped."
 else
   echo "Container not stopped."
+  echo "Connect to BrowserBox from a browser now by going to: $new_link"
 fi
 
+echo "Exiting BrowserBox Docker run script..."
+exit 0

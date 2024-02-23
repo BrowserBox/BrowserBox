@@ -2,7 +2,8 @@
 
 #set -x
 
-trap 'echo "Exiting..."' EXIT ERR
+trap 'echo "Got an error. Bailing this section..." >&2' ERR
+trap 'echo "Exiting..." >&2' EXIT
 
 OS_TYPE=""
 ONTOR=false
@@ -92,7 +93,7 @@ is_port_free_windows() {
 ensure_certtools_windows() {
   if ! command -v openssl > /dev/null 2>&1; then
     echo "Installing OpenSSL..." >&2
-    winget install -e --id OpenSSL.OpenSSL
+    winget install -e --id OpenSSL.OpenSSL 1>&2
   fi
 }
 
@@ -144,6 +145,35 @@ is_port_free() {
   return 0
 }
 
+# i like this version
+is_port_free_new() {
+  local port=$1
+  if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -ge 4022 ] && [ "$port" -le 65535 ]; then
+    echo "$port is a valid port number." >&2
+  else
+    echo "$1 is an invalid port number." >&2
+    echo "" >&2
+    echo "Select a main port between 4024 and 65533." >&2
+    echo "" >&2
+    echo "  Why 4024?" >&2
+    echo "    This is because, by convention the browser runs on the port 3000 below the app's main port, and the first user-space port is 1024." >&2
+    echo "" >&2
+    echo "  Why 65533?" >&2
+    echo "    This is because each app occupies a slice of 5 consecutive ports, two below, and two above, the app's main port. The highest user-space port is 65535, hence the highest main port that leaves two above it free is 65533." >&2
+    echo "" >&2
+    return 1
+  fi
+
+  # Using direct TCP connection attempt to check port status
+  if (echo > /dev/tcp/localhost/$port) &>/dev/null; then
+    echo "Port $port is available." >&2
+    return 0
+  else
+    echo "Port $port is in use."
+    return 1
+  fi
+}
+
 # Detect Operating System
 detect_os() {
   if command_exists lsb_release ; then
@@ -156,7 +186,7 @@ detect_os() {
   elif [[ "$OSTYPE" == "msys"* ]]; then
     distro="win"
   else
-    echo "Cannot determine the distribution. Please email support@dosyago.com." >&2
+    echo "ERROR: Cannot determine the distribution. Please email support@dosyago.com." >&2
     exit 1
   fi
 
@@ -174,7 +204,7 @@ detect_os() {
       OS_TYPE="win"
     ;;
     *)
-      echo "Unsupported Operating System: $distro" >&2
+      echo "ERROR: Unsupported Operating System: $distro" >&2
       exit 1
       ;;
   esac
@@ -199,7 +229,7 @@ find_torrc_path() {
     TORRC="/etc/tor/torrc"  # Default path for Linux distributions
     TORDIR="/var/lib/tor"
   fi
-  echo "$TORRC"
+  echo "$TORRC" 
 }
 
 # Function to check if Tor is installed
@@ -251,8 +281,12 @@ obtain_socks5_proxy_address() {
 
 function create_selinux_policy_for_ports() {
   # Check if SELinux is enforcing
+  if ! command_exists getenforce; then
+    echo "Not SELinux" >&2
+    return
+  fi
   if [[ "$(getenforce)" != "Enforcing" ]]; then
-    echo "SELinux is not in enforcing mode. Exiting."
+    echo "SELinux is not in enforcing mode." >&2
     return
   fi
 
@@ -262,7 +296,7 @@ function create_selinux_policy_for_ports() {
   local PORT_RANGE=$3
 
   if [[ -z "$SEL_TYPE" || -z "$PROTOCOL" || -z "$PORT_RANGE" ]]; then
-    echo "Usage: create_selinux_policy_for_ports SEL_TYPE PROTOCOL PORT_RANGE"
+    echo "Usage: create_selinux_policy_for_ports SEL_TYPE PROTOCOL PORT_RANGE" >&2
     return
   fi
 
@@ -275,7 +309,7 @@ function create_selinux_policy_for_ports() {
   $SUDO semodule -i my_custom_policy_module.pp
   rm my_custom_policy_module.*
 
-  echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE."
+  echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE." >&2
 }
 
 open_firewall_port_range() {
@@ -290,22 +324,22 @@ open_firewall_port_range() {
 
     # Check for firewall-cmd (firewalld)
     if command -v firewall-cmd &> /dev/null; then
-      echo "Using firewalld"
-      $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
-      $SUDO firewall-cmd --reload
+      echo "Using firewalld" >&2
+      $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent 1>&2
+      $SUDO firewall-cmd --reload 1>&2
     # Check for ufw (Uncomplicated Firewall)
     elif $SUDO bash -c 'command -v ufw' &> /dev/null; then
-      echo "Using ufw"
+      echo "Using ufw" >&2
       if [[ "$start_port" != "$end_port" ]]; then
-        $SUDO ufw allow ${start_port}:${end_port}/tcp
+        $SUDO ufw allow ${start_port}:${end_port}/tcp 1>&2
       else
-        $SUDO ufw allow ${start_port}/tcp
+        $SUDO ufw allow ${start_port}/tcp 1>&2
       fi
     elif command -v netsh &>/dev/null; then
-      echo "Will use netsh later"
+      echo "Will use netsh later" >&2
     else
-        echo "No recognized firewall management tool found"
-        return 1
+      echo "No recognized firewall management tool found" >&2
+      return 1
     fi
 }
 
@@ -343,7 +377,7 @@ fi
 OPTS=$($getopt -o hp:t:c:d: --long help,port:,token:,cookie:,doc-key:,ontor,inject: -n 'parse-options' -- "$@")
 
 
-if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; exit 1 ; fi
+if [ $? != 0 ] ; then echo "ERROR: Failed parsing options." >&2 ; exit 1 ; fi
 
 eval set -- "$OPTS"
 
@@ -363,7 +397,7 @@ while true; do
       if [[ -f "$INJECT_SCRIPT" ]]; then
         echo "Inject script valid." >&2
       else
-        echo "Inject script does not exist. Exiting..." >&2
+        echo "ERROR: Inject script $INJECT_SCRIPT does not exist." >&2
         exit 1
       fi
     ;;
@@ -371,7 +405,7 @@ while true; do
       if [[ $2 =~ ^[0-9]+$ ]]; then
         PORT="$2"
       else
-        echo "Error: --port requires a numeric argument.">&2
+        echo "ERROR: --port requires a numeric argument.">&2
         exit 1
       fi
       shift 2
@@ -384,7 +418,7 @@ while true; do
       break
     ;;
     * )
-      echo "Invalid option: $1" >&2
+      echo "ERROR: Invalid option: $1" >&2
       display_help
       exit 1
     ;;
@@ -394,21 +428,21 @@ done
 echo "Done!">&2;
 
 if [ -z "$PORT" ]; then
-  echo "Error: --port option is required. Type --help for options." >&2
+  echo "ERROR: --port option is required. Type --help for options." >&2
   exit 1
 elif ! is_port_free "$PORT"; then
   echo "" >&2
-  echo "Error: the suggested port $PORT is invalid or already in use." >&2
+  echo "ERROR: the suggested port $PORT is invalid or already in use." >&2
   echo "" >&2
   exit 1
 elif ! is_port_free $(($PORT - 2)); then
-  echo "Error: the suggested port range (audio) is already in use" >&2
+  echo "ERROR: the suggested port range (audio) is already in use" >&2
   exit 1
 elif ! is_port_free $(($PORT + 1)); then
-  echo "Error: the suggested port range (devtools) is already in use" >&2
+  echo "ERROR: the suggested port range (devtools) is already in use" >&2
   exit 1
 elif ! is_port_free $(($PORT - 1)); then
-  echo "Error: the suggested port range (doc viewer) is already in use" >&2
+  echo "ERROR: the suggested port range (doc viewer) is already in use" >&2
   exit 1
 fi
 
@@ -540,4 +574,4 @@ DOMAIN=$HOST
 echo https://$DOMAIN:$PORT/login?token=$TOKEN > $CONFIG_DIR/login.link
 echo https://$DOMAIN:$PORT/login?token=$TOKEN
 
-echo "Setup complete. Exiting...">&2
+echo "Setup complete.">&2

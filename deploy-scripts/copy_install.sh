@@ -22,11 +22,7 @@ else
   mkdir -p $COMMAND_DIR
 fi
 
-if [ "$IS_DOCKER_BUILD" = "true" ]; then
-  echo "In docker, not running parcel (it hangs sometimes!)"
-else
-  npm run parcel
-fi
+npm run parcel
 
 echo "INSTALL_DIR: $INSTALL_DIR"
 echo -n "Copying bbpro application files to /usr/local/share/dosyago/ ..."

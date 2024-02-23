@@ -32,9 +32,9 @@ const DEBUG = {
   showAllMessages: false,
   showAcks: false,
   showConnections: true,
-  val: 1,
+  val: 0,
   showFormat: true,
-  mode: 'dev',
+  mode: 'prod',
   goSecure: true
 }
 const Clients = new Set();

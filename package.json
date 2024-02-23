@@ -1,7 +1,7 @@
 {
   "name": "@dosyago/browserbox",
   "type": "module",
-  "version": "7.1.0",
+  "version": "7.1.2",
   "description": "BrowserBox - remote browser isolation tool",
   "main": "./src/server.js",
   "default": "dist/image.html",
@@ -90,7 +90,7 @@
     "cors": "latest",
     "csurf": "latest",
     "entities": "latest",
-    "esbuild": "0.20.0",
+    "esbuild": "0.20.1",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "latest",
