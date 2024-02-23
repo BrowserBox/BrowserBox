@@ -3,10 +3,13 @@
 
 # current base
 FROM ubuntu:jammy
+LABEL org.opencontainers.image.title="BrowserBox" \
+      org.opencontainers.image.description="BrowserBox provides Web Isolation, Document Sanitization and a Reverse CORS Proxy in one iframe you can embed on your web app. Licensed multiply under noncommercial, AGPL-3.0-or-later, and commercial options, BrowserBox gives you the flexibility and customization you need for your most demanding applications. Contact us at hello@dosyago.com for flexible licensing options if you won't be publishing your changes under the AGPL. Or, simply reach out for a range of support, customization and deployment solutions tailored to your needs. BrowserBox is the open-source RBI solution tailored for demanding custom applications, and is suitable for individuals and organizations of all sizes." \
+      org.opencontainers.image.version="7.1.2" \
+      org.opencontainers.image.authors="DOSYAGO BrowserBox Team <bb-team@dosyago.com>" \
+      org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox"
 
 SHELL ["/bin/bash", "-c"]
-
-LABEL org.opencontainers.image.source https://github.com/BrowserBox/BrowserBox
 
 ARG IS_DOCKER_BUILD=true
 ENV IS_DOCKER_BUILD=$IS_DOCKER_BUILD
