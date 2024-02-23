@@ -95,7 +95,7 @@ To run BrowserBox docker easily you need to use the included **run script**: `./
 > [!NOTE]
 > We use a run script to avoid you needing to manually bridge a range of ports, run the correct command, and ensure HTTPS certificates are set up across a range of deployment scenarios. Worry not, our intrepid `run_docker.sh` script will guide you through everything you need.
 
-You can get started right away, just follow the prompts when you run the below:
+You can get started right away, just follow the prompts when you run the below to install and run the latest BrowserBox on Docker:
 
 ```console
 bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) 9999
