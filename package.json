@@ -1,7 +1,7 @@
 {
   "name": "@dosyago/browserbox",
   "type": "module",
-  "version": "7.1.0",
+  "version": "7.1.2",
   "description": "BrowserBox - remote browser isolation tool",
   "main": "./src/server.js",
   "default": "dist/image.html",

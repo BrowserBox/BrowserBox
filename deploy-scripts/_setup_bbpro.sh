@@ -338,8 +338,8 @@ open_firewall_port_range() {
     elif command -v netsh &>/dev/null; then
       echo "Will use netsh later" >&2
     else
-        echo "No recognized firewall management tool found" >&2
-        return 1
+      echo "No recognized firewall management tool found" >&2
+      return 1
     fi
 }
 
