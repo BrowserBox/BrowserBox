@@ -93,7 +93,7 @@ is_port_free_windows() {
 ensure_certtools_windows() {
   if ! command -v openssl > /dev/null 2>&1; then
     echo "Installing OpenSSL..." >&2
-    winget install -e --id OpenSSL.OpenSSL
+    winget install -e --id OpenSSL.OpenSSL 1>&2
   fi
 }
 
@@ -165,8 +165,8 @@ is_port_free_new() {
   fi
 
   # Using direct TCP connection attempt to check port status
-  if (echo > /dev/tcp/localhost/$port) 2>/dev/null; then
-    echo "Port $port is available."
+  if (echo > /dev/tcp/localhost/$port) &>/dev/null; then
+    echo "Port $port is available." >&2
     return 0
   else
     echo "Port $port is in use."
@@ -229,7 +229,7 @@ find_torrc_path() {
     TORRC="/etc/tor/torrc"  # Default path for Linux distributions
     TORDIR="/var/lib/tor"
   fi
-  echo "$TORRC"
+  echo "$TORRC" 
 }
 
 # Function to check if Tor is installed
@@ -281,6 +281,10 @@ obtain_socks5_proxy_address() {
 
 function create_selinux_policy_for_ports() {
   # Check if SELinux is enforcing
+  if ! command_exists getenforce; then
+    echo "Not SELinux" >&2
+    return
+  fi
   if [[ "$(getenforce)" != "Enforcing" ]]; then
     echo "SELinux is not in enforcing mode." >&2
     return
@@ -292,7 +296,7 @@ function create_selinux_policy_for_ports() {
   local PORT_RANGE=$3
 
   if [[ -z "$SEL_TYPE" || -z "$PROTOCOL" || -z "$PORT_RANGE" ]]; then
-    echo "Usage: create_selinux_policy_for_ports SEL_TYPE PROTOCOL PORT_RANGE"
+    echo "Usage: create_selinux_policy_for_ports SEL_TYPE PROTOCOL PORT_RANGE" >&2
     return
   fi
 
@@ -305,7 +309,7 @@ function create_selinux_policy_for_ports() {
   $SUDO semodule -i my_custom_policy_module.pp
   rm my_custom_policy_module.*
 
-  echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE."
+  echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE." >&2
 }
 
 open_firewall_port_range() {
@@ -320,19 +324,19 @@ open_firewall_port_range() {
 
     # Check for firewall-cmd (firewalld)
     if command -v firewall-cmd &> /dev/null; then
-      echo "Using firewalld"
-      $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
-      $SUDO firewall-cmd --reload
+      echo "Using firewalld" >&2
+      $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent 1>&2
+      $SUDO firewall-cmd --reload 1>&2
     # Check for ufw (Uncomplicated Firewall)
     elif $SUDO bash -c 'command -v ufw' &> /dev/null; then
-      echo "Using ufw"
+      echo "Using ufw" >&2
       if [[ "$start_port" != "$end_port" ]]; then
-        $SUDO ufw allow ${start_port}:${end_port}/tcp
+        $SUDO ufw allow ${start_port}:${end_port}/tcp 1>&2
       else
-        $SUDO ufw allow ${start_port}/tcp
+        $SUDO ufw allow ${start_port}/tcp 1>&2
       fi
     elif command -v netsh &>/dev/null; then
-      echo "Will use netsh later"
+      echo "Will use netsh later" >&2
     else
         echo "No recognized firewall management tool found" >&2
         return 1
