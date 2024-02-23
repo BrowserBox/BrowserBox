@@ -10,6 +10,179 @@
  
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
 
+# Getting Started Guide
+
+You may run BrowserBox via a variety of easy to access means. The simplest and most stable is the full manual install. Simple spin up a VPS, VM baremetal server, or even your local device of choice and follow the instructions below and you'll be up and running in two jiffies! :joy_cat:
+
+> [!NOTE]
+> In case you're wondering, right now we don't track any telemetry at all. Not even that email address you'll enter. We plan to, in future one day, begin collecting at least your email, for the following purpose only: to very cautiously and tripatiously invite you to join a mailing list to receive updates on BrowserBox. *But not today.*
+
+## Manual Install - Most Flexible, and Most Reliable :green_checkmark:
+
+Before we show you the step by step instructions, we'll just show you the whole thing, in one block:
+
+```console
+git clone https://github.com/BrowserBox/BrowserBox.git
+cd BrowserBox
+./deploy-scripts/global_install.sh localhost my-email@address.com
+setup_bbpro --port 8080 > my.login.link.txt
+bbpro
+cat my.login.link
+```
+You can try this right now if you just want to try it out, and don't care about getting the rights certificates for production or accessing over the public internet. 
+
+The above commands will download, install, setup and start BrowserBox, as well as output your login link for you. Open that link (which looks like: **https://localhost:8080/login?token=csdkjhvsdfkjhv3498ysdf**) in your regular browser.
+
+> [!TIP]
+> The above simple method uses `localhost` as the hostname for your BrowserBox instance. While this works, thanks to `https://localhost` HTTPS certs, unless you're connecting from your local machine (not a common use case outside of trying it for yourslef), this is not a good idea because you will encounter certificate errors and warnings if you try to connect to BrowserBox from remote machine, which is normally the point.
+
+-------
+
+***Now, let's show you the full manual install.***
+
+1. **Download and Clone the Git Repository, and jump into the directory**:
+
+```console
+git clone https://github.com/BrowserBox/BrowserBox.git
+cd BrowserBox
+```
+
+2. **Point your DNS to your machine's IP with an *A record* mapping your chosen domain name to the IPv4 address of your VPS, VM, baremetal or whatever you're setting up on.**
+
+Check that your hostname (you were creative so you picked: **my.awesome.host.com**) resolves by running:
+
+```console
+./deploy-scripts/wait_for_hostname.sh my.awesome.host.com
+```
+
+3. **Once DNS is set up Begin the Install:**
+
+Run the install script using your instance's full domain name and your email address. Email is for agreeing to our terms and the HTTPS certificate provider's (aka LetsEncrypt's) terms. We don't spam you! We may send you a product announce in future tho, or invite you to join a list, but such a vile transgression of the sanctity of your holy email space would be an exceedingly rare, and cautiously approached, occurrence!
+
+```console
+./deploy-scripts/global_install.sh my.awesome.host.name.com my-rockin@email.address.com
+```
+
+this will take you through the attended install where you'll need to follow prompts. To just get the defaults (good idea), you can alter that command slightly to be a yes person for you :joy_cat::
+
+```console
+yes | ./deploy-scripts/global_install.sh my.so-awesome.host.name.com my-rockin@email.address.com
+```
+
+The above will run an unattended install, where it does everything for you, and you can go away and fix yourself a delicious beverage, or what not.
+
+> [!TIP]
+> The user you install with *will* need `sudo` capabilities. But you do *not* need `sudo` caps to **run** BrowserBox once it is already installed. 
+
+4. **Once Install Completes, Set Up, and Run!** :tada:
+
+As soon as installation completes you'll be ready to run BrowserBox using the following two key commands:
+
+```console
+setup_bbpro --port 9999
+bbpro
+```
+
+`setup_bbpro` will setup BrowserBox to bind to port 9999 (plus two either side for all its services. So ports 9997 through 10001 in this case).And will also return your very valuable, secret and crucial **login link**. This is your only way to access your BrowserBox. We save it to `$HOME/.config/dosyago/bbpro/login.link` if you lost it. Treat it like an screen sharing invite link, anyone you share that link with will be able to share, watch and drive your BrowserBox session, just like you. It's a free for all! Some may call it a melee. :joy:
+
+`bbpro` will start BrowserBox. Give it a couple seconds to start up.
+
+-----
+
+## Install and Run Via Docker - Easiest and Fastest, but can be less Reliable :green_checkmark:
+
+To run BrowserBox docker easily you need to use the included **run script**: `./deploy-scripts/run_docker.sh PORT` and follow the instructions. 
+> [!NOTE]
+> We use a run script to avoid you needing to manually bridge a range of ports, run the correct command, and ensure HTTPS certificates are set up across a range of deployment scenarios. Worry not, our intrepid `run_docker.sh` script will guide you through everything you need.
+
+You can get started right away, just follow the prompts when you run the below:
+
+```console
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) 9999
+```
+
+> [!TIP]
+> The run script may prompt you to perform some setup steps. Follow those and you'll be on your way to BrowserBox Land in no time! :joy_cat:
+
+#### Custom Docker Options
+
+To run a specific version manually, tag it as latest, then run it via the run_script:
+
+```console
+docker pull ghcr.io/browserbox/browserbox:v7.1
+docker tag ghcr.io/browserbox/browserbox:v7.1 ghcr.io/browserbox/browserbox:latest
+PORT=9999
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) $PORT
+```
+
+------
+
+## 1-Click Deploy - Deploy BrowserBox to the cloud instantly! :green_checkmark: :tada: :cyclone:
+
+By far the easiest and most fun method, 1-Click-Deploy BrowserBox is ready to deploy today on a number of popular cloud providers. See below for details. Just click the links to start your deployment and you'll be up and running in no time!
+
+> [!NOTE]
+> There's no licensing fees for personal use so all you pay are your own cloud costs. Just use one of the cloud providers below to start browsing the web *from a safe distance!*
+
+***What are you waiting for? Give it a try now!***
+
+<table>
+  <tr>
+    <th></th>
+    <th>Vultr</th>
+    <th>AWS</th>
+    <th>Linode</th>
+    <th>
+      Azure Quickstart
+      <br>
+      <strong>(recommended*)</strong>
+    </th>
+  </tr>
+  <tr> 
+    <td><b>Deploy</b></td>
+    <td align=center>
+      <a href="https://my.vultr.com/deploy?marketplace_app=browserbox&marketplace_vendor_username=DOSYAGO&_gl=1*66yk24*_ga*NDY0MTUzODIzLjE2OTM0Nzg4MDA.*_ga_K6536FHN4D*MTcwNTM3NzY0NS40NC4xLjE3MDUzNzgyMzMuMjguMC4w">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/806c0846-a11d-4b41-bee1-98782b392fcf" alt="Deploy to Vultr!" width=100>
+        <br>Deploy to Vultr
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://us-east-1.console.aws.amazon.com/cloudformation/home#/stacks/quickcreate?stackName=My-BrowserBox&templateURL=https://dosyago-external.s3.us-west-1.amazonaws.com/cloud-formation-template.yaml">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/de7f8908-c00e-4cbc-ac73-c6cfc0203ae3" alt="Deploy to AWS!" width=80>
+        <br>Deploy to AWS
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://cloud.linode.com/linodes/create?type=StackScripts&subtype=Community&stackScriptID=1279678">
+        <img src="https://github.com/BrowserBox/BrowserBox/assets/22254235/9102f2f8-6eb4-4088-91c6-ae535a42cdf1"
+          alt="Deploy to Linode!" width=80>
+        <br>Deploy to Linode
+      </a>
+    </td>
+     <td align=center valign=bottom>
+       <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json" rel="nofollow"><img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true" alt="Deploy To Azure" style="max-width: 100%;"></a>
+       <br>
+       <a href="https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2Fazuredeploy.json/createUIDefinitionUri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure%2Fazure-quickstart-templates%2Fmaster%2Fapplication-workloads%2Fdosyago%2Fbrowserbox%2FcreateUiDefinition.json" rel="nofollow"><img src="https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazuregov.svg?sanitize=true" alt="Deploy To Azure US Gov" style="max-width: 100%;"></a>
+       <br><a href=https://github.com/Azure/azure-quickstart-templates/tree/master/application-workloads/dosyago/browserbox>Quickstart Template</a>
+      </td>
+  </tr>
+</table>
+
+*If you have issues with your deployment, it's a good idea check the cloud provider status page:*
+
+- [Azure Status](https://azure.status.microsoft/en-us/status)
+- [Vultr Status](https://status.vultr.com/)
+- [AWS Status](https://health.aws.amazon.com/health/status)
+- [Linode Akamai Status](https://status.linode.com/)
+
+It's also a great idea to check cloud ping test (internet speed and round-trip time) sites before you create your 1-click deployment to create in the cloud region with the lowest ping for you. 
+
+If you encounter any issues at all or wish to discuss licenses or customizations, or anything else, reach out to us at support@dosyago.com.
+
+\* Azure is our recommended option because it makes deployment easieset: no need to add a separate DNS record for your instance; and Azure even emails you when the deployment is complete! 
+
+------
+
 # Latest News
 
 ## v7.1.2 Maintenance Release
@@ -136,17 +309,7 @@ It's also a great idea to check cloud ping test (internet speed and round-trip t
 
 ------
 
-## New Docker Release v7.1
-
-```console
-docker pull ghcr.io/browserbox/browserbox:v7.1
-```
-
-or simply run very easily with:
-
-```console
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/e300055/deploy-scripts/run_docker.sh) 8080 # or the port you want
-```
+## New Docker Release v7.1 
 
 The v7.1 release includes all the updates from the latest [7-series major release](https://github.com/BrowserBox/BrowserBox/releases/tag/v7.0) plus a few more. 
 

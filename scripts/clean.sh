@@ -6,7 +6,11 @@ rm BrowserBox.js
 rm BrowserBox.*
 rm *.node
 rm -rf build/
-rm -rf dist/
+if [ "$IS_DOCKER_BUILD" = "true" ]; then
+  echo "Not removing dist folder as we don't rebuild in docker."
+else
+  rm -rf dist/
+fi
 rm -rf typetests
 rm -rf node_modules 
 rm -rf package-lock*
