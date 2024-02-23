@@ -17,7 +17,7 @@ You may run BrowserBox via a variety of easy to access means. The simplest and m
 > [!NOTE]
 > In case you're wondering, right now we don't track any telemetry at all. Not even that email address you'll enter. We plan to, in future one day, begin collecting at least your email, for the following purpose only: to very cautiously and tripatiously invite you to join a mailing list to receive updates on BrowserBox. *But not today.*
 
-## Manual Install - Most Flexible, and Most Reliable :green_checkmark:
+## Manual Install - Most Flexible, and Most Reliable ✅
 
 Before we show you the step by step instructions, we'll just show you the whole thing, in one block:
 
@@ -89,7 +89,7 @@ bbpro
 
 -----
 
-## Install and Run Via Docker - Easiest and Fastest, but can be less Reliable :green_checkmark:
+## Install and Run Via Docker - Easiest and Fastest, but can be less Reliable ✅
 
 To run BrowserBox docker easily you need to use the included **run script**: `./deploy-scripts/run_docker.sh PORT` and follow the instructions. 
 > [!NOTE]
@@ -104,6 +104,9 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/depl
 > [!TIP]
 > The run script may prompt you to perform some setup steps. Follow those and you'll be on your way to BrowserBox Land in no time! :joy_cat:
 
+> [!WARNING]
+> Apple macOS users may find the Docker version to be the least stable. A common problem encountered when running BrowserBox Docker on macOS is tabs inexplicably freeze on occasion. A workaround is to close the problem tab, and resume in a new tab. This issues does not occur in BrowserBox Docker on other systems.
+
 #### Custom Docker Options
 
 To run a specific version manually, tag it as latest, then run it via the run_script:
@@ -117,7 +120,7 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/depl
 
 ------
 
-## 1-Click Deploy - Deploy BrowserBox to the cloud instantly! :green_checkmark: :tada: :cyclone:
+## 1-Click Deploy - Deploy BrowserBox to the cloud instantly! ✅ :tada: :cyclone:
 
 By far the easiest and most fun method, 1-Click-Deploy BrowserBox is ready to deploy today on a number of popular cloud providers. See below for details. Just click the links to start your deployment and you'll be up and running in no time!
 
