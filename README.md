@@ -831,7 +831,7 @@ BrowserBoxPro isn't just a tool; it's a comprehensive solution designed to fit s
 - **Remote Browser Isolation**: Fundamental to Zero Trust, ensuring no direct content interaction with user devices.
 - **Co-Browsing**: Collaborate without compromising on security.
 - **VPN Alternatives**: A more secure solution than traditional VPNs.
-- **Email Threat Mitigation**: Content Disarm & Reconstruction (CDR) ensures safe email attachments.
+- **Threat Mitigation**: Web & Document Content Sanitization (Content Disarm & Reconstruction - CDR) ensures safe email attachments, web browsing and more!
 - **Secure Web Interaction**: A user-friendly UI for secure third-party processes.
 
 ### Creative Ways that Clients are Using BrowserBox 
