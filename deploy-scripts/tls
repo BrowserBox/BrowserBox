@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#set -x
+
 sudo="$(command -v sudo)"
 
 os_type() {
