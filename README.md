@@ -17,78 +17,6 @@ You may run BrowserBox via a variety of easy to access means. The simplest and m
 > [!NOTE]
 > In case you're wondering, right now we don't track any telemetry at all. Not even that email address you'll enter. We plan to, in future one day, begin collecting at least your email, for the following purpose only: to very cautiously and tripatiously invite you to join a mailing list to receive updates on BrowserBox. *But not today.*
 
-## Manual Install - Most Flexible, and Most Reliable ✅
-
-Before we show you the step by step instructions, we'll just show you the whole thing, in one block:
-
-```console
-git clone https://github.com/BrowserBox/BrowserBox.git
-cd BrowserBox
-./deploy-scripts/global_install.sh localhost my-email@address.com
-setup_bbpro --port 8080 > my.login.link.txt
-bbpro
-cat my.login.link
-```
-You can try this right now if you just want to try it out, and don't care about getting the rights certificates for production or accessing over the public internet. 
-
-The above commands will download, install, setup and start BrowserBox, as well as output your login link for you. Open that link (which looks like: **https://localhost:8080/login?token=csdkjhvsdfkjhv3498ysdf**) in your regular browser.
-
-> [!TIP]
-> The above simple method uses `localhost` as the hostname for your BrowserBox instance. While this works, thanks to `https://localhost` HTTPS certs, unless you're connecting from your local machine (not a common use case outside of trying it for yourslef), this is not a good idea because you will encounter certificate errors and warnings if you try to connect to BrowserBox from remote machine, which is normally the point.
-
--------
-
-***Now, let's show you the full manual install.***
-
-1. **Download and Clone the Git Repository, and jump into the directory**:
-
-```console
-git clone https://github.com/BrowserBox/BrowserBox.git
-cd BrowserBox
-```
-
-2. **Point your DNS to your machine's IP with an *A record* mapping your chosen domain name to the IPv4 address of your VPS, VM, baremetal or whatever you're setting up on.**
-
-Check that your hostname (you were creative so you picked: **my.awesome.host.com**) resolves by running:
-
-```console
-./deploy-scripts/wait_for_hostname.sh my.awesome.host.com
-```
-
-3. **Once DNS is set up Begin the Install:**
-
-Run the install script using your instance's full domain name and your email address. Email is for agreeing to our terms and the HTTPS certificate provider's (aka LetsEncrypt's) terms. We don't spam you! We may send you a product announce in future tho, or invite you to join a list, but such a vile transgression of the sanctity of your holy email space would be an exceedingly rare, and cautiously approached, occurrence!
-
-```console
-./deploy-scripts/global_install.sh my.awesome.host.name.com my-rockin@email.address.com
-```
-
-this will take you through the attended install where you'll need to follow prompts. To just get the defaults (good idea), you can alter that command slightly to be a yes person for you :joy_cat::
-
-```console
-yes | ./deploy-scripts/global_install.sh my.so-awesome.host.name.com my-rockin@email.address.com
-```
-
-The above will run an unattended install, where it does everything for you, and you can go away and fix yourself a delicious beverage, or what not.
-
-> [!TIP]
-> The user you install with *will* need `sudo` capabilities. But you do *not* need `sudo` caps to **run** BrowserBox once it is already installed. 
-
-4. **Once Install Completes, Set Up, and Run!** :tada:
-
-As soon as installation completes you'll be ready to run BrowserBox using the following two key commands:
-
-```console
-setup_bbpro --port 9999
-bbpro
-```
-
-`setup_bbpro` will setup BrowserBox to bind to port 9999 (plus two either side for all its services. So ports 9997 through 10001 in this case).And will also return your very valuable, secret and crucial **login link**. This is your only way to access your BrowserBox. We save it to `$HOME/.config/dosyago/bbpro/login.link` if you lost it. Treat it like an screen sharing invite link, anyone you share that link with will be able to share, watch and drive your BrowserBox session, just like you. It's a free for all! Some may call it a melee. :joy:
-
-`bbpro` will start BrowserBox. Give it a couple seconds to start up.
-
------
-
 ## Install and Run Via Docker - Easiest and Fastest, but can be less Reliable ✅
 
 To run BrowserBox docker easily you need to use the included **run script**: `./deploy-scripts/run_docker.sh PORT` and follow the instructions. 
@@ -98,11 +26,11 @@ To run BrowserBox docker easily you need to use the included **run script**: `./
 You can get started right away, just follow the prompts when you run the below to install and run the latest BrowserBox on Docker:
 
 ```console
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) 9999
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) 9999 my-browser.example.com me@example.com
 ```
 
 > [!TIP]
-> The run script may prompt you to perform some setup steps. Follow those and you'll be on your way to BrowserBox Land in no time! :joy_cat:
+> The run script may prompt you to perform some setup steps, especially on macOS. Follow those and you'll be on your way to BrowserBox Land in no time! :joy_cat:
 
 > [!WARNING]
 > Apple macOS users may find the Docker version to be the least stable. A common problem encountered when running BrowserBox Docker on macOS is tabs inexplicably freeze on occasion. A workaround is to close the problem tab, and resume in a new tab. This issues does not occur in BrowserBox Docker on other systems.
@@ -183,6 +111,78 @@ It's also a great idea to check cloud ping test (internet speed and round-trip t
 If you encounter any issues at all or wish to discuss licenses or customizations, or anything else, reach out to us at support@dosyago.com.
 
 \* Azure is our recommended option because it makes deployment easieset: no need to add a separate DNS record for your instance; and Azure even emails you when the deployment is complete! 
+
+------
+
+## Manual Install - Most Flexible, and Most Reliable ✅
+
+Before we show you the step by step instructions, we'll just show you the whole thing, in one block:
+
+```console
+git clone https://github.com/BrowserBox/BrowserBox.git
+cd BrowserBox
+./deploy-scripts/global_install.sh localhost my-email@address.com
+setup_bbpro --port 8080 > my.login.link.txt
+bbpro
+cat my.login.link.txt
+```
+You can try this right now if you just want to try it out, and don't care about getting the rights certificates for production or accessing over the public internet. 
+
+The above commands will download, install, setup and start BrowserBox, as well as output your login link for you. Open that link (which looks like: **https://localhost:8080/login?token=csdkjhvsdfkjhv3498ysdf**) in your regular browser.
+
+> [!TIP]
+> The above simple method uses `localhost` as the hostname for your BrowserBox instance. While this works, thanks to `https://localhost` HTTPS certs, unless you're connecting from your local machine (not a common use case outside of trying it for yourslef), this is not a good idea because you will encounter certificate errors and warnings if you try to connect to BrowserBox from remote machine, which is normally the point.
+
+-------
+
+***Now, let's show you the full manual install.***
+
+1. **Download and Clone the Git Repository, and jump into the directory**:
+
+```console
+git clone https://github.com/BrowserBox/BrowserBox.git
+cd BrowserBox
+```
+
+2. **Point your DNS to your machine's IP with an *A record* mapping your chosen domain name to the IPv4 address of your VPS, VM, baremetal or whatever you're setting up on.**
+
+Check that your hostname (you were creative so you picked: **my.awesome.host.com**) resolves by running:
+
+```console
+./deploy-scripts/wait_for_hostname.sh my.awesome.host.com
+```
+
+3. **Once DNS is set up Begin the Install:**
+
+Run the install script using your instance's full domain name and your email address. Email is for agreeing to our terms and the HTTPS certificate provider's (aka LetsEncrypt's) terms. We don't spam you! We may send you a product announce in future tho, or invite you to join a list, but such a vile transgression of the sanctity of your holy email space would be an exceedingly rare, and cautiously approached, occurrence!
+
+```console
+./deploy-scripts/global_install.sh my.awesome.host.name.com my-rockin@email.address.com
+```
+
+this will take you through the attended install where you'll need to follow prompts. To just get the defaults (good idea), you can alter that command slightly to be a yes person for you :joy_cat::
+
+```console
+yes | ./deploy-scripts/global_install.sh my.so-awesome.host.name.com my-rockin@email.address.com
+```
+
+The above will run an unattended install, where it does everything for you, and you can go away and fix yourself a delicious beverage, or what not.
+
+> [!TIP]
+> The user you install with *will* need `sudo` capabilities. But you do *not* need `sudo` caps to **run** BrowserBox once it is already installed. 
+
+4. **Once Install Completes, Set Up, and Run!** :tada:
+
+As soon as installation completes you'll be ready to run BrowserBox using the following two key commands:
+
+```console
+setup_bbpro --port 9999
+bbpro
+```
+
+`setup_bbpro` will setup BrowserBox to bind to port 9999 (plus two either side for all its services. So ports 9997 through 10001 in this case).And will also return your very valuable, secret and crucial **login link**. This is your only way to access your BrowserBox. We save it to `$HOME/.config/dosyago/bbpro/login.link` if you lost it. Treat it like an screen sharing invite link, anyone you share that link with will be able to share, watch and drive your BrowserBox session, just like you. It's a free for all! Some may call it a melee. :joy:
+
+`bbpro` will start BrowserBox. Give it a couple seconds to start up.
 
 ------
 
