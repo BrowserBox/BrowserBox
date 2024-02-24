@@ -72,6 +72,9 @@ USER bbpro
 # install application
 RUN yes | ./deploy-scripts/global_install.sh localhost
 
+# Change ownership of the workdir to the 'bbpro' user
+RUN chown -R bbpro:bbpro $HOME/sslcerts/
+
 # run the application
 CMD bash -c 'echo $(setup_bbpro --port 8080) > login_link.txt; ( bbpro || true ) && tail -f /dev/null'
 

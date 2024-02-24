@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#set -x
+
 sudo="$(command -v sudo)"
 
 os_type() {
@@ -129,8 +131,11 @@ else
   fi
 fi
 mkdir -p $HOME/sslcerts
-$sudo -u root ./deploy-scripts/cp_certs $1 $HOME/sslcerts/
+if [[ -f ./deploy-scripts/cp_certs ]]; then
+  $sudo -u root ./deploy-scripts/cp_certs $1 $HOME/sslcerts/
+else
+  $sudo -u root bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/cp_certs) $1 $HOME/sslcerts/
+fi
 $sudo chown $USER:$USER $HOME/sslcerts/*
 chmod 600 $HOME/sslcerts/*
-
 

@@ -10,7 +10,7 @@ OS=$(uname)
 ZONE=""
 SUDO=""
 if command -v sudo &>/dev/null; then
-  echo "Using passwordless sudo. Ensure sudo is already unlocked with a password or use NOPASSWD in sudoers, which can be edited using visudo." >&2 
+  echo "Using passwordless sudo. Ensure sudo is already unlocked with a password or use NOPASSWD in sudoers, which can be edited using visudo." >&2
   SUDO="sudo -n"
 fi
 
@@ -133,17 +133,17 @@ is_port_free_new() {
 
 bail_on_port=""
 if ! is_port_free_new $(($PORT - 2)); then
-  bail_on_port="true" 
+  bail_on_port="true"
 elif ! is_port_free_new $(($PORT - 1)); then
-  bail_on_port="true" 
+  bail_on_port="true"
 elif ! is_port_free_new $PORT; then
-  bail_on_port="true" 
+  bail_on_port="true"
 elif ! is_port_free_new $(($PORT + 1)); then
-  bail_on_port="true" 
+  bail_on_port="true"
 elif ! is_port_free_new $(($PORT + 2)); then
-  bail_on_port="true" 
-else 
-  bail_on_port="" 
+  bail_on_port="true"
+else
+  bail_on_port=""
 fi
 
 if [[ -n "$bail_on_port" ]]; then
@@ -159,7 +159,7 @@ open_firewall_port_range() {
 
   # Check for firewall-cmd (firewalld)
   if [[ "$(uname)" == "Darwin" ]]; then
-    echo "pass in proto tcp from any to any port $start_port:$end_port" | sudo pfctl -ef - 
+    echo "pass in proto tcp from any to any port $start_port:$end_port" | sudo pfctl -ef -
   elif command -v firewall-cmd &> /dev/null; then
     echo "Using firewalld"
     firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
@@ -202,6 +202,7 @@ ssl_dir="$HOME/sslcerts"
 output=""
 darwin_needs_close=""
 
+function get_hostname() {
 if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
   hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
   echo "Hostname: $hostname" >&2
@@ -209,8 +210,9 @@ if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
 else
   ip_address=$(get_external_ip)
   echo "IP Address: $ip_address" >&2
-  output="$ip_address"
+  output=""
 fi
+}
 
 function get_certs() {
   if [[ -f "${ssl_dir}/privkey.pem" && -f "${ssl_dir}/fullchain.pem" && "$HOSTNAME" == "$output" ]]; then
@@ -244,9 +246,9 @@ function get_certs() {
         open_firewall_port_range 80 80
       fi
       print_instructions
-      if [[ -f ./wait_for_hostname.sh ]]; then 
+      if [[ -f ./wait_for_hostname.sh ]]; then
         ./wait_for_hostname.sh $HOSTNAME
-      elif [[ -f ./deploy-scripts/wait_for_hostname.sh ]]; then 
+      elif [[ -f ./deploy-scripts/wait_for_hostname.sh ]]; then
         ./deploy-scripts/wait_for_hostname.sh $HOSTNAME
       elif command_exists wait_for_hostname.sh; then
         wait_for_hostname.sh $HOSTNAME
@@ -268,6 +270,7 @@ function get_certs() {
   fi
 }
 
+get_hostname
 get_certs
 chmod 600 "$certDir"/*.pem
 
@@ -276,26 +279,20 @@ if [[ "$(uname)" == "Darwin" ]] && [[ -n "$darwin_needs_close" ]]; then
   sudo pfctl -F all -f /etc/pf.conf
 fi
 
-if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
-  hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
-  echo "Hostname: $hostname" >&2
-  output="$hostname"
-  echo "Certificate hostname: $output" >&2
-else
-  ip_address=$(get_external_ip)
-  echo "IP Address: $ip_address" >&2
-  output="$ip_address"
-  echo "Could not get a certificate. Bailing..." 
-  exit 1
-fi
+get_hostname
+HOSTNAME="$output"
 
+if [[ -z "$HOSTNAME" ]]; then
+echo "ERROR: Could not get a certificate. Bailing..."
+exit 1
+fi
 
 if [[ "$HOSTNAME" != "localhost" ]]; then
   open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
 fi
 
 # Run the container with the appropriate port mappings and capture the container ID
-CONTAINER_ID=$($SUDO docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
+CONTAINER_ID=$($SUDO docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; sudo chown bbpro:bbpro ~/sslcerts/*; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
 
 echo "We will now Log You In to your container..."
 echo "[Remember: you can get out of your container anytime by typing 'exit'.]"
@@ -342,3 +339,4 @@ fi
 
 echo "Exiting BrowserBox Docker run script..."
 exit 0
+
