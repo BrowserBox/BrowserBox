@@ -269,7 +269,8 @@ function get_certs() {
 }
 
 get_certs
-chmod 600 "$certDir"/*.pem
+# we need the certs to have such perms so they can be read
+chmod 644 "$certDir"/*.pem
 
 if [[ "$(uname)" == "Darwin" ]] && [[ -n "$darwin_needs_close" ]]; then
   echo "Removing opened firewall ports. If you use Apple iCloud Private Relay it will now be re-enabled."
