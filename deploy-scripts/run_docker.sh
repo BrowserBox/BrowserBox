@@ -79,23 +79,29 @@ else
   echo "Docker image already exists locally."
 fi
 
-
 # Get the PORT and other arguments
 PORT=$1
 HOSTNAME=$2
 EMAIL=$3
 
+# Check if all arguments are provided
+if [ -z "$PORT" ] || [ -z "$HOSTNAME" ] || [ -z "$EMAIL" ]; then
+  echo "Error: All arguments must be provided."
+  echo "Usage: $0 <PORT> <DNS HOSTNAME> <EMAIL>"
+  exit 1
+fi
+
 # Validate that PORT is a number
 if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
-  echo "Error: PORT must be a number, DNS hostname and email must be provided"
-  echo "Usage: " "$0" "<PORT> <DNS HOSTNAME> <EMAIL>"
+  echo "Error: PORT must be a number."
+  echo "Usage: $0 <PORT> <DNS HOSTNAME> <EMAIL>"
   exit 1
-else
-  echo "Setting main args to: "
-  echo "Port: $PORT"
-  echo "Host: $HOSTNAME"
-  echo "Email: $EMAIL"
 fi
+
+echo "Setting main args to: "
+echo "Port: $PORT"
+echo "Host: $HOSTNAME"
+echo "Email: $EMAIL"
 
 is_port_free_new() {
   local port=$1
