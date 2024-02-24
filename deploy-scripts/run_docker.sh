@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#set -x
+
+trap 'echo "Got an error. Bailing this section..." >&2' ERR
+trap 'echo "Exiting..." >&2' EXIT
+
 # Detect operating system
 OS=$(uname)
 ZONE=""
@@ -50,32 +55,16 @@ certDir="${HOME}/sslcerts"
 certFile="${certDir}/fullchain.pem"
 keyFile="${certDir}/privkey.pem"
 
-# Function to print instructions
-print_instructions() {
-  echo "Here's what you need to do:"
-  echo "1. Create a directory named 'sslcerts' in your home directory. You can do this by running 'mkdir ~/sslcerts'."
-  echo "2. Obtain your SSL certificate and private key files. You can use 'mkcert' for localhost, or 'Let's Encrypt' for a public hostname."
-  echo "We provide a convenience script in BrowserBox/deploy-scripts/tls to obtain LE certs. It will automatically put get cert and put in right place"
-  echo "3. Place your certificate in the 'sslcerts' directory with the name 'fullchain.pem'."
-  echo "4. Place your private key in the 'sslcerts' directory with the name 'privkey.pem'."
-  echo "5. Ensure these files are for the domain you want to serve BrowserBox from (i.e., the domain of the current machine)."
+# Function to check if a command exists
+command_exists() {
+  command -v "$@" > /dev/null 2>&1
 }
 
-# Check if directory exists and if certificate and key files exist
-if [ -d "$certDir" ]; then
-    if [ -f "$certFile" ] && [ -f "$keyFile" ]; then
-      chmod 644 "$certDir"/*.pem
-      echo "Great job! Your SSL/TLS/HTTPS certificates are all set up correctly. You're ready to go!"
-    else
-      echo "Almost there! Your 'sslcerts' directory exists, but it seems you're missing some certificate files."
-      print_instructions
-      exit 1
-    fi
-else
-    echo "Looks like you're missing the 'sslcerts' directory."
-    print_instructions
-    exit 1
-fi
+# Function to print instructions
+print_instructions() {
+  echo "Please ensure you have set up a DNS A record to point to the IPv4 address of this machine ($ip)"
+  echo "We are now waiting for that hostname to resolve to this ip..."
+}
 
 # Define Docker image details
 DOCKER_IMAGE="ghcr.io/browserbox/browserbox"
@@ -90,55 +79,214 @@ else
   echo "Docker image already exists locally."
 fi
 
-# Get the hostname
-ssl_dir="$HOME/sslcerts"
-output=""
 
-if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
-  hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
-  echo "Hostname: $hostname" >&2
-  output="$hostname"
-else
-  ip_address=$(hostname -I | awk '{print $1}')
-  echo "IP Address: $ip_address" >&2
-  output="$ip_address"
-fi
-
-echo "$output"
-
-# Get the PORT argument
+# Get the PORT and other arguments
 PORT=$1
+HOSTNAME=$2
+EMAIL=$3
 
 # Validate that PORT is a number
 if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
-  echo "Error: PORT must be a number."
-  echo "Usage: " "$0" "<PORT>"
+  echo "Error: PORT must be a number, DNS hostname and email must be provided"
+  echo "Usage: " "$0" "<PORT> <DNS HOSTNAME> <EMAIL>"
   exit 1
 else
-  echo "Setting main port to: $PORT"
+  echo "Setting main args to: "
+  echo "Port: $PORT"
+  echo "Host: $HOSTNAME"
+  echo "Email: $EMAIL"
 fi
+
+is_port_free_new() {
+  local port=$1
+  if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -ge 4022 ] && [ "$port" -le 65535 ]; then
+    echo "$port is a valid port number." >&2
+  else
+    echo "$1 is an invalid port number." >&2
+    echo "" >&2
+    echo "Select a main port between 4024 and 65533." >&2
+    echo "" >&2
+    echo "  Why 4024?" >&2
+    echo "    This is because, by convention the browser runs on the port 3000 below the app's main port, and the first user-space port is 1024." >&2
+    echo "" >&2
+    echo "  Why 65533?" >&2
+    echo "    This is because each app occupies a slice of 5 consecutive ports, two below, and two above, the app's main port. The highest user-space port is 65535, hence the highest main port that leaves two above it free is 65533." >&2
+    echo "" >&2
+    return 1
+  fi
+
+  # Using direct TCP connection attempt to check port status
+  if ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$port" 2>/dev/null; then
+    echo "Port $port is available." >&2
+    return 0
+  else
+    echo "Port $port is in use."
+    return 1
+  fi
+}
+
+bail_on_port=""
+if ! is_port_free_new $(($PORT - 2)); then
+  bail_on_port="true" 
+elif ! is_port_free_new $(($PORT - 1)); then
+  bail_on_port="true" 
+elif ! is_port_free_new $PORT; then
+  bail_on_port="true" 
+elif ! is_port_free_new $(($PORT + 1)); then
+  bail_on_port="true" 
+elif ! is_port_free_new $(($PORT + 2)); then
+  bail_on_port="true" 
+else 
+  bail_on_port="" 
+fi
+
+if [[ -n "$bail_on_port" ]]; then
+  echo "ERROR: One of the ports between $(($PORT - 2)) and $(($PORT + 2)) is already being used. Please pick a different starting port. You picked $PORT and it did not work." >&2
+  exit 1
+fi
+
+# Get the certs
 
 open_firewall_port_range() {
   local start_port=$1
   local end_port=$2
 
   # Check for firewall-cmd (firewalld)
-  if command -v firewall-cmd &> /dev/null; then
-      echo "Using firewalld"
-      firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
-      firewall-cmd --reload
-
+  if [[ "$(uname)" == "Darwin" ]]; then
+    echo "pass in proto tcp from any to any port $start_port:$end_port" | sudo pfctl -ef - 
+  elif command -v firewall-cmd &> /dev/null; then
+    echo "Using firewalld"
+    firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
+    firewall-cmd --reload
   # Check for ufw (Uncomplicated Firewall)
   elif $SUDO bash -c 'command -v ufw' &> /dev/null; then
-      echo "Using ufw"
-      $SUDO ufw allow ${start_port}:${end_port}/tcp
+    echo "Using ufw"
+    $SUDO ufw allow ${start_port}:${end_port}/tcp
   else
-      echo "No recognized firewall management tool found"
-      return 1
+    echo "No recognized firewall management tool found"
+    return 1
   fi
 }
 
-open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
+get_external_ip() {
+  local ip
+
+  # List of services to try
+  local services=(
+    "https://icanhazip.com"
+    "https://ifconfig.me"
+    "https://api.ipify.org"
+  )
+
+  # Try each service in turn
+  for service in "${services[@]}"; do
+    ip=$(curl -4s --connect-timeout 5 "$service")
+    if [[ -n "$ip" ]]; then
+      echo "$ip"
+      return
+    fi
+  done
+
+  echo "Failed to obtain external IP address" >&2
+  return 1
+}
+
+# Get the hostname
+ssl_dir="$HOME/sslcerts"
+output=""
+darwin_needs_close=""
+
+if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
+  hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
+  echo "Hostname: $hostname" >&2
+  output="$hostname"
+else
+  ip_address=$(get_external_ip)
+  echo "IP Address: $ip_address" >&2
+  output="$ip_address"
+fi
+
+function get_certs() {
+  if [[ -f "${ssl_dir}/privkey.pem" && -f "${ssl_dir}/fullchain.pem" && "$HOSTNAME" == "$output" ]]; then
+    echo "Certs already present, will not overwrite. To force new certs for $HOSTNAME please remove or rename $ssl_dir"
+  else
+    if [[ "$HOSTNAME" != "localhost" ]]; then
+      if [[ "$(uname)" == "Darwin" ]]; then
+        # Use osascript to display a confirmation dialog and capture the output
+        echo "We are waiting for your response. Please check your Desktop now for the Dialog Box..."
+        userResponse=$(osascript -e 'display dialog "LetsEncrypt will ask your permission to open a temporary server for a few seconds to verify the domain for your HTTPS certificate. Allow LetsEncrypt to ask you?" buttons {"No", "Yes"} default button "Yes"')
+        echo "Dialog response: $userResponse"
+
+        # Check the user's response to the dialog
+        if [[ $userResponse == *"Yes"* ]]; then
+          echo "User agreed. Proceeding with verification..."
+          # Insert the code to open the temporary server for Let's Encrypt verification here
+          read -p "This will disable Apple iCloud Private Relay temporarily to attempt to open port 80 for LetsEncrypt HTTPS certificate issuance verification of hostname (which may fail anyway if your ISP blocks port 80). Continue? (y/n) " answer
+          if [[ "$answer" == "y" ]]; then
+            # Assuming open_firewall_port_range is a function you have defined to open port ranges with pfctl
+            open_firewall_port_range 80 80
+            darwin_needs_close="true"
+          else
+            echo "Not trying to open port 80. LetsEncrypt certificate issuance verification may fail." >&2
+          fi
+        else
+          echo "User declined. Verification canceled."
+          # Handle the case where the user declines
+          return 1
+        fi
+      else
+        open_firewall_port_range 80 80
+      fi
+      print_instructions
+      if [[ -f ./wait_for_hostname.sh ]]; then 
+        ./wait_for_hostname.sh $HOSTNAME
+      elif [[ -f ./deploy-scripts/wait_for_hostname.sh ]]; then 
+        ./deploy-scripts/wait_for_hostname.sh $HOSTNAME
+      elif command_exists wait_for_hostname.sh; then
+        wait_for_hostname.sh $HOSTNAME
+      else
+        bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/wait_for_hostname.sh) $HOSTNAME
+      fi
+    fi
+
+    export BB_USER_EMAIL="$EMAIL"
+    if [[ -f ./tls ]]; then
+      ./tls $HOSTNAME
+    elif [[ -f ./deploy-scripts/tls ]]; then
+      ./deploy-scripts/tls $HOSTNAME
+    elif command_exists tls; then
+      tls $HOSTNAME
+    else
+      bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/tls) $HOSTNAME
+    fi
+  fi
+}
+
+get_certs
+chmod 600 "$certDir"/*.pem
+
+if [[ "$(uname)" == "Darwin" ]] && [[ -n "$darwin_needs_close" ]]; then
+  echo "Removing opened firewall ports. If you use Apple iCloud Private Relay it will now be re-enabled."
+  sudo pfctl -F all -f /etc/pf.conf
+fi
+
+if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
+  hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
+  echo "Hostname: $hostname" >&2
+  output="$hostname"
+  echo "Certificate hostname: $output" >&2
+else
+  ip_address=$(get_external_ip)
+  echo "IP Address: $ip_address" >&2
+  output="$ip_address"
+  echo "Could not get a certificate. Bailing..." 
+  exit 1
+fi
+
+
+if [[ "$HOSTNAME" != "localhost" ]]; then
+  open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
+fi
 
 # Run the container with the appropriate port mappings and capture the container ID
 CONTAINER_ID=$($SUDO docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
