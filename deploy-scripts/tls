@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 sudo="$(command -v sudo)"
 
 os_type() {
@@ -87,15 +89,17 @@ if [[ -z "${BB_USER_EMAIL}" ]]; then
   exit 1
 fi
 
-if $sudo certbot certonly --standalone --keep -d $1 --agree-tos -m "${BB_USER_EMAIL}" --no-eff-email; then
+if [[ "$1" != "localhost" ]] && $sudo certbot certonly --standalone --keep -d $1 --agree-tos -m "${BB_USER_EMAIL}" --no-eff-email; then
   $sudo systemctl start certbot-renew.timer
   ./deploy-scripts/auto_cert_renew $1 $USER
 else 
   echo "ERROR: Certbot failed. Will use mkcert for local certs" >&2
-  if [ "$(os_type)" == "macOS" ]; then
-    brew install jq
-  else
-    $SUDO $APT -y install jq
+  if ! command -v jq &>/dev/null; then
+    if [ "$(os_type)" == "macOS" ]; then
+      brew install jq
+    else
+      $SUDO $APT -y install jq
+    fi
   fi
 
   if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
@@ -142,14 +146,14 @@ else
     fi
   else
     if [[ "$1" == "localhost" ]]; then
-      echo ""
-      echo "Usage: $0 <hostname>"
-      echo "Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
+      echo "" >&2
+      echo "Usage: $0 <hostname>" >&2
+      echo "ERROR: Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
     else 
-      echo ""
-      echo "Usage: $0 <hostname> <your_email>"
-      echo "Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
-      echo "Please provide an email as argument. This email will be used to agree to the Letsencrypt TOS for cert provisioning" >&2
+      echo "" >&2
+      echo "Usage: $0 <hostname> <your_email>" >&2
+      echo "ERROR: Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
+      echo "ERROR: Please provide an email as argument. This email will be used to agree to the Letsencrypt TOS for cert provisioning" >&2
     fi
     exit 1
   fi
@@ -157,5 +161,6 @@ fi
 mkdir -p $HOME/sslcerts
 $sudo -u root ./deploy-scripts/cp_certs $1 $HOME/sslcerts/
 $sudo chown $USER:$USER $HOME/sslcerts/*
+chmod 600 $HOME/sslcerts/*
 
 

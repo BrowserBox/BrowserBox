@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 # Detect operating system
 OS=$(uname)
 ZONE=""
@@ -61,7 +63,7 @@ print_instructions() {
   echo "We are now waiting for that hostname to resolve to this ip..."
 }
 
-chmod 644 "$certDir"/*.pem
+chmod 600 "$certDir"/*.pem
 
 # Define Docker image details
 DOCKER_IMAGE="ghcr.io/browserbox/browserbox"
@@ -92,6 +94,54 @@ else
   echo "Port: $PORT"
   echo "Host: $HOSTNAME"
   echo "Email: $EMAIL"
+fi
+
+is_port_free_new() {
+  local port=$1
+  if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -ge 4022 ] && [ "$port" -le 65535 ]; then
+    echo "$port is a valid port number." >&2
+  else
+    echo "$1 is an invalid port number." >&2
+    echo "" >&2
+    echo "Select a main port between 4024 and 65533." >&2
+    echo "" >&2
+    echo "  Why 4024?" >&2
+    echo "    This is because, by convention the browser runs on the port 3000 below the app's main port, and the first user-space port is 1024." >&2
+    echo "" >&2
+    echo "  Why 65533?" >&2
+    echo "    This is because each app occupies a slice of 5 consecutive ports, two below, and two above, the app's main port. The highest user-space port is 65535, hence the highest main port that leaves two above it free is 65533." >&2
+    echo "" >&2
+    return 1
+  fi
+
+  # Using direct TCP connection attempt to check port status
+  if (echo > /dev/tcp/localhost/$port) &>/dev/null; then
+    echo "Port $port is available." >&2
+    return 0
+  else
+    echo "Port $port is in use."
+    return 1
+  fi
+}
+
+bail_on_port=""
+if ! is_port_free_new $(($PORT - 2)); then
+  bail_on_port="true" 
+elif ! is_port_free_new $(($PORT - 1)); then
+  bail_on_port="true" 
+elif ! is_port_free_new $PORT; then
+  bail_on_port="true" 
+elif ! is_port_free_new $(($PORT + 1)); then
+  bail_on_port="true" 
+elif ! is_port_free_new $(($PORT + 2)); then
+  bail_on_port="true" 
+else 
+  bail_on_port="" 
+fi
+
+if [[ -n "$bail_on_port" ]]; then
+  echo "ERROR: One of the ports between $(($PORT - 2)) and $(($PORT + 2)) is already being used. Please pick a different starting port. You picked $PORT and it did not work." >&2
+  exit 1
 fi
 
 # Get the certs
@@ -179,7 +229,9 @@ fi
 
 echo "Certificate hostname: $output"
 
-open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
+if [[ "$HOSTNAME" != "localhost" ]]; then
+  open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
+fi
 
 # Run the container with the appropriate port mappings and capture the container ID
 CONTAINER_ID=$($SUDO docker run -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
