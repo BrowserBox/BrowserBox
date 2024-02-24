@@ -100,60 +100,32 @@ else
     fi
   fi
 
-  if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
-    hostname="$1"
-    export BB_USER_EMAIL="$2"
+  hostname="$1"
+  amd64=""
 
-    amd64=""
-
-    if [ "$hostname" == "localhost" ]; then
-      if ! command -v mkcert &>/dev/null; then
-        if [ "$(os_type)" == "macOS" ]; then
-          brew install nss mkcert
-        elif [ "$(os_type)" == "win" ]; then
-          choco install mkcert || scoop bucket add extras && scoop install mkcert
-        else
-          amd64=$(dpkg --print-architecture || uname -m)
-          $SUDO $APT -y install libnss3-tools
-          curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
-          chmod +x mkcert-v*-linux-$amd64
-          $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
-          rm mkcert-v*
-        fi
-      fi
-      mkcert -install
-      if [[ ! -f "$HOME/sslcerts/privkey.pem" || ! -f "$HOME/sslcerts/fullchain.pem" ]]; then
-        mkdir -p $HOME/sslcerts
-        pwd=$(pwd)
-        cd $HOME/sslcerts
-        mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
-        cd $pwd
-      else 
-        echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We are not overwriting them."
-      fi
+  if ! command -v mkcert &>/dev/null; then
+    if [ "$(os_type)" == "macOS" ]; then
+      brew install nss mkcert
+    elif [ "$(os_type)" == "win" ]; then
+      choco install mkcert || scoop bucket add extras && scoop install mkcert
     else
-      ip=$(getent hosts "$hostname" | awk '{ print $1 }')
-
-      if [ -n "$ip" ]; then
-        ./deploy-scripts/wait_for_hostname.sh "$hostname"
-        ./deploy-scripts/tls "$hostname"
-      else
-        echo "The provided hostname could not be resolved. Please ensure that you've added a DNS A/AAAA record pointing from the hostname to this machine's public IP address."
-        exit 1
-      fi
+      amd64=$(dpkg --print-architecture || uname -m)
+      $SUDO $APT -y install libnss3-tools
+      curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
+      chmod +x mkcert-v*-linux-$amd64
+      $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
+      rm mkcert-v*
     fi
-  else
-    if [[ "$1" == "localhost" ]]; then
-      echo "" >&2
-      echo "Usage: $0 <hostname>" >&2
-      echo "ERROR: Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
-    else 
-      echo "" >&2
-      echo "Usage: $0 <hostname> <your_email>" >&2
-      echo "ERROR: Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
-      echo "ERROR: Please provide an email as argument. This email will be used to agree to the Letsencrypt TOS for cert provisioning" >&2
-    fi
-    exit 1
+  fi
+  mkcert -install
+  if [[ ! -f "$HOME/sslcerts/privkey.pem" || ! -f "$HOME/sslcerts/fullchain.pem" ]]; then
+    mkdir -p $HOME/sslcerts
+    pwd=$(pwd)
+    cd $HOME/sslcerts
+    mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
+    cd $pwd
+  else 
+    echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We are not overwriting them."
   fi
 fi
 mkdir -p $HOME/sslcerts

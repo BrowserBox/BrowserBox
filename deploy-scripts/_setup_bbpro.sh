@@ -165,7 +165,7 @@ is_port_free_new() {
   fi
 
   # Using direct TCP connection attempt to check port status
-  if (echo > /dev/tcp/localhost/$port) &>/dev/null; then
+  if ! exec 6<>/dev/tcp/localhost/$port &>/dev/null; then
     echo "Port $port is available." >&2
     return 0
   else
