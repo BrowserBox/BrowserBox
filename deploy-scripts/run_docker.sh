@@ -270,8 +270,19 @@ if [[ "$(uname)" == "Darwin" ]] && [[ -n "$darwin_needs_close" ]]; then
   sudo pfctl -F all -f /etc/pf.conf
 fi
 
+if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
+  hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
+  echo "Hostname: $hostname" >&2
+  output="$hostname"
+  echo "Certificate hostname: $output" >&2
+else
+  ip_address=$(get_external_ip)
+  echo "IP Address: $ip_address" >&2
+  output="$ip_address"
+  echo "Could not get a certificate. Bailing..." 
+  exit 1
+fi
 
-echo "Certificate hostname: $output"
 
 if [[ "$HOSTNAME" != "localhost" ]]; then
   open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
