@@ -159,11 +159,11 @@ open_firewall_port_range() {
 
   # Check for firewall-cmd (firewalld)
   if [[ "$(uname)" == "Darwin" ]]; then
-    echo "pass in proto tcp from any to any port $start_port:$end_port" | sudo pfctl -ef -
+    echo "pass in proto tcp from any to any port $start_port:$end_port" | $SUDO pfctl -ef -
   elif command -v firewall-cmd &> /dev/null; then
     echo "Using firewalld"
-    firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
-    firewall-cmd --reload
+    $SUDO firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
+    $SUDO firewall-cmd --reload
   # Check for ufw (Uncomplicated Firewall)
   elif $SUDO bash -c 'command -v ufw' &> /dev/null; then
     echo "Using ufw"
@@ -276,7 +276,7 @@ chmod 600 "$certDir"/*.pem
 
 if [[ "$(uname)" == "Darwin" ]] && [[ -n "$darwin_needs_close" ]]; then
   echo "Removing opened firewall ports. If you use Apple iCloud Private Relay it will now be re-enabled."
-  sudo pfctl -F all -f /etc/pf.conf
+  $SUDO pfctl -F all -f /etc/pf.conf
 fi
 
 get_hostname
