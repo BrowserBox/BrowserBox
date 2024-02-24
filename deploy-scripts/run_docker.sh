@@ -50,32 +50,18 @@ certDir="${HOME}/sslcerts"
 certFile="${certDir}/fullchain.pem"
 keyFile="${certDir}/privkey.pem"
 
-# Function to print instructions
-print_instructions() {
-  echo "Here's what you need to do:"
-  echo "1. Create a directory named 'sslcerts' in your home directory. You can do this by running 'mkdir ~/sslcerts'."
-  echo "2. Obtain your SSL certificate and private key files. You can use 'mkcert' for localhost, or 'Let's Encrypt' for a public hostname."
-  echo "We provide a convenience script in BrowserBox/deploy-scripts/tls to obtain LE certs. It will automatically put get cert and put in right place"
-  echo "3. Place your certificate in the 'sslcerts' directory with the name 'fullchain.pem'."
-  echo "4. Place your private key in the 'sslcerts' directory with the name 'privkey.pem'."
-  echo "5. Ensure these files are for the domain you want to serve BrowserBox from (i.e., the domain of the current machine)."
+# Function to check if a command exists
+command_exists() {
+  command -v "$@" > /dev/null 2>&1
 }
 
-# Check if directory exists and if certificate and key files exist
-if [ -d "$certDir" ]; then
-    if [ -f "$certFile" ] && [ -f "$keyFile" ]; then
-      chmod 644 "$certDir"/*.pem
-      echo "Great job! Your SSL/TLS/HTTPS certificates are all set up correctly. You're ready to go!"
-    else
-      echo "Almost there! Your 'sslcerts' directory exists, but it seems you're missing some certificate files."
-      print_instructions
-      exit 1
-    fi
-else
-    echo "Looks like you're missing the 'sslcerts' directory."
-    print_instructions
-    exit 1
-fi
+# Function to print instructions
+print_instructions() {
+  echo "Please ensure you have set up a DNS A record to point to the IPv4 address of this machine ($ip)"
+  echo "We are now waiting for that hostname to resolve to this ip..."
+}
+
+chmod 644 "$certDir"/*.pem
 
 # Define Docker image details
 DOCKER_IMAGE="ghcr.io/browserbox/browserbox"
@@ -90,9 +76,96 @@ else
   echo "Docker image already exists locally."
 fi
 
+
+# Get the PORT and other arguments
+PORT=$1
+HOSTNAME=$2
+EMAIL=$3
+
+# Validate that PORT is a number
+if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+  echo "Error: PORT must be a number, DNS hostname and email must be provided"
+  echo "Usage: " "$0" "<PORT> <DNS HOSTNAME> <EMAIL>"
+  exit 1
+else
+  echo "Setting main args to: "
+  echo "Port: $PORT"
+  echo "Host: $HOSTNAME"
+  echo "Email: $EMAIL"
+fi
+
+# Get the certs
+
+open_firewall_port_range() {
+  local start_port=$1
+  local end_port=$2
+
+  # Check for firewall-cmd (firewalld)
+  if [[ "$(uname)" == "Darwin" ]]; then
+    echo "pass in proto tcp from any to any port $start_port:$end_port" | sudo pfctl -ef - 
+  elif command -v firewall-cmd &> /dev/null; then
+    echo "Using firewalld"
+    firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
+    firewall-cmd --reload
+  # Check for ufw (Uncomplicated Firewall)
+  elif $SUDO bash -c 'command -v ufw' &> /dev/null; then
+    echo "Using ufw"
+    $SUDO ufw allow ${start_port}:${end_port}/tcp
+  else
+    echo "No recognized firewall management tool found"
+    return 1
+  fi
+}
+
 # Get the hostname
 ssl_dir="$HOME/sslcerts"
 output=""
+darwin_needs_close=""
+
+if [[ -f "${ssl_dir}/privkey.pem" && -f "${ssl_dir}/fullchain.pem" ]]; then
+  echo "Certs already present, will not overwrite. To force new certs for $HOSTNAME please remove or rename $ssl_dir"
+else
+  if [[ "$HOSTNAME" != "localhost" ]]; then
+    print_instructions
+    if [[ "$(uname)" == "Darwin" ]]; then
+      read -p "This will disable Apple iCloud Private Relay temporarily to attempt to open port 80 for LetsEncrypt HTTPS certificate issuance verification of hostname (which may fail anyway if your ISP blocks port 80). Continue? (y/n) " answer
+      if [[ "$answer" == "y" ]]; then
+        # Assuming open_firewall_port_range is a function you have defined to open port ranges with pfctl
+        open_firewall_port_range 80 80
+        darwin_needs_close="true"
+      else
+        echo "Not trying to open port 80. LetsEncrypt certificate issuance verification may fail." >&2
+      fi
+    else
+      open_firewall_port_range 80 80
+    fi
+    if [[ -f ./wait_for_hostname.sh ]]; then 
+      ./wait_for_hostname.sh $HOSTNAME
+    elif [[ -f ./deploy-scripts/wait_for_hostname.sh ]]; then 
+      ./deploy-scripts/wait_for_hostname.sh $HOSTNAME
+    elif command_exists wait_for_hostname.sh; then
+      wait_for_hostname.sh $HOSTNAME
+    else
+      bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/wait_for_hostname.sh) $HOSTNAME
+    fi
+  fi
+
+  export BB_USER_EMAIL="$EMAIL"
+  if [[ -f ./tls ]]; then
+    ./tls $HOSTNAME
+  elif [[ -f ./deploy-scripts/tls ]]; then
+    ./deploy-scripts/tls $HOSTNAME
+  elif command_exists tls; then
+    tls $HOSTNAME
+  else
+    bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/tls) $HOSTNAME
+  fi
+fi
+
+if [[ "$(uname)" == "Darwin" ]] && [[ -n "$darwin_needs_close" ]]; then
+  echo "Removing opened firewall ports. If you use Apple iCloud Private Relay it will now be re-enabled."
+  sudo pfctl -F all -f /etc/pf.conf
+fi
 
 if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
   hostname=$(openssl x509 -in "${ssl_dir}/fullchain.pem" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
@@ -104,39 +177,7 @@ else
   output="$ip_address"
 fi
 
-echo "$output"
-
-# Get the PORT argument
-PORT=$1
-
-# Validate that PORT is a number
-if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
-  echo "Error: PORT must be a number."
-  echo "Usage: " "$0" "<PORT>"
-  exit 1
-else
-  echo "Setting main port to: $PORT"
-fi
-
-open_firewall_port_range() {
-  local start_port=$1
-  local end_port=$2
-
-  # Check for firewall-cmd (firewalld)
-  if command -v firewall-cmd &> /dev/null; then
-      echo "Using firewalld"
-      firewall-cmd --zone="$ZONE" --add-port=${start_port}-${end_port}/tcp --permanent
-      firewall-cmd --reload
-
-  # Check for ufw (Uncomplicated Firewall)
-  elif $SUDO bash -c 'command -v ufw' &> /dev/null; then
-      echo "Using ufw"
-      $SUDO ufw allow ${start_port}:${end_port}/tcp
-  else
-      echo "No recognized firewall management tool found"
-      return 1
-  fi
-}
+echo "Certificate hostname: $output"
 
 open_firewall_port_range "$(($PORT - 2))" "$(($PORT + 2))"
 

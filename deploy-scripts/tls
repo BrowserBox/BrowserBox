@@ -2,11 +2,26 @@
 
 sudo="$(command -v sudo)"
 
+os_type() {
+  case "$(uname -s)" in
+    Darwin*) echo "macOS";;
+    Linux*)  echo "Linux";;
+    MING*)   echo "win";;
+    *)       echo "unknown";;
+  esac
+}
+
 initialize_package_manager() {
   local package_manager
   local amzn_release_info
 
-  if command -v apt >/dev/null; then
+  if command -v brew &>/dev/null; then
+    package_manager=$(command -v brew)
+  elif [[ "$(uname)" == "Darwin" ]]; then
+    echo "ERROR: Homebrew not present. Please install Homebrew, or install certbot or letsencrypt client equivalent for macOS manually. But you may be better of using self-signed mkcert certificates if you are testing locally. If so please install and run:" >&2
+    echo "brew install mkcert nss && mkcert -install && mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1" >&2
+    exit 1
+  elif command -v apt >/dev/null; then
     package_manager=$(command -v apt)
   elif command -v dnf >/dev/null; then
     package_manager=$(command -v dnf)
@@ -54,7 +69,11 @@ if ! command -v certbot >/dev/null; then
         $sudo $APT -y install certbot curl
     fi
   else
-    $sudo $APT -y install certbot curl
+    if [[ "$(uname)" == "Darwin" ]]; then
+      $APT install certbot curl
+    else
+      $sudo $APT -y install certbot curl
+    fi
   fi
 fi
 
@@ -68,12 +87,75 @@ if [[ -z "${BB_USER_EMAIL}" ]]; then
   exit 1
 fi
 
+if $sudo certbot certonly --standalone --keep -d $1 --agree-tos -m "${BB_USER_EMAIL}" --no-eff-email; then
+  $sudo systemctl start certbot-renew.timer
+  ./deploy-scripts/auto_cert_renew $1 $USER
+else 
+  echo "ERROR: Certbot failed. Will use mkcert for local certs" >&2
+  if [ "$(os_type)" == "macOS" ]; then
+    brew install jq
+  else
+    $SUDO $APT -y install jq
+  fi
 
-$sudo certbot certonly --standalone --keep -d $1 --agree-tos -m "${BB_USER_EMAIL}" --no-eff-email
-$sudo systemctl start certbot-renew.timer
+  if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
+    hostname="$1"
+    export BB_USER_EMAIL="$2"
+
+    amd64=""
+
+    if [ "$hostname" == "localhost" ]; then
+      if ! command -v mkcert &>/dev/null; then
+        if [ "$(os_type)" == "macOS" ]; then
+          brew install nss mkcert
+        elif [ "$(os_type)" == "win" ]; then
+          choco install mkcert || scoop bucket add extras && scoop install mkcert
+        else
+          amd64=$(dpkg --print-architecture || uname -m)
+          $SUDO $APT -y install libnss3-tools
+          curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
+          chmod +x mkcert-v*-linux-$amd64
+          $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
+          rm mkcert-v*
+        fi
+      fi
+      mkcert -install
+      if [[ ! -f "$HOME/sslcerts/privkey.pem" || ! -f "$HOME/sslcerts/fullchain.pem" ]]; then
+        mkdir -p $HOME/sslcerts
+        pwd=$(pwd)
+        cd $HOME/sslcerts
+        mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
+        cd $pwd
+      else 
+        echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We are not overwriting them."
+      fi
+    else
+      ip=$(getent hosts "$hostname" | awk '{ print $1 }')
+
+      if [ -n "$ip" ]; then
+        ./deploy-scripts/wait_for_hostname.sh "$hostname"
+        ./deploy-scripts/tls "$hostname"
+      else
+        echo "The provided hostname could not be resolved. Please ensure that you've added a DNS A/AAAA record pointing from the hostname to this machine's public IP address."
+        exit 1
+      fi
+    fi
+  else
+    if [[ "$1" == "localhost" ]]; then
+      echo ""
+      echo "Usage: $0 <hostname>"
+      echo "Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
+    else 
+      echo ""
+      echo "Usage: $0 <hostname> <your_email>"
+      echo "Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
+      echo "Please provide an email as argument. This email will be used to agree to the Letsencrypt TOS for cert provisioning" >&2
+    fi
+    exit 1
+  fi
+fi
 mkdir -p $HOME/sslcerts
 $sudo -u root ./deploy-scripts/cp_certs $1 $HOME/sslcerts/
 $sudo chown $USER:$USER $HOME/sslcerts/*
 
-./deploy-scripts/auto_cert_renew $1 $USER
 

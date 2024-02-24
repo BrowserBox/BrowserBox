@@ -11,3 +11,7 @@ etc. And ensure that run_docker takes
 PORT hostname and emailaddress and sets everything up in a single command, certs and all
 
 also ensure we open port 80 on internal firewall first so we can get cert
+
+ialso add the docker to release notes for 7.1.2 and also to news section of readme
+
+
