@@ -65,6 +65,15 @@ initialize_package_manager() {
       mv debian-11-wrtc.node $HOME/build/Release/wrtc.node
       $SUDO mkdir -p /usr/local/share/dosyago/build/Release
       $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
+    elif [[ "$ID" == "ubuntu" && "$(arch)" == "aarch64" ]]; then # arm64
+      $SUDO apt -y install wget tar
+      mkdir -p $HOME/build/Release
+      echo "Installing Custom Build of WebRTC Node for Ubuntu ARM..."
+      wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/ubuntu-arm-wrtc.node
+      chmod +x ubuntu-arm-wrtc.node
+      mv ubuntu-arm-wrtc.node $HOME/build/Release/wrtc.node
+      $SUDO mkdir -p /usr/local/share/dosyago/build/Release
+      $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
     fi
   elif command -v dnf >/dev/null; then
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"

@@ -16,7 +16,7 @@ docker buildx create --use
 
 # Start the multi-platform build
 # This includes both linux/amd64 and linux/arm64 (for macOS Apple Silicon)
-docker buildx build --platform linux/amd64,linux/arm64 -t bbpro --push . > artefacts/build.log 2>&1 &
+docker buildx build --platform linux/amd64,linux/arm64 -t dosyago/browserbox --push . > artefacts/build.log 2>&1 &
 
 # Note: The '--push' flag is necessary for multi-platform builds as they cannot be loaded directly into the Docker daemon.
 # Ensure you're logged into the Docker registry where you're pushing the image.
