@@ -92,7 +92,7 @@ fi
 if [[ "$1" != "localhost" ]] && $sudo certbot certonly --standalone --keep -d $1 --agree-tos -m "${BB_USER_EMAIL}" --no-eff-email; then
   $sudo systemctl start certbot-renew.timer
   ./deploy-scripts/auto_cert_renew $1 $USER
-else 
+else
   echo "ERROR: Certbot failed. Will use mkcert for local certs" >&2
   if ! command -v jq &>/dev/null; then
     if [ "$(os_type)" == "macOS" ]; then
@@ -126,15 +126,17 @@ else
     cd $HOME/sslcerts
     mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
     cd $pwd
-  else 
+  else
     echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We are not overwriting them."
   fi
 fi
 mkdir -p $HOME/sslcerts
-if [[ -f ./deploy-scripts/cp_certs ]]; then
+if [[ -f ./cp_certs ]]; then
+  $sudo -u root ./cp_certs $1 $HOME/sslcerts/
+elif [[ -f ./deploy-scripts/cp_certs ]]; then
   $sudo -u root ./deploy-scripts/cp_certs $1 $HOME/sslcerts/
 else
-  $sudo -u root bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/cp_certs) $1 $HOME/sslcerts/
+  $sudo -u root bash -c "bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/cp_certs) $1 $HOME/sslcerts/"
 fi
 $sudo chown $USER:$USER $HOME/sslcerts/*
 chmod 600 $HOME/sslcerts/*
