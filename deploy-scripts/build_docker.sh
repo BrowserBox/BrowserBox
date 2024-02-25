@@ -16,6 +16,12 @@ docker buildx create --use
 
 # Start the multi-platform build
 # This includes both linux/amd64 and linux/arm64 (for macOS Apple Silicon)
+# Multi platform build "works" but has some issues
+# node-webrtc will not compile and we need to use a weird pre-built version 
+# with currently (25 02 2024) unknown build scripts
+# Also even if that wrtc.node (for Ubuntu / Linux ARM) seems to be loaded by node 
+# Chrome is not easy to install on Ubuntu ARM in Docker.
+# So currently we are NOT supporting native ARM container images
 docker buildx build --platform linux/amd64,linux/arm64 -t dosyago/browserbox --push . > artefacts/build.log 2>&1 &
 
 # Note: The '--push' flag is necessary for multi-platform builds as they cannot be loaded directly into the Docker daemon.

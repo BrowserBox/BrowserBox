@@ -66,6 +66,7 @@ initialize_package_manager() {
       $SUDO mkdir -p /usr/local/share/dosyago/build/Release
       $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
     elif [[ "$ID" == "ubuntu" && "$(arch)" == "aarch64" ]]; then # arm64
+      # however the problem with arm is chromium will not install
       $SUDO apt -y install wget tar
       mkdir -p $HOME/build/Release
       echo "Installing Custom Build of WebRTC Node for Ubuntu ARM..."
