@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# ensure you use containerd for storage (Docker settings) for better performance and stability
+
 if [[ ! -d node_modules ]]; then
   yes | npm i
 fi
