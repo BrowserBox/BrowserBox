@@ -50,7 +50,19 @@ To run a specific version manually, tag it as latest, then run it via the run_sc
 docker pull ghcr.io/browserbox/browserbox:v7.1
 docker tag ghcr.io/browserbox/browserbox:v7.1 ghcr.io/browserbox/browserbox:latest
 PORT=9999
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) $PORT
+HOST=browserbox.example.com
+EMAIL=j.citizen@example.com
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) $PORT $HOST $EMAIL
+```
+
+## Alternate 
+
+Alternately you can clone the repository first and run the script direclty, like so:
+
+```console
+git clone https://github.com/BrowserBox/BrowserBox
+cd BrowserBox
+./deploy-scripts/run_docker.sh $PORT $HOST $EMAIL
 ```
 
 ------
@@ -1163,7 +1175,7 @@ For detailed information and progress updates, please refer to: https://github.c
 -----
 ##### Footnotes
 
-[^1]: DOSYAGO [Terms](https://dosyago.com/terms.txt), [Privacy Policy](https://dosyago.com/privacy.txt) and the [BrowserBox License](LICENSE.md)
+[^1]: DOSYAGO [Terms](https://dosyago.com/terms.txt), [Privacy Policy](https://dosyago.com/privacy.txt) and the [BrowserBox License](https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md)
 [^2]: *LetsEncrypt is a registered trademark of ISRG and there is no affiliation, or endorsement with BrowserBox or DOSYAGO*
 
 
