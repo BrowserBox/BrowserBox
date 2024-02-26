@@ -19,7 +19,8 @@ You may run BrowserBox via a variety of easy to access means. The simplest and m
 
 ## Install and Run Via Docker - Easiest and Fastest, but can be less Reliable ✅
 
-To run BrowserBox docker easily you need to use the included **run script**: `./deploy-scripts/run_docker.sh PORT` and follow the instructions. 
+To run BrowserBox docker easily you need to use the included **run script**: `./deploy-scripts/run_docker.sh PORT HOST EMAIL` and follow the instructions. 
+
 > [!NOTE]
 > We use a run script to avoid you needing to manually bridge a range of ports, run the correct command, and ensure HTTPS certificates are set up across a range of deployment scenarios. Worry not, our intrepid `run_docker.sh` script will guide you through everything you need.
 
@@ -32,6 +33,12 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/depl
 > [!TIP]
 > The run script may prompt you to perform some setup steps, especially on macOS. Follow those and you'll be on your way to BrowserBox Land in no time! :joy_cat:
 
+### A note on the arguments
+
+- `PORT` is the main port where BrowserBox will run.
+- `HOST` is the hostname of the server where BrowserBox will run. It can either be localhost or a fully-qualified domain name, backed by a DNA a record.
+- `EMAIL` is your email address, to agree to our terms[^1] and [LetsEncrypt's terms](https://letsencrypt.org/documents/LE-SA-v1.2-November-15-2017.pdf)[^2]
+  
 > [!WARNING]
 > Apple macOS users may find the Docker version to be the least stable. A common problem encountered when running BrowserBox Docker on macOS is tabs inexplicably freeze on occasion. A workaround is to close the problem tab, and resume in a new tab. This issues does not occur in BrowserBox Docker on other systems.
 
@@ -1151,4 +1158,12 @@ Join us in navigating the Zero Trust landscape. Secure your commercial license t
 
 This project is copyright The Dosyago Corporation 2018-2023. All rights reserved.
 
-For detailed information and progress updates, please refer to: https://github.com/dosyago/BrowserBox.
+For detailed information and progress updates, please refer to: https://github.com/BrowserBox/BrowserBox.
+
+-----
+##### Footnotes
+
+[^1]: DOSYAGO [Terms](https://dosyago.com/terms.txt), [Privacy Policy](https://dosyago.com/privacy.txt) and the [BrowserBox License](LICENSE.md)
+[^2]: *LetsEncrypt is a registered trademark of ISRG and there is no affiliation, or endorsement with BrowserBox or DOSYAGO*
+
+
