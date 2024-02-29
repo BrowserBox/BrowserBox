@@ -10,6 +10,21 @@
  
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
 
+------
+
+## Install and Run Options
+
+We provide a variety of install and run options, with instructions listed in this README. They include:
+
+- [Docker Hub](https://hub.docker.com/r/dosyago/browserbox) - pull, then use `./deploy-scripts/run_docker.sh` after tagging the pulled image to `ghcr.io/browserbox/browserbox:latest`
+- [GitHub Container Registry](https://github.com/orgs/BrowserBox/packages) - just use `./deploy-scripts/run_docker.sh` directly or via bash redirect with curl (the *no clone* option :rocket:).
+- [Manual `git clone` and `./deploy-scripts/global_install.sh`](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#manual-install---most-flexible-and-most-reliable-) - simple, flexible, direct. Perfect for development. 
+- [1-Click Cloud Deploy to Vultr, AWS, Azure or Linode](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#1-click-deploy---deploy-browserbox-to-the-cloud-instantly--tada-cyclone) - great for using it right away.
+- Pull from a mirror (SourceForge, but it lags behind the official repo [on GitHub](https://github.com/BrowserBox/BrowserBox)), or a fork (https://github.com/BrowserBox/BrowserBox/forks) &ndash; then use one the manual install option. But we recommend always using the latest code from our [Official BrowserBox GitHub Repository](https://github.com/BrowserBox/BrowserBox).
+- [Windows Edition](https://www.powershellgallery.com/packages/BrowserBox-Installer/1.5.8.20) - via the PowerShell Gallery installer package. In beta, so currently may be a little brittle or fragile, but the only option if you need to run natively on Windows. As a bonus we figured out how to get audio to stream from a Windows server without an active RDP connection, and without installing a virtual audio driver. We rock! 🚀 ❤️
+  
+------
+
 # Getting Started Guide
 
 You may run BrowserBox via a variety of easy to access means. The simplest and most stable is the full manual install. Simple spin up a VPS, VM baremetal server, or even your local device of choice and follow the instructions below and you'll be up and running in two jiffies! :joy_cat:
@@ -44,11 +59,11 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/depl
 
 #### Custom Docker Options
 
-To run a specific version manually, tag it as latest, then run it via the run_script:
+If you want, you can run a specific version manually, even pull it from [Docker Hub](https://hub.docker.com/r/dosyago/browserbox). Just make sure you tag it as `ghcr.io/dosyago/browserbox:latest`, so you can run it via the (very much necessary) run_script:
 
 ```console
-docker pull ghcr.io/browserbox/browserbox:v7.1
-docker tag ghcr.io/browserbox/browserbox:v7.1 ghcr.io/browserbox/browserbox:latest
+docker pull dosyago/browserbox:v7.1.2
+docker tag dosyago/browserbox:v7.1.2 ghcr.io/browserbox/browserbox:latest
 PORT=9999
 HOST=browserbox.example.com
 EMAIL=j.citizen@example.com
@@ -64,8 +79,6 @@ git clone https://github.com/BrowserBox/BrowserBox
 cd BrowserBox
 ./deploy-scripts/run_docker.sh $PORT $HOST $EMAIL
 ```
-
-------
 
 ## 1-Click Deploy - Deploy BrowserBox to the cloud instantly! ✅ :tada: :cyclone:
 
@@ -214,6 +227,12 @@ Our new maintenance release has just landed and includes a range of minor improv
 We've also translated a brief README introduction to BrowserBox into a few languages. See the links at the top of the README for a version that might be in your preferred language.
 
 ## Contributing
+
+A few tips for development:
+
+- Ensure you use `./deploy-scripts/build_docker.sh` to build the Docker image. We build on macOS using Docker Desktop. Building on other platforms is not officially supported, tho we are open to reviewing a PR that adds a Podman build script.
+- `npm test` in the root directory runs the copy of BrowserBox in the current directory. `bbpro` runs the globally installed copy. `setup_bbpro` (equivalently: `./deploy-scripts/_setup_bbpro.sh`) configures BrowserBox and applies to any copy you run, regardless of whether you run with `npm test`, or `bbpro`.
+- Setting the `./src/common.js` `DEBUG.mode` key to `dev` uses the unbundled, unminified client code in `./src/public/voodoo`. Ensure you do this if you want to modify client-side code.
 
 Contributors and developers take a look at these source diagrams of BrowserBox. 
 
