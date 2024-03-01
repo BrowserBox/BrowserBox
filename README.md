@@ -46,7 +46,7 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/depl
 ```
 
 > [!TIP]
-> The run script may prompt you to perform some setup steps, especially on macOS. Follow those and you'll be on your way to BrowserBox Land in no time! :joy_cat:
+> That's all you need! Just ensure you replace the examples values above with the correct `PORT`, `HOST`, and `EMAIL` you wish to use for your deployment. Finally, a head's up: the run script may prompt you to perform some setup steps, especially on macOS. Follow those and you'll be on your way to BrowserBox Land in no time! :joy_cat:
 
 ### A note on the arguments
 
