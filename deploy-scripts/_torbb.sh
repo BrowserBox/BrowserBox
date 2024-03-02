@@ -3,9 +3,37 @@
 # Global Variables
 OS_TYPE=""
 TOR_INSTALLED=false
+SUDO=""
 TORRC=""
 TORDIR=""
 torsslcerts="tor-sslcerts"
+
+if command -v sudo &>/dev/null; then
+  SUDO="sudo -n"
+fi
+
+initialize_package_manager() {
+  local package_manager
+
+  if [[ "$OSTYPE" == darwin* ]]; then
+    package_manager=$(command -v brew)
+  elif command -v apt &>/dev/null; then
+    package_manager=$(command -v apt)
+    if command -v apt-get &>/dev/null; then
+      source ./deploy-scripts/non-interactive.sh
+    fi
+  elif command -v dnf >/dev/null; then
+    package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
+  else
+    echo "No supported package manager found. Exiting."
+    return 1
+  fi
+
+  echo "Using package manager: $package_manager"
+  export APT=$package_manager
+}
+
+initialize_package_manager
 
 ensure_shutdown() {
   pm2 delete all
@@ -37,7 +65,7 @@ find_mkcert_root_ca() {
   esac
 
   if [ -d "$mkcert_dir" ]; then
-    echo "$mkcert_dir" 
+    echo "$mkcert_dir"
   else
     echo "warning: mkcert directory not found in the expected location." >&2
     return 1
@@ -60,22 +88,38 @@ find_torrc_path() {
   echo "$TORRC"
 }
 
+get_normalized_arch() {
+  local arch=$(dpkg --print-architecture || uname -m) # This is widely supported across different Unix-like systems
+
+  # Normalize x86_64 to amd64
+  if [ "$arch" = "x86_64" ]; then
+    echo "amd64"
+  else
+    echo "$arch"
+  fi
+}
+
 setup_mkcert() {
+  echo "Setting up mkcert..." >&2
   if ! command -v mkcert &>/dev/null; then
     if [ "$(os_type)" == "macOS" ]; then
       brew install nss mkcert
     elif [ "$(os_type)" == "win" ]; then
       choco install mkcert || scoop bucket add extras && scoop install mkcert
     else
-      amd64="$(dpkg --print-architecture || uname -m)"
-      $SUDO "$APT" -y install libnss3-tools
+      amd64="$(get_normalized_arch)"
+      if [[ "${OS_TYPE}" == "centos" ]]; then
+        $SUDO "$APT" -y install nss-tools
+      else
+        $SUDO "$APT" -y install libnss3-tools
+      fi
       curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/${amd64}"
       chmod +x mkcert-v*-linux-"$amd64"
       $SUDO cp mkcert-v*-linux-"$amd64" /usr/local/bin/mkcert
       rm mkcert-v*
     fi
   fi
-  mkcert -install &>/dev/null
+  mkcert -install
 }
 
 # Detect Operating System
@@ -168,7 +212,7 @@ configure_and_export_tor() {
   for i in {0..4}; do
     local service_port=$((base_port + i))
     local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
-    local dirLine="HiddenServiceDir $hidden_service_dir" 
+    local dirLine="HiddenServiceDir $hidden_service_dir"
 
     if sudo test -d "$hidden_service_dir"; then
       sudo rm -rf "$hidden_service_dir"
@@ -186,7 +230,11 @@ configure_and_export_tor() {
 
     if [[ "${OS_TYPE}" != "macos" ]]; then
       sudo mkdir -p "$hidden_service_dir"
-      sudo chown debian-tor:debian-tor "$hidden_service_dir"
+      if [[ "${OS_TYPE}" == "centos" ]]; then
+        sudo chown toranon:toranon "$hidden_service_dir"
+      else
+        sudo chown debian-tor:debian-tor "$hidden_service_dir"
+      fi
       sudo chmod 700 "$hidden_service_dir"
     else
       mkdir -p "$hidden_service_dir"
@@ -215,6 +263,7 @@ configure_and_export_tor() {
     # and anyway probably a good idea to keep a user's onion addresses private rather than put them in a globally shared location
 
     local cert_dir="$HOME/${torsslcerts}/${onion_address}"
+    setup_mkcert
     mkdir -p "${cert_dir}"
     if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
       echo "mkcert failed for $onion_address" >&2
@@ -322,4 +371,3 @@ LOGIN_LINK="https://${DOMAIN}/login?token=${LOGIN_TOKEN}"
 echo "$LOGIN_LINK" > "${CONFIG_DIR}/login.link"
 echo "Login link for Tor hidden service BB instance:" >&2
 echo "$LOGIN_LINK"
-
