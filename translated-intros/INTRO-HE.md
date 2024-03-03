@@ -14,7 +14,8 @@
 **התחלה מהירה עם Docker**: הקל על ההתקנה של BrowserBox באמצעות Docker עם פקודה פשוטה זו:
 
 ```console
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) 8080
+PORT=9999; HOST=localhost; EMAIL=$my_email
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) $PORT $HOST $EMAIL
 ```
 
 **הפצה בענן**: לקנה מידה רחב יותר, הפץ את BrowserBox בפלטפורמות ענן מובילות באמצעות אפשרויות הפצה בלחיצה אחת.

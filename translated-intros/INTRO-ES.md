@@ -12,7 +12,8 @@ BrowserBox transforma la experiencia de navegación web permitiendo el acceso de
 **Inicio Rápido con Docker**: Configura BrowserBox fácilmente utilizando Docker con este simple comando:
 
 ```console
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) 8080
+PORT=9999; HOST=localhost; EMAIL=$my_email
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) $PORT $HOST $EMAIL
 ```
 
 **Despliegue en la Nube**: Para una escalabilidad más amplia, despliega BrowserBox en las principales plataformas en la nube con opciones de despliegue con un solo clic.
