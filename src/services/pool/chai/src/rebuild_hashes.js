@@ -5,7 +5,6 @@
   import { execSync } from 'child_process';
   import path from 'path';
   import {rainbowHash} from '@dosyago/rainsum';
-  import {APP_ROOT} from '../../../../common.js';
 
   const BBPRO_CONF = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro');
   const CHAI_STATE_PATH = path.resolve(BBPRO_CONF, 'chai')
@@ -33,6 +32,14 @@
       }
     }
     const scheme = GO_SECURE ? 'https' : 'http';
+    let APP_ROOT = '.';
+    try { 
+      const commonStuff = await import('../../../../common.js');
+      ({APP_ROOT} = commonStuff);
+    } catch(e) {
+      const commonStuff = await import('../../src/common.js');
+      ({APP_ROOT} = commonStuff);
+    }
     const host_or_address = execSync(path.resolve(APP_ROOT, '..', 'chai', 'scripts', 'get_hostname.sh')).toString('utf8').trim();
 
     for( const file of dir ) {
