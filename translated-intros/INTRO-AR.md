@@ -14,7 +14,8 @@
 **البدء السريع مع Docker**: قم بإعداد BrowserBox بسهولة باستخدام Docker بهذا الأمر البسيط:
 
 ```console
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) 8080
+PORT=9999; HOST=localhost; EMAIL=$my_email
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) $PORT $HOST $EMAIL
 ```
 
 **التوزيع على السحابة**: لمزيد من القابلية للتوسع، قم بتوزيع BrowserBox على منصات السحابة الرئيسية باستخدام خيارات التوزيع بنقرة واحدة.

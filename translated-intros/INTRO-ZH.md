@@ -12,7 +12,8 @@ BrowserBox 彻底改变了网络浏览的方式，通过服务器运行，允许
 **Docker 快速启动**：使用 Docker 轻松设置 BrowserBox，仅需以下命令：
 
 ```console
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) 8080
+PORT=9999; HOST=localhost; EMAIL=$my_email
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) $PORT $HOST $EMAIL
 ```
 
 **云部署**：为了更广泛的可扩展性，在主要云平台上使用一键部署选项部署 BrowserBox。

@@ -13,7 +13,8 @@ BrowserBox кардинально меняет подход к веб-серфи
 **Быстрый старт с Docker**: Легко настройте BrowserBox, используя Docker, с помощью этой простой команды:
 
 ```console
-bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) 8080
+PORT=9999; HOST=localhost; EMAIL=$my_email
+bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/run_docker.sh) $PORT $HOST $EMAIL
 ```
 
 **Развертывание в облаке**: Для более широкой масштабируемости разверните BrowserBox на основных облачных платформах с помощью опций развертывания в один клик.
