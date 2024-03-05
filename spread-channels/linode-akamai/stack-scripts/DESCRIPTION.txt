@@ -33,7 +33,8 @@ BB: Embeddable, multiplayer browser for RBI and web.
 ======================================================
 
 - Using BrowserBox for free implies agreement to our terms, including 
-  AGPL-3.0 license.
+  Polyform Noncommercial License 1.0, or your valid commercial license
+  purchased at https://dosyago.com or via licenses@dosyago.com
 - Review our detailed terms, privacy policy, and licenses:
   
   Licenses:

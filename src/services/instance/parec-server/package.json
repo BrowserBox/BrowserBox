@@ -1,18 +1,16 @@
 {
-  "name": "@dosy-private/parec-server",
-  "private": true,
+  "name": "@browserbox/audio-server",
   "type": "module",
-  "version": "1.0.0",
-  "description": "Record pulseaudio monitor and serve http stream",
+  "version": "7.1.2",
+  "description": "Record pulseaudio, or windows monitor and serve ws or http streams",
   "main": "index.js",
   "scripts": {
     "clean": "node exec.js \"./scripts/clean.sh\"",
     "postinstall": "node exec.js  \"./scripts/install_config.sh\"",
-    "test": "node index.js",
-    "prepublishOnly": "echo 'do not publish this' && fail"
+    "test": "node index.js"
   },
   "author": "@dosy, forked and modified from work by original author, Jerko Steiner",
-  "license": "AGPL-3.0",
+  "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
   "dependencies": {
     "@dosy/wav": "^1.1.2",
     "@dosy/ws": "^8.11.6",

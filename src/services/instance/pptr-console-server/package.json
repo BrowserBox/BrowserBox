@@ -1,16 +1,14 @@
 {
-  "name": "@dosy-private/pptr-console-server",
-  "private": true,
+  "name": "@browserbox/puppeteer-console",
   "type": "module",
-  "version": "1.0.0",
-  "description": "server for pptr console for vf",
+  "version": "7.1.2",
+  "description": "Run puppeteer scripts in a sandboxed node environment inside your BrowserBox instance",
   "main": "index.js",
   "scripts": {
     "test": "nodemon index.js 8001 xxxcookie token2",
-    "prepublishOnly": "echo 'do not publish this' && fail"
   },
   "author": "@dosy",
-  "license": "AGPL-3.0",
+  "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
   "dependencies": {
     "compression": "latest",
     "cookie-parser": "latest",
