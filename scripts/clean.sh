@@ -35,6 +35,11 @@ cd ../
 cd chai/
 rm -rf node_modules
 rm -rf package-lock*
+cd ../
+cd devtools/
+rm -rf node_modules
+rm -rf package-lock*
+
 
 
 

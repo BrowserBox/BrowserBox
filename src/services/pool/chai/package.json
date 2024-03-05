@@ -1,6 +1,6 @@
 {
-  "name": "chai",
-  "version": "2.5.8",
+  "name": "@browserbox/chai",
+  "version": "7.1.2",
   "type": "module",
   "description": "chai - convert your documents to images by way of PDF",
   "main": "src/index.js",
@@ -24,9 +24,9 @@
   ],
   "author": "@dosy",
   "bugs": {
-    "url": "https://github.com/dosyago/documentspark/issues"
+    "url": "https://github.com/dosyago/chai/issues"
   },
-  "homepage": "https://github.com/dosyago/documentspark#readme",
+  "homepage": "https://github.com/dosyago/chai#readme",
   "dependencies": {
     "@dosyago/rainsum": "^1.1.1",
     "compression": "latest",
@@ -37,5 +37,5 @@
     "multer": "latest",
     "serve-index": "latest"
   },
-  "license": "AGPL-3.0"
+  "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
 }

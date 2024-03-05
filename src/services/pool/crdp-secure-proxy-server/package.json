@@ -1,16 +1,14 @@
 {
-  "name": "@dosy-private/crdp-secure-proxy-server",
-  "private": true,
+  "name": "@browserbox/remote-devtools",
   "type": "module",
-  "version": "1.0.0",
-  "description": "",
+  "version": "7.1.2",
+  "description": "Serve and proxy Chrome's devtools front-end securely and remotely",
   "main": "index.js",
   "scripts": {
     "test": "node-dev index.js 8003 xxxcookie token2",
-    "prepublishOnly": "echo 'do not publish this' && fail"
   },
   "author": "@dosy",
-  "license": "AGPL-3.0",
+  "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
   "dependencies": {
     "compression": "^1.7.4",
     "cookie-parser": "latest",

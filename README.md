@@ -883,7 +883,7 @@ This guide will walk you through the seamless integration of BrowserBoxPro into 
     - [Creative Ways that Clients are Using BrowserBox](#creative-ways-that-clients-are-using-browserbox)
     - [Internal Tooling Applications](#internal-tooling-applications)
     - [Tech and Framework Applications](#tech-and-framework-applications)
-  - [Features of BrowserBox Pro in a Zero Trust Environment](#features-of-browserbox-pro-in-a-zero-trust-environment)
+  - [Features of BrowserBox in a Zero Trust Environment](#features-of-browserbox-pro-in-a-zero-trust-environment)
   - [Licensing for Zero Trust](#licensing-for-zero-trust)
     - [Purchasing a commercial license](#purchasing-a-commercial-license)
     - [Hardware Appliance (OEM) Licensing](#hardware-appliance-oem-licensing)
@@ -904,9 +904,9 @@ In the evolving cybersecurity landscape, the Zero Trust model has emerged as a c
 For the latest on how BrowserBox is shaping the Zero Trust landscape, visit our [Company Blog](https://blog.dosyago.com).
 
 - [Updated Pricing](https://dosyago.com) - now with even more tiers for smaller use cases!
-- [BrowserBox Pro Goes Open Source with Multiple Licenses
+- [BrowserBox Goes Open Source with Multiple Licenses
 ](https://blog.dosyago.com/2023/06/26/browserbox-pro-goes-open-source-with-multiple-licenses.html)
-- [Tunnelling over SSH - You're guide to using Localhost Certificates and SSH port-forwarding to run BrowserBox Pro on a remote machine without a domain name, using SSH tunneling](https://blog.dosyago.com/tutorials/2023/06/17/tunneling-browserbox-pro-over-SSH-complete-guide-to-using-port-forwarding-to-run-RBI-on-a-router.html)
+- [Tunnelling over SSH - You're guide to using Localhost Certificates and SSH port-forwarding to run BrowserBox on a remote machine without a domain name, using SSH tunneling](https://blog.dosyago.com/tutorials/2023/06/17/tunneling-browserbox-pro-over-SSH-complete-guide-to-using-port-forwarding-to-run-RBI-on-a-router.html)
 
 ## Key Features
 
@@ -1061,9 +1061,9 @@ BrowserBoxPro isn't just a tool; it's a comprehensive solution designed to fit s
 
 For a comprehensive list of features and their availability in BrowserBoxPro, refer to the feature table below.
 
-## Features of BrowserBox Pro in a Zero Trust Environment
+## Features of BrowserBox in a Zero Trust Environment
 
-BrowserBox Pro offers an array of advanced features that set it apart from other versions of remote browser isolation. With fully open source-code, non-commercial use for free, frequent updates and cutting-edge technology, BrowserBox Pro provides an enhanced browsing experience with superior rendering, top-tier graphics, and minimal lag. Here are the key features of BrowserBox Pro:
+BrowserBox offers an array of advanced features that set it apart from other versions of remote browser isolation. With fully source-available code, non-commercial use for free, frequent updates and cutting-edge technology, BrowserBox provides an enhanced browsing experience with superior rendering, top-tier graphics, and minimal lag. Here are the key features of BrowserBox Pro:
 
 - Advanced streaming technology and variable bitrate innovations for smoother browsing experience
 - Superior rendering and graphics capabilities
@@ -1086,7 +1086,7 @@ BrowserBox Pro offers an array of advanced features that set it apart from other
 - User-friendly API (Pro exclusive)
 - SSH tunneling (Pro exclusive)
 
-These features make BrowserBox Pro the ideal choice for businesses and organizations looking to enhance their cybersecurity, privacy, and browsing capabilities.
+These features make BrowserBox the ideal choice for businesses and organizations looking to enhance their cybersecurity, privacy, and browsing capabilities.
 
 For more information about commercial options and licensing, please refer to the relevant sections below.
 
@@ -1094,52 +1094,55 @@ For more information about commercial options and licensing, please refer to the
 
 BrowserBoxPro is licensed separately under the following licenses:
 
-- [GNU Affero General Public License v3 (or later)](LICENSES/AGPL-3.0.txt)
 - [Polyform Non-Commercial License 1.0](LICENSES/PolyForm-Noncommercial-1.0.0.md)
-- [BrowserBox Pro perpetual commercial license](LICENSES/LicenseRef-BBP-Commercial-Perpetual.md)
-- [BrowserBox Pro subscription commercial license](LICENSES/LicenseRef-BBP-Commercial-Subscription.md)
+- [BrowserBox perpetual commercial license](LICENSES/LicenseRef-BBP-Commercial-Perpetual.md)
+- [BrowserBox subscription commercial license](LICENSES/LicenseRef-BBP-Commercial-Subscription.md)
 
 #### What does this mean for me?
 
-##### Are you using BrowserBox Pro as it ships?
+##### Are you using BrowserBox as it ships?
 
-  You may use BrowserBox Pro under the terms of the AGPLv3 (or later).
+  You may use BrowserBox under the terms of the Polyform Non-Commercial License 1.0
 
-##### Are you modifying BrowserBox Pro or developing software that uses BrowserBox Pro and willing to license those changes under the AGPL?
+##### Are you modifying BrowserBox or developing software that uses BrowserBox and willing to license those changes under the Polyform Non-Commercial License 1.0?
 
-  You may use BrowserBox Pro under the terms of the AGPLv3 (or later).
+  You may use BrowserBox under the terms of the Polyform Non-Commercial License 1.0
 
-##### Are you using BrowserBox Pro, modifying BrowserBox Pro, or developing software that uses BrowserBox Pro in a non-commercial capacity but do not wish to comply with the license terms of the AGPLv3?
+##### Are you using BrowserBox, modifying BrowserBox, or developing software that uses BrowserBox in a non-commercial capacity but do not wish to comply with the license terms of the Polyform Non-Commercial License 1.0?
 
-  You may use BrowserBox Pro under the terms of the Polyform Non-Commercial License 1.0.0.
+  You may have created a portal through spacetime...just kidding, but you'll need to purchase a commercial license. We offer discounts in this case due to your noncommercial status.
 
-##### Are you using BrowserBox Pro, modifying BrowserBox Pro, or developing software that uses BrowserBox Pro in a commercial capacity but do not wish to comply with the license terms of the AGPLv3?
+##### Are you using BrowserBox, modifying BrowserBox, or developing software that uses BrowserBox in a commercial capacity but do not wish to comply with the license terms of the BrowserBox Commercial License?
 
-  You may purchase a [perpetual or subscription based commercial license](#purchasing-a-commercial-license).
+  In order to be compliant, you need to negotiate custom licenses to suit your needs. Reach out to us at licensing@dosyago.com
+
+##### Are you using BrowserBox, modifying BrowserBox, or developing software that uses BrowserBox in a commercial capacity but think you may open source it in future?
+
+  In order to be compliant, you need to purchase licenses. Reach out to us at licensing@dosyago.com or purchase via [our website](https://dosyago.com)
 
 ### Purchasing a commercial license
 
-Purchasing takes a minute. Our purchasing form accepts credit cards, bank transfers and many other forms of payment. Once purchased, you'll receive a commercial license PDF including your agreement and valid Order receipt and you will be all set to use BrowserBox Pro in your commercial applications. With the purchase of a commercial license:
+Once purchased, you'll receive a commercial license PDF including your agreement and valid Order receipt and you will be all set to use BrowserBox in your commercial applications. With the purchase of a commercial license:
 
-- You may use BrowserBox Pro in as many commercial applications you like.
-- You may use BrowserBox Pro in your own commercial applications and products. For example: premium VPN services, RBI systems, system integration portals, web automation and scraping products, educational platforms, and other products and apps.
-- Customers and users of your products do not need to purchase their own license &mdash; so long as they are not developing their own commercial products with BrowserBox Pro.
+- You may use BrowserBox in as many commercial applications you like.
+- You may use BrowserBox in your own commercial applications and products. For example: premium VPN services, RBI systems, system integration portals, web automation and scraping products, educational platforms, and other products and apps.
+- Customers and users of your products do not need to purchase their own license &mdash; so long as they are not developing their own commercial products with BrowserBox.
 
 *Please note that we cannot transact with sanctioned countries, entities or individuals.* 
 
-Commercial Licenses are priced per seat. A seat is someone who uses the BrowserBox Pro system, either in an internal application (like secure email attachment viewing), or an external customer-facing application (such as a customer of your remote browser isolation product). Commercial Licenses come in two flavors:
+Commercial Licenses are priced per seat. A seat is someone who uses the BrowserBox system, either in an internal application (like secure email attachment viewing), or an external customer-facing application (such as a customer of your remote browser isolation product). Commercial Licenses come in two flavors:
 
-- **Perpetual License** This is a license to use the version of BrowserBox Pro you purchase forever. The version can be updated to the latest via purchase of yearly licenses.
+- **Perpetual License** This is a license to use the version of BrowserBox you purchase forever. The version can be updated to the latest via purchase of yearly licenses.
 - **Yearly License** This is a license to use the latest version available within the 12-months from your purchase. It can be manually renewed every year, or you can subscribe so it renews automatically.
 
-Commercial Licenses are available in two sizes:
 
-- **Individual License** Purchasable at [our GumRoad site](https://dosyo.gumroad.com). This is suitable for individuals or small teams working on commercial projects who don't want to use the AGPLv3.
-- **License Pack** Available in multiple sizes, from the small to the truly epic, with commensurately epic discounts at scale. These are purchasable at [our main website](https://dosyago.com).
+**License Pack** Available in multiple sizes, from the small to the truly epic, with commensurately epic discounts at scale. These are purchasable at [our main website](https://dosyago.com).
 
-By obtaining a commercial license, you gain the freedom to tailor BrowserBox Pro to your specific requirements and integrate it seamlessly into your workflow. This empowers organizations to leverage the advanced features and capabilities of BrowserBox Pro while maintaining full control over its customization and usage. 
+You can purchase either per-named-user or per-concurrent-user. Licenses available on our website are currently for named users. Purchase concurrent user licenses by contacting us at licensing@dosyago.com
 
-Support tiers and customization may be separately negotiated and purchased. To discuss your needs, please [reach out to our helpful support team here](mailto:support@dosyago.com?subject=BrowserBox%20Pro).
+By obtaining a commercial license, you gain the freedom to tailor BrowserBox to your specific requirements and integrate it seamlessly into your workflow. This empowers organizations to leverage the advanced features and capabilities of BrowserBox while maintaining full control over its customization and usage. 
+
+Support tiers and customization may be separately negotiated and purchased. To discuss your needs, please [reach out to our helpful support team here](mailto:support@dosyago.com?subject=BrowserBox).
 
 ### Hardware Appliance (OEM) Licensing
 
@@ -1151,15 +1154,15 @@ Unfotunately if you or your company are an OFAC sanctioned entity or other entit
 
 ### Licensing Summary 
 
-BrowserBox Pro offers flexible licensing options to cater to different usage scenarios. As previously mentioned, BBPro software is available for free for non-commercial use under the PolyForm NonCommercial license. This allows individuals and non-profit organizations to enjoy the benefits of BrowserBox Pro without any licensing fees when using the software without any participation in or anticipation of commercial application. The PolyForm NonCommercial license ensures that the software is used strictly for non-commercial purposes.
+BrowserBox offers flexible licensing options to cater to different usage scenarios. As previously mentioned, BBPro software is available for free for non-commercial use under the PolyForm NonCommercial license. This allows individuals and non-profit organizations to enjoy the benefits of BrowserBox without any licensing fees when using the software without any participation in or anticipation of commercial application. The PolyForm NonCommercial license ensures that the software is used strictly for non-commercial purposes.
 
-Whether it's for non-commercial or commercial purposes, BrowserBox Pro provides a range of licensing options to accommodate different user needs and ensure a secure and powerful browsing experience.
+Whether it's for non-commercial or commercial purposes, BrowserBox provides a range of licensing options to accommodate different user needs and ensure a secure and powerful browsing experience.
 
 -----
 
 ## Pricing
 
-See [our website](https://dosyago.com) and [our GumRoad](https://dosy.gumroad.com) for accurate latest pricing or [reach out to us](mailto:sales@dosyago.com?subject=Pricing), but here is a summary below:
+See [our website](https://dosyago.com) for accurate latest pricing or [reach out to us](mailto:sales@dosyago.com?subject=Pricing), but here is a summary below:
 
 | License Type | Quantity | Price Per Unit/Pack | Includes |
 | :----------: | :------: | :-----------------: | :------ |
