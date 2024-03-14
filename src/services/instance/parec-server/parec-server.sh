@@ -105,7 +105,6 @@ else
       #pulseaudio -k
     else 
       pulseaudio --start --use-pid-file=true --log-level=debug
-      sleep 2
       until pulseaudio --check
       do  
         sleep 2
@@ -116,7 +115,6 @@ else
   pa_pid=$(cat $pidFile || pgrep pulseaudio)
   sudo renice -n $reniceValue -p $pa_pid
   echo "Pulseaudio (pid: $pa_pid) is reniced to priority $reniceValue"
-  sleep 2
 fi
 
 echo "Starting parec-server"
