@@ -169,7 +169,7 @@ is_port_free_new() {
     echo "Port $port is available." >&2
     return 0
   else
-    echo "Port $port is in use."
+    echo "Port $port is in use." >&2
     return 1
   fi
 }
