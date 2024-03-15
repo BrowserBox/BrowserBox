@@ -10,6 +10,8 @@
  
 BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
 
+**March 2024 Update:** Docker install is temporarily disabled due to license violations by noncompliant users. Installing via docker will not currently work.
+
 ------
 
 ## Install and Run Options
