@@ -26,6 +26,7 @@ import {
 } from '../../../common.js';
 const DEBUG = {
   showAllData: false,
+  showPacketPushes: false,
   showDroppedSilents: false,
   showPrimeFilter: false,
   showPrimeChecks: false,
@@ -86,11 +87,13 @@ const encoders = {
   }
 };
 const encoderType = process.env.TORBB ? 'wav' : 'wav';
+const MAX_RETRY_COUNT = 703;
 
 var hooks = 0;
 let parec = undefined;
 let savedEncoder;
 let encoderExpiration;
+let retryCount = 0;
 const ENCODER_EXPIRY_MS = 13*60*1000; // shut down encoder after 13 minutes of nobody listening
 
 const SSL_OPTS = {};
@@ -160,6 +163,7 @@ if ( DEBUG.goSecure ) {
 }
 const MODE = certsFound ? https: http;
 const app = express();
+let RETRY_WORTHY_EXIT = 11000;
 let shuttingDown = false;
 let audioProcessShuttingDown = false;
 
@@ -380,7 +384,7 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
         }
 
         client.buffer.push(packet);
-        console.log(`Pushing packet length: ${packet.length}`);
+        DEBUG.showPacketPushes && console.log(`Pushing packet length: ${packet.length}`);
       }
       while ( client.buffer.length > client.BUF_WINDOW ) {
         client.buffer.shift();
@@ -548,6 +552,8 @@ async function getEncoder() {
 		  console.warn(`error starting encoder`, e);
 	  }
   } else {
+    let resolve;
+    const pr = new Promise(res => resolve = res);
     // Notes on args
       /* 
         note that the following args break it or are unnecessary
@@ -567,8 +573,11 @@ async function getEncoder() {
       ])
     ]
     parec = childProcess.spawn('pacat', args);
+    let timer = null;
+    let retryingOnStartupError = false;
     parec.on('spawn', e => {
       console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
+      timer = Date.now();
       if ( ! process.platform.startsWith('win') ) {
         try {
           childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
@@ -592,9 +601,18 @@ async function getEncoder() {
       killEncoder(encoder);
       //shutDown();
     });
-    parec.on('exit', e => { 
+    parec.on('exit', async e => { 
       console.log('parec exit', e);
       killEncoder(encoder);
+      if ( (Date.now() - timer) <= RETRY_WORTHY_EXIT ) {
+        retryingOnStartupError = true;
+        if ( retryCount > MAX_RETRY_COUNT ) {
+          console.error(`Could not start encoder. This is likely a pulseaudio issue where parec/pacat cannot connect for some reason.`);
+          return;
+        } 
+        await sleep(RETRY_WORTHY_EXIT);
+        resolve(await getEncoder(retryCount++)); 
+      }
       //shutDown();
     });
 
@@ -632,8 +650,6 @@ async function getEncoder() {
       if ( ! process.env.TORBB ) {
         savedEncoder = encoder;
       }
-
-      return encoder;
     } else if ( typeof encoderCommand?.command === "function" ) {
       encoder = encoderCommand.command();
       encoder.parec = parec;
@@ -643,15 +659,20 @@ async function getEncoder() {
       if ( ! process.env.TORBB ) {
         savedEncoder = encoder;
       }
-
-      return encoder;
     } else {
       encoder = parec;
       if ( ! process.env.TORBB ) {
         savedEncoder = parec;
       }
-      return parec;
     }
+    setTimeout(() => {
+      if ( ! retryingOnStartupError ) {
+        retryCount = 0;
+        resolve(encoder);
+      }
+    }, RETRY_WORTHY_EXIT + 1618);
+
+    return pr;
   }
 }
 
