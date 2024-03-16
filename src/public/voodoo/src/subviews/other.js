@@ -233,7 +233,7 @@ import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js
               <form method=GET action="${url}" target=_top submit=${submission => {
                   submission.preventDefault(); 
                   const target = CONFIG.useBlankWindowForProtocolLaunch ? 
-                    window.top.open("about:blank") 
+                    globalThis.window.open("about:blank") 
                     : 
                     window.top
                   ;
