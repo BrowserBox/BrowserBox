@@ -1041,7 +1041,7 @@
               /*
                 otherButton: {
                   title: 'Buy',
-                  onclick: () => window.top.open('https://buy.stripe.com/dR615g7hL0Mjeek5kx', "_blank")
+                  onclick: () => globalThis.window.open('https://buy.stripe.com/dR615g7hL0Mjeek5kx', "_blank")
                 },
               */
               title: "SecureView\u2122 Enabled",
@@ -1054,7 +1054,7 @@
             const {url} = secureview;
             if ( url ) {
               if ( DEBUG.useWindowOpenForSecureView ) {
-                window.top.open(url);
+                globalThis.window.open(url);
               } else {
                 createTab(null, url);
               }
