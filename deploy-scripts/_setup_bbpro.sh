@@ -496,7 +496,7 @@ echo "Done!">&2
 echo -n "Creating test.env...">&2
 
 sslcerts="${HOME}/sslcerts"
-if [[ ! -d $sslcerts ]]; then
+if [[ ! -d $sslcerts ]] || [[ ! -f "${sslcerts}/fullchain.pem" ]]; then
   sslcerts="/usr/local/share/dosyago/sslcerts"
 fi
 cert_file="${sslcerts}/fullchain.pem"
