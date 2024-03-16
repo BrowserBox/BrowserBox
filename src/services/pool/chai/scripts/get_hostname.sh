@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [[ -f ~/.config/dosyago/bbpro/test.env ]]; then
+  source ~/.config/dosyago/bbpro/test.env
+fi
+
 # Define the path to the SSL certificates
 ssl_dir="${SSLCERTS_DIR:-"${HOME}/sslcerts"}"
 
