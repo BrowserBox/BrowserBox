@@ -352,6 +352,12 @@
       }
 
       const {searchParams} = new URL(location);
+
+      if ( searchParams.has('cloudTabsStatusLine') || location.hostname.endsWith('cloudtabs.net') ) {
+        state.cloudTabsStatusLine = true; 
+        setState('bbpro', state);
+      }
+
       if ( searchParams.has('url') ) {
         let urls = [];
         try {
