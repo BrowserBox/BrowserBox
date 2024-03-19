@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
-sudo pkill watcher.sh
-sudo nohup ./scripts/watcher.sh &
+sudo pkill w2.sh
+#sudo nohup ./scripts/watcher.sh &
+sudo nohup ./scripts/w2.sh &
 
