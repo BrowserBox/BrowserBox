@@ -21,6 +21,7 @@ export const OPTIONS = {
   showWebRTCStatus: true,
   useSystemColorScheme: true,
   useDarkMode: false,
+  useCloudTabsStatus: true,
 };
 
 export const DEBUG = Object.freeze({

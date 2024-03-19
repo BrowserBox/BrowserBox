@@ -813,6 +813,21 @@
     } 
 
 /* other */
+  .ct-home {
+    display: inline-block;
+    margin: 0 0.5rem;
+  }
+
+  .ct-home:hover, .ct-home:active {
+    color: black;
+    font-weight: bold;
+    background: aquamarine;
+  }
+
+  .align-right {
+    text-align: right;
+  }
+
   #debugBox {
     display: none;
   }
