@@ -25,6 +25,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  tryPeeringAnywayEvenIfUserMediaFails: true,
   utilizeTempHackFixForIMENoKey: true,
   mode: 'prod',
   debugKeyEvents: false,
@@ -68,7 +69,7 @@ export const DEBUG = Object.freeze({
   debugAudioAck: false,
   debugFastest: false,
   get useStraightAudioStream() {
-    return location.host.endsWith('.onion') || false;
+    return globalThis?.location?.host?.endsWith?.('.onion') || false;
   },
   get includeAudioElementAnyway() {
     return isSafari() || deviceIsMobile() || this.useStraightAudioStream;
@@ -165,7 +166,7 @@ export const CONFIG = Object.freeze({
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
   get useServiceWorkerToCache() {
-    return location.hostname !== 'localhost' && true;
+    return globalThis?.location?.hostname !== 'localhost' && true;
   },
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,
@@ -194,7 +195,7 @@ export const CONFIG = Object.freeze({
   devtoolsServiceFileName: 'devtools.srv',
   sessionTokenFileName: 'session.tkn',
   get isOnion() {
-    return location.host.endsWith('.onion')
+    return globalThis?.location?.host?.endsWith?.('.onion')
   },
   get privateConnectivity() {
     return this.isOnion || true; // on by default now

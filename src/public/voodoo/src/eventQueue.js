@@ -672,20 +672,35 @@
                             // Skip the pre-request explainer
                             DEBUG.debugSafariWebRTC && console.log(`We already have permissions, no need to explain a request!`);
                           } else {
-                            await showExplainer();
+                            if ( deviceIsMobile() ) {
+                              await showExplainer();
+                            } else {
+                              console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
+                            }
                           }
-                          if ( deviceIsMobile() ) {
-                            await navigator.mediaDevices.getUserMedia({audio: true});
-                          } else {
-                            await navigator.mediaDevices.getUserMedia({video: true});
+                          try {
+                            if ( deviceIsMobile() ) {
+                              await navigator.mediaDevices.getUserMedia({audio: true});
+                            } else {
+                              //await navigator.mediaDevices.getUserMedia({audio: true});
+                              console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
+                            }
+                            state.safariWebRTCPermsRequested = true;
+                            resolve(true);
+                          } catch(e) {
+                            reject('Could not obtain user media permission');
                           }
-                          state.safariWebRTCPermsRequested = true;
-                          resolve(true);
                         }
                       }
                       state.afterSafariPermsRequested = state.afterSafariPermsRequested.then(() => {
                         DEBUG.debugSafariWebRTC && console.log(`Signaling`);
                         peer.signal(signal);
+                      }).catch(err => {
+                        console.info(`Safari User Media request to enable WebRTC peering has failed.`);
+                        if ( DEBUG.tryPeeringAnywayEvenIfUserMediaFails ) {
+                          console.info(`However we will try to peer anyway.`);
+                          peer.signal(signal);
+                        }
                       });
                     } else {
                       peer.signal(signal);  
