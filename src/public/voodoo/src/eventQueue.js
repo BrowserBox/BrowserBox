@@ -677,7 +677,7 @@
                           if ( deviceIsMobile() ) {
                             await navigator.mediaDevices.getUserMedia({audio: true});
                           } else {
-                            await navigator.mediaDevices.getUserMedia({video: true});
+                            await navigator.mediaDevices.getUserMedia({audio: true});
                           }
                           state.safariWebRTCPermsRequested = true;
                           resolve(true);
@@ -686,6 +686,12 @@
                       state.afterSafariPermsRequested = state.afterSafariPermsRequested.then(() => {
                         DEBUG.debugSafariWebRTC && console.log(`Signaling`);
                         peer.signal(signal);
+                      }).catch(err => {
+                        console.info(`Safari User Media request to enable WebRTC peering has failed.`);
+                        if ( DEBUG.tryPeeringAnywayEvenIfUserMediaFails ) {
+                          console.info(`However we will try to peer anyway.`);
+                          peer.signal(signal);
+                        }
                       });
                     } else {
                       peer.signal(signal);  

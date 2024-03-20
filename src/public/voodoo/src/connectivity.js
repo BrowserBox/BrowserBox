@@ -10,8 +10,8 @@ export default class InternetChecker {
     this.checkInProgress = false;
     this[StatusSymbol] = 'issue';
     this.urls = CONFIG.privateConnectivity ? [ 
-      location.origin,
-      location.origin
+      globalThis?.location?.origin,
+      globalThis?.location?.origin,
     ] : [
       "https://1.1.1.1",
       "https://dns.google",
