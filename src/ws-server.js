@@ -344,7 +344,7 @@
         app.get("/", SEC_HEADERS, (req,res) => res.sendFile(path.join(APP_ROOT, '..', 'dist', 'image.html'))); 
       }
       app.get("/login", SEC_HEADERS, (req,res) => {
-        console.log(req.query);
+        console.log('login', req.query);
         const {ui: ui = 'true',token,ran: ran = Math.random(),url:Url} = req.query; 
         DEBUG.debugCookie && console.log({token, session_token});
         if ( token == session_token ) {
@@ -383,6 +383,32 @@
           }
         }
       }); 
+      app.get("/local_cookie", SEC_HEADERS, (req,res) => {
+        console.log('local cookie', req.query);
+        const {ui: ui = 'true',token,ran: ran = Math.random(),url:Url} = req.query; 
+        DEBUG.debugCookie && console.log({token, session_token});
+        if ( token == session_token ) {
+          res.type('application/javascript');
+          const userAgent = req.headers['user-agent'];
+          const isSafari = SafariPlatform.test(userAgent);
+          if ( isSafari ) {
+            res.send(`
+              localStorage.setItem('localCookie',"${allowed_user_cookie}");
+            `);
+          } else {
+            res.send(`
+              void 0;
+            `);
+          }
+        } else {
+          res.type("html");
+          if ( session_token == 'token2' ) {
+            res.end(`Incorrect token, not token2. <a href=/login?token=token2>Try again.</a>`);
+          } else {
+            res.end(`Incorrect token. <a href=https://${req.hostname}/>Try again.</a>`);
+          }
+        }
+      });
       app.get("/SPLlogin", (req,res) => {
         const {token,ran,url:Url} = req.query; 
         if ( token == session_token ) {
@@ -818,7 +844,7 @@
     function addHandlers() {
       // core app interface functions
         app.get(`/api/${version}/tabs`, wrap(async (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port];
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port];
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
           DEBUG.debugCookie && console.log('all cookies', req.cookies);
           if ( (cookie !== allowed_user_cookie) ) {
@@ -870,7 +896,7 @@
           }
         }));
         app.get(`/isTor`, (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port];
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port];
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
           DEBUG.debugCookie && console.log('all cookies', req.cookies);
           if ( (cookie !== allowed_user_cookie) ) {
@@ -886,7 +912,7 @@
           res.end(JSON.stringify(data));
         });
         app.get("/settings_modal", (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port];
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port];
           if ( (cookie !== allowed_user_cookie) ) { 
             return res.status(401).send('{"err":"forbidden"}');
           }
@@ -903,7 +929,7 @@
           `);
         });
         app.post("/file", async (req,res) => {
-          const cookie = req.cookies[COOKIENAME+port];
+          const cookie = req.cookies[COOKIENAME+port] || req.body[COOKIENAME+port];
           if ( (cookie !== allowed_user_cookie) ) { 
             DEBUG.debugFileUpload && console.log(`Request for file upload forbidden.`, req.files);
             return res.status(401).send('{"err":"forbidden"}');
@@ -954,7 +980,7 @@
         }); 
       // app meta controls
         app.post("/restart_app", ConstrainedRateLimiter, (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port];
+          const cookie = req.cookies[COOKIENAME+port] || req.body[COOKIENAME+port];
           const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
           const qp = url.searchParams.get('session_token');
           if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
@@ -1011,7 +1037,7 @@
           return res.status(200).send("requested");
         });
         app.post("/stop_app", ConstrainedRateLimiter, (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port];
+          const cookie = req.cookies[COOKIENAME+port] || req.body[COOKIENAME+port];
           const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
           const qp = url.searchParams.get('session_token');
           if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
@@ -1037,7 +1063,7 @@
           }
         });
         app.post("/stop_browser", async (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port];
+          const cookie = req.cookies[COOKIENAME+port] || req.body[COOKIENAME+port];
           const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
           const qp = url.searchParams.get('session_token');
           if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
@@ -1049,7 +1075,7 @@
           await zl.life.kill(zombie_port);
         });
         app.post("/start_browser", (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port];
+          const cookie = req.cookies[COOKIENAME+port] || req.body[COOKIENAME+port];
           const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
           const qp = url.searchParams.get('session_token');
           if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
@@ -1061,7 +1087,7 @@
         });
       // app integrity check
         app.get("/integrity", ConstrainedRateLimiter, (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port];
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port];
           const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
           const qp = url.searchParams.get('session_token');
           if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
