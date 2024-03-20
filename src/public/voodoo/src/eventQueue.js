@@ -672,15 +672,24 @@
                             // Skip the pre-request explainer
                             DEBUG.debugSafariWebRTC && console.log(`We already have permissions, no need to explain a request!`);
                           } else {
-                            await showExplainer();
+                            if ( deviceIsMobile() ) {
+                              await showExplainer();
+                            } else {
+                              console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
+                            }
                           }
-                          if ( deviceIsMobile() ) {
-                            await navigator.mediaDevices.getUserMedia({audio: true});
-                          } else {
-                            await navigator.mediaDevices.getUserMedia({audio: true});
+                          try {
+                            if ( deviceIsMobile() ) {
+                              await navigator.mediaDevices.getUserMedia({audio: true});
+                            } else {
+                              //await navigator.mediaDevices.getUserMedia({audio: true});
+                              console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
+                            }
+                            state.safariWebRTCPermsRequested = true;
+                            resolve(true);
+                          } catch(e) {
+                            reject('Could not obtain user media permission');
                           }
-                          state.safariWebRTCPermsRequested = true;
-                          resolve(true);
                         }
                       }
                       state.afterSafariPermsRequested = state.afterSafariPermsRequested.then(() => {
