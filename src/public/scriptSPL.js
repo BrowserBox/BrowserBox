@@ -20,7 +20,7 @@
         click.target.innerText = 'Enabling...';
         location.pathname = "/SPLlogin";
       } catch(e) {
-        alert(`Sorry Safari did not grant the permissions.`);
+        alert(`Sorry Safari did not grant the permissions. The embedding application needs to add 'allow-storage-access-by-user-activation' to its iframe sandbox attribute to permit Safari to grant these permissions.`);
       }
     } else if ( click.target.matches('button#generator') ) {
       click.target.innerText = 'Generating...';
