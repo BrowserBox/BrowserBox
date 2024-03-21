@@ -235,7 +235,7 @@ export const COMMON = Object.seal(Object.preventExtensions({
 }));
 
 // Cache the token outside the uberFetch function
-let authToken = localStorage.getItem('localCookie');
+authToken = localStorage.getItem('localCookie');
 
 async function uberFetch (url, options = {}) => {
   // Check if uberFetch should be used
