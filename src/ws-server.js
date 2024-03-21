@@ -368,7 +368,7 @@
           console.log({url});
           const userAgent = req.headers['user-agent'];
           const isSafari = SafariPlatform.test(userAgent);
-          if ( isSafari ) {
+          if ( isSafari && DEBUG.ensureRSA_for_3PC ) { // ensure request storage access for 3rd-party cookies
             res.type('html');
             res.end(SafariPermissionLoader());
           } else {
@@ -391,7 +391,7 @@
           res.type('application/javascript');
           const userAgent = req.headers['user-agent'];
           const isSafari = SafariPlatform.test(userAgent);
-          if ( isSafari ) {
+          if ( isSafari || DEBUG.useLocalAuthInPrepFor_3PC_PhaseOut ) {
             res.send(`
               localStorage.setItem('localCookie',"${allowed_user_cookie}");
             `);

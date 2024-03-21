@@ -29,6 +29,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  ensureRSA_for_3PC: false,
+  useLocalAuthInPrepFor_3PC_PhaseOut: true,
   showDebug: false,
   utilizeTempHackFixForIMENoKey: true,
   debugTyping: false,
