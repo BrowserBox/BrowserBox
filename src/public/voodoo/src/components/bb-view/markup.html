@@ -78,6 +78,6 @@ ${DEBUG.useStraightAudioStream ?
 ${CONFIG.isOnion ? 
   F`<!-- onion router no use iframe to log in -->` 
   :
-  F`<iframe id=audio-login src=${audio_login_url}></iframe>`
+  F`<iframe id=audio-login src="${audio_login_url}?localCookie=${await _top.localCookie}"></iframe>`
 }
 ${DEBUG.pluginsMenu && state.chromeUI ? subviews.PluginsMenu(state) : F`<!-- plugins menu -->`}

@@ -16,6 +16,7 @@
     import {saveClick} from './subviews/controls.js';
     import {
       untilTrue,
+      untilTrueOrTimeout,
       logit, sleep, debounce, DEBUG, BLANK, 
       CONFIG,
       OPTIONS,
@@ -136,6 +137,13 @@
       // url params
         const urlParams = new URLSearchParams(location.search);
         const urlFlags = parseURLFlags(urlParams);
+
+      // save local cookie
+        let lcResolve, lcReject;
+        const localCookiePromise = new Promise((res, rej) => (lcResolve = res, lcReject = rej));
+        untilTrue(() => localStorage.getItem('localCookie'), 100, 1000)
+          .then(() => lcResolve(localStorage.getItem('localCookie')))
+          .catch(err => lcReject(err));
 
       // app state
         magicAssign(state, {
@@ -261,6 +269,9 @@
 
           sidebarMenuActive: false,
           sessionToken,
+          get localCookie() {
+            return localCookiePromise;
+          },
 
           // services
           loggedInCount: 0,
@@ -506,6 +517,7 @@
           AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
           AUDIO.port = CONFIG.isOnion ? 443 : parseInt(location.port) - 2;
           AUDIO.searchParams.set('ran', Math.random());
+          AUDIO.searchParams.set('localCookie', await state.localCookie);
           if ( CONFIG.isOnion ) {
             // due to 3rd-party cookie restrictions in Tor browser we take an easy approach for now
             // simple logging in to the audio stream using a token every time, avoiding any need for cookies

@@ -517,7 +517,13 @@
       const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
       const qp = url.searchParams.get('session_token');
       const cookie = req.headers.cookie;
-      const localCookie = url.searchParams.get(COOKIENAME+port) || req.headers['x-browserbox-local-auth'];
+      let query;
+      try {
+        query = new URL(req.url).searchParams;
+      } catch(e) {
+        query = new URL(`https://localhost${req.url}`).searchParams;
+      }
+      const localCookie = url.searchParams.get(COOKIENAME+port) || req.headers['x-browserbox-local-auth'] || query.get('localCookie');
       const IP = req.connection.remoteAddress;
       let closed = false;
 

@@ -250,7 +250,7 @@ app.use((req,res,next) => {
 app.get('/login', (req, res) => {
   res.type('html');
   const {token} = req.query; 
-  const cookie = req.cookies[COOKIENAME+PORT];
+  const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
   let loggedIn = false;
   if ( token == TOKEN ) {
     res.cookie(COOKIENAME+PORT, COOKIE, COOKIE_OPTS);
@@ -274,7 +274,7 @@ app.get('/login', (req, res) => {
 if ( process.env.TORBB ) {
   app.get('/', async (request, response) => {
     const {token} = request.query; 
-    const cookie = request.cookies[COOKIENAME+PORT];
+    const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
     if ( token == TOKEN || cookie == COOKIE ) {
       var contentType = encoders[encoderType].contentType;
       DEBUG.val && console.log('  setting Content-Type to', contentType);
@@ -327,7 +327,13 @@ const socketWaveStreamer = new WebSocketServer({
 
 socketWaveStreamer.on('connection',  async (ws, req) => {
   cookieParser()(req, {}, () => console.log('cookie parsed'));
-  const cookie = req.cookies[COOKIENAME+PORT];
+  let query;
+  try {
+    query = new URL(req.url).searchParams;
+  } catch(e) {
+    query = new URL(`https://localhost${req.url}`).searchParams;
+  }
+  const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || query.get('localCookie');
   console.log({cookie});
   if ( cookie == COOKIE ) {
     console.log('auth');
