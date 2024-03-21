@@ -226,7 +226,7 @@
       res.redirect(301, redirTo);
     });
 
-    app.post('/very-secure-manifest-convert(*)', SmallRateLimiter, upload.single('pdf'), async (req, res) => {
+    app.post(/^\/very-secure-manifest-convert.*\/?/, SmallRateLimiter, upload.single('pdf'), async (req, res) => {
       let {file:pdf} = req;
       const {secret} = req.body;
 
