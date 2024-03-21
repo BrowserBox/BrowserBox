@@ -408,7 +408,7 @@
         {
           const isTorAPI = new URL(location.origin);
           isTorAPI.pathname = '/isTor';
-          fetch(isTorAPI).then(r => r.json()).then(({isTor}) => {
+          uberFetch(isTorAPI).then(r => r.json()).then(({isTor}) => {
             state.isTor = isTor;
             if ( state.isTor ) {
               setState('bbpro', state);

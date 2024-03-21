@@ -177,7 +177,7 @@
       }
     }))
 
-    app.use(`/uploads/file*0000.${FORMAT}`, RateLimiter, (req, res) => {
+    app.use(new RegExp(`/uploads/file.*0000\.${FORMAT}`), RateLimiter, (req, res) => {
       // save browser cache from getting tired of this not existing while conversion is in progress
         // prevent the repreated requests for first page to blow the cache
         // as in browser will eventually think ti doesn't exist and just serve no exist for ever
@@ -226,7 +226,7 @@
       res.redirect(301, redirTo);
     });
 
-    app.post('/very-secure-manifest-convert(*)', SmallRateLimiter, upload.single('pdf'), async (req, res) => {
+    app.post(/^\/very-secure-manifest-convert.*\/?/, SmallRateLimiter, upload.single('pdf'), async (req, res) => {
       let {file:pdf} = req;
       const {secret} = req.body;
 

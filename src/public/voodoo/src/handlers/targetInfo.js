@@ -1,7 +1,7 @@
 //FIXME we could move this into constructor 
 // and switch it to WS 
 
-import {untilTrue,COMMON,DEBUG} from '../common.js';
+import {uberFetch,untilTrue,COMMON,DEBUG} from '../common.js';
 import DEFAULT_FAVICON from '../subviews/faviconDataURL.js';
 
 const STATE_SYMBOL = Symbol(`[[State]]`);
@@ -13,8 +13,8 @@ export async function fetchTabs({sessionToken}, getState) {
   DEBUG.debugTabs && console.log(`Fetch tabs called`);
   try {
     const url = new URL(location);
-    url.pathname = '/api/v1/tabs';
-    const resp = await fetch(url);
+    url.pathname = '/api/v7/tabs';
+    const resp = await uberFetch(url);
     if ( resp.ok ) {
       const data = await resp.json();
       if ( data.error ) {

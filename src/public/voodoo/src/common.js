@@ -9,10 +9,16 @@ const FirefoxPlatform = /firefox/i;
 export const iden = e => e;
 export const isSafari = () => SafariPlatform.test(navigator.userAgent);
 
+export const GO_SECURE = globalThis?.location?.protocol == 'https:';
+export const version = 'v7';
+export const Port = globalThis?.location?.port || (GO_SECURE ? '443': '80');
+export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`+Port;
+
 export const BLANK = "about:blank";
 export const USE_DDG = true;
 const MIN_WAIT = 50;
 const MAX_WAITS = 200;
+let authToken;
 
 export const OPTIONS = {
   showBWStatus: true,
@@ -25,6 +31,8 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  useUberFetch: true,
+  logUberFetchErrors: true,
   tryPeeringAnywayEvenIfUserMediaFails: true,
   utilizeTempHackFixForIMENoKey: true,
   mode: 'prod',
@@ -225,6 +233,42 @@ export const COMMON = Object.seal(Object.preventExtensions({
   blockAnotherReset: false,
   delayUnload: false,
 }));
+
+// Cache the token outside the uberFetch function
+authToken = globalThis?.localStorage?.getItem?.('localCookie');
+
+Object.assign(globalThis, { uberFetch });
+
+export async function uberFetch (url, options = {}) {
+  // Check if uberFetch should be used
+  if (!DEBUG.useUberFetch) {
+    // Fall back to regular fetch if DEBUG.useUberFetch is false
+    return fetch(url, options);
+  }
+
+  if ( ! authToken ) {
+    console.warn(`Using uberFetch but authToken not yet present. Waiting for it...`);
+    await untilTrueOrTimeout(() => globalThis?.localStorage?.getItem?.('localCookie'), 120); // wait 2 minutes 
+    console.info(`Using uberFetch and authToken arrived!`);
+    authToken = globalThis?.localStorage?.getItem?.('localCookie');
+  }
+
+  // If there's no 'headers' field in options, initialize it
+  if (!options.headers) {
+    options.headers = {};
+  }
+
+  // Add the X-BrowserBox-Local-Auth header with the cached auth token
+  options.headers['X-BrowserBox-Local-Auth'] = authToken;
+
+  try {
+    const response = await fetch(url, options);
+    return response;
+  } catch (error) {
+    DEBUG.logUberFetchErrors && console.error('uberFetch encountered an error:', error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+}
 
 export async function sleep(ms) {
   return new Promise(res => setTimeout(res, ms));

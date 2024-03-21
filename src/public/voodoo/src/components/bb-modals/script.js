@@ -340,7 +340,7 @@ class BBModal extends Base {
     this.prepareState(state.viewState.currentModal);
     this.state = state;
     try {
-      const resp = await fetch(form.action, request).then(r => r.json());
+      const resp = await uberFetch(form.action, request).then(r => r.json());
       if ( resp.error ) {
         alert(resp.error);
       } else {
@@ -371,7 +371,7 @@ class BBModal extends Base {
     });
     this.prepareState(state.viewState.currentModal);
     this.state = state;
-    const resp = await fetch(form.action, request).then(r => r.json());
+    const resp = await uberFetch(form.action, request).then(r => r.json());
     if ( resp.error ) {
       alert(`An error occurred`);
       console.log({resp});

@@ -1,6 +1,7 @@
 @import url("themes/blank.css");
 
 .status-bar {
+  position: relative;
   vertical-align: super;
   height: 15px;
   max-height: 16px;
@@ -19,13 +20,29 @@
 }
 
 .download-count, .download-mb {
-  font-size: 10px;
+  font-size: 9px !important;
+}
+
+#download-status-bar {
+  position: relative;
 }
 
 .download-meter {
   flex-grow: 1;
   max-width: 100%;
   width: 100px;
+}
+
+.download-mb {
+  color: gray;
+  display: inline-block;
+  position: absolute;
+  z-index: 1000;
+  text-align: right;
+  width: 100%;
+  font-size: 9px;
+  padding: 1px 2px;
+  box-sizing: border-box;
 }
 
 progress {

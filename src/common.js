@@ -29,6 +29,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  ensureRSA_for_3PC: false,
+  useLocalAuthInPrepFor_3PC_PhaseOut: true,
   showDebug: false,
   utilizeTempHackFixForIMENoKey: true,
   debugTyping: false,
@@ -288,8 +290,8 @@ if ( DEBUG.noSecurityHeaders ) {
 
 export const GO_SECURE = fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
 
-export const version = 'v1';
-export const COOKIENAME = `litewait-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
+export const version = 'v7';
+export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
 
 export const SECURE_VIEW_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 'get_download_view_url.sh');
 

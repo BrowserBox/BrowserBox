@@ -82,7 +82,7 @@ app.get('/login', (req, res) => {
     res.cookie(COOKIENAME+PORT, COOKIE, COOKIE_OPTS);
     authorized = true;
   } else {
-    const cookie = req.cookies[COOKIENAME+PORT];
+    const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'];
     authorized = (cookie === COOKIE) || NO_AUTH;
   }
   if ( authorized ) {
@@ -142,8 +142,8 @@ app.get('/favicon.svg', (req, res) => {
 app.get('/favicons/favicon.ico', (req, res) => {
   res.sendFile(path.resolve('public', 'favicons', 'favicon.ico'));
 });
-app.get('*', (req, res) => {
-  const cookie = req.cookies[COOKIENAME+PORT];
+app.get(/\/.*/, (req, res) => {
+  const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'];
   const authorized = (cookie === COOKIE) || NO_AUTH;
 
   if (authorized) {
@@ -248,6 +248,7 @@ app.get('*', (req, res) => {
 
     req.pipe(destination, {end: true});
   } else {
+    console.log('Request not authorized to proxy through devtools server');
     res.sendStatus(401);
   }
 });
@@ -259,7 +260,7 @@ const wss = new WebSocket.Server({server});
 // we should probably handle upgrade too to stop server crashing on a 404 websocket. weird
 wss.on('connection', (ws, req) => {
   try {
-    const cookie = req.headers.cookie;
+    const cookie = req.headers.cookie || req.headers['x-browserbox-local-auth'];
     const parts = req.url.split('/');
     let token;
     if ( parts.length == 5 ) {
@@ -296,6 +297,7 @@ wss.on('connection', (ws, req) => {
         console.warn('Error on websocket creation', e);
       }
     } else {
+      console.warn(`WS not authorized`);
       ws.send(JSON.stringify({error:`Not authorized`}));
       ws.close();
     }
