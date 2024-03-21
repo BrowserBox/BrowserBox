@@ -147,8 +147,10 @@ class BBContextMenu extends Base {
 
       DEBUG.debugInspect && console.log("Login url", url.href);
 
+      const useCookies = !state.CONFIG.isOnion || await document?.hasStorageAccess?.();
+
       // we don't use cookie auth with Tor as Tor browser will block this "3rd-party request"
-      if ( !state.CONFIG.isOnion ) {
+      if ( useCookies ) {
         try {
           await uberFetch(url, {mode: 'no-cors', credentials: 'include'});
         } catch(e) {
@@ -165,7 +167,7 @@ class BBContextMenu extends Base {
       );
       inspectParams.set('remoteFrontend', 'true');
       url.search = inspectParams;
-      if ( state.CONFIG.isOnion ) {
+      if ( !useCookies ) {
         const locationUrl = new URL(url);
         locationUrl.pathname = `/devtools/inspector.html`
         const nextUri = locationUrl.href;
