@@ -1,5 +1,26 @@
 <header class="topbar ${state.cloudTabsStatusLine ? 'align-right' : ''}" stylist=styleTopBar>
   ${state.cloudTabsStatusLine ? F`
+    ${!_host.vanish ? F`
+      <div id="download-status-bar" class="status-bar ${_host.downloadState.activeDownloads ? "progress" : "done"}" title="${_host.downloadState.completedDownloads} completed download${_host.plural ? "s" : ""}">
+        ${_host.totalFiles > 1 ? F`
+          <span class=download-count>
+            ${_host.downloadState.completedDownloads}/${_host.totalFiles}
+          </span>
+          <span class=wide-word>&nbsp;downloaded</span>
+        ` : F`
+          <span class=wide-word>1&nbsp;download</span>
+        `}
+        <progress class="download-meter" 
+          min=0 
+          step=0.01
+          max="${Math.max(_host.totalFiles, 1)}"
+          value="${_host.progressValue}"
+        ></progress>       
+        <span class="download-mb">
+          ${_host.megabytesReceived} MB
+        </span>
+      </div>` : F`<!-- download progress -->`
+    }
     <a title="CloudTabs Home" class="ct-home" href="https://browse.cloudtabs.net">
       &nbsp;CloudTabs&nbsp;Home&nbsp;
     </a>
