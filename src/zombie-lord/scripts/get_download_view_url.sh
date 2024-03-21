@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 if [[ -f ~/.config/dosyago/bbpro/test.env ]]; then
   source ~/.config/dosyago/bbpro/test.env
 fi
@@ -84,7 +86,7 @@ while [ $step -lt $maxwaitsteps ]; do
 done
 
 file=$(LC_ALL=C head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13 ; echo)
-curl -s -k -F secret="$secret" -F pdf=@"$filename" $provider > $file
+curl -s -k -F secret="$secret" -F pdf=@'"'"$filename"'"' $provider > $file
 # echo the file without buffering so node's child_process definitely gets it
 stdbuf --output=0 echo $(cat $file)
 rm $file
