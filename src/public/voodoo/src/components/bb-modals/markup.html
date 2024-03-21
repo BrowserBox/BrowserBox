@@ -316,7 +316,7 @@
       </p>
     </form>
     ${viewState?.currentModal?.el === viewState.ModalRef.settings ? 
-      Fskip(await fetch('/settings_modal').then(r => r.text())) : F`<!-- settings modal spot -->`
+      Fskip(await uberFetch('/settings_modal').then(r => r.text())) : F`<!-- settings modal spot -->`
     }
   </article>
 </aside>

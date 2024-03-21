@@ -14,7 +14,7 @@ export async function fetchTabs({sessionToken}, getState) {
   try {
     const url = new URL(location);
     url.pathname = '/api/v7/tabs';
-    const resp = await fetch(url);
+    const resp = await uberFetch(url);
     if ( resp.ok ) {
       const data = await resp.json();
       if ( data.error ) {

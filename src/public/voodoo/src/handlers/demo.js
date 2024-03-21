@@ -45,7 +45,7 @@ async function handleEvent(event) {
     meta.push(
       {
         treeUpdate: {
-          open: await fetch(`https://${location.hostname}:8001/demo-landing`).then(resp => resp.text()),
+          open: await uberFetch(`https://${location.hostname}:8001/demo-landing`).then(resp => resp.text()),
           targetId: tab && tab.targetId,
           ...opts
         }
@@ -63,7 +63,7 @@ async function handleEvent(event) {
       }
       const meta2 = {
         treeUpdate: {
-          open: await fetch(`https://${location.hostname}:8001/demo-landing`).then(resp => resp.text()),
+          open: await uberFetch(`https://${location.hostname}:8001/demo-landing`).then(resp => resp.text()),
           targetId: tab.targetId,
           ...opts
         }

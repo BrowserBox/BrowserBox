@@ -18,6 +18,7 @@ export const BLANK = "about:blank";
 export const USE_DDG = true;
 const MIN_WAIT = 50;
 const MAX_WAITS = 200;
+let authToken;
 
 export const OPTIONS = {
   showBWStatus: true,
@@ -30,6 +31,8 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  useUberFetch: true,
+  logUberFetchErrors: true,
   tryPeeringAnywayEvenIfUserMediaFails: true,
   utilizeTempHackFixForIMENoKey: true,
   mode: 'prod',
@@ -230,6 +233,40 @@ export const COMMON = Object.seal(Object.preventExtensions({
   blockAnotherReset: false,
   delayUnload: false,
 }));
+
+// Cache the token outside the uberFetch function
+let authToken = localStorage.getItem('localCookie');
+
+async function uberFetch (url, options = {}) => {
+  // Check if uberFetch should be used
+  if (!DEBUG.useUberFetch) {
+    // Fall back to regular fetch if DEBUG.useUberFetch is false
+    return uberFetch(url, options);
+  }
+
+  if ( ! authToken ) {
+    console.warn(`Using uberFetch but authToken not yet present. Waiting for it...`);
+    await untilTrueOrTimeout(() => localStorage.getItem('localCookie'), 120); // wait 2 minutes 
+    console.info(`Using uberFetch and authToken arrived!`);
+    authToken = localStorage.getItem('localCookie');
+  }
+
+  // If there's no 'headers' field in options, initialize it
+  if (!options.headers) {
+    options.headers = {};
+  }
+
+  // Add the X-BrowserBox-Local-Auth header with the cached auth token
+  options.headers['X-BrowserBox-Local-Auth'] = authToken;
+
+  try {
+    const response = await uberFetch(url, options);
+    return response;
+  } catch (error) {
+    DEBUG.logUberFetchErrors && console.error('uberFetch encountered an error:', error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+}
 
 export async function sleep(ms) {
   return new Promise(res => setTimeout(res, ms));

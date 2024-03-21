@@ -378,7 +378,7 @@
               'content-type': 'application/json'
             }
           };
-          return fetch(url, request).then(r => r.json()).then(async ({data,frameBuffer,meta}) => {
+          return uberFetch(url, request).then(r => r.json()).then(async ({data,frameBuffer,meta}) => {
             if ( !!frameBuffer && this.images.has(url) ) {
               if ( DEBUG.logAcks ) {
                 const measure = Date.now();

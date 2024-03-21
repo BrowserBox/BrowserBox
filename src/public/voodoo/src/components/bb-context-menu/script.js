@@ -150,7 +150,7 @@ class BBContextMenu extends Base {
       // we don't use cookie auth with Tor as Tor browser will block this "3rd-party request"
       if ( !state.CONFIG.isOnion ) {
         try {
-          await fetch(url, {mode: 'no-cors', credentials: 'include'});
+          await uberFetch(url, {mode: 'no-cors', credentials: 'include'});
         } catch(e) {
           console.warn(`Issue when attempting to login via token for cookie to devtools service`);
         }

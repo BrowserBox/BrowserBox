@@ -32,7 +32,7 @@ export default class InternetChecker {
         setTimeout(() => reject(new Error("Request timed out")), this.timeout);
       });
 
-      const fetchPromise = fetch(url, {
+      const fetchPromise = uberFetch(url, {
         method: 'GET',
         mode: 'no-cors'
       });
