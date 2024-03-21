@@ -1,7 +1,7 @@
 //FIXME we could move this into constructor 
 // and switch it to WS 
 
-import {untilTrue,COMMON,DEBUG} from '../common.js';
+import {uberFetch,untilTrue,COMMON,DEBUG} from '../common.js';
 import DEFAULT_FAVICON from '../subviews/faviconDataURL.js';
 
 const STATE_SYMBOL = Symbol(`[[State]]`);

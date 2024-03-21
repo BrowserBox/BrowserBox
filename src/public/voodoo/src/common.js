@@ -235,20 +235,22 @@ export const COMMON = Object.seal(Object.preventExtensions({
 }));
 
 // Cache the token outside the uberFetch function
-authToken = localStorage.getItem('localCookie');
+authToken = globalThis?.localStorage?.getItem?.('localCookie');
 
-async function uberFetch (url, options = {}) => {
+Object.assign(globalThis, { uberFetch });
+
+export async function uberFetch (url, options = {}) {
   // Check if uberFetch should be used
   if (!DEBUG.useUberFetch) {
     // Fall back to regular fetch if DEBUG.useUberFetch is false
-    return uberFetch(url, options);
+    return fetch(url, options);
   }
 
   if ( ! authToken ) {
     console.warn(`Using uberFetch but authToken not yet present. Waiting for it...`);
-    await untilTrueOrTimeout(() => localStorage.getItem('localCookie'), 120); // wait 2 minutes 
+    await untilTrueOrTimeout(() => globalThis?.localStorage?.getItem?.('localCookie'), 120); // wait 2 minutes 
     console.info(`Using uberFetch and authToken arrived!`);
-    authToken = localStorage.getItem('localCookie');
+    authToken = globalThis?.localStorage?.getItem?.('localCookie');
   }
 
   // If there's no 'headers' field in options, initialize it
@@ -260,7 +262,7 @@ async function uberFetch (url, options = {}) => {
   options.headers['X-BrowserBox-Local-Auth'] = authToken;
 
   try {
-    const response = await uberFetch(url, options);
+    const response = await fetch(url, options);
     return response;
   } catch (error) {
     DEBUG.logUberFetchErrors && console.error('uberFetch encountered an error:', error);
