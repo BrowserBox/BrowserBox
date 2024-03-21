@@ -13,7 +13,7 @@ export async function fetchTabs({sessionToken}, getState) {
   DEBUG.debugTabs && console.log(`Fetch tabs called`);
   try {
     const url = new URL(location);
-    url.pathname = '/api/v1/tabs';
+    url.pathname = '/api/v7/tabs';
     const resp = await fetch(url);
     if ( resp.ok ) {
       const data = await resp.json();
