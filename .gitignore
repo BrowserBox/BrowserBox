@@ -3,6 +3,7 @@
 .parcel-cache/*
 .*.un~
 *~
+process_actions.sh
 core
 build.log
 build/*

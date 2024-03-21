@@ -1,4 +1,4 @@
-import {untilTrueOrTimeout} from './src/common.js'; 
+import {untilTrueOrTimeout} from './voodoo/src/common.js'; 
 
 const s = document.createElement('script');
 document.body.appendChild(s);
