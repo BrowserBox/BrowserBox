@@ -18,6 +18,7 @@ export const BLANK = "about:blank";
 export const USE_DDG = true;
 const MIN_WAIT = 50;
 const MAX_WAITS = 200;
+const OPEN_SERVICES_IN_BROWSER = false; // true is within BrowserBox tabs, false is in the regular browser's new tabs
 let authToken;
 
 export const OPTIONS = {
@@ -88,7 +89,7 @@ export const DEBUG = Object.freeze({
   dontEnforceOnlineCheck: true,
   newUI: true,
   get useWindowOpenForSecureView() {
-    return true && ! deviceIsMobile();
+    return !CONFIG.openServicesInCloudTabs;
   },
   showCollect: false,
   debugFocus: false,
@@ -171,6 +172,7 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  openServicesInCloudTabs: globalThis?.location?.hostname?.endsWith?.('cloudtabs.net') ? true : OPEN_SERVICES_IN_BROWSER,
   encforceKeyOrdering: true,
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
