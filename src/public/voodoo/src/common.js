@@ -22,7 +22,6 @@ const OPEN_SERVICES_IN_BROWSER = false; // true is within BrowserBox tabs, false
 let authToken;
 
 export const OPTIONS = {
-  openServicesInCloudTabs: globalThis?.location?.hostname.endsWith('cloudtabs.net') ? true : OPEN_SERVICES_IN_BROWSER,
   showBWStatus: true,
   showTorStatus: true,
   showAudioStatus: true,
@@ -90,7 +89,7 @@ export const DEBUG = Object.freeze({
   dontEnforceOnlineCheck: true,
   newUI: true,
   get useWindowOpenForSecureView() {
-    return !CONFIG.openServiceInCloudTabs;
+    return !CONFIG.openServicesInCloudTabs;
   },
   showCollect: false,
   debugFocus: false,
@@ -173,6 +172,7 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  openServicesInCloudTabs: globalThis?.location?.hostname?.endsWith?.('cloudtabs.net') ? true : OPEN_SERVICES_IN_BROWSER,
   encforceKeyOrdering: true,
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
