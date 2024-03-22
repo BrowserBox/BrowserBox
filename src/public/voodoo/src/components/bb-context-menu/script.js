@@ -175,12 +175,17 @@ class BBContextMenu extends Base {
         url.pathname = '/login';
         url.searchParams.set('token', localStorage.getItem(state.CONFIG.sessionTokenFileName));
         url.searchParams.set('nextUri', nextUri);
+
+        DEBUG.debugInspect && console.log("Inspect url", url.href);
+
+        alert('Will set url to: ' + url);
         devtoolsWindow.location = url;
       } else {
         url.pathname = `/devtools/inspector.html`
 
         DEBUG.debugInspect && console.log("Inspect url", url.href);
 
+        alert('Will set url to: ' + url);
         devtoolsWindow.location  = url;
       }
     }

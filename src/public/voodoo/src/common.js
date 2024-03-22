@@ -31,6 +31,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  debugInspect: true,
   useUberFetch: true,
   logUberFetchErrors: true,
   tryPeeringAnywayEvenIfUserMediaFails: true,
