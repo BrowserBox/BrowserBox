@@ -129,7 +129,10 @@ class BBContextMenu extends Base {
 
       DEBUG.debugInspect && console.log(`Opening DevTools window to inspect tab ${currentTab}`, state.active);
 
-      const devtoolsWindow = window.open("about:blank");
+      let devtoolsWindow;
+      if ( !CONFIG.openServicesInCloudTabs ) {
+        devtoolsWindow = window.open("about:blank");
+      }
 
       const url = state.CONFIG.isOnion ? new URL(
           `${location.protocol}//${localStorage.getItem(state.CONFIG.devtoolsServiceFileName)}`
@@ -177,14 +180,24 @@ class BBContextMenu extends Base {
         DEBUG.debugInspect && console.log("Inspect url", url.href);
 
         DEBUG.debugInspect && alert('Will set url to: ' + url);
-        devtoolsWindow.location = url;
+        if ( CONFIG.openServicesInCloudTabs ) {
+          state.createTab(click, url);
+          setTimeout(() => state.runUpdateTabs(), 0);
+        } else {
+          devtoolsWindow.location = url;
+        }
       } else {
         url.pathname = `/devtools/inspector.html`
 
         DEBUG.debugInspect && console.log("Inspect url", url.href);
 
         DEBUG.debugInspect && alert('Will set url to: ' + url);
-        devtoolsWindow.location  = url;
+        if ( CONFIG.openServicesInCloudTabs ) {
+          state.createTab(click, url);
+          setTimeout(() => state.runUpdateTabs(), 0);
+        } else {
+          devtoolsWindow.location  = url;
+        }
       }
     }
 
