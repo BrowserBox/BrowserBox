@@ -141,13 +141,13 @@ class BBContextMenu extends Base {
       url.port = state.CONFIG.isOnion ? 443 : parseInt(location.port) + 1;
 
       url.pathname = "login";
-      const params = new URLSearchParams();
+      const params = url.searchParams;
       params.set('token', state.sessionToken);
-      url.search = params;
 
       DEBUG.debugInspect && console.log("Login url", url.href);
 
-      const useCookies = !state.CONFIG.isOnion || await document?.hasStorageAccess?.();
+      const useCookies = !state.CONFIG.isOnion && (await document?.hasStorageAccess?.());
+      DEBUG.debugInspect && alert('use cookie?' + useCookies);
 
       // we don't use cookie auth with Tor as Tor browser will block this "3rd-party request"
       if ( useCookies ) {
@@ -160,13 +160,11 @@ class BBContextMenu extends Base {
 
       const dtUrl = `${url.host}/devtools/page/${currentTab}`;
       DEBUG.debugDevTools && console.log({dtUrl});
-      const inspectParams = new URLSearchParams();
-      inspectParams.set(
+      params.set(
         location.protocol.endsWith('https:') ? 'wss' : 'ws', 
         dtUrl
       );
-      inspectParams.set('remoteFrontend', 'true');
-      url.search = inspectParams;
+      params.set('remoteFrontend', 'true');
       if ( !useCookies ) {
         const locationUrl = new URL(url);
         locationUrl.pathname = `/devtools/inspector.html`
@@ -175,12 +173,17 @@ class BBContextMenu extends Base {
         url.pathname = '/login';
         url.searchParams.set('token', localStorage.getItem(state.CONFIG.sessionTokenFileName));
         url.searchParams.set('nextUri', nextUri);
+
+        DEBUG.debugInspect && console.log("Inspect url", url.href);
+
+        DEBUG.debugInspect && alert('Will set url to: ' + url);
         devtoolsWindow.location = url;
       } else {
         url.pathname = `/devtools/inspector.html`
 
         DEBUG.debugInspect && console.log("Inspect url", url.href);
 
+        DEBUG.debugInspect && alert('Will set url to: ' + url);
         devtoolsWindow.location  = url;
       }
     }
