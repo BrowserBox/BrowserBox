@@ -146,8 +146,8 @@ class BBContextMenu extends Base {
 
       DEBUG.debugInspect && console.log("Login url", url.href);
 
-      const useCookies = !state.CONFIG.isOnion && false && (await document?.hasStorageAccess?.());
-      alert('use cookie?' + useCookies);
+      const useCookies = !state.CONFIG.isOnion && (await document?.hasStorageAccess?.());
+      DEBUG.debugInspect && alert('use cookie?' + useCookies);
 
       // we don't use cookie auth with Tor as Tor browser will block this "3rd-party request"
       if ( useCookies ) {
@@ -176,14 +176,14 @@ class BBContextMenu extends Base {
 
         DEBUG.debugInspect && console.log("Inspect url", url.href);
 
-        alert('Will set url to: ' + url);
+        DEBUG.debugInspect && alert('Will set url to: ' + url);
         devtoolsWindow.location = url;
       } else {
         url.pathname = `/devtools/inspector.html`
 
         DEBUG.debugInspect && console.log("Inspect url", url.href);
 
-        alert('Will set url to: ' + url);
+        DEBUG.debugInspect && alert('Will set url to: ' + url);
         devtoolsWindow.location  = url;
       }
     }
