@@ -155,17 +155,21 @@ Before we show you the step by step instructions, we'll just show you the whole 
 ```console
 git clone https://github.com/BrowserBox/BrowserBox.git
 cd BrowserBox
-./deploy-scripts/global_install.sh localhost my-email@address.com
+./deploy-scripts/wait_for_hostname.sh my.awesome.host.com
+./deploy-scripts/global_install.sh my.awesome.host.com my-email@address.com
 setup_bbpro --port 8080 > my.login.link.txt
 bbpro
 cat my.login.link.txt
 ```
 You can try this right now if you just want to try it out, and don't care about getting the rights certificates for production or accessing over the public internet. 
 
+
 The above commands will download, install, setup and start BrowserBox, as well as output your login link for you. Open that link (which looks like: **https://localhost:8080/login?token=csdkjhvsdfkjhv3498ysdf**) in your regular browser.
 
+To stop your instance just issue the `stop_bbpro` command.
+
 > [!TIP]
-> The above simple method uses `localhost` as the hostname for your BrowserBox instance. While this works, thanks to `https://localhost` HTTPS certs, unless you're connecting from your local machine (not a common use case outside of trying it for yourslef), this is not a good idea because you will encounter certificate errors and warnings if you try to connect to BrowserBox from remote machine, which is normally the point.
+> The above simple method uses `my.awesome.host.com` as the hostname for your BrowserBox instance. You'll need to ensure you've set a DNS A record from `my.awesome.host.com` or your actual full domain name, to the IP address of the machine you're running BrowserBox on.
 
 -------
 
