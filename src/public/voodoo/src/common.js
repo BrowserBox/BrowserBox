@@ -37,7 +37,7 @@ export const DEBUG = Object.freeze({
   logUberFetchErrors: true,
   tryPeeringAnywayEvenIfUserMediaFails: true,
   utilizeTempHackFixForIMENoKey: true,
-  mode: 'prod',
+  mode: 'dev',
   debugKeyEvents: false,
   debugCommandOrder: false,
   // note on: increaseResolutionOfSmallerCanvas
@@ -58,7 +58,7 @@ export const DEBUG = Object.freeze({
   debugSafariWebRTC: false,
   debugSetup: false,
   /* debug connections */
-  cnx: false,
+  cnx: true,
   debugIntentPrompts: false,
   allowContextMenuOnContextMenu: true,
   debugTabs: false,
@@ -268,7 +268,7 @@ export async function uberFetch (url, options = {}) {
     const response = await fetch(url, options);
     return response;
   } catch (error) {
-    DEBUG.logUberFetchErrors && console.error('uberFetch encountered an error:', error);
+    DEBUG.logUberFetchErrors && console.error('uberFetch encountered an error:', error, url, options);
     throw error; // Re-throw the error to be handled by the caller
   }
 }

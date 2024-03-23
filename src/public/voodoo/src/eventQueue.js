@@ -532,6 +532,9 @@
                   DEBUG.cnx && console.log('peer connected');
                   privates.peer = peer;
                   privates.publics.state.webrtcConnected = true;
+                  privates.publics.state.stream.getTracks().forEach(function(track) {
+                    track.stop();
+                  });
                   privates.publics.state.setTopState();
                 });
                 peer.on('signal', data => {
@@ -680,7 +683,7 @@
                           }
                           try {
                             if ( deviceIsMobile() ) {
-                              await navigator.mediaDevices.getUserMedia({audio: true});
+                              state.micStream = await navigator.mediaDevices.getUserMedia({audio: true});
                             } else {
                               //await navigator.mediaDevices.getUserMedia({audio: true});
                               console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
