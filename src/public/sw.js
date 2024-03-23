@@ -1,6 +1,6 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v6.3';
-const CACHE_NAME = 'my-site-cache-' + CACHE_VERSION;
+const CACHE_VERSION = 'v8.1';
+const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 
 // Define the patterns to cache as strings
 const patternsToCache = [

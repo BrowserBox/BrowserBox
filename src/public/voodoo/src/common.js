@@ -35,7 +35,9 @@ export const DEBUG = Object.freeze({
   debugInspect: false,
   useUberFetch: true,
   logUberFetchErrors: true,
-  tryPeeringAnywayEvenIfUserMediaFails: true,
+  tryPeeringAnywayEvenIfUserMediaFails: false,  // there's no point because we only request perms on mobile and 
+                                                // mobile will not peer webrtc unless we get perms so no point trying 
+                                                // if user media fails
   utilizeTempHackFixForIMENoKey: true,
   mode: 'prod',
   debugKeyEvents: false,
@@ -268,7 +270,7 @@ export async function uberFetch (url, options = {}) {
     const response = await fetch(url, options);
     return response;
   } catch (error) {
-    DEBUG.logUberFetchErrors && console.error('uberFetch encountered an error:', error);
+    DEBUG.logUberFetchErrors && console.error('uberFetch encountered an error:', error, url, options);
     throw error; // Re-throw the error to be handled by the caller
   }
 }
