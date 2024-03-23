@@ -532,9 +532,16 @@
                   DEBUG.cnx && console.log('peer connected');
                   privates.peer = peer;
                   privates.publics.state.webrtcConnected = true;
-                  privates.publics.state.stream.getTracks().forEach(function(track) {
-                    track.stop();
-                  });
+                  if ( privates.publics.state.micStream ) {
+                    privates.publics.state.micStream.getTracks().forEach(function(track) {
+                      track.stop();
+                    });
+                    if ( privates.publics.state.micAccessNotAlwaysAllowed ) {
+                      // if the user has not set always allow, then notify them about this as they are probably antsy 
+                      // about it and need reassurance which is fine
+                      setTimeout(() => alert(`Fast connection established. Mic access stopped!`), 60);
+                    }
+                  }
                   privates.publics.state.setTopState();
                 });
                 peer.on('signal', data => {
@@ -644,7 +651,7 @@
                   DEBUG.cnx && console.log(`received webrtc signal data from socket`, copeer);
                   const {signal} = copeer;
                   untilTrue(() => !!peer).then(async () => {
-                    if ( isSafari() ) {
+                    if ( isSafari() && deviceIsMobile() ) {
                       if ( !state.safariWebRTCPermsRequestStarted ) {
                         let resolve;
                         let reject;
@@ -676,6 +683,7 @@
                             DEBUG.debugSafariWebRTC && console.log(`We already have permissions, no need to explain a request!`);
                           } else {
                             if ( deviceIsMobile() ) {
+                              state.micAccessNotAlwaysAllowed  = true;
                               await showExplainer();
                             } else {
                               console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
@@ -1284,7 +1292,7 @@
   async function showExplainer() {
     state.viewState.modalComponent.openModal({modal:{
       type:'notice',
-      message: `We need your permission for better BrowserBox streaming due to a Safari bug. We don't collect your data and you can turn off the camera or mic anytime by clicking the red symbol in the address bar. Denying permission won't break BrowserBox, but may reduce streaming quality. To skip this request in the future, select 'Always Allow' from the recording icon in the address bar. Thanks for understanding`,
+      message: `We're about to request mic access to improve streaming quality (see the bug below). It's just for setup, not recording, and automatically switches off after a fast connection is established. Deny if you prefer, but it might affect quality. Ready?`,
       title: `Permissions for Safari`,
       link: {
         title: 'View Bug',
