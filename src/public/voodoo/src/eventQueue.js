@@ -707,10 +707,13 @@
                         DEBUG.debugSafariWebRTC && console.log(`Signaling`);
                         peer.signal(signal);
                       }).catch(err => {
-                        console.info(`Safari User Media request to enable WebRTC peering has failed.`);
+                        DEBUG.cnx && console.info(`Safari User Media request to enable WebRTC peering has failed.`);
                         if ( DEBUG.tryPeeringAnywayEvenIfUserMediaFails ) {
-                          console.info(`However we will try to peer anyway.`);
+                          DEBUG.cnx && console.info(`However we will try to peer anyway.`);
                           peer.signal(signal);
+                        } else {
+                          DEBUG.cnx && console.info(`Will destroy peer as WebRTC data channel peering unsupported in this browser.`);
+                          peer.destroy('WebRTC peering on data channel not supported in this browser'); 
                         }
                       });
                     } else {

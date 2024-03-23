@@ -39,7 +39,7 @@ export const DEBUG = Object.freeze({
                                                 // mobile will not peer webrtc unless we get perms so no point trying 
                                                 // if user media fails
   utilizeTempHackFixForIMENoKey: true,
-  mode: 'dev',
+  mode: 'prod',
   debugKeyEvents: false,
   debugCommandOrder: false,
   // note on: increaseResolutionOfSmallerCanvas
@@ -60,7 +60,7 @@ export const DEBUG = Object.freeze({
   debugSafariWebRTC: false,
   debugSetup: false,
   /* debug connections */
-  cnx: true,
+  cnx: false,
   debugIntentPrompts: false,
   allowContextMenuOnContextMenu: true,
   debugTabs: false,
