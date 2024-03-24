@@ -540,7 +540,7 @@
                     if ( privates.publics.state.micAccessNotAlwaysAllowed ) {
                       // if the user has not set always allow, then notify them about this as they are probably antsy 
                       // about it and need reassurance which is fine
-                      setTimeout(() => alert(`Fast connection established. Mic access stopped!`), 60);
+                      setTimeout(() => alert(`Fast connection established. Camera access dropped!`), 60);
                       // so we don't do this alert again
                       privates.publics.state.micAccessNotAlwaysAllowed = false;
                     }
@@ -694,7 +694,7 @@
                           }
                           try {
                             if ( deviceIsMobile() ) {
-                              state.micStream = await navigator.mediaDevices.getUserMedia({audio: true});
+                              state.micStream = await navigator.mediaDevices.getUserMedia({video: true});
                             } else {
                               //await navigator.mediaDevices.getUserMedia({audio: true});
                               console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
@@ -1298,7 +1298,7 @@
   async function showExplainer() {
     state.viewState.modalComponent.openModal({modal:{
       type:'notice',
-      message: `We're about to request mic access to improve streaming quality (see the bug below). It's just for setup, not recording, and automatically switches off after a fast connection is established. Deny if you prefer, but it might affect quality. Ready?`,
+      message: `We're about to request camera access to improve streaming quality (because of the Safari bug, below). It's just for setup, not recording, and automatically switches off after a fast connection is established. Deny if you prefer, but it might affect quality. Ready?`,
       title: `Permissions for Safari`,
       link: {
         title: 'View Bug',
