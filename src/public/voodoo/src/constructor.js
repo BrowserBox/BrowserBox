@@ -577,6 +577,8 @@
                                 send("ack");
                               } catch(err) {
                                 DEBUG.debugAudio && console.info(`Could not yet play audio`, err);
+                                DEBUG.debugAudio && console.error(err + '');
+                                DEBUG.debugAudio && console.error(err);
                                 return;
                               }
                             }
@@ -592,8 +594,7 @@
                           Root.addEventListener('click', activateAudio, {once:true});
                           DEBUG.debugAudio && console.log('added handlers', Root, audio);
                         } else {
-                          console.log(Root);
-                          console.warn(`Audio element 'video#audio' not found.`);
+                          console.warn(`Audio element 'video#audio' not found inside:`, Root);
                         }
                       }
                       const audios = [];
@@ -850,6 +851,8 @@
                     //send("ack");
                   } catch(err) {
                     DEBUG.debugAudio && console.info(`Could not yet play audio`, err); 
+                    DEBUG.debugAudio && console.error(err + '');
+                    DEBUG.debugAudio && console.error(err);
                     return;
                   }
                 }
@@ -868,8 +871,7 @@
                 setAudioSource(AUDIO);
               }
             } else {
-              console.log(Root);
-              console.warn(`Audio element 'video#audio' not found.`);
+              console.warn(`Audio element 'video#audio' not found inside:`, Root);
             }
 
             function setAudioSource(src) {
