@@ -71,7 +71,7 @@ ${DEBUG.useStraightAudioStream ?
   F`<video autoplay preload=auto id=audio playsinline></video>` 
   : 
   DEBUG.includeAudioElementAnyway ? 
-    F`<audio autoplay preload=auto loop id=audio playsinline></audio>` 
+    F`<video autoplay preload=auto loop id=audio playsinline></video>` 
     :
     F`<!-- audio element superceded by stream -->`
 }

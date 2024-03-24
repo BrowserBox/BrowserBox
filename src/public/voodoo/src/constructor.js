@@ -553,7 +553,7 @@
                       let activateAudio;
                       let fetchedData;
                       if ( DEBUG.includeAudioElementAnyway ) {
-                        const audio = Root.querySelector('audio#audio');
+                        const audio = Root.querySelector('video#audio');
                         const source = document.createElement('source');
                         source.type = 'audio/wav';
                         source.src = '/silent_half-second.wav'; // this is needed to trigger web audio audibility in some browsers
@@ -593,7 +593,7 @@
                           DEBUG.debugAudio && console.log('added handlers', Root, audio);
                         } else {
                           console.log(Root);
-                          console.warn(`Audio element 'audio#audio' not found.`);
+                          console.warn(`Audio element 'video#audio' not found.`);
                         }
                       }
                       const audios = [];
