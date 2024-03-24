@@ -509,7 +509,7 @@
         // (so we can use el.shadowRoot instead of document)
         // as context for querySelector
         // audio login
-        {
+        async function setupAudio() {
           const AUDIO = CONFIG.isOnion ? new URL(
               `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}`
             ) 
@@ -887,6 +887,11 @@
             }
           }
         }
+        globalThis.setupAudio = setupAudio;
+        setTimeout(() => {
+          alert('Will set up audio now');
+          setupAudio();
+        }, 60000);
 
         // input
           queue.addMetaListener('selectInput', meta => handleSelectMessage(meta, state));

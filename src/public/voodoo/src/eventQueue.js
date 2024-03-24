@@ -702,7 +702,7 @@
                             state.safariWebRTCPermsRequested = true;
                             resolve(true);
                           } catch(e) {
-                            reject('Could not obtain user media permission');
+                            reject('Could not obtain user media permission', e);
                           }
                         }
                       }

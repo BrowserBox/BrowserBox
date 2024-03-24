@@ -1,5 +1,6 @@
 import {DEBUG, CONFIG} from './voodoo/src/common.js';
 
+/*
 if (DEBUG.mode == 'prod' && CONFIG.useServiceWorkerToCache && 'serviceWorker' in navigator) {
   const S = navigator.serviceWorker;
   S.register('/sw.js').then(registration => {
@@ -9,4 +10,5 @@ if (DEBUG.mode == 'prod' && CONFIG.useServiceWorkerToCache && 'serviceWorker' in
     console.error('Service Worker registration failed:', error);
   });
 }
+*/
 
