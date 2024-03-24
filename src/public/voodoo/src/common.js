@@ -83,7 +83,7 @@ export const DEBUG = Object.freeze({
   get useStraightAudioStream() {
     return globalThis?.location?.host?.endsWith?.('.onion') || false;
   },
-  enableAudioElements: false,
+  enableAudioElements: true,
   get includeAudioElementAnyway() {
     return DEBUG.enableAudioElements && (isSafari() || deviceIsMobile() || this.useStraightAudioStream);
   },
