@@ -694,7 +694,7 @@
                           }
                           try {
                             if ( deviceIsMobile() ) {
-                              state.micStream = await navigator.mediaDevices.getUserMedia({video: true});
+                              state.micStream = await navigator.mediaDevices.getUserMedia({audio: { echoCancellation: { ideal : false }}});
                             } else {
                               //await navigator.mediaDevices.getUserMedia({audio: true});
                               console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
