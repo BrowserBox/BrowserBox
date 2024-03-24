@@ -536,10 +536,13 @@
                     privates.publics.state.micStream.getTracks().forEach(function(track) {
                       track.stop();
                     });
+                    privates.publics.state.micStream = null;
                     if ( privates.publics.state.micAccessNotAlwaysAllowed ) {
                       // if the user has not set always allow, then notify them about this as they are probably antsy 
                       // about it and need reassurance which is fine
                       setTimeout(() => alert(`Fast connection established. Mic access stopped!`), 60);
+                      // so we don't do this alert again
+                      privates.publics.state.micAccessNotAlwaysAllowed = false;
                     }
                   }
                   privates.publics.state.setTopState();

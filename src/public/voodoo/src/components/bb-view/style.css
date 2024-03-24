@@ -1,6 +1,6 @@
 @import url("themes/blank.css");
 
-video#audio {
+audio#audio, video#audio {
   display: none;
 }
 

@@ -113,6 +113,7 @@
       // security
         const sessionToken = globalThis._sessionToken();
         location.hash = '';
+        const useCookies = !CONFIG.isOnion && (await document?.hasStorageAccess?.()) && ! CONFIG.openServicesInCloudTabs;
 
       // constants
         const closed = new Set();
@@ -149,6 +150,7 @@
         magicAssign(state, {
           H,
           checkResults,
+          useCookies,
 
           // set up progress
           safariLongTapInstalled: false,
@@ -517,11 +519,16 @@
           AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
           AUDIO.port = CONFIG.isOnion ? 443 : parseInt(location.port) - 2;
           AUDIO.searchParams.set('ran', Math.random());
+
           AUDIO.searchParams.set('localCookie', await state.localCookie);
-          if ( CONFIG.isOnion ) {
-            // due to 3rd-party cookie restrictions in Tor browser we take an easy approach for now
-            // simple logging in to the audio stream using a token every time, avoiding any need for cookies
+          if ( ! state.useCookies ) {
+            // due to 3rd-party cookie restrictions in for example
+            // modern browsers post 2024, incognitor or private browsing, or Tor browser 
+            // we take an easy approach for now to auth
+            // simply logging in to the audio stream using a token every time, avoiding any need for cookies
             AUDIO.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName));
+          }
+          if ( CONFIG.isOnion ) {
             setupAudioElement('audio/wav');
           } else {
             self.addEventListener('message', ({data, origin, source}) => {
@@ -546,7 +553,7 @@
                       let activateAudio;
                       let fetchedData;
                       if ( DEBUG.includeAudioElementAnyway ) {
-                        const audio = Root.querySelector('video#audio');
+                        const audio = Root.querySelector('audio#audio');
                         const source = document.createElement('source');
                         source.type = 'audio/wav';
                         source.src = '/silent_half-second.wav'; // this is needed to trigger web audio audibility in some browsers
@@ -586,7 +593,7 @@
                           DEBUG.debugAudio && console.log('added handlers', Root, audio);
                         } else {
                           console.log(Root);
-                          console.warn(`Audio element 'video#audio' not found.`);
+                          console.warn(`Audio element 'audio#audio' not found.`);
                         }
                       }
                       const audios = [];
