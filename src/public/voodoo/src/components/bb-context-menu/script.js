@@ -149,8 +149,8 @@ class BBContextMenu extends Base {
 
       DEBUG.debugInspect && console.log("Login url", url.href);
 
-      const useCookies = !state.CONFIG.isOnion && (await document?.hasStorageAccess?.()) && ! state.CONFIG.openServicesInCloudTabs;
       DEBUG.debugInspect && alert('use cookie?' + useCookies);
+      const useCookies = state.useCookies;
 
       // we don't use cookie auth with Tor as Tor browser will block this "3rd-party request"
       if ( useCookies ) {

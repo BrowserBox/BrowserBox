@@ -113,6 +113,7 @@
       // security
         const sessionToken = globalThis._sessionToken();
         location.hash = '';
+        const useCookies = !CONFIG.isOnion && (await document?.hasStorageAccess?.()) && ! CONFIG.openServicesInCloudTabs;
 
       // constants
         const closed = new Set();
@@ -149,6 +150,7 @@
         magicAssign(state, {
           H,
           checkResults,
+          useCookies,
 
           // set up progress
           safariLongTapInstalled: false,
@@ -507,377 +509,408 @@
         // (so we can use el.shadowRoot instead of document)
         // as context for querySelector
         // audio login
-        {
-          const AUDIO = CONFIG.isOnion ? new URL(
-              `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}`
-            ) 
-            : 
-            new URL(location)
-          ;
-          AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
-          AUDIO.port = CONFIG.isOnion ? 443 : parseInt(location.port) - 2;
-          AUDIO.searchParams.set('ran', Math.random());
-          AUDIO.searchParams.set('localCookie', await state.localCookie);
-          if ( CONFIG.isOnion ) {
-            // due to 3rd-party cookie restrictions in Tor browser we take an easy approach for now
-            // simple logging in to the audio stream using a token every time, avoiding any need for cookies
-            AUDIO.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName));
-            setupAudioElement('audio/wav');
-          } else {
-            self.addEventListener('message', ({data, origin, source}) => {
-              DEBUG.val && console.log('message for audio', {data,origin,source});
-              if ( origin === AUDIO.origin ) {
-                if ( data.request ) {
-                  if ( data.request.login ) {
-                    DEBUG.val && console.log('send session token', data, state.sessionToken);
-                    source.postMessage({login:{sessionToken:state.sessionToken}}, origin);
-                  } else if ( data.request.audio ) {
-                    DEBUG.debugAudio && console.log('doing audio');
-                    state.loggedInCount += 1;
-                    if ( state.loggedInCount >= SERVICE_COUNT ) {
-                      console.log("Everybody logged in");
-                      state.sessionToken = null;
-                    }
-                    const frame = Root.querySelector('iframe#audio-login');
-                    frame?.remove();
-                    if ( DEBUG.useStraightAudioStream ) {
-                      setupAudioElement('audio/wav');
-                    } else {
-                      let activateAudio;
-                      let fetchedData;
-                      if ( DEBUG.includeAudioElementAnyway ) {
-                        const audio = Root.querySelector('video#audio');
-                        const source = document.createElement('source');
-                        source.type = 'audio/wav';
-                        source.src = '/silent_half-second.wav'; // this is needed to trigger web audio audibility in some browsers
-                        if ( audio ) {
-                          audio.append(source);
-                          audio.addEventListener('playing', () => {
-                            DEBUG.debugAudio && console.log('audio playing ~~ for first time since page load, so clearing buffer');
-                            fetchedData = new Float32Array( 0 );
-                            audio.playing = true;
-                          });
-                          audio.addEventListener('waiting', () => audio.playing = false);
-                          audio.addEventListener('ended', () => audio.playing = false);
-                          activateAudio = async () => {
-                            DEBUG.debugAudio && console.log('called activate audio');
-                            audio.muted = false;
-                            audio.removeAttribute('muted');
-                            if ( true || !audio.playing ) {
-                              try {
-                                DEBUG.debugAudio && console.log(`Trying to play...`);
-                                await audio.play();
-                                send("ack");
-                              } catch(err) {
-                                DEBUG.debugAudio && console.info(`Could not yet play audio`, err);
-                                return;
+        let settingUp = false;
+        async function setupAudio() {
+          if ( settingUp ) return false;
+          settingUp = true;
+          try {
+            const AUDIO = CONFIG.isOnion ? new URL(
+                `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}`
+              ) 
+              : 
+              new URL(location)
+            ;
+            AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
+            AUDIO.port = CONFIG.isOnion ? 443 : parseInt(location.port) - 2;
+            AUDIO.searchParams.set('ran', Math.random());
+
+            AUDIO.searchParams.set('localCookie', await state.localCookie);
+            if ( ! state.useCookies ) {
+              // due to 3rd-party cookie restrictions in for example
+              // modern browsers post 2024, incognitor or private browsing, or Tor browser 
+              // we take an easy approach for now to auth
+              // simply logging in to the audio stream using a token every time, avoiding any need for cookies
+              AUDIO.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName));
+            }
+            if ( CONFIG.isOnion ) {
+              setupAudioElement('audio/wav');
+            } else {
+              self.addEventListener('message', ({data, origin, source}) => {
+                DEBUG.val && console.log('message for audio', {data,origin,source});
+                if ( origin === AUDIO.origin ) {
+                  if ( data.request ) {
+                    if ( data.request.login ) {
+                      DEBUG.val && console.log('send session token', data, state.sessionToken);
+                      source.postMessage({login:{sessionToken:state.sessionToken}}, origin);
+                    } else if ( data.request.audio ) {
+                      DEBUG.debugAudio && console.log('doing audio');
+                      state.loggedInCount += 1;
+                      if ( state.loggedInCount >= SERVICE_COUNT ) {
+                        console.log("Everybody logged in");
+                        //state.sessionToken = null;
+                      }
+                      const frame = Root.querySelector('iframe#audio-login');
+                      frame?.remove();
+                      if ( DEBUG.useStraightAudioStream ) {
+                        setupAudioElement('audio/wav');
+                      } else {
+                        let activateAudio;
+                        let fetchedData;
+                        if ( DEBUG.includeAudioElementAnyway ) {
+                          const audio = Root.querySelector('video#audio');
+                          const source = document.createElement('source');
+                          source.type = 'audio/wav';
+                          source.src = '/silent_half-second.wav'; // this is needed to trigger web audio audibility in some browsers
+                          if ( audio ) {
+                            audio.append(source);
+                            audio.addEventListener('playing', () => {
+                              DEBUG.debugAudio && console.log('audio playing ~~ for first time since page load, so clearing buffer');
+                              fetchedData = new Float32Array( 0 );
+                              audio.playing = true;
+                            });
+                            audio.addEventListener('waiting', () => audio.playing = false);
+                            audio.addEventListener('ended', () => audio.playing = false);
+                            activateAudio = async () => {
+                              DEBUG.debugAudio && console.log('called activate audio');
+                              audio.muted = false;
+                              audio.removeAttribute('muted');
+                              if ( true || !audio.playing ) {
+                                try {
+                                  DEBUG.debugAudio && console.log(`Trying to play...`);
+                                  await audio.play();
+                                  send("ack");
+                                } catch(err) {
+                                  DEBUG.debugAudio && console.info(`Could not yet play audio`, err);
+                                  DEBUG.debugAudio && console.error(err + '');
+                                  DEBUG.debugAudio && console.error(err);
+                                  return;
+                                }
                               }
-                            }
-                            if ( CONFIG.removeAudioStartHandlersAfterFirstStart ) {
-                              Root.removeEventListener('pointerdown', activateAudio);
-                              Root.removeEventListener('touchend', activateAudio);
-                              DEBUG.debugAudio && console.log('Removed audio start handlers');
-                            }
-                          };
-                          setTimeout(activateAudio, 0);
-                          Root.addEventListener('pointerdown', activateAudio);
-                          Root.addEventListener('touchend', activateAudio);
-                          Root.addEventListener('click', activateAudio, {once:true});
-                          DEBUG.debugAudio && console.log('added handlers', Root, audio);
-                        } else {
-                          console.log(Root);
-                          console.warn(`Audio element 'video#audio' not found.`);
+                              if ( CONFIG.removeAudioStartHandlersAfterFirstStart ) {
+                                Root.removeEventListener('pointerdown', activateAudio);
+                                Root.removeEventListener('touchend', activateAudio);
+                                DEBUG.debugAudio && console.log('Removed audio start handlers');
+                              }
+                            };
+                            setTimeout(activateAudio, 0);
+                            Root.addEventListener('pointerdown', activateAudio);
+                            Root.addEventListener('touchend', activateAudio);
+                            Root.addEventListener('click', activateAudio, {once:true});
+                            DEBUG.debugAudio && console.log('added handlers', Root, audio);
+                          } else {
+                            console.warn(`Audio element 'video#audio' not found inside:`, Root);
+                          }
                         }
-                      }
-                      const audios = [];
-                      self.audios = audios;
-                      const wsUri = new URL(AUDIO);
-                      wsUri.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-                      wsUri.hash = '';
-                      let ws;
-                      const channels = 1;
-                      const min_sample_duration = 0.5; // seconds;
-                      const sample_rate = 44100; // Hz;
-                      const min_sample_size = min_sample_duration * sample_rate;
-                      let chunk_size = 2**14;
-                      let counter = 1;
-                      let playing = false;
-                      let active = false;
-                      let ctx;
-                      let gain;
-                      let activeNode;
-                      let is_reading = false;
-                      let audioReconnectMs = AUDIO_RECONNECT_MS;
-                      let stopped = true;
-                      fetchedData = new Float32Array( 0 );
+                        const audios = [];
+                        self.audios = audios;
+                        const wsUri = new URL(AUDIO);
+                        wsUri.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                        wsUri.hash = '';
+                        let ws;
+                        const channels = 1;
+                        const min_sample_duration = 0.5; // seconds;
+                        const sample_rate = 44100; // Hz;
+                        const min_sample_size = min_sample_duration * sample_rate;
+                        let chunk_size = 2**14;
+                        let counter = 1;
+                        let playing = false;
+                        let active = false;
+                        let ctx;
+                        let gain;
+                        let activeNode;
+                        let is_reading = false;
+                        let audioReconnectMs = AUDIO_RECONNECT_MS;
+                        let stopped = true;
+                        fetchedData = new Float32Array( 0 );
 
-                      const ensureResume = () => {
-                        if ( ! ctx ) return;
-                        ctx && ctx.resume();
-                        document.removeEventListener('click', ensureResume);
-                      };
+                        const ensureResume = () => {
+                          if ( ! ctx ) return;
+                          ctx && ctx.resume();
+                          document.removeEventListener('click', ensureResume);
+                        };
 
-                      document.addEventListener('click', ensureResume);
+                        document.addEventListener('click', ensureResume);
 
-                      document.addEventListener('click', beginSound, {once: true});
-                      beginSound();
+                        document.addEventListener('click', beginSound, {once: true});
+                        beginSound();
 
-                      function beginSound() {
-                        stopped = false;
-                        active = true;
-                        ctx = new AudioContext({
-                          sampleRate: sample_rate
-                        });
-                        gain = ctx.createGain();
-                        gain.gain.value = 1.414;
-                        gain.connect( ctx.destination );
+                        function beginSound() {
+                          stopped = false;
+                          active = true;
+                          ctx = new AudioContext({
+                            sampleRate: sample_rate
+                          });
+                          gain = ctx.createGain();
+                          gain.gain.value = 1.217;
+                          gain.connect( ctx.destination );
 
-                        connectAudio();
-                        readingLoop();
-                      }
-
-                      function connectAudio() {
-                        // 0 - CONNECTING, 1 - OPEN, 2 - CLOSING, 3 - CLOSED
-                        if ( ws?.readyState < 2 ) return;
-                        DEBUG.debugAudio && console.log(`Creating websocket...`);
-                        ws = new WebSocket(wsUri);
-                        DEBUG.debugAudio && console.log('Create ws');
-                        DEBUG.debugAudio && console.log(`Created`, ws);
-                        ws.binaryType = 'arraybuffer';
-
-                        ws.addEventListener('open', msg => {
-                          DEBUG.debugAudio && console.log('ws open');
-                          DEBUG.debugAudio && console.log(`Audio websocket connected`, msg);
-                          state.audioConnected = true;
-                          state.setTopState();
-                          audioReconnectMs = AUDIO_RECONNECT_MS;
-                          setTimeout(activateAudio, 0);
+                          connectAudio();
                           readingLoop();
-                        });
+                        }
 
-                        ws.addEventListener('close', msg => {
-                          DEBUG.debugAudio && console.log(`Audio websocket closing`, msg); 
-                          state.audioConnected = false;
-                          audioReconnectMs = AUDIO_RECONNECT_MS;
-                          setTimeout(audioReconnect, 0);
-                          state.setTopState();
-                        });
+                        function connectAudio() {
+                          // 0 - CONNECTING, 1 - OPEN, 2 - CLOSING, 3 - CLOSED
+                          if ( ws?.readyState < 2 ) return;
+                          DEBUG.debugAudio && console.log(`Creating websocket...`);
+                          ws = new WebSocket(wsUri);
+                          DEBUG.debugAudio && console.log('Create ws');
+                          DEBUG.debugAudio && console.log(`Created`, ws);
+                          ws.binaryType = 'arraybuffer';
 
-                        ws.addEventListener('message', async msg => {
-                          DEBUG.debugAudioAcks && console.log('client got msg %s', msg.data.length || msg.data.byteLength);
-                          send("ack");
-                          if ( typeof msg.data === "string" ) {
-                            DEBUG.debugAudioAck && console.log('audio ws message', msg.data);
-                            return;
-                          }
-                          
-                          const audioBuffer = new Int16Array(msg.data);
-                          fetchedData = concat(fetchedData, audioBuffer);
-                          if ( !is_reading && fetchedData.length >= min_sample_size ) {
+                          ws.addEventListener('open', msg => {
+                            DEBUG.debugAudio && console.log('ws open');
+                            DEBUG.debugAudio && console.log(`Audio websocket connected`, msg);
+                            state.audioConnected = true;
+                            state.setTopState();
+                            audioReconnectMs = AUDIO_RECONNECT_MS;
+                            setTimeout(activateAudio, 0);
                             readingLoop();
-                          }
-                        });
+                          });
 
-                        ws.addEventListener('error', async err => {
-                          console.warn('Audio websocket client got error', err);
-                          state.audioConnected = false;
-                          audioReconnect(err);
-                          state.setTopState();
-                        });
-                      }
-
-                      async function audioReconnect(msg) {
-                        DEBUG.debugAudio && console.log(`Audio websocket waiting ${audioReconnectMs}ms...`, {msg});
-                        await sleep(audioReconnectMs);
-                        audioReconnectMs *= AUDIO_RECONNECT_MULTIPLIER;
-                        if ( audioReconnectMs <= AUDIO_RECONNECT_MAX ) {
-                          DEBUG.debugAudio && console.log(`Audio websocket attempting reconnect...`);
-                          setTimeout(connectAudio, 0); 
-                        } else {
-                          const keepTrying = confirm(
-                            "We haven't been about to connect to the audio service for a while. Should we keep trying?"
-                          );
-                          if ( keepTrying ) {
+                          ws.addEventListener('close', msg => {
+                            DEBUG.debugAudio && console.log(`Audio websocket closing`, msg); 
+                            state.audioConnected = false;
                             audioReconnectMs = AUDIO_RECONNECT_MS;
                             setTimeout(audioReconnect, 0);
+                            state.setTopState();
+                          });
+
+                          ws.addEventListener('message', async msg => {
+                            DEBUG.debugAudioAcks && console.log('client got msg %s', msg.data.length || msg.data.byteLength);
+                            send("ack");
+                            if ( typeof msg.data === "string" ) {
+                              DEBUG.debugAudioAck && console.log('audio ws message', msg.data);
+                              return;
+                            }
+                            
+                            const audioBuffer = new Int16Array(msg.data);
+                            fetchedData = concat(fetchedData, audioBuffer);
+                            if ( !is_reading && fetchedData.length >= min_sample_size ) {
+                              readingLoop();
+                            }
+                          });
+
+                          ws.addEventListener('error', async err => {
+                            console.warn('Audio websocket client got error', err);
+                            state.audioConnected = false;
+                            audioReconnect(err);
+                            state.setTopState();
+                          });
+                        }
+
+                        async function audioReconnect(msg) {
+                          DEBUG.debugAudio && console.log(`Audio websocket waiting ${audioReconnectMs}ms...`, {msg});
+                          await sleep(audioReconnectMs);
+                          audioReconnectMs *= AUDIO_RECONNECT_MULTIPLIER;
+                          if ( audioReconnectMs <= AUDIO_RECONNECT_MAX ) {
+                            DEBUG.debugAudio && console.log(`Audio websocket attempting reconnect...`);
+                            setTimeout(connectAudio, 0); 
+                          } else {
+                            const keepTrying = confirm(
+                              "We haven't been about to connect to the audio service for a while. Should we keep trying?"
+                            );
+                            if ( keepTrying ) {
+                              audioReconnectMs = AUDIO_RECONNECT_MS;
+                              setTimeout(audioReconnect, 0);
+                            }
                           }
                         }
-                      }
 
-                      function readingLoop() {
-                        if ( stopped || fetchedData.length < min_sample_size ) {
-                          is_reading = false;
-                          DEBUG.debugAudio && console.log('not playing');
-                          return;
+                        function readingLoop() {
+                          if ( stopped || fetchedData.length < min_sample_size ) {
+                            is_reading = false;
+                            DEBUG.debugAudio && console.log('not playing');
+                            return;
+                          }
+
+                          is_reading = true;
+                          DEBUG.debugAudioAcks && console.log('reading');
+
+                          const audio_buffer = ctx.createBuffer(
+                            channels,
+                            fetchedData.length,
+                            sample_rate
+                          );
+
+                          try {
+                            DEBUG.debugAudioAcks && console.log(fetchedData.length);
+                            audio_buffer.copyToChannel( fetchedData, 0 );
+
+                            fetchedData = new Float32Array( 0 );
+
+                            activeNode = ctx.createBufferSource();
+                            activeNode.buffer = audio_buffer;
+                            // ended not end
+                            activeNode.addEventListener('ended', () => {
+                              DEBUG.debugAudioAcks && console.log('node end');
+                              send("stop");
+                              readingLoop();
+                            });
+                            activeNode.connect( gain );
+
+                            activeNode.start( 0 );
+                            DEBUG.debugAudioAcks && console.log('playing');
+                          } catch(e) {
+                            console.warn(e);
+                          }
                         }
 
-                        is_reading = true;
-                        DEBUG.debugAudioAcks && console.log('reading');
-
-                        const audio_buffer = ctx.createBuffer(
-                          channels,
-                          fetchedData.length,
-                          sample_rate
-                        );
-
-                        try {
-                          DEBUG.debugAudioAcks && console.log(fetchedData.length);
-                          audio_buffer.copyToChannel( fetchedData, 0 );
-
-                          fetchedData = new Float32Array( 0 );
-
-                          activeNode = ctx.createBufferSource();
-                          activeNode.buffer = audio_buffer;
-                          // ended not end
-                          activeNode.addEventListener('ended', () => {
-                            DEBUG.debugAudioAcks && console.log('node end');
-                            send("stop");
-                            readingLoop();
-                          });
-                          activeNode.connect( gain );
-
-                          activeNode.start( 0 );
-                          DEBUG.debugAudioAcks && console.log('playing');
-                        } catch(e) {
-                          console.warn(e);
+                        function concat( arr1, arr2 ) {
+                          if( !arr2 || !arr2.length ) {
+                            return arr1 && arr1.slice();
+                          }
+                          const arr2_32 = new Float32Array( arr2.byteLength / 2 );
+                          const dv = new DataView( arr2.buffer );
+                          for( let i = 0, offset = 0; offset < arr2.byteLength; i++, offset += 2 ) {
+                            const v = dv.getInt16(offset, true);
+                            arr2_32[i] = v > 0 ? (v / 32767.0) : (v / 32768.0);
+                          }
+                          const out = new arr1.constructor( arr1.length + arr2_32.length );
+                          out.set( arr1 );
+                          out.set( arr2_32, arr1.length );
+                          DEBUG.debugAudioAcks && console.log('out length ' + out.length);
+                          return out;
                         }
-                      }
 
-                      function concat( arr1, arr2 ) {
-                        if( !arr2 || !arr2.length ) {
-                          return arr1 && arr1.slice();
+                        function send(o) {
+                          if ( typeof o === 'string' ) {
+                            ws.send(o);
+                          } else if ( o instanceof ArrayBuffer ) {
+                            ws.send(o);
+                          } else {
+                            ws.send(JSON.stringify(o));
+                          }
                         }
-                        const arr2_32 = new Float32Array( arr2.byteLength / 2 );
-                        const dv = new DataView( arr2.buffer );
-                        for( let i = 0, offset = 0; offset < arr2.byteLength; i++, offset += 2 ) {
-                          const v = dv.getInt16(offset, true);
-                          arr2_32[i] = v > 0 ? (v / 32767.0) : (v / 32768.0);
-                        }
-                        const out = new arr1.constructor( arr1.length + arr2_32.length );
-                        out.set( arr1 );
-                        out.set( arr2_32, arr1.length );
-                        DEBUG.debugAudioAcks && console.log('out length ' + out.length);
-                        return out;
-                      }
 
-                      function send(o) {
-                        if ( typeof o === 'string' ) {
-                          ws.send(o);
-                        } else if ( o instanceof ArrayBuffer ) {
-                          ws.send(o);
-                        } else {
-                          ws.send(JSON.stringify(o));
+                        function startPlaying() {
+                          DEBUG.debugAudio && console.log('start playing', playing, audios);
+                          if ( playing || !active ) return;
+                          console.warn(`startPlaying not implemented yet`);
                         }
-                      }
-
-                      function startPlaying() {
-                        DEBUG.debugAudio && console.log('start playing', playing, audios);
-                        if ( playing || !active ) return;
-                        console.warn(`startPlaying not implemented yet`);
                       }
                     }
                   }
                 }
-              }
-            });
-          }
-
-          async function setupAudioElement(type = 'audio/wav') {
-            const bb = document.querySelector('bb-view');
-            if ( !bb?.shadowRoot ) {
-              await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot, 1000, 600);
+              });
+              setupAudioIframe();
             }
-            Root = document.querySelector('bb-view').shadowRoot;
-            Root = document.querySelector('bb-view').shadowRoot;
-            const audio = Root.querySelector('video#audio');
-            //const source = document.createElement('source');
-            setAudioSource(AUDIO);
-            DEBUG.debugAudio && console.log({'audio?': audio});
-            let existingTimer = null;
-            let waiting = false;
-            if ( audio ) {
-              //audio.append(source);
-              // Event listener for when audio is successfully loaded
-              audio.addEventListener('loadeddata', () => {
-                console.log('Audio loaded');
-                audio.play();
-              });
+            async function setupAudioElement(type = 'audio/wav') {
+              const bb = document.querySelector('bb-view');
+              if ( !bb?.shadowRoot ) {
+                await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot, 1000, 600);
+              }
+              Root = document.querySelector('bb-view').shadowRoot;
+              Root = document.querySelector('bb-view').shadowRoot;
+              const audio = Root.querySelector('video#audio');
+              //const source = document.createElement('source');
+              setAudioSource(AUDIO);
+              DEBUG.debugAudio && console.log({'audio?': audio});
+              let existingTimer = null;
+              let waiting = false;
+              if ( audio ) {
+                //audio.append(source);
+                // Event listener for when audio is successfully loaded
+                audio.addEventListener('loadeddata', () => {
+                  console.log('Audio loaded');
+                  audio.play();
+                });
 
-              audio.addEventListener('playing', () => {
-                audio.playing = true;
-                audio.hasError = false;
-              });
-              // Event listener for playing state
-              audio.addEventListener('play', () => {
-                audio.playing = true;
-                audio.hasError = false;
-                console.log('Audio playing');
-              });
+                audio.addEventListener('playing', () => {
+                  audio.playing = true;
+                  audio.hasError = false;
+                });
+                // Event listener for playing state
+                audio.addEventListener('play', () => {
+                  audio.playing = true;
+                  audio.hasError = false;
+                  console.log('Audio playing');
+                });
 
-              audio.addEventListener('waiting', () => audio.playing = false);
-              audio.addEventListener('ended', () => {
-                audio.playing = false;
-                DEBUG.debugAudio && console.log(`Audio stream ended`);
-                existingTimer = setTimeout(startAudioStream, 100);
-              });
-              audio.addEventListener('error', err => {
-                audio.playing = false;
-                audio.hasError = true;
-                DEBUG.debugAudio && console.log(`Audio stream errored`, err);
-              });
-              // Event listener for pause state
-              audio.addEventListener('pause', () => {
-                audio.playing = false;
-                console.log('Audio paused');
-              });
+                audio.addEventListener('waiting', () => audio.playing = false);
+                audio.addEventListener('ended', () => {
+                  audio.playing = false;
+                  DEBUG.debugAudio && console.log(`Audio stream ended`);
+                  existingTimer = setTimeout(startAudioStream, 100);
+                });
+                audio.addEventListener('error', err => {
+                  audio.playing = false;
+                  audio.hasError = true;
+                  DEBUG.debugAudio && console.log(`Audio stream errored`, err);
+                });
+                // Event listener for pause state
+                audio.addEventListener('pause', () => {
+                  audio.playing = false;
+                  console.log('Audio paused');
+                });
 
-              const activateAudio = async () => {
-                DEBUG.debugAudio && console.log('called activate audio');
-                if ( audio.muted || audio.hasAttribute('muted') ) {
-                  audio.muted = false;
-                  audio.removeAttribute('muted');
-                }
-                if ( !audio.playing ) {
-                  try {
-                    startAudioStream();
-                    //send("ack");
-                  } catch(err) {
-                    DEBUG.debugAudio && console.info(`Could not yet play audio`, err); 
-                    return;
+                const activateAudio = async () => {
+                  DEBUG.debugAudio && console.log('called activate audio');
+                  if ( audio.muted || audio.hasAttribute('muted') ) {
+                    audio.muted = false;
+                    audio.removeAttribute('muted');
                   }
-                }
-                if ( CONFIG.removeAudioStartHandlersAfterFirstStart /*|| CONFIG.isOnion */ ) {
-                  Root.removeEventListener('pointerdown', activateAudio);
-                  Root.removeEventListener('touchend', activateAudio);
-                  DEBUG.debugAudio && console.log('Removed audio start handlers');
-                }
-              };
-              Root.addEventListener('pointerdown', activateAudio);
-              Root.addEventListener('touchend', activateAudio);
-              Root.addEventListener('click', activateAudio, {once:true});
-              DEBUG.debugAudio && console.log('added handlers', Root, audio);
+                  if ( !audio.playing ) {
+                    try {
+                      startAudioStream();
+                      //send("ack");
+                    } catch(err) {
+                      DEBUG.debugAudio && console.info(`Could not yet play audio`, err); 
+                      DEBUG.debugAudio && console.error(err + '');
+                      DEBUG.debugAudio && console.error(err);
+                      return;
+                    }
+                  }
+                  if ( CONFIG.removeAudioStartHandlersAfterFirstStart /*|| CONFIG.isOnion */ ) {
+                    Root.removeEventListener('pointerdown', activateAudio);
+                    Root.removeEventListener('touchend', activateAudio);
+                    DEBUG.debugAudio && console.log('Removed audio start handlers');
+                  }
+                };
+                Root.addEventListener('pointerdown', activateAudio);
+                Root.addEventListener('touchend', activateAudio);
+                Root.addEventListener('click', activateAudio, {once:true});
+                DEBUG.debugAudio && console.log('added handlers', Root, audio);
 
-              async function startAudioStream() {
-                setAudioSource(AUDIO);
+                async function startAudioStream() {
+                  setAudioSource(AUDIO);
+                }
+              } else {
+                console.warn(`Audio element 'video#audio' not found inside:`, Root);
               }
-            } else {
-              console.log(Root);
-              console.warn(`Audio element 'video#audio' not found.`);
+
+              function setAudioSource(src) {
+                // Check if the audio is already loading or playing the same source
+                if (audio.src === src && !audio.error && ! audio.hasError && (audio.readyState > 2 || audio.playing)) {
+                  console.log('Audio is already playing or loading this source');
+                  return;
+                }
+
+                // Reset error state and set the new source
+                audio.hasError = null;
+                audio.src = src;
+              }
             }
 
-            function setAudioSource(src) {
-              // Check if the audio is already loading or playing the same source
-              if (audio.src === src && !audio.error && ! audio.hasError && (audio.readyState > 2 || audio.playing)) {
-                console.log('Audio is already playing or loading this source');
-                return;
-              }
-
-              // Reset error state and set the new source
-              audio.hasError = null;
-              audio.src = src;
+            async function setupAudioIframe() {
+              await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot, 1000, 600);
+              Root = document.querySelector('bb-view').shadowRoot;
+              const aif = document.createElement('iframe');
+              aif.id = 'audio-login';
+              const src = new URL(AUDIO.href);
+              src.pathname = '/login';
+              src.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName) || state.sessionToken);
+              src.searchParams.set('localCookie', await state.localCookie);
+              Root.appendChild(aif);
+              aif.src = src;
             }
+          } catch(e) {
+            console.warn(`Error setting up audio`, e);
+            return false;
           }
+
+          return true;
         }
+        globalThis.setupAudio = setupAudio;
 
         // input
           queue.addMetaListener('selectInput', meta => handleSelectMessage(meta, state));

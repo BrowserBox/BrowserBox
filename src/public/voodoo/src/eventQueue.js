@@ -536,10 +536,13 @@
                     privates.publics.state.micStream.getTracks().forEach(function(track) {
                       track.stop();
                     });
+                    privates.publics.state.micStream = null;
                     if ( privates.publics.state.micAccessNotAlwaysAllowed ) {
                       // if the user has not set always allow, then notify them about this as they are probably antsy 
                       // about it and need reassurance which is fine
-                      setTimeout(() => alert(`Fast connection established. Mic access stopped!`), 60);
+                      setTimeout(() => alert(`Fast connection established. Mic access dropped!`), 60);
+                      // so we don't do this alert again
+                      privates.publics.state.micAccessNotAlwaysAllowed = false;
                     }
                   }
                   privates.publics.state.setTopState();
@@ -691,7 +694,7 @@
                           }
                           try {
                             if ( deviceIsMobile() ) {
-                              state.micStream = await navigator.mediaDevices.getUserMedia({audio: true});
+                              state.micStream = await navigator.mediaDevices.getUserMedia({audio: { echoCancellation: { ideal : false }}});
                             } else {
                               //await navigator.mediaDevices.getUserMedia({audio: true});
                               console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
@@ -699,7 +702,7 @@
                             state.safariWebRTCPermsRequested = true;
                             resolve(true);
                           } catch(e) {
-                            reject('Could not obtain user media permission');
+                            reject('Could not obtain user media permission', e);
                           }
                         }
                       }
@@ -715,9 +718,20 @@
                           DEBUG.cnx && console.info(`Will destroy peer as WebRTC data channel peering unsupported in this browser.`);
                           peer.destroy('WebRTC peering on data channel not supported in this browser'); 
                         }
+                      }).finally(() => {
+                        setTimeout(async () => {
+                          if ( await globalThis.setupAudio() && deviceIsMobile() ) {
+                            setTimeout(() => alert('Tap the screen to unmute.'), 100);
+                          }
+                        }, 30);
                       });
                     } else {
                       peer.signal(signal);  
+                      setTimeout(async () => {
+                        if ( await globalThis.setupAudio() && deviceIsMobile() ) {
+                          setTimeout(() => alert('Tap the screen to unmute.'), 100);
+                        }
+                      }, 30);
                     }
                   });
                 }
@@ -1295,8 +1309,8 @@
   async function showExplainer() {
     state.viewState.modalComponent.openModal({modal:{
       type:'notice',
-      message: `We're about to request mic access to improve streaming quality (see the bug below). It's just for setup, not recording, and automatically switches off after a fast connection is established. Deny if you prefer, but it might affect quality. Ready?`,
-      title: `Permissions for Safari`,
+      message: `We're about to request mic access to improve streaming quality (because of the Safari bug, below). It's just for setup, not recording, and automatically switches off after a fast connection is established. Deny if you prefer, but it might affect quality. Ready?`,
+      title: `Safari Permissions`,
       link: {
         title: 'View Bug',
         target: "_blank",

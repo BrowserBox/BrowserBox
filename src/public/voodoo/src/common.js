@@ -83,8 +83,9 @@ export const DEBUG = Object.freeze({
   get useStraightAudioStream() {
     return globalThis?.location?.host?.endsWith?.('.onion') || false;
   },
+  enableAudioElements: false,
   get includeAudioElementAnyway() {
-    return isSafari() || deviceIsMobile() || this.useStraightAudioStream;
+    return DEBUG.enableAudioElements && (isSafari() || deviceIsMobile() || this.useStraightAudioStream);
   },
   scaleImage: true,       // scaleImage: false centers the remote image if it's smaller than local viewport (large screens))
   centerImage: false,
