@@ -32,6 +32,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  showAudioInstructions: false,
   debugInspect: false,
   useUberFetch: true,
   logUberFetchErrors: true,

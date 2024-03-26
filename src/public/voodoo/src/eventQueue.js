@@ -540,7 +540,7 @@
                     if ( privates.publics.state.micAccessNotAlwaysAllowed ) {
                       // if the user has not set always allow, then notify them about this as they are probably antsy 
                       // about it and need reassurance which is fine
-                      setTimeout(() => alert(`Fast connection established. Mic access dropped!`), 60);
+                      DEBUG.debugSafariWebRTC && setTimeout(() => alert(`Fast connection established. Mic access dropped!`), 60);
                       // so we don't do this alert again
                       privates.publics.state.micAccessNotAlwaysAllowed = false;
                     }
@@ -721,7 +721,7 @@
                       }).finally(() => {
                         setTimeout(async () => {
                           if ( await globalThis.setupAudio() && deviceIsMobile() ) {
-                            setTimeout(() => alert('Tap the screen to unmute.'), 100);
+                            DEBUG.showAudioInstructions && setTimeout(() => alert('Tap the screen to unmute.'), 100);
                           }
                         }, 30);
                       });
@@ -729,7 +729,7 @@
                       peer.signal(signal);  
                       setTimeout(async () => {
                         if ( await globalThis.setupAudio() && deviceIsMobile() ) {
-                          setTimeout(() => alert('Tap the screen to unmute.'), 100);
+                          DEBUG.showAudioInstructions && setTimeout(() => alert('Tap the screen to unmute.'), 100);
                         }
                       }, 30);
                     }
