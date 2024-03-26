@@ -1,6 +1,6 @@
-<aside class="modals ${viewState.currentModal ? 'active' : ''}" stylist="styleModals" b:click=${click => _host.closeModal(click)}>
+<aside class="modals ${!!viewState.currentModal ? 'active' : ''}" stylist="styleModals" b:click=${click => _host.closeModal(click)}>
   <article role=dialog bond=${el => viewState.ModalRef.alert = el} class="alert ${
-      viewState?.currentModal?.el === viewState.ModalRef.alert ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.alert ) ? 'open' : '' 
     }">
     <form method=dialog>
       <fieldset>
@@ -18,7 +18,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.confirm = el} class="confirm ${
-      viewState?.currentModal?.el === viewState.ModalRef.confirm ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.confirm ) ? 'open' : '' 
     }">
     <form method=dialog>
       <fieldset>
@@ -37,7 +37,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.prompt = el} class="prompt ${
-      viewState?.currentModal?.el === viewState.ModalRef.prompt ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.prompt ) ? 'open' : '' 
     }">
     <form method=dialog>
       <fieldset>
@@ -59,7 +59,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.paste = el} class="paste ${
-      viewState?.currentModal?.el === viewState.ModalRef.paste ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.paste ) ? 'open' : '' 
     }">
     <form method=dialog>
       <fieldset>
@@ -81,7 +81,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.beforeunload = el} class="beforeunload ${
-      viewState?.currentModal?.el === viewState.ModalRef.beforeunload ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.beforeunload ) ? 'open' : '' 
     }">
     <form method=dialog>
       <fieldset>
@@ -103,7 +103,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.infobox = el} class="infobox ${
-      viewState?.currentModal?.el === viewState.ModalRef.infobox ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.infobox ) ? 'open' : '' 
     }">
     <form method=dialog>
       <fieldset>
@@ -124,7 +124,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.notice = el} class="notice ${
-      viewState?.currentModal?.el === viewState.ModalRef.notice ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.notice ) ? 'open' : '' 
     }">
     <form method=dialog>
       <fieldset>
@@ -148,7 +148,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.copy = el} class="copy ${
-      viewState?.currentModal?.el === viewState.ModalRef.copy ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.copy ) ? 'open' : '' 
     }">
     <form method=dialog>
       <fieldset>
@@ -179,7 +179,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.auth = el} class="auth ${
-      viewState?.currentModal?.el === viewState.ModalRef.auth ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.auth ) ? 'open' : '' 
     }">
     <form method=dialog>
       <fieldset>
@@ -207,7 +207,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.filechooser = el} class="filechooser ${
-      viewState?.currentModal?.el === viewState.ModalRef.filechooser ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.filechooser ) ? 'open' : '' 
     }">
     <form method=POST action=/file enctype=multipart/form-data>
       <fieldset>
@@ -242,7 +242,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.intentPrompt = el} class="intent-prompt ${
-      viewState?.currentModal?.el === viewState.ModalRef.intentPrompt ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.intentPrompt ) ? 'open' : '' 
     }">
     <form method=GET action="${url}" target=_top submit=${submission => {
         submission.preventDefault(); 
@@ -279,7 +279,7 @@
     </form>
   </article>
   <article role=dialog bond=${el => viewState.ModalRef.settings = el} class="settings ${
-      viewState?.currentModal?.el === viewState.ModalRef.settings ? 'open' : '' 
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.settings ) ? 'open' : '' 
     }">
     <form method=GET action="${url}" target=_top submit=${submission => {
         submission.preventDefault(); 
@@ -315,7 +315,7 @@
         <button type=submit value=ok>Save</button>
       </p>
     </form>
-    ${viewState?.currentModal?.el === viewState.ModalRef.settings ? 
+    ${!!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.settings ) ? 
       Fskip(await uberFetch('/settings_modal').then(r => r.text())) : F`<!-- settings modal spot -->`
     }
   </article>

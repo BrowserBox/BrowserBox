@@ -540,7 +540,7 @@
                     if ( privates.publics.state.micAccessNotAlwaysAllowed ) {
                       // if the user has not set always allow, then notify them about this as they are probably antsy 
                       // about it and need reassurance which is fine
-                      setTimeout(() => alert(`Fast connection established. Mic access dropped!`), 60);
+                      DEBUG.showAudioInstructions && DEBUG.debugSafariWebRTC && setTimeout(() => alert(`Fast connection established. Mic access dropped!`), 60);
                       // so we don't do this alert again
                       privates.publics.state.micAccessNotAlwaysAllowed = false;
                     }
@@ -721,7 +721,7 @@
                       }).finally(() => {
                         setTimeout(async () => {
                           if ( await globalThis.setupAudio() && deviceIsMobile() ) {
-                            setTimeout(() => alert('Tap the screen to unmute.'), 100);
+                            DEBUG.showAudioInstructions && setTimeout(() => alert('Tap the screen to unmute.'), 100);
                           }
                         }, 30);
                       });
@@ -729,7 +729,7 @@
                       peer.signal(signal);  
                       setTimeout(async () => {
                         if ( await globalThis.setupAudio() && deviceIsMobile() ) {
-                          setTimeout(() => alert('Tap the screen to unmute.'), 100);
+                          DEBUG.showAudioInstructions && setTimeout(() => alert('Tap the screen to unmute.'), 100);
                         }
                       }, 30);
                     }
@@ -1309,7 +1309,7 @@
   async function showExplainer() {
     state.viewState.modalComponent.openModal({modal:{
       type:'notice',
-      message: `We're about to request mic access to improve streaming quality (because of the Safari bug, below). It's just for setup, not recording, and automatically switches off after a fast connection is established. Deny if you prefer, but it might affect quality. Ready?`,
+      message: `We're about to request mic access to improve streaming (because of the Safari bug, below). It's just for setup, not recording, and auto-closes after a fast link is built. Tap Allow in Website Settings to avoid future prompts; or, deny if you prefer, tho it might affect quality. Ready?`,
       title: `Safari Permissions`,
       link: {
         title: 'View Bug',
