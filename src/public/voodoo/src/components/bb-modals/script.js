@@ -1,4 +1,5 @@
 class BBModal extends Base {
+  static MICRO_SLEEP = 30;
   RESPONDABLE_MODALS = new Set([
     'alert',
     'confirm',
@@ -159,7 +160,17 @@ class BBModal extends Base {
 
     (DEBUG.debugModal || (DEBUG.val >= DEBUG.med)) && console.log(`Will display modal ${type} with ${msg} on el:`, state.viewState.currentModal.el);
 
+    /*
+    while( state?.viewState?.currentModal?.el !== state?.viewState?.ModalRef?.notice ) {
+      DEBUG.debugModal && console.log(`Sleeping ${BBModal.MICRO_SLEEP} while we wait for state to be set...`);
+      this.state = state;
+      await sleep(BBModal.MICRO_SLEEP);
+    }
+    */
+
     this.state = state;
+
+    DEBUG.debugModal && alert(`Modal should be shown`);
     setTimeout(async () => {
       if ( type == 'copy' ) {
         await state._top.untilTrue(() => this.copyBoxTextarea.value == msg, 300, 20);

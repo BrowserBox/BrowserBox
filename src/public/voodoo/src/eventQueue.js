@@ -540,7 +540,7 @@
                     if ( privates.publics.state.micAccessNotAlwaysAllowed ) {
                       // if the user has not set always allow, then notify them about this as they are probably antsy 
                       // about it and need reassurance which is fine
-                      DEBUG.debugSafariWebRTC && setTimeout(() => alert(`Fast connection established. Mic access dropped!`), 60);
+                      DEUG.showAudioInstructions && DEBUG.debugSafariWebRTC && setTimeout(() => alert(`Fast connection established. Mic access dropped!`), 60);
                       // so we don't do this alert again
                       privates.publics.state.micAccessNotAlwaysAllowed = false;
                     }
