@@ -1,0 +1,15 @@
+:host {
+  position: absolute;
+  background: gainsboro;
+  border-radius: var(--radius);
+  width: var(--radius);
+  height: var(--radius);
+  border: thin solid;
+  transform: translate(-50%, -50%);
+  cursor: zoom-out;
+  cursor: default;
+}
+
+:host(.selected) {
+  background-color: lightslategray;
+}

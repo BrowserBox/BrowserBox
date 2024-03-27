@@ -1,0 +1,44 @@
+<sg-frame state=${_self}>
+  <form class=layout onsubmit="event.preventDefault();">
+    <label class=filter>
+      Filter prefix:
+      <input type=text name=prefix oninput=SetPrefix>
+    </label>
+    <select size=5 name=names
+      oninput="SetSelected"
+    >${names.filter(({surname}) => surname.startsWith(prefix))
+      .map(({firstName,surname,key}) => {
+        const value = `${surname}, ${firstName}`;
+        return F`${{key}}
+      <option 
+        ${selected === key ? 'selected' : ''}
+        data-key=${key}
+        value=${value}
+        title=${value}
+      >${value}</option>
+    `})}</select>
+    <fieldset name=edit>
+      <label>
+        Name:
+        <input type=text autocomplete=given-name name=firstname>
+      </label>
+      <label>
+        Surname:
+        <input type=text autocomplete=family-name name=surname>
+      </label>
+    </fieldset>
+    <fieldset name=commit>
+      <button name=action value=create onclick=AddName>Create</button>
+      <button name=action 
+        value=update 
+        onclick=UpdateSelected
+        ${selected ? '' : 'disabled'} 
+      >Update</button>
+      <button name=action 
+        value=delete 
+        onclick=DeleteSelected
+        ${selected ? '' : 'disabled'} 
+      >Delete</button>
+    </fieldset>
+  </form>
+</sg-frame>

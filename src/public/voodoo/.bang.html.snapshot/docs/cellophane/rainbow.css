@@ -1,0 +1,28 @@
+:root {
+  background: #0fb;
+}
+.rainbow {
+  text-align: center;
+  text-decoration: underline;
+  font-size: 61.8pt;
+  font-weight: bold;
+  font-family: Helvetica, Verdana, sans-serif;
+}
+.rainbow_text_animated {
+  background: linear-gradient(to right, dodgerblue, turquoise, aquamarine , mediumspringgreen, dodgerblue);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: rainbow_animation 6s ease-in-out infinite;
+  background-size: 700% 100%;
+}
+
+@keyframes rainbow_animation {
+  0%,100% {
+    background-position: 0 0;
+  }
+
+  50% {
+    background-position: 100% 0;
+  }
+}

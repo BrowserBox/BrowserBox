@@ -1,8 +1,7 @@
 /* eslint-disable no-setter-return, no-with, no-constant-condition, no-async-promise-executor */
 (function () {
   // constants, classes, config and state
-    const BBDEBUG = false;
-    const SK_BBDEBUG = false;
+    const DEBUG = false;
     const IMMEDIATE = Symbol.for(`[[IMMEDIATE]]`);
     const NAMESPACE = 'b';
     const PIPELINE_REQUESTS = true;
@@ -21,6 +20,7 @@
     const EMPTY = '';
     const {stringify:_STR} = JSON;
     const Reserved = new Set(['_self', '_host', '_top']);
+    const JS = o => _STR(o, Replacer, EMPTY);
     const LIGHTHOUSE = navigator.userAgent.includes("Chrome-Lighthouse");
     const DOUBLE_BARREL = /^\w+-(?:\w+-?)*$/; // note that this matches triple- and higher barrels, too
     const POS = 'beforeend';
@@ -31,7 +31,6 @@
     let comp = 0;
     const NextComponent = () => `b${comp++}${Math.random().toString(36)}`;
     const F = _FUNC; 
-    const G = _GFUNC;
     const FUNC_CALL = /\);?$/;
     const MirrorNode = Symbol.for('[[MN]]');
     const DIV = document.createElement('div');
@@ -48,18 +47,16 @@
         mousemove touchstart touchend touchmove touchcancel dblclick dragstart dragend 
         dragmove drag mouseover mouseout focus blur focusin focusout scroll
         input change compositionstart compositionend text paste beforepaste select cut copy
-        keydown keyup keypress compositionupdate selectionchange 
+        keydown keyup keypress compositionupdate
         contextmenu wheel
       `.split(/\s+/g).filter(s => s.length).map(e => `[on${e}]`).join(','),
       delayFirstPaintUntilLoaded: false,
       capBangRatioAtUnity: false,
-      noHandlerPassthrough: false,
-      useMagicClone: true,
+      noHandlerPassthrough: false
     }
     const History = [];
     const STATE = new Map();
     const CACHE = new Map();
-    const syskeys = new Map();
     const Waiters = new Map();
     const Started = new Set();
     const TRANSFORMING = new WeakSet();
@@ -107,14 +104,12 @@
     const OBSERVE_OPTS = {subtree: true, childList: true, characterData: true};
     const INSERT = 'insert';
     const ALL_DEPS = {allDependents: true};
-    const Env = Object.create(null); // storage for 'environment variables' (add to with setEnv)
     let LoadChecker;
     let RequestId = 0;
     let hindex = 0;
     let observer; // global mutation observer
     let systemKeys = 1;
     let _c$;
-    let _s$;
     let firstState;
 
     const BangBase = (name) => class Base extends HTMLElement {
@@ -128,31 +123,30 @@
       #names = new Map();
       #paths = new Map();
       #destructors = new Set();
-      #others;
       key;
 
       constructor() {
         super();
         this.cookMarkup = async (markup, state) => {
           const _host = this;
-          BBDEBUG && console.log(`Component ${this.#name}`);
+          DEBUG && console.log(`Component ${this.#name}`);
           const cooked = await cook.call(this, markup, state);
-          BBDEBUG && console.log(`Component : ${this.#name}`);
-          BBDEBUG && console.log(`State host: ${_host.name}`);
-          BBDEBUG && console.log(`Will add ${this.#funcs.size} event handler functions`);
+          console.log(`Component : ${this.#name}`);
+          console.log(`State host: ${_host.name}`);
+          console.log(`Will add ${this.#funcs.size} event handler functions`);
           if ( _host.name !== this.#name ) {
-            BBDEBUG && console.info(`\tComponent and _host value differ`);
+            console.info(`\tComponent and _host value differ`);
           }
           this.#funcs.forEach(t => {
             try {
               const funcName = t(this);
-              BBDEBUG && console.log(`Applied automatic event handler function ${funcName} to component`, this);
+              DEBUG && console.log(`Applied automatic event handler function ${funcName} to component`, this);
               this.#funcs.delete(t);
             } catch(e) {
               console.warn(e);
             }
           });
-          BBDEBUG && console.log();
+          DEBUG && console.log();
           let shadow = this.shadowRoot;
           if ( ! shadow ) {
             const shadow = this.attachShadow(SHADOW_OPTS);
@@ -163,7 +157,7 @@
             this.#dependents = deps.map(node => node.untilVisible());
             this.cookListeners(shadow);
           } else {
-            BBDEBUG && console.log('already has shadow', this);
+            console.log('already has shadow', this);
             if ( this.needsRefresh ) {
               this.cookListeners(shadow);
               this.needsRefresh = false;
@@ -187,19 +181,6 @@
             }
           }
         }
-      }
-
-      prepareState() {
-        // set others to be merged into the with
-      }
-
-      get others() {
-        if ( ! this.#others ) return {}
-        return this.#others;
-      }
-
-      set others(newOthers) {
-        this.#others = newOthers;
       }
 
       get destructors() {
@@ -246,10 +227,6 @@
         }
       }
 
-      rerender() {
-        this.printShadow(this.state);
-      }
-
       prepareVisibility() {
         this.classList.add('bang-el');
         this.counts.start();
@@ -267,7 +244,7 @@
         const myDependentsLoaded = (await Promise.all(this.#dependents)).every(visible => visible);
         const myContentLoaded = await becomesTrue(this.loadCheck, this.loadKey);
         const styleCheck = await becomesTrue(() => this.styleSheetsImported());
-        BBDEBUG && console.log(new Date - self.Start);
+        DEBUG && console.log(new Date - self.Start);
         return myContentLoaded && myDependentsLoaded && styleCheck;
       }
 
@@ -305,7 +282,7 @@
         if ( didChange ) {
           const oKey = this.getAttribute('state');
           const newKey = updateState(state);
-          BBDEBUG && console.log({didChange, oKey, newKey}, this);
+          DEBUG && console.log({didChange, oKey, newKey}, this);
           const views = Dependents.get(this) || new Set();
           views.add(this);
           Dependents.set(newKey, views);
@@ -339,12 +316,8 @@
 
       connectedCallback() {
         new Counter(this);
-        this.loadCheck = () => this?.counts?.check?.();
-        this.visibleCheck = () => {
-          const result = this?.classList?.contains?.('bang-styled');
-          BBDEBUG && console.log(`Visible check. Result? ${result}`, this?.constructor?.name + '', this, globalThis.lastThis = this);
-          return result;
-        };
+        this.loadCheck = () => this.counts.check();
+        this.visibleCheck = () => this.classList?.contains('bang-styled');
         this.loadKey = Math.random().toString(36);
         this.visibleLoadKey = Math.random().toString(36);
         say('log',name, 'connected');
@@ -367,12 +340,12 @@
       }
 
       disconnectedCallback() {
-        BBDEBUG && console.log(`${this.name} disconnecting...`);
+        console.log(`${this.name} disconnecting...`);
         this.alreadyPrinted = false;
         this.loaded = false;
         this.destructors.forEach(d => {
           try {
-            BBDEBUG && console.log(`Running destructor`, d.toString());
+            console.log(`Running destructor`, d.toString());
             d();
           } catch(e) {
             console.warn(`Destructor for ${this.name} failed`, e, d);
@@ -406,27 +379,23 @@
 
       printShadow(state) {
         if ( ! state ) {
-          BBDEBUG && console.warn(`No state on component ${this.name}. Will pass empty state`);
-          BBDEBUG && console.dir(this);
+          DEBUG && console.warn(`No state on component ${this.name}. Will pass empty state`);
+          DEBUG && console.dir(this);
           //throw new TypeError(`No state`);
           const stateKey = new StateKey()+''; 
           state = {};
           setState(stateKey, state);
           this.setAttribute('state', stateKey);
-          BBDEBUG && console.log(`Assigned empty state to key ${stateKey}`);
+          DEBUG && console.log(`Assigned empty state to key ${stateKey}`);
         }
         return fetchMarkup(this.#name).then(markup => this.cookMarkup(markup, state))
-        .catch(err => BBDEBUG && say('warn!',err))
+        .catch(err => DEBUG && say('warn!',err))
         .finally(this.markLoaded);
       }
     };
 
     class StateKey extends String {
       constructor (keyNumber) {
-        if ( BBDEBUG || SK_BBDEBUG ) {
-          const stack = (new Error('state key')).stack;
-          self.syskeys.set(`system-key:${systemKeys+2}`, stack);
-        }
         if ( keyNumber == undefined ) super(`system-key:${systemKeys+=2}`); 
         else super(`client-key:${keyNumber}`);
       }
@@ -438,7 +407,7 @@
     async function use(name) {
       if ( self.customElements.get(name) ) return;
 
-      BBDEBUG && console.log('using', name);
+      console.log('using', name);
 
       let component;
       await fetchScript(name)
@@ -446,26 +415,19 @@
           const Base = BangBase(name);
           const Compose = `(function () { ${Base.toString()}; return ${script}; }())`;
           try {
-            with({...Env}) {
-              component = eval(Compose);
-            }
+            component = eval(Compose);
           } catch(e) {
-            console.error(`Error evaluating component ${name}`, e, {Compose});
+            DEBUG && console.warn('use', e);
+            say('warn!',e, Compose, component)
           }
         }).catch(err => {  // otherwise if there is no such extension script, just use the Base class
-          BBDEBUG && say('log!', err);
+          DEBUG && say('log!', err);
           component = BangBase(name);
         });
       
       if ( self.customElements.get(name) ) return;
 
       self.customElements.define(name, component);
-    }
-
-    function setEnv(env) {
-      if ( env ) {
-        Object.assign(Env, env);
-      }
     }
     
     // run a map of a list of work with configurable breaks in between
@@ -528,7 +490,6 @@
     }
 
     function bangFig(newConfig = {}) {
-      console.log(newConfig);
       Object.assign(CONFIG, newConfig);
     }
 
@@ -543,7 +504,7 @@
     }
 
     function runCode(context, str) {
-      with({...Env, ...context}) {
+      with(context) {
         return eval(str); 
       }
     }
@@ -566,7 +527,7 @@
       const stateJSON = JS(state);
       STATE.delete(oStateJSON);
       STATE.set(key, state);
-      BBDEBUG && console.log({key, state});
+      DEBUG && console.log({key});
       const views = Dependents.get(oKey);
       if ( key.startsWith('system-key:') ) {
         try {
@@ -578,7 +539,7 @@
           if ( views ) {
             views.forEach(view => view.setAttribute('state', key));
           }
-          BBDEBUG && console.log({key, oKey});
+          DEBUG && console.log({key, oKey});
         } catch(e) {
           console.warn(e);
         }
@@ -607,7 +568,7 @@
       save: save = false
     } = {}) {
       const jss = JS(state);
-      BBDEBUG && console.log({jss, state});
+      DEBUG && console.log({jss, state});
       let lk = key+'.json.last';
       if ( GET_ONLY ) {
         if ( !STATE.has(key) ) {
@@ -620,7 +581,7 @@
           /*if ( stateChanged(oState).didChange ) {*/
           if ( oStateJSON !== jss ) {
             key = updateState(state, key);
-            BBDEBUG && console.log({key}, 'no where to put');
+            DEBUG && console.log({key}, 'no where to put');
           }
         }
       } else {
@@ -642,7 +603,7 @@
 
       if ( ! firstState ) {
         firstState = state; 
-        BBDEBUG && console.log(`Set first state at key ${key}`, state);
+        console.log(`Set first state at key ${key}`, state);
       }
       
       return true;
@@ -718,9 +679,9 @@
   // helpers
     function cookListeners(root) {
       const that = root.getRootNode().host;
-      BBDEBUG && console.log({root, that});
+      DEBUG && console.log({root, that});
       const listening = select(root, USE_XPATH ? X_LISTENING : CONFIG.EVENTS);
-      BBDEBUG && console.log({listening});
+      DEBUG && console.log({listening});
       if ( USE_XPATH ) {
         listening.forEach(({name, value, ownerElement:node}) => handleAttribute(name, value, {node, originals: true, host: that}));
       } else {
@@ -735,7 +696,7 @@
     }
 
     function handleAttribute(name, value, {node, originals, stateHolder, host: Host} = {}) {
-      BBDEBUG && console.log({name, value, node, originals, stateHolder});
+      DEBUG && console.log({name, value, node, originals, stateHolder});
       if ( name === 'state' ) {
         const stateKey = value.trim(); 
         const stateObject = getState(stateKey); // cloneState(stateKey);
@@ -776,7 +737,7 @@
 
         if ( name === 'onbond' ) {
           if ( Func ) {
-            BBDEBUG && console.log(`Dereference bond function`, Func, node);
+            DEBUG && console.log(`Dereference bond function`, Func, node);
             try {
               Func(node);
               //FIXME: should this actually be removed ? 
@@ -800,7 +761,7 @@
         const val = `${path}${value}${ender}`;
         host.paths.set(val, Func); 
         node.setAttribute(name, val);
-        BBDEBUG && console.log(`Adding destructor`, host, name);
+        DEBUG && console.log(`Adding destructor`, host, name);
         if ( value.match(/^f\d+_/) ) {
           host.destructors.add(() => node.removeAttribute(name));
         }
@@ -812,22 +773,22 @@
       if ( ! value ) return;
 
       const [nameSpace, ...flags] = name.split(':');
-      
+
       if ( nameSpace !== NAMESPACE ) {
         throw new TypeError(`Irregular namespace ${nameSpace}`);
       }
 
       const eventName = flags.pop();
-      const flagObj = Object.fromEntries(flags.map(f => [f, true]));
+      const flagObj = flags.reduce((o, name) => (o[name] = true, o), {});
+
+      //if ( value.startsWith('this') ) return;
 
       if ( node.getRootNode().host.paths.has(value) ) return;
-
-      value = value.replace(/\(event\)$/, '');
-      if ( ! value ) return;
+      //console.log('2', value, [...node.getRootNode().host.paths.keys()]);
 
       const {Func,host,path} = getAncestor(node, value);
 
-      BBDEBUG && console.log(node, {value, path});
+      console.log(node, {value, path});
 
       if ( !path || value.startsWith(path) ) return;
 
@@ -889,7 +850,7 @@
           }
           return results;
         } else {
-          BBDEBUG && console.log('non xpath', selector);
+          DEBUG && console.log('non xpath', selector);
           return context.querySelectorAll ? context.querySelectorAll(selector) : [];
         }
       } catch(e) {
@@ -898,19 +859,16 @@
     }
 
     async function install() {
-      BBDEBUG && (self.Start = new Date);
+      DEBUG && (self.Start = new Date);
       new Counter(document);
       LoadChecker = () => document.counts.check();
 
       self._states = [];
-      self.syskeys = syskeys;
       Object.assign(globalThis, {
         Dependents,
         STATE,
-        Env,
         CONFIG,
         F,
-        setEnv,
         use, setState, getState, patchState, cloneState, loaded, 
         sleep, bangFig, bangLoaded, isMobile, trace,
         undoState, redoState, stateChanged, getViews, updateState,
@@ -918,18 +876,14 @@
         dateString,
         runCode, schedule,
         immediate,
-        ...( BBDEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
+        ...( DEBUG ? { STATE, CACHE, TRANSFORMING, Started, BangBase } : {})
       });
 
       const module = globalThis.vanillaview || (await import('./vv/vanillaview.js'));
-      const {s,c} = module;
+      const {s} = module;
       const That = {STATE,CONFIG,StateKey,JS}; 
       _c$ = s.bind(That);
-      _s$ = c.bind(That);
       That._c$ = _c$;
-      That._s$ = _s$;
-
-      globalThis.Fskip = s.skip;
 
       if ( CONFIG.delayFirstPaintUntilLoaded ) {
         becomesTrue(() => document.body).then(() => document.body.classList.add('bang-el'));
@@ -1242,7 +1196,7 @@
       }
       
       try {
-        with({...Env, ...state, ..._host.others}) {
+        with(state) {
           cooked = await eval("(async function () { return await _FUNC`${{state,_host}}"+markup+"`; }())");  
         }
         return cooked;
@@ -1256,12 +1210,6 @@
     async function _FUNC(strings, ...vals) {
       const s = Array.from(strings);
       const ret =  await _c$(s, ...vals);
-      return ret;
-    }
-
-    async function _GFUNC(strings, ...vals) {
-      const s = Array.from(strings);
-      const ret = await _s$(s, ...vals);
       return ret;
     }
 
@@ -1328,8 +1276,8 @@
     }
 
     function say(mode, ...stuff) {
-      (BBDEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && !LIGHTHOUSE && alert(`${mode}: ${stuff.join('\n')}`);
-      (BBDEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!',EMPTY)](...stuff);
+      (DEBUG || mode === 'error' || mode.endsWith('!')) && MOBILE && !LIGHTHOUSE && alert(`${mode}: ${stuff.join('\n')}`);
+      (DEBUG || mode === 'error' || mode.endsWith('!')) && console[mode.replace('!',EMPTY)](...stuff);
     }
 
     function isMobile() {
@@ -1350,7 +1298,7 @@
   
     function trace(msg = EMPTY) {
       const tracer = new Error('Trace');
-      BBDEBUG && console.log(msg, 'Call stack', tracer.stack);
+      console.log(msg, 'Call stack', tracer.stack);
     }
 
     function dateString(date) {
@@ -1360,80 +1308,7 @@
     }
 
     function clone(o) {
-      console.log(CONFIG);
-      if ( CONFIG.useMagicClone ) {
-        return magicClone(o);
-      }
       return JSON.parse(JS(o));
-    }
-
-    function magicClone(o) {
-      console.log('using magic clone');
-      // Check if the input is an object. Non-objects (like primitives) are returned as is.
-      if (o === null || typeof o !== 'object') {
-        return o;
-      }
-
-      try {
-        // Create a new object with the same prototype as the original.
-        let clone = Object.create(Object.getPrototypeOf(o));
-
-        // Copy each property (including getters, setters, and regular properties).
-        Object.getOwnPropertyNames(o).forEach(prop => {
-          let descriptor = Object.getOwnPropertyDescriptor(o, prop);
-          Object.defineProperty(clone, prop, descriptor);
-        });
-
-        return clone;
-      } catch (error) {
-        // Handle errors (e.g., non-clonable objects) and possibly log them.
-        console.error('Error in magicClone:', error);
-        return null; // Or any other fallback value as per your error handling strategy.
-      }
-    }
-
-    function JS(o) {
-      if ( CONFIG.useMagicClone ) {
-        return magicStringify(o); 
-      }
-      return _STR(o, Replacer, EMPTY);
-    }
-
-    function magicStringify(obj) {
-      const seenObjects = new WeakSet();
-
-      function serialize(o) {
-        if (o === null || typeof o !== 'object') {
-          return o;
-        }
-
-        // Detect circular references
-        if (seenObjects.has(o)) {
-          return '[Circular]';
-        }
-        seenObjects.add(o);
-
-        if (o?.constructor?.name === 'Object' || Array.isArray(o)) {
-          let plainObj = Array.isArray(o) ? [] : {};
-
-          Object.getOwnPropertyNames(o).forEach(prop => {
-            let descriptor = Object.getOwnPropertyDescriptor(o, prop);
-            plainObj[prop] = (typeof descriptor.value === 'object') ? serialize(descriptor.value) : (descriptor.get ? o[prop] : descriptor.value);
-          });
-
-          return plainObj;
-        } else {
-          // Non-plain objects are returned as is
-          return o;
-        }
-      }
-
-      try {
-        return JSON.stringify(serialize(obj), Replacer, EMPTY);
-      } catch (error) {
-        console.error('Error in magicStringify:', error);
-        return null;
-      }
     }
 
     function Replacer(key, value) {

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang=en>
+<title>7GUIs implementation | BANG! Web Compoment Framework</title>
+<meta name=theme-color content=turquoise>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<meta name=description content="7GUIs implemented in BANG!, a framework that uses Web Components, Shadow DOM, scoped styles, template syntax, async templating, minimal DOM diffing with granular updates and no VDOM, and custom void tags!">
+<link rel=stylesheet href=./style.css>
+<link rel=stylesheet href=./rainbow.css>
+<script src=err.js></script>
+<script type=application/javascript src=./bang.js?1.618></script>
+<script type=module>
+  import Countries from './assets/countries.js';
+  bangLoaded().then(() => {
+    use('sg-look-book');
+    use('sg-multi-search');
+    use('sg-counter');
+    use('sg-temp-converter');
+    use('sg-flight-booker');
+    use('sg-timer');
+    use('sg-crud');
+    use('sg-circle-drawer');
+    use('sg-circle');
+    use('sg-sizer-modal');
+    use('sg-cells');
+    use('sg-table');
+    use('sg-cell');
+    use('sg-frame');
+
+    const compKey = Math.random().toFixed(18);
+    const State = {
+      temperatureConverter: {
+        key: Math.random().toFixed(18),
+        title: 'Temperature Converter',
+        sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-temp-converter',
+        k: 198,
+        c: 0,
+        f: 32,
+      },
+      flightBooker: {
+        key: Math.random().toFixed(18),
+        title: 'Flight Booker',
+        sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-flight-booker',
+        valence: 'one-way',
+        out: dateString(new Date),
+        back: dateString(new Date),
+        formValid: true
+      },
+      timer: {
+        key: Math.random().toFixed(18),
+        title: 'Timer',
+        sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-timer',
+        duration: 37.518,
+        elapsed: 11.3710000
+      },
+      crud: {
+        key: Math.random().toFixed(18),
+        title: 'CRUD',
+        sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-crud',
+        prefix: '',
+        names: [
+          {
+            firstName: 'Cris',
+            surname: 'Stringfellow'
+          },
+          {
+            firstName: 'YuShen',
+            surname: 'Long'
+          },
+          {
+            firstName: 'Noboru',
+            surname: 'Watanabe'
+          },
+          {
+            firstName: 'Saanvi',
+            surname: 'Devi'
+          },
+          {
+            firstName: 'Seonghoon',
+            surname: 'Kang'
+          }
+        ].map(name => (name.key = Math.random()+'', name)),
+        selected: '',
+      },
+    };
+    const cells2 = {
+      key: compKey,
+      title: 'Cells (works!)',
+      sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-table',
+      columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
+      rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,12),
+      selections: []
+    };
+
+    cells2.cell = Object.fromEntries((function () {
+      const entries = [];
+      cells2.columnNames.forEach(col => {
+        cells2.rowNames.forEach(row => {
+          const key = `${compKey}:${col}${row}`;
+          const value = {key, value: '', formula: '', editFormula: false};
+          entries.push([key, value]);
+        });
+      });
+      return entries;
+    }()));
+
+    setState('data', State, {save:true});
+    setState('circleDrawer', {
+      key: Math.random().toFixed(18),
+      title: 'Cricle Drawer',
+      sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-circle-drawer',
+      selected: '',
+      circles: []
+    }, {save:true});
+    const ctr = {
+      key: Math.random().toFixed(18),
+      title: 'Counter',
+      sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-counter',
+      count: 42
+    };
+    setState('ctr', ctr, {save:true});
+
+    const multi = {
+      key: Math.random().toFixed(18),
+      title: 'Multi Search-select List',
+      sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-multi-search',
+      list: Countries,
+      chosen: [
+      ]
+    }
+    setState('multi', multi, {save:true});
+    setState('cells2', cells2, {save:true});
+  });
+</script>
+<style>
+  main {
+    margin: 0;
+    width: 100%;
+  }
+
+  main #shadowBox a {
+    color: transparent;
+  }
+</style>
+<main>
+  <div id=shadowBox>
+    <h1 class="rainbow rainbow_text_animated"><a href=https://github.com/crisdosyago/der.Knall.Gerust>7GUIs</a></h1>
+  </div>
+  <!sg-look-book state=data />
+  <hr>
+  <div id=shadowBox>
+    <h1 class="rainbow rainbow_text_animated">More UI Components</h1>
+  </div>
+  
+  <!sg-multi-search state=multi />
+</main>
+<a target=_blank rel=noreferrer href=https://github.com/eugenkiss/7guis>What is 7GUIs?</a>
+<br>
+<a href=https://github.com/crisdosyago/der.Knall.Gerust>What is <i>BANG!</i>?</a>
