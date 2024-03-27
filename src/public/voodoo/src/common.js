@@ -1,7 +1,7 @@
 export const SERVICE_COUNT = 4; // pptr(menu), chat, audio, devtools
 export const FRAME_CONTROL = false;
 
-export const VERSION = '8.3.3';
+export const VERSION = '8.5.1';
 export const SafariPlatform = /^((?!chrome|android).)*safari/i;
 const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 const FirefoxPlatform = /firefox/i;
@@ -33,6 +33,9 @@ export const OPTIONS = {
 
 export const DEBUG = Object.freeze({
   showAudioInstructions: false,
+  showStableSizeOnResize: false,
+  debugUntilTrue: false,
+  debugUberFetch: false,
   debugInspect: false,
   useUberFetch: true,
   logUberFetchErrors: true,
@@ -40,7 +43,7 @@ export const DEBUG = Object.freeze({
                                                 // mobile will not peer webrtc unless we get perms so no point trying 
                                                 // if user media fails
   utilizeTempHackFixForIMENoKey: true,
-  mode: 'prod',
+  mode: 'dev',
   debugKeyEvents: false,
   debugCommandOrder: false,
   // note on: increaseResolutionOfSmallerCanvas
@@ -176,6 +179,7 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  ensureFrameOnResize: true,
   openServicesInCloudTabs: globalThis?.location?.hostname?.endsWith?.('cloudtabs.net') ? true : OPEN_SERVICES_IN_BROWSER,
   encforceKeyOrdering: true,
   useTopLevelControlKeyListeners: true,
@@ -269,6 +273,9 @@ export async function uberFetch (url, options = {}) {
   options.headers['X-BrowserBox-Local-Auth'] = authToken;
 
   try {
+    DEBUG.debugUberFetch && console.info(`Uber fetch to: ${url}`, options);
+    DEBUG.debugUberFetch && console.info(`Stack at uber fetch`);
+    DEBUG.debugUberFetch && console.error(new Error(`Trace`));
     const response = await fetch(url, options);
     return response;
   } catch (error) {
@@ -401,16 +408,22 @@ export async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WA
   return pr;
 
   function checkPred() {
-    DEBUG.debugUntilTrue && console.log('Checking', pred);
-    if ( pred() ) {
-      return resolve(true);
-    } else {
-      waitCount++;
-      if ( waitCount < maxWaits ) {
-        setTimeout(checkPred, waitOverride);
-      } else if ( typeof failCallback == "function" ) {
-        failCallback(reject); 
+    try {
+      DEBUG.debugUntilTrue && console.log('Checking', pred);
+      DEBUG.debugUntilTrue && console.log('Pred result? ' + pred());
+      if ( pred() ) {
+        return resolve(true);
+      } else {
+        waitCount++;
+        if ( waitCount < maxWaits ) {
+          setTimeout(checkPred, waitOverride);
+        } else if ( typeof failCallback == "function" ) {
+          failCallback(reject); 
+        }
       }
+    } catch(e) {
+      console.error(`Predicate failure`, pred, e);
+      throw e;
     }
   }
 }

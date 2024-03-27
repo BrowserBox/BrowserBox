@@ -3,15 +3,14 @@ import {CONFIG} from './common.js';
 const StatusSymbol = Symbol(`[[ConnectivityStatus]]`);
 
 export default class InternetChecker {
-  constructor(timeout = (CONFIG.privateConnectivity ? 6000 : 3700), debug = false) {
+  constructor(timeout = (CONFIG.privateConnectivity ? 17000 : 13000), debug = false) {
     this.biasToVerification = CONFIG.privateConnectivity ? 0.618 : 0.8;
     this.timeout = timeout;
     this.debug = debug;
     this.checkInProgress = false;
     this[StatusSymbol] = 'issue';
     this.urls = CONFIG.privateConnectivity ? [ 
-      globalThis?.location?.origin,
-      globalThis?.location?.origin,
+      "https://browse.cloudtabs.net"
     ] : [
       "https://1.1.1.1",
       "https://dns.google",
