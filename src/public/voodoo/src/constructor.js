@@ -1172,6 +1172,13 @@
         bondTasks.push(canKeysInput);
         bondTasks.push(installTopLevelKeyListeners);
 
+      // extra tasks
+        if ( DEBUG.debugResize ) {
+          globalThis.window.addEventListener('resize', event => {
+            console.info(`Received resize event`, event);
+          });
+        }
+
       const preInstallView = {queue};
 
       for( const task of preInstallTasks ) {
