@@ -435,7 +435,7 @@
       let resolve;
       const promise = new Promise(res => resolve = res);
       if ( connecting ) {
-        //await untilTrue(() => this.websockets.has(url));
+        await untilTrue(() => this.websockets.has(url));
         try {
           sendClosure(this.websockets.get(url));
         } catch(e) {
