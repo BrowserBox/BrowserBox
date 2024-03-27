@@ -1,0 +1,6 @@
+<dialog open>
+  <label ondragstart="return false;" ondrag="return false;">
+    Circle size
+    <input onchange="this.getRootNode().host.getRootNode().host.SaveCircleSize(event)" type=range min=1 max=${window.innerWidth/4} value=${radius}>
+  </label>
+</dialog>

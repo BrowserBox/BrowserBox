@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#set -x 
+
 if [[ "$OSTYPE" == darwin* ]]; then
   echo "On macOS we don't need to run the setup_machine script. Exiting..." >&2
   exit 0

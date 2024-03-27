@@ -1173,11 +1173,14 @@
         bondTasks.push(installTopLevelKeyListeners);
 
       // extra tasks
-        if ( DEBUG.debugResize ) {
-          globalThis.window.addEventListener('resize', event => {
+        if ( DEBUG.debugResize || CONFIG.ensureFrameOnResize ) {
+          globalThis.window.addEventListener('resize', async event => {
             DEBUG.debugResize && console.info(`Received resize event from local browser (this device)`, event);
             // The below is already called in resize_helper.js so no need to double it up
             //setTimeout(() => self._voodoo_resizeAndReport(), 40);
+            await untilSizeStabilizes(state.viewState.canvasEl);
+            await sleep(40);
+            globalThis._voodoo_asyncSizeTab({resetRequested:true});
           });
         }
 
@@ -1834,6 +1837,43 @@
           setTimeout(() => alert(...args), 1000);
         }
 
+        async function getBounds(el) {
+          el = el || (await untilTrue(() => !!state.viewState.canvasEl) && state.viewState.canvasEl);
+          if ( ! el ) {
+            //throw new TypeError(`sizeBrowserToBounds needs to be called with element as argument.`);
+            DEBUG.val && console.warn(new TypeError(`sizeBrowserToBounds needs to be called with element as argument.`));
+            return;
+          }
+          let {width, height} = el.getBoundingClientRect();
+          width = Math.round(width);
+          height = Math.round(height);
+          return {width, height};
+        }
+
+        async function untilSizeStabilizes(el, inRow = 3, maxChecks = 100) {
+          let count = 0;
+          let achieved = 0;
+          let {width,height} = await getBounds(el);
+          while(true) {
+            count++;
+            if ( count > maxChecks ) throw new Error(`Bounds kept changing`);
+            await sleep(100); 
+            const {width:newWidth, height: newHeight} = await getBounds(el);
+            if ( newWidth == width && newHeight == height ) {
+              achieved++;
+              if ( achieved >= inRow ) break;
+            } else {
+              achieved = 0;
+              width = newWidth;
+              height = newHeight;
+            }
+          }
+
+          DEBUG.showStableSizeOnResize && alert(`Size stabilized at: ${width} x ${height}`);
+
+          return true;
+        }
+
         async function sizeBrowserToBounds(el, targetId, opts) {
           if ( opts && !validOpts(opts, 'resetRequested', 'forceFrame') ) {
             console.log(`Invalid viewport size options given`, opts);
@@ -1910,7 +1950,7 @@
         }
 
         function asyncSizeBrowserToBounds(el, opts) {
-          setTimeout(() => (sizeBrowserToBounds(el, null, opts), indicateNoOpenTabs()), 0);
+          setTimeout(() => (sizeBrowserToBounds(el, null, opts), indicateNoOpenTabs()), 40);
         }
 
         function emulateNavigator() {
