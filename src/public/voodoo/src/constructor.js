@@ -489,7 +489,7 @@
             subviews.UnreadBadge(state);
           });
           queue.addMetaListener('resize', meta => {
-            DEBUG.debugResize && console.log(`resize event`, meta);
+            DEBUG.debugResize && console.log(`Received resize event from remote browser (server)`, meta);
             clearViewport();
           });
           queue.addMetaListener('multiplayer', meta => handleMultiplayerMessage(meta, state));
@@ -1171,6 +1171,15 @@
 
         bondTasks.push(canKeysInput);
         bondTasks.push(installTopLevelKeyListeners);
+
+      // extra tasks
+        if ( DEBUG.debugResize ) {
+          globalThis.window.addEventListener('resize', event => {
+            DEBUG.debugResize && console.info(`Received resize event from local browser (this device)`, event);
+            // The below is already called in resize_helper.js so no need to double it up
+            //setTimeout(() => self._voodoo_resizeAndReport(), 40);
+          });
+        }
 
       const preInstallView = {queue};
 
