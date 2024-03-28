@@ -157,6 +157,9 @@
           // set up progress
           safariLongTapInstalled: false,
 
+          // force a re display
+          refreshViews,
+
           // chrome browser UI (tabs, address bar, etc)
           chromeUI: (
             CONFIG.uiDefaultOff ? false :
@@ -676,15 +679,7 @@
                             audioReconnectMs = AUDIO_RECONNECT_MS;
                             setTimeout(activateAudio, 0);
                             readingLoop();
-                            untilHuman(() => state?.viewState?.bbView).then(async () => {
-                              await state.viewState.bbView.untilLoaded();
-                              globalThis._voodoo_asyncSizeTab();
-                              DEBUG.debugStartup && alert('Completed size of view loaded');
-                              await updateTabs();
-                              await untilHuman(() => state?.tabs?.length >= 1);
-                              globalThis._voodoo_asyncSizeTab();
-                              DEBUG.debugStartup && alert('Completed size of tabs loaded');
-                            })
+                            state.refreshViews();
                           });
 
                           ws.addEventListener('close', msg => {
@@ -1306,19 +1301,23 @@
         setTimeout(() => activateTab(null, {hello:'onload', targetId:activeTarget}, {forceFrame:true}), LONG_DELAY);
       }
 
-      untilHuman(() => state?.viewState?.bbView).then(async () => {
-        await state.viewState.bbView.untilLoaded();
-        globalThis._voodoo_asyncSizeTab();
-        DEBUG.debugStartup && alert('Completed size of view loaded');
-        await updateTabs();
-        await untilHuman(() => state?.tabs?.length >= 1);
-        globalThis._voodoo_asyncSizeTab();
-        DEBUG.debugStartup && alert('Completed size of tabs loaded');
-      })
+      refreshViews();
 
       return poppetView;
 
       // closures
+        async function refreshViews() {
+          return untilHuman(() => state?.viewState?.bbView).then(async () => {
+            await state.viewState.bbView.untilLoaded();
+            globalThis._voodoo_asyncSizeTab();
+            DEBUG.debugStartup && alert('Completed size of view loaded');
+            await updateTabs();
+            await untilHuman(() => state?.tabs?.length >= 1);
+            globalThis._voodoo_asyncSizeTab();
+            DEBUG.debugStartup && alert('Completed size of tabs loaded');
+          })
+        }
+
         function checkResults() {
           queue.checkResults();
         }
