@@ -1,7 +1,7 @@
 export const SERVICE_COUNT = 4; // pptr(menu), chat, audio, devtools
 export const FRAME_CONTROL = false;
 
-export const VERSION = '8.5.7';
+export const VERSION = '8.5.8';
 export const SafariPlatform = /^((?!chrome|android).)*safari/i;
 const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 const FirefoxPlatform = /firefox/i;
@@ -36,7 +36,7 @@ export const DEBUG = Object.freeze({
   bustCache: false,
   showAudioInstructions: false,
   showStableSizeOnResize: false,
-  debugUntilTrue: false,
+  debugUntilTrue: true,
   debugUberFetch: false,
   debugInspect: false,
   useUberFetch: true,
@@ -45,7 +45,7 @@ export const DEBUG = Object.freeze({
                                                 // mobile will not peer webrtc unless we get perms so no point trying 
                                                 // if user media fails
   utilizeTempHackFixForIMENoKey: true,
-  mode: 'prod',
+  mode: 'dev',
   debugKeyEvents: false,
   debugCommandOrder: false,
   // note on: increaseResolutionOfSmallerCanvas
