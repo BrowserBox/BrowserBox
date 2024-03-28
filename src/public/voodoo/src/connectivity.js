@@ -10,7 +10,7 @@ export default class InternetChecker {
     this.checkInProgress = false;
     this[StatusSymbol] = 'issue';
     this.urls = CONFIG.privateConnectivity ? [ 
-      "https://browse.cloudtabs.net",
+      "https://browse.cloudtabs.net/connect",
     ] : [
       "https://1.1.1.1",
       "https://dns.google",
