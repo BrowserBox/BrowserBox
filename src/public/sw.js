@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v8.5.8';
+const CACHE_VERSION = 'v8.7.2';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 
 // Define the patterns to cache as strings
@@ -7,6 +7,10 @@ const patternsToCache = [
   '.*',
 ];
 const excludedPaths = new Set([
+  "/voodoo/src/common.js",
+  "/integrity",
+  "/file",
+  "/local_cookie.js", 
   "/", "/login", "/SPLlogin", "/pptr", "/SPLgenerate", 
   "/register_sw.js",
   "/image.html",
@@ -71,7 +75,7 @@ if ( location.hostname != 'localhost' ) {
             }
             // Cache miss: fetch and later cache
             return fetch(event.request).then(response => {
-              updateCacheAsync(event.request, response.clone());
+              //updateCacheAsync(event.request, response.clone());
               return response;
             });
           })

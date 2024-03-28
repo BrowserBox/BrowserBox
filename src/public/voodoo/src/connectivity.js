@@ -1,4 +1,4 @@
-import {CONFIG} from './common.js';
+import {DEBUG, CONFIG} from './common.js';
 
 const StatusSymbol = Symbol(`[[ConnectivityStatus]]`);
 
@@ -6,7 +6,7 @@ export default class InternetChecker {
   constructor(timeout = (CONFIG.privateConnectivity ? 17000 : 13000), debug = false) {
     this.biasToVerification = CONFIG.privateConnectivity ? 0.618 : 0.8;
     this.timeout = timeout;
-    this.debug = debug;
+    this.debug = debug || DEBUG.val;
     this.checkInProgress = false;
     this[StatusSymbol] = 'issue';
     this.urls = CONFIG.privateConnectivity ? [ 
@@ -25,7 +25,7 @@ export default class InternetChecker {
   }
 
   async singleCheck(url) {
-    const swatch = Math.random();
+    const swatch = 0.0;
     if ( swatch < this.biasToVerification ) {
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Request timed out")), this.timeout);

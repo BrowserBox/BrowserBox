@@ -29,6 +29,7 @@
       logitKeyInputEvent,
     } from './common.js';
     import {component, subviews, saveCanvas, audio_login_url} from './view.js';
+    import InternetChecker from './connectivity.js';
 
     //import installDemoPlugin from '../../plugins/demo/installPlugin.js';
     //import installAppminifierPlugin from '../../plugins/appminifier/installPlugin.js';
@@ -38,6 +39,12 @@
     import {s as R, c as X} from '../node_modules/bang.html/src/vv/vanillaview.js';
 
   // constants
+    const Connectivity = {
+      checker: new InternetChecker(CONFIG.netCheckTimeout, DEBUG.netCheckDebug),
+    };
+
+    Connectivity.checker.checkInternet();
+
     const ThrottledEvents = new Set([
       "mousemove", "pointermove", "touchmove"
     ]);
@@ -125,12 +132,15 @@
           mySource: (Math.random()*1e10).toString(36)
         };
         await untilTrueOrTimeout(() => globalThis?.localStorage?.getItem?.('sessionToken'), 120); // wait 2 minutes
+        await untilTrueOrTimeout(() => globalThis?.localStorage?.getItem?.('localCookie'), 120); // wait 2 minutes
         const {tabs,vmPaused,activeTarget,requestId} = await (/*demoMode ? fetchDemoTabs() : */ fetchTabs({sessionToken}, () => state));
         // when app loads get favicons for any existing tabs 
         tabs.forEach(({targetId}) => {
           //initialGetFavicon(targetId);
           //getFavicon(targetId);
         });
+        const updateTabs = debounce(rawUpdateTabs, LONG_DELAY);
+
         // MIGRATE (go)
         const {
           go,
@@ -150,6 +160,10 @@
 
       // app state
         magicAssign(state, {
+          // internet
+          Connectivity,
+
+          // main comms
           H,
           checkResults,
           useCookies,
@@ -241,6 +255,8 @@
           createTab,
           activeTab,
           favicons: new Map(),
+          rawUpdateTabs,
+          updateTabs,
 
           // timing constants
           IMMEDIATE,
@@ -356,8 +372,6 @@
       DEBUG.exposeState && (self.state = state);
 
       patchGlobals();
-
-      const updateTabs = debounce(rawUpdateTabs, LONG_DELAY);
 
       /*
       if ( state.demoMode ) {
@@ -1292,6 +1306,11 @@
 
       window.addEventListener('online', () => {
         setTimeout(() => {
+          try {
+            state.Connectivity.checker.status = 'online';
+          } catch(e) {
+            console.warn(`Connectivity checker has error`, e); 
+          }
           setState('bbpro', state);
           writeCanvas("Online. Connecting...");
         }, 0);
@@ -1307,15 +1326,10 @@
 
       // closures
         async function refreshViews() {
-          return untilHuman(() => state?.viewState?.bbView).then(async () => {
-            await state.viewState.bbView.untilLoaded();
-            globalThis._voodoo_asyncSizeTab();
-            DEBUG.debugStartup && alert('Completed size of view loaded');
-            await updateTabs();
-            await untilHuman(() => state?.tabs?.length >= 1);
-            globalThis._voodoo_asyncSizeTab();
-            DEBUG.debugStartup && alert('Completed size of tabs loaded');
-          })
+          await untilHuman(() => state?.viewState?.bbView?.classList?.contains?.('bang-styled'));
+          await untilHuman(() => state?.Connectivity?.checker?.status == 'online');
+          state.activateTab();
+          DEBUG.val && alert('Performed refresh views');
         }
 
         function checkResults() {
