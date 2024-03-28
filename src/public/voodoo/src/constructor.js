@@ -16,6 +16,7 @@
     import {saveClick} from './subviews/controls.js';
     import {
       untilTrue,
+      untilHuman,
       untilTrueOrTimeout,
       logit, sleep, debounce, DEBUG, BLANK, 
       CONFIG,
@@ -123,6 +124,7 @@
         const state = {
           mySource: (Math.random()*1e10).toString(36)
         };
+        await untilTrueOrTimeout(() => globalThis?.localStorage?.getItem?.('sessionToken'), 120); // wait 2 minutes
         const {tabs,vmPaused,activeTarget,requestId} = await (/*demoMode ? fetchDemoTabs() : */ fetchTabs({sessionToken}, () => state));
         // when app loads get favicons for any existing tabs 
         tabs.forEach(({targetId}) => {
@@ -366,7 +368,7 @@
 
       const {searchParams} = new URL(location);
 
-      if ( searchParams.has('cloudTabsStatusLine') || location.hostname.endsWith('cloudtabs.net') && ! searchParams.has('forceRegularStatusLine') ) {
+      if ( (searchParams.has('cloudTabsStatusLine') || location.hostname.endsWith('cloudtabs.net')) && ! searchParams.has('forceRegularStatusLine') ) {
         state.cloudTabsStatusLine = true; 
         setState('bbpro', state);
       }
@@ -409,13 +411,11 @@
         });
       }
 
-      const queue = new EventQueue(state, sessionToken);
-      DEBUG.val && console.log({queue});
-      if ( DEBUG.fullScope ) {
-        globalThis.queue = queue;
-      } else {
-        globalThis.queue = queue;
-      }
+      // make this so we can call it on resize
+        window._voodoo_asyncSizeTab = async (opts) => {
+          await sleep(40);
+          return sizeTab(opts);
+        };
 
       // check tor status
         {
@@ -428,6 +428,17 @@
             }
           });
         }
+
+      // create link
+        const queue = new EventQueue(state, sessionToken);
+        DEBUG.val && console.log({queue});
+        if ( DEBUG.fullScope ) {
+          globalThis.queue = queue;
+        } else {
+          //globalThis.queue = queue;
+        }
+
+      await sleep(5);
 
       // plugins 
         /**
@@ -1154,12 +1165,6 @@
           state.viewState.modalComponent.openModal({modal});
         });
       
-      // make this so we can call it on resize
-        window._voodoo_asyncSizeTab = async (opts) => {
-          await sleep(40);
-          return sizeTab(opts);
-        };
-
       // bond tasks 
         canvasBondTasks.push(indicateNoOpenTabs);
         canvasBondTasks.push(installZoomListener);
@@ -1177,10 +1182,9 @@
           globalThis.window.addEventListener('resize', async event => {
             DEBUG.debugResize && console.info(`Received resize event from local browser (this device)`, event);
             // The below is already called in resize_helper.js so no need to double it up
-            //setTimeout(() => self._voodoo_resizeAndReport(), 40);
             await untilSizeStabilizes(state.viewState.canvasEl);
             await sleep(40);
-            globalThis._voodoo_asyncSizeTab({resetRequested:true});
+            globalThis._voodoo_asyncSizeTab({forceFrame:true,resetRequested:true});
           });
         }
 
@@ -1235,7 +1239,7 @@
           use('bb-settings-button');
           const bb = document.querySelector('bb-view');
           if ( !bb?.shadowRoot ) {
-            await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot);
+            await untilTrueOrTimeout(() => !!document.querySelector('bb-view')?.shadowRoot, 120);
           }
           Root = document.querySelector('bb-view').shadowRoot;
         } catch(e) {
@@ -1292,6 +1296,15 @@
       if ( activeTarget ) {
         setTimeout(() => activateTab(null, {hello:'onload', targetId:activeTarget}, {forceFrame:true}), LONG_DELAY);
       }
+
+      untilHuman(() => state?.viewState?.bbView).then(async () => {
+        await state.viewState.bbView.untilLoaded();
+        globalThis._voodoo_asyncSizeTab();
+        DEBUG.debugStartup && alert('Completed size of view loaded');
+        await untilHuman(() => state?.tabs?.length >= 1);
+        globalThis._voodoo_asyncSizeTab();
+        DEBUG.debugStartup && alert('Completed size of tabs loaded');
+      })
 
       return poppetView;
 
