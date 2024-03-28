@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v8.5.1';
+const CACHE_VERSION = 'v8.5.2';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 
 // Define the patterns to cache as strings
@@ -8,6 +8,7 @@ const patternsToCache = [
 ];
 const excludedPaths = new Set([
   "/", "/login", "/SPLlogin", "/pptr", "/SPLgenerate", 
+  "/register_sw.js",
   "/image.html",
   "/isTor",
   "/torca/rootCA.pem", "/settings_modal", "/restart_app", 

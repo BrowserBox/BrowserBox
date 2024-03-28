@@ -1,7 +1,7 @@
 export const SERVICE_COUNT = 4; // pptr(menu), chat, audio, devtools
 export const FRAME_CONTROL = false;
 
-export const VERSION = '8.5.1';
+export const VERSION = '8.5.7';
 export const SafariPlatform = /^((?!chrome|android).)*safari/i;
 const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 const FirefoxPlatform = /firefox/i;
@@ -32,10 +32,12 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  debugStartup: false,
+  bustCache: false,
   showAudioInstructions: false,
   showStableSizeOnResize: false,
-  debugUntilTrue: false,
-  debugUberFetch: false,
+  debugUntilTrue: true,
+  debugUberFetch: true,
   debugInspect: false,
   useUberFetch: true,
   logUberFetchErrors: true,
@@ -43,7 +45,7 @@ export const DEBUG = Object.freeze({
                                                 // mobile will not peer webrtc unless we get perms so no point trying 
                                                 // if user media fails
   utilizeTempHackFixForIMENoKey: true,
-  mode: 'dev',
+  mode: 'prod',
   debugKeyEvents: false,
   debugCommandOrder: false,
   // note on: increaseResolutionOfSmallerCanvas
@@ -168,7 +170,7 @@ export const DEBUG = Object.freeze({
   neonMode: false,
   resetCache: false,
   exposeState: true,
-  fullScope: false,
+  fullScope: true,
   get err() { return this.fullScope || false },
   get promiserejection() { return this.fullScope || false },
   get dev() { return this.fullScope || false },
@@ -315,16 +317,16 @@ export function throttle(func, wait) {
 }
 
 export function littleEndian() {
-	const uInt32 = new Uint32Array([0x11223344]);
-	const uInt8 = new Uint8Array(uInt32.buffer);
+  const uInt32 = new Uint32Array([0x11223344]);
+  const uInt8 = new Uint8Array(uInt32.buffer);
  
-	if(uInt8[0] === 0x44) {
-		return true;
-	} else if (uInt8[0] === 0x11) {
-		return false;
-	} else {
-		return true;
-	}
+  if(uInt8[0] === 0x44) {
+    return true;
+  } else if (uInt8[0] === 0x11) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 export function be2le(u32) {

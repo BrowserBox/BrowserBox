@@ -33,7 +33,7 @@ export default class InternetChecker {
 
       const fetchPromise = uberFetch(url, {
         method: 'GET',
-        mode: 'no-cors'
+        mode: CONFIG.privateConnectivity ? 'cors' : 'no-cors'
       });
 
       return Promise.race([fetchPromise, timeoutPromise]);

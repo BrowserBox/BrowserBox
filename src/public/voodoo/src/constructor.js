@@ -16,6 +16,7 @@
     import {saveClick} from './subviews/controls.js';
     import {
       untilTrue,
+      untilHuman,
       untilTrueOrTimeout,
       logit, sleep, debounce, DEBUG, BLANK, 
       CONFIG,
@@ -123,6 +124,7 @@
         const state = {
           mySource: (Math.random()*1e10).toString(36)
         };
+        await untilTrueOrTimeout(() => globalThis?.localStorage?.getItem?.('sessionToken'), 120); // wait 2 minutes
         const {tabs,vmPaused,activeTarget,requestId} = await (/*demoMode ? fetchDemoTabs() : */ fetchTabs({sessionToken}, () => state));
         // when app loads get favicons for any existing tabs 
         tabs.forEach(({targetId}) => {
@@ -1237,7 +1239,7 @@
           use('bb-settings-button');
           const bb = document.querySelector('bb-view');
           if ( !bb?.shadowRoot ) {
-            await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot);
+            await untilTrueOrTimeout(() => !!document.querySelector('bb-view')?.shadowRoot, 120);
           }
           Root = document.querySelector('bb-view').shadowRoot;
         } catch(e) {
@@ -1294,6 +1296,15 @@
       if ( activeTarget ) {
         setTimeout(() => activateTab(null, {hello:'onload', targetId:activeTarget}, {forceFrame:true}), LONG_DELAY);
       }
+
+      untilHuman(() => state?.viewState?.bbView).then(async () => {
+        await state.viewState.bbView.untilLoaded();
+        globalThis._voodoo_asyncSizeTab();
+        DEBUG.debugStartup && alert('Completed size of view loaded');
+        await untilHuman(() => state?.tabs?.length >= 1);
+        globalThis._voodoo_asyncSizeTab();
+        DEBUG.debugStartup && alert('Completed size of tabs loaded');
+      })
 
       return poppetView;
 
