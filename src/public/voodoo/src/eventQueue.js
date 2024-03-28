@@ -546,6 +546,7 @@
                     }
                   }
                   privates.publics.state.setTopState();
+                  privates.publlics.state.refreshViews();
                 });
                 peer.on('signal', data => {
                   DEBUG.cnx && console.log('have webrtc signal data', data);
