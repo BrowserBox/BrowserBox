@@ -676,6 +676,15 @@
                             audioReconnectMs = AUDIO_RECONNECT_MS;
                             setTimeout(activateAudio, 0);
                             readingLoop();
+                            untilHuman(() => state?.viewState?.bbView).then(async () => {
+                              await state.viewState.bbView.untilLoaded();
+                              globalThis._voodoo_asyncSizeTab();
+                              DEBUG.debugStartup && alert('Completed size of view loaded');
+                              await updateTabs();
+                              await untilHuman(() => state?.tabs?.length >= 1);
+                              globalThis._voodoo_asyncSizeTab();
+                              DEBUG.debugStartup && alert('Completed size of tabs loaded');
+                            })
                           });
 
                           ws.addEventListener('close', msg => {
@@ -1301,6 +1310,7 @@
         await state.viewState.bbView.untilLoaded();
         globalThis._voodoo_asyncSizeTab();
         DEBUG.debugStartup && alert('Completed size of view loaded');
+        await updateTabs();
         await untilHuman(() => state?.tabs?.length >= 1);
         globalThis._voodoo_asyncSizeTab();
         DEBUG.debugStartup && alert('Completed size of tabs loaded');
