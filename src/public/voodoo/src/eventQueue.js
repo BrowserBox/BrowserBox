@@ -10,7 +10,6 @@
     be2le,
     randomInterval,
   } from './common.js';
-  import InternetChecker from './connectivity.js';
   import abto64 from './abto64.js';
 
   const $ = Symbol('[[EventQueuePrivates]]');
@@ -47,9 +46,6 @@
   const OldIncoming = new Map();
   const waiting = new Map();
   const isLE = littleEndian();
-  const Connectivity = {
-    checker: new InternetChecker(CONFIG.netCheckTimeout, DEBUG.netCheckDebug),
-  };
 
   let DEBUG_ORDER_ID = 99999;
   let loopCalls = 0;
@@ -68,6 +64,7 @@
   let clearNextFrame = false;
   let frameDrawing = false;
   let bufferedFrameCollectDelay = BUFFERED_FRAME_COLLECT_DELAY.MIN;
+  let Connectivity;
 
   class Privates {
     constructor(publics, state, sessionToken) {
@@ -435,6 +432,7 @@
       let resolve;
       const promise = new Promise(res => resolve = res);
       if ( connecting ) {
+        DEBUG.debugCnx && console.log(`Already connecting...`);
         await untilTrue(() => this.websockets.has(url));
         try {
           sendClosure(this.websockets.get(url));
@@ -442,7 +440,9 @@
           resolve(false);
         }
       } else {
+        DEBUG.debugCnx && console.log(`Not connecting...`);
         if ( !this.publics.state.demoMode && onLine() && ! connecting ) {
+          DEBUG.debugCnx && console.log(`Online and now connecting...`);
           connecting = true;
           let peer;
           let socket;
@@ -460,6 +460,7 @@
               const receivesFrames = !this.publics.state.useViewFrame;
               so({messageId,zombie:{events: [],receivesFrames}});
               this.publics.state.serverConnected = true;
+              this.publics.state.refreshViews();
 
               AssureOpenTask = async () => {
                 this.publics.state.serverConnected = true;
@@ -792,7 +793,9 @@
                         x.search = `token=${this.sessionToken}&ran=${Math.random()}`;
                         await talert("Your browser cleared your session. We need to reload the page to refresh it.");
                         DEBUG.delayUnload = false;
-                        location.href = x;
+                        if ( ! DEBUG.noReset ) {
+                          location.href = x;
+                        }
                         socket.onmessage = null;
                       } catch(e) {
                         talert("An error occurred. Please reload.");
@@ -1151,7 +1154,7 @@
       const queue = [];
       this.state = state;
 
-      this.state.Connectivity = Connectivity;
+      Connectivity = this.state.Connectivity;
       Connectivity.checkInterval = randomInterval(async () => {
         await sleep(0);
         const { status, error } = await Connectivity.checker.checkInternet();

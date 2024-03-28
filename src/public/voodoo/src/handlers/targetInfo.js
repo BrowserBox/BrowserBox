@@ -62,7 +62,9 @@ export async function fetchTabs({sessionToken}, getState) {
       COMMON.blockAnotherReset = true;
       alert("Your browser cleared your session. We need to reload the page to refresh it.");
       COMMON.delayUnload = false;
-      location.href = x;
+      if ( ! DEBUG.noReset ) {
+        location.href = x;
+      }
       return;
     }
   } catch(e) {
