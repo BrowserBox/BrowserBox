@@ -619,7 +619,8 @@ async function getEncoder() {
           console.error(`Could not start encoder. This is likely a pulseaudio issue where parec/pacat cannot connect for some reason.`);
           return;
         } 
-        await sleep(RETRY_WORTHY_EXIT);
+        savedEncoder = false;
+        await sleep(1000);
         resolve(await getEncoder(retryCount++)); 
       }
       //shutDown();
