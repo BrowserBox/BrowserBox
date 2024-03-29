@@ -104,7 +104,7 @@ else
       echo "Not shutting pulse down"
       #pulseaudio -k
     else 
-      pulseaudio --start --use-pid-file=true --log-level=debug
+      sudo -g browsers pulseaudio --start --use-pid-file=true --log-level=debug
       until pulseaudio --check
       do  
         sleep 2
