@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+set -x
 echo "starting audio service..."
 
 command -v pulseaudio &>/dev/null;
@@ -99,13 +100,13 @@ else
 
   if [ $PULSE_INSTALLED -eq 0 ]; then
     echo "Starting pulseaudio (PID file: $pidFile)"
-    if pulseaudio --check; then
+    if sudo -g browsers pulseaudio --check; then
       echo "pulse is started already"
       echo "Not shutting pulse down"
       #pulseaudio -k
     else 
-      pulseaudio --start --use-pid-file=true --log-level=debug
-      until pulseaudio --check
+      sudo -g browsers pulseaudio --start --use-pid-file=true --log-level=debug
+      until sudo -g browsers pulseaudio --check
       do  
         sleep 2
       done
