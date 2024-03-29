@@ -25,6 +25,7 @@ import {
   CONFIG, sleep
 } from '../../../common.js';
 const DEBUG = {
+  debugRetries: true,
   showAllData: false,
   showPacketPushes: false,
   showDroppedSilents: false,
@@ -33,7 +34,7 @@ const DEBUG = {
   showAllMessages: false,
   showAcks: false,
   showConnections: true,
-  val: 0,
+  val: 1,
   showFormat: true,
   mode: 'prod',
   goSecure: true
@@ -610,8 +611,10 @@ async function getEncoder() {
     parec.on('exit', async e => { 
       console.log('parec exit', e);
       killEncoder(encoder);
+      DEBUG.debugRetries && console.log(`Time since spawn: ${Date.now() - timer}. Spawn: ${timer}. Now: ${Date.now()}`);
       if ( (Date.now() - timer) <= RETRY_WORTHY_EXIT ) {
         retryingOnStartupError = true;
+        DEBUG.debugRetries && console.info({retryingOnStartupError, retryCount, MAX_RETRY_COUNT});
         if ( retryCount > MAX_RETRY_COUNT ) {
           console.error(`Could not start encoder. This is likely a pulseaudio issue where parec/pacat cannot connect for some reason.`);
           return;

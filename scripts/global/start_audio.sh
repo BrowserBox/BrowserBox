@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Get the platform using Node.js
+# Get the platform using Node.js (for Windows only)
 node="$(command -v node.exe)"
 PLATFORM_IS=$("$node" -p "process.platform")
 
