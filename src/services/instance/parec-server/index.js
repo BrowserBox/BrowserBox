@@ -36,7 +36,7 @@ const DEBUG = {
   showConnections: true,
   val: 1,
   showFormat: true,
-  mode: 'dev',
+  mode: 'prod',
   goSecure: true
 }
 const Clients = new Set();
