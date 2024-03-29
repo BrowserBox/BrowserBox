@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v8.7.5';
+const CACHE_VERSION = 'v8.7.6';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 
 // Define the patterns to cache as strings
