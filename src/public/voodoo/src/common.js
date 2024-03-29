@@ -86,7 +86,7 @@ export const DEBUG = Object.freeze({
   HFUNCTION: false,
   debugCopyPaste: false,
   trackLoading: true,
-  debugAudio: true,
+  debugAudio: false,
   debugAudioAck: false,
   debugFastest: false,
   get useStraightAudioStream() {
