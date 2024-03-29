@@ -539,7 +539,9 @@
         // audio login
         let settingUp = false;
         async function setupAudio() {
-          if ( settingUp ) return false;
+          if ( settingUp ) {
+            return false;
+          }
           settingUp = true;
           try {
             const AUDIO = CONFIG.isOnion ? new URL(

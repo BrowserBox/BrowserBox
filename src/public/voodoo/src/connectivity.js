@@ -4,6 +4,26 @@ const StatusSymbol = Symbol(`[[ConnectivityStatus]]`);
 
 export default class InternetChecker {
   constructor(timeout = (CONFIG.privateConnectivity ? 17000 : 13000), debug = false) {
+  }
+
+  async singleCheck(url) {
+  }
+
+  async checkInternet() {
+    return {status: 'online'};
+  }
+
+  get status() {
+    return 'online';
+  }
+
+  set status(value) {
+
+  }
+}
+/*
+export default class InternetChecker {
+  constructor(timeout = (CONFIG.privateConnectivity ? 17000 : 13000), debug = false) {
     this.biasToVerification = CONFIG.privateConnectivity ? 0.618 : 0.8;
     this.timeout = timeout;
     this.debug = debug || DEBUG.val;
@@ -126,4 +146,5 @@ export default class InternetChecker {
     }
   }
 }
+*/
 
