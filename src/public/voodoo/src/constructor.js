@@ -154,7 +154,7 @@
       // save local cookie
         let lcResolve, lcReject;
         const localCookiePromise = new Promise((res, rej) => (lcResolve = res, lcReject = rej));
-        untilTrue(() => localStorage.getItem('localCookie'), 100, 1000)
+        untilTrueOrTimeout(() => localStorage.getItem('localCookie'), 420)
           .then(() => lcResolve(localStorage.getItem('localCookie')))
           .catch(err => lcReject(err));
 
@@ -923,16 +923,41 @@
             }
 
             async function setupAudioIframe() {
+              DEBUG.debugAudio && console.log('Begginning create of audio login iframe...');
+              const MAX_RETRIES = 25;
+              let retry = 0;
+              DEBUG.debugAudio && console.log(`Waiting for root element...`);
               await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot, 1000, 600);
               Root = document.querySelector('bb-view').shadowRoot;
+              DEBUG.debugAudio && console.log(`Root element arrived. Creating iframe...`);
               const aif = document.createElement('iframe');
               aif.id = 'audio-login';
+              DEBUG.debugAudio && console.log(`Iframe created. Constructing url and waiting for necessary components...`);
               const src = new URL(AUDIO.href);
               src.pathname = '/login';
               src.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName) || state.sessionToken);
               src.searchParams.set('localCookie', await state.localCookie);
+              DEBUG.debugAudio && console.log(`All components ready. Login url composed. Attaching to document and connecting...`);
               Root.appendChild(aif);
+              aif.addEventListener('error', async (err) => {
+                DEBUG.debugAudio && console.error(err);
+                DEBUG.debugAudio && console.log(`Connecting failed. Retrying?`);
+                await sleep(1000);
+                retry++;
+                if ( retry > MAX_RETRIES ) {
+                  DEBUG.debugAudio && console.log(`Cannot retry. Max attempts exceeded.`);
+                  return;
+                }
+                DEBUG.debugAudio && console.log(`Will retry`);
+                aif.src = src;
+                DEBUG.debugAudio && console.log(`${retry}th connect attempt started.`);
+              });
+              aif.addEventListener('load', () => {
+                DEBUG.debugAudio && console.log(`Iframe loaded. Audio login appears successful. 
+                  WebSocket connect should be triggered soon.`);
+              });
               aif.src = src;
+              DEBUG.debugAudio && console.log(`Initial connect attempt started`);
             }
           } catch(e) {
             console.warn(`Error setting up audio`, e);
