@@ -570,11 +570,12 @@
                 if ( origin === AUDIO.origin ) {
                   if ( data.request ) {
                     if ( data.request.login ) {
-                      DEBUG.val && console.log('send session token', data, state.sessionToken);
+                      (DEBUG.debugAudio || DEBUG.val) && console.log('send session token', data, state.sessionToken);
                       state.audioMessageReceived = true;
                       source.postMessage({login:{sessionToken:state.sessionToken}}, origin);
                     } else if ( data.request.audio ) {
-                      DEBUG.debugAudio && console.log('doing audio');
+                      (DEBUG.val || DEBUG.debugAudio) && console.log('doing audio');
+                      state.audioMessageReceived = true;
                       state.loggedInCount += 1;
                       if ( state.loggedInCount >= SERVICE_COUNT ) {
                         console.log("Everybody logged in");
@@ -940,19 +941,23 @@
               src.searchParams.set('localCookie', await state.localCookie);
               DEBUG.debugAudio && console.log(`All components ready. Login url composed. Attaching to document and connecting...`);
               Root.appendChild(aif);
-              untilTrueOrTimeout(() => state.audioMessageReceived, 12).catch(async (err) => {
-                DEBUG.debugAudio && console.error(err);
-                DEBUG.debugAudio && console.log(`Connecting failed. Retrying?`);
-                await sleep(1000);
-                retry++;
-                if ( retry > MAX_RETRIES ) {
-                  DEBUG.debugAudio && console.log(`Cannot retry. Max attempts exceeded.`);
-                  return;
-                }
-                DEBUG.debugAudio && console.log(`Will retry`);
-                aif.remove();
-                setTimeout(setupAudioIframe, 0);
-                DEBUG.debugAudio && console.log(`${retry}th connect attempt started.`);
+              // wait 4 seconds to receive response
+              untilTrueOrTimeout(() => state.audioMessageReceived, 4)
+                .then(() => {
+                  DEBUG.debugAudio && console.log(`Audio message received. We have connected to audio service. Audio WebSocket should connect soon.`)
+                }).catch(async (err) => {
+                  DEBUG.debugAudio && console.error(err);
+                  DEBUG.debugAudio && console.log(`Connecting failed. Retrying?`);
+                  await sleep(1000);
+                  retry++;
+                  if ( retry > MAX_RETRIES ) {
+                    DEBUG.debugAudio && console.log(`Cannot retry. Max attempts exceeded.`);
+                    return;
+                  }
+                  DEBUG.debugAudio && console.log(`Will retry`);
+                  aif.remove();
+                  setTimeout(setupAudioIframe, 0);
+                  DEBUG.debugAudio && console.log(`${retry}th connect attempt started.`);
               });
               aif.addEventListener('load', () => {
                 DEBUG.debugAudio && console.log(`Iframe 'load' event. But this provides no information on whether Audio login is successful.`);
