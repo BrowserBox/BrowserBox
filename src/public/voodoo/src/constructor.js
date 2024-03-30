@@ -571,6 +571,7 @@
                   if ( data.request ) {
                     if ( data.request.login ) {
                       DEBUG.val && console.log('send session token', data, state.sessionToken);
+                      state.audioMessageReceived = true;
                       source.postMessage({login:{sessionToken:state.sessionToken}}, origin);
                     } else if ( data.request.audio ) {
                       DEBUG.debugAudio && console.log('doing audio');
@@ -939,7 +940,7 @@
               src.searchParams.set('localCookie', await state.localCookie);
               DEBUG.debugAudio && console.log(`All components ready. Login url composed. Attaching to document and connecting...`);
               Root.appendChild(aif);
-              aif.addEventListener('error', async (err) => {
+              untilTrueOrTimeout(() => state.audioMessageReceived, 12).catch(async (err) => {
                 DEBUG.debugAudio && console.error(err);
                 DEBUG.debugAudio && console.log(`Connecting failed. Retrying?`);
                 await sleep(1000);
@@ -949,12 +950,12 @@
                   return;
                 }
                 DEBUG.debugAudio && console.log(`Will retry`);
-                aif.src = src;
+                aif.remove();
+                setTimeout(setupAudioIframe, 0);
                 DEBUG.debugAudio && console.log(`${retry}th connect attempt started.`);
               });
               aif.addEventListener('load', () => {
-                DEBUG.debugAudio && console.log(`Iframe loaded. Audio login appears successful. 
-                  WebSocket connect should be triggered soon.`);
+                DEBUG.debugAudio && console.log(`Iframe 'load' event. But this provides no information on whether Audio login is successful.`);
               });
               aif.src = src;
               DEBUG.debugAudio && console.log(`Initial connect attempt started`);
