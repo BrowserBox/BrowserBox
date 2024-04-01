@@ -19,6 +19,15 @@ navigator.serviceWorker.getRegistrations().then(registrations => {
 
 if (DEBUG.mode == 'prod' && CONFIG.useServiceWorkerToCache && 'serviceWorker' in navigator) {
   const S = navigator.serviceWorker;
+
+  // allow SW to reload the pages if they need to update to fresh content
+  S.addEventListener('message', event => {
+    if ( event.data = 'cache-out-of-sync' ) {
+      console.log('Cache out of sync, reloading page.');
+      globalThis.window.location.reload();
+    }
+  });
+
   S.register(`/sw.js?ver=${VERSION}`).then(registration => {
     console.log('Service Worker registered with scope:', registration.scope);
   })
