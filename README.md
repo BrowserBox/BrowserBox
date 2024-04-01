@@ -6,13 +6,34 @@
 
 [Español&nbsp;(Spanish)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-ES.md) | [עברית&nbsp;(Hebrew)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-HE.md) | [हिन्दी&nbsp;(Hindi)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-HI.md) | [Français&nbsp;(French)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-FR.md) | [Русский&nbsp;(Russian)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-RU.md) | [العربية&nbsp;(Arabic)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-AR.md) | [中文&nbsp;(Chinese)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-ZH.md) | [اردو&nbsp;(Urdu)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-UR.md)
 
+BrowserBox
+==========
+
 > *BrowserBox: a browser you run on a server, rather than your local device. The web **browser** becomes a web **app**. Abstract your web content. Secure your network. Program across sites. Access the web from anywhere, anywhere!*
- 
-BrowserBox is an embeddable, multiplayer browser and reverse proxy that facilitates RBI (remote browser isolation) and zero trust protection, via unrestricted iframes you can embed on any page on any device. 
 
-**March 2024 Update:** Docker install is temporarily disabled due to license violations by noncompliant users. Installing via docker will not currently work.
+BrowserBox is a tiny, web-based browser that's embeddable anywhere. It's also multiplayer, allowing
+many clients to screen share the same browsing session at the same time. It's lightweight and fast, 
+consuming the minimum system resources while adapting its streaming quality to take advantage of as
+much bandwidth as is available to provide a low-lag, responsive experience. 
 
-------
+It's the only remote browser that works seamlessly on mobile devices, because, instead of just using a 
+virtual desktop or VNC layer, we virtualize the browser itself and fully control every part of it, ensuring
+when you view BrowserBox on a mobile device, you get a mobile browser on the server.
+
+[![Screenshot of BrowserBox running on the CloudTabs SaaS][IMG1]][PLAY1]
+
+**[TRY NOW!][PLAY1]**
+
+[![Screenshot of BrowserBox embedded, in this case on Puter.com Internet OS Web Desktop][IMG2]][PLAY2]
+
+**[TRY NOW on Puter.com!][PLAY2]**
+
+[PLAY1]: https://browse.cloudtabs.net/signupless_session
+[PLAY2]: https://puter.com/app/cloudtabs-browserbox
+[IMG1]: https://github.com
+[IMG2]: https://github.com
+
+-------------
 
 ## Install and Run Options
 
