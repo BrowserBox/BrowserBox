@@ -26,10 +26,11 @@ export default function Voodoo({
   } else {
     if ( ! image ) {
       //console.warn(`Did not specify an image to act as the screen, searching for one descending from root`);
-      image = root.querySelector('img');
+      image = root.querySelector('img.frame-holder');
       if ( ! image ) {
         //console.warn(`No image found! Creating one...`);
         image = new Image();
+        image.classList.add('.frame-holder');
         root.appendChild(image);
       }
     } else if ( typeof image == "string" ) {

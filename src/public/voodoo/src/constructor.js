@@ -1435,7 +1435,7 @@
             console.warn(`No canvas found yet`);
             return;
           }
-          ctx.fillStyle = CONFIG.darkMode ? 'black' : 'white';
+          ctx.fillStyle = CONFIG.darkMode ? 'gray' : 'silver';
           if ( !noClear ) {
             ctx.fillRect(0, 0, canv.width, canv.height);
           }
@@ -1468,7 +1468,7 @@
           } else {
             const canv = state.viewState.canvasEl;
             const ctx = state.viewState.ctx;
-            ctx.fillStyle = CONFIG.darkMode ? 'black' : 'white';
+            ctx.fillStyle = CONFIG.darkMode ? 'gray' : 'silver';
             ctx.fillRect(0, 0, canv.width, canv.height);
           }
         }

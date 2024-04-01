@@ -9,22 +9,29 @@
     <meta name="msapplication-TileColor" content="#1e90ff">
     <title>Loading BB...</title>
     <link rel="icon" href="favicon.svg">
+    <link rel="preload" href="hourglass.gif" as=image>
+    <link rel="preload" href="themes/WebPlus_IBM_VGA_9x14.woff" crossorigin as=font>
     <link rel=manifest href=./manifest.webmanifest>
-    <script src=load_local_cookie.js></script>
-    <script type=module src=register_sw.js?v8></script>
     <link rel=stylesheet href=style.css>
     <link rel=stylesheet href=voodoo/src/components/style.css>
+    <link rel=stylesheet href=voodoo/node_modules/bang.html/src/style.css></script>
+    <link rel=stylesheet href=splash/styles.css>
+  </head>
+  <body>
+    <div tabindex=-1 id=debugBox></div>
+    <div id=splash>
+      <div class=image><img src=hourglass.gif /></div>
+      <span class=text>Loading</span>
+      <script src=splash-load.js></script>
+    </div>
+    <script src=load_local_cookie.js></script>
+    <script type=module src=register_sw.js?v8></script>
     <script src=simplepeer.min.js></script>
     <script type=module src=save_tor_params.js></script>
     <script type=module src=resize_helper.js></script>
     <script type=module src=error_catchers.js></script>
     <script type=module src=prod/ask-before-unload.js></script>
     <script type=application/javascript src=voodoo/node_modules/bang.html/src/bang.js></script>
-    <link rel=stylesheet href=voodoo/node_modules/bang.html/src/style.css></script>
-    <link rel=stylesheet no-href=styles/splash.css>
-  </head>
-  <body>
-    <div tabindex=-1 id=debugBox></div>
     <script type=module src=image-start-app.js?fdh234324></script>
     <script type=module src=load-bang.js></script>
     <bb-view state=bbpro></bb-view>

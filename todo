@@ -1,3 +1,4 @@
+- for pulse renice we should only select our own pulseuadio. maybe pgrep -u $(whoami) etc ???
 
 
 

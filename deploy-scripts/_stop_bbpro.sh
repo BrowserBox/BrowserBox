@@ -8,5 +8,6 @@ pm2 delete run-docspark
 pm2 delete devtools-server
 pm2 delete start_audio
 killall node chrome
+pulseaudio -k
 
 exit 0 

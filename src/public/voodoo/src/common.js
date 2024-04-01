@@ -203,7 +203,7 @@ export const CONFIG = Object.freeze({
   centerContextMenuOnMobile: true,
   get darkMode() {
     if ( OPTIONS.useSystemColorScheme ) {
-      const isDark = globalThis.window.matchMedia("screen and (prefers-color-scheme: dark)");
+      const isDark = !!window?.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
       return isDark;
     }
     return OPTIONS.useDarkMode;
