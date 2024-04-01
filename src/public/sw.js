@@ -25,14 +25,7 @@ const excludedPrefixes = [
 // Convert string patterns to RegExp objects
 const regexPatternsToCache = patternsToCache.map(pattern => new RegExp(pattern));
 
-// Revalidation queue for cache updates
-const revalidationQueue = [];
-let isRevalidationRunning = false;
-const BATCH_SIZE = 3;
-const INTERVAL = 60000; // 60 seconds for queue processing
-const FETCH_TIMEOUT = 10000; // 10 seconds for fetch timeout
-
-if ( location.hostname != 'localhost' ) {
+//if ( globalThis?.location?.hostname != 'localhost' ) {
   // Service Worker Install Event
   self.addEventListener('install', event => {
     event.waitUntil(
@@ -99,58 +92,36 @@ if ( location.hostname != 'localhost' ) {
   }
 
   async function checkETagAndRevalidate(request, cachedResponse) {
-    const etagResponse = await caches.open(ETAG_CACHE_NAME).match(request);
-    const etag = etagResponse ? await etagResponse.text() : undefined;
-    if (!etag) {
-      addToRevalidationQueue(request);
-      return;
-    }
+    const etagResponse = await caches.open(ETAG_CACHE_NAME).then(cache => cache.match(request));
+    const etag = etagResponse ? await etagResponse.text() : null;
     fetch(request, {
-      headers: { 'If-None-Match': etag },
+      headers: etag ? { 'If-None-Match': etag } : {},
       signal: (new AbortController()).signal
     }).then(response => {
       if (response.status === 304) {
         console.log('Content not modified');
+        return false;
       } else if (response.ok) {
         const newEtag = response.headers.get('ETag');
-        caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
-        if (newEtag) {
-          caches.open(ETAG_CACHE_NAME).then(cache => cache.put(request, new Response(newEtag)));
+        if ( newEtag !== etag ) {
+          caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
+          if (newEtag) {
+            caches.open(ETAG_CACHE_NAME).then(cache => cache.put(request, new Response(newEtag)));
+          }
+          self.clients.matchAll().then(clients => {
+            clients.forEach(client => {
+              client.postMessage({
+                message: 'content-updated',
+                url: request.url
+              });
+            });
+          });
         }
+        return true;
       }
     }).catch(error => {
       console.error('Revalidation failed:', error);
     });
   }
-
-  function addToRevalidationQueue(request) {
-    const insertIndex = Math.floor(Math.random() * (revalidationQueue.length + 1));
-    revalidationQueue.splice(insertIndex, 0, request);
-    startRevalidationProcess();
-  }
-
-  function startRevalidationProcess() {
-    if (!isRevalidationRunning && revalidationQueue.length > 0) {
-      isRevalidationRunning = true;
-      setTimeout(processRevalidationQueue, INTERVAL);
-    }
-  }
-
-  async function processRevalidationQueue() {
-    for (let i = 0; i < Math.min(BATCH_SIZE, revalidationQueue.length); i++) {
-      const request = revalidationQueue.shift();
-      try {
-        await fetchAndCache(request); // Re-fetch and cache, which will handle ETag comparison
-      } catch (error) {
-        console.error('Failed to revalidate:', request, error);
-        revalidationQueue.push(request); // Optionally re-add failed requests to the queue
-      }
-    }
-    if (revalidationQueue.length > 0) {
-      setTimeout(processRevalidationQueue, INTERVAL);
-    } else {
-      isRevalidationRunning = false;
-    }
-  }
-}
+//}
 

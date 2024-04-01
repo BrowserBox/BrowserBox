@@ -39,6 +39,7 @@
     import {s as R, c as X} from '../node_modules/bang.html/src/vv/vanillaview.js';
 
   // constants
+
     const Connectivity = {
       checker: new InternetChecker(CONFIG.netCheckTimeout, DEBUG.netCheckDebug),
     };

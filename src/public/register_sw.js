@@ -22,9 +22,12 @@ if (DEBUG.mode == 'prod' && CONFIG.useServiceWorkerToCache && 'serviceWorker' in
 
   // allow SW to reload the pages if they need to update to fresh content
   S.addEventListener('message', event => {
-    if ( event.data = 'cache-out-of-sync' ) {
+    if ( event.data.message == 'cache-out-of-sync' ) {
       console.log('Cache out of sync, reloading page.');
       globalThis.window.location.reload();
+    }
+    if (event.data.message === 'content-updated') {
+      CONFIG.logUpdatedContent && console.log(`Content updated for: ${event.data.url}`);
     }
   });
 

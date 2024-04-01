@@ -183,13 +183,14 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  logUpdatedContent: true,
   ensureFrameOnResize: true,
   openServicesInCloudTabs: globalThis?.location?.hostname?.endsWith?.('cloudtabs.net') ? true : OPEN_SERVICES_IN_BROWSER,
   encforceKeyOrdering: true,
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
   get useServiceWorkerToCache() {
-    return globalThis?.location?.hostname !== 'localhost' && true;
+    return true;
   },
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,
