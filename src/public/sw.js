@@ -1,6 +1,7 @@
 // Version variable for cache busting
 const CACHE_VERSION = 'v8.9.0';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
+const ETAG_CACHE_NAME = 'etag-cache-' + CACHE_VERSION;
 
 // Define the patterns to cache as strings
 const patternsToCache = [
@@ -37,11 +38,9 @@ if ( location.hostname != 'localhost' ) {
     event.waitUntil(
       caches.open(CACHE_NAME)
         .then(cache => {
-          // Add initial assets to cache if necessary
-          // const assetsToCache = [...]; // List your assets here if needed
-          // return cache.addAll(assetsToCache);
+          // Your initial cache population can go here if needed
         })
-        .then(() => self.skipWaiting()) // Forces the waiting service worker to become the active service worker
+        .then(() => self.skipWaiting())
     );
   });
 
@@ -51,13 +50,12 @@ if ( location.hostname != 'localhost' ) {
       caches.keys().then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {
-            // Delete old versions of caches
-            if (cacheName !== CACHE_NAME) {
+            if (cacheName !== CACHE_NAME && cacheName !== ETAG_CACHE_NAME) {
               return caches.delete(cacheName);
             }
           })
         );
-      }).then(() => self.clients.claim()) // Claim clients for current page
+      }).then(() => self.clients.claim())
     );
   });
 
@@ -67,44 +65,70 @@ if ( location.hostname != 'localhost' ) {
       event.respondWith(
         caches.match(event.request)
           .then(cachedResponse => {
-            // Cache hit: send it! full seennndd! :) :p xx ;p
             if (cachedResponse) {
-              // Add to revalidation queue
-              addToRevalidationQueue(event.request);
+              // Here we add the request to the revalidation process with ETag checking
+              checkETagAndRevalidate(event.request, cachedResponse);
               return cachedResponse;
             }
-            // Cache miss: fetch and later cache
-            return fetch(event.request).then(response => {
-              //updateCacheAsync(event.request, response.clone());
-              return response;
-            });
+            return fetchAndCache(event.request);
           })
       );
     }
   });
 
-  // Function to determine if a request should be cached
   function shouldCache(request) {
     const url = new URL(request.url);
     const pathname = url.pathname;
-
-    // Check if the request is in the excluded paths
     if (excludedPaths.has(pathname) || excludedPrefixes.some(prefix => pathname.startsWith(prefix))) {
-      return false; // Do not cache if the path is excluded
+      return false;
     }
-
-    // Check if the request matches any of the regex patterns to cache
     return regexPatternsToCache.some(regex => regex.test(request.url));
   }
 
-  // Function to add a request to the revalidation queue at a random position
+  async function fetchAndCache(request) {
+    const response = await fetch(request);
+    if (response.ok) {
+      const clone = response.clone();
+      const etag = response.headers.get('ETag');
+      if (etag) {
+        caches.open(ETAG_CACHE_NAME).then(cache => cache.put(request, new Response(etag)));
+      }
+      caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+    }
+    return response;
+  }
+
+  async function checkETagAndRevalidate(request, cachedResponse) {
+    const etagResponse = await caches.open(ETAG_CACHE_NAME).match(request);
+    const etag = etagResponse ? await etagResponse.text() : undefined;
+    if (!etag) {
+      addToRevalidationQueue(request);
+      return;
+    }
+    fetch(request, {
+      headers: { 'If-None-Match': etag },
+      signal: (new AbortController()).signal
+    }).then(response => {
+      if (response.status === 304) {
+        console.log('Content not modified');
+      } else if (response.ok) {
+        const newEtag = response.headers.get('ETag');
+        caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
+        if (newEtag) {
+          caches.open(ETAG_CACHE_NAME).then(cache => cache.put(request, new Response(newEtag)));
+        }
+      }
+    }).catch(error => {
+      console.error('Revalidation failed:', error);
+    });
+  }
+
   function addToRevalidationQueue(request) {
     const insertIndex = Math.floor(Math.random() * (revalidationQueue.length + 1));
     revalidationQueue.splice(insertIndex, 0, request);
     startRevalidationProcess();
   }
 
-  // Function to start the revalidation process
   function startRevalidationProcess() {
     if (!isRevalidationRunning && revalidationQueue.length > 0) {
       isRevalidationRunning = true;
@@ -112,10 +136,15 @@ if ( location.hostname != 'localhost' ) {
     }
   }
 
-  // Function to process the revalidation queue in batches
   async function processRevalidationQueue() {
     for (let i = 0; i < Math.min(BATCH_SIZE, revalidationQueue.length); i++) {
-      await processRequestWithTimeout(revalidationQueue.shift(), FETCH_TIMEOUT);
+      const request = revalidationQueue.shift();
+      try {
+        await fetchAndCache(request); // Re-fetch and cache, which will handle ETag comparison
+      } catch (error) {
+        console.error('Failed to revalidate:', request, error);
+        revalidationQueue.push(request); // Optionally re-add failed requests to the queue
+      }
     }
     if (revalidationQueue.length > 0) {
       setTimeout(processRevalidationQueue, INTERVAL);
@@ -123,60 +152,5 @@ if ( location.hostname != 'localhost' ) {
       isRevalidationRunning = false;
     }
   }
-
-  // Function to process a request with a fetch timeout
-  async function processRequestWithTimeout(request, timeout) {
-    try {
-      const controller = new AbortController();
-      const signal = controller.signal;
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-      const response = await fetch(request, { signal });
-      clearTimeout(timeoutId);
-
-      if (!response || response.status !== 200 || response.type !== 'basic') {
-        throw new Error('Invalid response');
-      }
-
-      const responseToCache = response.clone();
-      caches.open(CACHE_NAME).then(cache => {
-        cache.put(request, responseToCache);
-      });
-    } catch (error) {
-      console.error('Revalidation failed for request:', request.url, error);
-      // Re-add to the end of the queue
-      revalidationQueue.push(request);
-    }
-  }
-
-  // Function to cache and return the response
-  function cacheAndReturn(response) {
-    if (!response || response.status !== 200 || response.type !== 'basic') {
-      return response;
-    }
-    const responseToCache = response.clone();
-    caches.open(CACHE_NAME).then(cache => {
-      cache.put(response.url, responseToCache);
-    });
-    return response;
-  }
-
-  // Function to asynchronously update the cache
-  function updateCacheAsync(request, responseToCache = null) {
-    // Use a delay if desired, or just proceed to update the cache
-    setTimeout(() => {
-      // If responseToCache is null, fetch it
-      const responsePromise = responseToCache ? Promise.resolve(responseToCache) : fetch(request);
-      responsePromise.then(response => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return;
-        }
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(request, response);
-        });
-      });
-    }, 2); // Adjust the delay as needed (0 means it will run as soon as the main execution stack is clear)
-  }
 }
-   
 
