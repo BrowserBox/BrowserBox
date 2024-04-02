@@ -14,7 +14,7 @@ else
   echo "Waiting for OS to catch up. We are too fast..."
   sleep 1
   echo "Running parcel clientless remote browser isolation build step..."
-  CONFIG_DIR=./config/ npx parcel build src/public/image.html --no-optimize --no-source-maps --config=./config/parcelrc 
+  CONFIG_DIR=./config/ npx parcel build src/public/image.html --no-source-maps --config=./config/parcelrc 
 fi
 echo "Ensuring client has access to framework..."
 cp -r src/public/voodoo/node_modules dist/node_modules
