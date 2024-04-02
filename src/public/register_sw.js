@@ -1,22 +1,22 @@
-navigator.serviceWorker.getRegistrations().then(registrations => {
-  registrations.forEach(registration => {
-    // Extract the version from the scriptURL
-    if ( registration?.active?.scriptURL ) {
-      let url = new URL(registration?.active?.scriptURL);
-      let version = url.searchParams.get('ver');
-
-      // Unregister if the version does not match
-      if (version !== VERSION) {
-        console.log('Unregistering', url);
-        registration.unregister().then(bool => {
-          if (bool) console.log('Unregistered an old service worker.');
-        });
-      }
-    }
-  });
-});
-
 import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(registration => {
+      // Extract the version from the scriptURL
+      if ( registration?.active?.scriptURL ) {
+        let url = new URL(registration?.active?.scriptURL);
+        let version = url.searchParams.get('ver');
+
+        // Unregister if the version does not match
+        if (version !== VERSION) {
+          console.log('Unregistering', url);
+          registration.unregister().then(bool => {
+            if (bool) console.log('Unregistered an old service worker.');
+          });
+        }
+      }
+    });
+  });
+
   if (DEBUG.mode == 'prod' && CONFIG.useServiceWorkerToCache && 'serviceWorker' in navigator) {
     const S = navigator.serviceWorker;
 
