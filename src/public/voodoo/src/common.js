@@ -213,6 +213,7 @@ export const CONFIG = Object.freeze({
   settingsButton: false,
   useBlankWindowForProtocolLaunch: false,
   removeAudioStartHandlersAfterFirstStart: false, 
+  onlyStartAudioBeginSoundOnce: false,
   uiDefaultOff: false,
   magicBar: false,
   audioServiceFileName: 'audio.srv',
