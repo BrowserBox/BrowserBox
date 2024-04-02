@@ -6,6 +6,8 @@ import {DEBUG, sleep, deviceIsMobile as isMobile} from './voodoo/src/common.js';
     let repeat = true;
 
   //window.addEventListener('load', resizeAndReport, {once:true});
+  resizeAndReport();
+
   window.addEventListener('message', ({data,origin}) => {
     const target = new URL(location);
     target.port = parseInt(location.port) - 1;
@@ -53,7 +55,6 @@ import {DEBUG, sleep, deviceIsMobile as isMobile} from './voodoo/src/common.js';
     }
   });
 
-  resizeAndReport();
   async function resizeAndReport() {
     if ( running ) return;
     await sleep(500);

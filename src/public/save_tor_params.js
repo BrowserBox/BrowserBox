@@ -1,13 +1,14 @@
 import {CONFIG} from './voodoo/src/common.js';
 
-// some services (audio and devtools) require the client to know their URL in order to connect. 
-// in the case of tor we can't calculate from ports as there are independent random addresses
-// this function saves these to local storage for later so we don't always have to provide them
-// in the url. It's expected that for a given main app onion address (hidden service) the 
-// audio and devtools addresses will remain as they are. In other words, all services in an 
-// instance will update their addresses in sync, whent he service as a whole is restarted. 
-// but for the duration of a single run, the addresses are consistent, and so local storage
-// is a good way for the main service to store these other addresses against its own
+// Note
+  // some services (audio and devtools) require the client to know their URL in order to connect. 
+  // in the case of tor we can't calculate from ports as there are independent random addresses
+  // this function saves these to local storage for later so we don't always have to provide them
+  // in the url. It's expected that for a given main app onion address (hidden service) the 
+  // audio and devtools addresses will remain as they are. In other words, all services in an 
+  // instance will update their addresses in sync, whent he service as a whole is restarted. 
+  // but for the duration of a single run, the addresses are consistent, and so local storage
+  // is a good way for the main service to store these other addresses against its own
 
 saveTorParams();
 

@@ -2,6 +2,7 @@ import Voodoo from './voodoo/index.js';
 import getAPI from './getAPI.js';
 import {default as image_translator} from './translateVoodooCRDP.js';
 
+// main start
 globalThis._restartApp = start_app;
 globalThis._sessionToken = () => {
   let sessionToken = location.hash && location.hash.slice(1);
