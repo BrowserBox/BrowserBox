@@ -3,7 +3,7 @@ import {DEBUG, CONFIG, VERSION} from './voodoo/src/common.js';
 navigator.serviceWorker.getRegistrations().then(registrations => {
   registrations.forEach(registration => {
     // Extract the version from the scriptURL
-    if ( registrations?.active?.scriptURL ) {
+    if ( registration?.active?.scriptURL ) {
       let url = new URL(registration?.active?.scriptURL);
       let version = url.searchParams.get('ver');
 
