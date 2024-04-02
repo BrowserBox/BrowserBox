@@ -656,9 +656,9 @@
                         fetchedData = new Float32Array( 0 );
 
                         const ensureResume = () => {
-                          if ( ! ctx ) return beginSound();
+                          if ( ! ctx ) return;
                           ctx && ctx.resume();
-                          CONFIG.onlyStartAudioBeginSoundOnce && document.removeEventListener('click', ensureResume);
+                          document.removeEventListener('click', ensureResume);
                         };
 
                         document.addEventListener('click', ensureResume);
@@ -667,8 +667,8 @@
                         beginSound();
 
                         function beginSound() {
-                          if ( ctx.state == 'running' ) return;
-                          if ( ctx.state == 'closed' ) ctx = null;
+                          if ( ctx?.state == 'running' ) return;
+                          if ( ctx?.state == 'closed' ) ctx = null;
                           if ( stopped || !ctx ) {
                             stopped = false;
                             active = true;
@@ -684,83 +684,83 @@
                             gain.connect( ctx.destination );
                           }
 
-                          connectaudio();
-                          readingloop();
+                          connectAudio();
+                          readingLoop();
                         }
 
-                        function connectaudio() {
-                          // 0 - connecting, 1 - open, 2 - closing, 3 - closed
-                          if ( ws?.readystate < 2 ) return;
-                          debug.debugaudio && console.log(`creating websocket...`);
-                          ws = new websocket(wsuri);
-                          debug.debugaudio && console.log('create ws');
-                          debug.debugaudio && console.log(`created`, ws);
-                          ws.binarytype = 'arraybuffer';
+                        function connectAudio() {
+                          // 0 - CONNECTING, 1 - OPEN, 2 - CLOSING, 3 - CLOSED
+                          if ( ws?.readyState < 2 ) return;
+                          DEBUG.debugAudio && console.log(`Creating websocket...`);
+                          ws = new WebSocket(wsUri);
+                          DEBUG.debugAudio && console.log('Create ws');
+                          DEBUG.debugAudio && console.log(`Created`, ws);
+                          ws.binaryType = 'arraybuffer';
 
-                          ws.addeventlistener('open', msg => {
-                            debug.debugaudio && console.log('ws open');
-                            debug.debugaudio && console.log(`audio websocket connected`, msg);
-                            state.audioconnected = true;
-                            state.settopstate();
-                            audioreconnectms = audio_reconnect_ms;
-                            settimeout(activateaudio, 0);
-                            readingloop();
-                            state.refreshviews();
+                          ws.addEventListener('open', msg => {
+                            DEBUG.debugAudio && console.log('ws open');
+                            DEBUG.debugAudio && console.log(`Audio websocket connected`, msg);
+                            state.audioConnected = true;
+                            state.setTopState();
+                            audioReconnectMs = AUDIO_RECONNECT_MS;
+                            setTimeout(activateAudio, 0);
+                            readingLoop();
+                            state.refreshViews();
                           });
 
-                          ws.addeventlistener('close', msg => {
-                            debug.debugaudio && console.log(`audio websocket closing`, msg); 
-                            state.audioconnected = false;
-                            audioreconnectms = audio_reconnect_ms;
-                            settimeout(audioreconnect, 0);
-                            state.settopstate();
+                          ws.addEventListener('close', msg => {
+                            DEBUG.debugAudio && console.log(`Audio websocket closing`, msg); 
+                            state.audioConnected = false;
+                            audioReconnectMs = AUDIO_RECONNECT_MS;
+                            setTimeout(audioReconnect, 0);
+                            state.setTopState();
                           });
 
-                          ws.addeventlistener('message', async msg => {
-                            debug.debugaudioacks && console.log('client got msg %s', msg.data.length || msg.data.bytelength);
+                          ws.addEventListener('message', async msg => {
+                            DEBUG.debugAudioAcks && console.log('client got msg %s', msg.data.length || msg.data.byteLength);
                             send("ack");
                             if ( typeof msg.data === "string" ) {
-                              debug.debugaudioack && console.log('audio ws message', msg.data);
+                              DEBUG.debugAudioAck && console.log('audio ws message', msg.data);
                               return;
                             }
                             
-                            const audiobuffer = new int16array(msg.data);
-                            fetcheddata = concat(fetcheddata, audiobuffer);
-                            if ( !is_reading && fetcheddata.length >= min_sample_size ) {
-                              readingloop();
+                            const audioBuffer = new Int16Array(msg.data);
+                            fetchedData = concat(fetchedData, audioBuffer);
+                            if ( !is_reading && fetchedData.length >= min_sample_size ) {
+                              readingLoop();
                             }
                           });
 
-                          ws.addeventlistener('error', async err => {
-                            console.warn('audio websocket client got error', err);
-                            state.audioconnected = false;
-                            audioreconnect(err);
-                            state.settopstate();
+                          ws.addEventListener('error', async err => {
+                            console.warn('Audio websocket client got error', err);
+                            state.audioConnected = false;
+                            audioReconnect(err);
+                            state.setTopState();
                           });
                         }
 
-                        async function audioreconnect(msg) {
-                          debug.debugaudio && console.log(`audio websocket waiting ${audioreconnectms}ms...`, {msg});
-                          await sleep(audioreconnectms);
-                          audioreconnectms *= audio_reconnect_multiplier;
-                          if ( audioreconnectms <= audio_reconnect_max ) {
-                            debug.debugaudio && console.log(`audio websocket attempting reconnect...`);
-                            settimeout(connectaudio, 0); 
+                        async function audioReconnect(msg) {
+                          DEBUG.debugAudio && console.log(`Audio websocket waiting ${audioReconnectMs}ms...`, {msg});
+                          await sleep(audioReconnectMs);
+                          audioReconnectMs *= AUDIO_RECONNECT_MULTIPLIER;
+                          if ( audioReconnectMs <= AUDIO_RECONNECT_MAX ) {
+                            DEBUG.debugAudio && console.log(`Audio websocket attempting reconnect...`);
+                            setTimeout(connectAudio, 0); 
                           } else {
-                            const keeptrying = confirm(
-                              "we haven't been about to connect to the audio service for a while. should we keep trying?"
+                            const keepTrying = confirm(
+                              "We haven't been about to connect to the audio service for a while. Should we keep trying?"
                             );
-                            if ( keeptrying ) {
-                              audioreconnectms = audio_reconnect_ms;
-                              settimeout(audioreconnect, 0);
+                            if ( keepTrying ) {
+                              audioReconnectMs = AUDIO_RECONNECT_MS;
+                              setTimeout(audioReconnect, 0);
                             }
                           }
                         }
 
                         function readingLoop() {
-                          if ( stopped || fetcheddata.length < min_sample_size ) {
+                          if ( stopped || fetchedData.length < min_sample_size ) {
                             is_reading = false;
-                            debug.debugaudio && console.log('not playing');
+                            DEBUG.debugAudio && console.log('not playing');
                             return;
                           }
 
