@@ -33,7 +33,7 @@ if (DEBUG.mode == 'prod' && CONFIG.useServiceWorkerToCache && 'serviceWorker' in
   });
 
   S.register(`/sw.js?ver=${VERSION}`).then(registration => {
-    console.log('Service Worker registered with scope:', registration.scope);
+    console.log(`Service Worker registered with scope: ${registration.scope} and version: ${VERSION}`);
   })
   .catch(error => {
     console.error('Service Worker registration failed:', error);
