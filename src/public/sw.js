@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v8.9.0';
+const CACHE_VERSION = 'v8.9.3';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'etag-cache-' + CACHE_VERSION;
 
@@ -61,8 +61,10 @@ const regexPatternsToCache = patternsToCache.map(pattern => new RegExp(pattern))
             if (cachedResponse) {
               // Here we add the request to the revalidation process with ETag checking
               checkETagAndRevalidate(event.request, cachedResponse);
+              console.log('Returning cached response for', event.request);
               return cachedResponse;
             }
+            console.log('Returning and caching new response for', event.request);
             return fetchAndCache(event.request);
           })
       );
