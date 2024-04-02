@@ -9,6 +9,7 @@ navigator.serviceWorker.getRegistrations().then(registrations => {
 
       // Unregister if the version does not match
       if (version !== VERSION) {
+        console.log('Unregistering', url);
         registration.unregister().then(bool => {
           if (bool) console.log('Unregistered an old service worker.');
         });
