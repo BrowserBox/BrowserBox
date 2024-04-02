@@ -17,6 +17,15 @@ export default function setupErrorCatchers() {
   });
 }
 
+function extractMeat(list) {
+  const meatIndex = list.findIndex(val => !! val && val.message || val.stack);
+  if ( meatIndex == -1 || meatIndex == undefined ) {
+    return "";
+  } else {
+    return list[meatIndex];
+  }
+}
+
 function func() {
   if ( isMobile() ) {
     return (...x) => {
@@ -33,14 +42,4 @@ function func() {
     return (a, ...x) => (console.log(a), console.log(...x));
   }
 }
-
-function extractMeat(list) {
-  const meatIndex = list.findIndex(val => !! val && val.message || val.stack);
-  if ( meatIndex == -1 || meatIndex == undefined ) {
-    return "";
-  } else {
-    return list[meatIndex];
-  }
-}
-
 

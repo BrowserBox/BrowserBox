@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v8.9.3';
+const CACHE_VERSION = 'v8.9.4';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'etag-cache-' + CACHE_VERSION;
 
