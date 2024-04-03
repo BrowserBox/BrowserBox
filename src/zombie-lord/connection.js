@@ -104,6 +104,7 @@ const WAIT_FOR_COALESCED_NETWORK_EVENTS = 1000
 
 import {
   deskUA_Mac_FF,
+  deskUA_Mac_Chrome,
   mobUA_iOSFF,
   deskPLAT_Mac,
   mobPLAT_iOS,
@@ -149,7 +150,8 @@ const Area51Long = -115.80666344;
 const INTENT_PROMPT_THRESHOLD = 30000;
 
 const mobUA = mobUA_iOSFF;
-const deskUA = deskUA_Mac_FF;
+//const deskUA = deskUA_Mac_FF;
+const deskUA = deskUA_Mac_Chrome;
 const mobPLAT = mobPLAT_iOS;
 const deskPLAT = deskPLAT_Mac;
 const UA = deskUA;
