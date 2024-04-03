@@ -8,48 +8,45 @@
 // https://infosimples.github.io/detect-headless/
 
 {
-  // outer height and width
-    try {
-      Object.defineProperty(globalThis.window, 'outerHeight', {value: window.innerHeight + 80}); // BB chrome is 80 pix high
-      Object.defineProperty(globalThis.window, 'outerWidth', {value: window.innerWidth});
-    } catch(e) {
-      console.warn(`Inner and outer height not overriden`);
-    }
+  /* eslint-disable no-inner-declarations */
+  // Pass the Webdriver Test.
+    const newProto = navigator.__proto__;
+    delete newProto.webdriver;
+    navigator.__proto__ = newProto;
 
-  // webdriver, connection.rtt, and chrome properties
-    try {
-      Object.defineProperty(navigator, 'webdriver', {value: false})
-    } catch(e) {
-      console.warn(`Webdriver not overriden`);
-    }
+  // Pass the Chrome Test.
+    // We can mock this in as much depth as we need for the test.
+    window.chrome = {
+      runtime: {}
+    };
 
-    try {
-      Object.defineProperty(navigator.connection, 'rtt', {value: 50})
-    } catch(e) {
-      console.warn(`connection.rtt not overriden`);
-    }
+  // Pass the Permissions Test.
+    const originalQuery = window.navigator.permissions.query;
+    window.navigator.permissions.__proto__.query = parameters =>
+      parameters.name === 'notifications'
+        ? Promise.resolve({state: Notification.permission})
+        : originalQuery(parameters);
 
-    try {
-      const chrome = {
-        app: Object.assign(
-          {}, 
-          JSON.parse(
-            '{"isInstalled":false,"InstallState":{"DISABLED":"disabled","INSTALLED":"installed","NOT_INSTALLED":"not_installed"},"RunningState":{"CANNOT_RUN":"cannot_run","READY_TO_RUN":"ready_to_run","RUNNING":"running"}}'
-          ), 
-          {
-            getDetails: () => null,
-            getIsInstalled: () => null,
-            installState: () => null,
-            runningState: () => null,
-          }
-        ),
-        loadTimes: () => null,
-        csi: () => null,
-      };
-      Object.defineProperty(globalThis, 'chrome', {value: chrome});
-    } catch(e) {
-      console.warn(`navigator.chrome not set`);
-    }
+      // Inspired by: https://github.com/ikarienator/phantomjs_hide_and_seek/blob/master/5.spoofFunctionBind.js
+      const oldCall = Function.prototype.call;
+      function call() {
+          return oldCall.apply(this, arguments);
+      }
+      Function.prototype.call = call;
+
+      const nativeToStringFunctionString = Error.toString().replace(/Error/g, "toString");
+      const oldToString = Function.prototype.toString;
+
+      function functionToString() {
+        if (this === window.navigator.permissions.query) {
+          return "function query() { [native code] }";
+        }
+        if (this === functionToString) {
+          return nativeToStringFunctionString;
+        }
+        return oldCall.call(oldToString, this);
+      }
+      Function.prototype.toString = functionToString;
 
   // Pass the Plugins Length Test.
     // Overwrite the `plugins` property to use a custom getter.
@@ -123,13 +120,15 @@
     const {PluginArray, MimeTypeArray} = getPluginsClasses();
 
     try {
-      Object.defineProperty(navigator, 'plugins', {value: PluginArray});
+      delete newProto.plugins;
+      newProto.plugins = PluginArray;
     } catch(e) {
       console.log(JSON.stringify({msg:`navigator.plugins needs workaround.`}));
     }
 
     try {
-      Object.defineProperty(navigator, 'mimeTypes', {value: MimeTypeArray});
+      delete newProto.mimeTypes;
+      newProto.mimeTypes = MimeTypeArray;
     } catch(e) {
       console.log(JSON.stringify({msg:`navigator.mimeTypes needs workaround.`}));
     }
@@ -256,4 +255,60 @@
           Object.freeze(this);
         }
       }
+
+  // Pass the Languages Test.
+    try {
+      Object.defineProperty(navigator, 'languages', {
+        get: () => ['en-US', 'en']
+      });
+    } catch(e) {
+      console.log(JSON.stringify({msg:`navigator.languages needs workaround.`}));
+    }
+
+  // [caution] Pass the iframe Test
+    /** careful with this, it might break something (overriding contentWindow on an iframe?
+      what if a page relies on an actual value for this ?? **/
+    /**
+    /**
+    Object.defineProperty(HTMLIFrameElement.prototype, 'contentWindow', {
+      get: function() {
+        return window;
+      }
+    });
+    **/
+
+  // [caution] Pass toString test, though it breaks console.debug() from working
+    window.console.debug = () => {
+      return null;
+    };
+
+   // Pass the connection rtt test
+    delete newProto.connection;
+    newProto.connection = new EventTarget();
+    const data = {
+      rtt:50, 
+      type:"unknown", 
+      effectiveType:"4g", 
+      downlinkMax:Infinity, 
+      downlink:(Math.random()*15).toFixed(1), 
+      saveData: false,
+      onchange: null,
+      ontypechange: null,
+    };
+    Object.assign(newProto.connection, data);
+
+   // Pass the MouseEvent movementX/Y test
+    const mouseProto = MouseEvent.prototype;
+    delete mouseProto.movementX;
+    delete mouseProto.movementY;
+    mouseProto.movementX = 10;
+    mouseProto.movementY = 10;
+
+     document.addEventListener('mousemove',e => {
+      e.__proto__ = mouseProto;
+      //const {clientX,clientY,movementX,movementY} = e;
+      //console.log(JSON.stringify({mm:{clientX,clientY,movementX,movementY}}));
+     }, {capture:true});
+  
+  /* eslint-enable no-inner-declarations */
 }

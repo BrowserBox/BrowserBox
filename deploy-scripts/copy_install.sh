@@ -53,6 +53,12 @@ $SUDO cp $INSTALL_DIR/deploy-scripts/_stop_bbpro.sh $COMMAND_DIR/stop_bbpro
 
 echo "Copied!"
 
+echo -n "Copying msgme command to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/_msgme.sh $COMMAND_DIR/msgme
+
+echo "Copied!"
+
 echo -n "Copying torbb command to $COMMAND_DIR/ ..."
 
 $SUDO cp $INSTALL_DIR/deploy-scripts/_torbb.sh $COMMAND_DIR/torbb
