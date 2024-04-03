@@ -30,9 +30,8 @@ when you view BrowserBox on a mobile device, you get a mobile browser on the ser
 
 [PLAY1]: https://browse.cloudtabs.net/signupless_session
 [PLAY2]: https://puter.com/app/cloudtabs-browserbox
-[IMG1]: https://github.com/BrowserBox/BrowserBox/assets/22254235/36d6370a-aafc-40bf-bbbd-87540b7b379b
-[IMG2]: https://github.com/BrowserBox/BrowserBox/assets/22254235/9b6b8f4f-fd8b-4c00-914e-658c3cbfbdb0
-
+[IMG1]: https://github.com/BrowserBox/BrowserBox/assets/22254235/599945e3-f2f9-416f-9a0e-fd0720fa8e87
+[IMG2]: https://github.com/BrowserBox/BrowserBox/assets/22254235/bfdbe7b2-a713-4add-83f7-9e10a9fd3e2f
 -------------
 
 ## Install and Run Options
