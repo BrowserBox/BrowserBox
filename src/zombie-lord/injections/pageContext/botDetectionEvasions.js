@@ -284,7 +284,8 @@
 
    // Pass the connection rtt test
     delete newProto.connection;
-    newProto.connection = {
+    newProto.connection = new EventTarget();
+    const data = {
       rtt:50, 
       type:"unknown", 
       effectiveType:"4g", 
@@ -294,6 +295,7 @@
       onchange: null,
       ontypechange: null,
     };
+    Object.assign(newProto.connection, data);
 
    // Pass the MouseEvent movementX/Y test
     const mouseProto = MouseEvent.prototype;
