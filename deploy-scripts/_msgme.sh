@@ -15,7 +15,7 @@ fi
 USERNAME="$1"
 MESSAGE="$2"
 NOTICES_PATH="/home/$USERNAME/.config/dosyago/bbpro/notices/text"
-PID_FILE_PATH="/home/$USERNAME/.config/dosyago/bbpro/app-\$PORT.pd"
+PID_FILE_PATH="/home/$USERNAME/.config/dosyago/bbpro/app-\$PORT.pid"
 LOGIN_LINK_FILE="/home/$USERNAME/.config/dosyago/bbpro/login.link"
 
 # Check for root or sudo access if the script user is not the target user
@@ -29,10 +29,11 @@ if [[ $USERNAME != "$(whoami)" ]]; then
 fi
 
 # Write the message
-sudo echo "$MESSAGE" > "$NOTICES_PATH" 2>/dev/null || { echo "Failed to write message. Check permissions and user existence." >&2; exit 3; }
+sudo -u $USERNAME mkdir -p "$(dirname "$NOTICES_PATH")"
+echo "$MESSAGE" | sudo tee "$NOTICES_PATH" 2>/dev/null || { echo "Failed to write message. Check permissions and user existence." >&2; exit 3; }
 
 # Extract port and update PID_FILE_PATH
-PORT=$(sudo grep -Po '(?<=://)[^:/]+' "$LOGIN_LINK_FILE" | cut -d':' -f2) 2>/dev/null
+PORT=$(sudo cat "$LOGIN_LINK_FILE" | grep -Po '(?<=:)\d+' | head -n 1) 2>/dev/null
 if [[ -z "$PORT" ]]; then
   echo "Failed to extract port from login link." >&2
   exit 4
