@@ -8,26 +8,48 @@
 // https://infosimples.github.io/detect-headless/
 
 {
+  // outer height and width
+    try {
+      Object.defineProperty(globalThis.window, 'outerHeight', {value: window.innerHeight + 80}); // BB chrome is 80 pix high
+      Object.defineProperty(globalThis.window, 'outerWidth', {value: window.innerWidth});
+    } catch(e) {
+      console.warn(`Inner and outer height not overriden`);
+    }
+
   // webdriver, connection.rtt, and chrome properties
-    Object.defineProperty(navigator, 'webdriver', {value: false})
-    Object.defineProperty(navigator.connection, 'rtt', {value: 50})
-    const chrome = {
-      app: Object.assign(
-        {}, 
-        JSON.parse(
-          '{"isInstalled":false,"InstallState":{"DISABLED":"disabled","INSTALLED":"installed","NOT_INSTALLED":"not_installed"},"RunningState":{"CANNOT_RUN":"cannot_run","READY_TO_RUN":"ready_to_run","RUNNING":"running"}}'
-        ), 
-        {
-          getDetails: () => null,
-          getIsInstalled: () => null,
-          installState: () => null,
-          runningState: () => null,
-        }
-      ),
-      loadTimes: () => null,
-      csi: () => null,
-    };
-    Object.defineProperty(globalThis, 'chrome', {value: chrome});
+    try {
+      Object.defineProperty(navigator, 'webdriver', {value: false})
+    } catch(e) {
+      console.warn(`Webdriver not overriden`);
+    }
+
+    try {
+      Object.defineProperty(navigator.connection, 'rtt', {value: 50})
+    } catch(e) {
+      console.warn(`connection.rtt not overriden`);
+    }
+
+    try {
+      const chrome = {
+        app: Object.assign(
+          {}, 
+          JSON.parse(
+            '{"isInstalled":false,"InstallState":{"DISABLED":"disabled","INSTALLED":"installed","NOT_INSTALLED":"not_installed"},"RunningState":{"CANNOT_RUN":"cannot_run","READY_TO_RUN":"ready_to_run","RUNNING":"running"}}'
+          ), 
+          {
+            getDetails: () => null,
+            getIsInstalled: () => null,
+            installState: () => null,
+            runningState: () => null,
+          }
+        ),
+        loadTimes: () => null,
+        csi: () => null,
+      };
+      Object.defineProperty(globalThis, 'chrome', {value: chrome});
+    } catch(e) {
+      console.warn(`navigator.chrome not set`);
+    }
 
   // Pass the Plugins Length Test.
     // Overwrite the `plugins` property to use a custom getter.
@@ -234,5 +256,4 @@
           Object.freeze(this);
         }
       }
-
 }
