@@ -30,7 +30,7 @@ fi
 
 # Write the message
 sudo -u $USERNAME mkdir -p "$(dirname "$NOTICES_PATH")"
-echo "$MESSAGE" | sudo tee "$NOTICES_PATH" 2>/dev/null || { echo "Failed to write message. Check permissions and user existence." >&2; exit 3; }
+echo "$MESSAGE" | sudo tee "$NOTICES_PATH" &>/dev/null || { echo "Failed to write message. Check permissions and user existence." >&2; exit 3; }
 
 # Extract port and update PID_FILE_PATH
 PORT=$(sudo cat "$LOGIN_LINK_FILE" | grep -Po '(?<=:)\d+' | head -n 1) 2>/dev/null
