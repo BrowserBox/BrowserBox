@@ -7,7 +7,8 @@ pm2 delete basic-bb-main-service
 pm2 delete run-docspark
 pm2 delete devtools-server
 pm2 delete start_audio
-killall node chrome
+killall -u $(whoami) node chrome pulseaudio
 pulseaudio -k
 
 exit 0 
+
