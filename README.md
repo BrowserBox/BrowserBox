@@ -9,6 +9,8 @@
 BrowserBox
 ==========
 
+<a href="https://www.producthunt.com/posts/cloudtabs?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-cloudtabs" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=449033&theme=light" alt="CloudTabs - Your&#0032;browser&#0032;in&#0032;the&#0032;cloud&#0033; | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+
 > *BrowserBox: a browser you run on a server, rather than your local device. The web **browser** becomes a web **app**. Abstract your web content. Secure your network. Program across sites. Access the web from anywhere, anywhere!*
 
 BrowserBox is a tiny, web-based browser that's embeddable anywhere. It's also multiplayer, allowing
