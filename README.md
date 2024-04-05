@@ -2,13 +2,14 @@
 |  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1>　BrowserBox 　</h1> |
 |------|------|
 
-#  　 　*meta web browser* 　  　 　
+<a href="https://www.producthunt.com/posts/cloudtabs-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-cloudtabs&#0045;1" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=449256&theme=neutral" alt="CloudTabs - A&#0032;browser&#0032;in&#0032;a&#0032;computer&#0032;in&#0032;your&#0032;browser | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 [Español&nbsp;(Spanish)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-ES.md) | [עברית&nbsp;(Hebrew)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-HE.md) | [हिन्दी&nbsp;(Hindi)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-HI.md) | [Français&nbsp;(French)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-FR.md) | [Русский&nbsp;(Russian)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-RU.md) | [العربية&nbsp;(Arabic)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-AR.md) | [中文&nbsp;(Chinese)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-ZH.md) | [اردو&nbsp;(Urdu)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-UR.md)
 
 BrowserBox
 ==========
 
+🥳 [Come support us on ProductHunt! Launched our Puter App April 5 2024](https://www.producthunt.com/posts/cloudtabs-1) 🚀
 
 >*BrowserBox: a browser you run on a server, rather than your local device. The web **browser** becomes a web **app**. Abstract your web content. Secure your network. Program across sites. Access the web from anywhere, anywhere!*
 
