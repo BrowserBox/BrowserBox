@@ -33,6 +33,7 @@ when you view BrowserBox on a mobile device, you get a mobile browser on the ser
 [PLAY2]: https://puter.com/app/cloudtabs-browserbox
 [IMG1]: https://github.com/BrowserBox/BrowserBox/assets/22254235/599945e3-f2f9-416f-9a0e-fd0720fa8e87
 [IMG2]: https://github.com/BrowserBox/BrowserBox/assets/22254235/bfdbe7b2-a713-4add-83f7-9e10a9fd3e2f
+
 -------------
 
 ## Install and Run Options
