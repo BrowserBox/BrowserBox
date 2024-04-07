@@ -9,8 +9,6 @@
 BrowserBox
 ==========
 
-🥳 [Come support us on ProductHunt! Launched our Puter App April 5 2024](https://www.producthunt.com/posts/cloudtabs-1) 🚀
-
 >*BrowserBox: a browser you run on a server, rather than your local device. The web **browser** becomes a web **app**. Abstract your web content. Secure your network. Program across sites. Access the web from anywhere, anywhere!*
 
 BrowserBox is a tiny, web-based browser that's embeddable anywhere. It's also multiplayer, allowing
