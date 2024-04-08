@@ -40,6 +40,7 @@ export function applyHandlers(app, STATIC_DIR) {
   });
 }
 
+// run hexServer as a standalone, for testing only
 if ( import.meta.url === `file://${process.argv[1]}` ) {
   const app = express();
   const port = 3000;
@@ -47,7 +48,7 @@ if ( import.meta.url === `file://${process.argv[1]}` ) {
   applyHandlers(app);
 
   app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}/`);
+    console.log(`Test hexServer Server running at http://localhost:${port}/`);
   });
 }
 
@@ -66,7 +67,11 @@ function runWorker({req, res, command, filePath, cursor}, STATIC_DIR) {
   if (!workerId || !worker) {
     worker = fork(path.join('src', 'hexReader.mjs'));
     if ( ! req.session[filePath] ) {
-      req.session[filePath] = {};
+      if ( filePath !== '__proto__' && filePath.includes('/') ) {
+        req.session[filePath] = {};
+      } else {
+        throw new Error(`runWorker received garbled filePath: ${filePath}`);
+      }
     }
     workerId = nextId();
     sessionToWorker.set(workerId, worker);
