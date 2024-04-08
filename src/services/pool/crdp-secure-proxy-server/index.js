@@ -10,6 +10,7 @@ import WebSocket from 'ws';
 //import {WebSocketServer} from 'ws';
 import compression from 'compression';
 import exitOnExpipe from 'exit-on-epipe';
+import rateLimit from 'express-rate-limit';
 
 import {
   DEBUG,
@@ -62,7 +63,15 @@ const SOCKETS = new Map();
 const internalEndpointRegex = /ws=localhost(:\d+)?([\/\w.-]+)/g;
 //const internalEndpointRegex = /ws=localhost/g;
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
 const app = express();
+app.use(limiter);
 app.use(compression());
 app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());

@@ -2,14 +2,14 @@
 |  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1>　BrowserBox 　</h1> |
 |------|------|
 
-#  　 　*meta web browser* 　  　 　
+<a href="https://www.producthunt.com/posts/cloudtabs-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-cloudtabs&#0045;1" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=449256&theme=neutral" alt="CloudTabs - A&#0032;browser&#0032;in&#0032;a&#0032;computer&#0032;in&#0032;your&#0032;browser | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 [Español&nbsp;(Spanish)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-ES.md) | [עברית&nbsp;(Hebrew)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-HE.md) | [हिन्दी&nbsp;(Hindi)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-HI.md) | [Français&nbsp;(French)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-FR.md) | [Русский&nbsp;(Russian)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-RU.md) | [العربية&nbsp;(Arabic)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-AR.md) | [中文&nbsp;(Chinese)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-ZH.md) | [اردو&nbsp;(Urdu)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-UR.md)
 
 BrowserBox
 ==========
 
-> *BrowserBox: a browser you run on a server, rather than your local device. The web **browser** becomes a web **app**. Abstract your web content. Secure your network. Program across sites. Access the web from anywhere, anywhere!*
+>*BrowserBox: a browser you run on a server, rather than your local device. The web **browser** becomes a web **app**. Abstract your web content. Secure your network. Program across sites. Access the web from anywhere, anywhere!*
 
 BrowserBox is a tiny, web-based browser that's embeddable anywhere. It's also multiplayer, allowing
 many clients to screen share the same browsing session at the same time. It's lightweight and fast, 
@@ -30,8 +30,8 @@ when you view BrowserBox on a mobile device, you get a mobile browser on the ser
 
 [PLAY1]: https://browse.cloudtabs.net/signupless_session
 [PLAY2]: https://puter.com/app/cloudtabs-browserbox
-[IMG1]: https://github.com/BrowserBox/BrowserBox/assets/22254235/36d6370a-aafc-40bf-bbbd-87540b7b379b
-[IMG2]: https://github.com/BrowserBox/BrowserBox/assets/22254235/9b6b8f4f-fd8b-4c00-914e-658c3cbfbdb0
+[IMG1]: https://github.com/BrowserBox/BrowserBox/assets/22254235/599945e3-f2f9-416f-9a0e-fd0720fa8e87
+[IMG2]: https://github.com/BrowserBox/BrowserBox/assets/22254235/bfdbe7b2-a713-4add-83f7-9e10a9fd3e2f
 
 -------------
 

@@ -385,7 +385,7 @@
 
       const {searchParams} = new URL(location);
 
-      if ( (searchParams.has('cloudTabsStatusLine') || location.hostname.endsWith('cloudtabs.net')) && ! searchParams.has('forceRegularStatusLine') ) {
+      if ( (searchParams.has('cloudTabsStatusLine') || location.hostname.endsWith('.cloudtabs.net')) && ! searchParams.has('forceRegularStatusLine') ) {
         state.cloudTabsStatusLine = true; 
         setState('bbpro', state);
       }
