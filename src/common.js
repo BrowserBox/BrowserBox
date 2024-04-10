@@ -186,6 +186,8 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  fastSnapback: false, // fast snapback recovers immediately to best quality imagery when bandwidth passess 1 rtt test
+                       // when false the rate of worsening and improving quality is the same
   BINDING_NAME: 'bb',
   devapi: true,
   inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this

@@ -225,8 +225,13 @@ export function makeCamera(connection) {
       return;
     }
 
-    SAFARI_SHOT.command.params.quality = 80;
-    SCREEN_OPTS.quality = 80;
+    if ( CONFIG.fastSnapback ) {
+      SAFARI_SHOT.command.params.quality = 80;
+      SCREEN_OPTS.quality = 80;
+    } else {
+      SAFARI_SHOT.command.params.quality += 20;
+      SCREEN_OPTS.quality += 20;
+    }
     if ( SAFARI_SHOT.command.params.quality > MAX_JPG_QUAL ) {
       SAFARI_SHOT.command.params.quality = MAX_JPG_QUAL;
     }
