@@ -3,7 +3,7 @@ import {DEBUG, sleep, CONFIG} from '../common.js';
 
 const FORMAT = "jpeg"; // "png"
 const MIN_JPG_QUAL = process.env.TORBB ? 25 : 5;
-const MAX_JPG_QUAL = process.env.TORBB ? 75 : 80;
+const MAX_JPG_QUAL = process.env.TORBB ? 75 : 25;
 const MAX_NTH_FRAME = process.env.TORBB ? 17 : 8;
 export const ADAPTIVE_FREQUENCY = 5;
 export const JPEG_QUAL = MAX_JPG_QUAL;
