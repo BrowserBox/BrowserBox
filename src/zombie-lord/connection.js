@@ -1614,7 +1614,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.showViewportChanges && console.log(`thisChange: ${thisChange}`);
         if ( changes ) {
           lastWChange = thisChange;
-          setTimeout(() => connection.restartCast(), 0);
+          if ( CONFIG.waitRestartCast ) {
+            await connection.restartCast();
+          } else {
+            setTimeout(() => connection.restartCast(), 0);
+          }
+
         } else {
           return {};
         }
@@ -1667,7 +1672,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
           if ( tabOrViewportChanged  ) {
             lastVT = thisVT;
-            setTimeout(async () => { 
+            if ( CONFIG.waitRestartCast ) {
               await connection.restartCast();
               if ( viewportChanged ) {
                 DEBUG.showResizeEvents && console.log(`Sending resize event as viewport changed`, {lastV, thisV});
@@ -1675,7 +1680,17 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                   resize: connection.bounds
                 });
               }
-            }, 0);
+            } else {
+              setTimeout(async () => { 
+                await connection.restartCast();
+                if ( viewportChanged ) {
+                  DEBUG.showResizeEvents && console.log(`Sending resize event as viewport changed`, {lastV, thisV});
+                  connection.forceMeta({
+                    resize: connection.bounds
+                  });
+                }
+              }, 0);
+            }
           }
           if ( viewportChanged || command.params.resetRequested ) {
             delete command.params.resetRequested;

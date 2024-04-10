@@ -20,8 +20,8 @@ const Options = {
 //let lastTailShot = false;
 //let lastHash;
 let BANDWIDTH_ISSUE_STATE = false;
-const goLowRes = throttle((connection, ...args) => connection.shrinkImagery(...args), Math.ceil(1000/ADAPTIVE_FREQUENCY));
-const goHighRes = throttle((connection, ...args) => connection.growImagery(...args), Math.ceil(1000/ADAPTIVE_FREQUENCY)); 
+const goLowRes = throttle(async (connection, ...args) => await connection.shrinkImagery(...args), Math.ceil(1000/ADAPTIVE_FREQUENCY));
+const goHighRes = throttle(async (connection, ...args) => await connection.growImagery(...args), Math.ceil(1000/ADAPTIVE_FREQUENCY)); 
 const notifyBandwidthIssue = throttle(function (zombie_port, bandwidthIssue) {
   DEBUG.debugAdaptiveImagery && console.log('Maybe notifying bwissue on ack', {bandwidthIssue});
   if ( bandwidthIssue != BANDWIDTH_ISSUE_STATE ) {
@@ -157,10 +157,10 @@ const controller_api = {
             DEBUG.debugAdaptiveImagery && console.log(`Average roundtrip time: ${avgRoundtrip}ms, actual: ${roundtripTime}ms`);
             if ( avgRoundtrip > MAX_ROUNDTRIP /*|| roundtripTime > MAX_ROUNDTRIP */ ) {
               bandwidthIssue = true;
-              goLowRes(connection);
+              await goLowRes(connection);
             } else if ( avgRoundtrip < MIN_ROUNDTRIP /*|| roundtripTime < MIN_SPOT_ROUNDTRIP */) {
               bandwidthIssue = false;
-              goHighRes(connection);
+              await goHighRes(connection);
             }
           }
         }
@@ -528,9 +528,9 @@ const controller_api = {
             const {down, up, averageBw} = command.params;
             if ( DEBUG.adaptiveImagery ) {
               if ( down ) {
-                goLowRes(connection, {averageBw});
+                await goLowRes(connection, {averageBw});
               } else if ( up ) {
-                goHighRes(connection, {averageBw});
+                await goHighRes(connection, {averageBw});
               }
             }
           }

@@ -127,7 +127,7 @@ export const DEBUG = Object.freeze({
   disable3D: process.platform == 'linux',
   // this logs resize related data, probably rename resizeDebug or logResize
   resize: false,          
-  logFastest: false,
+  logFastest: true,
   showConsoleMessages: false,
   get debugConsoleMessages() {
     /* || other condition || some other condition ... etc ... */
@@ -392,7 +392,7 @@ export async function untilForever(pred, waitOverride = 5000) {
 export function throttle(func, wait) {
   let timeout;
 
-  const throttled = (...args) => {
+  const throttled = async (...args) => {
     if ( ! timeout ) {
       timeout = setTimeout(() => timeout = false, wait);
       return func(...args);

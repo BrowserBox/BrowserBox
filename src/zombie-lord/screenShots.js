@@ -216,7 +216,7 @@ export function makeCamera(connection) {
     if ( DEBUG.debugAdaptiveImagery ) {
       console.log(`Shrinking JPEG quality to ${SAFARI_SHOT.command.params.quality}`);
     }
-    restartCast();
+    await restartCast();
   }
 
   async function growImagery() {
@@ -245,7 +245,7 @@ export function makeCamera(connection) {
     if ( DEBUG.debugAdaptiveImagery ) {
       console.log(`Growing JPEG quality to ${SAFARI_SHOT.command.params.quality}`);
     }
-    restartCast();
+    await restartCast();
   }
 
   function queueTailShot() {
