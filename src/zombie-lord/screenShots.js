@@ -148,6 +148,7 @@ export function makeCamera(connection) {
   }
 
   async function restartCast() {
+    if ( !DEBUG.adaptiveImagery ) return;
     let restart = true;
     if ( lastScreenOpts ) {
       restart = false;
@@ -196,6 +197,7 @@ export function makeCamera(connection) {
   }
 
   async function shrinkImagery() {
+    if ( !DEBUG.adaptiveImagery ) return;
     if ( SCREEN_OPTS.everyNthFrame >= MAX_NTH_FRAME && SCREEN_OPTS.quality <= MIN_JPG_QUAL ) {
       // we don't go any lower
       return;
@@ -220,6 +222,7 @@ export function makeCamera(connection) {
   }
 
   async function growImagery() {
+    if ( !DEBUG.adaptiveImagery ) return;
     if ( SCREEN_OPTS.quality >= MAX_JPG_QUAL ) {
       // we don't go any higher
       return;

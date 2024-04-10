@@ -120,7 +120,7 @@ export const DEBUG = Object.freeze({
   showFlash: false, /* debug flash */
   loadSPLFreshEachLogin: false,
   frameDebug: false,
-  adaptiveImagery: true,
+  adaptiveImagery: false,
   debugAdaptiveImagery: true,
   useGL: true,
   disableGL: false,
