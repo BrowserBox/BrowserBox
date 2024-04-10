@@ -53,6 +53,10 @@ if ( import.meta.url === `file://${process.argv[1]}` ) {
 }
 
 function runWorker({req, res, command, filePath, cursor}, STATIC_DIR) {
+  if ( typeof filePath != "string" ) {
+    console.error(`Invalid filePath`, filePath, {command, cursor});
+    throw new TypeError(`Invalid filePath`);
+  }
   const file = filePath.split(/\//g);
 
   if ( file[0] === 'archives' ) {
