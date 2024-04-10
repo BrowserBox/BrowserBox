@@ -1,7 +1,7 @@
 import Connect from './connection.js';
 import {executeBinding, getViewport} from './connection.js';
 import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
-import {MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
+import {ADAPTIVE_FREQUENCY, MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
 import fs from 'fs';
 
 const FRAME_GC_LIMIT = 5;
@@ -20,8 +20,8 @@ const Options = {
 //let lastTailShot = false;
 //let lastHash;
 let BANDWIDTH_ISSUE_STATE = false;
-const goLowRes = throttle((connection, ...args) => connection.shrinkImagery(...args), 8000);
-const goHighRes = throttle((connection, ...args) => connection.growImagery(...args), 8000); 
+const goLowRes = throttle((connection, ...args) => connection.shrinkImagery(...args), Math.ceil(1000/ADAPTIVE_FREQUENCY));
+const goHighRes = throttle((connection, ...args) => connection.growImagery(...args), Math.ceil(1000/ADAPTIVE_FREQUENCY)); 
 const notifyBandwidthIssue = throttle(function (zombie_port, bandwidthIssue) {
   DEBUG.debugAdaptiveImagery && console.log('Maybe notifying bwissue on ack', {bandwidthIssue});
   if ( bandwidthIssue != BANDWIDTH_ISSUE_STATE ) {
