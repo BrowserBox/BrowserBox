@@ -894,7 +894,20 @@
               }
               targets = targets.filter(({targetId,type}) => { 
                 if ( type !== 'page' ) return false;
-                if ( ! zl.act.hasSession(targetId, zombie_port) ) return false;
+                if ( ! zl.act.hasSession(targetId, zombie_port) ) {
+                  if ( DEBUG.restoreSessions ) { 
+                    DEBUG.restore && console.info(`Sent 'attach' to tab target ${targetId}`);
+                    zl.act.send({
+                      name: "Target.attachToTarget",
+                      params: {
+                        targetId,
+                        flatten: true
+                      }
+                    }, zombie_port);
+                  } else {
+                    return false;
+                  }
+                }
                 return true;
               });
               targets = targets.map(t => {
