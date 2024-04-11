@@ -188,6 +188,8 @@ const launcher_api = {
     }
     if ( DEBUG.restoreSessions ) {
       CHROME_FLAGS.push(`--restore-last-session`);
+      CHROME_FLAGS.push(`--restart`);
+      CHROME_FLAGS.push(`--hide-crash-restore-bubble`);
     }
     if ( CONFIG.useTorProxy ) {
       CHROME_FLAGS.push(`--proxy-server="${process.env.TOR_PROXY.replace('socks5h', 'socks5')}"`);
