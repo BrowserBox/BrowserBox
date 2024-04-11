@@ -32,7 +32,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  debugConnectivity: true,
+  debugConnectivity: false,
   noReset: false,
   debugStartup: false,
   bustCache: false,
