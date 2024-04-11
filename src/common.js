@@ -11,6 +11,7 @@ import {APP_ROOT as app_root} from './root.js';
 export * from './args.js';
 
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
+export const StartupTabs = new Set(); // track tabs that arrive at setup
 
 export const EXPEDITE = new Set([
   "Target.activateTarget",

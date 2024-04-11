@@ -1215,6 +1215,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       await send("Network.setBlockedURLs", {
           urls: [
             "file://*",
+            "chrome:*",
           ]
         },
         sessionId
