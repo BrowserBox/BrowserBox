@@ -30,8 +30,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  restore: true,
-  restoreSessions: true,
+  restore: false, // debug restore
+  restoreSessions: process.env.BB_NO_RESTORE_LAST_SESSION ? false : true,
   ensureRSA_for_3PC: false,
   useLocalAuthInPrepFor_3PC_PhaseOut: true,
   showDebug: false,
@@ -119,7 +119,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
+  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
