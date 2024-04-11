@@ -132,7 +132,7 @@ const launcher_api = {
     ] : [
       `--window-size=${COMMON_FORMAT.width},${COMMON_FORMAT.height}`,
       `--crash-dumps-dir=${crashDir}`,
-      `--profile-directory="${upd}"`,
+      `--profile-directory="${'Default'}"`,
       ...(
         CONFIG.forceContentDarkMode ? [
           `--force-dark-mode`,
@@ -186,6 +186,11 @@ const launcher_api = {
     } else {
       CHROME_FLAGS.push('--no-sandbox'); 
     }
+    if ( DEBUG.restoreSessions ) {
+      CHROME_FLAGS.push(`--restore-last-session`);
+      CHROME_FLAGS.push(`--restart`);
+      CHROME_FLAGS.push(`--hide-crash-restore-bubble`);
+    }
     if ( CONFIG.useTorProxy ) {
       CHROME_FLAGS.push(`--proxy-server="${process.env.TOR_PROXY.replace('socks5h', 'socks5')}"`);
       CHROME_FLAGS.push(`--host-resolver-rules="MAP * 0.0.0.0 , EXCLUDE localhost"`);
@@ -211,6 +216,7 @@ const launcher_api = {
     DEBUG.showFlags && console.log({chromeFlags: CHROME_FLAGS});
     const CHROME_OPTS = {
       port,
+      startingUrl: ' ',
       ignoreDefaultFlags: true,
       handleSIGINT: false,
       userDataDir: process.platform == 'darwin' ? false : path.resolve(CONFIG.baseDir, 'browser-cache'),

@@ -11,6 +11,7 @@ import {WebSocket} from 'ws';
 import {SocksProxyAgent} from 'socks-proxy-agent';
 
 import {
+  StartupTabs,
   EXPEDITE,
   LOG_FILE,
   SignalNotices,
@@ -21,7 +22,8 @@ import {
   CONFIG,
   sleep, SECURE_VIEW_SCRIPT, MAX_TABS, 
   consolelog,
-  untilTrue
+  untilTrue,
+  untilTrueOrTimeout,
 } from '../common.js';
 
 import {username} from '../args.js';
@@ -489,7 +491,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     DEBUG.val > DEBUG.med && console.log("Attached to target", sessionId, targetId);
     targets.add(targetId);
     addSession(targetId, sessionId);
-    checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false});
+    checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
     connection.meta.push({attached});
     // we always size when we attach, otherwise they just go to screen size
     // which might be bigger than the lowest common screen dimensions for the clients
@@ -799,6 +801,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         message,
       },null,2)+"\n");
     }
+    await untilTrueOrTimeout(() => (typeof connection.forceMeta) == "function", 20);
     if ( message.method == "Network.dataReceived" ) {
       const {encodedDataLength, dataLength} = message.params;
       connection.totalBandwidth += (encodedDataLength || dataLength);
@@ -1214,6 +1217,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       await send("Network.setBlockedURLs", {
           urls: [
             "file://*",
+            "chrome:*",
           ]
         },
         sessionId
@@ -1406,7 +1410,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       );
       const {windowId} = await send("Browser.getWindowForTarget", {targetId});
       connection.latestWindowId = windowId;
-      const {width,height} = connection.bounds;
+      let {width,height} = connection.bounds;
+      if ( DEBUG.useNewAsgardHeadless ) {
+        height += 80;
+      }
       await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
       //id = await overrideNewtab(connection.zombie, sessionId, id);
       if ( AD_BLOCK_ON ) {
@@ -1612,6 +1619,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         const changes = lastWChange !== thisChange;
         DEBUG.showViewportChanges && console.log(`lastWChange: ${lastWChange}`);
         DEBUG.showViewportChanges && console.log(`thisChange: ${thisChange}`);
+        if ( DEBUG.useNewAsgardHeadless ) {
+          command.params.bounds.height += 80;
+        }
         if ( changes ) {
           lastWChange = thisChange;
           setTimeout(() => connection.restartCast(), 0);
