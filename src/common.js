@@ -58,7 +58,7 @@ export const DEBUG = Object.freeze({
   showTargetSessionMap: false,
   debugFileDownload: false,
   debugFileUpload: false,
-  useNewAsgardHeadless: false,
+  useNewAsgardHeadless: true,
   showFlags: false,
   allowExternalChrome: true,
   debugChromeStart: false,

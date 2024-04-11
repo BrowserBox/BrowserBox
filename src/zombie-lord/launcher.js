@@ -132,7 +132,7 @@ const launcher_api = {
     ] : [
       `--window-size=${COMMON_FORMAT.width},${COMMON_FORMAT.height}`,
       `--crash-dumps-dir=${crashDir}`,
-      `--profile-directory="${upd}"`,
+      `--profile-directory="${'Default'}"`,
       ...(
         CONFIG.forceContentDarkMode ? [
           `--force-dark-mode`,
