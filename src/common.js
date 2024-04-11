@@ -29,6 +29,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  restore: true,
   restoreSessions: true,
   ensureRSA_for_3PC: false,
   useLocalAuthInPrepFor_3PC_PhaseOut: true,

@@ -748,6 +748,7 @@
                   if ( type !== 'page' ) return false;
                   if ( ! zl.act.hasSession(targetId, zombie_port) ) {
                     if ( DEBUG.restoreSessions ) { 
+                      DEBUG.restore && console.info(`Sent 'attach' to tab target ${targetId}`);
                       zl.act.send({
                         name: "Target.attachToTarget",
                         params: {
