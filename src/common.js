@@ -355,6 +355,10 @@ export async function sleep(ms, Aborter) {
   return pr;
 }
 
+export async function untilTrueOrTimeout(pred, seconds) {
+  return untilTrue(pred, 500, 2*seconds, reject => reject(`Checking predicate (${pred}) timed out after ${seconds} seconds.`));
+}
+
 export async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WAITS) {
   let waitCount = 0;
   let resolve;

@@ -22,7 +22,8 @@ import {
   CONFIG,
   sleep, SECURE_VIEW_SCRIPT, MAX_TABS, 
   consolelog,
-  untilTrue
+  untilTrue,
+  untilTrueOrTimeout,
 } from '../common.js';
 
 import {username} from '../args.js';
@@ -800,6 +801,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         message,
       },null,2)+"\n");
     }
+    await untilTrueOrTimeout(() => (typeof connection.forceMeta) == "function", 20);
     if ( message.method == "Network.dataReceived" ) {
       const {encodedDataLength, dataLength} = message.params;
       connection.totalBandwidth += (encodedDataLength || dataLength);
