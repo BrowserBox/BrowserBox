@@ -32,7 +32,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  debugConnectivity: true,
+  debugConnectivity: false,
   noReset: false,
   debugStartup: false,
   bustCache: false,
@@ -172,7 +172,7 @@ export const DEBUG = Object.freeze({
   neonMode: false,
   resetCache: false,
   exposeState: true,
-  fullScope: false,
+  fullScope: true,
   get err() { return this.fullScope || false },
   get promiserejection() { return this.fullScope || false },
   get dev() { return this.fullScope || false },
@@ -439,7 +439,7 @@ export async function untilHuman(pred) {
 }
 
 export async function untilTrueOrTimeout(pred, seconds) {
-  return untilTrue(pred, 1000, seconds, reject => reject(`Checking predicate (${pred}) timed out after ${seconds} seconds.`));
+  return untilTrue(pred, 500, 2*seconds, reject => reject(`Checking predicate (${pred}) timed out after ${seconds} seconds.`));
 }
 
 export function randomInterval(func, minGap, maxGap) {

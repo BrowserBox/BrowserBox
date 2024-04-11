@@ -23,6 +23,7 @@
   import zl from './zombie-lord/index.js';
   import {start_mode} from './args.js';
   import {
+    StartupTabs,
     T2_MINUTES,
     version, APP_ROOT, 
     COOKIENAME, GO_SECURE, DEBUG,
@@ -744,9 +745,26 @@
                 if ( targets.length === 1 ) {
                   zl.act.setHiddenTarget(targets[0].targetId, zombie_port);
                 }
-                targets = targets.filter(({targetId,type}) => { 
+                targets = targets.filter(({targetId,type,url}) => { 
                   if ( type !== 'page' ) return false;
-                  if ( ! zl.act.hasSession(targetId, zombie_port) ) return false;
+                  if ( url.startsWith('chrome') ) {
+                    return false;
+                  }
+                  if ( ! zl.act.hasSession(targetId, zombie_port) ) {
+                    if ( DEBUG.restoreSessions ) { 
+                      DEBUG.restore && console.info(`Sent 'attach' to tab target ${targetId}`);
+                      StartupTabs.add(targetId);
+                      zl.act.send({
+                        name: "Target.attachToTarget",
+                        params: {
+                          targetId,
+                          flatten: true
+                        }
+                      }, zombie_port);
+                    } else {
+                      return false;
+                    }
+                  }
                   return true;
                 });
                 targets = targets.map(t => {
@@ -879,9 +897,26 @@
               if ( targets?.length === 1 ) {
                 zl.act.setHiddenTarget(targets[0].targetId, zombie_port);
               }
-              targets = targets.filter(({targetId,type}) => { 
+              targets = targets.filter(({targetId,type,url}) => { 
                 if ( type !== 'page' ) return false;
-                if ( ! zl.act.hasSession(targetId, zombie_port) ) return false;
+                if ( url.startsWith('chrome') ) {
+                  return false;
+                }
+                if ( ! zl.act.hasSession(targetId, zombie_port) ) {
+                  if ( DEBUG.restoreSessions ) { 
+                    DEBUG.restore && console.info(`Sent 'attach' to tab target ${targetId}`);
+                    StartupTabs.add(targetId);
+                    zl.act.send({
+                      name: "Target.attachToTarget",
+                      params: {
+                        targetId,
+                        flatten: true
+                      }
+                    }, zombie_port);
+                  } else {
+                    return false;
+                  }
+                }
                 return true;
               });
               targets = targets.map(t => {

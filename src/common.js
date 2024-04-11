@@ -11,6 +11,7 @@ import {APP_ROOT as app_root} from './root.js';
 export * from './args.js';
 
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
+export const StartupTabs = new Set(); // track tabs that arrive at setup
 
 export const EXPEDITE = new Set([
   "Target.activateTarget",
@@ -29,6 +30,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  restore: false, // debug restore
+  restoreSessions: process.env.BB_NO_RESTORE_LAST_SESSION ? false : true,
   ensureRSA_for_3PC: false,
   useLocalAuthInPrepFor_3PC_PhaseOut: true,
   showDebug: false,
@@ -57,7 +60,9 @@ export const DEBUG = Object.freeze({
   showTargetSessionMap: false,
   debugFileDownload: false,
   debugFileUpload: false,
-  useNewAsgardHeadless: false,
+  get useNewAsgardHeadless() { 
+    return this.restoreSessions || false;
+  },
   showFlags: false,
   allowExternalChrome: true,
   debugChromeStart: false,
@@ -348,6 +353,10 @@ export async function sleep(ms, Aborter) {
     };
   }
   return pr;
+}
+
+export async function untilTrueOrTimeout(pred, seconds) {
+  return untilTrue(pred, 500, 2*seconds, reject => reject(`Checking predicate (${pred}) timed out after ${seconds} seconds.`));
 }
 
 export async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WAITS) {

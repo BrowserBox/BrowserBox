@@ -1370,7 +1370,8 @@
           await untilHuman(() => state?.viewState?.bbView?.classList?.contains?.('bang-styled'));
           await untilHuman(() => state?.Connectivity?.checker?.status == 'online');
           state.activateTab();
-          DEBUG.val && alert('Performed refresh views');
+          DEBUG.val && DEBUG.useAlerts && alert('Performed refresh views');
+          DEBUG.val && console.info('Performed refresh views');
         }
 
         function checkResults() {
