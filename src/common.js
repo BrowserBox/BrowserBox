@@ -60,7 +60,9 @@ export const DEBUG = Object.freeze({
   showTargetSessionMap: false,
   debugFileDownload: false,
   debugFileUpload: false,
-  useNewAsgardHeadless: true,
+  get useNewAsgardHeadless() { 
+    return this.restoreSessions || false;
+  },
   showFlags: false,
   allowExternalChrome: true,
   debugChromeStart: false,
