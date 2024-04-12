@@ -130,9 +130,10 @@ class BBContextMenu extends Base {
       DEBUG.debugInspect && console.log(`Opening DevTools window to inspect tab ${currentTab}`, state.active);
 
       let devtoolsWindow;
-      if ( !state.CONFIG.openServicesInCloudTabs ) {
+      if ( state.CONFIG.ensureDevToolsOpensInNewTab || !state.CONFIG.openServicesInCloudTabs ) {
         devtoolsWindow = window.open("about:blank");
       }
+      state.emulateActive(currentTab);
 
       const url = state.CONFIG.isOnion ? new URL(
           `${location.protocol}//${localStorage.getItem(state.CONFIG.devtoolsServiceFileName)}`
@@ -180,7 +181,7 @@ class BBContextMenu extends Base {
         DEBUG.debugInspect && console.log("Inspect url", url.href);
 
         DEBUG.debugInspect && alert('Will set url to: ' + url);
-        if ( state.CONFIG.openServicesInCloudTabs ) {
+        if ( !state.CONFIG.ensureDevToolsOpensInNewTab && state.CONFIG.openServicesInCloudTabs ) {
           state.createTab(click, url);
           setTimeout(() => state.runUpdateTabs(), 0);
         } else {
@@ -192,7 +193,7 @@ class BBContextMenu extends Base {
         DEBUG.debugInspect && console.log("Inspect url", url.href);
 
         DEBUG.debugInspect && alert('Will set url to: ' + url);
-        if ( state.CONFIG.openServicesInCloudTabs ) {
+        if ( !state.CONFIG.ensureDevToolsOpensInNewTab && state.CONFIG.openServicesInCloudTabs ) {
           state.createTab(click, url);
           setTimeout(() => state.runUpdateTabs(), 0);
         } else {

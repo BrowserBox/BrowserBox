@@ -257,6 +257,7 @@
           favicons: new Map(),
           rawUpdateTabs,
           updateTabs,
+          emulateActive,
 
           // timing constants
           IMMEDIATE,
@@ -1456,6 +1457,17 @@
           if ( X ) x = X(x);
           if ( Y ) y = Y(y);
           ctx.fillText(text, x, y);
+        }
+
+        function emulateActive(targetId, yesOrNo = true) {
+          queue.send({
+            command: {
+              name: "Emulation.setFocusEmulationEnabled",
+              params: {
+                enabled: yesOrNo
+              },
+            }
+          });
         }
 
         function writeDocument(html, frameId, sessionId) {

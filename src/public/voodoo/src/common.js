@@ -183,6 +183,7 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  ensureDevToolsOpensInNewTab: false,
   logUpdatedContent: true,
   ensureFrameOnResize: true,
   openServicesInCloudTabs: globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net') ? true : OPEN_SERVICES_IN_BROWSER,
