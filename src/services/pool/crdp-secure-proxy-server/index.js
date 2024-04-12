@@ -19,6 +19,7 @@ import {
   version,
   COOKIENAME,
   CONFIG,
+  untilTrueOrTimeout,
 } from '../../../common.js';
 
 DEBUG.debugDevtoolsServer && console.log(process.argv);
@@ -62,6 +63,11 @@ const SOCKETS = new Map();
 //const internalEndpointRegex = /ws=localhost(:\d+)?([^ "'<>,;)}\]`]+)/g;
 const internalEndpointRegex = /ws=localhost(:\d+)?([\/\w.-]+)/g;
 //const internalEndpointRegex = /ws=localhost/g;
+
+process.on('uncaughtException', err => { 
+  console.error(`Uncaught exception`, err);
+  process.exit(1);
+});
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -281,17 +287,32 @@ wss.on('connection', (ws, req) => {
     if ( authorized ) {
       const url = `ws://127.0.0.1:${CHROME_PORT}${path}`;
       try {
-        const crdpSocket = new WebSocket(url);
+        let crdpSocket = new WebSocket(url);
         SOCKETS.set(ws, crdpSocket);
-        crdpSocket.on('open', () => {
-          DEBUG.debugDevtoolServer && console.log('CRDP Socket open');
+        ws.on('error', err => {
+          DEBUG.debugDevtoolServer && console.warn(`Front-end socket error`, err);
         });
-        crdpSocket.on('message', msg => {
+        crdpSocket.on('error', err => {
+          DEBUG.debugDevtoolServer && console.warn(`CRDPSocket error`, err);
+        });
+        ws.on('open', () => {
+          DEBUG.debugDevtoolsServer && console.log('Front-end socket open');
+        });
+        crdpSocket.on('open', () => {
+          DEBUG.debugDevtoolsServer && console.log('CRDP Socket open');
+        });
+        crdpSocket.on('message', async msg => {
           //console.log('Browser sends us message', msg);
+          if ( ws.readyState < WebSocket.OPEN ) {
+            await untilTrueOrTimeout(() => ws.readyState == WebSocket.OPEN, 150);
+          } 
           ws.send(msg);
         });
-        ws.on('message', msg => {
+        ws.on('message', async msg => {
           //console.log('We send browser message');
+          if ( crdpSocket.readyState < WebSocket.OPEN ) {
+            await untilTrueOrTimeout(() => crdpSocket.readyState == WebSocket.OPEN, 150);
+          } 
           crdpSocket.send(msg);
         });
         ws.on('close', (code, reason) => {
@@ -300,14 +321,16 @@ wss.on('connection', (ws, req) => {
         });
         crdpSocket.on('close', (code, reason) => {
           SOCKETS.delete(ws);
-          crdpSocket.close(1011, 'browser disconnected');
+          ws.close(1011, 'browser disconnected');
         });
       } catch(e) {
         console.warn('Error on websocket creation', e);
       }
     } else {
       console.warn(`WS not authorized`);
-      ws.send(JSON.stringify({error:`Not authorized`}));
+      if ( ws.readyState == WebSocket.OPEN ) {
+        ws.send(JSON.stringify({error:`Not authorized`}));
+      }
       ws.close();
     }
   } catch(err) {
