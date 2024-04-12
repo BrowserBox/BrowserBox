@@ -1404,7 +1404,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         sessionId
       );
       if ( DEBUG.fixDevToolsInactive && DEBUG.useActiveFocusEmulation ) {
-        await send(
+        // don't await it as it's very experimental
+        send(
           "Emulation.setFocusEmulationEnabled",
           {
             enabled: true, 
