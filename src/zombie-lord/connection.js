@@ -1403,6 +1403,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }, connection.bounds),
         sessionId
       );
+      if ( CONFIG.fixDevToolsInactive && DEBUG.useActiveFocusEmulation ) {
+        await send(
+          "Emulation.setFocusEmulationEnabled",
+          {
+            enabled: true, 
+          },
+          sessionId
+        );
+      }
       await send(
         "Emulation.setScrollbarsHidden",
         {hidden:connection.hideBars || false},
