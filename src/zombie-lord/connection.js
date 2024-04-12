@@ -1403,7 +1403,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }, connection.bounds),
         sessionId
       );
-      if ( CONFIG.fixDevToolsInactive && DEBUG.useActiveFocusEmulation ) {
+      if ( DEBUG.fixDevToolsInactive && DEBUG.useActiveFocusEmulation ) {
         await send(
           "Emulation.setFocusEmulationEnabled",
           {
