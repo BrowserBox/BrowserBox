@@ -1403,6 +1403,22 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }, connection.bounds),
         sessionId
       );
+      /* 
+        // notes
+          // putting here causes tab startup stability issues, better to wait to apply it later
+          // but if we're waiting then may as well just wait until we actually open devtools
+          // this means we just send from client
+        if ( DEBUG.fixDevToolsInactive && DEBUG.useActiveFocusEmulation ) {
+          // don't await it as it's very experimental
+          send(
+            "Emulation.setFocusEmulationEnabled",
+            {
+              enabled: true, 
+            },
+            sessionId
+          );
+        }
+      */
       await send(
         "Emulation.setScrollbarsHidden",
         {hidden:connection.hideBars || false},

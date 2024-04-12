@@ -30,6 +30,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  useActiveFocusEmulation: true,
+  fixDevToolsInactive: true,
   restore: false, // debug restore
   restoreSessions: process.env.BB_NO_RESTORE_LAST_SESSION ? false : true,
   ensureRSA_for_3PC: false,
