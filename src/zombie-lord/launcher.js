@@ -191,9 +191,6 @@ const launcher_api = {
       CHROME_FLAGS.push(`--restart`);
       CHROME_FLAGS.push(`--hide-crash-restore-bubble`);
     }
-    if ( DEBUG.fixDevToolsInactive ) {
-      CHROME_FLAGS.push(`--disable-backgrounding-occluded-windows`);
-    }
     if ( CONFIG.useTorProxy ) {
       CHROME_FLAGS.push(`--proxy-server="${process.env.TOR_PROXY.replace('socks5h', 'socks5')}"`);
       CHROME_FLAGS.push(`--host-resolver-rules="MAP * 0.0.0.0 , EXCLUDE localhost"`);

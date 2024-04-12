@@ -133,6 +133,7 @@ class BBContextMenu extends Base {
       if ( state.CONFIG.ensureDevToolsOpensInNewTab || !state.CONFIG.openServicesInCloudTabs ) {
         devtoolsWindow = window.open("about:blank");
       }
+      state.emulateActive(currentTab);
 
       const url = state.CONFIG.isOnion ? new URL(
           `${location.protocol}//${localStorage.getItem(state.CONFIG.devtoolsServiceFileName)}`
