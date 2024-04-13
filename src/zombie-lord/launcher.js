@@ -191,6 +191,9 @@ const launcher_api = {
       CHROME_FLAGS.push(`--restart`);
       CHROME_FLAGS.push(`--hide-crash-restore-bubble`);
     }
+    if ( DEBUG.preventNewTab ) {
+      CHROME_FLAGS.push(`--homepage=about:blank`);
+    }
     if ( DEBUG.extensionsAssemble ) {
       CHROME_FLAGS.push(`--disable-extensions-except=${DEBUG.extensions.join(',')}`);
       CHROME_FLAGS.push(`--skip-force-online-signin-for-testing`)
