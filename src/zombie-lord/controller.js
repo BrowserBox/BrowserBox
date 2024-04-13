@@ -535,6 +535,11 @@ const controller_api = {
             }
           }
           break;
+          case "Connection.sizeAll": {
+            const {width, height} = command.params;
+            console.info(`Implement size all`, width, height);
+          }
+          break;
           case "Connection.closeModal": {
             connection.forceMeta({
               closeModal: command.params
