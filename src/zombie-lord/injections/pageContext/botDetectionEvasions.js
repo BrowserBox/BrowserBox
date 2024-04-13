@@ -8,6 +8,48 @@
 // https://infosimples.github.io/detect-headless/
 
 {
+  shim();
+  let int = setInterval(() => {
+    if ( shim() ) {
+      clearInterval(int);
+    }
+  }, 1);
+  function shim() {
+    if ( chrome.webstorePrivate ) {
+      const B = chrome.webstorePrivate;
+      let done = 0;
+      if ( chrome.webstorePrivate.beginInstallWithManifest3 ) {
+        const f = chrome.webstorePrivate.beginInstallWithManifest3;
+        chrome.webstorePrivate.beginInstallWithManifest3 = g;
+        async function g(...args) {
+          chrome.webstorePrivate.beginInstallWithManifest3 = f;
+          const ret = await f.call(B, ...args);
+          chrome.webstorePrivate.beginInstallWithManifest3 = g;
+          console.log('bi', {args, ret});
+          alert('begin');
+          //args[1].call(B, args[0].id);
+          return ret;
+        }
+        done += 1;
+      }
+      if ( chrome.webstorePrivate.completeInstall ) {
+        const f = chrome.webstorePrivate.completeInstall;
+        chrome.webstorePrivate.completeInstall = async (...args) => {
+          const ret = await f.call(B, ...args);
+          console.log('ci', {args, ret});
+          alert('complete');
+          return ret;
+        };
+        done += 1;
+      }
+      alert('shim ' + done);
+      return done == 2;
+    }
+  }
+
+}
+
+{
   // outer height and width
     try {
       Object.defineProperty(globalThis.window, 'outerHeight', {value: window.innerHeight + 80}); // BB chrome is 80 pix high
