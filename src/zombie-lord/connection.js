@@ -184,9 +184,9 @@ let AD_BLOCK_ON = true;
 let DEMO_BLOCK_ON = false;
 let firstSource;
 let latestTimestamp;
-let lastV; 
-let lastVT;
-let lastWChange;
+let lastV = getViewport(); 
+let lastVT = JSON.stringify(lastV,null,2)+'startup';
+let lastWChange = '';
 
 function addSession(targetId, sessionId) {
   sessions.set(targetId,sessionId);
