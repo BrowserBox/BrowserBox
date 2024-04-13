@@ -30,6 +30,11 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  extensionsAssemble: true,
+  extensions: [
+    'cbimabofgmfdkicghcadidpemeenbffn',
+    'eimadpbcbfnmbkopoojfekhnkhdbieeh'
+  ],
   useActiveFocusEmulation: true,
   fixDevToolsInactive: true,
   restore: false, // debug restore
@@ -37,7 +42,7 @@ export const DEBUG = Object.freeze({
   ensureRSA_for_3PC: false,
   useLocalAuthInPrepFor_3PC_PhaseOut: true,
   showDebug: false,
-  utilizeTempHackFixForIMENoKey: true,
+  utilizeTempHackFixForIMENoKey: false,
   debugTyping: false,
   logFileCommands: false,
   windowsUses48KAudio: false,
@@ -48,7 +53,7 @@ export const DEBUG = Object.freeze({
   debugBinding: false,
   events: false,
   commands: false,
-  adBlock: true,
+  adBlock: false,
   debugAddr: true,
   debugScaledUpCoViewport: false,
   debugInterception: false,
