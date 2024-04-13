@@ -46,7 +46,9 @@
         loadTimes: () => null,
         csi: () => null,
       };
-      Object.defineProperty(globalThis, 'chrome', {value: chrome});
+      if ( ! globalThis.chrome ) {
+        Object.defineProperty(globalThis, 'chrome', {value: chrome});
+      }
     } catch(e) {
       console.warn(`navigator.chrome not set`);
     }

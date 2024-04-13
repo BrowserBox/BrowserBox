@@ -747,9 +747,11 @@
                 }
                 targets = targets.filter(({targetId,type,url}) => { 
                   if ( type !== 'page' ) return false;
+                  /*
                   if ( url.startsWith('chrome') ) {
                     return false;
                   }
+                  */
                   if ( ! zl.act.hasSession(targetId, zombie_port) ) {
                     if ( DEBUG.restoreSessions ) { 
                       DEBUG.restore && console.info(`Sent 'attach' to tab target ${targetId}`);
@@ -899,9 +901,11 @@
               }
               targets = targets.filter(({targetId,type,url}) => { 
                 if ( type !== 'page' ) return false;
+                /*
                 if ( url.startsWith('chrome') ) {
                   return false;
                 }
+                */
                 if ( ! zl.act.hasSession(targetId, zombie_port) ) {
                   if ( DEBUG.restoreSessions ) { 
                     DEBUG.restore && console.info(`Sent 'attach' to tab target ${targetId}`);
