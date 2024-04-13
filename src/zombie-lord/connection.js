@@ -184,9 +184,9 @@ let AD_BLOCK_ON = true;
 let DEMO_BLOCK_ON = false;
 let firstSource;
 let latestTimestamp;
-let lastV; 
-let lastVT;
-let lastWChange;
+let lastV = getViewport(); 
+let lastVT = JSON.stringify(lastV,null,2)+'startup';
+let lastWChange = '';
 
 function addSession(targetId, sessionId) {
   sessions.set(targetId,sessionId);
@@ -1703,6 +1703,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               }
             }, 0);
           }
+          (DEBUG.showViewportChanges || DEBUG.debugViewportDimensions) && console.log({tabOrViewportChanged, viewportChanged});
           if ( viewportChanged || command.params.resetRequested ) {
             delete command.params.resetRequested;
             lastV = thisV;
@@ -1711,7 +1712,23 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             // if a viewport didn't change we don't need to call Emulation.setDeviceMetricOverride as it will only
             // cause the screen to flash and be completely redrawn as if it were resized 
             // when it was not resized at all
-            return {};
+            DEBUG.debugViewportDimensions && console.log('Actual page dimensions checking...', {send,sessionId});
+            try {
+              const {result:{value:{width,height}}} = await send("Runtime.evaluate", {
+                expression: `
+                  (function () {
+                    return {width: window.innerWidth, height: window.innerHeight};
+                  }())
+                `,
+                returnByValue: true 
+              }, connection.sessionId);
+              DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width,height});
+              if ( width == command.params.width && height == command.params.height ) {
+                return {}; // no change so we return without sending
+              }
+            } catch(e) {
+              console.warn(`Uh oh, error checking actual page dimensions`, e);
+            }
           }
         }
       }; break;

@@ -30,7 +30,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  extensionsAssemble: true,
+  preventNewTab: true,
+  extensionsAssemble: false,
   extensions: [
     'cbimabofgmfdkicghcadidpemeenbffn',
     'eimadpbcbfnmbkopoojfekhnkhdbieeh'
