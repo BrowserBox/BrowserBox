@@ -53,7 +53,7 @@ export const DEBUG = Object.freeze({
   debugBinding: false,
   events: false,
   commands: false,
-  adBlock: false,
+  adBlock: true,
   debugAddr: true,
   debugScaledUpCoViewport: false,
   debugInterception: false,
@@ -189,7 +189,11 @@ export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   ...(
   process.env.DOMAIN ? [
     `https://${process.env.DOMAIN}:*`,
-  ] : [])
+  ] : []),
+  ...(
+    !os?.userInfo?.()?.username?.startsWith?.("bbuser-ss") ? [
+      "*"
+  ] : []),
 ];
 export const FLASH_FORMATS = new Set([
   'swf',
