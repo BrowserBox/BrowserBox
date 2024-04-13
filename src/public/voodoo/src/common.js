@@ -46,7 +46,7 @@ export const DEBUG = Object.freeze({
   tryPeeringAnywayEvenIfUserMediaFails: false,  // there's no point because we only request perms on mobile and 
                                                 // mobile will not peer webrtc unless we get perms so no point trying 
                                                 // if user media fails
-  utilizeTempHackFixForIMENoKey: true,
+  utilizeTempHackFixForIMENoKey: false,
   mode: 'prod',
   debugKeyEvents: false,
   debugCommandOrder: false,
