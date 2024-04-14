@@ -1214,14 +1214,16 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         sessionId
       );
       await send("Network.enable", {}, sessionId);
-      await send("Network.setBlockedURLs", {
-          urls: [
-            "file://*",
-            "chrome:*",
-          ]
-        },
-        sessionId
-      )
+      if ( DEBUG.networkBlocking ) {
+        await send("Network.setBlockedURLs", {
+            urls: [
+              ...(DEBUG.blockFileURLs ? ["file://*"] : []),
+              ...(DEBUG.blockChromeURLs ? ["chrome:*"] : []),
+            ]
+          },
+          sessionId
+        );
+      }
       await send(
         "Emulation.setUserAgentOverride", 
         connection.navigator,
