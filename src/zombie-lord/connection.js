@@ -1115,8 +1115,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.meta.push({resource}); 
       setTimeout(() => Frames.delete(requestId), WAIT_FOR_COALESCED_NETWORK_EVENTS);
     } else if ( message.method == "Network.loadingFailed" ) {
-      console.log(message);
-      return;
       const resource = endLoading(sessionId);
       const {requestId} = message.params;
       const savedFrame = Frames.get(requestId)
