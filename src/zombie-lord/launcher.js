@@ -198,6 +198,10 @@ const launcher_api = {
       CHROME_FLAGS.push(`--disable-extensions-except=${DEBUG.extensions.join(',')}`);
       CHROME_FLAGS.push(`--skip-force-online-signin-for-testing`)
     }
+    if ( DEBUG.extensionsNew ) {
+      CHROME_FLAGS.push(`--extensions-on-chrome-urls`)
+      CHROME_FLAGS.push(`--skip-force-online-signin-for-testing`)
+    }
     if ( CONFIG.useTorProxy ) {
       CHROME_FLAGS.push(`--proxy-server="${process.env.TOR_PROXY.replace('socks5h', 'socks5')}"`);
       CHROME_FLAGS.push(`--host-resolver-rules="MAP * 0.0.0.0 , EXCLUDE localhost"`);

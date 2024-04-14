@@ -8,6 +8,7 @@
 // https://infosimples.github.io/detect-headless/
 
 {
+  let shimmed = false;
   shim();
   let int = setInterval(() => {
     if ( shim() ) {
@@ -15,6 +16,7 @@
     }
   }, 1);
   function shim() {
+    if ( shimmed ) return;
     if ( chrome.webstorePrivate ) {
       const B = chrome.webstorePrivate;
       let done = 0;
@@ -22,12 +24,16 @@
         const f = chrome.webstorePrivate.beginInstallWithManifest3;
         chrome.webstorePrivate.beginInstallWithManifest3 = g;
         async function g(...args) {
-          chrome.webstorePrivate.beginInstallWithManifest3 = f;
-          const ret = await f.call(B, ...args);
-          chrome.webstorePrivate.beginInstallWithManifest3 = g;
+          //chrome.webstorePrivate.beginInstallWithManifest3 = f;
+          const ret = f.call(B, args[0], () => {
+            alert('ret after begin');
+            console.log('Running complete...');
+            chrome.webstorePrivate.completeInstall(args[0].id, () => alert('complete returned'));
+          });
+          //chrome.webstorePrivate.beginInstallWithManifest3 = g;
+          chrome.webstorePrivate.completeInstall(args[0].id, () => alert('complete returned'));
           console.log('bi', {args, ret});
-          alert('begin');
-          //args[1].call(B, args[0].id);
+          alert('run already');
           return ret;
         }
         done += 1;
@@ -35,6 +41,7 @@
       if ( chrome.webstorePrivate.completeInstall ) {
         const f = chrome.webstorePrivate.completeInstall;
         chrome.webstorePrivate.completeInstall = async (...args) => {
+          alert('calling complete');
           const ret = await f.call(B, ...args);
           console.log('ci', {args, ret});
           alert('complete');
@@ -43,10 +50,10 @@
         done += 1;
       }
       alert('shim ' + done);
+      shimmed = done == 2;
       return done == 2;
     }
   }
-
 }
 
 {
