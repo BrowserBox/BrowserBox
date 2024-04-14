@@ -1115,6 +1115,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.meta.push({resource}); 
       setTimeout(() => Frames.delete(requestId), WAIT_FOR_COALESCED_NETWORK_EVENTS);
     } else if ( message.method == "Network.loadingFailed" ) {
+      console.log(message);
+      return;
       const resource = endLoading(sessionId);
       const {requestId} = message.params;
       const savedFrame = Frames.get(requestId)
@@ -1214,14 +1216,16 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         sessionId
       );
       await send("Network.enable", {}, sessionId);
-      await send("Network.setBlockedURLs", {
-          urls: [
-            "file://*",
-            "chrome:*",
-          ]
-        },
-        sessionId
-      )
+      if ( DEBUG.networkBlocking ) {
+        await send("Network.setBlockedURLs", {
+            urls: [
+              ...(DEBUG.blockFileURLs ? ["file://*"] : []),
+              ...(DEBUG.blockChromeURLs ? ["chrome:*"] : []),
+            ]
+          },
+          sessionId
+        );
+      }
       await send(
         "Emulation.setUserAgentOverride", 
         connection.navigator,

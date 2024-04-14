@@ -30,6 +30,9 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  networkBlocking: true,
+  blockFileURLs: true,
+  blockChromeURLs: false,
   extensionsNew: true,
   preventNewTab: true,
   extensionsAssemble: false,

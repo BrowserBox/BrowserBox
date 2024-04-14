@@ -199,7 +199,6 @@ const launcher_api = {
       CHROME_FLAGS.push(`--skip-force-online-signin-for-testing`)
     }
     if ( DEBUG.extensionsNew ) {
-      CHROME_FLAGS.push(`--extensions-on-chrome-urls`)
       CHROME_FLAGS.push(`--skip-force-online-signin-for-testing`)
     }
     if ( CONFIG.useTorProxy ) {
@@ -230,7 +229,7 @@ const launcher_api = {
       startingUrl: ' ',
       ignoreDefaultFlags: true,
       handleSIGINT: false,
-      userDataDir: process.platform == 'darwin' ? false : path.resolve(CONFIG.baseDir, 'browser-cache'),
+      userDataDir: path.resolve(CONFIG.baseDir, 'browser-cache'),
       logLevel: 'verbose',
       chromeFlags: CHROME_FLAGS
     };
