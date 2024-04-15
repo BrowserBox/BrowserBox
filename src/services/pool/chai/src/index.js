@@ -162,6 +162,10 @@
       next();
     });
 
+    if ( process.env.DOMAIN.endsWith('cloudtabs.net') ) {
+      app.use(miniCorsPuter);
+    }
+
     app.use(express.static(STATIC_DIR, { maxAge: 31557600 }));
 
     app.use('/archives', exploreDirectories(ArchivesDir, {
@@ -611,5 +615,26 @@
       };
 
       return htmlString.replace(/[&<>"']/g, (char) => map[char]);
+    }
+
+    function miniCorsPuter(req, res, next) {
+      const allowedDomainPattern = /^https:\/\/([a-zA-Z0-9-]+\.)*puter\.site(:\d+)?$/;
+
+      const origin = req.headers.origin;
+      DEBUG.debugMiniCors && console.log('Origin?', origin);
+      if (origin && allowedDomainPattern.test(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);  // Allow the specific origin
+        res.header("Access-Control-Allow-Methods", "GET, OPTIONS");  // Specify methods you want to allow
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, X-BrowserBox-Local-Auth");  // Specify headers you want to allow
+
+        // Setting Cache-Control for private caching, must-revalidate ensures fresh validation
+        res.header("Cache-Control", "private, must-revalidate, max-age=3600");  // Allows client caching, but not shared (e.g., CDNs)
+        res.header("Vary", "Origin");  // Ensures all requests from new origins revalidate
+      } else {
+        // Optionally handle the non-allowed origins
+        res.header("Access-Control-Allow-Origin", "null");  // Mitigates the risk of leaking CORS headers to any origin
+      }
+
+      next();
     }
   }

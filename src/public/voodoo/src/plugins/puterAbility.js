@@ -18,7 +18,7 @@ export default async function untilPuterAbility() {
       resolve(true);
     }
   });
-  globalThis.top.postMessage({request:{hasPuterAbility: 0}}, '*');
+  globalThis.parent.postMessage({request:{hasPuterAbility: 0}}, '*');
   return pr;
 }
 
@@ -27,7 +27,7 @@ export async function handlePuterAbility(meta, state) {
   if ( meta.hasPuterAbility ) {
     if ( ! globalThis.hasPuterAbility ) {
       // throw it up the chain
-      globalThis.postMessage({request:{hasPuterAbility:0}}, '*');
+      globalThis.parent.postMessage({request:{hasPuterAbility:0}}, '*');
     } else {
       // push it back down with the answer
       state.execute(`globalThis.puterAbilityConfirmed = true;`, {contextId: meta.executionContextId});       
@@ -35,6 +35,6 @@ export async function handlePuterAbility(meta, state) {
   }
   if ( meta.puterCustomDownload ) {
     // throw it up the chain
-    globalThis.postMessage({request:{...meta}}, '*');
+    globalThis.parent.postMessage({request:{...meta}}, '*');
   }
 }
