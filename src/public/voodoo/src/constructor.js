@@ -364,6 +364,30 @@
           latestRequestId: 0
         });
 
+      // plugins
+        const plugins = {};
+        if ( DEBUG.detectPuterAbility ) {
+          DEBUG.logPlugins && console.log(`Loading puter ability plugin...`);
+          try {
+            const module = await import('./plugins/puterAbility.js');
+            const {default:untilPuterAbility, handlePuterAbility} = module;
+            untilPuterAbility().then(() => {
+              DEBUG.logPlugins && console.log(`Puter ability`, globalThis.hasPuterAbility);
+              if ( globalThis.hasPuterAbility ) {
+                state.hasPuterAbility = globalThis.hasPuterAbility;
+              }
+            });
+            if ( handlePuterAbility ) {
+              plugins.handlePuterAbility = handlePuterAbility;
+            } else {
+              throw new TypeError(`Puter ability handler 'handlePuterAbility' not exported from a plugin module`);
+            }
+            DEBUG.logPlugins && console.log(`Plugin to detect puter ability loaded and ready.`);
+          } catch(e) {
+            console.warn(`detectPuterAbility is on but we could not load a plugin module for it.`, e);
+          }
+        }
+
       // variables
         let Root = document;
         let lastTime = new Date;
@@ -1022,6 +1046,11 @@
           });
           queue.addMetaListener('navigated', meta => resetLoadingIndicator(meta, state));
 
+        // plugins
+        if ( DEBUG.detectPuterAbility ) {
+          queue.addMetaListener('hasPuterAbility', meta => plugins.handlePuterAbility(meta, state));
+        }
+
         if ( DEBUG.val >= DEBUG.med ) {
           queue.addMetaListener('vm', meta => console.log(meta));
           queue.addMetaListener('modal', meta => console.log(meta));
@@ -1200,30 +1229,30 @@
           });
 
         // HTTP auth
-        queue.addMetaListener('authRequired', ({authRequired}) => {
-          const {requestId} = authRequired;
-          const modal = {
-            requestId,
-            type: 'auth',
-            message: `Provide credentials to continue`,
-            title: `HTTP Authentication`,
-          };
-          state.viewState.modalComponent.openModal({modal});
-        });
+          queue.addMetaListener('authRequired', ({authRequired}) => {
+            const {requestId} = authRequired;
+            const modal = {
+              requestId,
+              type: 'auth',
+              message: `Provide credentials to continue`,
+              title: `HTTP Authentication`,
+            };
+            state.viewState.modalComponent.openModal({modal});
+          });
 
         // File chooser 
-        queue.addMetaListener('fileChooser', ({fileChooser}) => {
-          const {sessionId, mode, accept, csrfToken} = fileChooser;
-          DEBUG.val && console.log('client receive file chooser notification', fileChooser);
-          const modal = {
-            sessionId, mode, accept, csrfToken,
-            type: 'filechooser',
-            message: `Securely send files to the remote page.`,
-            title: `File Upload`,
-          };
-          DEBUG.val && console.log({fileChooserModal:modal});
-          state.viewState.modalComponent.openModal({modal});
-        });
+          queue.addMetaListener('fileChooser', ({fileChooser}) => {
+            const {sessionId, mode, accept, csrfToken} = fileChooser;
+            DEBUG.val && console.log('client receive file chooser notification', fileChooser);
+            const modal = {
+              sessionId, mode, accept, csrfToken,
+              type: 'filechooser',
+              message: `Securely send files to the remote page.`,
+              title: `File Upload`,
+            };
+            DEBUG.val && console.log({fileChooserModal:modal});
+            state.viewState.modalComponent.openModal({modal});
+          });
       
       // bond tasks 
         canvasBondTasks.push(indicateNoOpenTabs);

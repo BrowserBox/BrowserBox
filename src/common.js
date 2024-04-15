@@ -133,6 +133,7 @@ export const DEBUG = Object.freeze({
   noSecurityHeaders: false,
   mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
+  useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
   loadSPLFreshEachLogin: false,
