@@ -162,6 +162,10 @@
       next();
     });
 
+    if ( process.env.DOMAIN.endsWith('cloudtabs.net') ) {
+      app.use(miniCorsPuter);
+    }
+
     app.use(express.static(STATIC_DIR, { maxAge: 31557600 }));
 
     app.use('/archives', exploreDirectories(ArchivesDir, {
@@ -295,12 +299,11 @@
       let SCRIPT;
       let isArchive = false;
       let resolve;
-      let pr;
+      let pr = new Promise(res => resolve = res);
 
       try {
         if ( mime && ARCHIVES.has(mime) && ! DOCUMENTS_THAT_ARE_ARCHIVES.has(ext) ) {
           isArchive = true;
-          pr = new Promise(res => resolve = res);
           SCRIPT = EXPLORER;
           const destPath = Path.join(uploadPath, pdf.filename);
           if ( pdf.path != destPath ) {
@@ -314,12 +317,17 @@
           let fileContent = fs.readFileSync(sourceFilePath, 'utf8');
           fileContent = fileContent.replace(/\$\$FORMAT\$\$/g, FORMAT);
           fs.writeFileSync(destinationFilePath, fileContent);
+          const size = fs.statSync(pdf.path).size;
 
-          if ( fs.statSync(pdf.path).size > 158*(1<<20) ) {
+          if ( size > 158*(1<<20) ) {
             noConvertReason = 'File too big. Larger than 158 MB.';
           } else if ( FORBIDDEN_CONVERSIONS.has( Path.extname(pdf.path).slice(1) ) ) {
             noConvertReason = 'File is of a type we do not convert.';
+          } else if ( size < 10 && fs.readFileSync(pdf.path).toString() == 'Failed' ) {
+            noConvertReason = 'File failed to download. This is probably a rate limit on the file\'s website.';
           }
+
+          console.log('file', size, fs.readFileSync(pdf.path).toString());
 
           if ( noConvertReason ) {
             fs.writeFileSync(noConvertFilePath, noConvertReason );
@@ -355,7 +363,7 @@
             } else {
               console.log(`${SCRIPT} exited`);
             }
-            if ( isArchive && resolve ) {
+            if ( resolve ) {
               resolve();
             }
           });
@@ -383,12 +391,15 @@
             res.type('text/plain');
             res.end(sanitizeUrl(viewUrl));
           }
-          if ( setViewUrl ) {
-            State.Files.set(hash, viewUrl);
-            if ( newFiles % WAIT_NEW_FILES_BEFORE_DISK_SYNC == 0 ) {
-              syncHashes(State.Files, State.Links);
+          pr.then(() => {
+            if ( setViewUrl ) {
+              State.Files.set(hash, viewUrl);
+              console.log(`Set view url`, viewUrl);
+              if ( newFiles % WAIT_NEW_FILES_BEFORE_DISK_SYNC == 0 ) {
+                syncHashes(State.Files, State.Links);
+              }
             }
-          }
+          });
           return sanitizeUrl(viewUrl);
       } catch(e) {
         console.warn(e);
@@ -604,5 +615,26 @@
       };
 
       return htmlString.replace(/[&<>"']/g, (char) => map[char]);
+    }
+
+    function miniCorsPuter(req, res, next) {
+      const allowedDomainPattern = /^https:\/\/([a-zA-Z0-9-]+\.)*puter\.site(:\d+)?$/;
+
+      const origin = req.headers.origin;
+      DEBUG.debugMiniCors && console.log('Origin?', origin);
+      if (origin && allowedDomainPattern.test(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);  // Allow the specific origin
+        res.header("Access-Control-Allow-Methods", "GET, OPTIONS");  // Specify methods you want to allow
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, X-BrowserBox-Local-Auth");  // Specify headers you want to allow
+
+        // Setting Cache-Control for private caching, must-revalidate ensures fresh validation
+        res.header("Cache-Control", "private, must-revalidate, max-age=3600");  // Allows client caching, but not shared (e.g., CDNs)
+        res.header("Vary", "Origin");  // Ensures all requests from new origins revalidate
+      } else {
+        // Optionally handle the non-allowed origins
+        res.header("Access-Control-Allow-Origin", "null");  // Mitigates the risk of leaking CORS headers to any origin
+      }
+
+      next();
     }
   }

@@ -30,6 +30,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  networkDebug: false,
   networkBlocking: true,
   blockFileURLs: true,
   blockChromeURLs: false,
@@ -70,7 +71,7 @@ export const DEBUG = Object.freeze({
   localTestRTT: !process.env.TORBB && process.platform == "darwin" && true,
   debugCast: false,
   showTargetSessionMap: false,
-  debugFileDownload: false,
+  debugFileDownload: true,
   debugFileUpload: false,
   get useNewAsgardHeadless() { 
     return this.restoreSessions || false;
@@ -133,6 +134,7 @@ export const DEBUG = Object.freeze({
   noSecurityHeaders: false,
   mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
+  useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
   showFlash: false, /* debug flash */
   loadSPLFreshEachLogin: false,
@@ -150,7 +152,7 @@ export const DEBUG = Object.freeze({
     /* || other condition || some other condition ... etc ... */
     return this.debugFavicon || this.showConsoleMessages; 
   },
-  worldDebug: false,
+  worldDebug: true,
   bufSend: true,
   acks: false,          // actually this doesn't "turn on" acks. They are on by default
                         // this flag just turns on acks logging. It should probably be called
