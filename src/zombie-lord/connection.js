@@ -2147,7 +2147,6 @@ function ensureMinBounds(bounds) {
   return bounds;
 }
 
-
 function saveTargetIdAsGlobal(targetId) {
   return `
     {

@@ -1,4 +1,3 @@
-- for pulse renice we should only select our own pulseuadio. maybe pgrep -u $(whoami) etc ???
-
+- we should not cache the doc conversion if it fails. there is a bug where this occurs.
 
 
