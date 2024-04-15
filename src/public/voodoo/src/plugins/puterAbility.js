@@ -22,3 +22,19 @@ export default async function untilPuterAbility() {
   return pr;
 }
 
+export async function handlePuterAbility(meta, state) {
+  console.log(`received meta event`, meta, state);
+  if ( meta.hasPuterAbility ) {
+    if ( ! globalThis.hasPuterAbility ) {
+      // throw it up the chain
+      globalThis.postMessage({request:{hasPuterAbility:0}}, '*');
+    } else {
+      // push it back down with the answer
+      state.execute(`globalThis.puterAbilityConfirmed = true;`, {contextId: meta.executionContextId});       
+    }
+  }
+  if ( meta.puterCustomDownload ) {
+    // throw it up the chain
+    globalThis.postMessage({request:{...meta}}, '*');
+  }
+}

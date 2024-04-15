@@ -30,6 +30,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  networkDebug: false,
   networkBlocking: true,
   blockFileURLs: true,
   blockChromeURLs: false,
@@ -70,7 +71,7 @@ export const DEBUG = Object.freeze({
   localTestRTT: !process.env.TORBB && process.platform == "darwin" && true,
   debugCast: false,
   showTargetSessionMap: false,
-  debugFileDownload: false,
+  debugFileDownload: true,
   debugFileUpload: false,
   get useNewAsgardHeadless() { 
     return this.restoreSessions || false;

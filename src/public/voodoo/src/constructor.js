@@ -168,6 +168,9 @@
           checkResults,
           useCookies,
 
+          // instrumentation
+          execute,
+
           // set up progress
           safariLongTapInstalled: false,
 
@@ -1505,6 +1508,19 @@
             type: 'setDocument',
             html, frameId, sessionId,
             synthetic: true
+          });
+        }
+
+        function execute(expression, {contextId, returnByValue = true}) {
+          queue.send({
+            command: {
+              name: "Runtime.evaluate",
+              params: {
+                expression,
+                contextId,
+                returnByValue
+              }
+            }
           });
         }
 

@@ -675,7 +675,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
       DEBUG.debugFileDownload && console.log(`File ${downloadFileName} has downloaded`);
 
-      await sleep(1001);
+      DEBUG.debugFileDownload && console.info({guidFile,originalFile});
+      await untilTrueOrTimeout(() => fs.existsSync(guidFile) || fs.existsSync(originalFile), 6); // wait 6 seconds for file to resolve
       
       // if the file is named with a guid copy it to original name
       if ( fs.existsSync(guidFile) ) {
@@ -683,7 +684,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           fs.linkSync(guidFile, originalFile);
           DEBUG.debugFileDownload && console.log(`GUID file name`, originalFile );
         } catch(e) {
-          DEBUG.showFlash && console.info(`Could not create link from guid file`, e);
+          (DEBUG.debugFileDownload || DEBUG.showFlash) && console.info(`Could not create link from guid file`, e);
         } finally {
           try {
             fs.unlinkSync(guidFile);
@@ -691,7 +692,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             console.warn(`Could not delete guid file`, guidFile, downloadFileName);
           }
         }
-      } else if ( fs.existsSync(originalFile) ) {
+      }
+      if ( fs.existsSync(originalFile) ) {
         DEBUG.debugFileDownload && console.log(`Original file name`, originalFile );
       } else {
         console.warn(`Cannot find download`, download);
@@ -1106,6 +1108,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.val && console.log('notify client', fileChooser);
       connection.forceMeta({fileChooser});
     } else if ( message.method == "Network.requestWillBeSent" ) {
+      DEBUG.networkDebug && console.log({message});
       const resource = startLoading(sessionId);
       const {requestId,frameId, request:{url}} = message.params;
       if ( requestId && frameId ) {
@@ -1113,6 +1116,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }
       connection.meta.push({resource}); 
     } else if ( message.method == "Network.requestServedFromCache" ) {
+      DEBUG.networkDebug && console.log({message});
       const resource = endLoading(sessionId);
       const {requestId} = message.params;
       connection.meta.push({resource}); 
@@ -1120,12 +1124,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     } else if ( message.method == "Network.loadingFinished" ) {
       const resource = endLoading(sessionId);
       const {requestId} = message.params;
+      DEBUG.networkDebug && console.log({message});
       connection.meta.push({resource}); 
       setTimeout(() => Frames.delete(requestId), WAIT_FOR_COALESCED_NETWORK_EVENTS);
     } else if ( message.method == "Network.loadingFailed" ) {
       const resource = endLoading(sessionId);
       const {requestId} = message.params;
       const savedFrame = Frames.get(requestId)
+      DEBUG.networkDebug && console.log({message, savedFrame});
       DEBUG.fontDebug && message.params.type == 'Font' && console.log({message, savedFrame});
       if ( savedFrame ) {
         const {url: url = '',frameId} = savedFrame;
@@ -1174,6 +1180,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.val && console.warn(`No url or frameId saved for requestId: ${requestId}`);
       }
     } else if ( message.method == "Network.responseReceived" ) {
+      DEBUG.networkDebug && console.log({message});
       const resource = endLoading(sessionId);
       connection.meta.push({resource}); 
     } else if ( message.method == "Runtime.exceptionThrown" ) {
@@ -2024,6 +2031,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }
       }
     }
+  }
+
+  function getEmbeddingHostname() {
+    return `This is unknown at the time this code runs.`;
   }
 
   function addContext(id, contextId) {

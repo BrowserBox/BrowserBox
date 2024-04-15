@@ -353,7 +353,7 @@
       stopCheck = true;
       clearTimeout(noCram);
       console.log(`Stopped.`);
-      loading.innerHTML = `Document did not convert. Please see the hex viewer if you want to review its contents.`;
+      loading.innerHTML = `${reason} <br>Please see the hex viewer if you want to review its contents.`;
       // remove the image element used to display the current page
       globalThis?.page?.remove?.();
     }
