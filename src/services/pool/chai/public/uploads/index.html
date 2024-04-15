@@ -332,7 +332,14 @@
       const userConfirmed = confirm("This file could harm your computer. Are you sure you want to download?");
       if (!userConfirmed) {
         event.preventDefault();
-      }
+      } else if ( globalThis.puterAbilityConfirmed ) {
+        event.preventDefault();
+        console.log(JSON.stringify({
+          puterCustomDownload: {
+            url: downloadLink.href,
+          }
+        }));
+      } 
     });
   });
 
@@ -350,5 +357,24 @@
       // remove the image element used to display the current page
       globalThis?.page?.remove?.();
     }
+  }
+</script>
+<script>
+  if ( globalThis.location.hostname.endsWith('cloudtabs.net') ) {
+    const maxTimes = 150; // check for some time
+    let times = 0;
+    let int = setInterval(() => {
+      times++;
+      if ( (times > maxTimes) || globalThis.puterAbilityConfirmed ) {
+        clearInterval(int);
+        return;
+      }
+      // this will be picked up and passed to the meta listener
+      console.log(JSON.stringify({
+        hasPuterAbility : {
+          msg: "Checking puter ability for custom download plugin: 'save to puter desktop'"
+        }
+      }));
+    }, 1001);
   }
 </script>

@@ -377,6 +377,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       console.warn(`Error importing flashEmu.js`, e);
     }
   }
+  if ( DEBUG.useDocCustomDownloadPlugin ) {
+    try {
+      templatedInjections.docDownloadPlugin = templatedInjections.docDownloadPlugin || 
+        await import(path.join(APP_ROOT, 'zombie-lord', 'injections', 'templated', 'docDownloadPlugin.js'));
+    } catch(e) {
+      console.warn(`Error importing flashEmu.js`, e);
+    }
+  }
 
   console.log({port});
   const {send,on, ons} = connection.zombie;
@@ -1369,6 +1377,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             injectableAssetPath
           });
           templatedInjectionsScroll += flashEmuScript;
+        }
+        if ( DEBUG.useDocCustomDownloadPlugin ) {
+          const embeddingHostname = getEmbeddingHostname();
+          const pluginScript = templatedInjections.docDownloadPlugin.default({
+            embeddingHostname
+          });
+          templatedInjectionsScroll += pluginScript;
         }
         await send(
           "Page.addScriptToEvaluateOnNewDocument",
