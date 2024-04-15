@@ -21,3 +21,7 @@ export default async function untilPuterAbility() {
   globalThis.top.postMessage({request:{hasPuterAbility: 0}}, '*');
   return pr;
 }
+
+export async function handlePuterAbility(meta, state) {
+  console.log(`received meta event`, meta, state);
+}

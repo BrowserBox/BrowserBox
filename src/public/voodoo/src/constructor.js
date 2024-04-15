@@ -1049,6 +1049,7 @@
         // plugins
         if ( DEBUG.detectPuterAbility ) {
           queue.addMetaListener('hasPuterAbility', meta => plugins.handlePuterAbility(meta, state));
+          queue.addMetaListener('puterCustomDownload', meta => plugins.handlePuterAbility(meta, state));
         }
 
         if ( DEBUG.val >= DEBUG.med ) {
