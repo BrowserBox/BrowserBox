@@ -21,3 +21,4 @@ export default async function untilPuterAbility() {
   globalThis.top.postMessage({request:{hasPuterAbility: 0}}, '*');
   return pr;
 }
+
