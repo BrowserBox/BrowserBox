@@ -3,6 +3,7 @@
 .parcel-cache/*
 .*.un~
 *~
+.*.swo
 process_actions.sh
 core
 build.log

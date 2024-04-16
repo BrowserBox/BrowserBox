@@ -32,6 +32,8 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  logPlugins: false,
+  debugPuterAbility: false,
   detectPuterAbility: true,
   debugConnectivity: false,
   noReset: false,

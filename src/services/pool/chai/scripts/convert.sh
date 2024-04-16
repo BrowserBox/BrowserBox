@@ -36,6 +36,7 @@ convert_to_pdf() {
 convert_via_latex() {
   local input_file="$1"
   local output_file="$2"
+  local retry_flag="$3"
 
   latex=$(mktemp -d)
   cp "$input_file" "${latex}/"
@@ -63,7 +64,8 @@ convert_via_latex() {
 
 \end{document}
 TAO
-  pdflatex --output-directory "$latex" file.tex 1>&2
+
+  pdflatex -interaction=nonstopmode --output-directory "$latex" file.tex 1>&2
   mv "${latex}/file.pdf" "${output_file}"
 }
 

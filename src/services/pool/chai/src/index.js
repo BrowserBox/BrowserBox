@@ -94,7 +94,8 @@
     const sleep = ms => new Promise(res => setTimeout(res, ms));
     // adapted from code at source: https://stackoverflow.com/a/22907134/10283964
     const DEBUG = {
-      showHash: false
+      showHash: false,
+      showFullFile: false,
     };
     const uploadPath = Path.resolve(STATIC_DIR, 'uploads');
     const CONVERTER = Path.resolve('.', 'scripts', 'convert.sh');
@@ -182,20 +183,22 @@
     }))
 
     app.use(new RegExp(`/uploads/file.*0000\.${FORMAT}`), RateLimiter, (req, res) => {
-      // save browser cache from getting tired of this not existing while conversion is in progress
-        // prevent the repreated requests for first page to blow the cache
-        // as in browser will eventually think ti doesn't exist and just serve no exist for ever
-        // rather than make request
+      // Save browser cache from getting tired of this not existing while conversion is in progress
+      // Prevent the repeated requests for first page to blow the cache
+      // As in browser will eventually think it doesn't exist and just serve no exist forever
+      // Rather than make request
       const fullPath = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
       const fileSystemPath = Path.join(uploadPath, Path.basename(sanitizeUrl(fullPath)));
       console.log('Not found yet', fileSystemPath);
-      if ( fs.existsSync(fileSystemPath) ) {
+      if (fs.existsSync(fileSystemPath)) {
         res.send(fileSystemPath);
       } else {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.status(404).end('');
+        res.set({
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        });
+        res.status(200).end('');
       }
     });
 
@@ -327,7 +330,7 @@
             noConvertReason = 'File failed to download. This is probably a rate limit on the file\'s website.';
           }
 
-          console.log('file', size, fs.readFileSync(pdf.path).toString());
+          DEBUG.showFullFile && console.log('file', size, fs.readFileSync(pdf.path).toString());
 
           if ( noConvertReason ) {
             fs.writeFileSync(noConvertFilePath, noConvertReason );
