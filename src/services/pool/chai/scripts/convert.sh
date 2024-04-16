@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#set -x
+set -x
 
 . ./scripts/config.sh
 
@@ -33,9 +33,67 @@ convert_to_pdf() {
   pandoc "${options[@]}" "$input_file" -o "$output_file"
 }
 
+broke_convert_via_latex() {
+  local input_file="$1"
+  local output_file="$2"
+  local retry_flag="$3"
+
+  local latex_dir=$(mktemp -d)
+  local base_name=$(basename "$input_file")  # Extracts the filename from the input path
+
+  cp "$input_file" "$latex_dir/$base_name"  # Copy the input file to the temp directory with its original name
+
+  # Prepare the LaTeX file setup
+  cat <<TAO > "$latex_dir/file.tex"
+\documentclass{article}
+\usepackage[left=2cm,right=1cm,top=2cm,bottom=2cm]{geometry}
+\usepackage{listings}
+\usepackage{beramono}
+\usepackage[T1]{fontenc}
+
+\lstset{%
+  language={},%
+  basicstyle=\ttfamily,%
+  linewidth=19cm,%
+  breaklines=true,%
+  breakatwhitespace=false,%
+  texcl=false,%
+  literate={\\\}{{\textbackslash}}1
+}
+
+\begin{document}
+\pagestyle{empty}
+
+\lstinputlisting{"$base_name"}
+
+\end{document}
+TAO
+
+  # First attempt to compile the LaTeX document
+  pdflatex --output-directory="$latex_dir" "$latex_dir/file.tex" 1>&2 && mv "$latex_dir/file.pdf" "$output_file" || {
+    # If pdflatex fails and retry has not been attempted (retry_flag is not 'no_repeat')
+    if [[ $retry_flag != 'no_repeat' ]]; then
+      echo "pdflatex failed, attempting to fix input file and retry..."
+
+      # Attempt to convert the encoding to UTF-8 and replace non-printable characters
+      iconv -f ASCII -t UTF-8 "$latex_dir/$base_name" -o "$latex_dir/cleaned_$base_name" || true
+      sed -i 's/[^[:print:]\t]//g' "$latex_dir/cleaned_$base_name"
+      mv "$latex_dir/cleaned_$base_name" "$latex_dir/$base_name"
+
+      # Recursive call to the function with 'no_repeat' to avoid further retries
+      convert_via_latex "$1" "$2" 'no_repeat'
+    else
+      echo "Retry failed; no further attempts will be made."
+      return 1  # Return a non-zero exit status to indicate failure
+    fi
+  }
+}
+
+
 convert_via_latex() {
   local input_file="$1"
   local output_file="$2"
+  local retry_flag="$3"
 
   latex=$(mktemp -d)
   cp "$input_file" "${latex}/"
@@ -63,8 +121,27 @@ convert_via_latex() {
 
 \end{document}
 TAO
-  pdflatex --output-directory "$latex" file.tex 1>&2
-  mv "${latex}/file.pdf" "${output_file}"
+  if ! pdflatex --output-directory "$latex" file.tex 1>&2; then
+    # If pdflatex fails and retry has not been attempted (retry_flag is not 'no_repeat')
+    if [[ $retry_flag != 'no_repeat' ]]; then
+      echo "pdflatex failed, attempting to fix input file and retry..." >&2
+
+      # Attempt to convert the encoding to UTF-8 and replace non-printable characters 
+      local base_name=$(basename "$input_file")  # Extracts the filename from the input path
+      iconv -f ASCII -t UTF-8 "$input_file" -o "${latex_dir}/cleaned_${base_name}" >&2 || true
+      sed -i 's/[^[:print:]\t]//g' "${latex_dir}/cleaned_${base_name}" >&2
+      mv "${latex_dir}/cleaned_${base_name}" "${latex_dir}/${base_name}"
+
+      # Recursive call to the function with 'no_repeat' to avoid further retries
+      convert_via_latex "${latex_dir}/${base_name}" "$2" 'no_repeat'
+    else
+      echo "Retry failed; no further attempts will be made."
+      return 1  # Return a non-zero exit status to indicate failure
+    fi
+  else
+    mv "${latex}/file.pdf" "${output_file}"
+  fi
+
 }
 
 convert_via_libreoffice() {
