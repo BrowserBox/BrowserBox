@@ -1,3 +1,4 @@
+import {DEBUG} from '../common.js';
 // returns a promise that eventually resolve to true if puter ability is detected. It never rejects
 // and does not resolve until puter ability is detected.
 export default async function untilPuterAbility() {
@@ -13,15 +14,17 @@ export default async function untilPuterAbility() {
       resolve(true);
     }
   });
+  DEBUG.debugPuterAbility && console.log(`browser context sending request for info on puter ability to puter context`);
   globalThis.parent.parent.postMessage({request:{hasPuterAbility: 0}}, '*');
   return pr;
 }
 
 export async function handlePuterAbility(meta, state) {
-  DEBUG.debugPuterAbility && console.log(`received meta event`, meta, state);
+  DEBUG.debugPuterAbility && console.log(`browser context received meta event`, meta, state);
   if ( meta.hasPuterAbility ) {
     if ( ! globalThis.hasPuterAbility ) {
       // throw it up the chain
+      DEBUG.debugPuterAbility && console.log(`browser context sending request for info on puter ability to puter context`);
       globalThis.parent.parent.postMessage({request:{hasPuterAbility:0}}, '*');
     } else {
       // push it back down with the answer
@@ -30,6 +33,7 @@ export async function handlePuterAbility(meta, state) {
   }
   if ( meta.puterCustomDownload ) {
     // throw it up the chain
+    DEBUG.debugPuterAbility && console.log(`browser context sending notification of intended download to puter to puter context`);
     globalThis.parent.parent.postMessage({request:{...meta}}, '*');
   }
 }

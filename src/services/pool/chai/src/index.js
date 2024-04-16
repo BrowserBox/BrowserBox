@@ -183,20 +183,22 @@
     }))
 
     app.use(new RegExp(`/uploads/file.*0000\.${FORMAT}`), RateLimiter, (req, res) => {
-      // save browser cache from getting tired of this not existing while conversion is in progress
-        // prevent the repreated requests for first page to blow the cache
-        // as in browser will eventually think ti doesn't exist and just serve no exist for ever
-        // rather than make request
+      // Save browser cache from getting tired of this not existing while conversion is in progress
+      // Prevent the repeated requests for first page to blow the cache
+      // As in browser will eventually think it doesn't exist and just serve no exist forever
+      // Rather than make request
       const fullPath = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
       const fileSystemPath = Path.join(uploadPath, Path.basename(sanitizeUrl(fullPath)));
       console.log('Not found yet', fileSystemPath);
-      if ( fs.existsSync(fileSystemPath) ) {
+      if (fs.existsSync(fileSystemPath)) {
         res.send(fileSystemPath);
       } else {
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.status(404).end('');
+        res.set({
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        });
+        res.status(200).end('');
       }
     });
 
