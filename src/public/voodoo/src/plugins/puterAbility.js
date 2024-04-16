@@ -1,8 +1,3 @@
-{
-  
-
-}
-
 // returns a promise that eventually resolve to true if puter ability is detected. It never rejects
 // and does not resolve until puter ability is detected.
 export default async function untilPuterAbility() {
@@ -23,7 +18,7 @@ export default async function untilPuterAbility() {
 }
 
 export async function handlePuterAbility(meta, state) {
-  console.log(`received meta event`, meta, state);
+  DEBUG.debugPuterAbility && console.log(`received meta event`, meta, state);
   if ( meta.hasPuterAbility ) {
     if ( ! globalThis.hasPuterAbility ) {
       // throw it up the chain
