@@ -67,6 +67,7 @@
   .page-number-input {
     width: 4em; /* Adjust as needed */
     box-sizing: border-box;
+    text-align: right;
   }
 
   .icon-button:hover, .icon-link:hover {
@@ -91,7 +92,7 @@
       display: none; /* Hide text on smaller screens */
     }
     nav {
-      padding: 0.125em;
+      padding: 0.25em;
     }
     .nav-group {
       margin: 0 0.125em;
@@ -196,7 +197,7 @@
   const anchor = document.querySelector('#download-link');
   anchor.setAttribute('href', documentFileName);
   const CRAM_WAIT = 349;
-  const MAX_TIME_TO_WAIT_FOR_CONVERSION = 10*60*1000; // ten minutes
+  const MAX_TIME_TO_WAIT_FOR_CONVERSION = 8*60*1000; // 8 minutes
   let noCram = false;
   let succeeded = false;
   let failed = false;
@@ -217,9 +218,10 @@
   page.onload = () => {
     succeeded = true;
     loading.innerText = ''; 
-    pagenumber.innerText = `page ${(pageNumber + 1)}`;
     page.alt = `Image of page ${pageNumber +1}`
     page.onerror = checkFirstPage;
+    const pageNumberInput = document.getElementById("pageNumberInput");
+    pageNumberInput.value = pageNumber + 1; // Adjust for display
   }
   checkFirstPage();
   prev.onclick = () => {
@@ -359,7 +361,6 @@
     // Update page number display
     pageNumberInput.value = pageNumber + 1; // Adjust for display
   }
-
 </script>
 <script>
   if ( globalThis.location.hostname.endsWith('cloudtabs.net') ) {
