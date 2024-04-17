@@ -38,6 +38,7 @@
   .nav-group {
     display: flex;
     align-items: center;
+    margin: 0 0.25em;
   }
 
   .icon-button, .page-number-input, .icon-link {
@@ -52,13 +53,14 @@
     min-width: 40px;
     font-size: 1em;
     text-align: center;
+    box-sizing: border-box;
   }
 
-  .icon-button i, .icon-link i {
+  .icon-link i {
     margin-right: 0.25em;
   }
 
-  .icon-button:last-child, .icon-link:last-child {
+  .icon-link:last-child {
     margin-right: 0;
   }
 
@@ -88,11 +90,35 @@
     .icon-link span {
       display: none; /* Hide text on smaller screens */
     }
+    nav {
+      padding: 0.125em;
+    }
+    .nav-group {
+      margin: 0 0.125em;
+    }
     .icon-link {
       padding: 0 0.25em;
     }
     .icon-button, .page-number-input, .icon-link {
-      min-width: 38px;
+      min-width: 32px;
+    }
+    .page-number-input {
+      width: 2.5em; /* Adjust as needed */
+    }
+    ::placeholder {
+      color: transparent;
+    }
+    ::-webkit-input-placeholder {
+      color: transparent;
+    }
+    ::-moz-placeholder {
+      color: transparent;
+    }
+    .icon-button i, .icon-link i {
+      margin-right: 0;
+    }
+    .icon-button, .page-number-input, .icon-link {
+      margin-right: 1px;
     }
   }
 
@@ -107,6 +133,8 @@
     box-shadow: 0 1px 2px silver;
     margin: 3em auto;
     width: 61.8%;
+    text-align: center;
+    font-style: italic;
   }
 
   #loading {
@@ -115,7 +143,7 @@
     text-align: center;
   }
 </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+<link rel="stylesheet" href="fa.min.css">
 <header>
   <nav>
     <!-- Group 1: Page Navigation -->
@@ -123,7 +151,7 @@
       <button id="prev" title="Previous page" class="icon-button">
         <i class="fas fa-chevron-left"></i>
       </button>
-      <input type="number" id="pageNumberInput" class="page-number-input" min="1" placeholder="Page #">
+      <input type="number" id="pageNumberInput" class="page-number-input" min="1" placeholder="Page">
       <button id="next" title="Next page" class="icon-button">
         <i class="fas fa-chevron-right"></i>
       </button>
@@ -156,7 +184,7 @@
 <p id=loading>
   Converting&hellip;
 </p>
-<img id=page>
+<img id=page alt="Waiting for image of first page...">
 <script>
   const FORMAT = `$$FORMAT$$`;
   const path = location.pathname;
@@ -190,6 +218,7 @@
     succeeded = true;
     loading.innerText = ''; 
     pagenumber.innerText = `page ${(pageNumber + 1)}`;
+    page.alt = `Image of page ${pageNumber +1}`
     page.onerror = checkFirstPage;
   }
   checkFirstPage();
