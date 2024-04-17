@@ -304,6 +304,13 @@
         }));
       } 
     });
+
+    // Event listeners for zoom buttons
+    document.getElementById("zoomIn").addEventListener("click", function() { adjustZoom(true); });
+    document.getElementById("zoomOut").addEventListener("click", function() { adjustZoom(false); });
+
+    // Event listener for page number input
+    document.getElementById("pageNumberInput").addEventListener("change", updatePageNumber);
   });
 
   async function checkNoConvert() {
@@ -321,6 +328,38 @@
       globalThis?.page?.remove?.();
     }
   }
+
+  // Function to adjust zoom
+  function adjustZoom(zoomIn) {
+    const image = document.getElementById("page");
+    let width = parseInt(image.style.width) || 61.8; // Default zoom level
+    const zoomStep = 10; // The amount by which the zoom changes
+
+    if (zoomIn) {
+      width += zoomStep;
+    } else {
+      width -= zoomStep;
+    }
+
+    // Limit zoom bounds (example: 10% to 200%)
+    width = Math.max(10, Math.min(200, width));
+
+    image.style.width = width + "%";
+  }
+
+  // Function to update page number
+  function updatePageNumber() {
+    const pageNumberInput = document.getElementById("pageNumberInput");
+    pageNumber = parseInt(pageNumberInput.value) - 1; // Adjust because pages are zero-indexed
+    const nextUrl = imgUrl(pageNumber);
+
+    // Update image source
+    page.src = nextUrl;
+
+    // Update page number display
+    pageNumberInput.value = pageNumber + 1; // Adjust for display
+  }
+
 </script>
 <script>
   if ( globalThis.location.hostname.endsWith('cloudtabs.net') ) {
