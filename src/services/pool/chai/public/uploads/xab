@@ -1,156 +1,22 @@
-<!DOCTYPE html>
-<title>View Document</title>
-<meta charset=utf-8>
-<meta name=viewport content=width=device-width,initial-scale=1>
-<style>
-  :root {
-    --bg-color: whitesmoke;
-    --button-color: #f5f5f5;
-    --button-hover-color: #e0e0e0;
-    --icon-color: #333;
-    --icon-button-size: 36px;
-  }
-
-  body {
-    background: var(--bg-color);
-    font-family: system-ui, Arial, sans-serif;
-    margin: 0;
-    padding-top: 60px; /* Space for fixed header */
-  }
-
-  header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-  }
-
-  nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5em;
-  }
-
-  .nav-group {
-    display: flex;
-    align-items: center;
-  }
-
-  .icon-button, .page-number-input, .icon-link {
-    border: 1px solid #dcdcdc;
-    padding: 0 0.25em;
-    margin-right: 0.25em;
-    background: var(--button-color);
-    border-radius: 4px;
-    height: var(--icon-button-size);
-    text-decoration: none;
-    color: var(--icon-color);
-    min-width: 40px;
-    font-size: 1em;
-    text-align: center;
-  }
-
-  .icon-button i, .icon-link i {
-    margin-right: 0.25em;
-  }
-
-  .icon-button:last-child, .icon-link:last-child {
-    margin-right: 0;
-  }
-
-  .page-number-input {
-    width: 4em; /* Adjust as needed */
-    box-sizing: border-box;
-  }
-
-  .icon-button:hover, .icon-link:hover {
-    background: var(--button-hover-color);
-    cursor: pointer;
-  }
-
-  .icon-link {
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    padding: 0 0.5em;
-  }
-
-  nav > div {
-    display: flex;
-    align-items: stretch;
-  }
-
-  @media (max-width: 768px) {
-    .icon-link span {
-      display: none; /* Hide text on smaller screens */
-    }
-    .icon-link {
-      padding: 0 0.25em;
-    }
-    .icon-button, .page-number-input, .icon-link {
-      min-width: 38px;
-    }
-  }
-
-  /* Accessibility: Outlines for focus states */
-  .icon-button:focus, .page-number-input:focus, .icon-link:focus {
-    outline: 2px dashed dodgerblue;
-    outline-offset: 2px;
-  }
-
-  img {
-    display: block;
-    box-shadow: 0 1px 2px silver;
-    margin: 3em auto;
-    width: 61.8%;
-  }
-
-  #loading {
-    margin-top: 1.5rem;
-    cursor: wait !important;
-    text-align: center;
-  }
-</style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
-<header>
-  <nav>
-    <!-- Group 1: Page Navigation -->
-    <div class="nav-group page-navigation">
-      <button id="prev" title="Previous page" class="icon-button">
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      <input type="number" id="pageNumberInput" class="page-number-input" min="1" placeholder="Page #">
-      <button id="next" title="Next page" class="icon-button">
-        <i class="fas fa-chevron-right"></i>
-      </button>
-    </div>
-
-    <!-- Group 2: View Controls -->
-    <div class="nav-group view-controls">
-      <button id="zoomOut" title="Zoom out" class="icon-button">
-        <i class="fas fa-search-minus"></i>
-      </button>
-      <button id="rotate" title="Rotate page" class="icon-button">
-        <i class="fas fa-sync"></i>
-      </button>
-      <button id="zoomIn" title="Zoom in" class="icon-button">
-        <i class="fas fa-search-plus"></i>
-      </button>
-    </div>
-
-    <!-- Group 3: Links -->
-    <div class="nav-group link-controls">
-      <a id="hex-view-link" title="View hex of original" class="icon-link" href="/hex/command" target="_blank">
-        <i class="fas fa-code"></i><span class="text">HexView</span>
-      </a>
-      <a id="download-link" title="Download original" class="icon-link" rel="canonical" download href="#">
-        <i class="fas fa-download"></i><span class="text">Download</span>
-      </a>
-    </div>
+      <span id=pagenumber></span>
+      <input type="range" id="resizeSlider" min="15" max="200" value="61.8" style="max-width: 30vw;" title="Zoom" class=zoomer>
+    </section>
+    <section class=document>
+      <div class=hex-view>
+        <a id=hex-view-link title="View hex of original" href="/hex/command" target=_blank>
+          <span class=link-text>HexView</span>
+          <strong>&#11042;</strong>
+        </a>
+      </div>
+    </section>
+    <section class=document>
+      <div class=download>
+        <a id=download-link title="Download original" rel=canonical download href=#download>
+          <span class=link-text>Download</span>
+          <strong>&#xFE3E;</strong>
+        </a>
+      </div>
+    </section>
   </nav>
 </header>
 <p id=loading>
