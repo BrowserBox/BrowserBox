@@ -41,10 +41,14 @@ We provide a variety of install and run options, with instructions listed in thi
 
 - [Docker Hub](https://hub.docker.com/r/dosyago/browserbox) - pull, then use `./deploy-scripts/run_docker.sh` after tagging the pulled image to `ghcr.io/browserbox/browserbox:latest`
 - [GitHub Container Registry](https://github.com/orgs/BrowserBox/packages) - just use `./deploy-scripts/run_docker.sh` directly or via bash redirect with curl (the *no clone* option :rocket:).
-- [Manual `git clone` and `./deploy-scripts/global_install.sh`](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#manual-install---most-flexible-and-most-reliable-) - simple, flexible, direct. Perfect for development. 
+- [Manual `git clone` and `./deploy-scripts/global_install.sh`](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#manual-install---most-flexible-and-most-reliable-) - simple, flexible, direct. Perfect for development. See the [screencast &mdash; Deploying BrowserBox from 0 to 1: *"Recorded in High Definition ASCII-nema Vision"*](https://asciinema.org/a/654866)
+[![Screenshot of BrowserBox running on the CloudTabs SaaS][GIFSHOT]][ASCII]
 - [1-Click Cloud Deploy to Vultr, AWS, Azure or Linode](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#1-click-deploy---deploy-browserbox-to-the-cloud-instantly--tada-cyclone) - great for using it right away.
 - Pull from a mirror (SourceForge, but it lags behind the official repo [on GitHub](https://github.com/BrowserBox/BrowserBox)), or a fork (https://github.com/BrowserBox/BrowserBox/forks) &ndash; then use one the manual install option. But we recommend always using the latest code from our [Official BrowserBox GitHub Repository](https://github.com/BrowserBox/BrowserBox).
 - [Windows Edition](https://www.powershellgallery.com/packages/BrowserBox-Installer/1.5.8.20) - via the PowerShell Gallery installer package. In beta, so currently may be a little brittle or fragile, but the only option if you need to run natively on Windows. As a bonus we figured out how to get audio to stream from a Windows server without an active RDP connection, and without installing a virtual audio driver. We rock! 🚀 ❤️
+
+[GIFSHOT]: https://github.com/BrowserBox/BrowserBox/assets/22254235/5376f2c3-91b5-4865-94bf-ee3a616b3b98
+[ASCII]: https://asciinema.org/a/654866
   
 ------
 
