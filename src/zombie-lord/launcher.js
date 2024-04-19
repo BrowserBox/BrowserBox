@@ -9,6 +9,7 @@ import {sleep, DEBUG, CONFIG, untilForever} from '../common.js';
 import {COMMON_FORMAT} from './screenShots.js';
 
 //const RESTART_MS = 1000;
+const CHROME_PROFILE = 'Default'
 const zombies = new Map();
 let chromeNumber = 0;
 let chrome_started = false;
@@ -119,7 +120,7 @@ const launcher_api = {
   async newZombie({port, /*username*/}) {
     const crashDir = path.resolve(CONFIG.baseDir, 'browser-crashes');
     const udd = path.resolve(CONFIG.baseDir, 'browser-cache');
-    const upd = path.resolve(udd, 'Default');
+    const upd = path.resolve(udd, CHROME_PROFILE);
     if ( ! fs.existsSync( udd ) ) {
       fs.mkdirSync(udd, {recursive:true});
     }
@@ -132,7 +133,7 @@ const launcher_api = {
     ] : [
       `--window-size=${COMMON_FORMAT.width},${COMMON_FORMAT.height}`,
       `--crash-dumps-dir=${crashDir}`,
-      `--profile-directory="${'Default'}"`,
+      `--profile-directory="${CHROME_PROFILE}"`,
       ...(
         CONFIG.forceContentDarkMode ? [
           `--force-dark-mode`,
@@ -223,10 +224,9 @@ const launcher_api = {
     if ( DEBUG.noAudio ) {
       CHROME_FLAGS.push('--mute-audio');
     }
-    DEBUG.showFlags && console.log({chromeFlags: CHROME_FLAGS});
     const CHROME_OPTS = {
       port,
-      startingUrl: ' ',
+      startingUrl: fs.existsSync(path.resolve(CONFIG.baseDir, 'browser-cache', CHROME_PROFILE, 'README')) ? ' ' : (CONFIG.homePage || 'https://duckduckgo.com'),
       ignoreDefaultFlags: true,
       handleSIGINT: false,
       userDataDir: path.resolve(CONFIG.baseDir, 'browser-cache'),
@@ -236,7 +236,7 @@ const launcher_api = {
     if ( CHROME_OPTS.userDataDir ) {
       fs.mkdirSync(CHROME_OPTS.userDataDir, {recursive:true});
     }
-    console.log(CHROME_OPTS, CHROME_FLAGS);
+    DEBUG.showFlags && console.log({chromeOpts: CHROME_OPTS});
     const zomb = await ChromeLauncher(CHROME_OPTS);
 
     const retVal = {};

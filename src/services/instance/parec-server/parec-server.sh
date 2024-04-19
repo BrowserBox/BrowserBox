@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -x
+#set -x
 echo "starting audio service..."
 
 command -v pulseaudio &>/dev/null;
@@ -104,12 +104,15 @@ else
       echo "pulse is started already"
       echo "Not shutting pulse down"
       #pulseaudio -k
-    else 
+    elif [[ "$(uname)" != "Darwin" ]]; then
       sudo -g browsers pulseaudio --start --use-pid-file=true --log-level=debug
       until sudo -g browsers pulseaudio --check
       do  
         sleep 2
       done
+    else 
+      echo "Not running Pulseaudio on Darwin." >&2
+      tail -f /dev/null
     fi
   fi
 
