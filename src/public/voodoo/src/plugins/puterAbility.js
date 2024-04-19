@@ -4,7 +4,7 @@ import {DEBUG} from '../common.js';
 export default async function untilPuterAbility() {
   let resolve;
   const pr = new Promise(res => resolve = res);
-  globalThis.addEventListener('message', ({data, origin, source}) => {
+  globalThis.addEventListener('message', async ({data, origin, source}) => {
     const uri = new URL(origin);
     if ( !uri.hostname.endsWith('puter.site') ) return;
     if ( !data.response ) return;
@@ -16,6 +16,34 @@ export default async function untilPuterAbility() {
     if ( data.response.puterCustomUpload ) {
       const {names,contents} = data.response.puterCustomUpload;
       console.log(`Browser has received ${names.length} files to upload`, names, contents);
+      const body = new FormData();
+      const method = 'POST';
+      const action = '/file';
+      const request = {
+        method,
+        body
+      };
+
+      body.append('_csrf', csrfToken);
+      body.append('sessionId', sessionId);
+     
+      contents.forEach((content, i) => {
+        const name = names[i];
+        const file = new File([content], name);
+        body.append('files' + (contents.length > 1 ? '[]' : ''), file, name);
+      });
+
+      try {
+        const resp = await uberFetch(action, request).then(r => r.json());
+        if ( resp.error ) {
+          alert(resp.error);
+        } else {
+          DEBUG.upload && console.log(`Success attached files`, resp); 
+          DEBUG.upload && console.log({resp});
+        }
+      } catch(e) {
+        console.warn("Error on file upload", e);
+      }
     }
   });
   DEBUG.debugPuterAbility && console.log(`browser context sending request for info on puter ability to puter context`);

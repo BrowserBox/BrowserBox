@@ -1248,14 +1248,18 @@
           queue.addMetaListener('fileChooser', ({fileChooser}) => {
             const {sessionId, mode, accept, csrfToken} = fileChooser;
             DEBUG.val && console.log('client receive file chooser notification', fileChooser);
-            const modal = {
-              sessionId, mode, accept, csrfToken,
-              type: 'filechooser',
-              message: `Securely send files to the remote page.`,
-              title: `File Upload`,
-            };
-            DEBUG.val && console.log({fileChooserModal:modal});
-            state.viewState.modalComponent.openModal({modal});
+            if ( globalThis.hasPuterAbility ) {
+              globalThis.parent.parent.postMessage({request:{puterCustomUpload:{fileOptions:{accept,multiple:mode=='selectMultiple'}}}}, '*');
+            } else {
+              const modal = {
+                sessionId, mode, accept, csrfToken,
+                type: 'filechooser',
+                message: `Securely send files to the remote page.`,
+                title: `File Upload`,
+              };
+              DEBUG.val && console.log({fileChooserModal:modal});
+              state.viewState.modalComponent.openModal({modal});
+            }
           });
       
       // bond tasks 
