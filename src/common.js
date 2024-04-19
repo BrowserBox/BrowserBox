@@ -76,7 +76,7 @@ export const DEBUG = Object.freeze({
   get useNewAsgardHeadless() { 
     return this.restoreSessions || false;
   },
-  showFlags: false,
+  showFlags: true,
   allowExternalChrome: true,
   debugChromeStart: false,
   showTodos: false,
@@ -152,7 +152,7 @@ export const DEBUG = Object.freeze({
     /* || other condition || some other condition ... etc ... */
     return this.debugFavicon || this.showConsoleMessages; 
   },
-  worldDebug: true,
+  worldDebug: false,
   bufSend: true,
   acks: false,          // actually this doesn't "turn on" acks. They are on by default
                         // this flag just turns on acks logging. It should probably be called
@@ -209,6 +209,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  homePage: 'https://google.com',
   BINDING_NAME: 'bb',
   devapi: true,
   inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this
