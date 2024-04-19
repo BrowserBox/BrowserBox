@@ -13,6 +13,10 @@ export default async function untilPuterAbility() {
       globalThis.hasPuterAbility = true;
       resolve(true);
     }
+    if ( data.response.puterCustomUpload ) {
+      const {names,contents} = data.response.puterCustomUpload;
+      console.log(`Browser has received ${names.length} files to upload`, names, contents);
+    }
   });
   DEBUG.debugPuterAbility && console.log(`browser context sending request for info on puter ability to puter context`);
   globalThis.parent.parent.postMessage({request:{hasPuterAbility: 0}}, '*');
