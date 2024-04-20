@@ -997,21 +997,25 @@
           }, zombie_port);
           DEBUG.debugFileUpload && console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
           const objectId = fileInputResult.data.result.objectId;
-          const command = {
-            name: "DOM.setFileInputFiles",
-            params: {
-              files: files && files.map(({path}) => path),
-              backendNodeId
-            },
-            sessionId
-          };
-          DEBUG.debugFileUpload && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
           let result;
-          
-          try {
-            result = await zl.act.send(command, zombie_port);
-          } catch(e) {
-            console.log("Error sending file input command", e);
+            
+          if ( objectId && !fileInputResult.data.exceptionDetails ) {
+            const command = {
+              name: "DOM.setFileInputFiles",
+              params: {
+                files: files && files.map(({path}) => path),
+                backendNodeId
+              },
+              sessionId
+            };
+            DEBUG.debugFileUpload && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
+            try {
+              result = await zl.act.send(command, zombie_port);
+            } catch(e) {
+              console.log("Error sending file input command", e);
+            }
+          } else {
+            result = {error: fileInputResult.data.exceptionDetails || 'unknown error'}
           }
 
           DEBUG.debugFileUpload && console.log(JSON.stringify({fileResult:result}, null, 2));
