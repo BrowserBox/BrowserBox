@@ -164,7 +164,7 @@
     });
 
     if ( process.env.DOMAIN.endsWith('cloudtabs.net') ) {
-      app.use(miniCorsPuter);
+      app.use(miniCorsEmbed);
     }
 
     app.use(express.static(STATIC_DIR, { maxAge: 31557600 }));
@@ -620,7 +620,7 @@
       return htmlString.replace(/[&<>"']/g, (char) => map[char]);
     }
 
-    function miniCorsPuter(req, res, next) {
+    function miniCorsEmbed(req, res, next) {
       const allowedDomainPattern = /^https:\/\/([a-zA-Z0-9-]+\.)*puter\.site(:\d+)?$/;
 
       const origin = req.headers.origin;

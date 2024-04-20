@@ -304,7 +304,14 @@
             url: downloadLink.href,
           }
         }));
-      } 
+      } else if ( globalThis.location.hostname.endsWith('.cloudtabs.net') ) {
+        event.preventDefault();
+        console.log(JSON.stringify({
+          ctOpenDownload: {
+            url: downloadLink.href,
+          }
+        }));
+      }
     });
 
     // Event listeners for zoom buttons
