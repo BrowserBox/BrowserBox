@@ -1055,6 +1055,11 @@
           queue.addMetaListener('hasPuterAbility', meta => plugins.handlePuterAbility(meta, state));
           queue.addMetaListener('puterCustomDownload', meta => plugins.handlePuterAbility(meta, state));
         }
+        queue.addMetaListener('ctCustomDownload', meta => {
+          const {ctCustomDownload} = meta;
+          const {url} = ctCustomDownload;
+          downloadFile(url);
+        });
 
         if ( DEBUG.val >= DEBUG.med ) {
           queue.addMetaListener('vm', meta => console.log(meta));
@@ -1409,6 +1414,15 @@
       return poppetView;
 
       // closures
+        function downloadFile(url) {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = url.split('/').pop();  // Sets the download filename to the last segment of the URL
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+
         async function refreshViews() {
           await untilHuman(() => state?.viewState?.bbView?.classList?.contains?.('bang-styled'));
           await untilHuman(() => state?.Connectivity?.checker?.status == 'online');
