@@ -15,7 +15,11 @@ pm2 delete chat-server
 pm2 delete main-vf-service
 
 sleep 1
-killall node npm chrome
+pkill -u $(whoami) node 
+pkill -u $(whoami) npm 
+pkill -u $(whoami) chrome
 sleep 1
-killall -9 node npm chrome
+pkill -9 -u $(whoami) node 
+pkill -9 -u $(whoami) npm 
+pkill -9 -u $(whoami) chrome 
 

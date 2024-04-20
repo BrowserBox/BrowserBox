@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-killall chrome
-killall -9 chrome
+pkill -u $(whoami) chrome
+pkill -9 -u $(whoami) chrome
 
 node=$(which node)
 
