@@ -226,7 +226,7 @@ const launcher_api = {
     }
     const CHROME_OPTS = {
       port,
-      startingUrl: fs.existsSync(path.resolve(CONFIG.baseDir, 'browser-cache', CHROME_PROFILE, 'Preferences')) ? '"javascript:window.close()"' : (CONFIG.homePage || 'https://duckduckgo.com'),
+      startingUrl: fs.existsSync(path.resolve(CONFIG.baseDir, 'browser-cache', CHROME_PROFILE, 'Preferences')) ? 'chrome://about' : (CONFIG.homePage || 'https://duckduckgo.com'),
       ignoreDefaultFlags: true,
       handleSIGINT: false,
       userDataDir: path.resolve(CONFIG.baseDir, 'browser-cache'),
