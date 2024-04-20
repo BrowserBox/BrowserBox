@@ -175,7 +175,7 @@ export const DEBUG = Object.freeze({
   neonMode: false,
   resetCache: false,
   exposeState: true,
-  fullScope: true,
+  fullScope: false,
   get err() { return this.fullScope || false },
   get promiserejection() { return this.fullScope || false },
   get dev() { return this.fullScope || false },
