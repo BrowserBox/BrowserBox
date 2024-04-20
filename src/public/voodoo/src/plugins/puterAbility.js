@@ -1,6 +1,11 @@
-import {DEBUG} from '../common.js';
+import {DEBUG, untilTrueOrTimeout} from '../common.js';
 // returns a promise that eventually resolve to true if puter ability is detected. It never rejects
 // and does not resolve until puter ability is detected.
+const FileState = {
+  currentFiles: [],
+  csrfToken: null, 
+  sessionId: null,
+};
 export default async function untilPuterAbility() {
   let resolve;
   const pr = new Promise(res => resolve = res);
@@ -24,8 +29,10 @@ export default async function untilPuterAbility() {
         body
       };
 
-      body.append('_csrf', csrfToken);
-      body.append('sessionId', sessionId);
+      await untilTrueOrTimeout(() => (FileState?.currentFiles?.length == names.length) && FileState.csrfToken && FileState.sessionId, 120);
+
+      body.append('_csrf', FileState.csrfToken);
+      body.append('sessionId', FileState.sessionId);
      
       contents.forEach((content, i) => {
         const name = names[i];
@@ -44,6 +51,10 @@ export default async function untilPuterAbility() {
       } catch(e) {
         console.warn("Error on file upload", e);
       }
+    }
+    if ( Array.isArray(data) ) {
+      console.log(`Browser has received ${data.length} files to upload`, data);
+      currentFiles = data;
     }
   });
   DEBUG.debugPuterAbility && console.log(`browser context sending request for info on puter ability to puter context`);
@@ -68,4 +79,8 @@ export async function handlePuterAbility(meta, state) {
     DEBUG.debugPuterAbility && console.log(`browser context sending notification of intended download to puter to puter context`);
     globalThis.parent.parent.postMessage({request:{...meta}}, '*');
   }
+}
+
+export function setFileContext({csrfToken, sessionId}) {
+
 }

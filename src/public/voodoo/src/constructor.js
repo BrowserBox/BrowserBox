@@ -373,17 +373,18 @@
           DEBUG.logPlugins && console.log(`Loading puter ability plugin...`);
           try {
             const module = await import('./plugins/puterAbility.js');
-            const {default:untilPuterAbility, handlePuterAbility} = module;
+            const {default:untilPuterAbility, setFileContext, handlePuterAbility} = module;
             untilPuterAbility().then(() => {
               DEBUG.logPlugins && console.log(`Puter ability`, globalThis.hasPuterAbility);
               if ( globalThis.hasPuterAbility ) {
                 state.hasPuterAbility = globalThis.hasPuterAbility;
               }
             });
-            if ( handlePuterAbility ) {
+            if ( handlePuterAbility && setFileContext ) {
               plugins.handlePuterAbility = handlePuterAbility;
+              plugins.setFileContext = setFileContext;
             } else {
-              throw new TypeError(`Puter ability handler 'handlePuterAbility' not exported from a plugin module`);
+              throw new TypeError(`Puter ability handlers 'handlePuterAbility' or 'setFileContext' not exported from a plugin module`);
             }
             DEBUG.logPlugins && console.log(`Plugin to detect puter ability loaded and ready.`);
           } catch(e) {
@@ -1249,7 +1250,11 @@
             const {sessionId, mode, accept, csrfToken} = fileChooser;
             DEBUG.val && console.log('client receive file chooser notification', fileChooser);
             if ( globalThis.hasPuterAbility ) {
-              globalThis.parent.parent.postMessage({request:{puterCustomUpload:{fileOptions:{accept,multiple:mode=='selectMultiple'}}}}, '*');
+              globalThis.parent.parent.postMessage({request:{puterCustomUpload:{fileOptions:{
+                accept,
+                multiple:mode=='selectMultiple'
+              }}}}, '*');
+              plugins.setFileContext({csrfToken, sessionId});
             } else {
               const modal = {
                 sessionId, mode, accept, csrfToken,
