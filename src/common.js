@@ -71,8 +71,8 @@ export const DEBUG = Object.freeze({
   localTestRTT: !process.env.TORBB && process.platform == "darwin" && true,
   debugCast: false,
   showTargetSessionMap: false,
-  debugFileDownload: true,
-  debugFileUpload: false,
+  debugFileDownload: false,
+  debugFileUpload: true,
   get useNewAsgardHeadless() { 
     return this.restoreSessions || false;
   },

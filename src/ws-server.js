@@ -995,7 +995,7 @@
             definitelyWait: true,
             sessionId
           }, zombie_port);
-          DEBUG.debugFileInput && console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
+          DEBUG.debugFileUpload && console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
           const objectId = fileInputResult.data.result.objectId;
           const command = {
             name: "DOM.setFileInputFiles",
