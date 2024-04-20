@@ -1417,6 +1417,7 @@
         function downloadFile(url) {
           const a = document.createElement('a');
           a.href = url;
+          a.target = '_blank';
           a.download = url.split('/').pop();  // Sets the download filename to the last segment of the URL
           document.body.appendChild(a);
           a.click();
