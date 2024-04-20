@@ -73,7 +73,7 @@ export const DEBUG = Object.freeze({
   debugCast: false,
   showTargetSessionMap: false,
   debugFileDownload: false,
-  debugFileUpload: true,
+  debugFileUpload: false,
   get useNewAsgardHeadless() { 
     return this.restoreSessions || false;
   },

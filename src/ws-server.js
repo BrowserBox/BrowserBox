@@ -985,7 +985,7 @@
             return res.status(401).send('{"err":"forbidden"}');
           }
           const {files} = req;
-          const {sessionid:sessionId} = req.body;
+          const sessionId = req.body.sessionid || req.body.sessionId;
           const contextId = OurWorld.get(sessionId);
           const backendNodeId = fileChoosers.get(sessionId);
           DEBUG.debugFileUpload && console.log('File choosers get', fileChoosers, `sessionId: ${sessionId}`, {backendNodeId});
