@@ -1,3 +1,0 @@
-- we should not cache the doc conversion if it fails. there is a bug where this occurs.
-
-

@@ -24,6 +24,7 @@
   import {start_mode} from './args.js';
   import {
     StartupTabs,
+    OurWorld,
     T2_MINUTES,
     version, APP_ROOT, 
     COOKIENAME, GO_SECURE, DEBUG,
@@ -984,34 +985,42 @@
             return res.status(401).send('{"err":"forbidden"}');
           }
           const {files} = req;
-          const {sessionid:sessionId} = req.body;
+          const sessionId = req.body.sessionid || req.body.sessionId;
+          const contextId = OurWorld.get(sessionId);
           const backendNodeId = fileChoosers.get(sessionId);
+          DEBUG.debugFileUpload && console.log('File choosers get', fileChoosers, `sessionId: ${sessionId}`, {backendNodeId});
           const action = ! files || files.length == 0 ? 'cancel' : 'accept';
           const fileInputResult = await zl.act.send({
             name:"Runtime.evaluate",
             params: {
-              expression: "self.zombieDosyLastClicked.fileInput"
+              expression: "self.zombieDosyLastClicked.fileInput",
+              contextId,
             }, 
             definitelyWait: true,
             sessionId
           }, zombie_port);
-          DEBUG.debugFileInput && console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
+          DEBUG.debugFileUpload && console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
           const objectId = fileInputResult.data.result.objectId;
-          const command = {
-            name: "DOM.setFileInputFiles",
-            params: {
-              files: files && files.map(({path}) => path),
-              backendNodeId
-            },
-            sessionId
-          };
-          DEBUG.debugFileUpload && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
           let result;
-          
-          try {
-            result = await zl.act.send(command, zombie_port);
-          } catch(e) {
-            console.log("Error sending file input command", e);
+            
+          if ( objectId || backednNodeId ) {
+            const command = {
+              name: "DOM.setFileInputFiles",
+              params: {
+                files: files && files.map(({path}) => path),
+                backendNodeId,
+                objectId,
+              },
+              sessionId
+            };
+            DEBUG.debugFileUpload && console.log("We need to send the right command to the browser session", files, sessionId, action, command);
+            try {
+              result = await zl.act.send(command, zombie_port);
+            } catch(e) {
+              console.log("Error sending file input command", e);
+            }
+          } else {
+            result = {error: fileInputResult.data.exceptionDetails || 'unknown error'}
           }
 
           DEBUG.debugFileUpload && console.log(JSON.stringify({fileResult:result}, null, 2));

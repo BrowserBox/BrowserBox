@@ -12,6 +12,7 @@ export * from './args.js';
 
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
+export const OurWorld = new Map();
 
 export const EXPEDITE = new Set([
   "Target.activateTarget",
@@ -71,7 +72,7 @@ export const DEBUG = Object.freeze({
   localTestRTT: !process.env.TORBB && process.platform == "darwin" && true,
   debugCast: false,
   showTargetSessionMap: false,
-  debugFileDownload: true,
+  debugFileDownload: false,
   debugFileUpload: false,
   get useNewAsgardHeadless() { 
     return this.restoreSessions || false;

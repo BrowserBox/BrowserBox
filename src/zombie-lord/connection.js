@@ -11,6 +11,7 @@ import {WebSocket} from 'ws';
 import {SocksProxyAgent} from 'socks-proxy-agent';
 
 import {
+  OurWorld,
   StartupTabs,
   EXPEDITE,
   LOG_FILE,
@@ -983,6 +984,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       addContext(sessionId,contextId);
       if ( worldName == WorldName ) {
         SetupTabs.set(sessionId, {worldName});
+        OurWorld.set(sessionId, contextId);
         await send(
           "Runtime.addBinding", 
           {
@@ -1083,6 +1085,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.val && console.log('file chooser', message);
 
       fileChoosers.set(sessionId, backendNodeId);
+      DEBUG.debugFileUpload && console.log(`File chooser set`, fileChoosers, {sessionId, backendNodeId});
 
       DEBUG.val > DEBUG.med && console.log(fileChooser, message);
 
