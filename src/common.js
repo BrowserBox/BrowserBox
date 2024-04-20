@@ -31,6 +31,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  disable3PC: true,
   networkDebug: false,
   networkBlocking: true,
   blockFileURLs: true,

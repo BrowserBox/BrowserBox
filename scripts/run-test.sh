@@ -30,9 +30,9 @@ start_bbpro() {
   else
     sudo -g browsers pulseaudio -k
   fi
-  pkill pacat
-  pkill parec
-  pkill pulseaudio
+  pkill -u $(whoami) pacat
+  pkill -u $(whoami) parec
+  pkill -u $(whoami) pulseaudio
 
   bash -c "source $envFile; ./scripts/control/basic/run-pm2.sh $envFile"
 }

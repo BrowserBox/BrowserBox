@@ -195,6 +195,9 @@ const launcher_api = {
     if ( DEBUG.preventNewTab ) {
       CHROME_FLAGS.push(`--homepage=about:blank`);
     }
+    if ( DEBUG.disable3PC ) {
+      CHROME_FLAGS.push(`--test-third-party-cookie-phaseout`);
+    }
     if ( DEBUG.extensionsAssemble ) {
       CHROME_FLAGS.push(`--disable-extensions-except=${DEBUG.extensions.join(',')}`);
       CHROME_FLAGS.push(`--skip-force-online-signin-for-testing`)
