@@ -12,6 +12,7 @@ export * from './args.js';
 
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
+export const OurWorld = new Map();
 
 export const EXPEDITE = new Set([
   "Target.activateTarget",
@@ -57,8 +58,8 @@ export const DEBUG = Object.freeze({
   debugCommandOrder: false,
   debugKeyEvents: false,
   debugBinding: false,
-  events: true,
-  commands: true,
+  events: false,
+  commands: false,
   adBlock: true,
   debugAddr: true,
   debugScaledUpCoViewport: false,

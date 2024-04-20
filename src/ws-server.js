@@ -24,6 +24,7 @@
   import {start_mode} from './args.js';
   import {
     StartupTabs,
+    OurWorld,
     T2_MINUTES,
     version, APP_ROOT, 
     COOKIENAME, GO_SECURE, DEBUG,
@@ -985,12 +986,15 @@
           }
           const {files} = req;
           const {sessionid:sessionId} = req.body;
+          const contextId = OurWorld.get(sessionId);
           const backendNodeId = fileChoosers.get(sessionId);
+          DEBUG.debugFileUpload && console.log('File choosers get', fileChoosers, `sessionId: ${sessionId}`, {backendNodeId});
           const action = ! files || files.length == 0 ? 'cancel' : 'accept';
           const fileInputResult = await zl.act.send({
             name:"Runtime.evaluate",
             params: {
-              expression: "self.zombieDosyLastClicked.fileInput"
+              expression: "self.zombieDosyLastClicked.fileInput",
+              contextId,
             }, 
             definitelyWait: true,
             sessionId
@@ -999,12 +1003,13 @@
           const objectId = fileInputResult.data.result.objectId;
           let result;
             
-          if ( objectId && !fileInputResult.data.exceptionDetails ) {
+          if ( objectId || backednNodeId ) {
             const command = {
               name: "DOM.setFileInputFiles",
               params: {
                 files: files && files.map(({path}) => path),
-                backendNodeId
+                backendNodeId,
+                objectId,
               },
               sessionId
             };
