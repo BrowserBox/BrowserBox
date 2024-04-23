@@ -114,7 +114,7 @@ decompress_anything() {
       fi
       ;;
     "application/x-rar")
-      install_guard "unar"
+      install_guard "unrar"
       unrar t "$archive_path" >/dev/null 2>&1 || { echo "Error: Archive integrity check failed."; exit 1; }
       unrar x "$archive_path" "$extraction_directory"
       ;;
