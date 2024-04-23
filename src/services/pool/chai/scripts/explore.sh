@@ -52,13 +52,31 @@ decompress_anything() {
   case "$mime_type" in
     "application/gzip")
       install_guard "gzip"
+      # Check the integrity of the gzip archive
       gzip -t "$archive_path" || { echo "Error: Archive integrity check failed."; exit 1; }
-      tar xzf "$archive_path" -C "$extraction_directory"
+
+      # Check if the file is a tar.gz archive and extract accordingly
+      if [[ "$archive_path" == *.tar.gz ]]; then
+        # It's a tar.gz file, extract it
+        tar xzf "$archive_path" -C "$extraction_directory"
+      else
+        # It's likely just a .gz file, decompress it
+        gunzip "$archive_path"
+        # Remove the .gz extension to get the path of the decompressed file
+        gunzipped_path="${archive_path%.gz}"
+        # Move the decompressed file to the extraction directory
+        mv "$gunzipped_path" "$extraction_directory"
+      fi
       ;;
     "application/x-bzip2")
       install_guard "bzip2"
       bzip2 -t "$archive_path" || { echo "Error: Archive integrity check failed."; exit 1; }
-      tar xjf "$archive_path" -C "$extraction_directory"
+      if [[ "$archive_path" == *.tar.bz2 ]]; then
+        tar xjf "$archive_path" -C "$extraction_directory"
+      else
+        bzip2 -d "$archive_path"
+        mv "${archive_path%.bz2}" "$extraction_directory"
+      fi
       ;;
     "application/zip")
       install_guard "unzip"
@@ -68,17 +86,32 @@ decompress_anything() {
     "application/x-xz")
       install_guard "xz"
       xz -t "$archive_path" || { echo "Error: Archive integrity check failed."; exit 1; }
-      tar xJf "$archive_path" -C "$extraction_directory"
+      if [[ "$archive_path" == *.tar.xz ]]; then
+        tar xJf "$archive_path" -C "$extraction_directory"
+      else
+        xz -d "$archive_path"
+        mv "${archive_path%.xz}" "$extraction_directory"
+      fi
       ;;
     "application/x-lzma")
       install_guard "xz"
       xz -t "$archive_path" || { echo "Error: Archive integrity check failed."; exit 1; }
-      tar --lzma -xf "$archive_path" -C "$extraction_directory"
+      if [[ "$archive_path" == *.tar.lzma ]]; then
+        tar --lzma -xf "$archive_path" -C "$extraction_directory"
+      else
+        xz --format=lzma -d "$archive_path"
+        mv "${archive_path%.lzma}" "$extraction_directory"
+      fi
       ;;
     "application/x-lz4")
       install_guard "lz4"
       lz4 -t "$archive_path" || { echo "Error: Archive integrity check failed."; exit 1; }
-      tar --lz4 -xf "$archive_path" -C "$extraction_directory"
+      if [[ "$archive_path" == *.tar.lz4 ]]; then
+        tar --lz4 -xf "$archive_path" -C "$extraction_directory"
+      else
+        lz4 -d "$archive_path" "${archive_path%.lz4}"
+        mv "${archive_path%.lz4}" "$extraction_directory"
+      fi
       ;;
     "application/x-rar")
       install_guard "unar"
