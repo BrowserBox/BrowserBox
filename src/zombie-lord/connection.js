@@ -109,8 +109,8 @@ import {
   deskUA_Mac_FF,
   deskUA_Mac_Chrome,
   mobUA_iOSFF,
-  deskPLAT_Mac,
-  mobPLAT_iOS,
+  deskPlat_Mac,
+  mobPlat_iOS,
   LANG,
   VEND_FF,
   ua,
@@ -155,13 +155,13 @@ const INTENT_PROMPT_THRESHOLD = 30000;
 const mobUA = mobUA_iOSFF;
 //const deskUA = deskUA_Mac_FF;
 const deskUA = deskUA_Mac_Chrome;
-const mobPLAT = mobPLAT_iOS;
-const deskPLAT = deskPLAT_Mac;
+const mobPlat = mobPlat_iOS;
+const deskPlat = deskPlat_Mac;
 const UA = deskUA;
-const PLAT = deskPLAT_Mac;
+const Plat = deskPlat_Mac;
 const VEND = VEND_FF;
 
-DEBUG.debugNavigator && console.log({UA, mobUA, deskUA, PLAT, VEND});
+DEBUG.debugNavigator && console.log({UA, mobUA, deskUA, Plat, VEND});
 
 const checkSetup = new Map();
 const targets = new Set(); 
@@ -295,7 +295,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     favicons,
     sessionId: null,
     bounds: Object.assign({}, COMMON_FORMAT),
-    navigator: { userAgent: UA, platform: PLAT, acceptLanguage: LANG, vendor: VEND },
+    navigator: { userAgent: UA, platform: Plat, acceptLanguage: LANG, vendor: VEND },
     plugins: {},
     setClientErrorSender(e) {
       this.zombie.sendErrorToClient = e;
@@ -1716,6 +1716,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           const thisVT = thisV+thisT;
           const tabOrViewportChanged = lastVT != thisVT;
           const viewportChanged = lastV != thisV || (viewports.has(thisT) ? viewports.get(thisT) != thisV : false);
+          const mobileChanged = JSON.parse(lastV)?.mobile != command.params.mobile;
           DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
           DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
           if ( tabOrViewportChanged  ) {
@@ -1731,6 +1732,20 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             }, 0);
           }
           (DEBUG.showViewportChanges || DEBUG.debugViewportDimensions) && console.log({tabOrViewportChanged, viewportChanged});
+          if ( mobileChanged ) {
+            setTimeout(async () => {
+              try {
+                await send("Emulation.setUserAgentOverride", {
+                  userAgent: command.params.mobile ? mobUA : deskUA,
+                  platform:  command.params.mobile ? mobPlat : deskPlat,
+                  acceptLanguage: connection.navigator.acceptLanguage,
+                }, connection.sessionId);
+                await send("Page.reload", {}, connection.sessionId);
+              } catch(e) {
+                console.warn(`Error updating viewport to reflect form factor 'mobile' change`, e);
+              }
+            }, 0);
+          }
           if ( viewportChanged || command.params.resetRequested ) {
             delete command.params.resetRequested;
             lastV = thisV;
@@ -1771,7 +1786,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         //command.params.platform = connection.navigator.platform;
 
         command.params.userAgent = connection.isMobile ? mobUA : deskUA;
-        command.params.platform = connection.isMobile ? mobPLAT : deskPLAT;
+        command.params.platform = connection.isMobile ? mobPlat : deskPlat;
 
         connection.navigator.platform = command.params.platform;
 
@@ -2098,7 +2113,7 @@ export function getViewport(...viewports) {
     const {
       width, height, deviceScaleFactor,
     } = COMMON_FORMAT;
-    return {width, height, deviceScaleFactor};
+    return {width, height, deviceScaleFactor, mobile: false};
   }
   const vals = [...viewports.values()];
   const W = [...vals.map(v => v.width)];
@@ -2118,11 +2133,13 @@ export function getViewport(...viewports) {
       scale = Math.min(maxWidth/width,maxHeight/height);
     }
   }
+  const atLeastOneMobile = vals.some(({mobile}) => mobile);
   const deviceScaleFactor = Math.max(...viewports.map(v => v.deviceScaleFactor));
   const commonViewport = {
     width: Math.floor(width*scale), 
     height: Math.floor(height*scale),
-    deviceScaleFactor
+    deviceScaleFactor,
+    mobile: atLeastOneMobile
   };
   ensureMinBounds(commonViewport);
   if ( DEBUG.debugScaledUpCoViewport && CONFIG.useScaledUpCoViewport ) {
