@@ -19,6 +19,7 @@ const Options = {
 //const TAIL_START = 100;
 //let lastTailShot = false;
 //let lastHash;
+const tabsOnClose = new Map();
 let BANDWIDTH_ISSUE_STATE = false;
 const goLowRes = throttle((connection, ...args) => connection.shrinkImagery(...args), 8000);
 const goHighRes = throttle((connection, ...args) => connection.growImagery(...args), 8000); 
@@ -337,13 +338,17 @@ const controller_api = {
     Object.assign(Options, new_options);
   },
 
-  async close(port) {
+  close(port) {
+    console.log('Close called');
     const connection = connections.get(port);    
     if ( ! connection ) {
       return true;
     }
+    console.log('Saving tabs');
+    const t = connection.tabs || [];
+    tabsOnClose.set(port, Array.isArray(t) ? t : [...t.values()]);
     connections.delete(port);
-    return await connection.close();
+    return connection.close();
   },
 
   getActiveTarget(port) {
@@ -369,8 +374,10 @@ const controller_api = {
     if ( ! tabs ) throw new TypeError(`No tabs provided.`);
     const connection = connections.get(port);
     if ( ! connection ) return;
-    tabs.forEach(({targetId}) => {
+    tabs.forEach(tab => {
+      const {targetId} = tab;
       connection.targets.add(targetId);
+      connection.tabs.set(targetId, tab);
     });
   },
 
@@ -685,6 +692,15 @@ const controller_api = {
 
   getConnection(port) {
     return connections.get(port);
+  },
+
+  getTargets(port) {
+    const t = connections.get(port)?.tabs || tabsOnClose.get(port);
+    if ( ! t ) {
+      console.warn('Could not get tabs on close, returning a dummy tab to not spawn excessive tabs on restart');
+      return [{dummy:true}];
+    }
+    return Array.from(Array.isArray(t) ? t : [...t.values()]);
   }
 };
 

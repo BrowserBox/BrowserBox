@@ -31,6 +31,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  showFaviconErrors: false,
+  showUARedux: false,
   disable3PC: true,
   networkDebug: false,
   networkBlocking: true,

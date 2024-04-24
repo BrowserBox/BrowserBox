@@ -1,8 +1,10 @@
+  import fs from 'fs';
+  import path from 'path';
   import exitOnExpipe from 'exit-on-epipe';
   import express from 'express';
   import zl from './zombie-lord/index.js';
   import {MAX_FRAMES} from './zombie-lord/screenShots.js';
-  import {EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
+  import {CONFIG, EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
   import {start_ws_server} from './ws-server.js';
 
   const BEGIN_AGAIN = 500;
@@ -15,6 +17,7 @@
   let ws_started = false;
   let lastDebugOrderId = -Infinity;
   let server;
+  let targetSaver;
   //let zombie_started = false;
 
   if ( GO_SECURE && start_mode == "signup" ) {
@@ -49,6 +52,10 @@
     //begin();
   });
 
+  process.on('beforeExit', () => {
+    clearInterval(targetSaver);
+  });
+
   begin();
 
   async function begin() {
@@ -71,6 +78,9 @@
         app_port, chrome_port, cookie, token, 
       );
       ws_started = true;
+    }
+    if ( ! targetSaver ) {
+      targetSaver = setInterval(saveTargetCount, 13001);
     }
   }
 
@@ -167,4 +177,10 @@
       }
     }
     DEBUG.metaDebug && DEBUG.val && console.log('after loop', {Meta});
+  }
+
+  // necessary to know if we closed browser with any tabs or not, so we know whether to open a 'home page' tag when we start again
+  function saveTargetCount() {
+    const targetCount = zl.act.getTargets(chrome_port).length;
+    fs.writeFileSync(path.resolve(CONFIG.baseDir, 'targetCount'), `${targetCount}`);
   }

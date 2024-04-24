@@ -227,9 +227,22 @@ const launcher_api = {
     if ( DEBUG.noAudio ) {
       CHROME_FLAGS.push('--mute-audio');
     }
+    const targetCount = fs.existsSync(path.resolve(CONFIG.baseDir, 'targetCount')) ? 
+        parseInt(fs.readFileSync(path.resolve(CONFIG.baseDir, 'targetCount')).toString())
+      :
+        0
+    ;
+    const isNotFirstRun = fs.existsSync(path.resolve(CONFIG.baseDir, 'browser-cache', CHROME_PROFILE, 'Preferences'));
+
     const CHROME_OPTS = {
       port,
-      startingUrl: fs.existsSync(path.resolve(CONFIG.baseDir, 'browser-cache', CHROME_PROFILE, 'Preferences')) ? 'chrome://about' : (CONFIG.homePage || 'https://duckduckgo.com'),
+      startingUrl: isNotFirstRun ? 
+          targetCount == 0 ? 
+              (CONFIG.homePage || 'https://bing.com'),
+            :
+              'chrome://about' 
+        : 
+          (CONFIG.homePage || 'https://duckduckgo.com'),
       ignoreDefaultFlags: true,
       handleSIGINT: false,
       userDataDir: path.resolve(CONFIG.baseDir, 'browser-cache'),
@@ -315,11 +328,14 @@ const launcher_api = {
         }
       });
     }
-    process.on('SIGHUP', undoChrome);
-    process.on('SIGUSR1', undoChrome);
-    process.on('SIGTERM', undoChrome);
-    process.on('SIGINT', undoChrome);
-    process.on('beforeExit', undoChrome);
+
+    setTimeout(() => {
+      process.on('SIGHUP', undoChrome);
+      process.on('SIGUSR1', undoChrome);
+      process.on('SIGTERM', undoChrome);
+      process.on('SIGINT', undoChrome);
+      process.on('beforeExit', undoChrome);
+    }, 1001);
 
     return retVal;
 
