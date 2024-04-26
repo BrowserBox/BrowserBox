@@ -168,6 +168,7 @@ const targets = new Set();
 //const waiting = new Map();
 const sessions = new Map();
 const viewports = new Map();
+const viewChanges = new Map();
 const casts = new Map();
 const castStarting = new Map();
 const loadings = new Map();
@@ -185,8 +186,8 @@ let AD_BLOCK_ON = true;
 let DEMO_BLOCK_ON = false;
 let firstSource;
 let latestTimestamp;
-let lastV = getViewport(); 
-let lastVT = JSON.stringify(lastV,null,2)+'startup';
+let lastV = JSON.stringify(getViewport(),null,2); 
+let lastVT = lastV+'startup';
 let lastWChange = '';
 
 function addSession(targetId, sessionId) {
@@ -963,7 +964,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                       }
                     }
                   }).catch(err => {
-                    console.warn('favicon get err', Message, err);
+                    DEBUG.showFaviconErrors && console.warn('favicon get err', Message, err);
                   });
                 }
               }
@@ -1673,6 +1674,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }
       }; break;
       case "Emulation.setDeviceMetricsOverride": {
+        // there's a race where we call this before any targets so the "mobile changed blip does not take effect"
+        // but if we have no targets we should not execute this code
+        if ( sessions.size == 0 || targets.size == 0 ) {
+          return {}; 
+        }
         /* if the client has not request we resize to their viewport
          we only move a bound if it's smaller than existing
          This ensures that the default behaviour is to let the remote
@@ -1714,8 +1720,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           const thisV = JSON.stringify(command.params,null,2);
           const thisT = (command.params.sessionId||command.sessionId||that.sessionId);
           const thisVT = thisV+thisT;
+          //DEBUG.showUARedux && console.log({thisV,lastV,thisT,thisVT,lastVT,params:command.params});
           const tabOrViewportChanged = lastVT != thisVT;
-          const viewportChanged = lastV != thisV || (viewports.has(thisT) ? viewports.get(thisT) != thisV : false);
+          const viewportChanged = lastV != thisV || (viewChanges.has(thisT) ? viewChanges.get(thisT) != thisV : false);
           const mobileChanged = JSON.parse(lastV)?.mobile != command.params.mobile;
           DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
           DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
@@ -1732,24 +1739,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             }, 0);
           }
           (DEBUG.showViewportChanges || DEBUG.debugViewportDimensions) && console.log({tabOrViewportChanged, viewportChanged});
-          if ( mobileChanged ) {
-            setTimeout(async () => {
-              try {
-                await send("Emulation.setUserAgentOverride", {
-                  userAgent: command.params.mobile ? mobUA : deskUA,
-                  platform:  command.params.mobile ? mobPlat : deskPlat,
-                  acceptLanguage: connection.navigator.acceptLanguage,
-                }, connection.sessionId);
-                await send("Page.reload", {}, connection.sessionId);
-              } catch(e) {
-                console.warn(`Error updating viewport to reflect form factor 'mobile' change`, e);
-              }
-            }, 0);
-          }
           if ( viewportChanged || command.params.resetRequested ) {
             delete command.params.resetRequested;
             lastV = thisV;
-            viewports.set(thisT, thisV);
+            viewChanges.set(thisT, thisV);
           } else {
             // if a viewport didn't change we don't need to call Emulation.setDeviceMetricOverride as it will only
             // cause the screen to flash and be completely redrawn as if it were resized 
@@ -1771,6 +1764,68 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             } catch(e) {
               console.warn(`Uh oh, error checking actual page dimensions`, e);
             }
+          }
+          if ( mobileChanged ) {
+            DEBUG.showUARedux && console.log({mobileChanged}, 'will update targets', targets);
+            setTimeout(async () => {
+              try {
+                await send("Emulation.setUserAgentOverride", {
+                  userAgent: command.params.mobile ? mobUA : deskUA,
+                  platform:  command.params.mobile ? mobPlat : deskPlat,
+                  acceptLanguage: connection.navigator.acceptLanguage,
+                }, connection.sessionId);
+                await send("Page.reload", {}, connection.sessionId);
+                setTimeout(async () => {
+                  for ( const targetId of targets.values() ) {
+                    const sessionId = sessions.get(targetId);
+                    if ( sessionId == connection.sessionId ) continue; // because we just did it above
+                    // we *could* check here running evaluate navigator.userAgent on the page to see if a change is needed
+                    // but who cares? Only add that if it messes up doing this way
+                    try {
+                      await send("Emulation.setUserAgentOverride", {
+                        userAgent: command.params.mobile ? mobUA : deskUA,
+                        platform:  command.params.mobile ? mobPlat : deskPlat,
+                        acceptLanguage: connection.navigator.acceptLanguage,
+                      }, sessionId);
+                      await send("Page.reload", {}, sessionId);
+                    } catch(err) {
+                      console.warn(`Error updating viewport to reflect form factor 'mobile' change, during all targets update loop`, {targetId, sessionId}, err);
+                    }
+                  }
+                }, 0);
+              } catch(e) {
+                console.warn(`Error updating viewport to reflect form factor 'mobile' change on main active tab`, e);
+              }
+            }, 0);
+          } else {
+            DEBUG.showUARedux && console.log({mobileChanged}, 'will check and update targets', targets);
+            setTimeout(async () => { 
+              for ( const targetId of targets ) {
+                const sessionId = sessions.get(targetId);
+                try {
+                  const {result:{value:{userAgent}}} = await send("Runtime.evaluate", {
+                    expression: `
+                      (function () {
+                        return {userAgent: navigator.userAgent};
+                      }())
+                    `,
+                    returnByValue: true 
+                  }, sessionId);
+                  const desiredUserAgent = command.params.mobile ? mobUA : deskUA;
+                  console.log({targetId,userAgent,desiredUserAgent});
+                  if ( userAgent != desiredUserAgent ) {
+                    await send("Emulation.setUserAgentOverride", {
+                      userAgent: desiredUserAgent,
+                      platform:  command.params.mobile ? mobPlat : deskPlat,
+                      acceptLanguage: connection.navigator.acceptLanguage,
+                    }, sessionId);
+                    await send("Page.reload", {}, sessionId);
+                  }
+                } catch(err) {
+                  console.warn(`Error updating user agent for double checked target`, {targetId, sessionId}, err);
+                }
+              }
+            }, 0);
           }
         }
       }; break;
@@ -2095,7 +2150,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     if ( connection.activeTarget === targetId ) {
       connection.activeTarget = null;
     }
-    viewports.delete(sessionId);
+    viewChanges.delete(sessionId);
     loadings.delete(sessionId);
     targets.delete(targetId);
     tabs.delete(targetId);
