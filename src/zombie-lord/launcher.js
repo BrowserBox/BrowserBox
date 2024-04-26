@@ -134,6 +134,7 @@ const launcher_api = {
       `--window-size=${COMMON_FORMAT.width},${COMMON_FORMAT.height}`,
       `--crash-dumps-dir=${crashDir}`,
       `--profile-directory="${CHROME_PROFILE}"`,
+      `--noerrdialogs`,
       ...(
         CONFIG.forceContentDarkMode ? [
           `--force-dark-mode`,
@@ -238,7 +239,7 @@ const launcher_api = {
       port,
       startingUrl: isNotFirstRun ? 
           targetCount == 0 ? 
-              (CONFIG.homePage || 'https://bing.com'),
+              (CONFIG.homePage || 'https://bing.com')
             :
               'chrome://about' 
         : 

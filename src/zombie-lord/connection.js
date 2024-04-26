@@ -2086,7 +2086,7 @@ export function getViewport(...viewports) {
   return commonViewport;
 }
 
-export function updateTargetsOnCommonChange({connection, command}) {
+export function updateTargetsOnCommonChanged({connection, command}) {
   const commonViewport = getViewport(connection.viewports);
   let proceed = false;
   switch(command.name) {
@@ -2103,7 +2103,7 @@ export function updateTargetsOnCommonChange({connection, command}) {
       }
     }; break;
     default: 
-      DEBUG.showOtherCommandsForViewportUpdate && console.info(`updateTargetsOnCommonChange called with command: ${command?.name}, command);
+      DEBUG.showOtherCommandsForViewportUpdate && console.info(`updateTargetsOnCommonChange called with command: ${command?.name}`, command);
       // deliberate fall through
       // because we can call this from multiple locations
     case "Emulation.setDeviceMetricsOverride": 
