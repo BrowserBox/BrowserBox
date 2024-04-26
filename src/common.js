@@ -31,6 +31,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  showSkippedCommandsAfterViewportChangeCheck: true,
   showFaviconErrors: false,
   showUARedux: false,
   disable3PC: true,
@@ -84,7 +85,7 @@ export const DEBUG = Object.freeze({
   allowExternalChrome: true,
   debugChromeStart: false,
   showTodos: false,
-  showViewportChanges: false,
+  showViewportChanges: true,
   showResizeEvents: false,
   logRestartCast: false,
   showErrorSources: false,
@@ -98,7 +99,7 @@ export const DEBUG = Object.freeze({
   debugRestart: true,
   debugUntilTrue: false,
   debugUntilForever: false,
-  debugViewportDimensions: false,
+  debugViewportDimensions: true,
   debugDevtoolsServer: false,
   /* peer and websocket connections */
   cnx: false, 
