@@ -348,7 +348,13 @@ export function isFirefox() {
 }
 
 export function deviceIsMobile() {
-  return MobilePlatform.test(navigator.userAgent);
+  const mobile = MobilePlatform.test(navigator.userAgent);
+  /*
+  if ( mobile ) {
+    alert('mobile');
+  }
+  */
+  return mobile;
 }
 
 // debug logging

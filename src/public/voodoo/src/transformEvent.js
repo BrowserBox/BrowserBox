@@ -133,8 +133,8 @@ export default function transformEvent(e, {scale}, bounds) {
           ({width:{value:width}, height:{value:height}} = form);
         }
 
-        const {targetId, forceFrame, resetRequested} = synthetic;
-        Object.assign(transformedEvent, {width, height, targetId, resetRequested, forceFrame});
+        const {targetId, mobile, forceFrame, resetRequested} = synthetic;
+        Object.assign(transformedEvent, {width, height, mobile, targetId, resetRequested, forceFrame});
         break;
       }
       case "user-agent": {

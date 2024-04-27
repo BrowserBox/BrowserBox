@@ -2097,7 +2097,7 @@ export function getViewport(...viewports) {
 
 export function updateTargetsOnCommonChanged({connection, command}) {
   const {send,on, ons} = connection.zombie;
-  const commonViewport = getViewport(connection.viewports);
+  const commonViewport = getViewport(...connection.viewports.values());
   let proceed = false;
   switch(command?.name) {
     case "Browser.setWindowBounds": 
