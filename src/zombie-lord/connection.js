@@ -1639,12 +1639,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log('Command', command);
         if ( connectionId ) {
           connection.viewports.set(connectionId, Object.assign(connection.viewports.get(connectionId) || {}, command.params.bounds));
+          console.log('MOBILE', connection.viewports, command.params.bounds);
           if ( command.params.windowId ) {
             connection.latestWindowId = command.params.windowId;
-          }
-          if ( command.params.bounds.mobile ) {
-            connection.isMobile = true;
-            delete command.params.bounds.mobile;
           }
           DEBUG.debugViewportDimensions && console.log('Viewports', connection.viewports);
         }
@@ -1658,7 +1655,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           ensureMinBounds(command.params.bounds);
         }
         delete command.params.bounds.resetRequested;
-        Object.assign(connection.bounds, command.params.bounds);
+        Object.assign(connection.bounds, viewport);
+        if ( command.params.bounds.mobile ) {
+          connection.isMobile = true;
+          delete command.params.bounds.mobile;
+        }
         SCREEN_OPTS.maxWidth = connection.bounds.width;
         SCREEN_OPTS.maxHeight = connection.bounds.height;
         DEBUG.debugViewportDimensions && console.log("Screen opts at set window bounds", SCREEN_OPTS);
