@@ -2058,6 +2058,7 @@
             type: "window-bounds",
             width,
             height,
+            mobile,
             targetId: targetId || state.activeTarget,
             ...opts
           });
