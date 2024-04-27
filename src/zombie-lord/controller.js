@@ -1,5 +1,5 @@
 import Connect from './connection.js';
-import {executeBinding, getViewport} from './connection.js';
+import {updateTargetsOnCommonChanged, executeBinding, getViewport} from './connection.js';
 import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
 import {MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
 import fs from 'fs';
@@ -320,6 +320,7 @@ const controller_api = {
         requiresShot: true,
         forceFrame: true,
       }, port);
+      updateTargetsOnCommonChanged({connection});
     } else {
       throw new TypeError(`No connection on port ${port}`);
     }

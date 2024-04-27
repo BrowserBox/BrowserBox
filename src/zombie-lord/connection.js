@@ -109,6 +109,7 @@ import {
   deskUA_Mac_FF,
   deskUA_Mac_Chrome,
   mobUA_iOSFF,
+  mobUA_iOSSafari,
   deskPlat_Mac,
   mobPlat_iOS,
   LANG,
@@ -152,7 +153,7 @@ const Area51Long = -115.80666344;
 // throttling 'open in external app' requests
 const INTENT_PROMPT_THRESHOLD = 30000;
 
-const mobUA = mobUA_iOSFF;
+const mobUA = mobUA_iOSSafari;
 //const deskUA = deskUA_Mac_FF;
 const deskUA = deskUA_Mac_Chrome;
 const mobPlat = mobPlat_iOS;
@@ -1663,8 +1664,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           command.params.bounds.height += 80;
         }
 
-        const proceedWithCommand = updateTargetsOnCommonChanged({connection, command});
-        if ( ! proceedWithCommand ) return {};
+        //const proceedWithCommand = updateTargetsOnCommonChanged({connection, command});
+        //if ( ! proceedWithCommand ) return {};
       }; break;
       case "Emulation.setDeviceMetricsOverride": {
         // there's a race where we call this before any targets so the "mobile changed blip does not take effect"
@@ -1683,6 +1684,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( connectionId ) {
           connection.viewports.set(connectionId, Object.assign(connection.viewports.get(connectionId) || {}, command.params));
           DEBUG.debugViewportDimensions && console.log('Viewports', connection.viewports);
+          updateTargetsOnCommonChanged({connection, command});
         }
         const viewport = getViewport(...connection.viewports.values());
         DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
@@ -1708,8 +1710,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log("Screen opts at device metric override", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
 
-        const proceedWithCommand = updateTargetsOnCommonChanged({connection, command});
-        if ( ! proceedWithCommand ) return {};
+        //const proceedWithCommand = updateTargetsOnCommonChanged({connection, command});
+        //if ( ! proceedWithCommand ) return {};
       }; break;
       case "Emulation.setScrollbarsHidden": {
         DEBUG.scrollbars && console.log("setting scrollbars 'hideBars'", command.params.hidden);
@@ -2087,9 +2089,10 @@ export function getViewport(...viewports) {
 }
 
 export function updateTargetsOnCommonChanged({connection, command}) {
+  const {send,on, ons} = connection.zombie;
   const commonViewport = getViewport(connection.viewports);
   let proceed = false;
-  switch(command.name) {
+  switch(command?.name) {
     case "Browser.setWindowBounds": 
     {
       const thisChange = JSON.stringify(commonViewport,null,2);
@@ -2120,6 +2123,8 @@ export function updateTargetsOnCommonChanged({connection, command}) {
       DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
       (DEBUG.showViewportChanges || DEBUG.debugViewportDimensions) && console.log({tabOrViewportChanged, viewportChanged});
 
+      console.log({commonViewport});
+      updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection})
       if ( mobileChanged ) {
         updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection})
       }
@@ -2157,6 +2162,7 @@ export function updateTargetsOnCommonChanged({connection, command}) {
 }
 
 async function updateAllTargetsToUserAgent({mobile, connection}) {
+  const {send,on, ons} = connection.zombie;
   for ( const targetId of connection.targets.values() ) {
     const sessionId = sessions.get(targetId);
     try {
@@ -2169,7 +2175,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
         returnByValue: true 
       }, sessionId);
       const desiredUserAgent = mobile ? mobUA : deskUA;
-      console.log({targetId,userAgent,desiredUserAgent});
+      console.log({mobile,targetId,userAgent,desiredUserAgent});
       if ( userAgent != desiredUserAgent ) {
         await send("Emulation.setUserAgentOverride", {
           userAgent: desiredUserAgent,
@@ -2185,6 +2191,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
 }
 
 async function updateAllTargetsToViewport({commonViewport, connection, skipSelf = true}) {
+  const {send,on, ons} = connection.zombie;
   for ( const targetId of connection.targets.values() ) {
     const sessionId = sessions.get(targetId);
     if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
