@@ -1639,7 +1639,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log('Command', command);
         if ( connectionId ) {
           connection.viewports.set(connectionId, Object.assign(connection.viewports.get(connectionId) || {}, command.params.bounds));
-          console.log('MOBILE', connection.viewports, command.params.bounds);
+          DEBUG.debugViewportDimensions && console.log('MOBILE', connection.viewports, command.params.bounds);
           if ( command.params.windowId ) {
             connection.latestWindowId = command.params.windowId;
           }
@@ -2130,7 +2130,7 @@ export function updateTargetsOnCommonChanged({connection, command}) {
       DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
       (DEBUG.showViewportChanges || DEBUG.debugViewportDimensions) && console.log({tabOrViewportChanged, viewportChanged});
 
-      console.log({commonViewport});
+      DEBUG.debugViewportDimensions && console.log({commonViewport});
       updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection})
       if ( mobileChanged ) {
         updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection})
