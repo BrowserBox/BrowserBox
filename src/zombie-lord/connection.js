@@ -2131,7 +2131,6 @@ export function updateTargetsOnCommonChanged({connection, command}) {
       (DEBUG.showViewportChanges || DEBUG.debugViewportDimensions) && console.log({tabOrViewportChanged, viewportChanged});
 
       DEBUG.debugViewportDimensions && console.log({commonViewport});
-      updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection})
       if ( mobileChanged ) {
         updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection})
       }
@@ -2182,7 +2181,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
         returnByValue: true 
       }, sessionId);
       const desiredUserAgent = mobile ? mobUA : deskUA;
-      console.log({mobile,targetId,userAgent,desiredUserAgent});
+      DEBUG.debugUserAgent && console.log({mobile,targetId,userAgent,desiredUserAgent});
       if ( userAgent != desiredUserAgent ) {
         await send("Emulation.setUserAgentOverride", {
           userAgent: desiredUserAgent,
