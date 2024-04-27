@@ -180,6 +180,7 @@ const MainFrames = new Map();
 const PowerSources = new Map();
 const OpenModals = new Map();
 const SetupTabs = new Map();
+const settingUp = new Map();
 //const originalMessage = new Map();
 const DownloadPath = path.resolve(CONFIG.baseDir , 'browser-downloads');
 let GlobalFrameId = 1;
@@ -308,6 +309,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     activeTarget: null,
     // modals related
     OpenModals,
+    // helpers
+    reloadAfterSetup
   };
 
   process.on(NOTICE_SIGNAL, reportNoticeOnSignal);
@@ -484,7 +487,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           if ( !obj.tabSetup ) {
             obj.needsReload = true;
           } else {
-            await send("Page.reload", {}, sessionId);
+            reloadAfterSetup(sessionId);
           }
         } else {
           checkSetup.delete(targetId);
@@ -1215,7 +1218,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   async function setupTab({attached}) {
     const {waitingForDebugger, sessionId, targetInfo} = attached;
     const {targetId} = targetInfo;
+    if ( settingUp.has(targetId) ) return;
+    settingUp.set(targetId, attached);
     DEBUG.attachImmediately && DEBUG.worldDebug && console.log({waitingForDebugger, targetInfo});
+
     try {
       DEBUG.val && console.log(sessionId, targetId, 'setting up');
 
@@ -1427,9 +1433,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         );
       await send(
         "Emulation.setDeviceMetricsOverride", 
-        Object.assign({
-          mobile: connection.isMobile ? true : false
-        }, connection.bounds),
+        connection.bounds,
         sessionId
       );
       /* 
@@ -1450,7 +1454,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       */
       await send(
         "Emulation.setScrollbarsHidden",
-        {hidden:connection.hideBars || false},
+        {hidden:connection.isMobile || false},
         sessionId
       );
       const {windowId} = await send("Browser.getWindowForTarget", {targetId});
@@ -1482,7 +1486,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( obj.needsReload ) {
           DEBUG.worldDebug && consolelog('Reloading', targetId);
           obj.needsReload = false; 
-          await send("Page.reload", {}, sessionId);
+          reloadAfterSetup(sessionId);
           obj.checking = false;
         } 
         if ( CONFIG.inspectMode ) {
@@ -1509,6 +1513,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     } catch(e) {
       console.warn("Error setting up", e, targetId, sessionId);
     }
+    settingUp.delete(targetId);
   }
 
   function updateCast(sessionId, castUpdate, event) {
@@ -1591,6 +1596,18 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     return castInfo;
   }
 
+  async function reloadAfterSetup(sessionId) {
+    /*
+    const targetId = sessions.get(sessionId);
+    if ( settingUp.has(targetId) ) {
+      await untilTrueOrTimeout(() => !settingUp.has(targetId), 15);
+    }
+    await sleep(100);
+    */
+    await sleep(100);
+    await send("Page.reload", {ignoreCache:true}, sessionId);
+  }
+
   async function sessionSend(command) {
     /* here connection is a connection to a browser backend */
     const that = this || connection;
@@ -1669,8 +1686,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           command.params.bounds.height += 80;
         }
 
-        //const proceedWithCommand = updateTargetsOnCommonChanged({connection, command});
-        //if ( ! proceedWithCommand ) return {};
+        const proceedWithCommand = updateTargetsOnCommonChanged({connection, command});
+        if ( ! proceedWithCommand ) return {};
       }; break;
       case "Emulation.setDeviceMetricsOverride": {
         // there's a race where we call this before any targets so the "mobile changed blip does not take effect"
@@ -1717,8 +1734,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log("Screen opts at device metric override", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
 
-        //const proceedWithCommand = updateTargetsOnCommonChanged({connection, command});
-        //if ( ! proceedWithCommand ) return {};
+        const proceedWithCommand = updateTargetsOnCommonChanged({connection, command});
+        if ( ! proceedWithCommand ) return {};
       }; break;
       case "Emulation.setScrollbarsHidden": {
         DEBUG.scrollbars && console.log("setting scrollbars 'hideBars'", command.params.hidden);
@@ -1731,12 +1748,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         //command.params.userAgent = connection.navigator.userAgent;
         //command.params.platform = connection.navigator.platform;
 
+        changed = connection.navigator.userAgent !== command.params.userAgent;
+
         command.params.userAgent = connection.isMobile ? mobUA : deskUA;
         command.params.platform = connection.isMobile ? mobPlat : deskPlat;
 
         connection.navigator.platform = command.params.platform;
-
-        changed = connection.navigator.userAgent !== command.params.userAgent;
 
         connection.navigator.userAgent = command.params.userAgent;
         connection.navigator.acceptLanguage = command.params.acceptLanguage;
@@ -1826,7 +1843,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         if ( ! worlds ) {
           DEBUG.val && console.log("reloading because no worlds we can access yet");
-          await send("Page.reload", {}, sessionId);
+          reloadAfterSetup(sessionId);
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);
         }
@@ -1967,7 +1984,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         //DEBUG.coords && command.name.startsWith("Emulation") && console.log('Emulation session send 2', command, {sessionId})
         const r = await send(command.name, command.params, sessionId);
         if ( needsReload ) {
-          await send("Page.reload", {}, sessionId);
+          reloadAfterSetup(sessionId);
         }
         if ( requiresTask ) {
           //setTimeout(() => {
@@ -2188,7 +2205,12 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
           platform:  mobile ? mobPlat : deskPlat,
           acceptLanguage: connection.navigator.acceptLanguage,
         }, sessionId);
-        await send("Page.reload", {}, sessionId);
+        await send(
+          "Emulation.setScrollbarsHidden",
+          {hidden:mobile},
+          sessionId
+        );
+        connection.reloadAfterSetup(sessionId);
       }
     } catch(err) {
       console.warn(`Error updating user agent for double checked target`, {targetId, sessionId}, err);
@@ -2196,26 +2218,34 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
   }
 }
 
-async function updateAllTargetsToViewport({commonViewport, connection, skipSelf = true}) {
+async function updateAllTargetsToViewport({commonViewport, connection, skipSelf = false}) {
   const {send,on, ons} = connection.zombie;
   for ( const targetId of connection.targets.values() ) {
     const sessionId = sessions.get(targetId);
     if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
+    let width, height, screenWidth, screenHeight;
     try {
-      const {result:{value:{width,height}}} = await send("Runtime.evaluate", {
+      ({result:{value:{width,height,screenWidth,screenHeight}}} = await send("Runtime.evaluate", {
         expression: `
           (function () {
-            return {width: window.innerWidth, height: window.innerHeight};
+            return {width: window.innerWidth, height: window.innerHeight, screenWidth: screen?.width, screenHeight: screen?.height};
           }())
         `,
         returnByValue: true 
-      }, sessionId);
+      }, sessionId));
       DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width,height});
-      if ( width == commonViewport.width && height == commonViewport.height ) {
+      if ( width == commonViewport.width && height == commonViewport.height && screenWidth == commonViewport.width && (screenHeight - commonViewport.height) < 100) {
         continue;
       }
+      /*
       // no need for await here, this reset path is independent of other command paths
-      /* await */ send("Emulation.setDeviceMetricsOverride", commonViewport, sessionId);
+      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
+      let {width,height} = commonViewport;
+      console.log({width,height,windowId});
+      await send("Browser.setWindowBounds", {bounds:{width,height}, windowId})
+      */
+      /* await */ 
+      await send("Emulation.setDeviceMetricsOverride", commonViewport, sessionId);
     } catch(err) {
       console.warn(`Error updating viewport to reflect change, during all targets update loop`, {targetId, sessionId}, err);
     }

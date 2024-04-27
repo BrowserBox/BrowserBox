@@ -698,7 +698,7 @@ const controller_api = {
   getTargets(port) {
     const t = connections.get(port)?.tabs || tabsOnClose.get(port);
     if ( ! t ) {
-      console.warn('Could not get tabs on close, returning a dummy tab to not spawn excessive tabs on restart');
+      DEBUG.showNoTargets && console.warn('Could not get tabs on close, returning a dummy tab to not spawn excessive tabs on restart');
       return [{dummy:true}];
     }
     return Array.from(Array.isArray(t) ? t : [...t.values()]);

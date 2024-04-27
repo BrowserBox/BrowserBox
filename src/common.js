@@ -31,6 +31,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  showNoTargets: false,
   debugUserAgent: false,
   showSkippedCommandsAfterViewportChangeCheck: false,
   showFaviconErrors: false,
