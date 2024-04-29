@@ -280,6 +280,7 @@
             }
           },
 
+          getViewport,
           clearViewport,
           doShot,
 
@@ -457,12 +458,6 @@
         });
       }
 
-      // make this so we can call it on resize
-        window._voodoo_asyncSizeTab = async (opts) => {
-          await sleep(40);
-          return sizeTab(opts);
-        };
-
       // check tor status
         {
           const isTorAPI = new URL(location.origin);
@@ -483,6 +478,14 @@
         } else {
           //globalThis.queue = queue;
         }
+
+      // make this so we can call it on resize
+        window._voodoo_asyncSizeTab = async (opts) => {
+          await sleep(40);
+          const viewport = await sizeTab(opts);
+          queue.sendViewport(viewport);
+          return viewport;
+        };
 
       await sleep(5);
 
@@ -1548,6 +1551,22 @@
           });
         }
 
+        async function untilLoaded() {
+          let bb = document.querySelector('bb-view');
+          if ( !bb?.shadowRoot ) {
+            await untilTrueOrTimeout(() => !!document.querySelector('bb-view')?.shadowRoot, 120);
+          }
+          bb = document.querySelector('bb-view');
+          await bb.untilLoaded();
+        }
+
+        async function getViewport() {
+          await untilLoaded();  
+          const vp = await getBounds();
+          vp.mobile = deviceIsMobile();
+          return vp;
+        }
+
         function clearViewport() {
           //return;
           if ( state.useViewFrame ) {
@@ -2072,7 +2091,7 @@
           });
           self.ViewportWidth = width;
           self.ViewportHeight = height;
-          return {width,height};
+          return {width,height,mobile};
         }
 
         function validOpts(obj, ...keys) {
@@ -2106,12 +2125,15 @@
           setState('bbpro', state);
         }
 
-        function sizeTab(opts) {
+        async function sizeTab(opts) {
           return sizeBrowserToBounds(state.viewState.canvasEl, null, opts);
         }
 
-        function asyncSizeBrowserToBounds(el, opts) {
-          setTimeout(() => (sizeBrowserToBounds(el, null, opts), indicateNoOpenTabs()), 40);
+        async function asyncSizeBrowserToBounds(el, opts) {
+          await sleep(40);
+          const vp = await sizeBrowserToBounds(el, null, opts); 
+          indicateNoOpenTabs();
+          return vp;
         }
 
         function emulateNavigator() {

@@ -590,7 +590,7 @@
 
             DEBUG.cnx && console.log(message);
 
-            const {fastestChannel, copeer, zombie, tabs, messageId} = message;  
+            const {fastestChannel, copeer, zombie, tabs, messageId, viewport} = message;  
             let {screenshotAck} = message;
 
             latestMessageId = messageId;
@@ -742,8 +742,16 @@
               if ( copeer ) {
                 const {signal} = copeer;
                 DEBUG.cnx && console.log('Received webrtc signal data from socket', copeer); 
-                peer.signal(signal);
+                if ( ! peer && DEBUG.useWebRTC ) {
+                  connectPeer().then(peer => peer.signal(signal));
+                } else {
+                  peer.signal(signal);
+                }
               } 
+              if ( viewport ) {
+                console.log(`Viewport received`, viewport);
+                zl.act.setViewport(connectionId, viewport, zombie_port);
+              }
             } catch(e) {
               console.error("Error", IP, connectionId, e);
               // errors are not always pushed up this far
@@ -768,51 +776,54 @@
         DEBUG.debugConnect && console.log(`Check 11`);
         if ( DEBUG.useWebRTC ) {
           connectPeer();
-
-          function connectPeer() {
-            DEBUG.debugConnect && console.log(`Check 4`);
-            peer = new Peer({
-              wrtc: WRTC, trickle: true, initiator: true,
-              channelConfig: {
-                ordered: true,
-                maxRetransmits: 0,
-                /*maxPacketLifeTime: MIN_TIME_BETWEEN_SHOTS*/
+        }
+        function connectPeer() {
+          DEBUG.debugConnect && console.log(`Check 4`);
+          let resolve;
+          const pr = new Promise(res => resolve = res);
+          peer = new Peer({
+            wrtc: WRTC, trickle: true, initiator: true,
+            channelConfig: {
+              ordered: true,
+              maxRetransmits: 0,
+              /*maxPacketLifeTime: MIN_TIME_BETWEEN_SHOTS*/
+            }
+          });
+          DEBUG.debugConnect && console.log(`Check 5`);
+          peer.on('error', err => {
+            DEBUG.val && console.log('webrtc error', err);
+            if ( peer ) {
+              peers.delete(peer);
+              peer = null;
+              zl.act.addLink({so, forceMeta}, {connectionId, peer: null, socket:ws}, zombie_port);
+              if ( ws?.readyState < WebSocket.CLOSING ) {
+                setTimeout(connectPeer, PEER_RECONNECT_MS);
               }
-            });
-            DEBUG.debugConnect && console.log(`Check 5`);
-            peer.on('error', err => {
-              DEBUG.val && console.log('webrtc error', err);
-              if ( peer ) {
-                peers.delete(peer);
-                peer = null;
-                zl.act.addLink({so, forceMeta}, {connectionId, peer: null, socket:ws}, zombie_port);
-                if ( ws?.readyState < WebSocket.CLOSING ) {
-                  setTimeout(connectPeer, PEER_RECONNECT_MS);
-                }
+            }
+          });
+          peer.on('close', c => {
+            DEBUG.val && console.log('peer closed', c);
+            if ( peer ) {
+              peers.delete(peer);
+              peer = null;
+              zl.act.addLink({so, forceMeta}, {connectionId, peer: null, socket:ws}, zombie_port);
+              if ( ws?.readyState < WebSocket.CLOSING ) {
+                setTimeout(connectPeer, PEER_RECONNECT_MS);
               }
-            });
-            peer.on('close', c => {
-              DEBUG.val && console.log('peer closed', c);
-              if ( peer ) {
-                peers.delete(peer);
-                peer = null;
-                zl.act.addLink({so, forceMeta}, {connectionId, peer: null, socket:ws}, zombie_port);
-                if ( ws?.readyState < WebSocket.CLOSING ) {
-                  setTimeout(connectPeer, PEER_RECONNECT_MS);
-                }
-              }
-            });
-            peer.on('connect', () => {
-              DEBUG.cnx && console.log('peer connected');
-              //setTimeout(() => zl.act.addLink({so, forceMeta}, {connectionId, peer, socket:ws}, zombie_port), 15000);
-              zl.act.addLink({so, forceMeta}, {connectionId, peer, socket:ws}, zombie_port);
-            });
-            peer.on('signal', data => {
-              DEBUG.cnx && console.log(`have webrtc signal data. sending to client`, data);
-              so(ws, {copeer:{signal:data}});
-              peers.add(peer);
-            });
-          }
+            }
+          });
+          peer.on('connect', () => {
+            DEBUG.cnx && console.log('peer connected');
+            //setTimeout(() => zl.act.addLink({so, forceMeta}, {connectionId, peer, socket:ws}, zombie_port), 15000);
+            zl.act.addLink({so, forceMeta}, {connectionId, peer, socket:ws}, zombie_port);
+            resolve(peer);
+          });
+          peer.on('signal', data => {
+            DEBUG.cnx && console.log(`have webrtc signal data. sending to client`, data);
+            so(ws, {copeer:{signal:data}});
+            peers.add(peer);
+          });
+          return pr;
         }
 
         // send favicons to client
@@ -1209,10 +1220,12 @@
       }
 
       try {
-        socket.send(message);
+        if ( socket ) {
+          socket.send(message);
+        }
       } catch(e) {
+        // client has disconnected
         DEBUG.val && console.warn(`${socket} error with sending message`, e, message);
-        console.warn(`${socket} error with sending message`, e, message);
         if ( ! socket && websockets.size === 0 && zl.act.zombieIsDead(zombie_port) ) {
           console.log(`Zombie Chrome is dead and there are no clients. Shutting down.`);
           try {

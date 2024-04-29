@@ -459,6 +459,11 @@
               Senders = {so,sa};
               const receivesFrames = !this.publics.state.useViewFrame;
               so({messageId,zombie:{events: [],receivesFrames}});
+              messageId++;
+              this.publics.state.getViewport().then(viewport => {
+                messageId++;
+                so({messageId, viewport});
+              });
               this.publics.state.serverConnected = true;
               this.publics.state.refreshViews();
 
@@ -1174,6 +1179,14 @@
           get: () => privates
         }
       });
+    }
+    sendViewport(viewport) {
+      messageId++;
+      if ( ! this[$].senders )  {
+        untilTrue(() => this[$].senders).then(() => this.sendViewport(viewport));
+      } else {
+        this[$].senders.so({messageId,viewport});
+      }
     }
     sendAck() {
       messageId++;

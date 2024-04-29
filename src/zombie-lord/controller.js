@@ -295,32 +295,7 @@ const controller_api = {
     if ( connection ) {
       connection.links.delete(connectionId);
       connection.viewports.delete(connectionId);
-      const remainingConnectionId = [...connection.viewports.keys()][0];
-      DEBUG.debugViewportDimensions && console.log('Viewports--', connection.viewports);
-      const viewport = getViewport(...connection.viewports.values());
-      DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
-      DEBUG.coords && console.log(`Resetting device metrics on client departure`, viewport);
-      this.send({
-        name: "Browser.setWindowBounds",
-        params: {
-          windowId: connection.latestWindowId,
-          bounds: viewport,
-        },
-        requiresWindowId: true,
-        forceFrame: true,
-        receivesFrames: true,
-      }, port);
-      this.send({
-        name: "Emulation.setDeviceMetricsOverride",
-        params: {
-          ...viewport,
-          mobile: viewport.mobile ? viewport.mobile : connection.isMobile,
-        },
-        receivesFrames: true,
-        requiresShot: true,
-        forceFrame: true,
-      }, port);
-      updateTargetsOnCommonChanged({connection});
+      updateTargetsOnCommonChanged({connection, command: "all", force: true});
     } else {
       throw new TypeError(`No connection on port ${port}`);
     }
@@ -702,6 +677,15 @@ const controller_api = {
       return [{dummy:true}];
     }
     return Array.from(Array.isArray(t) ? t : [...t.values()]);
+  },
+
+  setViewport(connectionId, viewport, port) {
+    const connection = connections.get(port);
+    if ( ! connection ) {
+      throw new TypeError(`No such connection on port: ${port}`);
+    }
+    connection.viewports.set(connectionId, viewport);
+    updateTargetsOnCommonChanged({connection,command:"all"});
   }
 };
 
