@@ -448,7 +448,7 @@ function translator(e, handled = {type:'case'}) {
       return retVal;
     }
     case "window-bounds": {
-      let {forceFrame,resetRequested,width,height,targetId} = e;
+      let {forceFrame,width,height,mobile,resetRequested, targetId} = e;
       width = parseInt(width);
       height = parseInt(height);
       const retVal = {chain:[
@@ -465,7 +465,7 @@ function translator(e, handled = {type:'case'}) {
               name: "Browser.setWindowBounds",
               params: {
                 windowId,
-                bounds: {width, height},
+                bounds: {width, height, mobile},
                 resetRequested
               },
               requiresWindowId: true,
@@ -487,7 +487,7 @@ function translator(e, handled = {type:'case'}) {
           params: {
             width,
             height,
-            mobile: mobile ? true : false,
+            mobile, 
             deviceScaleFactor:1,
             /*
             ...(mobile ? {

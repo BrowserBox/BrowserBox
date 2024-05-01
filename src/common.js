@@ -31,7 +31,9 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  showSkippedCommandsAfterViewportChangeCheck: true,
+  showNoTargets: false,
+  debugUserAgent: false,
+  showSkippedCommandsAfterViewportChangeCheck: false,
   showFaviconErrors: false,
   showUARedux: false,
   disable3PC: true,
@@ -85,7 +87,7 @@ export const DEBUG = Object.freeze({
   allowExternalChrome: true,
   debugChromeStart: false,
   showTodos: false,
-  showViewportChanges: true,
+  showViewportChanges: false,
   showResizeEvents: false,
   logRestartCast: false,
   showErrorSources: false,
@@ -99,7 +101,7 @@ export const DEBUG = Object.freeze({
   debugRestart: true,
   debugUntilTrue: false,
   debugUntilForever: false,
-  debugViewportDimensions: true,
+  debugViewportDimensions: false,
   debugDevtoolsServer: false,
   /* peer and websocket connections */
   cnx: false, 
@@ -137,7 +139,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,

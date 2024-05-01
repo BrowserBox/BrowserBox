@@ -10,7 +10,7 @@ export const iden = e => e;
 export const isSafari = () => SafariPlatform.test(navigator.userAgent);
 
 export const GO_SECURE = globalThis?.location?.protocol == 'https:';
-export const version = 'v7';
+export const version = 'v8';
 export const Port = globalThis?.location?.port || (GO_SECURE ? '443': '80');
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`+Port;
 
@@ -348,7 +348,13 @@ export function isFirefox() {
 }
 
 export function deviceIsMobile() {
-  return MobilePlatform.test(navigator.userAgent);
+  const mobile = MobilePlatform.test(navigator.userAgent);
+  /*
+  if ( mobile ) {
+    alert('mobile');
+  }
+  */
+  return mobile;
 }
 
 // debug logging

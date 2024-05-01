@@ -1,5 +1,5 @@
 import Connect from './connection.js';
-import {executeBinding, getViewport} from './connection.js';
+import {updateTargetsOnCommonChanged, executeBinding, getViewport} from './connection.js';
 import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
 import {MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
 import fs from 'fs';
@@ -295,31 +295,7 @@ const controller_api = {
     if ( connection ) {
       connection.links.delete(connectionId);
       connection.viewports.delete(connectionId);
-      const remainingConnectionId = [...connection.viewports.keys()][0];
-      DEBUG.debugViewportDimensions && console.log('Viewports--', connection.viewports);
-      const viewport = getViewport(...connection.viewports.values());
-      DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
-      DEBUG.coords && console.log(`Resetting device metrics on client departure`, viewport);
-      this.send({
-        name: "Browser.setWindowBounds",
-        params: {
-          windowId: connection.latestWindowId,
-          bounds: viewport,
-        },
-        requiresWindowId: true,
-        forceFrame: true,
-        receivesFrames: true,
-      }, port);
-      this.send({
-        name: "Emulation.setDeviceMetricsOverride",
-        params: {
-          ...viewport,
-          mobile: viewport.mobile ? viewport.mobile : connection.isMobile,
-        },
-        receivesFrames: true,
-        requiresShot: true,
-        forceFrame: true,
-      }, port);
+      updateTargetsOnCommonChanged({connection, command: "all", force: true});
     } else {
       throw new TypeError(`No connection on port ${port}`);
     }
@@ -697,10 +673,19 @@ const controller_api = {
   getTargets(port) {
     const t = connections.get(port)?.tabs || tabsOnClose.get(port);
     if ( ! t ) {
-      console.warn('Could not get tabs on close, returning a dummy tab to not spawn excessive tabs on restart');
+      DEBUG.showNoTargets && console.warn('Could not get tabs on close, returning a dummy tab to not spawn excessive tabs on restart');
       return [{dummy:true}];
     }
     return Array.from(Array.isArray(t) ? t : [...t.values()]);
+  },
+
+  setViewport(connectionId, viewport, port) {
+    const connection = connections.get(port);
+    if ( ! connection ) {
+      throw new TypeError(`No such connection on port: ${port}`);
+    }
+    connection.viewports.set(connectionId, viewport);
+    updateTargetsOnCommonChanged({connection,command:"all"});
   }
 };
 
