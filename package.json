@@ -82,7 +82,7 @@
   },
   "homepage": "https://github.com/BrowserBox/BrowserBox",
   "dependencies": {
-    "@roamhq/wrtc": "^0.7.2",
+    "@roamhq/wrtc": "^0.7.3",
     "bang.html": "latest",
     "body-parser": "latest",
     "compression": "latest",
@@ -102,7 +102,7 @@
     "simple-peer": "latest",
     "socks-proxy-agent": "^8.0.2",
     "spdy": "latest",
-    "ws": "latest"
+    "ws": "^8.17.0"
   },
   "devDependencies": {
     "@babel/core": "latest",
