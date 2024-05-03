@@ -57,7 +57,7 @@ export const DEBUG = Object.freeze({
   showDebug: false,
   utilizeTempHackFixForIMENoKey: false,
   debugTyping: false,
-  logFileCommands: false,
+  logFileCommands: true,
   windowsUses48KAudio: false,
   debugAlerts: false,
   debugModals: false,
@@ -102,6 +102,7 @@ export const DEBUG = Object.freeze({
   debugUntilTrue: false,
   debugUntilForever: false,
   debugViewportDimensions: false,
+  debugViewportChanges: true,
   debugDevtoolsServer: false,
   /* peer and websocket connections */
   cnx: false, 

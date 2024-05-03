@@ -191,6 +191,7 @@ let latestTimestamp;
 let lastV = JSON.stringify(getViewport(),null,2); 
 let lastVT = lastV+'startup';
 let lastWChange = '';
+let updatingTargets = false;
 
 function addSession(targetId, sessionId) {
   sessions.set(targetId,sessionId);
@@ -245,11 +246,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   AD_BLOCK_ON = adBlock;
 
   LOG_FILE.Commands = new Set([
-  ...(DEBUG.debugTyping ? [
-
-	"Input.dispatchKeyEvent",
-	  "Input.insertText",
-  ] : []),
+    ...(DEBUG.debugTyping ? [
+      "Input.dispatchKeyEvent",
+      "Input.insertText",
+    ] : []),
     ...(DEBUG.debugFileUpload ? [
       'DOM.setFileInputFiles',
       'Page.fileChooserOpened',
@@ -269,6 +269,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Page.screencastFrameAck",
       "Page.screencastFrame",
     ] : []),
+    ...(DEBUG.debugViewportChanges ? [
+      "Emulation.setDeviceMetricsOverride",
+      "Browser.setWindowBounds",
+      "Page.reload",
+      "Page.startScreencast",
+      "Page.stopScreencast",
+    ] : [])
   ]);
 
   if ( demoBlock ) {
@@ -2102,69 +2109,74 @@ export function getViewport(...viewports) {
   return commonViewport;
 }
 
-export function updateTargetsOnCommonChanged({connection, command, force = false}) {
+export async function updateTargetsOnCommonChanged({connection, command, force = false}) {
+  if ( updatingTargets ) {
+    await untilTrueOrTimeout(() => !updatingTargets, 15);
+  }
+  updatingTargets = true;
   const {send,on, ons} = connection.zombie;
   const commonViewport = getViewport(...connection.viewports.values());
+  console.log('Common viewport', commonViewport, (new Error).stack);
   connection.commonViewport = commonViewport;
   Object.assign(connection.bounds, connection.commonViewport);
   const cvs = JSON.stringify(commonViewport, null, 2);
-  if ( cvs == connection.lastCommonViewport && ! force ) {
-    return;
-  }
   let proceed = false;
-
-  DEBUG.showOtherCommandsForViewportUpdate && console.info(`updateTargetsOnCommonChange called with command: ${command?.name}`, command);
-  if ( command?.name == "Browser.setWindowBounds" || command == "all" ) {
-      setTimeout(() => connection.restartCast(), 0);
-  }
-  if ( command?.name == "Emulation.setDeviceMetricsOverride" || command == "all" ) {
-    DEBUG.showTodos && console.log(`Make V Changes sessionId linked (issue #351)`);
-    const thisV = cvs;
-    const thisT = (command?.params?.sessionId||command?.sessionId||connection.sessionId);
-    const thisVT = thisV+thisT;
-    //DEBUG.showUARedux && console.log({thisV,lastV,thisT,thisVT,lastVT,params:command?.params||commonViewport});
-    const tabOrViewportChanged = lastVT != thisVT;
-    const viewportChanged = lastV != thisV || (viewChanges.has(thisT) ? viewChanges.get(thisT) != thisV : false);
-    const mobileChanged = JSON.parse(connection.lastCommonViewport)?.mobile != commonViewport.mobile;
-    DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
-    DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
-    (DEBUG.showViewportChanges || DEBUG.debugViewportDimensions) && console.log({tabOrViewportChanged, viewportChanged});
-
-    DEBUG.debugViewportDimensions && console.log({commonViewport});
-    console.log('Viewports match?', connection.lastCommonViewport == cvs, {commonViewport}, {last:JSON.parse(connection.lastCommonViewport)});
-    if ( mobileChanged ) {
-      console.warn(`Mobile changed`, commonViewport, connection.viewports);
+  if ( cvs != connection.lastCommonViewport || force ) {
+    DEBUG.showOtherCommandsForViewportUpdate && console.info(`updateTargetsOnCommonChange called with command: ${command?.name}`, command);
+    if ( command?.name == "Browser.setWindowBounds" || command == "all" ) {
+        setTimeout(() => connection.restartCast(), 0);
     }
-    updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection})
-    updateAllTargetsToViewport({commonViewport, connection}); 
+    if ( command?.name == "Emulation.setDeviceMetricsOverride" || command == "all" ) {
+      DEBUG.showTodos && console.log(`Make V Changes sessionId linked (issue #351)`);
+      const thisV = cvs;
+      const thisT = (command?.params?.sessionId||command?.sessionId||connection.sessionId);
+      const thisVT = thisV+thisT;
+      //DEBUG.showUARedux && console.log({thisV,lastV,thisT,thisVT,lastVT,params:command?.params||commonViewport});
+      const tabOrViewportChanged = lastVT != thisVT;
+      const viewportChanged = lastV != thisV || (viewChanges.has(thisT) ? viewChanges.get(thisT) != thisV : false);
+      const mobileChanged = JSON.parse(connection.lastCommonViewport)?.mobile != commonViewport.mobile;
+      DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
+      DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
+      (DEBUG.showViewportChanges || DEBUG.debugViewportDimensions) && console.log({tabOrViewportChanged, viewportChanged});
 
-    if ( command?.params?.resetRequested ) {
-      proceed = true;
-      if ( command?.params ) {
-        delete command.params.resetRequested;
+      DEBUG.debugViewportDimensions && console.log({commonViewport});
+      DEBUG.debugViewportDimensions && console.log('Viewports match?', connection.lastCommonViewport == cvs, {commonViewport}, {last:JSON.parse(connection.lastCommonViewport)});
+      if ( mobileChanged ) {
+        console.warn(`Mobile changed`, commonViewport, connection.viewports);
       }
-      lastV = thisV;
-      viewChanges.set(thisT, thisV);
-    }
+      await updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection})
+      await updateAllTargetsToViewport({commonViewport, connection}); 
 
-    if ( tabOrViewportChanged  ) {
-      lastVT = thisVT;
-      setTimeout(async () => { 
-        await connection.restartCast();
-        if ( viewportChanged ) {
-          DEBUG.showResizeEvents && console.log(`Sending resize event as viewport changed`, {lastV, thisV});
-          connection.forceMeta({
-            resize: connection.bounds
-          });
+      if ( command?.params?.resetRequested ) {
+        proceed = true;
+        if ( command?.params ) {
+          delete command.params.resetRequested;
         }
-      }, 0);
+        lastV = thisV;
+        viewChanges.set(thisT, thisV);
+      }
+
+      if ( true || tabOrViewportChanged  ) {
+        lastVT = thisVT;
+        setTimeout(async () => { 
+          await connection.restartCast();
+          if ( viewportChanged ) {
+            DEBUG.showResizeEvents && console.log(`Sending resize event as viewport changed`, {lastV, thisV});
+            connection.forceMeta({
+              resize: connection.bounds
+            });
+          }
+        }, 0);
+      }
+    } 
+    
+    if ( ! proceed && DEBUG.showSkippedCommandsAfterViewportChangeCheck ) {
+      console.info(`Skipping command ${command?.name} in updateTargetsOnCommonChange, with commandViewport and command`, {commonViewport, command});
     }
-  } 
-  
-  if ( ! proceed && DEBUG.showSkippedCommandsAfterViewportChangeCheck ) {
-    console.info(`Skipping command ${command?.name} in updateTargetsOnCommonChange, with commandViewport and command`, {commonViewport, command});
+    connection.lastCommonViewport = cvs;
   }
-  connection.lastCommonViewport = cvs;
+  updatingTargets = false;
+
   return proceed;
 }
 
@@ -2185,7 +2197,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
       const desiredUserAgent = mobile ? mobUA : deskUA;
       DEBUG.debugUserAgent && console.log({mobile,targetId,userAgent,desiredUserAgent});
       if ( userAgent != desiredUserAgent ) {
-        console.log(`Will update user agent for target ${targetId}`, {mobile,desiredUserAgent});
+        DEBUG.debugUserAgent && console.log(`Will update user agent for target ${targetId}`, {mobile,desiredUserAgent});
         const nav = {
           userAgent: desiredUserAgent,
           platform: mobile ? mobPlat : deskPlat,
@@ -2198,10 +2210,10 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
           {hidden:mobile},
           sessionId
         );
-        list.push(sessionId);
       } else {
-        console.log(`Will NOT update user agent for target ${targetId}`, {mobile,userAgent, desiredUserAgent});
+        DEBUG.debugUserAgent && console.log(`Will NOT update user agent for target ${targetId}`, {mobile,userAgent, desiredUserAgent});
       }
+      list.push(sessionId);
     } catch(err) {
       console.warn(`Error updating user agent for double checked target`, {targetId, sessionId}, err);
     }
@@ -2213,11 +2225,22 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
 
 async function updateAllTargetsToViewport({commonViewport, connection, skipSelf = false}) {
   const {send,on, ons} = connection.zombie;
+  const windows = new Set();
   for ( const targetId of connection.targets.values() ) {
     const sessionId = sessions.get(targetId);
     if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
     let width, height, screenWidth, screenHeight;
     try {
+      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
+      if ( !windows.has(windowId) ) {
+        windows.add(windowId);
+        let {width,height} = commonViewport;
+        DEBUG.debugViewportDImensions && console.log({width,height,windowId});
+        if ( DEBUG.useNewAsgardHeadless ) {
+          height += 80;
+        }
+        await send("Browser.setWindowBounds", {bounds:{width,height}, windowId})
+      }
       ({result:{value:{width,height,screenWidth,screenHeight}}} = await send("Runtime.evaluate", {
         expression: `
           (function () {
@@ -2228,16 +2251,8 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
       }, sessionId));
       DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width,height});
       if ( width == commonViewport.width && height == commonViewport.height && screenWidth == commonViewport.width && (screenHeight - commonViewport.height) < 100) {
-        continue;
+        //continue;
       }
-      /*
-      // no need for await here, this reset path is independent of other command paths
-      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
-      let {width,height} = commonViewport;
-      console.log({width,height,windowId});
-      await send("Browser.setWindowBounds", {bounds:{width,height}, windowId})
-      */
-      /* await */ 
       send("Emulation.setDeviceMetricsOverride", commonViewport, sessionId);
     } catch(err) {
       console.warn(`Error updating viewport to reflect change, during all targets update loop`, {targetId, sessionId}, err);
