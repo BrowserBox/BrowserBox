@@ -1684,15 +1684,18 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log('Viewports', connection.viewports);
         DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
 
-        if ( DEBUG.useNewAsgardHeadless ) {
-          command.params.bounds.height += 80;
-        }
         if ( ! command.params.resetRequested ) {
-          const {width, height} = viewport;
+          let {width, height} = viewport;
+          if ( DEBUG.useNewAsgardHeadless ) {
+            height += 80;
+          }
           Object.assign(command.params.bounds, {width, height});
           Object.assign(connection.bounds, viewport);
         } else {
           // don't send our custom flag through to the browser
+          if ( DEBUG.useNewAsgardHeadless ) {
+            command.params.bounds.height += 80;
+          }
           ensureMinBounds(command.params.bounds);
           Object.assign(connection.bounds, command.param.bounds);
         }
@@ -1755,7 +1758,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
       }; break;
       case "Emulation.setScrollbarsHidden": {
-        DEBUG.scrollbars && console.log("setting scrollbars 'hideBars'", command.params.hidden);
+        DEBUG.debugScrollbars && console.log("setting scrollbars 'hideBars'", command.params.hidden);
         connection.hideBars = command.params.hidden;
       }; break;
       case "Emulation.setUserAgentOverride": {

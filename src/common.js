@@ -98,7 +98,7 @@ export const DEBUG = Object.freeze({
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,
   coords: false,
-  scrollbars: true,
+  debugScrollbars: true,
   get ensureUptimeBeforeRestart() {
     return this.mode !== 'dev'
   },
