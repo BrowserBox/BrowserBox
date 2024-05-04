@@ -11,6 +11,7 @@ import {WebSocket} from 'ws';
 import {SocksProxyAgent} from 'socks-proxy-agent';
 
 import {
+  debounce,
   OurWorld,
   StartupTabs,
   EXPEDITE,
@@ -244,6 +245,7 @@ function removeSession(id) {
   1 Connect call per client would require a translation table among targetIds and sessionIds
 **/
 export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, demoBlock: demoBlock = false} = {}) {
+  const reloadAfterSetup = debounce(_reloadAfterSetup, 757);
   AD_BLOCK_ON = adBlock;
 
   LOG_FILE.Commands = new Set([
@@ -1615,18 +1617,16 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     return castInfo;
   }
 
-  async function reloadAfterSetup(sessionId) {
-    /*
+  async function _reloadAfterSetup(sessionId) {
+    if ( waitingToReload.has(sessionId) ) return;
+    waitingToReload.add(sessionId);
     const targetId = sessions.get(sessionId);
     if ( settingUp.has(targetId) ) {
       await untilTrueOrTimeout(() => !settingUp.has(targetId), 15);
     }
     await sleep(100);
-    */
-    if ( waitingToReload.has(sessionId) ) return;
-    waitingToReload.add(sessionId);
-    await sleep(100);
     await send("Page.reload", {ignoreCache:true}, sessionId);
+    await sleep(100);
     waitingToReload.delete(sessionId);
   }
 

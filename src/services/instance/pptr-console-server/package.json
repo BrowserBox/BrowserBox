@@ -1,7 +1,7 @@
 {
   "name": "@browserbox/puppeteer-console",
   "type": "module",
-  "version": "7.1.2",
+  "version": "8.1.0",
   "description": "Run puppeteer scripts in a sandboxed node environment inside your BrowserBox instance",
   "main": "index.js",
   "scripts": {

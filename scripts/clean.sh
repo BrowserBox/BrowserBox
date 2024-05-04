@@ -14,29 +14,37 @@ fi
 rm -rf typetests
 rm -rf node_modules 
 rm -rf package-lock*
-cd src/zombie-lord 
+cd src/services/pool/socket-puppet-service/ ; pwd
 rm -rf node_modules
 rm -rf package-lock*
-cd ../public/voodoo
+cd ../../../../ ; pwd
+cd deploy ; pwd
 rm -rf node_modules
 rm -rf package-lock*
-cd ../../public
+cd ../ ; pwd
+cd src/zombie-lord ; pwd
+rm -rf node_modules
+rm -rf package-lock*
+cd ../public/voodoo ; pwd
+rm -rf node_modules
+rm -rf package-lock*
+cd ../../public ; pwd
 rm -f *bundle*.js
 rm -rf node_modules
 rm -rf package-lock*
-cd ../zombie-lord/custom-launcher
+cd ../zombie-lord/custom-launcher ; pwd
 rm -rf node_modules
 rm -rf package-lock*
-cd ../../../
-cd audio/
+cd ../../../ ; pwd
+cd audio/ ; pwd
 rm -rf node_modules
 rm -rf package-lock*
-cd ../
-cd chai/
+cd ../ ; pwd
+cd chai/ ; pwd
 rm -rf node_modules
 rm -rf package-lock*
-cd ../
-cd devtools/
+cd ../ ; pwd
+cd devtools/ ; pwd
 rm -rf node_modules
 rm -rf package-lock*
 
