@@ -1627,6 +1627,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     waitingToReload.add(sessionId);
     await sleep(100);
     await send("Page.reload", {ignoreCache:true}, sessionId);
+    await sleep(100);
     waitingToReload.delete(sessionId);
   }
 
