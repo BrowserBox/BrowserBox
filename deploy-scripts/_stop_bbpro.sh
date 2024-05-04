@@ -10,5 +10,6 @@ pm2 delete start_audio
 pkill -u $(whoami) node 
 pkill -u $(whoami) chrome
 pulseaudio -k
+pm2 save --force
 
 exit 0 

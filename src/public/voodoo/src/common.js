@@ -10,7 +10,7 @@ export const iden = e => e;
 export const isSafari = () => SafariPlatform.test(navigator.userAgent);
 
 export const GO_SECURE = globalThis?.location?.protocol == 'https:';
-export const version = 'v7';
+export const version = 'v8';
 export const Port = globalThis?.location?.port || (GO_SECURE ? '443': '80');
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`+Port;
 
@@ -32,6 +32,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  blockClientFormFactorCommands: false, /*block setWindowBounds, and setDeviceMetricsOverride from client*/
   logPlugins: false,
   debugPuterAbility: false,
   detectPuterAbility: true,
@@ -140,7 +141,7 @@ export const DEBUG = Object.freeze({
   regularFrameCheck: false,
   showUnreadBadge: true,
   framesPushed: true,
-  clientsCanResetViewport: true,
+  clientsCanResetViewport: false,
   adaptiveImageQuality: false,
   loggableEvents: new Set([
     /*typing events*/
@@ -348,7 +349,13 @@ export function isFirefox() {
 }
 
 export function deviceIsMobile() {
-  return MobilePlatform.test(navigator.userAgent);
+  const mobile = MobilePlatform.test(navigator.userAgent);
+  /*
+  if ( mobile ) {
+    alert('mobile');
+  }
+  */
+  return mobile;
 }
 
 // debug logging

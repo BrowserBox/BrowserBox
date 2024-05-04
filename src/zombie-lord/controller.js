@@ -1,5 +1,5 @@
 import Connect from './connection.js';
-import {executeBinding, getViewport} from './connection.js';
+import {updateTargetsOnCommonChanged, executeBinding, getViewport} from './connection.js';
 import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
 import {MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
 import fs from 'fs';
@@ -19,6 +19,7 @@ const Options = {
 //const TAIL_START = 100;
 //let lastTailShot = false;
 //let lastHash;
+const tabsOnClose = new Map();
 let BANDWIDTH_ISSUE_STATE = false;
 const goLowRes = throttle((connection, ...args) => connection.shrinkImagery(...args), 8000);
 const goHighRes = throttle((connection, ...args) => connection.growImagery(...args), 8000); 
@@ -294,31 +295,7 @@ const controller_api = {
     if ( connection ) {
       connection.links.delete(connectionId);
       connection.viewports.delete(connectionId);
-      const remainingConnectionId = [...connection.viewports.keys()][0];
-      DEBUG.debugViewportDimensions && console.log('Viewports--', connection.viewports);
-      const viewport = getViewport(...connection.viewports.values());
-      DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
-      DEBUG.coords && console.log(`Resetting device metrics on client departure`, viewport);
-      this.send({
-        name: "Browser.setWindowBounds",
-        params: {
-          windowId: connection.latestWindowId,
-          bounds: viewport,
-        },
-        requiresWindowId: true,
-        forceFrame: true,
-        receivesFrames: true,
-      }, port);
-      this.send({
-        name: "Emulation.setDeviceMetricsOverride",
-        params: {
-          ...viewport,
-          mobile: viewport.mobile ? viewport.mobile : connection.isMobile,
-        },
-        receivesFrames: true,
-        requiresShot: true,
-        forceFrame: true,
-      }, port);
+      updateTargetsOnCommonChanged({connection, command: "all", force: true});
     } else {
       throw new TypeError(`No connection on port ${port}`);
     }
@@ -337,13 +314,17 @@ const controller_api = {
     Object.assign(Options, new_options);
   },
 
-  async close(port) {
+  close(port) {
+    console.log('Close called');
     const connection = connections.get(port);    
     if ( ! connection ) {
       return true;
     }
+    console.log('Saving tabs');
+    const t = connection.tabs || [];
+    tabsOnClose.set(port, Array.isArray(t) ? t : [...t.values()]);
     connections.delete(port);
-    return await connection.close();
+    return connection.close();
   },
 
   getActiveTarget(port) {
@@ -369,8 +350,10 @@ const controller_api = {
     if ( ! tabs ) throw new TypeError(`No tabs provided.`);
     const connection = connections.get(port);
     if ( ! connection ) return;
-    tabs.forEach(({targetId}) => {
+    tabs.forEach(tab => {
+      const {targetId} = tab;
       connection.targets.add(targetId);
+      connection.tabs.set(targetId, tab);
     });
   },
 
@@ -404,12 +387,15 @@ const controller_api = {
       //({Page, Target} = connection.zombie);
       command = command || {};
       if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(command.name) ) {
-        setTimeout(() => {
-          fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
-            timestamp: (new Date).toISOString(),
-            command,
-          },null,2)+"\n");
-        }, 5);
+        let stack = '';
+        if ( DEBUG.noteCallStackInLog ) {
+          stack = (new Error).stack; 
+        }
+        console.info(`Logging`, command, stack);
+        fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
+          timestamp: (new Date).toISOString(),
+          command,
+        },null,2)+"\n");
       }
       DEBUG.val >= DEBUG.high && !command.isBufferedResultsCollectionOnly && console.log(JSON.stringify(command));
       if ( command.isBufferedResultsCollectionOnly ) {
@@ -685,6 +671,27 @@ const controller_api = {
 
   getConnection(port) {
     return connections.get(port);
+  },
+
+  getTargets(port) {
+    const t = connections.get(port)?.tabs || tabsOnClose.get(port);
+    if ( ! t ) {
+      DEBUG.showNoTargets && console.warn('Could not get tabs on close, returning a dummy tab to not spawn excessive tabs on restart');
+      return [{dummy:true}];
+    }
+    return Array.from(Array.isArray(t) ? t : [...t.values()]);
+  },
+
+  setViewport(connectionId, viewport, port) {
+    const connection = connections.get(port);
+    if ( ! connection ) {
+      throw new TypeError(`No such connection on port: ${port}`);
+    }
+    if ( !viewport.deviceScaleFactor ) {
+      viewport.deviceScaleFactor = 1;
+    }
+    connection.viewports.set(connectionId, viewport);
+    updateTargetsOnCommonChanged({connection,command:"all"});
   }
 };
 

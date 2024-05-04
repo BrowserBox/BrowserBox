@@ -31,6 +31,13 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugViewports: false,
+  noteCallStackInLog: true,
+  showNoTargets: false,
+  debugUserAgent: false,
+  showSkippedCommandsAfterViewportChangeCheck: false,
+  showFaviconErrors: false,
+  showUARedux: false,
   disable3PC: true,
   networkDebug: false,
   networkBlocking: true,
@@ -85,11 +92,13 @@ export const DEBUG = Object.freeze({
   showViewportChanges: false,
   showResizeEvents: false,
   logRestartCast: false,
-  showErrorSources: false,
+  get showErrorSources() {
+    return this.logFileCommands || this.commands || false;
+  },
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,
   coords: false,
-  scrollbars: true,
+  debugScrollbars: true,
   get ensureUptimeBeforeRestart() {
     return this.mode !== 'dev'
   },
@@ -97,6 +106,7 @@ export const DEBUG = Object.freeze({
   debugUntilTrue: false,
   debugUntilForever: false,
   debugViewportDimensions: false,
+  debugViewportChanges: false,
   debugDevtoolsServer: false,
   /* peer and websocket connections */
   cnx: false, 
