@@ -1617,7 +1617,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     return castInfo;
   }
 
-  async function reloadAfterSetup(sessionId) {
+  async function _reloadAfterSetup(sessionId) {
     if ( waitingToReload.has(sessionId) ) return;
     waitingToReload.add(sessionId);
     const targetId = sessions.get(sessionId);
