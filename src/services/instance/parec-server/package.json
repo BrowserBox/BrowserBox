@@ -1,7 +1,7 @@
 {
   "name": "@browserbox/audio-server",
   "type": "module",
-  "version": "8.1.0,
+  "version": "8.1.0",
   "description": "Record pulseaudio, or windows monitor and serve ws or http streams",
   "main": "index.js",
   "scripts": {
