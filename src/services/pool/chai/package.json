@@ -1,6 +1,6 @@
 {
   "name": "@browserbox/chai",
-  "version": "7.2.0",
+  "version": "8.1.0",
   "type": "module",
   "description": "chai - convert your documents to images by way of PDF",
   "main": "src/index.js",
