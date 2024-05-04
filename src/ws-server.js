@@ -749,7 +749,7 @@
                 }
               } 
               if ( viewport ) {
-                console.log(`Viewport received`, viewport);
+                DEBUG.showViewportChanges && console.log(`Viewport received`, viewport);
                 zl.act.setViewport(connectionId, viewport, zombie_port);
               }
             } catch(e) {

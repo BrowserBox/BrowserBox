@@ -31,6 +31,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugViewports: false,
+  noteCallStackInLog: true,
   showNoTargets: false,
   debugUserAgent: false,
   showSkippedCommandsAfterViewportChangeCheck: false,
@@ -57,7 +59,7 @@ export const DEBUG = Object.freeze({
   showDebug: false,
   utilizeTempHackFixForIMENoKey: false,
   debugTyping: false,
-  logFileCommands: true,
+  logFileCommands: false,
   windowsUses48KAudio: false,
   debugAlerts: false,
   debugModals: false,
@@ -90,7 +92,9 @@ export const DEBUG = Object.freeze({
   showViewportChanges: false,
   showResizeEvents: false,
   logRestartCast: false,
-  showErrorSources: false,
+  get showErrorSources() {
+    return this.logFileCommands || this.commands || false;
+  },
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,
   coords: false,
@@ -102,7 +106,7 @@ export const DEBUG = Object.freeze({
   debugUntilTrue: false,
   debugUntilForever: false,
   debugViewportDimensions: false,
-  debugViewportChanges: true,
+  debugViewportChanges: false,
   debugDevtoolsServer: false,
   /* peer and websocket connections */
   cnx: false, 
@@ -140,7 +144,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
+  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,

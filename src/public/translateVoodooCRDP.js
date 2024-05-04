@@ -475,6 +475,7 @@ function translator(e, handled = {type:'case'}) {
           return retVal;
         }
       ]};
+      if ( DEBUG.blockClientFormFactorCommands ) return;
       return retVal;
     }
     case "window-bounds-preImplementation": {
@@ -503,6 +504,7 @@ function translator(e, handled = {type:'case'}) {
           forceFrame
         },
       };
+      if ( DEBUG.blockClientFormFactorCommands ) return;
       return retVal;
     }
     case "user-agent": {

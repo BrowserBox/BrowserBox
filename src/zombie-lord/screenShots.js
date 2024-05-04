@@ -77,6 +77,7 @@ export const RACE_SAMPLE = 0.74;
   };
 
 export function makeCamera(connection) {
+  let restartingNow = false;
   let shooting = false;
   let lastScreenOpts = null;
   let frameId = 1;
@@ -163,35 +164,42 @@ export function makeCamera(connection) {
       restart = true;
       DEBUG.logRestartCast && console.log(`ALWAYS restarting cast.`);
     }
-    if ( restart ) {
-      DEBUG.logRestartCast && console.log(`Restarting cast`);
-      await connection.sessionSend({
-        name: "Page.stopScreencast",
-        params: {}
-      });
-      const {
-        format,
-        quality, everyNthFrame,
-        maxWidth, maxHeight
-      } = SCREEN_OPTS;
-      await connection.sessionSend({
-        name: "Page.startScreencast",
-        params: {
-          format, quality, everyNthFrame, 
-          ...(DEBUG.noCastMaxDims ? 
-            {}
-            : 
-            {maxWidth, maxHeight}
-          ),
-        }
-      });
-      lastScreenOpts = {
-        quality, everyNthFrame,
-        maxWidth, maxHeight,
-      };
-    } else {
-      DEBUG.logRestartCast && console.log(`Restart requested by nothing changed so not restarting cast.`);
+    try {
+      if ( restart ) {
+        if ( restartingNow ) return;
+        restartingNow = true;
+        DEBUG.logRestartCast && console.log(`Restarting cast`);
+        await connection.sessionSend({
+          name: "Page.stopScreencast",
+          params: {}
+        });
+        const {
+          format,
+          quality, everyNthFrame,
+          maxWidth, maxHeight
+        } = SCREEN_OPTS;
+        await connection.sessionSend({
+          name: "Page.startScreencast",
+          params: {
+            format, quality, everyNthFrame, 
+            ...(DEBUG.noCastMaxDims ? 
+              {}
+              : 
+              {maxWidth, maxHeight}
+            ),
+          }
+        });
+        lastScreenOpts = {
+          quality, everyNthFrame,
+          maxWidth, maxHeight,
+        };
+      } else {
+        DEBUG.logRestartCast && console.log(`Restart requested by nothing changed so not restarting cast.`);
+      }
+    }catch(e) {
+      console.warn(`Error restarting cast`, e);
     }
+    restartingNow = false;
   }
 
   async function shrinkImagery() {

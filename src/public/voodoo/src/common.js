@@ -32,6 +32,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  blockClientFormFactorCommands: true, /*block setWindowBounds, and setDeviceMetricsOverride from client*/
   logPlugins: false,
   debugPuterAbility: false,
   detectPuterAbility: true,
@@ -140,7 +141,7 @@ export const DEBUG = Object.freeze({
   regularFrameCheck: false,
   showUnreadBadge: true,
   framesPushed: true,
-  clientsCanResetViewport: true,
+  clientsCanResetViewport: false,
   adaptiveImageQuality: false,
   loggableEvents: new Set([
     /*typing events*/

@@ -1185,6 +1185,9 @@
       if ( ! this[$].senders )  {
         untilTrue(() => this[$].senders).then(() => this.sendViewport(viewport));
       } else {
+        if ( !viewport.deviceScaleFactor ) {
+          viewport.deviceScaleFactor = 1;
+        }
         this[$].senders.so({messageId,viewport});
       }
     }

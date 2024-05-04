@@ -387,12 +387,15 @@ const controller_api = {
       //({Page, Target} = connection.zombie);
       command = command || {};
       if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(command.name) ) {
-        setTimeout(() => {
-          fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
-            timestamp: (new Date).toISOString(),
-            command,
-          },null,2)+"\n");
-        }, 5);
+        let stack = '';
+        if ( DEBUG.noteCallStackInLog ) {
+          stack = (new Error).stack; 
+        }
+        console.info(`Logging`, command, stack);
+        fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
+          timestamp: (new Date).toISOString(),
+          command,
+        },null,2)+"\n");
       }
       DEBUG.val >= DEBUG.high && !command.isBufferedResultsCollectionOnly && console.log(JSON.stringify(command));
       if ( command.isBufferedResultsCollectionOnly ) {
@@ -683,6 +686,9 @@ const controller_api = {
     const connection = connections.get(port);
     if ( ! connection ) {
       throw new TypeError(`No such connection on port: ${port}`);
+    }
+    if ( !viewport.deviceScaleFactor ) {
+      viewport.deviceScaleFactor = 1;
     }
     connection.viewports.set(connectionId, viewport);
     updateTargetsOnCommonChanged({connection,command:"all"});

@@ -166,6 +166,7 @@ DEBUG.debugNavigator && console.log({UA, mobUA, deskUA, Plat, VEND});
 
 const checkSetup = new Map();
 const targets = new Set(); 
+const waitingToReload = new Set();
 //const waiting = new Map();
 const sessions = new Map();
 const viewports = new Map();
@@ -269,8 +270,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Page.screencastFrameAck",
       "Page.screencastFrame",
     ] : []),
-    ...(DEBUG.debugViewportChanges ? [
+    ...(DEBUG.debugViewports ? [
       "Emulation.setDeviceMetricsOverride",
+      "Emulation.setUserAgentOverride",
+      "Emulation.setScrollbarsHidden",
       "Browser.setWindowBounds",
       "Page.reload",
       "Page.startScreencast",
@@ -589,7 +592,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   function sendFrameToClient({message, sessionId}) {
     if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
       const {params: {data, metadata}, method, sessionId} = message;
-      console.info(`Logging`, {method, params: {metadata, data:'img data...'}, sessionId});
+      let stack = '';
+      if ( DEBUG.noteCallStackInLog ) {
+        stack = (new Error).stack; 
+      }
+      console.info(`Logging`, {method, params: {metadata, data:'img data...'}, sessionId, stack});
       setTimeout(() => {
         fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
           timestamp: (new Date).toISOString(),
@@ -819,7 +826,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   async function receiveMessage({message, sessionId}) {
     if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
-      console.info(`Logging`, message);
+      let stack = '';
+      if ( DEBUG.noteCallStackInLog ) {
+        stack = (new Error).stack; 
+      }
+      console.info(`Logging`, message, stack);
       fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
         timestamp: (new Date).toISOString(),
         message,
@@ -1612,8 +1623,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     }
     await sleep(100);
     */
+    if ( waitingToReload.has(sessionId) ) return;
+    waitingToReload.add(sessionId);
     await sleep(100);
     await send("Page.reload", {ignoreCache:true}, sessionId);
+    waitingToReload.delete(sessionId);
   }
 
   async function sessionSend(command) {
@@ -1670,27 +1684,28 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log('Viewports', connection.viewports);
         DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
 
+        if ( DEBUG.useNewAsgardHeadless ) {
+          command.params.bounds.height += 80;
+        }
         if ( ! command.params.resetRequested ) {
           const {width, height} = viewport;
           Object.assign(command.params.bounds, {width, height});
+          Object.assign(connection.bounds, viewport);
         } else {
           // don't send our custom flag through to the browser
           ensureMinBounds(command.params.bounds);
+          Object.assign(connection.bounds, command.param.bounds);
         }
         delete command.params.bounds.resetRequested;
-        Object.assign(connection.bounds, viewport);
         if ( command.params.bounds.mobile ) {
           connection.isMobile = true;
           delete command.params.bounds.mobile;
         }
+        DEBUG.debugViewportDimensions && console.log(connection.bounds);
         SCREEN_OPTS.maxWidth = connection.bounds.width;
         SCREEN_OPTS.maxHeight = connection.bounds.height;
         DEBUG.debugViewportDimensions && console.log("Screen opts at set window bounds", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
-
-        if ( DEBUG.useNewAsgardHeadless ) {
-          command.params.bounds.height += 80;
-        }
       }; break;
       case "Emulation.setDeviceMetricsOverride": {
         // there's a race where we call this before any targets so the "mobile changed blip does not take effect"
@@ -1715,11 +1730,16 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
         if ( ! command.params.resetRequested ) {
           Object.assign(command.params, viewport);
+          Object.assign(connection.bounds, viewport);
         } else {
           // don't send our custom flag through to the browser
           ensureMinBounds(command.params);
+          Object.assign(connection.bounds, command.params);
         }
-        Object.assign(connection.bounds, command.params);
+        if ( ! command.params.deviceScaleFactor ) {
+          command.params.deviceScaleFactor = 1;
+        }
+        DEBUG.debugViewportDimensions && console.log(connection.bounds);
         SCREEN_OPTS.maxWidth = connection.bounds.width;
         SCREEN_OPTS.maxHeight = connection.bounds.height;
         if ( command.params.deviceScaleFactor ) {
@@ -2066,9 +2086,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 }
 
 export function getViewport(...viewports) {
-  if ( viewports.length === 1 ) {
-    return viewports[0];
-  }
   if ( viewports.length === 0 ) {
     const {
       width, height, deviceScaleFactor,
@@ -2116,7 +2133,7 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
   updatingTargets = true;
   const {send,on, ons} = connection.zombie;
   const commonViewport = getViewport(...connection.viewports.values());
-  console.log('Common viewport', commonViewport, (new Error).stack);
+  DEBUG.debugViewportDimensions && console.log('Common viewport', commonViewport, (new Error).stack);
   connection.commonViewport = commonViewport;
   Object.assign(connection.bounds, connection.commonViewport);
   const cvs = JSON.stringify(commonViewport, null, 2);
@@ -2142,7 +2159,7 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
       DEBUG.debugViewportDimensions && console.log({commonViewport});
       DEBUG.debugViewportDimensions && console.log('Viewports match?', connection.lastCommonViewport == cvs, {commonViewport}, {last:JSON.parse(connection.lastCommonViewport)});
       if ( mobileChanged ) {
-        console.warn(`Mobile changed`, commonViewport, connection.viewports);
+        DEBUG.debugViewportChanges && console.warn(`Mobile changed`, commonViewport, connection.viewports);
       }
       await updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection})
       await updateAllTargetsToViewport({commonViewport, connection}); 
@@ -2226,9 +2243,11 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
 async function updateAllTargetsToViewport({commonViewport, connection, skipSelf = false}) {
   const {send,on, ons} = connection.zombie;
   const windows = new Set();
+  SCREEN_OPTS.maxWidth = commonViewport.width;
+  SCREEN_OPTS.maxHeight = commonViewport.height;
   for ( const targetId of connection.targets.values() ) {
     const sessionId = sessions.get(targetId);
-    if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
+    //if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
     let width, height, screenWidth, screenHeight;
     try {
       const {windowId} = await send("Browser.getWindowForTarget", {targetId});
@@ -2419,7 +2438,11 @@ async function makeZombie({port:port = 9222} = {}) {
         }
       }
       if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
-        console.info(`Logging`, message);
+        let stack = '';
+        if ( DEBUG.noteCallStackInLog ) {
+          stack = (new Error).stack; 
+        }
+        console.info(`Logging`, message, stack);
         fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
           timestamp: (new Date).toISOString(),
           message,
