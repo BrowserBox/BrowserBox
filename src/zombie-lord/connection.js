@@ -1627,8 +1627,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     await sleep(100);
     await send("Page.reload", {ignoreCache:true}, sessionId);
     await sleep(100);
-    // hack to fix a weird reload loop but, only 1 reload per 60 seconds
-    setTimeout(() => waitingToReload.delete(sessionId), 60000);
+    waitingToReload.delete(sessionId)
   }
 
   async function sessionSend(command) {
