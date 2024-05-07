@@ -1627,7 +1627,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     await sleep(100);
     await send("Page.reload", {ignoreCache:true}, sessionId);
     await sleep(100);
-    waitingToReload.delete(sessionId);
+    waitingToReload.delete(sessionId)
   }
 
   async function sessionSend(command) {
@@ -1697,7 +1697,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             command.params.bounds.height += 80;
           }
           ensureMinBounds(command.params.bounds);
-          Object.assign(connection.bounds, command.param.bounds);
+          Object.assign(connection.bounds, command.params.bounds);
         }
         delete command.params.bounds.resetRequested;
         if ( command.params.bounds.mobile ) {
@@ -2238,6 +2238,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
       console.warn(`Error updating user agent for double checked target`, {targetId, sessionId}, err);
     }
   }
+  list = [...(new Set([...list]))];
   for ( const sessionId of list ) {
     connection.reloadAfterSetup(sessionId);
   }
