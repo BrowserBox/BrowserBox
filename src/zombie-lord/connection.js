@@ -1627,7 +1627,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     await sleep(100);
     await send("Page.reload", {ignoreCache:true}, sessionId);
     await sleep(100);
-    waitingToReload.delete(sessionId);
+    // hack to fix a weird reload loop but, only 1 reload per 60 seconds
+    setTimeout(() => waitingToReload.delete(sessionId), 60000);
   }
 
   async function sessionSend(command) {
@@ -2238,6 +2239,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
       console.warn(`Error updating user agent for double checked target`, {targetId, sessionId}, err);
     }
   }
+  list = [...(new Set([...list]))];
   for ( const sessionId of list ) {
     connection.reloadAfterSetup(sessionId);
   }
