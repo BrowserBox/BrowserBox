@@ -1697,7 +1697,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             command.params.bounds.height += 80;
           }
           ensureMinBounds(command.params.bounds);
-          Object.assign(connection.bounds, command.param.bounds);
+          Object.assign(connection.bounds, command.params.bounds);
         }
         delete command.params.bounds.resetRequested;
         if ( command.params.bounds.mobile ) {
