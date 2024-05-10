@@ -36,6 +36,7 @@
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
 
   // config
+    const THIRTEEN_MINUTES = 13 * 60 * 1000;
     const SafariPlatform = /^((?!chrome|android).)*safari/i;
     const PEER_RECONNECT_MS = 2000;
     const FRAME_LIMIT = false; // 'SAMEORIGIN' or 'DENY' or false (no limit)
@@ -124,6 +125,7 @@
   const TabNumbers = new Map();
 
   export let LatestCSRFToken = '';
+  let shutdownTimer = null;
   let serverOrigin;
   let messageQueueRunning = false;
   let requestId = 0;
@@ -548,6 +550,7 @@
             onlineCount: zl.act.linkStats(zombie_port).onlineCount
           }
         });
+        stopShutdownTimer();
         DEBUG.debugConnect && console.log(`Check 3`);
         let peer;
         zl.life.onDeath(zombie_port, () => {
@@ -561,6 +564,10 @@
           closed = true;    
           ws = null;
           peer && peer.destroy(new Error(`Main communication WebSocket closed.`));
+          console.log(websockets);
+          if ( websockets.size === 0 ) {
+            startShutdownTimer();
+          }
           peer = null;
           zl.act.addLink({so, forceMeta}, {connectionId, peer: null, socket:null}, zombie_port);
           zl.act.deleteLink({connectionId}, zombie_port);
@@ -772,6 +779,10 @@
         ws.on('error', err => {
           DEBUG.debugConnect && console.log(`Check 10`);
           console.log(`ws err`, err);
+          websockets.delete(ws);
+          if ( websockets.size === 0 ) {
+            startShutdownTimer();
+          }
         });
         DEBUG.debugConnect && console.log(`Check 11`);
         if ( DEBUG.useWebRTC ) {
@@ -1122,7 +1133,7 @@
           if ( process.env.PM2_USAGE && process.env.name ) {
             DEBUG.debugRestart && console.log(`Is pm2. Deleting pm2 name`, process.env.name);
             try {
-              console.log(child_process.execSync(`pm2 delete ${process.env.name}`).toString());
+              return executeShutdownOfBBPRO();
             } catch(e) {
               console.warn(e);
             }
@@ -1153,6 +1164,7 @@
           /**
             launch a new browser (if one is not running)
           **/
+          throw new Error(`Not implemented`);
         });
       // app integrity check
         app.get("/integrity", ConstrainedRateLimiter, (req, res) => {
@@ -1305,5 +1317,22 @@
     const name = `file${(Math.random()*1000000).toString(36)}${ext}`;
     //console.log({nextFileName:{name}});
     return name;
+  }
+
+  function startShutdownTimer() {
+    if ( shutdownTimer ) return;
+    console.log(`Starting BrowserBox shutdown timer on all clients disconnected`);
+    shutdownTimer = setTimeout(executeShutdownOfBBPRO, THIRTEEN_MINUTES);
+  }
+
+  function stopShutdownTimer() {
+    clearTimeout(shutdownTimer);
+    console.log(`Stopped BrowserBox shutdown timer on a client connected`);
+    shutdownTimer = null;
+  }
+
+  function executeShutdownOfBBPRO() {
+    console.warn(`Stopping BrowserBox`);
+    return child_process.exec(`stop_bbpro`);
   }
 
