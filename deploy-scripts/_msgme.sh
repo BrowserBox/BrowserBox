@@ -29,11 +29,18 @@ if [[ $USERNAME != "$(whoami)" ]]; then
 fi
 
 # Write the message
-sudo -u $USERNAME mkdir -p "$(dirname "$NOTICES_PATH")"
-echo "$MESSAGE" | sudo tee "$NOTICES_PATH" &>/dev/null || { echo "Failed to write message. Check permissions and user existence." >&2; exit 3; }
+sudo=""
+if [[ "$USERNAME" == "$USER" ]]; then
+  mkdir -p "$(dirname "$NOTICES_PATH")"
+  echo "$MESSAGE" | tee "$NOTICES_PATH" &>/dev/null || { echo "Failed to write message. Check permissions and user existence." >&2; exit 3; }
+else
+  sudo -u $USERNAME mkdir -p "$(dirname "$NOTICES_PATH")"
+  echo "$MESSAGE" | sudo tee "$NOTICES_PATH" &>/dev/null || { echo "Failed to write message. Check permissions and user existence." >&2; exit 3; }
+  sudo="sudo -n"
+fi
 
 # Extract port and update PID_FILE_PATH
-PORT=$(sudo cat "$LOGIN_LINK_FILE" | grep -Po '(?<=:)\d+' | head -n 1) 2>/dev/null
+PORT=$($sudo cat "$LOGIN_LINK_FILE" | grep -Po '(?<=:)\d+' | head -n 1) 2>/dev/null
 if [[ -z "$PORT" ]]; then
   echo "Failed to extract port from login link." >&2
   exit 4
@@ -42,14 +49,14 @@ fi
 PID_FILE_PATH=${PID_FILE_PATH/\$PORT/$PORT}
 
 # Read the PID
-PID=$(sudo cat "$PID_FILE_PATH" 2>/dev/null)
+PID=$($sudo cat "$PID_FILE_PATH" 2>/dev/null)
 if [[ -z "$PID" ]]; then
   echo "Failed to read PID from $PID_FILE_PATH. Check if the app is running." >&2
   exit 5
 fi
 
 # Send SIGPIPE to the process
-sudo kill -SIGPIPE "$PID" 2>/dev/null || { echo "Failed to send SIGPIPE to process $PID. Check permissions and if the process exists." >&2; exit 6; }
+$sudo kill -SIGPIPE "$PID" 2>/dev/null || { echo "Failed to send SIGPIPE to process $PID. Check permissions and if the process exists." >&2; exit 6; }
 
 echo "Message delivered successfully to $USERNAME." >&2
 
