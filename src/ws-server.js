@@ -6,7 +6,6 @@
   import child_process from 'child_process';	
 
   import express from 'express';
-  /* import fetch from 'node-fetch'; */
   import multer from 'multer';
   import {WebSocketServer, WebSocket} from 'ws';
   import Peer from 'simple-peer';
@@ -18,7 +17,6 @@
   import helmet from 'helmet';
   import rateLimit from 'express-rate-limit';
   import csrf from 'csurf';
-  //import {CWebp} from 'cwebp';
 
   import zl from './zombie-lord/index.js';
   import {start_mode} from './args.js';
@@ -130,7 +128,6 @@
   let messageQueueRunning = false;
   let requestId = 0;
   let TabNumber = 0;
-
 
   export async function start_ws_server(
       port, zombie_port, allowed_user_cookie, session_token, 
@@ -892,6 +889,9 @@
     process.on('SIGUSR2', shutDown);
     process.on('beforeExit', shutDown);
     process.on('exit', shutDown);
+
+    DEBUG.alwaysStartShutdownTimer && startShutdownTimer();
+
     return server;
 
     function addHandlers() {
@@ -1335,4 +1335,3 @@
     console.warn(`Stopping BrowserBox`);
     return child_process.exec(`stop_bbpro`);
   }
-

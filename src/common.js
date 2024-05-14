@@ -31,6 +31,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  alwaysStartShutdownTimer: true,
   debugViewports: false,
   noteCallStackInLog: true,
   showNoTargets: false,
