@@ -2202,7 +2202,7 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
 
 async function updateAllTargetsToUserAgent({mobile, connection}) {
   const {send,on, ons} = connection.zombie;
-  const list = [];
+  let list = [];
   for ( const targetId of connection.targets.values() ) {
     const sessionId = sessions.get(targetId);
     try {
