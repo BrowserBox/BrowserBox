@@ -222,6 +222,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  runInjectionsImmediately: true,
   homePage: 'https://google.com',
   BINDING_NAME: 'bb',
   devapi: true,
