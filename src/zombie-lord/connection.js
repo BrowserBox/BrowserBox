@@ -2274,7 +2274,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
       }, sessionId));
       DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width,height});
       if ( width == commonViewport.width && height == commonViewport.height && screenWidth == commonViewport.width && (screenHeight - commonViewport.height) < 100) {
-        //continue;
+        continue;
       }
       send("Emulation.setDeviceMetricsOverride", commonViewport, sessionId);
     } catch(err) {
