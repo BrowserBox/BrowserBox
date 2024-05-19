@@ -11,6 +11,8 @@ pkill -u $(whoami) node
 pkill -u $(whoami) chrome
 pulseaudio -k
 pm2 save --force
-pm2 kill
+if [[ "$(pm2 jlist)" == "[]" ]]; then
+  pm2 kill
+fi
 
 exit 0 
