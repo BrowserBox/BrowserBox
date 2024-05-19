@@ -280,7 +280,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Page.reload",
       "Page.startScreencast",
       "Page.stopScreencast",
-    ] : [])
+    ] : []),
+    ...(DEBUG.debugReloadLoop ? [
+      "Page.reload",
+    ] : []),
   ]);
 
   if ( demoBlock ) {
@@ -2264,6 +2267,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
         }
         await send("Browser.setWindowBounds", {bounds:{width,height}, windowId})
       }
+
       ({result:{value:{width,height,screenWidth,screenHeight}}} = await send("Runtime.evaluate", {
         expression: `
           (function () {
@@ -2273,9 +2277,6 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
         returnByValue: true 
       }, sessionId));
       DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width,height});
-      if ( width == commonViewport.width && height == commonViewport.height && screenWidth == commonViewport.width && (screenHeight - commonViewport.height) < 100) {
-        continue;
-      }
       send("Emulation.setDeviceMetricsOverride", commonViewport, sessionId);
     } catch(err) {
       console.warn(`Error updating viewport to reflect change, during all targets update loop`, {targetId, sessionId}, err);
