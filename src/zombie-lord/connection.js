@@ -838,17 +838,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   }
 
   async function receiveMessage({message, sessionId}) {
-    if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
-      let stack = '';
-      if ( DEBUG.noteCallStackInLog ) {
-        stack = (new Error).stack; 
-      }
-      console.info(`Logging`, message, stack);
-      fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
-        timestamp: (new Date).toISOString(),
-        message,
-      },null,2)+"\n");
-    }
     await untilTrueOrTimeout(() => (typeof connection.forceMeta) == "function", 20);
     if ( message.method == "Network.dataReceived" ) {
       const {encodedDataLength, dataLength} = message.params;
@@ -2473,6 +2462,11 @@ async function makeZombie({port:port = 9222} = {}) {
           DEBUG.debugCast && console.log(`NOT blocking this screenshot as it is blockExempt`);
         }
       }
+      if ( message.method == "Page.screencastFrameAck" ) {
+        if ( message.params.sessionId === undefined ) {
+          message.params.sessionId = 1;
+        }
+      }
       try {
         socket.send(JSON.stringify(message));
       } catch(e) {
@@ -2525,10 +2519,16 @@ async function makeZombie({port:port = 9222} = {}) {
           if ( DEBUG.events ) {
             console.log(`Event: ${method}\n`, JSON.stringify(message, null, 2));
           }
-          if ( LOG_FILE.Commands.has(method) ) {
+          if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(method) ) {
             console.log(`Event received: ${method}`);
             console.info(JSON.stringify(message, null, 2));
-            //console.info(message);
+            // append to log file
+            {
+              fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
+                timestamp: (new Date).toISOString(),
+                message,
+              },null,2)+"\n");
+            }
           }
           if ( img ) {
             message.params.data = img;
