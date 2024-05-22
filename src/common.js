@@ -31,10 +31,11 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  overrideMaxRTT: 3500,
   debugNewWorlds: true,
+  neverShowErrorSources: true,
   debugReloadLoop: false,
   alwaysStartShutdownTimer: true,
+  overrideMaxRTT: 3500,
   debugViewports: false,
   noteCallStackInLog: false,
   showNoTargets: false,
@@ -98,7 +99,8 @@ export const DEBUG = Object.freeze({
   showResizeEvents: false,
   logRestartCast: false,
   get showErrorSources() {
-    return this.logFileCommands || this.commands || false;
+    if ( this.neverShowErrorSources ) return false;
+    else return this.logFileCommands || this.commands || false;
   },
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,
