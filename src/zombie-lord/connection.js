@@ -2528,6 +2528,7 @@ async function makeZombie({port:port = 9222} = {}) {
           if ( LOG_FILE.Commands.has(method) ) {
             console.log(`Event received: ${method}`);
             console.info(JSON.stringify(message, null, 2));
+            //console.info(message);
           }
           if ( img ) {
             message.params.data = img;

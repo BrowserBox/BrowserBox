@@ -44,7 +44,7 @@ export const MIN_TIME_BETWEEN_TAIL_SHOTS = process.env.TORBB ? 1000 : 175;
 export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
 export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
 // local testing values so small haha
-export const MAX_ROUNDTRIP = DEBUG.localTestRTT ? 100 : process.env.TORBB ? 4000 : 725;
+export const MAX_ROUNDTRIP = DEBUG.localTestRTT ? 100 : process.env.TORBB ? 4000 : (DEBUG.overrideMaxRTT || 725);
 export const MIN_ROUNDTRIP = DEBUG.localTestRTT ? 80 : process.env.TORBB ? 2000 : 600;
 export const MIN_SPOT_ROUNDTRIP = process.env.TORBB ? 600 : 125;
 export const BUF_SEND_TIMEOUT = 50;

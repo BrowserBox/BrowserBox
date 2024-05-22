@@ -7,7 +7,9 @@ pm2 delete basic-bb-main-service
 pm2 delete run-docspark
 pm2 delete devtools-server
 pm2 delete start_audio
-pkill -u $(whoami) node 
+if [[ -z "$DO_NOT_KILL_NODE" ]]; then
+  pkill -u $(whoami) node 
+fi
 pkill -u $(whoami) chrome
 pulseaudio -k
 pm2 save --force

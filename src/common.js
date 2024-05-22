@@ -31,11 +31,12 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  overrideMaxRTT: 3500,
   debugNewWorlds: true,
   debugReloadLoop: false,
   alwaysStartShutdownTimer: true,
   debugViewports: false,
-  noteCallStackInLog: true,
+  noteCallStackInLog: false,
   showNoTargets: false,
   debugUserAgent: false,
   showSkippedCommandsAfterViewportChangeCheck: false,
