@@ -39,6 +39,7 @@ export const DEBUG = Object.freeze({
   noteCallStackInLog: false,
   showNoTargets: false,
   debugUserAgent: false,
+  worldDebug: false,
   showSkippedCommandsAfterViewportChangeCheck: false,
   showFaviconErrors: false,
   showUARedux: false,
@@ -168,7 +169,6 @@ export const DEBUG = Object.freeze({
     /* || other condition || some other condition ... etc ... */
     return this.debugFavicon || this.showConsoleMessages; 
   },
-  worldDebug: true,
   bufSend: true,
   acks: false,          // actually this doesn't "turn on" acks. They are on by default
                         // this flag just turns on acks logging. It should probably be called
