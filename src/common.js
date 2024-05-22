@@ -31,6 +31,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugReloadLoop: true,
   alwaysStartShutdownTimer: true,
   debugViewports: false,
   noteCallStackInLog: true,
@@ -60,7 +61,7 @@ export const DEBUG = Object.freeze({
   showDebug: false,
   utilizeTempHackFixForIMENoKey: false,
   debugTyping: false,
-  logFileCommands: false,
+  logFileCommands: true,
   windowsUses48KAudio: false,
   debugAlerts: false,
   debugModals: false,
@@ -165,7 +166,7 @@ export const DEBUG = Object.freeze({
     /* || other condition || some other condition ... etc ... */
     return this.debugFavicon || this.showConsoleMessages; 
   },
-  worldDebug: false,
+  worldDebug: true,
   bufSend: true,
   acks: false,          // actually this doesn't "turn on" acks. They are on by default
                         // this flag just turns on acks logging. It should probably be called
