@@ -284,6 +284,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     ...(DEBUG.debugReloadLoop ? [
       "Page.reload",
     ] : []),
+    ...(DEBUG.debugNewWorlds ? [
+      "Runtime.executionContextCreated",
+      "Runtime.executionContextDestroyed",
+      "Runtime.executionContexsCleared",
+      "Page.addScriptToEvaluateOnNewDocument",
+      "Page.frameAttached",
+      "Page.frameDetached",
+    ] : []),
   ]);
 
   if ( demoBlock ) {
@@ -2507,13 +2515,23 @@ async function makeZombie({port:port = 9222} = {}) {
           }
         }
       } else if ( method ) {
-        if ( DEBUG.events ) {
-          const img = message.params.data;
+        // logging related
+        {
+          let img;
           if ( method == "Page.screencastFrame" ) {
+            img = message.params.data;
             message.params.data = "... img data ...";
           }
-          console.log(`Event: ${method}\n`, JSON.stringify(message, null, 2));
-          message.params.data = img;
+          if ( DEBUG.events ) {
+            console.log(`Event: ${method}\n`, JSON.stringify(message, null, 2));
+          }
+          if ( LOG_FILE.Commands.has(method) ) {
+            console.log(`Event received: ${method}`);
+            console.info(JSON.stringify(message, null, 2));
+          }
+          if ( img ) {
+            message.params.data = img;
+          }
         }
         const listeners = Handlers[method];
         if ( Array.isArray(listeners) ) {
