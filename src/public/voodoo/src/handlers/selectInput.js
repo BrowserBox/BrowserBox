@@ -1,5 +1,5 @@
-export function handleSelectMessage({selectInput:{selectOpen, values, selected}, executionContextId}, state) {
-  state.waitingExecutionContext = executionContextId;
+export function handleSelectMessage({selectInput:{selectOpen, values, selected}, executionContextUniqueId}, state) {
+  state.waitingExecutionContext = executionContextUniqueId;
   if ( state.ignoreSelectInputEvents ) return;
   toggleSelect({selectOpen,values, selected});
 }

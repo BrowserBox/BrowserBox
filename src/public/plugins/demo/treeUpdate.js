@@ -74,7 +74,7 @@
     return focusSaver;
   };
 
-  export function resetFocusCache({navigated:{targetId}, executionContextId}, state) {
+  export function resetFocusCache({navigated:{targetId}, executionContextUniqueId}, state) {
     let cache = state.domCache.get(targetId);
     if ( ! cache ) {
       cache = {contextId:'', domTree:'', focusSaver: FocusCache()};
@@ -82,12 +82,12 @@
     } else {
       cache.focusSaver.reset();
     }
-    if ( executionContextId ) {
-      cache.contextId = executionContextId;
+    if ( executionContextUniqueId ) {
+      cache.contextId = executionContextUniqueId;
     } 
   }
 
-  export function handleTreeUpdate({treeUpdate:{open,targetId,dontFocus,runFuncs}, executionContextId}, state) {
+  export function handleTreeUpdate({treeUpdate:{open,targetId,dontFocus,runFuncs}, executionContextUniqueId}, state) {
     if ( targetId !== state.activeTarget ) {
       DEBUG.val >= DEBUG.med && console.log(`Rejecting tree update for ${targetId} as it is not active target ${state.activeTarget}`);
       DEBUG.val >= DEBUG.med && console.log(`But saving this update into that targets cache.`);
@@ -98,12 +98,12 @@
       }
       // when we have  iframes this will be dangerous
       // to flatten contextId (which will be multiple per page 1 for each iframe)
-      cache.contextId = executionContextId;
+      cache.contextId = executionContextUniqueId;
       cache.domTree = open;
       return;
     }
     if ( state.viewState.viewFrameEl ) {
-      updateTree({targetId, domTree:open, contextId:executionContextId, dontFocus, runFuncs}, state);
+      updateTree({targetId, domTree:open, contextId:executionContextUniqueId, dontFocus, runFuncs}, state);
       if ( state.scrollToTopOnNextTreeUpdate ) {
         scrollToTop({navigated:state.scrollToTopOnNextTreeUpdate}, state);
         state.scrollToTopOnNextTreeUpdate = null;
@@ -178,7 +178,7 @@
     }, 40);
   }
 
-  export function handleTreeDiff({treeDiff:{diffs,targetId},executionContextId}, state) {
+  export function handleTreeDiff({treeDiff:{diffs,targetId},executionContextUniqueId}, state) {
     if ( targetId !== state.activeTarget ) {
       DEBUG.val >= DEBUG.med && console.log(`Rejecting tree diff for ${targetId} as it is not active target ${state.activeTarget}`);
       DEBUG.val >= DEBUG.med && console.log(`But saving this diff into that targets cache.`);
@@ -189,7 +189,7 @@
       }
       // when we have  iframes this will be dangerous
       // to flatten contextId (which will be multiple per page 1 for each iframe)
-      cache.contextId = executionContextId;
+      cache.contextId = executionContextUniqueId;
       cache.diffs = diffs;
       return;
     }

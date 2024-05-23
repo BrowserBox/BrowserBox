@@ -2,11 +2,11 @@ export function handleKeysCanInputMessage({keyInput:{
       keysCanInput, 
       isTextareaOrContenteditable, type, inputmode, 
       value:value = ''
-    }, executionContextId}, state) {
+    }, executionContextUniqueId}, state) {
   if ( state.ignoreKeysCanInputMessage ) return;
   if ( keysCanInput ) {
     state.viewState.hasNoKeys = true;
-    state.contextIdOfFocusedInput = executionContextId;
+    state.contextIdOfFocusedInput = executionContextUniqueId;
     if ( ! state.dontFocusControlInputs ) {
       if ( isTextareaOrContenteditable ) {
         state.viewState.focusTextarea(inputmode, value); 

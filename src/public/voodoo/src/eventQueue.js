@@ -199,7 +199,7 @@
           }
           if ( !!meta && meta.length ) {
             meta.forEach(metaItem => {
-              const executionContextId = metaItem.executionContextId;
+              const executionContextUniqueId = metaItem.executionContextUniqueId;
               DEBUG.logMeta && console.log(`Meta in chain`, metaItem);
               for ( const key of Object.keys(metaItem) ) {
                 DEBUG.logMeta && console.log('meta', key, metaItem);
@@ -207,7 +207,7 @@
                 if ( typeList ) {
                   typeList.forEach(func => {
                     try {
-                      func({[key]:metaItem[key], executionContextId});
+                      func({[key]:metaItem[key], executionContextUniqueId});
                     } catch(e) {
                       console.warn(`Error on ${key} handler`, func, e);
                     }
@@ -848,14 +848,14 @@
                   DEBUG.debugMeta && console.log({meta});
                   meta.forEach(metaItem => {
                     DEBUG.logMeta && console.log(`Meta in regular event stream`, metaItem);
-                    const executionContextId = metaItem.executionContextId;
+                    const executionContextUniqueId = metaItem.executionContextUniqueId;
                     for ( const key of Object.keys(metaItem) ) {
                       DEBUG.logMeta && console.log('meta', key, metaItem);
                       let typeList = this.typeLists.get(key);
                       if ( typeList ) {
                         typeList.forEach(func => {
                           try {
-                            func({[key]:metaItem[key], executionContextId});
+                            func({[key]:metaItem[key], executionContextUniqueId});
                           } catch(e) {
                             console.warn(`Error on ${key} handler`, func, e);
                           }

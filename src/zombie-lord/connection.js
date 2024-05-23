@@ -184,6 +184,7 @@ const OpenModals = new Map();
 const SetupTabs = new Map();
 const settingUp = new Map();
 const FrameContexts = {};
+const ContextIds = new Map();
 //const originalMessage = new Map();
 const DownloadPath = path.resolve(CONFIG.baseDir , 'browser-downloads');
 let GlobalFrameId = 1;
@@ -860,11 +861,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const consoleMessage = message.params;
       const {type,args,executionContextId} = consoleMessage;
 
+      const executionContextUniqueId = ContextIds.get(`${sessionId}-${executionContextId}`) || executionContextId;
+
       const logMessages = args.map(convertRemoteObjectToString);
 
       try {
         DEBUG.val && console.log("Runtime.consoleAPICalled",
-          {executionContextId}, 
+          {executionContextUniqueId}, 
           {logMessageCount:logMessages.length}, 
           {type},
           JSON.stringify(logMessages).slice(0,255)
@@ -882,7 +885,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         // we should check this so people can spam us with messages
         // but there may be some things we need to send from page context. in that case
         // perhaps we ought to send them from 'binding' 
-        /*if ( ! activeContexts || ! activeContexts.has(executionContextId) ) {
+        /*if ( ! activeContexts || ! activeContexts.has(executionContextUniqueId) ) {
           DEBUG.val && console.log(`Blocking as is not a context in the active target.`);
           return;
         }*/
@@ -897,7 +900,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           }
           return value;
         })
-        console.group(`Remote console message (context: ${executionContextId})`);
+        console.group(`Remote console message (context: ${executionContextUniqueId})`);
         try {
           console[type](...argVals);
         } catch(e) {
@@ -909,7 +912,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         try {
           // we only accept JSON messages
           const Message = JSON.parse(firstArg.value);
-          Message.executionContextId = executionContextId;
+          Message.executionContextUniqueId = executionContextUniqueId;
           if ( Message.favicon ) {
             const {faviconDataUrl, faviconURL, targetId} = Message.favicon;
             const oldUrl = favicons.get(targetId);
@@ -924,7 +927,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                 const faviconDataUrl = favicons.get(faviconURL);
                 if ( oldUrl !== faviconDataUrl ) {
                   favicons.set(targetId, faviconDataUrl);
-                  const Message = {favicon:{targetId, faviconDataUrl}, executionContextId};
+                  const Message = {favicon:{targetId, faviconDataUrl}, executionContextUniqueId};
                   connection.forceMeta(Message);
                   DEBUG.debugFavicon && console.log(`FROM SERVER CACHE (from FETCH): Setting favicon for ${targetId}`, {Message});
                 }
@@ -978,7 +981,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                             favicons.set(faviconURL, faviconDataUrl);
                             if ( oldUrl !== faviconDataUrl ) {
                               favicons.set(targetId, faviconDataUrl);
-                              const Message = {favicon:{targetId, faviconDataUrl}, executionContextId};
+                              const Message = {favicon:{targetId, faviconDataUrl}, executionContextUniqueId};
                               connection.forceMeta(Message);
                               DEBUG.debugFavicon && console.log(`FROM FETCH: Setting favicon for ${targetId}`, {Message});
                             }
@@ -1009,6 +1012,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     } else if ( message.method == "Runtime.executionContextCreated" ) {
       DEBUG.val && console.log(JSON.stringify({createdContext:message.params.context}));
       const {auxData, name:worldName, id:contextId, uniqueId} = message.params.context;
+      ContextIds.set(`${sessionId}-${contextId}`, uniqueId);
       const cid = uniqueId || contextId;
       addContext(sessionId,cid);
       if ( worldName == WorldName ) {
@@ -1040,16 +1044,17 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         FrameContexts[frameId] = FrameContexts[frameId] || new Map();
         FrameContexts[frameId].set(cid, message.params.context);
         FrameContexts[cid] = frameId;
+        console.log(FrameContexts);
       }
     } else if ( message.method == "Runtime.executionContextDestroyed" ) {
-      const contextId = message.params.executionContextId;
+      const contextId = message.params.executionContextUniqueId;
       const uniqueId = message.params.executionContextUniqueId;
       const cid = uniqueId || contextId;
       deleteContext(sessionId, cid);
       if ( FrameContexts[cid] ) {
         const frameId = FrameContexts[cid];
-        console.log(FrameContexts[frameId], cid);
         FrameContexts[frameId].delete(cid);
+        console.log(FrameContexts);
       }
     } else if ( message.method == "Runtime.executionContextsCleared" ) {
       DEBUG.val > DEBUG.med && console.log("Execution contexts cleared");
@@ -2303,7 +2308,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
 }
 
 export async function executeBinding({message, sessionId, connection, send, on, ons}) {
-  const {name, executionContextUniqueId} = message.params;
+  const {name, executionContextId} = message.params;
   let {payload} = message.params;
   try {
     payload = JSON.parse(payload);
@@ -2329,7 +2334,7 @@ export async function executeBinding({message, sessionId, connection, send, on, 
     "Runtime.evaluate", 
     {
       expression,
-      uniqueContextId: executionContextUniqueId, 
+      uniqueContextId: executionContextId, 
       awaitPromise: true
     },
     sessionId

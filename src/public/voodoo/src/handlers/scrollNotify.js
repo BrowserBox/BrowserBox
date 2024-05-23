@@ -1,3 +1,3 @@
-export function handleScrollNotification({/*scroll:{didScroll},*/executionContextId}, state) {
-  state.viewState.latestScrollContext = executionContextId;
+export function handleScrollNotification({/*scroll:{didScroll},*/executionContextUniqueId}, state) {
+  state.viewState.latestScrollContext = executionContextUniqueId;
 }

@@ -78,7 +78,7 @@ export async function handlePuterAbility(meta, state) {
       globalThis.parent.parent.postMessage({request:{hasPuterAbility:0}}, '*');
     } else {
       // push it back down with the answer
-      state.execute(`globalThis.puterAbilityConfirmed = true;`, {contextId: meta.executionContextId});       
+      state.execute(`globalThis.puterAbilityConfirmed = true;`, {contextId: meta.executionContextUniqueId});       
     }
   }
   if ( meta.puterCustomDownload ) {
