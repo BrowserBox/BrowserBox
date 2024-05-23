@@ -1044,7 +1044,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         FrameContexts[frameId] = FrameContexts[frameId] || new Map();
         FrameContexts[frameId].set(cid, message.params.context);
         FrameContexts[cid] = frameId;
-        console.log(FrameContexts);
+        //console.log(FrameContexts);
       }
     } else if ( message.method == "Runtime.executionContextDestroyed" ) {
       const contextId = message.params.executionContextUniqueId;
@@ -1058,7 +1058,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( FrameContexts[frameId].size == 0 ) {
           delete FrameContexts[frameId];
         }
-        console.log(FrameContexts);
+        //console.log(FrameContexts);
       }
     } else if ( message.method == "Runtime.executionContextsCleared" ) {
       DEBUG.val > DEBUG.med && console.log("Execution contexts cleared");
