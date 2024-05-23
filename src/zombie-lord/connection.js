@@ -1010,17 +1010,17 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.val && console.log(JSON.stringify({createdContext:message.params.context}));
       const {auxData, name:worldName, id:contextId, uniqueId} = message.params.context;
       const cid = uniqueId || contextId;
-      addContext(sessionId,contextId);
+      addContext(sessionId,cid);
       if ( worldName == WorldName ) {
         SetupTabs.set(sessionId, {worldName});
         if ( auxData.isDefault ) {
-          OurWorld.set(sessionId, contextId);
+          OurWorld.set(sessionId, cid);
         }
         await send(
           "Runtime.addBinding", 
           {
             name: CONFIG.BINDING_NAME, 
-            executionContextId: contextId
+            executionContextUniqueId: cid
           },
           sessionId
         );
@@ -1045,9 +1045,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const contextId = message.params.executionContextId;
       const uniqueId = message.params.executionContextUniqueId;
       const cid = uniqueId || contextId;
-      deleteContext(sessionId, contextId);
+      deleteContext(sessionId, cid);
       if ( FrameContexts[cid] ) {
         const frameId = FrameContexts[cid];
+        console.log(FrameContexts[frameId], cid);
         FrameContexts[frameId].delete(cid);
       }
     } else if ( message.method == "Runtime.executionContextsCleared" ) {
@@ -1923,12 +1924,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           }
 
           if ( worlds ) {
-            const [contextId] = [...worlds];
+            const [uniqueContextId] = [...worlds];
             send("Runtime.evaluate", {
               expression: `document.querySelector('my-cursor').style.borderRadius = 0;`,
               includeCommandLineAPI: false,
               userGesture: true,
-              contextId,
+              uniqueContextId,
               timeout: CONFIG.SHORT_TIMEOUT
             }, sessionId);
             send("Page.screencastFrameAck", {
@@ -1939,7 +1940,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               expression: `document.querySelector('my-cursor').style.borderRadius = '20px';`,
               includeCommandLineAPI: false,
               userGesture: true,
-              contextId,
+              uniqueContextId,
               timeout: CONFIG.SHORT_TIMEOUT
             }, sessionId);
           }
@@ -2009,7 +2010,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         sessionId = command.sessionId || that.sessionId;
         //console.log(command, sessionId);
       }
-      if ( !! command.params.contextId && ! hasContext(sessionId, command.params.contextId) ) {
+      if ( !! command.params.uniqueContextId && ! hasContext(sessionId, command.params.uniqueContextId) ) {
         DEBUG.val && console.log("Blocking as context does not exist.", command, sessionId, connection.worlds, connection.worlds.get(sessionId) );
         return {};
       }
@@ -2302,7 +2303,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
 }
 
 export async function executeBinding({message, sessionId, connection, send, on, ons}) {
-  const {name, executionContextId} = message.params;
+  const {name, executionContextUniqueId} = message.params;
   let {payload} = message.params;
   try {
     payload = JSON.parse(payload);
@@ -2328,7 +2329,7 @@ export async function executeBinding({message, sessionId, connection, send, on, 
     "Runtime.evaluate", 
     {
       expression,
-      contextId: executionContextId,
+      uniqueContextId: executionContextUniqueId, 
       awaitPromise: true
     },
     sessionId
