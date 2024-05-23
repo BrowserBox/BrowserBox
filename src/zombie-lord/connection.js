@@ -1054,6 +1054,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( FrameContexts[cid] ) {
         const frameId = FrameContexts[cid];
         FrameContexts[frameId].delete(cid);
+        delete FrameContexts[cid];
+        if ( FrameContexts[frameId].size == 0 ) {
+          delete FrameContexts[frameId];
+        }
         console.log(FrameContexts);
       }
     } else if ( message.method == "Runtime.executionContextsCleared" ) {
