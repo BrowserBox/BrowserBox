@@ -1008,11 +1008,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.val > DEBUG.med && connection.meta.push({consoleMessage});
     } else if ( message.method == "Runtime.executionContextCreated" ) {
       DEBUG.val && console.log(JSON.stringify({createdContext:message.params.context}));
-      const {name:worldName, id:contextId} = message.params.context;
+      const {auxData, name:worldName, id:contextId, uniqueId} = message.params.context;
+      const cid = uniqueId || contextId;
       addContext(sessionId,contextId);
       if ( worldName == WorldName ) {
         SetupTabs.set(sessionId, {worldName});
-        OurWorld.set(sessionId, contextId);
+        if ( auxData.isDefault ) {
+          OurWorld.set(sessionId, contextId);
+        }
         await send(
           "Runtime.addBinding", 
           {
@@ -1032,9 +1035,21 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.val && console.log({resp,contextId});
         */
       }
+      if ( auxData.frameId ) {
+        const {frameId} = auxData;
+        FrameContexts[frameId] = FrameContexts[frameId] || new Map();
+        FrameContexts[frameId].set(cid, message.params.context);
+        FrameContexts[cid] = frameId;
+      }
     } else if ( message.method == "Runtime.executionContextDestroyed" ) {
       const contextId = message.params.executionContextId;
+      const uniqueId = message.params.executionContextUniqueId;
+      const cid = uniqueId || contextId;
       deleteContext(sessionId, contextId);
+      if ( FrameContexts[cid] ) {
+        const frameId = FrameContexts[cid];
+        FrameContexts[frameId].delete(cid);
+      }
     } else if ( message.method == "Runtime.executionContextsCleared" ) {
       DEBUG.val > DEBUG.med && console.log("Execution contexts cleared");
       deleteWorld(sessionId);
@@ -2639,7 +2654,7 @@ function enumerateFrames(tree, max = 0) {
     }
     frames.push(frame);
     if ( DEBUG.decorateFrameListWithContexts && FrameContexts?.[frame.id]?.size ) {
-      frame.contexts = [...FrameContexts[frame.id]];
+      frame.contexts = JSON.stringify([...FrameContexts[frame.id].values()], null, 2)
     }
     if ( max && frames.length > max ) {
       return frames;  // only check so far if we know we will have a mismatch with world number
