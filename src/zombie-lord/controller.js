@@ -391,7 +391,7 @@ const controller_api = {
         if ( DEBUG.noteCallStackInLog ) {
           stack = (new Error).stack; 
         }
-        console.info(`Logging`, command, stack);
+        console.info(`Logging (controller.send)`, command, stack);
         fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
           timestamp: (new Date).toISOString(),
           command,

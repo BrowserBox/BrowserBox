@@ -183,6 +183,7 @@ const PowerSources = new Map();
 const OpenModals = new Map();
 const SetupTabs = new Map();
 const settingUp = new Map();
+const FrameContexts = {};
 //const originalMessage = new Map();
 const DownloadPath = path.resolve(CONFIG.baseDir , 'browser-downloads');
 let GlobalFrameId = 1;
@@ -486,7 +487,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( worlds ) {
           const {frameTree} = await send("Page.getFrameTree", {}, sessionId);
           MainFrames.set(sessionId, frameTree.frame.id);
-          const frameList = enumerateFrames(frameTree, worlds.size);
+          const max = 0; // world.size /* max frames to enumerate, 0 is all */
+          const frameList = enumerateFrames(frameTree, max);
           DEBUG.worldDebug && consolelog('Frames', frameList, 'worlds', worlds);
           missingWorlds = worlds.size < frameList.length;
         }
@@ -2444,10 +2446,18 @@ async function makeZombie({port:port = 9222} = {}) {
       }
       if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
         let stack = '';
+        let source;
         if ( DEBUG.noteCallStackInLog ) {
           stack = (new Error).stack; 
         }
+        if ( message.method == "Page.addScriptToEvaluateOnNewDocument" ) {
+          source = message.params.source;
+          message.params.source = message.params.source.slice(0,120) + (source.length > 120 ? '...' : '');
+        }
         console.info(`Logging`, message, stack);
+        if ( source ) {
+          message.params.source = source;
+        }
         fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
           timestamp: (new Date).toISOString(),
           message,
@@ -2522,6 +2532,14 @@ async function makeZombie({port:port = 9222} = {}) {
           if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(method) ) {
             console.log(`Event received: ${method}`);
             console.info(JSON.stringify(message, null, 2));
+            if ( DEBUG.showFrameTreeOnFrameChanges ) {
+              if ( method == "Page.frameAttached" || method == "Page.frameDetached" ) {
+                const {frameTree} = await send("Page.getFrameTree", {}, sessionId);
+                const max = 0; // world.size /* max frames to enumerate, 0 is all */
+                const frameList = enumerateFrames(frameTree, max);
+                console.log(`Frame list`, frameList);
+              }
+            }
             // append to log file
             {
               fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
@@ -2620,6 +2638,9 @@ function enumerateFrames(tree, max = 0) {
       stack.push(...childFrames);
     }
     frames.push(frame);
+    if ( DEBUG.decorateFrameListWithContexts && FrameContexts?.[frame.id]?.size ) {
+      frame.contexts = [...FrameContexts[frame.id]];
+    }
     if ( max && frames.length > max ) {
       return frames;  // only check so far if we know we will have a mismatch with world number
     }
