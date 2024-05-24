@@ -560,7 +560,7 @@ function translator(e, handled = {type:'case'}) {
             name: "Runtime.evaluate",
             params: {
               expression: "canKeysInput();",
-              contextId: contextId,
+              uniqueContextId: contextId,
               timeout: SHORT_TIMEOUT
             },
           }
@@ -595,7 +595,7 @@ function translator(e, handled = {type:'case'}) {
             name: "Runtime.evaluate",
             params: {
               expression: `getElementInfo && getElementInfo(${JSON.stringify(e.data)});`,
-              contextId: contextId,
+              uniqueContextId: contextId,
               timeout: SHORT_TIMEOUT
             },
           }
@@ -621,7 +621,7 @@ function translator(e, handled = {type:'case'}) {
                 name: "Runtime.evaluate",
                 params: {
                   sessionId,
-                  contextId,
+                  uniqueContextId: contextId,
                   expression: "getFaviconElement();",
                   timeout: SHORT_TIMEOUT
                 },
@@ -655,7 +655,7 @@ function translator(e, handled = {type:'case'}) {
                 name: "Runtime.evaluate",
                 params: {
                   sessionId,
-                  contextId,
+                  uniqueContextId: contextId,
                   expression: "reportFaviconReceived();",
                   timeout: SHORT_TIMEOUT
                 },

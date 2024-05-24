@@ -2330,6 +2330,9 @@ export async function executeBinding({message, sessionId, connection, send, on, 
       ({key} = payload);
       delete payload.key;
     }
+    if ( payload?.name?.startsWith?.("Connection.") ) {
+      payload.isZombieLordCommand = true;
+    }
     response = await connection.sessionSend(payload);
     response.key = key;
   }

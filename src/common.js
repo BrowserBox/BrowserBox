@@ -34,7 +34,7 @@ export const DEBUG = Object.freeze({
   decorateFrameListWithContexts: true,
   showFrameTreeOnFrameChanges: true,
   debugNewWorlds: true,
-  neverShowErrorSources: true,
+  neverShowErrorSources: false,
   debugReloadLoop: false,
   alwaysStartShutdownTimer: true,
   overrideMaxRTT: 3500,
