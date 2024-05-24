@@ -432,17 +432,23 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   ! DEBUG.legacyShots && await send("HeadlessExperimental.enable", {});
   await send("Target.setDiscoverTargets", {
     discover:true,
+    /*
     filter: [
-      {type: 'page'}
+      {type: 'page'},
+      {type: 'iframe'},
     ]
+    */
   });
   await send("Target.setAutoAttach", {
     autoAttach:DEBUG.attachImmediately, 
     waitForDebuggerOnStart:DEBUG.attachImmediately, 
     flatten:true, 
+    /*
     filter: [
-      {type: 'page'}
+      {type: 'page'},
+      {type: 'iframe'},
     ]
+    */
   });
 
   await send("Browser.setDownloadBehavior", {
@@ -459,7 +465,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     targets.add(targetId);
     tabs.set(targetId,targetInfo);
     connection.forceMeta({created:targetInfo,targetInfo});
-    if ( targetInfo.type == "page" && !DEBUG.attachImmediately ) {
+    if ( (targetInfo.type == "page" || targetInfo.type == "iframe") && !DEBUG.attachImmediately ) {
       await send("Target.attachToTarget", {targetId, flatten:true});
     }
     DEBUG.val && consolelog('create 2', targetInfo);
@@ -529,6 +535,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   on("Target.attachedToTarget", async ({sessionId,targetInfo,waitingForDebugger}) => {
     DEBUG.worldDebug && consolelog('attached 1', targetInfo);
+    consolelog('attached 1', targetInfo);
     DEBUG.val && consolelog('attached 1', targetInfo);
     const attached = {sessionId,targetInfo,waitingForDebugger};
     const {targetId} = targetInfo;
@@ -1280,7 +1287,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const executionContextName = `${WorldName}${worldId++}`;
 
     try {
-      DEBUG.val && console.log(sessionId, targetId, 'setting up');
+      DEBUG && console.log(sessionId, targetId, 'setting up');
 
       ! DEBUG.legacyShots && await send("HeadlessExperimental.enable", {}, sessionId);
 
