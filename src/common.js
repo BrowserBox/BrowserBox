@@ -31,6 +31,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  disableIso: true,
   decorateFrameListWithContexts: true,
   showFrameTreeOnFrameChanges: true,
   debugNewWorlds: false,
