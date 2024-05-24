@@ -199,6 +199,9 @@ const launcher_api = {
     if ( DEBUG.disable3PC ) {
       CHROME_FLAGS.push(`--test-third-party-cookie-phaseout`);
     }
+    if ( DEBUG.disableIso ) {
+      CHROME_FLAGS.push(`--disable-site-isolation-trials`);
+    }
     if ( DEBUG.extensionsAssemble ) {
       CHROME_FLAGS.push(`--disable-extensions-except=${DEBUG.extensions.join(',')}`);
       CHROME_FLAGS.push(`--skip-force-online-signin-for-testing`)
