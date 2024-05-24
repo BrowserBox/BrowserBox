@@ -100,7 +100,7 @@ const templatedInjections = {
 };
 
 const docViewerSecret = process.env.DOCS_KEY;
-const MAX_TRIES_TO_LOAD = 10;
+const MAX_TRIES_TO_LOAD = 2;
 const TAB_LOAD_WAIT = 300;
 const RECONNECT_MS = 5000;
 const WAIT_FOR_DOWNLOAD_BEGIN_DELAY = 5000;
@@ -480,7 +480,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           missingWorlds = worlds.size < frameList.length;
         }
 
-        if ( missingWorlds ) {
+        if ( DEBUG.dontSkipOldMissingWorldsCheck && missingWorlds ) {
           DEBUG.worldDebug && consolelog(
             'Our tab has not fully loaded all our injections. Will reload', 
             targetInfo
@@ -506,6 +506,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           checkSetup.delete(targetId);
           DEBUG.worldDebug && consolelog(`Our tab is loaded!`, targetInfo);
         }
+        reloadAfterSetup(sessionId);
       }
     }
   });
