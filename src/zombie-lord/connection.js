@@ -1508,11 +1508,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           },
           sessionId
         );
-      await send(
-        "Emulation.setDeviceMetricsOverride", 
-        connection.bounds,
-        sessionId
-      );
+      if ( targetInfo.type == 'page' ) {
+        await send(
+          "Emulation.setDeviceMetricsOverride", 
+          connection.bounds,
+          sessionId
+        );
+      }
       /* 
         // notes
           // putting here causes tab startup stability issues, better to wait to apply it later
@@ -2307,6 +2309,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
   SCREEN_OPTS.maxHeight = commonViewport.height;
   for ( const targetId of connection.targets.values() ) {
     const sessionId = sessions.get(targetId);
+    if ( tabs.get(targetId).type != 'page' ) continue;
     //if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
     let width, height, screenWidth, screenHeight;
     try {
