@@ -1021,14 +1021,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( auxData.isDefault ) {
           OurWorld.set(sessionId, cid);
         }
-        await send(
-          "Runtime.addBinding", 
-          {
-            name: CONFIG.BINDING_NAME, 
-            executionContextUniqueId: cid
-          },
-          sessionId
-        );
+        
       } else if ( DEBUG.manuallyInjectIntoEveryCreatedContext && !SetupTabs.get(sessionId)?.worldName?.startsWith?.(WorldName) ) {
         /*
         const targetId = sessions.get(sessionId);
@@ -1282,6 +1275,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     if ( settingUp.has(targetId) ) return;
     settingUp.set(targetId, attached);
     DEBUG.attachImmediately && DEBUG.worldDebug && console.log({waitingForDebugger, targetInfo});
+    const executionContextName = `${WorldName}${worldId++}`;
 
     try {
       DEBUG.val && console.log(sessionId, targetId, 'setting up');
@@ -1447,6 +1441,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {},
         sessionId
       );
+      await send(
+        "Runtime.addBinding", 
+        {
+          name: CONFIG.BINDING_NAME, 
+          executionContextName,
+        },
+        sessionId
+      );
       // Page context injection (to set values in the page's original JS execution context
         let templatedInjectionsScroll = '';
         // Flash emulation injection
@@ -1490,7 +1492,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               injectionsScroll,
               modeInjectionScroll
             ].join(';'),
-            worldName: `${WorldName}${worldId++}`,
+            worldName: executionContextName,
             runImmediately: CONFIG.runInjectionsImmediately,
           },
           sessionId
