@@ -1340,6 +1340,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
       await send("Page.enable", {}, sessionId);
 
+      if ( DEBUG.disableIso ) {
+        //await send("Page.setBypassCSP", {enabled: true}, sessionId); 
+      }
+
       if ( CONFIG.createPowerSource ) {
         const {frameTree: { frame : { id: frameId } }} = await send("Page.getFrameTree", {}, sessionId);
         MainFrames.set(sessionId, frameId);
