@@ -1441,14 +1441,17 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {},
         sessionId
       );
-      await send(
-        "Runtime.addBinding", 
-        {
-          name: CONFIG.BINDING_NAME, 
-          executionContextName,
-        },
-        sessionId
-      );
+      // binding
+        /*
+        await send(
+          "Runtime.addBinding", 
+          {
+            name: CONFIG.BINDING_NAME, 
+            executionContextName,
+          },
+          sessionId
+        );
+        */
       // Page context injection (to set values in the page's original JS execution context
         let templatedInjectionsScroll = '';
         // Flash emulation injection
