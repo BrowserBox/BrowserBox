@@ -294,6 +294,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Page.addScriptToEvaluateOnNewDocument",
       "Page.frameAttached",
       "Page.frameDetached",
+      "Page.frameNavigated",
+      "Page.frameRequestedNavigation",
     ] : []),
   ]);
 
@@ -1442,7 +1444,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         sessionId
       );
       // binding
-        /*
         await send(
           "Runtime.addBinding", 
           {
@@ -1451,7 +1452,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           },
           sessionId
         );
-        */
       // Page context injection (to set values in the page's original JS execution context
         let templatedInjectionsScroll = '';
         // Flash emulation injection

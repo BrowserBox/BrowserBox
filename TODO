@@ -8,6 +8,15 @@ two problems
 
 aim: get to right amount of isolated worlds and right amount of reloads
 
+some issues with devtools i've seen:
+
+getframetree appears incomplete. frames are sometimes not displayed there. possibly if they are inside shadow dom.
+frames are reported as detached when they are still present in the document. 
+
+relevant bug is: https://issues.chromium.org/issues/333981074
+
+it is a restriction on cross-origin (out of process) iframes. okay. you need to attach to the target type iframe for this. 
+
 
 
 - the all caps issue is because can keys input is not working in the context of the app's where this shows up. we need to ensure can keys input is being executed across all contexts. and then we also have to fix the doubling up of events due to the top listeners. basically if our little key input has focus we don't send the top level listeners. should already be doing this. we may also want to fix the top level listeners so they don't always use caps to fix the case where can keys input just doesn't work. nice.
