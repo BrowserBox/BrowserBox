@@ -432,23 +432,19 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   ! DEBUG.legacyShots && await send("HeadlessExperimental.enable", {});
   await send("Target.setDiscoverTargets", {
     discover:true,
-    /*
     filter: [
       {type: 'page'},
       {type: 'iframe'},
     ]
-    */
   });
   await send("Target.setAutoAttach", {
     autoAttach:DEBUG.attachImmediately, 
     waitForDebuggerOnStart:DEBUG.attachImmediately, 
     flatten:true, 
-    /*
     filter: [
       {type: 'page'},
       {type: 'iframe'},
     ]
-    */
   });
 
   await send("Browser.setDownloadBehavior", {
@@ -460,12 +456,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   on("Browser.downloadProgress", progressDownload);
 
   on("Target.targetCreated", async ({targetInfo}) => {
-    DEBUG.val && consolelog('create 1', targetInfo);
+    consolelog('create 1', targetInfo);
     const {targetId} = targetInfo;
     targets.add(targetId);
     tabs.set(targetId,targetInfo);
     connection.forceMeta({created:targetInfo,targetInfo});
-    if ( (targetInfo.type == "page" || targetInfo.type == "iframe") && !DEBUG.attachImmediately ) {
+    if ( (((targetInfo.type == "page") && !DEBUG.attachImmediately) || targetInfo.type == 'iframe') && ! targetInfo.attached ) {
       await send("Target.attachToTarget", {targetId, flatten:true});
     }
     DEBUG.val && consolelog('create 2', targetInfo);
@@ -534,16 +530,20 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   });
 
   on("Target.attachedToTarget", async ({sessionId,targetInfo,waitingForDebugger}) => {
-    DEBUG.worldDebug && consolelog('attached 1', targetInfo);
-    consolelog('attached 1', targetInfo);
-    DEBUG.val && consolelog('attached 1', targetInfo);
     const attached = {sessionId,targetInfo,waitingForDebugger};
     const {targetId} = targetInfo;
-    DEBUG.val > DEBUG.med && console.log("Attached to target", sessionId, targetId);
-    targets.add(targetId);
-    addSession(targetId, sessionId);
-    checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
-    connection.meta.push({attached});
+    try {
+      DEBUG.worldDebug && consolelog('attached 1', targetInfo);
+      consolelog('attached 1', targetInfo);
+      DEBUG.val && consolelog('attached 1', targetInfo);
+      DEBUG.val > DEBUG.med && console.log("Attached to target", sessionId, targetId);
+      targets.add(targetId);
+      addSession(targetId, sessionId);
+      checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
+      connection.meta.push({attached});
+    } catch(e) {
+      console.warn(`Error during attach to target`, e, targetInfo);
+    }
     // we always size when we attach, otherwise they just go to screen size
     // which might be bigger than the lowest common screen dimensions for the clients
     // so they will call a resize anyway, so we just anticipate here
@@ -1279,6 +1279,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   return connection;
 
   async function setupTab({attached}) {
+    console.log(`setup tab`, attached);
     const {waitingForDebugger, sessionId, targetInfo} = attached;
     const {targetId} = targetInfo;
     if ( settingUp.has(targetId) ) return;
