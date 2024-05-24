@@ -561,7 +561,7 @@
           closed = true;    
           ws = null;
           peer && peer.destroy(new Error(`Main communication WebSocket closed.`));
-          console.log(websockets);
+          console.log(`Clients connected now: ${websockets.size}`);
           if ( websockets.size === 0 ) {
             startShutdownTimer();
           }
