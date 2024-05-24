@@ -187,6 +187,7 @@ const FrameContexts = {};
 const ContextIds = new Map();
 //const originalMessage = new Map();
 const DownloadPath = path.resolve(CONFIG.baseDir , 'browser-downloads');
+let worldId = 1;
 let GlobalFrameId = 1;
 let AD_BLOCK_ON = true;
 let DEMO_BLOCK_ON = false;
@@ -1015,7 +1016,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       ContextIds.set(`${sessionId}-${contextId}`, uniqueId);
       const cid = uniqueId || contextId;
       addContext(sessionId,cid);
-      if ( worldName == WorldName ) {
+      if ( worldName.startsWith(WorldName) ) {
         SetupTabs.set(sessionId, {worldName});
         if ( auxData.isDefault ) {
           OurWorld.set(sessionId, cid);
@@ -1028,7 +1029,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           },
           sessionId
         );
-      } else if ( DEBUG.manuallyInjectIntoEveryCreatedContext && SetupTabs.get(sessionId)?.worldName !== WorldName ) {
+      } else if ( DEBUG.manuallyInjectIntoEveryCreatedContext && !SetupTabs.get(sessionId)?.worldName?.startsWith?.(WorldName) ) {
         /*
         const targetId = sessions.get(sessionId);
         const expression = saveTargetIdAsGlobal(targetId) + manualInjectionsScroll;
@@ -1477,7 +1478,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               injectionsScroll,
               modeInjectionScroll
             ].join(';'),
-            worldName: WorldName,
+            worldName: `${WorldName}${worldId++}`,
             runImmediately: CONFIG.runInjectionsImmediately,
           },
           sessionId
