@@ -2314,6 +2314,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
 
 export async function executeBinding({message, sessionId, connection, send, on, ons}) {
   const {name, executionContextId} = message.params;
+  const uniqueContextId = ContextIds.get(`${sessionId}-${executionContextId}`);
   let {payload} = message.params;
   try {
     payload = JSON.parse(payload);
@@ -2342,7 +2343,7 @@ export async function executeBinding({message, sessionId, connection, send, on, 
     "Runtime.evaluate", 
     {
       expression,
-      uniqueContextId: executionContextId, 
+      ...(uniqueContextId ? {uniqueContextId} : {contextId: executionContextId}), 
       awaitPromise: true
     },
     sessionId
