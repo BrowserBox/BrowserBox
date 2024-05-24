@@ -1396,7 +1396,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         PowerSources.set(sessionId, executionContextId);
       }
 
-      if ( CONFIG.screencastOnly ) {
+      if ( CONFIG.screencastOnly && targetInfo.type == "page" ) {
         let castInfo;
         if ( castStarting.get(targetId) ) {
           await untilTrue(() => casts.get(targetId)?.started, 200, 500);
@@ -1536,13 +1536,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {hidden:connection.isMobile || false},
         sessionId
       );
-      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
-      connection.latestWindowId = windowId;
-      let {width,height} = connection.bounds;
-      if ( DEBUG.useNewAsgardHeadless ) {
-        height += 80;
+      if ( targetInfo.type == "page" ) {
+        const {windowId} = await send("Browser.getWindowForTarget", {targetId});
+        connection.latestWindowId = windowId;
+        let {width,height} = connection.bounds;
+        if ( DEBUG.useNewAsgardHeadless ) {
+          height += 80;
+        }
+        await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
       }
-      await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
       //id = await overrideNewtab(connection.zombie, sessionId, id);
       if ( AD_BLOCK_ON ) {
         await blockAds(/*connection.zombie, sessionId*/);
