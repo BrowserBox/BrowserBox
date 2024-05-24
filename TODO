@@ -1,2 +1,12 @@
+contexts
+
+two problems
+
+1. we create a new context on main document for isolate world/Zanj when we create the isolate on any added frame. why?
+
+2. we are not getting destroyed/cleared events for contexts that have ceased to exist
+
+
+
 - the all caps issue is because can keys input is not working in the context of the app's where this shows up. we need to ensure can keys input is being executed across all contexts. and then we also have to fix the doubling up of events due to the top listeners. basically if our little key input has focus we don't send the top level listeners. should already be doing this. we may also want to fix the top level listeners so they don't always use caps to fix the case where can keys input just doesn't work. nice.
 - need a way to not be connected to the app if on mobile and the page is not active. Otherwise mobile browsers randomly connect and disconnect creating viewport shock

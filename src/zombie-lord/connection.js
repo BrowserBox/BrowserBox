@@ -636,7 +636,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( ! sessionId ) {
         console.warn(`1 No sessionId for screencast ack`);
       }
-      setTimeout(() => send("Page.screencastFrameAck", {sessionId: frameId}, sessionId), 5);
+      setTimeout(() => send("Page.screencastFrameAck", {sessionId: castSessionId || 1}, sessionId), 5);
       return;
     }
     latestTimestamp = timestamp;
