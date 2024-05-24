@@ -290,7 +290,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     ...(DEBUG.debugNewWorlds ? [
       "Runtime.executionContextCreated",
       "Runtime.executionContextDestroyed",
-      "Runtime.executionContexsCleared",
+      "Runtime.executionContextsCleared",
       "Page.addScriptToEvaluateOnNewDocument",
       "Page.frameAttached",
       "Page.frameDetached",
@@ -490,7 +490,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           const {frameTree} = await send("Page.getFrameTree", {}, sessionId);
           MainFrames.set(sessionId, frameTree.frame.id);
           const max = 0; // world.size /* max frames to enumerate, 0 is all */
-          const frameList = enumerateFrames(frameTree, max);
+          const frameList = enumerateFrames(frameTree, sessionId, max);
           DEBUG.worldDebug && consolelog('Frames', frameList, 'worlds', worlds);
           missingWorlds = worlds.size < frameList.length;
         }
@@ -1042,9 +1042,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }
       if ( auxData.frameId ) {
         const {frameId} = auxData;
-        FrameContexts[frameId] = FrameContexts[frameId] || new Map();
-        FrameContexts[frameId].set(cid, message.params.context);
-        FrameContexts[cid] = frameId;
+        let f = FrameContexts[sessionId];
+        if ( ! f ) {
+          f = FrameContexts[sessionId] = {};
+        }
+        f[frameId] = f[frameId] || new Map();
+        f[frameId].set(cid, message.params.context);
+        f[cid] = frameId;
         //console.log(FrameContexts);
       }
     } else if ( message.method == "Runtime.executionContextDestroyed" ) {
@@ -1052,18 +1056,26 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const uniqueId = message.params.executionContextUniqueId;
       const cid = uniqueId || contextId;
       deleteContext(sessionId, cid);
-      if ( FrameContexts[cid] ) {
-        const frameId = FrameContexts[cid];
-        FrameContexts[frameId].delete(cid);
-        delete FrameContexts[cid];
-        if ( FrameContexts[frameId].size == 0 ) {
-          delete FrameContexts[frameId];
+      let f = FrameContexts[sessionId];
+      if ( ! f ) {
+        f = FrameContexts[sessionId] = {};
+      }
+      if ( f[cid] ) {
+        const frameId = f[cid];
+        f[frameId].delete(cid);
+        delete f[cid];
+        if ( f[frameId].size == 0 ) {
+          delete f[frameId];
         }
-        //console.log(FrameContexts);
+        //console.log(f);
       }
     } else if ( message.method == "Runtime.executionContextsCleared" ) {
       DEBUG.val > DEBUG.med && console.log("Execution contexts cleared");
       deleteWorld(sessionId);
+      let f = FrameContexts[sessionId];
+      if ( f ) {
+        FrameContexts[sessionId] = null;
+      }
     } else if ( message.method == "LayerTree.layerPainted" ) {
       if ( !DEBUG.screenCastOnly ) connection.doShot();
     } else if ( message.method == "Page.javascriptDialogOpening" ) {
@@ -2566,7 +2578,7 @@ async function makeZombie({port:port = 9222} = {}) {
               if ( method == "Page.frameAttached" || method == "Page.frameDetached" ) {
                 const {frameTree} = await send("Page.getFrameTree", {}, sessionId);
                 const max = 0; // world.size /* max frames to enumerate, 0 is all */
-                const frameList = enumerateFrames(frameTree, max);
+                const frameList = enumerateFrames(frameTree, sessionId, max);
                 console.log(`Frame list`, frameList);
               }
             }
@@ -2658,7 +2670,7 @@ function convertRemoteObjectToString({type, className, value, unserializableValu
   return `${type}:${className||type}:${asString||''}:${description||'[unknown value]'}`;
 }
 
-function enumerateFrames(tree, max = 0) {
+function enumerateFrames(tree, sessionId, max = 0) {
   const stack = [tree];
   const frames = [];
 
@@ -2668,8 +2680,8 @@ function enumerateFrames(tree, max = 0) {
       stack.push(...childFrames);
     }
     frames.push(frame);
-    if ( DEBUG.decorateFrameListWithContexts && FrameContexts?.[frame.id]?.size ) {
-      frame.contexts = JSON.stringify([...FrameContexts[frame.id].values()], null, 2)
+    if ( DEBUG.decorateFrameListWithContexts && FrameContexts?.[sessionId]?.[frame.id]?.size ) {
+      frame.contexts = JSON.stringify([...FrameContexts[sessionId][frame.id].values()], null, 2)
     }
     if ( max && frames.length > max ) {
       return frames;  // only check so far if we know we will have a mismatch with world number

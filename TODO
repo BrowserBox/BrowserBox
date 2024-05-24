@@ -6,6 +6,8 @@ two problems
 
 2. we are not getting destroyed/cleared events for contexts that have ceased to exist
 
+aim: get to right amount of isolated worlds and right amount of reloads
+
 
 
 - the all caps issue is because can keys input is not working in the context of the app's where this shows up. we need to ensure can keys input is being executed across all contexts. and then we also have to fix the doubling up of events due to the top listeners. basically if our little key input has focus we don't send the top level listeners. should already be doing this. we may also want to fix the top level listeners so they don't always use caps to fix the case where can keys input just doesn't work. nice.
