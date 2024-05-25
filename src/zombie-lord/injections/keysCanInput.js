@@ -23,6 +23,7 @@
 
   function install() {
     self.addEventListener('focusin', monitorActiveElement, {passive:true});
+    self.addEventListener('focusin', () => setTimeout(monitorActiveElement, 150), {passive:true});
     self.addEventListener('focusout', monitorActiveElementNextTick, {passive:true});
     self.addEventListener('beforeunload', () => {
       if ( !! self.focusEl && top == self ) {
@@ -32,12 +33,16 @@
       }
     });
     self.addEventListener('load', monitorActiveElement);
-    self.addEventListener('domcontentloaded', monitorActiveElement);
+    if ( document.addEventListener ) {
+      document.addEventListener('DOMContentLoaded', monitorActiveElement);
+    }
     setTimeout(monitorActiveElement, 100);
     self.canKeysInput = () => monitorActiveElement(null, {alwaysNotify:true});
     console.log(JSON.stringify({message:"Defined canKeysInput",targetId:self.targetId}));
   }
 
+  // i believe this function next tick refers to how the focus out event will essentially occur on the 'next tick' after focus/activeEl status
+  // is lost the function is for monitoring that keys can no longer input
   function monitorActiveElementNextTick(e = {target:document.activeElement}) {
     let {target} = e || {target:document.activeElement};
     let condition = target == self.focusEl;
@@ -67,13 +72,14 @@
       condition = !!target;
     }
     if ( condition ) {
-      self.focusEl = target;
+      const changedTarget = self.focusEl != target;
       const newType = target.getAttribute('type');
       const inputmode = target.getAttribute('inputmode');
       const newIsTextareaOrContenteditable = target.matches(TEXTAREA_OR_CONTENTEDITABLE);
+      self.focusEl = target;
       // always notify (since we may be joining page for first time)
       if ( alwaysNotify || 
-        condition != keysCanInput || type != newType || newIsTextareaOrContenteditable != isTextareaOrContenteditable 
+        changedTarget || (condition != keysCanInput) || (type != newType) || (newIsTextareaOrContenteditable != isTextareaOrContenteditable) 
       ) {
         const value = target.value;
         keysCanInput = condition;
