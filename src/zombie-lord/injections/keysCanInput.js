@@ -32,27 +32,49 @@
       }
     });
     self.addEventListener('load', monitorActiveElement);
-    self.addEventListener('domcontentloaded', monitorActiveElement);
-    setTimeout(monitorActiveElement, 100);
+    if ( document.addEventListener ) {
+      document.addEventListener('DOMContentLoaded', monitorActiveElement);
+    }
+    setTimeout(monitorActiveElement, 200);
     self.canKeysInput = () => monitorActiveElement(null, {alwaysNotify:true});
     console.log(JSON.stringify({message:"Defined canKeysInput",targetId:self.targetId}));
   }
 
+  // i believe this function next tick refers to how the focus out event will essentially occur on the 'next tick' after focus/activeEl status
+  // is lost the function is for monitoring that keys can no longer input
   function monitorActiveElementNextTick(e = {target:document.activeElement}) {
-    let {target} = e || {target:document.activeElement};
-    let condition = target == self.focusEl;
+    let focusDestination = e.relatedTarget || e.target;
+    let condition;
     if ( !e.path ) {
       e.path = e?.composedPath?.() || getAncestors(target);
     }
-    if ( !condition && e?.path ) {
-      target = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
-      condition = target == self.focusEl;
-    }
-    if ( condition ) {
-      self.focusEl = null;
-      keysCanInput = false;
-      s({keysCanInput,isTextareaOrContenteditable,type});
-    }
+    setTimeout(() => {
+      condition = focusDestination.matches(KEYINPUT_ELEMENT);
+      if ( !condition && e?.path ) {
+        focusDestination = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
+        condition = !!focusDestination;
+      }
+      if ( ! condition ) {
+        condition = document.activeElement.matches(KEYINPUT_ELEMENT);
+        if ( condition ) {
+          focusDestination = document.activeElement; 
+        }
+      }
+      const changedTarget = self.focusEl != focusDestination;
+      const newType = focusDestination.getAttribute('type');
+      const inputmode = focusDestination.getAttribute('inputmode');
+      const newIsTextareaOrContenteditable = focusDestination.matches(TEXTAREA_OR_CONTENTEDITABLE);
+      self.focusEl = focusDestination;
+      if ( alwaysNotify || 
+        changedTarget || (condition != keysCanInput) || (type != newType) || (newIsTextareaOrContenteditable != isTextareaOrContenteditable) 
+      ) {
+        const value = focusDestination.value || focusDestination.textContent;
+        keysCanInput = condition;
+        type = newType;
+        isTextareaOrContenteditable = newIsTextareaOrContenteditable;
+        s({keysCanInput,isTextareaOrContenteditable,type,inputmode,value});
+      }
+    }, 100);
   }
 
   function monitorActiveElement(e = {target:document.activeElement}, {alwaysNotify:alwaysNotify = false} = {}) {
@@ -67,13 +89,14 @@
       condition = !!target;
     }
     if ( condition ) {
-      self.focusEl = target;
+      const changedTarget = self.focusEl != target;
       const newType = target.getAttribute('type');
       const inputmode = target.getAttribute('inputmode');
       const newIsTextareaOrContenteditable = target.matches(TEXTAREA_OR_CONTENTEDITABLE);
+      self.focusEl = target;
       // always notify (since we may be joining page for first time)
       if ( alwaysNotify || 
-        condition != keysCanInput || type != newType || newIsTextareaOrContenteditable != isTextareaOrContenteditable 
+        changedTarget || (condition != keysCanInput) || (type != newType) || (newIsTextareaOrContenteditable != isTextareaOrContenteditable) 
       ) {
         const value = target.value;
         keysCanInput = condition;
