@@ -65,6 +65,9 @@
       const inputmode = focusDestination.getAttribute('inputmode');
       const newIsTextareaOrContenteditable = focusDestination.matches(TEXTAREA_OR_CONTENTEDITABLE);
       self.focusEl = focusDestination;
+      if ( ! condition ) {
+        self.focusEl = null;
+      }
       if ( alwaysNotify || 
         changedTarget || (condition != keysCanInput) || (type != newType) || (newIsTextareaOrContenteditable != isTextareaOrContenteditable) 
       ) {
@@ -78,33 +81,42 @@
   }
 
   function monitorActiveElement(e = {target:document.activeElement}, {alwaysNotify:alwaysNotify = false} = {}) {
-    let {target} = e || {target:document.activeElement};
+    let target = e.target;
     if ( ! target || ! target.matches ) return;
-    let condition = target.matches(KEYINPUT_ELEMENT);
     if ( !e.path ) {
       e.path = e?.composedPath?.() || getAncestors(target);
     }
-    if ( !condition && e?.path ) {
-      target = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
-      condition = !!target;
-    }
-    if ( condition ) {
-      const changedTarget = self.focusEl != target;
-      const newType = target.getAttribute('type');
-      const inputmode = target.getAttribute('inputmode');
-      const newIsTextareaOrContenteditable = target.matches(TEXTAREA_OR_CONTENTEDITABLE);
-      self.focusEl = target;
-      // always notify (since we may be joining page for first time)
-      if ( alwaysNotify || 
-        changedTarget || (condition != keysCanInput) || (type != newType) || (newIsTextareaOrContenteditable != isTextareaOrContenteditable) 
-      ) {
-        const value = target.value;
-        keysCanInput = condition;
-        type = newType;
-        isTextareaOrContenteditable = newIsTextareaOrContenteditable;
-        s({keysCanInput,isTextareaOrContenteditable,type,inputmode,value});
+    let condition;
+    setTimeout(() => {
+      if ( document.activeElement.matches(KEYINPUT_ELEMENT) ) {
+        target = document.activeElement;
       }
-    }
+      condition = target.matches(KEYINPUT_ELEMENT);
+      if ( !condition && e?.path ) {
+        target = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
+        condition = !!target;
+      }
+      if ( condition ) {
+        const changedTarget = self.focusEl != target;
+        const newType = target.getAttribute('type');
+        const inputmode = target.getAttribute('inputmode');
+        const newIsTextareaOrContenteditable = target.matches(TEXTAREA_OR_CONTENTEDITABLE);
+        self.focusEl = target;
+        // always notify (since we may be joining page for first time)
+        if ( alwaysNotify || 
+          changedTarget || (condition != keysCanInput) || (type != newType) || (newIsTextareaOrContenteditable != isTextareaOrContenteditable) 
+        ) {
+          const value = target.value;
+          keysCanInput = condition;
+          type = newType;
+          isTextareaOrContenteditable = newIsTextareaOrContenteditable;
+          s({keysCanInput,isTextareaOrContenteditable,type,inputmode,value});
+        }
+      }
+      if ( ! condition ) {
+        self.focusEl = null;
+      }
+    }, 100);
   }
 
   function s(o) {
