@@ -31,6 +31,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  disableInjection: true,
   disableIso: true,
   decorateFrameListWithContexts: true,
   showFrameTreeOnFrameChanges: true,
@@ -68,6 +69,7 @@ export const DEBUG = Object.freeze({
   showDebug: false,
   utilizeTempHackFixForIMENoKey: false,
   debugTyping: false,
+  debugTopTyping: true,
   logFileCommands: true,
   windowsUses48KAudio: false,
   debugAlerts: false,

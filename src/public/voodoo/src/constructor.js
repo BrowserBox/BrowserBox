@@ -1594,7 +1594,7 @@
               // do nothing
             } else{
               DEBUG.debugKeyEvents && console.info(`[sendKey]: sending event: ${keyEvent.key}`, keyEvent);
-              H(ev);
+              //H(ev);
             }
           }
         }
