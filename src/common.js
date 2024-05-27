@@ -31,6 +31,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  adjustHeightForHeadfulUI: true,
+  needsDOMSnapshot: false,
   dontSkipOldMissingWorldsCheck: false,
   disableIso: true,
   decorateFrameListWithContexts: true,
@@ -131,7 +133,7 @@ export const DEBUG = Object.freeze({
   debugFavicon: false,
   neverWait: true, /* for commands */
   attachImmediately: true,
-  manuallyInjectIntoEveryCreatedContext: true,
+  manuallyInjectIntoEveryCreatedContext: false,
   ignoreCertificateErrors: true,
   debugNavigator: false,
   showContextIdCalls: false,

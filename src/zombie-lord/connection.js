@@ -100,6 +100,7 @@ const templatedInjections = {
 };
 
 const docViewerSecret = process.env.DOCS_KEY;
+const heightAdjust = process.platform == 'darwin' ? 130 : 80;
 const MAX_TRIES_TO_LOAD = 2;
 const TAB_LOAD_WAIT = 300;
 const RECONNECT_MS = 5000;
@@ -476,8 +477,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           const {frameTree} = await send("Page.getFrameTree", {}, sessionId);
           MainFrames.set(sessionId, frameTree.frame.id);
           const frameList = enumerateFrames(frameTree, worlds.size);
-          DEBUG.worldDebug && consolelog('Frames', frameList, 'worlds', worlds);
           missingWorlds = worlds.size < frameList.length;
+          DEBUG.worldDebug && consolelog('Frames', frameList, 'worlds', worlds, `world size: ${worlds.size}, frames length: ${frameList.length}`, {missingWorlds});
         }
 
         if ( DEBUG.dontSkipOldMissingWorldsCheck && missingWorlds ) {
@@ -499,14 +500,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           obj.checking = true;
           if ( !obj.tabSetup ) {
             obj.needsReload = true;
-          } else {
             reloadAfterSetup(sessionId);
           }
         } else {
           checkSetup.delete(targetId);
           DEBUG.worldDebug && consolelog(`Our tab is loaded!`, targetInfo);
         }
-        reloadAfterSetup(sessionId);
+        //reloadAfterSetup(sessionId);
       }
     }
   });
@@ -525,6 +525,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     // which might be bigger than the lowest common screen dimensions for the clients
     // so they will call a resize anyway, so we just anticipate here
     await setupTab({attached});
+    if ( StartupTabs.has(targetId) ) {
+      reloadAfterSetup(sessionId);
+    }
     /**
       // putting this here will stop open in new tab from working, since
       // we will reload a tab before it has navigated to its intended destination
@@ -1021,7 +1024,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           sessionId
         );
       } else if ( DEBUG.manuallyInjectIntoEveryCreatedContext && SetupTabs.get(sessionId)?.worldName !== WorldName ) {
-        /*
         const targetId = sessions.get(sessionId);
         const expression = saveTargetIdAsGlobal(targetId) + manualInjectionsScroll;
         const resp = await send("Runtime.evaluate", {
@@ -1029,7 +1031,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           expression
         }, sessionId);
         DEBUG.val && console.log({resp,contextId});
-        */
       }
     } else if ( message.method == "Runtime.executionContextDestroyed" ) {
       const contextId = message.params.executionContextId;
@@ -1402,16 +1403,68 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       await send("Page.setInterceptFileChooserDialog", {
         enabled: true
       }, sessionId);
-      await send(
-        "DOMSnapshot.enable", 
-        {},
-        sessionId
-      );
+      if ( DEBUG.needsDOMSnapshot ) {
+        await send(
+          "DOMSnapshot.enable", 
+          {},
+          sessionId
+        );
+      }
       await send(
         "Runtime.enable", 
         {},
         sessionId
       );
+      await send(
+        "Emulation.setDeviceMetricsOverride", 
+        connection.bounds,
+        sessionId
+      );
+      /* 
+        // notes
+          // putting here causes tab startup stability issues, better to wait to apply it later
+          // but if we're waiting then may as well just wait until we actually open devtools
+          // this means we just send from client
+        if ( DEBUG.fixDevToolsInactive && DEBUG.useActiveFocusEmulation ) {
+          // don't await it as it's very experimental
+          send(
+            "Emulation.setFocusEmulationEnabled",
+            {
+              enabled: true, 
+            },
+            sessionId
+          );
+        }
+      */
+      await send(
+        "Emulation.setScrollbarsHidden",
+        {hidden:connection.isMobile || false},
+        sessionId
+      );
+      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
+      connection.latestWindowId = windowId;
+      let {width,height} = connection.bounds;
+      if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+        height += heightAdjust;
+      }
+      await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
+      //id = await overrideNewtab(connection.zombie, sessionId, id);
+      if ( AD_BLOCK_ON ) {
+        await blockAds(/*connection.zombie, sessionId*/);
+      } else if ( DEMO_BLOCK_ON ) {
+        console.warn("Demo block disabled.");
+        //await blockSites(connection.zombie, sessionId);
+      }
+      if ( CONFIG.useLayerTreeDomain ) {
+        await send(
+          "LayerTree.enable", 
+          {},
+          sessionId
+        );
+      }
+      if ( waitingForDebugger ) {
+        await send("Runtime.runIfWaitingForDebugger", {}, sessionId);
+      }
       // Page context injection (to set values in the page's original JS execution context
         let templatedInjectionsScroll = '';
         // Flash emulation injection
@@ -1457,64 +1510,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           },
           sessionId
         );
-      await send(
-        "Emulation.setDeviceMetricsOverride", 
-        connection.bounds,
-        sessionId
-      );
-      /* 
-        // notes
-          // putting here causes tab startup stability issues, better to wait to apply it later
-          // but if we're waiting then may as well just wait until we actually open devtools
-          // this means we just send from client
-        if ( DEBUG.fixDevToolsInactive && DEBUG.useActiveFocusEmulation ) {
-          // don't await it as it's very experimental
-          send(
-            "Emulation.setFocusEmulationEnabled",
-            {
-              enabled: true, 
-            },
-            sessionId
-          );
-        }
-      */
-      await send(
-        "Emulation.setScrollbarsHidden",
-        {hidden:connection.isMobile || false},
-        sessionId
-      );
-      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
-      connection.latestWindowId = windowId;
-      let {width,height} = connection.bounds;
-      if ( DEBUG.useNewAsgardHeadless ) {
-        height += 80;
-      }
-      await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
-      //id = await overrideNewtab(connection.zombie, sessionId, id);
-      if ( AD_BLOCK_ON ) {
-        await blockAds(/*connection.zombie, sessionId*/);
-      } else if ( DEMO_BLOCK_ON ) {
-        console.warn("Demo block disabled.");
-        //await blockSites(connection.zombie, sessionId);
-      }
-      if ( CONFIG.useLayerTreeDomain ) {
-        await send(
-          "LayerTree.enable", 
-          {},
-          sessionId
-        );
-      }
-      if ( waitingForDebugger ) {
-        await send("Runtime.runIfWaitingForDebugger", {}, sessionId);
-      }
       const obj = checkSetup.get(targetId)
       if ( obj ) {
-        if ( obj.needsReload ) {
-          DEBUG.worldDebug && consolelog('Reloading', targetId);
-          obj.needsReload = false; 
-          reloadAfterSetup(sessionId);
-          obj.checking = false;
-        } 
         if ( CONFIG.inspectMode ) {
           setTimeout(async () => {
             await send("Overlay.enable", {}, sessionId);
@@ -1531,7 +1528,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             }, sessionId);
           }, 300);
         }
-
         obj.tabSetup = true;
       } else {
         console.warn(`No checsetup entry at end of setuptab`, targetId);
@@ -1540,6 +1536,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       console.warn("Error setting up", e, targetId, sessionId);
     }
     settingUp.delete(targetId);
+    reloadAfterSetup(sessionId);
   }
 
   function updateCast(sessionId, castUpdate, event) {
@@ -1691,15 +1688,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         if ( ! command.params.resetRequested ) {
           let {width, height} = viewport;
-          if ( DEBUG.useNewAsgardHeadless ) {
-            height += 80;
+          if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+            height += heightAdjust;
           }
           Object.assign(command.params.bounds, {width, height});
           Object.assign(connection.bounds, viewport);
         } else {
           // don't send our custom flag through to the browser
-          if ( DEBUG.useNewAsgardHeadless ) {
-            command.params.bounds.height += 80;
+          if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+            command.params.bounds.height += heightAdjust;
           }
           ensureMinBounds(command.params.bounds);
           Object.assign(connection.bounds, command.params.bounds);
@@ -2264,8 +2261,8 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
         windows.add(windowId);
         let {width,height} = commonViewport;
         DEBUG.debugViewportDImensions && console.log({width,height,windowId});
-        if ( DEBUG.useNewAsgardHeadless ) {
-          height += 80;
+        if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+          height += heightAdjust;
         }
         await send("Browser.setWindowBounds", {bounds:{width,height}, windowId})
       }
