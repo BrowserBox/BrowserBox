@@ -476,8 +476,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           const {frameTree} = await send("Page.getFrameTree", {}, sessionId);
           MainFrames.set(sessionId, frameTree.frame.id);
           const frameList = enumerateFrames(frameTree, worlds.size);
-          DEBUG.worldDebug && consolelog('Frames', frameList, 'worlds', worlds);
           missingWorlds = worlds.size < frameList.length;
+          DEBUG.worldDebug && consolelog('Frames', frameList, 'worlds', worlds, `world size: ${worlds.size}, frames length: ${frameList.length}`, {missingWorlds});
         }
 
         if ( DEBUG.dontSkipOldMissingWorldsCheck && missingWorlds ) {
@@ -506,7 +506,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           checkSetup.delete(targetId);
           DEBUG.worldDebug && consolelog(`Our tab is loaded!`, targetInfo);
         }
-        reloadAfterSetup(sessionId);
+        //reloadAfterSetup(sessionId);
       }
     }
   });
@@ -1402,61 +1402,18 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       await send("Page.setInterceptFileChooserDialog", {
         enabled: true
       }, sessionId);
-      await send(
-        "DOMSnapshot.enable", 
-        {},
-        sessionId
-      );
+      if ( DEBUG.needsDOMSnapshot ) {
+        await send(
+          "DOMSnapshot.enable", 
+          {},
+          sessionId
+        );
+      }
       await send(
         "Runtime.enable", 
         {},
         sessionId
       );
-      // Page context injection (to set values in the page's original JS execution context
-        let templatedInjectionsScroll = '';
-        // Flash emulation injection
-        if ( DEBUG.useFlashEmu ) {
-          const injectableAssetPath = getInjectableAssetPath();
-          const flashEmuScript = templatedInjections.flashEmu.default({
-            injectableAssetPath
-          });
-          templatedInjectionsScroll += flashEmuScript;
-        }
-        if ( DEBUG.useDocCustomDownloadPlugin ) {
-          const embeddingHostname = getEmbeddingHostname();
-          const pluginScript = templatedInjections.docDownloadPlugin.default({
-            embeddingHostname
-          });
-          templatedInjectionsScroll += pluginScript;
-        }
-        await send(
-          "Page.addScriptToEvaluateOnNewDocument",
-          {
-            // NOTE: NO world name to use the Page context
-            source: pageContextInjectionsScroll + templatedInjectionsScroll
-          },
-          sessionId
-        );
-      // Isolated world injection
-        let modeInjectionScroll = '';
-        if ( connection.plugins.appminifier ) {
-          modeInjectionScroll += appMinifier;
-        } 
-        if ( connection.plugins.projector ) {
-          modeInjectionScroll += projector;
-        }
-        await send(
-          "Page.addScriptToEvaluateOnNewDocument", 
-          {
-            source: [
-              saveTargetIdAsGlobal(targetId),
-              injectionsScroll,
-              modeInjectionScroll
-            ].join(''),
-            worldName: WorldName
-          },
-          sessionId
-        );
       await send(
         "Emulation.setDeviceMetricsOverride", 
         connection.bounds,
@@ -1507,14 +1464,53 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( waitingForDebugger ) {
         await send("Runtime.runIfWaitingForDebugger", {}, sessionId);
       }
+      // Page context injection (to set values in the page's original JS execution context
+        let templatedInjectionsScroll = '';
+        // Flash emulation injection
+        if ( DEBUG.useFlashEmu ) {
+          const injectableAssetPath = getInjectableAssetPath();
+          const flashEmuScript = templatedInjections.flashEmu.default({
+            injectableAssetPath
+          });
+          templatedInjectionsScroll += flashEmuScript;
+        }
+        if ( DEBUG.useDocCustomDownloadPlugin ) {
+          const embeddingHostname = getEmbeddingHostname();
+          const pluginScript = templatedInjections.docDownloadPlugin.default({
+            embeddingHostname
+          });
+          templatedInjectionsScroll += pluginScript;
+        }
+        await send(
+          "Page.addScriptToEvaluateOnNewDocument",
+          {
+            // NOTE: NO world name to use the Page context
+            source: pageContextInjectionsScroll + templatedInjectionsScroll
+          },
+          sessionId
+        );
+      // Isolated world injection
+        let modeInjectionScroll = '';
+        if ( connection.plugins.appminifier ) {
+          modeInjectionScroll += appMinifier;
+        } 
+        if ( connection.plugins.projector ) {
+          modeInjectionScroll += projector;
+        }
+        await send(
+          "Page.addScriptToEvaluateOnNewDocument", 
+          {
+            source: [
+              saveTargetIdAsGlobal(targetId),
+              injectionsScroll,
+              modeInjectionScroll
+            ].join(''),
+            worldName: WorldName
+          },
+          sessionId
+        );
       const obj = checkSetup.get(targetId)
       if ( obj ) {
-        if ( obj.needsReload ) {
-          DEBUG.worldDebug && consolelog('Reloading', targetId);
-          obj.needsReload = false; 
-          reloadAfterSetup(sessionId);
-          obj.checking = false;
-        } 
         if ( CONFIG.inspectMode ) {
           setTimeout(async () => {
             await send("Overlay.enable", {}, sessionId);
@@ -1531,7 +1527,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             }, sessionId);
           }, 300);
         }
-
         obj.tabSetup = true;
       } else {
         console.warn(`No checsetup entry at end of setuptab`, targetId);
@@ -1540,6 +1535,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       console.warn("Error setting up", e, targetId, sessionId);
     }
     settingUp.delete(targetId);
+    reloadAfterSetup(sessionId);
   }
 
   function updateCast(sessionId, castUpdate, event) {
