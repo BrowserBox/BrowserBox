@@ -100,6 +100,7 @@ const templatedInjections = {
 };
 
 const docViewerSecret = process.env.DOCS_KEY;
+const heightAdjust = process.platform == 'darwin' ? 130 : 80;
 const MAX_TRIES_TO_LOAD = 2;
 const TAB_LOAD_WAIT = 300;
 const RECONNECT_MS = 5000;
@@ -499,7 +500,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           obj.checking = true;
           if ( !obj.tabSetup ) {
             obj.needsReload = true;
-          } else {
             reloadAfterSetup(sessionId);
           }
         } else {
@@ -525,6 +525,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     // which might be bigger than the lowest common screen dimensions for the clients
     // so they will call a resize anyway, so we just anticipate here
     await setupTab({attached});
+    if ( StartupTabs.has(targetId) ) {
+      reloadAfterSetup(sessionId);
+    }
     /**
       // putting this here will stop open in new tab from working, since
       // we will reload a tab before it has navigated to its intended destination
@@ -1021,7 +1024,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           sessionId
         );
       } else if ( DEBUG.manuallyInjectIntoEveryCreatedContext && SetupTabs.get(sessionId)?.worldName !== WorldName ) {
-        /*
         const targetId = sessions.get(sessionId);
         const expression = saveTargetIdAsGlobal(targetId) + manualInjectionsScroll;
         const resp = await send("Runtime.evaluate", {
@@ -1029,7 +1031,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           expression
         }, sessionId);
         DEBUG.val && console.log({resp,contextId});
-        */
       }
     } else if ( message.method == "Runtime.executionContextDestroyed" ) {
       const contextId = message.params.executionContextId;
@@ -1443,8 +1444,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const {windowId} = await send("Browser.getWindowForTarget", {targetId});
       connection.latestWindowId = windowId;
       let {width,height} = connection.bounds;
-      if ( DEBUG.useNewAsgardHeadless ) {
-        height += 80;
+      if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+        height += heightAdjust;
       }
       await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
       //id = await overrideNewtab(connection.zombie, sessionId, id);
@@ -1687,15 +1688,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         if ( ! command.params.resetRequested ) {
           let {width, height} = viewport;
-          if ( DEBUG.useNewAsgardHeadless ) {
-            height += 80;
+          if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+            height += heightAdjust;
           }
           Object.assign(command.params.bounds, {width, height});
           Object.assign(connection.bounds, viewport);
         } else {
           // don't send our custom flag through to the browser
-          if ( DEBUG.useNewAsgardHeadless ) {
-            command.params.bounds.height += 80;
+          if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+            command.params.bounds.height += heightAdjust;
           }
           ensureMinBounds(command.params.bounds);
           Object.assign(connection.bounds, command.params.bounds);
@@ -2260,8 +2261,8 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
         windows.add(windowId);
         let {width,height} = commonViewport;
         DEBUG.debugViewportDImensions && console.log({width,height,windowId});
-        if ( DEBUG.useNewAsgardHeadless ) {
-          height += 80;
+        if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+          height += heightAdjust;
         }
         await send("Browser.setWindowBounds", {bounds:{width,height}, windowId})
       }
