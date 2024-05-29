@@ -219,8 +219,10 @@ export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   process.env.DOMAIN ? [
     `https://${process.env.DOMAIN}:*`,
   ] : []),
-  ...(
-    !os?.userInfo?.()?.username?.startsWith?.("bbuser-ss") ? [
+  ...((
+    process?.env?.DOMAIN?.endsWith?.('.cloudtabs.net') &&  
+    !os?.userInfo?.()?.username?.startsWith?.("bbuser-ss")
+    ) ? [
       "*"
   ] : []),
 ];
