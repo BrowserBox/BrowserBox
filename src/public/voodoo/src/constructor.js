@@ -1225,8 +1225,16 @@
 
           queue.addMetaListener('secureview', ({secureview}) => {
             DEBUG.val && console.log('secureview', secureview);
-            const {url} = secureview;
+            let {url} = secureview;
             if ( url ) {
+              if ( CONFIG.isDNSFacade ) {
+                url = new URL(url);
+                const subs = url.hostname.split('.');
+                const port = url.port;
+                subs.unshift(`p${port}`);
+                url.port = url.protocol == 'https:' ? 443 : 80;
+                url.hostname = subs.join('.');
+              }
               if ( DEBUG.useWindowOpenForSecureView ) {
                 globalThis.window.open(url);
               } else {

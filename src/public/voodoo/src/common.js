@@ -196,7 +196,7 @@ export const CONFIG = Object.freeze({
     }
   },
   get isDNSFacade() {
-    return location.hostname.split('.')[0].match(FACADE_HOST_REGEX);
+    return !!location.hostname.split('.')[0].match(FACADE_HOST_REGEX);
   },
   ensureDevToolsOpensInNewTab: false,
   logUpdatedContent: true,
