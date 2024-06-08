@@ -518,9 +518,9 @@
       // event handlers
         // multiplayer connections
           const MENU = new URL(location);
-          MENU.port = parseInt(location.port) - 1;
+          MENU.port = parseInt(CONFIG.mainPort) - 1;
           const CHAT = new URL(location);
-          CHAT.port = parseInt(location.port) + 2;
+          CHAT.port = parseInt(CONFIG.mainPort) + 2;
           self.addEventListener('message', ({data, origin, source}) => {
             if ( origin === CHAT.origin ) {
               if ( data.multiplayer ) {
@@ -584,7 +584,7 @@
               new URL(location)
             ;
             AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
-            const DEFAULT_AUDIO_PORT = parseInt(location.port) - 2;
+            const DEFAULT_AUDIO_PORT = parseInt(CONFIG.mainPort) - 2;
             AUDIO.port = (CONFIG.isOnion || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
             if ( CONFIG.isDNSFacade ) {
               const subs = location.hostname.split('.');

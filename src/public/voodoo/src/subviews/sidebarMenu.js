@@ -71,7 +71,7 @@ function sendToken(frame, target, state) {
 function stopTryingToLogin(state) {
   const mHandler = ({origin, data, source}) => {
     const originUrl = new URL(origin);
-    if ( parseInt(originUrl.port) === (parseInt(location.port) - 1) ) {
+    if ( parseInt(originUrl.port) === (parseInt(CONFIG.mainPort) - 1) ) {
       // pptr guy
       const {ack} = data;
       if ( ack && ack.arrived ) {
@@ -87,7 +87,7 @@ function stopTryingToLogin(state) {
         }
         handlerClosure = undefined;
       }
-    } else if ( parseInt(originUrl.port) === (parseInt(location.port) + 1 ) ) {
+    } else if ( parseInt(originUrl.port) === (parseInt(CONFIG.mainPort) + 1 ) ) {
       DEBUG.val && console.log(origin, data);
       // devtools guy
       const {request} = data;
@@ -100,7 +100,7 @@ function stopTryingToLogin(state) {
           console.log(`Everyone logged in`);
         }
       }
-    } else if ( parseInt(originUrl.port) === (parseInt(location.port) + 2 ) ) {
+    } else if ( parseInt(originUrl.port) === (parseInt(CONFIG.mainPort) + 2 ) ) {
       // chat guy
       const {request} = data;
       if ( request && request.sessionToken ) {

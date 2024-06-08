@@ -188,6 +188,13 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  get mainPort() {
+    if ( CONFIG.isDNSFacade ) {
+      return parseInt(location.hostname.split('.')[0].replace(/\D+/g, '')); 
+    } else {
+      return location.port;
+    }
+  },
   get isDNSFacade() {
     return location.hostname.split('.')[0].match(FACADE_HOST_REGEX);
   },

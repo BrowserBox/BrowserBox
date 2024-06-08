@@ -160,6 +160,7 @@
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ])
       ],
       frameSrc: [
@@ -171,6 +172,7 @@
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
+          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ])
       ],
@@ -196,7 +198,9 @@
           `https://${process.env[`ADDR_${server_port + 2}`]}:*`, // docs
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ])
       ],
       fontSrc: [

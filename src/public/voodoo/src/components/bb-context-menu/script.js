@@ -142,7 +142,7 @@ class BBContextMenu extends Base {
         new URL(location)
       ;
 
-      url.port = state.CONFIG.isOnion ? 443 : parseInt(location.port) + 1;
+      url.port = state.CONFIG.isOnion ? 443 : parseInt(CONFIG.mainPort) + 1;
 
       url.pathname = "login";
       const params = url.searchParams;
