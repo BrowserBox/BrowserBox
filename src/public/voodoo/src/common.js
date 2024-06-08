@@ -5,6 +5,7 @@ export const VERSION = '9.0';
 export const SafariPlatform = /^((?!chrome|android).)*safari/i;
 const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 const FirefoxPlatform = /firefox/i;
+export const FACADE_HOST_REGEX = /^p\d+$/;
 
 export const iden = e => e;
 export const isSafari = () => SafariPlatform.test(navigator.userAgent);
@@ -187,6 +188,9 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  get isDNSFacade() {
+    return location.hostname.split('.')[0].match(FACADE_HOST_REGEX);
+  },
   ensureDevToolsOpensInNewTab: false,
   logUpdatedContent: true,
   ensureFrameOnResize: true,

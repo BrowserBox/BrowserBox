@@ -21,6 +21,7 @@
       logit, sleep, debounce, DEBUG, BLANK, 
       CONFIG,
       OPTIONS,
+      FACADE_HOST_REGEX,
       isFirefox, isSafari, deviceIsMobile,
       SERVICE_COUNT,
       // for bang
@@ -583,7 +584,16 @@
               new URL(location)
             ;
             AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
-            AUDIO.port = CONFIG.isOnion ? 443 : parseInt(location.port) - 2;
+            const DEFAULT_AUDIO_PORT = parseInt(location.port) - 2;
+            AUDIO.port = (CONFIG.isOnion || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
+            if ( CONFIG.isDNSFacade ) {
+              const subs = location.hostname.split('.');
+              if ( subs?.[0]?.match?.(FACADE_HOST_REGEX)?.index == 0 ) {
+                subs.shift();
+                subs.unshift(`p${DEFAULT_AUDIO_PORT}`);
+              }
+              AUDIO.hostname = subs.join('.');
+            }
             AUDIO.searchParams.set('ran', Math.random());
 
             AUDIO.searchParams.set('localCookie', await state.localCookie);
