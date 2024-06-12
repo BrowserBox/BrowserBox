@@ -154,7 +154,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
@@ -218,6 +218,7 @@ export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   ...(
   process.env.DOMAIN ? [
     `https://${process.env.DOMAIN}:*`,
+    `https://*.${process.env.DOMAIN}:*`,
   ] : []),
   ...((
     process?.env?.DOMAIN?.endsWith?.('.cloudtabs.net') &&  

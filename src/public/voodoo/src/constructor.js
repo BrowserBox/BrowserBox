@@ -21,6 +21,7 @@
       logit, sleep, debounce, DEBUG, BLANK, 
       CONFIG,
       OPTIONS,
+      FACADE_HOST_REGEX,
       isFirefox, isSafari, deviceIsMobile,
       SERVICE_COUNT,
       // for bang
@@ -517,9 +518,9 @@
       // event handlers
         // multiplayer connections
           const MENU = new URL(location);
-          MENU.port = parseInt(location.port) - 1;
+          MENU.port = parseInt(CONFIG.mainPort) - 1;
           const CHAT = new URL(location);
-          CHAT.port = parseInt(location.port) + 2;
+          CHAT.port = parseInt(CONFIG.mainPort) + 2;
           self.addEventListener('message', ({data, origin, source}) => {
             if ( origin === CHAT.origin ) {
               if ( data.multiplayer ) {
@@ -583,7 +584,16 @@
               new URL(location)
             ;
             AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
-            AUDIO.port = CONFIG.isOnion ? 443 : parseInt(location.port) - 2;
+            const DEFAULT_AUDIO_PORT = parseInt(CONFIG.mainPort) - 2;
+            AUDIO.port = (CONFIG.isOnion || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
+            if ( CONFIG.isDNSFacade ) {
+              const subs = location.hostname.split('.');
+              if ( subs?.[0]?.match?.(FACADE_HOST_REGEX)?.index == 0 ) {
+                subs.shift();
+                subs.unshift(`p${DEFAULT_AUDIO_PORT}`);
+              }
+              AUDIO.hostname = subs.join('.');
+            }
             AUDIO.searchParams.set('ran', Math.random());
 
             AUDIO.searchParams.set('localCookie', await state.localCookie);
@@ -1215,8 +1225,16 @@
 
           queue.addMetaListener('secureview', ({secureview}) => {
             DEBUG.val && console.log('secureview', secureview);
-            const {url} = secureview;
+            let {url} = secureview;
             if ( url ) {
+              if ( CONFIG.isDNSFacade ) {
+                url = new URL(url);
+                const subs = url.hostname.split('.');
+                const port = url.port;
+                subs.unshift(`p${port}`);
+                url.port = url.protocol == 'https:' ? 443 : 80;
+                url.hostname = subs.join('.');
+              }
               if ( DEBUG.useWindowOpenForSecureView ) {
                 globalThis.window.open(url);
               } else {

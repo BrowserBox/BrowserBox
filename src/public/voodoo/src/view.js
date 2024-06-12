@@ -12,7 +12,7 @@ export const subviews = Subviews;
 const USE_INPUT_MODE = false;
 
 // for bang
-const audio_port = Number(location.port ? location.port : ( location.protocol == 'https' ? 443 : 80 ) ) - 2;
+const audio_port = Number(CONFIG.mainPort ? CONFIG.mainPort : ( location.protocol == 'https' ? 443 : 80 ) ) - 2;
 export const audio_login_url = CONFIG.isOnion ? 
   `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}/login` 
   : 
