@@ -21,13 +21,16 @@
         </span>
       </div>` : F`<!-- download progress -->`
     }
-    <button
-      class=ct-extend
-      title="Extend your session" class="ct-extend-session"
-      onclick="(parent || top).location.href='https://browse.cloudtabs.net/extend'"
-      >
-      &nbsp;Add&nbsp;1&nbsp;Hour&nbsp;for&nbsp;$1&nbsp;
-    </button>
+    ${!state?.isSubscriber?.isSubscriber ? F`
+      <button
+        class=ct-extend
+        title="Extend your session" class="ct-extend-session"
+        onclick="(parent || top).location.href='https://browse.cloudtabs.net/extend'"
+        >
+        &nbsp;Add&nbsp;1&nbsp;Hour&nbsp;for&nbsp;$1&nbsp;
+      </button>
+    ` : F`<!-- subscriber -->`
+    }
     <span 
       id=cloudtabs-session-clock 
       title="Session time remaining. Top up to extend your session or Subscribe for unlimited sessions."

@@ -148,6 +148,18 @@
           limitCursor,
         } = subviews;
 
+      // account
+        const isSubscriber = {};
+
+        try {
+          fetch('/isSubscriber').then(r => r.json()).then(resp => {
+            // gotta make money
+            Object.assign(isSubscriber, resp || {});
+          }).catch(e => console.warn(`Could not determine if user is a subscriber`, e));
+        } catch(e) {
+          console.warn(`Could not check is user is subscriber`, e);
+        }
+
       // url params
         const urlParams = new URLSearchParams(location.search);
         const urlFlags = parseURLFlags(urlParams);
@@ -161,6 +173,9 @@
 
       // app state
         magicAssign(state, {
+          // account (CloudTabs, etc),
+          isSubscriber, 
+
           // internet
           Connectivity,
 
