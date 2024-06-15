@@ -975,15 +975,31 @@
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
           DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          res.type('json');
           if ( (cookie !== allowed_user_cookie) ) {
             return res.status(401).send('{"err":"forbidden"}');
           }
-          res.type('json');
           const data = {};
           if ( CONFIG.useTorProxy ) {
             data.isTor = true;
           } else {
             data.isTor = false;
+          }
+          res.end(JSON.stringify(data));
+        });
+        app.get(`/isSubscriber`, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          res.type('json');
+          if ( (cookie !== allowed_user_cookie) ) {
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          const data = {};
+          if ( CONFIG.isSubscriber ) {
+            data.isSubscriber = true;
+          } else {
+            data.isSubscriber = false;
           }
           res.end(JSON.stringify(data));
         });

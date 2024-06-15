@@ -13,6 +13,15 @@ export * from './args.js';
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
+export const BASE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro'),
+export const SUBSCRIBER_FILE_PATH = path.resolve(BASE_PATH, 'subscriber.json');
+export let subscriberFileExists;
+
+try {
+  subscriberFileExists = fs.existsSync(path.resolve(SUBSCRIBER_FILE_PATH));
+} catch(e) {
+  subscriberFileExists = false;
+}
 
 export const EXPEDITE = new Set([
   "Target.activateTarget",
@@ -239,6 +248,7 @@ export const CONFIG = Object.freeze({
   devapi: true,
   inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this
   createPowerSource: false,
+  isSubscriber: subscriberFileExists || false,
   useTorProxy: process.env.TOR_PROXY || false,
   // viewport scale up related options
     // note: we are switching this off as the weird seems to break some sites
@@ -258,7 +268,7 @@ export const CONFIG = Object.freeze({
   blockAllCaptureScreenshots: true,
   setAlternateBackgroundColor: false,
   screencastOnly: true,
-  baseDir: path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro'),
+  baseDir: BASE_PATH,
   darkMode: false, 
   forceDarkContentMode: false,
   audioDropPossiblySilentFrames: true,
