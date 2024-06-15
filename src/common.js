@@ -13,7 +13,7 @@ export * from './args.js';
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
-export const BASE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro'),
+export const BASE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro');
 export const SUBSCRIBER_FILE_PATH = path.resolve(BASE_PATH, 'subscriber.json');
 export let subscriberFileExists;
 
