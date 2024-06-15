@@ -15,6 +15,7 @@ export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
 export const BASE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro');
 export const SUBSCRIBER_FILE_PATH = path.resolve(BASE_PATH, 'subscriber.json');
+export const expiryTimeFilePath = path.resolve(BASE_PATH, 'expiry_time');
 export let subscriberFileExists;
 
 try {
@@ -243,6 +244,7 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  expiryTimeFilePath,
   homePage: 'https://google.com',
   BINDING_NAME: 'bb',
   devapi: true,
