@@ -12,6 +12,9 @@ button.ct-extend {
 button.ct-extend:hover {
   position: relative;
   z-index: 20000000;
+  background: mediumskyblue;
+  color: white;
+  font-weight: bold;
 }
 
 .status-bar {
