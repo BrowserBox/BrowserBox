@@ -50,7 +50,12 @@ class BBTopBar extends Base {
   }
 
   goToExtend() {
-    (parent || top).location.href='https://browse.cloudtabs.net/extend';
+    const {state} = this;
+    if ( state.serverConnected ) {
+      (parent || top).location.href='https://browse.cloudtabs.net/extend';
+    } else {
+      alert(`Sorry! Your session has already expired. You cannot extend it now.`);
+    }
   }
 
   updateDownloadStatus(event) {
