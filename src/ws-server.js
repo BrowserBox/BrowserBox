@@ -34,7 +34,7 @@
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
 
   // config
-    const THIRTEEN_MINUTES = 13 * 60 * 1000;
+    const SHUTDOWN_MINUTES = 45 * 60 * 1000; // lol
     const SafariPlatform = /^((?!chrome|android).)*safari/i;
     const PEER_RECONNECT_MS = 2000;
     const FRAME_LIMIT = false; // 'SAMEORIGIN' or 'DENY' or false (no limit)
@@ -1363,7 +1363,7 @@
   function startShutdownTimer() {
     if ( shutdownTimer ) return;
     console.log(`Starting BrowserBox shutdown timer on all clients disconnected`);
-    shutdownTimer = setTimeout(executeShutdownOfBBPRO, THIRTEEN_MINUTES);
+    shutdownTimer = setTimeout(executeShutdownOfBBPRO, SHUTDOWN_MINUTES);
   }
 
   function stopShutdownTimer() {
