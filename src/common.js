@@ -13,6 +13,16 @@ export * from './args.js';
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
+export const BASE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro');
+export const SUBSCRIBER_FILE_PATH = path.resolve(BASE_PATH, 'subscriber.json');
+export const expiryTimeFilePath = path.resolve(BASE_PATH, 'expiry_time');
+export let subscriberFileExists;
+
+try {
+  subscriberFileExists = fs.existsSync(path.resolve(SUBSCRIBER_FILE_PATH));
+} catch(e) {
+  subscriberFileExists = false;
+}
 
 export const EXPEDITE = new Set([
   "Target.activateTarget",
@@ -154,7 +164,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
+  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
@@ -234,11 +244,13 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  expiryTimeFilePath,
   homePage: 'https://google.com',
   BINDING_NAME: 'bb',
   devapi: true,
   inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this
   createPowerSource: false,
+  isSubscriber: subscriberFileExists || false,
   useTorProxy: process.env.TOR_PROXY || false,
   // viewport scale up related options
     // note: we are switching this off as the weird seems to break some sites
@@ -258,7 +270,7 @@ export const CONFIG = Object.freeze({
   blockAllCaptureScreenshots: true,
   setAlternateBackgroundColor: false,
   screencastOnly: true,
-  baseDir: path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro'),
+  baseDir: BASE_PATH,
   darkMode: false, 
   forceDarkContentMode: false,
   audioDropPossiblySilentFrames: true,
