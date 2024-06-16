@@ -7,12 +7,13 @@ button.ct-extend {
   border: thin solid gray;
   padding: 0;
   opacity: 1;
+  border-radius: 3px;
 }
 
 button.ct-extend:hover {
   position: relative;
   z-index: 20000000;
-  background: mediumskyblue;
+  background: skyblue !important;
   color: white;
   font-weight: bold;
 }

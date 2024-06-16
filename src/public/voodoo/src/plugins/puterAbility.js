@@ -37,7 +37,7 @@ export default async function untilPuterAbility() {
       };
 
       await untilTrueOrTimeout(() => {
-        const pred = FileState?.currentFiles?.length == names.length) && FileState.csrfToken && FileState.sessionId;
+        const pred = (FileState?.currentFiles?.length == names.length) && FileState.csrfToken && FileState.sessionId;
         console.log({pred, FileState, names});
         return pred;
       }, 120);

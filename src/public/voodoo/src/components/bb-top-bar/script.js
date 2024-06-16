@@ -12,6 +12,36 @@ class BBTopBar extends Base {
     state.downloadState = this.downloadState;
     state.topBarComponent = this;
     this.state = state;
+    this.untilLoaded().then(() => this.displayExpiryClock());
+  }
+
+  displayExpiryClock() {
+    const {state} = this;
+    const timerSpan = this.shadowRoot.querySelector('#cloudtabs-session-clock');
+    console.log(timerSpan);
+    (function() {
+      const now = Date.now() / 1000; // Current time in epoch seconds
+      const expiresAt = state.browserExpiresAt || Math.floor((Date.now())/1000 + 500);
+      let display = '';
+
+      if (typeof expiresAt === 'number' && expiresAt > now) {
+        const remainingSeconds = expiresAt - now;
+        if (remainingSeconds <= 99 * 3600) {
+          const hours = Math.floor(remainingSeconds / 3600);
+          const minutes = Math.floor((remainingSeconds % 3600) / 60);
+          const seconds = Math.floor(remainingSeconds % 60);
+          display = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        } else {
+          display = 'XX';
+        }
+      }
+
+      if (display) {
+        timerSpan.textContent = display;
+      } else {
+        timerSpan.style.display = 'none';
+      }
+    })();
   }
 
   updateDownloadStatus(event) {
