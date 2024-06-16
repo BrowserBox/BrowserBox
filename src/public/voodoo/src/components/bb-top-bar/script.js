@@ -18,10 +18,10 @@ class BBTopBar extends Base {
   displayExpiryClock() {
     const {state} = this;
     const timerSpan = this.shadowRoot.querySelector('#cloudtabs-session-clock');
-    console.log(timerSpan);
-    (function() {
+    const expiresAt = state.browserExpiresAt || Math.floor((Date.now())/1000 + 300);
+
+    let timerUpdater = setInterval(function() {
       const now = Date.now() / 1000; // Current time in epoch seconds
-      const expiresAt = state.browserExpiresAt || Math.floor((Date.now())/1000 + 500);
       let display = '';
 
       if (typeof expiresAt === 'number' && expiresAt > now) {
@@ -33,6 +33,7 @@ class BBTopBar extends Base {
           display = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         } else {
           display = 'XX';
+          clearInterval(timerUpdater);
         }
       }
 
@@ -40,8 +41,13 @@ class BBTopBar extends Base {
         timerSpan.textContent = display;
       } else {
         timerSpan.style.display = 'none';
+        clearInterval(timerUpdater);
       }
-    })();
+    }, 1001);
+  }
+
+  goToExtend() {
+    (parent || top).location.href='https://browse.cloudtabs.net/extend';
   }
 
   updateDownloadStatus(event) {

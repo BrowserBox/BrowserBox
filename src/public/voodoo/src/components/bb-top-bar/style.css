@@ -1,5 +1,11 @@
 @import url("themes/blank.css");
 
+#cloudtabs-session-clock {
+  display: inline-block;
+  height: 15px;
+  margin: auto;
+}
+
 button.ct-extend {
   appearance: button; 
   background: linear-gradient(to bottom, whitesmoke, silver);
