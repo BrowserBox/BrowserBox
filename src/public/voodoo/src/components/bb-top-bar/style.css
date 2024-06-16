@@ -1,5 +1,29 @@
 @import url("themes/blank.css");
 
+#cloudtabs-session-clock {
+  display: inline-block;
+  height: 15px;
+  margin: auto;
+}
+
+button.ct-extend {
+  appearance: button; 
+  background: linear-gradient(to bottom, whitesmoke, silver);
+  color: black;
+  border: thin solid gray;
+  padding: 0;
+  opacity: 1;
+  border-radius: 3px;
+}
+
+button.ct-extend:hover {
+  position: relative;
+  z-index: 20000000;
+  background: skyblue !important;
+  color: white;
+  font-weight: bold;
+}
+
 .status-bar {
   position: relative;
   vertical-align: super;

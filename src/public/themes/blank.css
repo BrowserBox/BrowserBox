@@ -276,7 +276,7 @@
     color: #555555;
   }
 
-  header.topbar span {
+  header.topbar span.super {
     font-size: 0.8rem;
     line-height: 1.3;
     vertical-align: super;
