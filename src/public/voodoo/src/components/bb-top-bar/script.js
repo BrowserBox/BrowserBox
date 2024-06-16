@@ -15,10 +15,13 @@ class BBTopBar extends Base {
     this.untilLoaded().then(() => this.displayExpiryClock());
   }
 
-  displayExpiryClock() {
+  async displayExpiryClock() {
     const {state} = this;
     const timerSpan = this.shadowRoot.querySelector('#cloudtabs-session-clock');
-    const expiresAt = state.browserExpiresAt || Math.floor((Date.now())/1000 + 300);
+    
+    await state.untilTrueOrTimeout(() => !!state?.browserExpiresAt?.browserExpiresAt, 20);
+
+    const expiresAt = state.browserExpiresAt.browserExpiresAt;
 
     let timerUpdater = setInterval(function() {
       const now = Date.now() / 1000; // Current time in epoch seconds

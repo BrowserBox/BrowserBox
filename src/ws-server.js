@@ -1016,7 +1016,7 @@
             data.expiry_time = 0;
           } else {
             try {
-              data.expiry_time = fs.readFileSync(CONFIG.expiryTimeFilePath).toString();
+              data.expiry_time = fs.readFileSync(CONFIG.expiryTimeFilePath).toString().trim();
             } catch(e) {
               console.info(`Cannot read expiry time`, e);
               data.expiry_time = 0;

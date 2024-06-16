@@ -161,17 +161,17 @@
         }
 
         // UTC epoch seconds when the browser expires
-        let browserExpiresAt = Math.round(Date.now()/1000 + 500);
+        const browserExpiresAt = {};
 
         try {
           fetch('/expiry_time').then(r => r.json()).then(resp => {
             // gotta make money
             const time = Number(resp?.expiry_time);
-            if ( Number.isNaN(num) ) {
+            if ( Number.isNaN(time) ) {
               throw new Error(`Cannot read browser expiry time. Browser will shut down at scheduled expiry time but expiry countdown clock may not display correctly`);
             }
-            browserExpiresAt = time;
-            console.info(`Browser will expire at UTC: ${new Date(browserExpiresAt*1000)}`);
+            browserExpiresAt.browserExpiresAt = time;
+            console.info(`Browser will expire at UTC: ${new Date(browserExpiresAt.browserExpiresAt*1000)}`);
           }).catch(e => console.warn(`Could not determine expiry time for countdown clock. Clock will assume 5 minutes.`, e));
         } catch(e) {
           console.info(`Error accessing browser expiry clock time. This does not affect any scheduled shutdown. For unlimited sessions, subscribe now. Or extend your session by 1 hour by purchasing at the button above`, e);
@@ -368,6 +368,7 @@
           contextMenuEvent: null,
           contextMenuBondTasks: makeContextMenuBondTasks(state),
           untilTrue,
+          untilTrueOrTimeout,
 
           // MIGRATE (go)
           go,
