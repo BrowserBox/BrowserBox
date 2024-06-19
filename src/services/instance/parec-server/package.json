@@ -12,10 +12,9 @@
   "author": "@dosy, forked and modified from work by original author, Jerko Steiner",
   "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
   "dependencies": {
-    "@dosy/wav": "^1.1.2",
-    "@dosy/ws": "^8.11.6",
-    "cors": "^2.8.5",
-    "exit-on-epipe": "^1.0.1",
-    "ws": "^8.11.0"
+    "@dosy/wav": "latest",
+    "cors": "latest",
+    "exit-on-epipe": "latest",
+    "ws": "latest"
   }
 }
