@@ -45,7 +45,6 @@ export const DEBUG = Object.freeze({
   showStableSizeOnResize: false,
   debugUntilTrue: false,
   debugUberFetch: false,
-  debugInspect: false,
   useUberFetch: true,
   logUberFetchErrors: true,
   tryPeeringAnywayEvenIfUserMediaFails: false,  // there's no point because we only request perms on mobile and 
@@ -122,6 +121,7 @@ export const DEBUG = Object.freeze({
   debugBox: false,
   debugDraw: false,
   debugDevTools: false,
+  debugInspect: false,
   debugFrameDrops: false,
   logFrameIds: false,
   dropFramesWhenDrawing: false,
