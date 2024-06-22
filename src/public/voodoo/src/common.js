@@ -80,7 +80,7 @@ export const DEBUG = Object.freeze({
   debugQdEs: false, /* QdEs == QueuedEvents */
   debugConnect: false,
   debugBetterModals: false,
-  debugHistory: false,
+  debugHistory: true,
   debugFavicon: false,
   debugElementInfo: false,
   coords: false,
