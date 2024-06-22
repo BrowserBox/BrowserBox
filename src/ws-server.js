@@ -1267,7 +1267,7 @@
         message;
       } else {
         if ( message.data ) {
-          message.data = message.data.filter(x => !!x);
+          message.data = message.data.filter(x => !!x && Object.getOwnPropertyNames(x).length);
         }
         message = JSON.stringify(message);
       }
