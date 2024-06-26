@@ -1268,6 +1268,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             urls: [
               ...(DEBUG.blockFileURLs ? ["file://*"] : []),
               ...(DEBUG.blockChromeURLs ? ["chrome:*"] : []),
+              ...(DEBUG.blockInspect ? ["chrome://inspect*"] : []),
             ]
           },
           sessionId

@@ -63,6 +63,7 @@ export const DEBUG = Object.freeze({
   networkBlocking: true,
   blockFileURLs: true,
   blockChromeURLs: false,
+  blockInspect: true,
   extensionsNew: true,
   preventNewTab: true,
   extensionsAssemble: false,
