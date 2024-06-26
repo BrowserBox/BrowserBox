@@ -55,7 +55,7 @@ class BBTopBar extends Base {
       globalThis.location.href='https://browse.cloudtabs.net/extend';
     } else {
       alert(`Sorry! Your session has already expired. You cannot extend it now. But you can purchase 1 hour for $1.`);
-      setTimeout(() => globalThis.location.href='https://browse.cloudtabs.net/go_to_embed', 150);
+      setTimeout(() => globalThis.location.href='https://browse.cloudtabs.net/extend', 150);
     }
   }
 
