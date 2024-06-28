@@ -1869,7 +1869,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         if ( ! worlds ) {
           DEBUG.val && console.log("reloading because no worlds we can access yet");
-          console.log(`Reloading because no isolated worlds`);
+          console.log(`Reloading because no isolated worlds`, sessionId, new Error);
+          // this is the reload that has the problem
+          untilTrueOrTimeout(() => !!connection.worlds.has(sessionId), 20).then(() => console.log(`worlds arrived`, sessionId)).catch(() => reloadAfterSetup(sessionId));
           reloadAfterSetup(sessionId);
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);
