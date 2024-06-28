@@ -168,7 +168,7 @@ export const DEBUG = Object.freeze({
     'contextmenu',
     'dblclick'
   ]),
-  activateDebug: true,
+  activateDebug: false,
   activateNewTab: true,
   frameControl: FRAME_CONTROL,
   sidebarMenu: false,
