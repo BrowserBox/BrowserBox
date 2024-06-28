@@ -2432,7 +2432,7 @@
               }
               // this ensures we activate the tab
               if ( state.tabs.length ) {
-                if ( state.tabs.length == 1 ) {
+                if ( state.tabs.length == 1 && !activeTarget) {
                   DEBUG.activateDebug && console.log(`Activate to be called`);
                   alert((new Error).stack);
                   setTimeout(() => activateTab(null, {hello:'onupdate.len1', targetId:state.tabs[0].targetId}, {forceFrame:true}), LONG_DELAY);
