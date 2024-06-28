@@ -1461,6 +1461,8 @@
       });
 
       if ( activeTarget ) {
+        DEBUG.activateDebug && console.log(`Activate to be called`);
+        DEBUG.activateDebug && alert((new Error).stack);
         setTimeout(() => activateTab(null, {hello:'onload', targetId:activeTarget}, {forceFrame:true}), LONG_DELAY);
       }
 
@@ -2206,7 +2208,8 @@
             notify: notify = true, 
             forceFrame: forceFrame = false
           } = {}) {
-            DEBUG.activateDebug && console.log('activate called', click, tab, {notify, forceFrame});
+            DEBUG.activateDebug && console.log('activate called', click, tab, {notify, forceFrame}, new Error);
+            DEBUG.activateDebug && alert((new Error).stack);
 
             sizeTab();
 
@@ -2429,9 +2432,13 @@
               }
               // this ensures we activate the tab
               if ( state.tabs.length ) {
-                if ( state.tabs.length == 1 ) {
+                if ( state.tabs.length == 1 && !activeTarget) {
+                  DEBUG.activateDebug && console.log(`Activate to be called`);
+                  DEBUG.activateDebug && alert((new Error).stack);
                   setTimeout(() => activateTab(null, {hello:'onupdate.len1', targetId:state.tabs[0].targetId}, {forceFrame:true}), LONG_DELAY);
                 } else if( !activeTarget ) {
+                  DEBUG.activateDebug && console.log(`Activate to be called`);
+                  DEBUG.activateDebug && alert((new Error).stack);
                   setTimeout(() => activateTab(null, {hello:'onupdate.noactive', targetId:state.tabs[0].targetId}, {forceFrame:true}), LONG_DELAY);
                 } else {
                   // the reason we don't set timeout here is because if we did
