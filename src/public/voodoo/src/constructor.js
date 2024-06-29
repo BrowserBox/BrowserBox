@@ -2232,15 +2232,6 @@
             } else {
               tab = ourtab;
             }
-            DEBUG.val && console.log('Activating?', tab);
-
-            if ( state.activeTarget == tab.targetId ) {
-              if ( state.chromeUI ) { // otherwise there is no omniBoxInput
-                if ( state.viewState.omniBoxInput == state.viewState.lastActive ) {
-                  state.viewState.omniBoxInput?.focus();
-                }
-              }
-            }
 
             DEBUG.val && console.log('Activating', tab);
 
