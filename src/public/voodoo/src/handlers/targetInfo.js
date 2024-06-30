@@ -1,7 +1,7 @@
 //FIXME we could move this into constructor 
 // and switch it to WS 
 
-import {uberFetch,untilTrue,COMMON,DEBUG} from '../common.js';
+import {uberFetch,untilTrue,CONFIG,COMMON,DEBUG} from '../common.js';
 import DEFAULT_FAVICON from '../subviews/faviconDataURL.js';
 
 const STATE_SYMBOL = Symbol(`[[State]]`);
@@ -19,8 +19,17 @@ export async function fetchTabs({sessionToken}, getState) {
       const data = await resp.json();
       if ( data.error ) {
         if ( data.resetRequired ) {
-          const reload = confirm(`Some errors occurred and we can't seem to reach your cloud browser. You can try reloading the page and if the problem persists, try switching your cloud browser off then on again. Want to reload the page now?`);
-          if ( reload ) location.reload();
+          const state = getState();
+          if ( ! state.connected ) {
+            if ( CONFIG.isCT ) {
+              alert(`Your session expired. You can buy more time starting from $1/hour`);
+              location.href = 'https://browse.cloudtabs.net/extend'
+            } else {
+              alert(`Your session has expired or disconnected.`);
+            }
+          } else {
+            alert(`An error occurred. You might need to reload the page, or switch your remote browser off then on again. That is all we know.`);
+          }
         }
       } 
       if ( data.vmPaused ) {
@@ -69,9 +78,15 @@ export async function fetchTabs({sessionToken}, getState) {
     }
   } catch(e) {
     console.warn(e);
-    alert(e);
-    const reload = confirm(`Some errors occurred and we can't seem to reach your cloud browser. You can try reloading the page and if the problem persists, try switching your cloud browser off then on again. Want to reload the page now?`);
-    if ( reload ) location.reload();
+    const state = getState();
+    if ( ! state.connected ) {
+      if ( CONFIG.isCT ) {
+        alert(`Your session expired. You can buy more time starting from $1/hour`);
+        location.href = 'https://browse.cloudtabs.net/extend'
+      } else {
+        alert(`Your session has expired or disconnected.`);
+      }
+    } 
   }
 }
 
