@@ -1,0 +1,274 @@
+  :host {
+    --sizer-width: 1.5em;
+    --sizer-height: 1.5em;
+    --row-height: max(2em, var(--comfortable-height));
+    --comfortable-width: calc(2.25 * var(--sizer-width));
+    --comfortable-height: calc(2.25 * var(--sizer-height));
+    --row-headers-width: max(3.5em, var(--comfortable-width));
+    --column-headers-height: max(var(--comfortable-height), var(--row-height));
+    --max-height: 500px;
+    --max-width: 400px;
+    max-height: var(--max-height);
+    max-width: var(--max-width);
+    width: 100%;
+    height: 100%;
+    font-size: 0.85rem;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  sg-frame {
+    height: var(--max-height);
+    width: var(--max-width);
+    max-width: 90vw;
+    max-height: 90vh;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* basic layout and scroll */
+    /* .box */
+      .box {
+        position: relative;
+        display: flex;
+        x-scroll-snap-type: both;
+        overflow: auto;
+        width: 100%;
+        height: 100%;
+        x-scroll-padding: var(--column-headers-height) 0 0 var(--row-headers-width);
+        min-width: var(--comfortable-width);
+        min-height: var(--comfortable-height);
+      }
+
+      .box.snap-free {
+        scroll-snap-type: none;
+      }
+
+    /* everything */
+      * {
+        box-sizing: border-box;
+      }
+
+    /* rows */
+      tr {
+        padding: 0;
+        margin: 0;
+        border: 0;
+      }
+
+    /* cells */
+      table, tbody, tr, thead, th, .label {
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      th, td {
+        margin: 0;
+        padding: 0;
+        scroll-snap-align: start start;
+        background: transparent;
+      }
+
+      table {
+      }
+
+    /* table extras (to organize */
+      table, tr, th, td {
+        border: 0;
+        position: relative;
+        box-sizing: border-box;
+      }
+
+      table {
+        table-layout: fixed;
+        width: 100%;
+        height: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+
+      table, th, td {
+        border: thin solid gray;
+      }
+
+      th.row, thead {
+        position: sticky;
+        background: azure;
+        z-index: 2;
+      }
+
+      th {
+        font-weight: 600;
+        color: darkslategrey;
+      }
+
+      thead {
+        top: 0;
+      }
+
+      th.row {
+        left: 0;
+      }
+
+      tr.column {
+        top: 0;
+        z-index: 4;
+      }
+
+      th[scope="row"] {
+        z-index: 1;
+      }
+
+      th.top-left, th[scope="col"] {
+        z-index: 4;
+      }
+
+      col.row-header {
+        width: var(--row-headers-width);
+      }
+
+  /* the adjustment bureau */
+    :host([fill]) {
+      width: 100%;
+      height: 100%;
+      --max-height: 100vh;
+      --max-width: 100vw;
+    }
+
+    :host([fill]) * {
+      margin: 0;
+      padding: 0;
+    }
+
+    :host([fill]) table {
+      border: 0;
+      border-bottom: thin solid grey;
+    }
+
+  /* debug */
+    :host([DEBUG]) .sizer {
+      border: thin solid lime;
+    }
+
+  /* focus */
+    /*
+    tr:first-of-type th:first-of-type:focus,
+    tr:first-of-type th:not(.dragging) + th:focus,
+    tr:not(.sizing) + tr th:focus {
+      background-color: paleturquoise;
+    }
+    */
+
+    th:focus, 
+    col.selected, 
+    th:focus ~ td {
+      background: paleturquoise;
+      outline: none;
+    }
+
+  /* height */
+    tr.column {
+      height: var(--column-headers-height);
+    }
+      
+    col.sizing, tr.sizing td, th.dragging, 
+    table.row-header-sizing th.row {
+      background: darkturquoise;
+    }
+
+    th[scope="col"]::after {
+      content: attr(name);
+      color: currentColor;
+      display: block;
+      position: relative;
+    }
+
+  /* column sizing */
+    .sizer {
+      display: flex; 
+      position: absolute;
+      left: 0;
+      top: 0;
+      box-sizing: border-box;
+      z-index: 30;
+      background-color: transparent;
+      scroll-snap-align: none none;
+      margin: 0;
+      padding: 0;
+      /*
+      outline: thin solid lime;
+      background: lime;
+      */
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .sizer:active {
+      background: blueviolet;
+    }
+
+    .column.sizer {
+      height: 100%;
+      width: var(--sizer-width);
+      transform: translate(-50%, 0);
+      cursor: col-resize;
+      text-align: right;
+    }
+
+    .row.sizer {
+      height: var(--sizer-height);
+      width: 100%;
+      transform: translate(0, -50%);
+      cursor: row-resize;
+    }
+
+    col, th, tr {
+      min-width: var(--comfortable-width);
+      min-height: var(--comfortable-height);
+    }
+
+    tr:first-of-type th .row.sizer {
+      transform: translate(0,-25%);
+    }
+
+  /* selections overlay */
+  .overlay {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 55;
+    background: transparent;
+  }
+
+  .overlay .selection {
+    position: absolute;
+    z-index: 80;
+    display: block;
+    pointer-events: none;
+    border: medium solid dodgerblue;
+  }
+
+ /* infinite overrides */
+  table {
+    position: absolute;
+    width: 20000em;
+    background: white;
+    height: 20000em;
+  }
+
+  tbody {
+    /*position: absolute;*/
+  }
+
+  tr {
+    position: absolute;
+    width: 100%;
+  }
+
+  tr, tr th, tr td {
+    position: absolute;
+    height: var(--row-height);
+  }
+
