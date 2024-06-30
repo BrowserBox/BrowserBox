@@ -100,7 +100,7 @@ const templatedInjections = {
 };
 
 const docViewerSecret = process.env.DOCS_KEY;
-const heightAdjust = process.platform == 'darwin' ? 130 : 80;
+const HeightAdjust = process.platform == 'darwin' ? 80 : 80;
 const MAX_TRIES_TO_LOAD = 2;
 const TAB_LOAD_WAIT = 300;
 const RECONNECT_MS = 5000;
@@ -1448,7 +1448,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.latestWindowId = windowId;
       let {width,height} = connection.bounds;
       if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
-        height += heightAdjust;
+        height += HeightAdjust;
       }
       await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
       //id = await overrideNewtab(connection.zombie, sessionId, id);
@@ -1693,14 +1693,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( ! command.params.resetRequested ) {
           let {width, height} = viewport;
           if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
-            height += heightAdjust;
+            height += HeightAdjust;
           }
           Object.assign(command.params.bounds, {width, height});
           Object.assign(connection.bounds, viewport);
         } else {
           // don't send our custom flag through to the browser
           if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
-            command.params.bounds.height += heightAdjust;
+            command.params.bounds.height += HeightAdjust;
           }
           ensureMinBounds(command.params.bounds);
           Object.assign(connection.bounds, command.params.bounds);
@@ -2271,7 +2271,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
         let {width,height} = commonViewport;
         DEBUG.debugViewportDImensions && console.log({width,height,windowId});
         if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
-          height += heightAdjust;
+          height += HeightAdjust;
         }
         await send("Browser.setWindowBounds", {bounds:{width,height}, windowId})
       }

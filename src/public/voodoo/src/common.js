@@ -188,6 +188,9 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  get isCT() {
+    return globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net');
+  },
   get mainPort() {
     if ( CONFIG.isDNSFacade ) {
       return parseInt(location.hostname.split('.')[0].replace(/\D+/g, '')); 
