@@ -146,6 +146,10 @@
 
     static get firstDelay() { return 37; /* 20, 40, 250, 500;*/ }
 
+    get connected() {
+      return this.publics.state?.connected;
+    }
+
     triggerSendLoop() {
       if ( this.loopActive ) return;
       this.loopActive = true;
@@ -817,7 +821,7 @@
                       console.warn(`Some events are timing out when sent to the cloud browser.`);
                       if ( COMMON.blockAnotherReset ) return;
                       COMMON.blockAnotherReset = true;
-                      const reload = await tconfirm(`Some events are timing out when sent to the cloud browser. Try reloading the page, and if the problem persists try switching your cloud browser off then on again. Want to reload now?`); 
+                      const reload = await tconfirm(`Some events are timing out when sent to the cloud browser. Try reloading the page, and if the problem persists try switching your cloud browser off then on again. Want to reload now?`, this.connected); 
                       if ( reload ) {
                         treload(this.sessionToken);
                       }
@@ -826,7 +830,7 @@
                       console.warn(`We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again.`);
                       if ( COMMON.blockAnotherReset ) return;
                       COMMON.blockAnotherReset = true;
-                      const reload = await tconfirm(`We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again. Reload the page now?`);
+                      const reload = await tconfirm(`We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again. Reload the page now?`, this.connected);
                       if ( reload ) {
                         treload(this.sessionToken);
                       }
@@ -835,7 +839,7 @@
                       console.warn(`Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again.`);
                       if ( COMMON.blockAnotherReset ) return;
                       COMMON.blockAnotherReset = true;
-                      const reload = await tconfirm(`Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again. Want to reload the page now?`); 
+                      const reload = await tconfirm(`Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again. Want to reload the page now?`, this.connected); 
                       if ( reload ) {
                         treload(this.sessionToken);
                       }
@@ -1514,7 +1518,7 @@
     if ( DEBUG.val ) {
       console.log(`Application is in an invalid state. Going to ask to reload`);
     }
-    if ( !DEBUG.dev && await tconfirm(`Sorry, something went wrong, and we need to reload. Is this okay?`) ) {
+    if ( !DEBUG.dev && await tconfirm(`Sorry, something went wrong, and we need to reload. Is this okay?`, this.connected) ) {
       treload();
     } else if ( DEBUG.val ) {
       throw new Error(`App is in an invalid state`);
@@ -1542,18 +1546,27 @@
     latestAlert = setTimeout(() => alert(msg), ALERT_TIMEOUT);
   }
 
-  async function tconfirm(msg) {
-    let resolve;
-    const pr = new Promise(res => resolve = res);
+  async function tconfirm(msg, connected) {
+    if ( ! connected ) {
+      if ( CONFIG.isCT ) {
+        alert(`Your session expired. You can buy more time starting from $1/hour`);
+        location.href = 'https://browse.cloudtabs.net/extend'
+      } else {
+        alert(`Your session has expired or disconnected.`);
+      }
+    } else {
+      let resolve;
+      const pr = new Promise(res => resolve = res);
 
-    if ( latestAlert ) {
-      clearTimeout(latestAlert);
+      if ( latestAlert ) {
+        clearTimeout(latestAlert);
+      }
+      latestAlert = setTimeout(() => {
+        resolve(confirm(msg));
+      }, ALERT_TIMEOUT);
+
+      return pr;
     }
-    latestAlert = setTimeout(() => {
-      resolve(confirm(msg));
-    }, ALERT_TIMEOUT);
-
-    return pr;
   }
 
   async function treload(sessionToken) {
