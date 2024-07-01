@@ -1,8 +1,12 @@
-export function handleKeysCanInputMessage({keyInput:{
-      keysCanInput, 
-      isTextareaOrContenteditable, type, inputmode, 
-      value:value = ''
-    }, executionContextId}, state) {
+import {DEBUG, deviceIsMobile} from '../common.js';
+export function handleKeysCanInputMessage(message, state) {
+  const {keyInput:{
+    keysCanInput, 
+    isTextareaOrContenteditable, type, inputmode, 
+    value:value = ''
+  }, executionContextId} = message;
+  DEBUG.debugKeysCanInput && console.log(`Received keys can input message`, message);
+  DEBUG.debugKeysCanInput && deviceIsMobile() && alert(JSON.stringify(message))
   if ( state.ignoreKeysCanInputMessage ) return;
   if ( keysCanInput ) {
     state.viewState.hasNoKeys = true;

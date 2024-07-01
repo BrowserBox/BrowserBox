@@ -43,22 +43,15 @@
   // i believe this function next tick refers to how the focus out event will essentially occur on the 'next tick' after focus/activeEl status
   // is lost the function is for monitoring that keys can no longer input
   function monitorActiveElementNextTick(e = {target:document.activeElement}, {alwaysNotify = false} = {}) {
-    let focusDestination = e.relatedTarget || e.target;
+    let focusDestination =  document.activeElement;
     let condition;
     if ( !e.path ) {
       e.path = e?.composedPath?.() || getAncestors(target);
     }
     setTimeout(() => {
       condition = focusDestination.matches(KEYINPUT_ELEMENT);
-      if ( !condition && e?.path ) {
-        focusDestination = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
-        condition = !!focusDestination;
-      }
-      if ( ! condition ) {
-        condition = document.activeElement.matches(KEYINPUT_ELEMENT);
-        if ( condition ) {
-          focusDestination = document.activeElement; 
-        }
+      if ( condition ) {
+        //console.log(`KCI on active element`, focusDestination);
       }
       const changedTarget = self.focusEl != focusDestination;
       const newType = focusDestination.getAttribute('type');
@@ -71,7 +64,8 @@
       if ( alwaysNotify || 
         changedTarget || (condition != keysCanInput) || (type != newType) || (newIsTextareaOrContenteditable != isTextareaOrContenteditable) 
       ) {
-        const value = focusDestination.value || focusDestination.textContent;
+        //console.log(`Focus out keysCanInput ${keysCanInput} condition ${condition}`);
+        const value = condition ? (focusDestination.value || focusDestination.textContent) : undefined;
         keysCanInput = condition;
         type = newType;
         isTextareaOrContenteditable = newIsTextareaOrContenteditable;
