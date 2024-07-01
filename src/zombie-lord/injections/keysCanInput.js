@@ -51,7 +51,7 @@
     setTimeout(() => {
       condition = focusDestination.matches(KEYINPUT_ELEMENT);
       if ( condition ) {
-        console.log(`KCI on active element`, focusDestination);
+        //console.log(`KCI on active element`, focusDestination);
       }
       const changedTarget = self.focusEl != focusDestination;
       const newType = focusDestination.getAttribute('type');
@@ -64,7 +64,7 @@
       if ( alwaysNotify || 
         changedTarget || (condition != keysCanInput) || (type != newType) || (newIsTextareaOrContenteditable != isTextareaOrContenteditable) 
       ) {
-        console.log(`Focus out keysCanInput ${keysCanInput} condition ${condition}`);
+        //console.log(`Focus out keysCanInput ${keysCanInput} condition ${condition}`);
         const value = condition ? (focusDestination.value || focusDestination.textContent) : undefined;
         keysCanInput = condition;
         type = newType;
