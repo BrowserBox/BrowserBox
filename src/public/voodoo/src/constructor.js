@@ -2483,6 +2483,8 @@
         function canKeysInput() {
           if ( state.viewState.viewFrameEl ) return;
           setTimeout(() => {
+            DEBUG.debugKeysCanInput && console.log(`Sending canKeysInput`);
+            DEBUG.debugKeysCanInput && deviceIsMobile() && alert(`Sending canKeysInput`);
             queue.send({
               type: "canKeysInput",
               synthetic: true
