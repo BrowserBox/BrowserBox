@@ -33,7 +33,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  debugKeysCanInput: true,
+  debugKeysCanInput: false,
   blockClientFormFactorCommands: false, /*block setWindowBounds, and setDeviceMetricsOverride from client*/
   logPlugins: false,
   debugPuterAbility: false,
