@@ -184,6 +184,7 @@ const PowerSources = new Map();
 const OpenModals = new Map();
 const SetupTabs = new Map();
 const settingUp = new Map();
+const Reloaders = new Map();
 //const originalMessage = new Map();
 const DownloadPath = path.resolve(CONFIG.baseDir , 'browser-downloads');
 let GlobalFrameId = 1;
@@ -246,7 +247,6 @@ function removeSession(id) {
   1 Connect call per client would require a translation table among targetIds and sessionIds
 **/
 export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, demoBlock: demoBlock = false} = {}) {
-  const reloadAfterSetup = debounce(_reloadAfterSetup, 757);
   AD_BLOCK_ON = adBlock;
 
   LOG_FILE.Commands = new Set([
@@ -507,7 +507,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           checkSetup.delete(targetId);
           DEBUG.worldDebug && consolelog(`Our tab is loaded!`, targetInfo);
         }
-        //reloadAfterSetup(sessionId);
+        reloadAfterSetup(sessionId);
       }
     }
   });
@@ -1539,7 +1539,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       console.warn("Error setting up", e, targetId, sessionId);
     }
     settingUp.delete(targetId);
-    console.log(`Reloading after setup`);
+    console.log(`Reloading after setup`, {attached});
     reloadAfterSetup(sessionId);
   }
 
@@ -1624,16 +1624,34 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   }
 
   async function _reloadAfterSetup(sessionId) {
-    if ( waitingToReload.has(sessionId) ) return;
+    if ( waitingToReload.has(sessionId) ) {
+      console.log(`Already reloading for ${sessionId} not going to reload again`);
+      return;
+    }
     waitingToReload.add(sessionId);
     const targetId = sessions.get(sessionId);
-    if ( settingUp.has(targetId) ) {
-      await untilTrueOrTimeout(() => !settingUp.has(targetId), 15);
+    try {
+      if ( settingUp.has(targetId) ) {
+        console.log(`Waiting setting up complete ${sessionId}`);
+        await untilTrueOrTimeout(() => !settingUp.has(targetId), 15);
+      }
+      await sleep(100);
+      console.log(`Reloading ${sessionId}`);
+      await send("Page.reload", {ignoreCache:true}, sessionId);
+      await sleep(100);
+      waitingToReload.delete(sessionId)
+    } catch(e) {
+      console.error(`Error on reload after setup`);
     }
-    await sleep(100);
-    await send("Page.reload", {ignoreCache:true}, sessionId);
-    await sleep(100);
-    waitingToReload.delete(sessionId)
+  }
+
+  function reloadAfterSetup(sessionId) {
+    let reloader = Reloaders.get(sessionId);
+    if ( ! reloader ) {
+      reloader = debounce(_reloadAfterSetup, 757);
+      Reloaders.set(sessionId);
+    }
+    reloader(sessionId);
   }
 
   async function sessionSend(command) {
@@ -1871,8 +1889,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           DEBUG.val && console.log("reloading because no worlds we can access yet");
           console.log(`Reloading because no isolated worlds`, sessionId, new Error);
           // this is the reload that has the problem
-          untilTrueOrTimeout(() => !!connection.worlds.has(sessionId), 20).then(() => console.log(`worlds arrived`, sessionId)).catch(() => reloadAfterSetup(sessionId));
-          reloadAfterSetup(sessionId);
+          const SESS = sessionId;
+          untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);
         }

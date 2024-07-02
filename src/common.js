@@ -469,6 +469,7 @@ export function throttle(func, wait) {
 export function debounce(func, wait) {
   let timeout;
   return function (...args) {
+    console.log(`Debounce got func ${func} with args ${args}`);
     const later = () => {
       timeout = null; 
       func.apply(this, args);
