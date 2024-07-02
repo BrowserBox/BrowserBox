@@ -9,7 +9,7 @@ export const subviews = Subviews;
 
 //const DEFAULT_URL = 'https://google.com';
 //const isIOS = navigator.platform && navigator.platform.match("iPhone|iPod|iPad");
-const USE_INPUT_MODE = false;
+const USE_INPUT_MODE = true;
 
 // for bang
 const audio_port = Number(CONFIG.mainPort ? CONFIG.mainPort : ( location.protocol == 'https' ? 443 : 80 ) ) - 2;
@@ -45,7 +45,7 @@ export function component(state) {
   state.endTimer = endTimer;
 
   const toggleVirtualKeyboard = e => {
-    e.preventDefault();
+    e?.preventDefault?.();
     let el = viewState.shouldHaveFocus;
     if ( el ) {
       if ( el == viewState.keyinput ) {
@@ -125,13 +125,13 @@ export function component(state) {
     return location.pathname == "/bundle.html";
   }
 
-  function focusKeyinput(type = 'text', inputmode = 'text', value = '') {
+  function focusKeyinput(type, inputmode, value = '') {
     const {viewState} = state;
-    viewState.keyinput.type = type;
+    viewState.keyinput.type = type || viewState.keyinput.type || 'text';
     if ( USE_INPUT_MODE ) {
-      viewState.keyinput.inputmode = inputmode;
+      viewState.keyinput.inputmode = inputmode || 'text';
     }
-    viewState.keyinput.value = value;
+    viewState.keyinput.value = value || viewState.keyinput.value;
     if ( document.deepActiveElement != viewState.keyinput ) {
       viewState.keyinput.focus({preventScroll:true});
     }
@@ -142,6 +142,7 @@ export function component(state) {
     const {viewState} = state;
     if ( document.deepActiveElement == viewState.keyinput )
       viewState.keyinput.blur();
+    viewState.keyinput.value = '';
     viewState.shouldHaveFocus = null;
   }
 
@@ -161,6 +162,7 @@ export function component(state) {
     const {viewState} = state;
     if ( document.deepActiveElement == viewState.textarea ) 
       viewState.textarea.blur();
+    viewState.textarea.value = '';
     viewState.shouldHaveFocus = null;
   }
 }
