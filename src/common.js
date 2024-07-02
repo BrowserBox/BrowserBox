@@ -41,6 +41,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugDebounce: false,
   adjustHeightForHeadfulUI: true,
   needsDOMSnapshot: false,
   dontSkipOldMissingWorldsCheck: false,
@@ -165,7 +166,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
+  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
@@ -469,7 +470,7 @@ export function throttle(func, wait) {
 export function debounce(func, wait) {
   let timeout;
   return function (...args) {
-    console.log(`Debounce got func ${func} with args ${args}`);
+    DEBUG.debugDebounce && console.log(`Debounce got func ${func} with args ${args}`);
     const later = () => {
       timeout = null; 
       func.apply(this, args);
