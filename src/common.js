@@ -247,7 +247,7 @@ export const FLASH_FORMATS = new Set([
 ]);
 export const CONFIG = Object.freeze({
   expiryTimeFilePath,
-  homePage: 'https://duckduckgo.com',
+  homePage: 'https://bing.com',
   BINDING_NAME: 'bb',
   devapi: true,
   inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this
