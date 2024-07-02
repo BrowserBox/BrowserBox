@@ -45,7 +45,7 @@ export function component(state) {
   state.endTimer = endTimer;
 
   const toggleVirtualKeyboard = e => {
-    e.preventDefault();
+    e?.preventDefault?.();
     let el = viewState.shouldHaveFocus;
     if ( el ) {
       if ( el == viewState.keyinput ) {
@@ -125,11 +125,11 @@ export function component(state) {
     return location.pathname == "/bundle.html";
   }
 
-  function focusKeyinput(type = 'text', inputmode = 'text', value = '') {
+  function focusKeyinput(type, inputmode, value = '') {
     const {viewState} = state;
-    viewState.keyinput.type = type;
+    viewState.keyinput.type = type || viewState.keyinput.type || 'text';
     if ( USE_INPUT_MODE ) {
-      viewState.keyinput.inputmode = inputmode;
+      viewState.keyinput.inputmode = inputmode || 'text';
     }
     viewState.keyinput.value = value || viewState.keyinput.value;
     if ( document.deepActiveElement != viewState.keyinput ) {
