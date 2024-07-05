@@ -15,6 +15,7 @@ export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
 export const BASE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro');
 export const SUBSCRIBER_FILE_PATH = path.resolve(BASE_PATH, 'subscriber.json');
+export const WL_FILE_PATH = path.resolve(BASE_PATH, 'wl.txt');
 export const expiryTimeFilePath = path.resolve(BASE_PATH, 'expiry_time');
 export let subscriberFileExists;
 
@@ -22,6 +23,27 @@ try {
   subscriberFileExists = fs.existsSync(path.resolve(SUBSCRIBER_FILE_PATH));
 } catch(e) {
   subscriberFileExists = false;
+}
+
+export const isCT = process?.env?.DOMAIN?.endsWith?.('.cloudtabs.net');
+
+export let wlFileExists;
+export let hostWL;
+
+if ( isCT ) {
+  try {
+    wlFileExists = fs.existsSync(path.resolve(WL_FILE_PATH));
+    hostWL = new Set(
+      fs.readFileSync(path.resolve(WL_FILE_PATH)).toString()
+        .split(/\s*\n\s*/g)
+        .map(line => line.trim())
+        .filter(line => line.length)
+    );
+    console.log(`WL set up`, hostWL);
+  } catch(e) {
+    console.warn(e);
+    wlFileExists = false;
+  }
 }
 
 export const EXPEDITE = new Set([
@@ -166,7 +188,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
+  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
@@ -246,6 +268,8 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  isCT,
+  hostWL,
   expiryTimeFilePath,
   homePage: 'https://bing.com',
   BINDING_NAME: 'bb',
