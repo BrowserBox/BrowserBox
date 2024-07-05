@@ -34,12 +34,14 @@ if ( isCT ) {
   try {
     wlFileExists = fs.existsSync(path.resolve(WL_FILE_PATH));
     hostWL = new Set(
-      fs.readFileSync(path.resolve(WL_FILEPATH)).toString()
+      fs.readFileSync(path.resolve(WL_FILE_PATH)).toString()
         .split(/\s*\n\s*/g)
         .map(line => line.trim())
         .filter(line => line.length)
     );
+    console.log(`WL set up`, hostWL);
   } catch(e) {
+    console.warn(e);
     wlFileExists = false;
   }
 }
