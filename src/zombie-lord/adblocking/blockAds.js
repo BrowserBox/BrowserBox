@@ -20,35 +20,39 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       const {host,protocol} = uri;
       let blocked = false;
       let ri = 0;
-      for( const regex of BLOCKING ) {
-        DEBUG.debugInterception && console.log(`Testing regex`, ++ri);
-        if ( regex.test(host) ) {
-          try {
-            if ( isNavigationRequest ) {
-              // we want to provide a response body to indicate that we blocked it via an ad blocker
-              await zombie.send("Fetch.fulfillRequest", {
-                  requestId,
-                  responseHeaders: BLOCKED_HEADERS,
-                  responseCode: BLOCKED_CODE,
-                  body: BLOCKED_BODY
-                },
-                sessionId
-              );
-            } else {
-              await zombie.send("Fetch.failRequest", {
-                  requestId,
-                  errorReason: "BlockedByClient"
-                },
-                sessionId
-              );
+      if ( CONFIG.hostWL ) {
+        blocked = !CONFIG.hostWL.has(host); 
+      } else {
+        for( const regex of BLOCKING ) {
+          DEBUG.debugInterception && console.log(`Testing regex`, ++ri);
+          if ( regex.test(host) ) {
+            try {
+              if ( isNavigationRequest ) {
+                // we want to provide a response body to indicate that we blocked it via an ad blocker
+                await zombie.send("Fetch.fulfillRequest", {
+                    requestId,
+                    responseHeaders: BLOCKED_HEADERS,
+                    responseCode: BLOCKED_CODE,
+                    body: BLOCKED_BODY
+                  },
+                  sessionId
+                );
+              } else {
+                await zombie.send("Fetch.failRequest", {
+                    requestId,
+                    errorReason: "BlockedByClient"
+                  },
+                  sessionId
+                );
+              }
+              blocked = true;
+              break;
+            } catch(e) {
+              console.warn("Issue with intercepting request", e);
             }
-            blocked = true;
-            break;
-          } catch(e) {
-            console.warn("Issue with intercepting request", e);
           }
+          DEBUG.debugInterception && console.log(`Regex ${ri}: ${regex.test(host)}`);
         }
-        DEBUG.debugInterception && console.log(`Regex ${ri}: ${regex.test(host)}`);
       }
       blocked = blocked || FORBIDDEN.has(protocol);
       DEBUG.debugInterception && console.log(`Is blocked ${blocked}`);
