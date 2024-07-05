@@ -2,6 +2,7 @@ import {URL} from 'url';
 import BLOCKING from './blocking.js';
 import {DEBUG, sleep, CONFIG} from '../../common.js';
 import {BLOCKED_BODY, BLOCKED_CODE, BLOCKED_HEADERS} from './blockedResponse.js';
+import {WL_BLOCKED_BODY, WL_BLOCKED_CODE, WL_BLOCKED_HEADERS} from './WLblockedResponse.js';
 
 const {FORBIDDEN} = CONFIG;
 
@@ -19,41 +20,54 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       const uri = new URL(url);
       const {host,protocol} = uri;
       let blocked = false;
+      let wl = false;
       let ri = 0;
-      for( const regex of BLOCKING ) {
-        DEBUG.debugInterception && console.log(`Testing regex`, ++ri);
-        if ( regex.test(host) ) {
-          try {
-            if ( isNavigationRequest ) {
-              // we want to provide a response body to indicate that we blocked it via an ad blocker
-              await zombie.send("Fetch.fulfillRequest", {
-                  requestId,
-                  responseHeaders: BLOCKED_HEADERS,
-                  responseCode: BLOCKED_CODE,
-                  body: BLOCKED_BODY
-                },
-                sessionId
-              );
-            } else {
-              await zombie.send("Fetch.failRequest", {
-                  requestId,
-                  errorReason: "BlockedByClient"
-                },
-                sessionId
-              );
+      if ( CONFIG.hostWL ) {
+        const rHost = host.split('.').slice(-2).join('.');
+        blocked = !CONFIG.hostWL.has(rHost); 
+        if ( blocked ) wl = true;
+      } else {
+        for( const regex of BLOCKING ) {
+          DEBUG.debugInterception && console.log(`Testing regex`, ++ri);
+          if ( regex.test(host) ) {
+            try {
+              blocked = true;
+              break;
+            } catch(e) {
+              console.warn("Issue with intercepting request", e);
             }
-            blocked = true;
-            break;
-          } catch(e) {
-            console.warn("Issue with intercepting request", e);
           }
+          DEBUG.debugInterception && console.log(`Regex ${ri}: ${regex.test(host)}`);
         }
-        DEBUG.debugInterception && console.log(`Regex ${ri}: ${regex.test(host)}`);
       }
       blocked = blocked || FORBIDDEN.has(protocol);
+      
       DEBUG.debugInterception && console.log(`Is blocked ${blocked}`);
       //await sleep(3000);
-      if ( blocked ) return;
+      if ( blocked ) {
+        if ( isNavigationRequest ) {
+          // we want to provide a response body to indicate that we blocked it via an ad blocker
+          const responseHeaders = wl ? WL_BLOCKED_HEADERS : BLOCKED_HEADERS;
+          const responseCode = wl ? WL_BLOCKED_CODE : BLOCKED_CODE;
+          const body = wl ? WL_BLOCKED_BODY : BLOCKED_BODY;
+          await zombie.send("Fetch.fulfillRequest", {
+              requestId,
+              responseHeaders,
+              responseCode,
+              body,
+            },
+            sessionId
+          );
+        } else {
+          await zombie.send("Fetch.failRequest", {
+              requestId,
+              errorReason: "BlockedByClient"
+            },
+            sessionId
+          );
+        }
+        return;
+      }
       // responseErrorReason never appears to be set, regardless of interception stage 
       //DEBUG.debugInterception && console.log({responseErrorReason,requestId, url, resourceType});
       // we need the font check here, because otherwise fonts will fail to load
