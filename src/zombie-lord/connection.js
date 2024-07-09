@@ -500,7 +500,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           obj.checking = true;
           if ( !obj.tabSetup ) {
             obj.needsReload = true;
-            console.log(`Reloading due to no tab setup`);
+            DEBUG.debugSetupReload && console.log(`Reloading due to no tab setup`);
             reloadAfterSetup(sessionId);
           }
         } else {
@@ -527,7 +527,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     // so they will call a resize anyway, so we just anticipate here
     await setupTab({attached});
     if ( StartupTabs.has(targetId) ) {
-      console.log(`Reloading due to attached`);
+      DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
       reloadAfterSetup(sessionId);
     }
     /**
@@ -1539,7 +1539,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       console.warn("Error setting up", e, targetId, sessionId);
     }
     settingUp.delete(targetId);
-    console.log(`Reloading after setup`, {attached});
+    DEBUG.debugSetupReload && console.log(`Reloading after setup`, {attached});
     reloadAfterSetup(sessionId);
   }
 
@@ -1636,7 +1636,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         await untilTrueOrTimeout(() => !settingUp.has(targetId), 15);
       }
       await sleep(100);
-      console.log(`Reloading ${sessionId}`);
+      DEBUG.debugSetupReload && console.log(`Reloading ${sessionId}`);
       await send("Page.reload", {ignoreCache:true}, sessionId);
       await sleep(100);
       waitingToReload.delete(sessionId)
@@ -1887,7 +1887,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         if ( ! worlds ) {
           DEBUG.val && console.log("reloading because no worlds we can access yet");
-          console.log(`Reloading because no isolated worlds`, sessionId, new Error);
+          DEBUG.debugSetupReload && console.log(`Reloading because no isolated worlds`, sessionId, new Error);
           // this is the reload that has the problem
           const SESS = sessionId;
           untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
@@ -2031,7 +2031,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         //DEBUG.coords && command.name.startsWith("Emulation") && console.log('Emulation session send 2', command, {sessionId})
         const r = await send(command.name, command.params, sessionId);
         if ( needsReload ) {
-          console.log(`Reloading because command specified needsReload`);
+          DEBUG.debugSetupReload && console.log(`Reloading because command specified needsReload`);
           reloadAfterSetup(sessionId);
         }
         if ( requiresTask ) {
@@ -2268,7 +2268,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
   }
   list = [...(new Set([...list]))];
   for ( const sessionId of list ) {
-    console.log(`Reloading after user agent update`);
+    DEBUG.debugSetupReload && console.log(`Reloading after user agent update`);
     connection.reloadAfterSetup(sessionId);
   }
 }

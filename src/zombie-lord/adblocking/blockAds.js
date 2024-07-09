@@ -59,6 +59,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
           const responseHeaders = wl ? WL_BLOCKED_HEADERS : BLOCKED_HEADERS;
           const responseCode = wl ? WL_BLOCKED_CODE : BLOCKED_CODE;
           const body = wl ? WL_BLOCKED_BODY : BLOCKED_BODY;
+          DEBUG.blockDebug && wl && console.log(`WL Blocking`, uri);
           await zombie.send("Fetch.fulfillRequest", {
               requestId,
               responseHeaders,
