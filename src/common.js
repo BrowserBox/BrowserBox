@@ -39,7 +39,7 @@ if ( isCT ) {
         .map(line => line.trim())
         .filter(line => line.length)
     );
-    console.log(`WL set up`, hostWL);
+    //console.log(`WL set up`, hostWL);
   } catch(e) {
     console.warn(e);
     wlFileExists = false;
@@ -268,6 +268,8 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  useRedirectBlock: true,
+  blockedRedirectLocation: 'https://browse.cloudtabs.net/blocked',
   isCT,
   hostWL,
   expiryTimeFilePath,
