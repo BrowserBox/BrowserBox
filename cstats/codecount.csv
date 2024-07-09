@@ -1,12 +1,12 @@
-language,filename,blank,comment,code,"github.com/AlDanial/cloc v 2.00  T=0.66 s (3287.4 files/s 177855.4 lines/s)"
-JavaScript,./dist/image.20ce2990.js,146,524,7553
+language,filename,blank,comment,code,"github.com/AlDanial/cloc v 2.00  T=1.03 s (2096.9 files/s 114735.3 lines/s)"
+JavaScript,./dist/image.0cc318aa.js,147,528,7629
 JavaScript,./dist/image.bf72637d.js,1,0,3191
-JavaScript,./src/zombie-lord/connection.js,183,209,2258
-JavaScript,./src/public/voodoo/src/constructor.js,249,266,2063
+JavaScript,./src/zombie-lord/connection.js,184,202,2293
+CSV,./cstats/codecount.csv,0,0,2156
+JavaScript,./src/public/voodoo/src/constructor.js,253,271,2106
 JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/infinite/cat.bang.js,262,179,1863
 CSS,./src/public/themes/macos.css,301,20,1441
-JavaScript,./src/public/voodoo/src/eventQueue.js,92,85,1402
-CSV,./cstats/codecount.csv,0,0,1374
+JavaScript,./src/public/voodoo/src/eventQueue.js,93,85,1414
 CSS,./src/public/themes/water.css,311,5,1373
 JavaScript,./src/public/voodoo/.bang.html.snapshot/src/bang.js,177,82,1189
 HTML,./src/public/save.html,6,0,1180
@@ -14,12 +14,12 @@ JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/infinite/bang.js,158,77,
 PowerShell,./windows-scripts/BrowserBox-Installer/Install-BrowserBox-Task.ps1,203,80,975
 JavaScript,./src/public/voodoo/.bang.html.snapshot/src/vv/vanillaview.js,123,133,942
 JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/infinite/vv/vanillaview.js,124,125,931
-JavaScript,./src/ws-server.js,70,381,886
+JavaScript,./src/ws-server.js,70,381,927
 JavaScript,./src/public/translateVoodooCRDP.js,12,50,857
 Markdown,./README.md,383,0,851
 JavaScript,./src/public/voodoo/.bang.html.snapshot/src/vv/old_vv.js,114,90,824
 JavaScript,./src/services/pool/deploy/src/server.js,86,34,822
-JavaScript,./src/services/instance/parec-server/index.js,68,28,727
+JavaScript,./src/services/instance/parec-server/index.js,68,28,729
 JavaScript,./src/plugins/appminifier/injections.js,58,28,716
 CSS,./src/public/themes/blank.css,137,36,715
 CSS,./src/public/themes/almond.css,101,12,693
@@ -27,19 +27,19 @@ CSS,./src/public/themes/Chocolate.css,128,20,668
 CSS,./src/public/themes/Midnight.css,128,20,668
 JavaScript,./src/zombie-lord/controller.js,48,28,630
 JavaScript,./src/services/pool/chai/src/index.js,70,25,548
+JavaScript,./dist/image.6fc89f77.js,14,32,526
 Markdown,./src/public/voodoo/.bang.html.snapshot/README.md,220,0,519
-JavaScript,./dist/image.b7c3be77.js,14,32,510
 Markdown,./src/public/voodoo/README.md,215,0,477
 JavaScript,./src/services/instance/pptr-console-server/index.js,28,37,477
-JavaScript,./src/public/voodoo/src/components/bb-context-menu/script.js,37,11,453
+JavaScript,./src/public/voodoo/src/components/bb-context-menu/script.js,37,11,463
+JavaScript,./src/common.js,34,21,452
 Bourne Shell,./deploy-scripts/_setup_bbpro.sh,80,57,440
+JavaScript,./src/public/voodoo/src/common.js,47,32,437
 CSV,./docs/cstats/codecount.csv,0,0,429
 JavaScript,./src/public/voodoo/.bang.html.snapshot/src/vv/t.js,71,9,423
-JavaScript,./src/public/voodoo/src/common.js,47,32,419
 JavaScript,./src/services/pool/socket-puppet-service/src/server.js,55,27,417
 Markdown,./src/public/voodoo/.bang.html.snapshot/INTRO.md,195,0,411
 Markdown,./src/public/voodoo/INTRO.md,194,0,411
-JavaScript,./src/common.js,30,20,404
 JavaScript,./src/public/voodoo/src/subviews/other.js,30,5,400
 CSS,./docs/styles.css,95,7,397
 JavaScript,./src/services/instance/pptr-console-server/runner.js,54,55,381
@@ -51,8 +51,8 @@ CSV,./docs/cstats/2020-07-05/codecount.csv,0,0,339
 JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/src/app.js,80,44,327
 HTML,./src/public/voodoo/src/components/bb-modals/markup.html,0,0,322
 Bourne Shell,./deploy-scripts/global_install.sh,66,25,320
+JavaScript,./src/zombie-lord/launcher.js,24,52,318
 CSV,./docs/cstats/2020-06-22/codecount.csv,0,0,317
-JavaScript,./src/zombie-lord/launcher.js,24,52,315
 PowerShell,./windows-scripts/BrowserBox-Installer/Thunderbird.ps1,58,15,314
 Bourne Shell,./deploy-scripts/_torbb.sh,47,16,310
 TypeScript,./src/zombie-lord/custom-launcher/src/chrome-launcher.ts,58,24,293
@@ -82,8 +82,8 @@ HTML,./src/services/pool/chai/src/templates/hexview.html,20,1,190
 TypeScript,./src/zombie-lord/custom-launcher/src/chrome-finder.ts,41,27,183
 YAML,./.github/workflows/userjob.yaml,31,13,182
 JavaScript,./src/public/landing.js,1,0,178
+JavaScript,./src/public/voodoo/src/view.js,27,25,176
 JavaScript,./src/public/voodoo/src/subviews/controls.js,16,41,174
-JavaScript,./src/public/voodoo/src/view.js,27,25,174
 CSV,./docs/cstats/2020-04-28/codecount.csv,0,0,164
 YAML,./spread-channels/aws/cloud-formation-template.yaml,21,9,158
 CSS,./src/services/instance/pptr-console-server/public/style.css,34,3,157
@@ -98,33 +98,36 @@ CSS,./src/services/pool/socket-puppet-service/public/normalize.css,74,129,146
 CSS,./src/services/pool/socket-puppet-service/public/sakura-dark-solarized.css,30,11,146
 CSS,./src/services/pool/socket-puppet-service/public/sakura.css,30,10,146
 Bourne Shell,./spread-channels/azure/dosyago/az-group-deploy.sh,29,5,145
+JavaScript,./src/public/voodoo/src/components/bb-top-bar/script.js,30,5,141
 TypeScript,./src/zombie-lord/custom-launcher/test/chrome-launcher-test.ts,33,7,139
 HTML,./docs/index.html,1,3,137
 Bourne Shell,./src/services/pool/chai/scripts/explore.sh,23,24,137
 HTML,./src/services/pool/crdp-secure-proxy-server/public/index.html,20,0,134
 Bourne Shell,./src/services/pool/chai/scripts/convert.sh,40,10,128
-JavaScript,./src/public/serviceWorker.js,23,4,126
+JavaScript,./dist/serviceWorker.js,23,4,126
 JavaScript,./src/services/pool/chai/src/hexReader.mjs,15,1,124
 Bourne Again Shell,./deploy-scripts/tls,14,6,123
 Bourne Shell,./spread-channels/azure/dosyago/browserbox/notifier.sh,27,14,123
+JavaScript,./src/public/voodoo/src/handlers/targetInfo.js,9,2,123
 Markdown,./src/zombie-lord/custom-launcher/README.md,52,0,122
 Bourne Shell,./spread-channels/vultr/vendor-data.sh,20,16,120
 Bourne Shell,./deploy-scripts/wait_for_hostname.sh,15,9,118
-JavaScript,./dist/puterAbility.272a2b0d.js,9,4,117
+JavaScript,./dist/puterAbility.9382d215.js,9,4,117
 Bourne Shell,./scripts/setup_machine.sh,13,4,115
 Bourne Shell,./deploy-scripts/_bbpro.sh,28,11,114
 JavaScript,./src/zombie-lord/api/injections/protocol.js,11,8,114
 JavaScript,./src/services/pool/chai/src/hexServer.mjs,25,5,113
 HTML,./src/services/pool/socket-puppet-service/public/authentication-security-guide.html,0,0,113
-JavaScript,./src/public/sw.js,8,10,111
+JavaScript,./src/public/sw.js,8,10,112
+JavaScript,./dist/sw.js,8,10,111
+JavaScript,./src/zombie-lord/adblocking/blockAds.js,7,8,110
 YAML,./.github/workflows/torrun.yaml,21,0,108
-JavaScript,./src/public/voodoo/src/handlers/targetInfo.js,9,2,108
 Markdown,./src/zombie-lord/custom-launcher/docs/chrome-flags-for-tools.md,39,0,108
 JavaScript,./dist/image.583c2a96.js,9,5,107
 JavaScript,./src/zombie-lord/injections/favicon.js,15,14,107
+JavaScript,./src/zombie-lord/injections/keysCanInput.js,10,15,107
 Markdown,./src/public/voodoo/.bang.html.snapshot/src/vv/README.md,61,4,106
 Markdown,./src/zombie-lord/custom-launcher/changelog.md,19,0,104
-JavaScript,./src/public/voodoo/src/components/bb-top-bar/script.js,23,5,103
 JavaScript,./src/public/voodoo/src/subviews/sidebarMenu.js,9,7,102
 JavaScript,./src/public/voodoo/src/handlers/demo.js,6,0,101
 Markdown,./legal/3rd-party/azure-qst/UNDERSTANDING.md,17,0,99
@@ -135,12 +138,12 @@ JavaScript,./src/public/plugins/projector/scripts/createListener.js,4,9,97
 Bourne Shell,./src/services/instance/parec-server/parec-server.sh,25,4,97
 HTML,./src/services/pool/chai/public/convert.html,9,0,97
 JavaScript,./src/public/plugins/demo/translateAppminifierCRDP.js,13,1,96
+CSS,./src/public/voodoo/src/components/bb-top-bar/style.css,17,1,96
 Markdown,./src/services/pool/socket-puppet-service/public/LICENSE.md,37,0,96
 Markdown,./src/services/pool/crdp-secure-proxy-server/LICENSES/PolyForm-Noncommercial-1.0.0.md,36,0,95
 XML,./src/zombie-lord/fonts.conf,16,36,95
 JavaScript,./src/public/voodoo/src/subviews/pluginsMenu.js,2,1,94
 JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-cells/script.js,10,0,91
-JavaScript,./src/zombie-lord/adblocking/blockAds.js,4,8,90
 CSS,./src/public/themes/main.css,18,19,87
 YAML,./.github/workflows/ci.yaml,18,13,83
 JavaScript,./src/public/plugins/appminifier/page/listen.js,11,3,83
@@ -148,7 +151,6 @@ HTML,./src/public/voodoo/src/components/bb-view/markup.html,0,0,83
 Jinja Template,./spread-channels/gcp-wip/dm/browserbox-template.jinja,8,0,82
 JavaScript,./src/public/voodoo/src/subviews/omniBox.js,6,2,82
 TypeScript,./src/zombie-lord/custom-launcher/src/utils.ts,18,6,82
-JavaScript,./src/zombie-lord/injections/keysCanInput.js,10,11,82
 Bourne Shell,./scripts/install_vfpro.sh,12,0,81
 Bourne Again Shell,./spread-channels/linode-akamai/stack-scripts/StackScript,10,12,80
 JavaScript,./src/public/resize_helper.js,7,5,80
@@ -157,9 +159,9 @@ JavaScript,./src/public/voodoo/src/plugins/puterAbility.js,9,5,79
 JavaScript,./src/public/voodoo/.bang.html.snapshot/src/vv/types.js,29,7,78
 Bourne Shell,./src/zombie-lord/dlchrome.sh,9,10,78
 JavaScript,./src/zombie-lord/newtab/overrideNewtab.js,9,9,77
-CSS,./src/public/voodoo/src/components/bb-top-bar/style.css,14,1,75
 JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/src/helpers.js,21,26,75
 JavaScript,./src/zombie-lord/demoblocking/blockSites.js,8,6,75
+HTML,./src/public/voodoo/src/components/bb-top-bar/markup.html,0,0,74
 Text,./report-bugs/solved/metabug/metabug.txt,6,0,73
 JavaScript,./src/public/voodoo/src/subviews/contextMenu.js,4,3,73
 HCL,./spread-channels/gcp-wip/terraform/browserbox.tf,18,3,72
@@ -169,7 +171,6 @@ Markdown,./CONTRIBUTING.md,23,0,69
 Text,./legal/3rd-party/imgbot/terms.txt,35,0,69
 HTML,./src/public/voodoo/src/components/bb-ctrl/markup.html,0,2,69
 TypeScript,./src/zombie-lord/custom-launcher/dist/chrome-launcher.d.ts,0,0,69
-JavaScript,./dist/render_static.js,11,9,68
 JavaScript,./src/plugins/projector/injections.js,11,2,68
 JavaScript,./src/public/render_static.js,11,9,68
 JavaScript,./src/zombie-lord/injections/selectDropdownEvents.js,13,17,68
@@ -191,14 +192,13 @@ CSS,./src/public/voodoo/.bang.html.snapshot/docs/components/style.css,12,4,58
 JavaScript,./src/public/voodoo/src/api.js,13,10,58
 Markdown,./docs/CODE_OF_CONDUCT.md,19,0,57
 JavaScript,./docs/script.js,15,1,57
-HTML,./src/public/voodoo/src/components/bb-top-bar/markup.html,0,0,57
 Markdown,./src/services/pool/chai/README.md,36,0,57
 HTML,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-table/markup.html,1,0,55
 JavaScript,./src/zombie-lord/injections/pageContext/webstore.js,1,1,55
 JavaScript,./src/go.js,9,0,54
 JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/components/warm-greeter/script.js,22,21,54
 JavaScript,./src/spdy-server.js,17,0,54
-JavaScript,./dist/image.runtime.1eddba6d.js,14,0,53
+JavaScript,./dist/image.runtime.3f9341f2.js,14,0,53
 Bourne Shell,./deploy-scripts/copy_install.sh,30,1,51
 JavaScript,./src/public/plugins/projector/translateProjectorCRDP.js,4,1,51
 Dockerfile,./Dockerfile,15,15,50
@@ -264,6 +264,7 @@ JavaScript,./src/zombie-lord/navigator.js,7,3,36
 Bourne Shell,./scripts/install_webp.sh,8,2,35
 PowerShell,./scripts/postinstall.ps1,7,15,35
 CSS,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-circle-drawer/style.css,5,0,35
+JavaScript,./src/public/voodoo/src/handlers/keysCanInput.js,1,0,35
 Bourne Shell,./scripts/share-test.sh,11,15,34
 JavaScript,./src/public/register_sw.js,5,3,34
 JavaScript,./src/services/instance/pptr-console-server/public/load.js,7,0,34
@@ -274,6 +275,7 @@ HTML,./src/public/assets/SPL.html,1,0,33
 JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-temp-converter/script.js,6,0,33
 JavaScript,./src/public/voodoo/src/handlers/favicon.js,10,1,33
 Bourne Shell,./src/services/pool/chai/scripts/get_hostname.sh,10,6,33
+JavaScript,./src/zombie-lord/adblocking/WLblockedResponse.js,4,1,33
 TypeScript,./src/zombie-lord/custom-launcher/dist/utils.d.ts,0,0,33
 JavaScript,./src/zombie-lord/injections/templated/flashEmu.js,3,0,33
 PowerShell,./windows-scripts/BrowserBox-Installer/Start-BrowserBox-In-Windows-Server.ps1,4,3,32
@@ -288,6 +290,7 @@ JavaScript,./src/public/scriptSPL.js,2,1,30
 JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-multi-search/script.js,11,1,30
 HTML,./src/public/voodoo/.bang.html.snapshot/docs/index.html,1,0,30
 Bourne Shell,./src/services/pool/chai/scripts/build_src.sh,1,6,30
+JavaScript,./src/zombie-lord/adblocking/WLblockedResponse-redir.js,4,1,30
 Bourne Shell,./scripts/pm2-run.sh,10,0,29
 Bourne Shell,./spread-channels/azure/dosyago/validate.sh,8,0,29
 JavaScript,./src/public/plugins/appminifier/page/listeners/scroll.js,2,0,29
@@ -305,8 +308,8 @@ Markdown,./src/public/voodoo/.bang.html.snapshot/src/vv/docs/coc.md,18,0,28
 SVG,./src/public/voodoo/assets/icons/square-dashed-kanban.svg,0,1,28
 SVG,./src/public/voodoo/assets/icons/text-select.svg,0,1,28
 CSS,./src/public/voodoo/src/components/bb-bw-spinner/style.css,5,0,28
-JavaScript,./src/public/voodoo/src/handlers/keysCanInput.js,1,0,28
 Markdown,./src/services/instance/parec-server/README.md,14,0,28
+JavaScript,./src/services/instance/parec-server/public/request_login.js,2,0,28
 JavaScript,./src/zombie-lord/custom-launcher/manual-chrome-launcher.js,9,15,28
 Markdown,./translated-intros/INTRO-UR.md,21,0,28
 JavaScript,./config/roamhq-wrtc-lib-binding.js,3,0,27
@@ -319,6 +322,7 @@ Bourne Shell,./src/services/pool/chai/public/uploads/clean.sh,16,17,27
 Markdown,./translated-intros/INTRO-HE.md,17,0,27
 Markdown,./translated-intros/INTRO-HI.md,19,0,27
 Markdown,./translated-intros/INTRO-RU.md,20,0,27
+Markdown,./LICENSE.md,21,0,26
 Bourne Shell,./deploy-scripts/docker_push.sh,7,5,26
 JavaScript,./src/public/plugins/projector/scripts/treeUpdate.js,15,136,26
 HTML,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-infin/markup.html,0,0,26
@@ -802,6 +806,7 @@ HTML,./src/public/voodoo/src/components/bb-settings-button/markup.html,0,0,18
 JavaScript,./src/public/voodoo/src/subviews/pluginsMenuButton.js,5,2,18
 JavaScript,./src/public/voodoo/src/subviews/viewportResetButton.js,5,0,18
 Dockerfile,./build-scripts/roamhq-wrtc/Dockerfile,9,9,17
+Bourne Shell,./deploy-scripts/_stop_bbpro.sh,3,0,17
 Bourne Shell,./deploy-scripts/renew_tls.sh,4,1,17
 Markdown,./docs/GIT_HISTORY_NOTE.md,17,0,17
 PowerShell,./scripts/run-test.ps1,3,8,17
@@ -1082,7 +1087,6 @@ SVG,./src/public/voodoo/assets/icons/wine.svg,0,1,17
 SVG,./src/public/voodoo/assets/icons/wrap-text.svg,0,1,17
 SVG,./src/public/voodoo/assets/icons/zap-off.svg,0,1,17
 SVG,./src/public/voodoo/assets/icons/zoom-in.svg,0,1,17
-JavaScript,./src/services/instance/parec-server/public/request_login.js,2,0,17
 PowerShell,./src/services/instance/parec-server/scripts/set_prio.ps1,4,1,17
 JavaScript,./src/zombie-lord/custom-launcher/dist/flags.js,0,20,17
 JavaScript,./src/public/prod/ask-before-unload.js,3,0,16
@@ -1865,11 +1869,11 @@ SVG,./src/public/voodoo/assets/icons/unlink-2.svg,0,1,14
 SVG,./src/public/voodoo/assets/icons/volume.svg,0,1,14
 SVG,./src/public/voodoo/assets/icons/wrench.svg,0,1,14
 SVG,./src/public/voodoo/assets/icons/zap.svg,0,1,14
+JavaScript,./src/services/instance/parec-server/public/request_audio.js,1,0,14
 TypeScript,./src/zombie-lord/custom-launcher/src/random-port.ts,2,8,14
 Bourne Again Shell,./src/zombie-lord/font.deps2,2,0,14
 JavaScript,./src/zombie-lord/injections/templated/docDownloadPlugin.js,1,0,14
 JavaScript,./src/zombie-lord/newtab/newtabResponse.js,3,0,14
-Bourne Shell,./deploy-scripts/_stop_bbpro.sh,3,0,13
 Bourne Shell,./scripts/stop-test.sh,3,0,13
 Bourne Shell,./scripts/test_audio.sh,10,0,13
 JavaScript,./src/public/.eslintrc.cjs,0,0,13
@@ -1882,7 +1886,6 @@ JavaScript,./src/zombie-lord/custom-launcher/dist/random-port.mjs,0,8,13
 Bourne Shell,./src/zombie-lord/custom-launcher/test/check-formatting.sh,2,0,13
 JavaScript,./src/zombie-lord/injections/.eslintrc.cjs,0,0,13
 Text,./cstats/codestats.txt,5,0,12
-XML,./dist/sitemap.xml,2,1,12
 Text,./docs/cstats/2020-04-28/codestats.txt,5,0,12
 Text,./docs/cstats/2020-06-22/codestats.txt,5,0,12
 Text,./docs/cstats/2020-07-05/codestats.txt,5,0,12
@@ -1902,6 +1905,7 @@ Text,./src/services/instance/pptr-console-server/websocket_chat_app_homework/sta
 Text,./src/services/instance/pptr-console-server/websocket_chat_app_homework/stats/codestats.txt,5,0,12
 Bourne Again Shell,./deploy-scripts/auto_cert_renew,4,1,11
 Bourne Again Shell,./deploy-scripts/cp_certs,3,0,11
+JavaScript,./dist/prod/setup-service-worker.js,2,0,11
 JavaScript,./functionality-demos/pm2-self-delete/no-pm2.cjs,0,1,11
 JavaScript,./functionality-demos/pm2-self-delete/no-pm2.mjs,4,0,11
 Bourne Shell,./scripts/dstart.sh,3,0,11
@@ -1911,7 +1915,6 @@ Bourne Shell,./scripts/only_build.sh,4,0,11
 Bourne Shell,./spread-channels/azure/dosyago/prettify_json.sh,5,3,11
 JavaScript,./src/public/plugins/demo/stripe.js,0,0,11
 HTML,./src/public/plugins/projector/index.html,1,0,11
-JavaScript,./src/public/prod/setup-service-worker.js,2,0,11
 JavaScript,./src/public/splash_switch.js,2,2,11
 Bourne Shell,./src/public/voodoo/.bang.html.snapshot/scripts/cpfiles.sh,3,0,11
 JavaScript,./src/public/voodoo/src/components/bb-bar/script.js,1,0,11
@@ -1999,7 +2002,6 @@ HTML,./src/services/pool/chai/archives/index.html,0,0,6
 Bourne Shell,./src/services/pool/chai/scripts/install_deps.sh,3,1,6
 YAML,./src/zombie-lord/custom-launcher/.clang-format,0,0,6
 JavaScript,./src/zombie-lord/custom-launcher/dist/index.js,0,1,6
-Text,./dist/security.txt,2,0,5
 Bourne Shell,./functionality-demos/pm2-self-delete/build.sh,3,0,5
 Markdown,./report-bugs/thoughts/general-strategy.md,6,0,5
 Bourne Shell,./scripts/getstats.sh,2,0,5
@@ -2035,6 +2037,7 @@ TypeScript,./src/zombie-lord/custom-launcher/dist/chrome-finder.d.ts,0,6,4
 PowerShell,./windows-scripts/BrowserBox-Installer/Stop-BrowserBox.ps1,0,0,4
 Markdown,./legal/self-hosted/README.md,3,0,3
 Bourne Shell,./scripts/devtest.sh,2,0,3
+Bourne Shell,./scripts/for_debug.sh,2,1,3
 Bourne Shell,./scripts/installstats.sh,0,0,3
 Bourne Shell,./scripts/kill_mine.sh,2,0,3
 Bourne Shell,./scripts/logs_demo.sh,1,0,3
@@ -2046,7 +2049,6 @@ JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-frame/scri
 HTML,./src/public/voodoo/src/components/bb-bw-spinner/markup.html,1,0,3
 JavaScript,./src/public/voodoo/src/handlers/scrollNotify.js,0,0,3
 JavaScript,./src/public/voodoo/src/handlers/takeShot.js,2,0,3
-JavaScript,./src/services/instance/parec-server/public/request_audio.js,1,0,3
 Bourne Shell,./src/services/instance/parec-server/scripts/clean.sh,2,0,3
 JavaScript,./src/services/instance/pptr-console-server/hack.js,0,6,3
 Bourne Shell,./src/services/instance/pptr-console-server/pptr-console-server.sh,2,0,3
@@ -2107,7 +2109,7 @@ CSS,./dist/image.023d44f6.css,0,0,1
 CSS,./dist/image.7b6aa3bb.css,0,0,1
 HTML,./dist/image.html,0,0,1
 JSON,./dist/manifest.webmanifest,0,0,1
-CSS,./dist/style.04f2f96a.css,0,0,1
+CSS,./dist/style.15e83c48.css,0,0,1
 Markdown,./docs/CONTRIBUTING.md,1,0,1
 Text,./docs/LAST_RELEASE.txt,0,0,1
 Text,./docs/RELEASE_TIME.txt,0,0,1
@@ -2153,4 +2155,4 @@ TypeScript,./src/zombie-lord/custom-launcher/dist/random-port.d.ts,0,3,1
 TypeScript,./src/zombie-lord/custom-launcher/src/index.ts,0,0,1
 HTML,./src/zombie-lord/injections/pageContext/test.html,0,0,1
 Bourne Shell,./src/zombie-lord/record-audio.sh,1,0,1
-SUM,,10127,6999,99410
+SUM,,10175,7009,100786
