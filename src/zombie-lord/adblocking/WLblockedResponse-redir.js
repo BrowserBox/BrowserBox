@@ -1,19 +1,15 @@
-export const WL_BLOCKED_CODE = 200;
+import {CONFIG} from '../../common.js';
+export const WL_BLOCKED_CODE = 302;
 // can add custom reason
 export const WL_BLOCKED_BODY = Buffer.from(`
   <!DOCTYPE html>
   <meta name=viewport content=width=device-width,initial-scale=1>
   <style>:root { font-family: Arial; }</style>
   <h1>Request blocked in free session</h1>
-  <p>This navigation prevented by your CloudTabs free session. Purchase time or subscribe to browse the unrestricted internet.</p>
-  <details>
-    <summary>How to unblock?</summary>
-    <p>
-      Click the button at top named "Add 1 Hour for $1", or subscribe by signing up and then going to "My Plan", in order to browse everything without restriction.
-    <p>
-  </details>
+  <p>Redirecting...</p>
 `).toString("base64");
 export const WL_BLOCKED_HEADERS = [
+  {name: "Location", value: CONFIG.blockedRedirectLocation},
   {name: "X-Powered-By", value: "DOSAYGO-BrowserBox"},
   {name: "X-Blocked-Internally", value: "Custom ad blocking"},
   {name: "Accept-Ranges", value: "bytes"},
@@ -23,7 +19,8 @@ export const WL_BLOCKED_HEADERS = [
 ];
 
 const WL_BLOCKED_RESPONSE = `
-HTTP/1.1 ${WL_BLOCKED_CODE} OK
+HTTP/1.1 ${WL_BLOCKED_CODE} Found
+Location: ${CONFIG.blockedRedirectLocation}
 X-Powered-By: DOSAYGO-BrowserBox
 X-Blocked-Internally: Custom blocking
 Accept-Ranges: bytes

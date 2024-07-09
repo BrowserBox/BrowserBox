@@ -2,7 +2,16 @@ import {URL} from 'url';
 import BLOCKING from './blocking.js';
 import {DEBUG, sleep, CONFIG} from '../../common.js';
 import {BLOCKED_BODY, BLOCKED_CODE, BLOCKED_HEADERS} from './blockedResponse.js';
-import {WL_BLOCKED_BODY, WL_BLOCKED_CODE, WL_BLOCKED_HEADERS} from './WLblockedResponse.js';
+import * as WLBlock from './WLblockedResponse.js';
+import * as WLBlockRedir from './WLblockedResponse-redir.js';
+
+let WL_BLOCKED_BODY, WL_BLOCKED_CODE, WL_BLOCKED_HEADERS;
+
+if ( CONFIG.useRedirectBlock ) {
+  ({WL_BLOCKED_BODY, WL_BLOCKED_CODE, WL_BLOCKED_HEADERS} = WLBlockRedir);
+} else {
+  ({WL_BLOCKED_BODY, WL_BLOCKED_CODE, WL_BLOCKED_HEADERS} = WLBlock);
+}
 
 const {FORBIDDEN} = CONFIG;
 
