@@ -268,6 +268,8 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  useRedirectBlock: true,
+  blockedRedirectLocation: 'https://browse.cloudtabs.net/blocked',
   isCT,
   hostWL,
   expiryTimeFilePath,
