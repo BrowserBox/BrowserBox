@@ -1625,7 +1625,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   async function _reloadAfterSetup(sessionId) {
     if ( waitingToReload.has(sessionId) ) {
-      console.log(`Already reloading for ${sessionId} not going to reload again`);
+      DEBUG.debugSetupReload && console.log(`Already reloading for ${sessionId} not going to reload again`);
       return;
     }
     waitingToReload.add(sessionId);
