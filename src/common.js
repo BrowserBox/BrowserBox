@@ -39,7 +39,7 @@ if ( isCT ) {
         .map(line => line.trim())
         .filter(line => line.length)
     );
-    console.log(`WL set up`, hostWL);
+    //console.log(`WL set up`, hostWL);
   } catch(e) {
     console.warn(e);
     wlFileExists = false;
