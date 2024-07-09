@@ -9,6 +9,7 @@ const patternsToCache = [
 ];
 const excludedPaths = new Set([
   "/voodoo/src/common.js",
+  "/expiry_time",
   "/integrity",
   "/file",
   "/local_cookie.js", 
