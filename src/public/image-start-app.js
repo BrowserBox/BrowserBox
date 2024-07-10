@@ -3,7 +3,7 @@ import getAPI from './getAPI.js';
 import {default as image_translator} from './translateVoodooCRDP.js';
 
 // main start
-const LOAD_WAIT = 10000; // 10 seconds for load
+const LOAD_WAIT = 1000; // 10 seconds for load
 globalThis._restartApp = start_app;
 globalThis._sessionToken = () => {
   let sessionToken = location.hash && location.hash.slice(1);
@@ -24,9 +24,10 @@ async function start_app() {
     postInstallTasks: [() => self._voodoo_resizeAndReport]
   });
   self.voodoo = voodoo;
+  console.log(voodoo);
   try {
     await Promise.race([
-      self.voodoo.api.untilLoaded(),
+      voodoo.api.untilLoaded(),
       new Promise((_, rej) => setTimeout(rej, LOAD_WAIT)),
     ]);
   } catch(e) {
