@@ -194,6 +194,9 @@
           isSubscriber, 
           browserExpiresAt,
 
+          // setup
+          untilLoaded,
+
           // internet
           Connectivity,
 
@@ -1410,6 +1413,7 @@
       }
 
       const api = {
+        untilLoaded, 
         back: () => 1,
         forward: () => 1,
         reload: () => 1, 
