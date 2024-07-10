@@ -3,7 +3,7 @@ import getAPI from './getAPI.js';
 import {default as image_translator} from './translateVoodooCRDP.js';
 
 // main start
-const LOAD_WAIT = 1000; // 10 seconds for load
+const LOAD_WAIT = 10000; // 10 seconds for load
 globalThis._restartApp = start_app;
 globalThis._sessionToken = () => {
   let sessionToken = location.hash && location.hash.slice(1);
