@@ -534,6 +534,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         targetInfo = tabs.get(targetId);
         if ( !targetInfo || targetInfo?.url == '' ) {
           DEBUG.attachDebug && consolelog(`URL is still empty will not set up`);
+          send("Target.closeTarget", {targetId});
+          targets.delete(targetId);
           return;
         } else {
           DEBUG.attachDebug && consolelog(`Target info now looks okay`, targetInfo);
