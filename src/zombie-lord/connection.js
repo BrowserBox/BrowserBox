@@ -530,12 +530,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           await sleep(500);
           DEBUG.attachDebug && console.log(`Continuing`);
         }
-        await untilTrueOrTimeout(() => tabs.get(targetId)?.url !== '', 20);
+        await untilTrueOrTimeout(() => tabs.get(targetId)?.url !== '', 3).catch(() => consolelog(`No correct target info`));
         targetInfo = tabs.get(targetId);
         if ( !targetInfo || targetInfo?.url == '' ) {
           DEBUG.attachDebug && consolelog(`URL is still empty will not set up`);
-          send("Target.closeTarget", {targetId});
-          targets.delete(targetId);
+          if ( CONFIG.isCT && CONFIG.hostWL ) {
+            DEBUG.attachDebug && consolelog(`As this was likely due to WL blocking interacting with Network failure we will now close it`);
+            send("Target.closeTarget", {targetId});
+            targets.delete(targetId);
+          }
           return;
         } else {
           DEBUG.attachDebug && consolelog(`Target info now looks okay`, targetInfo);
@@ -727,7 +730,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.debugFileDownload && console.log(`File ${downloadFileName} has downloaded`);
 
       DEBUG.debugFileDownload && console.info({guidFile,originalFile});
-      await untilTrueOrTimeout(() => fs.existsSync(guidFile) || fs.existsSync(originalFile), 6); // wait 6 seconds for file to resolve
+      await untilTrueOrTimeout(() => fs.existsSync(guidFile) || fs.existsSync(originalFile), 6).catch(() => console.error(`File did not resolve`)); // wait 6 seconds for file to resolve
       
       // if the file is named with a guid copy it to original name
       if ( fs.existsSync(guidFile) ) {
