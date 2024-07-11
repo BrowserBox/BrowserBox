@@ -460,7 +460,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         connection.doShot();
       }
     } else {
-      DEBUG.val > DEBUG.med && console.log("Changed event for removed target", targetId, targetInfo);
+      console.log("Changed event for removed / not present target", targetId, targetInfo);
+      tabs.set(targetId,targetInfo);
     }
     DEBUG.val && consolelog('change 2', targetInfo);
     if ( checkSetup.has(targetId) && targetInfo.url !== 'about:blank' ) {
@@ -1890,7 +1891,19 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           DEBUG.debugSetupReload && console.log(`Reloading because no isolated worlds`, sessionId, new Error);
           // this is the reload that has the problem
           const SESS = sessionId;
-          untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+          const targetInfo = tabs.get(targetId);
+          if ( ! targetInfo ) {
+            DEBUG.debugSetupReload && console.log(`No targetinfo found for reload target. Weird`, {targetId, sessionId}, new Error);
+          } else {
+            DEBUG.debugSetupReload && console.log(`Reload target targetInfo: `, targetInfo);
+          }
+          if ( ! targetInfo || targetInfo.url == '' ) {
+            console.log(`Cannot reload now because target has no url`, {targetInfo});
+            console.log(`Will wait for target to have url`);
+            untilTrueOrTimeout(() => !!(tabs.get(targetId)?.url !== ''), 20).then(() => { console.log(`worlds arrived`, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+          } else {
+            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+          }
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);
         }
