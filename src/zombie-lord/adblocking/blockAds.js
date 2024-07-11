@@ -27,12 +27,12 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       const isNavigationRequest = resourceType == "Document";
       const isFont = resourceType == "Font";
       const uri = new URL(url);
-      const {host,protocol} = uri;
+      const {hostname, host,protocol} = uri;
       let blocked = false;
       let wl = false;
       let ri = 0;
       if ( CONFIG.hostWL ) {
-        const rHost = host.split('.').slice(-2).join('.');
+        const rHost = hostname.split('.').slice(-2).join('.');
         blocked = !CONFIG.hostWL.has(rHost); 
         if ( blocked ) wl = true;
       } else {
@@ -59,6 +59,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
           const responseHeaders = wl ? WL_BLOCKED_HEADERS : BLOCKED_HEADERS;
           const responseCode = wl ? WL_BLOCKED_CODE : BLOCKED_CODE;
           const body = wl ? WL_BLOCKED_BODY : BLOCKED_BODY;
+          DEBUG.blockDebug && wl && console.log(`WL Blocking`, uri);
           await zombie.send("Fetch.fulfillRequest", {
               requestId,
               responseHeaders,
