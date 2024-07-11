@@ -1675,7 +1675,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   function reloadAfterSetup(sessionId) {
     let reloader = Reloaders.get(sessionId);
     if ( ! reloader ) {
-      reloader = debounce(_reloadAfterSetup, 757);
+      reloader = debounce(_reloadAfterSetup, 631);
       Reloaders.set(sessionId);
     }
     reloader(sessionId);
