@@ -27,12 +27,12 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       const isNavigationRequest = resourceType == "Document";
       const isFont = resourceType == "Font";
       const uri = new URL(url);
-      const {host,protocol} = uri;
+      const {hostname, host,protocol} = uri;
       let blocked = false;
       let wl = false;
       let ri = 0;
       if ( CONFIG.hostWL ) {
-        const rHost = host.split('.').slice(-2).join('.');
+        const rHost = hostname.split('.').slice(-2).join('.');
         blocked = !CONFIG.hostWL.has(rHost); 
         if ( blocked ) wl = true;
       } else {
