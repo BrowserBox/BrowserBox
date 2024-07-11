@@ -20,7 +20,7 @@ export async function blockAds(/*zombie, sessionId*/) {
 }
 
 export async function onInterceptRequest({sessionId, message}, zombie) {
-  DEBUG.debugInterception && console.log(`Request paused`);
+  DEBUG.debugInterception && console.log(`Request paused`, message, sessionId);
   try {
     if ( message.method == "Fetch.requestPaused" ) {
       const {request:{url}, requestId, resourceType, responseErrorReason} = message.params;
