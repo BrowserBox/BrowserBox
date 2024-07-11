@@ -1,7 +1,7 @@
 export const SERVICE_COUNT = 4; // pptr(menu), chat, audio, devtools
 export const FRAME_CONTROL = false;
 
-export const VERSION = '9.4';
+export const VERSION = '9.5';
 export const SafariPlatform = /^((?!chrome|android).)*safari/i;
 const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 const FirefoxPlatform = /firefox/i;
@@ -33,6 +33,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  debugSW: false,
   debugKeysCanInput: false,
   get debugKCI() {
     return this.debugKeysCanInput;
@@ -206,7 +207,7 @@ export const CONFIG = Object.freeze({
     return !!location.hostname.split('.')[0].match(FACADE_HOST_REGEX);
   },
   ensureDevToolsOpensInNewTab: false,
-  logUpdatedContent: true,
+  logUpdatedContent: false,
   ensureFrameOnResize: true,
   openServicesInCloudTabs: globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net') ? true : OPEN_SERVICES_IN_BROWSER,
   encforceKeyOrdering: true,

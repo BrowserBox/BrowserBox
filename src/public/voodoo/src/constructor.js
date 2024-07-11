@@ -107,6 +107,7 @@
     const IMMEDIATE = 0;
     const SHORT_DELAY = 20;
     const LONG_DELAY = 300;
+    const NEW_TAB_ACTIVATE_DELAY = 400;
     const VERY_LONG_DELAY = 60000;
     const EVENT_THROTTLE_MS = 60;  /* 20, 40, 80 */
 
@@ -1158,13 +1159,13 @@
               if ( tab ) {
                 if ( DEBUG.activateNewTab ) {
                   DEBUG.val && console.log('Setting activate to occur after delay for new tab');
-                  setTimeout(activate, LONG_DELAY);
+                  setTimeout(activate, NEW_TAB_ACTIVATE_DELAY);
                 }
               } else {
                 DEBUG.activateDebug && console.warn('created tab not found in our list', meta.created);
                 if ( DEBUG.activateNewTab ) {
                   DEBUG.activateDebug && console.log('Pushing activate for new tab');
-                  state.updateTabsTasks.push(activate);
+                  state.updateTabsTasks.push(() => setTimeout(activate, NEW_TAB_ACTIVATE_DELAY));
                 }
                 updateTabs();
               }
@@ -1206,7 +1207,7 @@
             if ( tab ) {
               if ( DEBUG.activateNewTab ) {
                 (DEBUG.val || DEBUG.activateDebug) && console.log('Refered -> Activate now');
-                activate();
+                setTimeout(activate, NEW_TAB_ACTIVATE_DELAY);
               }
             } else {
               DEBUG.activateDebug && console.warn(
@@ -1215,7 +1216,7 @@
               );
               if ( DEBUG.activateNewTab ) {
                 DEBUG.activateDebug && console.log('Refered -> Pushing activate for new tab');
-                state.updateTabsTasks.push(activate);
+                state.updateTabsTasks.push(() => setTimeout(activate, NEW_TAB_ACTIVATE_DELAY));
               }
               updateTabs();
             }
@@ -2235,6 +2236,11 @@
               return;
             } else {
               tab = ourtab;
+            }
+
+            if ( tab.url == '' ) {
+              DEBUG.val && console.log(`Refusing to activate tab with empty url`, tab);
+              return;
             }
 
             DEBUG.val && console.log('Activating', tab);

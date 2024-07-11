@@ -63,6 +63,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugInfoChanged: false,
+  attachDebug: false,
   debugSetupReload: false,
   blockDebug: false,
   debugDebounce: false,
@@ -442,13 +444,13 @@ export async function sleep(ms, Aborter) {
 }
 
 export async function untilTrueOrTimeout(pred, seconds) {
-  return untilTrue(pred, 500, 2*seconds, reject => reject(`Checking predicate (${pred}) timed out after ${seconds} seconds.`));
+  return untilTrue(pred, 500, 2*seconds, () => new Error(`Checking predicate (${pred}) timed out after ${seconds} seconds.`));
 }
 
-export async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WAITS) {
+export async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WAITS, getRejectionReason) {
   let waitCount = 0;
-  let resolve;
-  const pr = new Promise(res => resolve = res);
+  let resolve, reject;
+  const pr = new Promise((res, rej) => (resolve = res, reject = rej));
   setTimeout(checkPred, 0);
   return pr;
 
@@ -460,6 +462,10 @@ export async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WA
       waitCount++;
       if ( waitCount < maxWaits ) {
         setTimeout(checkPred, waitOverride);
+      } else {
+        if ( getRejectionReason ) {
+          return reject(getRejectionReason());
+        }
       }
     }
   }

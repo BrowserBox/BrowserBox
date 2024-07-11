@@ -20,14 +20,15 @@ export async function blockAds(/*zombie, sessionId*/) {
 }
 
 export async function onInterceptRequest({sessionId, message}, zombie) {
-  DEBUG.debugInterception && console.log(`Request paused`);
+  DEBUG.debugInterception && console.log(`Request paused`, message?.params?.request?.url, sessionId);
+  
   try {
     if ( message.method == "Fetch.requestPaused" ) {
       const {request:{url}, requestId, resourceType, responseErrorReason} = message.params;
       const isNavigationRequest = resourceType == "Document";
       const isFont = resourceType == "Font";
       const uri = new URL(url);
-      const {hostname, host,protocol} = uri;
+      const {hostname, host, protocol} = uri;
       let blocked = false;
       let wl = false;
       let ri = 0;
@@ -60,7 +61,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
           const responseCode = wl ? WL_BLOCKED_CODE : BLOCKED_CODE;
           const body = wl ? WL_BLOCKED_BODY : BLOCKED_BODY;
           DEBUG.blockDebug && wl && console.log(`WL Blocking`, uri);
-          await zombie.send("Fetch.fulfillRequest", {
+          zombie.send("Fetch.fulfillRequest", {
               requestId,
               responseHeaders,
               responseCode,
@@ -69,7 +70,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
             sessionId
           );
         } else {
-          await zombie.send("Fetch.failRequest", {
+          zombie.send("Fetch.failRequest", {
               requestId,
               errorReason: "BlockedByClient"
             },
@@ -86,7 +87,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       if ( !isFont && responseErrorReason ) {
         if ( isNavigationRequest ) {
           DEBUG.debugInterception && console.log(`Fulfill request`);
-          await zombie.send("Fetch.fulfillRequest", {
+          zombie.send("Fetch.fulfillRequest", {
               requestId,
               responseHeaders: BLOCKED_HEADERS,
               responseCode: BLOCKED_CODE,
@@ -96,7 +97,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
           );
           DEBUG.debugInterception && console.log(`Fulfill request complete`);
         } else {
-          await zombie.send("Fetch.failRequest", {
+          zombie.send("Fetch.failRequest", {
               requestId,
               errorReason: responseErrorReason
             },
@@ -106,7 +107,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
       } else {
         try {
           DEBUG.debugInterception && console.log(`Continue request`);
-          await zombie.send("Fetch.continueRequest", {
+          zombie.send("Fetch.continueRequest", {
               requestId,
             },
             sessionId

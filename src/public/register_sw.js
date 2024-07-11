@@ -8,9 +8,13 @@ import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
 
         // Unregister if the version does not match
         if (version !== VERSION) {
-          console.log('Unregistering', url);
+          DEBUG.debugSW && console.log('Unregistering', url);
           registration.unregister().then(bool => {
-            if (bool) console.log('Unregistered an old service worker.');
+            if (bool) {
+              DEBUG.debugSW && console.log('Unregistered an old service worker.');
+              alert(`Your app has been updated and needs to reload.`);
+              location.reload();
+            }
           });
         }
       }
@@ -23,7 +27,8 @@ import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
     // allow SW to reload the pages if they need to update to fresh content
     S.addEventListener('message', event => {
       if ( event.data.message == 'cache-out-of-sync' ) {
-        console.log('Cache out of sync, reloading page.');
+        DEBUG.debugSW && console.log('Cache out of sync, reloading page.');
+        alert(`We need to refresh your cache. We will reload now.`);
         globalThis.window.location.reload();
       }
       if (event.data.message === 'content-updated') {
@@ -32,7 +37,7 @@ import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
     });
 
     S.register(`/sw.js?ver=${VERSION}`).then(registration => {
-      console.log(`Service Worker registered with scope: ${registration.scope} and version: ${VERSION}`);
+      DEBUG.debugSW && console.log(`Service Worker registered with scope: ${registration.scope} and version: ${VERSION}`);
     })
     .catch(error => {
       console.error('Service Worker registration failed:', error);

@@ -440,6 +440,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   on("Target.targetCreated", async ({targetInfo}) => {
     DEBUG.val && consolelog('create 1', targetInfo);
+    DEBUG.debugAttach && consolelog('create 1', targetInfo);
     const {targetId} = targetInfo;
     targets.add(targetId);
     tabs.set(targetId,targetInfo);
@@ -451,7 +452,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   });
 
   on("Target.targetInfoChanged", async ({targetInfo}) => {
-    DEBUG.val && consolelog('change 1', targetInfo);
+    DEBUG.debugInfoChanged && consolelog('change 1', targetInfo);
     const {targetId} = targetInfo;
     if ( tabs.has(targetId) ) {
       tabs.set(targetId,targetInfo);
@@ -460,16 +461,17 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         connection.doShot();
       }
     } else {
-      DEBUG.val > DEBUG.med && console.log("Changed event for removed target", targetId, targetInfo);
+      DEBUG.debugAttached && console.log("Changed event for removed / not present target", targetId, targetInfo);
+      tabs.set(targetId,targetInfo);
     }
-    DEBUG.val && consolelog('change 2', targetInfo);
+    DEBUG.debugInfoChanged && consolelog('change 2', targetInfo);
     if ( checkSetup.has(targetId) && targetInfo.url !== 'about:blank' ) {
       const sessionId = sessions.get(targetId);
       if ( sessionId ) {
         const obj = checkSetup.get(targetId);
         await sleep(TAB_LOAD_WAIT);
         const worlds = connection.worlds.get(sessionId);
-        DEBUG.val && console.log('worlds at info changed', worlds);
+        DEBUG.debugInfoChanged && console.log('worlds at info changed', worlds);
 
         let missingWorlds = ! worlds;
 
@@ -513,36 +515,59 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   });
 
   on("Target.attachedToTarget", async ({sessionId,targetInfo,waitingForDebugger}) => {
-    DEBUG.worldDebug && consolelog('attached 1', targetInfo);
-    DEBUG.val && consolelog('attached 1', targetInfo);
-    const attached = {sessionId,targetInfo,waitingForDebugger};
-    const {targetId} = targetInfo;
-    DEBUG.val > DEBUG.med && console.log("Attached to target", sessionId, targetId);
-    targets.add(targetId);
-    addSession(targetId, sessionId);
-    checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
-    connection.meta.push({attached});
-    // we always size when we attach, otherwise they just go to screen size
-    // which might be bigger than the lowest common screen dimensions for the clients
-    // so they will call a resize anyway, so we just anticipate here
-    await setupTab({attached});
-    if ( StartupTabs.has(targetId) ) {
-      DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
-      reloadAfterSetup(sessionId);
-    }
-    /**
-      // putting this here will stop open in new tab from working, since
-      // we will reload a tab before it has navigated to its intended destination
-      // in effect resetting it mid navigation, whereupon it remains on about:blank
-      // and information about its intended destination is lost
-      const worlds = connection.worlds.get(sessionId);
-      DEBUG.val && console.log('worlds at attached', worlds);
-      if ( ! worlds ) {
-        await send("Page.reload", {}, sessionId);
+    try {
+      DEBUG.worldDebug && consolelog('attached 1', targetInfo);
+      DEBUG.val && consolelog('attached 1', targetInfo);
+      const attached = {sessionId,targetInfo,waitingForDebugger};
+      const {targetId} = targetInfo;
+      DEBUG.val && consolelog("Attached to target", sessionId, targetId);
+      targets.add(targetId);
+      if ( targetInfo.url == '' ) {
+        DEBUG.attachDebug && consolelog(`Cannot do anything as url is empty`, targetInfo);
+        if ( waitingForDebugger ) {
+          DEBUG.attachDebug && consolelog(`Telling target to run`);
+          await send("Runtime.runIfWaitingForDebugger", {}, sessionId);
+          await sleep(500);
+          DEBUG.attachDebug && console.log(`Continuing`);
+        }
+        await untilTrueOrTimeout(() => tabs.get(targetId)?.url !== '', 3).catch(() => consolelog(`No correct target info`));
+        targetInfo = tabs.get(targetId);
+        if ( !targetInfo || targetInfo?.url == '' ) {
+          DEBUG.attachDebug && consolelog(`URL is still empty will not set up`);
+          if ( CONFIG.isCT && CONFIG.hostWL ) {
+            DEBUG.attachDebug && consolelog(`As this was likely due to WL blocking interacting with Network failure we will now close it`);
+            send("Target.closeTarget", {targetId});
+            targets.delete(targetId);
+          }
+          return;
+        } else {
+          DEBUG.attachDebug && consolelog(`Target info now looks okay`, targetInfo);
+        }
       }
-    **/
-    DEBUG.val && consolelog('attached 2', targetInfo);
-    DEBUG.worldDebug && consolelog('attached 2', targetInfo);
+      addSession(targetId, sessionId);
+      checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
+      connection.meta.push({attached});
+      await setupTab({attached});
+      if ( StartupTabs.has(targetId) ) {
+        DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
+        reloadAfterSetup(sessionId);
+      }
+      /**
+        // putting this here will stop open in new tab from working, since
+        // we will reload a tab before it has navigated to its intended destination
+        // in effect resetting it mid navigation, whereupon it remains on about:blank
+        // and information about its intended destination is lost
+        const worlds = connection.worlds.get(sessionId);
+        DEBUG.val && console.log('worlds at attached', worlds);
+        if ( ! worlds ) {
+          await send("Page.reload", {}, sessionId);
+        }
+      **/
+      DEBUG.val && consolelog('attached 2', targetInfo);
+      DEBUG.worldDebug && consolelog('attached 2', targetInfo);
+    } catch(err) {
+      console.error(`Big error during attach`, err);
+    }
   });
 
   on("Target.detachedFromTarget", ({sessionId}) => {
@@ -705,7 +730,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.debugFileDownload && console.log(`File ${downloadFileName} has downloaded`);
 
       DEBUG.debugFileDownload && console.info({guidFile,originalFile});
-      await untilTrueOrTimeout(() => fs.existsSync(guidFile) || fs.existsSync(originalFile), 6); // wait 6 seconds for file to resolve
+      await untilTrueOrTimeout(() => fs.existsSync(guidFile) || fs.existsSync(originalFile), 6).catch(() => console.error(`File did not resolve`)); // wait 6 seconds for file to resolve
       
       // if the file is named with a guid copy it to original name
       if ( fs.existsSync(guidFile) ) {
@@ -1243,7 +1268,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   async function setupTab({attached}) {
     const {waitingForDebugger, sessionId, targetInfo} = attached;
     const {targetId} = targetInfo;
+    DEBUG.debugSetupReload && consolelog(`Called setup for `, attached);
     if ( settingUp.has(targetId) ) return;
+    DEBUG.debugSetupReload && consolelog(`Running setup for `, attached);
     settingUp.set(targetId, attached);
     DEBUG.attachImmediately && DEBUG.worldDebug && console.log({waitingForDebugger, targetInfo});
 
@@ -1648,7 +1675,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   function reloadAfterSetup(sessionId) {
     let reloader = Reloaders.get(sessionId);
     if ( ! reloader ) {
-      reloader = debounce(_reloadAfterSetup, 757);
+      reloader = debounce(_reloadAfterSetup, 631);
       Reloaders.set(sessionId);
     }
     reloader(sessionId);
@@ -1868,17 +1895,21 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }
       }; break;
       case "Target.activateTarget": {
+        isActivate = true;
+        sessionId = sessions.get(targetId);
+
+        if ( ! sessionId ) { 
+          console.error(`!! No sessionId at Target.activateTarget`);
+          isActivate = false;
+          return {};
+        } else {
+          that.sessionId = sessionId;
+          that.targetId = targetId; 
+        }
         if ( CONFIG.screencastOnly && CONFIG.castSyncsWithActive ) {
           await connection.stopCast();
         }
-        isActivate = true;
-        that.sessionId = sessions.get(targetId); 
-        that.targetId = targetId; 
-        sessionId = that.sessionId;
-
-        if ( ! that.sessionId ) { 
-          console.error(`!! No sessionId at Target.activateTarget`);
-        } else if ( DEBUG.showTargetSessionMap ) {
+        if ( DEBUG.showTargetSessionMap ) {
           console.log({targetId, sessionId});
         }
 
@@ -1890,7 +1921,21 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           DEBUG.debugSetupReload && console.log(`Reloading because no isolated worlds`, sessionId, new Error);
           // this is the reload that has the problem
           const SESS = sessionId;
-          untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+          const targetInfo = tabs.get(targetId);
+          if ( ! targetInfo ) {
+            DEBUG.debugSetupReload && console.log(`No targetinfo found for reload target. Weird`, {targetId, sessionId}, new Error);
+          } else {
+            DEBUG.debugSetupReload && console.log(`Reload target targetInfo: `, targetInfo);
+          }
+          if ( ! targetInfo || targetInfo.url == '' ) {
+            DEBUG.debugSetupReload && console.log(`Cannot reload now because target has no url`, {targetInfo});
+            DEBUG.debugSetupReload && console.log(`Will wait for target to have url`);
+            untilTrueOrTimeout(() => !!(tabs.get(targetId)?.url !== ''), 20).then(() => { console.log(`url arrived`, tabs.get(targetId)?.url, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+            DEBUG.debugSetupReload && console.log(`Will not send activate now`, targetInfo);
+            return {};
+          } else {
+            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, connection.worlds.get(SESS), SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+          }
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);
         }
