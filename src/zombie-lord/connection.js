@@ -452,7 +452,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   });
 
   on("Target.targetInfoChanged", async ({targetInfo}) => {
-    DEBUG.val && consolelog('change 1', targetInfo);
+    DEBUG.debugInfoChanged && consolelog('change 1', targetInfo);
     const {targetId} = targetInfo;
     if ( tabs.has(targetId) ) {
       tabs.set(targetId,targetInfo);
@@ -461,17 +461,17 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         connection.doShot();
       }
     } else {
-      console.log("Changed event for removed / not present target", targetId, targetInfo);
+      DEBUG.debugAttached && console.log("Changed event for removed / not present target", targetId, targetInfo);
       tabs.set(targetId,targetInfo);
     }
-    DEBUG.val && consolelog('change 2', targetInfo);
+    DEBUG.debugInfoChanged && consolelog('change 2', targetInfo);
     if ( checkSetup.has(targetId) && targetInfo.url !== 'about:blank' ) {
       const sessionId = sessions.get(targetId);
       if ( sessionId ) {
         const obj = checkSetup.get(targetId);
         await sleep(TAB_LOAD_WAIT);
         const worlds = connection.worlds.get(sessionId);
-        DEBUG.val && console.log('worlds at info changed', worlds);
+        DEBUG.debugInfoChanged && console.log('worlds at info changed', worlds);
 
         let missingWorlds = ! worlds;
 
