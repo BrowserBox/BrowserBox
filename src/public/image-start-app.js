@@ -32,6 +32,7 @@ async function start_app() {
     ]);
   } catch(e) {
     alert(`Hmm, looks like your page is taking longer to load than normal. This is usually fixed by reloading and trying again. Let's try that!`);
+    location.reload();
   }
   return voodoo;
 }
