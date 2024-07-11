@@ -52,6 +52,14 @@
 
   DEBUG.debugCookie && console.log(COOKIE_OPTS);
 
+  if ( ! DEBUG.blockInspect ) {
+    console.warn(`
+        ===============================================
+               WARNING: Inspect is not blocked. 
+        ===============================================
+    `);
+  }
+
   // file uploads
     export const fileChoosers = new Map();
     const uploadPath = path.resolve(CONFIG.baseDir, 'uploads');
