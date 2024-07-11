@@ -522,8 +522,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const {targetId} = targetInfo;
       DEBUG.val && consolelog("Attached to target", sessionId, targetId);
       targets.add(targetId);
-      addSession(targetId, sessionId);
-      checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
       if ( targetInfo.url == '' ) {
         DEBUG.attachDebug && consolelog(`Cannot do anything as url is empty`, targetInfo);
         if ( waitingForDebugger ) {
@@ -534,11 +532,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }
         await untilTrueOrTimeout(() => tabs.get(targetId)?.url !== '', 20);
         targetInfo = tabs.get(targetId);
-        if ( targetInfo?.url == '' ) {
+        if ( !targetInfo || targetInfo?.url == '' ) {
           DEBUG.attachDebug && consolelog(`URL is still empty will not set up`);
           return;
+        } else {
+          DEBUG.attachDebug && consolelog(`Target info now looks okay`, targetInfo);
         }
       }
+      addSession(targetId, sessionId);
+      checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
       connection.meta.push({attached});
       await setupTab({attached});
       if ( StartupTabs.has(targetId) ) {
@@ -1888,17 +1890,21 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }
       }; break;
       case "Target.activateTarget": {
+        isActivate = true;
+        sessionId = sessions.get(targetId);
+
+        if ( ! sessionId ) { 
+          console.error(`!! No sessionId at Target.activateTarget`);
+          isActivate = false;
+          return {};
+        } else {
+          that.sessionId = sessionId;
+          that.targetId = targetId; 
+        }
         if ( CONFIG.screencastOnly && CONFIG.castSyncsWithActive ) {
           await connection.stopCast();
         }
-        isActivate = true;
-        that.sessionId = sessions.get(targetId); 
-        that.targetId = targetId; 
-        sessionId = that.sessionId;
-
-        if ( ! that.sessionId ) { 
-          console.error(`!! No sessionId at Target.activateTarget`);
-        } else if ( DEBUG.showTargetSessionMap ) {
+        if ( DEBUG.showTargetSessionMap ) {
           console.log({targetId, sessionId});
         }
 
@@ -1919,11 +1925,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           if ( ! targetInfo || targetInfo.url == '' ) {
             DEBUG.debugSetupReload && console.log(`Cannot reload now because target has no url`, {targetInfo});
             DEBUG.debugSetupReload && console.log(`Will wait for target to have url`);
-            untilTrueOrTimeout(() => !!(tabs.get(targetId)?.url !== ''), 20).then(() => { console.log(`worlds arrived`, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+            untilTrueOrTimeout(() => !!(tabs.get(targetId)?.url !== ''), 20).then(() => { console.log(`url arrived`, tabs.get(targetId)?.url, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
             DEBUG.debugSetupReload && console.log(`Will not send activate now`, targetInfo);
             return {};
           } else {
-            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, connection.worlds.get(SESS), SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
           }
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);

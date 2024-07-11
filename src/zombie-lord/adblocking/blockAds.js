@@ -61,47 +61,21 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
           const responseCode = wl ? WL_BLOCKED_CODE : BLOCKED_CODE;
           const body = wl ? WL_BLOCKED_BODY : BLOCKED_BODY;
           DEBUG.blockDebug && wl && console.log(`WL Blocking`, uri);
-          if ( ! wl ) {
-            zombie.send("Fetch.fulfillRequest", {
-                requestId,
-                responseHeaders,
-                responseCode,
-                body,
-              },
-              sessionId
-            );
-          } else {
-            // add extra delay for wl blocking to avoid a weird race
-            setTimeout(() => zombie.send("Fetch.fulfillRequest", {
-                  requestId,
-                  responseHeaders,
-                  responseCode,
-                  body,
-                },
-                sessionId
-              ),
-              300
-            );
-          }
+          zombie.send("Fetch.fulfillRequest", {
+              requestId,
+              responseHeaders,
+              responseCode,
+              body,
+            },
+            sessionId
+          );
         } else {
-          if ( ! wl ) {
-            zombie.send("Fetch.failRequest", {
-                requestId,
-                errorReason: "BlockedByClient"
-              },
-              sessionId
-            );
-          } else {
-            // add extra delay for wl blocking to avoid a weird race
-            setTimeout(() => zombie.send("Fetch.failRequest", {
-                  requestId,
-                  errorReason: "BlockedByClient"
-                },
-                sessionId
-              ),
-              300
-            );
-          }
+          zombie.send("Fetch.failRequest", {
+              requestId,
+              errorReason: "BlockedByClient"
+            },
+            sessionId
+          );
         }
         return;
       }
