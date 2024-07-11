@@ -2238,6 +2238,11 @@
               tab = ourtab;
             }
 
+            if ( tab.url == '' ) {
+              DEBUG.val && console.log(`Refusing to activate tab with empty url`, tab);
+              return;
+            }
+
             DEBUG.val && console.log('Activating', tab);
 
             if ( state.tabs.length === 1 ) {
