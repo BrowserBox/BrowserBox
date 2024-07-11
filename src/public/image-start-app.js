@@ -24,7 +24,6 @@ async function start_app() {
     postInstallTasks: [() => self._voodoo_resizeAndReport]
   });
   self.voodoo = voodoo;
-  console.log(voodoo);
   try {
     await Promise.race([
       voodoo.api.untilLoaded(),
