@@ -514,40 +514,44 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   });
 
   on("Target.attachedToTarget", async ({sessionId,targetInfo,waitingForDebugger}) => {
-    DEBUG.worldDebug && consolelog('attached 1', targetInfo);
-    DEBUG.val && consolelog('attached 1', targetInfo);
-    const attached = {sessionId,targetInfo,waitingForDebugger};
-    const {targetId} = targetInfo;
-    DEBUG.val && consolelog("Attached to target", sessionId, targetId);
-    targets.add(targetId);
-    addSession(targetId, sessionId);
-    checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
-    connection.meta.push({attached});
-    // we always size when we attach, otherwise they just go to screen size
-    // which might be bigger than the lowest common screen dimensions for the clients
-    // so they will call a resize anyway, so we just anticipate here
-    if ( targetInfo.url == '' ) {
-      console.log(`Cannot do anything as url is empty`, targetInfo);
-      await untilTrueOrTimeout(() => tabs.get(targetId)?.url !== '', 20);
-    }
-    await setupTab({attached});
-    if ( StartupTabs.has(targetId) ) {
-      DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
-      reloadAfterSetup(sessionId);
-    }
-    /**
-      // putting this here will stop open in new tab from working, since
-      // we will reload a tab before it has navigated to its intended destination
-      // in effect resetting it mid navigation, whereupon it remains on about:blank
-      // and information about its intended destination is lost
-      const worlds = connection.worlds.get(sessionId);
-      DEBUG.val && console.log('worlds at attached', worlds);
-      if ( ! worlds ) {
-        await send("Page.reload", {}, sessionId);
+    try {
+      DEBUG.worldDebug && consolelog('attached 1', targetInfo);
+      DEBUG.val && consolelog('attached 1', targetInfo);
+      const attached = {sessionId,targetInfo,waitingForDebugger};
+      const {targetId} = targetInfo;
+      DEBUG.val && consolelog("Attached to target", sessionId, targetId);
+      targets.add(targetId);
+      addSession(targetId, sessionId);
+      checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
+      connection.meta.push({attached});
+      // we always size when we attach, otherwise they just go to screen size
+      // which might be bigger than the lowest common screen dimensions for the clients
+      // so they will call a resize anyway, so we just anticipate here
+      if ( targetInfo.url == '' ) {
+        consolelog(`Cannot do anything as url is empty`, targetInfo);
+        await untilTrueOrTimeout(() => tabs.get(targetId)?.url !== '', 20);
       }
-    **/
-    DEBUG.val && consolelog('attached 2', targetInfo);
-    DEBUG.worldDebug && consolelog('attached 2', targetInfo);
+      await setupTab({attached});
+      if ( StartupTabs.has(targetId) ) {
+        DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
+        reloadAfterSetup(sessionId);
+      }
+      /**
+        // putting this here will stop open in new tab from working, since
+        // we will reload a tab before it has navigated to its intended destination
+        // in effect resetting it mid navigation, whereupon it remains on about:blank
+        // and information about its intended destination is lost
+        const worlds = connection.worlds.get(sessionId);
+        DEBUG.val && console.log('worlds at attached', worlds);
+        if ( ! worlds ) {
+          await send("Page.reload", {}, sessionId);
+        }
+      **/
+      DEBUG.val && consolelog('attached 2', targetInfo);
+      DEBUG.worldDebug && consolelog('attached 2', targetInfo);
+    } catch(err) {
+      console.error(`Big error during attach`, err);
+    }
   });
 
   on("Target.detachedFromTarget", ({sessionId}) => {
