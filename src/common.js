@@ -63,7 +63,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  attachDebug: true,
+  attachDebug: false,
   debugSetupReload: false,
   blockDebug: false,
   debugDebounce: false,

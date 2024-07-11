@@ -10,7 +10,11 @@ import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
         if (version !== VERSION) {
           console.log('Unregistering', url);
           registration.unregister().then(bool => {
-            if (bool) console.log('Unregistered an old service worker.');
+            if (bool) {
+              console.log('Unregistered an old service worker.');
+              alert(`Your app has been updated and needs to reload. Close this to reload`);
+              location.reload();
+            }
           });
         }
       }
