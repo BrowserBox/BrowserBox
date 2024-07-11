@@ -526,7 +526,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       // so they will call a resize anyway, so we just anticipate here
       if ( targetInfo.url == '' ) {
         consolelog(`Cannot do anything as url is empty`, targetInfo);
+        if ( waitingForDebugger ) {
+          console.log(`Telling target to run`);
+          await send("Runtime.runIfWaitingForDebugger", {}, sessionId);
+          await sleep(1000);
+          console.log(`Continuing`);
+        }
         await untilTrueOrTimeout(() => tabs.get(targetId)?.url !== '', 20);
+        console.log(`Hello`);
         targetInfo = tabs.get(targetId);
         if ( targetInfo?.url == '' ) {
           consolelog(`URL is still empty will not set up`);
