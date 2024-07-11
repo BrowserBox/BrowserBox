@@ -440,6 +440,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   on("Target.targetCreated", async ({targetInfo}) => {
     DEBUG.val && consolelog('create 1', targetInfo);
+    DEBUG.debugAttach && consolelog('create 1', targetInfo);
     const {targetId} = targetInfo;
     targets.add(targetId);
     tabs.set(targetId,targetInfo);
