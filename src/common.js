@@ -63,8 +63,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  debugSetupReload: true,
-  blockDebug: true,
+  debugSetupReload: false,
+  blockDebug: false,
   debugDebounce: false,
   adjustHeightForHeadfulUI: true,
   needsDOMSnapshot: false,
@@ -113,11 +113,11 @@ export const DEBUG = Object.freeze({
   debugKeyEvents: false,
   debugBinding: false,
   events: false,
-  commands: true,
+  commands: false,
   adBlock: true,
   debugAddr: true,
   debugScaledUpCoViewport: false,
-  debugInterception: true,
+  debugInterception: false,
   noCastMaxDims: false,
   debugAckBlast: false,
   allowAckBlastOnStart: !process.env.TORBB && true,
@@ -231,8 +231,8 @@ export const DEBUG = Object.freeze({
   },
   shotDebug: false,
   noShot: false,
-  dev: true,
-  val: 6,
+  dev: false,
+  val: 0,
   low: 1,
   med: 3,
   high: 5
