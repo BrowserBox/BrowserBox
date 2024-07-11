@@ -112,7 +112,7 @@ export const DEBUG = Object.freeze({
   debugCommandOrder: false,
   debugKeyEvents: false,
   debugBinding: false,
-  events: false,
+  events: true,
   commands: true,
   adBlock: true,
   debugAddr: true,

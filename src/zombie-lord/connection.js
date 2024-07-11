@@ -518,7 +518,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     DEBUG.val && consolelog('attached 1', targetInfo);
     const attached = {sessionId,targetInfo,waitingForDebugger};
     const {targetId} = targetInfo;
-    DEBUG.val > DEBUG.med && console.log("Attached to target", sessionId, targetId);
+    DEBUG.val && consolelog("Attached to target", sessionId, targetId);
     targets.add(targetId);
     addSession(targetId, sessionId);
     checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
@@ -526,6 +526,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     // we always size when we attach, otherwise they just go to screen size
     // which might be bigger than the lowest common screen dimensions for the clients
     // so they will call a resize anyway, so we just anticipate here
+    if ( targetInfo.url == '' ) {
+      console.log(`Cannot do anything as url is empty`, targetInfo);
+      await untilTrueOrTimeout(() => tabs.get(targetId)?.url !== '', 20);
+    }
     await setupTab({attached});
     if ( StartupTabs.has(targetId) ) {
       DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
