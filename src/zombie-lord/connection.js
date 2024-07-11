@@ -530,6 +530,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( targetInfo.url == '' ) {
         consolelog(`Cannot do anything as url is empty`, targetInfo);
         await untilTrueOrTimeout(() => tabs.get(targetId)?.url !== '', 20);
+        targetInfo = tabs.get(targetId);
+        if ( targetInfo?.url == '' ) {
+          consolelog(`URL is still empty will not set up`);
+          return;
+        }
       }
       await setupTab({attached});
       if ( StartupTabs.has(targetId) ) {
@@ -1906,9 +1911,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             DEBUG.debugSetupReload && console.log(`Reload target targetInfo: `, targetInfo);
           }
           if ( ! targetInfo || targetInfo.url == '' ) {
-            console.log(`Cannot reload now because target has no url`, {targetInfo});
-            console.log(`Will wait for target to have url`);
+            DEBUG.debugSetupReload && console.log(`Cannot reload now because target has no url`, {targetInfo});
+            DEBUG.debugSetupReload && console.log(`Will wait for target to have url`);
             untilTrueOrTimeout(() => !!(tabs.get(targetId)?.url !== ''), 20).then(() => { console.log(`worlds arrived`, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+            DEBUG.debugSetupReload && console.log(`Will not send activate now`, targetInfo);
+            return {};
           } else {
             untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
           }
