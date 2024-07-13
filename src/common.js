@@ -383,7 +383,7 @@ if ( DEBUG.noSecurityHeaders ) {
 
 export const GO_SECURE = fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
 
-export const version = 'v7';
+export const version = 'v9';
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
 
 export const SECURE_VIEW_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 'get_download_view_url.sh');

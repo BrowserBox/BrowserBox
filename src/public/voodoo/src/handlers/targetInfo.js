@@ -1,7 +1,7 @@
 //FIXME we could move this into constructor 
 // and switch it to WS 
 
-import {uberFetch,untilTrue,CONFIG,COMMON,DEBUG} from '../common.js';
+import {version,uberFetch,untilTrue,CONFIG,COMMON,DEBUG} from '../common.js';
 import DEFAULT_FAVICON from '../subviews/faviconDataURL.js';
 
 const STATE_SYMBOL = Symbol(`[[State]]`);
@@ -13,7 +13,7 @@ export async function fetchTabs({sessionToken}, getState) {
   DEBUG.debugTabs && console.log(`Fetch tabs called`);
   try {
     const url = new URL(location);
-    url.pathname = '/api/v7/tabs';
+    url.pathname = `/api/${version}/tabs`;
     const resp = await uberFetch(url);
     if ( resp.ok ) {
       const data = await resp.json();
@@ -65,16 +65,30 @@ export async function fetchTabs({sessionToken}, getState) {
       return data;
     } else if ( resp.status == 401 ) {
       console.warn(`Session has been cleared. Let's attempt relogin`, sessionToken);
+      COMMON.blockAnotherReset = true;
       const x = new URL(location);
       x.pathname = 'login';
       x.search = `token=${sessionToken}&ran=${Math.random()}`;
-      COMMON.blockAnotherReset = true;
       alert("Your browser cleared your session. We need to reload the page to refresh it.");
       COMMON.delayUnload = false;
       if ( ! DEBUG.noReset ) {
         location.href = x;
       }
       return;
+    } else if ( resp.status == 404 ) {
+      console.warn(`404 on key tabs endpoint`);
+      COMMON.blockAnotherReset = true;
+      alert(`Your app has been updated. We will reload and try again. Try clearing your caches if that doesn't work.`);
+      const x = new URL(location);
+      x.pathname = 'login';
+      x.search = `token=${sessionToken}&ran=${Math.random()}`;
+      COMMON.delayUnload = false;
+      if ( ! DEBUG.noReset ) {
+        location.href = x;
+      }
+      return;
+    } else {
+      alert(`An error occurred and we could not access the server. It may be down or you may be offline. If you're online, try again.`);
     }
   } catch(e) {
     console.warn(e);
