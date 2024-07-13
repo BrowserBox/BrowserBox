@@ -7,7 +7,7 @@ import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
         let version = url.searchParams.get('ver');
 
         // Unregister if the version does not match
-        if (version !== VERSION) {
+        if (version !== VERSION || !CONFIG.useServiceWorkerToCache) {
           DEBUG.debugSW && console.log('Unregistering', url);
           registration.unregister().then(bool => {
             if (bool) {
