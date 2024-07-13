@@ -11,7 +11,7 @@ export const iden = e => e;
 export const isSafari = () => SafariPlatform.test(navigator.userAgent);
 
 export const GO_SECURE = globalThis?.location?.protocol == 'https:';
-export const version = 'v8.5.1';
+export const version = 'v9';
 export const Port = globalThis?.location?.port || (GO_SECURE ? '443': '80');
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`+Port;
 
