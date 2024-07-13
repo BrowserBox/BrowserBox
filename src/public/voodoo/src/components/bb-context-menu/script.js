@@ -354,6 +354,7 @@ class BBContextMenu extends Base {
       state = this.state._top;
       const contextClick = state.contextMenuEvent;
       const target = state.viewState.canvasEl;
+      DEBUG.debugTabs && console.log({contextClick, target});
       let pageX, pageY, clientX, clientY;
       if ( contextClick?.detail?.pageX ) {
         ({pageX,pageY,clientX,clientY} = contextClick.detail);
