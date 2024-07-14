@@ -51,6 +51,7 @@ class BBTopBar extends Base {
 
   goToExtend() {
     const {state} = this;
+    globalThis.purchaseClicked = true;
     if ( state.serverConnected ) {
       globalThis.location.href='https://browse.cloudtabs.net/extend';
     } else {
