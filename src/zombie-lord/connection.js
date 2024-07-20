@@ -166,6 +166,11 @@ const VEND = VEND_FF;
 
 DEBUG.debugNavigator && console.log({UA, mobUA, deskUA, Plat, VEND});
 
+const TargetReloads = new Map();
+const AllowedReloadReasons = new Set([
+  'user-agent',
+  'post-setup'
+]);
 const checkSetup = new Map();
 const targets = new Set(); 
 const waitingToReload = new Set();
@@ -503,13 +508,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           if ( !obj.tabSetup ) {
             obj.needsReload = true;
             DEBUG.debugSetupReload && console.log(`Reloading due to no tab setup`);
-            reloadAfterSetup(sessionId);
+            reloadAfterSetup(sessionId, {reason:'tab-no-setup'});
           }
         } else {
           checkSetup.delete(targetId);
           DEBUG.worldDebug && consolelog(`Our tab is loaded!`, targetInfo);
         }
-        reloadAfterSetup(sessionId);
+        reloadAfterSetup(sessionId, {reason:'info-changed'});
       }
     }
   });
@@ -520,6 +525,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.val && consolelog('attached 1', targetInfo);
       const attached = {sessionId,targetInfo,waitingForDebugger};
       const {targetId} = targetInfo;
+      TargetReloads.set(sessionId, {reloads: 0});
       DEBUG.val && consolelog("Attached to target", sessionId, targetId);
       targets.add(targetId);
       if ( targetInfo.url == '' ) {
@@ -550,7 +556,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       await setupTab({attached});
       if ( StartupTabs.has(targetId) ) {
         DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
-        reloadAfterSetup(sessionId);
+        reloadAfterSetup(sessionId, {reason: 'attached'});
       }
       /**
         // putting this here will stop open in new tab from working, since
@@ -1567,7 +1573,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     }
     settingUp.delete(targetId);
     DEBUG.debugSetupReload && console.log(`Reloading after setup`, {attached});
-    reloadAfterSetup(sessionId);
+    reloadAfterSetup(sessionId, {reason:'post-setup'});
   }
 
   function updateCast(sessionId, castUpdate, event) {
@@ -1672,7 +1678,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     }
   }
 
-  function reloadAfterSetup(sessionId) {
+  function reloadAfterSetup(sessionId, {reason} = {}) {
+    if ( ! reason || AllowedReloadReasons.has(reason) ) {
+      DEBUG.debugReload && console.log(`Not reloading because reason is: ${reload}`);
+      return;
+    }
     let reloader = Reloaders.get(sessionId);
     if ( ! reloader ) {
       reloader = debounce(_reloadAfterSetup, 631);
@@ -1930,11 +1940,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           if ( ! targetInfo || targetInfo.url == '' ) {
             DEBUG.debugSetupReload && console.log(`Cannot reload now because target has no url`, {targetInfo});
             DEBUG.debugSetupReload && console.log(`Will wait for target to have url`);
-            untilTrueOrTimeout(() => !!(tabs.get(targetId)?.url !== ''), 20).then(() => { console.log(`url arrived`, tabs.get(targetId)?.url, SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+            untilTrueOrTimeout(() => !!(tabs.get(targetId)?.url !== ''), 20).then(() => { console.log(`url arrived`, tabs.get(targetId)?.url, SESS); reloadAfterSetup(SESS, {reason:'url-arrived'}); }).catch(() => reloadAfterSetup(SESS, {reason:'error-url'}));
             DEBUG.debugSetupReload && console.log(`Will not send activate now`, targetInfo);
             return {};
           } else {
-            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, connection.worlds.get(SESS), SESS); reloadAfterSetup(SESS); }).catch(() => reloadAfterSetup(SESS));
+            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, connection.worlds.get(SESS), SESS); reloadAfterSetup(SESS, {reason:'worlds-arrived'}); }).catch(() => reloadAfterSetup(SESS, {reason:'error-worlds'}));
           }
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);
@@ -2077,7 +2087,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         const r = await send(command.name, command.params, sessionId);
         if ( needsReload ) {
           DEBUG.debugSetupReload && console.log(`Reloading because command specified needsReload`);
-          reloadAfterSetup(sessionId);
+          reloadAfterSetup(sessionId, {reason: 'command'});
         }
         if ( requiresTask ) {
           //setTimeout(() => {
@@ -2314,7 +2324,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
   list = [...(new Set([...list]))];
   for ( const sessionId of list ) {
     DEBUG.debugSetupReload && console.log(`Reloading after user agent update`);
-    connection.reloadAfterSetup(sessionId);
+    connection.reloadAfterSetup(sessionId, {reason:'user-agent'});
   }
 }
 
