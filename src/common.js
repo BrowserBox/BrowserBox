@@ -63,7 +63,8 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  debugReload: true,
+  traceViewportUpdateFuncs: false,
+  debugReload: false,
   debugInfoChanged: false,
   attachDebug: false,
   debugSetupReload: false,
@@ -456,7 +457,7 @@ export async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WA
   return pr;
 
   async function checkPred() {
-    DEBUG.debugUntilTrue && console.log('Checking', pred);
+    DEBUG.debugUntilTrue && console.log('Checking', pred+'');
     if ( await pred() ) {
       return resolve(true);
     } else {

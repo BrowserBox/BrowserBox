@@ -166,6 +166,7 @@ const VEND = VEND_FF;
 
 DEBUG.debugNavigator && console.log({UA, mobUA, deskUA, Plat, VEND});
 
+const MAX_RELOAD_MEMORY = 25;
 const TargetReloads = new Map();
 const AllowedReloadReasons = new Set([
   'user-agent',
@@ -203,6 +204,7 @@ let lastWChange = '';
 let updatingTargets = false;
 
 function addSession(targetId, sessionId) {
+  console.log(`Adding SESSION`, targetId, sessionId);
   sessions.set(targetId,sessionId);
   sessions.set(sessionId,targetId);
 }
@@ -525,7 +527,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.val && consolelog('attached 1', targetInfo);
       const attached = {sessionId,targetInfo,waitingForDebugger};
       const {targetId} = targetInfo;
-      TargetReloads.set(sessionId, {reloads: 0});
+      TargetReloads.set(sessionId, {reloads: 0, queue: [], reasons:[]});
+      addSession(targetId, sessionId);
       DEBUG.val && consolelog("Attached to target", sessionId, targetId);
       targets.add(targetId);
       if ( targetInfo.url == '' ) {
@@ -550,7 +553,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           DEBUG.attachDebug && consolelog(`Target info now looks okay`, targetInfo);
         }
       }
-      addSession(targetId, sessionId);
       checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
       connection.meta.push({attached});
       await setupTab({attached});
@@ -1683,15 +1685,43 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.debugReload && console.log(`Not reloading because reason is: ${reason}`);
       return;
     }
-    DEBUG.debugReload && console.log(`Queueing debounced reload due to: ${reason} for ${sessionId}`);
-    let reloader = Reloaders.get(sessionId);
-    if ( ! reloader ) {
-      reloader = debounce(() => {
-        _reloadAfterSetup(sessionId).then(() => DEBUG.debugReload && console.log(`Reloaded ${sessionId} due to: ${reason}`))
-      }, 631);
-      Reloaders.set(sessionId);
+    try {
+      if ( TargetReloads.get(sessionId)?.queue?.length > 0 ) {
+        DEBUG.debugReload && console.log(`Not reloading because queue has at least 1 reload waiting`);
+        return;
+      }
+      DEBUG.debugReload && console.log(`Queueing debounced reload due to: ${reason} for ${sessionId}`);
+      let rt = TargetReloads.get(sessionId);
+      if ( ! rt ) { 
+        TargetReloads.set(sessionId, {relaods: 0, queue: [], reasons: []});
+      } else {
+        if ( ! rt.queue ) {
+          rt.queue = [];
+        }
+        if ( ! rt.reasons ) {
+          rt.reasons = [];
+        }
+      }
+      let reloader = Reloaders.get(sessionId);
+      if ( ! reloader ) {
+        reloader = debounce((sessId, {reason}) => {
+          _reloadAfterSetup(sessId).then(() => {
+            rt.queue = rt.queue.filter(item => item !== reloader);
+            rt.reloads++;
+            rt.reasons.push({reason, time: new Date});
+            if ( rt.reasons.length > MAX_RELOAD_MEMORY ) {
+              rt.reasons = rt.reasons.splice(-MAX_RELOAD_MEMORY);
+            }
+            DEBUG.debugReload && console.log(`Reloaded ${sessId} due to: ${reason}`);
+          });
+        }, 631);
+        Reloaders.set(sessionId, reloader);
+      }
+      rt.queue.push(reloader);
+      reloader(sessionId, {reason});
+    } catch(e) {
+      console.error(e);
     }
-    reloader(sessionId);
   }
 
   async function sessionSend(command) {
@@ -2164,6 +2194,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     if ( connection.activeTarget === targetId ) {
       connection.activeTarget = null;
     }
+    TargetReloads.delete(sessionId);
     viewChanges.delete(sessionId);
     loadings.delete(sessionId);
     targets.delete(targetId);
@@ -2216,119 +2247,167 @@ export function getViewport(...viewports) {
 }
 
 export async function updateTargetsOnCommonChanged({connection, command, force = false}) {
-  if ( updatingTargets ) {
+  DEBUG.traceViewportUpdateFuncs && console.log('Entering updateTargetsOnCommonChanged');
+  if (updatingTargets) {
+    DEBUG.traceViewportUpdateFuncs && console.log('Updating targets in progress, waiting...');
     await untilTrueOrTimeout(() => !updatingTargets, 15);
   }
-  updatingTargets = true;
-  const {send,on, ons} = connection.zombie;
-  const commonViewport = getViewport(...connection.viewports.values());
-  DEBUG.debugViewportDimensions && console.log('Common viewport', commonViewport, (new Error).stack);
-  connection.commonViewport = commonViewport;
-  Object.assign(connection.bounds, connection.commonViewport);
-  const cvs = JSON.stringify(commonViewport, null, 2);
-  let proceed = false;
-  if ( cvs != connection.lastCommonViewport || force ) {
-    DEBUG.showOtherCommandsForViewportUpdate && console.info(`updateTargetsOnCommonChange called with command: ${command?.name}`, command);
-    if ( command?.name == "Browser.setWindowBounds" || command == "all" ) {
+  try {
+    DEBUG.traceViewportUpdateFuncs && console.log('Setting updatingTargets to true');
+    updatingTargets = true;
+    const {send, on, ons} = connection.zombie;
+    DEBUG.traceViewportUpdateFuncs && console.log('Retrieved zombie properties from connection');
+    const commonViewport = getViewport(...connection.viewports.values());
+    DEBUG.traceViewportUpdateFuncs && console.log('Common viewport:', commonViewport);
+    DEBUG.debugViewportDimensions && console.log('Common viewport', commonViewport, (new Error).stack);
+    connection.commonViewport = commonViewport;
+    DEBUG.traceViewportUpdateFuncs && console.log('Set connection commonViewport');
+    Object.assign(connection.bounds, connection.commonViewport);
+    DEBUG.traceViewportUpdateFuncs && console.log('Assigned commonViewport to connection bounds');
+    const cvs = JSON.stringify(commonViewport, null, 2);
+    DEBUG.traceViewportUpdateFuncs && console.log('Stringified commonViewport:', cvs);
+    let proceed = false;
+    if (cvs != connection.lastCommonViewport || force) {
+      DEBUG.traceViewportUpdateFuncs && console.log('Common viewport changed or force update');
+      DEBUG.showOtherCommandsForViewportUpdate && console.info(`updateTargetsOnCommonChange called with command: ${command?.name}`, command);
+      if (command?.name == "Browser.setWindowBounds" || command == "all") {
+        DEBUG.traceViewportUpdateFuncs && console.log('Command is Browser.setWindowBounds or all, restarting cast');
         setTimeout(() => connection.restartCast(), 0);
-    }
-    if ( command?.name == "Emulation.setDeviceMetricsOverride" || command == "all" ) {
-      DEBUG.showTodos && console.log(`Make V Changes sessionId linked (issue #351)`);
-      const thisV = cvs;
-      const thisT = (command?.params?.sessionId||command?.sessionId||connection.sessionId);
-      const thisVT = thisV+thisT;
-      //DEBUG.showUARedux && console.log({thisV,lastV,thisT,thisVT,lastVT,params:command?.params||commonViewport});
-      const tabOrViewportChanged = lastVT != thisVT;
-      const viewportChanged = lastV != thisV || (viewChanges.has(thisT) ? viewChanges.get(thisT) != thisV : false);
-      const mobileChanged = JSON.parse(connection.lastCommonViewport)?.mobile != commonViewport.mobile;
-      DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
-      DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
-      (DEBUG.showViewportChanges || DEBUG.debugViewportDimensions) && console.log({tabOrViewportChanged, viewportChanged});
-
-      DEBUG.debugViewportDimensions && console.log({commonViewport});
-      DEBUG.debugViewportDimensions && console.log('Viewports match?', connection.lastCommonViewport == cvs, {commonViewport}, {last:JSON.parse(connection.lastCommonViewport)});
-      if ( mobileChanged ) {
-        DEBUG.debugViewportChanges && console.warn(`Mobile changed`, commonViewport, connection.viewports);
       }
-      await updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection})
-      await updateAllTargetsToViewport({commonViewport, connection}); 
-
-      if ( command?.params?.resetRequested ) {
-        proceed = true;
-        if ( command?.params ) {
-          delete command.params.resetRequested;
+      if (command?.name == "Emulation.setDeviceMetricsOverride" || command == "all") {
+        DEBUG.traceViewportUpdateFuncs && console.log('Command is Emulation.setDeviceMetricsOverride or all');
+        DEBUG.showTodos && console.log(`Make V Changes sessionId linked (issue #351)`);
+        const thisV = cvs;
+        const thisT = (command?.params?.sessionId || command?.sessionId || connection.sessionId);
+        const thisVT = thisV + thisT;
+        DEBUG.traceViewportUpdateFuncs && console.log('Constructed thisV, thisT, and thisVT');
+        //DEBUG.showUARedux && console.log({thisV, lastV, thisT, thisVT, lastVT, params: command?.params || commonViewport});
+        const tabOrViewportChanged = lastVT != thisVT;
+        const viewportChanged = lastV != thisV || (viewChanges.has(thisT) ? viewChanges.get(thisT) != thisV : false);
+        const mobileChanged = JSON.parse(connection.lastCommonViewport)?.mobile != commonViewport.mobile;
+        DEBUG.traceViewportUpdateFuncs && console.log('tabOrViewportChanged:', tabOrViewportChanged, 'viewportChanged:', viewportChanged, 'mobileChanged:', mobileChanged);
+        DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
+        DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
+        (DEBUG.showViewportChanges || DEBUG.debugViewportDimensions) && console.log({tabOrViewportChanged, viewportChanged});
+        DEBUG.debugViewportDimensions && console.log({commonViewport});
+        DEBUG.debugViewportDimensions && console.log('Viewports match?', connection.lastCommonViewport == cvs, {commonViewport}, {last: JSON.parse(connection.lastCommonViewport)});
+        if (mobileChanged) {
+          DEBUG.traceViewportUpdateFuncs && console.log('Mobile changed');
+          DEBUG.debugViewportChanges && console.warn(`Mobile changed`, commonViewport, connection.viewports);
         }
-        lastV = thisV;
-        viewChanges.set(thisT, thisV);
-      }
-
-      if ( true || tabOrViewportChanged  ) {
-        lastVT = thisVT;
-        setTimeout(async () => { 
-          await connection.restartCast();
-          if ( viewportChanged ) {
-            DEBUG.showResizeEvents && console.log(`Sending resize event as viewport changed`, {lastV, thisV});
-            connection.forceMeta({
-              resize: connection.bounds
-            });
+        DEBUG.traceViewportUpdateFuncs && console.log('Updating all targets to user agent');
+        await updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection});
+        DEBUG.traceViewportUpdateFuncs && console.log('Updated all targets to user agent');
+        await updateAllTargetsToViewport({commonViewport, connection});
+        DEBUG.traceViewportUpdateFuncs && console.log('Updated all targets to viewport');
+        if (command?.params?.resetRequested) {
+          DEBUG.traceViewportUpdateFuncs && console.log('Reset requested in command parameters');
+          proceed = true;
+          if (command?.params) {
+            delete command.params.resetRequested;
           }
-        }, 0);
+          lastV = thisV;
+          viewChanges.set(thisT, thisV);
+        }
+        if (true || tabOrViewportChanged) {
+          DEBUG.traceViewportUpdateFuncs && console.log('tabOrViewportChanged is true');
+          lastVT = thisVT;
+          setTimeout(async () => {
+            DEBUG.traceViewportUpdateFuncs && console.log('Restarting cast due to viewport change');
+            await connection.restartCast();
+            if (viewportChanged) {
+              DEBUG.traceViewportUpdateFuncs && console.log('Viewport changed, sending resize event');
+              DEBUG.showResizeEvents && console.log(`Sending resize event as viewport changed`, {lastV, thisV});
+              connection.forceMeta({
+                resize: connection.bounds
+              });
+            }
+          }, 0);
+        }
       }
-    } 
-    
-    if ( ! proceed && DEBUG.showSkippedCommandsAfterViewportChangeCheck ) {
-      console.info(`Skipping command ${command?.name} in updateTargetsOnCommonChange, with commandViewport and command`, {commonViewport, command});
+      if (!proceed && DEBUG.showSkippedCommandsAfterViewportChangeCheck) {
+        DEBUG.traceViewportUpdateFuncs && console.log('Skipping command in updateTargetsOnCommonChange');
+        console.info(`Skipping command ${command?.name} in updateTargetsOnCommonChange, with commandViewport and command`, {commonViewport, command});
+      }
+      connection.lastCommonViewport = cvs;
+      DEBUG.traceViewportUpdateFuncs && console.log('Set connection lastCommonViewport');
     }
-    connection.lastCommonViewport = cvs;
+    updatingTargets = false;
+    DEBUG.traceViewportUpdateFuncs && console.log('Set updatingTargets to false');
+    DEBUG.traceViewportUpdateFuncs && console.log('Returning proceed:', proceed);
+    return proceed;
+  } catch (err) {
+    console.error('common changed error', err);
   }
-  updatingTargets = false;
-
-  return proceed;
+  DEBUG.traceViewportUpdateFuncs && console.log('Exiting updateTargetsOnCommonChanged');
 }
 
 async function updateAllTargetsToUserAgent({mobile, connection}) {
-  const {send,on, ons} = connection.zombie;
+  DEBUG.traceViewportUpdateFuncs && console.log('Entering updateAllTargetsToUserAgent');
+  const {send, on, ons} = connection.zombie;
+  DEBUG.traceViewportUpdateFuncs && console.log('Retrieved zombie properties from connection', connection.targets.values());
   let list = [];
-  for ( const targetId of connection.targets.values() ) {
+  for (const targetId of connection.targets.values()) {
+    DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);
+    await untilTrueOrTimeout(() => sessions.has(targetId), 10);
     const sessionId = sessions.get(targetId);
+    DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
+    if (!sessionId) continue;
     try {
-      const {result:{value:{userAgent}}} = await send("Runtime.evaluate", {
+      const {result: {value: {userAgent}}} = await send("Runtime.evaluate", {
         expression: `
           (function () {
             return {userAgent: navigator.userAgent};
           }())
         `,
-        returnByValue: true 
+        returnByValue: true
       }, sessionId);
+      DEBUG.traceViewportUpdateFuncs && console.log('Retrieved userAgent:', userAgent);
       const desiredUserAgent = mobile ? mobUA : deskUA;
-      DEBUG.debugUserAgent && console.log({mobile,targetId,userAgent,desiredUserAgent});
-      if ( userAgent != desiredUserAgent ) {
-        DEBUG.debugUserAgent && console.log(`Will update user agent for target ${targetId}`, {mobile,desiredUserAgent});
+      DEBUG.traceViewportUpdateFuncs && console.log('Determined desiredUserAgent:', desiredUserAgent);
+      DEBUG.debugUserAgent && console.log({mobile, targetId, userAgent, desiredUserAgent});
+      if (userAgent != desiredUserAgent) {
+        DEBUG.traceViewportUpdateFuncs && console.log('User agent mismatch, updating user agent for target:', targetId);
+        DEBUG.debugUserAgent && console.log(`Will update user agent for target ${targetId}`, {mobile, desiredUserAgent});
         const nav = {
           userAgent: desiredUserAgent,
           platform: mobile ? mobPlat : deskPlat,
           acceptLanguage: connection.navigator.acceptLanguage || 'en-US',
         };
         Object.assign(connection.navigator, nav);
+        DEBUG.traceViewportUpdateFuncs && console.log('Assigned new navigation properties to connection.navigator');
         await send("Emulation.setUserAgentOverride", nav, sessionId);
+        DEBUG.traceViewportUpdateFuncs && console.log('Sent Emulation.setUserAgentOverride');
         await send(
           "Emulation.setScrollbarsHidden",
-          {hidden:mobile},
+          {hidden: mobile},
           sessionId
         );
+        DEBUG.traceViewportUpdateFuncs && console.log('Sent Emulation.setScrollbarsHidden');
       } else {
-        DEBUG.debugUserAgent && console.log(`Will NOT update user agent for target ${targetId}`, {mobile,userAgent, desiredUserAgent});
+        DEBUG.traceViewportUpdateFuncs && console.log('User agent matches, no update needed for target:', targetId);
+        DEBUG.debugUserAgent && console.log(`Will NOT update user agent for target ${targetId}`, {mobile, userAgent, desiredUserAgent});
       }
       list.push(sessionId);
-    } catch(err) {
-      console.warn(`Error updating user agent for double checked target`, {targetId, sessionId}, err);
+      DEBUG.traceViewportUpdateFuncs && console.log('Added sessionId to list');
+    } catch (err) {
+      console.warn(`Error updating user agent for double-checked target`, {targetId, sessionId}, err);
     }
   }
+  DEBUG.traceViewportUpdateFuncs && console.log('Finished processing targets, deduplicating sessionId list');
   list = [...(new Set([...list]))];
-  for ( const sessionId of list ) {
+  DEBUG.traceViewportUpdateFuncs && console.log('Deduplicated sessionId list:', list);
+  for (const sessionId of list) {
+    DEBUG.traceViewportUpdateFuncs && console.log('Reloading after user agent update for sessionId:', sessionId);
     DEBUG.debugSetupReload && console.log(`Reloading after user agent update`);
-    connection.reloadAfterSetup(sessionId, {reason:'user-agent'});
+    try {
+      connection.reloadAfterSetup(sessionId, {reason: 'user-agent'});
+      DEBUG.traceViewportUpdateFuncs && console.log('Successfully reloaded sessionId:', sessionId);
+    } catch (err) {
+      console.error('Reload error', err);
+    }
   }
+  DEBUG.traceViewportUpdateFuncs && console.log('Exiting updateAllTargetsToUserAgent');
 }
 
 async function updateAllTargetsToViewport({commonViewport, connection, skipSelf = false}) {
@@ -2337,7 +2416,9 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
   SCREEN_OPTS.maxWidth = commonViewport.width;
   SCREEN_OPTS.maxHeight = commonViewport.height;
   for ( const targetId of connection.targets.values() ) {
+    await untilTrueOrTimeout(() => sessions.has(targetId), 10);
     const sessionId = sessions.get(targetId);
+    if ( ! sessionId ) continue;
     //if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
     let width, height, screenWidth, screenHeight;
     try {
