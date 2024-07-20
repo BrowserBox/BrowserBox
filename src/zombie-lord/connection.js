@@ -1683,9 +1683,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.debugReload && console.log(`Not reloading because reason is: ${reason}`);
       return;
     }
+    DEBUG.debugReload && console.log(`Queueing debounced reload due to: ${reason} for ${sessionId}`);
     let reloader = Reloaders.get(sessionId);
     if ( ! reloader ) {
-      reloader = debounce(_reloadAfterSetup, 631);
+      reloader = debounce(() => {
+        _reloadAfterSetup(sessionId).then(() => DEBUG.debugReload && console.log(`Reloaded ${sessionId} due to: ${reason}`))
+      }, 631);
       Reloaders.set(sessionId);
     }
     reloader(sessionId);
