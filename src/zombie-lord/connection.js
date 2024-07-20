@@ -204,7 +204,7 @@ let lastWChange = '';
 let updatingTargets = false;
 
 function addSession(targetId, sessionId) {
-  console.log(`Adding SESSION`, targetId, sessionId);
+  DEBUG.debugSession && console.log(`Adding SESSION`, targetId, sessionId);
   sessions.set(targetId,sessionId);
   sessions.set(sessionId,targetId);
 }
