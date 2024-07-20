@@ -1680,7 +1680,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   function reloadAfterSetup(sessionId, {reason} = {}) {
     if ( ! reason || AllowedReloadReasons.has(reason) ) {
-      DEBUG.debugReload && console.log(`Not reloading because reason is: ${reload}`);
+      DEBUG.debugReload && console.log(`Not reloading because reason is: ${reason}`);
       return;
     }
     let reloader = Reloaders.get(sessionId);
