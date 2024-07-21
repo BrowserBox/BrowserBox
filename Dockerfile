@@ -49,7 +49,7 @@ RUN useradd -ms /bin/bash bbpro && \
     apt-get install -y sudo && \
     echo "bbpro ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-RUN groupadd browsers && useradd -m -G browsers bbpro
+RUN groupadd browsers && usermod -a -G browsers bbpro
 
 # install Node.js
 # RUN apt-get install -y nodejs
