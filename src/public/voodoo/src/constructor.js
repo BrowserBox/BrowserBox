@@ -21,6 +21,7 @@
       logit, sleep, debounce, DEBUG, BLANK, 
       CONFIG,
       OPTIONS,
+      FACADE_HOST_REGEX,
       isFirefox, isSafari, deviceIsMobile,
       SERVICE_COUNT,
       // for bang
@@ -106,6 +107,7 @@
     const IMMEDIATE = 0;
     const SHORT_DELAY = 20;
     const LONG_DELAY = 300;
+    const NEW_TAB_ACTIVATE_DELAY = 400;
     const VERY_LONG_DELAY = 60000;
     const EVENT_THROTTLE_MS = 60;  /* 20, 40, 80 */
 
@@ -147,6 +149,35 @@
           limitCursor,
         } = subviews;
 
+      // account
+        const isSubscriber = {};
+
+        try {
+          fetch('/isSubscriber').then(r => r.json()).then(resp => {
+            // gotta make money
+            Object.assign(isSubscriber, resp || {});
+          }).catch(e => console.warn(`Could not determine if user is a subscriber`, e));
+        } catch(e) {
+          console.warn(`Could not check is user is subscriber`, e);
+        }
+
+        // UTC epoch seconds when the browser expires
+        const browserExpiresAt = {};
+
+        try {
+          fetch('/expiry_time').then(r => r.json()).then(resp => {
+            // gotta make money
+            const time = Number(resp?.expiry_time);
+            if ( Number.isNaN(time) ) {
+              throw new Error(`Cannot read browser expiry time. Browser will shut down at scheduled expiry time but expiry countdown clock may not display correctly`);
+            }
+            browserExpiresAt.browserExpiresAt = time;
+            console.info(`Browser will expire at UTC: ${new Date(browserExpiresAt.browserExpiresAt*1000)}`);
+          }).catch(e => console.warn(`Could not determine expiry time for countdown clock. Clock will assume 5 minutes.`, e));
+        } catch(e) {
+          console.info(`Error accessing browser expiry clock time. This does not affect any scheduled shutdown. For unlimited sessions, subscribe now. Or extend your session by 1 hour by purchasing at the button above`, e);
+        } 
+
       // url params
         const urlParams = new URLSearchParams(location.search);
         const urlFlags = parseURLFlags(urlParams);
@@ -160,6 +191,13 @@
 
       // app state
         magicAssign(state, {
+          // account (CloudTabs, etc),
+          isSubscriber, 
+          browserExpiresAt,
+
+          // setup
+          untilLoaded,
+
           // internet
           Connectivity,
 
@@ -334,6 +372,7 @@
           contextMenuEvent: null,
           contextMenuBondTasks: makeContextMenuBondTasks(state),
           untilTrue,
+          untilTrueOrTimeout,
 
           // MIGRATE (go)
           go,
@@ -517,9 +556,9 @@
       // event handlers
         // multiplayer connections
           const MENU = new URL(location);
-          MENU.port = parseInt(location.port) - 1;
+          MENU.port = parseInt(CONFIG.mainPort) - 1;
           const CHAT = new URL(location);
-          CHAT.port = parseInt(location.port) + 2;
+          CHAT.port = parseInt(CONFIG.mainPort) + 2;
           self.addEventListener('message', ({data, origin, source}) => {
             if ( origin === CHAT.origin ) {
               if ( data.multiplayer ) {
@@ -583,7 +622,16 @@
               new URL(location)
             ;
             AUDIO.pathname = DEBUG.useStraightAudioStream ? '/' : '/stream';
-            AUDIO.port = CONFIG.isOnion ? 443 : parseInt(location.port) - 2;
+            const DEFAULT_AUDIO_PORT = parseInt(CONFIG.mainPort) - 2;
+            AUDIO.port = (CONFIG.isOnion || CONFIG.isDNSFacade) ? 443 : DEFAULT_AUDIO_PORT;
+            if ( CONFIG.isDNSFacade ) {
+              const subs = location.hostname.split('.');
+              if ( subs?.[0]?.match?.(FACADE_HOST_REGEX)?.index == 0 ) {
+                subs.shift();
+                subs.unshift(`p${DEFAULT_AUDIO_PORT}`);
+              }
+              AUDIO.hostname = subs.join('.');
+            }
             AUDIO.searchParams.set('ran', Math.random());
 
             AUDIO.searchParams.set('localCookie', await state.localCookie);
@@ -1111,13 +1159,13 @@
               if ( tab ) {
                 if ( DEBUG.activateNewTab ) {
                   DEBUG.val && console.log('Setting activate to occur after delay for new tab');
-                  setTimeout(activate, LONG_DELAY);
+                  setTimeout(activate, NEW_TAB_ACTIVATE_DELAY);
                 }
               } else {
                 DEBUG.activateDebug && console.warn('created tab not found in our list', meta.created);
                 if ( DEBUG.activateNewTab ) {
                   DEBUG.activateDebug && console.log('Pushing activate for new tab');
-                  state.updateTabsTasks.push(activate);
+                  state.updateTabsTasks.push(() => setTimeout(activate, NEW_TAB_ACTIVATE_DELAY));
                 }
                 updateTabs();
               }
@@ -1159,7 +1207,7 @@
             if ( tab ) {
               if ( DEBUG.activateNewTab ) {
                 (DEBUG.val || DEBUG.activateDebug) && console.log('Refered -> Activate now');
-                activate();
+                setTimeout(activate, NEW_TAB_ACTIVATE_DELAY);
               }
             } else {
               DEBUG.activateDebug && console.warn(
@@ -1168,7 +1216,7 @@
               );
               if ( DEBUG.activateNewTab ) {
                 DEBUG.activateDebug && console.log('Refered -> Pushing activate for new tab');
-                state.updateTabsTasks.push(activate);
+                state.updateTabsTasks.push(() => setTimeout(activate, NEW_TAB_ACTIVATE_DELAY));
               }
               updateTabs();
             }
@@ -1215,8 +1263,16 @@
 
           queue.addMetaListener('secureview', ({secureview}) => {
             DEBUG.val && console.log('secureview', secureview);
-            const {url} = secureview;
+            let {url} = secureview;
             if ( url ) {
+              if ( CONFIG.isDNSFacade ) {
+                url = new URL(url);
+                const subs = url.hostname.split('.');
+                const port = url.port;
+                subs.unshift(`p${port}`);
+                url.port = url.protocol == 'https:' ? 443 : 80;
+                url.hostname = subs.join('.');
+              }
               if ( DEBUG.useWindowOpenForSecureView ) {
                 globalThis.window.open(url);
               } else {
@@ -1358,6 +1414,7 @@
       }
 
       const api = {
+        untilLoaded, 
         back: () => 1,
         forward: () => 1,
         reload: () => 1, 
@@ -1409,6 +1466,8 @@
       });
 
       if ( activeTarget ) {
+        DEBUG.activateDebug && console.log(`Activate to be called`);
+        DEBUG.activateDebug && alert((new Error).stack);
         setTimeout(() => activateTab(null, {hello:'onload', targetId:activeTarget}, {forceFrame:true}), LONG_DELAY);
       }
 
@@ -2154,7 +2213,8 @@
             notify: notify = true, 
             forceFrame: forceFrame = false
           } = {}) {
-            DEBUG.activateDebug && console.log('activate called', click, tab, {notify, forceFrame});
+            DEBUG.activateDebug && console.log('activate called', click, tab, {notify, forceFrame}, new Error);
+            DEBUG.activateDebug && alert((new Error).stack);
 
             sizeTab();
 
@@ -2177,14 +2237,10 @@
             } else {
               tab = ourtab;
             }
-            DEBUG.val && console.log('Activating?', tab);
 
-            if ( state.activeTarget == tab.targetId ) {
-              if ( state.chromeUI ) { // otherwise there is no omniBoxInput
-                if ( state.viewState.omniBoxInput == state.viewState.lastActive ) {
-                  state.viewState.omniBoxInput?.focus();
-                }
-              }
+            if ( tab.url == '' ) {
+              DEBUG.val && console.log(`Refusing to activate tab with empty url`, tab);
+              return;
             }
 
             DEBUG.val && console.log('Activating', tab);
@@ -2377,9 +2433,13 @@
               }
               // this ensures we activate the tab
               if ( state.tabs.length ) {
-                if ( state.tabs.length == 1 ) {
+                if ( state.tabs.length == 1 && !activeTarget) {
+                  DEBUG.activateDebug && console.log(`Activate to be called`);
+                  DEBUG.activateDebug && alert((new Error).stack);
                   setTimeout(() => activateTab(null, {hello:'onupdate.len1', targetId:state.tabs[0].targetId}, {forceFrame:true}), LONG_DELAY);
                 } else if( !activeTarget ) {
+                  DEBUG.activateDebug && console.log(`Activate to be called`);
+                  DEBUG.activateDebug && alert((new Error).stack);
                   setTimeout(() => activateTab(null, {hello:'onupdate.noactive', targetId:state.tabs[0].targetId}, {forceFrame:true}), LONG_DELAY);
                 } else {
                   // the reason we don't set timeout here is because if we did
@@ -2433,6 +2493,8 @@
         function canKeysInput() {
           if ( state.viewState.viewFrameEl ) return;
           setTimeout(() => {
+            DEBUG.debugKeysCanInput && console.log(`Sending canKeysInput`);
+            DEBUG.debugKeysCanInput && deviceIsMobile() && alert(`Sending canKeysInput`);
             queue.send({
               type: "canKeysInput",
               synthetic: true

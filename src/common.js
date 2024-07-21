@@ -13,6 +13,38 @@ export * from './args.js';
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
+export const BASE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro');
+export const SUBSCRIBER_FILE_PATH = path.resolve(BASE_PATH, 'subscriber.json');
+export const WL_FILE_PATH = path.resolve(BASE_PATH, 'wl.txt');
+export const expiryTimeFilePath = path.resolve(BASE_PATH, 'expiry_time');
+export let subscriberFileExists;
+
+try {
+  subscriberFileExists = fs.existsSync(path.resolve(SUBSCRIBER_FILE_PATH));
+} catch(e) {
+  subscriberFileExists = false;
+}
+
+export const isCT = process?.env?.DOMAIN?.endsWith?.('.cloudtabs.net');
+
+export let wlFileExists;
+export let hostWL;
+
+if ( isCT ) {
+  try {
+    wlFileExists = fs.existsSync(path.resolve(WL_FILE_PATH));
+    hostWL = new Set(
+      fs.readFileSync(path.resolve(WL_FILE_PATH)).toString()
+        .split(/\s*\n\s*/g)
+        .map(line => line.trim())
+        .filter(line => line.length)
+    );
+    //console.log(`WL set up`, hostWL);
+  } catch(e) {
+    console.warn(e);
+    wlFileExists = false;
+  }
+}
 
 export const EXPEDITE = new Set([
   "Target.activateTarget",
@@ -31,6 +63,24 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugSession: false,
+  traceViewportUpdateFuncs: false,
+  debugReload: false,
+  debugInfoChanged: false,
+  attachDebug: false,
+  debugSetupReload: false,
+  blockDebug: false,
+  debugDebounce: false,
+  adjustHeightForHeadfulUI: true,
+  needsDOMSnapshot: false,
+  dontSkipOldMissingWorldsCheck: false,
+  disableIso: true,
+  decorateFrameListWithContexts: true,
+  showFrameTreeOnFrameChanges: true,
+  debugNewWorlds: false,
+  neverShowErrorSources: false,
+  debugReloadLoop: false,
+  alwaysStartShutdownTimer: true,
   debugViewports: false,
   noteCallStackInLog: true,
   showNoTargets: false,
@@ -43,6 +93,7 @@ export const DEBUG = Object.freeze({
   networkBlocking: true,
   blockFileURLs: true,
   blockChromeURLs: false,
+  blockInspect: true,
   extensionsNew: true,
   preventNewTab: true,
   extensionsAssemble: false,
@@ -123,7 +174,7 @@ export const DEBUG = Object.freeze({
   debugFavicon: false,
   neverWait: true, /* for commands */
   attachImmediately: true,
-  manuallyInjectIntoEveryCreatedContext: true,
+  manuallyInjectIntoEveryCreatedContext: false,
   ignoreCertificateErrors: true,
   debugNavigator: false,
   showContextIdCalls: false,
@@ -208,9 +259,12 @@ export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   ...(
   process.env.DOMAIN ? [
     `https://${process.env.DOMAIN}:*`,
+    `https://*.${process.env.DOMAIN}:*`,
   ] : []),
-  ...(
-    !os?.userInfo?.()?.username?.startsWith?.("bbuser-ss") ? [
+  ...((
+    process?.env?.DOMAIN?.endsWith?.('.cloudtabs.net') &&  
+    !os?.userInfo?.()?.username?.startsWith?.("bbuser-ss")
+    ) ? [
       "*"
   ] : []),
 ];
@@ -221,11 +275,17 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
-  homePage: 'https://google.com',
+  useRedirectBlock: true,
+  blockedRedirectLocation: 'https://browse.cloudtabs.net/blocked',
+  isCT,
+  hostWL,
+  expiryTimeFilePath,
+  homePage: 'https://bing.com',
   BINDING_NAME: 'bb',
   devapi: true,
   inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this
   createPowerSource: false,
+  isSubscriber: subscriberFileExists || false,
   useTorProxy: process.env.TOR_PROXY || false,
   // viewport scale up related options
     // note: we are switching this off as the weird seems to break some sites
@@ -245,7 +305,7 @@ export const CONFIG = Object.freeze({
   blockAllCaptureScreenshots: true,
   setAlternateBackgroundColor: false,
   screencastOnly: true,
-  baseDir: path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro'),
+  baseDir: BASE_PATH,
   darkMode: false, 
   forceDarkContentMode: false,
   audioDropPossiblySilentFrames: true,
@@ -326,7 +386,7 @@ if ( DEBUG.noSecurityHeaders ) {
 
 export const GO_SECURE = fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.APP_PORT), 'privkey.pem'));
 
-export const version = 'v7';
+export const version = 'v9';
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
 
 export const SECURE_VIEW_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 'get_download_view_url.sh');
@@ -387,24 +447,28 @@ export async function sleep(ms, Aborter) {
 }
 
 export async function untilTrueOrTimeout(pred, seconds) {
-  return untilTrue(pred, 500, 2*seconds, reject => reject(`Checking predicate (${pred}) timed out after ${seconds} seconds.`));
+  return untilTrue(pred, 500, 2*seconds, () => new Error(`Checking predicate (${pred}) timed out after ${seconds} seconds.`));
 }
 
-export async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WAITS) {
+export async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WAITS, getRejectionReason) {
   let waitCount = 0;
-  let resolve;
-  const pr = new Promise(res => resolve = res);
+  let resolve, reject;
+  const pr = new Promise((res, rej) => (resolve = res, reject = rej));
   setTimeout(checkPred, 0);
   return pr;
 
   async function checkPred() {
-    DEBUG.debugUntilTrue && console.log('Checking', pred);
+    DEBUG.debugUntilTrue && console.log('Checking', pred+'');
     if ( await pred() ) {
       return resolve(true);
     } else {
       waitCount++;
       if ( waitCount < maxWaits ) {
         setTimeout(checkPred, waitOverride);
+      } else {
+        if ( getRejectionReason ) {
+          return reject(getRejectionReason());
+        }
       }
     }
   }
@@ -443,6 +507,7 @@ export function throttle(func, wait) {
 export function debounce(func, wait) {
   let timeout;
   return function (...args) {
+    DEBUG.debugDebounce && console.log(`Debounce got func ${func} with args ${args}`);
     const later = () => {
       timeout = null; 
       func.apply(this, args);

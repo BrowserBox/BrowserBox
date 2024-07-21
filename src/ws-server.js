@@ -6,7 +6,6 @@
   import child_process from 'child_process';	
 
   import express from 'express';
-  /* import fetch from 'node-fetch'; */
   import multer from 'multer';
   import {WebSocketServer, WebSocket} from 'ws';
   import Peer from 'simple-peer';
@@ -18,7 +17,6 @@
   import helmet from 'helmet';
   import rateLimit from 'express-rate-limit';
   import csrf from 'csurf';
-  //import {CWebp} from 'cwebp';
 
   import zl from './zombie-lord/index.js';
   import {start_mode} from './args.js';
@@ -36,6 +34,7 @@
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
 
   // config
+    const SHUTDOWN_MINUTES = 45 * 60 * 1000; // lol
     const SafariPlatform = /^((?!chrome|android).)*safari/i;
     const PEER_RECONNECT_MS = 2000;
     const FRAME_LIMIT = false; // 'SAMEORIGIN' or 'DENY' or false (no limit)
@@ -52,6 +51,14 @@
     Object.freeze(COOKIE_OPTS);
 
   DEBUG.debugCookie && console.log(COOKIE_OPTS);
+
+  if ( ! DEBUG.blockInspect ) {
+    console.warn(`
+        ===============================================
+               WARNING: Inspect is not blocked. 
+        ===============================================
+    `);
+  }
 
   // file uploads
     export const fileChoosers = new Map();
@@ -124,11 +131,11 @@
   const TabNumbers = new Map();
 
   export let LatestCSRFToken = '';
+  let shutdownTimer = null;
   let serverOrigin;
   let messageQueueRunning = false;
   let requestId = 0;
   let TabNumber = 0;
-
 
   export async function start_ws_server(
       port, zombie_port, allowed_user_cookie, session_token, 
@@ -161,6 +168,7 @@
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ])
       ],
       frameSrc: [
@@ -172,6 +180,7 @@
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
+          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ])
       ],
@@ -197,7 +206,9 @@
           `https://${process.env[`ADDR_${server_port + 2}`]}:*`, // docs
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ])
       ],
       fontSrc: [
@@ -548,6 +559,7 @@
             onlineCount: zl.act.linkStats(zombie_port).onlineCount
           }
         });
+        stopShutdownTimer();
         DEBUG.debugConnect && console.log(`Check 3`);
         let peer;
         zl.life.onDeath(zombie_port, () => {
@@ -561,6 +573,10 @@
           closed = true;    
           ws = null;
           peer && peer.destroy(new Error(`Main communication WebSocket closed.`));
+          console.log(`Clients connected now: ${websockets.size}`);
+          if ( websockets.size === 0 ) {
+            startShutdownTimer();
+          }
           peer = null;
           zl.act.addLink({so, forceMeta}, {connectionId, peer: null, socket:null}, zombie_port);
           zl.act.deleteLink({connectionId}, zombie_port);
@@ -772,6 +788,10 @@
         ws.on('error', err => {
           DEBUG.debugConnect && console.log(`Check 10`);
           console.log(`ws err`, err);
+          websockets.delete(ws);
+          if ( websockets.size === 0 ) {
+            startShutdownTimer();
+          }
         });
         DEBUG.debugConnect && console.log(`Check 11`);
         if ( DEBUG.useWebRTC ) {
@@ -881,6 +901,9 @@
     process.on('SIGUSR2', shutDown);
     process.on('beforeExit', shutDown);
     process.on('exit', shutDown);
+
+    DEBUG.alwaysStartShutdownTimer && startShutdownTimer();
+
     return server;
 
     function addHandlers() {
@@ -960,15 +983,52 @@
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
           DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          res.type('json');
           if ( (cookie !== allowed_user_cookie) ) {
             return res.status(401).send('{"err":"forbidden"}');
           }
-          res.type('json');
           const data = {};
           if ( CONFIG.useTorProxy ) {
             data.isTor = true;
           } else {
             data.isTor = false;
+          }
+          res.end(JSON.stringify(data));
+        });
+        app.get(`/isSubscriber`, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          res.type('json');
+          if ( (cookie !== allowed_user_cookie) ) {
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          const data = {};
+          if ( CONFIG.isSubscriber ) {
+            data.isSubscriber = true;
+          } else {
+            data.isSubscriber = false;
+          }
+          res.end(JSON.stringify(data));
+        });
+        app.get(`/expiry_time`, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          res.type('json');
+          if ( (cookie !== allowed_user_cookie) ) {
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          const data = {};
+          if ( CONFIG.isSubscriber ) {
+            data.expiry_time = 0;
+          } else {
+            try {
+              data.expiry_time = fs.readFileSync(CONFIG.expiryTimeFilePath).toString().trim();
+            } catch(e) {
+              console.info(`Cannot read expiry time`, e);
+              data.expiry_time = 0;
+            }
           }
           res.end(JSON.stringify(data));
         });
@@ -1122,7 +1182,7 @@
           if ( process.env.PM2_USAGE && process.env.name ) {
             DEBUG.debugRestart && console.log(`Is pm2. Deleting pm2 name`, process.env.name);
             try {
-              console.log(child_process.execSync(`pm2 delete ${process.env.name}`).toString());
+              return executeShutdownOfBBPRO();
             } catch(e) {
               console.warn(e);
             }
@@ -1153,6 +1213,7 @@
           /**
             launch a new browser (if one is not running)
           **/
+          throw new Error(`Not implemented`);
         });
       // app integrity check
         app.get("/integrity", ConstrainedRateLimiter, (req, res) => {
@@ -1214,7 +1275,7 @@
         message;
       } else {
         if ( message.data ) {
-          message.data = message.data.filter(x => !!x);
+          message.data = message.data.filter(x => !!x && Object.getOwnPropertyNames(x).length);
         }
         message = JSON.stringify(message);
       }
@@ -1307,3 +1368,19 @@
     return name;
   }
 
+  function startShutdownTimer() {
+    if ( shutdownTimer ) return;
+    console.log(`Starting BrowserBox shutdown timer on all clients disconnected`);
+    shutdownTimer = setTimeout(executeShutdownOfBBPRO, SHUTDOWN_MINUTES);
+  }
+
+  function stopShutdownTimer() {
+    clearTimeout(shutdownTimer);
+    console.log(`Stopped BrowserBox shutdown timer on a client connected`);
+    shutdownTimer = null;
+  }
+
+  function executeShutdownOfBBPRO() {
+    console.warn(`Stopping BrowserBox`);
+    return child_process.exec(`stop_bbpro`);
+  }

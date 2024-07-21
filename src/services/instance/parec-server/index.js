@@ -212,7 +212,9 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
           `https://*.dosyago.com:${PORT+1}`,
           "wss://*.browserbox.pro:*",
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+          `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ],
         styleSrc: [
           "'self'", 

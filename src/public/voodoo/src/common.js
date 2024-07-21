@@ -1,16 +1,17 @@
 export const SERVICE_COUNT = 4; // pptr(menu), chat, audio, devtools
 export const FRAME_CONTROL = false;
 
-export const VERSION = '9.0';
+export const VERSION = '9.9';
 export const SafariPlatform = /^((?!chrome|android).)*safari/i;
 const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 const FirefoxPlatform = /firefox/i;
+export const FACADE_HOST_REGEX = /^p\d+$/;
 
 export const iden = e => e;
 export const isSafari = () => SafariPlatform.test(navigator.userAgent);
 
 export const GO_SECURE = globalThis?.location?.protocol == 'https:';
-export const version = 'v8.1';
+export const version = 'v9';
 export const Port = globalThis?.location?.port || (GO_SECURE ? '443': '80');
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`+Port;
 
@@ -32,6 +33,11 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  debugSW: false,
+  debugKeysCanInput: false,
+  get debugKCI() {
+    return this.debugKeysCanInput;
+  },
   blockClientFormFactorCommands: false, /*block setWindowBounds, and setDeviceMetricsOverride from client*/
   logPlugins: false,
   debugPuterAbility: false,
@@ -44,7 +50,6 @@ export const DEBUG = Object.freeze({
   showStableSizeOnResize: false,
   debugUntilTrue: false,
   debugUberFetch: false,
-  debugInspect: false,
   useUberFetch: true,
   logUberFetchErrors: true,
   tryPeeringAnywayEvenIfUserMediaFails: false,  // there's no point because we only request perms on mobile and 
@@ -121,6 +126,7 @@ export const DEBUG = Object.freeze({
   debugBox: false,
   debugDraw: false,
   debugDevTools: false,
+  debugInspect: false,
   debugFrameDrops: false,
   logFrameIds: false,
   dropFramesWhenDrawing: false,
@@ -187,15 +193,28 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  get isCT() {
+    return globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net');
+  },
+  get mainPort() {
+    if ( CONFIG.isDNSFacade ) {
+      return parseInt(location.hostname.split('.')[0].replace(/\D+/g, '')); 
+    } else {
+      return location.port;
+    }
+  },
+  get isDNSFacade() {
+    return !!location.hostname.split('.')[0].match(FACADE_HOST_REGEX);
+  },
   ensureDevToolsOpensInNewTab: false,
-  logUpdatedContent: true,
+  logUpdatedContent: false,
   ensureFrameOnResize: true,
   openServicesInCloudTabs: globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net') ? true : OPEN_SERVICES_IN_BROWSER,
   encforceKeyOrdering: true,
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
   get useServiceWorkerToCache() {
-    return false;
+    return true;
   },
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,

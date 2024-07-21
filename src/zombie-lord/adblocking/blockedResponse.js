@@ -1,17 +1,17 @@
 export const BLOCKED_CODE = 200;
 export const BLOCKED_BODY = Buffer.from(`
-  <style>:root { font-family: system-ui, monospace; }</style>
+  <style>:root { font-family: Arial; }</style>
   <h1>Request blocked</h1>
-  <p>This navigation was prevented by the BrowserBox ad blocker.</p>
+  <p>This navigation prevented by BrowserBox.</p>
   <details>
-    <summary>Not an ad?</summary>
+    <summary>To block or not to block?</summary>
     <p>
-      Tweet the link you clicked or the page you were on <a target=_blank href=https://twitter.com/@browsergap>@browsergap</a> for service.
+      Send the link you clicked or the page you were on to: <a style="text-decoration: none; color: inherit;" target=_blank href=mailto:support@dosyago.com>support@dosyago.com</a> to report.
     <p>
   </details>
 `).toString("base64");
 export const BLOCKED_HEADERS = [
-  {name: "X-Powered-By", value: "Zanj-Dosyago-Corporation"},
+  {name: "X-Powered-By", value: "DOSAYGO-BrowserBox"},
   {name: "X-Blocked-Internally", value: "Custom ad blocking"},
   {name: "Accept-Ranges", value: "bytes"},
   {name: "Cache-Control", value: "public, max-age=0"},
@@ -21,7 +21,7 @@ export const BLOCKED_HEADERS = [
 
 const BLOCKED_RESPONSE = `
 HTTP/1.1 ${BLOCKED_CODE} OK
-X-Powered-By: Zanj-Dosyago-Corporation
+X-Powered-By: DOSAYGO-BrowserBox
 X-Blocked-Internally: Custom ad blocking
 Accept-Ranges: bytes
 Cache-Control: public, max-age=0

@@ -32,56 +32,85 @@
       }
     });
     self.addEventListener('load', monitorActiveElement);
-    self.addEventListener('domcontentloaded', monitorActiveElement);
-    setTimeout(monitorActiveElement, 100);
+    if ( document.addEventListener ) {
+      document.addEventListener('DOMContentLoaded', monitorActiveElement);
+    }
+    setTimeout(monitorActiveElement, 200);
     self.canKeysInput = () => monitorActiveElement(null, {alwaysNotify:true});
     console.log(JSON.stringify({message:"Defined canKeysInput",targetId:self.targetId}));
   }
 
-  function monitorActiveElementNextTick(e = {target:document.activeElement}) {
-    let {target} = e || {target:document.activeElement};
-    let condition = target == self.focusEl;
+  // i believe this function next tick refers to how the focus out event will essentially occur on the 'next tick' after focus/activeEl status
+  // is lost the function is for monitoring that keys can no longer input
+  function monitorActiveElementNextTick(e = {target:document.activeElement}, {alwaysNotify = false} = {}) {
+    let focusDestination =  document.activeElement;
+    let condition;
     if ( !e.path ) {
       e.path = e?.composedPath?.() || getAncestors(target);
     }
-    if ( !condition && e?.path ) {
-      target = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
-      condition = target == self.focusEl;
-    }
-    if ( condition ) {
-      self.focusEl = null;
-      keysCanInput = false;
-      s({keysCanInput,isTextareaOrContenteditable,type});
-    }
-  }
-
-  function monitorActiveElement(e = {target:document.activeElement}, {alwaysNotify:alwaysNotify = false} = {}) {
-    let {target} = e || {target:document.activeElement};
-    if ( ! target || ! target.matches ) return;
-    let condition = target.matches(KEYINPUT_ELEMENT);
-    if ( !e.path ) {
-      e.path = e?.composedPath?.() || getAncestors(target);
-    }
-    if ( !condition && e?.path ) {
-      target = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
-      condition = !!target;
-    }
-    if ( condition ) {
-      self.focusEl = target;
-      const newType = target.getAttribute('type');
-      const inputmode = target.getAttribute('inputmode');
-      const newIsTextareaOrContenteditable = target.matches(TEXTAREA_OR_CONTENTEDITABLE);
-      // always notify (since we may be joining page for first time)
+    setTimeout(() => {
+      condition = focusDestination.matches(KEYINPUT_ELEMENT);
+      if ( condition ) {
+        //console.log(`KCI on active element`, focusDestination);
+      }
+      const changedTarget = self.focusEl != focusDestination;
+      const newType = focusDestination.getAttribute('type');
+      const inputmode = focusDestination.getAttribute('inputmode');
+      const newIsTextareaOrContenteditable = focusDestination.matches(TEXTAREA_OR_CONTENTEDITABLE);
+      self.focusEl = focusDestination;
+      if ( ! condition ) {
+        self.focusEl = null;
+      }
       if ( alwaysNotify || 
-        condition != keysCanInput || type != newType || newIsTextareaOrContenteditable != isTextareaOrContenteditable 
+        changedTarget || (condition != keysCanInput) || (type != newType) || (newIsTextareaOrContenteditable != isTextareaOrContenteditable) 
       ) {
-        const value = target.value;
+        //console.log(`Focus out keysCanInput ${keysCanInput} condition ${condition}`);
+        const value = condition ? (focusDestination.value || focusDestination.textContent) : undefined;
         keysCanInput = condition;
         type = newType;
         isTextareaOrContenteditable = newIsTextareaOrContenteditable;
         s({keysCanInput,isTextareaOrContenteditable,type,inputmode,value});
       }
+    }, 100);
+  }
+
+  function monitorActiveElement(e = {target:document.activeElement}, {alwaysNotify:alwaysNotify = false} = {}) {
+    let target = e.target;
+    if ( ! target || ! target.matches ) return;
+    if ( !e.path ) {
+      e.path = e?.composedPath?.() || getAncestors(target);
     }
+    let condition;
+    setTimeout(() => {
+      if ( document.activeElement.matches(KEYINPUT_ELEMENT) ) {
+        target = document.activeElement;
+      }
+      condition = target.matches(KEYINPUT_ELEMENT);
+      if ( !condition && e?.path ) {
+        target = Array.from(e.path).find(el => el.matches && el.matches(KEYINPUT_ELEMENT)); 
+        condition = !!target;
+      }
+      if ( condition ) {
+        const changedTarget = self.focusEl != target;
+        const newType = target.getAttribute('type');
+        const inputmode = target.getAttribute('inputmode');
+        const newIsTextareaOrContenteditable = target.matches(TEXTAREA_OR_CONTENTEDITABLE);
+        self.focusEl = target;
+        // always notify (since we may be joining page for first time)
+        if ( alwaysNotify || 
+          changedTarget || (condition != keysCanInput) || (type != newType) || (newIsTextareaOrContenteditable != isTextareaOrContenteditable) 
+        ) {
+          const value = target.value;
+          keysCanInput = condition;
+          type = newType;
+          isTextareaOrContenteditable = newIsTextareaOrContenteditable;
+          s({keysCanInput,isTextareaOrContenteditable,type,inputmode,value});
+        }
+      }
+      if ( ! condition ) {
+        self.focusEl = null;
+      }
+    }, 100);
   }
 
   function s(o) {

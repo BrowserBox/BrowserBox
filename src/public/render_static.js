@@ -7,7 +7,7 @@ import * as Path from 'path';
   const STATIC_FILE_PATHS = {
     'index.html': Site.Landing.default,
     'pages': {
-      'about-browsergap.html': Site.Pages.About,
+      'about-browserbox.html': Site.Pages.About,
       'training-and-tutorials.html': Site.Pages.Training,
       'remote-cloud-browser-service.html': Site.Pages.CloudBrowsers,
       'per-seat-subscription-pricing.html': Site.Pages.Pricing,

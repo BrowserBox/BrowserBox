@@ -4,7 +4,7 @@ On this day
 
 The 23rd of January Two Thousand Twenty Two
 
-I, Cris Stringfellow
+I, Cris DOSAYGO
 
 Founder of the Dosyago Corporation
 

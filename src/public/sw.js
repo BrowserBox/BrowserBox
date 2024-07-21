@@ -1,7 +1,8 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v9.0';
+const CACHE_VERSION = 'v9.9';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'etag-cache-' + CACHE_VERSION;
+const DEBUG = globalThis.SW_DEBUG || false;
 
 // Define the patterns to cache as strings
 const patternsToCache = [
@@ -9,6 +10,7 @@ const patternsToCache = [
 ];
 const excludedPaths = new Set([
   "/voodoo/src/common.js",
+  "/expiry_time",
   "/integrity",
   "/file",
   "/local_cookie.js", 
@@ -61,10 +63,10 @@ const regexPatternsToCache = patternsToCache.map(pattern => new RegExp(pattern))
             if (cachedResponse) {
               // Here we add the request to the revalidation process with ETag checking
               checkETagAndRevalidate(event.request, cachedResponse);
-              console.log('Returning cached response for', event.request);
+              DEBUG && console.log('Returning cached response for', event.request);
               return cachedResponse;
             }
-            console.log('Returning and caching new response for', event.request);
+            DEBUG && console.log('Returning and caching new response for', event.request);
             return fetchAndCache(event.request);
           })
       );
@@ -101,7 +103,7 @@ const regexPatternsToCache = patternsToCache.map(pattern => new RegExp(pattern))
       signal: (new AbortController()).signal
     }).then(response => {
       if (response.status === 304) {
-        console.log('Content not modified');
+        DEBUG && console.log('Content not modified');
         return false;
       } else if (response.ok) {
         const newEtag = response.headers.get('ETag');
@@ -122,7 +124,7 @@ const regexPatternsToCache = patternsToCache.map(pattern => new RegExp(pattern))
         return true;
       }
     }).catch(error => {
-      console.error('Revalidation failed:', error);
+      DEBUG && console.error('Revalidation failed:', error);
     });
   }
 //}

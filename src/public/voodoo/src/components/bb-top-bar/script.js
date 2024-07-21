@@ -12,6 +12,52 @@ class BBTopBar extends Base {
     state.downloadState = this.downloadState;
     state.topBarComponent = this;
     this.state = state;
+    this.untilLoaded().then(() => this.displayExpiryClock());
+  }
+
+  async displayExpiryClock() {
+    const {state} = this;
+    const timerSpan = this.shadowRoot.querySelector('#cloudtabs-session-clock');
+    
+    await state.untilTrueOrTimeout(() => !!state?.browserExpiresAt?.browserExpiresAt, 20);
+
+    const expiresAt = state.browserExpiresAt.browserExpiresAt;
+
+    let timerUpdater = setInterval(function() {
+      const now = Date.now() / 1000; // Current time in epoch seconds
+      let display = '';
+
+      if (typeof expiresAt === 'number' && expiresAt > now) {
+        const remainingSeconds = expiresAt - now;
+        if (remainingSeconds <= 99 * 3600) {
+          const hours = Math.floor(remainingSeconds / 3600);
+          const minutes = Math.floor((remainingSeconds % 3600) / 60);
+          const seconds = Math.floor(remainingSeconds % 60);
+          display = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        } else {
+          display = 'XX';
+          clearInterval(timerUpdater);
+        }
+      }
+
+      if (display) {
+        timerSpan.textContent = display;
+      } else {
+        timerSpan.style.display = 'none';
+        clearInterval(timerUpdater);
+      }
+    }, 1001);
+  }
+
+  goToExtend() {
+    const {state} = this;
+    globalThis.purchaseClicked = true;
+    if ( state.serverConnected ) {
+      globalThis.location.href='https://browse.cloudtabs.net/extend';
+    } else {
+      alert(`Sorry! Your session has already expired. You cannot extend it now. But you can purchase 1 hour for $1.`);
+      setTimeout(() => globalThis.location.href='https://browse.cloudtabs.net/extend', 150);
+    }
   }
 
   updateDownloadStatus(event) {

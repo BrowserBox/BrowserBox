@@ -305,7 +305,7 @@
       let pr = new Promise(res => resolve = res);
 
       try {
-        if ( mime && ARCHIVES.has(mime) && ! DOCUMENTS_THAT_ARE_ARCHIVES.has(ext) ) {
+        if ( mime && ARCHIVES.has(mime) && ! DOCUMENTS_THAT_ARE_ARCHIVES.has(ext) && ! FORBIDDEN_CONVERSIONS.has(ext) ) {
           isArchive = true;
           SCRIPT = EXPLORER;
           const destPath = Path.join(uploadPath, pdf.filename);

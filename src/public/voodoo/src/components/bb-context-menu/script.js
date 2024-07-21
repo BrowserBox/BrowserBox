@@ -142,7 +142,16 @@ class BBContextMenu extends Base {
         new URL(location)
       ;
 
-      url.port = state.CONFIG.isOnion ? 443 : parseInt(location.port) + 1;
+      if ( state.CONFIG.isDNSFacade ) {
+        const port = state.CONFIG.mainPort + 1;
+        const subs = url.hostname.split('.');
+        subs.shift();
+        subs.unshift(`p${port}`);
+        url.hostname = subs.join('.');
+        console.log({url});
+      } else {
+        url.port = state.CONFIG.isOnion ? 443 : (parseInt(state.CONFIG.mainPort) + 1);
+      }
 
       url.pathname = "login";
       const params = url.searchParams;
@@ -150,8 +159,9 @@ class BBContextMenu extends Base {
 
       DEBUG.debugInspect && console.log("Login url", url.href);
 
-      DEBUG.debugInspect && alert('use cookie?' + useCookies);
       const useCookies = state.useCookies;
+      DEBUG.debugInspect && alert('use cookie?' + useCookies);
+      DEBUG.debugInspect && console.log(state.CONFIG.mainPort, state.CONFIG)
 
       // we don't use cookie auth with Tor as Tor browser will block this "3rd-party request"
       if ( useCookies ) {
@@ -344,6 +354,7 @@ class BBContextMenu extends Base {
       state = this.state._top;
       const contextClick = state.contextMenuEvent;
       const target = state.viewState.canvasEl;
+      DEBUG.debugTabs && console.log({contextClick, target});
       let pageX, pageY, clientX, clientY;
       if ( contextClick?.detail?.pageX ) {
         ({pageX,pageY,clientX,clientY} = contextClick.detail);
