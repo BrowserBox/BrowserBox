@@ -49,11 +49,13 @@ RUN useradd -ms /bin/bash bbpro && \
     apt-get install -y sudo && \
     echo "bbpro ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+RUN groupadd browsers && usermod -a -G browsers bbpro
+
 # install Node.js
 # RUN apt-get install -y nodejs
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | sudo -E bash -
-RUN . ~/.nvm/nvm.sh; nvm install v20
+RUN . ~/.nvm/nvm.sh; nvm install v20; npm i -g npm@latest
 
 # Define HOME and WORKDIR
 ENV HOME=/home/bbpro
