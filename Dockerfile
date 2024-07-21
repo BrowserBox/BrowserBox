@@ -49,6 +49,8 @@ RUN useradd -ms /bin/bash bbpro && \
     apt-get install -y sudo && \
     echo "bbpro ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
+RUN groupadd browsers && useradd -m -G browsers bbpro
+
 # install Node.js
 # RUN apt-get install -y nodejs
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
