@@ -199,7 +199,7 @@ const launcher_api = {
     if ( DEBUG.disable3PC ) {
       CHROME_FLAGS.push(`--test-third-party-cookie-phaseout`);
     }
-    if ( DEBUG.disableIso ) {
+    if ( DEBUG.disableIso && ! isDocker() ) {
       CHROME_FLAGS.push(`--disable-site-isolation-trials`);
     }
     if ( DEBUG.extensionsAssemble ) {
@@ -214,8 +214,17 @@ const launcher_api = {
       CHROME_FLAGS.push(`--host-resolver-rules="MAP * 0.0.0.0 , EXCLUDE localhost"`);
     }
     if (isDocker()) {
-      console.log("We are in docker");
-      CHROME_FLAGS.push('--remote-debugging-address=0.0.0.0');
+      CHROME_FLAGS.push(...[
+        "--disable-gpu",
+        "--enable-low-end-device-mode",
+        "--ignore-gpu-blacklist",
+        "--single-process",
+        "--disable-extensions",
+        "--disable-hang-monitor",
+        "--noerrdialogs",
+        "--no-sandbox",
+        "--disable-dev-shm-usage"
+      ]);
       CHROME_FLAGS.push('--no-first-run');
       CHROME_FLAGS.push('--start-maximized');
       CHROME_FLAGS.push('--bwsi');
