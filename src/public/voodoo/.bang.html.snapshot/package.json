@@ -1,6 +1,6 @@
 {
   "name": "bang.html",
-  "version": "7.0.2",
+  "version": "7.0.5",
   "description": "BANG! Web Component custom elements with async templating, smooth syntax and custom void  tags!",
   "main": "dist/pack.bang.js",
   "scripts": {
@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com//i5ik/bang.git"
+    "url": "https://github.com//o0101/bang.git"
   },
   "keywords": [
     "bang!",
@@ -46,9 +46,9 @@
     "@babel/plugin-proposal-private-methods": "latest",
     "@babel/plugin-transform-modules-commonjs": "latest",
     "@babel/plugin-transform-strict-mode": "latest",
-    "babel-core": "latest",
+    "babel-core": "^4.7.16",
     "babel-loader": "latest",
-    "babel-preset-env": "latest",
+    "babel-preset-env": "^0.0.0",
     "css-loader": "latest",
     "eslint": "latest",
     "html-loader": "latest",
