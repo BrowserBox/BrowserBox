@@ -1,6 +1,6 @@
 {
   "name": "bang.html",
-  "version": "7.0.2",
+  "version": "7.0.4",
   "description": "BANG! Web Component custom elements with async templating, smooth syntax and custom void  tags!",
   "main": "dist/pack.bang.js",
   "scripts": {
@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com//i5ik/bang.git"
+    "url": "https://github.com//o0101/bang.git"
   },
   "keywords": [
     "bang!",
