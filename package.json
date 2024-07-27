@@ -1,7 +1,7 @@
 {
-  "name": "@dosyago/browserbox",
+  "name": "@browserbox/browserbox",
   "type": "module",
-  "version": "8.2.2",
+  "version": "9.1.0",
   "description": "BrowserBox - interactive images that embed web contents. A WebView for the open web, an unrestricted IFRAME element, a CORS-proxy, and reverse proxy. Secure remote browser isolation and document viewer, by DOSAYGO.",
   "main": "./src/server.js",
   "default": "dist/image.html",
@@ -13,7 +13,7 @@
     }
   },
   "bin": {
-    "bb": "./scripts/demo_run.sh"
+    "bbox": "./deploy-scripts/run_docker.sh 9999 localhost user@hostname.tld"
   },
   "parcelIgnore": [
     ".*/bang.js",
