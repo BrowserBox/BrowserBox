@@ -53,10 +53,10 @@ class BBTopBar extends Base {
     const {state} = this;
     globalThis.purchaseClicked = true;
     if ( state.serverConnected ) {
-      globalThis.location.href='https://browse.cloudtabs.net/buy';
+      globalThis.location.href='https://browse.cloudtabs.net/#myPlan';
     } else {
       alert(`Sorry! Your session has already expired. You cannot extend it now. But you can purchase 1 hour for $1.`);
-      setTimeout(() => globalThis.location.href='https://browse.cloudtabs.net/buy', 150);
+      setTimeout(() => globalThis.location.href='https://browse.cloudtabs.net/#myPlan', 150);
     }
   }
 

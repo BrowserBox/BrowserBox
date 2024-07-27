@@ -24,7 +24,7 @@ export async function fetchTabs({sessionToken}, getState) {
             if ( globalThis.purchaseClicked ) return;
             if ( CONFIG.isCT ) {
               alert(`Your session expired. You can buy more time starting from $1/hour`);
-              location.href = 'https://browse.cloudtabs.net/buy'
+              location.href = 'https://browse.cloudtabs.net/#myPlan'
             } else {
               alert(`Your session has expired or disconnected.`);
             }
@@ -98,7 +98,7 @@ export async function fetchTabs({sessionToken}, getState) {
       if ( globalThis.purchaseClicked ) return;
       if ( CONFIG.isCT ) {
         alert(`Your session expired. You can buy more time starting from $1/hour`);
-        location.href = 'https://browse.cloudtabs.net/buy'
+        location.href = 'https://browse.cloudtabs.net/#myPlan'
       } else {
         alert(`Your session has expired or disconnected.`);
       }
