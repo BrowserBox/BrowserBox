@@ -1078,13 +1078,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       deleteWorld(sessionId);
     } else if ( message.method == "LayerTree.layerPainted" ) {
       if ( !DEBUG.screenCastOnly ) connection.doShot();
-    } else if ( message.method == "Page.domContentEventFired" ) {
-      const {params:{timestamp}} = message;
-      const reloadInfo = TargetReloads.get(sessionId);
-      if ( reloadInfo.firstReloadStatus != 'first-reload-completed' ) {
-        console.log(`SessionId`, sessionId, 'first reload status', 'domcontent-event-fired');
-        reloadInfo.firstReloadStatus = 'domcontent-event-fired';
-      }
+    } else if ( message.method == "Page.loadEventFired" ) {
+      //const {params:{timestamp}} = message;
+      //const reloadInfo = TargetReloads.get(sessionId);
+      //if ( reloadInfo.firstReloadStatus != 'first-reload-completed' ) {
+      //  console.log(`SessionId`, sessionId, 'first reload status', 'domcontent-event-fired');
+      //  reloadInfo.firstReloadStatus = 'domcontent-event-fired';
+      //}
     } else if ( message.method == "Page.javascriptDialogOpening" ) {
       const {params:modal} = message;
       modal.sessionId = sessionId;
@@ -1585,12 +1585,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     }
     settingUp.delete(targetId);
     DEBUG.debugSetupReload && console.log(`Reloading after setup`, {attached});
-    if ( TargetReloads.get(sessionId).firstReloadStatus == 'domcontent-event-fired' ) {
-      reloadAfterSetup(sessionId, {reason:'post-setup'});
-    } else {
-      await untilTrueOrTimeout(() => TargetReloads?.get?.(sessionId)?.firstReloadStatus == 'domcontent-event-fired', 30)
-      reloadAfterSetup(sessionId, {reason:'post-setup'});
-    }
+    reloadAfterSetup(sessionId, {reason:'post-setup'});
+    //if ( TargetReloads.get(sessionId).firstReloadStatus == 'domcontent-event-fired' ) {
+    //  console.log('already domcontent fired');
+    //  reloadAfterSetup(sessionId, {reason:'post-setup'});
+    //} else {
+    //  await untilTrueOrTimeout(() => TargetReloads?.get?.(sessionId)?.firstReloadStatus == 'domcontent-event-fired', 30)
+    //  await sleep(5000);
+    //  reloadAfterSetup(sessionId, {reason:'post-setup'});
+    //}
   }
 
   function updateCast(sessionId, castUpdate, event) {
@@ -1695,7 +1698,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     }
   }
 
-  function reloadAfterSetup(sessionId, {reason} = {}) {
+  async function reloadAfterSetup(sessionId, {reason} = {}) {
     if ( ! reason || ! AllowedReloadReasons.has(reason) ) {
       DEBUG.debugReload && console.log(`Not reloading because reason is: ${reason}`);
       return;
@@ -1734,6 +1737,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         Reloaders.set(sessionId, reloader);
       }
       rt.queue.push(reloader);
+
+      //DEBUG.debugReload && console.log(`Final check before running load: has domcontent event fired yet`);
+      //if ( !rt.firstReloadStatus == 'first-reload-completed' ) {
+      //  await untilTrueOrTimeout(() => TargetReloads.get(sessionId)?.firstReloadStatus === 'domcontent-event-fired', 50);
+      //}
       reloader(sessionId, {reason});
     } catch(e) {
       console.error(e);
