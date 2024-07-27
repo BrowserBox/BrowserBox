@@ -135,7 +135,7 @@ const launcher_api = {
       `--crash-dumps-dir=${crashDir}`,
       `--profile-directory="${CHROME_PROFILE}"`,
       '--no-first-run',
-      '--metrics-recording-only',
+      //'--metrics-recording-only',
       '--disable-infobars',
       `--noerrdialogs`,
       ...(

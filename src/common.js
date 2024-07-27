@@ -65,7 +65,7 @@ export const LOG_FILE = {
 export const DEBUG = Object.freeze({
   debugSession: false,
   traceViewportUpdateFuncs: false,
-  debugReload: false,
+  debugReload: true,
   debugInfoChanged: false,
   attachDebug: false,
   debugSetupReload: false,
@@ -118,7 +118,7 @@ export const DEBUG = Object.freeze({
   debugKeyEvents: false,
   debugBinding: false,
   events: false,
-  commands: false,
+  commands: true,
   adBlock: true,
   debugAddr: true,
   debugScaledUpCoViewport: false,
