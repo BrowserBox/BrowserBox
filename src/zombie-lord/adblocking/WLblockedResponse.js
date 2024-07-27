@@ -9,7 +9,7 @@ export const WL_BLOCKED_BODY = Buffer.from(`
   <details>
     <summary>How to unblock?</summary>
     <p>
-      Click the button at top named "Add 1 Hour for $1", or subscribe by signing up and then going to "My Plan", in order to browse everything without restriction.
+      Click the "Upgrade" button at the top, or going to "My Plan" to subscribe. Then you can browse everything with no restrictions.
     <p>
   </details>
 `).toString("base64");
