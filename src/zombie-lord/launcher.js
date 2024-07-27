@@ -134,6 +134,9 @@ const launcher_api = {
       `--window-size=${COMMON_FORMAT.width},${COMMON_FORMAT.height}`,
       `--crash-dumps-dir=${crashDir}`,
       `--profile-directory="${CHROME_PROFILE}"`,
+      '--no-first-run',
+      '--metrics-recording-only',
+      '--disable-infobars',
       `--noerrdialogs`,
       ...(
         CONFIG.forceContentDarkMode ? [
