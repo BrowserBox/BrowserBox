@@ -11,7 +11,7 @@ button.ct-extend {
   background: linear-gradient(to bottom, whitesmoke, silver);
   color: black;
   border: thin solid gray;
-  padding: 0;
+  padding: 0 0.5em;
   opacity: 1;
   border-radius: 3px;
 }
