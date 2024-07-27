@@ -1,5 +1,5 @@
 {
-  const LOAD_WAIT = 1000; // 10 seconds for load
+  const LOAD_WAIT = 10000; // 10 seconds for load
   const checkUntil = Date.now() + LOAD_WAIT;
   let timer = setInterval(() => {
     if ( globalThis?.voodoo?.api?.untilLoaded?.() ) {
