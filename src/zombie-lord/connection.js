@@ -1556,7 +1556,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               modeInjectionScroll
             ].join(''),
             worldName: WorldName,
-            runImmediately
+            runImmediately: true
           },
           sessionId
         );
