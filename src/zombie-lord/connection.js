@@ -1534,7 +1534,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           "Page.addScriptToEvaluateOnNewDocument",
           {
             // NOTE: NO world name to use the Page context
-            source: pageContextInjectionsScroll + templatedInjectionsScroll
+            source: pageContextInjectionsScroll + templatedInjectionsScroll,
+            runImmediately: true
           },
           sessionId
         );
@@ -1554,7 +1555,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               injectionsScroll,
               modeInjectionScroll
             ].join(''),
-            worldName: WorldName
+            worldName: WorldName,
+            runImmediately
           },
           sessionId
         );
