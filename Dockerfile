@@ -5,7 +5,7 @@
 FROM ubuntu:mantic
 LABEL org.opencontainers.image.title="BrowserBox" \
       org.opencontainers.image.description="BrowserBox provides Web Isolation, Document Sanitization and a Reverse CORS Proxy in one iframe you can embed on your web app. Licensed multiply under noncommercial (Polyform Noncommercial 1.0), and commercial options, BrowserBox gives you the flexibility and customization you need for your most demanding applications. Contact us at hello@dosyago.com for flexible licensing options if you won't be using it noncommercially. Or, simply reach out for a range of support, customization and deployment solutions tailored to your needs. BrowserBox is the open-source RBI solution tailored for demanding custom applications, and is suitable for individuals and organizations of all sizes." \
-      org.opencontainers.image.version="7.1.2" \
+      org.opencontainers.image.version="9.1.0" \
       org.opencontainers.image.authors="DOSYAGO BrowserBox Team <bb-team@dosyago.com>" \
       org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox"
 
@@ -49,13 +49,13 @@ RUN useradd -ms /bin/bash bbpro && \
     apt-get install -y sudo && \
     echo "bbpro ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-RUN groupadd browsers && usermod -a -G browsers bbpro
+RUN groupadd browsers && groupadd renice && usermod -a -G browsers bbpro && usermod -a -G renice bbpro
 
 # install Node.js
 # RUN apt-get install -y nodejs
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | sudo -E bash -
-RUN . ~/.nvm/nvm.sh; nvm install v20; npm i -g npm@latest
+RUN . ~/.nvm/nvm.sh; nvm install v20.16 ; npm i -g npm@latest pm2@latest
 
 # Define HOME and WORKDIR
 ENV HOME=/home/bbpro
@@ -78,5 +78,5 @@ RUN yes | ./deploy-scripts/global_install.sh localhost
 # RUN chown -R bbpro:bbpro $HOME/sslcerts/
 
 # run the application
-CMD bash -c 'echo $(setup_bbpro --port 8080) > login_link.txt; ( bbpro || true ) && tail -f /dev/null'
+CMD bash -c -l 'cd; source ~/.nvm/nvm.sh; echo $(setup_bbpro --port 8080) > login_link.txt; ( bbpro || true ) && tail -f /dev/null'
 

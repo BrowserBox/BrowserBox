@@ -527,7 +527,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.val && consolelog('attached 1', targetInfo);
       const attached = {sessionId,targetInfo,waitingForDebugger};
       const {targetId} = targetInfo;
-      TargetReloads.set(sessionId, {reloads: 0, queue: [], reasons:[]});
+      TargetReloads.set(sessionId, {reloads: 0, queue: [], reasons:[], firstReloadStatus: 'waiting-to-setup'});
       addSession(targetId, sessionId);
       DEBUG.val && consolelog("Attached to target", sessionId, targetId);
       targets.add(targetId);
@@ -612,6 +612,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   ons("Runtime.executionContextsCleared", receiveMessage);
   ons("Page.frameNavigated", receiveMessage);
   ons("Page.fileChooserOpened", receiveMessage);
+  ons("Page.domContentEventFired", receiveMessage);
   ons("Page.javascriptDialogOpening", receiveMessage);
   ons("Runtime.exceptionThrown", receiveMessage);
   ons("Target.detachedFromTarget", receiveMessage);
@@ -1050,6 +1051,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( worldName == WorldName ) {
         SetupTabs.set(sessionId, {worldName});
         OurWorld.set(sessionId, contextId);
+        /*
         await send(
           "Runtime.addBinding", 
           {
@@ -1058,6 +1060,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           },
           sessionId
         );
+        */
       } else if ( DEBUG.manuallyInjectIntoEveryCreatedContext && SetupTabs.get(sessionId)?.worldName !== WorldName ) {
         const targetId = sessions.get(sessionId);
         const expression = saveTargetIdAsGlobal(targetId) + manualInjectionsScroll;
@@ -1075,6 +1078,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       deleteWorld(sessionId);
     } else if ( message.method == "LayerTree.layerPainted" ) {
       if ( !DEBUG.screenCastOnly ) connection.doShot();
+    } else if ( message.method == "Page.loadEventFired" ) {
+      //const {params:{timestamp}} = message;
+      //const reloadInfo = TargetReloads.get(sessionId);
+      //if ( reloadInfo.firstReloadStatus != 'first-reload-completed' ) {
+      //  console.log(`SessionId`, sessionId, 'first reload status', 'domcontent-event-fired');
+      //  reloadInfo.firstReloadStatus = 'domcontent-event-fired';
+      //}
     } else if ( message.method == "Page.javascriptDialogOpening" ) {
       const {params:modal} = message;
       modal.sessionId = sessionId;
@@ -1524,7 +1534,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           "Page.addScriptToEvaluateOnNewDocument",
           {
             // NOTE: NO world name to use the Page context
-            source: pageContextInjectionsScroll + templatedInjectionsScroll
+            source: pageContextInjectionsScroll + templatedInjectionsScroll,
+            runImmediately: true
           },
           sessionId
         );
@@ -1544,7 +1555,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               injectionsScroll,
               modeInjectionScroll
             ].join(''),
-            worldName: WorldName
+            worldName: WorldName,
+            runImmediately: true
           },
           sessionId
         );
@@ -1576,6 +1588,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     settingUp.delete(targetId);
     DEBUG.debugSetupReload && console.log(`Reloading after setup`, {attached});
     reloadAfterSetup(sessionId, {reason:'post-setup'});
+    //if ( TargetReloads.get(sessionId).firstReloadStatus == 'domcontent-event-fired' ) {
+    //  console.log('already domcontent fired');
+    //  reloadAfterSetup(sessionId, {reason:'post-setup'});
+    //} else {
+    //  await untilTrueOrTimeout(() => TargetReloads?.get?.(sessionId)?.firstReloadStatus == 'domcontent-event-fired', 30)
+    //  await sleep(5000);
+    //  reloadAfterSetup(sessionId, {reason:'post-setup'});
+    //}
   }
 
   function updateCast(sessionId, castUpdate, event) {
@@ -1680,7 +1700,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     }
   }
 
-  function reloadAfterSetup(sessionId, {reason} = {}) {
+  async function reloadAfterSetup(sessionId, {reason} = {}) {
     if ( ! reason || ! AllowedReloadReasons.has(reason) ) {
       DEBUG.debugReload && console.log(`Not reloading because reason is: ${reason}`);
       return;
@@ -1693,7 +1713,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.debugReload && console.log(`Queueing debounced reload due to: ${reason} for ${sessionId}`);
       let rt = TargetReloads.get(sessionId);
       if ( ! rt ) { 
-        TargetReloads.set(sessionId, {relaods: 0, queue: [], reasons: []});
+        TargetReloads.set(sessionId, {relaods: 0, queue: [], reasons: [], firstReloadStatus: `initiated-at-${reason}`});
       } else {
         if ( ! rt.queue ) {
           rt.queue = [];
@@ -1706,6 +1726,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( ! reloader ) {
         reloader = debounce((sessId, {reason}) => {
           _reloadAfterSetup(sessId).then(() => {
+            rt.firstReloadStatus = 'first-reload-completed';
             rt.queue = rt.queue.filter(item => item !== reloader);
             rt.reloads++;
             rt.reasons.push({reason, time: new Date});
@@ -1718,6 +1739,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         Reloaders.set(sessionId, reloader);
       }
       rt.queue.push(reloader);
+
+      //DEBUG.debugReload && console.log(`Final check before running load: has domcontent event fired yet`);
+      //if ( !rt.firstReloadStatus == 'first-reload-completed' ) {
+      //  await untilTrueOrTimeout(() => TargetReloads.get(sessionId)?.firstReloadStatus === 'domcontent-event-fired', 50);
+      //}
       reloader(sessionId, {reason});
     } catch(e) {
       console.error(e);
