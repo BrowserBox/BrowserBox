@@ -63,6 +63,13 @@ You may run BrowserBox via a variety of easy to access means. The simplest and m
 
 To run BrowserBox docker easily you need to use the included **run script**: `./deploy-scripts/run_docker.sh PORT HOST EMAIL` and follow the instructions. 
 
+Equivalently, use npm to install the global `bbox` command which just executes the docker run script:
+
+```console
+$ npm i -g @dosyago/browserbox@latest
+$ bbox
+```
+
 > [!NOTE]
 > We use a run script to avoid you needing to manually bridge a range of ports, run the correct command, and ensure HTTPS certificates are set up across a range of deployment scenarios. Worry not, our intrepid `run_docker.sh` script will guide you through everything you need.
 
