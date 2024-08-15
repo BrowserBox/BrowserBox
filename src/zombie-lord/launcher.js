@@ -201,6 +201,7 @@ const launcher_api = {
     }
     if ( DEBUG.disable3PC ) {
       CHROME_FLAGS.push(`--test-third-party-cookie-phaseout`);
+      CHROME_FLAGS.push(`--enable-privacy-sandbox-ads-apis`);
     }
     if ( DEBUG.disableIso && ! isDocker() ) {
       CHROME_FLAGS.push(`--disable-site-isolation-trials`);
