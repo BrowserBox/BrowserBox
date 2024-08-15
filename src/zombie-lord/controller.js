@@ -80,6 +80,9 @@ const controller_api = {
 
   async screenshotAck(connectionId, port, receivedFrameId, channel) {
     const {frameId, castSessionId} = receivedFrameId;
+    if ( frameId === 0 || castSessionId == 3428128028){
+      receivedFrameId.requiresCastId = true; 
+    }
     const connection = connections.get(port);
     let bandwidthIssue = false;
     //DEBUG.debugCast && console.log('Acking', connectionId, port, receivedFrameId);

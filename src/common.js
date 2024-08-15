@@ -63,6 +63,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugCast: false,
   lowEndDefault: false,
   debugSession: false,
   traceViewportUpdateFuncs: false,
@@ -130,7 +131,6 @@ export const DEBUG = Object.freeze({
   dontSendActivate: false,
   ALL_FLAGS: false, // turn on all chrome flags listed in MISC_STABILITY_RELATED_FLAGS_THAT_REDUCE_SECURITY
   localTestRTT: !process.env.TORBB && process.platform == "darwin" && true,
-  debugCast: false,
   showTargetSessionMap: false,
   debugFileDownload: false,
   debugFileUpload: false,
