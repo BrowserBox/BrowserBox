@@ -199,9 +199,12 @@ const launcher_api = {
     if ( DEBUG.preventNewTab ) {
       CHROME_FLAGS.push(`--homepage=about:blank`);
     }
+    if ( DEBUG.lowEndDefault ) {
+      CHROME_FLAGS.push("--enable-low-end-device-mode");
+    }
     if ( DEBUG.disable3PC ) {
       CHROME_FLAGS.push(`--test-third-party-cookie-phaseout`);
-      CHROME_FLAGS.push(`--enable-privacy-sandbox-ads-apis`);
+      CHROME_FLAGS.push(`--disable-features=PrivacySandboxSettings4`);
     }
     if ( DEBUG.disableIso && ! isDocker() ) {
       CHROME_FLAGS.push(`--disable-site-isolation-trials`);
