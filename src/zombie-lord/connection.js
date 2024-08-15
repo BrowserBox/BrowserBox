@@ -1613,7 +1613,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           castUpdate.castSessionId
       }`);
       */
-      connection.latestCastId = castUpdate.castSessionId;
+      connection.latestCastId = event.frameId ? castUpdate.castSessionId : castInfo.castSessionId;
     } else if ( event === 'stop' ) {
       connection.latestCastId = null;
     }
