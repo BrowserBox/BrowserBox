@@ -13,7 +13,7 @@
     }
   },
   "bin": {
-    "bbox": "./deploy-scripts/run_docker.sh 9999 localhost user@hostname.tld"
+    "bbox": "./deploy-scripts/bbox.sh"
   },
   "parcelIgnore": [
     ".*/bang.js",
