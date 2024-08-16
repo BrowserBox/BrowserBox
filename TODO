@@ -1,2 +1,3 @@
-- devtools is borked on latest. viewport crush
+- youtube on macos in docker doesn't load. That issue is back. Fiddle with flags to fix
 - need a way to not be connected to the app if on mobile and the page is not active. Otherwise mobile browsers randomly connect and disconnect creating viewport shock
+
