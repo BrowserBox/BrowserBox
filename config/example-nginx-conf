@@ -1,7 +1,7 @@
 # Example Nginx Config
 
 # The config below is used for the https://lon.cloudtabs.net server's reverse proxy. We map ports on the proxied server to domains like
-p${port}.lon.cloudtabs.net on the reverse proxy. This ensures that BrowserBox can work on networks that restrict non-standard ports.
+# p${port}.lon.cloudtabs.net on the reverse proxy. This ensures that BrowserBox can work on networks that restrict non-standard ports.
 
 # A file like below should go into /etc/nginx/sites-available/${domain} with a link from 
 # that file to /etc/nginx/sites-available/${domain}
