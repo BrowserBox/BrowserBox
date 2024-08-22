@@ -220,7 +220,32 @@ const launcher_api = {
       CHROME_FLAGS.push(`--proxy-server="${process.env.TOR_PROXY.replace('socks5h', 'socks5')}"`);
       CHROME_FLAGS.push(`--host-resolver-rules="MAP * 0.0.0.0 , EXCLUDE localhost"`);
     }
-    if (isDocker()) {
+    if (isDocker() || process.platform == "darwin") {
+      CHROME_FLAGS.push(...[
+        "--disable-gpu",
+        "--enable-low-end-device-mode",
+        "--ignore-gpu-blacklist",
+        "--single-process",
+        "--disable-extensions",
+        "--disable-hang-monitor",
+        "--noerrdialogs",
+        "--no-sandbox",
+        "--disable-dev-shm-usage"
+      ]);
+      // the commented out flags below ruined video on Docker (at least on macOS)
+      CHROME_FLAGS.push('--no-first-run');
+      CHROME_FLAGS.push('--start-maximized');
+      CHROME_FLAGS.push('--bwsi');
+      CHROME_FLAGS.push('--disable-file-system');
+      //CHROME_FLAGS.push('--enable-features=Vulkan,UseSkiaRenderer,VaapiVideoEncoder,VaapiVideoDecoder,CanvasOopRasterization');
+      CHROME_FLAGS.push('--ignore-gpu-blocklist');
+      CHROME_FLAGS.push('--disable-seccomp-filter-sandbox');
+      //CHROME_FLAGS.push('--use-gl=egl');
+      //CHROME_FLAGS.push('--disable-software-rasterizer');
+      CHROME_FLAGS.push('--disable-dev-shm-usage');
+      CHROME_FLAGS.push('--window-position=0,0');
+    }
+    if (process.platform == "darwin") {
       CHROME_FLAGS.push(...[
         "--disable-gpu",
         "--enable-low-end-device-mode",
