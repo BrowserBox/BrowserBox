@@ -1,9 +1,11 @@
 {
   const LOAD_WAIT = 10000; // 10 seconds for load
   const checkUntil = Date.now() + LOAD_WAIT;
+  let loaderInstalled = false;
   let timer = setInterval(() => {
-    if ( globalThis?.voodoo?.api?.untilLoaded?.() ) {
-      clearInterval(timer);
+    if ( !loaderInstalled && globalThis?.voodoo?.api?.untilLoaded) {
+      globalThis?.voodoo?.api?.untilLoaded?.().then(() => clearInterval(timer));
+      loaderInstalled = true;
     }
     if ( Date.now() > checkUntil ) {
       clearInterval(timer);
