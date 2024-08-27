@@ -1,4 +1,4 @@
+- fix macos Meta key (meta + click for open in new tab) when running server on macos
 - fix macos native (non docker) version. screen cast issues seemingly. possible race due to super low lag of running local
 - create a "print" dialog to intercept the window.print function or beforeprint event. Throw up our own config modal and use printToPDF (ensure secure so no active scripts in pdf).
-- fix the sensitive "1 per hour session expired" erroneous alert on navigate away etc. 
 
