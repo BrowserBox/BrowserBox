@@ -1550,8 +1550,8 @@
     if ( ! connected ) {
       if ( globalThis.purchaseClicked ) return;
       if ( CONFIG.isCT ) {
-        alert(`Your session expired. You can buy more time starting from $1/hour`);
-        location.href = 'https://browse.cloudtabs.net/#myPlan'
+        alert(`Your session expired. Close this message to return to your dashboard.`);
+        location.href = 'https://browse.cloudtabs.net/'
       } else {
         alert(`Your session has expired or disconnected.`);
       }

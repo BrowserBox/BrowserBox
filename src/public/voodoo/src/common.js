@@ -56,7 +56,7 @@ export const DEBUG = Object.freeze({
                                                 // mobile will not peer webrtc unless we get perms so no point trying 
                                                 // if user media fails
   utilizeTempHackFixForIMENoKey: false,
-  mode: 'prod',
+  mode: 'dev',
   debugKeyEvents: false,
   debugCommandOrder: false,
   // note on: increaseResolutionOfSmallerCanvas
@@ -214,7 +214,7 @@ export const CONFIG = Object.freeze({
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
   get useServiceWorkerToCache() {
-    return true;
+    return false;
   },
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,
