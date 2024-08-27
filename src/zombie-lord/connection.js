@@ -2025,7 +2025,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             DEBUG.debugSetupReload && console.log(`Will not send activate now`, targetInfo);
             return {};
           } else {
-            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, connection.worlds.get(SESS), SESS); reloadAfterSetup(SESS, {reason:'worlds-arrived'}); }).catch(() => reloadAfterSetup(SESS, {reason:'error-worlds'}));
+            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { DEBUG.worldDebug && console.log(`worlds arrived`, connection.worlds.get(SESS), SESS); reloadAfterSetup(SESS, {reason:'worlds-arrived'}); }).catch(() => reloadAfterSetup(SESS, {reason:'error-worlds'}));
           }
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);
