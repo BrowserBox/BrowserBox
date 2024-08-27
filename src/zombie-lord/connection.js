@@ -2386,6 +2386,7 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
     return proceed;
   } catch (err) {
     console.error('common changed error', err);
+    updatingTargets = false;
   }
   DEBUG.traceViewportUpdateFuncs && console.log('Exiting updateTargetsOnCommonChanged');
 }
