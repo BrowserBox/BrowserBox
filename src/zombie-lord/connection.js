@@ -1760,6 +1760,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   async function sessionSend(command) {
     /* here connection is a connection to a browser backend */
+    if ( DEBUG.commands ) {
+      console.log(`Got command at sessionSend`, command);
+      if ( DEBUG.blockList && DEBUG.blockList.has(command.name) ) {
+        console.log(`Blocking because of DEBUG.blockList`);
+        return {};
+      }
+    }
     const that = this || connection;
     let sessionId;
     let isActivate = false;
@@ -1887,6 +1894,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         } 
         DEBUG.debugViewportDimensions && console.log("Screen opts at device metric override", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
+        // FIXES A big class of bugs with Emulation.setDeviceMetricsOverride 
+        // basically without this we often get seg faults on mobile with 
+        // some amount of existing tabs
+        command.params.dontSetVisibleSize = true;
       }; break;
       case "Emulation.setScrollbarsHidden": {
         DEBUG.debugScrollbars && console.log("setting scrollbars 'hideBars'", command.params.hidden);
@@ -2632,7 +2643,7 @@ async function makeZombie({port:port = 9222} = {}) {
             }
             return resp;
           }).catch(err => {
-            console.warn({sendFail:err}); 
+            console.warn({sendFail:err, message}); 
           });
         }
       }
@@ -2683,6 +2694,11 @@ async function makeZombie({port:port = 9222} = {}) {
       const {id, result, error} = message;
 
       if ( error ) {
+        if ( message?.error?.message == "Internal error" || message?.error?.code == -32603 ) {
+          const sessionToReload = message.sessionId;
+          // this usually fixes it
+          send("Page.reload", {}, sessionToReload);
+        }
         if ( DEBUG.errors || DEBUG.showErrorSources ) {
           console.warn("\nBrowser backend Error message", message);
           const key = `${sessionId||ROOT_SESSION}:${id}`;
