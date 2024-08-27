@@ -58,6 +58,9 @@ const devAPIInjection = [
   'protocol.js',
 ].map(file => fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'api', 'injections', file)).toString()).join('\n');
 
+// Browser.getWindowForTarget causing issues
+let cachedWindowId = null;
+
 // Custom Injection
 let customInjection = ''
 if ( process.env.INJECT_SCRIPT ) {
@@ -1489,7 +1492,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {hidden:connection.isMobile || false},
         sessionId
       );
-      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
+      if ( !cachedWindowId ) {
+        // could also try using the sessiond version if this breaks
+        // POSSIBLE BUG as window id may differ between tabs in some scenarios
+        ({windowId:cachedWindowId} = await send("Browser.getWindowForTarget", {targetId}));
+      }
+      const windowId = cachedWindowId;
       connection.latestWindowId = windowId;
       let {width,height} = connection.bounds;
       if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
@@ -1752,6 +1760,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   async function sessionSend(command) {
     /* here connection is a connection to a browser backend */
+    if ( DEBUG.commands ) {
+      console.log(`Got command at sessionSend`, command);
+      if ( DEBUG.blockList && DEBUG.blockList.has(command.name) ) {
+        console.log(`Blocking because of DEBUG.blockList`);
+        return {};
+      }
+    }
     const that = this || connection;
     let sessionId;
     let isActivate = false;
@@ -1785,6 +1800,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       case "Browser.getWindowForTarget": {
         if ( !command.params.targetId ) {
           command.params.targetId = connection.hiddenTargetId;
+        }
+        if ( that.latestWindowId ) {
+          return {windowId: that.lastestWindowId};
         }
       }; break;
       case "Browser.setWindowBounds": {
@@ -1876,6 +1894,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         } 
         DEBUG.debugViewportDimensions && console.log("Screen opts at device metric override", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
+        // FIXES A big class of bugs with Emulation.setDeviceMetricsOverride 
+        // basically without this we often get seg faults on mobile with 
+        // some amount of existing tabs
+        command.params.dontSetVisibleSize = true;
       }; break;
       case "Emulation.setScrollbarsHidden": {
         DEBUG.debugScrollbars && console.log("setting scrollbars 'hideBars'", command.params.hidden);
@@ -2003,7 +2025,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             DEBUG.debugSetupReload && console.log(`Will not send activate now`, targetInfo);
             return {};
           } else {
-            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, connection.worlds.get(SESS), SESS); reloadAfterSetup(SESS, {reason:'worlds-arrived'}); }).catch(() => reloadAfterSetup(SESS, {reason:'error-worlds'}));
+            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { DEBUG.worldDebug && console.log(`worlds arrived`, connection.worlds.get(SESS), SESS); reloadAfterSetup(SESS, {reason:'worlds-arrived'}); }).catch(() => reloadAfterSetup(SESS, {reason:'error-worlds'}));
           }
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);
@@ -2364,6 +2386,7 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
     return proceed;
   } catch (err) {
     console.error('common changed error', err);
+    updatingTargets = false;
   }
   DEBUG.traceViewportUpdateFuncs && console.log('Exiting updateTargetsOnCommonChanged');
 }
@@ -2621,7 +2644,7 @@ async function makeZombie({port:port = 9222} = {}) {
             }
             return resp;
           }).catch(err => {
-            console.warn({sendFail:err}); 
+            console.warn({sendFail:err, message}); 
           });
         }
       }
@@ -2672,6 +2695,11 @@ async function makeZombie({port:port = 9222} = {}) {
       const {id, result, error} = message;
 
       if ( error ) {
+        if ( message?.error?.message == "Internal error" || message?.error?.code == -32603 ) {
+          const sessionToReload = message.sessionId;
+          // this usually fixes it
+          send("Page.reload", {}, sessionToReload);
+        }
         if ( DEBUG.errors || DEBUG.showErrorSources ) {
           console.warn("\nBrowser backend Error message", message);
           const key = `${sessionId||ROOT_SESSION}:${id}`;

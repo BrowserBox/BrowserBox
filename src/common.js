@@ -33,15 +33,17 @@ export let hostWL;
 if ( isCT ) {
   try {
     wlFileExists = fs.existsSync(path.resolve(WL_FILE_PATH));
-    hostWL = new Set(
-      fs.readFileSync(path.resolve(WL_FILE_PATH)).toString()
-        .split(/\s*\n\s*/g)
-        .map(line => line.trim())
-        .filter(line => line.length)
-    );
+    if ( wlFileExists ) {
+      hostWL = new Set(
+        fs.readFileSync(path.resolve(WL_FILE_PATH)).toString()
+          .split(/\s*\n\s*/g)
+          .map(line => line.trim())
+          .filter(line => line.length)
+      );
+    }
     //console.log(`WL set up`, hostWL);
   } catch(e) {
-    console.warn(e);
+    //console.warn(e);
     wlFileExists = false;
   }
 }
@@ -63,6 +65,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  showFileErrors: false,
   debugCast: false,
   lowEndDefault: false,
   debugSession: false,
@@ -121,6 +124,9 @@ export const DEBUG = Object.freeze({
   debugBinding: false,
   events: false,
   commands: false,
+  blockList: new Set([
+    //"Emulation.setDeviceMetricsOverride",
+  ]),
   adBlock: true,
   debugAddr: true,
   debugScaledUpCoViewport: false,
@@ -176,7 +182,7 @@ export const DEBUG = Object.freeze({
   neverWait: true, /* for commands */
   attachImmediately: true,
   manuallyInjectIntoEveryCreatedContext: false,
-  ignoreCertificateErrors: true,
+  ignoreCertificateErrors: false,
   debugNavigator: false,
   showContextIdCalls: false,
   debugCopyPaste: false,

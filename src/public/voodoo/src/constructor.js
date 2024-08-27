@@ -2310,14 +2310,10 @@
             if ( delta > 1000 ) {
               lastTime = now;
               setTimeout(() => {
-                let el;
-                if ( click ) {
-                  el = click.target;
-                } else if ( ! notify ) {
-                  el = Array.from(Root.querySelectorAll('nav.targets li.tab-selector a'))
-                    .find(el => el.href.endsWith(tab.targetId));
-                }
-                el?.scrollIntoView({behavior:'smooth',inline:'center'});
+                let el = document.querySelector('bb-view')
+                  .shadowRoot.querySelector('bb-tabs')
+                    .shadowRoot.querySelector('bb-select-tab.active');
+                el?.scrollIntoView?.({behavior:'smooth',inline:'center'});
               }, 500);
             }
 
