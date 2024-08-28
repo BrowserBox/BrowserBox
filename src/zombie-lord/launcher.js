@@ -201,6 +201,7 @@ const launcher_api = {
     }
     if ( DEBUG.lowEndDefault ) {
       CHROME_FLAGS.push("--enable-low-end-device-mode");
+      CHROME_FLAGS.push("--disable-dev-shm-usage");
     }
     if ( DEBUG.disable3PC ) {
       CHROME_FLAGS.push(`--test-third-party-cookie-phaseout`);

@@ -174,7 +174,7 @@ class BBModal extends Base {
     setTimeout(async () => {
       if ( type == 'copy' ) {
         await state._top.untilTrue(() => this.copyBoxTextarea.value == msg, 300, 20);
-        this.copyBoxTextarea.select();
+        //this.copyBoxTextarea.select();
         let secondTitle = '';
         try {
           await navigator.clipboard.writeText(this.copyBoxTextarea.value);

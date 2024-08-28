@@ -162,7 +162,7 @@
     
     form.url input[type="search"] {
       padding: 0 1em;
-      border-radius: 2em;
+      border-radius: 1.618em;
     }
 
   /* hidden, disabled, active, focus and hover states */
@@ -813,9 +813,17 @@
     } 
 
 /* other */
-  .ct-home {
+  .ct-extend, .ct-home {
     display: inline-block;
-    margin: 0 0.5rem;
+    margin: 0;
+  }
+
+  .ct-extend {
+    margin-left: 0.25rem;
+  }
+
+  .ct-home {
+    margin-right: 0.25rem;
   }
 
   .ct-home:hover, .ct-home:active {

@@ -58,6 +58,9 @@ const devAPIInjection = [
   'protocol.js',
 ].map(file => fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'api', 'injections', file)).toString()).join('\n');
 
+// Browser.getWindowForTarget causing issues
+let cachedWindowId = null;
+
 // Custom Injection
 let customInjection = ''
 if ( process.env.INJECT_SCRIPT ) {
@@ -288,7 +291,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Page.reload",
       "Page.startScreencast",
       "Page.stopScreencast",
-    ] : [])
+    ] : []),
+    ...(DEBUG.debugScreenSize ? [
+      "Emulation.setDeviceMetricsOverride",
+      "Browser.setWindowBounds",
+    ] : []),
   ]);
 
   if ( demoBlock ) {
@@ -878,7 +885,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         message,
       },null,2)+"\n");
     }
-    await untilTrueOrTimeout(() => (typeof connection.forceMeta) == "function", 20);
+    await untilTrueOrTimeout(() => (typeof connection.forceMeta) == "function", 4);
     if ( message.method == "Network.dataReceived" ) {
       const {encodedDataLength, dataLength} = message.params;
       connection.totalBandwidth += (encodedDataLength || dataLength);
@@ -1409,7 +1416,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( CONFIG.screencastOnly ) {
         let castInfo;
         if ( castStarting.get(targetId) ) {
+          console.log(`[cast] Waiting for cast start ${tabs.get(targetId)}...`);
           await untilTrue(() => casts.get(targetId)?.started, 200, 500);
+          console.log(`[cast] Finished waiting for cast start ${tabs.get(targetId)}...`);
           castInfo = casts.get(targetId);
         } else {
           castInfo = casts.get(targetId);
@@ -1423,6 +1432,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             quality, everyNthFrame,
             maxWidth, maxHeight
           } = SCREEN_OPTS;
+          DEBUG.debugScreenSize && console.log(`Sending cast`, SCREEN_OPTS, 'to', connection.tabs.get(targetId));
           await send("Page.startScreencast", {
             format, quality, everyNthFrame, 
             ...(DEBUG.noCastMaxDims ? 
@@ -1463,6 +1473,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {},
         sessionId
       );
+      connection.bounds.dontSetVisibleSize = true;
       await send(
         "Emulation.setDeviceMetricsOverride", 
         connection.bounds,
@@ -1687,8 +1698,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const targetId = sessions.get(sessionId);
     try {
       if ( settingUp.has(targetId) ) {
-        console.log(`Waiting setting up complete ${sessionId}`);
-        await untilTrueOrTimeout(() => !settingUp.has(targetId), 15);
+        console.log(`Waiting for setup to complete for ${tabs.get(targets.get(sessionId))}`);
+        await untilTrueOrTimeout(() => !settingUp.has(targetId), 10);
+        console.log(`Finished waiting for setup to complete for ${tabs.get(targets.get(sessionId))}`);
       }
       await sleep(100);
       DEBUG.debugSetupReload && console.log(`Reloading ${sessionId}`);
@@ -1752,6 +1764,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   async function sessionSend(command) {
     /* here connection is a connection to a browser backend */
+    if ( DEBUG.blockList && DEBUG.blockList.has(command.name) ) {
+      console.log(`Got command at sessionSend`, command);
+      console.log(`Blocking because of DEBUG.blockList`);
+      return {};
+    }
     const that = this || connection;
     let sessionId;
     let isActivate = false;
@@ -1786,6 +1803,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( !command.params.targetId ) {
           command.params.targetId = connection.hiddenTargetId;
         }
+        /*
+        if ( that.latestWindowId ) {
+          return {windowId: that.lastestWindowId};
+        }
+        */
       }; break;
       case "Browser.setWindowBounds": {
         /* if the client has not requested we resize to their viewport
@@ -1876,6 +1898,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         } 
         DEBUG.debugViewportDimensions && console.log("Screen opts at device metric override", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
+        // FIXES A big class of bugs with Emulation.setDeviceMetricsOverride 
+        // basically without this we often get seg faults on mobile with 
+        // some amount of existing tabs
+        command.params.dontSetVisibleSize = true;
+        //await send("Emulation.clearDeviceMetricsOverride", {}, that.sessionId);
       }; break;
       case "Emulation.setScrollbarsHidden": {
         DEBUG.debugScrollbars && console.log("setting scrollbars 'hideBars'", command.params.hidden);
@@ -2003,7 +2030,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             DEBUG.debugSetupReload && console.log(`Will not send activate now`, targetInfo);
             return {};
           } else {
-            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { console.log(`worlds arrived`, connection.worlds.get(SESS), SESS); reloadAfterSetup(SESS, {reason:'worlds-arrived'}); }).catch(() => reloadAfterSetup(SESS, {reason:'error-worlds'}));
+            untilTrueOrTimeout(() => !!connection.worlds.has(SESS), 20).then(() => { DEBUG.worldDebug && console.log(`worlds arrived`, connection.worlds.get(SESS), SESS); reloadAfterSetup(SESS, {reason:'worlds-arrived'}); }).catch(() => reloadAfterSetup(SESS, {reason:'error-worlds'}));
           }
         } else {
           DEBUG.val && console.log("Tab is loaded",sessionId);
@@ -2013,7 +2040,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( CONFIG.screencastOnly ) {
           let castInfo;
           if ( castStarting.get(targetId) ) {
+            console.log(`[cast] Waiting for cast start ${tabs.get(targetId)}...`);
             await untilTrue(() => casts.get(targetId)?.started, 200, 500);
+            console.log(`[cast] Finished waiting for cast start ${tabs.get(targetId)}...`);
             castInfo = casts.get(targetId);
           } else {
             castInfo = casts.get(targetId);
@@ -2026,6 +2055,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               quality, everyNthFrame,
               maxWidth, maxHeight
             } = SCREEN_OPTS;
+            DEBUG.debugScreenSize && console.log(`Sending cast`, SCREEN_OPTS, 'to', connection.tabs.get(targetId));
             await send("Page.startScreencast", {
               format, quality, everyNthFrame, 
               ...(DEBUG.noCastMaxDims ? 
@@ -2276,7 +2306,7 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
   DEBUG.traceViewportUpdateFuncs && console.log('Entering updateTargetsOnCommonChanged');
   if (updatingTargets) {
     DEBUG.traceViewportUpdateFuncs && console.log('Updating targets in progress, waiting...');
-    await untilTrueOrTimeout(() => !updatingTargets, 15);
+    await untilTrueOrTimeout(() => !updatingTargets, 15).catch(() => DEBUG.debugViewportDimensions && console.warn(`Updating targets did not complete`));
   }
   try {
     DEBUG.traceViewportUpdateFuncs && console.log('Setting updatingTargets to true');
@@ -2364,6 +2394,7 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
     return proceed;
   } catch (err) {
     console.error('common changed error', err);
+    updatingTargets = false;
   }
   DEBUG.traceViewportUpdateFuncs && console.log('Exiting updateTargetsOnCommonChanged');
 }
@@ -2444,7 +2475,10 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
   for ( const targetId of connection.targets.values() ) {
     await untilTrueOrTimeout(() => sessions.has(targetId), 10);
     const sessionId = sessions.get(targetId);
-    if ( ! sessionId ) continue;
+    if ( ! sessionId ) {
+      console.log('SKIPPING', {targetId, sessionId});
+      continue;
+    }
     //if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
     let width, height, screenWidth, screenHeight;
     try {
@@ -2466,10 +2500,13 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
         `,
         returnByValue: true 
       }, sessionId));
-      DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width,height});
+      DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width,height}, 'Sending', {commonViewport});
+      DEBUG.debugScreenSize && console.log('Actual page dimensions', {width,height,screenWidth,screenHeight}, 'Sending', {commonViewport}, 'to', tabs.get(targetId));
       if ( width == commonViewport.width && height == commonViewport.height && screenWidth == commonViewport.width && (screenHeight - commonViewport.height) < 100) {
         //continue;
       }
+      //send("Emulation.clearDeviceMetricsOverride", {}, sessionId);
+      commonViewport.dontSetVisibleSize = true;
       send("Emulation.setDeviceMetricsOverride", commonViewport, sessionId);
     } catch(err) {
       console.warn(`Error updating viewport to reflect change, during all targets update loop`, {targetId, sessionId}, err);
@@ -2621,7 +2658,7 @@ async function makeZombie({port:port = 9222} = {}) {
             }
             return resp;
           }).catch(err => {
-            console.warn({sendFail:err}); 
+            console.warn({sendFail:err, message}); 
           });
         }
       }
@@ -2672,6 +2709,11 @@ async function makeZombie({port:port = 9222} = {}) {
       const {id, result, error} = message;
 
       if ( error ) {
+        if ( message?.error?.message == "Internal error" || message?.error?.code == -32603 ) {
+          const sessionToReload = message.sessionId;
+          // this usually fixes it
+          send("Page.reload", {}, sessionToReload);
+        }
         if ( DEBUG.errors || DEBUG.showErrorSources ) {
           console.warn("\nBrowser backend Error message", message);
           const key = `${sessionId||ROOT_SESSION}:${id}`;

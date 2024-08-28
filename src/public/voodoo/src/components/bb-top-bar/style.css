@@ -6,22 +6,41 @@
   margin: auto;
 }
 
+button.ct-extend, a.ct-home {
+  transition: 0.1s all ease;
+}
+
 button.ct-extend {
   appearance: button; 
-  background: linear-gradient(to bottom, whitesmoke, silver);
-  color: black;
+  background: dodgerblue;
+  color: whitesmoke;
   border: thin solid gray;
   padding: 0 0.5em;
   opacity: 1;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 button.ct-extend:hover {
   position: relative;
   z-index: 20000000;
-  background: skyblue !important;
+  background: deepskyblue !important;
   color: white;
+  border-color: springgreen;
   font-weight: bold;
+  cursor: pointer;
+  margin-top: 0.333em;
+}
+
+a.ct-home {
+  text-decoration: none;
+}
+
+a.ct-home:hover {
+  position: relative;
+  z-index: 20000000;
+  border: thin dotted var(--ultra-contrast);
+  padding: 0 0.5em;
+  margin-top: 0.333em;
 }
 
 .status-bar {
