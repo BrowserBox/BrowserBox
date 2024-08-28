@@ -24,7 +24,7 @@
     ${!state?.isSubscriber?.isSubscriber ? F`
       <button
         class=ct-extend
-        title="Extend your session by 1 Hour or More from only USD$1" class="ct-extend-session"
+        title="Subscribe for endless, unrestricted, 24/7 browsing" class="ct-extend-session"
         onclick="goToExtend"
         >
         Upgrade
@@ -34,12 +34,10 @@
     <span 
       id=cloudtabs-session-clock 
       title="Session time remaining. Top up to extend your session or Subscribe for unlimited sessions."
-      >
-    </span>
-    <script>
-    </script>
-    <a title="Subscribe by Signing up Here - CloudTabs Home" class="ct-home" href="https://browse.cloudtabs.net">
-      &nbsp;CloudTabs&nbsp;Home&nbsp;
+      ></span>
+    <script></script>
+    <a title="Go to your CloudTabs Dashboard" class="ct-home" href="https://browse.cloudtabs.net">
+      CloudTabs
     </a>
   `: F`
     <span title="Number of co-browsing clients connected" class="super online-count">${state.onlineCount || 1} client${state.onlineCount > 1 ? 's' : ''}</span>
