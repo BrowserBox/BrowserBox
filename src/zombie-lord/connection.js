@@ -1803,9 +1803,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( !command.params.targetId ) {
           command.params.targetId = connection.hiddenTargetId;
         }
+        /*
         if ( that.latestWindowId ) {
           return {windowId: that.lastestWindowId};
         }
+        */
       }; break;
       case "Browser.setWindowBounds": {
         /* if the client has not requested we resize to their viewport
