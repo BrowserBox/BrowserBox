@@ -130,6 +130,7 @@ export function makeCamera(connection) {
       quality, everyNthFrame,
       maxWidth, maxHeight
     } = SCREEN_OPTS;
+    DEBUG.debugScreenSize && console.log(`Sending cast `, SCREEN_OPTS);
     await connection.sessionSend({
       name: "Page.startScreencast",
       params: {
