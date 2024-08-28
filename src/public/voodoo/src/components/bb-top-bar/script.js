@@ -19,7 +19,7 @@ class BBTopBar extends Base {
     const {state} = this;
     const timerSpan = this.shadowRoot.querySelector('#cloudtabs-session-clock');
     
-    await state.untilTrueOrTimeout(() => !!state?.browserExpiresAt?.browserExpiresAt, 20);
+    await state.untilTrueOrTimeout(() => !!state?.browserExpiresAt?.browserExpiresAt, 20).catch(() => console.info('Waiting for browser expiry information timed out'));
 
     const expiresAt = state.browserExpiresAt.browserExpiresAt;
 
