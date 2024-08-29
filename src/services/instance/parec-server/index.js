@@ -6,6 +6,7 @@ import os from 'os';
 import path from 'path';
 import url from 'url';
 import childProcess from 'child_process';
+import stream from 'stream';
 import http from 'http';
 import https from 'https';
 import helmet from 'helmet';
@@ -37,6 +38,12 @@ const DEBUG = {
   showFormat: true,
   mode: 'prod',
   goSecure: true
+}
+
+class MockStream extends stream.Readable {
+  _read() {
+
+  }
 }
 const Clients = new Set();
 const sockets = new Set();
@@ -501,7 +508,7 @@ server.on('upgrade', (req, socket, head) => {
 
 server.listen(port);
 
-if ( ! process.platform.startsWith('win') ) {
+if ( ! process.platform.startsWith('win') && ! process.platform.startsWith('darwin') ) {
   try {
     childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${process.pid}`);
   } catch(e) {
@@ -522,7 +529,7 @@ async function getEncoder() {
   let parec = undefined;
 
   DEBUG.val && console.log('starting encoder');
-  if ( process.platform == 'win32' )  {
+  if ( process.platform.startsWith('win') )  {
 	  try {
 		  encoder = childProcess.spawn('fmedia.exe', [
 			  `--channels=mono`, `--rate=44100`, `--format=int16`,
@@ -558,6 +565,14 @@ async function getEncoder() {
 	  } catch(e) {
 		  console.warn(`error starting encoder`, e);
 	  }
+  } else if ( process.platform.startsWith('darwin') ) {
+    // do nothing
+    // return a mock 
+    savedEncoder = {
+      stdout: new MockStream(),
+      stderr: new MockStream(),
+    };
+    return savedEncoder;
   } else {
     let resolve;
     const pr = new Promise(res => resolve = res);
@@ -585,7 +600,7 @@ async function getEncoder() {
     parec.on('spawn', e => {
       console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
       timer = Date.now();
-      if ( ! process.platform.startsWith('win') ) {
+      if ( ! process.platform.startsWith('win') && ! process.platform.startsWith('darwin') ) {
         try {
           childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
           console.log(`reniced parec`);

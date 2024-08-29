@@ -112,7 +112,7 @@ else
       done
     else 
       echo "Not running Pulseaudio on Darwin." >&2
-      tail -f /dev/null
+      pulseaudio -k
     fi
   fi
 
