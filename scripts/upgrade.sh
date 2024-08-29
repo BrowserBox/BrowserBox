@@ -28,7 +28,7 @@ cd ../
 
 cd pptr-console-server
 rm -rf node_modules && rm package-lock.json && npm upgrade && npm audit fix
-cd websocket_chat_app_homework
+cd websocket_chat_app
 rm -rf node_modules && rm package-lock.json && npm upgrade && npm audit fix
 
 cd ../../
