@@ -10,7 +10,6 @@
   import compression from 'compression';
   import cookieParser from 'cookie-parser';
   import rateLimit from 'express-rate-limit';
-  import csrf from 'csurf';
   import express from 'express';
   import exitOnExpipe from 'exit-on-epipe';
 
@@ -76,7 +75,6 @@
     'https://twitter.com/elonmusk'
   ];
   const connections = new Set();
-  export let LatestCSRFToken = '';
   let certsFound = false;
   let tabCount = 0;
   let seq = 1;
@@ -154,9 +152,7 @@
     app.use(RateLimiter);
     app.use(express.urlencoded({extended:true}));
     app.use(cookieParser());
-    app.use(csrf({cookie:{sameSite:'None', secure:true}}));
     app.use((req, res, next) => {
-      LatestCSRFToken = req.csrfToken();
       next();
     });
     app.use(express.static(path.resolve(APP_ROOT, 'pptr-console-server', 'public')));
@@ -190,7 +186,7 @@
       chaturl.port = parseInt(PORT) + 3;
       res.type('html');
       if ( cookie === COOKIE ) {
-        res.end(view({chaturl, csrfToken: req.csrfToken(), dturl: DEVTOOLS_URL}));
+        res.end(view({chaturl, dturl: DEVTOOLS_URL}));
       } else {
         DEBUG.val && console.log(cookie, COOKIE, req.body);
         res.sendStatus(401);
@@ -369,7 +365,7 @@
         res.end(view({
           chaturl,
           dturl: DEVTOOLS_URL, error, script:scriptText, 
-          result, run:'completed', csrfToken: req.csrfToken()
+          result, run:'completed', 
         }));
       } else {
         console.log(cookie, COOKIE, req.body);
@@ -417,7 +413,7 @@
     });
   }
 
-  function view({dturl, chaturl, script, run: run = 'not started', error, result, csrfToken} = {}) {
+  function view({dturl, chaturl, script, run: run = 'not started', error, result} = {}) {
     if ( result && typeof result !== "string" ) {
       try {
         result = JSON.stringify({result}, null, 2);
@@ -427,7 +423,6 @@
     }
     return `
       <!DOCTYPE html>
-      <meta name=csrf-token content="${csrfToken}">
       <link rel=stylesheet href=style.css>
       <main>
         <nav class=tab-heads>
@@ -454,7 +449,6 @@
                   <button class=run-action>Run script</button>
                 </span>
               </p>
-              <input hidden type=text name=_csrf value=${csrfToken}>
               <details>
                 <summary>
                   <span class=script-run>

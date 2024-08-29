@@ -16,7 +16,6 @@
   import cors from 'cors';
   import helmet from 'helmet';
   import rateLimit from 'express-rate-limit';
-  import csrf from 'csurf';
 
   import zl from './zombie-lord/index.js';
   import {start_mode} from './args.js';
@@ -130,7 +129,6 @@
   // keep tabs organized
   const TabNumbers = new Map();
 
-  export let LatestCSRFToken = '';
   let shutdownTimer = null;
   let serverOrigin;
   let messageQueueRunning = false;
@@ -338,14 +336,12 @@
     app.use(bodyParser.json());
     app.use(cookieParser());
     app.use(upload.array("files", 10));
-    app.use(csrf({cookie: {sameSite: 'None', secure:true}}));
     app.use((req, res, next) => {
       const newOrigin = `${req.protocol}://${req.headers.host}`;
       if ( newOrigin !== serverOrigin ) {
         serverOrigin = newOrigin;
         DEBUG.showOrigin && console.log({serverOrigin});
       }
-      LatestCSRFToken = req.csrfToken();
       next();
     });
     // serve assets that can be injected into pages
@@ -1040,7 +1036,6 @@
           }
           res.status(200).send(` 
             <form method=POST target=results>
-              <input type=hidden name=_csrf value=${LatestCSRFToken}>
               <fieldset>
                 <button formaction=/restart_app>Restart app</button>
                 <button formaction=/stop_app>Stop app</button>
@@ -1052,6 +1047,7 @@
         });
         app.post("/file", async (req,res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          console.log(req);
           if ( (cookie !== allowed_user_cookie) ) { 
             DEBUG.debugFileUpload && console.log(`Request for file upload forbidden.`, req.files);
             return res.status(401).send('{"err":"forbidden"}');

@@ -33,7 +33,7 @@ import {WorldName} from '../public/translateVoodooCRDP.js';
 import {RACE_SAMPLE, makeCamera, COMMON_FORMAT, DEVICE_FEATURES, SCREEN_OPTS, MAX_ACK_BUFFER, MIN_WIDTH, MIN_HEIGHT} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
 import {Document} from './api/document.js';
-import {getInjectableAssetPath, LatestCSRFToken, fileChoosers} from '../ws-server.js';
+import {getInjectableAssetPath, fileChoosers} from '../ws-server.js';
 
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
@@ -1186,8 +1186,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         console.info(`Error getting FileInput.accept attribute by describing backend node from id`, e, fileChooser)
       }
 
-      fileChooser.csrfToken = LatestCSRFToken;
-
       DEBUG.val && console.log('notify client', fileChooser);
       connection.forceMeta({fileChooser});
     } else if ( message.method == "Network.requestWillBeSent" ) {
@@ -1625,6 +1623,21 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }`);
       */
       connection.latestCastId = event.frameId ? castUpdate.castSessionId : castInfo.castSessionId;
+      if ( event?.frameId ) {
+        if ( castUpdate ) {
+          connection.latestCastId = castUpdate.castSessionId;
+        } else {
+          const targetInfo = tabs.get(targets.get(sessionId));
+          console.warn(`Unknown latest cast id:`, {castInfo, castUpdate, sessionId, event, targetInfo});
+        }
+      } else {
+        if ( castInfo ) {
+          connection.latestCastId = castInfo.castSessionId;
+        } else {
+          const targetInfo = tabs.get(targets.get(sessionId));
+          console.warn(`Unknown latest cast id:`, {castInfo, castUpdate, sessionId, event, targetInfo});
+        }
+      }
     } else if ( event === 'stop' ) {
       connection.latestCastId = null;
     }
