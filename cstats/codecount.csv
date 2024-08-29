@@ -48,7 +48,7 @@ JavaScript,./src/zombie-lord/screenShots.js,25,27,375
 JavaScript,./src/public/voodoo/src/components/bb-modals/script.js,41,22,368
 HTML,./src/services/pool/chai/public/uploads/index.html,35,3,352
 CSV,./docs/cstats/2020-07-05/codecount.csv,0,0,339
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/src/app.js,80,44,327
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/src/app.js,80,44,327
 HTML,./src/public/voodoo/src/components/bb-modals/markup.html,0,0,322
 Bourne Shell,./deploy-scripts/global_install.sh,66,25,320
 JavaScript,./src/zombie-lord/launcher.js,24,52,318
@@ -64,11 +64,11 @@ JavaScript,./src/public/plugins/appminifier/translateAppminifierCRDP.js,14,18,28
 JavaScript,./src/services/pool/crdp-secure-proxy-server/index.js,29,43,279
 HTML,./src/public/index.html,23,0,264
 Bourne Shell,./deploy-scripts/run_docker.sh,49,32,261
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/index.js,39,32,261
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/index.js,39,32,261
 JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-table/script.js,27,12,258
 JavaScript,./src/zombie-lord/injections/pageContext/old-bot.js,29,33,252
 JavaScript,./src/public/kbd.js,2,2,251
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/src/views.js,25,13,245
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/src/views.js,25,13,245
 JavaScript,./src/zombie-lord/injections/pageContext/botDetectionEvasions.js,20,11,230
 JavaScript,./src/public/plugins/appminifier/scripts/treeUpdate.js,23,10,227
 JavaScript,./src/public/plugins/demo/treeUpdate.js,23,10,227
@@ -87,7 +87,7 @@ JavaScript,./src/public/voodoo/src/subviews/controls.js,16,41,174
 CSV,./docs/cstats/2020-04-28/codecount.csv,0,0,164
 YAML,./spread-channels/aws/cloud-formation-template.yaml,21,9,158
 CSS,./src/services/instance/pptr-console-server/public/style.css,34,3,157
-CSS,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/style.css,35,12,154
+CSS,./src/services/instance/pptr-console-server/websocket_chat_app/public/style.css,35,12,154
 HTML,./src/public/voodoo/.bang.html.snapshot/docs/7guis/index.html,6,0,152
 JavaScript,./src/server.js,13,22,151
 HTML,./src/services/pool/chai/public/secretpage-canneverbefound.html,16,0,150
@@ -159,7 +159,7 @@ JavaScript,./src/public/voodoo/src/plugins/puterAbility.js,9,5,79
 JavaScript,./src/public/voodoo/.bang.html.snapshot/src/vv/types.js,29,7,78
 Bourne Shell,./src/zombie-lord/dlchrome.sh,9,10,78
 JavaScript,./src/zombie-lord/newtab/overrideNewtab.js,9,9,77
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/src/helpers.js,21,26,75
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/src/helpers.js,21,26,75
 JavaScript,./src/zombie-lord/demoblocking/blockSites.js,8,6,75
 HTML,./src/public/voodoo/src/components/bb-top-bar/markup.html,0,0,74
 Text,./report-bugs/solved/metabug/metabug.txt,6,0,73
@@ -210,7 +210,7 @@ Text,./docs/privacy.txt,41,0,49
 Bourne Shell,./scripts/control/basic/run-pm2.sh,17,7,49
 HTML,./src/public/factory.html,0,0,49
 HTML,./src/public/voodoo/.bang.html.snapshot/docs/infinite/index.html,1,0,48
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/tests/loadTest.js,20,5,48
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/tests/loadTest.js,20,5,48
 Bourne Shell,./scripts/clean.sh,5,1,47
 Bourne Shell,./scripts/start.sh,13,9,47
 JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-crud/script.js,12,0,47
@@ -221,7 +221,7 @@ JavaScript,./src/services/instance/pptr-console-server/public/updateStatus.js,1,
 Bourne Shell,./deploy-scripts/non-interactive.sh,13,9,45
 JavaScript,./src/public/plugins/demo/listen.js,1,1,45
 JavaScript,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-timer/script.js,7,1,45
-Markdown,./src/services/instance/pptr-console-server/websocket_chat_app_homework/README.md,22,0,45
+Markdown,./src/services/instance/pptr-console-server/websocket_chat_app/README.md,22,0,45
 CSS,./src/services/pool/deploy/public/style.css,13,0,45
 JavaScript,./src/zombie-lord/injections/elementInfo.js,8,5,45
 PowerShell,./windows-scripts/BrowserBox-Installer/Utils.ps1,15,8,45
@@ -229,7 +229,7 @@ Bourne Shell,./deploy-scripts/_msgme.sh,11,7,44
 JavaScript,./dist/image.2eb8945f.js,10,0,44
 Bourne Shell,./scripts/run-test.sh,14,2,44
 HTML,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-crud/markup.html,0,0,44
-CSS,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/theme.css,13,8,44
+CSS,./src/services/instance/pptr-console-server/websocket_chat_app/public/theme.css,13,8,44
 Bourne Shell,./deploy-scripts/disk_extend.sh,12,8,43
 CSS,./src/public/voodoo/src/components/bb-bar/style.css,9,0,43
 HTML,./src/public/signup.html,0,0,42
@@ -268,7 +268,7 @@ JavaScript,./src/public/voodoo/src/handlers/keysCanInput.js,1,0,35
 Bourne Shell,./scripts/share-test.sh,11,15,34
 JavaScript,./src/public/register_sw.js,5,3,34
 JavaScript,./src/services/instance/pptr-console-server/public/load.js,7,0,34
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/tests/messageTest.js,14,2,34
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/tests/messageTest.js,14,2,34
 Bourne Shell,./src/services/pool/deploy/scripts/setup.sh,10,5,34
 JavaScript,./src/sm.js,5,3,34
 HTML,./src/public/assets/SPL.html,1,0,33
@@ -416,8 +416,8 @@ SVG,./src/public/voodoo/assets/icons/sun.svg,0,1,22
 SVG,./src/public/voodoo/assets/icons/theater.svg,0,1,22
 SVG,./src/public/voodoo/assets/icons/tractor.svg,0,1,22
 SVG,./src/public/voodoo/assets/icons/wand.svg,0,1,22
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/tests/testAll.js,5,0,22
-CSV,./src/services/instance/pptr-console-server/websocket_chat_app_homework/stats/2020-06-14/codecount.csv,0,0,22
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/tests/testAll.js,5,0,22
+CSV,./src/services/instance/pptr-console-server/websocket_chat_app/stats/2020-06-14/codecount.csv,0,0,22
 Bourne Shell,./src/services/pool/chai/scripts/nix_install_deps.sh,2,0,22
 Bourne Shell,./src/services/pool/deploy/scripts/commands/killuser.sh,8,7,22
 JavaScript,./src/zombie-lord/tests/tor.cjs,8,3,22
@@ -503,7 +503,7 @@ SVG,./src/public/voodoo/assets/icons/webhook-off.svg,0,1,20
 SVG,./src/public/voodoo/assets/icons/wifi-off.svg,0,1,20
 JavaScript,./src/public/voodoo/src/handlers/selectInput.js,2,2,20
 JavaScript,./src/root.js,4,0,20
-CSV,./src/services/instance/pptr-console-server/websocket_chat_app_homework/stats/codecount.csv,0,0,20
+CSV,./src/services/instance/pptr-console-server/websocket_chat_app/stats/codecount.csv,0,0,20
 JavaScript,./src/services/pool/deploy/src/root.js,5,0,20
 TypeScript,./src/zombie-lord/custom-launcher/test/utils-test.ts,4,15,20
 Bourne Shell,./scripts/kill-pm2.sh,5,1,19
@@ -1486,7 +1486,7 @@ HTML,./src/public/voodoo/src/components/bb-bar/markup.html,0,0,16
 HTML,./src/public/voodoo/src/components/bb-select-tab/markup.html,0,0,16
 JavaScript,./src/public/voodoo/src/connectivity.js,24,110,16
 JavaScript,./src/public/voodoo/src/handlers/elementInfo.js,2,0,16
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/chat_login.js,0,0,16
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/chat_login.js,0,0,16
 HTML,./src/services/pool/chai/public/error.html,0,0,16
 JavaScript,./src/services/pool/crdp-secure-proxy-server/public/devtools_login.js,0,0,16
 TypeScript,./src/zombie-lord/custom-launcher/src/flags.ts,1,19,16
@@ -1879,7 +1879,7 @@ Bourne Shell,./scripts/test_audio.sh,10,0,13
 JavaScript,./src/public/.eslintrc.cjs,0,0,13
 JavaScript,./src/public/getAPI.js,0,0,13
 HTML,./src/public/test.html,1,0,13
-CSV,./src/services/instance/pptr-console-server/websocket_chat_app_homework/stats/2020-06-13/codecount.csv,0,0,13
+CSV,./src/services/instance/pptr-console-server/websocket_chat_app/stats/2020-06-13/codecount.csv,0,0,13
 Bourne Shell,./src/services/pool/chai/scripts/mac_install_deps.sh,2,0,13
 Bourne Shell,./src/services/pool/chai/scripts/restart.sh,5,0,13
 JavaScript,./src/zombie-lord/custom-launcher/dist/random-port.mjs,0,8,13
@@ -1899,10 +1899,10 @@ Bourne Shell,./spread-channels/linode-akamai/stack-scripts/test.sh,3,1,12
 HTML,./src/public/plugins/appminifier/bundle.html,1,6,12
 HTML,./src/public/voodoo/src/components/bb-resize-button/markup.html,0,0,12
 JavaScript,./src/public/voodoo/src/components/bb-resize-button/script.js,3,0,12
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/tests/renderTest.js,6,0,12
-Text,./src/services/instance/pptr-console-server/websocket_chat_app_homework/stats/2020-06-13/codestats.txt,5,0,12
-Text,./src/services/instance/pptr-console-server/websocket_chat_app_homework/stats/2020-06-14/codestats.txt,5,0,12
-Text,./src/services/instance/pptr-console-server/websocket_chat_app_homework/stats/codestats.txt,5,0,12
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/tests/renderTest.js,6,0,12
+Text,./src/services/instance/pptr-console-server/websocket_chat_app/stats/2020-06-13/codestats.txt,5,0,12
+Text,./src/services/instance/pptr-console-server/websocket_chat_app/stats/2020-06-14/codestats.txt,5,0,12
+Text,./src/services/instance/pptr-console-server/websocket_chat_app/stats/codestats.txt,5,0,12
 Bourne Again Shell,./deploy-scripts/auto_cert_renew,4,1,11
 Bourne Again Shell,./deploy-scripts/cp_certs,3,0,11
 JavaScript,./dist/prod/setup-service-worker.js,2,0,11
@@ -1948,7 +1948,7 @@ HTML,./src/public/voodoo/src/components/bb-loading-indicator/markup.html,0,0,9
 CSS,./src/public/voodoo/src/components/bb-modals/style.css,2,0,9
 JavaScript,./src/public/voodoo/src/components/bb-omni-box/script.js,0,0,9
 JavaScript,./src/services/instance/parec-server/test.cjs,1,0,9
-Bourne Shell,./src/services/instance/pptr-console-server/websocket_chat_app_homework/deployutils/listportredirects.sh,3,0,9
+Bourne Shell,./src/services/instance/pptr-console-server/websocket_chat_app/deployutils/listportredirects.sh,3,0,9
 Bourne Shell,./src/services/pool/chai/public/uploads/show.sh,6,1,9
 Bourne Shell,./src/services/pool/chai/scripts/rename_1_based.sh,2,0,9
 YAML,./.github/ISSUE_TEMPLATE/config.yml,1,0,8
@@ -1979,7 +1979,7 @@ CSS,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-flight-booker/sty
 HTML,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-look-book/markup.html,0,0,7
 CSS,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-look-book/style.css,0,0,7
 JavaScript,./src/public/voodoo/src/handlers/multiplayer.js,2,0,7
-HTML,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/runtests.html,0,0,7
+HTML,./src/services/instance/pptr-console-server/websocket_chat_app/public/runtests.html,0,0,7
 Bourne Shell,./src/services/pool/chai/scripts/config.sh,3,0,7
 Bourne Shell,./src/services/pool/crdp-secure-proxy-server/devtools-server.sh,4,0,7
 Bourne Shell,./src/services/pool/crdp-secure-proxy-server/scripts/install_gn.sh,2,0,7
@@ -1997,7 +1997,7 @@ Bourne Shell,./scripts/make_bundle.sh,2,0,6
 JavaScript,./src/public/plugins/appminifier/am_start.js,3,0,6
 HTML,./src/public/select-test.html,0,0,6
 HTML,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-sizer-modal/markup.html,0,0,6
-HTML,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/index.html,0,0,6
+HTML,./src/services/instance/pptr-console-server/websocket_chat_app/public/index.html,0,0,6
 HTML,./src/services/pool/chai/archives/index.html,0,0,6
 Bourne Shell,./src/services/pool/chai/scripts/install_deps.sh,3,1,6
 YAML,./src/zombie-lord/custom-launcher/.clang-format,0,0,6
@@ -2013,7 +2013,7 @@ JavaScript,./src/public/scriptSPL2.js,0,0,5
 Text,./src/public/security.txt,2,0,5
 CSS,./src/public/voodoo/.bang.html.snapshot/docs/components/sg-counter/style.css,1,0,5
 CSS,./src/public/voodoo/src/components/bb-favicon/style.css,1,0,5
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/src/config.js,1,2,5
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/src/config.js,1,2,5
 Bourne Shell,./src/services/pool/crdp-secure-proxy-server/scripts/dl_devtools.sh,2,0,5
 JavaScript,./src/zombie-lord/demoblocking/whitelist.js,1,0,5
 Markdown,./docs/CLAs/OUTSTANDING.md,4,0,4
@@ -2054,8 +2054,8 @@ JavaScript,./src/services/instance/pptr-console-server/hack.js,0,6,3
 Bourne Shell,./src/services/instance/pptr-console-server/pptr-console-server.sh,2,0,3
 HTML,./src/services/instance/pptr-console-server/public/index.html,0,0,3
 Bourne Shell,./src/services/instance/pptr-console-server/script.sh,1,0,3
-Bourne Shell,./src/services/instance/pptr-console-server/websocket_chat_app_homework/chat-server.sh,2,0,3
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/src/xhelp.js,1,1,3
+Bourne Shell,./src/services/instance/pptr-console-server/websocket_chat_app/chat-server.sh,2,0,3
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/src/xhelp.js,1,1,3
 Bourne Shell,./src/zombie-lord/custom-launcher/scripts/format.sh,2,0,3
 Text,./src/zombie-lord/example_launch_opts.txt,4,0,3
 PowerShell,./windows-scripts/BrowserBox-Installer/Install-BrowserBox.ps1,1,4,3
@@ -2092,8 +2092,8 @@ Bourne Shell,./src/services/instance/pptr-console-server/repro1.sh,1,0,2
 Bourne Shell,./src/services/instance/pptr-console-server/repro2.sh,1,0,2
 Bourne Shell,./src/services/instance/pptr-console-server/repro3.sh,1,0,2
 Bourne Shell,./src/services/instance/pptr-console-server/repro4.sh,1,0,2
-Bourne Shell,./src/services/instance/pptr-console-server/websocket_chat_app_homework/deployutils/portredirect.sh,1,0,2
-Bourne Shell,./src/services/instance/pptr-console-server/websocket_chat_app_homework/deployutils/run.sh,1,0,2
+Bourne Shell,./src/services/instance/pptr-console-server/websocket_chat_app/deployutils/portredirect.sh,1,0,2
+Bourne Shell,./src/services/instance/pptr-console-server/websocket_chat_app/deployutils/run.sh,1,0,2
 Bourne Shell,./src/services/pool/deploy/scripts/start.sh,2,0,2
 Bourne Shell,./src/services/pool/deploy/scripts/test.sh,2,0,2
 Markdown,./src/services/pool/socket-puppet-service/README.md,0,0,2
@@ -2142,7 +2142,7 @@ JavaScript,./src/services/instance/pptr-console-server/argv.js,0,0,1
 JavaScript,./src/services/instance/pptr-console-server/crazy.js,0,0,1
 JavaScript,./src/services/instance/pptr-console-server/env.js,0,0,1
 JavaScript,./src/services/instance/pptr-console-server/hello.js,0,0,1
-JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app_homework/public/tests/helpers.js,0,0,1
+JavaScript,./src/services/instance/pptr-console-server/websocket_chat_app/public/tests/helpers.js,0,0,1
 YAML,./src/services/pool/chai/.github/FUNDING.yml,1,1,1
 Text,./src/services/pool/chai/.npm.release.info.txt,0,0,1
 CSS,./src/services/pool/chai/public/uploads/css/fa.min.css,0,4,1

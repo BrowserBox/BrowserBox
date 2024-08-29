@@ -39,7 +39,7 @@ sudo -g browsers $node index.js $console $3 $5 &
 BGPID2=$!
 
 echo "Starting chat server"
-cd websocket_chat_app_homework
+cd websocket_chat_app
 pwd
 sudo -g browsers $node index.js $chat $3 $5 &
 BGPID5=$!

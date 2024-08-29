@@ -16,7 +16,7 @@ JavaScript,./zombie-lord/controller.js,38,21,435
 CSS,./public/styles/splash.css,61,9,405
 JavaScript,./pptr-console-server/runner.js,54,55,381
 JavaScript,./public/voodoo/src/subviews/contextMenu.js,27,60,361
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/src/app.js,79,44,326
+JavaScript,./pptr-console-server/websocket_chat_app/public/src/app.js,79,44,326
 JavaScript,./public/voodoo/src/subviews/other.js,29,6,325
 JavaScript,./capi.click/server.js,56,29,317
 TypeScript,./zombie-lord/custom-launcher/src/chrome-launcher.ts,58,24,293
@@ -33,12 +33,12 @@ JavaScript,./capi.click/public/src/profile.js,22,1,237
 JavaScript,./zombie-lord/screenShots.js,23,9,230
 JavaScript,./public/plugins/demo/treeUpdate.js,23,10,227
 JavaScript,./public/plugins/appminifier/scripts/treeUpdate.js,23,10,227
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/src/views.js,25,13,220
+JavaScript,./pptr-console-server/websocket_chat_app/public/src/views.js,25,13,220
 JavaScript,./public/voodoo/src/subviews/controls.js,14,38,219
 JavaScript,./capi.click/db_helpers.js,29,20,218
 JavaScript,./parec-server/index.js,21,13,205
 JavaScript,./crdp-secure-proxy-server/index.js,24,26,203
-JavaScript,./pptr-console-server/websocket_chat_app_homework/index.js,34,32,193
+JavaScript,./pptr-console-server/websocket_chat_app/index.js,34,32,193
 JavaScript,./zombie-lord/custom-launcher/dist/chrome-finder.js,0,28,184
 TypeScript,./zombie-lord/custom-launcher/src/chrome-finder.ts,41,27,183
 JavaScript,./capi.click/_middlewares/permission.js,39,4,183
@@ -47,7 +47,7 @@ JavaScript,./capi.click/_actions/record_payment.js,29,6,178
 JavaScript,./capi.click/tests.js,16,1,172
 Markdown,./README.md,101,0,170
 CSS,./pptr-console-server/public/style.css,34,3,157
-CSS,./pptr-console-server/websocket_chat_app_homework/public/style.css,35,12,154
+CSS,./pptr-console-server/websocket_chat_app/public/style.css,35,12,154
 JavaScript,./public/voodoo/src/common.js,21,5,149
 CSS,./public/style.css,37,12,147
 TypeScript,./zombie-lord/custom-launcher/test/chrome-launcher-test.ts,33,7,139
@@ -81,7 +81,7 @@ JavaScript,./public/resize_helper.js,6,4,78
 JavaScript,./zombie-lord/adblocking/blockAds.js,3,7,77
 JavaScript,./zombie-lord/newtab/overrideNewtab.js,9,9,77
 CSS,./public/styles/typesetting.css,22,1,76
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/src/helpers.js,21,26,75
+JavaScript,./pptr-console-server/websocket_chat_app/public/src/helpers.js,21,26,75
 JavaScript,./zombie-lord/demoblocking/blockSites.js,8,6,75
 JavaScript,./public/voodoo/src/subviews/omniBox.js,5,1,74
 CSS,./public/styles/logo.css,12,15,73
@@ -115,7 +115,7 @@ HTML,./public/custom.html,0,0,49
 HTML,./public/factory.html,0,0,49
 JavaScript,./public/voodoo/index.js,10,8,49
 JavaScript,./capi.click/public/src/signup.js,3,0,48
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/tests/loadTest.js,20,5,48
+JavaScript,./pptr-console-server/websocket_chat_app/public/tests/loadTest.js,20,5,48
 Bourne Shell,./capi.click/test.sh,1,0,48
 Bourne Shell,./start.sh,13,9,47
 JavaScript,./zombie-lord/injections/elementInfo.js,7,3,47
@@ -125,9 +125,9 @@ JavaScript,./capi.click/public/src/check_your_email.js,6,0,46
 JavaScript,./capi.click/public/src/documentation.js,4,0,45
 JavaScript,./capi.click/_schemas/transactions.js,13,3,45
 JavaScript,./public/plugins/demo/listen.js,1,1,45
-Markdown,./pptr-console-server/websocket_chat_app_homework/README.md,22,0,45
+Markdown,./pptr-console-server/websocket_chat_app/README.md,22,0,45
 JavaScript,./capi.click/_actions/pay.js,13,2,45
-CSS,./pptr-console-server/websocket_chat_app_homework/public/theme.css,13,8,44
+CSS,./pptr-console-server/websocket_chat_app/public/theme.css,13,8,44
 JavaScript,./capi.click/common.js,7,7,42
 JavaScript,./capi.click/_actions/loginwithlink.js,9,2,42
 JavaScript,./capi.click/_actions/login.js,10,0,42
@@ -149,7 +149,7 @@ Bourne Shell,./install_webp.sh,8,2,35
 Bourne Shell,./share-test.sh,11,15,34
 CSS,./public/styles/auth-form.css,9,2,34
 JavaScript,./pptr-console-server/public/load.js,7,0,34
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/tests/messageTest.js,14,2,34
+JavaScript,./pptr-console-server/websocket_chat_app/public/tests/messageTest.js,14,2,34
 JavaScript,./sm.js,5,3,34
 HTML,./capi.click/public/dev-console.html,1,0,33
 Bourne Shell,./run-test.sh,12,14,33
@@ -188,7 +188,7 @@ Bourne Shell,./aws-yum-installzanj.sh,0,2,24
 JavaScript,./webpack.config.js,1,0,24
 JavaScript,./capi.click/_views/loginlink.js,4,0,23
 JavaScript,./capi.click/_actions/update_email.js,11,2,23
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/tests/testAll.js,5,0,22
+JavaScript,./pptr-console-server/websocket_chat_app/public/tests/testAll.js,5,0,22
 JavaScript,./capi.click/_views/tocheckout.js,5,0,22
 HTML,./public/spdy.html,0,9,22
 Markdown,./CLAs/CLA.md,15,0,22
@@ -225,7 +225,7 @@ JavaScript,./capi.click/_views/archivist1.js,3,0,17
 JavaScript,./capi.click/_selections/login.js,3,0,17
 Bourne Shell,./setup_machine.sh,3,0,17
 JavaScript,./capi.click/_views/app.js,3,0,17
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/chat_login.js,0,0,16
+JavaScript,./pptr-console-server/websocket_chat_app/public/chat_login.js,0,0,16
 TypeScript,./zombie-lord/custom-launcher/src/flags.ts,1,19,16
 JavaScript,./capi.click/_schemas/loginlinks.js,4,0,16
 JavaScript,./zombie-lord/demoblocking/blockedResponse.js,3,0,16
@@ -257,7 +257,7 @@ XML,./public/sitemap.xml,2,1,12
 JavaScript,./public/voodoo/src/subviews/index.js,0,0,12
 JavaScript,./capi.click/secrets/dosycorp.com-gsuite-email-key.js,0,0,12
 JavaScript,./public/dist-start.js,2,0,12
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/tests/renderTest.js,6,0,12
+JavaScript,./pptr-console-server/websocket_chat_app/public/tests/renderTest.js,6,0,12
 Bourne Shell,./docker_fullinstall.sh,10,2,12
 HTML,./public/plugins/appminifier/bundle.html,1,6,12
 CSS,./public/styles/elements.css,4,1,12
@@ -290,7 +290,7 @@ Bourne Shell,./install.sh,0,0,9
 Bourne Shell,./lw.sh,3,0,9
 Bourne Shell,./capi.click/deployutils/listportredirects.sh,3,0,9
 Bourne Shell,./public/voodoo/asset-imports/nhsuk-icons/import.sh,3,0,9
-Bourne Shell,./pptr-console-server/websocket_chat_app_homework/deployutils/listportredirects.sh,3,0,9
+Bourne Shell,./pptr-console-server/websocket_chat_app/deployutils/listportredirects.sh,3,0,9
 CSS,./public/styles/graphic.css,2,1,8
 Markdown,./zombie-lord/README.md,11,0,8
 JavaScript,./public/voodoo/src/subviews/topBar.js,1,0,8
@@ -308,11 +308,11 @@ Bourne Shell,./zombie-lord/cgroup_create.sh,5,5,7
 JavaScript,./args.js,1,0,7
 JavaScript,./zombie-lord/api.js,2,0,7
 CSS,./public/plugins/demo/styles/geocitiesmode.css,1,0,7
-HTML,./pptr-console-server/websocket_chat_app_homework/public/runtests.html,0,0,7
+HTML,./pptr-console-server/websocket_chat_app/public/runtests.html,0,0,7
 JavaScript,./zombie-lord/custom-launcher/dist/index.js,0,1,6
 JavaScript,./public/plugins/appminifier/am_start.js,3,0,6
 Bourne Shell,./capi.click/prod_views.sh,0,0,6
-HTML,./pptr-console-server/websocket_chat_app_homework/public/index.html,0,0,6
+HTML,./pptr-console-server/websocket_chat_app/public/index.html,0,0,6
 Bourne Shell,./capi.click/clean.sh,1,0,6
 JavaScript,./capi.click/start.js,2,0,6
 JavaScript,./capi.click/public/src/preCheckout.js,2,0,6
@@ -328,7 +328,7 @@ Bourne Shell,./public/voodoo/import-assets.sh,3,0,5
 Bourne Shell,./public/test.sh,2,1,5
 JavaScript,./public/voodoo/src/subviews/copyModal.js,2,1,5
 Bourne Shell,./crdp-secure-proxy-server/scripts/dl_devtools.sh,2,0,5
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/src/config.js,1,2,5
+JavaScript,./pptr-console-server/websocket_chat_app/public/src/config.js,1,2,5
 Bourne Shell,./zombie-lord/dlchrome.sh,1,2,5
 SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-minus.svg,0,0,4
 TypeScript,./decs.d.ts,4,0,4
@@ -345,7 +345,7 @@ JavaScript,./public/meta.js,0,2,4
 CSS,./public/styles/story.css,2,1,4
 SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-cross.svg,0,0,4
 JavaScript,./public/voodoo/src/handlers/takeShot.js,2,0,3
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/src/xhelp.js,1,1,3
+JavaScript,./pptr-console-server/websocket_chat_app/public/src/xhelp.js,1,1,3
 SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-chevron-left.svg,0,0,3
 Bourne Shell,./build_docker.sh,1,0,3
 SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-search.svg,0,0,3
@@ -368,8 +368,8 @@ SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-arrow-left.svg,0,0,3
 YAML,./.github/FUNDING.yml,3,1,2
 JavaScript,./public/voodoo/src/subviews/faviconDataURL.js,2,0,2
 JavaScript,./capi.click/functionTest.js,1,0,2
-Bourne Shell,./pptr-console-server/websocket_chat_app_homework/deployutils/portredirect.sh,1,0,2
-Bourne Shell,./pptr-console-server/websocket_chat_app_homework/deployutils/run.sh,1,0,2
+Bourne Shell,./pptr-console-server/websocket_chat_app/deployutils/portredirect.sh,1,0,2
+Bourne Shell,./pptr-console-server/websocket_chat_app/deployutils/run.sh,1,0,2
 TypeScript,./capi.click/public/src/wmdecs.d.ts,0,0,2
 Bourne Shell,./pptr-console-server/repro4.sh,1,0,2
 Bourne Shell,./pptr-console-server/repro1.sh,1,0,2
@@ -422,7 +422,7 @@ JavaScript,./public/plugins/projector/page/listen.js,0,0,1
 JavaScript,./pptr-console-server/hello.js,0,0,1
 SVG,./public/favicons/safari-pinned-tab.svg,0,0,1
 Bourne Shell,./capi.click/dev_views.sh,0,0,1
-JavaScript,./pptr-console-server/websocket_chat_app_homework/public/tests/helpers.js,0,0,1
+JavaScript,./pptr-console-server/websocket_chat_app/public/tests/helpers.js,0,0,1
 HTML,./public/online-test.html,0,0,1
 Bourne Shell,./zombie-lord/record-audio.sh,1,0,1
 Bourne Shell,./postclonedevstart.sh,0,0,1

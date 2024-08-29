@@ -1311,17 +1311,21 @@
 
         // File chooser 
           queue.addMetaListener('fileChooser', ({fileChooser}) => {
-            const {sessionId, mode, accept, csrfToken} = fileChooser;
+            const {sessionId, mode, accept} = fileChooser;
+            let {token} = fileChooser;
+            if ( ! token ) {
+              token = globalThis._sessionToken();
+            }
             DEBUG.val && console.log('client receive file chooser notification', fileChooser);
             if ( globalThis.hasPuterAbility ) {
               globalThis.parent.parent.postMessage({request:{puterCustomUpload:{fileOptions:{
                 accept,
                 multiple:mode=='selectMultiple'
               }}}}, '*');
-              plugins.setFileContext({csrfToken, sessionId});
+              plugins.setFileContext({token, sessionId});
             } else {
               const modal = {
-                sessionId, mode, accept, csrfToken,
+                sessionId, mode, accept, token,
                 type: 'filechooser',
                 message: `Securely send files to the remote page.`,
                 title: `File Upload`,
@@ -1329,6 +1333,15 @@
               DEBUG.val && console.log({fileChooserModal:modal});
               state.viewState.modalComponent.openModal({modal});
             }
+          });
+
+          queue.addMetaListener('fileChooserClosed', ({fileChooserClosed}) => {
+            console.log('File chooser closed', fileChooserClosed);
+            state.viewState.modalComponent.onlyCloseModal(state.viewState.modalComponent.state);
+            // update tabs (to trigger vm paused warning if it's still paused
+            // 1 second after a modal closes only if there is no other modal open then
+            clearTimeout(modaler);
+            modaler = setTimeout(() => !state.viewState.currentModal && updateTabs(), 1000);
           });
       
       // bond tasks 

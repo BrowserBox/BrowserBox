@@ -24,7 +24,7 @@ cd pptr-console-server
 pm2 start ./pptr-console-server.sh
 
 echo "Starting chat server"
-cd websocket_chat_app_homework
+cd websocket_chat_app
 pm2 start ./chat-server.sh
 cd ..
 cd ..

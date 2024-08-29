@@ -3,7 +3,7 @@ import {DEBUG, untilTrueOrTimeout} from '../common.js';
 // and does not resolve until puter ability is detected.
 const FileState = {
   currentFiles: [],
-  csrfToken: null, 
+  token: null, 
   sessionId: null,
 };
 export default async function untilPuterAbility() {
@@ -37,12 +37,12 @@ export default async function untilPuterAbility() {
       };
 
       await untilTrueOrTimeout(() => {
-        const pred = (FileState?.currentFiles?.length == names.length) && FileState.csrfToken && FileState.sessionId;
+        const pred = (FileState?.currentFiles?.length == names.length) && FileState.token && FileState.sessionId;
         console.log({pred, FileState, names});
         return pred;
       }, 120);
 
-      body.append('_csrf', FileState.csrfToken);
+      body.append('token', FileState.token);
       body.append('sessionId', FileState.sessionId);
      
       FileState.currentFiles.forEach((content, i, Files) => {
@@ -88,6 +88,6 @@ export async function handlePuterAbility(meta, state) {
   }
 }
 
-export function setFileContext({csrfToken, sessionId}) {
-  Object.assign(FileState, {csrfToken, sessionId});
+export function setFileContext({token, sessionId}) {
+  Object.assign(FileState, {token, sessionId});
 }

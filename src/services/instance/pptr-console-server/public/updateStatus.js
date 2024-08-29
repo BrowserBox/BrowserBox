@@ -16,7 +16,6 @@
       if ( viewport ) {
         try {
           const formData = new FormData();
-          const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content')
           formData.append('width', viewport.width);
           formData.append('height', viewport.height);
           formData.append('isMobile', viewport.isMobile);
@@ -24,9 +23,6 @@
           //console.log({viewport});
           const resp = await fetch('/viewport', {
             credentials: 'same-origin',
-            headers: {
-              'CSRF-Token': token,
-            },
             method: 'POST',
             body: new URLSearchParams(formData)
           })

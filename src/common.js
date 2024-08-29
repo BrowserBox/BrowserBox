@@ -65,6 +65,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  fileDebug: false,
   debugScreenSize: false,
   showFileErrors: false,
   debugCast: false,
@@ -254,26 +255,16 @@ export const DEBUG = Object.freeze({
 DEBUG.showDebug && console.log(DEBUG);
 
 export const ALLOWED_3RD_PARTY_EMBEDDERS = [
-  "https://dustinbrett.com",
-  "https://users.dosyago.com",
   "https://cloudtabs.net",
   "https://*.puter.com",
   "https://puter.com",
   "https://*.puter.site",
   "https://*.cloudtabs.net",
-  "https://browserbox.pro",
-  "https://*.browserbox.pro",
   "https://localhost:*",
   ...(
   process.env.DOMAIN ? [
     `https://${process.env.DOMAIN}:*`,
     `https://*.${process.env.DOMAIN}:*`,
-  ] : []),
-  ...((
-    process?.env?.DOMAIN?.endsWith?.('.cloudtabs.net') &&  
-    !os?.userInfo?.()?.username?.startsWith?.("bbuser-ss")
-    ) ? [
-      "*"
   ] : []),
 ];
 export const FLASH_FORMATS = new Set([

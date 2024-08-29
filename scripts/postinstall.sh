@@ -170,7 +170,7 @@ cd ../
   #rm -rf node_modules/puppeteer/.local-chromium
   #
   #echo "Installing packages for real time chat service..."
-  #cd websocket_chat_app_homework
+  #cd websocket_chat_app
   #npm i
   #npm audit fix
   #cd ../

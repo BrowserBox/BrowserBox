@@ -30,7 +30,6 @@
   "dependencies": {
     "@dosyago/rainsum": "^1.1.1",
     "compression": "latest",
-    "csurf": "latest",
     "express": "latest",
     "express-rate-limit": "latest",
     "express-session": "latest",
