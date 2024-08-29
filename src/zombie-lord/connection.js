@@ -2492,7 +2492,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
       console.log('SKIPPING', {targetId, sessionId});
       continue;
     }
-    //if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
+    if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
     let width, height, screenWidth, screenHeight;
     try {
       const {windowId} = await send("Browser.getWindowForTarget", {targetId});
@@ -2516,7 +2516,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
       DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width,height}, 'Sending', {commonViewport});
       DEBUG.debugScreenSize && console.log('Actual page dimensions', {width,height,screenWidth,screenHeight}, 'Sending', {commonViewport}, 'to', tabs.get(targetId));
       if ( width == commonViewport.width && height == commonViewport.height && screenWidth == commonViewport.width && (screenHeight - commonViewport.height) < 100) {
-        //continue;
+        continue;
       }
       //send("Emulation.clearDeviceMetricsOverride", {}, sessionId);
       commonViewport.dontSetVisibleSize = true;
