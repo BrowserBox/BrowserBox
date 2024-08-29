@@ -86,6 +86,7 @@ class BBModal extends Base {
     }
 
     if ( type == 'filechooser' && !(mode && sessionId && token) ) {
+      console.log({mode,sessionId,token});
       DEBUG.debugModal && console.log(currentModal);
       throw new TypeError(`File chooser modal requires all of: sessionId, mode and token`);
     }

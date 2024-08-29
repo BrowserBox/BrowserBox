@@ -1047,11 +1047,13 @@
         });
         app.post("/file", async (req,res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
-          console.log(req);
-          if ( (cookie !== allowed_user_cookie) ) { 
+          const {token} = req.body;
+          DEBUG.fileDebug && console.log(req.files, req.body, {token});
+          if ( (cookie !== allowed_user_cookie) && token != session_token ) { 
             DEBUG.debugFileUpload && console.log(`Request for file upload forbidden.`, req.files);
             return res.status(401).send('{"err":"forbidden"}');
           }
+          DEBUG.fileDebug && console.log(req.files, req.body, {token});
           const {files} = req;
           const sessionId = req.body.sessionid || req.body.sessionId;
           const contextId = OurWorld.get(sessionId);
@@ -1068,7 +1070,7 @@
             sessionId
           }, zombie_port);
           DEBUG.debugFileUpload && console.log({fileInputResult, s:JSON.stringify(fileInputResult)});
-          const objectId = fileInputResult.data.result.objectId;
+          const objectId = fileInputResult?.data?.result?.objectId;
           let result;
             
           if ( objectId || backednNodeId ) {
@@ -1103,6 +1105,8 @@
             DEBUG.val > DEBUG.med && console.log("Sent files to file input", result, files);
             res.json(result);
           }
+          forceMeta({fileChooserClosed:{sessionId}});
+          DEBUG.fileDebug && console.log('force meta called');
         }); 
       // app meta controls
         app.post("/restart_app", ConstrainedRateLimiter, (req, res) => {
