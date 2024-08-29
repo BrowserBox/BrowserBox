@@ -18,7 +18,7 @@ install_nvm() {
 install_nvm
 
 . ~/.nvm/nvm.sh
-profile="realtime"
+profile="network-latency"
 
 USER="${USER:-$(whoami)}"
 
