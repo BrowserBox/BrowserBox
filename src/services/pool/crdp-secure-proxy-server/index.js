@@ -348,4 +348,5 @@ server.listen(PORT, err => {
     throw err;
   }
   DEBUG.debugDevtoolsServer && console.log({crdpSecureProxyServer: { up: new Date, port: PORT }});
+  console.log({devtoolServer: {up: new Date, port: PORT}});
 });

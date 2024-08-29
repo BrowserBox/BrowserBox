@@ -1,4 +1,3 @@
-- fix devtools "Terminated" on macos.
 - fix macos Meta key (meta + click for open in new tab) when running server on macos
 - macos docker: youtube issues, locks up but only after yt reload. probably need debugCast and debugReload, we may have an extra reload in there we don't need, or maybe we should wait the page to load properly before reloading it, or not "ignoreCache" after the first reload on a page. 
 - create a "print" dialog to intercept the window.print function or beforeprint event. Throw up our own config modal and use printToPDF (ensure secure so no active scripts in pdf).
