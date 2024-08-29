@@ -1311,17 +1311,17 @@
 
         // File chooser 
           queue.addMetaListener('fileChooser', ({fileChooser}) => {
-            const {sessionId, mode, accept, csrfToken} = fileChooser;
+            const {sessionId, mode, accept, token} = fileChooser;
             DEBUG.val && console.log('client receive file chooser notification', fileChooser);
             if ( globalThis.hasPuterAbility ) {
               globalThis.parent.parent.postMessage({request:{puterCustomUpload:{fileOptions:{
                 accept,
                 multiple:mode=='selectMultiple'
               }}}}, '*');
-              plugins.setFileContext({csrfToken, sessionId});
+              plugins.setFileContext({token, sessionId});
             } else {
               const modal = {
-                sessionId, mode, accept, csrfToken,
+                sessionId, mode, accept, token,
                 type: 'filechooser',
                 message: `Securely send files to the remote page.`,
                 title: `File Upload`,

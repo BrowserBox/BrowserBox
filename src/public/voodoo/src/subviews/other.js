@@ -25,7 +25,7 @@ import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js
         const {currentModal} = state.viewState;
         // these are default values when there is no current Modal
         let msg = '',type = '', title = '', currentModalEl = false;
-        let csrfToken = '';
+        let token = '';
         let requestId = '';
         let sessionId = '';
         let mode = '';
@@ -42,7 +42,7 @@ import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js
           ({
             msg:msg = 'Empty',
             type,
-            csrfToken:csrfToken = '',
+            token:token = '',
             url:url = '',
             title:title = 'Untitled',
             el:currentModalEl,
@@ -78,9 +78,9 @@ import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js
           throw new TypeError(`Auth modal requires a requestId to send the response to`);
         }
 
-        if ( type == 'filechooser' && !(mode && sessionId && csrfToken) ) {
+        if ( type == 'filechooser' && !(mode && sessionId && token) ) {
           DEBUG.debugModal && console.log(currentModal);
-          throw new TypeError(`File chooser modal requires both sessionId, mode and csrfToken`);
+          throw new TypeError(`File chooser modal requires both sessionId, mode and token`);
         }
 
         if ( mode == 'selectMultiple' ) {
@@ -209,7 +209,7 @@ import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js
                   <legend><h1>&#x1f4c1; ${title || 'File upload'}</h1></legend>
                   <p class=message value=message>${msg||'Empty notice'}</p>
                   <input type=hidden name=sessionid value=${sessionId}>
-                  <input type=hidden name=_csrf value=${csrfToken}>
+                  <input type=hidden name=token value=${token}>
                   <p>
                     <label>
                       Select ${multiple?'one or more files':'one file'}.
@@ -365,16 +365,16 @@ import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js
     export function openModal({modal} = {}, state) {
       const {
           sessionId, mode, requestId, title, type, message:msg, defaultPrompt, url, otherButton,
-          csrfToken
+          token
       } = modal;
-      const currentModal = {type, csrfToken, mode, requestId, msg,el:ModalRef[type], sessionId, otherButton, title, url};
+      const currentModal = {type, token, mode, requestId, msg,el:ModalRef[type], sessionId, otherButton, title, url};
       state.viewState.currentModal = currentModal;
       localStorage.setItem('lastModal', JSON.stringify(modal));
 
       DEBUG.debugModal && console.log(state.viewState.currentModal);
 
       const modalDebug = {
-        defaultPrompt, url, currentModal, ModalRef, state, title, type, otherButton, csrfToken
+        defaultPrompt, url, currentModal, ModalRef, state, title, type, otherButton, token
       };
 
       DEBUG.val >= DEBUG.med && Object.assign(self, {modalDebug});

@@ -43,7 +43,7 @@ class BBTopBar extends Base {
       if (display) {
         timerSpan.textContent = display;
       } else {
-        timerSpan.style.display = 'none';
+        timerSpan?.style?.display = 'none';
         clearInterval(timerUpdater);
       }
     }, 1001);

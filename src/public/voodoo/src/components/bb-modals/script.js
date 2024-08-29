@@ -29,7 +29,7 @@ class BBModal extends Base {
     let title = '';
     let currentModalEl = false;
     let highlight = undefined;
-    let csrfToken = '';
+    let token = '';
     let requestId = '';
     let sessionId = '';
     let mode = '';
@@ -48,7 +48,7 @@ class BBModal extends Base {
         msg:msg = 'Empty',
         type,
         highlight: highlight = false,
-        csrfToken:csrfToken = '',
+        token:token = '',
         url:url = '',
         title:title = 'Untitled',
         el:currentModalEl,
@@ -85,16 +85,16 @@ class BBModal extends Base {
       throw new TypeError(`Auth modal requires a requestId to send the response to`);
     }
 
-    if ( type == 'filechooser' && !(mode && sessionId && csrfToken) ) {
+    if ( type == 'filechooser' && !(mode && sessionId && token) ) {
       DEBUG.debugModal && console.log(currentModal);
-      throw new TypeError(`File chooser modal requires all of: sessionId, mode and csrfToken`);
+      throw new TypeError(`File chooser modal requires all of: sessionId, mode and token`);
     }
 
     // we are getting this now via async fetch inside the HTML template ahahah
     /*
-    if ( type == 'settings' && !csrfToken ) {
+    if ( type == 'settings' && !token ) {
       DEBUG.debugModal && console.log(currentModal);
-      throw new TypeError(`Settings modal requires a csrfToken`);
+      throw new TypeError(`Settings modal requires a token`);
     }
     */
 
@@ -103,7 +103,7 @@ class BBModal extends Base {
     }
 
     currentModal = {
-      type, csrfToken, mode, requestId, msg,
+      type, token, mode, requestId, msg,
       highlight,
       el: state.viewState.ModalRef[type], 
       sessionId, otherButton, title, url, multiple, accept,
@@ -125,7 +125,7 @@ class BBModal extends Base {
       sessionId, mode, requestId, title, type, message:msg, defaultPrompt, url, 
       link,
       highlight,
-      csrfToken,
+      token,
     } = modal;
     let {
       otherButton,
@@ -135,7 +135,7 @@ class BBModal extends Base {
     }
     await state._top.untilTrue(() => !!ModalRef[type], 100, 1000);
     const currentModal = {
-      type, csrfToken, mode, 
+      type, token, mode, 
       highlight, 
       requestId, 
       msg,
@@ -152,7 +152,7 @@ class BBModal extends Base {
     DEBUG.debugModal && console.log(state.viewState.currentModal);
 
     const modalDebug = {
-      defaultPrompt, url, highlight, currentModal, ModalRef, state, title, type, otherButton, csrfToken,
+      defaultPrompt, url, highlight, currentModal, ModalRef, state, title, type, otherButton, token,
       link,
     };
 
@@ -186,7 +186,7 @@ class BBModal extends Base {
           otherButton = `<button onclick="copyToClipboard">Copy</button>`
         }
         const currentModal = {
-          type, csrfToken, mode, 
+          type, token, mode, 
           highlight, 
           requestId, 
           msg,
