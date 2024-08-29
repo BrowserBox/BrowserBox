@@ -128,7 +128,7 @@
     app.use(csrf({cookie:{sameSite:'None', secure:true}}));
     // client app is a SPA served from static files
     app.use(express.static(
-      path.resolve(APP_ROOT, 'pptr-console-server', 'websocket_chat_app_homework', 'public')
+      path.resolve(APP_ROOT, 'pptr-console-server', 'websocket_chat_app', 'public')
     ));
     /**
     app.get('/abc*', (req, res) => {

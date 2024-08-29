@@ -91,7 +91,6 @@
     "compression": "latest",
     "cookie-parser": "latest",
     "cors": "latest",
-    "csurf": "latest",
     "entities": "latest",
     "esbuild": "0.23.1",
     "esm": "latest",

@@ -7,8 +7,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "nodemon index.js 8004 xxxcookie token2",
-    "tests": "nodemon tests.js",
+    "test": "node --watch index.js 8004 xxxcookie token2",
+    "tests": "node --watch tests.js",
     "tscheck-client": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/client.js --module System public/src/app.js",
     "tscheck-server": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System index.js",
     "tscheck": "npm run tscheck-server && npm run tscheck-client",
@@ -31,13 +31,12 @@
   "author": "@dosy",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/cris691/bulgogi/issues"
+    "url": "https://github.com/o0101/bulgogi/issues"
   },
-  "homepage": "https://github.com/cris691/bulgogi#readme",
+  "homepage": "https://github.com/o0101/bulgogi#readme",
   "dependencies": {
     "compression": "latest",
     "cookie-parser": "latest",
-    "csurf": "latest",
     "exit-on-epipe": "latest",
     "express": "latest",
     "express-rate-limit": "latest",
@@ -45,11 +44,6 @@
     "ws": "latest"
   },
   "devDependencies": {
-    "@types/express": "latest",
-    "@types/helmet": "latest",
-    "@types/node": "latest",
-    "@types/ws": "latest",
-    "eslint": "latest",
-    "nodemon": "latest"
+    "eslint": "latest"
   }
 }

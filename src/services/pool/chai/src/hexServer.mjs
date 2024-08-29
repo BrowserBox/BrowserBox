@@ -3,7 +3,6 @@ import path from 'path';
 import { fork } from 'child_process';
 
 import express from 'express';
-import csurf from 'csurf';
 
 // In-memory mapping of session to worker
 const sessionToWorker = new Map();

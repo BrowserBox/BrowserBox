@@ -13,7 +13,6 @@ import compression from 'compression';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
-import csrf from 'csurf';
 import express from 'express';
 import exitOnEpipe from 'exit-on-epipe';
 import {WebSocket,WebSocketServer} from 'ws';
@@ -240,7 +239,6 @@ app.use(compression({
 app.use(RateLimiter);
 app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
-app.use(csrf({cookie:{sameSite:'None', secure:true}}));
 const staticPath = path.resolve(APP_ROOT, 'services', 'instance', 'parec-server', 'public');
 const serverPath = path.resolve(APP_ROOT, 'services', 'instance', 'parec-server');
 console.log({staticPath});
