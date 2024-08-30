@@ -2,52 +2,52 @@
 # base image
 
 # current base
-FROM ubuntu:mantic
+FROM debian:latest
 LABEL org.opencontainers.image.title="BrowserBox" \
-      org.opencontainers.image.description="BrowserBox provides Web Isolation, Document Sanitization and a Reverse CORS Proxy in one iframe you can embed on your web app. Licensed multiply under noncommercial (Polyform Noncommercial 1.0), and commercial options, BrowserBox gives you the flexibility and customization you need for your most demanding applications. Contact us at hello@dosyago.com for flexible licensing options if you won't be using it noncommercially. Or, simply reach out for a range of support, customization and deployment solutions tailored to your needs. BrowserBox is the open-source RBI solution tailored for demanding custom applications, and is suitable for individuals and organizations of all sizes." \
-      org.opencontainers.image.version="9.1.0" \
-      org.opencontainers.image.authors="DOSYAGO BrowserBox Team <bb-team@dosyago.com>" \
-      org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox"
+  org.opencontainers.image.description="BrowserBox: Web Isolation, Document Sanitization, and Reverse CORS Proxy in one embeddable iframe. Licensed under Polyform Noncommercial 1.0, with commercial options available. Contact hello@dosyago.com for flexible licensing, support, and customization. Suitable for all sizes of organizations and custom applications." \
+  org.opencontainers.image.version="9.2.0" \
+  org.opencontainers.image.authors="DOSAYGO BrowserBox Team <bb-team@dosyago.com>" \
+  org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox"
 
 SHELL ["/bin/bash", "-c"]
 
 ARG IS_DOCKER_BUILD=true
 ENV IS_DOCKER_BUILD=$IS_DOCKER_BUILD
 ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=America/New_York
+ENV TZ=America/Los_Angeles
 
 # install dependencies
 RUN apt-get update
 RUN apt-get update && \
-    apt-get install -y tzdata && \
-    ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && \
-    dpkg-reconfigure --frontend noninteractive tzdata && \
-    apt-get clean
+  apt-get install -y tzdata && \
+  ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && \
+  dpkg-reconfigure --frontend noninteractive tzdata && \
+  apt-get clean
 RUN apt-get install -y \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libnss3 \
-    libnspr4 \
-    libasound2 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libxrandr2 \
-    libpangocairo-1.0-0 \
-    libgtk-3-0 \
-    curl \
-    jq \
-    vim 
+  libx11-xcb1 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxext6 \
+  libxfixes3 \
+  libnss3 \
+  libnspr4 \
+  libasound2 \
+  libatk1.0-0 \
+  libatk-bridge2.0-0 \
+  libcups2 \
+  libxrandr2 \
+  libpangocairo-1.0-0 \
+  libgtk-3-0 \
+  curl \
+  jq \
+  vim 
 
 
 # Create a non-root user 'bbpro' and give it sudo permissions
 RUN useradd -ms /bin/bash bbpro && \
-    apt-get update && \
-    apt-get install -y sudo && \
-    echo "bbpro ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+  apt-get update && \
+  apt-get install -y sudo && \
+  echo "bbpro ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 RUN groupadd browsers && groupadd renice && usermod -a -G browsers bbpro && usermod -a -G renice bbpro
 

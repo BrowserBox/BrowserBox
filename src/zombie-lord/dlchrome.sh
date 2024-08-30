@@ -24,7 +24,7 @@ determine_package_manager() {
     PM_FIX="apt --fix-broken install -y"
     CHROME_PACKAGE="google-chrome-stable_current_amd64.deb"
     CHROME_INSTALL="dpkg -i"
-    CHROMIUM_PACKAGE="chromium-browser"
+    CHROMIUM_PACKAGE="chromium"
   elif command -v dnf >/dev/null; then
     PM_UPDATE="dnf check-update"
     PM_INSTALL="dnf install -y"
