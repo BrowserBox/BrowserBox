@@ -1073,7 +1073,7 @@
           const objectId = fileInputResult?.data?.result?.objectId;
           let result;
             
-          if ( objectId || backednNodeId ) {
+          if ( objectId || backendNodeId ) {
             const command = {
               name: "DOM.setFileInputFiles",
               params: {

@@ -7,6 +7,6 @@ if [[ ! -d node_modules ]]; then
 fi
 npm run bundle
 DOCKER_BUILDKIT=1 
-#docker buildx create --use
-docker buildx build --push --platform linux/amd64,linux/arm64 -t bbpro -t ghcr.io/browserbox/browserbox:latest -t dosyago/browserbox:latest . 
+docker buildx create --use
+docker buildx build --push --platform linux/amd64,linux/arm64 -t ghcr.io/browserbox/browserbox:latest -t dosyago/browserbox:latest . 
 
