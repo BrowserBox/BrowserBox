@@ -1622,7 +1622,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           castUpdate.castSessionId
       }`);
       */
-      connection.latestCastId = event.frameId ? castUpdate.castSessionId : castInfo.castSessionId;
       if ( event?.frameId ) {
         if ( castUpdate ) {
           connection.latestCastId = castUpdate.castSessionId;

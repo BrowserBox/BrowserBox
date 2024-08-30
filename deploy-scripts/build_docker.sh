@@ -5,8 +5,9 @@
 if [[ ! -d node_modules ]]; then
   yes | npm i
 fi
+tag="$(git tag | tail -n 1)"
 npm run bundle
-DOCKER_BUILDKIT=1 docker buildx build --load --platform linux/amd64 -t bbpro . 
-docker tag bbpro ghcr.io/browserbox/browserbox:latest
-docker tag bbpro dosyago/browserbox:latest
+DOCKER_BUILDKIT=1 
+docker buildx create --use
+docker buildx build --push --platform linux/amd64,linux/arm64 -t ghcr.io/browserbox/browserbox:latest -t "ghcr.io/browserbox/browserbox:${tag}" -t dosyago/browserbox:latest -t "dosyago/browserbox:${tag}" . 
 
