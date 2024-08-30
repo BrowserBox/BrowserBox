@@ -6,7 +6,7 @@ if [[ ! -d node_modules ]]; then
   yes | npm i
 fi
 npm run bundle
-DOCKER_BUILDKIT=1 docker buildx build --load --platform linux/amd64 -t bbpro . 
-docker tag bbpro ghcr.io/browserbox/browserbox:latest
-docker tag bbpro dosyago/browserbox:latest
+DOCKER_BUILDKIT=1 
+#docker buildx create --use
+docker buildx build --push --platform linux/amd64,linux/arm64 -t bbpro -t ghcr.io/browserbox/browserbox:latest -t dosyago/browserbox:latest . 
 
