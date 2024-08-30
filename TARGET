@@ -1,6 +1,4 @@
-- seems we have an extra reload when we are resizing viewport. but we don't need a reload unless viewport became mobile, or user agent changed. 
-  - likely related and subsumed (and hopefully fixed!) by the above:
-    - macos docker: youtube issues, locks up but only after yt reload. probably need debugCast and debugReload, we may have an extra reload in there we don't need, or maybe we should wait the page to load properly before reloading it, or not "ignoreCache" after the first reload on a page. 
+- macos docker on linux/amd64 was fixed, but i shifted to using chromium inside docker so i could use linux/arm64. now the browser crashes. so need to tweak the flags, and re build the docker images.
 
 - fix macos Meta key (meta + click for open in new tab) when running server on macos
 

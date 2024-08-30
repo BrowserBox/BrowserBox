@@ -42,6 +42,8 @@ determine_package_manager() {
 is_docker() {
   if [ -f /.dockerenv ]; then
     return 0
+  elif [[ -n "$IS_DOCKER_BUILD" ]]; then
+    return 0
   else
     return 1
   fi
