@@ -300,7 +300,27 @@ echo "Waiting a few seconds for container to start..."
 sleep 7
 
 mkdir -p artefacts
+
+# Wait for login_link.txt to appear in the container
+MAX_WAIT=60  # Maximum wait time in seconds
+SLEEP_INTERVAL=2  # Time between checks in seconds
+WAITED=0
+
+echo "Waiting for login_link.txt to be created inside the container..."
+while ! $SUDO docker exec "$CONTAINER_ID" test -f /home/bbpro/bbpro/login_link.txt; do
+  sleep $SLEEP_INTERVAL
+  WAITED=$((WAITED + SLEEP_INTERVAL))
+  if [ $WAITED -ge $MAX_WAIT ]; then
+    echo "ERROR: login_link.txt not found in the container after $MAX_WAIT seconds. Exiting..." >&2
+    exit 1
+  fi
+done
+
+echo "login_link.txt found in the container."
+
+# Now copy the login_link.txt file from the container
 $SUDO docker cp $CONTAINER_ID:/home/bbpro/bbpro/login_link.txt artefacts/
+
 login_link=$(cat ./artefacts/login_link.txt)
 
 new_link=${login_link//localhost/$output}
