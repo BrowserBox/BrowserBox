@@ -163,16 +163,16 @@ const launcher_api = {
           image editing, 3d games, etc, etc
         )
       **/
-      ...(DEBUG.disableGL ? [
+      ...(DEBUG.disableGL && process.platform != "darwin" ? [
         '--disable-webgl2',
         '--disable-webgl',
       ] : []),
 
-      ...(DEBUG.disable3D ? [
+      ...(DEBUG.disable3D && process.platform != "darwin" ? [
         '--disable-3d-apis',
       ] : []),
 
-      ...(DEBUG.disabled3D && DEBUG.useGL ? [
+      ...(DEBUG.disabled3D && DEBUG.useGL && process.platform != "darwin" ? [
         '--use-gl=swiftshader',
         '--use-angle=default',
       ] : []),
@@ -226,7 +226,7 @@ const launcher_api = {
         `--disable-features=UseSkiaRenderer,UseOzonePlatform,WebRTC-HWEncoding`
       ]);
     }
-    if (isDocker() || process.platform == "darwin") {
+    if (isDocker() ) {
       CHROME_FLAGS.push(...[
         "--disable-gpu",
         "--enable-low-end-device-mode",
@@ -253,8 +253,8 @@ const launcher_api = {
     }
     if (process.platform == "darwin") {
       CHROME_FLAGS.push(...[
-        "--disable-gpu",
-        "--enable-low-end-device-mode",
+        //"--disable-gpu",
+        //"--enable-low-end-device-mode",
         "--ignore-gpu-blacklist",
         "--single-process",
         "--disable-extensions",
