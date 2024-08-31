@@ -1,6 +1,4 @@
-- macos docker on linux/amd64 was fixed, but i shifted to using chromium inside docker so i could use linux/arm64. now the browser crashes. so need to tweak the flags, and re build the docker images.
-
-- fix macos Meta key (meta + click for open in new tab) when running server on macos
+- setup tab seems to be running too long. see with 5 tabs (that server), time it. trace it, something is causing the async parts of update to user agent to hang.
 
 - create a "print" dialog to intercept the window.print function or beforeprint event. Throw up our own config modal and use printToPDF (ensure secure so no active scripts in pdf).
 

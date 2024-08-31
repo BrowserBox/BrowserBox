@@ -1699,7 +1699,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   async function _reloadAfterSetup(sessionId) {
     if ( waitingToReload.has(sessionId) ) {
-      DEBUG.debugSetupReload && console.log(`Already reloading for ${sessionId} not going to reload again`);
+      (DEBUG.debugSetupReload || DEBUG.debugReload) && console.log(`Already reloading for ${sessionId} not going to reload again`);
       return;
     }
     waitingToReload.add(sessionId);
@@ -1712,7 +1712,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }
       await sleep(100);
       DEBUG.debugSetupReload && console.log(`Reloading ${sessionId}`);
-      await send("Page.reload", {ignoreCache:true}, sessionId);
+      await send("Page.reload", {ignoreCache:false}, sessionId);
       await sleep(100);
       waitingToReload.delete(sessionId)
     } catch(e) {
@@ -1753,7 +1753,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             if ( rt.reasons.length > MAX_RELOAD_MEMORY ) {
               rt.reasons = rt.reasons.splice(-MAX_RELOAD_MEMORY);
             }
-            DEBUG.debugReload && console.log(`Reloaded ${sessId} due to: ${reason}`);
+            DEBUG.debugReload && console.log(`Reloaded ${sessId} due to: ${reason} [UA: ${connection.navigator.userAgent}]`);
           });
         }, 631);
         Reloaders.set(sessionId, reloader);
@@ -2412,49 +2412,62 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
   const {send, on, ons} = connection.zombie;
   DEBUG.traceViewportUpdateFuncs && console.log('Retrieved zombie properties from connection', connection.targets.values());
   let list = [];
+  console.log([...connection.targets.values()]);
   for (const targetId of connection.targets.values()) {
     DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);
     await untilTrueOrTimeout(() => sessions.has(targetId), 10);
     const sessionId = sessions.get(targetId);
+    console.log('sessionid', sessionId);
     DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
     if (!sessionId) continue;
     try {
-      const {result: {value: {userAgent}}} = await send("Runtime.evaluate", {
-        expression: `
-          (function () {
-            return {userAgent: navigator.userAgent};
-          }())
-        `,
-        returnByValue: true
-      }, sessionId);
-      DEBUG.traceViewportUpdateFuncs && console.log('Retrieved userAgent:', userAgent);
-      const desiredUserAgent = mobile ? mobUA : deskUA;
-      DEBUG.traceViewportUpdateFuncs && console.log('Determined desiredUserAgent:', desiredUserAgent);
-      DEBUG.debugUserAgent && console.log({mobile, targetId, userAgent, desiredUserAgent});
-      if (userAgent != desiredUserAgent) {
-        DEBUG.traceViewportUpdateFuncs && console.log('User agent mismatch, updating user agent for target:', targetId);
-        DEBUG.debugUserAgent && console.log(`Will update user agent for target ${targetId}`, {mobile, desiredUserAgent});
-        const nav = {
-          userAgent: desiredUserAgent,
-          platform: mobile ? mobPlat : deskPlat,
-          acceptLanguage: connection.navigator.acceptLanguage || 'en-US',
-        };
-        Object.assign(connection.navigator, nav);
-        DEBUG.traceViewportUpdateFuncs && console.log('Assigned new navigation properties to connection.navigator');
-        await send("Emulation.setUserAgentOverride", nav, sessionId);
-        DEBUG.traceViewportUpdateFuncs && console.log('Sent Emulation.setUserAgentOverride');
-        await send(
-          "Emulation.setScrollbarsHidden",
-          {hidden: mobile},
-          sessionId
-        );
-        DEBUG.traceViewportUpdateFuncs && console.log('Sent Emulation.setScrollbarsHidden');
-        list.push(sessionId);
-      } else {
-        DEBUG.traceViewportUpdateFuncs && console.log('User agent matches, no update needed for target:', targetId);
-        DEBUG.debugUserAgent && console.log(`Will NOT update user agent for target ${targetId}`, {mobile, userAgent, desiredUserAgent});
-      }
-      DEBUG.traceViewportUpdateFuncs && console.log('Added sessionId to list');
+      send("Runtime.evaluate", {
+        expression: `navigator.userAgent`,
+        /*
+        includeCommandLineAPI: false,
+        userGesture: true,
+        timeout: CONFIG.SHORT_TIMEOUT,
+        awaitPromise: true,
+        */
+      }, sessionId).then(r => {
+        console.log({sessionId,r})
+        console.log('Sent 1');
+        /*
+        const {result: {value: {userAgent}}} = await send("Runtime.evaluate", {
+          expression: `navigator.userAgent`,
+        }, sessionId);
+        */
+        DEBUG.traceViewportUpdateFuncs && console.log('Retrieved userAgent:', userAgent);
+        console.log(`Session ${sessionId} has user agent ${userAgent}`);
+        const desiredUserAgent = mobile ? mobUA : deskUA;
+        connection.navigator.userAgent = desiredUserAgent;
+        DEBUG.traceViewportUpdateFuncs && console.log('Determined desiredUserAgent:', desiredUserAgent);
+        DEBUG.debugUserAgent && console.log({mobile, targetId, userAgent, desiredUserAgent});
+        if (userAgent != desiredUserAgent) {
+          DEBUG.traceViewportUpdateFuncs && console.log('User agent mismatch, updating user agent for target:', targetId);
+          DEBUG.debugUserAgent && console.log(`Will update user agent for target ${targetId}`, {mobile, desiredUserAgent});
+          const nav = {
+            userAgent: desiredUserAgent,
+            platform: mobile ? mobPlat : deskPlat,
+            acceptLanguage: connection.navigator.acceptLanguage || 'en-US',
+          };
+          Object.assign(connection.navigator, nav);
+          DEBUG.traceViewportUpdateFuncs && console.log('Assigned new navigation properties to connection.navigator');
+          send("Emulation.setUserAgentOverride", nav, sessionId);
+          DEBUG.traceViewportUpdateFuncs && console.log('Sent Emulation.setUserAgentOverride');
+          send(
+            "Emulation.setScrollbarsHidden",
+            {hidden: mobile},
+            sessionId
+          );
+          DEBUG.traceViewportUpdateFuncs && console.log('Sent Emulation.setScrollbarsHidden');
+          list.push(sessionId);
+        } else {
+          DEBUG.traceViewportUpdateFuncs && console.log('User agent matches, no update needed for target:', targetId);
+          DEBUG.debugUserAgent && console.log(`Will NOT update user agent for target ${targetId}`, {mobile, userAgent, desiredUserAgent});
+        }
+        DEBUG.traceViewportUpdateFuncs && console.log('Added sessionId to list');
+      }).catch(err => console.warn(`Sessionid err`, sessionId, err));
     } catch (err) {
       console.warn(`Error updating user agent for double-checked target`, {targetId, sessionId}, err);
     }
@@ -2487,7 +2500,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
       console.log('SKIPPING', {targetId, sessionId});
       continue;
     }
-    if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
+    //if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
     let width, height, screenWidth, screenHeight;
     try {
       const {windowId} = await send("Browser.getWindowForTarget", {targetId});
@@ -2653,7 +2666,7 @@ async function makeZombie({port:port = 9222} = {}) {
         const isNeither = !(isCaptureScreenshot || isScreenshotAck || (isFetchDomain && DEBUG.dontShowFetchDomain));
         const displayCommand = isNeither || (DEBUG.acks && isScreenshotAck) || (DEBUG.shotDebug && isCaptureScreenshot);
         if ( displayCommand ) {
-          //console.log({send:message});
+          console.log({send:message});
           promise = promise.then(resp => {
             if ( resp && resp.data ) {
               if ( resp.data.length < 1000 ) {
