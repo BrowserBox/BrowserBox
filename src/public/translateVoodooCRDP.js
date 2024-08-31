@@ -39,7 +39,17 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
 
   if ( ! def ) {
     console.warn(new Error(`Unknown key:${ e.key }`), e); 
-    return;
+    if ( e.originalEvent.type == 'keydown' ) {
+      const retVal = {
+        command: {
+          name: "Input.insertText",
+          params: {
+            text: e.key,
+          },
+        }
+      }
+      return retVal;
+    }
   }
 
   // If definition doesn't match the event key, throw an error
@@ -51,7 +61,9 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
   const description = getKeyDescription(e, def);
 
   // Update the current modifiers state
-  updateModifiers(e);
+  if ( e.originalEvent ) {
+    updateModifiers(e.originalEvent);
+  }
 
   // Determine event type ('keyDown', 'rawKeyDown', 'keyUp')
   let type;
@@ -62,6 +74,8 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
   } else {
     type = "keyUp";
   }
+
+  //console.log({description, currentModifiers, e});
 
   // Construct the return command object with dispatchKeyEvent
   const retVal = {
@@ -79,7 +93,11 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
     }
   };
 
-  // Handle special case for Meta key and SYNTHETIC
+  if ( description.location ) {
+    retVal.command.params.location = description.location;
+  }
+
+  // Handle special case for Meta key
   if (!SYNTHETIC && retVal.command.params.key === 'Meta') {
     return [
       retVal,
@@ -93,7 +111,7 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
 
 // Function to update the global modifier state based on the event
 function updateModifiers(originalEvent) {
-  currentModifiers = 0;
+  clearModifiers();
   if (originalEvent.altKey) currentModifiers |= 1;   // Alt
   if (originalEvent.ctrlKey) currentModifiers |= 2;  // Control
   if (originalEvent.metaKey) currentModifiers |= 4;  // Meta
