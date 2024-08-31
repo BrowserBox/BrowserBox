@@ -20,7 +20,7 @@ const DOM_DELTA_LINE = 1;
 const DOM_DELTA_PAGE = 2;
 const LINE_HEIGHT_GUESS = 32;
 
-const SYNTHETIC_CTRL = e => keyEvent({key:'Control',originalType:e.originalType}, 2, true);
+const SYNTHETIC_CTRL = e => keyEvent({key:'Control',code:'Control', originalType:e.originalType,originalEvent:{ctrlKey:true}}, true);
 
 export default translator;
 
@@ -115,7 +115,7 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
 function updateModifiers(originalEvent) {
   clearModifiers();
   if (originalEvent.altKey) currentModifiers |= 1;   // Alt
-  if (originalEvent.ctrlKey) currentModifiers |= 2;  // Control
+  if (originalEvent.ctrlKey || originalEvent.metaKey) currentModifiers |= 2;  // Control
   if (originalEvent.metaKey) currentModifiers |= 4;  // Meta
   if (originalEvent.shiftKey) currentModifiers |= 8; // Shift
 }
