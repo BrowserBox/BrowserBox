@@ -59,13 +59,13 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
     console.warn(new Error(`Mismatch: ${def.key} fails original ${e.key}`), def, e);
   }
 
-  // Get the description based on key definitions (inspired by Puppeteer)
-  const description = getKeyDescription(e, def);
-
   // Update the current modifiers state
   if ( e.originalEvent ) {
     updateModifiers(e.originalEvent);
   }
+
+  // Get the description based on key definitions (inspired by Puppeteer)
+  const description = getKeyDescription(e, def);
 
   // Determine event type ('keyDown', 'rawKeyDown', 'keyUp')
   let type;
@@ -107,7 +107,7 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
     ];
   }
 
-  //console.log({ def, retVal });
+  console.log({ e, def, retVal });
   return retVal;
 }
 
@@ -127,7 +127,7 @@ function getKeyDescription(e, def) {
     key: def.key || '',
     keyCode: def.keyCode || 0,
     code: def.code || '',
-    text: '',
+    text: def.text || '',
     location: def.location || 0,
   };
 
@@ -135,11 +135,12 @@ function getKeyDescription(e, def) {
     description.key = def.shiftKey;
     description.keyCode = def.shiftKeyCode || description.keyCode;
     description.text = def.shiftText || def.shiftKey || '';
+    alert('shift');
   } else if (description.key.length === 1) {
     description.text = description.key;
   }
 
-  if (currentModifiers & ~8) {
+  if (currentModifiers != 8 && currentModifiers != 0 || e.type == 'keyup') {
     description.text = ''; // If other modifiers (not Shift) are active, clear text
   }
 
