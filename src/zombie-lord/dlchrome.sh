@@ -49,12 +49,17 @@ is_docker() {
   fi
 }
 
+is_arm() {
+  uname -a | grep -q arm64;
+}
+
 # Function to install Chromium instead of Google Chrome if in Docker
 install_browser() {
-  if is_docker; then
-    echo "Running inside Docker. Installing Chromium instead of Google Chrome."
+  if is_arm; then
+    echo "Running inside Docker or ARM. Installing Chromium instead of Google Chrome."
     $sudo $PM_UPDATE
     $sudo $PM_INSTALL $CHROMIUM_PACKAGE
+    read -p "Is it installed?"
   else
     install_chrome
   fi

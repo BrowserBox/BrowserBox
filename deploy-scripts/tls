@@ -79,6 +79,28 @@ if ! command -v certbot >/dev/null; then
   fi
 fi
 
+install_crontab() {
+  if ! command -v crontab &>/dev/null; then
+    echo "Crontab not found. Installing..."
+    if [ "$(os_type)" == "macOS" ]; then
+      brew install cronie
+    elif [[ "$APT" == *yum || "$APT" == *dnf ]]; then
+      $sudo $APT -y install cronie
+      $sudo systemctl enable crond
+      $sudo systemctl start crond
+    else
+      $sudo $APT -y install cron
+      $sudo systemctl enable cron
+      $sudo systemctl start cron
+    fi
+    echo "Crontab installation complete."
+  else
+    echo "Crontab is already installed."
+  fi
+}
+
+install_crontab
+
 if [[ -z "$1" ]]; then
   echo "Supply a domain name as first argument" >&2
   exit 1
