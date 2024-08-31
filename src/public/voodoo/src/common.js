@@ -1,4 +1,4 @@
-export const VERSION = '9.9.7';
+export const VERSION = '9.9.8';
 export const SERVICE_COUNT = 4; // pptr(menu), chat, audio, devtools
 export const FRAME_CONTROL = false;
 
