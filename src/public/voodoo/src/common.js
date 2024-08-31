@@ -193,6 +193,7 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  alwaysSendTopLevel: true,
   get isCT() {
     return globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net');
   },
@@ -214,7 +215,7 @@ export const CONFIG = Object.freeze({
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
   get useServiceWorkerToCache() {
-    return true;
+    return false;
   },
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,
