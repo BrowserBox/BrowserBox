@@ -1660,7 +1660,7 @@
             //console.info(`[sendKey]: got event: ${keyEvent.key} (${keyEvent.type.slice(3)})`, keyEvent);
           }
           const {viewState} = state;
-          if ( ! ( viewState.shouldHaveFocus || document.deepActiveElement == viewState.omniBoxInput ) ) {
+          if ( CONFIG.alwaysSendTopLevel || ! ( viewState.shouldHaveFocus || document.deepActiveElement == viewState.omniBoxInput ) ) {
             let ev = keyEvent;
             if ( ev.key == "Tab" || ev.key == "Enter" ) {
               // do nothing
@@ -2007,7 +2007,7 @@
           if ( mouseWheel ) {
             transformedEvent.contextId = state.viewState.latestScrollContext;
           }
-          
+
           if ( (event.type.startsWith('key')) && (event.code === 229 || event.keyCode === 229) ) {
             showIMEUI();
           } 
@@ -2079,6 +2079,7 @@
             }
             DEBUG.HFUNCTION && console.log(`H Sending`, transformedEvent);
             queue.send(transformedEvent);
+            DEBUG.debugKeyEvents && console.log('Sent',{transformedEvent,event});
             DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`);
           }
         }
