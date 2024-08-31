@@ -49,6 +49,8 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
         }
       }
       return retVal;
+    } else {
+      return;
     }
   }
 
@@ -105,7 +107,7 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
     ];
   }
 
-  //console.log({ def, retVal });
+  console.log({ def, retVal });
   return retVal;
 }
 
@@ -271,6 +273,7 @@ function translator(e, handled = {type:'case'}) {
       }
     }
     case "control-chars": {
+      console.log({e});
       return keyEvent(e);
     }
     case "keydown":

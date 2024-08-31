@@ -208,7 +208,7 @@ export default function transformEvent(e, {scale}, bounds) {
       case "keyup": {
         const id = getKeyId(event);
         if ( controlChars.has(id) ) {
-          event.type == "keypress" && event.preventDefault && event.preventDefault();
+          event.type == "keydown" && event.preventDefault && event.preventDefault();
           transformedEvent.synthetic = true;
           transformedEvent.originalType = event.type;
           transformedEvent.type = "control-chars";
