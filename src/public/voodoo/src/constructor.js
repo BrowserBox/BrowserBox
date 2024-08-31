@@ -1660,9 +1660,9 @@
             //console.info(`[sendKey]: got event: ${keyEvent.key} (${keyEvent.type.slice(3)})`, keyEvent);
           }
           const {viewState} = state;
-          if ( ! ( viewState.shouldHaveFocus || document.deepActiveElement == viewState.omniBoxInput ) ) {
+          if ( CONFIG.alwaysSendTopLevel || ! ( viewState.shouldHaveFocus || document.deepActiveElement == viewState.omniBoxInput ) ) {
             let ev = keyEvent;
-            if ( ev.key == "Tab" || ev.key == "Enter" ) {
+            if ( ev.key == "Tab" ) {
               // do nothing
             } else{
               DEBUG.debugKeyEvents && console.info(`[sendKey]: sending event: ${keyEvent.key}`, keyEvent);
@@ -1674,7 +1674,7 @@
         function installTopLevelKeyListeners() {
           if ( ! deviceIsMobile() && CONFIG.useTopLevelSendKeyListeners ) {
             self.addEventListener('keydown', sendKey); 
-            self.addEventListener('keypress', sendKey);
+            //self.addEventListener('keypress', sendKey);
             self.addEventListener('keyup', sendKey); 
           }
         }
@@ -2007,7 +2007,7 @@
           if ( mouseWheel ) {
             transformedEvent.contextId = state.viewState.latestScrollContext;
           }
-          
+
           if ( (event.type.startsWith('key')) && (event.code === 229 || event.keyCode === 229) ) {
             showIMEUI();
           } 
@@ -2019,6 +2019,7 @@
             DEBUG.HFUNCTION && console.log(`H Sending`, transformedEvent);
             queue.send(transformedEvent);
             DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`);
+            DEBUG.debugKeyEvents & event.type.startsWith('key') && console.log((new Error).stack);
           } else {
             if ( event.type == "keydown" && event.key == "Enter" ) {
               // Note
@@ -2079,7 +2080,9 @@
             }
             DEBUG.HFUNCTION && console.log(`H Sending`, transformedEvent);
             queue.send(transformedEvent);
+            //DEBUG.debugKeyEvents && console.log('Sent',{transformedEvent,event});
             DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`);
+            DEBUG.debugKeyEvents & event.type.startsWith('key') && console.log((new Error).stack);
           }
         }
 

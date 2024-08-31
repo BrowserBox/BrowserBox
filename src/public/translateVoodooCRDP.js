@@ -20,9 +20,131 @@ const DOM_DELTA_LINE = 1;
 const DOM_DELTA_PAGE = 2;
 const LINE_HEIGHT_GUESS = 32;
 
-const SYNTHETIC_CTRL = e => keyEvent({key:'Control',originalType:e.originalType}, 2, true);
+const SYNTHETIC_CTRL = e => keyEvent({key:'Control',code:'Control', originalType:e.originalType,originalEvent:{ctrlKey:true}}, true);
 
 export default translator;
+
+// Global variable to store the current modifier state
+let currentModifiers = 0;
+
+// Function to clear the modifier state
+export function clearModifiers() {
+  currentModifiers = 0;
+}
+
+function keyEvent(e, SYNTHETIC = false, straight = false) {
+  // Use the existing or passed key definitions
+  const def = straight ? e :
+    e.key.length == 1 ? keys[e.key] : keys[e.code];
+
+  if ( ! def ) {
+    console.warn(new Error(`Unknown key:${ e.key }`), e); 
+    if ( e.originalEvent.type == 'keydown' ) {
+      const retVal = {
+        command: {
+          name: "Input.insertText",
+          params: {
+            text: e.key,
+          },
+        }
+      }
+      return retVal;
+    } else {
+      return;
+    }
+  }
+
+  // If definition doesn't match the event key, throw an error
+  if (def.key !== e.key) {
+    console.warn(new Error(`Mismatch: ${def.key} fails original ${e.key}`), def, e);
+  }
+
+  // Get the description based on key definitions (inspired by Puppeteer)
+  const description = getKeyDescription(e, def);
+
+  // Update the current modifiers state
+  if ( e.originalEvent ) {
+    updateModifiers(e.originalEvent);
+  }
+
+  // Determine event type ('keyDown', 'rawKeyDown', 'keyUp')
+  let type;
+  if (e.originalType === "keydown") {
+    type = description.text ? "keyDown" : "rawKeyDown";
+  } else if (e.originalType === "keypress") {
+    type = "char";
+  } else {
+    type = "keyUp";
+  }
+
+  //console.log({description, currentModifiers, e});
+
+  // Construct the return command object with dispatchKeyEvent
+  const retVal = {
+    command: {
+      name: "Input.dispatchKeyEvent",
+      params: {
+        type,
+        text: description.text, // Can be empty based on modifier states
+        code: description.code,
+        key: description.key,
+        windowsVirtualKeyCode: description.keyCode,
+        modifiers: currentModifiers,
+      },
+      requiresShot: ["Enter", "Tab", "Delete"].includes(e.key),
+    }
+  };
+
+  if ( description.location ) {
+    retVal.command.params.location = description.location;
+  }
+
+  // Handle special case for Meta key
+  if (false && !SYNTHETIC && retVal.command.params.key === 'Meta') {
+    return [
+      retVal,
+      SYNTHETIC_CTRL(e)
+    ];
+  }
+
+  //console.log({ def, retVal });
+  return retVal;
+}
+
+// Function to update the global modifier state based on the event
+function updateModifiers(originalEvent) {
+  clearModifiers();
+  if (originalEvent.altKey) currentModifiers |= 1;   // Alt
+  if (originalEvent.ctrlKey) currentModifiers |= 2;  // Control
+  if (originalEvent.metaKey) currentModifiers |= 4;  // Meta
+  if (originalEvent.shiftKey) currentModifiers |= 8; // Shift
+}
+
+// Based on Puppeteer's key description logic
+function getKeyDescription(e, def) {
+  const shift = currentModifiers & 8; // Check if Shift is active
+  const description = {
+    key: def.key || '',
+    keyCode: def.keyCode || 0,
+    code: def.code || '',
+    text: '',
+    location: def.location || 0,
+  };
+
+  if (shift && def.shiftKey) {
+    description.key = def.shiftKey;
+    description.keyCode = def.shiftKeyCode || description.keyCode;
+    description.text = def.shiftText || def.shiftKey || '';
+  } else if (description.key.length === 1) {
+    description.text = description.key;
+  }
+
+  if (currentModifiers & ~8) {
+    description.text = ''; // If other modifiers (not Shift) are active, clear text
+  }
+
+  return description;
+}
 
 function translator(e, handled = {type:'case'}) {
   handled.type = handled.type || 'case';
@@ -826,47 +948,6 @@ function mouseEvent(e, deltaX = 0, deltaY = 0) {
       requiresShot: true,
     }
   };
-}
-
-function keyEvent(e, modifiers = 0, SYNTHETIC = false) {
-  const id = e.key && e.key.length > 1 ? e.key : e.code;
-  const def = keys[id] || {};
-  const text = e.originalType == "keypress" ? String.fromCharCode(def.keyCode) : undefined;
-  modifiers = modifiers || encodeModifiers(e.originalEvent);
-  let type;
-  if ( e.originalType == "keydown" ) {
-    if ( text ) 
-      type = "keyDown";
-    else 
-      type = "rawKeyDown";
-  } else if ( e.originalType == "keypress" ) {
-    type = "char";
-  } else {
-    type = "keyUp";
-  }
-  const retVal = {
-    command: {
-      name: "Input.dispatchKeyEvent",
-      params: {
-        type,
-        text,
-        //unmodifiedText: text,
-        code: def.code,
-        key: def.key,
-        windowsVirtualKeyCode: def.keyCode,
-        modifiers,
-      },
-      requiresShot: e.key == "Enter" || e.key == "Tab" || e.key == "Delete",
-      /*ignoreHash: e.key == "Enter" || e.key == "Tab" || e.key == "Delete"*/
-    }
-  };
-  if ( ! SYNTHETIC && retVal.command.params.key == 'Meta' ) {
-    return [
-      retVal,
-      SYNTHETIC_CTRL(e)
-    ];
-  }
-  return retVal;
 }
 
 function encodeModifiers(originalEvent) {

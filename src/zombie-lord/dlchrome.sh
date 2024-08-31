@@ -42,15 +42,23 @@ determine_package_manager() {
 is_docker() {
   if [ -f /.dockerenv ]; then
     return 0
+  elif [[ -n "$IS_DOCKER_BUILD" ]]; then
+    return 0
   else
     return 1
   fi
 }
 
+is_arm() {
+  uname -a | grep -q arm64;
+}
+
+is_macos() { [[ "$(uname -s)" == "Darwin" ]]; }
+
 # Function to install Chromium instead of Google Chrome if in Docker
 install_browser() {
-  if is_docker; then
-    echo "Running inside Docker. Installing Chromium instead of Google Chrome."
+  if is_arm && ! is_macos; then
+    echo "Running inside Docker or ARM. Installing Chromium instead of Google Chrome."
     $sudo $PM_UPDATE
     $sudo $PM_INSTALL $CHROMIUM_PACKAGE
   else

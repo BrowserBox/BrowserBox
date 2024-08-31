@@ -111,15 +111,13 @@ const WAIT_FOR_DOWNLOAD_BEGIN_DELAY = 5000;
 const WAIT_FOR_COALESCED_NETWORK_EVENTS = 1000
 
 import {
-  deskUA_Mac_FF,
   deskUA_Mac_Chrome,
-  mobUA_iOSFF,
   mobUA_iOSSafari,
   deskPlat_Mac,
   mobPlat_iOS,
+  DeskVend,
+  MobVend,
   LANG,
-  VEND_FF,
-  ua,
 } from './navigator.js';
 
 const GrantedPermissions = [
@@ -159,15 +157,13 @@ const Area51Long = -115.80666344;
 const INTENT_PROMPT_THRESHOLD = 30000;
 
 const mobUA = mobUA_iOSSafari;
-//const deskUA = deskUA_Mac_FF;
 const deskUA = deskUA_Mac_Chrome;
 const mobPlat = mobPlat_iOS;
 const deskPlat = deskPlat_Mac;
 const UA = deskUA;
 const Plat = deskPlat_Mac;
-const VEND = VEND_FF;
 
-DEBUG.debugNavigator && console.log({UA, mobUA, deskUA, Plat, VEND});
+DEBUG.debugNavigator && console.log({UA, mobUA, deskUA, Plat});
 
 const MAX_RELOAD_MEMORY = 25;
 const TargetReloads = new Map();
@@ -325,7 +321,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     favicons,
     sessionId: null,
     bounds: Object.assign({}, COMMON_FORMAT),
-    navigator: { userAgent: UA, platform: Plat, acceptLanguage: LANG, vendor: VEND },
+    navigator: { userAgent: UA, platform: Plat, acceptLanguage: LANG, vendor: UA == mobUA ? MobVend : DeskVend },
     plugins: {},
     setClientErrorSender(e) {
       this.zombie.sendErrorToClient = e;
@@ -2453,11 +2449,11 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
           sessionId
         );
         DEBUG.traceViewportUpdateFuncs && console.log('Sent Emulation.setScrollbarsHidden');
+        list.push(sessionId);
       } else {
         DEBUG.traceViewportUpdateFuncs && console.log('User agent matches, no update needed for target:', targetId);
         DEBUG.debugUserAgent && console.log(`Will NOT update user agent for target ${targetId}`, {mobile, userAgent, desiredUserAgent});
       }
-      list.push(sessionId);
       DEBUG.traceViewportUpdateFuncs && console.log('Added sessionId to list');
     } catch (err) {
       console.warn(`Error updating user agent for double-checked target`, {targetId, sessionId}, err);
