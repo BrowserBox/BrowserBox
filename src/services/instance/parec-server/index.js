@@ -34,7 +34,7 @@ const DEBUG = {
   showAllMessages: false,
   showAcks: false,
   showConnections: true,
-  val: 1,
+  val: 0,
   showFormat: true,
   mode: 'prod',
   goSecure: true
