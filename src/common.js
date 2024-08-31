@@ -72,7 +72,7 @@ export const DEBUG = Object.freeze({
   lowEndDefault: false,
   debugSession: false,
   traceViewportUpdateFuncs: false,
-  debugReload: false,
+  debugReload: true,
   debugInfoChanged: false,
   attachDebug: false,
   debugSetupReload: false,
