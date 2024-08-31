@@ -10,7 +10,7 @@ fi
 npm run bundle
 
 #DOCKER_BUILDKIT=1 
-#export BUILDKIT_PROGRESS=plain
+export BUILDKIT_PROGRESS=plain
 
 # check if any builder supports our platforms
 

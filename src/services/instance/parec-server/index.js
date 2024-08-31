@@ -34,6 +34,7 @@ const DEBUG = {
   showAllMessages: false,
   showAcks: false,
   showConnections: true,
+  showClients: false,
   val: 0,
   showFormat: true,
   mode: 'prod',
@@ -362,7 +363,8 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
     ip: `${ws?._socket?.remoteAddress}:${ws?._socket?.remotePort}`,
   };
   stopEncoderExpiryClock(client);
-  DEBUG.showConnections && console.log(`Now have ${Clients.size} clients`, Clients);
+  DEBUG.showConnections && console.log(`Now have ${Clients.size} clients`);
+  DEBUG.showClients && console.log(`Now have ${Clients.size} clients`, Clients);
   try {
     DEBUG.val && console.log('ws (wave header + pcm stream) connection (server #2)');
 
@@ -469,6 +471,7 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
       console.log(`WebSocket closing`, info);
       reader.off('data', processData);
       maybeStartEncoderExpiryClock(client);
+      DEBUG.showConnections && console.log(`Now have ${Clients.size} clients`);
       client.packet.length = 0;
       totalLength = 0;
       client.buffer.length = 0;
@@ -480,8 +483,11 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
 
 server.on('connection', function(socket) {
   sockets.add(socket);
-  socket.on('close', () => sockets.delete(socket));
-  DEBUG.showConnections && console.log('New http connection: setting no delay true');
+  socket.on('close', () => {
+    DEBUG.showConnections && console.log(`Connection ended from: ${socket.remoteAddress}`);
+    sockets.delete(socket);
+  });
+  DEBUG.showConnections && console.log(`Connection from: ${socket.remoteAddress}`);
   socket.setNoDelay(true);
 });
 

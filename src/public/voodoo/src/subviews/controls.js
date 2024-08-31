@@ -1,4 +1,5 @@
 import keys from '../../../kbd.js';
+import {controlChars,getKeyId} from '../transformEvent.js';
 import {DEBUG, CHAR, logitKeyInputEvent} from '../common.js';
 import {c as X, s as R} from '../../node_modules/bang.html/src/vv/vanillaview.js';
 //import {PluginsMenuButton} from './pluginsMenuButton.js';
@@ -157,6 +158,10 @@ export function Controls(state) {
   function pressKey(e) {
     //DEBUG.debugKeyEvents && console.info(`[pressKey]: got key event: ${e.key} (${e.type.slice(3)})`, e);
     updateWord(e, state);
+    if ( controlChars.has(getKeyId(e)) && e.type == 'keypress' && keys[getKeyId(e)].text ) {
+      H(e);
+    }
+    /*
     if ( e.key && e.key.length == 1 ) {
       state.lastKeypressKey = e.key;
       H({
@@ -166,6 +171,7 @@ export function Controls(state) {
         data: e.key
       });
     } else H(e);
+    */
     DEBUG.debugKeyEvents && console.info(`[pressKey]: sent key event: ${e.key} (${e.type.slice(3)})`);
     state.retargetTab(e);
   }
@@ -188,7 +194,7 @@ export function Controls(state) {
   }
 
   function updateWord(keypress, state) {
-    const key = keys[keypress.key];
+    const key = keys[getKeyId(keypress)];
     if ( !! key && (key.code == 'Space' || key.code == 'Enter') ) {
       clearWord(state);
     } else {
