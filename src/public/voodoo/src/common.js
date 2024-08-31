@@ -193,7 +193,7 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
-  alwaysSendTopLevel: true,
+  alwaysSendTopLevel: false,
   get isCT() {
     return globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net');
   },
