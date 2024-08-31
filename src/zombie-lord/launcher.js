@@ -256,7 +256,7 @@ const launcher_api = {
         //"--disable-gpu",
         //"--enable-low-end-device-mode",
         "--ignore-gpu-blacklist",
-        "--single-process",
+        //"--single-process",
         "--disable-extensions",
         "--disable-hang-monitor",
         "--noerrdialogs",
