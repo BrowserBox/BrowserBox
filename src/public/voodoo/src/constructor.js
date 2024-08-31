@@ -1662,7 +1662,7 @@
           const {viewState} = state;
           if ( CONFIG.alwaysSendTopLevel || ! ( viewState.shouldHaveFocus || document.deepActiveElement == viewState.omniBoxInput ) ) {
             let ev = keyEvent;
-            if ( ev.key == "Tab" || ev.key == "Enter" ) {
+            if ( ev.key == "Tab" ) {
               // do nothing
             } else{
               DEBUG.debugKeyEvents && console.info(`[sendKey]: sending event: ${keyEvent.key}`, keyEvent);

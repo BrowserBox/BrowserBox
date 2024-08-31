@@ -100,14 +100,14 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
   }
 
   // Handle special case for Meta key
-  if (!SYNTHETIC && retVal.command.params.key === 'Meta') {
+  if (false && !SYNTHETIC && retVal.command.params.key === 'Meta') {
     return [
       retVal,
       SYNTHETIC_CTRL(e)
     ];
   }
 
-  console.log({ def, retVal });
+  //console.log({ def, retVal });
   return retVal;
 }
 
@@ -115,7 +115,7 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
 function updateModifiers(originalEvent) {
   clearModifiers();
   if (originalEvent.altKey) currentModifiers |= 1;   // Alt
-  if (originalEvent.ctrlKey || originalEvent.metaKey) currentModifiers |= 2;  // Control
+  if (originalEvent.ctrlKey) currentModifiers |= 2;  // Control
   if (originalEvent.metaKey) currentModifiers |= 4;  // Meta
   if (originalEvent.shiftKey) currentModifiers |= 8; // Shift
 }
@@ -273,7 +273,6 @@ function translator(e, handled = {type:'case'}) {
       }
     }
     case "control-chars": {
-      console.log({e});
       return keyEvent(e);
     }
     case "keydown":
