@@ -215,7 +215,7 @@ export const CONFIG = Object.freeze({
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
   get useServiceWorkerToCache() {
-    return false;
+    return true;
   },
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,
