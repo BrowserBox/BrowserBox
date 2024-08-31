@@ -3,6 +3,7 @@
 #set -x
 
 sudo="$(command -v sudo)"
+SUDO="$sudo"
 
 os_type() {
   case "$(uname -s)" in
@@ -120,7 +121,7 @@ else
     if [ "$(os_type)" == "macOS" ]; then
       brew install jq
     else
-      $SUDO $APT -y install jq
+      $sudo $APT -y install jq
     fi
   fi
 
