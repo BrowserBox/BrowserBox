@@ -1,5 +1,5 @@
 import {DEBUG, FRAME_CONTROL, deviceIsMobile} from './voodoo/src/common.js';
-import keys from './kbd.js';
+import keys from './kbd2.js';
 
 export const WorldName = 'PlanetZanj';
 
