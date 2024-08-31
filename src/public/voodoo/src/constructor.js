@@ -1674,7 +1674,7 @@
         function installTopLevelKeyListeners() {
           if ( ! deviceIsMobile() && CONFIG.useTopLevelSendKeyListeners ) {
             self.addEventListener('keydown', sendKey); 
-            self.addEventListener('keypress', sendKey);
+            //self.addEventListener('keypress', sendKey);
             self.addEventListener('keyup', sendKey); 
           }
         }
@@ -2019,6 +2019,7 @@
             DEBUG.HFUNCTION && console.log(`H Sending`, transformedEvent);
             queue.send(transformedEvent);
             DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`);
+            DEBUG.debugKeyEvents & event.type.startsWith('key') && console.log((new Error).stack);
           } else {
             if ( event.type == "keydown" && event.key == "Enter" ) {
               // Note
@@ -2079,8 +2080,9 @@
             }
             DEBUG.HFUNCTION && console.log(`H Sending`, transformedEvent);
             queue.send(transformedEvent);
-            DEBUG.debugKeyEvents && console.log('Sent',{transformedEvent,event});
+            //DEBUG.debugKeyEvents && console.log('Sent',{transformedEvent,event});
             DEBUG.debugKeyEvents && event.type.startsWith('key') && console.info(`[H]: sent key event: ${event.key} (${event.type.slice(3)})`);
+            DEBUG.debugKeyEvents & event.type.startsWith('key') && console.log((new Error).stack);
           }
         }
 
