@@ -1698,7 +1698,7 @@
                 });
                 //event.preventDefault();
               } else if ( event.key == "Tab" ) {
-                retargetTab(event);
+                state.retargetTab(event);
               } else if ( event.key == "Enter" ) {
                 H(event);
               }

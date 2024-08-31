@@ -107,7 +107,7 @@ function keyEvent(e, SYNTHETIC = false, straight = false) {
     ];
   }
 
-  console.log({ e, def, retVal });
+  //console.log({ e, def, retVal });
   return retVal;
 }
 
@@ -135,7 +135,6 @@ function getKeyDescription(e, def) {
     description.key = def.shiftKey;
     description.keyCode = def.shiftKeyCode || description.keyCode;
     description.text = def.shiftText || def.shiftKey || '';
-    alert('shift');
   } else if (description.key.length === 1) {
     description.text = description.key;
   }

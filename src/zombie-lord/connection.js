@@ -641,7 +641,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( DEBUG.noteCallStackInLog ) {
         stack = (new Error).stack; 
       }
-      console.info(`Logging`, {method, params: {metadata, data:'img data...'}, sessionId, stack});
+      console.info(`Logging 3`, {method, params: {metadata, data:'img data...'}, sessionId, stack});
       setTimeout(() => {
         fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
           timestamp: (new Date).toISOString(),
@@ -875,7 +875,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( DEBUG.noteCallStackInLog ) {
         stack = (new Error).stack; 
       }
-      console.info(`Logging`, message, stack);
+      console.info(`Logging 1`, message, stack);
       fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
         timestamp: (new Date).toISOString(),
         message,
@@ -2685,7 +2685,7 @@ async function makeZombie({port:port = 9222} = {}) {
         if ( DEBUG.noteCallStackInLog ) {
           stack = (new Error).stack; 
         }
-        console.info(`Logging`, message, stack);
+        console.info(`Logging 2`, message, stack);
         fs.appendFileSync(LOG_FILE.FileHandle, JSON.stringify({
           timestamp: (new Date).toISOString(),
           message,
