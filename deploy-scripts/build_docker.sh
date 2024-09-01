@@ -34,6 +34,8 @@ if [[ -z "$USER" || -z "$HOST" ]]; then
   exit 1
 fi
 
+read -p "Are you logged in to Docker and GHCR? Enter to continue if so. Otherwise CTRL-C to exit and log in now."
+
 # Test SSH connection to the ARM64 host
 echo "Testing SSH connection to ${USER}@${HOST}..."
 if ! ssh -o BatchMode=yes -o ConnectTimeout=5 "${USER}@${HOST}" exit; then
