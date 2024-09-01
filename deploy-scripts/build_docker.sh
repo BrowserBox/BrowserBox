@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -eox
+
 # Default values
 USER=""
 HOST=""
@@ -44,24 +46,28 @@ fi
 # Ensure jq is installed
 if ! command -v jq &> /dev/null; then
   echo "jq is not installed. Installing jq..."
-  apt-get update && apt-get install -y jq
+  sudo apt-get update && sudo apt-get install -y jq
 fi
 
 # Define Docker daemon configuration file path
 DOCKER_CONFIG="/etc/docker/daemon.json"
 
-# Backup existing daemon.json if it exists
-if [[ -f "$DOCKER_CONFIG" ]]; then
-  sudo cp "$DOCKER_CONFIG" "${DOCKER_CONFIG}.bak_$(date +%F_%T)"
-  echo "Backup of existing daemon.json created at ${DOCKER_CONFIG}.bak_$(date +%F_%T)"
-fi
+restart=""
 
 # Ensure containerd-snapshotter is enabled in daemon.json
 if [[ -f "$DOCKER_CONFIG" ]]; then
-  # Use jq to update the configuration and write back to the file
-  contents="$(jq '.features["containerd-snapshotter"] = true' "$DOCKER_CONFIG")" && \
-  echo -E "${contents}" | sudo tee "$DOCKER_CONFIG"
+  # Check if containerd-snapshotter is already set to true
+  if jq -e '.features["containerd-snapshotter"] == true' "$DOCKER_CONFIG" > /dev/null; then
+    echo "containerd-snapshotter is already enabled in $DOCKER_CONFIG"
+  else
+    echo "Enabling containerd-snapshotter in $DOCKER_CONFIG"
+    # Use jq to update the configuration and write back to the file
+    contents="$(jq '.features["containerd-snapshotter"] = true' "$DOCKER_CONFIG")" && \
+    echo -E "${contents}" | sudo tee "$DOCKER_CONFIG"
+    restart=true
+  fi
 else
+  echo "$DOCKER_CONFIG does not exist, creating with containerd-snapshotter enabled"
   # Create new daemon.json with required configuration
   sudo mkdir -p /etc/docker
   echo '{
@@ -69,68 +75,48 @@ else
       "containerd-snapshotter": true
     }
   }' | sudo tee "$DOCKER_CONFIG"
+  restart=true
 fi
 
-echo "Docker daemon configuration updated successfully."
-
-# Restart Docker to apply changes
-echo "Restarting Docker daemon..."
-sudo systemctl restart docker
-echo "Docker daemon restarted."
-
-# Ensure you use containerd for storage (Docker settings) for better performance and stability
-
-# Install npm dependencies if node_modules directory does not exist
-if [[ ! -d node_modules ]]; then
-  echo "Installing npm dependencies..."
-  npm install
+if [[ -n "$restart" ]];then
+  # Restart Docker to apply changes
+  echo "Restarting Docker daemon..."
+  sudo systemctl restart docker
+  echo "Docker daemon restarted."
+  echo "Docker daemon configuration updated successfully."
 fi
 
-# Build the client (because this sometimes does not work inside a container)
-echo "Building client bundle..."
-npm run bundle
+# Step 0: Remove any old ones
+docker buildx rm container-builder
 
-# Set up Docker build context for ARM64
-echo "Setting up Docker context for ARM64..."
-docker context create arm64-build --docker "host=ssh://${USER}@${HOST}" --default-stack-orchestrator swarm || echo "Docker context 'arm64-build' already exists."
+# Step 1: Create the builder
+echo "Creating Docker buildx builder..."
+docker buildx create --name container-builder --driver docker-container --use
 
-# Create and use a custom builder with docker-container driver
-echo "Creating and configuring Docker buildx builder..."
+# Step 3: Append the remote arm64 node
+echo "Appending remote arm64 build node to the builder..."
 docker buildx create \
+  --append \
   --name container-builder \
-  --driver docker-container \
-  --use \
-  --bootstrap \
-  arm64-build || echo "Docker buildx builder 'container-builder' already exists."
+  --node remote_arm64_builder \
+  --platform linux/arm64 \
+  ssh://${USER}@${HOST} \
+  --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=10000000 \
+  --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=10000000
 
-# Check if the builder supports the required platforms
-echo "Ensuring builder supports linux/amd64 and linux/arm64 platforms..."
-SUPPORTED_PLATFORMS=$(docker buildx inspect --bootstrap | grep -Eo 'linux/amd64|linux/arm64' | sort | uniq)
-if [[ "$SUPPORTED_PLATFORMS" != *"linux/amd64"* ]] || [[ "$SUPPORTED_PLATFORMS" != *"linux/arm64"* ]]; then
-  echo "Builder does not support required platforms. Reconfiguring builder..."
-  docker buildx rm container-builder
-  docker buildx create \
-    --name container-builder \
-    --driver docker-container \
-    --platform linux/amd64,linux/arm64 \
-    --use \
-    --bootstrap \
-    arm64-build
-fi
-
-# Retrieve the latest git tag
-tag="$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.1")"
+# Step 4: Inspect and bootstrap the builder
+echo "Inspecting and bootstrapping the builder..."
+docker buildx inspect --bootstrap
 
 # Build and push multi-platform Docker images
-echo "Building and pushing Docker images with tag: $tag"
+echo "Building and pushing Docker images..."
 docker buildx build \
   --push \
   --platform linux/amd64,linux/arm64 \
   -t ghcr.io/browserbox/browserbox:latest \
-  -t ghcr.io/browserbox/browserbox:"${tag}" \
+  -t ghcr.io/browserbox/browserbox:"$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.1")" \
   -t dosyago/browserbox:latest \
-  -t dosyago/browserbox:"${tag}" \
+  -t dosyago/browserbox:"$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.1")" \
   .
 
 echo "Docker images built and pushed successfully."
-
