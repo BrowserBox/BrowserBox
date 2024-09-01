@@ -1,10 +1,12 @@
 import {DEBUG, logit} from './common.js';
 
 export const getKeyId = event => event.key && event.key.length > 1 ? event.key : event.code;
-export const controlChars = new Set([
+export const controlChars = new Set([]);
+/*
   "Enter", "Backspace", "Control", "Shift", "Alt", "Meta", "Space", "Delete",
   "ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Tab"
 ]);
+*/
 
 export default function transformEvent(e, {scale}, bounds) {
   const transformedEvent = {
