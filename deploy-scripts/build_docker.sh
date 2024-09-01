@@ -52,7 +52,7 @@ DOCKER_CONFIG="/etc/docker/daemon.json"
 
 # Backup existing daemon.json if it exists
 if [[ -f "$DOCKER_CONFIG" ]]; then
-  cp "$DOCKER_CONFIG" "${DOCKER_CONFIG}.bak_$(date +%F_%T)"
+  sudo cp "$DOCKER_CONFIG" "${DOCKER_CONFIG}.bak_$(date +%F_%T)"
   echo "Backup of existing daemon.json created at ${DOCKER_CONFIG}.bak_$(date +%F_%T)"
 fi
 
@@ -60,22 +60,22 @@ fi
 if [[ -f "$DOCKER_CONFIG" ]]; then
   # Use jq to update the configuration and write back to the file
   contents="$(jq '.features["containerd-snapshotter"] = true' "$DOCKER_CONFIG")" && \
-  echo -E "${contents}" > "$DOCKER_CONFIG"
+  echo -E "${contents}" | sudo tee "$DOCKER_CONFIG"
 else
   # Create new daemon.json with required configuration
-  mkdir -p /etc/docker
+  sudo mkdir -p /etc/docker
   echo '{
     "features": {
       "containerd-snapshotter": true
     }
-  }' > "$DOCKER_CONFIG"
+  }' | sudo tee "$DOCKER_CONFIG"
 fi
 
 echo "Docker daemon configuration updated successfully."
 
 # Restart Docker to apply changes
 echo "Restarting Docker daemon..."
-systemctl restart docker
+sudo systemctl restart docker
 echo "Docker daemon restarted."
 
 # Ensure you use containerd for storage (Docker settings) for better performance and stability
