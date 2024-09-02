@@ -786,7 +786,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           DEBUG.showFlash && console.info(`Could not create link`, e);
         }
       } else {
-        console.log({docViewerSecret, SECURE_VIEW_SCRIPT});
+        DEBUG.debugSecureView && console.log({docViewerSecret, SECURE_VIEW_SCRIPT});
         const subshell = spawn(
           SECURE_VIEW_SCRIPT, 
           [username, `${originalFile}`, docViewerSecret]
@@ -1879,6 +1879,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
         if ( viewport.mobile ) {
           connection.isMobile = true;
+          DEBUG.debugUserAgent && console.log('Connection is mobile', viewport, connection.isMobile);
+        } else {
+          connection.isMobile = false;
+          DEBUG.debugUserAgent && console.log('Connection is NOT mobile', viewport, connection.isMobile);
         }
         DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
         if ( ! command.params.resetRequested ) {
@@ -2349,6 +2353,11 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
         const tabOrViewportChanged = lastVT != thisVT;
         const viewportChanged = lastV != thisV || (viewChanges.has(thisT) ? viewChanges.get(thisT) != thisV : false);
         const mobileChanged = JSON.parse(connection.lastCommonViewport)?.mobile != commonViewport.mobile;
+        if ( commonViewport.mobile ) {
+          connection.isMobile = true;
+        } else {
+          connection.isMobile = false;
+        }
         DEBUG.traceViewportUpdateFuncs && console.log('tabOrViewportChanged:', tabOrViewportChanged, 'viewportChanged:', viewportChanged, 'mobileChanged:', mobileChanged);
         DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
         DEBUG.showViewportChanges && console.log(`thisVT: ${thisVT}`);
@@ -2359,6 +2368,7 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
           DEBUG.traceViewportUpdateFuncs && console.log('Mobile changed');
           DEBUG.debugViewportChanges && console.warn(`Mobile changed`, commonViewport, connection.viewports);
         }
+
         DEBUG.traceViewportUpdateFuncs && console.log('Updating all targets to user agent');
         await updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection});
         DEBUG.traceViewportUpdateFuncs && console.log('Updated all targets to user agent');
@@ -2411,8 +2421,8 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
   DEBUG.traceViewportUpdateFuncs && console.log('Entering updateAllTargetsToUserAgent');
   const {send, on, ons} = connection.zombie;
   DEBUG.traceViewportUpdateFuncs && console.log('Retrieved zombie properties from connection', connection.targets.values());
+  mobile = mobile || connection.isMobile;
   let list = [];
-  console.log([...connection.targets.values()]);
   for (const targetId of connection.targets.values()) {
     DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);
     await untilTrueOrTimeout(() => sessions.has(targetId), 10);
@@ -2421,7 +2431,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
     DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
     if (!sessionId) continue;
     try {
-      send("Runtime.evaluate", {
+      await send("Runtime.evaluate", {
         expression: `navigator.userAgent`,
         /*
         includeCommandLineAPI: false,
@@ -2430,15 +2440,17 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
         awaitPromise: true,
         */
       }, sessionId).then(r => {
-        console.log({sessionId,r})
-        console.log('Sent 1');
+        //console.log({sessionId,r})
+        const {result:{value: userAgent}} = r;
+
+        console.log(`Sent userAgent request to ${sessionId}`);
         /*
         const {result: {value: {userAgent}}} = await send("Runtime.evaluate", {
           expression: `navigator.userAgent`,
         }, sessionId);
         */
         DEBUG.traceViewportUpdateFuncs && console.log('Retrieved userAgent:', userAgent);
-        console.log(`Session ${sessionId} has user agent ${userAgent}`);
+        //console.log(`Session ${sessionId} has user agent ${userAgent}`);
         const desiredUserAgent = mobile ? mobUA : deskUA;
         connection.navigator.userAgent = desiredUserAgent;
         DEBUG.traceViewportUpdateFuncs && console.log('Determined desiredUserAgent:', desiredUserAgent);
