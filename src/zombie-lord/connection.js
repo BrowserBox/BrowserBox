@@ -1879,7 +1879,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
         if ( viewport.mobile ) {
           connection.isMobile = true;
-          console.log('Connection is mobile', viewport, connection.isMobile);
+          DEBUG.debugUserAgent && console.log('Connection is mobile', viewport, connection.isMobile);
+        } else {
+          connection.isMobile = false;
+          DEBUG.debugUserAgent && console.log('Connection is NOT mobile', viewport, connection.isMobile);
         }
         DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
         if ( ! command.params.resetRequested ) {
@@ -2352,6 +2355,8 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
         const mobileChanged = JSON.parse(connection.lastCommonViewport)?.mobile != commonViewport.mobile;
         if ( commonViewport.mobile ) {
           connection.isMobile = true;
+        } else {
+          connection.isMobile = false;
         }
         DEBUG.traceViewportUpdateFuncs && console.log('tabOrViewportChanged:', tabOrViewportChanged, 'viewportChanged:', viewportChanged, 'mobileChanged:', mobileChanged);
         DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
@@ -2426,7 +2431,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
     DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
     if (!sessionId) continue;
     try {
-      send("Runtime.evaluate", {
+      await send("Runtime.evaluate", {
         expression: `navigator.userAgent`,
         /*
         includeCommandLineAPI: false,
@@ -2436,7 +2441,9 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
         */
       }, sessionId).then(r => {
         //console.log({sessionId,r})
-        console.log('Sent 1');
+        const {result:{value: userAgent}} = r;
+
+        console.log(`Sent userAgent request to ${sessionId}`);
         /*
         const {result: {value: {userAgent}}} = await send("Runtime.evaluate", {
           expression: `navigator.userAgent`,

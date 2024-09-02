@@ -91,7 +91,7 @@ export const DEBUG = Object.freeze({
   debugViewports: false,
   noteCallStackInLog: true,
   showNoTargets: false,
-  debugUserAgent: true,
+  debugUserAgent: false,
   showSkippedCommandsAfterViewportChangeCheck: false,
   showFaviconErrors: false,
   showUARedux: false,
