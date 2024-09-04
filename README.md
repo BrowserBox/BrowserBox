@@ -545,12 +545,13 @@ Alternately, [find us via Microsoft Code Samples search](https://learn.microsoft
 
 | Browser      | Compatibility | Desktop | Android | iOS  |
 |--------------|:-------------:|:-------:|:-------:|:----:|
-| Firefox      |       ✅      |    ✅   |    ✅   |  ✅  |
-| Chrome       |       ✅      |    ✅   |    ✅   |  ✅  |
-| Safari       |       ✅      |    ✅   |    N/A     |  ✅  |
-| Edge         |       ✅      |    ✅   |    ✅   |  ✅  |
-| Brave        |       ✅      |    ✅   |    ✅   |  ✅  |
-| Tor Browser  |       ✅      |    ✅   |    ✅   |  ✅  |
+| Firefox         |       ✅      |    ✅   |    ✅   |  ✅  |
+| Chrome          |       ✅      |    ✅   |    ✅   |  ✅  |
+| Safari          |       ✅      |    ✅   |    N/A     |  ✅  |
+| Safari (LockDown mode)       |       ✅      |    ✅   |    N/A     |  ✅  |
+| Edge            |       ✅      |    ✅   |    ✅   |  ✅  |
+| Brave           |       ✅      |    ✅   |    ✅   |  ✅  |
+| Tor Browser     |       ✅      |    ✅   |    ✅   |  ✅  |
 
 
 
