@@ -2,7 +2,7 @@ import {s as R} from '../../node_modules/bang.html/src/vv/vanillaview.js';
 import {CHAR, USE_DDG} from '../common.js';
 import {resetFavicon} from '../handlers/favicon.js';
 import {saveClick} from './controls.js';
-
+import {checkAndAppendHTTPS} from '../domainer.js';
 
 let omniBoxInput = null;
 let refocus = false;
@@ -55,8 +55,14 @@ export function go(e, state) {
   const {target:form} = e;
   const {address} = form;
   let url, search;
+  let addressValue = address.value;
   try {
-    url = new URL(address.value);
+    addressValue = checkAndAppendHTTPS(addressValue);
+  } catch(e) {
+    console.info(`Error checking for a domain`);
+  }
+  try {
+    url = new URL(addressValue);
     if ( url.host == location.host && ! (url.path.startsWith('/assets/') || url.path.startsWith('/uploads/'))) {
       console.warn("Too relative", address.value);
       return;
