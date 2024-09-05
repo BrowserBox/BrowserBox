@@ -311,7 +311,7 @@ export const CONFIG = Object.freeze({
   sslcerts: port => {
     if ( process.env.TORBB ) {
       DEBUG.debugAddr && console.log('Cert file for', process.env[`ADDR_${port}`]);
-      return path.join(process.env.SSLCERTS_DIR, process.env[`ADDR_${port}`]);
+      return path.join(os.homedir(), process.env.SSLCERTS_DIR, process.env[`ADDR_${port}`]);
     } else {
       return process.env.SSLCERTS_DIR ? process.env.SSLCERTS_DIR : 'sslcerts';
     }
