@@ -1,5 +1,13 @@
 ### BrowserBox HTTPS and Tor: Essential Trust and Installation Guide
 
+#### Important Update: August 2024
+
+The below instructions for macOS currently do not work. `mkcert` signed certificates downloaded from `/torca/rootCA.pem` are never recognized by Tor Browser, even after disabling OCSP querying, adding via KeyChain Access or mkcert -install with a custom `$CAROOT` pointing to your remote's downloaded `rootCA.pem`, or even manually importing into the Certificates section in the Tor Browser.
+
+As a result, the only current reliable method to use TLS with BrowserBox when running as a Tor hidden service is to add an exception to the Tor Browser for the BrowserBox instance. Just click through the security prompts Tor Browser will surface when initially connecting to the BrowserBox instance's onion address login link.
+
+Ideally, a TLS provider such as LetsEncrypt would support certificates for hidden services. As of right now, they do not.
+
 #### Understanding HTTPS with Tor in BrowserBox
 
 BrowserBox, running as a Tor hidden service, encounters unique challenges with HTTPS. Most free certificate authorities, like Let's Encrypt, are reluctant to issue certificates for `.onion` domains due to privacy concerns. This leads to limited HTTPS usage for onion services and reliance on self-signed certificates, which though secure, trigger browser warnings.
