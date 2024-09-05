@@ -172,7 +172,7 @@ convert_to_pdf_if_needed() {
 
 converted_file=$(convert_to_pdf_if_needed "$1")
 
-convert -verbose -density 131 -background ivory -alpha remove -alpha off -quality 77% -strip -interlace Plane "${converted_file}[0-999]" +adjoin "${1}-%04d.${format}" || (mutool draw -F 1 -L 1000 -i -o "${1}-%04d.${format}" "${converted_file}" && "${INSTALL_DIR}/chai/scripts/rename_1_based.sh" "${1}" "$format") || exit 1
+convert -verbose -density 131 -background ivory -alpha remove -alpha off -quality 77% -strip -interlace Plane "${converted_file}[0-999]" +adjoin "${1}-%04d.${format}" || magick convert -verbose -density 131 -background ivory -alpha remove -alpha off -quality 77% -strip -interlace Plane "${converted_file}[0-999]" +adjoin "${1}-%04d.${format}" || (mutool draw -F 1 -L 1000 -i -o "${1}-%04d.${format}" "${converted_file}" && "${INSTALL_DIR}/chai/scripts/rename_1_based.sh" "${1}" "$format") || exit 1
 
 cp "$1" "${pdfs}/"
 
