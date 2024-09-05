@@ -51,6 +51,13 @@ os_type() {
 find_mkcert_root_ca() {
   local mkcert_dir=""
 
+  mkcert_dir="$(mkcert -CAROOT 2>/dev/null)"
+  
+  if [[ -n "$mkcert_dir" ]]; then
+    echo "$mkcert_dir"
+    return 0
+  fi
+
   case "$(uname)" in
     "Linux")
       mkcert_dir="$HOME/.local/share/mkcert"
