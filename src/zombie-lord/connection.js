@@ -1622,14 +1622,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( castUpdate ) {
           connection.latestCastId = castUpdate.castSessionId;
         } else {
-          const targetInfo = tabs.get(targets.get(sessionId));
+          const targetInfo = tabs.get(sessions.get(sessionId));
           console.warn(`Unknown latest cast id:`, {castInfo, castUpdate, sessionId, event, targetInfo});
         }
       } else {
         if ( castInfo ) {
           connection.latestCastId = castInfo.castSessionId;
         } else {
-          const targetInfo = tabs.get(targets.get(sessionId));
+          const targetInfo = tabs.get(sessions.get(sessionId));
           console.warn(`Unknown latest cast id:`, {castInfo, castUpdate, sessionId, event, targetInfo});
         }
       }
@@ -1706,9 +1706,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const targetId = sessions.get(sessionId);
     try {
       if ( settingUp.has(targetId) ) {
-        console.log(`Waiting for setup to complete for ${tabs.get(targets.get(sessionId))}`);
+        console.log(`Waiting for setup to complete for ${tabs.get(sessions.get(sessionId))}`);
         await untilTrueOrTimeout(() => !settingUp.has(targetId), 10);
-        console.log(`Finished waiting for setup to complete for ${tabs.get(targets.get(sessionId))}`);
+        console.log(`Finished waiting for setup to complete for ${tabs.get(sessions.get(sessionId))}`);
       }
       await sleep(100);
       DEBUG.debugSetupReload && console.log(`Reloading ${sessionId}`);
