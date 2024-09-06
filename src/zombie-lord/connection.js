@@ -103,7 +103,7 @@ const templatedInjections = {
 };
 
 const docViewerSecret = process.env.DOCS_KEY;
-const HeightAdjust = process.platform == 'darwin' ? 88 : 88;
+const HeightAdjust = process.platform == 'darwin' ? 90 : 90;
 const MAX_TRIES_TO_LOAD = 2;
 const TAB_LOAD_WAIT = 300;
 const RECONNECT_MS = 5000;
