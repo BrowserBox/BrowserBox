@@ -143,7 +143,7 @@ export const DEBUG = Object.freeze({
   debugFileDownload: false,
   debugFileUpload: false,
   get useNewAsgardHeadless() { 
-    return this.restoreSessions || false;
+    return this.restoreSessions || true;
   },
   showFlags: true,
   allowExternalChrome: true,
