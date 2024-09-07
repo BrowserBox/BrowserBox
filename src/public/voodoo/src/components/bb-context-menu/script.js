@@ -434,17 +434,14 @@ class BBContextMenu extends Base {
 
     clearHistoryAndCacheLeaveCookies(click) {
       state = this.state._top;
-      const doIt = confirm("You'll stay signed in to most sites, but your browsing history and cached files will be wiped. You cannot undo this action.\nAre you sure?");
+      const doIt = confirm("You'll stay signed in to most sites, but your browsing history and caches will be wiped. You cannot undo this action.\nIf you proceed, your application will reload in 5 seconds.\n\nAre you sure you want to clear all history and caches?");
       if ( doIt ) {
         const {H} = state;
         H({
           synthetic: true,
           type: "clearCacheAndHistory"
         });
-        setTimeout(() => {
-          alert("Process started: clearing all caches and history. This window will reload in 5 seconds.");
-          setTimeout(() => location.reload(), 5000);
-        }, 400);
+        setTimeout(() => location.reload(), 5000);
       }
       this.close(state);
     }
