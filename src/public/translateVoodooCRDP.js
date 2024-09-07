@@ -861,6 +861,15 @@ function translator(e, handled = {type:'case'}) {
         })
       ]};
     }
+    case "clearCacheAndHistory": {
+      return {
+        command: {
+          isZombieLordCommand: true,
+          name: "Connection.clearCacheAndHistory",
+          params: {}
+        }
+      };
+    }
     case "clearCache": {
       return {
         command: {

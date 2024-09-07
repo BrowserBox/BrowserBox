@@ -70,16 +70,14 @@ class BBContextMenu extends Base {
           shortCut: this.constructor.SHORT_CUT,
           func: this.reload
         },
+        /*
         {
+          // delete the directories
           title: 'Clear History',
           shortCut: this.constructor.SHORT_CUT,
           func: this.clearHistoryAndCacheLeaveCookies,
         },
-        {
-          title: 'Wipe All Data',
-          shortCut: this.constructor.SHORT_CUT,
-          func: this.clearBrowsingData,
-        },
+        */
         {
           title: 'Inspect in DevTools',
           hr: true,
@@ -439,18 +437,14 @@ class BBContextMenu extends Base {
 
     clearHistoryAndCacheLeaveCookies(click) {
       state = this.state._top;
-      const doIt = confirm("You'll stay signed in to most sites, but wipe browsing history and cached files. Are you sure?");
+      const doIt = confirm("You'll stay signed in to most sites, but your browsing history and cached files will be wiped. You cannot undo this action.\nAre you sure?");
       if ( doIt ) {
         const {H} = state;
         H({
           synthetic: true,
-          type: "clearAllPageHistory"
+          type: "clearCacheAndHistory"
         });
-        H({
-          synthetic: true,
-          type: "clearCache"
-        });
-        alert("Cleared all caches and history.");
+        setTimeout(() => alert("Process started: clearing all caches and history."), 400);
       }
       this.close(state);
     }
