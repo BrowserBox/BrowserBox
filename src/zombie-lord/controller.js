@@ -695,6 +695,10 @@ const controller_api = {
     return connections.get(port);
   },
 
+  deleteConnection(port) {
+    connections.delete(port);
+  },
+
   getTargets(port) {
     const t = connections.get(port)?.tabs || tabsOnClose.get(port);
     if ( ! t ) {

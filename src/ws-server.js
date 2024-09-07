@@ -560,6 +560,7 @@
         let peer;
         zl.life.onDeath(zombie_port,  () => {
           console.info("Zombie/chrome closed or crashed.");
+          zl.act.deleteConnection(zombie_port);
           if ( fs.existsSync(path.join(os.homedir(), 'restart_chrome')) ) {
             fs.unlinkSync(path.join(os.homedir(), 'restart_chrome'));
             console.log(`Restarting chrome on request`);

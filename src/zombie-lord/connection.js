@@ -374,39 +374,35 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     (DEBUG.debugFavicon || DEBUG.metaDebug) && console.warn(`META: resetting meta`, JSON.stringify(connection.meta));
     connection.meta = [];
   }
-  connection.zombie._socket.on('close', async () => {
-    console.log(`Reconnecting to zombie in ${RECONNECT_MS}`);
-    process.off(NOTICE_SIGNAL, reportNoticeOnSignal);
-    const MAX_RETRIES = 10;
-    let count = 0;
-    setTimeout(reconnect, RECONNECT_MS);
 
-    async function reconnect() {
-      // maybe should actually call makeZombie again?
-      try {
-        const next_connection = await Connect(
-          {port:connection.port}, 
-          {adBlock, demoBlock},
-          {noExit: true}
-        );
-        const {so, forceMeta} = connection;
-        DEBUG.debugReconnect && console.log("SO", connection.so);
-        Object.assign(connection,next_connection);
-        DEBUG.debugReconnect && console.log("SO", connection.so);
-        Object.assign(connection, {forceMeta, so});
-        connection.renewed = true;
-        console.log(`Connection established`);
-      } catch(e) {
-        console.log(`Error establishing connection.`);
-        if ( count++ < MAX_RETRIES ) {
-          console.log(`Will retry`); 
-          setTimeout(reconnect, RECONNECT_MS);
-        } else {
-          console.warn(new Error(`Could not establish connection to zombie. Max retries exceeded.`));
+  /** This reconnect is unnecessary **/
+  /**
+    connection.zombie._socket.on('close', async () => {
+      console.log(`Reconnecting to zombie in ${RECONNECT_MS}`);
+      process.off(NOTICE_SIGNAL, reportNoticeOnSignal);
+      const MAX_RETRIES = 10;
+      let count = 0;
+      //setTimeout(reconnect, RECONNECT_MS);
+
+      async function reconnect() {
+        // maybe should actually call makeZombie again?
+        try {
+          // what to do ? 
+          DEBUG.debugReconnect && console.log("SO", connection.so);
+          const {so, forceMeta} = connection;
+          console.log(`Connection established`);
+        } catch(e) {
+          console.log(`Error establishing connection.`);
+          if ( count++ < MAX_RETRIES ) {
+            console.log(`Will retry`); 
+            setTimeout(reconnect, RECONNECT_MS);
+          } else {
+            console.warn(new Error(`Could not establish connection to zombie. Max retries exceeded.`));
+          }
         }
       }
-    }
-  });
+    });
+  **/
 
   {
     const {doShot, queueTailShot, shrinkImagery, growImagery, restartCast, stopCast, startCast} = makeCamera(connection);
