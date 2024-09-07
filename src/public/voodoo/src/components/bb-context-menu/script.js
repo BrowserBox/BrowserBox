@@ -65,8 +65,8 @@ class BBContextMenu extends Base {
           func: this.paste
         },
         {
-          hr: true,
           title: 'Reload',
+          hr: true,
           shortCut: this.constructor.SHORT_CUT,
           func: this.reload
         },
@@ -74,11 +74,6 @@ class BBContextMenu extends Base {
           title: 'Clear History',
           shortCut: this.constructor.SHORT_CUT,
           func: this.clearHistoryAndCacheLeaveCookies,
-        },
-        {
-          title: 'Wipe All Data',
-          shortCut: this.constructor.SHORT_CUT,
-          func: this.clearBrowsingData,
         },
         {
           title: 'Inspect in DevTools',
@@ -439,18 +434,14 @@ class BBContextMenu extends Base {
 
     clearHistoryAndCacheLeaveCookies(click) {
       state = this.state._top;
-      const doIt = confirm("You'll stay signed in to most sites, but wipe browsing history and cached files. Are you sure?");
+      const doIt = confirm("You'll stay signed in to most sites, but your browsing history and caches will be wiped. You cannot undo this action.\nIf you proceed, your application will reload in 5 seconds.\n\nAre you sure you want to clear all history and caches?");
       if ( doIt ) {
         const {H} = state;
         H({
           synthetic: true,
-          type: "clearAllPageHistory"
+          type: "clearCacheAndHistory"
         });
-        H({
-          synthetic: true,
-          type: "clearCache"
-        });
-        alert("Cleared all caches and history.");
+        setTimeout(() => location.reload(), 5000);
       }
       this.close(state);
     }

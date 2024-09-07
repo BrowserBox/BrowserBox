@@ -69,7 +69,10 @@
         zl.life.kill(chrome_port);
         setTimeout(begin, BEGIN_AGAIN);
       }
-      if ( port !== chrome_port ) throw Error(`Port must match port allocated: p${port}, cp${chrome_port}`);
+      if ( port !== chrome_port ) {
+        zl.life.kill(port);
+        throw Error(`Port must match port allocated: app port ${port}, chrome port ${chrome_port}`);
+      }
       DEBUG.val && console.log({zombie:"gnawing at port ", port});
       await sleep(BEGIN_AGAIN);
     }

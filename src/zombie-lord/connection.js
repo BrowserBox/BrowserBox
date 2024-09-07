@@ -106,7 +106,7 @@ const docViewerSecret = process.env.DOCS_KEY;
 const HeightAdjust = process.platform == 'darwin' ? 86 : 86;
 const MAX_TRIES_TO_LOAD = 2;
 const TAB_LOAD_WAIT = 300;
-const RECONNECT_MS = 5000;
+const RECONNECT_MS = 2500;
 const WAIT_FOR_DOWNLOAD_BEGIN_DELAY = 5000;
 const WAIT_FOR_COALESCED_NETWORK_EVENTS = 1000
 
@@ -252,7 +252,7 @@ function removeSession(id) {
 
   1 Connect call per client would require a translation table among targetIds and sessionIds
 **/
-export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, demoBlock: demoBlock = false} = {}) {
+export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, demoBlock: demoBlock = false, noExit = false} = {}) {
   AD_BLOCK_ON = adBlock;
 
   LOG_FILE.Commands = new Set([
@@ -299,7 +299,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     DEMO_BLOCK_ON = true;
   }
   const connection = {
-    zombie: await makeZombie({port}),
+    zombie: await makeZombie({port}, {noExit}),
     // the clients ({peer, socket} objects)
     links: new Map,
     viewports,
@@ -374,19 +374,35 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     (DEBUG.debugFavicon || DEBUG.metaDebug) && console.warn(`META: resetting meta`, JSON.stringify(connection.meta));
     connection.meta = [];
   }
-  connection.zombie.on('disconnect', async () => {
-    console.log(`Reconnecting to zombie in ${RECONNECT_MS}`);
-    process.off(NOTICE_SIGNAL, reportNoticeOnSignal);
-    await sleep(RECONNECT_MS);
-    setTimeout(async () => {
-      // maybe should actually call makeZombie again?
-      const next_connection = await Connect(
-        {port:connection.port}, 
-        {adBlock, demoBlock}
-      );
-      Object.assign(connection,next_connection);
-    }, RECONNECT_MS);
-  });
+
+  /** This reconnect is unnecessary **/
+  /**
+    connection.zombie._socket.on('close', async () => {
+      console.log(`Reconnecting to zombie in ${RECONNECT_MS}`);
+      process.off(NOTICE_SIGNAL, reportNoticeOnSignal);
+      const MAX_RETRIES = 10;
+      let count = 0;
+      //setTimeout(reconnect, RECONNECT_MS);
+
+      async function reconnect() {
+        // maybe should actually call makeZombie again?
+        try {
+          // what to do ? 
+          DEBUG.debugReconnect && console.log("SO", connection.so);
+          const {so, forceMeta} = connection;
+          console.log(`Connection established`);
+        } catch(e) {
+          console.log(`Error establishing connection.`);
+          if ( count++ < MAX_RETRIES ) {
+            console.log(`Will retry`); 
+            setTimeout(reconnect, RECONNECT_MS);
+          } else {
+            console.warn(new Error(`Could not establish connection to zombie. Max retries exceeded.`));
+          }
+        }
+      }
+    });
+  **/
 
   {
     const {doShot, queueTailShot, shrinkImagery, growImagery, restartCast, stopCast, startCast} = makeCamera(connection);
@@ -2614,7 +2630,7 @@ function isFileURL(url) {
   return scheme == 'file';
 }
 
-async function makeZombie({port:port = 9222} = {}) {
+async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
   try {
     const {webSocketDebuggerUrl} = await fetch(`http://${
         DEBUG.useLoopbackIP ? '127.0.0.1' : 'localhost'
@@ -2645,7 +2661,8 @@ async function makeZombie({port:port = 9222} = {}) {
 
     Object.assign(Zombie, {
       send,
-      on, ons
+      on, ons,
+      _socket: socket
     });
 
     return Zombie;
@@ -2821,6 +2838,9 @@ async function makeZombie({port:port = 9222} = {}) {
     console.log(`Error when starting browser: ${e}`, e);
     console.log(`Response: ${await resp.text()}`);
     await sleep(1000);
+    if ( noExit ) {
+      return;
+    }
     process.exit(1);
   }
 }

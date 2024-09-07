@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v10.0.0';
+const CACHE_VERSION = 'v10.0.2';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'etag-cache-' + CACHE_VERSION;
 const DEBUG = globalThis.SW_DEBUG || false;
@@ -17,6 +17,7 @@ const excludedPaths = new Set([
   "/local_cookie.js", 
   "/", "/login", "/SPLlogin", "/pptr", "/SPLgenerate", 
   "/register_sw.js",
+  "/sw.js",
   "/image.html",
   "/isTor",
   "/torca/rootCA.pem", "/settings_modal", "/restart_app", 
@@ -51,7 +52,14 @@ const regexPatternsToCache = patternsToCache.map(pattern => new RegExp(pattern))
             }
           })
         );
-      }).then(() => self.clients.claim())
+      }).then(() => {
+        try {
+          self.clients.claim();
+        } catch(e) {
+          console.warn(`Error claiming clients (we may not be the active service worker yet)`, e);
+        }
+        return;
+      })
     );
   });
 

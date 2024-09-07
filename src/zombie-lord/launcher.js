@@ -1,4 +1,3 @@
-//import {exec} from 'child_process';
 import path from 'path';
 import {EventEmitter} from 'node:events';
 import os from 'os';

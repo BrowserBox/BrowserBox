@@ -1,3 +1,5 @@
+import os from 'os';
+import {spawn} from 'node:child_process';
 import Connect from './connection.js';
 import {updateTargetsOnCommonChanged, executeBinding, getViewport} from './connection.js';
 import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
@@ -279,11 +281,14 @@ const controller_api = {
           console.log("Links keys", ...connection.links.keys());
         }
       }
-      if ( ! connection.so ) {
+      if ( ! connection.so || connection.renewed ) {
         connection.so = so;
       }
-      if ( ! connection.forceMeta ) {
+      if ( ! connection.forceMeta || connection.renewed ) {
         connection.forceMeta = forceMeta;
+      }
+      if ( connection.renewed ) {
+        connection.renewed = false;
       }
       connection.doShot({forceFrame:true});
     } else {
@@ -461,6 +466,20 @@ const controller_api = {
               }
             }
             retVal.data = {sessionContextIdPairs:allContexts};
+          }
+          break;
+          case "Connection.clearCacheAndHistory": {
+            try {
+              spawn('bbclear', [], {
+                detached: true,
+                stdio: 'ignore',
+                cwd: os.homedir(),
+                shell: true,
+                timeout: 15000,
+              });
+            } catch(e) {
+              console.warn("Error running exec to clear cache and history", e);
+            }
           }
           break;
           case "Connection.getAllSessionIds": {
@@ -674,6 +693,10 @@ const controller_api = {
 
   getConnection(port) {
     return connections.get(port);
+  },
+
+  deleteConnection(port) {
+    connections.delete(port);
   },
 
   getTargets(port) {
