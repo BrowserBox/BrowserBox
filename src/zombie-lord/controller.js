@@ -281,11 +281,14 @@ const controller_api = {
           console.log("Links keys", ...connection.links.keys());
         }
       }
-      if ( ! connection.so ) {
+      if ( ! connection.so || connection.renewed ) {
         connection.so = so;
       }
-      if ( ! connection.forceMeta ) {
+      if ( ! connection.forceMeta || connection.renewed ) {
         connection.forceMeta = forceMeta;
+      }
+      if ( connection.renewed ) {
+        connection.renewed = false;
       }
       connection.doShot({forceFrame:true});
     } else {

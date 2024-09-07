@@ -566,6 +566,8 @@
             const MAX_RETRIES = 10;
             let count = 0;
 
+            restart();
+
             async function restart() {
               let port;
               try {

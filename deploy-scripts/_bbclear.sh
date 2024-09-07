@@ -38,9 +38,11 @@ echo "$(date)" > "${HOME}/restart_chrome"
 CHROME_PID="$(cat "${HOME}/.config/dosyago/bbpro/chrome-${BROWSER_PORT}/pid")"
 
 kill $CHROME_PID
+rm -rf .config/dosyago/bbpro/targetCount
 sleep 1
 if ps $CHROME_PID; then
   kill -9 $CHROME_PID
+  rm -rf .config/dosyago/bbpro/targetCount
 fi
 
 exit 0
