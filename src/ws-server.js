@@ -558,8 +558,37 @@
         stopShutdownTimer();
         DEBUG.debugConnect && console.log(`Check 3`);
         let peer;
-        zl.life.onDeath(zombie_port, () => {
+        zl.life.onDeath(zombie_port,  () => {
           console.info("Zombie/chrome closed or crashed.");
+          if ( fs.existsSync(path.join(os.homedir(), 'restart_chrome')) ) {
+            fs.unlinkSync(path.join(os.homedir(), 'restart_chrome'));
+            console.log(`Restarting chrome on request`);
+            const MAX_RETRIES = 10;
+            let count = 0;
+
+            async function restart() {
+              let port;
+              try {
+                ({port} = await zl.life.newZombie({port: zombie_port})); 
+              } catch(e) {
+                console.warn(`Error starting chrome`);
+                zl.life.kill(zombie_port);
+              }
+              if ( port != zombie_port ) {
+                console.log(`Zombie port mismatch`, {zombie_port, acquired_port: port});
+                if ( port ) { 
+                  zl.life.kill(port);
+                }
+                await sleep(500);
+                if ( count++ < MAX_RETRIES ) {
+                  console.log(`Retrying...`);
+                  setTimeout(() => restart(), 0);
+                } else {
+                  console.warn(new Error(`Failed to restart chrome. Retry count exceeded`));
+                }
+              }
+            }
+          }
           //console.log("Closing as zombie crashed.");
           //ws.close();
         });

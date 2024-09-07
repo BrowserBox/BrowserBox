@@ -1,5 +1,5 @@
-import os from os;
-import {exec} from 'node:child_process';
+import os from 'os';
+import {spawn} from 'node:child_process';
 import Connect from './connection.js';
 import {updateTargetsOnCommonChanged, executeBinding, getViewport} from './connection.js';
 import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
@@ -467,17 +467,12 @@ const controller_api = {
           break;
           case "Connection.clearCacheAndHistory": {
             try {
-              exec('bbclear', {
+              spawn('bbclear', [], {
+                detached: true,
+                stdio: 'ignore',
                 cwd: os.homedir(),
-                shell: '/bin/bash',
+                shell: true,
                 timeout: 15000,
-              }, (err, stdout, stderr) => {
-                if ( err ) {
-                  console.error(`Error running exec to clear cache and history`, err);
-                }
-                if ( DEBUG.showClearHistoryOutput ) {
-                  console.log({stdout, stderr});
-                }
               });
             } catch(e) {
               console.warn("Error running exec to clear cache and history", e);

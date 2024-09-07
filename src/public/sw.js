@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v10.0.0';
+const CACHE_VERSION = 'v10.0.1';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'etag-cache-' + CACHE_VERSION;
 const DEBUG = globalThis.SW_DEBUG || false;
@@ -51,7 +51,14 @@ const regexPatternsToCache = patternsToCache.map(pattern => new RegExp(pattern))
             }
           })
         );
-      }).then(() => self.clients.claim())
+      }).then(() => {
+        try {
+          self.clients.claim();
+        } catch(e) {
+          console.warn(`Error claiming clients (we may not be the active service worker yet)`, e);
+        }
+        return;
+      })
     );
   });
 

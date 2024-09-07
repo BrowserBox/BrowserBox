@@ -65,19 +65,16 @@ class BBContextMenu extends Base {
           func: this.paste
         },
         {
-          hr: true,
           title: 'Reload',
+          hr: true,
           shortCut: this.constructor.SHORT_CUT,
           func: this.reload
         },
-        /*
         {
-          // delete the directories
           title: 'Clear History',
           shortCut: this.constructor.SHORT_CUT,
           func: this.clearHistoryAndCacheLeaveCookies,
         },
-        */
         {
           title: 'Inspect in DevTools',
           hr: true,
@@ -444,7 +441,10 @@ class BBContextMenu extends Base {
           synthetic: true,
           type: "clearCacheAndHistory"
         });
-        setTimeout(() => alert("Process started: clearing all caches and history."), 400);
+        setTimeout(() => {
+          alert("Process started: clearing all caches and history. This window will reload in 5 seconds.");
+          setTimeout(() => location.reload(), 5000);
+        }, 400);
       }
       this.close(state);
     }

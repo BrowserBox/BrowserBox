@@ -374,7 +374,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     (DEBUG.debugFavicon || DEBUG.metaDebug) && console.warn(`META: resetting meta`, JSON.stringify(connection.meta));
     connection.meta = [];
   }
-  connection.zombie.on('disconnect', async () => {
+  connection.zombie.socket.on('close', async () => {
     console.log(`Reconnecting to zombie in ${RECONNECT_MS}`);
     process.off(NOTICE_SIGNAL, reportNoticeOnSignal);
     await sleep(RECONNECT_MS);
@@ -2645,7 +2645,8 @@ async function makeZombie({port:port = 9222} = {}) {
 
     Object.assign(Zombie, {
       send,
-      on, ons
+      on, ons,
+      _socket: socket
     });
 
     return Zombie;
