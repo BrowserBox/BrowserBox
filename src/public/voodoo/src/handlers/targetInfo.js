@@ -25,7 +25,11 @@ export async function fetchTabs({sessionToken}, getState) {
             if ( state.wipeIsInProgress ) return;
             if ( CONFIG.isCT ) {
               alert(`Your session expired. Close this message to return to your dashboard.`);
-              location.href = 'https://browse.cloudtabs.net/'
+              try {
+                top.location.href = 'https://browse.cloudtabs.net/'
+              } catch {
+                location.href = 'https://browse.cloudtabs.net/'
+              }
             } else {
               alert(`Your session has expired or disconnected.`);
             }
@@ -100,7 +104,11 @@ export async function fetchTabs({sessionToken}, getState) {
       if ( state.wipeIsInProgress ) return;
       if ( CONFIG.isCT ) {
         alert(`Your session expired. Close this message to return to your dashboard.`);
-        location.href = 'https://browse.cloudtabs.net/'
+        try {
+          top.location.href = 'https://browse.cloudtabs.net/'
+        } catch {
+          location.href = 'https://browse.cloudtabs.net/'
+        }
       } else {
         alert(`Your session has expired or disconnected.`);
       }
