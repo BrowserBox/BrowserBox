@@ -821,7 +821,7 @@
                       console.warn(`Some events are timing out when sent to the cloud browser.`);
                       if ( COMMON.blockAnotherReset ) return;
                       COMMON.blockAnotherReset = true;
-                      const reload = await tconfirm(`Some events are timing out when sent to the cloud browser. Try reloading the page, and if the problem persists try switching your cloud browser off then on again. Want to reload now?`, this.connected); 
+                      const reload = await tconfirm(`Some events are timing out when sent to the cloud browser. Try reloading the page, and if the problem persists try switching your cloud browser off then on again. Want to reload now?`, this.connected, this.publics.state); 
                       if ( reload ) {
                         treload(this.sessionToken);
                       }
@@ -830,7 +830,7 @@
                       console.warn(`We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again.`);
                       if ( COMMON.blockAnotherReset ) return;
                       COMMON.blockAnotherReset = true;
-                      const reload = await tconfirm(`We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again. Reload the page now?`, this.connected);
+                      const reload = await tconfirm(`We can't establish a connection the cloud browser right now. We can try reloading the page, but if the problem persists try switching your cloud browser off then on again. Reload the page now?`, this.connected, this.publics.state);
                       if ( reload ) {
                         treload(this.sessionToken);
                       }
@@ -839,7 +839,7 @@
                       console.warn(`Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again.`);
                       if ( COMMON.blockAnotherReset ) return;
                       COMMON.blockAnotherReset = true;
-                      const reload = await tconfirm(`Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again. Want to reload the page now?`, this.connected); 
+                      const reload = await tconfirm(`Some errors have occurred which require reloading the page. If the problem persists try switching your cloud browser off then on again. Want to reload the page now?`, this.connected, this.publics.state); 
                       if ( reload ) {
                         treload(this.sessionToken);
                       }
@@ -1546,12 +1546,17 @@
     latestAlert = setTimeout(() => alert(msg), ALERT_TIMEOUT);
   }
 
-  async function tconfirm(msg, connected) {
+  async function tconfirm(msg, connected, state) {
     if ( ! connected ) {
       if ( globalThis.purchaseClicked ) return;
+      if ( state?.wipeIsInProgress ) return;
       if ( CONFIG.isCT ) {
         alert(`Your session expired. Close this message to return to your dashboard.`);
-        location.href = 'https://browse.cloudtabs.net/'
+        try {
+          top.location.href = 'https://browse.cloudtabs.net/';
+        } catch(e) {
+          location.href = 'https://browse.cloudtabs.net/'
+        }
       } else {
         alert(`Your session has expired or disconnected.`);
       }

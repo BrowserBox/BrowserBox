@@ -22,6 +22,7 @@ export async function fetchTabs({sessionToken}, getState) {
           const state = getState();
           if ( ! state.connected ) {
             if ( globalThis.purchaseClicked ) return;
+            if ( state.wipeIsInProgress ) return;
             if ( CONFIG.isCT ) {
               alert(`Your session expired. Close this message to return to your dashboard.`);
               location.href = 'https://browse.cloudtabs.net/'
@@ -96,6 +97,7 @@ export async function fetchTabs({sessionToken}, getState) {
     const state = getState();
     if ( ! state.connected ) {
       if ( globalThis.purchaseClicked ) return;
+      if ( state.wipeIsInProgress ) return;
       if ( CONFIG.isCT ) {
         alert(`Your session expired. Close this message to return to your dashboard.`);
         location.href = 'https://browse.cloudtabs.net/'
