@@ -345,7 +345,7 @@
       next();
     });
     // serve assets that can be injected into pages
-    app.get('/assets/*', OPEN_HEADERS, (req, res, next) => next());
+    app.get('/assets/*path', OPEN_HEADERS, (req, res, next) => next());
     if ( start_mode == "signup" ) {
       app.get("/", (req,res) => res.sendFile(path.join(APP_ROOT, 'public', 'index.html'))); 
     } else {
@@ -1260,7 +1260,7 @@
           res.status(200).send(INTEGRITY_FILE_CONTENT);
         });
       // error handling middleware
-        app.use('*', (err, req, res, next) => {
+        app.use('/*path', (err, req, res, next) => {
           try {
             res.type('json');
           } finally {
