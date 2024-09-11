@@ -44,4 +44,5 @@ fi
 
 echo "Install dir: $INSTALL_DIR"
 "${STATIC_DIR}/uploads/clean.sh"
-node src/index.js $port
+node="$(command -v node)"
+exec $node src/index.js $port

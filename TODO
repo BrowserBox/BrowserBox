@@ -1,0 +1,2 @@
+- could we use exec node in our start shell scripts so we don't need an unnecessary bash process to stay around?
+
