@@ -345,7 +345,7 @@
       next();
     });
     // serve assets that can be injected into pages
-    app.get('/assets/*', OPEN_HEADERS, (req, res, next) => next());
+    app.get('/assets/*path', OPEN_HEADERS, (req, res, next) => next());
     if ( start_mode == "signup" ) {
       app.get("/", (req,res) => res.sendFile(path.join(APP_ROOT, 'public', 'index.html'))); 
     } else {
