@@ -41,6 +41,12 @@ const DEBUG = {
   goSecure: true
 }
 
+try { 
+  process.title = "browserbox-sound";
+} catch(e) {
+  console.info(`Could not set process title. Current title: ${process.title}`, e);
+}
+
 class MockStream extends stream.Readable {
   _read() {
 
