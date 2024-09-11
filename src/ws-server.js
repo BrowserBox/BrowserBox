@@ -1260,7 +1260,7 @@
           res.status(200).send(INTEGRITY_FILE_CONTENT);
         });
       // error handling middleware
-        app.use('/*', (err, req, res, next) => {
+        app.use('/*path', (err, req, res, next) => {
           try {
             res.type('json');
           } finally {

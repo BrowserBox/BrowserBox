@@ -23,7 +23,7 @@
 
   if ( GO_SECURE && start_mode == "signup" ) {
     const redirector = express();
-    redirector.get('/*', (req,res) => {
+    redirector.get('/*path', (req,res) => {
       res.redirect('https://' + req.headers.host + req.url);
     });
     redirector.listen(80, () => DEBUG.val && console.log('listening on 80 for https redirect'));
