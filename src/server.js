@@ -1,3 +1,4 @@
+  /* entry point */
   import fs from 'fs';
   import path from 'path';
   import exitOnExpipe from 'exit-on-epipe';
@@ -22,14 +23,14 @@
 
   if ( GO_SECURE && start_mode == "signup" ) {
     const redirector = express();
-    redirector.get('*', (req,res) => {
+    redirector.get('/*path', (req,res) => {
       res.redirect('https://' + req.headers.host + req.url);
     });
     redirector.listen(80, () => DEBUG.val && console.log('listening on 80 for https redirect'));
   }
 
   try { 
-    process.title = "bbpro";
+    process.title = "browserbox";
   } catch(e) {
     console.info(`Could not set process title. Current title: ${process.title}`, e);
   }

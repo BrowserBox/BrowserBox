@@ -122,5 +122,5 @@ else
 fi
 
 echo "Starting parec-server"
-"$node" $traceOptions index.js $audio_port rtp.monitor $COOKIE_VALUE $LOGIN_TOKEN
+exec "$node" $traceOptions index.js $audio_port rtp.monitor $COOKIE_VALUE $LOGIN_TOKEN
 

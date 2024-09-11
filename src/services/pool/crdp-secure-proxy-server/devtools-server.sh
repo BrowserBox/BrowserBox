@@ -8,4 +8,4 @@ cookie=$COOKIE_VALUE
 token=$LOGIN_TOKEN
 port=$DEVTOOLS_PORT
 
-"$node" index.js $port $cookie $token
+exec "$node" index.js $port $cookie $token

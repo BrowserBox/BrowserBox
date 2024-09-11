@@ -28,11 +28,11 @@ if [[ -z "${BB_POOL}" ]] || [[ $PLATFORM_IS == win* ]]; then
     . "$1"
     pwsh="$(command -v pwsh || command -v powershell)"
     "$pwsh" -Command "taskkill /F /IM $AUDIO_PORT"
-    ./src/services/instance/parec-server/parec-server.sh "$1"
+    exec ./src/services/instance/parec-server/parec-server.sh "$1"
   else 
-    ./scripts/global/parec-server.sh "$1"
+    exec ./scripts/global/parec-server.sh "$1"
   fi
 else
-  sudo -g browsers ./scripts/global/parec-server.sh "$1"
+  exec sudo -g browsers ./scripts/global/parec-server.sh "$1"
 fi
 
