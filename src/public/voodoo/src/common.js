@@ -1,4 +1,4 @@
-export const VERSION = '10.0.6';
+export const VERSION = '10.0.7';
 export const SERVICE_COUNT = 4; // pptr(menu), chat, audio, devtools
 export const FRAME_CONTROL = false;
 
@@ -176,8 +176,8 @@ export const DEBUG = Object.freeze({
   activateDebug: false,
   activateNewTab: true,
   frameControl: FRAME_CONTROL,
-  debugTyping: true,
-  logTyping: true,
+  debugTyping: false,
+  logTyping: false,
   sidebarMenu: false,
   pluginsMenu: false,
   serviceWorker: false,

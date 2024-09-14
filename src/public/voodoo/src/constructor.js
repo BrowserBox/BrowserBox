@@ -2349,6 +2349,8 @@
             state.activeTarget = targetId;
             state.active = activeTab();
 
+            canKeysInput();
+
             setState('bbpro', state);
 
             if ( CONFIG.doAckBlast ) {
