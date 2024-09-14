@@ -176,6 +176,7 @@ export const DEBUG = Object.freeze({
   activateDebug: false,
   activateNewTab: true,
   frameControl: FRAME_CONTROL,
+  debugTyping: true,
   sidebarMenu: false,
   pluginsMenu: false,
   serviceWorker: false,
@@ -215,7 +216,7 @@ export const CONFIG = Object.freeze({
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
   get useServiceWorkerToCache() {
-    return true;
+    return false;
   },
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,

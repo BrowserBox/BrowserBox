@@ -117,8 +117,8 @@ export const DEBUG = Object.freeze({
   useLocalAuthInPrepFor_3PC_PhaseOut: true,
   showDebug: false,
   utilizeTempHackFixForIMENoKey: false,
-  debugTyping: false,
-  logFileCommands: false,
+  debugTyping: true,
+  logFileCommands: true,
   windowsUses48KAudio: false,
   debugAlerts: false,
   debugModals: false,
@@ -205,7 +205,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,

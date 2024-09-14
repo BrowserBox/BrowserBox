@@ -452,6 +452,18 @@
         Object.assign(self, {state});
       }
 
+      if ( DEBUG.debugTyping ) {
+        self.addEventListener('focusin', logTyping, {capture:true});
+        self.addEventListener('compositionstart', logTyping, {capture:true});
+        self.addEventListener('keydown', logTyping, {capture:true});
+        self.addEventListener('keyup', logTyping, {capture:true});
+        self.addEventListener('beforeinput', logTyping, {capture:true});
+        self.addEventListener('input', logTyping, {capture:true});
+        self.addEventListener('compositionupdate', logTyping, {capture:true});
+        self.addEventListener('compositionend', logTyping, {capture:true});
+        self.addEventListener('focusout', logTyping, {capture:true});
+      }
+
       const {searchParams} = new URL(location);
 
       if ( (searchParams.has('cloudTabsStatusLine') || location.hostname.endsWith('.cloudtabs.net')) && ! searchParams.has('forceRegularStatusLine') ) {
@@ -2653,6 +2665,10 @@
         }
       }
       return flags;
+    }
+
+    function logTyping(event) {
+      console.log(`[DEBUG TYPING] ${(' ' + event.type).padStart('-', 25)} `, event);
     }
 
   // patching 
