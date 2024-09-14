@@ -54,6 +54,7 @@ export function Controls(state) {
 
   function inputText(e) {
     let data = e.data || "";
+    DEBUG.logTyping && console.log("Input event", e);
     if ( state.convertTypingEventsToSyncValueEvents ) {
       H({
         synthetic: true,
@@ -223,7 +224,7 @@ export function Controls(state) {
   // determines if it's time to commit a text input change from an IME
   function commitChange(e, state) {
     const canCommit = ( 
-      (e.type == "input" && e.inputType == "insertText") ||
+      (e.type == "input" && (e.inputType == "insertText" || e.inputType == "insertFromComposition")) ||
       (e.type == "compositionend" && !! (e.data || state.latestData) )
     );
 

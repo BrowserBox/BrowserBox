@@ -262,7 +262,6 @@
 
           get currentInputLanguageUsesIME() {
             //console.log('requested ime use', this, (new Error).stack);
-            self._state = state;
             return state.usingIME;
           },
           get convertTypingEventsToSyncValueEvents() {
@@ -450,6 +449,18 @@
 
       if ( DEBUG.dev ) {
         Object.assign(self, {state});
+      }
+
+      if ( DEBUG.debugTyping ) {
+        self.addEventListener('focusin', logTyping, {capture:true});
+        self.addEventListener('compositionstart', logTyping, {capture:true});
+        self.addEventListener('keydown', logTyping, {capture:true});
+        self.addEventListener('keyup', logTyping, {capture:true});
+        self.addEventListener('beforeinput', logTyping, {capture:true});
+        self.addEventListener('input', logTyping, {capture:true});
+        self.addEventListener('compositionupdate', logTyping, {capture:true});
+        self.addEventListener('compositionend', logTyping, {capture:true});
+        self.addEventListener('focusout', logTyping, {capture:true});
       }
 
       const {searchParams} = new URL(location);
@@ -1977,6 +1988,7 @@
             event.value = event.event.target.value;
             event.contextId = state.contextIdOfFocusedInput;
             event.data = "";
+            DEBUG.logTyping && console.log("Typing -> Sync Value : Event", event, event.event);
             if ( DEBUG.utilizeTempHackFixForIMENoKey && state.viewState.hasNoKeys ) {
               if ( event.value.length == 0 ) {
                 state.viewState.hasNoKeys = true;
@@ -2337,6 +2349,8 @@
             state.activeTarget = targetId;
             state.active = activeTab();
 
+            canKeysInput();
+
             setState('bbpro', state);
 
             if ( CONFIG.doAckBlast ) {
@@ -2653,6 +2667,10 @@
         }
       }
       return flags;
+    }
+
+    function logTyping(event) {
+      console.log(`[DEBUG TYPING] ${(' ' + event.type).padStart(25, '-')} `, event);
     }
 
   // patching 
