@@ -262,7 +262,6 @@
 
           get currentInputLanguageUsesIME() {
             //console.log('requested ime use', this, (new Error).stack);
-            self._state = state;
             return state.usingIME;
           },
           get convertTypingEventsToSyncValueEvents() {
@@ -1989,6 +1988,7 @@
             event.value = event.event.target.value;
             event.contextId = state.contextIdOfFocusedInput;
             event.data = "";
+            DEBUG.logTyping && console.log("Typing -> Sync Value : Event", event, event.event);
             if ( DEBUG.utilizeTempHackFixForIMENoKey && state.viewState.hasNoKeys ) {
               if ( event.value.length == 0 ) {
                 state.viewState.hasNoKeys = true;
@@ -2668,7 +2668,7 @@
     }
 
     function logTyping(event) {
-      console.log(`[DEBUG TYPING] ${(' ' + event.type).padStart('-', 25)} `, event);
+      console.log(`[DEBUG TYPING] ${(' ' + event.type).padStart(25, '-')} `, event);
     }
 
   // patching 
