@@ -34,9 +34,9 @@ async function detectTor() {
   }
 
   // Calculate Tor score
-  if (!checkWebAudio()) probablyTorScore += 0.3;
-  if (!checkWebRTC()) probablyTorScore += 0.3;
-  if (await checkTorExitNode()) probablyTorScore += 0.3;
+  if (!checkWebAudio()) probablyTorScore += 0.24;
+  if (!checkWebRTC()) probablyTorScore += 0.25;
+  if (await checkTorExitNode()) probablyTorScore += 0.51;
 
   // Threshold to determine Tor usage
   const TOR_THRESHOLD = 0.5;

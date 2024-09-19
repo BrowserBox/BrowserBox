@@ -4,7 +4,7 @@ import './voodoo/src/common.js';
   const TOR_WAIT = 45000;
   const LOAD_WAIT = 10000;
   const isTorAPI = new URL(location.origin);
-  let isTor = false || isTorAPI.hostname.endsWith('.onion');
+  let isTor = false || globalThis.comingFromTOR || isTorAPI.hostname.endsWith('.onion');
   if ( ! isTor ) {
     isTorAPI.pathname = '/isTor';
     await uberFetch(isTorAPI).then(r => r.json()).then(resp => {
