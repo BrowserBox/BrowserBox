@@ -1,7 +1,7 @@
 //import {CWebp} from 'cwebp';
 import {DEBUG, sleep, CONFIG, scratchState} from '../common.js';
 
-const slowOrTorConnection = () => {
+const slowOrTORConnection = () => {
   return process.env.TORBB || scratchState.connectFromTOR || scratchState.slowConnection;
 };
 const FORMAT = "jpeg"; // "png"
