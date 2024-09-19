@@ -3,7 +3,9 @@
 // when accessing via the Onion browser, especially on mobile
 // the point of this is to increase availability for users accessing the service via the onion browser
 
-(async () => {
+detectTor().catch(e => console.warn(`Error detecting tor`, e));
+
+async function detectTor() {
   let probablyTorScore = 0;
 
   // Function to check if Web Audio is supported
@@ -21,33 +23,20 @@
   }
 
   // Function to check if IP is in Tor Exit Node List
-  async function checkTorExitNode(ip) {
-    const response = await fetch('https://check.torproject.org/torbulkexitlist');
-    const text = await response.text();
-    const exitNodes = text.split('\n');
-    return exitNodes.includes(ip.trim());
-  }
-
-  // Get user's IP address using a public API
-  async function getClientIP() {
-    try {
-      const res = await fetch('/clientIP');
-      return await res.text();
-    } catch {
-      return null;
+  async function checkTorExitNode() {
+    const response = await fetch('/torExit');
+    const {error, status} = await response.json();
+    if ( error ) {
+      console.warn(`Error checking tor exit node status`, error);
+      return;
     }
+    return status == 'tor-exit';
   }
 
   // Calculate Tor score
   if (!checkWebAudio()) probablyTorScore += 0.3;
   if (!checkWebRTC()) probablyTorScore += 0.3;
-  if (!checkWebGL()) probablyTorScore += 0.3;
-
-  const userIP = await getClientIP();
-  if (userIP) {
-    const isTorExit = await checkTorExitNode(userIP);
-    if (isTorExit) probablyTorScore += 0.3;
-  }
+  if (await checkTorExitNode()) probablyTorScore += 0.3;
 
   // Threshold to determine Tor usage
   const TOR_THRESHOLD = 0.5;
@@ -69,5 +58,7 @@
 
     // Add other Tor-specific adjustments here
   }
-})();
+}
+
+
 

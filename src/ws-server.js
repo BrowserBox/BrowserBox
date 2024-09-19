@@ -1025,6 +1025,30 @@
           }
           res.end(JSON.stringify(data));
         });
+        app.get(`/torExit`, wrap(async (req, res) => {
+          res.type('json');
+          const data = {};
+          let error;
+
+          let clientIP = req.ip || req.connection.remoteAddress;
+
+          clientIP = clientIP.replace('::ffff:', '');
+            
+          try {
+            const torExitList = await fetch('https://check.torproject.org/torbulkexitlist').then(r => r.text());
+            const torExitSet = new Set(
+              torExitList
+                .split(/\n/g)
+                .map(line => line.trim())
+                .filter(line => line.length)
+            );
+            data.status = torExitSet.has(clientIP) ? 'tor-exit' : 'non-tor-exit';
+          } catch(error) {
+            data.error = error;
+          }
+
+          res.end(JSON.stringify(data));
+        }));
         app.get(`/isSubscriber`, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});

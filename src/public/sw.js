@@ -20,7 +20,7 @@ const excludedPaths = new Set([
   "/sw.js",
   "/image.html",
   "/isTor",
-  "/clientIP",
+  "/torExit",
   "/torca/rootCA.pem", "/settings_modal", "/restart_app", 
   "/stop_app", "/stop_browser", "/start_browser", "/integrity"
 ]);
