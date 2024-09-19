@@ -836,7 +836,7 @@
             channelConfig: {
               ordered: true,
               maxRetransmits: 0,
-              /*maxPacketLifeTime: MIN_TIME_BETWEEN_SHOTS*/
+              /*maxPacketLifeTime: MIN_TIME_BETWEEN_SHOTS()*/
             }
           });
           DEBUG.debugConnect && console.log(`Check 5`);
