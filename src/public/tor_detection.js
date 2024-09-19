@@ -34,6 +34,7 @@ async function detectTor() {
   }
 
   // Calculate Tor score
+  globalThis.checkingTOR = true;
   if (!checkWebAudio()) probablyTorScore += 0.24;
   if (!checkWebRTC()) probablyTorScore += 0.25;
   if (await checkTorExitNode()) probablyTorScore += 0.51;
@@ -43,9 +44,8 @@ async function detectTor() {
   if (probablyTorScore > TOR_THRESHOLD) {
     assumeAccessViaTor();
   }
+  globalThis.checkingTOR = false;
 
-  alert(probablyTorScore);
-  alert(navigator.userAgent);
   // Function to handle Tor-specific adjustments
   function assumeAccessViaTor() {
     try {
@@ -59,7 +59,6 @@ async function detectTor() {
       }
 
       // Add other Tor-specific adjustments here
-      alert('TOR');
     } catch(e) {
       alert(e+'');
     }
