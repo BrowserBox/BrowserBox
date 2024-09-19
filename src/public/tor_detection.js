@@ -47,16 +47,16 @@ async function detectTor() {
   // Function to handle Tor-specific adjustments
   function assumeAccessViaTor() {
     console.log('Assuming access via Tor. Adjusting site behavior accordingly.');
+    globalThis.comingFromTOR = true;
 
     // Example: Disable microphone permission request on mobile
-    if (/Mobi|Android/i.test(navigator.userAgent)) {
-      const microphoneRequest = document.querySelector('#microphonePermission');
-      if (microphoneRequest) {
-        microphoneRequest.style.display = 'none';
-      }
+    const MobilePlatform = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+    if (MobilePlatform.test(navigator.userAgent)) {
+      globalThis.shouldNotRequestMicrophone = true;
     }
 
     // Add other Tor-specific adjustments here
+    alert('TOR');
   }
 }
 
