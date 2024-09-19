@@ -22,7 +22,8 @@ export async function fetchTabs({sessionToken}, getState) {
           const state = getState();
           if ( ! state.connected ) {
             if ( globalThis.purchaseClicked ) return;
-            if ( state.wipeIsInProgress ) return;
+            if ( state?.wipeIsInProgress || globalThis.wipeIsInProgress ) return;
+            if ( globalThis.comingFromTOR ) return;
             if ( CONFIG.isCT ) {
               alert(`Your session expired. Close this message to return to your dashboard.`);
               try {
@@ -101,7 +102,8 @@ export async function fetchTabs({sessionToken}, getState) {
     const state = getState();
     if ( ! state.connected ) {
       if ( globalThis.purchaseClicked ) return;
-      if ( state.wipeIsInProgress ) return;
+      if ( state?.wipeIsInProgress || globalThis.wipeIsInProgress ) return;
+      if ( globalThis.comingFromTOR ) return;
       if ( CONFIG.isCT ) {
         alert(`Your session expired. Close this message to return to your dashboard.`);
         try {
