@@ -10,6 +10,10 @@ import {FRAME_CONTROL} from './public/voodoo/src/common.js';
 import {APP_ROOT as app_root} from './root.js';
 export * from './args.js';
 
+export const scratchState = {
+  cameFromTOR: false,
+  slowConnection: false,
+};
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();

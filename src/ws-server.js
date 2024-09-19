@@ -207,7 +207,9 @@
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
-        ])
+        ]),
+        // for checking if access via TOR
+        "https://check.torproject.org/"
       ],
       fontSrc: [
         "'self'", 
