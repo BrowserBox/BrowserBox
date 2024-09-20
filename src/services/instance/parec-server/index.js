@@ -199,14 +199,14 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
           "https://link.local:*",
           "https://localhost:*",
           "https://*.dosyago.com:*",
-          "https://*.browserbox.pro:*"
+          "https://browse.cloudtabs.net:*"
         ],
         frameSrc: [
           "'self'",
           `https://*.dosyago.com:${PORT+1}`,
           `https://*.dosyago.com:${PORT+2}`,
           `https://*.dosyago.com:${PORT+3}`,
-          "https://*.browserbox.pro:*",
+          "https://browse.cloudtabs.net:*",
           ...ALLOWED_3RD_PARTY_EMBEDDERS
         ],
         frameAncestors: [
@@ -214,7 +214,7 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
           "https://localhost:*",
           "https://link.local:*",
           "https://*.dosyago.com:*",
-          "https://*.browserbox.pro:*",
+          "https://browse.cloudtabs.net:*",
           ...ALLOWED_3RD_PARTY_EMBEDDERS
         ],
         connectSrc: [
@@ -223,7 +223,7 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
           `https://*.link.local:${PORT+1}`,
           "wss://*.dosyago.com:*",
           `https://*.dosyago.com:${PORT+1}`,
-          "wss://*.browserbox.pro:*",
+          "wss://browse.cloudtabs.net:*",
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)

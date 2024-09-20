@@ -160,7 +160,7 @@
         "'self'",
         "https://localhost:*",
         "https://*.dosyago.com:*",
-        "https://*.browserbox.pro:*",
+        "https://browse.cloudtabs.net:*",
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port}`]}:*`, // main service (for data: urls seemingly)
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
@@ -173,7 +173,7 @@
         "'self'",
         "https://localhost:*",
         "https://link.local:*",
-        "https://*.browserbox.pro:*",
+        "https://browse.cloudtabs.net:*",
         "https://*.dosyago.com:*",
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
@@ -189,9 +189,9 @@
         "wss://link.local:*",
         `https://*.dosyago.com:${server_port-1}`,
         `https://*.dosyago.com:${server_port+1}`,
-        "https://*.browserbox.pro:*",
+        "https://browse.cloudtabs.net:*",
         "https://browse.cloudtabs.net",
-        "wss://*.browserbox.pro:*",
+        "wss://browse.cloudtabs.net:*",
         `https://localhost:${server_port-1}`,
         `https://localhost:${server_port+1}`,
         `https://link.local:${server_port-1}`,
@@ -227,7 +227,7 @@
         "'self'", 
         "'unsafe-eval'",
         "'unsafe-inline'",
-        "https://*.browserbox.pro:*",
+        "https://browse.cloudtabs.net:*",
         "https://*.dosyago.com:*"
       ],
       scriptSrcAttr: [
@@ -236,7 +236,7 @@
       ],
       frameAncestors: [
         "'self'",
-        "https://*.browserbox.pro:*",
+        "https://browse.cloudtabs.net:*",
         "https://*.dosyago.com:*",
         ...ALLOWED_3RD_PARTY_EMBEDDERS
       ],
