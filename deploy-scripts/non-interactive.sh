@@ -41,8 +41,8 @@ set_grub_install_device
 echo "Creating dpkg configuration..." >&2
 $SUDO mkdir -p /etc/dpkg/dpkg.cfg.d/
 cat <<EOF | $SUDO tee /etc/dpkg/dpkg.cfg.d/force-conf >/dev/null
-force-confdef >&2
-force-confnew >&2
+force-confdef
+force-confnew
 EOF
 
 # Create apt configuration
