@@ -44,11 +44,14 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
     # Loop through onion addresses and send DEL_ONION commands to the Tor control port
     for var in $(compgen -A variable | grep "^ADDR_"); do
       onion_address="${!var}"
+
+      # Remove the .onion suffix to get the service ID
+      service_id="${onion_address%.onion}"
       
       # Remove the onion address
-      control_command=$(printf 'AUTHENTICATE %s\r\nDEL_ONION %s\r\nQUIT\r\n' "$tor_cookie_hex" "$onion_address")
+      control_command=$(printf 'AUTHENTICATE %s\r\nDEL_ONION %s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_id")
       
-      echo "Removing onion service: $onion_address"
+      echo "Removing onion service: $service_id"
 
       # Send the command to the Tor control port
       echo -e "$control_command" | nc localhost "$control_port"
