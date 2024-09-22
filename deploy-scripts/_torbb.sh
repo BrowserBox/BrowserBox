@@ -220,7 +220,7 @@ add_hidden_service_via_control_port() {
   local tor_cookie_hex="$(xxd -u -p -c32 < "$tor_cookie_file")"
 
   # Build the control port command
-  local control_command=$(printf 'AUTHENTICATE %s\r\nADD_ONION NEW:ED25519-V3 Port=443,127.0.0.1:%s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_port")
+  local control_command=$(printf 'AUTHENTICATE %s\r\nADD_ONION NEW:ED25519-V3 Flags=Detach Port=443,127.0.0.1:%s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_port")
 
   echo "Using Tor command: $control_command" >&2
 
