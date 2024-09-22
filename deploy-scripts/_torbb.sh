@@ -233,7 +233,8 @@ add_hidden_service_via_control_port() {
     exit 1
   fi
 
-  echo "${onion_address}.onion"
+  addr="$(echo "$onion_address" | xargs)"
+  echo "${addr}.onion"
 }
 
 wait_for_hostnames() {
@@ -398,7 +399,7 @@ manage_firewall() {
 
   for i in {0..4}; do
     service_port=$((base_port + i))
-    onion_address=$(add_hidden_service_via_control_port "$service_port")
+    onion_address="$(add_hidden_service_via_control_port "$service_port")"
     export "ADDR_$service_port=$onion_address"
 
     echo "Onion address for port $service_port: $onion_address" >&2
