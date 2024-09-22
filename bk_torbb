@@ -321,9 +321,10 @@ configure_and_export_tor() {
   setup_mkcert
   for i in {0..4}; do
     local service_port=$((base_port + i))
-    local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
-    local onion_address="$($SUDO cat "$hidden_service_dir/hostname")"
+    local hidden_service_dir="${TORDIR}/hidden_service_${service_port}"
+    local onion_address="$($SUDO cat "${hidden_service_dir}/hostname")"
     export "ADDR_$service_port=$onion_address"
+    echo $service_port $onion_address
 
     # we user scope these certs as the addresses while distinct do not differentiate on ports
     # and anyway probably a good idea to keep a user's onion addresses private rather than put them in a globally shared location
