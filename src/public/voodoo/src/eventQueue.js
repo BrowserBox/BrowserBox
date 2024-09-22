@@ -485,8 +485,8 @@
                   }
                 }
 
-                if ( ! privates.peer ) {
-                  connectPeer();
+                if ( ! privates.peer && hasWebRTC() ) {
+                  connectPeer().catch(err => console.warn(`Connect peer error`, err));;
                 } else {
                   peer = privates.peer;
                 }
@@ -655,7 +655,7 @@
               if ( AssureOpenTask ) {
                 const Task = AssureOpenTask;
                 AssureOpenTask = false;
-                Task().then(() => resolve(true));
+                Task().then(() => resolve(true)).catch(err => console.warn(`Assume open task errored`, Task, err));
               }
               if ( typeof MessageData === "string" ) {
                 const messageData = JSON.parse(MessageData);
