@@ -233,7 +233,7 @@ add_hidden_service_via_control_port() {
     exit 1
   fi
 
-  echo "$onion_address"
+  echo "${onion_address}.onion"
 }
 
 wait_for_hostnames() {
@@ -404,7 +404,7 @@ manage_firewall() {
     echo "Onion address for port $service_port: $onion_address" >&2
 
     # Generate TLS certificates for the onion address
-    local cert_dir="$HOME/${torsslcerts}/${onion_address}"
+    cert_dir="$HOME/${torsslcerts}/${onion_address}"
     setup_mkcert
     mkdir -p "${cert_dir}"
     if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
