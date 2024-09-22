@@ -57,7 +57,7 @@ APT::Get::allow-change-held-packages "true";
 EOF
 
 # Create needrestart custom configuration
-echo "Creating needrestart custom configuration..." >&
+echo "Creating needrestart custom configuration..." >&2
 $SUDO mkdir -p /etc/needrestart/conf.d
 cat <<EOF | $SUDO tee /etc/needrestart/conf.d/no-prompt.conf >/dev/null
 \$nrconf{kernelhints} = -1;
@@ -68,7 +68,7 @@ EOF
 $SUDO apt-get dist-upgrade -o Dpkg::Options::="--force-confnew" --yes -yqq >&2
 
 # Install debconf-utils and set it to restart libraries without asking
-$SUDO apt-get -y install debconf-utils
+$SUDO apt-get -y install debconf-utils >&2
 echo '* libraries/restart-without-asking boolean true' | $SUDO debconf-set-selections >&2
 
 echo "Configurations applied successfully." >&2
