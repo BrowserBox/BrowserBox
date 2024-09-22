@@ -3,8 +3,8 @@ import {untilTrueOrTimeout, untilTrue} from './voodoo/src/common.js';
 checkLoad();
 
 async function checkLoad() {
-  const TOR_WAIT = 45000;
-  const LOAD_WAIT = 10000;
+  const TOR_WAIT = 47917;
+  const LOAD_WAIT = 11719;
   const isTorAPI = new URL(location.origin);
 
   if ( globalThis.checkingTOR ) {
@@ -30,8 +30,8 @@ async function checkLoad() {
     }
     if ( Date.now() > checkUntil ) {
       clearInterval(timer);
-      alert(`Hmm, looks like your page is taking longer to load than normal. This is usually fixed by reloading and trying again. Let's try that!`);
-      location.reload();
+      const doReload = confirm(`Hmm, looks like your page is taking longer to load than normal. This is usually fixed by reloading and trying again. Let's try that? Hit OK to reload.\n\nOr, hit Cancel if you'd prefer to wait.\n\nNote: waiting may be a better strategy on slow connections or with Tor.`);
+      if ( doReload ) location.reload();
     }
-  }, 300);
+  }, 331);
 }
