@@ -44,12 +44,43 @@ detect_os() {
     fi
   elif [[ "$OSTYPE" == "darwin"* ]]; then
     OS_TYPE="macos"
-    TOR_GROUP="tor"
+    TOR_GROUP="admin"
     TOR_USER="$(id -un)"  # On macOS, Tor runs as the current user by default
   else
     echo "Unsupported Operating System" >&2
     exit 1
   fi
+}
+
+# Function to add Tor repository and install Tor for Debian/Ubuntu
+add_tor_repository_debian() {
+  echo "Adding Tor repository for Debian/Ubuntu..." >&2
+  $SUDO apt-get update
+  $SUDO apt-get install -y apt-transport-https gpg
+  wget -qO- https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --import
+  gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | $SUDO apt-key add -
+  echo "deb https://deb.torproject.org/torproject.org $(lsb_release -sc) main" | $SUDO tee /etc/apt/sources.list.d/tor.list
+  $SUDO apt-get update
+  $SUDO apt-get install -y tor deb.torproject.org-keyring
+  TOR_INSTALLED=true
+}
+
+# Function to install Tor based on OS
+install_tor() {
+  case $OS_TYPE in
+    debian)
+      add_tor_repository_debian
+      ;;
+    centos)
+      $SUDO yum install -y epel-release || $SUDO dnf install -y epel-release
+      $SUDO yum install -y tor || $SUDO dnf install -y tor
+      TOR_INSTALLED=true
+      ;;
+    macos)
+      brew install tor
+      TOR_INSTALLED=true
+      ;;
+  esac
 }
 
 # Function to find the torrc file
@@ -183,6 +214,9 @@ restart_tor_service() {
 # Main execution flow
 main() {
   detect_os
+  if ! command -v tor &>/dev/null; then
+    install_tor
+  fi
   find_torrc_path
   add_user_to_tor_group
   configure_torrc

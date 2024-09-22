@@ -394,8 +394,9 @@ manage_firewall() {
   echo "Ensuring any other bbpro $USER was running is shutdown..." >&2
   ensure_shutdown &>/dev/null
 
+  find_torrc_path
+
   if [[ "$OSTYPE" == darwin* ]]; then
-    find_torrc_path
     [[ $TOR_INSTALLED == true ]] && configure_and_export_tor
     manage_firewall
   else
