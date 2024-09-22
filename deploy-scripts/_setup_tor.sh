@@ -2,13 +2,13 @@
 
 # This script must be run with sudo privileges
 if [ "$(id -u)" -ne 0 ]; then
-  echo "This script must be run as root. Please use sudo."
+  echo "This script must be run as root. Please use sudo." >&2
   exit 1
 fi
 
 # Check if a username was provided
 if [ -z "$1" ]; then
-  echo "Usage: sudo $0 username"
+  echo "Usage: sudo $0 username" >&2
   exit 1
 fi
 
@@ -80,10 +80,10 @@ find_torrc_path() {
 # Function to add the user to the tor group
 add_user_to_tor_group() {
   if id -nG "$USERNAME" | grep -qw "$TOR_GROUP"; then
-    echo "User $USERNAME is already in the $TOR_GROUP group."
+    echo "User $USERNAME is already in the $TOR_GROUP group." >&2
   else
     usermod -a -G "$TOR_GROUP" "$USERNAME"
-    echo "Added user $USERNAME to group $TOR_GROUP."
+    echo "Added user $USERNAME to group $TOR_GROUP." >&2
   fi
 }
 
@@ -117,25 +117,25 @@ configure_torrc() {
 
   # Update torrc if necessary
   if ! $control_port_configured; then
-    echo "Configuring ControlPort in torrc..."
+    echo "Configuring ControlPort in torrc..." >&2
     echo "ControlPort 9051" >> "$TORRC"
     torrc_modified=true
   fi
 
   if ! $cookie_auth_configured; then
-    echo "Enabling CookieAuthentication in torrc..."
+    echo "Enabling CookieAuthentication in torrc..." >&2
     echo "CookieAuthentication 1" >> "$TORRC"
     torrc_modified=true
   fi
 
   if ! $cookie_auth_group_readable_configured; then
-    echo "Setting CookieAuthFileGroupReadable in torrc..."
+    echo "Setting CookieAuthFileGroupReadable in torrc..." >&2
     echo "CookieAuthFileGroupReadable 1" >> "$TORRC"
     torrc_modified=true
   fi
 
   if ! $cookie_auth_file_configured; then
-    echo "Setting CookieAuthFile in torrc..."
+    echo "Setting CookieAuthFile in torrc..." >&2
     echo "CookieAuthFile $COOKIE_AUTH_FILE" >> "$TORRC"
     torrc_modified=true
   fi
@@ -147,7 +147,7 @@ configure_torrc() {
 
 # Function to adjust permissions on Tor directories and files
 adjust_permissions() {
-  echo "Adjusting permissions on Tor directories and files..."
+  echo "Adjusting permissions on Tor directories and files..." >&2
 
   # Set group ownership of the Tor data directory
   chown -R "$TOR_USER":"$TOR_GROUP" "$TORDIR"
@@ -160,23 +160,23 @@ adjust_permissions() {
   if [ -f "$control_auth_cookie" ]; then
     chown "$TOR_USER":"$TOR_GROUP" "$control_auth_cookie"
     chmod 640 "$control_auth_cookie"
-    echo "Set permissions on $control_auth_cookie"
+    echo "Set permissions on $control_auth_cookie" >&2
   else
-    echo "control_auth_cookie not found. It may be created when Tor starts."
+    echo "control_auth_cookie not found. It may be created when Tor starts." >&2
   fi
 }
 
 # Function to restart Tor service if necessary
 restart_tor_service() {
   if $RESTART_TOR; then
-    echo "Restarting Tor service..."
+    echo "Restarting Tor service..." >&2
     if [[ "$OS_TYPE" == "macos" ]]; then
       brew services restart tor
     else
       systemctl restart tor
     fi
   else
-    echo "No changes to torrc; no need to restart Tor."
+    echo "No changes to torrc; no need to restart Tor." >&2
   fi
 }
 
@@ -188,7 +188,7 @@ main() {
   configure_torrc
   adjust_permissions
   restart_tor_service
-  echo "Tor setup complete for user $USERNAME."
+  echo "Tor setup complete for user $USERNAME." >&2
 }
 
 # Invoke the main function
