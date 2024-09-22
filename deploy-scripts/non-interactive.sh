@@ -4,6 +4,14 @@ SUDO=""
 if command -v sudo &>/dev/null; then
   SUDO="sudo -n"
 fi
+
+if ! $SUDO true &>/dev/null; then
+  echo "Config script $0 requires passwordless sudo permissions." >&2
+  echo "please run with such." >&2
+  echo "exiting..." >&2
+  exit 1
+fi
+
 export NEEDRESTART_MODE=a
 export DEBIAN_FRONTEND=noninteractive
 unset UCF_FORCE_CONFOLD
