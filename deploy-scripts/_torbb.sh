@@ -51,7 +51,7 @@ initialize_package_manager() {
   elif command -v apt &>/dev/null; then
     package_manager=$(command -v apt)
     if command -v apt-get &>/dev/null; then
-      source non-interactive.sh
+      source non-interactive.sh >&2
     fi
   elif command -v dnf >/dev/null; then
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
