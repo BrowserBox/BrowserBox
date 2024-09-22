@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+set -x
+
 # Global Variables
 OS_TYPE=""
 TOR_INSTALLED=false
@@ -48,7 +51,7 @@ initialize_package_manager() {
   elif command -v apt &>/dev/null; then
     package_manager=$(command -v apt)
     if command -v apt-get &>/dev/null; then
-      source ./deploy-scripts/non-interactive.sh
+      source non-interactive.sh
     fi
   elif command -v dnf >/dev/null; then
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
@@ -80,7 +83,7 @@ find_mkcert_root_ca() {
   local mkcert_dir=""
 
   mkcert_dir="$(mkcert -CAROOT 2>/dev/null)"
-  
+
   if [[ -n "$mkcert_dir" ]]; then
     echo "$mkcert_dir"
     return 0
@@ -233,7 +236,7 @@ add_hidden_service_via_control_port() {
     exit 1
   fi
 
-  addr="$(echo "$onion_address" | xargs)"
+  addr=$(echo "$onion_address" | sed 's/[[:space:]]//g')
   echo "${addr}.onion"
 }
 
@@ -450,3 +453,4 @@ LOGIN_LINK="https://${DOMAIN}/login?token=${LOGIN_TOKEN}"
 echo "$LOGIN_LINK" > "${CONFIG_DIR}/login.link"
 echo "Login link for Tor hidden service BB instance:" >&2
 echo "$LOGIN_LINK"
+
