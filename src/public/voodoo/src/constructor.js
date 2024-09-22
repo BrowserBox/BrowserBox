@@ -2373,7 +2373,11 @@
             const delta = now - lastTime;
             if ( delta > 1000 ) {
               lastTime = now;
-              setTimeout(() => {
+              setTimeout(async () => {
+                await untilTrueOrTimeout(() => !!document?.querySelector?.('bb-view')
+                  ?.shadowRoot?.querySelector?.('bb-tabs')
+                    ?.shadowRoot?.querySelector?.('bb-select-tab.active')
+                , 17);
                 let el = document.querySelector('bb-view')
                   .shadowRoot.querySelector('bb-tabs')
                     .shadowRoot.querySelector('bb-select-tab.active');
