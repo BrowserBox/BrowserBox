@@ -32,6 +32,8 @@ export async function fetchTabs({sessionToken}, getState) {
                 location.href = 'https://browse.cloudtabs.net/'
               }
             } else {
+              if ( globalThis.alreadyExpired || globalThis.windowUnloading ) return;
+              globalThis.alreadyExpired = true;
               alert(`Your session has expired or disconnected.`);
             }
           } else {
@@ -112,6 +114,8 @@ export async function fetchTabs({sessionToken}, getState) {
           location.href = 'https://browse.cloudtabs.net/'
         }
       } else {
+        if ( globalThis.alreadyExpired || globalThis.windowUnloading ) return;
+        globalThis.alreadyExpired = true;
         alert(`Your session has expired or disconnected.`);
       }
     } 
