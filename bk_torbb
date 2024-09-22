@@ -435,6 +435,7 @@ export TORCA_CERT_ROOT="${cert_root}"
 export SSLCERTS_DIR="${torsslcerts}"
 
 EOF
+  base_port=$((APP_PORT - 2))
   for i in {0..4}; do
     service_port=$((base_port + i))
     ref="ADDR_$service_port"
