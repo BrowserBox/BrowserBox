@@ -40,7 +40,7 @@ torbb_env_file="$HOME/.config/dosyago/bbpro/torbb.env"
 if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
   login_link=$(cat "$login_link_file")
 
-  if command -v ufw &>/dev/null; then
+  if command -v ufw &>/dev/null || sudo bash -c 'command -v ufw' &>/dev/null; then
     $SUDO ufw disable
   fi
   
