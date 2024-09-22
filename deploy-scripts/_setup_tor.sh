@@ -60,7 +60,7 @@ find_torrc_path() {
       exit 1
     fi
     local prefix
-    prefix=$(brew --prefix tor)
+    prefix=$(brew --prefix)
     TORRC="${prefix}/etc/tor/torrc"
     TORDIR="${prefix}/var/lib/tor"
     COOKIE_AUTH_FILE="${prefix}/var/lib/tor/control_auth_cookie"

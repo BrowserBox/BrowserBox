@@ -1,8 +1,5 @@
 #!/bin/bash
 
-
-set -x
-
 # Global Variables
 OS_TYPE=""
 TOR_INSTALLED=false
@@ -26,7 +23,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     TOR_GROUP="tor"
   fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-  TOR_GROUP="tor"
+  TOR_GROUP="admin"
 else
   echo "Unsupported OS" >&2
   exit 1
@@ -214,7 +211,7 @@ install_tor() {
 add_hidden_service_via_control_port() {
   local service_port="$1"
   local tor_control_port=9051
-  local tor_cookie_file="/var/lib/tor/control_auth_cookie"
+  local tor_cookie_file="${TORDIR}/control_auth_cookie"
 
   # Read the authentication cookie
   local tor_cookie_hex="$(xxd -u -p -c32 < "$tor_cookie_file")"
@@ -397,28 +394,34 @@ manage_firewall() {
   echo "Ensuring any other bbpro $USER was running is shutdown..." >&2
   ensure_shutdown &>/dev/null
 
-  manage_firewall
+  if [[ "$OSTYPE" == darwin* ]]; then
+    find_torrc_path
+    [[ $TOR_INSTALLED == true ]] && configure_and_export_tor
+    manage_firewall
+  else
+    manage_firewall
 
-  base_port=$((APP_PORT - 2))
-  echo "Setting up tor hidden services via Control Port..." >&2
+    base_port=$((APP_PORT - 2))
+    echo "Setting up tor hidden services via Control Port..." >&2
 
-  for i in {0..4}; do
-    service_port=$((base_port + i))
-    onion_address="$(add_hidden_service_via_control_port "$service_port")"
-    export "ADDR_$service_port=$onion_address"
+    for i in {0..4}; do
+      service_port=$((base_port + i))
+      onion_address="$(add_hidden_service_via_control_port "$service_port")"
+      export "ADDR_$service_port=$onion_address"
 
-    echo "Onion address for port $service_port: $onion_address" >&2
+      echo "Onion address for port $service_port: $onion_address" >&2
 
-    # Generate TLS certificates for the onion address
-    cert_dir="$HOME/${torsslcerts}/${onion_address}"
-    setup_mkcert
-    mkdir -p "${cert_dir}"
-    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
-      echo "mkcert failed for $onion_address" >&2
-      echo "mkcert needs to work. exiting..." >&2
-      exit 1
-    fi
-  done
+      # Generate TLS certificates for the onion address
+      cert_dir="$HOME/${torsslcerts}/${onion_address}"
+      setup_mkcert
+      mkdir -p "${cert_dir}"
+      if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
+        echo "mkcert failed for $onion_address" >&2
+        echo "mkcert needs to work. exiting..." >&2
+        exit 1
+      fi
+    done
+  fi
 
   cert_root=$(find_mkcert_root_ca)
 

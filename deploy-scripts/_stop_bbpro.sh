@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
 source ~/.nvm/nvm.sh
+TORDIR="/var/lib/tor"
+
+if [[ "$OSTYPE" == darwin* ]]; then
+  TORDIR="$(brew --prefix)/var/lib/tor"
+fi
 
 # Ensure pm2 is available
 command -v pm2 &>/dev/null || npm i -g pm2@latest
@@ -38,7 +43,7 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
     source "$torbb_env_file"
 
     # Read the Tor authentication cookie and control port
-    tor_cookie_hex=$(xxd -p /var/lib/tor/control_auth_cookie | tr -d '\n')
+    tor_cookie_hex="$(xxd -p "${TORDIR}/control_auth_cookie" | tr -d '\n')"
     control_port="9051"
     
     # Loop through onion addresses and send DEL_ONION commands to the Tor control port
