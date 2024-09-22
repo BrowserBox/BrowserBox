@@ -79,9 +79,9 @@ initialize_package_manager() {
 initialize_package_manager
 
 if command -v dnf &>/dev/null; then
-  $SUDO $APT install -y wget curl jq unzip bc psmisc psutils tuned
+  $SUDO $APT install -y wget curl jq unzip bc psmisc psutils tuned xxd
 else
-  $SUDO $APT install -y apt-utils wget curl jq unzip bc psmisc psutils tuned
+  $SUDO $APT install -y apt-utils wget curl jq unzip bc psmisc psutils tuned xxd
 fi
 
 source ~/.nvm/nvm.sh

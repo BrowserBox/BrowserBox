@@ -260,7 +260,7 @@ run_torbb_if_needed() {
   fi
   echo "Running torbb" >&2
   torbb
-  pm2 delete all
+  stop_bbpro
 }
 
 # Function to obtain SOCKS5 proxy address from tor
