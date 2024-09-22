@@ -16,8 +16,6 @@ if command -v sudo &>/dev/null; then
   SUDO="sudo -n"
 fi
 
-#!/bin/bash
-
 # Set the correct Tor group based on the OS (you can adjust this based on your script's logic)
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
   if [ -f /etc/debian_version ]; then
@@ -156,8 +154,8 @@ setup_mkcert() {
       $SUDO cp mkcert-v*-linux-"$amd64" /usr/local/bin/mkcert
       rm mkcert-v*
     fi
+    mkcert -install
   fi
-  mkcert -install
 }
 
 # Detect Operating System
@@ -184,13 +182,13 @@ detect_os() {
 # Function to add Tor repository and install Tor for Debian/Ubuntu
 add_tor_repository_debian() {
   echo "Adding Tor repository for Debian/Ubuntu..." >&2
-  sudo apt-get update
-  sudo apt-get install -y apt-transport-https gpg
+  $SUDO apt-get update
+  $SUDO apt-get install -y apt-transport-https gpg
   wget -qO- https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --import
-  gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | sudo apt-key add -
-  echo "deb https://deb.torproject.org/torproject.org $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/tor.list
-  sudo apt-get update
-  sudo apt-get install -y tor deb.torproject.org-keyring
+  gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | $SUDO apt-key add -
+  echo "deb https://deb.torproject.org/torproject.org $(lsb_release -sc) main" | $SUDO tee /etc/apt/sources.list.d/tor.list
+  $SUDO apt-get update
+  $SUDO apt-get install -y tor deb.torproject.org-keyring
   TOR_INSTALLED=true
 }
 
@@ -201,8 +199,8 @@ install_tor() {
       add_tor_repository_debian
       ;;
     centos)
-      sudo yum install -y epel-release || sudo dnf install -y epel-release
-      sudo yum install -y tor || sudo dnf install -y tor
+      $SUDO yum install -y epel-release || $SUDO dnf install -y epel-release
+      $SUDO yum install -y tor || $SUDO dnf install -y tor
       TOR_INSTALLED=true
       ;;
     macos)
@@ -228,6 +226,8 @@ add_hidden_service_via_control_port() {
 
   # Send the command and capture the response
   local response=$(echo -e "$control_command" | nc localhost $tor_control_port)
+
+  echo "Got Tor response: $response" >&2
 
   # Extract the Onion address from the response
   local onion_address=$(echo "$response" | grep '^250-ServiceID=' | cut -d'=' -f2)
@@ -255,7 +255,7 @@ wait_for_hostnames() {
 
       # Use sudo for file existence check on Debian and CentOS
       if [[ "${OS_TYPE}" != "macos" ]]; then
-        if ! sudo test -f "$hidden_service_dir/hostname"; then
+        if ! $SUDO test -f "$hidden_service_dir/hostname"; then
           all_exist=0
           break
         fi
@@ -282,14 +282,14 @@ configure_and_export_tor() {
     local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
     local dirLine="HiddenServiceDir $hidden_service_dir"
 
-    if sudo test -d "$hidden_service_dir"; then
-      sudo rm -rf "$hidden_service_dir"
+    if $SUDO test -d "$hidden_service_dir"; then
+      $SUDO rm -rf "$hidden_service_dir"
     fi
 
     if ! grep -qF -- "$dirLine" "$TORRC"; then
       if [[ "${OS_TYPE}" != "macos" ]]; then
-        echo "$dirLine" | sudo tee -a "$TORRC"
-        echo "HiddenServicePort 443 127.0.0.1:$service_port" | sudo tee -a "$TORRC"
+        echo "$dirLine" | $SUDO tee -a "$TORRC"
+        echo "HiddenServicePort 443 127.0.0.1:$service_port" | $SUDO tee -a "$TORRC"
       else
         echo "$dirLine" |  tee -a "$TORRC"
         echo "HiddenServicePort 443 127.0.0.1:$service_port" |  tee -a "$TORRC"
@@ -297,13 +297,13 @@ configure_and_export_tor() {
     fi
 
     if [[ "${OS_TYPE}" != "macos" ]]; then
-      sudo mkdir -p "$hidden_service_dir"
+      $SUDO mkdir -p "$hidden_service_dir"
       if [[ "${OS_TYPE}" == "centos" ]]; then
-        sudo chown toranon:toranon "$hidden_service_dir"
+        $SUDO chown toranon:toranon "$hidden_service_dir"
       else
-        sudo chown debian-tor:debian-tor "$hidden_service_dir"
+        $SUDO chown debian-tor:debian-tor "$hidden_service_dir"
       fi
-      sudo chmod 700 "$hidden_service_dir"
+      $SUDO chmod 700 "$hidden_service_dir"
     else
       mkdir -p "$hidden_service_dir"
       chmod 700 "$hidden_service_dir"
@@ -314,7 +314,7 @@ configure_and_export_tor() {
   if [[ "$OS_TYPE" == "macos" ]]; then
     brew services restart tor &> /dev/null
   else
-    sudo systemctl restart tor &> /dev/null
+    $SUDO systemctl restart tor &> /dev/null
   fi
 
   echo "Waiting for onion services to connect..." >&2
@@ -324,7 +324,7 @@ configure_and_export_tor() {
   for i in {0..4}; do
     local service_port=$((base_port + i))
     local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
-    local onion_address=$(sudo cat "$hidden_service_dir/hostname")
+    local onion_address=$($SUDO cat "$hidden_service_dir/hostname")
     export "ADDR_$service_port=$onion_address"
 
     # we user scope these certs as the addresses while distinct do not differentiate on ports
@@ -357,8 +357,8 @@ manage_firewall() {
   echo "Closing firewall (except ssh)..." >&2
   case $OS_TYPE in
     debian | centos)
-      sudo ufw allow "$(get_ssh_port)" &> /dev/null
-      sudo ufw --force enable &> /dev/null
+      $SUDO ufw allow "$(get_ssh_port)" &> /dev/null
+      $SUDO ufw --force enable &> /dev/null
       ;;
     macos)
       # MacOS firewall configurations are typically done through the GUI
