@@ -318,17 +318,18 @@ configure_and_export_tor() {
   wait_for_hostnames
 
   echo "Creating HTTPS TLS certs for onion domains..." >&2
+  setup_mkcert
   for i in {0..4}; do
     local service_port=$((base_port + i))
-    local hidden_service_dir="${TORDIR}/hidden_service_$service_port"
-    local onion_address=$($SUDO cat "$hidden_service_dir/hostname")
+    local hidden_service_dir="${TORDIR}/hidden_service_${service_port}"
+    local onion_address="$($SUDO cat "${hidden_service_dir}/hostname")"
     export "ADDR_$service_port=$onion_address"
+    echo $service_port $onion_address
 
     # we user scope these certs as the addresses while distinct do not differentiate on ports
     # and anyway probably a good idea to keep a user's onion addresses private rather than put them in a globally shared location
 
     local cert_dir="$HOME/${torsslcerts}/${onion_address}"
-    setup_mkcert
     mkdir -p "${cert_dir}"
     if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
       echo "mkcert failed for $onion_address" >&2
@@ -434,6 +435,7 @@ export TORCA_CERT_ROOT="${cert_root}"
 export SSLCERTS_DIR="${torsslcerts}"
 
 EOF
+  base_port=$((APP_PORT - 2))
   for i in {0..4}; do
     service_port=$((base_port + i))
     ref="ADDR_$service_port"

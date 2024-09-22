@@ -6,6 +6,7 @@
   import child_process from 'child_process';	
 
   import express from 'express';
+  import compression from 'compression';
   import multer from 'multer';
   import {WebSocketServer, WebSocket} from 'ws';
   import Peer from 'simple-peer';
@@ -147,6 +148,7 @@
     }
     DEBUG.val && console.log(`Starting websocket server on ${port}`);
     const app = express();
+    app.use(compression());
     const server_port = parseInt(port);
     const StandardCSP = {
       defaultSrc: ["'self'"],
@@ -454,9 +456,11 @@
         res.sendFile(path.resolve(APP_ROOT,...(DEBUG.mode === 'dev' ? ['public', 'assets'] : ['..', 'dist', 'assets']),'SPL2.html'));
       });
     }
+    /*
     if ( process.env.TORBB ) {
       app.get("/torca/rootCA.pem", (req, res) => res.sendFile(path.resolve(process.env.TORCA_CERT_ROOT, 'rootCA.pem')));
     }
+    */
     app.use(express.static(path.resolve(APP_ROOT, ...(DEBUG.mode === 'dev' ? ['public'] : ['..', 'dist']))));
 
     try {

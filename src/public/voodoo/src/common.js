@@ -275,7 +275,7 @@ export const CHAR = Object.freeze({
 
 export const COMMON = Object.seal(Object.preventExtensions({
   blockAnotherReset: false,
-  delayUnload: false,
+  delayUnload: true,
 }));
 
 // Cache the token outside the uberFetch function

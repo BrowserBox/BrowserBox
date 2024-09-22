@@ -88,7 +88,7 @@
     "@roamhq/wrtc": "^0.7.3",
     "bang.html": "latest",
     "body-parser": "latest",
-    "compression": "latest",
+    "compression": "^1.7.4",
     "cookie-parser": "latest",
     "cors": "latest",
     "entities": "latest",
@@ -109,6 +109,8 @@
   "devDependencies": {
     "@babel/core": "latest",
     "@mapbox/node-pre-gyp": "latest",
+    "@parcel/optimizer-cssnano": "^2.12.0",
+    "@parcel/optimizer-terser": "^2.12.0",
     "@parcel/packager-raw-url": "latest",
     "@parcel/transformer-webmanifest": "latest",
     "@types/body-parser": "latest",

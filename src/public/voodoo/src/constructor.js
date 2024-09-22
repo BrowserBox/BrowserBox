@@ -2377,7 +2377,7 @@
                 await untilTrueOrTimeout(() => !!document?.querySelector?.('bb-view')
                   ?.shadowRoot?.querySelector?.('bb-tabs')
                     ?.shadowRoot?.querySelector?.('bb-select-tab.active')
-                , 17);
+                , 17).catch(e => console.warn('oh well could not find tab yet, must be some slowness'));
                 let el = document.querySelector('bb-view')
                   .shadowRoot.querySelector('bb-tabs')
                     .shadowRoot.querySelector('bb-select-tab.active');

@@ -5,6 +5,13 @@ import tlds from './tlds.js';
 export function checkAndAppendHTTPS(input) {
   const trimmedInput = input.trim();
   const firstPart = trimmedInput.split(' ')[0];
+  let url;
+  try {
+    url = new URL(firstPart);
+    return url;
+  } catch(e) {
+    console.info(`Not a url (at least not yet) - let's see if it starts with something that looks like one.`);
+  } 
   const domainParts = firstPart.split('.').filter(part => part.length);
 
   // If the last part of the first word is a known TLD

@@ -180,7 +180,8 @@ export const DEBUG = Object.freeze({
   debugNoticeSignal: false,
   throttleIntentPrompts: false,
   // this rewdraws every mouse event which produces too many frames for slow Tor
-  showMousePosition: !process.env.TORBB && true, 
+  //showMousePosition: !process.env.TORBB && true, 
+  showMousePosition: true, 
   debugConnect: false,
   debugCommandResponses: false,
   dataDebug: false,
@@ -210,7 +211,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
+  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,

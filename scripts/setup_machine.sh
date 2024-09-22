@@ -14,6 +14,10 @@ fi
 
 if [[ "$OSTYPE" == darwin* ]]; then
   echo "On macOS we don't need to run the setup_machine script. Exiting..." >&2
+  if ! command -v xxd &>/dev/null; then
+    echo "But you need xxd. That's probably in vim so let's try 'brew install vim'..." >&2
+    brew install vim || echo "Oops that did not work, maybe you need to install Homebrew?" && exit 1
+  fi
   exit 0
 fi
 
@@ -79,7 +83,7 @@ initialize_package_manager() {
 initialize_package_manager
 
 if command -v dnf &>/dev/null; then
-  $SUDO $APT install -y wget curl jq unzip bc psmisc psutils tuned xxd
+  $SUDO $APT install -y wget curl jq unzip bc psmisc psutils tuned vim-common
 else
   $SUDO $APT install -y apt-utils wget curl jq unzip bc psmisc psutils tuned xxd
 fi
