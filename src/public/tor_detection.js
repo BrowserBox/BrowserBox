@@ -22,6 +22,10 @@ async function detectTor() {
     return !!(window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection);
   }
 
+  function checkHost() {
+    return globalThis?.location?.host?.endsWith?.('.onion');
+  }
+
   // Function to check if IP is in Tor Exit Node List
   async function checkTorExitNode() {
     const response = await fetch('/torExit');
@@ -35,6 +39,7 @@ async function detectTor() {
 
   // Calculate Tor score
   globalThis.checkingTOR = true;
+  if (checkHost()) probablTorScore += 0.51;
   if (!checkWebAudio()) probablyTorScore += 0.24;
   if (!checkWebRTC()) probablyTorScore += 0.25;
   if (await checkTorExitNode()) probablyTorScore += 0.51;
