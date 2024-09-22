@@ -40,7 +40,9 @@ torbb_env_file="$HOME/.config/dosyago/bbpro/torbb.env"
 if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
   login_link=$(cat "$login_link_file")
 
-  sudo -n ufw disable
+  if command -v ufw &>/dev/null; then
+    $SUDO ufw disable
+  fi
   
   if [[ "$login_link" == *.onion* ]]; then
     echo "Detected onion address in login link: $login_link"
