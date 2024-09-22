@@ -6,10 +6,10 @@ if command -v sudo &>/dev/null; then
 fi
 
 if ! $SUDO true &>/dev/null; then
-  echo "Config script $0 requires passwordless sudo permissions." >&2
+  echo "Config script non-interactive.sh called by $0 requires passwordless sudo permissions." >&2
   echo "please run with such." >&2
-  echo "exiting..." >&2
-  exit 1
+  echo "returning to caller..." >&2
+  return 1
 fi
 
 export NEEDRESTART_MODE=a
