@@ -6,10 +6,38 @@ TOR_INSTALLED=false
 SUDO=""
 TORRC=""
 TORDIR=""
+TOR_GROUP=""
 torsslcerts="tor-sslcerts"
 
 if command -v sudo &>/dev/null; then
   SUDO="sudo -n"
+fi
+
+#!/bin/bash
+
+# Set the correct Tor group based on the OS (you can adjust this based on your script's logic)
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  if [ -f /etc/debian_version ]; then
+    TOR_GROUP="debian-tor"
+  elif [ -f /etc/centos-release ] || [ -f /etc/redhat-release ]; then
+    TOR_GROUP="toranon"
+  elif [ -f /etc/arch-release ]; then
+    TOR_GROUP="tor"
+  fi
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+  TOR_GROUP="tor"
+else
+  echo "Unsupported OS" >&2
+  exit 1
+fi
+
+# Check if the user is in the Tor group
+if id -nG "$USER" | grep -qw "$TOR_GROUP"; then
+  echo "User $USER is in the correct Tor group ($TOR_GROUP)." >&2
+else
+  echo "Error: User $USER is not in the $TOR_GROUP group." >&2
+  echo "Please run 'sudo setup_tor $USER' to configure Tor for this user." >&2
+  exit 1
 fi
 
 initialize_package_manager() {
@@ -25,11 +53,11 @@ initialize_package_manager() {
   elif command -v dnf >/dev/null; then
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
   else
-    echo "No supported package manager found. Exiting."
+    echo "No supported package manager found. Exiting." >&2
     return 1
   fi
 
-  echo "Using package manager: $package_manager"
+  echo "Using package manager: $package_manager" >&2
   export APT=$package_manager
 }
 
@@ -152,7 +180,7 @@ detect_os() {
 
 # Function to add Tor repository and install Tor for Debian/Ubuntu
 add_tor_repository_debian() {
-  echo "Adding Tor repository for Debian/Ubuntu..."
+  echo "Adding Tor repository for Debian/Ubuntu..." >&2
   sudo apt-get update
   sudo apt-get install -y apt-transport-https gpg
   wget -qO- https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --import
@@ -179,6 +207,33 @@ install_tor() {
       TOR_INSTALLED=true
       ;;
   esac
+}
+
+# Function to add hidden service via Control Port
+add_hidden_service_via_control_port() {
+  local service_port="$1"
+  local tor_control_port=9051
+  local tor_cookie_file="/var/lib/tor/control_auth_cookie"
+
+  # Read the authentication cookie
+  local tor_cookie_hex=$(xxd -p "$tor_cookie_file")
+
+  # Build the control port command
+  local control_command=$(printf 'AUTHENTICATE %s\r\nADD_ONION NEW:ED25519-V3 Port=443,127.0.0.1:%s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_port")
+
+  # Send the command and capture the response
+  local response=$(echo -e "$control_command" | nc localhost $tor_control_port)
+
+  # Extract the Onion address from the response
+  local onion_address=$(echo "$response" | grep '^250-ServiceID=' | cut -d'=' -f2)
+
+  if [[ -z "$onion_address" ]]; then
+    echo "Failed to obtain Onion address for port $service_port." >&2
+    echo "Response: $response" >&2
+    exit 1
+  fi
+
+  echo "$onion_address"
 }
 
 wait_for_hostnames() {
@@ -336,9 +391,28 @@ manage_firewall() {
   echo "Ensuring any other bbpro $USER was running is shutdown..." >&2
   ensure_shutdown &>/dev/null
 
-  find_torrc_path
-  [[ $TOR_INSTALLED == true ]] && configure_and_export_tor
   manage_firewall
+
+  base_port=$((APP_PORT - 2))
+  echo "Setting up tor hidden services via Control Port..." >&2
+
+  for i in {0..4}; do
+    service_port=$((base_port + i))
+    onion_address=$(add_hidden_service_via_control_port "$service_port")
+    export "ADDR_$service_port=$onion_address"
+
+    echo "Onion address for port $service_port: $onion_address" >&2
+
+    # Generate TLS certificates for the onion address
+    local cert_dir="$HOME/${torsslcerts}/${onion_address}"
+    setup_mkcert
+    mkdir -p "${cert_dir}"
+    if ! mkcert -cert-file "${cert_dir}/fullchain.pem" -key-file "${cert_dir}/privkey.pem" "$onion_address" &>/dev/null; then
+      echo "mkcert failed for $onion_address" >&2
+      echo "mkcert needs to work. exiting..." >&2
+      exit 1
+    fi
+  done
 
   cert_root=$(find_mkcert_root_ca)
 
@@ -350,7 +424,6 @@ export TORCA_CERT_ROOT="${cert_root}"
 export SSLCERTS_DIR="${torsslcerts}"
 
 EOF
-  base_port=$((APP_PORT - 2))
   for i in {0..4}; do
     service_port=$((base_port + i))
     ref="ADDR_$service_port"
@@ -366,14 +439,12 @@ EOF
     exit 1
   fi
   echo "Started!" >&2
-} >&2 # Redirect all output to stderr except for onion address export
+} >&2
 
 ref="ADDR_${APP_PORT}"
 cert_file="$HOME/${torsslcerts}/${!ref}/fullchain.pem"
-sans=$(openssl x509 -in "$cert_file" -noout -text | grep -A1 "Subject Alternative Name" | tail -n1 | sed 's/DNS://g; s/, /\n/g' | head -n1 | awk '{$1=$1};1')
-DOMAIN=$(echo "$sans" | awk '{print $1}')
+DOMAIN="${!ref}"
 
-# We don't need a port for the TOR link because we've already mapped 1 onion to 1 service port
 LOGIN_LINK="https://${DOMAIN}/login?token=${LOGIN_TOKEN}"
 echo "$LOGIN_LINK" > "${CONFIG_DIR}/login.link"
 echo "Login link for Tor hidden service BB instance:" >&2

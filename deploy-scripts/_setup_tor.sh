@@ -21,6 +21,7 @@ TORDIR=""
 TOR_GROUP="tor"
 TOR_USER=""
 RESTART_TOR=false
+COOKIE_AUTH_FILE="/var/lib/tor/control_auth_cookie"
 
 # Function to detect the operating system
 detect_os() {
@@ -60,11 +61,13 @@ find_torrc_path() {
     fi
     local prefix
     prefix=$(brew --prefix tor)
-    TORRC="$prefix/etc/tor/torrc"
-    TORDIR="$prefix/var/lib/tor"
+    TORRC="${prefix}/etc/tor/torrc"
+    TORDIR="${prefix}/var/lib/tor"
+    COOKIE_AUTH_FILE="${prefix}/var/lib/tor/control_auth_cookie"
   else
     TORRC="/etc/tor/torrc"
     TORDIR="/var/lib/tor"
+    COOKIE_AUTH_FILE="/var/lib/tor/control_auth_cookie"
   fi
 
   # Ensure torrc exists
@@ -90,6 +93,7 @@ configure_torrc() {
   local control_port_configured=false
   local cookie_auth_configured=false
   local cookie_auth_group_readable_configured=false
+  local cookie_auth_file_configured=false
 
   # Check if ControlPort is configured
   if grep -qE '^\s*ControlPort\s+9051' "$TORRC"; then
@@ -104,6 +108,11 @@ configure_torrc() {
   # Check if CookieAuthFileGroupReadable is enabled
   if grep -qE '^\s*CookieAuthFileGroupReadable\s+1' "$TORRC"; then
     cookie_auth_group_readable_configured=true
+  fi
+
+  # Check if CookieAuthFile is explicitly set
+  if grep -qE "^\s*CookieAuthFile\s+$COOKIE_AUTH_FILE" "$TORRC"; then
+    cookie_auth_file_configured=true
   fi
 
   # Update torrc if necessary
@@ -122,6 +131,12 @@ configure_torrc() {
   if ! $cookie_auth_group_readable_configured; then
     echo "Setting CookieAuthFileGroupReadable in torrc..."
     echo "CookieAuthFileGroupReadable 1" >> "$TORRC"
+    torrc_modified=true
+  fi
+
+  if ! $cookie_auth_file_configured; then
+    echo "Setting CookieAuthFile in torrc..."
+    echo "CookieAuthFile $COOKIE_AUTH_FILE" >> "$TORRC"
     torrc_modified=true
   fi
 
