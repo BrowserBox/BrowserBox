@@ -1,4 +1,4 @@
-import {untilTrue} from './voodoo/src/common.js';
+import {untilTrueOrTimeout, untilTrue} from './voodoo/src/common.js';
 
 checkLoad();
 
