@@ -92,7 +92,7 @@
     "cookie-parser": "latest",
     "cors": "latest",
     "entities": "latest",
-    "esbuild": "0.23.1",
+    "esbuild": "0.24.0",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "latest",
