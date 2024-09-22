@@ -69,6 +69,8 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
       # Send the command to the Tor control port
       echo -e "$control_command" | nc localhost "$control_port"
     done
+    rm -f "$torbb_env_file"
+    rm -f "$login_link_file"
   else
     echo "No onion address detected in login link."
   fi
