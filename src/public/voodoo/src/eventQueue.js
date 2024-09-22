@@ -665,7 +665,7 @@
                   DEBUG.cnx && console.log(`received webrtc signal data from socket`, copeer);
                   const {signal} = copeer;
                   untilTrue(() => !!peer).then(async () => {
-                    if ( isSafari() && deviceIsMobile() ) {
+                    if ( isSafari() && deviceIsMobile() && ! globalThis.comingFromTOR ) {
                       if ( !state.safariWebRTCPermsRequestStarted ) {
                         let resolve;
                         let reject;
@@ -696,7 +696,7 @@
                             // Skip the pre-request explainer
                             DEBUG.debugSafariWebRTC && console.log(`We already have permissions, no need to explain a request!`);
                           } else {
-                            if ( deviceIsMobile() ) {
+                            if ( deviceIsMobile() && ! globalThis.comingFromTOR ) {
                               state.micAccessNotAlwaysAllowed  = true;
                               await showExplainer();
                             } else {
@@ -704,7 +704,7 @@
                             }
                           }
                           try {
-                            if ( deviceIsMobile() ) {
+                            if ( deviceIsMobile() && ! globalThis.comingFromTOR ) {
                               state.micStream = await navigator.mediaDevices.getUserMedia({audio: { echoCancellation: { ideal : false }}});
                             } else {
                               //await navigator.mediaDevices.getUserMedia({audio: true});
@@ -736,7 +736,7 @@
                           }
                         }, 30);
                       });
-                    } else {
+                    } else if ( hasWebRTC() ) {
                       peer.signal(signal);  
                       setTimeout(async () => {
                         if ( await globalThis.setupAudio() && deviceIsMobile() ) {
@@ -1330,6 +1330,10 @@
     }
   }
 
+  function hasWebRTC() {
+    return !!(window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection);
+  }
+
   async function showExplainer() {
     state.viewState.modalComponent.openModal({modal:{
       type:'notice',
@@ -1549,7 +1553,8 @@
   async function tconfirm(msg, connected, state) {
     if ( ! connected ) {
       if ( globalThis.purchaseClicked ) return;
-      if ( state?.wipeIsInProgress ) return;
+      if ( state?.wipeIsInProgress || globalThis.wipeIsInProgress ) return;
+      if ( globalThis.comingFromTOR ) return;
       if ( CONFIG.isCT ) {
         alert(`Your session expired. Close this message to return to your dashboard.`);
         try {

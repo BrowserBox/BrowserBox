@@ -71,6 +71,18 @@ $SUDO cp $INSTALL_DIR/deploy-scripts/_torbb.sh $COMMAND_DIR/torbb
 
 echo "Copied!"
 
+echo -n "Copying setup_tor command to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/_setup_tor.sh $COMMAND_DIR/setup_tor
+
+echo "Copied!"
+
+echo -n "Copying non-interactive.sh config to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/non-interactive.sh $COMMAND_DIR/
+
+echo "Copied!"
+
 echo -n "Copying monitoring commands to $COMMAND_DIR/ ..."
 
 $SUDO cp $INSTALL_DIR/monitor-scripts/* $COMMAND_DIR/

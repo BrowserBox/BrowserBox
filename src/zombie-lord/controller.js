@@ -129,7 +129,8 @@ const controller_api = {
               }
               if ( frameBuffer ) {
                 Frames.push(...frameBuffer);
-                while ( Frames.length > MAX_FRAMES ) {
+                const mf = MAX_FRAMES();
+                while ( Frames.length > mf ) {
                   Frames.shift();
                 }
               }
@@ -161,10 +162,10 @@ const controller_api = {
 
             const avgRoundtrip = ack.timeSum / ack.times.length;
             DEBUG.debugAdaptiveImagery && console.log(`Average roundtrip time: ${avgRoundtrip}ms, actual: ${roundtripTime}ms`);
-            if ( avgRoundtrip > MAX_ROUNDTRIP /*|| roundtripTime > MAX_ROUNDTRIP */ ) {
+            if ( avgRoundtrip > MAX_ROUNDTRIP() /*|| roundtripTime > MAX_ROUNDTRIP() */ ) {
               bandwidthIssue = true;
               goLowRes(connection);
-            } else if ( avgRoundtrip < MIN_ROUNDTRIP /*|| roundtripTime < MIN_SPOT_ROUNDTRIP */) {
+            } else if ( avgRoundtrip < MIN_ROUNDTRIP() /*|| roundtripTime < MIN_SPOT_ROUNDTRIP() */) {
               bandwidthIssue = false;
               goHighRes(connection);
             }
@@ -204,7 +205,7 @@ const controller_api = {
               ack.count = 0;
               ack.buffer.length = 0;
             }
-            await sleep(MIN_TIME_BETWEEN_SHOTS);
+            await sleep(MIN_TIME_BETWEEN_SHOTS());
           }
 
           ack.sending = false;

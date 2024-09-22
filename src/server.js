@@ -169,7 +169,8 @@
           }
           if ( frameBuffer ) {
             Frames.push(...frameBuffer);
-            while(Frames.length > MAX_FRAMES) Frames.shift();
+            const mf = MAX_FRAMES();
+            while(Frames.length > mf) Frames.shift();
           }
           State.totalBandwidth = totalBandwidth;
         } else {

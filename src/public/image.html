@@ -19,7 +19,8 @@
     <link rel=stylesheet href=splash/styles.css>
     <script src=load_local_cookie.js></script>
     <!-- sw loader should not be a module, otherwise it will come in async which will make it weird -->
-    <script src=register_sw.js?v10></script>
+    <script src=register_sw.js?v10.1></script>
+    <script src=tor_detection.js?v1></script>
   </head>
   <body>
     <div tabindex=-1 id=debugBox></div>
@@ -29,7 +30,7 @@
       <script src=splash-load.js></script>
     </div>
     <script src=simplepeer.min.js?latestv10></script>
-    <script type=module src=check_load.js></script>
+    <script type=module src=check_load.js?v10></script>
     <script type=module src=save_tor_params.js?v10></script>
     <script type=module src=resize_helper.js?v10></script>
     <script type=module src=error_catchers.js?v10></script>

@@ -160,7 +160,7 @@
         "'self'",
         "https://localhost:*",
         "https://*.dosyago.com:*",
-        "https://*.browserbox.pro:*",
+        "https://browse.cloudtabs.net:*",
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port}`]}:*`, // main service (for data: urls seemingly)
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
@@ -173,7 +173,7 @@
         "'self'",
         "https://localhost:*",
         "https://link.local:*",
-        "https://*.browserbox.pro:*",
+        "https://browse.cloudtabs.net:*",
         "https://*.dosyago.com:*",
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
@@ -189,9 +189,9 @@
         "wss://link.local:*",
         `https://*.dosyago.com:${server_port-1}`,
         `https://*.dosyago.com:${server_port+1}`,
-        "https://*.browserbox.pro:*",
+        "https://browse.cloudtabs.net:*",
         "https://browse.cloudtabs.net",
-        "wss://*.browserbox.pro:*",
+        "wss://browse.cloudtabs.net:*",
         `https://localhost:${server_port-1}`,
         `https://localhost:${server_port+1}`,
         `https://link.local:${server_port-1}`,
@@ -207,7 +207,9 @@
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
-        ])
+        ]),
+        // for checking if access via TOR
+        "https://check.torproject.org/"
       ],
       fontSrc: [
         "'self'", 
@@ -225,7 +227,7 @@
         "'self'", 
         "'unsafe-eval'",
         "'unsafe-inline'",
-        "https://*.browserbox.pro:*",
+        "https://browse.cloudtabs.net:*",
         "https://*.dosyago.com:*"
       ],
       scriptSrcAttr: [
@@ -234,7 +236,7 @@
       ],
       frameAncestors: [
         "'self'",
-        "https://*.browserbox.pro:*",
+        "https://browse.cloudtabs.net:*",
         "https://*.dosyago.com:*",
         ...ALLOWED_3RD_PARTY_EMBEDDERS
       ],
@@ -834,7 +836,7 @@
             channelConfig: {
               ordered: true,
               maxRetransmits: 0,
-              /*maxPacketLifeTime: MIN_TIME_BETWEEN_SHOTS*/
+              /*maxPacketLifeTime: MIN_TIME_BETWEEN_SHOTS()*/
             }
           });
           DEBUG.debugConnect && console.log(`Check 5`);
@@ -1023,6 +1025,30 @@
           }
           res.end(JSON.stringify(data));
         });
+        app.get(`/torExit`, wrap(async (req, res) => {
+          res.type('json');
+          const data = {};
+          let error;
+
+          let clientIP = req.ip || req.connection.remoteAddress;
+
+          clientIP = clientIP.replace('::ffff:', '');
+            
+          try {
+            const torExitList = await fetch('https://check.torproject.org/torbulkexitlist').then(r => r.text());
+            const torExitSet = new Set(
+              torExitList
+                .split(/\n/g)
+                .map(line => line.trim())
+                .filter(line => line.length)
+            );
+            data.status = torExitSet.has(clientIP) ? 'tor-exit' : 'non-tor-exit';
+          } catch(error) {
+            data.error = error;
+          }
+
+          res.end(JSON.stringify(data));
+        }));
         app.get(`/isSubscriber`, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});

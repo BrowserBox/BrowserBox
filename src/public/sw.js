@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v10.0.7';
+const CACHE_VERSION = 'v10.0.8';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'etag-cache-' + CACHE_VERSION;
 const DEBUG = globalThis.SW_DEBUG || false;
@@ -20,6 +20,7 @@ const excludedPaths = new Set([
   "/sw.js",
   "/image.html",
   "/isTor",
+  "/torExit",
   "/torca/rootCA.pem", "/settings_modal", "/restart_app", 
   "/stop_app", "/stop_browser", "/start_browser", "/integrity"
 ]);

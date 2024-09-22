@@ -1,11 +1,14 @@
 //import {CWebp} from 'cwebp';
-import {DEBUG, sleep, CONFIG} from '../common.js';
+import {DEBUG, sleep, CONFIG, scratchState} from '../common.js';
 
+const slowOrTORConnection = () => {
+  return process.env.TORBB || scratchState.connectFromTOR || scratchState.slowConnection;
+};
 const FORMAT = "jpeg"; // "png"
-const MIN_JPG_QUAL = process.env.TORBB ? 25 : 5;
-const MAX_JPG_QUAL = process.env.TORBB ? 75 : 80;
-const MAX_NTH_FRAME = process.env.TORBB ? 17 : 8;
-export const JPEG_QUAL = MAX_JPG_QUAL;
+const MIN_JPG_QUAL = () => slowOrTORConnection() ? 25 : 5;
+const MAX_JPG_QUAL = () => slowOrTORConnection() ? 75 : 80;
+const MAX_NTH_FRAME = () => slowOrTORConnection() ? 17 : 8;
+export const JPEG_QUAL = () => MAX_JPG_QUAL();
 export const MAX_ACK_BUFFER = 3;
 export const COMMON_FORMAT = Object.freeze({
   width: 1920,
@@ -20,7 +23,7 @@ export const DEVICE_FEATURES = {
 };
 export const SCREEN_OPTS = {
   format: FORMAT,
-  quality: JPEG_QUAL,
+  quality: JPEG_QUAL(),
   maxWidth: COMMON_FORMAT.width,
   maxHeight: COMMON_FORMAT.height,
   everyNthFrame: COMMON_FORMAT.everyNth,
@@ -35,18 +38,18 @@ const getScreenshotViewport = () => ({
 export const MIN_WIDTH = 300;
 export const MIN_HEIGHT = 300;
 export const WEBP_QUAL = 32;
-export const JPEG_WEBP_QUAL = MAX_JPG_QUAL;
+export const JPEG_WEBP_QUAL = MAX_JPG_QUAL();
 // these can be tuned UP on better bandwidth and DOWN on lower bandwidth
 export const ACK_COUNT = process.platform == 'darwin' ? 1 : 2; // how many frames per ack? this should be adapted per link capacity
-export const MAX_FRAMES = process.env.TORBB ? 1 : 2; /* 1, 2, 4 */
-export const MIN_TIME_BETWEEN_SHOTS = process.env.TORBB ? 100 : 40; /* 20, 40, 100, 250, 500 */
-export const MIN_TIME_BETWEEN_TAIL_SHOTS = process.env.TORBB ? 1000 : 175;
+export const MAX_FRAMES = () => slowOrTORConnection() ? 1 : 2; /* 1, 2, 4 */
+export const MIN_TIME_BETWEEN_SHOTS = () => slowOrTORConnection() ? 100 : 40; /* 20, 40, 100, 250, 500 */
+export const MIN_TIME_BETWEEN_TAIL_SHOTS = () => slowOrTORConnection() ? 1000 : 175;
 export const MAX_TIME_BETWEEN_TAIL_SHOTS = 4000;
 export const MAX_TIME_TO_WAIT_FOR_SCREENSHOT = 100;
 // local testing values so small haha
-export const MAX_ROUNDTRIP = DEBUG.localTestRTT ? 100 : process.env.TORBB ? 4000 : 725;
-export const MIN_ROUNDTRIP = DEBUG.localTestRTT ? 80 : process.env.TORBB ? 2000 : 600;
-export const MIN_SPOT_ROUNDTRIP = process.env.TORBB ? 600 : 125;
+export const MAX_ROUNDTRIP = () =>  DEBUG.localTestRTT ? 100 : slowOrTORConnection() ? 4000 : 725;
+export const MIN_ROUNDTRIP = () => DEBUG.localTestRTT ? 80 : slowOrTORConnection() ? 2000 : 600;
+export const MIN_SPOT_ROUNDTRIP = () => slowOrTORConnection() ? 600 : 125;
 export const BUF_SEND_TIMEOUT = 50;
 const NOIMAGE = {img: '', frame:0};
 const KEYS = [
@@ -204,20 +207,20 @@ export function makeCamera(connection) {
   }
 
   async function shrinkImagery() {
-    if ( SCREEN_OPTS.everyNthFrame >= MAX_NTH_FRAME && SCREEN_OPTS.quality <= MIN_JPG_QUAL ) {
+    if ( SCREEN_OPTS.everyNthFrame >= MAX_NTH_FRAME() && SCREEN_OPTS.quality <= MIN_JPG_QUAL() ) {
       // we don't go any lower
       return;
     }
     SAFARI_SHOT.command.params.quality -= 20;
     SCREEN_OPTS.quality -= 20;
-    if ( SAFARI_SHOT.command.params.quality < MIN_JPG_QUAL ) {
-      SAFARI_SHOT.command.params.quality = MIN_JPG_QUAL;
+    if ( SAFARI_SHOT.command.params.quality < MIN_JPG_QUAL() ) {
+      SAFARI_SHOT.command.params.quality = MIN_JPG_QUAL();
     }
-    if ( SCREEN_OPTS.quality < MIN_JPG_QUAL ) {
-      SCREEN_OPTS.quality = MIN_JPG_QUAL;
+    if ( SCREEN_OPTS.quality < MIN_JPG_QUAL() ) {
+      SCREEN_OPTS.quality = MIN_JPG_QUAL();
       SCREEN_OPTS.everyNthFrame += 2;
-      if ( SCREEN_OPTS.everyNthFrame > MAX_NTH_FRAME ) {
-        SCREEN_OPTS.everyNthFrame = MAX_NTH_FRAME;
+      if ( SCREEN_OPTS.everyNthFrame > MAX_NTH_FRAME() ) {
+        SCREEN_OPTS.everyNthFrame = MAX_NTH_FRAME();
       }
       DEBUG.debugAdaptiveImagery && console.log(`Will only send every ${SCREEN_OPTS.everyNthFrame}th frame`);
     }
@@ -228,22 +231,22 @@ export function makeCamera(connection) {
   }
 
   async function growImagery() {
-    if ( SCREEN_OPTS.quality >= MAX_JPG_QUAL ) {
+    if ( SCREEN_OPTS.quality >= MAX_JPG_QUAL() ) {
       // we don't go any higher
       return;
     }
 
     SAFARI_SHOT.command.params.quality = 80;
     SCREEN_OPTS.quality = 80;
-    if ( SAFARI_SHOT.command.params.quality > MAX_JPG_QUAL ) {
-      SAFARI_SHOT.command.params.quality = MAX_JPG_QUAL;
+    if ( SAFARI_SHOT.command.params.quality > MAX_JPG_QUAL() ) {
+      SAFARI_SHOT.command.params.quality = MAX_JPG_QUAL();
     }
     if ( SCREEN_OPTS.everyNthFrame != 1 ) {
       SCREEN_OPTS.everyNthFrame = 1;
       DEBUG.debugAdaptiveImagery && console.log(`Will now send every ${SCREEN_OPTS.everyNthFrame}th frame`);
     }
-    if ( SCREEN_OPTS.quality > MAX_JPG_QUAL ) {
-      SCREEN_OPTS.quality = MAX_JPG_QUAL;
+    if ( SCREEN_OPTS.quality > MAX_JPG_QUAL() ) {
+      SCREEN_OPTS.quality = MAX_JPG_QUAL();
     }
     if ( DEBUG.debugAdaptiveImagery ) {
       console.log(`Growing JPEG quality to ${SAFARI_SHOT.command.params.quality}`);
@@ -268,7 +271,7 @@ export function makeCamera(connection) {
     if ( DEBUG.noShot ) return NOIMAGE;
     const timeNow = Date.now();
     const dur = timeNow - lastShot;
-    if ( !opts.ignoreHash && dur < MIN_TIME_BETWEEN_SHOTS ) {
+    if ( !opts.ignoreHash && dur < MIN_TIME_BETWEEN_SHOTS() ) {
       if ( DEBUG.shotDebug && DEBUG.val > DEBUG.low ) {
         console.log(`Dropping as duration (${dur}) too short.`);
       }
@@ -401,7 +404,8 @@ export function makeCamera(connection) {
         connection.frameBuffer.push(F);
       }
 
-      while ( connection.frameBuffer.length > MAX_FRAMES ) {
+      const mf = MAX_FRAMES();
+      while ( connection.frameBuffer.length > mf ) {
         connection.frameBuffer.shift();
       }
     }
@@ -421,7 +425,7 @@ export function makeCamera(connection) {
       saveShot(opts),
       sleep(MAX_TIME_TO_WAIT_FOR_SCREENSHOT)
     ]);
-    nextShot = setTimeout(() => nextShot = false, MIN_TIME_BETWEEN_SHOTS);
+    nextShot = setTimeout(() => nextShot = false, MIN_TIME_BETWEEN_SHOTS());
     shooting = false;
   }
 }
