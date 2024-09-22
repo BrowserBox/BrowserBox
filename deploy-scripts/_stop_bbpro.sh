@@ -3,6 +3,10 @@
 source ~/.nvm/nvm.sh
 TORDIR="/var/lib/tor"
 
+if command -v sudo &>/dev/null; then
+  SUDO="sudo -n"
+fi
+
 if [[ "$OSTYPE" == darwin* ]]; then
   TORDIR="$(brew --prefix)/var/lib/tor"
 fi
@@ -35,6 +39,8 @@ torbb_env_file="$HOME/.config/dosyago/bbpro/torbb.env"
 
 if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
   login_link=$(cat "$login_link_file")
+
+  sudo -n ufw disable
   
   if [[ "$login_link" == *.onion* ]]; then
     echo "Detected onion address in login link: $login_link"
