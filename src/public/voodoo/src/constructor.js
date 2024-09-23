@@ -927,16 +927,11 @@
               setupAudioIframe();
             }
             async function setupAudioElement(type = 'audio/wav') {
-              const bb = document.querySelector('bb-view');
-              if ( !bb?.shadowRoot ) {
-                await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot, 1000, 600);
-              }
-              Root = document.querySelector('bb-view').shadowRoot;
+              await untilTrueOrTimeout(() => document.querySelector('bb-view')?.shadowRoot?.querySelector?.('video#audio'), 75);
               Root = document.querySelector('bb-view').shadowRoot;
               const audio = Root.querySelector('video#audio');
-              //const source = document.createElement('source');
               setAudioSource(AUDIO);
-              DEBUG.debugAudio && console.log({'audio?': audio});
+              DEBUG.debugAudio && console.log({'audio?': audio, AUDIO});
               let existingTimer = null;
               let waiting = false;
               if ( audio ) {
