@@ -3,10 +3,10 @@
   "optimizers": {
     "*.js": [
       /*"@rbf/parcel-optimizer-javascript-obfuscator", "..."*/
-      "@parcel/optimizer-terser"
+      /*"@parcel/optimizer-terser"*/
     ],
     "*.css": [
-      "@parcel/optimizer-cssnano"
+      /*"@parcel/optimizer-cssnano"*/
     ]
   },
   "resolvers": ["parcel-resolver-ignore", "..."],
