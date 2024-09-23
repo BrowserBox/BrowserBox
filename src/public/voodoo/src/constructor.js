@@ -127,7 +127,7 @@
         const useCookies = !CONFIG.isOnion && (await document?.hasStorageAccess?.()) && ! CONFIG.openServicesInCloudTabs;
 
       // state
-        let isConnected = true;
+        let _isConnected = true;
 
       // constants
         const closed = new Set();
