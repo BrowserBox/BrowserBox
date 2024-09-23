@@ -49,9 +49,9 @@ function saveTorParams() {
           let keepChecking = true;
           while(keepChecking) {
             await sleep(1000);
-            await fetch(audioURI, OPTS).catch(() => console.info(`Audio not activated yet`)).then(r => {
+            await fetch(audioURI, OPTS).then(r => {
               keepChecking = false; 
-            });
+            }).catch(() => console.info(`Audio not activated yet`));
           }
           ref?.close?.();
           location.reload();
