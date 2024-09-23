@@ -269,7 +269,8 @@ if ( process.env.TORBB ) {
     if ( token == TOKEN || cookie == COOKIE ) {
       if ( activateOnly && activateOnly != 'false' ) {
         // do not start a wav process if we are just activating
-        return response.sendStatus(200);
+        response.type('text/html');
+        return response.status(200).send(`<!DOCTYPE html><script>setTimeout(() => window.close(), 500);</script>`);
       }
       var contentType = encoders[encoderType].contentType;
       DEBUG.val && console.log('  setting Content-Type to', contentType);
