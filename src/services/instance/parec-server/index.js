@@ -262,30 +262,6 @@ app.use((req,res,next) => {
   next();
 });
 
-app.get('/login', (req, res) => {
-  res.type('html');
-  const {token} = req.query; 
-  const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
-  let loggedIn = false;
-  if ( token == TOKEN ) {
-    res.cookie(COOKIENAME+PORT, COOKIE, COOKIE_OPTS);
-    loggedIn = true;
-  } else if ( cookie == COOKIE ) {
-    loggedIn = true;
-  }
-  if ( loggedIn ) {
-    res.end(`
-      <!DOCTYPE html>
-      <script src=request_audio.js></script>
-    `);
-  } else {
-    res.end(`
-      <!DOCTYPE html>
-      <script src=request_login.js></script>
-    `);
-  }
-});
-
 if ( process.env.TORBB ) {
   app.get('/', wrap(async (request, response) => {
     const {token} = request.query; 
@@ -332,6 +308,46 @@ if ( process.env.TORBB ) {
       response.sendStatus(401);
     }
   }));
+  app.get('/login', (req, res) => {
+    const {token} = req.query; 
+    const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
+    let loggedIn = false;
+    if ( token == TOKEN ) {
+      res.cookie(COOKIENAME+PORT, COOKIE, COOKIE_OPTS);
+      loggedIn = true;
+    } else if ( cookie == COOKIE ) {
+      loggedIn = true;
+    }
+    if ( loggedIn ) {
+      res.redirect('/');
+    } else {
+      res.sendStatus(401);
+    }
+  });
+} else {
+  app.get('/login', (req, res) => {
+    res.type('html');
+    const {token} = req.query; 
+    const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
+    let loggedIn = false;
+    if ( token == TOKEN ) {
+      res.cookie(COOKIENAME+PORT, COOKIE, COOKIE_OPTS);
+      loggedIn = true;
+    } else if ( cookie == COOKIE ) {
+      loggedIn = true;
+    }
+    if ( loggedIn ) {
+      res.end(`
+        <!DOCTYPE html>
+        <script src=request_audio.js></script>
+      `);
+    } else {
+      res.end(`
+        <!DOCTYPE html>
+        <script src=request_login.js></script>
+      `);
+    }
+  });
 }
 
 const server = MODE.createServer(SSL_OPTS, app);
