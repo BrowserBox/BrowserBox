@@ -319,7 +319,7 @@ if ( process.env.TORBB ) {
       loggedIn = true;
     }
     if ( loggedIn ) {
-      res.redirect('/');
+      res.redirect(`/?token=${encodeURIComponent(TOKEN)}`);
     } else {
       res.sendStatus(401);
     }
