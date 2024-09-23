@@ -99,7 +99,7 @@ export const DEBUG = Object.freeze({
   debugAudioAck: false,
   debugFastest: false,
   get useStraightAudioStream() {
-    return globalThis?.location?.host?.endsWith?.('.onion') || false;
+    return globalThis?.location?.host?.endsWith?.('.onion') || globalThis.comingFromTOR || ! globalThis.AudioContext || false;
   },
   enableAudioElements: true,
   get includeAudioElementAnyway() {

@@ -68,7 +68,7 @@
   <bb-modals bond=${el => viewState.modalComponent = el} state=bbpro class="${viewState.currentModal ? 'open' : ''}"></bb-modals>
 </main>
 ${DEBUG.useStraightAudioStream ? 
-  CONFIG.isOnion ? 
+  CONFIG.isOnion || globalThis.comingFromTOR || !globalThis.AudioContext ? 
     F`<video muted autoplay preload=auto id=audio playsinline src="${audio_login_url}"></video>` 
       :
     F`<video muted autoplay preload=auto id=audio playsinline></video>` 
