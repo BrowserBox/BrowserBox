@@ -353,6 +353,56 @@ if ( process.env.TORBB ) {
       `);
     }
   });
+  app.get('/', wrap(async (request, response) => {
+    const {token, activateOnly} = request.query; 
+    const cookie = request.cookies[COOKIENAME+PORT] || request.headers['x-browserbox-local-auth'] || request.query['localCookie'];
+    if ( token == TOKEN || cookie == COOKIE ) {
+      if ( activateOnly && activateOnly != 'false' ) {
+        // do not start a wav process if we are just activating
+        response.type('text/html');
+        return response.status(200).send(`<!DOCTYPE html><script>setTimeout(() => window.close(), 500);</script>`);
+      }
+      var contentType = encoders[encoderType].contentType;
+      DEBUG.val && console.log('  setting Content-Type to', contentType);
+
+      response.writeHead(200, {
+        'Connection': 'keep-alive',
+        'Content-Type': contentType
+      });
+
+      const enc = await getEncoder();
+      let unpipe;
+
+      if ( enc?.stdout ) {
+        DEBUG.val  && console.log('Setting encoder stdout to pipe');
+        enc.stdout.pipe(response);
+        unpipe = () => enc.stdout.unpipe(resopnse);
+      } else if ( enc?.pipe ) {
+        DEBUG.val  && console.log('Setting encoder to pipe');
+        enc.pipe(response);
+        unpipe = () => enc.unpipe(response);
+      } else {
+        console.warn(`Encoder has no stdout or pipe properties`);
+      }
+
+      exitOnEpipe(response);
+     
+      request.on('close', function() {
+        DEBUG.val && console.log('Request closing');
+        try {
+          unpipe();
+          if ( process.env.TORBB ) {
+            killEncoder(enc);
+          }
+        } catch(e) {
+          console.warn(`Error on unpipe at end of request / resopnse`);
+        }
+        response.end();
+      });
+    } else {
+      response.sendStatus(401);
+    }
+  }));
 }
 
 const server = MODE.createServer(SSL_OPTS, app);
