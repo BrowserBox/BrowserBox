@@ -9,6 +9,7 @@ if ( ! token() ) {
     location.reload();
   }
 } else {
-  globalThis._sessionToken = () => token;
+  globalThis._sessionToken = () => token();
+  localStorage.setItem('sessionToken', token());
   s.src = `/local_cookie.js?token=${token()}`;
 }
