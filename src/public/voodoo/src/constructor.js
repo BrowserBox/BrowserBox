@@ -15,6 +15,7 @@
     import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
     import {saveClick} from './subviews/controls.js';
     import {
+      COMMON,
       untilTrue,
       untilHuman,
       untilTrueOrTimeout,
@@ -124,6 +125,9 @@
         const sessionToken = globalThis._sessionToken();
         location.hash = '';
         const useCookies = !CONFIG.isOnion && (await document?.hasStorageAccess?.()) && ! CONFIG.openServicesInCloudTabs;
+
+      // state
+        let isConnected = true;
 
       // constants
         const closed = new Set();
@@ -243,6 +247,15 @@
           totalBytesThisSecond: 0,
           totalBandwidth: 0,
           frameBandwidth: [],
+          get connected() {
+            return _isConnected;
+          },
+          set connected(val) {
+            _isConnected = val;
+            if ( ! val ) {
+              COMMON.delayUnload = false;
+            }
+          },
 
           // demo mode
           demoMode,

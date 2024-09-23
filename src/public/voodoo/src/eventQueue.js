@@ -458,6 +458,7 @@
             socket.binaryType = "blob";
             connecting = socket;
             socket.onopen = () => {
+              this.publics.state.connected = true;
               privates.socket = socket;
               DEBUG.cnx && console.log(`WebSocket open`);
               Senders = {so,sa};
@@ -988,6 +989,7 @@
               }
             };
             socket.onclose = async (e) => {
+              this.publics.state.connected = false;
               DEBUG.cnx && console.log(`WebSocket closed. Server going down?`);
               this.websockets.delete(url);
               privates.socket = null;
@@ -1014,11 +1016,13 @@
               resolve(false);
             };
             socket.onerror = async (e) => {
+              this.publics.state.connected = false;
               socket.onerror = null;
               (DEBUG.cnx || DEBUG.debugConnect) && console.warn("WebSocket error", e);
               socket.close();
             };
           } catch(e) {
+            this.publics.state.connected = false;
             this.websockets.delete(url);
             this.senders = null;
             connecting = false;
