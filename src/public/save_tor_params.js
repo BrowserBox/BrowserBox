@@ -37,7 +37,15 @@ function saveTorParams() {
       fetch(audioURI, OPTS).catch(async err => {
         const getAudio = confirm(`Would you like to active audio?\n\nIf you want to, hit OK, and allow the audio window to open. You will see a security error on that popup relating to the self-signed HTTPS certificates we use.\n\nIf you want to enable audio, you need to click "Advanced" and "Accept the Risk and Continue".\n\nOnce you have done that, we will close that window and reload this page to activate audio.\n\nWant to proceed to activate audio?`);
         if ( getAudio ) {
-          const ref = window.open(audioURI); 
+          let ref = window.open(audioURI); 
+          if ( ! ref ) {
+            document.addEventListener('click', () => {
+              ref = window.open(audioURI);
+            }, {once: true});
+            alert('Oops, popup was blocked. Please close this message, then click the page to open the popup again.');
+          } else {
+            console.info(`Popup successfully opening`);
+          }
           let keepChecking = true;
           while(keepChecking) {
             await sleep(1000);
@@ -45,7 +53,7 @@ function saveTorParams() {
               keepChecking = false; 
             });
           }
-          ref.close();
+          ref?.close?.();
           location.reload();
         } else {
           console.info(`Proceeding without audio.`);
