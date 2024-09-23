@@ -943,11 +943,12 @@
             }
 
             async function setupAudioElement(type = 'audio/wav') {
+              let audio;
               try {
                 DEBUG.debugAudio && console.log({AUDIO, status:'waiting for audio element'});
                 await untilTrueOrTimeout(() => document.querySelector('bb-view')?.shadowRoot?.querySelector?.('video#audio'), 75);
                 Root = document.querySelector('bb-view').shadowRoot;
-                const audio = Root.querySelector('video#audio');
+                audio = Root.querySelector('video#audio');
                 setAudioSource(AUDIO);
                 DEBUG.debugAudio && console.log({'status': 'tried setting audio source', 'audio?': audio, AUDIO});
                 let existingTimer = null;
