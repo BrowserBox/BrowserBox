@@ -69,7 +69,7 @@ function saveTorParams() {
           } else {
             alert(`Audio is activated. Please close this message and we will reload your page so audio will now work with your remote browser.\n\nAlso, sorry we could not close that popup window automatically. It's safe to close yourself.`);
           }
-          COMMON?.delayUnload = false;
+          COMMON.delayUnload = false;
           location.reload();
         } else {
           console.info(`Proceeding without audio.`);
