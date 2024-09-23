@@ -1,4 +1,4 @@
-import {CONFIG} from './voodoo/src/common.js';
+import {COMMON, CONFIG} from './voodoo/src/common.js';
 
 // Note
   // some services (audio and devtools) require the client to know their URL in order to connect. 
@@ -34,13 +34,14 @@ function saveTorParams() {
       // pre fetch to warm up cache in case they open it
       const OPTS = { method: "GET", mode: "no-cors" };
       const audioURI = `${location.protocol}//${z.x}/?token=${encodeURIComponent(token)}`;
-      fetch(audioURI, OPTS).catch(async err => {
+      const activateOnly = audioURI + '&activateOnly=true';
+      fetch(activateOnly, OPTS).catch(async err => {
         const getAudio = confirm(`Would you like to active audio?\n\nIf you want to, hit OK, and allow the audio window to open. You will see a security error on that popup relating to the self-signed HTTPS certificates we use.\n\nIf you want to enable audio, you need to click "Advanced" and "Accept the Risk and Continue".\n\nOnce you have done that, we will close that window and reload this page to activate audio.\n\nWant to proceed to activate audio?`);
         if ( getAudio ) {
-          let ref = window.open(audioURI); 
+          let ref = window.open(activateOnly); 
           if ( ! ref ) {
             document.addEventListener('click', () => {
-              ref = window.open(audioURI);
+              ref = window.open(activateOnly);
             }, {once: true});
             alert('Oops, popup was blocked. Please close this message, then click the page to open the popup again.');
           } else {
@@ -54,6 +55,7 @@ function saveTorParams() {
             }).catch(() => console.info(`Audio not activated yet`));
           }
           ref?.close?.();
+          alert(`Audio is activated. Please close this message and we will reload your page so audio will now work with your remote browser.`);
           location.reload();
         } else {
           console.info(`Proceeding without audio.`);

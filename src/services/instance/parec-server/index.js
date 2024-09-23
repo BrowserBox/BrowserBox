@@ -264,9 +264,13 @@ app.use((req,res,next) => {
 
 if ( process.env.TORBB ) {
   app.get('/', wrap(async (request, response) => {
-    const {token} = request.query; 
+    const {token, activateOnly} = request.query; 
     const cookie = request.cookies[COOKIENAME+PORT] || request.headers['x-browserbox-local-auth'] || request.query['localCookie'];
     if ( token == TOKEN || cookie == COOKIE ) {
+      if ( activateOnly && activateOnly != 'false' ) {
+        // do not start a wav process if we are just activating
+        return response.sendStatus(200);
+      }
       var contentType = encoders[encoderType].contentType;
       DEBUG.val && console.log('  setting Content-Type to', contentType);
 
@@ -309,7 +313,7 @@ if ( process.env.TORBB ) {
     }
   }));
   app.get('/login', (req, res) => {
-    const {token} = req.query; 
+    const {token, activateOnly} = req.query; 
     const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
     let loggedIn = false;
     if ( token == TOKEN ) {
@@ -319,7 +323,7 @@ if ( process.env.TORBB ) {
       loggedIn = true;
     }
     if ( loggedIn ) {
-      res.redirect(`/?token=${encodeURIComponent(TOKEN)}`);
+      res.redirect(`/?token=${encodeURIComponent(TOKEN)}&activateOnly=${ activateOnly ? activateOnly : 'false'}`);
     } else {
       res.sendStatus(401);
     }
