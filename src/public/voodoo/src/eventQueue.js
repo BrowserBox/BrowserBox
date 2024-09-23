@@ -743,6 +743,8 @@
                           DEBUG.showAudioInstructions && setTimeout(() => alert('Tap the screen to unmute.'), 100);
                         }
                       }, 30);
+                    } else {
+                      globalThis.setupAudio();
                     }
                   });
                 }

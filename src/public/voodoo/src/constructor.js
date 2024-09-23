@@ -654,6 +654,7 @@
               AUDIO.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName));
             }
             if ( CONFIG.isOnion ) {
+              AUDIO.searchParams.set('token', globalThis._sessionToken());
               setupAudioElement('audio/wav');
             } else {
               self.addEventListener('message', ({data, origin, source}) => {
