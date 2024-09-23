@@ -1,25 +1,30 @@
 import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    registrations.forEach(registration => {
-      // Extract the version from the scriptURL
-      if ( registration?.active?.scriptURL ) {
-        let url = new URL(registration?.active?.scriptURL);
-        let version = url.searchParams.get('ver');
+  if ( navigator.serviceWorker ) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      registrations.forEach(registration => {
+        // Extract the version from the scriptURL
+        if ( registration?.active?.scriptURL ) {
+          let url = new URL(registration?.active?.scriptURL);
+          let version = url.searchParams.get('ver');
 
-        // Unregister if the version does not match
-        if (version !== VERSION || !CONFIG.useServiceWorkerToCache) {
-          DEBUG.debugSW && console.log('Unregistering', url);
-          registration.unregister().then(bool => {
-            if (bool) {
-              DEBUG.debugSW && console.log('Unregistered an old service worker.');
-              alert(`Your app has been updated and needs to reload.`);
-              location.reload();
-            }
-          });
+          // Unregister if the version does not match
+          if (version !== VERSION || !CONFIG.useServiceWorkerToCache) {
+            DEBUG.debugSW && console.log('Unregistering', url);
+            registration.unregister().then(bool => {
+              if (bool) {
+                DEBUG.debugSW && console.log('Unregistered an old service worker.');
+                alert(`Your app has been updated and needs to reload.`);
+                location.reload();
+              }
+            });
+          }
         }
-      }
+      });
     });
-  });
+  } else {
+    console.info(`No service worker. Will not cache with it.`);
+    return;
+  }
 
   if (DEBUG.mode == 'prod' && CONFIG.useServiceWorkerToCache && 'serviceWorker' in navigator) {
     const S = navigator.serviceWorker;

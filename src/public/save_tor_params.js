@@ -50,13 +50,26 @@ function saveTorParams() {
           let keepChecking = true;
           while(keepChecking) {
             await sleep(1000);
-            await fetch(audioURI, OPTS).then(r => {
+            await fetch(activateOnly, OPTS).then(r => {
               keepChecking = false; 
             }).catch(() => console.info(`Audio not activated yet`));
           }
-          ref?.close?.();
-          alert(`Audio is activated. Please close this message and we will reload your page so audio will now work with your remote browser.`);
-          COMMON.delayUnload = false;
+          let closed = false;
+          try {
+            if ( ref && typeof ref.close == "function" ) {
+              ref.close();
+              await sleep(300);
+              closed = true;
+            }
+          } catch(e) {
+            console.warn(`Error closing popup`, e);
+          }
+          if ( closed ) {
+            alert(`Audio is activated. Please close this message and we will reload your page so audio will now work with your remote browser.`);
+          } else {
+            alert(`Audio is activated. Please close this message and we will reload your page so audio will now work with your remote browser.\n\nAlso, sorry we could not close that popup window automatically. It's safe to close yourself.`);
+          }
+          COMMON?.delayUnload = false;
           location.reload();
         } else {
           console.info(`Proceeding without audio.`);

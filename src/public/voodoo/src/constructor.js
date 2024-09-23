@@ -715,6 +715,7 @@
                                 try {
                                   DEBUG.debugAudio && console.log(`Trying to play...`);
                                   await audio.play();
+                                  audio.playing = true;
                                   send("ack");
                                 } catch(err) {
                                   DEBUG.debugAudio && console.info(`Could not yet play audio`, err);
@@ -954,9 +955,10 @@
                 if ( audio ) {
                   //audio.append(source);
                   // Event listener for when audio is successfully loaded
-                  audio.addEventListener('loadeddata', () => {
+                  audio.addEventListener('loadeddata', async () => {
                     console.log('Audio loaded');
-                    audio.play();
+                    await audio.play();
+                    audio.playing = true;
                   });
 
                   audio.addEventListener('playing', () => {
@@ -993,6 +995,7 @@
                       audio.muted = false;
                       audio.removeAttribute('muted');
                     }
+                    await sleep(1000);
                     if ( !audio.playing ) {
                       try {
                         startAudioStream();
@@ -1005,15 +1008,15 @@
                       }
                     }
                     if ( CONFIG.removeAudioStartHandlersAfterFirstStart /*|| CONFIG.isOnion */ ) {
-                      Root.removeEventListener('pointerdown', activateAudio);
-                      Root.removeEventListener('touchend', activateAudio);
+                      document.removeEventListener('pointerdown', activateAudio);
+                      document.removeEventListener('touchend', activateAudio);
                       DEBUG.debugAudio && console.log('Removed audio start handlers');
                     }
                   };
-                  Root.addEventListener('pointerdown', activateAudio);
-                  Root.addEventListener('touchend', activateAudio);
-                  Root.addEventListener('click', activateAudio, {once: CONFIG.onlyStartAudioBeginSoundOnce });
-                  DEBUG.debugAudio && console.log('added handlers', Root, audio);
+                  document.addEventListener('pointerdown', activateAudio);
+                  document.addEventListener('touchend', activateAudio);
+                  document.addEventListener('click', activateAudio, {once: CONFIG.onlyStartAudioBeginSoundOnce });
+                  DEBUG.debugAudio && console.log('added handlers', document, audio);
 
                   async function startAudioStream() {
                     setAudioSource(AUDIO);

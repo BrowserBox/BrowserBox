@@ -69,9 +69,9 @@
 </main>
 ${DEBUG.useStraightAudioStream ? 
   CONFIG.isOnion ? 
-    F`<video autoplay preload=auto id=audio playsinline src="${audio_login_url}"></video>` 
+    F`<video muted autoplay preload=auto id=audio playsinline src="${audio_login_url}"></video>` 
       :
-    F`<video autoplay preload=auto id=audio playsinline></video>` 
+    F`<video muted autoplay preload=auto id=audio playsinline></video>` 
   : 
   DEBUG.includeAudioElementAnyway ? 
     F`<video autoplay preload=auto loop id=audio playsinline></video>` 
