@@ -15,7 +15,7 @@ saveTorParams();
 function saveTorParams() {
   const uri = new URL(location); 
   const zVal = uri.searchParams.get('z');
-  const token = uri.hash.slice(1);
+  const token = uri.hash.slice(1) || uri.searchParams.get('token') || localStorage.getItem('sessionToken');
   if ( ! zVal && ! token ) {
     // no tor params
     return;
