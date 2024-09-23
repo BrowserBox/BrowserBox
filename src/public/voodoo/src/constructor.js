@@ -666,7 +666,7 @@
               // simply logging in to the audio stream using a token every time, avoiding any need for cookies
               AUDIO.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName));
             }
-            if ( CONFIG.isOnion ) {
+            if ( CONFIG.isOnion || globalThis.comingFromTOR || ! globalThis.AudioContext ) {
               AUDIO.searchParams.set('token', globalThis._sessionToken());
               setupAudioElement('audio/wav');
             } else {
@@ -688,7 +688,7 @@
                       }
                       const frame = Root.querySelector('iframe#audio-login');
                       frame?.remove();
-                      if ( DEBUG.useStraightAudioStream ) {
+                      if ( DEBUG.useStraightAudioStream || globalThis.comingFromTOR || !globalThis.AudioContext ) {
                         setupAudioElement('audio/wav');
                       } else {
                         let activateAudio;
