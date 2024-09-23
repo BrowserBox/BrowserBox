@@ -287,7 +287,7 @@ app.get('/login', (req, res) => {
 });
 
 if ( process.env.TORBB ) {
-  app.get('/', async (request, response) => {
+  app.get('/', wrap(async (request, response) => {
     const {token} = request.query; 
     const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
     if ( token == TOKEN || cookie == COOKIE ) {
@@ -331,7 +331,7 @@ if ( process.env.TORBB ) {
     } else {
       response.sendStatus(401);
     }
-  });
+  }));
 }
 
 const server = MODE.createServer(SSL_OPTS, app);
@@ -340,7 +340,7 @@ const socketWaveStreamer = new WebSocketServer({
   perMessageDeflate: false,
 });
 
-socketWaveStreamer.on('connection',  async (ws, req) => {
+socketWaveStreamer.on('connection',  wrap(async (ws, req) => {
   cookieParser()(req, {}, () => console.log('cookie parsed'));
   let query;
   try {
@@ -485,7 +485,7 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
   } catch(e) {
     console.warn(e);
   }
-});
+}));
 
 server.on('connection', function(socket) {
   sockets.add(socket);
@@ -847,4 +847,23 @@ function isPrime(n) {
   }
 
   return true;
+}
+
+function wrap(fn) {
+  return async function handler(...args) {
+    let next;
+    if ( typeof args[2] == "function" ) {
+      next = args[2];
+    }
+    try {
+      await fn(...args);
+    } catch(e) {
+      console.warn(`caught error in ${fn}`, e, args);
+      if ( next ) {
+        next(e);
+      } else {
+        console.warn(`Error in wrapped async handler. If this was a http request, next was also undefined or not a function`, e);
+      }
+    }
+  }
 }
