@@ -289,7 +289,7 @@ app.get('/login', (req, res) => {
 if ( process.env.TORBB ) {
   app.get('/', wrap(async (request, response) => {
     const {token} = request.query; 
-    const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
+    const cookie = request.cookies[COOKIENAME+PORT] || request.headers['x-browserbox-local-auth'] || request.query['localCookie'];
     if ( token == TOKEN || cookie == COOKIE ) {
       var contentType = encoders[encoderType].contentType;
       DEBUG.val && console.log('  setting Content-Type to', contentType);
