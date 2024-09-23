@@ -21,8 +21,7 @@ function saveTorParams() {
     return;
   }
 
-  alert(token);
-  console.log(uri.hash.slice(1), uri.searchParams.get('token'), localStorage.getItem('sessionToken'));
+  //console.log(uri.hash.slice(1), uri.searchParams.get('token'), localStorage.getItem('sessionToken'));
 
   if ( zVal ) {
     const z = JSON.parse(atob(decodeURIComponent(zVal)));
