@@ -237,6 +237,9 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
           "'self'", 
           "'unsafe-eval'",
           "'sha256-ktnwD9kIpbxpOmbTg7NUsKRlpicCv8bryYhIbiRDFaQ='",
+          ...(process.env.TORBB ? [
+            "'unsafe-inline'"
+          ] : [])
         ],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
