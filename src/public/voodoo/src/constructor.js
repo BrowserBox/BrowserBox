@@ -15,6 +15,7 @@
     import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
     import {saveClick} from './subviews/controls.js';
     import {
+      COMMON,
       untilTrue,
       untilHuman,
       untilTrueOrTimeout,
@@ -124,6 +125,9 @@
         const sessionToken = globalThis._sessionToken();
         location.hash = '';
         const useCookies = !CONFIG.isOnion && (await document?.hasStorageAccess?.()) && ! CONFIG.openServicesInCloudTabs;
+
+      // state
+        let _isConnected = true;
 
       // constants
         const closed = new Set();
@@ -243,6 +247,15 @@
           totalBytesThisSecond: 0,
           totalBandwidth: 0,
           frameBandwidth: [],
+          get connected() {
+            return _isConnected;
+          },
+          set connected(val) {
+            _isConnected = val;
+            if ( ! val ) {
+              COMMON.delayUnload = false;
+            }
+          },
 
           // demo mode
           demoMode,
@@ -653,7 +666,8 @@
               // simply logging in to the audio stream using a token every time, avoiding any need for cookies
               AUDIO.searchParams.set('token', localStorage.getItem(CONFIG.sessionTokenFileName));
             }
-            if ( CONFIG.isOnion ) {
+            if ( CONFIG.isOnion || globalThis.comingFromTOR || ! globalThis.AudioContext ) {
+              AUDIO.searchParams.set('token', globalThis._sessionToken());
               setupAudioElement('audio/wav');
             } else {
               self.addEventListener('message', ({data, origin, source}) => {
@@ -674,7 +688,7 @@
                       }
                       const frame = Root.querySelector('iframe#audio-login');
                       frame?.remove();
-                      if ( DEBUG.useStraightAudioStream ) {
+                      if ( DEBUG.useStraightAudioStream || globalThis.comingFromTOR || !globalThis.AudioContext ) {
                         setupAudioElement('audio/wav');
                       } else {
                         let activateAudio;
@@ -701,6 +715,7 @@
                                 try {
                                   DEBUG.debugAudio && console.log(`Trying to play...`);
                                   await audio.play();
+                                  audio.playing = true;
                                   send("ack");
                                 } catch(err) {
                                   DEBUG.debugAudio && console.info(`Could not yet play audio`, err);
@@ -926,88 +941,92 @@
               });
               setupAudioIframe();
             }
+
             async function setupAudioElement(type = 'audio/wav') {
-              const bb = document.querySelector('bb-view');
-              if ( !bb?.shadowRoot ) {
-                await untilTrue(() => !!document.querySelector('bb-view')?.shadowRoot, 1000, 600);
-              }
-              Root = document.querySelector('bb-view').shadowRoot;
-              Root = document.querySelector('bb-view').shadowRoot;
-              const audio = Root.querySelector('video#audio');
-              //const source = document.createElement('source');
-              setAudioSource(AUDIO);
-              DEBUG.debugAudio && console.log({'audio?': audio});
-              let existingTimer = null;
-              let waiting = false;
-              if ( audio ) {
-                //audio.append(source);
-                // Event listener for when audio is successfully loaded
-                audio.addEventListener('loadeddata', () => {
-                  console.log('Audio loaded');
-                  audio.play();
-                });
+              let audio;
+              try {
+                DEBUG.debugAudio && console.log({AUDIO, status:'waiting for audio element'});
+                await untilTrueOrTimeout(() => document.querySelector('bb-view')?.shadowRoot?.querySelector?.('video#audio'), 75);
+                Root = document.querySelector('bb-view').shadowRoot;
+                audio = Root.querySelector('video#audio');
+                setAudioSource(AUDIO);
+                DEBUG.debugAudio && console.log({'status': 'tried setting audio source', 'audio?': audio, AUDIO});
+                let existingTimer = null;
+                let waiting = false;
+                if ( audio ) {
+                  //audio.append(source);
+                  // Event listener for when audio is successfully loaded
+                  audio.addEventListener('loadeddata', async () => {
+                    console.log('Audio loaded');
+                    await audio.play();
+                    audio.playing = true;
+                  });
 
-                audio.addEventListener('playing', () => {
-                  audio.playing = true;
-                  audio.hasError = false;
-                });
-                // Event listener for playing state
-                audio.addEventListener('play', () => {
-                  audio.playing = true;
-                  audio.hasError = false;
-                  console.log('Audio playing');
-                });
+                  audio.addEventListener('playing', () => {
+                    audio.playing = true;
+                    audio.hasError = false;
+                  });
+                  // Event listener for playing state
+                  audio.addEventListener('play', () => {
+                    audio.playing = true;
+                    audio.hasError = false;
+                    console.log('Audio playing');
+                  });
 
-                audio.addEventListener('waiting', () => audio.playing = false);
-                audio.addEventListener('ended', () => {
-                  audio.playing = false;
-                  DEBUG.debugAudio && console.log(`Audio stream ended`);
-                  existingTimer = setTimeout(startAudioStream, 100);
-                });
-                audio.addEventListener('error', err => {
-                  audio.playing = false;
-                  audio.hasError = true;
-                  DEBUG.debugAudio && console.log(`Audio stream errored`, err);
-                });
-                // Event listener for pause state
-                audio.addEventListener('pause', () => {
-                  audio.playing = false;
-                  console.log('Audio paused');
-                });
+                  audio.addEventListener('waiting', () => audio.playing = false);
+                  audio.addEventListener('ended', () => {
+                    audio.playing = false;
+                    DEBUG.debugAudio && console.log(`Audio stream ended`);
+                    existingTimer = setTimeout(startAudioStream, 100);
+                  });
+                  audio.addEventListener('error', err => {
+                    audio.playing = false;
+                    audio.hasError = true;
+                    DEBUG.debugAudio && console.log(`Audio stream errored`, err);
+                  });
+                  // Event listener for pause state
+                  audio.addEventListener('pause', () => {
+                    audio.playing = false;
+                    console.log('Audio paused');
+                  });
 
-                const activateAudio = async () => {
-                  DEBUG.debugAudio && console.log('called activate audio');
-                  if ( audio.muted || audio.hasAttribute('muted') ) {
-                    audio.muted = false;
-                    audio.removeAttribute('muted');
-                  }
-                  if ( !audio.playing ) {
-                    try {
-                      startAudioStream();
-                      //send("ack");
-                    } catch(err) {
-                      DEBUG.debugAudio && console.info(`Could not yet play audio`, err); 
-                      DEBUG.debugAudio && console.error(err + '');
-                      DEBUG.debugAudio && console.error(err);
-                      return;
+                  const activateAudio = async () => {
+                    DEBUG.debugAudio && console.log('called activate audio');
+                    if ( audio.muted || audio.hasAttribute('muted') ) {
+                      audio.muted = false;
+                      audio.removeAttribute('muted');
                     }
-                  }
-                  if ( CONFIG.removeAudioStartHandlersAfterFirstStart /*|| CONFIG.isOnion */ ) {
-                    Root.removeEventListener('pointerdown', activateAudio);
-                    Root.removeEventListener('touchend', activateAudio);
-                    DEBUG.debugAudio && console.log('Removed audio start handlers');
-                  }
-                };
-                Root.addEventListener('pointerdown', activateAudio);
-                Root.addEventListener('touchend', activateAudio);
-                Root.addEventListener('click', activateAudio, {once: CONFIG.onlyStartAudioBeginSoundOnce });
-                DEBUG.debugAudio && console.log('added handlers', Root, audio);
+                    await sleep(1000);
+                    if ( !audio.playing ) {
+                      try {
+                        startAudioStream();
+                        //send("ack");
+                      } catch(err) {
+                        DEBUG.debugAudio && console.info(`Could not yet play audio`, err); 
+                        DEBUG.debugAudio && console.error(err + '');
+                        DEBUG.debugAudio && console.error(err);
+                        return;
+                      }
+                    }
+                    if ( CONFIG.removeAudioStartHandlersAfterFirstStart /*|| CONFIG.isOnion */ ) {
+                      document.removeEventListener('pointerdown', activateAudio);
+                      document.removeEventListener('touchend', activateAudio);
+                      DEBUG.debugAudio && console.log('Removed audio start handlers');
+                    }
+                  };
+                  document.addEventListener('pointerdown', activateAudio);
+                  document.addEventListener('touchend', activateAudio);
+                  document.addEventListener('click', activateAudio, {once: CONFIG.onlyStartAudioBeginSoundOnce });
+                  DEBUG.debugAudio && console.log('added handlers', document, audio);
 
-                async function startAudioStream() {
-                  setAudioSource(AUDIO);
+                  async function startAudioStream() {
+                    setAudioSource(AUDIO);
+                  }
+                } else {
+                  console.warn(`Audio element 'video#audio' not found inside:`, Root);
                 }
-              } else {
-                console.warn(`Audio element 'video#audio' not found inside:`, Root);
+              } catch(e) {
+                console.error(`Issue setting up audio element`, e, AUDIO, audio);
               }
 
               function setAudioSource(src) {

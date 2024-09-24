@@ -237,6 +237,9 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
           "'self'", 
           "'unsafe-eval'",
           "'sha256-ktnwD9kIpbxpOmbTg7NUsKRlpicCv8bryYhIbiRDFaQ='",
+          ...(process.env.TORBB ? [
+            "'unsafe-inline'"
+          ] : [])
         ],
         objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
@@ -262,35 +265,16 @@ app.use((req,res,next) => {
   next();
 });
 
-app.get('/login', (req, res) => {
-  res.type('html');
-  const {token} = req.query; 
-  const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
-  let loggedIn = false;
-  if ( token == TOKEN ) {
-    res.cookie(COOKIENAME+PORT, COOKIE, COOKIE_OPTS);
-    loggedIn = true;
-  } else if ( cookie == COOKIE ) {
-    loggedIn = true;
-  }
-  if ( loggedIn ) {
-    res.end(`
-      <!DOCTYPE html>
-      <script src=request_audio.js></script>
-    `);
-  } else {
-    res.end(`
-      <!DOCTYPE html>
-      <script src=request_login.js></script>
-    `);
-  }
-});
-
 if ( process.env.TORBB ) {
-  app.get('/', async (request, response) => {
-    const {token} = request.query; 
-    const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
+  app.get('/', wrap(async (request, response) => {
+    const {token, activateOnly} = request.query; 
+    const cookie = request.cookies[COOKIENAME+PORT] || request.headers['x-browserbox-local-auth'] || request.query['localCookie'];
     if ( token == TOKEN || cookie == COOKIE ) {
+      if ( activateOnly && activateOnly != 'false' ) {
+        // do not start a wav process if we are just activating
+        response.type('text/html');
+        return response.status(200).send(`<!DOCTYPE html><script>setTimeout(() => window.close(), 500);</script>`);
+      }
       var contentType = encoders[encoderType].contentType;
       DEBUG.val && console.log('  setting Content-Type to', contentType);
 
@@ -331,7 +315,97 @@ if ( process.env.TORBB ) {
     } else {
       response.sendStatus(401);
     }
+  }));
+  app.get('/login', (req, res) => {
+    const {token, activateOnly} = req.query; 
+    const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
+    let loggedIn = false;
+    if ( token == TOKEN ) {
+      res.cookie(COOKIENAME+PORT, COOKIE, COOKIE_OPTS);
+      loggedIn = true;
+    } else if ( cookie == COOKIE ) {
+      loggedIn = true;
+    }
+    if ( loggedIn ) {
+      res.redirect(`/?token=${encodeURIComponent(TOKEN)}&activateOnly=${ activateOnly ? activateOnly : 'false'}`);
+    } else {
+      res.sendStatus(401);
+    }
   });
+} else {
+  app.get('/login', (req, res) => {
+    res.type('html');
+    const {token} = req.query; 
+    const cookie = req.cookies[COOKIENAME+PORT] || req.headers['x-browserbox-local-auth'] || req.query['localCookie'];
+    let loggedIn = false;
+    if ( token == TOKEN ) {
+      res.cookie(COOKIENAME+PORT, COOKIE, COOKIE_OPTS);
+      loggedIn = true;
+    } else if ( cookie == COOKIE ) {
+      loggedIn = true;
+    }
+    if ( loggedIn ) {
+      res.end(`
+        <!DOCTYPE html>
+        <script src=request_audio.js></script>
+      `);
+    } else {
+      res.end(`
+        <!DOCTYPE html>
+        <script src=request_login.js></script>
+      `);
+    }
+  });
+  app.get('/', wrap(async (request, response) => {
+    const {token, activateOnly} = request.query; 
+    const cookie = request.cookies[COOKIENAME+PORT] || request.headers['x-browserbox-local-auth'] || request.query['localCookie'];
+    if ( token == TOKEN || cookie == COOKIE ) {
+      if ( activateOnly && activateOnly != 'false' ) {
+        // do not start a wav process if we are just activating
+        response.type('text/html');
+        return response.status(200).send(`<!DOCTYPE html><script>setTimeout(() => window.close(), 500);</script>`);
+      }
+      var contentType = encoders[encoderType].contentType;
+      DEBUG.val && console.log('  setting Content-Type to', contentType);
+
+      response.writeHead(200, {
+        'Connection': 'keep-alive',
+        'Content-Type': contentType
+      });
+
+      const enc = await getEncoder();
+      let unpipe;
+
+      if ( enc?.stdout ) {
+        DEBUG.val  && console.log('Setting encoder stdout to pipe');
+        enc.stdout.pipe(response);
+        unpipe = () => enc.stdout.unpipe(resopnse);
+      } else if ( enc?.pipe ) {
+        DEBUG.val  && console.log('Setting encoder to pipe');
+        enc.pipe(response);
+        unpipe = () => enc.unpipe(response);
+      } else {
+        console.warn(`Encoder has no stdout or pipe properties`);
+      }
+
+      exitOnEpipe(response);
+     
+      request.on('close', function() {
+        DEBUG.val && console.log('Request closing');
+        try {
+          unpipe();
+          if ( process.env.TORBB ) {
+            killEncoder(enc);
+          }
+        } catch(e) {
+          console.warn(`Error on unpipe at end of request / resopnse`);
+        }
+        response.end();
+      });
+    } else {
+      response.sendStatus(401);
+    }
+  }));
 }
 
 const server = MODE.createServer(SSL_OPTS, app);
@@ -340,7 +414,7 @@ const socketWaveStreamer = new WebSocketServer({
   perMessageDeflate: false,
 });
 
-socketWaveStreamer.on('connection',  async (ws, req) => {
+socketWaveStreamer.on('connection',  wrap(async (ws, req) => {
   cookieParser()(req, {}, () => console.log('cookie parsed'));
   let query;
   try {
@@ -485,7 +559,7 @@ socketWaveStreamer.on('connection',  async (ws, req) => {
   } catch(e) {
     console.warn(e);
   }
-});
+}));
 
 server.on('connection', function(socket) {
   sockets.add(socket);
@@ -849,4 +923,23 @@ function isPrime(n) {
   }
 
   return true;
+}
+
+function wrap(fn) {
+  return async function handler(...args) {
+    let next;
+    if ( typeof args[2] == "function" ) {
+      next = args[2];
+    }
+    try {
+      await fn(...args);
+    } catch(e) {
+      console.warn(`caught error in ${fn}`, e, args);
+      if ( next ) {
+        next(e);
+      } else {
+        console.warn(`Error in wrapped async handler. If this was a http request, next was also undefined or not a function`, e);
+      }
+    }
+  }
 }

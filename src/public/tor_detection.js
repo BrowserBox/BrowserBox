@@ -39,8 +39,8 @@ async function detectTor() {
 
   // Calculate Tor score
   globalThis.checkingTOR = true;
-  if (checkHost()) probablTorScore += 0.51;
-  if (!checkWebAudio()) probablyTorScore += 0.24;
+  if (checkHost()) probablyTorScore += 0.51;
+  if (!checkWebAudio()) probablyTorScore += 0.51;
   if (!checkWebRTC()) probablyTorScore += 0.25;
   if (await checkTorExitNode()) probablyTorScore += 0.51;
 

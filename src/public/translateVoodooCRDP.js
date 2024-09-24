@@ -35,7 +35,7 @@ export function clearModifiers() {
 function keyEvent(e, SYNTHETIC = false, straight = false) {
   // Use the existing or passed key definitions
   const def = straight ? e :
-    e.key.length == 1 ? keys[e.key] : keys[e.code];
+    e.key.length == 1 ? keys[e.key] : (keys[e.code] || keys[e.key]);
 
   if ( ! def ) {
     console.warn(new Error(`Unknown key:${ e.key }`), e); 
