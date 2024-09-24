@@ -14,9 +14,9 @@ const USE_INPUT_MODE = true;
 // for bang
 const audio_port = Number(CONFIG.mainPort ? CONFIG.mainPort : ( location.protocol == 'https' ? 443 : 80 ) ) - 2;
 export const audio_login_url = CONFIG.isOnion ? 
-  `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}/login` 
+  `${location.protocol}//${localStorage.getItem(CONFIG.audioServiceFileName)}/login?token=${encodeURIComponent(globalThis._sessionToken())}` 
   : 
-  `${location.protocol}//${location.hostname}:${audio_port}/login`
+  `${location.protocol}//${location.hostname}:${audio_port}/login?token=${encodeURIComponent(globalThis._sessionToken())}` 
 ;
 
 // MIGRATE

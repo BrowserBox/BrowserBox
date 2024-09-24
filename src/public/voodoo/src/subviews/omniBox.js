@@ -57,7 +57,7 @@ export function go(e, state) {
   let url, search;
   let addressValue = address.value;
   try {
-    addressValue = checkAndAppendHTTPS(addressValue);
+    addressValue = checkAndAppendHTTPS(addressValue, state?.isTor);
   } catch(e) {
     console.info(`Error checking for a domain`);
   }
