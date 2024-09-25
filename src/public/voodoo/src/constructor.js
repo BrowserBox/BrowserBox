@@ -1144,7 +1144,7 @@
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 5800), {once:true, capture:true}
+              () => setTimeout(() => location.reload(), 3121), {once:true, capture:true}
             );
           });
           queue.addMetaListener('deleteExtension', ({removeExtension})  => {
@@ -1159,7 +1159,7 @@
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 5800), {once:true, capture:true}
+              () => setTimeout(() => location.reload(), 3371), {once:true, capture:true}
             );
           });
 
