@@ -1065,7 +1065,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               console.info(`Will install extension`, Message.installExtension);
               setTimeout(() => {
                 const {id, name} = Message.installExtension;
-                if ( id.match(/[^a-z]/g ) {
+                if ( id.match(/[^a-z]/g) ) {
                   console.warn(`Error`, new Error(`Will not install extension because id is invalid: {id}`), {id, name});
                   return;
                 }
@@ -1075,8 +1075,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                 }
                 
                 const subshell = spawn(
-                  EXTENSION_INSTALL_SCRIPT, 
-                  [name, id]
+                  'sudo',
+                  [EXTENSION_INSTALL_SCRIPT, id]
                 );
                 let stdout;
 
