@@ -1076,8 +1076,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                 
                 connection.forceMeta(Message);
 
-                await sleep(1000);
-
                 const installer = spawn(
                   'sudo',
                   [EXTENSION_INSTALL_SCRIPT, id],
@@ -1090,7 +1088,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                   console.warn(`Could not install extension for some reason`, err);
                   connection.forceMeta({installExtension:{error:"Could not install", err}});
                 });
-              }, 1327);
+              }, 1);
             } 
             connection.forceMeta(Message);
           }

@@ -1139,9 +1139,13 @@
               modal: {
                 type: 'notice',
                 title: 'Chrome Webstore',
-                message: 'Installing your extension now. Please wait while your browser installs and restarts.'
+                message: 'Installing your extension now. Close this message to reload and check progress.'
               }
             });
+            state.viewState.modalComponent.addEventListener(
+              'click', 
+              () => setTimeout(() => location.reload(), 100), {once:true, capture:true}
+            );
           });
 
         // plugins

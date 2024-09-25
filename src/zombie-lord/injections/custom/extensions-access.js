@@ -8,7 +8,7 @@
           const nameParts = document.title.split('-');
           nameParts.pop();
           let name = nameParts.filter(p => p.length).join('-').trim();
-          const installExtension = confirm(`You want to install the extension "${name}" into your CloudTabs browser?\n\nIf you select OK your app will install the extension and restart.`);
+          const installExtension = confirm(`Do you want to install the extension "${name}" into your CloudTabs browser?\n\nIf you select Confirm your app will install the extension and restart.`);
           if ( installExtension ) {
             try {
               const id = location.pathname.split('/').pop();
