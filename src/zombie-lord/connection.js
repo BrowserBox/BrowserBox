@@ -1137,7 +1137,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                   console.warn(`Could not delete extension for some reason`, err);
                   connection.forceMeta({deleteExtension:{error:"Could not delete", err}});
                 });
-              }, 1);
+              }, 2);
             }
             connection.forceMeta(Message);
           }
