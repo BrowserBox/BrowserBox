@@ -25,6 +25,8 @@ import {
   sleep, 
   SECURE_VIEW_SCRIPT, 
   EXTENSION_INSTALL_SCRIPT,
+  EXTENSION_REMOVE_SCRIPT,
+  EXTENSIONS_GET_SCRIPT,
   MAX_TABS, 
   consolelog,
   untilTrue,
