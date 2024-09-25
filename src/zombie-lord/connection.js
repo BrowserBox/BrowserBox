@@ -108,7 +108,7 @@ const pageContextInjectionsScroll = `(function () {
 // save installed extensions 
   const extensionsArray = [];
   try {
-    const ids = execSync(`get-extensions`).toString();
+    const ids = execSync(EXTENSIONS_GET_SCRIPT).toString();
     ids.split(/\s/g).forEach(id => {
       if ( id.length == 32 ) {
         extensionsArray.push(id);
@@ -119,7 +119,7 @@ const pageContextInjectionsScroll = `(function () {
   }
 
   const extensionsInstalled = `{
-    globalThis._installedExtensions = ${JSON.stringify(extensionsArray)};
+    globalThis._installedExtensions = new Set(${JSON.stringify(extensionsArray)});
   };`;
 
 const templatedInjections = {
@@ -1106,7 +1106,35 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                   connection.forceMeta({installExtension:{error:"Could not install", err}});
                 });
               }, 1);
-            } 
+            } else if ( Message.deleteExtension ) {
+              console.info(`Will delete extension`, Message.deleteExtension);
+              setTimeout(async () => {
+                const {id, name} = Message.deleteExtension;
+                if ( id.match(/[^a-z]/g) ) {
+                  console.warn(`Error`, new Error(`Will not delete extension because id is invalid: {id}`), {id, name});
+                  return;
+                }
+                if ( name.match(/[^a-z0-9\-]/g) ) {
+                  console.warn(`Error`, new Error(`Will not delete extension because name is invalid: {name}`), {id, name});
+                  return;
+                }
+                
+                connection.forceMeta(Message);
+
+                const deleter = spawn(
+                  'sudo',
+                  [EXTENSION_REMOVE_SCRIPT, id],
+                  { detached: true, stdio: 'ignore' }
+                );
+
+                deleter.unref();
+
+                deleter.on('error', err => {
+                  console.warn(`Could not delete extension for some reason`, err);
+                  connection.forceMeta({deleteExtension:{error:"Could not delete", err}});
+                });
+              }, 1);
+            }
             connection.forceMeta(Message);
           }
         } catch(e) {
@@ -1632,7 +1660,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               injectionsScroll,
               modeInjectionScroll,
               ...(DEBUG.extensionsAccess ? [
-                extensionsGroups,
+                extensionsInstalled,
                 extensionsAccess,
               ] : [ ]),
             ].join(';\n'),

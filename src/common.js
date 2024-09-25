@@ -397,6 +397,8 @@ export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'non
 
 export const SECURE_VIEW_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 'get_download_view_url.sh');
 export const EXTENSION_INSTALL_SCRIPT = 'add-extension';
+export const EXTENSION_REMOVE_SCRIPT = 'del-extension';
+export const EXTENSIONS_GET_SCRIPT = 'get-extensions';
 
 fs.mkdirSync(CONFIG.baseDir, {recursive: true});
 fs.mkdirSync(SignalNotices, {recursive:true});

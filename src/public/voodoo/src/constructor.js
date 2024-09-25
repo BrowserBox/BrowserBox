@@ -1147,6 +1147,21 @@
               () => setTimeout(() => location.reload(), 100), {once:true, capture:true}
             );
           });
+          queue.addMetaListener('removeExtension', ({removeExtension})  => {
+            COMMON.delayUnload = false;
+            globalThis.purchaseClicked = true;
+            state.viewState.modalComponent.openModal({
+              modal: {
+                type: 'notice',
+                title: 'Chrome Webstore',
+                message: 'Removing your extension now. Close this message to reload and check progress.'
+              }
+            });
+            state.viewState.modalComponent.addEventListener(
+              'click', 
+              () => setTimeout(() => location.reload(), 100), {once:true, capture:true}
+            );
+          });
 
         // plugins
           if ( DEBUG.detectPuterAbility ) {
