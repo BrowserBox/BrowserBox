@@ -1,4 +1,4 @@
-import {spawn} from 'child_process';
+import {spawn, execSync} from 'child_process';
 import fs from 'fs';
 import https from 'https';
 import http from 'http';
@@ -104,6 +104,23 @@ const pageContextInjectionsScroll = `(function () {
   ${botDetectionEvasions}
   ${DEBUG.showMousePosition ? showMousePosition : ''}
 }())`;
+
+// save installed extensions 
+  const extensionsArray = [];
+  try {
+    const ids = execSync(`get-extensions`).toString();
+    ids.split(/\s/g).forEach(id => {
+      if ( id.length == 32 ) {
+        extensionsArray.push(id);
+      }
+    });
+  } catch(e) {
+    console.warn(`Error collecting users installed extensions`, e);
+  }
+
+  const extensionsInstalled = `{
+    globalThis._installedExtensions = ${JSON.stringify(extensionsArray)};
+  };`;
 
 const templatedInjections = {
 };
@@ -1615,6 +1632,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               injectionsScroll,
               modeInjectionScroll,
               ...(DEBUG.extensionsAccess ? [
+                extensionsGroups,
                 extensionsAccess,
               ] : [ ]),
             ].join(';\n'),
