@@ -22,7 +22,10 @@ import {
   NOTICE_SIGNAL,
   APP_ROOT, FLASH_FORMATS, DEBUG, 
   CONFIG,
-  sleep, SECURE_VIEW_SCRIPT, MAX_TABS, 
+  sleep, 
+  SECURE_VIEW_SCRIPT, 
+  EXTENSION_INSTALL_SCRIPT,
+  MAX_TABS, 
   consolelog,
   untilTrue,
   untilTrueOrTimeout,
@@ -1060,6 +1063,42 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             // security: we should check against accept message types here
             if ( Message.installExtension ) {
               console.info(`Will install extension`, Message.installExtension);
+              setTimeout(() => {
+                const {id, name} = Message.installExtension;
+                if ( id.match(/[^a-z]/g ) {
+                  console.warn(`Error`, new Error(`Will not install extension because id is invalid: {id}`), {id, name});
+                  return;
+                }
+                if ( name.match(/[^a-z0-9\-]/g) ) {
+                  console.warn(`Error`, new Error(`Will not install extension because name is invalid: {name}`), {id, name});
+                  return;
+                }
+                
+                const subshell = spawn(
+                  EXTENSION_INSTALL_SCRIPT, 
+                  [name, id]
+                );
+                let stdout;
+
+                // subshell collect data and send once
+                  subshell.stderr.on('data', data => {
+                    console.warn('extension install script err:', data.toString());
+                  });
+                  subshell.stdout.on('data', data => {
+                    stdout += data;
+                    console.log('extension install script data (uri):', uri);
+                  });
+                  subshell.on('error', x => {
+                    console.warn('extension install script error event:', x);
+                  });
+                  subshell.stdout.on('end', completeInstall);
+                  subshell.on('close', completeInstall);
+                  subshell.on('exit', completeInstall);
+
+                function completeInstall(code) {
+                  console.log(`Completeing extension install`, {code});
+                }
+              }, 1);
             }
             connection.forceMeta(Message);
           }
