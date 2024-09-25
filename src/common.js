@@ -396,7 +396,7 @@ export const GO_SECURE = fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
 
 export const SECURE_VIEW_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 'get_download_view_url.sh');
-export const EXTENSION_INSTALL_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 'install_extension.sh');
+export const EXTENSION_INSTALL_SCRIPT = 'add-extension';
 
 fs.mkdirSync(CONFIG.baseDir, {recursive: true});
 fs.mkdirSync(SignalNotices, {recursive:true});
