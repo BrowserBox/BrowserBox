@@ -136,7 +136,7 @@ export const DEBUG = Object.freeze({
   blockList: new Set([
     //"Emulation.setDeviceMetricsOverride",
   ]),
-  adBlock: false,
+  adBlock: true,
   debugAddr: true,
   debugScaledUpCoViewport: false,
   debugInterception: false,
