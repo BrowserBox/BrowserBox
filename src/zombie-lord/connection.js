@@ -1063,7 +1063,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             // security: we should check against accept message types here
             if ( Message.installExtension ) {
               console.info(`Will install extension`, Message.installExtension);
-              setTimeout(() => {
+              setTimeout(async () => {
                 const {id, name} = Message.installExtension;
                 if ( id.match(/[^a-z]/g) ) {
                   console.warn(`Error`, new Error(`Will not install extension because id is invalid: {id}`), {id, name});
@@ -1074,32 +1074,24 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                   return;
                 }
                 
-                const subshell = spawn(
+                connection.forceMeta(Message);
+
+                await sleep(1000);
+
+                const installer = spawn(
                   'sudo',
-                  [EXTENSION_INSTALL_SCRIPT, id]
+                  [EXTENSION_INSTALL_SCRIPT, id],
+                  { detached: true, stdio: 'ignore' }
                 );
-                let stdout;
 
-                // subshell collect data and send once
-                  subshell.stderr.on('data', data => {
-                    console.warn('extension install script err:', data.toString());
-                  });
-                  subshell.stdout.on('data', data => {
-                    stdout += data;
-                    console.log('extension install script data (uri):', uri);
-                  });
-                  subshell.on('error', x => {
-                    console.warn('extension install script error event:', x);
-                  });
-                  subshell.stdout.on('end', completeInstall);
-                  subshell.on('close', completeInstall);
-                  subshell.on('exit', completeInstall);
+                installer.unref();
 
-                function completeInstall(code) {
-                  console.log(`Completeing extension install`, {code});
-                }
-              }, 1);
-            }
+                installer.on('error', err => {
+                  console.warn(`Could not install extension for some reason`, err);
+                  connection.forceMeta({installExtension:{error:"Could not install", err}});
+                });
+              }, 1327);
+            } 
             connection.forceMeta(Message);
           }
         } catch(e) {

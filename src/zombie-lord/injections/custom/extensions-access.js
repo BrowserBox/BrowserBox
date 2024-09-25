@@ -5,7 +5,10 @@
     document.addEventListener('click', event => {
       if ( event.target.closest(INSTALL_BUTTON_SELECTOR) ) {
         setTimeout(() => {
-          const installExtension = confirm('You want to install?');
+          const nameParts = document.title.split('-');
+          nameParts.pop();
+          let name = nameParts.filter(p => p.length).join('-').trim();
+          const installExtension = confirm(`You want to install the extension "${name}" into your CloudTabs browser?\n\nIf you select OK your app will install the extension and restart.`);
           if ( installExtension ) {
             try {
               const id = location.pathname.split('/').pop();
@@ -14,9 +17,7 @@
                 return;
               }
 
-              const nameParts = document.title.split('-');
-              nameParts.pop();
-              let name = nameParts.filter(p => p.length).join('-').trim().replace(/\s/g, '-').toLocaleLowerCase();
+              name = name.replace(/\s/g, '-').toLocaleLowerCase();
               if ( name.match(NOT_ALLOWED_CHAR) ) {
                 name = name.replace(NOT_ALLOWED_CHAR, '');
                 if ( name.length < 3 ) {
