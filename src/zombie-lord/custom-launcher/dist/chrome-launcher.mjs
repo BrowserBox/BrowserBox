@@ -230,7 +230,8 @@ export default class Launcher {
     const port = parseInt(this.port);
     console.log({port});
     let browser;
-    let err;
+    let err = null;
+    // try localhost
     try {
       console.info(`Trying to connect to browser on localhost port ${port}`);
       browser = execSync(`curl -s http://localhost:${port}/json/version`).toString();
@@ -246,6 +247,9 @@ export default class Launcher {
       DEBUG.val && console.info("Browser OK");
       return browser;
     }
+
+    // try 127.0.0.1
+    err = null;
     try {
       console.info(`Trying to connect to browser on 127.0.0.1 port ${port}`);
       browser = execSync(`curl -s http://127.0.0.1:${port}/json/version`).toString();
@@ -261,6 +265,9 @@ export default class Launcher {
       DEBUG.val && console.info("Browser OK");
       return browser;
     }
+
+    // try ::1
+    err = null;
     try {
       console.info(`Trying to connect to browser on ::1 port ${port}`);
       browser = execSync(`curl -s -6 "http://[::1]:${port}/json/version"`).toString();
