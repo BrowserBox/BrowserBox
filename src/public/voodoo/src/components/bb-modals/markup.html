@@ -142,6 +142,11 @@
             :
             F`<!-- link -->`
           }
+          ${otherButton ?
+            Fskip(otherButton)
+            :
+            F`<!-- other button -->`
+          }
           <button type=submit class=ok title=Acknowledge value=ok>OK</button>
         </p>
       </fieldset>
