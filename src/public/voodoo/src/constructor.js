@@ -1147,7 +1147,7 @@
               () => setTimeout(() => location.reload(), 800), {once:true, capture:true}
             );
           });
-          queue.addMetaListener('removeExtension', ({removeExtension})  => {
+          queue.addMetaListener('deleteExtension', ({removeExtension})  => {
             COMMON.delayUnload = false;
             globalThis.purchaseClicked = true;
             state.viewState.modalComponent.openModal({
@@ -1159,7 +1159,7 @@
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 100), {once:true, capture:true}
+              () => setTimeout(() => location.reload(), 800), {once:true, capture:true}
             );
           });
 
