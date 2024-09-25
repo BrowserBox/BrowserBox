@@ -1131,29 +1131,61 @@
           });
           queue.addMetaListener('navigated', meta => resetLoadingIndicator(meta, state));
 
-        // plugins
-        if ( DEBUG.detectPuterAbility ) {
-          queue.addMetaListener('hasPuterAbility', meta => plugins.handlePuterAbility(meta, state));
-          queue.addMetaListener('puterCustomDownload', meta => plugins.handlePuterAbility(meta, state));
-        }
-        queue.addMetaListener('ctCustomDownload', meta => {
-          const {ctCustomDownload} = meta;
-          const {url} = ctCustomDownload;
-          downloadFile(url);
-        });
+        // extensions
+          queue.addMetaListener('installExtension', ({installExtension})  => {
+            COMMON.delayUnload = false;
+            globalThis.purchaseClicked = true;
+            state.viewState.modalComponent.openModal({
+              modal: {
+                type: 'notice',
+                title: 'Chrome Webstore',
+                message: 'Installing your extension now. Close this message to reload and check progress.'
+              }
+            });
+            state.viewState.modalComponent.addEventListener(
+              'click', 
+              () => setTimeout(() => location.reload(), 3121), {once:true, capture:true}
+            );
+          });
+          queue.addMetaListener('deleteExtension', ({removeExtension})  => {
+            COMMON.delayUnload = false;
+            globalThis.purchaseClicked = true;
+            state.viewState.modalComponent.openModal({
+              modal: {
+                type: 'notice',
+                title: 'Chrome Webstore',
+                message: 'Removing your extension now. Close this message to reload and check progress.'
+              }
+            });
+            state.viewState.modalComponent.addEventListener(
+              'click', 
+              () => setTimeout(() => location.reload(), 3371), {once:true, capture:true}
+            );
+          });
 
-        if ( DEBUG.val >= DEBUG.med ) {
-          queue.addMetaListener('vm', meta => console.log(meta));
-          queue.addMetaListener('modal', meta => console.log(meta));
-          queue.addMetaListener('navigated', meta => console.log(meta));
-          queue.addMetaListener('changed', meta => console.log(meta));
-          queue.addMetaListener('created', meta => console.log(meta));
-          queue.addMetaListener('attached', meta => console.log(meta));
-          queue.addMetaListener('detached', meta => console.log(meta));
-          queue.addMetaListener('destroyed', meta => console.log(meta));
-          queue.addMetaListener('crashed', meta => console.log(meta));
-          queue.addMetaListener('consoleMessage', meta => console.log(meta));
-        }
+        // plugins
+          if ( DEBUG.detectPuterAbility ) {
+            queue.addMetaListener('hasPuterAbility', meta => plugins.handlePuterAbility(meta, state));
+            queue.addMetaListener('puterCustomDownload', meta => plugins.handlePuterAbility(meta, state));
+          }
+          queue.addMetaListener('ctCustomDownload', meta => {
+            const {ctCustomDownload} = meta;
+            const {url} = ctCustomDownload;
+            downloadFile(url);
+          });
+
+          if ( DEBUG.val >= DEBUG.med ) {
+            queue.addMetaListener('vm', meta => console.log(meta));
+            queue.addMetaListener('modal', meta => console.log(meta));
+            queue.addMetaListener('navigated', meta => console.log(meta));
+            queue.addMetaListener('changed', meta => console.log(meta));
+            queue.addMetaListener('created', meta => console.log(meta));
+            queue.addMetaListener('attached', meta => console.log(meta));
+            queue.addMetaListener('detached', meta => console.log(meta));
+            queue.addMetaListener('destroyed', meta => console.log(meta));
+            queue.addMetaListener('crashed', meta => console.log(meta));
+            queue.addMetaListener('consoleMessage', meta => console.log(meta));
+          }
 
         // vm
           queue.addMetaListener('vm', ({vm}) => {

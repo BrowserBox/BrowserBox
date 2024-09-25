@@ -1,4 +1,4 @@
-import {spawn} from 'child_process';
+import {spawn, execSync} from 'child_process';
 import fs from 'fs';
 import https from 'https';
 import http from 'http';
@@ -22,7 +22,12 @@ import {
   NOTICE_SIGNAL,
   APP_ROOT, FLASH_FORMATS, DEBUG, 
   CONFIG,
-  sleep, SECURE_VIEW_SCRIPT, MAX_TABS, 
+  sleep, 
+  SECURE_VIEW_SCRIPT, 
+  EXTENSION_INSTALL_SCRIPT,
+  EXTENSION_REMOVE_SCRIPT,
+  EXTENSIONS_GET_SCRIPT,
+  MAX_TABS, 
   consolelog,
   untilTrue,
   untilTrueOrTimeout,
@@ -53,6 +58,9 @@ const showMousePosition = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'in
 const appMinifier = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'appminifier', 'injections.js')).toString();
 const projector = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'projector', 'injections.js')).toString();
 
+// custom injections
+const extensionsAccess = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'custom', 'extensions-access.js')).toString();
+
 // API injection
 const devAPIInjection = [
   'protocol.js',
@@ -82,22 +90,41 @@ if ( process.env?.TOR_PROXY?.startsWith?.('socks') ) {
 const injectionsScroll = `(function () {
   if( !self.zanjInstalled ) {
      {
-       ${[fileInput, favicon, keysCanInputEvents, scrollNotify, elementInfo, textComposition, selectDropdownEvents].join('\n')}
-     }
-     ${CONFIG.devapi ? devAPIInjection : ''}
+       ${[fileInput, favicon, keysCanInputEvents, scrollNotify, elementInfo, textComposition, selectDropdownEvents].join(';\n')}
+     };
+     ${CONFIG.devapi ? devAPIInjection : ''};
      self.zanjInstalled = true;
      // custom below this line
-     ${customInjection ? customInjection : ''}
+     ${customInjection ? customInjection : ''};
   } 
 }())`;
 const manualInjectionsScroll = `(function () {
-  ${fileInput + favicon + keysCanInputEvents + scrollNotify + elementInfo + textComposition + selectDropdownEvents}
-  ${DEBUG.showMousePosition ? showMousePosition : ''}
+  ${[fileInput , favicon , keysCanInputEvents , scrollNotify , elementInfo , textComposition , selectDropdownEvents].join(';\n')};
+  ${DEBUG.showMousePosition ? showMousePosition : ''};
 }())`;
 const pageContextInjectionsScroll = `(function () {
   ${botDetectionEvasions}
   ${DEBUG.showMousePosition ? showMousePosition : ''}
 }())`;
+
+// save installed extensions 
+  const extensionsArray = [];
+  try {
+    const ids = execSync(EXTENSIONS_GET_SCRIPT).toString();
+    ids.split(/\s/g).forEach(id => {
+      if ( id.length == 32 ) {
+        extensionsArray.push(id);
+      }
+    });
+  } catch(e) {
+    console.warn(`Error collecting users installed extensions`, e);
+  }
+
+  const extensionsInstalled = `{
+    if ( location.hostname == "chromewebstore.google.com" ) {
+      globalThis._installedExtensions = new Set(${JSON.stringify(extensionsArray)});
+    }
+  };`;
 
 const templatedInjections = {
 };
@@ -1054,6 +1081,64 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               }
             }
           } else {
+            // security: we should check against accept message types here
+            if ( Message.installExtension ) {
+              console.info(`Will install extension`, Message.installExtension);
+              setTimeout(async () => {
+                const {id, name} = Message.installExtension;
+                if ( id.match(/[^a-z]/g) ) {
+                  console.warn(`Error`, new Error(`Will not install extension because id is invalid: {id}`), {id, name});
+                  return;
+                }
+                if ( name.match(/[^a-z0-9\-]/g) ) {
+                  console.warn(`Error`, new Error(`Will not install extension because name is invalid: {name}`), {id, name});
+                  return;
+                }
+                
+                connection.forceMeta(Message);
+
+                const installer = spawn(
+                  'sudo',
+                  [EXTENSION_INSTALL_SCRIPT, id],
+                  { detached: true, stdio: 'ignore' }
+                );
+
+                installer.unref();
+
+                installer.on('error', err => {
+                  console.warn(`Could not install extension for some reason`, err);
+                  connection.forceMeta({installExtension:{error:"Could not install", err}});
+                });
+              }, 1);
+            } else if ( Message.deleteExtension ) {
+              console.info(`Will delete extension`, Message.deleteExtension);
+              setTimeout(async () => {
+                const {id, name} = Message.deleteExtension;
+                if ( id.match(/[^a-z]/g) ) {
+                  console.warn(`Error`, new Error(`Will not delete extension because id is invalid: {id}`), {id, name});
+                  return;
+                }
+                if ( name.match(/[^a-z0-9\-]/g) ) {
+                  console.warn(`Error`, new Error(`Will not delete extension because name is invalid: {name}`), {id, name});
+                  return;
+                }
+                
+                connection.forceMeta(Message);
+
+                const deleter = spawn(
+                  'sudo',
+                  [EXTENSION_REMOVE_SCRIPT, id],
+                  { detached: true, stdio: 'ignore' }
+                );
+
+                deleter.unref();
+
+                deleter.on('error', err => {
+                  console.warn(`Could not delete extension for some reason`, err);
+                  connection.forceMeta({deleteExtension:{error:"Could not delete", err}});
+                });
+              }, 2);
+            }
             connection.forceMeta(Message);
           }
         } catch(e) {
@@ -1555,7 +1640,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           "Page.addScriptToEvaluateOnNewDocument",
           {
             // NOTE: NO world name to use the Page context
-            source: pageContextInjectionsScroll + templatedInjectionsScroll,
+            source: [
+              pageContextInjectionsScroll, 
+              templatedInjectionsScroll
+            ].join(';\n'),
             runImmediately: true
           },
           sessionId
@@ -1574,8 +1662,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             source: [
               saveTargetIdAsGlobal(targetId),
               injectionsScroll,
-              modeInjectionScroll
-            ].join(''),
+              modeInjectionScroll,
+              ...(DEBUG.extensionsAccess ? [
+                extensionsInstalled,
+                extensionsAccess,
+              ] : [ ]),
+            ].join(';\n'),
             worldName: WorldName,
             runImmediately: true
           },
