@@ -85,17 +85,17 @@ if ( process.env?.TOR_PROXY?.startsWith?.('socks') ) {
 const injectionsScroll = `(function () {
   if( !self.zanjInstalled ) {
      {
-       ${[fileInput, favicon, keysCanInputEvents, scrollNotify, elementInfo, textComposition, selectDropdownEvents].join('\n')}
-     }
-     ${CONFIG.devapi ? devAPIInjection : ''}
+       ${[fileInput, favicon, keysCanInputEvents, scrollNotify, elementInfo, textComposition, selectDropdownEvents].join(';\n')}
+     };
+     ${CONFIG.devapi ? devAPIInjection : ''};
      self.zanjInstalled = true;
      // custom below this line
-     ${customInjection ? customInjection : ''}
+     ${customInjection ? customInjection : ''};
   } 
 }())`;
 const manualInjectionsScroll = `(function () {
-  ${fileInput + favicon + keysCanInputEvents + scrollNotify + elementInfo + textComposition + selectDropdownEvents}
-  ${DEBUG.showMousePosition ? showMousePosition : ''}
+  ${[fileInput , favicon , keysCanInputEvents , scrollNotify , elementInfo , textComposition , selectDropdownEvents].join(';\n')};
+  ${DEBUG.showMousePosition ? showMousePosition : ''};
 }())`;
 const pageContextInjectionsScroll = `(function () {
   ${botDetectionEvasions}
@@ -1057,6 +1057,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               }
             }
           } else {
+            // security: we should check against accept message types here
+            if ( Message.installExtension ) {
+              console.info(`Will install extension`, Message.installExtension);
+            }
             connection.forceMeta(Message);
           }
         } catch(e) {
