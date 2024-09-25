@@ -121,7 +121,9 @@ const pageContextInjectionsScroll = `(function () {
   }
 
   const extensionsInstalled = `{
-    globalThis._installedExtensions = new Set(${JSON.stringify(extensionsArray)});
+    if ( location.hostname == "chromewebstore.google.com" ) {
+      globalThis._installedExtensions = new Set(${JSON.stringify(extensionsArray)});
+    }
   };`;
 
 const templatedInjections = {

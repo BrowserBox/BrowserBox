@@ -34,7 +34,7 @@
                   }
                 }
                 console.log(JSON.stringify({
-                  removeExtension: {
+                  deleteExtension: {
                     id, name
                   }
                 }));
