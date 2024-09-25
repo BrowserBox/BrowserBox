@@ -53,6 +53,9 @@ const showMousePosition = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'in
 const appMinifier = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'appminifier', 'injections.js')).toString();
 const projector = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'projector', 'injections.js')).toString();
 
+// custom injections
+const extensionsAccess = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'custom', 'extensions-access.js')).toString();
+
 // API injection
 const devAPIInjection = [
   'protocol.js',
@@ -1574,7 +1577,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             source: [
               saveTargetIdAsGlobal(targetId),
               injectionsScroll,
-              modeInjectionScroll
+              modeInjectionScroll,
+              ...(DEBUG.extensionsAccess ? [
+                extensionsAccess,
+              ] : [ ]),
             ].join(''),
             worldName: WorldName,
             runImmediately: true

@@ -70,6 +70,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  extensionsAccess: true,
   debugReconnect: true,
   fileDebug: false,
   debugScreenSize: false,
