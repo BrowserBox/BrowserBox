@@ -1464,6 +1464,7 @@
             DEFAULT_FAVICON
           });
           setState('bbpro', state);
+
           use('bb-view'); 
           use('bb-bar');
           use('bb-tabs'); 
@@ -1475,9 +1476,12 @@
           use('bb-omni-box');
           use('bb-top-bar');
           use('bb-modals');
-          use('bb-resize-button');
           use('bb-bw-spinner');
-          use('bb-settings-button');
+
+          DEBUG.extensionsAssemble &&         use('bb-extensions-button');
+          DEBUG.clientsCanResetViewport &&    use('bb-resize-button');
+          CONFIG.settingsButton &&            use('bb-settings-button');
+
           const bb = document.querySelector('bb-view');
           if ( !bb?.shadowRoot ) {
             await untilTrueOrTimeout(() => !!document.querySelector('bb-view')?.shadowRoot, 120);
