@@ -28,6 +28,7 @@
     COOKIENAME, GO_SECURE, DEBUG,
     CONFIG,
     ALLOWED_3RD_PARTY_EMBEDDERS,
+    BASE_PATH,
     EXTENSIONS_PATH,
     throttle,
   } from './common.js';
@@ -490,13 +491,13 @@
     const server = protocol.createServer.apply(protocol, GO_SECURE && secure ? [secure_options, app] : [app]);
 
     const extensions = [];
-    if ( false && DEBUG.extensionsAccess ) {
+    if ( DEBUG.extensionsAccess ) {
       try {
         const preferencesPath = path.resolve(BASE_PATH, 'browser-cache', 'Default', 'Preferences');
         const preferences = JSON.parse(fs.readFileSync(preferencesPath).toString());
         const extensionsManifests = child_process.execSync(`find "${EXTENSIONS_PATH}" | grep manifest.json`).toString();
         extensionsManifests.split('\n').forEach(manifestPath => {
-          if ( manifestPath.trim().length == 0 ) continue;
+          if ( manifestPath.trim().length == 0 ) return;
           try {
             manifestPath = path.resolve(manifestPath);
             const extensionId = ensureManifestDepth(manifestPath);
@@ -1476,7 +1477,7 @@
       } else {
         distance++;
       }
-      if ( part.length == 32 && part.match(/^[a-z]$/) ) {
+      if ( part.length == 32 && part.match(/^[a-z]+$/) ) {
         if ( distance > 2 ) {
           throw new Error(`manifest.json is nested too deeply in extension direcotry`);
         } else {
@@ -1488,31 +1489,33 @@
 
   function localizeExtensionManifest({extensionSettings, extensionPath, manifest}) {
     const keysToLocalize = ['short_name', 'name', 'description'];
-    const localesDir = path.resolve(extensionsPath, '_locales');
+    const localesDir = path.resolve(extensionPath, '_locales');
     if ( !fs.existsSync(localesDir) ) return manifest;
     let localeMessages;
     try {
       const localeMessagesJSON = 
-          extensionSettings.current_locale && 
-            fs.existsSync(path.resolve(localesDir, extensionSettings.current_locale, 'messages.json')) ? 
-            fs.readFileSync(path.resolve(localesDir, extensionSettings.current_locale, 'messages.json')).toString()
+          extensionSettings.manifest.current_locale && 
+            fs.existsSync(path.resolve(localesDir, extensionSettings.manifest.current_locale, 'messages.json')) ? 
+            fs.readFileSync(path.resolve(localesDir, extensionSettings.manifest.current_locale, 'messages.json')).toString()
             :
-          extensionSettings.default_locale && 
-            fs.existsSync(path.resolve(localesDir, extensionSettings.default_locale, 'messages.json')) ? 
-              fs.readFileSync(path.resolve(localesDir, extensionSettings.default_locale, 'messages.json')).toString()
+          extensionSettings.manifest.default_locale && 
+            fs.existsSync(path.resolve(localesDir, extensionSettings.manifest.default_locale, 'messages.json')) ? 
+              fs.readFileSync(path.resolve(localesDir, extensionSettings.manifest.default_locale, 'messages.json')).toString()
             :
             ''
       if ( ! localeMessagesJSON || localeMessagesJSON.trim().length == 0 ) {
-        console.warn(`Error with localizing extension`, {extensionSettings, extensionPath, manifest, localeMessagesJSON});
+        console.warn(`Error localizing extension`, {extensionSettings, extensionPath, manifest, localeMessagesJSON});
         return manifest;
       }
       localeMessages = JSON.parse(localeMessagesJSON);
+    } catch(e) {
+        console.warn(`Error localizing extension`, {extensionSettings, extensionPath, manifest}, e);
     }
     if ( ! localeMessages ) return manifest;
 
     for( const key of keysToLocalize ) {
       const value = manifest[key];
-      if ( value.startsWith("__MSG_") ) {
+      if ( value?.startsWith?.("__MSG_") ) {
         const messageKey = value.replace(/^__MSG_/, '').replace(/__$/, '');
         const localizedMessage = localeMessages[messageKey].message;
         manifest[key] = localizedMessage;

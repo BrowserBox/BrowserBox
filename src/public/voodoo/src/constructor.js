@@ -533,6 +533,16 @@
           });
         }
 
+      // check extensions status
+          const extensionsAPI = new URL(location.origin);
+          extensionsAPI.pathname = '/extensions';
+          uberFetch(extensionsAPI).then(r => r.json()).then(({extensions}) => {
+            state.extensions = extensions;
+            if ( extensions.length ) {
+              setState('bbpro', state);
+            }
+          });
+
       // create link
         const queue = new EventQueue(state, sessionToken);
         DEBUG.val && console.log({queue});
@@ -1144,7 +1154,7 @@
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 3121), {once:true, capture:true}
+              () => setTimeout(() => location.reload(), 6242), {once:true, capture:true}
             );
           });
           queue.addMetaListener('deleteExtension', ({removeExtension})  => {
@@ -1159,7 +1169,7 @@
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 3371), {once:true, capture:true}
+              () => setTimeout(() => location.reload(), 6742), {once:true, capture:true}
             );
           });
 

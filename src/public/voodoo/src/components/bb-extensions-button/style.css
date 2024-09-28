@@ -1,1 +1,18 @@
 @import url("themes/blank.css");
+
+aside.panel.visible {
+  display: block;
+  position: absolute;
+  z-index: 12000;
+  background: var(--bg);
+  color: var(--fg);
+  border: thin solid var(--contrast) ;
+  width: 120px;
+  height: 200px;
+  padding: 1em;
+  right: 1px;
+}
+
+aside.panel:not(.visible) {
+  display: none;
+}
