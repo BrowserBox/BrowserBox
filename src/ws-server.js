@@ -490,7 +490,7 @@
     const server = protocol.createServer.apply(protocol, GO_SECURE && secure ? [secure_options, app] : [app]);
 
     const extensions = [];
-    if ( DEBUG.extensionsAccess ) {
+    if ( false && DEBUG.extensionsAccess ) {
       try {
         const extensionsManifests = child_process.execSync(`find "${EXTENSIONS_PATH}" | grep manifest.json`);
         extensionsManifests.forEach(manifestPath => {
