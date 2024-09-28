@@ -28,6 +28,7 @@
     COOKIENAME, GO_SECURE, DEBUG,
     CONFIG,
     ALLOWED_3RD_PARTY_EMBEDDERS,
+    EXTENSIONS_PATH,
     throttle,
   } from './common.js';
   import {timedSend, eventSendLoop} from './server.js';
@@ -487,6 +488,32 @@
 
     const secure = secure_options.cert && secure_options.key;
     const server = protocol.createServer.apply(protocol, GO_SECURE && secure ? [secure_options, app] : [app]);
+
+    const extensions = [];
+    if ( DEBUG.extensionsAccess ) {
+      try {
+        const extensionsManifests = child_process.execSync(`find "${EXTENSIONS_PATH}" | grep manifest.json`);
+        extensionsManifests.forEach(manifestPath => {
+          manifestPath = path.resolve(manifestPath);
+          try {
+            ensureManifestDepth(manifestPath);
+            const manifestJSON = fs.readFileSync(manifestPath).toString();
+            const manifest = JSON.parse(manifestJSON);
+            if ( ! manifest.name || ! manifest.version || ! manifest.manifest_version ) {
+              console.warn({manifest});
+              throw new Error(`Incorrect manifest. Will ignore: ${manifestPath}`)
+            }
+            extensions.push(manifest);
+          } catch(e) {
+            console.warn(`Error handling supposed extension path ${path}`, e);
+          }
+        });
+      } catch(e) {
+        console.warn(`Could not get manifests for extensions`, e);
+      }
+    }
+    DEBUG.showExtensions && console.log({extensions});
+
     const wss = new WebSocketServer({
       server,
       perMessageDeflate: false
@@ -1013,6 +1040,16 @@
             /*throw e;*/
           }
         }));
+        app.get(`/extensions`, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          res.type('json');
+          if ( (cookie !== allowed_user_cookie) ) {
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          return res.send({extensions});
+        });
         app.get(`/isTor`, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
@@ -1419,6 +1456,29 @@
       `;
     }
     return `${serverOrigin}/assets`;
+  }
+
+  function ensureManifestDepth(manifestPath) {
+    const parts = manifestPath.split(path.sep);
+    const file = path.basename(manifestPath);
+    if ( file != 'manifest.json' ) throw new Error(`manifest.json does not end path`);
+    let distance = 0;
+    while(parts.length) {
+      const part = parts.pop();
+      if ( part == 'manifest.json' ) {
+        if ( distance != 0 ) throw new Error(`manifest.json exists mid path`);
+        continue;
+      } else {
+        distance++;
+      }
+      if ( part.length == 32 && part.match(/^[a-z]$/) ) {
+        if ( distance > 2 ) {
+          throw new Error(`manifest.json is nested too deeply in extension direcotry`);
+        } else {
+          break;
+        }
+      }
+    }
   }
 
   function nextFileName(ext = '') {

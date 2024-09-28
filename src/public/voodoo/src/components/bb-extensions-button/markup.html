@@ -1,0 +1,10 @@
+<button name=extensions>
+  <img class=no-small alt="Extensions" src="voodoo/assets/icons/spray-can.svg"/>
+</button>
+<aside class=extensions-panel>
+  <ul>${
+    _top.extensions.forEach(({name, short_name, options_page, action, side_panel}) => {
+      return F`<li>${short_name || name.slice(0, 15)}</li>`;
+    })
+  }</ul>
+</aside>
