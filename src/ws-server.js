@@ -492,24 +492,29 @@
     const extensions = [];
     if ( DEBUG.extensionsAccess ) {
       try {
-        const extensionsManifests = child_process.execSync(`find "${EXTENSIONS_PATH}" | grep manifest.json`);
-        extensionsManifests.forEach(manifestPath => {
-          manifestPath = path.resolve(manifestPath);
+        const preferencesPath = path.resolve(BASE_PATH, 'browser-cache', 'Default', 'Preferences');
+        const preferences = JSON.parse(fs.readFileSync(preferencesPath).toString());
+        const extensionsManifests = child_process.execSync(`find "${EXTENSIONS_PATH}" | grep manifest.json`).toString();
+        extensionsManifests.split('\n').forEach(manifestPath => {
+          if ( manifestPath.trim().length == 0 ) continue;
           try {
-            ensureManifestDepth(manifestPath);
+            manifestPath = path.resolve(manifestPath);
+            const extensionId = ensureManifestDepth(manifestPath);
             const manifestJSON = fs.readFileSync(manifestPath).toString();
             const manifest = JSON.parse(manifestJSON);
             if ( ! manifest.name || ! manifest.version || ! manifest.manifest_version ) {
               console.warn({manifest});
               throw new Error(`Incorrect manifest. Will ignore: ${manifestPath}`)
             }
-            extensions.push(manifest);
+            const extensionPath = path.dirname(manifestPath);
+            const extensionSettings = preferences.extensions.settings[extensionId];
+            extensions.push(localizeExtensionManifest({extensionSettings, extensionPath, manifest}));
           } catch(e) {
-            console.warn(`Error handling supposed extension path ${path}`, e);
+            console.warn(`Error handling supposed extension path ${manifestPath}, via: ${EXTENSIONS_PATH}`, e);
           }
         });
       } catch(e) {
-        console.warn(`Could not get manifests for extensions`, e);
+        console.warn(`Could not get manifests for extensions at: ${EXTENSIONS_PATH}`, e);
       }
     }
     DEBUG.showExtensions && console.log({extensions});
@@ -1475,10 +1480,46 @@
         if ( distance > 2 ) {
           throw new Error(`manifest.json is nested too deeply in extension direcotry`);
         } else {
-          break;
+          return part;
         }
       }
     }
+  }
+
+  function localizeExtensionManifest({extensionSettings, extensionPath, manifest}) {
+    const keysToLocalize = ['short_name', 'name', 'description'];
+    const localesDir = path.resolve(extensionsPath, '_locales');
+    if ( !fs.existsSync(localesDir) ) return manifest;
+    let localeMessages;
+    try {
+      const localeMessagesJSON = 
+          extensionSettings.current_locale && 
+            fs.existsSync(path.resolve(localesDir, extensionSettings.current_locale, 'messages.json')) ? 
+            fs.readFileSync(path.resolve(localesDir, extensionSettings.current_locale, 'messages.json')).toString()
+            :
+          extensionSettings.default_locale && 
+            fs.existsSync(path.resolve(localesDir, extensionSettings.default_locale, 'messages.json')) ? 
+              fs.readFileSync(path.resolve(localesDir, extensionSettings.default_locale, 'messages.json')).toString()
+            :
+            ''
+      if ( ! localeMessagesJSON || localeMessagesJSON.trim().length == 0 ) {
+        console.warn(`Error with localizing extension`, {extensionSettings, extensionPath, manifest, localeMessagesJSON});
+        return manifest;
+      }
+      localeMessages = JSON.parse(localeMessagesJSON);
+    }
+    if ( ! localeMessages ) return manifest;
+
+    for( const key of keysToLocalize ) {
+      const value = manifest[key];
+      if ( value.startsWith("__MSG_") ) {
+        const messageKey = value.replace(/^__MSG_/, '').replace(/__$/, '');
+        const localizedMessage = localeMessages[messageKey].message;
+        manifest[key] = localizedMessage;
+      }
+    }
+
+    return manifest;
   }
 
   function nextFileName(ext = '') {
