@@ -5,8 +5,13 @@
   
 /* basic visual appearance */
   /* reset clause */
-    *:not(script, noscript, style, datalist, option, head, head *, select, meter, input, label) {
+    *:not(ul, li, ol, script, noscript, style, datalist, option, head, head *, select, meter, input, label) {
       all: unset;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
     }
 
     input:not([type="radio"], input[type="checkbox"], input[type="range"]) {

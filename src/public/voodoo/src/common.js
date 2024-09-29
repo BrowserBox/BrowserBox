@@ -33,7 +33,9 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  extensionsAssemble: true,
+  extensionsAssemble() {
+    return CONFIG.isCT() && true;
+  },
   debugSW: false,
   debugKeysCanInput: false,
   get debugKCI() {

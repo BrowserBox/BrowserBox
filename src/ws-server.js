@@ -491,7 +491,7 @@
     const server = protocol.createServer.apply(protocol, GO_SECURE && secure ? [secure_options, app] : [app]);
 
     const extensions = [];
-    if ( DEBUG.extensionsAccess ) {
+    if ( CONFIG.isCT && DEBUG.extensionsAccess ) {
       try {
         const preferencesPath = path.resolve(BASE_PATH, 'browser-cache', 'Default', 'Preferences');
         const preferences = JSON.parse(fs.readFileSync(preferencesPath).toString());
@@ -509,7 +509,10 @@
             }
             const extensionPath = path.dirname(manifestPath);
             const extensionSettings = preferences.extensions.settings[extensionId];
-            extensions.push(localizeExtensionManifest({extensionSettings, extensionPath, manifest}));
+            const localizedManifest = localizeExtensionManifest({extensionSettings, extensionPath, manifest});
+            if ( localizedManifest.display_in_launcher !== false ) {
+              extensions.push({id: extensionId, ...localizedManifest});
+            }
           } catch(e) {
             console.warn(`Error handling supposed extension path ${manifestPath}, via: ${EXTENSIONS_PATH}`, e);
           }

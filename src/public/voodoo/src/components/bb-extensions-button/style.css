@@ -7,12 +7,27 @@ aside.panel.visible {
   background: var(--bg);
   color: var(--fg);
   border: thin solid var(--contrast) ;
-  width: 120px;
-  height: 200px;
+  width: min(80vw, 200px);
+  max-height: min(85vw, 300px);
+  overflow-y: scroll;
   padding: 1em;
   right: 1px;
 }
 
 aside.panel:not(.visible) {
   display: none;
+}
+
+ul li {
+  display: flex;
+  user-select: none;
+  width: min(80vw, 200px);
+  cursor: default;
+  justify-content: space-between;
+}
+
+ul li > a {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

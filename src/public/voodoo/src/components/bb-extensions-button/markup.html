@@ -4,8 +4,15 @@
 <aside class="extensions panel">
   <ul>${
     _top?.extensions?.length ? 
-      _top.extensions.map(({name, short_name, options_page, action, side_panel}) => {
-        return F`<li>${short_name || name.slice(0, 15)}</li>`;
+      _top.extensions.map(({id: key, name, short_name, options_page, action, side_panel}) => {
+        return F`${{key}}
+          <li data-id=${key}>
+            <a onclick=executeAction>${short_name || name.slice(0, 23)}</a>
+              <button onclick=openOptions> 
+              <img class=extensions-option alt="Options" src="voodoo/assets/icons/settings-2.svg">
+            </button>
+          </li>
+        `;
       }) 
       : 
       ''
