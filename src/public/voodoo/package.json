@@ -22,9 +22,7 @@
   "homepage": "https://gitlab.com/dosycorp/voodoo#readme",
   "dependencies": {
     "bang.html": "latest",
-    "dumbass": "^2.7.0",
-    "lucide-static": "^0.356.0",
-    "maskingtape.css": "^1.11.4",
+    "lucide-static": "latest",
     "style.dss": "latest",
     "vanillatype": "latest"
   },

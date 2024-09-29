@@ -15,6 +15,7 @@
     import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
     import {saveClick} from './subviews/controls.js';
     import {
+      AttachmentTypes,
       COMMON,
       untilTrue,
       untilHuman,
@@ -532,6 +533,16 @@
             }
           });
         }
+
+      // check extensions status
+          const extensionsAPI = new URL(location.origin);
+          extensionsAPI.pathname = '/extensions';
+          uberFetch(extensionsAPI).then(r => r.json()).then(({extensions}) => {
+            state.extensions = extensions;
+            if ( extensions.length ) {
+              setState('bbpro', state);
+            }
+          });
 
       // create link
         const queue = new EventQueue(state, sessionToken);
@@ -1144,7 +1155,7 @@
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 3121), {once:true, capture:true}
+              () => setTimeout(() => location.reload(), 6242), {once:true, capture:true}
             );
           });
           queue.addMetaListener('deleteExtension', ({removeExtension})  => {
@@ -1159,7 +1170,7 @@
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 3371), {once:true, capture:true}
+              () => setTimeout(() => location.reload(), 6742), {once:true, capture:true}
             );
           });
 
@@ -1214,7 +1225,7 @@
             });
 
           queue.addMetaListener('created', meta => {
-            if ( meta.created.type == 'page') {
+            if ( AttachmentTypes.has(meta.created.type) ) {
               meta.created.hello = 'oncreated';
               const activate = () => activateTab(null, meta.created, {notify: false, forceFrame:true})
               const tab = findTab(meta.created.targetId);
@@ -1235,7 +1246,7 @@
           });
           queue.addMetaListener('attached', meta => {
             const attached = meta.attached.targetInfo;
-            if ( attached.type == 'page' ) {
+            if ( AttachmentTypes.has(attached.type) ) {
               state.attached.add(attached.targetId);
 
               if ( state.useViewFrame ) {
@@ -1464,6 +1475,7 @@
             DEFAULT_FAVICON
           });
           setState('bbpro', state);
+
           use('bb-view'); 
           use('bb-bar');
           use('bb-tabs'); 
@@ -1475,9 +1487,12 @@
           use('bb-omni-box');
           use('bb-top-bar');
           use('bb-modals');
-          use('bb-resize-button');
           use('bb-bw-spinner');
-          use('bb-settings-button');
+
+          DEBUG.extensionsAssemble &&         use('bb-extensions-button');
+          DEBUG.clientsCanResetViewport &&    use('bb-resize-button');
+          CONFIG.settingsButton &&            use('bb-settings-button');
+
           const bb = document.querySelector('bb-view');
           if ( !bb?.shadowRoot ) {
             await untilTrueOrTimeout(() => !!document.querySelector('bb-view')?.shadowRoot, 120);
