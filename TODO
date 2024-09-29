@@ -1,2 +1,2 @@
-- could we use exec node in our start shell scripts so we don't need an unnecessary bash process to stay around?
+- implement wide ext support via: attach to sw, runtime.enable, then eval in context of sw, { <key api shims> <sw code> }, use runtime.consoleapicalled to get any useful data, and eval to call any useful functions (like those added to action.onClick.addListener etc)
 
