@@ -106,7 +106,9 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
         }
       } else {
         try {
-          DEBUG.debugInterception && console.log(`Continue request ${url}`);
+          if ( url.startsWith('chrome') ) {
+            console.log(`Continue request ${url}`);
+          }
           zombie.send("Fetch.continueRequest", {
               requestId,
             },

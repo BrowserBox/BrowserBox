@@ -143,7 +143,7 @@ export const DEBUG = Object.freeze({
   adBlock: true,
   debugAddr: true,
   debugScaledUpCoViewport: false,
-  debugInterception: true,
+  debugInterception: false,
   noCastMaxDims: false,
   debugAckBlast: false,
   allowAckBlastOnStart: !process.env.TORBB && true,

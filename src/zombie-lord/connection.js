@@ -1464,7 +1464,23 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               {
                 urlPattern: 'https://*/*',
                 requestStage: "Request"
-              }
+              },
+              {
+                urlPattern: 'chrome://*/*',
+                requestStage: "Request"
+              },
+              {
+                urlPattern: 'chrome://*/*',
+                requestStage: "Response"
+              },
+              {
+                urlPattern: 'chrome-extension://*/*',
+                requestStage: "Request"
+              },
+              {
+                urlPattern: 'chrome-extension://*/*',
+                requestStage: "Response"
+              },
             ],
           },
           sessionId
