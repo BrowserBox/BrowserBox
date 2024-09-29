@@ -13,7 +13,7 @@ class BBExtensionsButton extends Base {
     const {state: {extensions}} = this;
 
     const manifest = extensions.find(m => m.id == id);
-    console.log('options', id, manifest);
+    DEBUG.debugExtensions && console.log('options', id, manifest);
 
     if ( manifest.options_page ) {
       this.state.createTab(null, `chrome-extension://${id}/${manifest.options_page}`);
@@ -27,7 +27,7 @@ class BBExtensionsButton extends Base {
     const {state: {extensions}} = this;
 
     const manifest = extensions.find(m => m.id == id);
-    console.log('action', id, manifest);
+    DEBUG.debugExtensions && console.log('action', id, manifest);
 
     if ( manifest?.action?.default_popup ) {
       this.state.createTab(null, `chrome-extension://${id}/${manifest.action.default_popup}`);

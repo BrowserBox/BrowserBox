@@ -15,12 +15,6 @@ export const scratchState = {
   cameFromTOR: false,
   slowConnection: false,
 };
-export const AttachmentTypes = new Set([
-  'page', 
-  ...(DEBUG.attachToServiceWorkers ? [
-    'service_worker'
-  ] : [])
-]);
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
@@ -78,6 +72,7 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   attachToServiceWorkers: true,
+  showServerWorkersAsTabs: false,
   extensionsAccess: true,
   showExtensions: true,
   debugReconnect: true,
@@ -366,6 +361,12 @@ export const localBlockList = process.platform == 'darwin'
     /^10./,
     /^172.(1[6-9]|2[0-9]|3[01])./,
 ];
+export const AttachmentTypes = new Set([
+  'page', 
+  ...(DEBUG.attachToServiceWorkers ? [
+    'service_worker'
+  ] : [])
+]);
 
 const Timers = new Set(); 
 

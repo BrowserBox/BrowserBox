@@ -33,6 +33,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  revealServiceWorkersAsTabs: false,
   attachToServiceWorkers: true,
   extensionsAssemble() {
     return CONFIG.isCT() && true;
@@ -284,7 +285,7 @@ export const COMMON = Object.seal(Object.preventExtensions({
 
 export const AttachmentTypes = new Set([
   'page',
-  ...(DEBUG.attachToServiceWorkers ? [
+  ...(DEBUG.revealServiceWorkersAsTabs ? [
     'service_worker' 
   ] : []),
 ]);

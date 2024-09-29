@@ -15,6 +15,7 @@
     import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
     import {saveClick} from './subviews/controls.js';
     import {
+      AttachmentTypes,
       COMMON,
       untilTrue,
       untilHuman,

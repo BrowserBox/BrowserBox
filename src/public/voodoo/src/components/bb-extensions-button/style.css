@@ -1,7 +1,6 @@
 @import url("themes/blank.css");
 
-aside.panel.visible {
-  display: block;
+aside.panel {
   position: absolute;
   z-index: 12000;
   background: var(--bg);
@@ -10,24 +9,45 @@ aside.panel.visible {
   width: min(80vw, 200px);
   max-height: min(85vw, 300px);
   overflow-y: scroll;
-  padding: 1em;
+  padding: 0.5em 0;
   right: 1px;
+  box-shadow: 1px 1px 1px var(--fg);
+}
+
+aside.panel.visible {
+  display: block;
 }
 
 aside.panel:not(.visible) {
   display: none;
 }
 
+ul {
+  margin: 0;
+}
+
 ul li {
-  display: flex;
   user-select: none;
-  width: min(80vw, 200px);
   cursor: default;
+  display: flex;
+  box-sizing: border-box;
+  width: min(80vw, 200px);
+  padding: 0 0.75em;
   justify-content: space-between;
+  align-items: center;
+}
+
+ul li:hover {
+  background: var(--contrast);
 }
 
 ul li > a {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: smaller;
+}
+
+ul li > button {
+  margin-right: 0;
 }
