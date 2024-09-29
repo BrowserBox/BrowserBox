@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source $HOME/.nvm/nvm.sh
+nvm use v20 || nvm use v21
 rm -rf .parcel-cache/*
 
 if [ "$IS_DOCKER_BUILD" = "true" ]; then

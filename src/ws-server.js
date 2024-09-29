@@ -1494,6 +1494,10 @@
     let localeMessages;
     try {
       const localeMessagesJSON = 
+          manifest.default_locale && 
+            fs.existsSync(path.resolve(localesDir, manifest.default_locale, 'messages.json')) ? 
+            fs.readFileSync(path.resolve(localesDir, manifest.default_locale, 'messages.json')).toString()
+            :
           extensionSettings.manifest.current_locale && 
             fs.existsSync(path.resolve(localesDir, extensionSettings.manifest.current_locale, 'messages.json')) ? 
             fs.readFileSync(path.resolve(localesDir, extensionSettings.manifest.current_locale, 'messages.json')).toString()
@@ -1514,11 +1518,16 @@
     if ( ! localeMessages ) return manifest;
 
     for( const key of keysToLocalize ) {
-      const value = manifest[key];
-      if ( value?.startsWith?.("__MSG_") ) {
-        const messageKey = value.replace(/^__MSG_/, '').replace(/__$/, '');
-        const localizedMessage = localeMessages[messageKey].message;
-        manifest[key] = localizedMessage;
+      let value, messageKey, localizedMessage;
+      try {
+        value = manifest[key];
+        if ( value?.startsWith?.("__MSG_") ) {
+          messageKey = value.replace(/^__MSG_/, '').replace(/__$/, '')
+          localizedMessage = (localeMessages[messageKey] || localeMessages[messageKey.toLocaleLowerCase()]).message;
+          manifest[key] = localizedMessage;
+        }
+      } catch(e) {
+        console.warn(`Error localizing key: ${key}`, e, {value, messageKey, localizedMessage, extensionSettings, extensionPath, manifest}); 
       }
     }
 
