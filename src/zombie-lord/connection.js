@@ -607,7 +607,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }
       checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
       connection.meta.push({attached});
-      await setupTab({attached});
+      if ( targetInfo.type == 'page' ) {
+        await setupTab({attached});
+      } else if ( targetInfo.type == 'service_worker' ) {
+        await setupWorker({attached});
+      }
       if ( StartupTabs.has(targetId) ) {
         DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
         reloadAfterSetup(sessionId, {reason: 'attached'});
@@ -1715,6 +1719,193 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     //  await sleep(5000);
     //  reloadAfterSetup(sessionId, {reason:'post-setup'});
     //}
+  }
+
+  async function setupWorker({attached}) {
+    const {waitingForDebugger, sessionId, targetInfo} = attached;
+    const {targetId} = targetInfo;
+    DEBUG.debugSetupReload && consolelog(`Called setup for `, attached);
+    if ( settingUp.has(targetId) ) return;
+    DEBUG.debugSetupReload && consolelog(`Running setup for `, attached);
+    settingUp.set(targetId, attached);
+    DEBUG.attachImmediately && DEBUG.worldDebug && console.log({waitingForDebugger, targetInfo});
+
+    try {
+      DEBUG.val && console.log(sessionId, targetId, 'setting up');
+
+      if ( ! loadings.has(sessionId) ) {
+        const loading = {waiting:0, complete:0,targetId}
+        loadings.set(sessionId,loading);
+      }
+
+      await send("Network.enable", {}, sessionId);
+      if ( DEBUG.networkBlocking ) {
+        await send("Network.setBlockedURLs", {
+            urls: [
+              ...(DEBUG.blockFileURLs ? ["file://*"] : []),
+              ...(DEBUG.blockChromeURLs ? ["chrome:*"] : []),
+              ...(DEBUG.blockInspect ? ["chrome://inspect*"] : []),
+            ]
+          },
+          sessionId
+        );
+      }
+      await send(
+        "Security.setIgnoreCertificateErrors",
+        {
+          ignore: DEBUG.ignoreCertificateErrors
+        },
+        sessionId
+      );
+      if ( AD_BLOCK_ON ) {
+        await send("Fetch.enable",{
+            handleAuthRequests: true,
+            patterns: [
+              {
+                urlPattern: 'http://*/*',
+                requestStage: "Response"
+              },
+              {
+                urlPattern: 'https://*/*',
+                requestStage: "Response"
+              },
+              {
+                urlPattern: 'http://*/*',
+                requestStage: "Request"
+              },
+              {
+                urlPattern: 'https://*/*',
+                requestStage: "Request"
+              }
+            ],
+          },
+          sessionId
+        );
+      }
+
+      await send(
+        "Runtime.enable", 
+        {},
+        sessionId
+      );
+
+      await send("Page.enable", {}, sessionId);
+
+      if ( DEBUG.disableIso ) {
+        //await send("Page.setBypassCSP", {enabled: true}, sessionId); 
+      }
+
+      if ( CONFIG.createPowerSource ) {
+        const {frameTree: { frame : { id: frameId } }} = await send("Page.getFrameTree", {}, sessionId);
+        MainFrames.set(sessionId, frameId);
+        const {executionContextId} = await send("Page.createIsolatedWorld", {
+          frameId: MainFrames.get(sessionId),
+          worldName: 'POWER Source',
+          grantUniveralAccess: true
+        }, sessionId);
+        console.log(`Created power source. Got context id: ${executionContextId} for sessionId: ${sessionId}`);
+        PowerSources.set(sessionId, executionContextId);
+      }
+
+      if ( CONFIG.screencastOnly ) {
+        let castInfo;
+        if ( castStarting.get(targetId) ) {
+          console.log(`[cast] Waiting for cast start ${tabs.get(targetId)}...`);
+          await untilTrue(() => casts.get(targetId)?.started, 200, 500);
+          console.log(`[cast] Finished waiting for cast start ${tabs.get(targetId)}...`);
+          castInfo = casts.get(targetId);
+        } else {
+          castInfo = casts.get(targetId);
+        }
+        if ( !castInfo || ! castInfo.castSessionId ) {
+          castStarting.set(targetId, true);
+          updateCast(sessionId, {started:true}, 'start');
+          DEBUG.shotDebug && console.log("SCREENCAST", SCREEN_OPTS);
+          const {
+            format,
+            quality, everyNthFrame,
+            maxWidth, maxHeight
+          } = SCREEN_OPTS;
+          DEBUG.debugScreenSize && console.log(`Sending cast`, SCREEN_OPTS, 'to', connection.tabs.get(targetId));
+          await send("Page.startScreencast", {
+            format, quality, everyNthFrame, 
+            ...(DEBUG.noCastMaxDims ? 
+              {}
+              : 
+              {maxWidth, maxHeight}
+            ),
+          }, sessionId);
+          castStarting.delete(targetId);
+        } else {
+          if ( ! sessionId ) {
+            console.warn(`2 No sessionId for screencast ack`);
+          }
+          await send("Page.screencastFrameAck", {
+            sessionId: castInfo.castSessionId
+          }, sessionId);
+        }
+      }
+
+      if ( DEBUG.useFlashEmu ) {
+        await send("Page.setBypassCSP", {enabled: true}, sessionId);
+      }
+
+      DEBUG.val && console.log('Enabling file chooser interception for session', sessionId);
+
+      await send("Page.setInterceptFileChooserDialog", {
+        enabled: true
+      }, sessionId);
+
+      if ( AD_BLOCK_ON ) {
+        await blockAds(/*connection.zombie, sessionId*/);
+      }
+      if ( waitingForDebugger ) {
+        await send("Runtime.runIfWaitingForDebugger", {}, sessionId);
+      }
+      // Page context injection (to set values in the page's original JS execution context
+        let templatedInjectionsScroll = '';
+        await send(
+          "Page.addScriptToEvaluateOnNewDocument",
+          {
+            // NOTE: NO world name to use the Page context
+            source: [
+              pageContextInjectionsScroll, 
+              templatedInjectionsScroll
+            ].join(';\n'),
+            runImmediately: true
+          },
+          sessionId
+        );
+      // Isolated world injection
+        await send(
+          "Page.addScriptToEvaluateOnNewDocument", 
+          {
+            source: [
+              saveTargetIdAsGlobal(targetId),
+              injectionsScroll,
+              modeInjectionScroll,
+              ...(DEBUG.extensionsAccess ? [
+                extensionsInstalled,
+                extensionsAccess,
+              ] : [ ]),
+            ].join(';\n'),
+            worldName: WorldName,
+            runImmediately: true
+          },
+          sessionId
+        );
+      const obj = checkSetup.get(targetId)
+      if ( obj ) {
+        obj.tabSetup = true;
+      } else {
+        console.warn(`No checsetup entry at end of setuptab`, targetId);
+      }
+    } catch(e) {
+      console.warn("Error setting up", e, targetId, sessionId);
+    }
+    settingUp.delete(targetId);
+    DEBUG.debugSetupReload && console.log(`Reloading after setup`, {attached});
+    reloadAfterSetup(sessionId, {reason:'post-setup'});
   }
 
   function updateCast(sessionId, castUpdate, event) {
