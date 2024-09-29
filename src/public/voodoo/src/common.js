@@ -33,6 +33,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  attachToServiceWorkers: true,
   extensionsAssemble() {
     return CONFIG.isCT() && true;
   },
@@ -280,6 +281,13 @@ export const COMMON = Object.seal(Object.preventExtensions({
   blockAnotherReset: false,
   delayUnload: true,
 }));
+
+export const AttachmentTypes = new Set([
+  'page',
+  ...(DEBUG.attachToServiceWorkers ? [
+    'service_worker' 
+  ] : []),
+]);
 
 // Cache the token outside the uberFetch function
 authToken = globalThis?.localStorage?.getItem?.('localCookie');

@@ -1224,7 +1224,7 @@
             });
 
           queue.addMetaListener('created', meta => {
-            if ( meta.created.type == 'page') {
+            if ( AttachmentTypes.has(meta.created.type) ) {
               meta.created.hello = 'oncreated';
               const activate = () => activateTab(null, meta.created, {notify: false, forceFrame:true})
               const tab = findTab(meta.created.targetId);
@@ -1245,7 +1245,7 @@
           });
           queue.addMetaListener('attached', meta => {
             const attached = meta.attached.targetInfo;
-            if ( attached.type == 'page' ) {
+            if ( AttachmentTypes.has(attached.type) ) {
               state.attached.add(attached.targetId);
 
               if ( state.useViewFrame ) {

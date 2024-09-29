@@ -9,7 +9,7 @@
       all: unset;
     }
 
-    ul {
+    ol, ul {
       list-style-type: none;
       padding: 0;
     }

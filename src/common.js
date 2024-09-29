@@ -15,6 +15,12 @@ export const scratchState = {
   cameFromTOR: false,
   slowConnection: false,
 };
+export const AttachmentTypes = new Set([
+  'page', 
+  ...(DEBUG.attachToServiceWorkers ? [
+    'service_worker'
+  ] : [])
+]);
 export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
@@ -71,6 +77,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  attachToServiceWorkers: true,
   extensionsAccess: true,
   showExtensions: true,
   debugReconnect: true,

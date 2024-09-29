@@ -21,6 +21,7 @@
   import zl from './zombie-lord/index.js';
   import {start_mode} from './args.js';
   import {
+    AttachmentTypes,
     StartupTabs,
     OurWorld,
     T2_MINUTES,
@@ -776,7 +777,10 @@
                   name: "Target.getTargets",
                   params: {
                     filter: [
-                      {type: 'page'}
+                      {type: 'page'},
+                      ...(DEBUG.attachToServiceWorkers ? [
+                        {type: 'service_worker'}
+                      ] : []),
                     ]
                   },
                 }, zombie_port);
@@ -785,7 +789,7 @@
                   zl.act.setHiddenTarget(targets[0].targetId, zombie_port);
                 }
                 targets = targets.filter(({targetId,type,url}) => { 
-                  if ( type !== 'page' ) return false;
+                  if ( !AttachmentTypes.has(type) ) return false;
                   /*
                   if ( url.startsWith('chrome') ) {
                     return false;
@@ -995,7 +999,10 @@
               name: "Target.getTargets",
               params: {
                 filter: [
-                  {type: 'page'}
+                  {type: 'page'},
+                  ...(DEBUG.attachToServiceWorkers ? [
+                    {type: 'service_worker'}
+                  ] : []),
                 ]
               },
             }, zombie_port));
@@ -1005,7 +1012,7 @@
                 zl.act.setHiddenTarget(targets[0].targetId, zombie_port);
               }
               targets = targets.filter(({targetId,type,url}) => { 
-                if ( type !== 'page' ) return false;
+                if ( !AttachmentTypes.has(type) ) return false;
                 /*
                 if ( url.startsWith('chrome') ) {
                   return false;

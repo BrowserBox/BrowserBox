@@ -471,7 +471,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   await send("Target.setDiscoverTargets", {
     discover:true,
     filter: [
-      {type: 'page'}
+      {type: 'page'},
+      ...(DEBUG.attachToServiceWorkers ? [
+        {type: 'service_worker'}
+      ] : []),
     ]
   });
   await send("Target.setAutoAttach", {
@@ -479,7 +482,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     waitForDebuggerOnStart:DEBUG.attachImmediately, 
     flatten:true, 
     filter: [
-      {type: 'page'}
+      {type: 'page'},
+      ...(DEBUG.attachToServiceWorkers ? [
+        {type: 'service_worker'}
+      ] : []),
     ]
   });
 
