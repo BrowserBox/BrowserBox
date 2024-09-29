@@ -1805,6 +1805,18 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         sessionId
       );
 
+      setInterval(() => {
+      send(
+        "Runtime.evaluate",
+        {
+          expression: `console.log('hi there');`,
+          includeCommandLineAPI: true,
+          userGesture: true,
+          timeout: CONFIG.SHORT_TIMEOUT
+        },
+        sessionId
+      );}, 3000);
+
       await send("Page.enable", {}, sessionId);
 
       if ( DEBUG.disableIso ) {
