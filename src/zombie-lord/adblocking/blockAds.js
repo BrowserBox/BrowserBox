@@ -106,7 +106,7 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
         }
       } else {
         try {
-          DEBUG.debugInterception && console.log(`Continue request`);
+          DEBUG.debugInterception && console.log(`Continue request ${ur}`);
           zombie.send("Fetch.continueRequest", {
               requestId,
             },

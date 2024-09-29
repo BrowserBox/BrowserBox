@@ -33,7 +33,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  revealServiceWorkersAsTabs: false,
+  revealServiceWorkersAsTabs: true,
   attachToServiceWorkers: true,
   extensionsAssemble() {
     return CONFIG.isCT() && true;
