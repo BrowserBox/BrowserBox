@@ -1,7 +1,7 @@
 //FIXME we could move this into constructor 
 // and switch it to WS 
 
-import {version,uberFetch,untilTrue,CONFIG,COMMON,DEBUG} from '../common.js';
+import {version,uberFetch,untilTrue,CONFIG,COMMON,DEBUG, AttachmentTypes} from '../common.js';
 import DEFAULT_FAVICON from '../subviews/faviconDataURL.js';
 
 const STATE_SYMBOL = Symbol(`[[State]]`);
@@ -67,7 +67,7 @@ export async function fetchTabs({sessionToken}, getState) {
       }
       DEBUG.debugBetterModals && console.log(data);
       if ( data.tabs ) {
-        data.tabs = (data.tabs || []).filter(({type}) => type == 'page');
+        data.tabs = (data.tabs || []).filter(({type}) => AttachmentTypes.has(type));
         data.tabs = data.tabs.map(tab => new Tab(tab, {getState}));
       }
       DEBUG.debugTabs && console.log(data);

@@ -1,4 +1,4 @@
-export const VERSION = '10.2.0';
+export const VERSION = '10.2.1';
 export const SERVICE_COUNT = 4; // pptr(menu), chat, audio, devtools
 export const FRAME_CONTROL = false;
 
@@ -33,6 +33,11 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  revealServiceWorkersAsTabs: false,
+  attachToServiceWorkers: true,
+  extensionsAssemble() {
+    return CONFIG.isCT() && true;
+  },
   debugSW: false,
   debugKeysCanInput: false,
   get debugKCI() {
@@ -277,6 +282,13 @@ export const COMMON = Object.seal(Object.preventExtensions({
   blockAnotherReset: false,
   delayUnload: true,
 }));
+
+export const AttachmentTypes = new Set([
+  'page',
+  ...(DEBUG.revealServiceWorkersAsTabs ? [
+    'service_worker' 
+  ] : []),
+]);
 
 // Cache the token outside the uberFetch function
 authToken = globalThis?.localStorage?.getItem?.('localCookie');

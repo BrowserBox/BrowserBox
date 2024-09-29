@@ -5,8 +5,13 @@
   
 /* basic visual appearance */
   /* reset clause */
-    *:not(script, noscript, style, datalist, option, head, head *, select, meter, input, label) {
+    *:not(ul, li, ol, script, noscript, style, datalist, option, head, head *, select, meter, input, label) {
       all: unset;
+    }
+
+    ol, ul, menu {
+      list-style-type: none;
+      padding: 0;
     }
 
     input:not([type="radio"], input[type="checkbox"], input[type="range"]) {
@@ -112,7 +117,7 @@
       }
 
       aside.modals legend img,
-      button img {
+      button img, input[type="image"] {
         filter: invert(1.0);
       }
     }
@@ -391,13 +396,17 @@
     vertical-align: middle;
   }
 
-  button img {
+  button img, input[type="image"] {
     pointer-events: none;
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
     transform: scale(0.618);
+  }
+
+  button img.no-small {
+    transform: scale(1);
   }
 
   bb-favicon {

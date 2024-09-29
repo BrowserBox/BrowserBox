@@ -19,6 +19,7 @@ export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
 export const BASE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro');
+export const EXTENSIONS_PATH = path.resolve(BASE_PATH, 'browser-cache', 'Default', 'Extensions');
 export const SUBSCRIBER_FILE_PATH = path.resolve(BASE_PATH, 'subscriber.json');
 export const WL_FILE_PATH = path.resolve(BASE_PATH, 'wl.txt');
 export const expiryTimeFilePath = path.resolve(BASE_PATH, 'expiry_time');
@@ -70,7 +71,10 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  attachToServiceWorkers: true,
+  showServerWorkersAsTabs: false,
   extensionsAccess: true,
+  showExtensions: true,
   debugReconnect: true,
   fileDebug: false,
   debugScreenSize: false,
@@ -212,7 +216,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
@@ -357,6 +361,12 @@ export const localBlockList = process.platform == 'darwin'
     /^10./,
     /^172.(1[6-9]|2[0-9]|3[01])./,
 ];
+export const AttachmentTypes = new Set([
+  'page', 
+  ...(DEBUG.attachToServiceWorkers ? [
+    'service_worker'
+  ] : [])
+]);
 
 const Timers = new Set(); 
 
