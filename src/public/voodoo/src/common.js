@@ -1,5 +1,5 @@
-export const VERSION = '10.2.1';
-export const SERVICE_COUNT = 4; // pptr(menu), chat, audio, devtools
+export const VERSION = '10.2.2';
+export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 
 export const SafariPlatform = /^((?!chrome|android).)*safari/i;
@@ -33,7 +33,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  revealServiceWorkersAsTabs: true,
+  revealServiceWorkersAsTabs: false,
   attachToServiceWorkers: true,
   extensionsAssemble() {
     return CONFIG.isCT() && true;
