@@ -3,6 +3,7 @@
 source $HOME/.nvm/nvm.sh
 nvm use v20 || (nvm install v20 && nvm use v20)
 rm -rf .parcel-cache/*
+command -v parcel || npm i -g parcel@latest
 
 if [ "$IS_DOCKER_BUILD" = "true" ]; then
   echo "In docker, not running parcel (it hangs sometimes!)"
