@@ -141,6 +141,9 @@
   // keep tabs organized
   const TabNumbers = new Map();
 
+  // extensions
+  const extensions = [];
+
   let shutdownTimer = null;
   let serverOrigin;
   let messageQueueRunning = false;
@@ -498,8 +501,6 @@
 
     const secure = secure_options.cert && secure_options.key;
     const server = protocol.createServer.apply(protocol, GO_SECURE && secure ? [secure_options, app] : [app]);
-
-    const extensions = [];
 
     const wss = new WebSocketServer({
       server,
