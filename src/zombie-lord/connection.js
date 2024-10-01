@@ -109,22 +109,51 @@ const pageContextInjectionsScroll = `(function () {
 
 // save installed extensions 
   const extensionsArray = [];
-  try {
-    const ids = execSync(EXTENSIONS_GET_SCRIPT).toString();
-    ids.split(/\s/g).forEach(id => {
-      if ( id.length == 32 ) {
-        extensionsArray.push(id);
-      }
-    });
-  } catch(e) {
-    console.warn(`Error collecting users installed extensions`, e);
-  }
-
-  const extensionsInstalled = `{
+  let lastExtensionsUpdateScript;
+  const extensionsInstalled = () => `{
     if ( location.hostname == "chromewebstore.google.com" ) {
       globalThis._installedExtensions = new Set(${JSON.stringify(extensionsArray)});
     }
   };`;
+
+  saveInstalledExtensions();
+
+  function saveInstalledExtensions() {
+    try {
+      const ids = execSync(EXTENSIONS_GET_SCRIPT).toString();
+      extensionsArray.length = 0;
+      ids.split(/\s/g).forEach(id => {
+        if ( id.length == 32 ) {
+          extensionsArray.push(id);
+        }
+      });
+    } catch(e) {
+      console.warn(`Error collecting users installed extensions`, e);
+    }
+  }
+
+  // this function should not be needed as we always restart the application after installing/removing an extension
+  function propagateExtensions() {
+    saveInstalledExtensions();
+    const scriptToUpdateInPage = extensionsInstalled();
+    if ( lastExtensionsUpdateScript != scriptToUpdateInPage ) {
+      lastExtensionsUpdateScript = scriptToUpdateInPage;
+    }
+    // just eval it everywhere when we update the list because the script is guarded to only work on the right domain
+    tabs.forEach(({type}, targetId) => {
+      if ( type != 'page' ) return;
+      const sessionId = sessions.get(targetId);
+      if ( ! sessionId ) {
+        console.warn(`No sessionId for target ${targetId} in extensions update propagate loop`);
+        return;
+      }
+      const contextId = OurWorld.get(sessionId);
+      send("Runtime.evaluate", {
+        expression: scriptToUpdateInPage,
+        contextId,
+      }, sessionId);
+    });
+  }
 
 const templatedInjections = {
 };
@@ -1690,7 +1719,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               injectionsScroll,
               modeInjectionScroll,
               ...(DEBUG.extensionsAccess ? [
-                extensionsInstalled,
+                extensionsInstalled(),
                 extensionsAccess,
               ] : [ ]),
             ].join(';\n'),
@@ -1913,7 +1942,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               injectionsScroll,
               modeInjectionScroll,
               ...(DEBUG.extensionsAccess ? [
-                extensionsInstalled,
+                extensionsInstalled(),
                 extensionsAccess,
               ] : [ ]),
             ].join(';\n'),
