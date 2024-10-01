@@ -115,6 +115,14 @@
         Too many requests from this IP. Please try again in a little while.
       `
     });
+    
+    const VeryConstrainedRateLimiter = rateLimit({
+      windowMs: 30000,
+      max: 1,
+      message: `
+        Too many requests from this IP. Please try again in a little while.
+      `
+    });
 
   // Safari special cookie loader
     let SAFARI_PERMISSION_LOADER_HTML = `<h1>Safari not supported...</h1>`;
@@ -492,37 +500,6 @@
     const server = protocol.createServer.apply(protocol, GO_SECURE && secure ? [secure_options, app] : [app]);
 
     const extensions = [];
-    if ( CONFIG.isCT && DEBUG.extensionsAccess ) {
-      try {
-        const preferencesPath = path.resolve(BASE_PATH, 'browser-cache', 'Default', 'Preferences');
-        const preferences = JSON.parse(fs.readFileSync(preferencesPath).toString());
-        const extensionsManifests = child_process.execSync(`find "${EXTENSIONS_PATH}" | grep manifest.json`).toString();
-        extensionsManifests.split('\n').forEach(manifestPath => {
-          if ( manifestPath.trim().length == 0 ) return;
-          try {
-            manifestPath = path.resolve(manifestPath);
-            const extensionId = ensureManifestDepth(manifestPath);
-            const manifestJSON = fs.readFileSync(manifestPath).toString();
-            const manifest = JSON.parse(manifestJSON);
-            if ( ! manifest.name || ! manifest.version || ! manifest.manifest_version ) {
-              console.warn({manifest});
-              throw new Error(`Incorrect manifest. Will ignore: ${manifestPath}`)
-            }
-            const extensionPath = path.dirname(manifestPath);
-            const extensionSettings = preferences.extensions.settings[extensionId];
-            const localizedManifest = localizeExtensionManifest({extensionSettings, extensionPath, manifest});
-            if ( localizedManifest.display_in_launcher !== false ) {
-              extensions.push({id: extensionId, ...localizedManifest});
-            }
-          } catch(e) {
-            console.warn(`Error handling supposed extension path ${manifestPath}, via: ${EXTENSIONS_PATH}`, e);
-          }
-        });
-      } catch(e) {
-        console.warn(`Could not get manifests for extensions at: ${EXTENSIONS_PATH}`, e);
-      }
-    }
-    DEBUG.showExtensions && console.log({extensions});
 
     const wss = new WebSocketServer({
       server,
@@ -1056,7 +1033,7 @@
             /*throw e;*/
           }
         }));
-        app.get(`/extensions`, (req, res) => {
+        app.get(`/extensions`, VeryConstrainedRateLimiter, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
           DEBUG.debugCookie && console.log('all cookies', req.cookies);
@@ -1064,6 +1041,8 @@
           if ( (cookie !== allowed_user_cookie) ) {
             return res.status(401).send('{"err":"forbidden"}');
           }
+          res.set('Cache-Control', 'public, max-age=13');
+          populateExtensions();
           return res.send({extensions});
         });
         app.get(`/isTor`, (req, res) => {
@@ -1569,4 +1548,39 @@
   function executeShutdownOfBBPRO() {
     console.warn(`Stopping BrowserBox`);
     return child_process.exec(`stop_bbpro`);
+  }
+
+  function populateExtensions() {
+    extensions.length = 0;
+    if ( CONFIG.isCT && DEBUG.extensionsAccess ) {
+      try {
+        const preferencesPath = path.resolve(BASE_PATH, 'browser-cache', 'Default', 'Preferences');
+        const preferences = JSON.parse(fs.readFileSync(preferencesPath).toString());
+        const extensionsManifests = child_process.execSync(`find "${EXTENSIONS_PATH}" | grep manifest.json`).toString();
+        extensionsManifests.split('\n').forEach(manifestPath => {
+          if ( manifestPath.trim().length == 0 ) return;
+          try {
+            manifestPath = path.resolve(manifestPath);
+            const extensionId = ensureManifestDepth(manifestPath);
+            const manifestJSON = fs.readFileSync(manifestPath).toString();
+            const manifest = JSON.parse(manifestJSON);
+            if ( ! manifest.name || ! manifest.version || ! manifest.manifest_version ) {
+              console.warn({manifest});
+              throw new Error(`Incorrect manifest. Will ignore: ${manifestPath}`)
+            }
+            const extensionPath = path.dirname(manifestPath);
+            const extensionSettings = preferences.extensions.settings[extensionId];
+            const localizedManifest = localizeExtensionManifest({extensionSettings, extensionPath, manifest});
+            if ( localizedManifest.display_in_launcher !== false ) {
+              extensions.push({id: extensionId, ...localizedManifest});
+            }
+          } catch(e) {
+            console.warn(`Error handling supposed extension path ${manifestPath}, via: ${EXTENSIONS_PATH}`, e);
+          }
+        });
+      } catch(e) {
+        console.warn(`Could not get manifests for extensions at: ${EXTENSIONS_PATH}`, e);
+      }
+    }
+    DEBUG.showExtensions && console.log({extensions});
   }

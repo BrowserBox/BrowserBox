@@ -417,7 +417,10 @@
             state.latestRequestId = 0;
           },
 
-          latestRequestId: 0
+          latestRequestId: 0,
+
+          // for extensions
+          getExtensions
         });
 
       // plugins
@@ -537,12 +540,44 @@
       // check extensions status
           const extensionsAPI = new URL(location.origin);
           extensionsAPI.pathname = '/extensions';
-          uberFetch(extensionsAPI).then(r => r.json()).then(({extensions}) => {
-            state.extensions = extensions;
-            if ( extensions.length ) {
-              setState('bbpro', state);
+
+          getExtensions();
+
+          // function to dynamically get extensions
+            async function getExtensions() {
+              const extensionsAPI = new URL(location.origin);
+              extensionsAPI.pathname = '/extensions';
+              const cacheKey = 'extensionsCache';
+
+              return uberFetch(extensionsAPI)
+                .then(async (r) => {
+                  if (r.status === 429) {
+                    // If rate limit hit, use cached data if available
+                    const cachedData = localStorage.getItem(cacheKey);
+                    if (cachedData) {
+                      // Parse and return the cached data
+                      return JSON.parse(cachedData);
+                    } else {
+                      throw new Error('Rate limit hit and no cache available.');
+                    }
+                  }
+                  // If no rate limit issue, parse response and update cache
+                  const data = await r.json();
+                  localStorage.setItem(cacheKey, JSON.stringify(data));
+                  return data;
+                })
+                .then(({ extensions }) => {
+                  state.extensions = extensions;
+                  if (extensions.length) {
+                    setState('bbpro', state);
+                  }
+                  return extensions; // Optionally return extensions for further use
+                })
+                .catch((error) => {
+                  console.error('Failed to fetch extensions:', error);
+                  return null; // Optionally handle or return null on error
+                });
             }
-          });
 
       // create link
         const queue = new EventQueue(state, sessionToken);

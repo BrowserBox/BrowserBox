@@ -1,10 +1,13 @@
 class BBExtensionsButton extends Base {
-  toggleVisibility(click) {
+  async toggleVisibility(click) {
+    const {state} = this;
+
     const panel = this.shadowRoot.querySelector('.panel');
     if ( panel.classList.contains('visible') ) {
       panel.classList.remove('visible');
     } else {
       panel.classList.add('visible');
+      state.getExtensions();
     }
   }
 
