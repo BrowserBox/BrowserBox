@@ -1,9 +1,14 @@
 #!/bin/bash
 
 source $HOME/.nvm/nvm.sh
-nvm use v20 || (nvm install v20 && nvm use v20)
-rm -rf .parcel-cache/*
+if ! nvm use v20; then
+  nvm install v20 && nvm use v20
+  npm remove -g parcel
+  npm i -g parcel@latest
+fi
 command -v parcel || npm i -g parcel@latest
+
+rm -rf .parcel-cache/*
 
 if [ "$IS_DOCKER_BUILD" = "true" ]; then
   echo "In docker, not running parcel (it hangs sometimes!)"
