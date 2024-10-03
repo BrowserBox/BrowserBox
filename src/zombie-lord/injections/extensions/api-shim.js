@@ -9,7 +9,7 @@
   globalThis.__hear = command => {
     console.log(`Extension injection received command`, command);
     switch(command.name) {
-      case "actionOnClick": {
+      case "actionOnClicked": {
         Listeners.action.forEach(listener => {
           try {
             listener(command.params);
