@@ -2442,7 +2442,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         return resp;
       }
     } else {
-      if ( command.name !== "Page.screencastFrameAck" ) {
+      if ( command.sessionId ) {
+        sessionId = command.sessionId;
+      } else if ( command.name !== "Page.screencastFrameAck" ) {
         sessionId = command.params.sessionId || that.sessionId;
         if ( ! sessionId || ! sessions.has(sessionId) ) {
           DEBUG.val && console.log("Blocking as session not exist.", sessionId);

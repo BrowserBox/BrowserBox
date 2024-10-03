@@ -395,7 +395,8 @@ const controller_api = {
       }
       //({Page, Target} = connection.zombie);
       command = command || {};
-      if ( command.sessionId && getWorker(command.sessionId) && workerAllows(command.name) ) {
+      if ( command.sessionId && getWorker(command.sessionId) && !workerAllows(command.name) ) {
+        console.warn(`Blocking ${command.name} from worker ${command.sessionId}`);
         retVal.data = {};
         return retVal;
       }
@@ -573,23 +574,20 @@ const controller_api = {
             if ( ! worker ) {
               console.warn(`Worker unknown for extension: ${id}`);
             }
-            const message = JSON.stringify({name:"actionOnClicked"});
-            await controller_api.send({
-              name: "Target.activateTarget",
-              params: {
-                targetId: worker.targetId
-              }
-            }, port);
-            controller_api.send({
+            const expression = `void 0;(function () {__hear({name:"actionOnClicked"}); return "hi"}());`
+            const connection = connections.get(port);
+            connection.sessionSend({
               name: "Runtime.evaluate", 
               params: {
                 contextId: 1,
-                expression: `__hear(${message});`
+                expression,
               }, 
-              sessionId: worker.sessionId
+              sessionId: worker.sessionId,
+              ensureSessionId: true,
+              dontWait: true,
             }, port).then(sendResult => {
               if ( DEBUG.debugSetupWorker ) {
-                console.info(`Telling extension worker to execute action on clicked code results in: `, sendResult, {worker, command});
+                console.info(`Telling extension worker to execute action on clicked code results in: `, sendResult, {worker, command, expression});
               }
             }).catch(err => console.warn(`Error trying to send command: ${command.name} to extension `, err, {command}, {port}));
           }

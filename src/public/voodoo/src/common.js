@@ -1,4 +1,4 @@
-export const VERSION = '10.2.2';
+export const VERSION = '10.2.3';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 
@@ -33,7 +33,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
-  revealServiceWorkersAsTabs: false,
+  revealServiceWorkersAsTabs: true,
   attachToServiceWorkers: true,
   extensionsAssemble() {
     return CONFIG.isCT() && true;
