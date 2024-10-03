@@ -71,6 +71,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugSetupWorker: true,
   attachToServiceWorkers: true,
   showServerWorkersAsTabs: false,
   extensionsAccess: true,

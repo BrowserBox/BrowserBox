@@ -134,11 +134,11 @@ is_port_free() {
   else
     # Prefer 'ss' if available, fall back to 'netstat'
     if command -v ss > /dev/null 2>&1; then
-      if ss -lnt | awk '$4 ~ ":'$port'$" {exit 1}'; then
-        return 0
+      if ! ss -lnt | awk '$4 ~ ":'$port'$" {exit 1}'; then
+        return 1
       fi
-    elif netstat -lnt | awk '$4 ~ ":'$port'$" {exit 1}'; then
-      return 0
+    elif ! netstat -lnt | awk '$4 ~ ":'$port'$" {exit 1}'; then
+      return 1
     fi
   fi
 

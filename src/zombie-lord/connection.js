@@ -1769,14 +1769,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   async function setupWorker({attached}) {
     const {waitingForDebugger, sessionId, targetInfo} = attached;
     const {targetId} = targetInfo;
-    DEBUG.debugSetupReload && consolelog(`Called setup for `, attached);
+    DEBUG.debugSetupWorker && consolelog(`Called setup for `, attached);
     if ( settingUp.has(targetId) ) return;
-    DEBUG.debugSetupReload && consolelog(`Running setup for `, attached);
+    DEBUG.debugSetupWorker && consolelog(`Running setup for `, attached);
     settingUp.set(targetId, attached);
     DEBUG.attachImmediately && DEBUG.worldDebug && console.log({waitingForDebugger, targetInfo});
 
     try {
-      DEBUG.val && console.log(sessionId, targetId, 'setting up');
+      DEBUG.debugSetupWorker && console.log(sessionId, targetId, 'setting up');
 
       if ( ! loadings.has(sessionId) ) {
         const loading = {waiting:0, complete:0,targetId}
@@ -1788,6 +1788,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {},
         sessionId
       );
+
+	    const result = await send("Runtime.evaluate", {expression:`location.href`}, sessionId); 
+      DEBUG.debugSetupWorker && console.log({result});
 
       await send("Network.enable", {}, sessionId);
       if ( DEBUG.networkBlocking ) {
