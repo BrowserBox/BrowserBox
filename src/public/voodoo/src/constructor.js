@@ -1209,7 +1209,8 @@
             );
           });
           queue.addMetaListener('createTab', ({createTab}) => {
-            alert('Open Extension');
+            console.log({createTab});
+            alert('Open Extension: ' + createTab?.opts?.url);
             state.createTab(null, createTab.opts.url);
           });
 

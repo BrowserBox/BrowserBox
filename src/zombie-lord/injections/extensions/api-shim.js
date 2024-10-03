@@ -1,5 +1,6 @@
 {
   // shim key elements of the chrome extension API 
+  const FAKEWIN = {id:null,tabs:[{id:null}], left:0, top:0, width:0, height:0};
   try {
     let messageId = 0;
     let WinId = 1;
@@ -9,6 +10,7 @@
       globalThis.__ei_setup = true;
 
       const Wins = new Map();
+      Wins.set(FAKEWIN.id, FAKEWIN);
       const Listeners = {
         action: new Set(),
         winRemoved: new Set(),
@@ -61,20 +63,25 @@
         // this works for open and close but is wrong sized
 
         Object.assign(opts, {
-          __currentViewport
+          ...__currentViewport
         });
         say({createTab:{opts}});
-        const win = await OG_WC(opts);
-        lastWin = win;
-        //const win = {id:WinId++};
+        try {
+          //const win = await OG_WC(opts);
+          //lastWin = win;
+          //const win = {id:WinId++};
 
-        Wins.set(win.id, win);
+          //Wins.set(win.id, win);
+          //console.log(`I am betting this never executes or FAKEWIN is null`, FAKEWIN, JSON.stringify({FAKEWIN}));
 
-        if ( cb ) {
-          setTimeout(() => cb(win), 0);
+          if ( cb ) {
+            setTimeout(() => cb(FAKEWIN), 0);
+          }
+
+          return FAKEWIN;
+        } catch(e) {
+          console.warn('Error makeing window for extension', e);
         }
-
-        return win;
 
         /* // this works for first open and is right sized but then close doesn't work
         say({createTab:{opts}});
@@ -97,7 +104,9 @@
       chrome.windows.getCurrent = async (cb) => {
         let resolve;
         const pr = new Promise(res => resolve = res);
+        /*
         OG_CWGC_REF.call(chrome.windows, win => {
+          win = FAKEWIN;
           lastWin = win;
           win.height -= 86;
           console.log(win, JSON.stringify(win));
@@ -107,6 +116,12 @@
             return resolve(win);
           }
         });
+        */
+        if ( cb ) {
+          return cb(FAKEWIN);
+        } else {
+          return resolve(FAKEWIN);
+        }
         return pr;
       };
 
@@ -118,6 +133,11 @@
 
       const OG_CWU_REF = chrome.windows.update;
       chrome.windows.update = async (id, opts, cb) => {
+        if ( cb ) {
+          setTimeout(() => cb(FAKEWIN), 1000);
+        }
+        return FAKEWIN;
+        /*
         let resolve;
         const pr = new Promise(res => resolve = res);
         OG_CWGC_REF.call(chrome.windows, id, opts, (win) => {
@@ -128,7 +148,11 @@
             return resolve(win);
           }
         });
+        */
       };
+
+      chrome.tabs.onUpdated.addListener = (...whatevers) => 0;
+      chrome.runtime.onConnect.addListener = (...whatevers) => 0;
 
       function say(o) {
         o.messageId = messageId++;
