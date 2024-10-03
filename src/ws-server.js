@@ -142,7 +142,7 @@
   const TabNumbers = new Map();
 
   // extensions
-  const extensions = [];
+  export const extensions = [];
 
   let shutdownTimer = null;
   let serverOrigin;

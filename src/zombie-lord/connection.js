@@ -31,6 +31,7 @@ import {
   consolelog,
   untilTrue,
   untilTrueOrTimeout,
+  EXTENSIONS_PATH,
 } from '../common.js';
 
 import {username} from '../args.js';
@@ -38,7 +39,7 @@ import {WorldName} from '../public/translateVoodooCRDP.js';
 import {RACE_SAMPLE, makeCamera, COMMON_FORMAT, DEVICE_FEATURES, SCREEN_OPTS, MAX_ACK_BUFFER, MIN_WIDTH, MIN_HEIGHT} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
 import {Document} from './api/document.js';
-import {getInjectableAssetPath, fileChoosers} from '../ws-server.js';
+import {extensions, getInjectableAssetPath, fileChoosers} from '../ws-server.js';
 
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
@@ -53,6 +54,7 @@ const elementInfo = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injectio
 const scrollNotify = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'scrollNotify.js')).toString();
 const botDetectionEvasions = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'pageContext', 'botDetectionEvasions.js')).toString();
 const showMousePosition = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'pageContext', 'showMouse.js')).toString();
+const keyExtensionAPIShims = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'extensions', 'api-shim.js')).toString();
 
 // plugins injections
 const appMinifier = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'appminifier', 'injections.js')).toString();
@@ -244,6 +246,7 @@ const MainFrames = new Map();
 const PowerSources = new Map();
 const OpenModals = new Map();
 const SetupTabs = new Map();
+const Workers = new Set();
 const settingUp = new Map();
 const Reloaders = new Map();
 //const originalMessage = new Map();
@@ -985,6 +988,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
       const logMessages = args.map(convertRemoteObjectToString);
 
+      if ( DEBUG.debugSetupWorker && Workers.has(sessionId) ) {
+        console.info(`Console API messge from worker`, consoleMessage);
+      }
+
       try {
         DEBUG.val && console.log("Runtime.consoleAPICalled",
           {executionContextId}, 
@@ -1566,9 +1573,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( CONFIG.screencastOnly ) {
         let castInfo;
         if ( castStarting.get(targetId) ) {
-          console.log(`[cast] Waiting for cast start ${tabs.get(targetId)}...`);
+          console.log(`[cast] Waiting for cast start `, tabs.get(targetId), `...`);
           await untilTrue(() => casts.get(targetId)?.started, 200, 500);
-          console.log(`[cast] Finished waiting for cast start ${tabs.get(targetId)}...`);
+          console.log(`[cast] Finished waiting for cast start `, tabs.get(targetId), `...`);
           castInfo = casts.get(targetId);
         } else {
           castInfo = casts.get(targetId);
@@ -1774,6 +1781,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     DEBUG.debugSetupWorker && consolelog(`Running setup for `, attached);
     settingUp.set(targetId, attached);
     DEBUG.attachImmediately && DEBUG.worldDebug && console.log({waitingForDebugger, targetInfo});
+    Workers.add(sessionId);
 
     try {
       DEBUG.debugSetupWorker && console.log(sessionId, targetId, 'setting up');
@@ -1789,8 +1797,33 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         sessionId
       );
 
-	    const result = await send("Runtime.evaluate", {expression:`location.href`}, sessionId); 
+	    const {result} = await send("Runtime.evaluate", {expression:`location.href`}, sessionId); 
       DEBUG.debugSetupWorker && console.log({result});
+      const url = new URL(result.value);
+      DEBUG.debugSetupWorker && console.log({url});
+      if ( url.protocol == 'chrome-extension:' && url.hostname.length == 32 && !url.pathname.endsWith('.html') ) {
+        console.log('Attached to extension service worker. Preparing inject');
+        const swPathParts = url.pathname.split(path.sep);
+        const extensionManifest = extensions.find(({id}) => id == url.hostname);
+        let swContentPath = path.resolve(EXTENSIONS_PATH, url.hostname, `${extensionManifest?.version || '1.0.0'}_0`, ...swPathParts);
+        if ( ! fs.existsSync(swContentPath) ) {
+          swContentPath = extractExtSWContentPath(extensionManifest);
+        }
+        console.log('Will fetch extension service worker content from ', swContentPath);
+        const swContent = fs.readFileSync(swContentPath).toString();
+        const wrappedSwContent = `{void 0;${keyExtensionAPIShims};${swContent}}`;
+        console.log({wrappedSwContent});
+
+        const evalResult = await send(
+          "Runtime.evaluate", 
+          {
+            expression: wrappedSwContent
+          }, 
+          sessionId
+        );
+
+        console.log({evalResult});
+      }
 
       await send("Network.enable", {}, sessionId);
       if ( DEBUG.networkBlocking ) {
@@ -1853,45 +1886,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         }, sessionId);
         console.log(`Created power source. Got context id: ${executionContextId} for sessionId: ${sessionId}`);
         PowerSources.set(sessionId, executionContextId);
-      }
-
-      if ( CONFIG.screencastOnly ) {
-        let castInfo;
-        if ( castStarting.get(targetId) ) {
-          console.log(`[cast] Waiting for cast start ${tabs.get(targetId)}...`);
-          await untilTrue(() => casts.get(targetId)?.started, 200, 500);
-          console.log(`[cast] Finished waiting for cast start ${tabs.get(targetId)}...`);
-          castInfo = casts.get(targetId);
-        } else {
-          castInfo = casts.get(targetId);
-        }
-        if ( !castInfo || ! castInfo.castSessionId ) {
-          castStarting.set(targetId, true);
-          updateCast(sessionId, {started:true}, 'start');
-          DEBUG.shotDebug && console.log("SCREENCAST", SCREEN_OPTS);
-          const {
-            format,
-            quality, everyNthFrame,
-            maxWidth, maxHeight
-          } = SCREEN_OPTS;
-          DEBUG.debugScreenSize && console.log(`Sending cast`, SCREEN_OPTS, 'to', connection.tabs.get(targetId));
-          await send("Page.startScreencast", {
-            format, quality, everyNthFrame, 
-            ...(DEBUG.noCastMaxDims ? 
-              {}
-              : 
-              {maxWidth, maxHeight}
-            ),
-          }, sessionId);
-          castStarting.delete(targetId);
-        } else {
-          if ( ! sessionId ) {
-            console.warn(`2 No sessionId for screencast ack`);
-          }
-          await send("Page.screencastFrameAck", {
-            sessionId: castInfo.castSessionId
-          }, sessionId);
-        }
       }
 
       if ( DEBUG.useFlashEmu ) {
@@ -2059,9 +2053,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const targetId = sessions.get(sessionId);
     try {
       if ( settingUp.has(targetId) ) {
-        console.log(`Waiting for setup to complete for ${tabs.get(sessions.get(sessionId))}`);
+        console.log(`Waiting for setup to complete for ${JSON.stringify(tabs.get(sessions.get(sessionId)), null, 2)}`);
         await untilTrueOrTimeout(() => !settingUp.has(targetId), 10);
-        console.log(`Finished waiting for setup to complete for ${tabs.get(sessions.get(sessionId))}`);
+        console.log(`Finished waiting for setup to complete for`, tabs.get(sessions.get(sessionId)));
       }
       await sleep(100);
       DEBUG.debugSetupReload && console.log(`Reloading ${sessionId}`);
@@ -2405,9 +2399,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( CONFIG.screencastOnly ) {
           let castInfo;
           if ( castStarting.get(targetId) ) {
-            console.log(`[cast] Waiting for cast start ${tabs.get(targetId)}...`);
+            console.log(`[cast] Waiting for cast start `, tabs.get(targetId), `...`);
             await untilTrue(() => casts.get(targetId)?.started, 200, 500);
-            console.log(`[cast] Finished waiting for cast start ${tabs.get(targetId)}...`);
+            console.log(`[cast] Finished waiting for cast start `, tabs.get(targetId), `...`);
             castInfo = casts.get(targetId);
           } else {
             castInfo = casts.get(targetId);
@@ -2612,6 +2606,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   function endTarget({targetId}, label) {
     DEBUG.val > DEBUG.med && console.warn({[label]:{targetId}});
     const sessionId = sessions.get(targetId);
+    if ( Workers.has(sessionId) ) {
+      Workers.delete(sessionId);
+      DEBUG.debugSetupWorker && console.log(`Worker: ${sessionId} going down.`);
+    }
     if ( connection.activeTarget === targetId ) {
       connection.activeTarget = null;
     }
@@ -3273,4 +3271,23 @@ async function fetchWithTor(url, options = {}) {
 
     request.end();
   });
+}
+
+function extractExtSWContentPath(manifest, url) {
+  try {
+    const {id} =  manifest;
+    if ( ! id.match(/^[a-z]$/i) ) {
+      throw new TypeError(`Illegal extension id: ${id}`);
+    }
+    let {pathname} = url;
+    pathname = encodeURI(pathname);
+    const parts = pathname.split('/');
+    pathname = parts.join(path.sep);
+    const result = execSync(`find "${path.resolve(EXTENSIONS_PATH, id)}" | grep "${url.pathname}"`).trim();
+    const firstLine = result.split(/\n/g).map(line = line.trim()).filter(line => line.length)[0];
+    return path.resolve(firstLine);
+  } catch(e) {
+    console.warn(`Error during extract extension sw content path`, e);
+    throw new Error(`Extension SW could not be found`);
+  }
 }
