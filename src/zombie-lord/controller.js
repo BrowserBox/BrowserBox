@@ -1,7 +1,7 @@
 import os from 'os';
 import {spawn} from 'node:child_process';
 import Connect from './connection.js';
-import {updateTargetsOnCommonChanged, executeBinding, getViewport} from './connection.js';
+import {workerAllows, getWorker, updateTargetsOnCommonChanged, executeBinding, getViewport} from './connection.js';
 import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
 import {MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
 import fs from 'fs';
@@ -395,6 +395,10 @@ const controller_api = {
       }
       //({Page, Target} = connection.zombie);
       command = command || {};
+      if ( command.sessionId && getWorker(command.sessionId) && workerAllows(command.name) ) {
+        retVal.data = {};
+        return retVal;
+      }
       if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(command.name) ) {
         let stack = '';
         if ( DEBUG.noteCallStackInLog ) {
@@ -561,6 +565,33 @@ const controller_api = {
               activateTarget: command.params
             });
             DEBUG.val && console.log(`received activateTarget and sent to clients`, command);
+          }
+          break;
+          case "Connection.extensions.actionOnClicked": {
+            const {id} = command.params;
+            const worker = getWorker(id);
+            if ( ! worker ) {
+              console.warn(`Worker unknown for extension: ${id}`);
+            }
+            const message = JSON.stringify({name:"actionOnClicked"});
+            await controller_api.send({
+              name: "Target.activateTarget",
+              params: {
+                targetId: worker.targetId
+              }
+            }, port);
+            controller_api.send({
+              name: "Runtime.evaluate", 
+              params: {
+                contextId: 1,
+                expression: `__hear(${message});`
+              }, 
+              sessionId: worker.sessionId
+            }, port).then(sendResult => {
+              if ( DEBUG.debugSetupWorker ) {
+                console.info(`Telling extension worker to execute action on clicked code results in: `, sendResult, {worker, command});
+              }
+            }).catch(err => console.warn(`Error trying to send command: ${command.name} to extension `, err, {command}, {port}));
           }
           break;
           default: {

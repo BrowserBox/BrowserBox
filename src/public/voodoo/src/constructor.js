@@ -1208,6 +1208,9 @@
               () => setTimeout(() => location.reload(), 6742), {once:true, capture:true}
             );
           });
+          queue.addMetaListener('createTab', ({createTab}) => {
+            state.createTab(null, createTab.opts.url);
+          });
 
         // plugins
           if ( DEBUG.detectPuterAbility ) {
