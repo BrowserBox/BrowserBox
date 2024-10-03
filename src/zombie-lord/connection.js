@@ -677,6 +677,29 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   on("Target.detachedFromTarget", ({sessionId}) => {
     const detached = {sessionId};
     const targetId = sessions.get(sessionId);
+    if ( Workers.has(sessionId) ) {
+      const workerInfo = Workers.get(sessionId);
+      Workers.delete(sessionId);
+      Workers.delete(workerInfo.id);
+      DEBUG.debugSetupWorker && console.log(`Worker: ${sessionId} going down.`);
+    }
+    const targetInfo = tabs.get(targetId);
+    if ( targetInfo ) {
+      const {type} = targetInfo;
+      const url = new URL(targetInfo.url);
+      if ( type == 'page' && url.protocol == "chrome-extension:" && url.hostname.length == 32 ) {
+        DEBUG.debugSetupWorker && console.log(`Removing target from extension, so triggering window close logic in extension.`);
+        const id = url.hostname;
+        const worker = Workers.get(id);
+        if ( worker ) {
+          const expression = `__hear({name:"windowRemoved"});`
+          send("Runtime.evaluate", {
+            contextId: 1,
+            expression,
+          }, worker.sessionId).then(res => console.log(`Evaluate result`, res)).catch(err => console.warn(`Err`, err));
+        }
+      }
+    }
     targets.delete(targetId);
     tabs.delete(targetId);
     removeSession(sessionId);
@@ -1816,7 +1839,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         const extensionManifest = extensions.find(({id}) => id == extensionId);
         let swContentPath = path.resolve(EXTENSIONS_PATH, extensionId, `${extensionManifest?.version || '1.0.0'}_0`, ...swPathParts);
         if ( ! fs.existsSync(swContentPath) ) {
-          swContentPath = extractExtSWContentPath(extensionManifest);
+          swContentPath = extractExtSWContentPath(extensionManifest, url);
         }
         console.log('Will fetch extension service worker content from ', swContentPath);
         const swContent = fs.readFileSync(swContentPath).toString();
@@ -2548,6 +2571,23 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       Workers.delete(workerInfo.id);
       DEBUG.debugSetupWorker && console.log(`Worker: ${sessionId} going down.`);
     }
+    const targetInfo = tabs.get(targetId);
+    if ( targetInfo ) {
+      const {type} = targetInfo;
+      const url = new URL(targetInfo.url);
+      if ( type == 'page' && url.protocol == "chrome-extension:" && url.hostname.length == 32 ) {
+        DEBUG.debugSetupWorker && console.log(`Removing target from extension, so triggering window close logic in extension.`);
+        const id = url.hostname;
+        const worker = Workers.get(id);
+        if ( worker ) {
+          const expression = `__hear({name:"windowRemoved"});`
+          send("Runtime.evaluate", {
+            contextId: 1,
+            expression,
+          }, worker.sessionId).then(res => console.log(`Evaluate result`, res)).catch(err => console.warn(`Err`, err));
+        }
+      }
+    }
     if ( connection.activeTarget === targetId ) {
       connection.activeTarget = null;
     }
@@ -3235,7 +3275,7 @@ async function fetchWithTor(url, options = {}) {
 function extractExtSWContentPath(manifest, url) {
   try {
     const {id} =  manifest;
-    if ( ! id.match(/^[a-z]$/i) ) {
+    if ( ! id.match(/^[a-z]{32}$/i) ) {
       throw new TypeError(`Illegal extension id: ${id}`);
     }
     let {pathname} = url;

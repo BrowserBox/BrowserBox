@@ -573,19 +573,21 @@ const controller_api = {
             const worker = getWorker(id);
             if ( ! worker ) {
               console.warn(`Worker unknown for extension: ${id}`);
+              return;
+              // we could fall back to
+              //connection.forceMeta({createTab:{opts:{url:`chrome-extension://${id}/popup.html`}}});
             }
-            const expression = `void 0;(function () {__hear({name:"actionOnClicked"}); return "hi"}());`
-            const connection = connections.get(port);
-            connection.sessionSend({
-              name: "Runtime.evaluate", 
-              params: {
+            const {width,height} = connection.bounds;
+            const expression = `__currentViewport = {left:0,top:0,...${JSON.stringify({width,height})}};__hear({name:"actionOnClicked"});`
+            console.log(`ok`, expression);
+            //connection.zombie.send("Target.activateTarget", { targetId: worker.targetId }, worker.sessionId).catch(err => console.warn(`Error activate target`));
+            connection.zombie.send("Runtime.evaluate", 
+              {
                 contextId: 1,
                 expression,
               }, 
-              sessionId: worker.sessionId,
-              ensureSessionId: true,
-              dontWait: true,
-            }, port).then(sendResult => {
+              worker.sessionId,
+            ).then(sendResult => {
               if ( DEBUG.debugSetupWorker ) {
                 console.info(`Telling extension worker to execute action on clicked code results in: `, sendResult, {worker, command, expression});
               }

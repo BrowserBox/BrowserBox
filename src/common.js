@@ -260,7 +260,7 @@ export const DEBUG = Object.freeze({
   shotDebug: false,
   noShot: false,
   dev: false,
-  val: 1,
+  val: 0,
   low: 1,
   med: 3,
   high: 5
