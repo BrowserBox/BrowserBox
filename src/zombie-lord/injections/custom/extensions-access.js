@@ -1,11 +1,42 @@
 {
   if ( location.hostname == "chromewebstore.google.com" ) {
+    const MIN_WAIT = 5;
+    const MAX_WAITS = 8640000;
+    const DEBUG = {
+      debugUntilTrue: true,
+    }
     const NOT_ALLOWED_CHAR = /[^a-z0-9\-]/g;
     const INSTALL_BUTTON_SELECTOR = 'main section > section > div:last-child button';
-    const installButton = document.querySelector(INSTALL_BUTTON_SELECTOR);
-    if ( installButton.innerText.trim().match(/Add.*to.*Desktop/i) ) {
-      // just a bit of convneience only for the english store present version tho.
-      installButton.innerText = "Remove from CloudTabs";
+
+    correct();
+
+    async function correct() {
+      await untilTrue(() => document.querySelector(INSTALL_BUTTON_SELECTOR), 100, 10000, () => console.warn('Could not find the main button'));
+      setInterval(() => {
+        const installButton = document.querySelector(INSTALL_BUTTON_SELECTOR);
+        const id = location.pathname.split('/').pop();
+
+        if ( ! id ) {
+          return;
+        }
+
+        if ( installButton.innerText.trim().match(/Add.*to.*Desktop/i) ) {
+          // just a bit of convneience only for the english store present version tho.
+          const allSpan = Array.from(document.querySelectorAll(INSTALL_BUTTON_SELECTOR + ' span'));
+          const spanWithWords = allSpan.filter(s => s.innerText.trim().length);
+          let words = "Add to CloudTabs";
+          if ( globalThis._installedExtensions?.has?.(id) ) {
+            words = "Remove from CloudTabs";
+          }
+
+          if ( spanWithWords.length > 1 ) {
+            installButton.innerText = words;
+            installButton.style.color = "white !important;"
+          } else {
+            spanWithWords[0].innerText = words;
+          }
+        }
+      }, 250);
     }
     document.addEventListener('click', event => {
       if ( event.target.closest(INSTALL_BUTTON_SELECTOR) ) {
@@ -78,6 +109,34 @@
         }, 1);
       }
     });
+    async function untilTrue(pred, waitOverride = MIN_WAIT, maxWaits = MAX_WAITS, failCallback) {
+      let waitCount = 0;
+      let resolve;
+      let reject;
+      const pr = new Promise((res, rej) => (resolve = res, reject = rej));
+      setTimeout(checkPred, 0);
+      return pr;
+
+      function checkPred() {
+        try {
+          DEBUG.debugUntilTrue && console.log('Checking', pred);
+          DEBUG.debugUntilTrue && console.log('Pred result? ' + pred());
+          if ( pred() ) {
+            return resolve(true);
+          } else {
+            waitCount++;
+            if ( waitCount < maxWaits ) {
+              setTimeout(checkPred, waitOverride);
+            } else if ( typeof failCallback == "function" ) {
+              failCallback(reject); 
+            }
+          }
+        } catch(e) {
+          console.error(`Predicate failure`, pred, e);
+          throw e;
+        }
+      }
+    }
   }
   if ( location.protocol == "chrome:" && location.hostname == "extensions" ) {
     const NOT_ALLOWED_CHAR = /[^a-z0-9\-]/g;
