@@ -1190,7 +1190,19 @@
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 6242), {once:true, capture:true}
+              () => {
+                const maxWaits = 150;
+                //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
+                setInterval(async () => {
+                  const {isTor} = uberFetch('/isTor').then(r => await r.json());
+                  waits++;
+                  if ( waits > maxWaits ) {
+                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                  }
+                  location.reload();
+                }, 2003);
+              },
+              {once: true, capture: true}
             );
           });
           queue.addMetaListener('deleteExtension', ({removeExtension})  => {
@@ -1205,7 +1217,19 @@
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 6742), {once:true, capture:true}
+              () => {
+                const maxWaits = 150;
+                //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
+                setInterval(async () => {
+                  const {isTor} = uberFetch('/isTor').then(r => await r.json());
+                  waits++;
+                  if ( waits > maxWaits ) {
+                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                  }
+                  location.reload();
+                }, 2003);
+              },
+              {once: true, capture: true}
             );
           });
           queue.addMetaListener('createTab', ({createTab}) => {

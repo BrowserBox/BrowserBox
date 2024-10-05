@@ -23,7 +23,7 @@ const excludedPaths = new Set([
   "/isTor",
   "/torExit",
   "/torca/rootCA.pem", "/settings_modal", "/restart_app", 
-  "/stop_app", "/stop_browser", "/start_browser", "/integrity"
+  "/stop_app", "/stop_browser", "/start_browser", 
 ]);
 const excludedPrefixes = [
   '/api/',
