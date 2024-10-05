@@ -3,15 +3,15 @@
   </button>
   <aside class="extensions panel">
     <ul>
-      <li data-id="all-extensions-page">
-        <a onclick=openSettings>CloudTabs Extensions</a>
+      <li data-id="all-extensions-page" class="all-link" onclick=openSettings title="See all extensions">
+        <a>CloudTabs Extensions</a>
       </li>
     </ul>
     ${_top?.extensions?.length ? G`<hr>` : ''} 
-    <ul>${_top?.extensions?.length ? _top.extensions.map(({id: key, name, short_name, options_page, action, side_panel}) => F`${{key}}
+    <ul>${_top?.extensions?.length ? _top.extensions.map(({id: key, name, short_name, options_page, action, side_panel, enabled}) => F`${{key}}
       <li data-id=${key}>
-        <a onclick=executeAction>${short_name || name.slice(0, 23)}</a>
-        <button onclick=openOptions> 
+        <a ${!enabled ? 'disabled' : ''} onclick=executeAction title="Activate ${short_name || name.slice(0,23)}">${short_name || name}</a>
+        <button onclick=openOptions title="Settings"> 
           <img class=extensions-option alt="Options" src="voodoo/assets/icons/settings-2.svg">
         </button>
       </li>`)

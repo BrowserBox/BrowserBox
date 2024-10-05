@@ -180,7 +180,7 @@
           const nameEl = doc.querySelector('[id^="name"]');
           let name = nameEl?.innerText || `extension-${id}`;
           removeButton.addEventListener('click', () => {
-            const doIt = confirm(`Do you want to remove this "${name}" from your CloudTabs browser?`);
+            const doIt = confirm(`Do you want to remove "${name}" from your CloudTabs browser?`);
             if ( doIt ) {
               try {
                 name = name.replace(/\s/g, '-').toLocaleLowerCase();
