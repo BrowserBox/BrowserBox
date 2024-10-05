@@ -1,20 +1,23 @@
-<button name=extensions onclick=toggleVisibility>
-  <img class=no-small alt="Extensions" src="voodoo/assets/icons/spray-can.svg"/>
-</button>
-<aside class="extensions panel">
-  <ul>${
-    _top?.extensions?.length ? 
-      _top.extensions.map(({id: key, name, short_name, options_page, action, side_panel}) => {
-        return F`${{key}}
+  <button name=extensions onclick=toggleVisibility>
+    <img class=no-small alt="Extensions" src="voodoo/assets/icons/spray-can.svg"/>
+  </button>
+  <aside class="extensions panel">
+    <ul>
+          <li data-id="all-extensions-page">
+            <a onclick=openSettings>CloudTabs Extensions</a>
+          </li>
+      ${_top?.extensions?.length ? 
+        F`<hr>${_top.extensions.map(({id: key, name, short_name, options_page, action, side_panel}) => F`${{key}}
           <li data-id=${key}>
             <a onclick=executeAction>${short_name || name.slice(0, 23)}</a>
-              <button onclick=openOptions> 
+            <button onclick=openOptions> 
               <img class=extensions-option alt="Options" src="voodoo/assets/icons/settings-2.svg">
             </button>
           </li>
-        `;
-      }) 
-      : 
-      ''
-  }</ul>
-</aside>
+          `)}
+        `
+        : 
+        F`<!-- cloudtabs extensions -->`
+      }
+    </ul>
+  </aside>

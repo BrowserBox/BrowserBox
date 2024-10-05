@@ -43,4 +43,8 @@ class BBExtensionsButton extends Base {
       
     }
   }
+
+  openSettings(click) {
+    this.state.createTab(null, `chrome://extensions/`);
+  }
 }

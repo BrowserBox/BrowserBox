@@ -1192,9 +1192,10 @@
               'click', 
               () => {
                 const maxWaits = 150;
+                let waits = 0;
                 //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
                 setInterval(async () => {
-                  const {isTor} = uberFetch('/isTor').then(r => await r.json());
+                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
                   waits++;
                   if ( waits > maxWaits ) {
                     alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
@@ -1219,9 +1220,10 @@
               'click', 
               () => {
                 const maxWaits = 150;
+                let waits = 0;
                 //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
                 setInterval(async () => {
-                  const {isTor} = uberFetch('/isTor').then(r => await r.json());
+                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
                   waits++;
                   if ( waits > maxWaits ) {
                     alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
