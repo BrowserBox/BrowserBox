@@ -24,7 +24,9 @@ if [[ $PLAT == win* ]]; then
   cp ./pulse/default.pa "${PULSE}/etc/pulse/default.pa.d/"
   cp ./pulse/system.pa "${PULSE}/etc/pulse/system.pa.d/"
 else
-  sudo cp -r ./pulse/* /etc/pulse/
+  if sudo -n true; then
+    sudo cp -r ./pulse/* /etc/pulse/
+  fi
   mkdir -p ~/.config/pulse/
   cp -r ./pulse/* ~/.config/pulse/
 fi

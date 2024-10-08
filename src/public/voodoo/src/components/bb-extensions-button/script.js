@@ -35,7 +35,16 @@ class BBExtensionsButton extends Base {
     if ( manifest?.action?.default_popup ) {
       this.state.createTab(null, `chrome-extension://${id}/${manifest.action.default_popup}`);
     } else {
-      this.state.createTab(null, `chrome-extension://${id}/popup.html`);
+      this.state.H({
+        synthetic: true,
+        type: 'actionOnClicked',
+        data: {id}
+      });
+      
     }
+  }
+
+  openSettings(click) {
+    this.state.createTab(null, `chrome://extensions/`);
   }
 }
