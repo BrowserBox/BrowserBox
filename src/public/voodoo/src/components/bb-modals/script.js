@@ -135,7 +135,7 @@ class BBModal extends Base {
       DEBUG.debugModal && console.warn(`Waiting until modal type ${type} has its element loaded...`);
     }
     await state._top.untilTrue(() => !!ModalRef[type], 100, 1000);
-    const currentModal = {
+    let currentModal = {
       type, token, mode, 
       highlight, 
       requestId, 
@@ -147,19 +147,10 @@ class BBModal extends Base {
       title, url
     };
     state.viewState.currentModal = currentModal;
-    this.prepareState(currentModal);
     localStorage.setItem('lastModal', JSON.stringify(modal));
 
     DEBUG.debugModal && console.log(state.viewState.currentModal);
 
-    const modalDebug = {
-      defaultPrompt, url, highlight, currentModal, ModalRef, state, title, type, otherButton, token,
-      link,
-    };
-
-    (DEBUG.debugModal || (DEBUG.val >= DEBUG.med)) && Object.assign(self, {modalDebug});
-
-    (DEBUG.debugModal || (DEBUG.val >= DEBUG.med)) && console.log(`Will display modal ${type} with ${msg} on el:`, state.viewState.currentModal.el);
 
     /*
     while( state?.viewState?.currentModal?.el !== state?.viewState?.ModalRef?.notice ) {
@@ -169,24 +160,27 @@ class BBModal extends Base {
     }
     */
 
-    this.state = state;
-
     DEBUG.debugModal && alert(`Modal should be shown`);
-    setTimeout(async () => {
+    //setTimeout(async () => {
       if ( type == 'copy' ) {
-        await state._top.untilTrue(() => this.copyBoxTextarea.value == msg, 300, 20);
+        //await state._top.untilTrue(() => this.copyBoxTextarea.value == msg, 300, 20);
         //this.copyBoxTextarea.select();
         let secondTitle = '';
         try {
+          DEBUG.debugClipboard && console.log(`Trying to copy`);
           await navigator.clipboard.writeText(this.copyBoxTextarea.value);
           DEBUG.debugClipboard && console.info(`Copied to clipboard`);
           secondTitle = ' - Copied to Clipboard!';
         } catch(e) {
           DEBUG.debugClipboard && console.warn(`Could not copy to clipboard`, title);
           this.latestCopyValue = this.copyBoxTextarea.value;
-          otherButton = `<button onclick="copyToClipboard">Copy</button>`
+          otherButton = {
+            title: 'Copy',
+            onClick: 'copyToClipboard',
+          };
+          secondTitle = ' - Click Copy';
         }
-        const currentModal = {
+        currentModal = {
           type, token, mode, 
           highlight, 
           requestId, 
@@ -200,11 +194,19 @@ class BBModal extends Base {
         };
         state.viewState.currentModal = currentModal;
         this.prepareState(currentModal);
-        this.state = state;
         // weird hack don't know why we need this
         this.copyBoxTitle.innerText = title + secondTitle;
       }
-    }, 0);
+    //}, 0);
+    const modalDebug = {
+      defaultPrompt, url, highlight, currentModal, ModalRef, state, title, type, otherButton, token,
+      link,
+    };
+
+    (DEBUG.debugModal || (DEBUG.val >= DEBUG.med)) && Object.assign(self, {modalDebug});
+
+    (DEBUG.debugModal || (DEBUG.val >= DEBUG.med)) && console.log(`Will display modal ${type} with ${msg} on el:`, state.viewState.currentModal.el);
+    this.state = state;
   }
 
   copyToClipboard(event) {

@@ -98,7 +98,6 @@ export const DEBUG = Object.freeze({
   debugEventChains: false,
   debugEventQueue: false,
   HFUNCTION: false,
-  debugCopyPaste: false,
   trackLoading: true,
   debugAudio: false,
   debugAudioAck: false,
@@ -120,7 +119,14 @@ export const DEBUG = Object.freeze({
   showCollect: false,
   debugFocus: false,
   debugAuth: false,
-  debugModal: false,
+  debugCopyPaste: false,
+  debugOtherButton: false,
+  get debugModal() {
+    return this.debugCopyPaste || false;
+  },
+  get debugClipboard() {
+    return this.debugCopyPaste || false;
+  },
   get debugMeta() {
     return  (this.debugFavicon > 1) || 0;
   },

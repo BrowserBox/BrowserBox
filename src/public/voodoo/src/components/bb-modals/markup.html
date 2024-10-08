@@ -138,14 +138,14 @@
         <p class=message value=message>${msg||'Empty notice'}</p>
         <p>
           ${link ?
-            F`<a title="${link.title}" target=${link.target} href=${link.href}>${link.title}</a>` 
+            G`<a title="${link.title}" target=${link.target} href=${link.href}>${link.title}</a>` 
             :
-            F`<!-- link -->`
+            G`<!-- link -->`
           }
           ${otherButton ?
-            Fskip(otherButton)
+            (DEBUG.debugOtherButton && console.log('Have other button'), G`<button title="${otherButton.title}" click=${otherButton.onClick}>${otherButton.title}</button>`)
             :
-            F`<!-- other button -->`
+            (DEBUG.debugOtherButton  && console.log('No have other button'), G`<!-- other button -->`)
           }
           <button type=submit class=ok title=Acknowledge value=ok>OK</button>
         </p>
@@ -169,14 +169,14 @@
           }} readonly class=message value=message>${msg||'No text to copy'}</textarea>
         <p>
           ${link ?
-            F`<a title="${link.title}" target=${link.target} href=${link.href}>${link.title}</a>` 
+            G`<a title="${link.title}" target=${link.target} href=${link.href}>${link.title}</a>` 
             :
-            F`<!-- link -->`
+            G`<!-- link -->`
           }
           ${otherButton ?
-            Fskip(otherButton)
+            (DEBUG.debugOtherButton && console.log('Have other button'), G`<button title="${otherButton.title}" click=${otherButton.onClick}>${otherButton.title}</button>`)
             :
-            F`<!-- other button -->`
+            (DEBUG.debugOtherButton  && console.log('No have other button'), G`<!-- other button -->`)
           }
           <button type=submit class=ok title=Acknowledge value=ok>OK</button>
         </p>
