@@ -591,7 +591,7 @@ const controller_api = {
               if ( DEBUG.debugSetupWorker ) {
                 console.info(`Telling extension worker to execute action on clicked code results in: `, sendResult, {worker, command, expression});
               }
-            }).catch(err => console.warn(`Error trying to send command: ${command.name} to extension `, err, {command}, {port}));
+            }).catch(err => console.warn(`Error trying to send command: %s to extension`, command.name, err, {command}, {port});
           }
           break;
           default: {
