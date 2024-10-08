@@ -15,6 +15,7 @@
     import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
     import {saveClick} from './subviews/controls.js';
     import {
+      AttachmentTypes,
       COMMON,
       untilTrue,
       untilHuman,
@@ -416,7 +417,10 @@
             state.latestRequestId = 0;
           },
 
-          latestRequestId: 0
+          latestRequestId: 0,
+
+          // for extensions
+          getExtensions
         });
 
       // plugins
@@ -532,6 +536,48 @@
             }
           });
         }
+
+      // check extensions status
+          const extensionsAPI = new URL(location.origin);
+          extensionsAPI.pathname = '/extensions';
+
+          getExtensions();
+
+          // function to dynamically get extensions
+            async function getExtensions() {
+              const extensionsAPI = new URL(location.origin);
+              extensionsAPI.pathname = '/extensions';
+              const cacheKey = 'extensionsCache';
+
+              return uberFetch(extensionsAPI)
+                .then(async (r) => {
+                  if (r.status === 429) {
+                    // If rate limit hit, use cached data if available
+                    const cachedData = localStorage.getItem(cacheKey);
+                    if (cachedData) {
+                      // Parse and return the cached data
+                      return JSON.parse(cachedData);
+                    } else {
+                      throw new Error('Rate limit hit and no cache available.');
+                    }
+                  }
+                  // If no rate limit issue, parse response and update cache
+                  const data = await r.json();
+                  localStorage.setItem(cacheKey, JSON.stringify(data));
+                  return data;
+                })
+                .then(({ extensions }) => {
+                  state.extensions = extensions;
+                  if (extensions.length) {
+                    setState('bbpro', state);
+                  }
+                  return extensions; // Optionally return extensions for further use
+                })
+                .catch((error) => {
+                  console.error('Failed to fetch extensions:', error);
+                  return null; // Optionally handle or return null on error
+                });
+            }
 
       // create link
         const queue = new EventQueue(state, sessionToken);
@@ -1131,29 +1177,92 @@
           });
           queue.addMetaListener('navigated', meta => resetLoadingIndicator(meta, state));
 
-        // plugins
-        if ( DEBUG.detectPuterAbility ) {
-          queue.addMetaListener('hasPuterAbility', meta => plugins.handlePuterAbility(meta, state));
-          queue.addMetaListener('puterCustomDownload', meta => plugins.handlePuterAbility(meta, state));
-        }
-        queue.addMetaListener('ctCustomDownload', meta => {
-          const {ctCustomDownload} = meta;
-          const {url} = ctCustomDownload;
-          downloadFile(url);
-        });
+        // extensions
+          queue.addMetaListener('installExtension', ({installExtension})  => {
+            COMMON.delayUnload = false;
+            globalThis.purchaseClicked = true;
+            state.viewState.modalComponent.openModal({
+              modal: {
+                type: 'notice',
+                title: 'Chrome Webstore',
+                message: 'Installing your extension now. Close this message to reload and check progress.'
+              }
+            });
+            state.viewState.modalComponent.addEventListener(
+              'click', 
+              () => {
+                const maxWaits = 150;
+                let waits = 0;
+                //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
+                setInterval(async () => {
+                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                  waits++;
+                  if ( waits > maxWaits ) {
+                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                  }
+                  location.reload();
+                }, 2003);
+              },
+              {once: true, capture: true}
+            );
+          });
+          queue.addMetaListener('deleteExtension', ({removeExtension})  => {
+            COMMON.delayUnload = false;
+            globalThis.purchaseClicked = true;
+            state.viewState.modalComponent.openModal({
+              modal: {
+                type: 'notice',
+                title: 'Chrome Webstore',
+                message: 'Removing your extension now. Close this message to reload and check progress.'
+              }
+            });
+            state.viewState.modalComponent.addEventListener(
+              'click', 
+              () => {
+                const maxWaits = 150;
+                let waits = 0;
+                //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
+                setInterval(async () => {
+                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                  waits++;
+                  if ( waits > maxWaits ) {
+                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                  }
+                  location.reload();
+                }, 2003);
+              },
+              {once: true, capture: true}
+            );
+          });
+          queue.addMetaListener('createTab', ({createTab}) => {
+            console.log({createTab});
+            alert('Open Extension: ' + createTab?.opts?.url);
+            state.createTab(null, createTab.opts.url);
+          });
 
-        if ( DEBUG.val >= DEBUG.med ) {
-          queue.addMetaListener('vm', meta => console.log(meta));
-          queue.addMetaListener('modal', meta => console.log(meta));
-          queue.addMetaListener('navigated', meta => console.log(meta));
-          queue.addMetaListener('changed', meta => console.log(meta));
-          queue.addMetaListener('created', meta => console.log(meta));
-          queue.addMetaListener('attached', meta => console.log(meta));
-          queue.addMetaListener('detached', meta => console.log(meta));
-          queue.addMetaListener('destroyed', meta => console.log(meta));
-          queue.addMetaListener('crashed', meta => console.log(meta));
-          queue.addMetaListener('consoleMessage', meta => console.log(meta));
-        }
+        // plugins
+          if ( DEBUG.detectPuterAbility ) {
+            queue.addMetaListener('hasPuterAbility', meta => plugins.handlePuterAbility(meta, state));
+            queue.addMetaListener('puterCustomDownload', meta => plugins.handlePuterAbility(meta, state));
+          }
+          queue.addMetaListener('ctCustomDownload', meta => {
+            const {ctCustomDownload} = meta;
+            const {url} = ctCustomDownload;
+            downloadFile(url);
+          });
+
+          if ( DEBUG.val >= DEBUG.med ) {
+            queue.addMetaListener('vm', meta => console.log(meta));
+            queue.addMetaListener('modal', meta => console.log(meta));
+            queue.addMetaListener('navigated', meta => console.log(meta));
+            queue.addMetaListener('changed', meta => console.log(meta));
+            queue.addMetaListener('created', meta => console.log(meta));
+            queue.addMetaListener('attached', meta => console.log(meta));
+            queue.addMetaListener('detached', meta => console.log(meta));
+            queue.addMetaListener('destroyed', meta => console.log(meta));
+            queue.addMetaListener('crashed', meta => console.log(meta));
+            queue.addMetaListener('consoleMessage', meta => console.log(meta));
+          }
 
         // vm
           queue.addMetaListener('vm', ({vm}) => {
@@ -1182,7 +1291,7 @@
             });
 
           queue.addMetaListener('created', meta => {
-            if ( meta.created.type == 'page') {
+            if ( AttachmentTypes.has(meta.created.type) ) {
               meta.created.hello = 'oncreated';
               const activate = () => activateTab(null, meta.created, {notify: false, forceFrame:true})
               const tab = findTab(meta.created.targetId);
@@ -1203,7 +1312,7 @@
           });
           queue.addMetaListener('attached', meta => {
             const attached = meta.attached.targetInfo;
-            if ( attached.type == 'page' ) {
+            if ( AttachmentTypes.has(attached.type) ) {
               state.attached.add(attached.targetId);
 
               if ( state.useViewFrame ) {
@@ -1432,6 +1541,7 @@
             DEFAULT_FAVICON
           });
           setState('bbpro', state);
+
           use('bb-view'); 
           use('bb-bar');
           use('bb-tabs'); 
@@ -1443,9 +1553,12 @@
           use('bb-omni-box');
           use('bb-top-bar');
           use('bb-modals');
-          use('bb-resize-button');
           use('bb-bw-spinner');
-          use('bb-settings-button');
+
+          DEBUG.extensionsAssemble &&         use('bb-extensions-button');
+          DEBUG.clientsCanResetViewport &&    use('bb-resize-button');
+          CONFIG.settingsButton &&            use('bb-settings-button');
+
           const bb = document.querySelector('bb-view');
           if ( !bb?.shadowRoot ) {
             await untilTrueOrTimeout(() => !!document.querySelector('bb-view')?.shadowRoot, 120);

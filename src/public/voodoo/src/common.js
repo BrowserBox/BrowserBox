@@ -1,5 +1,5 @@
-export const VERSION = '10.1.0';
-export const SERVICE_COUNT = 4; // pptr(menu), chat, audio, devtools
+export const VERSION = '10.3.0';
+export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 
 export const SafariPlatform = /^((?!chrome|android).)*safari/i;
@@ -33,6 +33,11 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  revealServiceWorkersAsTabs: false,
+  attachToServiceWorkers: true,
+  extensionsAssemble() {
+    return CONFIG.isCT() && true;
+  },
   debugSW: false,
   debugKeysCanInput: false,
   get debugKCI() {
@@ -93,7 +98,6 @@ export const DEBUG = Object.freeze({
   debugEventChains: false,
   debugEventQueue: false,
   HFUNCTION: false,
-  debugCopyPaste: false,
   trackLoading: true,
   debugAudio: false,
   debugAudioAck: false,
@@ -115,7 +119,14 @@ export const DEBUG = Object.freeze({
   showCollect: false,
   debugFocus: false,
   debugAuth: false,
-  debugModal: false,
+  debugCopyPaste: false,
+  debugOtherButton: false,
+  get debugModal() {
+    return this.debugCopyPaste || false;
+  },
+  get debugClipboard() {
+    return this.debugCopyPaste || false;
+  },
   get debugMeta() {
     return  (this.debugFavicon > 1) || 0;
   },
@@ -217,7 +228,7 @@ export const CONFIG = Object.freeze({
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
   get useServiceWorkerToCache() {
-    return false;
+    return true;
   },
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,
@@ -277,6 +288,13 @@ export const COMMON = Object.seal(Object.preventExtensions({
   blockAnotherReset: false,
   delayUnload: true,
 }));
+
+export const AttachmentTypes = new Set([
+  'page',
+  ...(DEBUG.revealServiceWorkersAsTabs ? [
+    'service_worker' 
+  ] : []),
+]);
 
 // Cache the token outside the uberFetch function
 authToken = globalThis?.localStorage?.getItem?.('localCookie');

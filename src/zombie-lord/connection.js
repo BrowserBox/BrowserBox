@@ -1,4 +1,4 @@
-import {spawn} from 'child_process';
+import {spawn, execSync} from 'child_process';
 import fs from 'fs';
 import https from 'https';
 import http from 'http';
@@ -22,10 +22,16 @@ import {
   NOTICE_SIGNAL,
   APP_ROOT, FLASH_FORMATS, DEBUG, 
   CONFIG,
-  sleep, SECURE_VIEW_SCRIPT, MAX_TABS, 
+  sleep, 
+  SECURE_VIEW_SCRIPT, 
+  EXTENSION_INSTALL_SCRIPT,
+  EXTENSION_REMOVE_SCRIPT,
+  EXTENSIONS_GET_SCRIPT,
+  MAX_TABS, 
   consolelog,
   untilTrue,
   untilTrueOrTimeout,
+  EXTENSIONS_PATH,
 } from '../common.js';
 
 import {username} from '../args.js';
@@ -33,7 +39,7 @@ import {WorldName} from '../public/translateVoodooCRDP.js';
 import {RACE_SAMPLE, makeCamera, COMMON_FORMAT, DEVICE_FEATURES, SCREEN_OPTS, MAX_ACK_BUFFER, MIN_WIDTH, MIN_HEIGHT} from './screenShots.js';
 import {blockAds,onInterceptRequest as adBlockIntercept} from './adblocking/blockAds.js';
 import {Document} from './api/document.js';
-import {getInjectableAssetPath, fileChoosers} from '../ws-server.js';
+import {extensions, getInjectableAssetPath, fileChoosers} from '../ws-server.js';
 
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
@@ -48,10 +54,14 @@ const elementInfo = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injectio
 const scrollNotify = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'scrollNotify.js')).toString();
 const botDetectionEvasions = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'pageContext', 'botDetectionEvasions.js')).toString();
 const showMousePosition = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'pageContext', 'showMouse.js')).toString();
+const keyExtensionAPIShims = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'extensions', 'api-shim.js')).toString();
 
 // plugins injections
 const appMinifier = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'appminifier', 'injections.js')).toString();
 const projector = fs.readFileSync(path.join(APP_ROOT, 'plugins', 'projector', 'injections.js')).toString();
+
+// custom injections
+const extensionsAccess = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'custom', 'extensions-access.js')).toString();
 
 // API injection
 const devAPIInjection = [
@@ -82,22 +92,70 @@ if ( process.env?.TOR_PROXY?.startsWith?.('socks') ) {
 const injectionsScroll = `(function () {
   if( !self.zanjInstalled ) {
      {
-       ${[fileInput, favicon, keysCanInputEvents, scrollNotify, elementInfo, textComposition, selectDropdownEvents].join('\n')}
-     }
-     ${CONFIG.devapi ? devAPIInjection : ''}
+       ${[fileInput, favicon, keysCanInputEvents, scrollNotify, elementInfo, textComposition, selectDropdownEvents].join(';\n')}
+     };
+     ${CONFIG.devapi ? devAPIInjection : ''};
      self.zanjInstalled = true;
      // custom below this line
-     ${customInjection ? customInjection : ''}
+     ${customInjection ? customInjection : ''};
   } 
 }())`;
 const manualInjectionsScroll = `(function () {
-  ${fileInput + favicon + keysCanInputEvents + scrollNotify + elementInfo + textComposition + selectDropdownEvents}
-  ${DEBUG.showMousePosition ? showMousePosition : ''}
+  ${[fileInput , favicon , keysCanInputEvents , scrollNotify , elementInfo , textComposition , selectDropdownEvents].join(';\n')};
+  ${DEBUG.showMousePosition ? showMousePosition : ''};
 }())`;
 const pageContextInjectionsScroll = `(function () {
   ${botDetectionEvasions}
   ${DEBUG.showMousePosition ? showMousePosition : ''}
 }())`;
+
+// save installed extensions 
+  const extensionsArray = [];
+  let lastExtensionsUpdateScript;
+  const extensionsInstalled = () => `{
+    if ( location.hostname == "chromewebstore.google.com" ) {
+      globalThis._installedExtensions = new Set(${JSON.stringify(extensionsArray)});
+    }
+  };`;
+
+  saveInstalledExtensions();
+
+  function saveInstalledExtensions() {
+    try {
+      const ids = execSync(EXTENSIONS_GET_SCRIPT).toString();
+      extensionsArray.length = 0;
+      ids.split(/\s/g).forEach(id => {
+        if ( id.length == 32 ) {
+          extensionsArray.push(id);
+        }
+      });
+    } catch(e) {
+      console.warn(`Error collecting users installed extensions`, e);
+    }
+  }
+
+  // this function should not be needed as we always restart the application after installing/removing an extension
+  function propagateExtensions() {
+    saveInstalledExtensions();
+    const scriptToUpdateInPage = extensionsInstalled();
+    if ( lastExtensionsUpdateScript != scriptToUpdateInPage ) {
+      lastExtensionsUpdateScript = scriptToUpdateInPage;
+    }
+    // just eval it everywhere when we update the list because the script is guarded to only work on the right domain
+    tabs.forEach(({type}, targetId) => {
+      if ( type != 'page' ) return;
+      const sessionId = sessions.get(targetId);
+      if ( ! sessionId ) {
+        console.warn(`No sessionId for target ${targetId} in extensions update propagate loop`);
+        return;
+      }
+      const contextId = OurWorld.get(sessionId);
+      send("Runtime.evaluate", {
+        expression: scriptToUpdateInPage,
+        contextId,
+      }, sessionId);
+    });
+  }
 
 const templatedInjections = {
 };
@@ -188,6 +246,14 @@ const MainFrames = new Map();
 const PowerSources = new Map();
 const OpenModals = new Map();
 const SetupTabs = new Map();
+const Workers = new Map();
+const WorkerCommands = new Set([
+  "Target.activateTarget",
+  "Runtime.enable",
+  "Runtime.evaluate",
+  "Network.enable",
+  "Runtime.runIfWaitingForDebugger",
+]);
 const settingUp = new Map();
 const Reloaders = new Map();
 //const originalMessage = new Map();
@@ -444,7 +510,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   await send("Target.setDiscoverTargets", {
     discover:true,
     filter: [
-      {type: 'page'}
+      {type: 'page'},
+      ...(DEBUG.attachToServiceWorkers ? [
+        {type: 'service_worker'}
+      ] : []),
     ]
   });
   await send("Target.setAutoAttach", {
@@ -452,7 +521,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     waitForDebuggerOnStart:DEBUG.attachImmediately, 
     flatten:true, 
     filter: [
-      {type: 'page'}
+      {type: 'page'},
+      ...(DEBUG.attachToServiceWorkers ? [
+        {type: 'service_worker'}
+      ] : []),
     ]
   });
 
@@ -574,7 +646,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }
       checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
       connection.meta.push({attached});
-      await setupTab({attached});
+      if ( targetInfo.type == 'page' ) {
+        await setupTab({attached});
+      } else if ( targetInfo.type == 'service_worker' ) {
+        Workers.set(sessionId, {});
+        setupWorker({attached});
+      }
       if ( StartupTabs.has(targetId) ) {
         DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
         reloadAfterSetup(sessionId, {reason: 'attached'});
@@ -600,6 +677,29 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   on("Target.detachedFromTarget", ({sessionId}) => {
     const detached = {sessionId};
     const targetId = sessions.get(sessionId);
+    if ( Workers.has(sessionId) ) {
+      const workerInfo = Workers.get(sessionId);
+      Workers.delete(sessionId);
+      Workers.delete(workerInfo.id);
+      DEBUG.debugSetupWorker && console.log(`Worker: ${sessionId} going down.`);
+    }
+    const targetInfo = tabs.get(targetId);
+    if ( targetInfo ) {
+      const {type} = targetInfo;
+      const url = new URL(targetInfo.url);
+      if ( type == 'page' && url.protocol == "chrome-extension:" && url.hostname.length == 32 ) {
+        DEBUG.debugSetupWorker && console.log(`Removing target from extension, so triggering window close logic in extension.`);
+        const id = url.hostname;
+        const worker = Workers.get(id);
+        if ( worker ) {
+          const expression = `__hear({name:"windowRemoved"});`
+          send("Runtime.evaluate", {
+            contextId: 1,
+            expression,
+          }, worker.sessionId).then(res => console.log(`Evaluate result`, res)).catch(err => console.warn(`Err`, err));
+        }
+      }
+    }
     targets.delete(targetId);
     tabs.delete(targetId);
     removeSession(sessionId);
@@ -919,6 +1019,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
       const logMessages = args.map(convertRemoteObjectToString);
 
+      if ( DEBUG.debugSetupWorker && Workers.has(sessionId) ) {
+        console.info(`Console API messge from worker`, consoleMessage);
+      }
+
       try {
         DEBUG.val && console.log("Runtime.consoleAPICalled",
           {executionContextId}, 
@@ -1054,6 +1158,64 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               }
             }
           } else {
+            // security: we should check against accept message types here
+            if ( Message.installExtension ) {
+              console.info(`Will install extension`, Message.installExtension);
+              setTimeout(async () => {
+                const {id, name} = Message.installExtension;
+                if ( id.match(/[^a-z]/g) ) {
+                  console.warn(`Error`, new Error(`Will not install extension because id is invalid: {id}`), {id, name});
+                  return;
+                }
+                if ( name.match(/[^a-z0-9\-]/g) ) {
+                  console.warn(`Error`, new Error(`Will not install extension because name is invalid: {name}`), {id, name});
+                  return;
+                }
+                
+                connection.forceMeta(Message);
+
+                const installer = spawn(
+                  'sudo',
+                  [EXTENSION_INSTALL_SCRIPT, id],
+                  { detached: true, stdio: 'ignore' }
+                );
+
+                installer.unref();
+
+                installer.on('error', err => {
+                  console.warn(`Could not install extension for some reason`, err);
+                  connection.forceMeta({installExtension:{error:"Could not install", err}});
+                });
+              }, 1);
+            } else if ( Message.deleteExtension ) {
+              console.info(`Will delete extension`, Message.deleteExtension);
+              setTimeout(async () => {
+                const {id, name} = Message.deleteExtension;
+                if ( id.match(/[^a-z]/g) ) {
+                  console.warn(`Error`, new Error(`Will not delete extension because id is invalid: {id}`), {id, name});
+                  return;
+                }
+                if ( name.match(/[^a-z0-9\-]/g) ) {
+                  console.warn(`Error`, new Error(`Will not delete extension because name is invalid: {name}`), {id, name});
+                  return;
+                }
+                
+                connection.forceMeta(Message);
+
+                const deleter = spawn(
+                  'sudo',
+                  [EXTENSION_REMOVE_SCRIPT, id],
+                  { detached: true, stdio: 'ignore' }
+                );
+
+                deleter.unref();
+
+                deleter.on('error', err => {
+                  console.warn(`Could not delete extension for some reason`, err);
+                  connection.forceMeta({deleteExtension:{error:"Could not delete", err}});
+                });
+              }, 2);
+            }
             connection.forceMeta(Message);
           }
         } catch(e) {
@@ -1369,7 +1531,23 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               {
                 urlPattern: 'https://*/*',
                 requestStage: "Request"
-              }
+              },
+              {
+                urlPattern: 'chrome://*/*',
+                requestStage: "Request"
+              },
+              {
+                urlPattern: 'chrome://*/*',
+                requestStage: "Response"
+              },
+              {
+                urlPattern: 'chrome-extension://*/*',
+                requestStage: "Request"
+              },
+              {
+                urlPattern: 'chrome-extension://*/*',
+                requestStage: "Response"
+              },
             ],
           },
           sessionId
@@ -1426,9 +1604,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( CONFIG.screencastOnly ) {
         let castInfo;
         if ( castStarting.get(targetId) ) {
-          console.log(`[cast] Waiting for cast start ${tabs.get(targetId)}...`);
+          console.log(`[cast] Waiting for cast start `, tabs.get(targetId), `...`);
           await untilTrue(() => casts.get(targetId)?.started, 200, 500);
-          console.log(`[cast] Finished waiting for cast start ${tabs.get(targetId)}...`);
+          console.log(`[cast] Finished waiting for cast start `, tabs.get(targetId), `...`);
           castInfo = casts.get(targetId);
         } else {
           castInfo = casts.get(targetId);
@@ -1555,7 +1733,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           "Page.addScriptToEvaluateOnNewDocument",
           {
             // NOTE: NO world name to use the Page context
-            source: pageContextInjectionsScroll + templatedInjectionsScroll,
+            source: [
+              pageContextInjectionsScroll, 
+              templatedInjectionsScroll
+            ].join(';\n'),
             runImmediately: true
           },
           sessionId
@@ -1574,8 +1755,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
             source: [
               saveTargetIdAsGlobal(targetId),
               injectionsScroll,
-              modeInjectionScroll
-            ].join(''),
+              modeInjectionScroll,
+              ...(DEBUG.extensionsAccess ? [
+                extensionsInstalled(),
+                extensionsAccess,
+              ] : [ ]),
+            ].join(';\n'),
             worldName: WorldName,
             runImmediately: true
           },
@@ -1617,6 +1802,103 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     //  await sleep(5000);
     //  reloadAfterSetup(sessionId, {reason:'post-setup'});
     //}
+  }
+
+  async function setupWorker({attached}) {
+    const {waitingForDebugger, sessionId, targetInfo} = attached;
+    const {targetId} = targetInfo;
+    DEBUG.debugSetupWorker && consolelog(`Called setup for `, attached);
+    if ( settingUp.has(targetId) ) return;
+    DEBUG.debugSetupWorker && consolelog(`Running setup for `, attached);
+    settingUp.set(targetId, attached);
+    DEBUG.attachImmediately && DEBUG.worldDebug && console.log({waitingForDebugger, targetInfo});
+
+    try {
+      DEBUG.debugSetupWorker && console.log(sessionId, targetId, 'setting up');
+
+      if ( ! loadings.has(sessionId) ) {
+        const loading = {waiting:0, complete:0,targetId}
+        loadings.set(sessionId,loading);
+      }
+
+      await send(
+        "Runtime.enable", 
+        {},
+        sessionId
+      );
+
+	    const {result} = await send("Runtime.evaluate", {expression:`location.href`}, sessionId); 
+      DEBUG.debugSetupWorker && console.log({result});
+      const url = new URL(result.value);
+      DEBUG.debugSetupWorker && console.log({url});
+      if ( url.protocol == 'chrome-extension:' && url.hostname.length == 32 && !url.pathname.endsWith('.html') ) {
+        Workers.set(sessionId, {});
+        console.log('Attached to extension service worker. Preparing inject');
+        const swPathParts = url.pathname.split(path.sep);
+        const extensionId = url.hostname;
+        const extensionManifest = extensions.find(({id}) => id == extensionId);
+        let swContentPath = path.resolve(EXTENSIONS_PATH, extensionId, `${extensionManifest?.version || '1.0.0'}_0`, ...swPathParts);
+        if ( ! fs.existsSync(swContentPath) ) {
+          swContentPath = extractExtSWContentPath(extensionManifest, url);
+        }
+        console.log('Will fetch extension service worker content from ', swContentPath);
+        const swContent = fs.readFileSync(swContentPath).toString();
+        const wrappedSwContent = `{void 0;${keyExtensionAPIShims};${swContent}}`;
+        console.log({wrappedSwContent});
+
+        const workerInfo = {
+          id: extensionId, 
+          sessionId, 
+          targetId,
+          manifest: extensionManifest,
+        };
+
+        Workers.set(sessionId, workerInfo);
+        Workers.set(extensionId, workerInfo);
+
+        const evalResult = await send(
+          "Runtime.evaluate", 
+          {
+            expression: wrappedSwContent
+          }, 
+          sessionId
+        );
+
+        console.log({evalResult});
+      }
+
+      await send("Network.enable", {}, sessionId);
+      if ( DEBUG.networkBlocking ) {
+        await send("Network.setBlockedURLs", {
+            urls: [
+              ...(DEBUG.blockFileURLs ? ["file://*"] : []),
+              ...(DEBUG.blockChromeURLs ? ["chrome:*"] : []),
+              ...(DEBUG.blockInspect ? ["chrome://inspect*"] : []),
+            ]
+          },
+          sessionId
+        );
+      }
+
+      if ( DEBUG.disableIso ) {
+        //await send("Page.setBypassCSP", {enabled: true}, sessionId); 
+      }
+
+      if ( waitingForDebugger ) {
+        await send("Runtime.runIfWaitingForDebugger", {}, sessionId);
+      }
+      const obj = checkSetup.get(targetId)
+      if ( obj ) {
+        obj.tabSetup = true;
+      } else {
+        console.warn(`No checsetup entry at end of setuptab`, targetId);
+      }
+    } catch(e) {
+      console.warn("Error setting up", e, targetId, sessionId);
+    }
+    settingUp.delete(targetId);
+    DEBUG.debugSetupReload && console.log(`Reloading after setup`, {attached});
+    reloadAfterSetup(sessionId, {reason:'post-setup'});
   }
 
   function updateCast(sessionId, castUpdate, event) {
@@ -1722,9 +2004,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     const targetId = sessions.get(sessionId);
     try {
       if ( settingUp.has(targetId) ) {
-        console.log(`Waiting for setup to complete for ${tabs.get(sessions.get(sessionId))}`);
+        console.log(`Waiting for setup to complete for ${JSON.stringify(tabs.get(sessions.get(sessionId)), null, 2)}`);
         await untilTrueOrTimeout(() => !settingUp.has(targetId), 10);
-        console.log(`Finished waiting for setup to complete for ${tabs.get(sessions.get(sessionId))}`);
+        console.log(`Finished waiting for setup to complete for`, tabs.get(sessions.get(sessionId)));
       }
       await sleep(100);
       DEBUG.debugSetupReload && console.log(`Reloading ${sessionId}`);
@@ -2021,6 +2303,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       case "Target.activateTarget": {
         isActivate = true;
         sessionId = sessions.get(targetId);
+        if ( Workers.has(sessionId) ) break;
 
         if ( ! sessionId ) { 
           console.error(`!! No sessionId at Target.activateTarget`);
@@ -2068,9 +2351,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( CONFIG.screencastOnly ) {
           let castInfo;
           if ( castStarting.get(targetId) ) {
-            console.log(`[cast] Waiting for cast start ${tabs.get(targetId)}...`);
+            console.log(`[cast] Waiting for cast start `, tabs.get(targetId), `...`);
             await untilTrue(() => casts.get(targetId)?.started, 200, 500);
-            console.log(`[cast] Finished waiting for cast start ${tabs.get(targetId)}...`);
+            console.log(`[cast] Finished waiting for cast start `, tabs.get(targetId), `...`);
             castInfo = casts.get(targetId);
           } else {
             castInfo = casts.get(targetId);
@@ -2137,6 +2420,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     if ( !command.name.startsWith("Target") && !(command.name.startsWith("Browser") && command.name != "Browser.getWindowForTarget") ) {
       sessionId = command.params.sessionId || that.sessionId;
     } 
+    const isWorker = (Workers.has(sessions.get(targetId)) || Workers.has(sessionId));
+    if (  isWorker && ! WorkerCommands.has(command.name) ) {
+      DEBUG.debugSetupWorker && console.info(`Blocking ${command.name} from worker`);
+      return {};
+    }
     if ( command.name.startsWith("Target") || ! sessionId ) {
       if ( command.name.startsWith("Page") || command.name.startsWith("Runtime") || command.name.startsWith("Emulation") ) {
         sessionId = that.sessionId;
@@ -2152,7 +2440,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.val > DEBUG.med && console.log({zombieNoSessionCommand:command});
         const resp = await send(command.name, command.params); 
 
-        if ( isActivate && CONFIG.doAckBlast ) {
+        if ( isActivate && CONFIG.doAckBlast && ! isWorker ) {
           let castInfo = casts.get(targetId);
           castInfo.sessionHasReceivedFrame = false;
           let ac = 0;
@@ -2177,7 +2465,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         return resp;
       }
     } else {
-      if ( command.name !== "Page.screencastFrameAck" ) {
+      if ( command.sessionId ) {
+        sessionId = command.sessionId;
+      } else if ( command.name !== "Page.screencastFrameAck" ) {
         sessionId = command.params.sessionId || that.sessionId;
         if ( ! sessionId || ! sessions.has(sessionId) ) {
           DEBUG.val && console.log("Blocking as session not exist.", sessionId);
@@ -2275,6 +2565,29 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   function endTarget({targetId}, label) {
     DEBUG.val > DEBUG.med && console.warn({[label]:{targetId}});
     const sessionId = sessions.get(targetId);
+    if ( Workers.has(sessionId) ) {
+      const workerInfo = Workers.get(sessionId);
+      Workers.delete(sessionId);
+      Workers.delete(workerInfo.id);
+      DEBUG.debugSetupWorker && console.log(`Worker: ${sessionId} going down.`);
+    }
+    const targetInfo = tabs.get(targetId);
+    if ( targetInfo ) {
+      const {type} = targetInfo;
+      const url = new URL(targetInfo.url);
+      if ( type == 'page' && url.protocol == "chrome-extension:" && url.hostname.length == 32 ) {
+        DEBUG.debugSetupWorker && console.log(`Removing target from extension, so triggering window close logic in extension.`);
+        const id = url.hostname;
+        const worker = Workers.get(id);
+        if ( worker ) {
+          const expression = `__hear({name:"windowRemoved"});`
+          send("Runtime.evaluate", {
+            contextId: 1,
+            expression,
+          }, worker.sessionId).then(res => console.log(`Evaluate result`, res)).catch(err => console.warn(`Err`, err));
+        }
+      }
+    }
     if ( connection.activeTarget === targetId ) {
       connection.activeTarget = null;
     }
@@ -2287,6 +2600,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     deleteWorld(targetId);
     connection.meta.push({[label]:{targetId}});
   }
+}
+
+export function getWorker(id) {
+  return Workers.get(id);
+}
+
+export function workerAllows(name) {
+  return WorkerCommands.has(name);
 }
 
 export function getViewport(...viewports) {
@@ -2443,6 +2764,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
     DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);
     await untilTrueOrTimeout(() => sessions.has(targetId), 10);
     const sessionId = sessions.get(targetId);
+    if ( Workers.has(sessionId) ) continue;
     console.log('sessionid', sessionId);
     DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
     if (!sessionId) continue;
@@ -2524,6 +2846,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
   for ( const targetId of connection.targets.values() ) {
     await untilTrueOrTimeout(() => sessions.has(targetId), 10);
     const sessionId = sessions.get(targetId);
+    if ( Workers.has(sessionId) ) continue;
     if ( ! sessionId ) {
       console.log('SKIPPING', {targetId, sessionId});
       continue;
@@ -2669,6 +2992,10 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
     
     /* send debugging protocol message to browser */
     async function send(method, params = {}, sessionId) {
+      if ( !! sessionId && Workers.has(sessionId) && ! WorkerCommands.has(method) ) {
+        DEBUG.debugSetupWorker && console.info(`Blocking ${method} from worker`);
+        return {};
+      }
       if ( Zombie.disconnected ) {
         Zombie.sendErrorToClient('Our connection to chrome is disconnected. Probably means chrome shut down or crashed.');
         return;
@@ -2714,6 +3041,7 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
       }
       if ( DEBUG.showErrorSources ) {
         resolve._originalCommand = message;
+        resolve._stack = (new Error).stack;
       }
       Resolvers[key] = resolve; 
       if ( DEBUG.showErrorSources ) {
@@ -2768,8 +3096,9 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
           console.warn("\nBrowser backend Error message", message);
           const key = `${sessionId||ROOT_SESSION}:${id}`;
           const originalCommand = Resolvers?.[key]?._originalCommand;
+          const stack = Resolvers?.[key]?._stack;
           if ( originalCommand ) {
-            console.log(`Original command that caused error`, originalCommand);
+            console.log(`Original command that caused error`, originalCommand, {stack});
           } else {
             console.log(`Can't find original command as no id, but last ${LAST_COMMANDS_WINDOW} commands sent were:`, lastCommands);
           }
@@ -2832,16 +3161,21 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
       return ({message}) => fn(message.params)
     }
   } catch(e) {
-    const resp = await fetch(`http://${
-      DEBUG.useLoopbackIP ? '127.0.0.1' : 'localhost'
-    }:${port}/json/version`);
-    console.log(`Error when starting browser: ${e}`, e);
-    console.log(`Response: ${await resp.text()}`);
-    await sleep(1000);
-    if ( noExit ) {
-      return;
+    console.warn(`Error when making zombie`, e, {port}, {noExit});
+    try {
+      const resp = await fetch(`http://${
+        DEBUG.useLoopbackIP ? '127.0.0.1' : 'localhost'
+      }:${port}/json/version`);
+      console.log(`Error when starting browser: ${e}`, e);
+      console.log(`Response: ${await resp.text()}`);
+      await sleep(1000);
+      if ( noExit ) {
+        return;
+      }
+      process.exit(1);
+    } catch(e2) {
+      console.warn(`Error when recovering from error when making zombie`, e2); 
     }
-    process.exit(1);
   }
 }
 
@@ -2936,4 +3270,23 @@ async function fetchWithTor(url, options = {}) {
 
     request.end();
   });
+}
+
+function extractExtSWContentPath(manifest, url) {
+  try {
+    const {id} =  manifest;
+    if ( ! id.match(/^[a-z]{32}$/i) ) {
+      throw new TypeError(`Illegal extension id: ${id}`);
+    }
+    let {pathname} = url;
+    pathname = encodeURI(pathname);
+    const parts = pathname.split('/');
+    pathname = parts.join(path.sep);
+    const result = execSync(`find "${path.resolve(EXTENSIONS_PATH, id)}" | grep "${url.pathname}"`).trim();
+    const firstLine = result.split(/\n/g).map(line = line.trim()).filter(line => line.length)[0];
+    return path.resolve(firstLine);
+  } catch(e) {
+    console.warn(`Error during extract extension sw content path`, e);
+    throw new Error(`Extension SW could not be found`);
+  }
 }

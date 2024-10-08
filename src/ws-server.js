@@ -21,6 +21,7 @@
   import zl from './zombie-lord/index.js';
   import {start_mode} from './args.js';
   import {
+    AttachmentTypes,
     StartupTabs,
     OurWorld,
     T2_MINUTES,
@@ -28,6 +29,8 @@
     COOKIENAME, GO_SECURE, DEBUG,
     CONFIG,
     ALLOWED_3RD_PARTY_EMBEDDERS,
+    BASE_PATH,
+    EXTENSIONS_PATH,
     throttle,
   } from './common.js';
   import {timedSend, eventSendLoop} from './server.js';
@@ -112,6 +115,14 @@
         Too many requests from this IP. Please try again in a little while.
       `
     });
+    
+    const VeryConstrainedRateLimiter = rateLimit({
+      windowMs: 30000,
+      max: 1,
+      message: `
+        Too many requests from this IP. Please try again in a little while.
+      `
+    });
 
   // Safari special cookie loader
     let SAFARI_PERMISSION_LOADER_HTML = `<h1>Safari not supported...</h1>`;
@@ -129,6 +140,9 @@
 
   // keep tabs organized
   const TabNumbers = new Map();
+
+  // extensions
+  export const extensions = [];
 
   let shutdownTimer = null;
   let serverOrigin;
@@ -487,6 +501,7 @@
 
     const secure = secure_options.cert && secure_options.key;
     const server = protocol.createServer.apply(protocol, GO_SECURE && secure ? [secure_options, app] : [app]);
+
     const wss = new WebSocketServer({
       server,
       perMessageDeflate: false
@@ -740,7 +755,10 @@
                   name: "Target.getTargets",
                   params: {
                     filter: [
-                      {type: 'page'}
+                      {type: 'page'},
+                      ...(DEBUG.attachToServiceWorkers ? [
+                        {type: 'service_worker'}
+                      ] : []),
                     ]
                   },
                 }, zombie_port);
@@ -749,7 +767,7 @@
                   zl.act.setHiddenTarget(targets[0].targetId, zombie_port);
                 }
                 targets = targets.filter(({targetId,type,url}) => { 
-                  if ( type !== 'page' ) return false;
+                  if ( !AttachmentTypes.has(type) ) return false;
                   /*
                   if ( url.startsWith('chrome') ) {
                     return false;
@@ -959,7 +977,10 @@
               name: "Target.getTargets",
               params: {
                 filter: [
-                  {type: 'page'}
+                  {type: 'page'},
+                  ...(DEBUG.attachToServiceWorkers ? [
+                    {type: 'service_worker'}
+                  ] : []),
                 ]
               },
             }, zombie_port));
@@ -969,7 +990,7 @@
                 zl.act.setHiddenTarget(targets[0].targetId, zombie_port);
               }
               targets = targets.filter(({targetId,type,url}) => { 
-                if ( type !== 'page' ) return false;
+                if ( !AttachmentTypes.has(type) ) return false;
                 /*
                 if ( url.startsWith('chrome') ) {
                   return false;
@@ -1013,6 +1034,18 @@
             /*throw e;*/
           }
         }));
+        app.get(`/extensions`, VeryConstrainedRateLimiter, (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          res.type('json');
+          if ( (cookie !== allowed_user_cookie) ) {
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          res.set('Cache-Control', 'public, max-age=13');
+          populateExtensions();
+          return res.send({extensions});
+        });
         app.get(`/isTor`, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
@@ -1421,6 +1454,76 @@
     return `${serverOrigin}/assets`;
   }
 
+  function ensureManifestDepth(manifestPath) {
+    const parts = manifestPath.split(path.sep);
+    const file = path.basename(manifestPath);
+    if ( file != 'manifest.json' ) throw new Error(`manifest.json does not end path`);
+    let distance = 0;
+    while(parts.length) {
+      const part = parts.pop();
+      if ( part == 'manifest.json' ) {
+        if ( distance != 0 ) throw new Error(`manifest.json exists mid path`);
+        continue;
+      } else {
+        distance++;
+      }
+      if ( part.length == 32 && part.match(/^[a-z]+$/) ) {
+        if ( distance > 2 ) {
+          throw new Error(`manifest.json is nested too deeply in extension direcotry`);
+        } else {
+          return part;
+        }
+      }
+    }
+  }
+
+  function localizeExtensionManifest({extensionSettings, extensionPath, manifest}) {
+    const keysToLocalize = ['short_name', 'name', 'description'];
+    const localesDir = path.resolve(extensionPath, '_locales');
+    if ( !fs.existsSync(localesDir) ) return manifest;
+    let localeMessages;
+    try {
+      const localeMessagesJSON = 
+          manifest.default_locale && 
+            fs.existsSync(path.resolve(localesDir, manifest.default_locale, 'messages.json')) ? 
+            fs.readFileSync(path.resolve(localesDir, manifest.default_locale, 'messages.json')).toString()
+            :
+          extensionSettings.manifest.current_locale && 
+            fs.existsSync(path.resolve(localesDir, extensionSettings.manifest.current_locale, 'messages.json')) ? 
+            fs.readFileSync(path.resolve(localesDir, extensionSettings.manifest.current_locale, 'messages.json')).toString()
+            :
+          extensionSettings.manifest.default_locale && 
+            fs.existsSync(path.resolve(localesDir, extensionSettings.manifest.default_locale, 'messages.json')) ? 
+              fs.readFileSync(path.resolve(localesDir, extensionSettings.manifest.default_locale, 'messages.json')).toString()
+            :
+            ''
+      if ( ! localeMessagesJSON || localeMessagesJSON.trim().length == 0 ) {
+        console.warn(`Error localizing extension`, {extensionSettings, extensionPath, manifest, localeMessagesJSON});
+        return manifest;
+      }
+      localeMessages = JSON.parse(localeMessagesJSON);
+    } catch(e) {
+        console.warn(`Error localizing extension`, {extensionSettings, extensionPath, manifest}, e);
+    }
+    if ( ! localeMessages ) return manifest;
+
+    for( const key of keysToLocalize ) {
+      let value, messageKey, localizedMessage;
+      try {
+        value = manifest[key];
+        if ( value?.startsWith?.("__MSG_") ) {
+          messageKey = value.replace(/^__MSG_/, '').replace(/__$/, '')
+          localizedMessage = (localeMessages[messageKey] || localeMessages[messageKey.toLocaleLowerCase()]).message;
+          manifest[key] = localizedMessage;
+        }
+      } catch(e) {
+        console.warn(`Error localizing key: ${key}`, e, {value, messageKey, localizedMessage, extensionSettings, extensionPath, manifest}); 
+      }
+    }
+
+    return manifest;
+  }
+
   function nextFileName(ext = '') {
     //console.log({nextFileName:{ext}});
     if ( ! ext.startsWith('.') ) {
@@ -1446,4 +1549,43 @@
   function executeShutdownOfBBPRO() {
     console.warn(`Stopping BrowserBox`);
     return child_process.exec(`stop_bbpro`);
+  }
+
+  function populateExtensions() {
+    extensions.length = 0;
+    if ( CONFIG.isCT && DEBUG.extensionsAccess ) {
+      try {
+        const preferencesPath = path.resolve(BASE_PATH, 'browser-cache', 'Default', 'Preferences');
+        const preferences = JSON.parse(fs.readFileSync(preferencesPath).toString());
+        const extensionsManifests = child_process.execSync(`find "${EXTENSIONS_PATH}" | grep manifest.json`).toString();
+        extensionsManifests.split('\n').forEach(manifestPath => {
+          if ( manifestPath.trim().length == 0 ) return;
+          try {
+            manifestPath = path.resolve(manifestPath);
+            const extensionId = ensureManifestDepth(manifestPath);
+            const manifestJSON = fs.readFileSync(manifestPath).toString();
+            const manifest = JSON.parse(manifestJSON);
+            if ( ! manifest.name || ! manifest.version || ! manifest.manifest_version ) {
+              console.warn({manifest});
+              throw new Error(`Incorrect manifest. Will ignore: ${manifestPath}`)
+            }
+            const extensionPath = path.dirname(manifestPath);
+            const extensionSettings = preferences.extensions.settings[extensionId];
+            const localizedManifest = localizeExtensionManifest({extensionSettings, extensionPath, manifest});
+            if ( localizedManifest.display_in_launcher !== false ) {
+              if ( extensionSettings.active_bit === false ) {
+                extensions.push({id: extensionId, enabled: false, ...localizedManifest});
+              } else {
+                extensions.push({id: extensionId, enabled: true, ...localizedManifest});
+              }
+            }
+          } catch(e) {
+            console.warn(`Error handling supposed extension path ${manifestPath}, via: ${EXTENSIONS_PATH}`, e);
+          }
+        });
+      } catch(e) {
+        console.warn(`Could not get manifests for extensions at: ${EXTENSIONS_PATH}`, e);
+      }
+    }
+    DEBUG.showExtensions && console.log({extensions});
   }

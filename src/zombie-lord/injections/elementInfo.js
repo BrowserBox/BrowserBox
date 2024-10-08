@@ -10,6 +10,13 @@
     const retVal = {};
     let target = document.elementFromPoint(clientX,clientY);
 
+    while ( (target?.shadow instanceof DocumentFragment || target?.shadowRoot instanceof DocumentFragment ) ) {
+      const d = target.shadowRoot instanceof DocumentFragment ? target.shadowRoot : target.shadow;
+      const newTarget = d.elementFromPoint(clientX, clientY);
+      if ( newTarget ) target = newTarget;
+      else break;
+    }
+
     if ( !! target && !! closest ) {
       target = target.closest(closest);
     }

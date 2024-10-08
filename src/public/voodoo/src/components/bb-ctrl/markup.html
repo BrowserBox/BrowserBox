@@ -62,6 +62,7 @@ ${state.chromeUI ? F`
           </form>
       </nav>
       <bb-omni-box state=bbpro ></bb-omni-box>
+      ${DEBUG.extensionsAssemble ? F`<bb-extensions-button state=bbpro></bb-extensions-button>` : F`<!-- bb extensions button -->`}
       ${DEBUG.clientsCanResetViewport ? F`<bb-resize-button state=bbpro></bb-resize-button>` : F`<!-- resize viewport button -->`}
       ${CONFIG.settingsButton ? F`<bb-settings-button state=bbpro></bb-settings-button>` : F`<!-- settings button -->`}
     </div>

@@ -19,6 +19,7 @@ export const T2_MINUTES = 2 * 60; // 2 minutes in seconds
 export const StartupTabs = new Set(); // track tabs that arrive at setup
 export const OurWorld = new Map();
 export const BASE_PATH = path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro');
+export const EXTENSIONS_PATH = path.resolve(BASE_PATH, 'browser-cache', 'Default', 'Extensions');
 export const SUBSCRIBER_FILE_PATH = path.resolve(BASE_PATH, 'subscriber.json');
 export const WL_FILE_PATH = path.resolve(BASE_PATH, 'wl.txt');
 export const expiryTimeFilePath = path.resolve(BASE_PATH, 'expiry_time');
@@ -70,6 +71,12 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  revealChromeJSIntercepts: false,
+  debugSetupWorker: true,
+  attachToServiceWorkers: true,
+  showServerWorkersAsTabs: false,
+  extensionsAccess: true,
+  showExtensions: true,
   debugReconnect: true,
   fileDebug: false,
   debugScreenSize: false,
@@ -356,6 +363,12 @@ export const localBlockList = process.platform == 'darwin'
     /^10./,
     /^172.(1[6-9]|2[0-9]|3[01])./,
 ];
+export const AttachmentTypes = new Set([
+  'page', 
+  ...(DEBUG.attachToServiceWorkers ? [
+    'service_worker'
+  ] : [])
+]);
 
 const Timers = new Set(); 
 
@@ -395,6 +408,9 @@ export const GO_SECURE = fs.existsSync(path.resolve(CONFIG.sslcerts(process.env.
 export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'nonsec'}`;
 
 export const SECURE_VIEW_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 'get_download_view_url.sh');
+export const EXTENSION_INSTALL_SCRIPT = 'add-extension';
+export const EXTENSION_REMOVE_SCRIPT = 'del-extension';
+export const EXTENSIONS_GET_SCRIPT = 'get-extensions';
 
 fs.mkdirSync(CONFIG.baseDir, {recursive: true});
 fs.mkdirSync(SignalNotices, {recursive:true});

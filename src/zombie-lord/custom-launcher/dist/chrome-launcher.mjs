@@ -230,7 +230,10 @@ export default class Launcher {
     const port = parseInt(this.port);
     console.log({port});
     let browser;
+    let err = null;
+    // try localhost
     try {
+      console.info(`Trying to connect to browser on localhost port ${port}`);
       browser = execSync(`curl -s http://localhost:${port}/json/version`).toString();
       if ( browser.length == 0 ) {
         throw new Error(`Browser error`);
@@ -238,10 +241,50 @@ export default class Launcher {
       console.log('browser', browser.toString());
     } catch(e) {
       DEBUG.val && console.info("Browser error", e);
-      throw e;
+      err = e;
     }
-    DEBUG.val && console.info("Browser OK");
-    return browser;
+    if ( ! err && browser.length > 0 ) {
+      DEBUG.val && console.info("Browser OK");
+      return browser;
+    }
+
+    // try 127.0.0.1
+    err = null;
+    try {
+      console.info(`Trying to connect to browser on 127.0.0.1 port ${port}`);
+      browser = execSync(`curl -s http://127.0.0.1:${port}/json/version`).toString();
+      if ( browser.length == 0 ) {
+        throw new Error(`Browser error`);
+      } 
+      console.log('browser', browser.toString());
+    } catch(e) {
+      DEBUG.val && console.info("Browser error", e);
+      err = e;
+    }
+    if ( ! err && browser.length > 0 ) {
+      DEBUG.val && console.info("Browser OK");
+      return browser;
+    }
+
+    // try ::1
+    err = null;
+    try {
+      console.info(`Trying to connect to browser on ::1 port ${port}`);
+      browser = execSync(`curl -s -6 "http://[::1]:${port}/json/version"`).toString();
+      if ( browser.length == 0 ) {
+        throw new Error(`Browser error`);
+      } 
+      console.log('browser', browser.toString());
+    } catch(e) {
+      DEBUG.val && console.info("Browser error", e);
+      err = e;
+    }
+    if ( ! err && browser.length > 0 ) {
+      DEBUG.val && console.info("Browser OK");
+      return browser;
+    } else {
+      throw new Error(`Browser error`);
+    }
   }
   // resolves when debugger is ready, rejects after 10 polls
   async waitUntilReady() {

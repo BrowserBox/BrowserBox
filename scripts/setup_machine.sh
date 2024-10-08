@@ -127,8 +127,7 @@ if ! $SUDO grep -q "%renice ALL=NOPASSWD:" /etc/sudoers; then
 fi
 if ! $SUDO grep -q "%browsers ALL=NOPASSWD:" /etc/sudoers; then
   $SUDO groupadd browsers >&2
-  echo "%browsers ALL=NOPASSWD: /usr/bin/pulseaudio --start" | $SUDO tee -a /etc/sudoers >&2
-  echo "%browsers ALL=NOPASSWD: /usr/bin/pulseaudio --start --use-pid-file=true --log-level=debug, /usr/bin/pulseaudio --check" | $SUDO tee -a /etc/sudoers >&2
+  echo "%browsers ALL=NOPASSWD: /usr/bin/pulseaudio --start, /usr/bin/pulseaudio --start --use-pid-file=true --log-level=debug, /usr/bin/pulseaudio --check" | $SUDO tee -a /etc/sudoers >&2
 fi
 
 $SUDO ufw disable

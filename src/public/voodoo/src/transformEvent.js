@@ -28,6 +28,11 @@ export default function transformEvent(e, {scale}, bounds) {
       transformedEvent.originalEvent = originalEvent;
     }
     switch(synthetic.type) {
+      case "actionOnClicked": {
+        const {data} = synthetic;
+        Object.assign(transformedEvent, {data});
+        break;
+      }
       case "favicon": {
         throw new TypeError(`Client can not request favicons from back-end`);
         const {targetId} = synthetic;
