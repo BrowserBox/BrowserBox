@@ -1573,7 +1573,7 @@
             const extensionSettings = preferences.extensions.settings[extensionId];
             const localizedManifest = localizeExtensionManifest({extensionSettings, extensionPath, manifest});
             if ( localizedManifest.display_in_launcher !== false ) {
-              if ( extensionSettings.active_bit === false ) {
+              if ( extensionSettings.state === 0 ) {
                 extensions.push({id: extensionId, enabled: false, ...localizedManifest});
               } else {
                 extensions.push({id: extensionId, enabled: true, ...localizedManifest});

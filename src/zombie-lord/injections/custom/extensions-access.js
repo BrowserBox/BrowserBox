@@ -151,7 +151,8 @@
       vMan: 'cr-view-manager',
       eLi: 'extensions-item-list',
       eI: 'extensions-item',
-      rB: '#removeButton'
+      rB: '#removeButton',
+      eT: '#enableToggle',
     };
     DocumentFragment.prototype.$ = $;
     DocumentFragment.prototype.$$ = $$;
@@ -175,9 +176,10 @@
       for(const ext of items) {
         try {
           const removeButton = ext.shadowRoot.$(S.rB);
+          const enableToggle = ext.shadowRoot.$(S.eT);
           const doc = removeButton.getRootNode();
           const id = doc.host.id;
-          const nameEl = doc.querySelector('[id^="name"]');
+          const nameEl = doc.querySelector('#name') || doc.querySelector('[id^="name"]');
           let name = nameEl?.innerText || `extension-${id}`;
           removeButton.addEventListener('click', () => {
             const doIt = confirm(`Do you want to remove "${name}" from your CloudTabs browser?`);
@@ -199,6 +201,34 @@
                 }
                 console.log(JSON.stringify({
                   deleteExtension: {
+                    id, name
+                  }
+                }));
+              } catch(err) {
+                console.warn(`Error intercepting extension removal`, err);
+              }
+            }
+          }, {capture:true});
+          enableToggle.addEventListener('click', () => {
+            const doIt = confirm(`Do you want to modify "${name}" in your CloudTabs browser?`);
+            if ( doIt ) {
+              try {
+                name = name.replace(/\s/g, '-').toLocaleLowerCase();
+                if ( name.match(NOT_ALLOWED_CHAR) ) {
+                  name = name.replace(NOT_ALLOWED_CHAR, '');
+                  if ( name.length < 3 ) {
+                    name = `chrome-extension-${id}`;
+                  }
+                }
+                name = name.replace(/-+/g, '-');
+                if ( name.length > 49 ) {
+                  name = name.slice(0, 49);
+                  if ( name[48] == '-' ) {
+                    name = name.slice(0, 48);
+                  }
+                }
+                console.log(JSON.stringify({
+                  modifyExtension: {
                     id, name
                   }
                 }));

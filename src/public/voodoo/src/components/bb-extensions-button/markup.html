@@ -10,7 +10,11 @@
     ${_top?.extensions?.length ? G`<hr>` : ''} 
     <ul>${_top?.extensions?.length ? _top.extensions.map(({id: key, name, short_name, options_page, action, side_panel, enabled}) => F`${{key}}
       <li data-id=${key}>
-        <a ${!enabled ? 'disabled' : ''} onclick=executeAction title="${ enabled ? `Activate ${short_name || name.slice(0,23)}` : `Deactivated. You can re-enable in settings.` }">${short_name || name}</a>
+        <a ${enabled?'':'disabled'} onclick=executeAction title="${enabled?
+          `Activate ${short_name || name.slice(0,23)}`
+          :
+          `Deactivated. Re-enable in Extension Settings`
+        }">${short_name || name}</a>
         <button onclick=openOptions title="Settings"> 
           <img class=extensions-option alt="Options" src="voodoo/assets/icons/settings-2.svg">
         </button>

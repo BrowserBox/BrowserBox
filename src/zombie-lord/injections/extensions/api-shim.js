@@ -1,6 +1,6 @@
 {
   // shim key elements of the chrome extension API 
-  const FAKEWIN = {id:null,tabs:[{id:null}], left:0, top:0, width:0, height:0};
+  const FAKEWIN = {id:1,tabs:[{id:1}], left:0, top:0, width:0, height:0};
   try {
     let messageId = 0;
     let WinId = 1;
@@ -54,6 +54,10 @@
         console.log(`Received function`, listener, `for execution on Action click`);
         Listeners.action.add(listener);
       };
+
+      chrome.tabs.remove = (id, cb) => { typeof cb == 'function' && setTimeout(cb, 0); void 0 };
+      chrome.windows.remove = (id, cb) => { typeof cb == 'function' && setTimeout(cb, 0); void 0 };
+
 
       const OG_WC_REF = chrome.windows.create;
       const OG_WC = async (opts, cb) => OG_WC_REF.call(chrome.windows, opts, cb);
@@ -128,6 +132,12 @@
       const OG_WORAL_REF = chrome.windows.onRemoved.addListener;
       chrome.windows.onRemoved.addListener = listener => {
         console.log(`Received function`, listener, `for execution on window removed`);
+        Listeners.winRemoved.add(listener);
+      };
+
+      const OG_TORAL_REF = chrome.tabs.onRemoved.addListener;
+      chrome.tabs.onRemoved.addListener = listener => {
+        console.log(`Received function`, listener, `for execution on tab removed`);
         Listeners.winRemoved.add(listener);
       };
 
