@@ -26,6 +26,7 @@ import {
   SECURE_VIEW_SCRIPT, 
   EXTENSION_INSTALL_SCRIPT,
   EXTENSION_REMOVE_SCRIPT,
+  EXTENSION_MODIFY_SCRIPT,
   EXTENSIONS_GET_SCRIPT,
   MAX_TABS, 
   consolelog,
@@ -1213,6 +1214,34 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                 deleter.on('error', err => {
                   console.warn(`Could not delete extension for some reason`, err);
                   connection.forceMeta({deleteExtension:{error:"Could not delete", err}});
+                });
+              }, 2);
+            } else if ( Message.modifyExtension ) {
+              console.info(`Will modify extension`, Message.modifyExtension);
+              setTimeout(async () => {
+                const {id, name} = Message.modifyExtension;
+                if ( id.match(/[^a-z]/g) ) {
+                  console.warn(`Error`, new Error(`Will not modify extension because id is invalid: {id}`), {id, name});
+                  return;
+                }
+                if ( name.match(/[^a-z0-9\-]/g) ) {
+                  console.warn(`Error`, new Error(`Will not modify extension because name is invalid: {name}`), {id, name});
+                  return;
+                }
+                
+                connection.forceMeta(Message);
+
+                const modifyr = spawn(
+                  'sudo',
+                  [EXTENSION_MODIFY_SCRIPT, id],
+                  { detached: true, stdio: 'ignore' }
+                );
+
+                modifyr.unref();
+
+                modifyr.on('error', err => {
+                  console.warn(`Could not modify extension for some reason`, err);
+                  connection.forceMeta({modifyExtension:{error:"Could not modify", err}});
                 });
               }, 2);
             }

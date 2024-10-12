@@ -72,7 +72,7 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   revealChromeJSIntercepts: false,
-  debugSetupWorker: true,
+  debugSetupWorker: false,
   attachToServiceWorkers: true,
   showServerWorkersAsTabs: false,
   extensionsAccess: true,
@@ -218,7 +218,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
+  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
@@ -410,6 +410,7 @@ export const COOKIENAME = `browserbox-${version}-userauth-${GO_SECURE?'sec':'non
 export const SECURE_VIEW_SCRIPT = path.join(APP_ROOT, 'zombie-lord', 'scripts', 'get_download_view_url.sh');
 export const EXTENSION_INSTALL_SCRIPT = 'add-extension';
 export const EXTENSION_REMOVE_SCRIPT = 'del-extension';
+export const EXTENSION_MODIFY_SCRIPT = 'mod-extension';
 export const EXTENSIONS_GET_SCRIPT = 'get-extensions';
 
 fs.mkdirSync(CONFIG.baseDir, {recursive: true});

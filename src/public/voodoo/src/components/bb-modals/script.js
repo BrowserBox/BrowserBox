@@ -20,8 +20,9 @@ class BBModal extends Base {
     this.prepareState();
   }
 
-  prepareState(currentModal = {}) {
+  prepareState(currentModal) {
     const state = this.state;
+    state._top.DEBUG.debugModal && console.log(`Call stack`, (new Error).stack);
     //super.prepareState();
     // these are default values when there is no current Modal
     let msg = '';
@@ -44,8 +45,9 @@ class BBModal extends Base {
 
     if ( currentModal ) {
       // the defaults here are defaults when there *is* a current modal
+      state._top.DEBUG.debugModal && console.log(`Prepare`, {currentModal});
       ({
-        msg:msg = 'Empty',
+        msg:msg = '2 Empty',
         type,
         highlight: highlight = false,
         token:token = '',
@@ -87,7 +89,7 @@ class BBModal extends Base {
 
     if ( type == 'filechooser' && !(mode && sessionId && token) ) {
       console.log({mode,sessionId,token});
-      DEBUG.debugModal && console.log(currentModal);
+      state._top.DEBUG.debugModal && console.log(currentModal);
       throw new TypeError(`File chooser modal requires all of: sessionId, mode and token`);
     }
 
@@ -112,7 +114,7 @@ class BBModal extends Base {
       working, submitText, cancelText,
     };
 
-    DEBUG.debugModal && console.log('after prepare state', {currentModal}, '(also "others" state mixin)');
+    state._top.DEBUG.debugModal && console.log('after prepare state', {currentModal}, '(also "others" state mixin)');
 
     this.others = currentModal;
   }

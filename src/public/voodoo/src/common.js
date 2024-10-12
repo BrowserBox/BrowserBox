@@ -1,4 +1,4 @@
-export const VERSION = '10.3.1';
+export const VERSION = '10.3.3';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 
