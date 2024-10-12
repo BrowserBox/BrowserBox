@@ -1184,29 +1184,88 @@
             state.viewState.modalComponent.openModal({
               modal: {
                 type: 'notice',
-                title: 'Chrome Webstore',
+                title: 'CloudTabs Extensions',
                 message: 'Installing your extension now. Close this message to reload and check progress.'
               }
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 6242), {once:true, capture:true}
+              () => {
+                const maxWaits = 150;
+                let waits = 0;
+                //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
+                setInterval(async () => {
+                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                  waits++;
+                  if ( waits > maxWaits ) {
+                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                  }
+                  location.reload();
+                }, 2003);
+              },
+              {once: true, capture: true}
             );
           });
-          queue.addMetaListener('deleteExtension', ({removeExtension})  => {
+          queue.addMetaListener('deleteExtension', ({removeExtension,deleteExtension})  => {
             COMMON.delayUnload = false;
             globalThis.purchaseClicked = true;
             state.viewState.modalComponent.openModal({
               modal: {
                 type: 'notice',
-                title: 'Chrome Webstore',
+                title: 'CloudTabs Extensions',
                 message: 'Removing your extension now. Close this message to reload and check progress.'
               }
             });
             state.viewState.modalComponent.addEventListener(
               'click', 
-              () => setTimeout(() => location.reload(), 6742), {once:true, capture:true}
+              () => {
+                const maxWaits = 150;
+                let waits = 0;
+                //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
+                setInterval(async () => {
+                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                  waits++;
+                  if ( waits > maxWaits ) {
+                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                  }
+                  location.reload();
+                }, 2003);
+              },
+              {once: true, capture: true}
             );
+          });
+          queue.addMetaListener('modifyExtension', ({modifyExtension})  => {
+            COMMON.delayUnload = false;
+            globalThis.purchaseClicked = true;
+            state.viewState.modalComponent.openModal({
+              modal: {
+                type: 'notice',
+                title: 'CloudTabs Extensions',
+                message: 'Modifying your extension now. Close this message to reload and check progress.'
+              }
+            });
+            state.viewState.modalComponent.addEventListener(
+              'click', 
+              () => {
+                const maxWaits = 150;
+                let waits = 0;
+                //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
+                setInterval(async () => {
+                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                  waits++;
+                  if ( waits > maxWaits ) {
+                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                  }
+                  location.reload();
+                }, 2003);
+              },
+              {once: true, capture: true}
+            );
+          });
+          queue.addMetaListener('createTab', ({createTab}) => {
+            console.log({createTab});
+            //alert('Open Extension: ' + createTab?.opts?.url);
+            state.createTab(null, createTab.opts.url);
           });
 
         // plugins

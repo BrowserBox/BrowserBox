@@ -89,7 +89,7 @@ if [[ -n "$restart" ]];then
 fi
 
 # Step 0: Remove any old ones
-docker buildx rm container-builder || (sleep 10 && docker buildx rm container-builder) || true
+docker buildx rm container-builder || true
 
 # Step 1: Create the builder
 echo "Creating Docker buildx builder..."

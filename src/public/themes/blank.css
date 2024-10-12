@@ -656,7 +656,7 @@
     }
 
     aside.modals :is(article, dialog):not(.notice) {
-      word-break: break-all;
+      word-break: break-work;
     }
 
     aside.modals p:last-of-type {

@@ -235,6 +235,18 @@ function translator(e, handled = {type:'case'}) {
       }
       return retVal;
     }
+    case "actionOnClicked": {
+      const {data} = e;
+      return {
+        command: {
+          isZombieLordCommand: true,
+          name: "Connection.extensions.actionOnClicked",
+          params: {
+            ...data
+          }
+        }
+      }
+    }
     case "favicon": {
       throw new TypeError(`Client cannot request favicons from bank-end`);
       let {targetId} = e;

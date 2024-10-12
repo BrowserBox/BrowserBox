@@ -142,7 +142,7 @@
   const TabNumbers = new Map();
 
   // extensions
-  const extensions = [];
+  export const extensions = [];
 
   let shutdownTimer = null;
   let serverOrigin;
@@ -1573,7 +1573,11 @@
             const extensionSettings = preferences.extensions.settings[extensionId];
             const localizedManifest = localizeExtensionManifest({extensionSettings, extensionPath, manifest});
             if ( localizedManifest.display_in_launcher !== false ) {
-              extensions.push({id: extensionId, ...localizedManifest});
+              if ( extensionSettings.state === 0 ) {
+                extensions.push({id: extensionId, enabled: false, ...localizedManifest});
+              } else {
+                extensions.push({id: extensionId, enabled: true, ...localizedManifest});
+              }
             }
           } catch(e) {
             console.warn(`Error handling supposed extension path ${manifestPath}, via: ${EXTENSIONS_PATH}`, e);
