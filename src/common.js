@@ -137,8 +137,8 @@ export const DEBUG = Object.freeze({
   debugCommandOrder: false,
   debugKeyEvents: false,
   debugBinding: false,
-  events: true,
-  commands: true,
+  events: false,
+  commands: false,
   blockList: new Set([
     //"Emulation.setDeviceMetricsOverride",
   ]),
@@ -201,7 +201,7 @@ export const DEBUG = Object.freeze({
   ignoreCertificateErrors: false,
   debugNavigator: false,
   showContextIdCalls: false,
-  debugCopyPaste: false,
+  debugCopyPaste: true,
   watchFrameStack: false,
   enableClientsToSetURL: true,
   debugSendResult: false,
@@ -218,7 +218,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,

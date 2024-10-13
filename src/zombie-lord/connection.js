@@ -365,6 +365,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Emulation.setDeviceMetricsOverride",
       "Browser.setWindowBounds",
     ] : []),
+    ...(DEBUG.debugCopyPaste ? [
+      "Runtime.evaluate",
+      "Runtime.consoleAPICalled",
+    ] : []),
   ]);
 
   if ( demoBlock ) {
@@ -668,17 +672,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
         reloadAfterSetup(sessionId, {reason: 'attached'});
       }
-      /**
-        // putting this here will stop open in new tab from working, since
-        // we will reload a tab before it has navigated to its intended destination
-        // in effect resetting it mid navigation, whereupon it remains on about:blank
-        // and information about its intended destination is lost
-        const worlds = connection.worlds.get(sessionId);
-        DEBUG.val && console.log('worlds at attached', worlds);
-        if ( ! worlds ) {
-          await send("Page.reload", {}, sessionId);
-        }
-      **/
       DEBUG.val && consolelog('attached 2', targetInfo);
       DEBUG.worldDebug && consolelog('attached 2', targetInfo);
     } catch(err) {
