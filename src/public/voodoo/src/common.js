@@ -1,3 +1,4 @@
+const USW = false; // service worker
 export const VERSION = '10.3.3';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
@@ -119,7 +120,7 @@ export const DEBUG = Object.freeze({
   showCollect: false,
   debugFocus: false,
   debugAuth: false,
-  debugCopyPaste: false,
+  debugCopyPaste: true,
   debugOtherButton: false,
   get debugModal() {
     return this.debugCopyPaste || false;
@@ -228,7 +229,7 @@ export const CONFIG = Object.freeze({
   useTopLevelControlKeyListeners: true,
   useTopLevelSendKeyListeners: true,
   get useServiceWorkerToCache() {
-    return true;
+    return USW;
   },
   downloadMeterVanishTimeout: DEBUG.debugDownload ? 500000 : 5000,
   ACK_BLAST_LENGTH: 1000,
