@@ -366,6 +366,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Browser.setWindowBounds",
     ] : []),
     ...(DEBUG.debugCopyPaste ? [
+      "Target.activateTarget",
       "Runtime.evaluate",
       "Runtime.consoleAPICalled",
     ] : []),

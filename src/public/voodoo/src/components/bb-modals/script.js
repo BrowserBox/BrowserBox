@@ -162,7 +162,7 @@ class BBModal extends Base {
     }
     */
 
-    DEBUG.debugModal && alert(`Modal should be shown`);
+    //DEBUG.debugModal && alert(`Modal should be shown`);
     //setTimeout(async () => {
       if ( type == 'copy' ) {
         //await state._top.untilTrue(() => this.copyBoxTextarea.value == msg, 300, 20);

@@ -130,15 +130,15 @@ export const DEBUG = Object.freeze({
   showDebug: false,
   utilizeTempHackFixForIMENoKey: false,
   debugTyping: false,
-  logFileCommands: false,
+  logFileCommands: true,
   windowsUses48KAudio: false,
   debugAlerts: false,
   debugModals: false,
   debugCommandOrder: false,
   debugKeyEvents: false,
   debugBinding: false,
-  events: false,
-  commands: false,
+  events: true,
+  commands: true,
   blockList: new Set([
     //"Emulation.setDeviceMetricsOverride",
   ]),
@@ -218,7 +218,7 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'dev', // prod or dev (whether to bundle frontend code or not)
+  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
@@ -259,8 +259,8 @@ export const DEBUG = Object.freeze({
   },
   shotDebug: false,
   noShot: false,
-  dev: false,
-  val: 0,
+  dev: true,
+  val: 6,
   low: 1,
   med: 3,
   high: 5
