@@ -153,7 +153,6 @@ class BBModal extends Base {
 
     DEBUG.debugModal && console.log(state.viewState.currentModal);
 
-
     /*
     while( state?.viewState?.currentModal?.el !== state?.viewState?.ModalRef?.notice ) {
       DEBUG.debugModal && console.log(`Sleeping ${BBModal.MICRO_SLEEP} while we wait for state to be set...`);
@@ -165,7 +164,7 @@ class BBModal extends Base {
     //DEBUG.debugModal && alert(`Modal should be shown`);
     //setTimeout(async () => {
       if ( type == 'copy' ) {
-        //await state._top.untilTrue(() => this.copyBoxTextarea.value == msg, 300, 20);
+        await state._top.untilTrue(() => approxEqual(state?.viewState?.currentModal?.el, msg) > 0.618, 100, 30).catch(err => console.warn(`Could not find message`));;
         //this.copyBoxTextarea.select();
         let secondTitle = '';
         try {
@@ -434,3 +433,46 @@ class BBModal extends Base {
       }
   }
 }
+
+function approxEqual(s1, s2) {
+    // Calculate the Levenshtein distance between two strings
+    function levenshteinDistance(a, b) {
+      const matrix = [];
+
+      // Step 1: Initialize the distance matrix
+      for (let i = 0; i <= b.length; i++) {
+        matrix[i] = [i];
+      }
+      for (let j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+      }
+
+      // Step 2: Populate the matrix based on minimum edit distance
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,  // substitution
+              matrix[i][j - 1] + 1,      // insertion
+              matrix[i - 1][j] + 1       // deletion
+            );
+          }
+        }
+      }
+
+      return matrix[b.length][a.length];
+    }
+
+    // Compute the edit distance between the strings
+    const distance = levenshteinDistance(s1, s2);
+
+    // Normalize the distance by the maximum possible distance (longest string length)
+    const maxLength = Math.max(s1.length, s2.length);
+    const similarity = 1 - (distance / maxLength);
+
+    // Ensure similarity is always in the range [0, 1)
+    return similarity >= 1 ? 0.9999 : similarity;
+  }
+
