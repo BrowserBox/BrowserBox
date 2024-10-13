@@ -657,9 +657,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         await setupTab({attached});
       } else if ( targetInfo.type == 'service_worker' ) {
         const url = new URL(targetInfo.url);
-        if ( !INTERNAL_WORKERS.has(url.hostname) ) {
+        if ( url.protocol.startsWith('chrome-extension') && !INTERNAL_WORKERS.has(url.hostname) ) {
           Workers.set(sessionId, {});
           setupWorker({attached});
+        } else {
+          return;
         }
       }
       if ( StartupTabs.has(targetId) ) {
