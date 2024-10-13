@@ -650,8 +650,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( targetInfo.type == 'page' ) {
         await setupTab({attached});
       } else if ( targetInfo.type == 'service_worker' ) {
-        Workers.set(sessionId, {});
-        setupWorker({attached});
+        if ( targetInfo.url.startsWith('chrome') ) {
+          Workers.set(sessionId, {});
+          setupWorker({attached});
+        }
       }
       if ( StartupTabs.has(targetId) ) {
         DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
