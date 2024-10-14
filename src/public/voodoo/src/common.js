@@ -34,6 +34,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  debugCopyPaste: false,
   revealServiceWorkersAsTabs: false,
   attachToServiceWorkers: true,
   extensionsAssemble() {
@@ -93,7 +94,9 @@ export const DEBUG = Object.freeze({
   debugBetterModals: false,
   debugHistory: false,
   debugFavicon: false,
-  debugElementInfo: false,
+  get debugElementInfo() {
+    return this.debugCopyPaste || this.debugModals || false;
+  },
   coords: false,
   debugBitmapCoordConversion: false,
   debugEventChains: false,
@@ -120,7 +123,6 @@ export const DEBUG = Object.freeze({
   showCollect: false,
   debugFocus: false,
   debugAuth: false,
-  debugCopyPaste: true,
   debugOtherButton: false,
   get debugModal() {
     return this.debugCopyPaste || false;
