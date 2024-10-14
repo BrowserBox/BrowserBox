@@ -45,6 +45,12 @@ import {extensions, getInjectableAssetPath, fileChoosers} from '../ws-server.js'
 //import {overrideNewtab,onInterceptRequest as newtabIntercept} from './newtab/overrideNewtab.js';
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
 
+// limitations ( we do not attach to these as doing so ruins some Google websites )
+const INTERNAL_WORKERS = new Set([
+  'ghbmnnjooekpmoecnnnilnnbdlolhkhi', // Google docs offline
+  'nmmhkkegccagdldgiimedpiccmgmieda', // Some kind of Google / YouTube related extension
+]);
+
 // standard injections
 const selectDropdownEvents = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'selectDropdownEvents.js')).toString();
 const keysCanInputEvents = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'keysCanInput.js')).toString();
@@ -359,6 +365,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       "Emulation.setDeviceMetricsOverride",
       "Browser.setWindowBounds",
     ] : []),
+    ...(DEBUG.debugCopyPaste ? [
+      "Target.activateTarget",
+      "Runtime.evaluate",
+      "Runtime.consoleAPICalled",
+    ] : []),
   ]);
 
   if ( demoBlock ) {
@@ -650,24 +661,18 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( targetInfo.type == 'page' ) {
         await setupTab({attached});
       } else if ( targetInfo.type == 'service_worker' ) {
-        Workers.set(sessionId, {});
-        setupWorker({attached});
+        const url = new URL(targetInfo.url);
+        if ( url.protocol.startsWith('chrome-extension') && !INTERNAL_WORKERS.has(url.hostname) ) {
+          Workers.set(sessionId, {});
+          setupWorker({attached});
+        } else {
+          return;
+        }
       }
       if ( StartupTabs.has(targetId) ) {
         DEBUG.debugSetupReload && console.log(`Reloading due to attached`);
         reloadAfterSetup(sessionId, {reason: 'attached'});
       }
-      /**
-        // putting this here will stop open in new tab from working, since
-        // we will reload a tab before it has navigated to its intended destination
-        // in effect resetting it mid navigation, whereupon it remains on about:blank
-        // and information about its intended destination is lost
-        const worlds = connection.worlds.get(sessionId);
-        DEBUG.val && console.log('worlds at attached', worlds);
-        if ( ! worlds ) {
-          await send("Page.reload", {}, sessionId);
-        }
-      **/
       DEBUG.val && consolelog('attached 2', targetInfo);
       DEBUG.worldDebug && consolelog('attached 2', targetInfo);
     } catch(err) {
@@ -2494,9 +2499,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         return resp;
       }
     } else {
-      if ( command.sessionId ) {
+      /*if ( command.sessionId ) {
         sessionId = command.sessionId;
-      } else if ( command.name !== "Page.screencastFrameAck" ) {
+      } else*/ if ( command.name !== "Page.screencastFrameAck" ) {
         sessionId = command.params.sessionId || that.sessionId;
         if ( ! sessionId || ! sessions.has(sessionId) ) {
           DEBUG.val && console.log("Blocking as session not exist.", sessionId);

@@ -231,19 +231,21 @@ class BBContextMenu extends Base {
       DEBUG.debugCopyPaste && console.log({clientX,clientY});
       const target = state.viewState.canvasEl;
       const {H} = state;
-      this.close(state);
       state.elementInfoContinuation = ({innerText, noSuchElement}) => {
-        if ( ! noSuchElement ) {
-          state.elementInfoContinuation = null;
-          state.viewState.modalComponent.openModal({modal:{
-            type:'copy', 
-            highlight: true, 
-            message: innerText, 
-            title: `Text from Page`
-          }}, state);
+        if ( noSuchElement ) {
+          DEBUG.debugCopyPaste && console.log(`Got no such element so not nuking elementInfoContinuation`);
+          return;
         }
+        state.elementInfoContinuation = null;
+        state.viewState.modalComponent.openModal({modal:{
+          type:'copy', 
+          highlight: true, 
+          message: innerText, 
+          title: `Text from Page`
+        }}, state);
       };
-      DEBUG.debugCopyPaste && console.log({clientX,clientY});
+      this.close(state);
+      DEBUG.debugCopyPaste && console.log('setup elementInfoContinuation', {clientX,clientY}, state.elementInfoContinuation);
       H({
         type: 'getElementInfo',
         synthetic: true,
@@ -253,10 +255,10 @@ class BBContextMenu extends Base {
           clientX, clientY
         }
       });
+      DEBUG.debugCopyPaste && console.log('sending request for element info to remote');
       setTimeout(() => {
         state.checkResults();
       }, 300);
-      DEBUG.debugCopyPaste && console.log({clientX,clientY});
     }
 
     copyLink(click) {
