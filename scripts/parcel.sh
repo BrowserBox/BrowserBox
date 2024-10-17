@@ -1,19 +1,24 @@
 #!/usr/bin/env bash
 
-source $HOME/.nvm/nvm.sh
-if ! nvm use v20; then
-  nvm install v20 && nvm use v20
-  npm remove -g parcel
-  npm i -g parcel@latest
-fi
-if ! command -v parcel &>/dev/null; then
-  . /etc/os-release
+set -x
 
-  if [[ $ID == *"bsd" ]]; then
-    sudo -n npm i -g parcel@latest || echo "Could not install parcel" >&2
-  else
+. /etc/os-release
+if [[ $ID != *"bsd" ]]; then
+  source $HOME/.nvm/nvm.sh
+  if ! nvm use v20; then
+    nvm install v20 && nvm use v20
+    npm remove -g parcel
     npm i -g parcel@latest
   fi
+else
+  if ! command -v node &>/dev/null || ! command -v npm &>/dev/null; then
+    ./deploy-scripts/install_node.sh 20
+  fi
+fi
+if [[ $ID == *"bsd" ]]; then
+  npm i parcel@2.0.0-alpha.1
+else
+  npm i parcel@latest
 fi
 
 rm -rf .parcel-cache/*

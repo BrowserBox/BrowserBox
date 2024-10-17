@@ -100,6 +100,7 @@
     "helmet": "latest",
     "is-docker": "latest",
     "multer": "latest",
+    "parcel": "^2.0.0-alpha.1",
     "patch-package": "latest",
     "simple-peer": "latest",
     "socks-proxy-agent": "latest",
@@ -124,7 +125,6 @@
     "eslint": "latest",
     "jsdom": "^25.0.0",
     "node-loader": "latest",
-    "parcel": "latest",
     "parcel-resolver-ignore": "latest",
     "whatwg-fetch": "^3.6.20"
   }
