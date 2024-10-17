@@ -15,7 +15,11 @@ install_nvm() {
   fi
 }
 
-install_nvm
+install_node() {
+  ./deploy-scripts/install_node.sh 20
+}
+
+install_node
 
 . ~/.nvm/nvm.sh
 profile="network-latency"
