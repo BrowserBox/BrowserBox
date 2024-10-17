@@ -131,5 +131,14 @@ if ! $SUDO grep -q "%browsers ALL=NOPASSWD:" /etc/sudoers; then
 fi
 
 $SUDO ufw disable
-which pm2 || npm i -g pm2@latest || sudo npm i -g pm2@latest
-$SUDO setcap 'cap_net_bind_service=+ep' $(which node)
+if ! command -v pm2 &>/dev/null; then
+  . /etc/os-release
+
+  if [[ $ID == *"bsd" ]]; then
+    $SUDO npm i -g pm2@latest
+  else
+    npm i -g pm2@latest
+  fi
+fi
+
+$SUDO setcap 'cap_net_bind_service=+ep' "$(command -v node)"

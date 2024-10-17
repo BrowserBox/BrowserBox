@@ -87,7 +87,13 @@ else
 fi
 
 if ! command -v pm2 &>/dev/null; then
-  npm i -g pm2@latest
+  . /etc/os-release
+
+  if [[ $ID == *"bsd" ]]; then
+    sudo -n npm i -g pm2@latest || echo "Could not install pm2" >&2
+  else
+    npm i -g pm2@latest
+  fi
 fi
 
 # flush any partial

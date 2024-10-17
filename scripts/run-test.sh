@@ -5,8 +5,14 @@
 source ~/.nvm/nvm.sh
 #nvm install stable
 
-if ! command -v pm2; then
-  npm i -g pm2@latest
+if ! command -v pm2 &>/dev/null; then
+  . /etc/os-release
+
+  if [[ $ID == *"bsd" ]]; then
+    sudo -n npm i -g pm2@latest || echo "Could not install pm2" >&2
+  else
+    npm i -g pm2@latest
+  fi
 fi
 
 envFile=""

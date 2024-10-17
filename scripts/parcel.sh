@@ -6,7 +6,15 @@ if ! nvm use v20; then
   npm remove -g parcel
   npm i -g parcel@latest
 fi
-command -v parcel || npm i -g parcel@latest
+if ! command -v parcel &>/dev/null; then
+  . /etc/os-release
+
+  if [[ $ID == *"bsd" ]]; then
+    sudo -n npm i -g parcel@latest || echo "Could not install parcel" >&2
+  else
+    npm i -g parcel@latest
+  fi
+fi
 
 rm -rf .parcel-cache/*
 
