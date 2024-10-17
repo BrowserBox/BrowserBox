@@ -85,6 +85,7 @@
   },
   "homepage": "https://github.com/BrowserBox/BrowserBox",
   "dependencies": {
+    "@chialab/esbuild-plugin-html": "^0.18.2",
     "@roamhq/wrtc": "^0.7.3",
     "bang.html": "latest",
     "body-parser": "latest",
@@ -92,7 +93,6 @@
     "cookie-parser": "^1.0.0",
     "cors": "latest",
     "entities": "latest",
-    "esbuild": "0.24.0",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "^4.21.0",
@@ -100,7 +100,6 @@
     "helmet": "latest",
     "is-docker": "latest",
     "multer": "latest",
-    "parcel": "^2.0.0-alpha.1",
     "patch-package": "latest",
     "simple-peer": "latest",
     "socks-proxy-agent": "latest",

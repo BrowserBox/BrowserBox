@@ -218,7 +218,14 @@ export const DEBUG = Object.freeze({
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
-  mode: 'prod', // prod or dev (whether to bundle frontend code or not)
+  get isBSD() {
+    return process.platform.endsWith('bsd'); 
+  },
+  get mode() {
+    // prod or dev (whether to bundle frontend code or not)
+    // bsd is always dev because bundlers like parcel etc do not work on it
+    return this.isBSD ? 'dev' : 'prod'; 
+  },
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
   useFlashEmu: process.env.USE_FLASH == 'true' ? true : false,
