@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 base=$1
 format=$2

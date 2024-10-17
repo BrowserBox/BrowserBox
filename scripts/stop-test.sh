@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 command -v pm2 &>/dev/null || npm i -g pm2@latest
 node="$(command -v node.exe || command -v node)"

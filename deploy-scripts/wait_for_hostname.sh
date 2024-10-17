@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 hostname=$1
 timeout=3600 # Timeout in seconds (e.g., 3600 seconds = 1 hour to set up your DNS)

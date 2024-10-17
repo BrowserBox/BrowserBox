@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 cd $HOME
 if [ ! -d BrowserBox ]; then

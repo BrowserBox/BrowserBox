@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [ `id -u` != "0" ]; then
   echo "Error: Must run as root"

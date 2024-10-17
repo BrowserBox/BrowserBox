@@ -199,7 +199,7 @@ export default class Launcher {
       const scriptName = `start_bb_browser.sh`;
       const scriptPath = () => path.resolve(CONFIG.baseDir, 'scripts', scriptName); 
       fs.mkdirSync(path.dirname(scriptPath()), {recursive: true});
-      const script = `#!/bin/bash
+      const script = `#!/usr/bin/env bash
       exec ${process.env.BB_POOL ? 'sudo -g browsers ' : ''}"${execPath}" ${this.flags.join(' ')}
       `
       console.log({script});

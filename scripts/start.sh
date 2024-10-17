@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 let audio=$2-2
 let console=$2-1

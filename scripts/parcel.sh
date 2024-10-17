@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source $HOME/.nvm/nvm.sh
 if ! nvm use v20; then

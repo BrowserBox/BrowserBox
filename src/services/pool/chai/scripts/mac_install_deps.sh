@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 export HOMEBREW_NO_AUTO_UPDATE=1
 brew update

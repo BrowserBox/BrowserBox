@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ZONE=""
-#set -x
+set -x
 
 unset npm_config_prefix
 
@@ -51,13 +51,13 @@ initialize_package_manager() {
   if [[ "$OSTYPE" == darwin* ]]; then
     package_manager=$(command -v brew)
   elif command -v apt &>/dev/null; then
-    package_manager=$(command -v apt)
+    package_manager="$(command -v apt)"
     if command -v apt-get &>/dev/null; then
       source ./deploy-scripts/non-interactive.sh
     fi
     # Check if the system is Debian and the version is 11
     if [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]]; then
-      $SUDO apt -y install wget tar
+      $SUDO apt install -y wget tar
       mkdir -p $HOME/build/Release
       echo "Installing Custom Build of WebRTC Node for Debian 11..."
       wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/debian-11-wrtc.node
@@ -66,6 +66,8 @@ initialize_package_manager() {
       $SUDO mkdir -p /usr/local/share/dosyago/build/Release
       $SUDO cp $HOME/build/Release/wrtc.node /usr/local/share/dosyago/build/Release/
     fi
+  elif command -v pkg &>/dev/null; then
+    package_manager="$(command -v pkg)"
   elif command -v dnf >/dev/null; then
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
     $SUDO dnf config-manager --set-enabled crb
@@ -75,7 +77,7 @@ initialize_package_manager() {
     $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=http
     $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=https
     $SUDO firewall-cmd --reload
-    $SUDO dnf -y install wget tar
+    $SUDO dnf install -y wget tar
     mkdir -p $HOME/build/Release
     if [ "$ID" = "almalinux" ] && [[ "$VERSION_ID" == 8* ]]; then
       echo "Installing Custom Build of WebRTC Node for Almalinux 8 like..."
@@ -166,6 +168,10 @@ os_type() {
     MING*)   echo "win";;
     *)       echo "unknown";;
   esac
+}
+
+install_node() {
+  ./deploy-scripts/install_node.sh 20
 }
 
 install_nvm() {
@@ -266,9 +272,9 @@ open_firewall_port_range() {
   if [[ -z "$complete" ]]; then
       echo "No recognized firewall management tool found"
       if command -v apt; then
-        $SUDO apt -y install ufw 
+        $SUDO apt install -y ufw 
       elif command -v dnf; then
-        $SUDO dnf -y install firewalld
+        $SUDO dnf install -y firewalld
       fi
       return 1
   fi
@@ -289,7 +295,7 @@ fi
 if [ "$(os_type)" == "Linux" ]; then
   $SUDO $APT update
   $SUDO $APT -y upgrade
-  $SUDO $APT -y install net-tools 
+  $SUDO $APT install -y net-tools 
   open_firewall_port_range 80 80
 fi
 open_firewall_port_range 80 80
@@ -298,7 +304,7 @@ open_firewall_port_range 80 80
 if [ "$(os_type)" == "macOS" ]; then
         brew install jq
 else
-        $SUDO $APT -y install jq
+        $SUDO $APT install -y jq
 fi
 
 
@@ -316,7 +322,7 @@ if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
         choco install mkcert || scoop bucket add extras && scoop install mkcert
       else
         amd64=$(dpkg --print-architecture || uname -m)
-        $SUDO $APT -y install libnss3-tools
+        $SUDO $APT install -y libnss3-tools
         curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
         chmod +x mkcert-v*-linux-$amd64
         $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
@@ -372,7 +378,8 @@ echo "Ensuring fully installed..."
 cd $INSTALL_DIR
 
 echo "Ensuring nvm installed..."
-install_nvm
+#install_nvm
+install_node
 
 echo "Running npm install..."
 
