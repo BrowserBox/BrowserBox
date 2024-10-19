@@ -100,6 +100,7 @@
     "helmet": "latest",
     "is-docker": "latest",
     "multer": "latest",
+    "parcel": "^2.12.0",
     "patch-package": "latest",
     "simple-peer": "latest",
     "socks-proxy-agent": "latest",
