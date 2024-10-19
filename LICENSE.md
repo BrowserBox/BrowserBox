@@ -1,6 +1,6 @@
 SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later
 
-Required Notice: Copyright DOSAYGO Corporation & Contributors 2018-2024 (https://dosyago.com)
+Required Notice: Copyright DOSAYGO Corporation & @o0101 (Cris D) 2018-2024 (https://dosyago.com)
 
 You must distribute this file and its exact and entire contents when you distribute any copies or works of BrowserBox.
 

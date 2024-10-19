@@ -292,6 +292,10 @@ export const COMMON = Object.seal(Object.preventExtensions({
   delayUnload: true,
 }));
 
+export const HIDDEN_DOMAINS = new Set([
+  'neajdppkdcdipfabeoofebfddakdcjhd', // chrome internal tts extension, which chrome hides by default, so we shouldn't show it
+]);
+
 export const AttachmentTypes = new Set([
   'page',
   ...(DEBUG.revealServiceWorkersAsTabs ? [
