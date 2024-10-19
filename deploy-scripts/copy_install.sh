@@ -26,7 +26,10 @@ fi
 if [[ $ID == *"bsd" ]]; then
   echo "Skipping build step as on a bsd flavor" >&2
 else
-  npm run parcel
+  bundle="$(cd src; node -e "import('./common.js').then(({DEBUG}) => console.log(DEBUG.bundleClientCode))")"
+  if [[ "$bundle" != "false" ]]; then
+    npm run parcel
+  fi
 fi
 
 echo "INSTALL_DIR: $INSTALL_DIR"
