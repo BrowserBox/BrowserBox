@@ -6,12 +6,17 @@ trap 'echo "Got an error. Bailing this section..." >&2' ERR
 trap 'echo "Exiting..." >&2' EXIT
 
 OS_TYPE=""
-ONTOR=false
 TOR_PROXY=""
-INJECT_SCRIPT=""
 SUDO=""
 ZONE=""
 HAVE_SUDO=""
+
+ONTOR=false
+INJECT_SCRIPT=""
+PORT=""
+TOKEN=""
+COOKIE=""
+DOC_API_KEY=""
 
 # Function to check if a command exists
 command_exists() {
@@ -52,29 +57,6 @@ if command_exists firewall-cmd; then
   ZONE="$($SUDO firewall-cmd --get-default-zone)"
 fi
 
-# Function to display help message
-display_help() {
-  cat << EOF
-    Usage: $(basename $0) [OPTIONS]
-
-    This script sets up and configures BrowserBox with optional Tor support.
-
-    OPTIONS:
-      -h, --help              Show this help message and exit.
-      -p, --port PORT         Specify the main port for BrowserBox.
-      -t, --token TOKEN       Set a specific login token for BrowserBox.
-      -c, --cookie COOKIE     Set a specific cookie value for BrowserBox.
-      -d, --doc-key DOC_API_KEY Set a specific document viewer API key for BrowserBox.
-      --ontor                 Enable Tor support in BrowserBox.
-      --inject  PATH          JavaScript file to inject into every browsed page
-
-    EXAMPLES:
-      $(basename $0) --port 8080 --token mytoken --cookie mycookie --doc-key mydockey
-      $(basename $0) --port 8080 --ontor
-      $(basename $0) --port 8080 --inject ~/extension.js
-
-EOF
-}
 # Windows command for firewall
 open_firewall_port_windows() {
   local port=$1
@@ -202,6 +184,9 @@ detect_os() {
     ;;
     win)
       OS_TYPE="win"
+    ;;
+    freebsd)
+      OS_TYPE="bsd"
     ;;
     *)
       echo "ERROR: Unsupported Operating System: $distro" >&2
@@ -372,58 +357,90 @@ else
   getopt="/usr/bin/getopt"
 fi
 
-# Parsing command line args including --ontor
-#OPTS=`$getopt -o p:t:c:d: --long port:,token:,cookie:,doc-key:,ontor -n 'parse-options' -- "$@"`
-OPTS=$($getopt -o hp:t:c:d: --long help,port:,token:,cookie:,doc-key:,ontor,inject: -n 'parse-options' -- "$@")
+# Display help message
+display_help() {
+  cat << EOF
+Usage: $(basename "$0") [OPTIONS]
 
+This script sets up and configures BrowserBox with optional Tor support.
 
-if [ $? != 0 ] ; then echo "ERROR: Failed parsing options." >&2 ; exit 1 ; fi
+OPTIONS:
+  -h, --help                  Display this help message and exit.
+  -p, --port PORT             Specify the main port for BrowserBox (Required).
+  -t, --token TOKEN           Provide a specific login token.
+  -c, --cookie COOKIE         Set a custom cookie value for BrowserBox.
+  -d, --doc-api-key KEY       Provide a document viewer API key.
+      --ontor                 Enable Tor support for BrowserBox.
+      --inject PATH           Inject a JavaScript file into every browsed page.
 
-eval set -- "$OPTS"
+EXAMPLES:
+  $(basename "$0") --port 8080 --token mytoken --cookie mycookie
+  $(basename "$0") --port 8080 --ontor
+  $(basename "$0") --port 8080 --inject ~/extension.js
 
-while true; do
+EOF
+}
+
+# Parse options with getopts
+while :; do
   case "$1" in
-    -h | --help)
+    -h|--help)
       display_help
       exit 0
-    ;;
-    --ontor )
+      ;;
+    -p|--port)
+      PORT="$2"
+      shift 2
+      ;;
+    -t|--token)
+      TOKEN="$2"
+      shift 2
+      ;;
+    -c|--cookie)
+      COOKIE="$2"
+      shift 2
+      ;;
+    -d|--doc-api-key)
+      DOC_API_KEY="$2"
+      shift 2
+      ;;
+    --ontor)
       ONTOR=true
       shift
-    ;;
-    --inject )
+      ;;
+    --inject)
       INJECT_SCRIPT="$2"
       shift 2
-      if [[ -f "$INJECT_SCRIPT" ]]; then
-        echo "Inject script valid." >&2
-      else
-        echo "ERROR: Inject script $INJECT_SCRIPT does not exist." >&2
-        exit 1
-      fi
-    ;;
-    -p | --port ) 
-      if [[ $2 =~ ^[0-9]+$ ]]; then
-        PORT="$2"
-      else
-        echo "ERROR: --port requires a numeric argument.">&2
-        exit 1
-      fi
-      shift 2
-    ;;
-    -t | --token ) TOKEN="$2"; shift 2;;
-    -c | --cookie ) COOKIE="$2"; shift 2;;
-    -d | --doc-key ) DOC_API_KEY="$2"; shift 2;;
-    -- )
+      ;;
+    --)
       shift
       break
-    ;;
-    * )
-      echo "ERROR: Invalid option: $1" >&2
+      ;;
+    -*)
+      echo "ERROR: Unknown option: $1" >&2
       display_help
       exit 1
-    ;;
+      ;;
+    *)
+      break
+      ;;
   esac
 done
+
+# Validate required options
+if [[ -z "$PORT" ]]; then
+  echo "ERROR: --port option is required." >&2
+  exit 1
+fi
+
+if [[ -n "$DEBUG_BB" ]]; then
+  echo "PORT: $PORT" >&2
+  echo "TOKEN: ${TOKEN:-Not provided}" >&2
+  echo "COOKIE: ${COOKIE:-Not provided}" >&2
+  echo "DOC_API_KEY: ${DOC_API_KEY:-Not provided}" >&2
+  echo "ONTOR: $ONTOR" >&2
+  echo "INJECT_SCRIPT: ${INJECT_SCRIPT:-Not provided}" >&2
+fi
 
 echo "Done!">&2;
 
