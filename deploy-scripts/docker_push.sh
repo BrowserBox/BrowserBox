@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Function to read CR_PAT from stdin if not already an environment variable
 read_token() {

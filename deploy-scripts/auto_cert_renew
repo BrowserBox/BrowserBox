@@ -11,6 +11,10 @@ if [[ -z "$2" ]]; then
 fi
 
 sudo cp ./deploy-scripts/renew_tls.sh /root/renew_tls.sh
+
 # add our job to crontab if it's not there already
-(sudo crontab -l | grep "renew_tls.sh $1") || ( sudo crontab -l; echo "0 12 * * * /root/renew_tls.sh $1 $2"; ) | sudo crontab
+if ! sudo crontab -l 2>/dev/null | grep -q "renew_tls.sh $1"; then
+  (sudo crontab -l 2>/dev/null; echo "0 12 * * * /root/renew_tls.sh $1 $2") | sudo crontab -
+fi
+
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Exporting StackScript UDF variables for local testing
 export SIGNATURE="yes"

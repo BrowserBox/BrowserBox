@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Install dependencies
 brew install ghostscript jpeg libpng pkg-config webp xz

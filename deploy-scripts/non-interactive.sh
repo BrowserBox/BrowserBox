@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 SUDO=""
 if command -v sudo &>/dev/null; then
@@ -68,7 +68,7 @@ EOF
 $SUDO apt-get dist-upgrade -o Dpkg::Options::="--force-confnew" --yes -yqq >&2
 
 # Install debconf-utils and set it to restart libraries without asking
-$SUDO apt-get -y install debconf-utils >&2
+$SUDO apt-get install -y debconf-utils >&2
 echo '* libraries/restart-without-asking boolean true' | $SUDO debconf-set-selections >&2
 
 echo "Configurations applied successfully." >&2

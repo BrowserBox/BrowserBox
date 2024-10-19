@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 source $HOME/.bashrc
 source $HOME/.nvm/nvm.sh

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Global Variables
 OS_TYPE=""
@@ -142,9 +142,9 @@ setup_mkcert() {
     else
       amd64="$(get_normalized_arch)"
       if [[ "${OS_TYPE}" == "centos" ]]; then
-        $SUDO "$APT" -y install nss-tools
+        $SUDO "$APT" install -y nss-tools
       else
-        $SUDO "$APT" -y install libnss3-tools
+        $SUDO "$APT" install -y libnss3-tools
       fi
       curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/${amd64}"
       chmod +x mkcert-v*-linux-"$amd64"

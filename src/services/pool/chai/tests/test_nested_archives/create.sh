@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # List of supported archiving methods
 methods=("gz" "bz2" "zip" "rar" "7z")

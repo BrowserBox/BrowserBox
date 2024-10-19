@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ################################################
 ## Prerequisites
 chmod +x /root/vultr-helper.sh

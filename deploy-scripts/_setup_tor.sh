@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script must be run with sudo privileges
 if [ "$(id -u)" -ne 0 ]; then

@@ -62,7 +62,7 @@ resource "google_compute_instance" "browserbox_instance" {
   }
 
   metadata_startup_script = <<-EOF
-#!/bin/bash
+#!/usr/bin/env bash
 # Your existing setup script here
 EOF
 

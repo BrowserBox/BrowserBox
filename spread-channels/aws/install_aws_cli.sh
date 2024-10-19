@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Check if the OS is macOS
 if [[ "$OSTYPE" != "darwin"* ]]; then

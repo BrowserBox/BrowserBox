@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # <UDF name="useremail" label="signature email: I agree to the T&Cs" example="jcitizen@website.net" />
 # <UDF name="hostname" label="hostname:  FQDN you will point to this host in your DNS." example="hello.example.com" />
 # <UDF name="token" label="Token: Login with HOSTNAME:8080/login?token=TOKEN" />

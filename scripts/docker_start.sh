@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 username=$(whoami)
 trap 'sudo kill $BGPID; exit' SIGINT 

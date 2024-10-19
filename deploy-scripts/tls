@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#set -x
+set -x
 
 sudo="$(command -v sudo)"
 SUDO="$sudo"
@@ -26,6 +26,8 @@ initialize_package_manager() {
     exit 1
   elif command -v apt >/dev/null; then
     package_manager=$(command -v apt)
+  elif command -v pkg &>/dev/null; then
+    package_manager="$(command -v pkg)"
   elif command -v dnf >/dev/null; then
     package_manager=$(command -v dnf)
     $sudo dnf config-manager --set-enabled crb
@@ -65,17 +67,19 @@ if ! command -v certbot >/dev/null; then
           $sudo dnf upgrade
           $sudo subscription-manager repos --enable "rhel-*-optional-rpms" --enable "rhel-*-extras-rpms"
           $sudo yum update
-          $sudo dnf -y install certbot python3-certbot-apache
+          $sudo dnf install -y certbot python3-certbot-apache
         fi
+    elif [[ $ID == *"bsd" ]]; then
+      $sudo $APT install -y py311-certbot curl
     else
         # Install Certbot for other distributions
-        $sudo $APT -y install certbot curl
+        $sudo $APT install -y certbot curl
     fi
   else
     if [[ "$(uname)" == "Darwin" ]]; then
       $APT install certbot curl
     else
-      $sudo $APT -y install certbot curl
+      $sudo $APT install -y certbot curl
     fi
   fi
 fi
@@ -86,11 +90,11 @@ install_crontab() {
     if [ "$(os_type)" == "macOS" ]; then
       brew install cronie
     elif [[ "$APT" == *yum || "$APT" == *dnf ]]; then
-      $sudo $APT -y install cronie
+      $sudo $APT install -y cronie
       $sudo systemctl enable crond
       $sudo systemctl start crond
     else
-      $sudo $APT -y install cron
+      $sudo $APT install -y cron
       $sudo systemctl enable cron
       $sudo systemctl start cron
     fi
@@ -121,7 +125,7 @@ else
     if [ "$(os_type)" == "macOS" ]; then
       brew install jq
     else
-      $sudo $APT -y install jq
+      $sudo $APT install -y jq
     fi
   fi
 
@@ -135,7 +139,7 @@ else
       choco install mkcert || scoop bucket add extras && scoop install mkcert
     else
       amd64=$(dpkg --print-architecture || uname -m)
-      $SUDO $APT -y install libnss3-tools
+      $SUDO $APT install -y libnss3-tools
       curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
       chmod +x mkcert-v*-linux-$amd64
       $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert

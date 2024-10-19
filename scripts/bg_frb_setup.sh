@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #sudo $APT install -y nodejs npm
 sudo npm i -g npm node-dev serve 
