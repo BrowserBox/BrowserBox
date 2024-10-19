@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #npm cache clean --force
 rm -rf .parcel-cache/dist/ 

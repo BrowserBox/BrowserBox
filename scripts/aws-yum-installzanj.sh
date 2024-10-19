@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ssh_priv_key_file=$1
 ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
-sudo yum -y install git
+sudo yum install -y git
 sudo echo "$(cat $ssh_priv_key_file)" > .ssh/id_ed25519
 sudo chmod 400 .ssh/id_ed25519
 git clone git@github.com:/crislin2046/environments.git
@@ -17,7 +17,7 @@ source $HOME/.nvm/nvm.sh
 nvm install 8.12.0
 nvm install-latest-npm
 curl https://intoli.com/install-google-chrome.sh | bash
-sudo yum -y install google-noto*
+sudo yum install -y google-noto*
 npm i -g pm2
 cd zanj
 npm i

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #set -x
 
@@ -29,7 +29,7 @@ initialize_package_manager() {
     fi
     # Check if the system is Debian and the version is 11
     if [[ "$ID" == "debian" && "$VERSION_ID" == "11" ]]; then
-      $SUDO apt -y install wget tar
+      $SUDO apt install -y wget tar
       mkdir -p $HOME/build/Release
       echo "Installing Custom Build of WebRTC Node for Debian 11..."
       wget https://github.com/dosyago/node-webrtc/releases/download/v1.0.0/debian-11-wrtc.node
@@ -47,7 +47,7 @@ initialize_package_manager() {
     $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=http
     $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=https
     $SUDO firewall-cmd --reload
-    $SUDO dnf -y install wget tar
+    $SUDO dnf install -y wget tar
     mkdir -p $HOME/build/Release
     if [ "$ID" = "almalinux" ] && [[ "$VERSION_ID" == 8* ]]; then
       echo "Installing Custom Build of WebRTC Node for Almalinux 8 like..."
@@ -87,7 +87,13 @@ else
 fi
 
 if ! command -v pm2 &>/dev/null; then
-  npm i -g pm2@latest
+  . /etc/os-release
+
+  if [[ $ID == *"bsd" ]]; then
+    sudo -n npm i -g pm2@latest || echo "Could not install pm2" >&2
+  else
+    npm i -g pm2@latest
+  fi
 fi
 
 # flush any partial

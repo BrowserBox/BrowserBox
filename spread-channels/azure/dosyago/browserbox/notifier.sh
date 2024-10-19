@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 adminUsername=$1  # Assuming the first argument is the admin username
 region="${2//[[:space:]]/}"

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [[ -f ~/.config/dosyago/bbpro/test.env ]]; then
   source ~/.config/dosyago/bbpro/test.env

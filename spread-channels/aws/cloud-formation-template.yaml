@@ -71,7 +71,7 @@ Resources:
       UserData:
         Fn::Base64:
           !Sub |
-            #!/bin/bash
+            #!/usr/bin/env bash
 
             # Check if both KeyName and Token are not provided
             if [[ -z "${SSHKeyName}" && -z "${Token}" ]]; then

@@ -22,7 +22,12 @@ else
   mkdir -p $COMMAND_DIR
 fi
 
-npm run parcel
+. /etc/os-release
+if [[ $ID == *"bsd" ]]; then
+  echo "Skipping build step as on a bsd flavor" >&2
+else
+  npm run parcel
+fi
 
 echo "INSTALL_DIR: $INSTALL_DIR"
 echo -n "Copying bbpro application files to /usr/local/share/dosyago/ ..."

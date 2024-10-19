@@ -85,6 +85,7 @@
   },
   "homepage": "https://github.com/BrowserBox/BrowserBox",
   "dependencies": {
+    "@chialab/esbuild-plugin-html": "^0.18.2",
     "@roamhq/wrtc": "^0.7.3",
     "bang.html": "latest",
     "body-parser": "latest",
@@ -92,7 +93,6 @@
     "cookie-parser": "^1.0.0",
     "cors": "latest",
     "entities": "latest",
-    "esbuild": "0.24.0",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "^4.21.0",
@@ -124,7 +124,6 @@
     "eslint": "latest",
     "jsdom": "^25.0.0",
     "node-loader": "latest",
-    "parcel": "latest",
     "parcel-resolver-ignore": "latest",
     "whatwg-fetch": "^3.6.20"
   }

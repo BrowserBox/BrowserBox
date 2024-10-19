@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 node="$(command -v node.exe || command -v node)"
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 username=$(whoami)
 echo "Starting viewfinder service cluster as $username"

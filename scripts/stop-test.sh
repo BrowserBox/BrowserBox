@@ -1,6 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-command -v pm2 &>/dev/null || npm i -g pm2@latest
+if ! command -v pm2 &>/dev/null; then
+  . /etc/os-release
+
+  if [[ $ID == *"bsd" ]]; then
+    sudo -n npm i -g pm2@latest || echo "Could not install pm2" >&2
+  else
+    npm i -g pm2@latest
+  fi
+fi
 node="$(command -v node.exe || command -v node)"
 pm2 delete start_audio 
 pm2 delete basic-bb-main-service 

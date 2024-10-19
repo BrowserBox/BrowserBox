@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # killing bundling for now until work out babel issue
 # "Cannot find preset babel/env relative to directory public"

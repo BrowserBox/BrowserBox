@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 if [[ -z "$1" ]]; then
   echo "Specify which directory to validate as first argument. Will exit now..." >&2

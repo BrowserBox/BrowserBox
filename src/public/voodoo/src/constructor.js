@@ -16,6 +16,7 @@
     import {saveClick} from './subviews/controls.js';
     import {
       AttachmentTypes,
+      HIDDEN_DOMAINS,
       COMMON,
       untilTrue,
       untilHuman,
@@ -1319,7 +1320,8 @@
             });
 
           queue.addMetaListener('created', meta => {
-            if ( AttachmentTypes.has(meta.created.type) ) {
+            const url = new URL(meta.created.url);
+            if ( AttachmentTypes.has(meta.created.type) && ! HIDDEN_DOMAINS.has(url.hostname) ) {
               meta.created.hello = 'oncreated';
               const activate = () => activateTab(null, meta.created, {notify: false, forceFrame:true})
               const tab = findTab(meta.created.targetId);
@@ -1340,7 +1342,8 @@
           });
           queue.addMetaListener('attached', meta => {
             const attached = meta.attached.targetInfo;
-            if ( AttachmentTypes.has(attached.type) ) {
+            const url = new URL(attached.url);
+            if ( AttachmentTypes.has(attached.type) && ! HIDDEN_DOMAINS.has(url.hostname) ) {
               state.attached.add(attached.targetId);
 
               if ( state.useViewFrame ) {
