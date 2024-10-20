@@ -10,7 +10,6 @@
   import multer from 'multer';
   import {WebSocketServer, WebSocket} from 'ws';
   import Peer from 'simple-peer';
-  import WRTC from '@roamhq/wrtc';
 
   import bodyParser from 'body-parser';
   import cookieParser from 'cookie-parser';
@@ -35,6 +34,9 @@
   } from './common.js';
   import {timedSend, eventSendLoop} from './server.js';
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
+
+  let WRTC;
+  await import('@roamhq/wrtc').then(module => WRTC = module.default);
 
   // config
     const SHUTDOWN_MINUTES = 45 * 60 * 1000; // lol
