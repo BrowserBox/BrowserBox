@@ -29,14 +29,16 @@ if [ "$(uname)" = "FreeBSD" ]; then
 
   echo "Node.js version $VERSION installed successfully on FreeBSD."
 else
-  echo "Not a FreeBSD system. Installing nvm and using it to install Node.js..."
-
   # Download and install nvm
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+  if ! command -v nvm &>/dev/null; then
+    echo "Not a FreeBSD system. Installing nvm and using it to install Node.js..."
 
-  # Load nvm into the current shell session
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+
+    # Load nvm into the current shell session
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 
+  fi
 
   # Install the requested Node.js version using nvm
   nvm install "$VERSION"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -x
+#set -x
 
 trap 'echo "Got an error. Bailing this section..." >&2' ERR
 trap 'echo "Exiting..." >&2' EXIT
