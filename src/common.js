@@ -212,7 +212,15 @@ export const DEBUG = Object.freeze({
   useLoopbackIP: true,
   debugAuth: false,
   pausedDebug: false,
-  useWebRTC: !process.env.TORBB && true,
+  get useWebRTC() {
+    if ( this.isBSD ) {
+      return false;
+    } else if ( process.env.TORBB ) {
+      return false;
+    } else {
+      return true;
+    }
+  },
   binaryFrames: true,
   sendImmediate: !process.env.TORBB && true,
   chooseFastest: !process.env.TORBB && true,
