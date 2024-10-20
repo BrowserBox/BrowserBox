@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #set -x
-NODE_V="v20"
+NODE_V="v22"
 
 install_nvm() {
   source ~/.nvm/nvm.sh

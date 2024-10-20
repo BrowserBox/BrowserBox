@@ -212,19 +212,31 @@ export const DEBUG = Object.freeze({
   useLoopbackIP: true,
   debugAuth: false,
   pausedDebug: false,
-  useWebRTC: !process.env.TORBB && true,
+  get useWebRTC() {
+    if ( this.isBSD ) {
+      return false;
+    } else if ( process.env.TORBB ) {
+      return false;
+    } else {
+      return true;
+    }
+  },
   binaryFrames: true,
   sendImmediate: !process.env.TORBB && true,
   chooseFastest: !process.env.TORBB && true,
   logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
+  bundleClientCode: false,
   get isBSD() {
     return process.platform.endsWith('bsd'); 
   },
   get mode() {
     // prod or dev (whether to bundle frontend code or not)
     // bsd is always dev because bundlers like parcel etc do not work on it
-    return this.isBSD ? 'dev' : 'prod'; 
+    return this.bundleClientCode ? 
+      this.isBSD ? 'dev' : 'prod'
+      :
+      'dev';
   },
   showOrigin: false,
   useDocCustomDownloadPlugin: true,
