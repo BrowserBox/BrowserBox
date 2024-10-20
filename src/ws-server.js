@@ -36,7 +36,11 @@
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
 
   let WRTC;
-  await import('@roamhq/wrtc').then(module => WRTC = module.default);
+  try { 
+    await import('@roamhq/wrtc').then(module => WRTC = module.default);
+  } catch(e) {
+    console.warn(`webRTC not available on this platform (${process.platform}). You may wish to build the module @roamhq/wrtc yourself here.`);
+  }
 
   // config
     const SHUTDOWN_MINUTES = 45 * 60 * 1000; // lol
