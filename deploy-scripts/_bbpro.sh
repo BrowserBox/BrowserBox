@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 #set -x
-NODE_V="v20"
+NODEVERSION="22"
+NODE_V="v${NODEVERSION}"
 
 install_nvm() {
   source ~/.nvm/nvm.sh
@@ -16,12 +17,11 @@ install_nvm() {
 }
 
 install_node() {
-  ./deploy-scripts/install_node.sh 20
+  install_node.sh "$NODEVERSION"
 }
 
 install_node
 
-. ~/.nvm/nvm.sh
 profile="network-latency"
 
 USER="${USER:-$(whoami)}"

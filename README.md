@@ -540,6 +540,13 @@ Alternately, [find us via Microsoft Code Samples search](https://learn.microsoft
 | Ubuntu 22        |           ✅ |
 | Amazon Linux 2023|           ✅ |
 | Amazon Linux 2   |           ✅ |
+| FreeBSD          |           ✖️&dagger; |
+
+
+> [!WARNING]
+>  *&dagger; FreeBSD support is impossible at this time due [this Chrome bug.](https://issues.chromium.org/issues/374483175)*
+
+-----
 
 ## Supported Client Browser Table
 
@@ -553,9 +560,9 @@ Alternately, [find us via Microsoft Code Samples search](https://learn.microsoft
 | Brave           |       ✅      |    ✅   |    ✅   |  ✅  |
 | Tor Browser     |       ✅      |    ✅   |    ✅   |  ✅  |
 
+----
 
-
-## :earth_americas: Deploy BrowserBox Easily
+# :earth_americas: Deploy BrowserBox Easily
 
 We're excited to announce the release of our Azure Resource Manager (ARM) template! We're also excited to announce the release of our AWS CloudFormation template and our Linode StackScript, designed to simplify the deployment of BrowserBox instances on AWS and Linode. Seamlessly launch your BrowserBox in the cloud with these easy-to-use templates.
 

@@ -4,7 +4,9 @@ INSTALL_DIR="${1:-$(pwd)}"
 SUDO=""
 COMMAND_DIR=""
 
-source ~/.nvm/nvm.sh
+if [[ -f ~/.nvm/nvm.sh ]]; then
+  source ~/.nvm/nvm.sh
+fi
 
 if command -v sudo &> /dev/null; then
   SUDO="sudo -n"
@@ -22,9 +24,11 @@ else
   mkdir -p $COMMAND_DIR
 fi
 
-. /etc/os-release
-if [[ $ID == *"bsd" ]]; then
-  echo "Skipping build step as on a bsd flavor" >&2
+if [[ -f /etc/os-release ]]; then
+  . /etc/os-release
+  if [[ $ID == *"bsd" ]]; then
+    echo "Skipping build step as on a bsd flavor" >&2
+  fi
 else
   bundle="$(cd src; node -e "import('./common.js').then(({DEBUG}) => console.log(DEBUG.bundleClientCode))")"
   if [[ "$bundle" != "false" ]]; then
@@ -47,6 +51,12 @@ echo -n "Setting correct permissions for installation ... "
 $SUDO chmod -R 755 /usr/local/share/dosyago/*
 
 echo "Permissions set!"
+
+echo -n "Copying install_node command to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/install_node.sh $COMMAND_DIR/install_node.sh
+
+echo "Copied!"
 
 echo -n "Copying bbpro command to $COMMAND_DIR/ ..."
 
