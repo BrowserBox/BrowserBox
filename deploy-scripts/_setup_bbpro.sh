@@ -186,6 +186,13 @@ detect_os() {
       OS_TYPE="win"
     ;;
     freebsd)
+      echo "========================" >&2
+      echo "||   WARNING WARNING  ||" >&2
+      echo "========================" >&2
+      echo "FreeBSD and other BSD flavors are not currently supported due to this chrome bug: https://issues.chromium.org/issues/374483175" >&2
+      echo "========================" >&2
+      echo "||   WARNING WARNING  ||" >&2
+      echo "========================" >&2
       OS_TYPE="bsd"
     ;;
     *)

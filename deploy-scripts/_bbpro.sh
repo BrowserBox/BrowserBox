@@ -17,7 +17,7 @@ install_nvm() {
 }
 
 install_node() {
-  ./deploy-scripts/install_node.sh "$NODEVERSION"
+  install_node.sh "$NODEVERSION"
 }
 
 install_node

@@ -52,6 +52,12 @@ $SUDO chmod -R 755 /usr/local/share/dosyago/*
 
 echo "Permissions set!"
 
+echo -n "Copying install_node command to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/install_node.sh $COMMAND_DIR/install_node.sh
+
+echo "Copied!"
+
 echo -n "Copying bbpro command to $COMMAND_DIR/ ..."
 
 $SUDO cp $INSTALL_DIR/deploy-scripts/_bbpro.sh $COMMAND_DIR/bbpro
