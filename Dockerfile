@@ -5,7 +5,7 @@
 FROM debian:latest
 LABEL org.opencontainers.image.title="BrowserBox" \
   org.opencontainers.image.description="BrowserBox: Web Isolation, Document Sanitization, and Reverse CORS Proxy in one embeddable iframe. Licensed under Polyform Noncommercial 1.0, with commercial options available. Contact hello@dosyago.com for flexible licensing, support, and customization. Suitable for all sizes of organizations and custom applications." \
-  org.opencontainers.image.version="9.2.0" \
+  org.opencontainers.image.version="9.8.3" \
   org.opencontainers.image.authors="DOSAYGO BrowserBox Team <bb-team@dosyago.com>" \
   org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox"
 
