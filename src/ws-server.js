@@ -341,6 +341,9 @@
         },
         frameguard: FRAME_LIMIT
       }));
+      app.use(helmet.hsts({
+        maxAge: 0
+      }));
     }
     const CrossOriginSecure = helmet({
       crossOriginResourcePolicy: {
