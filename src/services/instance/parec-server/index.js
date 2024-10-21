@@ -247,6 +247,9 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
       reportOnly: false,  
     }
   }));
+  app.use(helmet.hsts({
+    maxAge: 0
+  }));
 } else {
   app.use(cors());
 }
