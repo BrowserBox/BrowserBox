@@ -49,7 +49,9 @@ import {extensions, getInjectableAssetPath, fileChoosers} from '../ws-server.js'
 const INTERNAL_WORKERS = new Set([
   'ghbmnnjooekpmoecnnnilnnbdlolhkhi', // Google docs offline
   'nmmhkkegccagdldgiimedpiccmgmieda', // Some kind of Google / YouTube related extension
+  'mhjfbmdgcfjbbpaeojofohoefgiehjai', // Google Chrome PDF viewer extension
 ]);
+const PROTECTED_EXTENSIONS = INTERNAL_WORKERS;
 
 // standard injections
 const selectDropdownEvents = fs.readFileSync(path.join(APP_ROOT, 'zombie-lord', 'injections', 'selectDropdownEvents.js')).toString();
@@ -1865,7 +1867,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.debugSetupWorker && console.log({result});
       const url = new URL(result.value);
       DEBUG.debugSetupWorker && console.log({url});
-      if ( url.protocol == 'chrome-extension:' && url.hostname.length == 32 && !url.pathname.endsWith('.html') ) {
+      if ( url.protocol == 'chrome-extension:' && url.hostname.length == 32 && !url.pathname.endsWith('.html') && ! PROTECTED_EXTENSIONS.has(url.hostname) ) {
         Workers.set(sessionId, {});
         console.log('Attached to extension service worker. Preparing inject');
         const swPathParts = url.pathname.split(path.sep);

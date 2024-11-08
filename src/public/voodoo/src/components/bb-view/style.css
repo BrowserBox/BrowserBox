@@ -9,6 +9,7 @@ canvas {
   image-rendering: optimizequality;
   image-rendering: smooth;
   image-rendering: high-quality;
+  touch-action: none;
 }
 
 
