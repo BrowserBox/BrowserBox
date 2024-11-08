@@ -40,7 +40,7 @@ cd $HOME
 touch $HOME/.bashrc
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 source $HOME/.nvm/nvm.sh
-nvm install v20 # we need v20 for the azure libraries
+nvm install v22 # we need v22 for the azure libraries
 
 # Create and navigate to the application directory
 mkdir test-app

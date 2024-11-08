@@ -79,11 +79,11 @@ initialize_package_manager() {
 initialize_package_manager
 
 if [[ $PLAT == win* ]]; then
-  winpty nvm install v20
+  winpty nvm install v22
   winpty nvm use latest
 else
   source ~/.nvm/nvm.sh;
-  nvm install v20
+  nvm install v22
 fi
 
 if ! command -v pm2 &>/dev/null; then
