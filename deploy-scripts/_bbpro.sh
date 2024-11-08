@@ -137,9 +137,9 @@ if ! has_renice_cap "$USER"; then
       $SUDO groupadd renice >&2
       echo "%renice ALL=NOPASSWD: /usr/bin/renice, /usr/bin/loginctl, /usr/bin/id" | $SUDO tee -a /etc/sudoers >&2
     fi
-    if ! $SUDO grep -q "%browsers ALL=NOPASSWD:" /etc/sudoers; then
+    if ! $SUDO grep -q "%browsers ALL=(ALL:browsers) NOPASSWD:" /etc/sudoers; then
       $SUDO groupadd browsers >&2
-      echo "%browsers ALL=NOPASSWD: /usr/bin/pulseaudio --start, /usr/bin/pulseaudio --start --use-pid-file=true --log-level=debug, /usr/bin/pulseaudio --check" | $SUDO tee -a /etc/sudoers >&2
+      echo "%browsers ALL=(ALL:browsers) NOPASSWD: /usr/bin/pulseaudio --start, /usr/bin/pulseaudio --start --use-pid-file=true --log-level=debug, /usr/bin/pulseaudio --check" | $SUDO tee -a /etc/sudoers >&2
     fi
     $SUDO usermod -aG renice $USER
     echo "You may need to log out and log in again, or restart your shell/terminal, for renice capability take effect."
