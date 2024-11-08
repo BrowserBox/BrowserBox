@@ -16,7 +16,7 @@ if command -v node; then
 else
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | $SUDO -E bash -
-  $SUDO bash -c "source ~/.nvm/nvm.sh; nvm install v20"
+  $SUDO bash -c "source ~/.nvm/nvm.sh; nvm install v22"
 fi
 
 if ! command -v pm2; then

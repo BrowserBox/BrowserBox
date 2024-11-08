@@ -5,8 +5,8 @@ set -x
 . /etc/os-release
 if [[ $ID != *"bsd" ]]; then
   source $HOME/.nvm/nvm.sh
-  if ! nvm use v20; then
-    nvm install v20 && nvm use v20
+  if ! nvm use v22; then
+    nvm install v22 && nvm use v22
     npm remove -g parcel
     npm i -g parcel@latest
   fi
