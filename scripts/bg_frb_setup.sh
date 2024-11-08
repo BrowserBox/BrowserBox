@@ -24,7 +24,7 @@ sudo groupadd browsers
 # not sure if we need it and it could be security risk 
 # as seems to give every app user sudo ability with browsers ? 
 #echo "You need to edit sudoers file with visudo to add"
-#echo "ALL ALL=(:browsers) NOPASSWD:ALL"
+#echo "%browsers ALL=(ALL:browsers) NOPASSWD: /usr/bin/pulseaudio"
 #read -p "Press enter to continue to visudo"
 #read | sudo visudo
 sudo $APT install cpulimit cgroup-tools
