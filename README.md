@@ -1215,23 +1215,7 @@ Whether it's for non-commercial or commercial purposes, BrowserBox provides a ra
 
 ## Pricing
 
-See [our website](https://dosyago.com) for accurate latest pricing or [reach out to us](mailto:sales@dosyago.com?subject=Pricing), but here is a summary below:
-
-| License Type | Quantity | Price Per Unit/Pack | Includes |
-| :----------: | :------: | :-----------------: | :------ |
-| Yearly | Up to 1 | $84/seat/year | <ul><li>Purchase from 1 to 1 million licenses</li><li>Each license is valid for 1 year</li><li>Volume discounts for multiple licenses</li><li>Source code access</li><li>Use in customer-facing products or internally</li><li>Email support</li><li>Additional support tiers purchasable</li><li>Customize yourself or contract us</li></ul> |
-| Yearly | 2-50 | $64.92 | Same as above |
-| Yearly | 51-500 | $46.25 | Same as above |
-| Yearly | 501-5000 | $35.58 | Same as above |
-| Yearly | 5001-100000 | $10.67 | Same as above |
-| Yearly | 100001+ | $9.99 | Same as above |
-| Perpetual | 10-pack | $1,947.60 | <ul><li>Use forever</li><li>Email support for 1 year</li><li>Optionally buy more support</li><li>Use in customer-facing products or internally</li><li>Customize source code yourself, or contract us</li></ul> |
-| Perpetual | 100-pack | $13,875.00 | Same as above |
-| Perpetual | 10,000-pack | $320,100.00 | Same as above |
-
-**Notes:**
-- *Perpetual Packs contain multiple seats. For example, the 10-pack contains 10 licenses.*
-- *Each 'seat' represents a named user.*
+See [our website](https://dosyago.com) for accurate latest pricing or [reach out to us](mailto:sales@dosyago.com?subject=Pricing).
 
 ## Elevate Your Zero Trust Strategy with BrowserBoxPro
 
