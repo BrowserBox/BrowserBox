@@ -722,7 +722,10 @@ async function getEncoder() {
       killEncoder(encoder);
       DEBUG.debugRetries && console.log(`Time since spawn: ${Date.now() - timer}. Spawn: ${timer}. Now: ${Date.now()}`);
       if ( (Date.now() - timer) <= RETRY_WORTHY_EXIT ) {
-        childProcess.spawn('pulseaudio', ['--start']);
+        const pa = childProcess.spawn('pulseaudio', ['--start']);
+        pa.on('spawn', e => {
+          setTimeout(() => childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${pa.pid}`), 2000);
+        })
         retryingOnStartupError = true;
         DEBUG.debugRetries && console.info({retryingOnStartupError, retryCount, MAX_RETRY_COUNT});
         if ( retryCount > MAX_RETRY_COUNT ) {
