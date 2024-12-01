@@ -121,6 +121,7 @@ else
   fi
 
   pa_pid=$(cat $pidFile || pgrep -u $(whoami) pulseaudio)
+  sleep 2
   sudo renice -n $reniceValue -p $pa_pid
   echo "Pulseaudio (pid: $pa_pid) is reniced to priority $reniceValue"
 fi
