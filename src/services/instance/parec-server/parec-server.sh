@@ -2,7 +2,11 @@
 
 #set -x
 echo "starting audio service..."
-
+USE_GID=""
+SUDO_G="sudo -g browsers"
+if [[ -z "$USE_GID" ]]; then
+  SUDO_G=""
+fi
 command -v pulseaudio &>/dev/null;
 export PULSE_INSTALLED=$?
 
@@ -100,13 +104,13 @@ else
 
   if [ $PULSE_INSTALLED -eq 0 ]; then
     echo "Starting pulseaudio (PID file: $pidFile)"
-    if sudo -g browsers pulseaudio --check; then
+    if $SUDO_G pulseaudio --check; then
       echo "pulse is started already"
       echo "Not shutting pulse down"
       #pulseaudio -k
     elif [[ "$(uname)" != "Darwin" ]]; then
-      sudo -g browsers pulseaudio --start --use-pid-file=true --log-level=debug
-      until sudo -g browsers pulseaudio --check
+      $SUDO_G pulseaudio --start --use-pid-file=true --log-level=debug
+      until $SUDO_G pulseaudio --check
       do  
         sleep 2
       done
