@@ -558,7 +558,7 @@ export INJECT_SCRIPT="${INJECT_SCRIPT}"
 # true runs within a 'browsers' group
 #export BB_POOL=true
 
-export RENICE_VALUE=-19
+export RENICE_VALUE=-18
 
 # used for building or for installing from repo on macos m1 
 # (because of some dependencies with native addons that do not support m1)
