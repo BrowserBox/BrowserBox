@@ -718,9 +718,9 @@ async function getEncoder() {
     parec.on('exit', async e => { 
       console.log('parec exit', e);
       killEncoder(encoder);
-      spawn('pulseaudio', ['--start']);
       DEBUG.debugRetries && console.log(`Time since spawn: ${Date.now() - timer}. Spawn: ${timer}. Now: ${Date.now()}`);
       if ( (Date.now() - timer) <= RETRY_WORTHY_EXIT ) {
+        childProcess.spawn('pulseaudio', ['--start']);
         retryingOnStartupError = true;
         DEBUG.debugRetries && console.info({retryingOnStartupError, retryCount, MAX_RETRY_COUNT});
         if ( retryCount > MAX_RETRY_COUNT ) {
