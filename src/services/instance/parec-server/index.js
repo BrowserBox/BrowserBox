@@ -692,12 +692,15 @@ async function getEncoder() {
       console.log('parec spawned', {error:e, pid: parec.pid, args: args.join(' ')});
       timer = Date.now();
       if ( ! process.platform.startsWith('win') && ! process.platform.startsWith('darwin') ) {
-        try {
-          childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
-          console.log(`reniced parec`);
-        } catch(e) {
-          console.warn(`Error renicing parec`, e);
-        }
+        // doing this later prevents a bug on some systems where pacat will not connect to pa if reniced immediately
+        setTimeout(() => {
+          try {
+            childProcess.execSync(`sudo renice -n ${CONFIG.reniceValue} -p ${parec.pid}`);
+            console.log(`reniced parec`);
+          } catch(e) {
+            console.warn(`Error renicing parec`, e);
+          }
+        }, 10000);
       }
     });
     exitOnEpipe(parec.stdout);
