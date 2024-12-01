@@ -700,7 +700,7 @@ async function getEncoder() {
           } catch(e) {
             console.warn(`Error renicing parec`, e);
           }
-        }, 10000);
+        }, 1441);
       }
     });
     exitOnEpipe(parec.stdout);
@@ -720,6 +720,7 @@ async function getEncoder() {
     parec.on('exit', async e => { 
       console.log('parec exit', e);
       killEncoder(encoder);
+      spawn('pulseaudio', ['--start']);
       DEBUG.debugRetries && console.log(`Time since spawn: ${Date.now() - timer}. Spawn: ${timer}. Now: ${Date.now()}`);
       if ( (Date.now() - timer) <= RETRY_WORTHY_EXIT ) {
         retryingOnStartupError = true;
