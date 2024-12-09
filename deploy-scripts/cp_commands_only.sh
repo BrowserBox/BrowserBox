@@ -24,6 +24,12 @@ else
   mkdir -p $COMMAND_DIR
 fi
 
+echo -n "Copying install_node command to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/install_node.sh $COMMAND_DIR/install_node.sh
+
+echo "Copied!"
+
 echo -n "Copying bbpro command to $COMMAND_DIR/ ..."
 
 $SUDO cp $INSTALL_DIR/deploy-scripts/_bbpro.sh $COMMAND_DIR/bbpro
@@ -64,6 +70,12 @@ echo "Copied!"
 echo -n "Copying non-interactive.sh config to $COMMAND_DIR/ ..."
 
 $SUDO cp $INSTALL_DIR/deploy-scripts/non-interactive.sh $COMMAND_DIR/
+
+echo "Copied!"
+
+echo -n "Copying cp_certs command to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/cp_certs $COMMAND_DIR/
 
 echo "Copied!"
 
