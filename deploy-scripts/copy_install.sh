@@ -101,6 +101,12 @@ $SUDO cp $INSTALL_DIR/deploy-scripts/non-interactive.sh $COMMAND_DIR/
 
 echo "Copied!"
 
+echo -n "Copying cp_certs command to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/cp_certs $COMMAND_DIR/
+
+echo "Copied!"
+
 echo -n "Copying monitoring commands to $COMMAND_DIR/ ..."
 
 $SUDO cp $INSTALL_DIR/monitor-scripts/* $COMMAND_DIR/
