@@ -1,14 +1,15 @@
 <div align=center>
        
-|  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1>　<a href=https://browse.cloudtabs.net/signupless_session>BrowserBox</a> 　</h1> |
+|  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1>　<a href=https://browse.cloudtabs.net/signupless_session>BrowserBox</a> 　</h1> <br> <small> by <a href=https://dosyago.com>DOSAYGO</a> </small> |
 |------|------|
 
 </div>
 
 [Español&nbsp;(Spanish)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-ES.md) | [עברית&nbsp;(Hebrew)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-HE.md) | [हिन्दी&nbsp;(Hindi)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-HI.md) | [Français&nbsp;(French)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-FR.md) | [Русский&nbsp;(Russian)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-RU.md) | [العربية&nbsp;(Arabic)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-AR.md) | [中文&nbsp;(Chinese)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-ZH.md) | [اردو&nbsp;(Urdu)](https://github.com/BrowserBox/BrowserBox/blob/boss/translated-intros/INTRO-UR.md)
 
-**NEWS: BrowserBox version 10 is coming very soon. Expect it to launch in Q1 2025**
-**NEWS: License Keys will be mandatory from Version 10 onwards.** ***Do you need a Non-Commercial License key?* [Join the waitlist here.](https://tally.so/r/nPvb1x)**
+<p style=text-align:center; align=center><b>BrowserBox version 10 is coming very soon, in Q1 2025</b></p>
+
+**License Keys will be mandatory from Version 10 onwards.** ***Do you need a Non-Commercial License key?* [Join the waitlist here.](https://tally.so/r/nPvb1x)**
 
 <a href=https://dosyago.com>BrowserBox</a>
 ==========
