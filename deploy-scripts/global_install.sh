@@ -171,7 +171,7 @@ os_type() {
 }
 
 install_node() {
-  ./deploy-scripts/install_node.sh 20
+  ./deploy-scripts/install_node.sh 22
 }
 
 install_nvm() {
