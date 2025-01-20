@@ -1225,11 +1225,34 @@ Our commitment goes beyond just providing a product. We offer a partnership, ens
 
 Join us in navigating the Zero Trust landscape. Secure your commercial license today and fortify your cybersecurity strategy with BrowserBoxPro.
 
+---
+
 ## Copyright
 
 This project is copyright The Dosyago Corporation 2018-2023. All rights reserved.
 
 For detailed information and progress updates, please refer to: https://github.com/BrowserBox/BrowserBox.
+
+---
+
+### Misuse Disclaimer
+
+> [!WARNING]
+> Do not use BrowserBox for bad stuff.
+
+This project is provided under license and is intended for lawful and ethical purposes only. The author(s) of this software explicitly disclaim any liability for its use in activities that violate applicable laws, regulations, or ethical standards. By using this project, you agree to comply with all relevant laws and not to use it for malicious or harmful purposes, including but not limited to:
+
+- Developing or distributing malware, ransomware, or other harmful software.
+- Compromising the privacy, security, or rights of others.
+- Engaging in illegal surveillance or unauthorized access to systems.
+
+The responsibility for the use or misuse of this software lies entirely with the user. If you do not agree with these terms, do not use this software.
+
+**Copyright 2024 Dosyago Corporation USA and @o0101**
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and
+limitations under the License.
 
 -----
 ##### Footnotes
