@@ -121,7 +121,7 @@ $SUDO echo "KillUserProcesses=no" > /usr/local/lib/systemd/logind.conf.d/nokill.
 $SUDO groupadd browsers
 $SUDO groupadd scripters
 # Edit the sudoers file to allow members of the "renice" group to run the "renice" command
-if ! $SUDO grep -q "%renice ALL=NOPASSWD:" /etc/sudoers; then
+if ! $SUDO grep -q "%renice ALL=(ALL:renice) NOPASSWD:" /etc/sudoers; then
   $SUDO groupadd renice >&2
   echo "%renice ALL=NOPASSWD: /usr/bin/renice, /usr/bin/loginctl, /usr/bin/id" | $SUDO tee -a /etc/sudoers >&2
 fi

@@ -93,7 +93,7 @@
     "cookie-parser": "^1.0.0",
     "cors": "latest",
     "entities": "latest",
-    "esbuild": "0.24.0",
+    "esbuild": "0.24.2",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "^4.21.0",
@@ -101,7 +101,7 @@
     "helmet": "latest",
     "is-docker": "latest",
     "multer": "latest",
-    "parcel": "^2.12.0",
+    "parcel": "^2.13.3",
     "patch-package": "latest",
     "simple-peer": "latest",
     "socks-proxy-agent": "latest",
@@ -127,6 +127,7 @@
     "jsdom": "^25.0.0",
     "node-loader": "latest",
     "parcel-resolver-ignore": "latest",
+    "svgo": "^3.3.2",
     "whatwg-fetch": "^3.6.20"
   }
 }
