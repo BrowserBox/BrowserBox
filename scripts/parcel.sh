@@ -12,7 +12,7 @@ if [[ $ID != *"bsd" ]]; then
   fi
 else
   if ! command -v node &>/dev/null || ! command -v npm &>/dev/null; then
-    ./deploy-scripts/install_node.sh 20
+    ./deploy-scripts/install_node.sh 22
   fi
 fi
 if [[ $ID == *"bsd" ]]; then
