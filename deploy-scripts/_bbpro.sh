@@ -133,9 +133,9 @@ if ! has_renice_cap "$USER"; then
 
   if $SUDO -n true 2>/dev/null; then
     echo "The user has $SUDO access." >&2
-    if ! $SUDO grep -q "%renice ALL=NOPASSWD:" /etc/sudoers; then
+    if ! $SUDO grep -q "%renice ALL=(ALL:renice) NOPASSWD:" /etc/sudoers; then
       $SUDO groupadd renice >&2
-      echo "%renice ALL=NOPASSWD: /usr/bin/renice, /usr/bin/loginctl, /usr/bin/id" | $SUDO tee -a /etc/sudoers >&2
+      echo "%renice ALL=(ALL:renice) NOPASSWD: /usr/bin/renice, /usr/bin/loginctl, /usr/bin/id" | $SUDO tee -a /etc/sudoers >&2
     fi
     if ! $SUDO grep -q "%browsers ALL=(ALL:browsers) NOPASSWD:" /etc/sudoers; then
       $SUDO groupadd browsers >&2
