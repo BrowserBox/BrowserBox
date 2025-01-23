@@ -1,6 +1,6 @@
 <div align=center>
        
-|  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1>　<a href=https://browse.cloudtabs.net/signupless_session>BrowserBox</a> 　</h1> <br> <small> by <a href=https://dosyago.com>DOSAYGO</a> </small> |
+|  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1>　<a href=https://browse.cloudtabs.net/ss>BrowserBox</a> 　</h1> <br> <small> by <a href=https://dosyago.com>DOSAYGO</a> </small> |
 |------|------|
 
 </div>
