@@ -75,7 +75,7 @@ export const DEBUG = Object.freeze({
   increaseResolutionOfSmallerCanvas: false, 
   debugIMEDetection: false,
   debugShrink: false,
-  debugResize: false,
+  debugResize: true,
   debugImageRemainderClears: false,
   debugDownload: false,
   debugNetCheck: false,

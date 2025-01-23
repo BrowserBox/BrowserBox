@@ -1542,6 +1542,7 @@
 
       // extra tasks
         if ( DEBUG.debugResize || CONFIG.ensureFrameOnResize ) {
+          /*
           globalThis.window.addEventListener('resize', async event => {
             DEBUG.debugResize && console.info(`Received resize event from local browser (this device)`, event);
             // The below is already called in resize_helper.js so no need to double it up
@@ -1549,6 +1550,7 @@
             await sleep(40);
             globalThis._voodoo_asyncSizeTab({forceFrame:true,resetRequested:true});
           });
+          */
         }
 
       const preInstallView = {queue};
@@ -1860,7 +1862,15 @@
         }
 
         function installResizeListener() {
-          window.addEventListener('resize', debounce(() => sizeTab(), 1000));
+          window.addEventListener('resize', debounce(() => {
+            DEBUG.debugResize && console.log(`Going resize after debounce`);
+            sizeTab();
+            reactivateCurrentTab({noResize: true});
+          }, 1000));
+        }
+
+        function reactivateCurrentTab(opts) {
+          activateTab(null, activeTab(), opts);
         }
 
         function installTopLevelKeyListeners() {
@@ -2454,12 +2464,15 @@
 
         async function activateTab(click, tab, {
             notify: notify = true, 
-            forceFrame: forceFrame = false
+            forceFrame: forceFrame = false,
+            noResize: noResize = false,
           } = {}) {
             DEBUG.activateDebug && console.log('activate called', click, tab, {notify, forceFrame}, new Error);
             DEBUG.activateDebug && alert((new Error).stack);
 
-            sizeTab();
+            if ( ! noResize ) {
+              sizeTab();
+            }
 
             // don't activate if the click was a close click from our tab
             if ( click && click.currentTarget.querySelector('button.close') == click.target ) return;
