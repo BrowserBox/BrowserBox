@@ -21,7 +21,7 @@ pm2 delete devtools-server
 pm2 delete start_audio
 
 if [[ -z "$DO_NOT_KILL_NODE" ]]; then
-  pkill -u "$(whoami)" node
+  pkill -u "$(whoami)" browserbox
 fi
 
 pkill -u "$(whoami)" chrome

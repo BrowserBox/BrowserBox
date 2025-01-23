@@ -15,6 +15,7 @@
     import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
     import {saveClick} from './subviews/controls.js';
     import {
+      throwAfter,
       AttachmentTypes,
       HIDDEN_DOMAINS,
       COMMON,
@@ -1323,7 +1324,10 @@
             const url = new URL(meta.created.url);
             if ( AttachmentTypes.has(meta.created.type) && ! HIDDEN_DOMAINS.has(url.hostname) ) {
               meta.created.hello = 'oncreated';
-              const activate = () => activateTab(null, meta.created, {notify: false, forceFrame:true})
+              const activate = () => {
+                DEBUG.activateTab && console.log(`Going activate for `, meta.created);
+                activateTab(null, meta.created, {notify: false, forceFrame:true})
+              };
               const tab = findTab(meta.created.targetId);
               if ( tab ) {
                 if ( DEBUG.activateNewTab ) {
@@ -1342,9 +1346,13 @@
           });
           queue.addMetaListener('attached', meta => {
             const attached = meta.attached.targetInfo;
-            const url = new URL(attached.url);
+            const url = attached.url ? new URL(attached.url) : '';
             if ( AttachmentTypes.has(attached.type) && ! HIDDEN_DOMAINS.has(url.hostname) ) {
               state.attached.add(attached.targetId);
+              const activate = () => {
+                DEBUG.activateTab && console.log(`Going activate for `, attached);
+                activateTab(null, attached, {notify: false, forceFrame:true})
+              };
 
               if ( state.useViewFrame ) {
                 //sizeBrowserToBounds(state.viewState.viewFrameEl, attached.targetId);
@@ -1353,6 +1361,10 @@
                 emulateNavigator();
               }
               //state.updateTabsTasks.push(() => initialGetFavicon(attached.targetId));
+              if ( DEBUG.activateNewTab ) {
+                DEBUG.activateDebug && console.log('Pushing activate for new tab');
+                state.updateTabsTasks.push(() => setTimeout(activate, NEW_TAB_ACTIVATE_DELAY));
+              }
               updateTabs();
             }
           });
@@ -1526,8 +1538,11 @@
         bondTasks.push(canKeysInput);
         bondTasks.push(installTopLevelKeyListeners);
 
+        installResizeListener();
+
       // extra tasks
         if ( DEBUG.debugResize || CONFIG.ensureFrameOnResize ) {
+          /*
           globalThis.window.addEventListener('resize', async event => {
             DEBUG.debugResize && console.info(`Received resize event from local browser (this device)`, event);
             // The below is already called in resize_helper.js so no need to double it up
@@ -1535,6 +1550,7 @@
             await sleep(40);
             globalThis._voodoo_asyncSizeTab({forceFrame:true,resetRequested:true});
           });
+          */
         }
 
       const preInstallView = {queue};
@@ -1843,6 +1859,18 @@
               H(ev);
             }
           }
+        }
+
+        function installResizeListener() {
+          window.addEventListener('resize', debounce(() => {
+            DEBUG.debugResize && console.log(`Going resize after debounce`);
+            sizeTab();
+            reactivateCurrentTab({noResize: true});
+          }, 1000));
+        }
+
+        function reactivateCurrentTab(opts) {
+          activateTab(null, activeTab(), opts);
         }
 
         function installTopLevelKeyListeners() {
@@ -2436,12 +2464,15 @@
 
         async function activateTab(click, tab, {
             notify: notify = true, 
-            forceFrame: forceFrame = false
+            forceFrame: forceFrame = false,
+            noResize: noResize = false,
           } = {}) {
             DEBUG.activateDebug && console.log('activate called', click, tab, {notify, forceFrame}, new Error);
             DEBUG.activateDebug && alert((new Error).stack);
 
-            sizeTab();
+            if ( ! noResize ) {
+              sizeTab();
+            }
 
             // don't activate if the click was a close click from our tab
             if ( click && click.currentTarget.querySelector('button.close') == click.target ) return;
@@ -2677,7 +2708,7 @@
               while(state.updateTabsTasks.length) {
                 const task = state.updateTabsTasks.shift();
                 try {
-                  task();
+                  await Promise.race([throwAfter(5000), task()]);
                 } catch(e) {
                   console.warn("State update tabs task failed", e, task);
                 }
