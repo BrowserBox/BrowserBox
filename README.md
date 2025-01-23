@@ -1,6 +1,6 @@
 <div align=center>
        
-|  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1>　<a href=https://browse.cloudtabs.net/signupless_session>BrowserBox</a> 　</h1> <br> <small> by <a href=https://dosyago.com>DOSAYGO</a> </small> |
+|  <img style width=80 height=80 src=https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/docs/icon.svg alt='BrowserBox Logo 2023'> | <h1>　<a href=https://browse.cloudtabs.net/ss>BrowserBox</a> 　</h1> <br> <small> by <a href=https://dosyago.com>DOSAYGO</a> </small> |
 |------|------|
 
 </div>
@@ -10,6 +10,8 @@
 <p style=text-align:center; align=center><b>BrowserBox version 10 is coming very soon, in Q1 2025</b></p>
 
 **License Keys will be mandatory from Version 10 onwards.** ***Do you need a Non-Commercial License key?* [Join the waitlist here.](https://tally.so/r/nPvb1x)**
+
+**The draft of our NEW LICENSE is available for review. [Read it here](NEW-LICENSE.md). The new license will be finalized and become effective in Q1 2025.**
 
 <a href=https://dosyago.com>BrowserBox</a>
 ==========
