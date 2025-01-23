@@ -1,4 +1,4 @@
-const USW = true; // service worker
+const USW = false; // service worker
 export const VERSION = '10.4.0';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
@@ -34,6 +34,7 @@ export const OPTIONS = {
 };
 
 export const DEBUG = Object.freeze({
+  activateTab: false,
   debugCopyPaste: false,
   revealServiceWorkersAsTabs: false,
   attachToServiceWorkers: true,
@@ -542,4 +543,11 @@ export function clearRandom(interval) {
   if ( typeof interval.abort == "function" ) {
     interval.abort();
   }
+}
+
+export async function throwAfter(ms, command, port, Aborter) {
+  // could make this sleep cancellable
+  await sleep(ms, Aborter);
+  //DEBUG.metaDebug && console.log(`Throwing after`);
+  throw new Error(`Timed out after ${ms}. ${port} : ${JSON.stringify(command,null,2)}`);
 }

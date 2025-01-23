@@ -15,6 +15,7 @@
     import {default as transformEvent, getKeyId, controlChars} from './transformEvent.js';
     import {saveClick} from './subviews/controls.js';
     import {
+      throwAfter,
       AttachmentTypes,
       HIDDEN_DOMAINS,
       COMMON,
@@ -1323,7 +1324,10 @@
             const url = new URL(meta.created.url);
             if ( AttachmentTypes.has(meta.created.type) && ! HIDDEN_DOMAINS.has(url.hostname) ) {
               meta.created.hello = 'oncreated';
-              const activate = () => activateTab(null, meta.created, {notify: false, forceFrame:true})
+              const activate = () => {
+                DEBUG.activateTab && console.log(`Going activate for `, meta.created);
+                activateTab(null, meta.created, {notify: false, forceFrame:true})
+              };
               const tab = findTab(meta.created.targetId);
               if ( tab ) {
                 if ( DEBUG.activateNewTab ) {
@@ -1342,9 +1346,13 @@
           });
           queue.addMetaListener('attached', meta => {
             const attached = meta.attached.targetInfo;
-            const url = new URL(attached.url);
+            const url = attached.url ? new URL(attached.url) : '';
             if ( AttachmentTypes.has(attached.type) && ! HIDDEN_DOMAINS.has(url.hostname) ) {
               state.attached.add(attached.targetId);
+              const activate = () => {
+                DEBUG.activateTab && console.log(`Going activate for `, attached);
+                activateTab(null, attached, {notify: false, forceFrame:true})
+              };
 
               if ( state.useViewFrame ) {
                 //sizeBrowserToBounds(state.viewState.viewFrameEl, attached.targetId);
@@ -1353,6 +1361,10 @@
                 emulateNavigator();
               }
               //state.updateTabsTasks.push(() => initialGetFavicon(attached.targetId));
+              if ( DEBUG.activateNewTab ) {
+                DEBUG.activateDebug && console.log('Pushing activate for new tab');
+                state.updateTabsTasks.push(() => setTimeout(activate, NEW_TAB_ACTIVATE_DELAY));
+              }
               updateTabs();
             }
           });
@@ -1525,6 +1537,8 @@
 
         bondTasks.push(canKeysInput);
         bondTasks.push(installTopLevelKeyListeners);
+
+        installResizeListener();
 
       // extra tasks
         if ( DEBUG.debugResize || CONFIG.ensureFrameOnResize ) {
@@ -1843,6 +1857,10 @@
               H(ev);
             }
           }
+        }
+
+        function installResizeListener() {
+          window.addEventListener('resize', debounce(() => sizeTab(), 1000));
         }
 
         function installTopLevelKeyListeners() {
@@ -2677,7 +2695,7 @@
               while(state.updateTabsTasks.length) {
                 const task = state.updateTabsTasks.shift();
                 try {
-                  task();
+                  await Promise.race([throwAfter(5000), task()]);
                 } catch(e) {
                   console.warn("State update tabs task failed", e, task);
                 }
