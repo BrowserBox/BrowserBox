@@ -1,5 +1,5 @@
-const USW = false; // service worker
-export const VERSION = '10.4.0';
+const USW = true; // service worker
+export const VERSION = '10.4.1';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 
@@ -75,7 +75,7 @@ export const DEBUG = Object.freeze({
   increaseResolutionOfSmallerCanvas: false, 
   debugIMEDetection: false,
   debugShrink: false,
-  debugResize: true,
+  debugResize: false,
   debugImageRemainderClears: false,
   debugDownload: false,
   debugNetCheck: false,
