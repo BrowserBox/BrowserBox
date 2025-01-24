@@ -10,9 +10,18 @@ import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
           // Unregister if the version does not match
           if (version !== VERSION || !CONFIG.useServiceWorkerToCache) {
             DEBUG.debugSW && console.log('Unregistering', url);
-            registration.unregister().then(bool => {
+            registration.unregister().then(async bool => {
               if (bool) {
                 DEBUG.debugSW && console.log('Unregistered an old service worker.');
+                const cacheNames = await caches.keys(); // Get cache names
+                for await (const cacheName of cacheNames) {
+                  const deleted = await caches.delete(cacheName);
+                  if (deleted) {
+                    console.log(`Deleted cache: ${cacheName}`);
+                  } else {
+                    console.log(`Failed to delete cache: ${cacheName}`);
+                  }
+                }
                 alert(`Your app has been updated and needs to reload.`);
                 location.reload();
               }
@@ -26,7 +35,7 @@ import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
     return;
   }
 
-  if (DEBUG.mode == 'prod' && CONFIG.useServiceWorkerToCache && 'serviceWorker' in navigator) {
+  if (CONFIG.useServiceWorkerToCache && 'serviceWorker' in navigator) {
     const S = navigator.serviceWorker;
 
     // allow SW to reload the pages if they need to update to fresh content

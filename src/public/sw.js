@@ -35,11 +35,15 @@ const regexPatternsToCache = patternsToCache.map(pattern => new RegExp(pattern))
   // Service Worker Install Event
   self.addEventListener('install', event => {
     event.waitUntil(
-      caches.open(CACHE_NAME)
-        .then(cache => {
-          // Your initial cache population can go here if needed
-        })
-        .then(() => self.skipWaiting())
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== currentCacheName) {
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
     );
   });
 
