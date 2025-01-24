@@ -26,7 +26,7 @@ import('./voodoo/src/common.js').then(({DEBUG,CONFIG,VERSION}) => {
     return;
   }
 
-  if (DEBUG.mode == 'prod' && CONFIG.useServiceWorkerToCache && 'serviceWorker' in navigator) {
+  if (CONFIG.useServiceWorkerToCache && 'serviceWorker' in navigator) {
     const S = navigator.serviceWorker;
 
     // allow SW to reload the pages if they need to update to fresh content
