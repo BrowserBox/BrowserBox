@@ -1,5 +1,5 @@
-const USW = true; // service worker
-export const VERSION = '10.4.1';
+const USW = false; // service worker
+export const VERSION = '10.4.2';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 
@@ -41,7 +41,7 @@ export const DEBUG = Object.freeze({
   extensionsAssemble() {
     return CONFIG.isCT() && true;
   },
-  debugSW: false,
+  debugSW: true,
   debugKeysCanInput: false,
   get debugKCI() {
     return this.debugKeysCanInput;

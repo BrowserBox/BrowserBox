@@ -2167,7 +2167,11 @@
           } else if ( pointerEvent ) {
             state.DoesNotSupportPointerEvents = false;
           } else if ( syntheticNonTypingEventWrapper ) {
-            event.event.preventDefault && event.event.preventDefault();
+            try { 
+              event.event.preventDefault && event.event.preventDefault();
+            } catch(e) {
+              console.info(`Event must be passive.`, e);
+            }
           }
 
           const simulated = event.event && event.event.simulated;
