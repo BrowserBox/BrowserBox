@@ -30,7 +30,7 @@
         /*H,*/
         throttle(e => retargetTouchScrollToRemote(e,H,viewState), state.EVENT_THROTTLE_MS)
       ]}
-      b:passive:wheel=${throttle(H, state.EVENT_THROTTLE_MS)}
+      b:wheel=${throttle(H, state.EVENT_THROTTLE_MS)}
       b:passive:mousemove=${[elogit, throttle(H, state.EVENT_THROTTLE_MS)]}         
       mousedown=${[elogit,H]}         
       mouseup=${[elogit,H]}         
