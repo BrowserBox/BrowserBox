@@ -1,5 +1,5 @@
 // Version variable for cache busting
-const CACHE_VERSION = 'v10.4.1';
+const CACHE_VERSION = 'v10.4.3';
 const CACHE_NAME = 'browserbox-' + CACHE_VERSION;
 const ETAG_CACHE_NAME = 'etag-cache-' + CACHE_VERSION;
 const DEBUG = globalThis.SW_DEBUG || false;
@@ -34,17 +34,6 @@ const regexPatternsToCache = patternsToCache.map(pattern => new RegExp(pattern))
 //if ( globalThis?.location?.hostname != 'localhost' ) {
   // Service Worker Install Event
   self.addEventListener('install', event => {
-    event.waitUntil(
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== currentCacheName) {
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
-    );
   });
 
   // Service Worker Activate Event
