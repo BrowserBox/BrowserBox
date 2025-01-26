@@ -11,6 +11,7 @@ import {WebSocket} from 'ws';
 import {SocksProxyAgent} from 'socks-proxy-agent';
 
 import {
+  WrongOnes,
   AttachmentTypes,
   debounce,
   OurWorld,
@@ -759,10 +760,15 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     }
   );
 
+  const WO = [...WrongOnes];
   for( const target of startupTargets ) {
     try {
-      const {targetId} = target;
-      await send("Target.attachToTarget", {targetId, flatten: true});
+      const {targetId, url} = target;
+      if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) {
+        await send("Target.closeTarget, {targetId});
+      } else {
+        await send("Target.attachToTarget", {targetId, flatten: true});
+      }
     } catch(e) {
       console.log(`Error attaching to startup target`, e, {target});
     }
