@@ -2,6 +2,7 @@
 
 // build-ins and 3rd parties
   import path from 'path';
+  import os from 'os';
   import { spawnSync } from 'child_process';
 
 // our lib
