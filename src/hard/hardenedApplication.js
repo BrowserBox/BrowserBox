@@ -1,6 +1,7 @@
 // hardenedApplication.js
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import crypto from 'crypto';
 import https from 'https';
 import { exec } from 'child_process';
@@ -9,6 +10,9 @@ import { readFile, log } from './utils.js';
 import { generateHardwareId } from './hardware_id.js';
 import { DEBUG, DIST_DIR, DISTRIBUTION_SERVER_URL } from './config.js';
 import { rainstormHash } from '@dosyago/rainsum';
+
+export const __filename = () => fileURLToPath(import.meta.url);
+export const __dirname = () => path.dirname(__filename());
 
 /**
  * HardenedApplication class encapsulates application integrity and license management.
@@ -127,7 +131,7 @@ export class HardenedApplication {
       throw new Error('Received empty public key from server');
     }
 
-    const manifestPath = path.join(this.#appDir, 'manifest.txt');
+    const manifestPath = path.join(__dirname(), 'manifest.txt');
     const sigPath = manifestPath + '.sig';
 
     if (!fs.existsSync(manifestPath) || !fs.existsSync(sigPath)) {

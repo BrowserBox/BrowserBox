@@ -3,10 +3,9 @@
 // build-ins and 3rd parties
   import path from 'path';
   import { spawnSync } from 'child_process';
-  import { fileURLToPath } from 'url';
 
 // our lib
-  import { HardenedApplication } from './hardenedApplication.js';
+  import { __dirname, __filename, HardenedApplication } from './hardenedApplication.js';
   import { sleep, log } from './utils.js';
   import {
     APP_DIR,
@@ -15,9 +14,6 @@
     CERTIFICATE_PATH,
     LICENSE_SERVER_URL,
   } from './config.js';
-
-const __filename = () => fileURLToPath(import.meta.url);
-const __dirname = () => path.dirname(__filename());
 
 // Initialize HardenedApplication with necessary configurations
 const hardenedApp = new HardenedApplication({
