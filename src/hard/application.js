@@ -82,7 +82,7 @@ export async function applicationCheck() {
   } catch (error) {
     console.warn(error);
     log('Application', `Error: ${error.message}`);
-    process.exit(1);
+    //process.exit(1);
   }
 }
 
