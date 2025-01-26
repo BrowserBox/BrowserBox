@@ -7,6 +7,7 @@
   import {MAX_FRAMES} from './zombie-lord/screenShots.js';
   import {CONFIG, EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
   import {start_ws_server} from './ws-server.js';
+  import {applicationCheck} from './hard/application.js';
 
   const BEGIN_AGAIN = 500;
   import {
@@ -33,6 +34,13 @@
     process.title = "browserbox";
   } catch(e) {
     console.info(`Could not set process title. Current title: ${process.title}`, e);
+  }
+  
+  try {
+    const result = await applicationCheck();
+    console.log({result});
+  } catch(e) {
+    console.warn(`Application check error:`, e);
   }
 
   process.on('uncaughtException', err => {

@@ -86,8 +86,11 @@
   "homepage": "https://github.com/BrowserBox/BrowserBox",
   "dependencies": {
     "@chialab/esbuild-plugin-html": "^0.18.2",
+    "@dosyago/rainsum": "^3.7.2",
+    "@noble/ed25519": "^2.2.3",
     "@roamhq/wrtc": "^0.7.3",
     "bang.html": "latest",
+    "binary-bliss": "^2.3.0",
     "body-parser": "latest",
     "compression": "^1.7.4",
     "cookie-parser": "^1.0.0",
@@ -106,7 +109,9 @@
     "simple-peer": "latest",
     "socks-proxy-agent": "latest",
     "spdy": "latest",
-    "ws": "latest"
+    "sshpk": "^1.18.0",
+    "ws": "latest",
+    "yargs": "^17.7.2"
   },
   "devDependencies": {
     "@babel/core": "latest",
