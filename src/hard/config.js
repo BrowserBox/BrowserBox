@@ -9,7 +9,7 @@ import { getServerDomainFromCert } from './utils.js';
 export const API_VERSION = 'v1';
 export const DEBUG = false;
 export const HOME_DIR = os.homedir();
-export const DIST_DIR = path.resolve('dist');
+export const DIST_DIR = path.resolve('dist', 'BrowserBox');
 export const APP_DIR = path.resolve('app');
 export const LIB_DIR = path.resolve('lib');
 export const LOGS_DIR = path.resolve('logs');

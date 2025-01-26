@@ -95,7 +95,7 @@ export class HardenedApplication {
       throw new Error('No private key available for signing.');
     }
 
-    const manifestPath = path.join(this.#appDir, 'manifest.txt');
+    const manifestPath = path.join(__dirname(), 'manifest.txt');
 
     // Gather file hashes
     const entries = await this.#hashAllFiles();
