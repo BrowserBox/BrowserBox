@@ -21,7 +21,7 @@ const __dirname = () => path.dirname(__filename());
 
 // Initialize HardenedApplication with necessary configurations
 const hardenedApp = new HardenedApplication({
-  appDir: __dirname(), // Directory containing your application files
+  appDir: path.resolve(__dirname(), '..', '..'), // Directory containing your application files
   certificatePath: CERTIFICATE_PATH,
   licenseServerUrl: LICENSE_SERVER_URL,
   apiVersion: API_VERSION,
