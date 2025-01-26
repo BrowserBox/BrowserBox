@@ -2,6 +2,7 @@ import path from 'path';
 import {EventEmitter} from 'node:events';
 import os from 'os';
 import fs from 'fs';
+import {execSync} from 'child_process';
 import isDocker from 'is-docker';
 import {launch as ChromeLauncher} from './custom-launcher/dist/chrome-launcher.mjs';
 import {sleep, DEBUG, CONFIG, untilForever} from '../common.js';
@@ -378,6 +379,7 @@ const launcher_api = {
           }
         }
       });
+     
     }
 
     setTimeout(() => {

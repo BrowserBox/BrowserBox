@@ -65,6 +65,7 @@
       try {
         ({port} = await zl.life.newZombie({port: chrome_port, /*username*/}));
         zl.act.setOptions({demoBlock});
+
       } catch(e) {
         console.warn("ZL start error", e);
         zl.life.kill(chrome_port);
