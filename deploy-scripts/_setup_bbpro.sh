@@ -57,6 +57,41 @@ if command_exists firewall-cmd; then
   ZONE="$($SUDO firewall-cmd --get-default-zone)"
 fi
 
+function create_selinux_policy_for_ports() {
+  if ! command_exists getenforce; then
+    echo "Not SELinux" >&2
+    return
+  fi
+  if [[ "$(getenforce)" != "Enforcing" ]]; then
+    echo "SELinux is not in enforcing mode." >&2
+    return
+  fi
+
+  local SEL_TYPE=$1
+  local PROTOCOL=$2
+  local PORT_RANGE=$3
+
+  if [[ -z "$SEL_TYPE" || -z "$PROTOCOL" || -z "$PORT_RANGE" ]]; then
+    echo "Usage: create_selinux_policy_for_ports SEL_TYPE PROTOCOL PORT_RANGE" >&2
+    return
+  fi
+
+  $SUDO semanage port -a -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE 2>/dev/null || \
+  $SUDO semanage port -m -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE
+
+  # Generate and compile a custom policy module
+  $SUDO grep AVC /var/log/audit/audit.log | audit2allow -M my_custom_policy_module
+  if [[ -f my_custom_policy_module.pp ]]; then
+    $SUDO semodule -i my_custom_policy_module.pp
+    rm my_custom_policy_module.*
+  else
+    echo "Custom SELinux policy file not found. Skipping SELinux module installation." >&2
+  fi
+
+  echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE." >&2
+}
+
+
 # Windows command for firewall
 open_firewall_port_windows() {
   local port=$1
@@ -269,39 +304,6 @@ obtain_socks5_proxy_address() {
     # use socks5h to pass DNS through tor as well
     echo "socks5h://127.0.0.1:9050"
   fi
-}
-
-function create_selinux_policy_for_ports() {
-  # Check if SELinux is enforcing
-  if ! command_exists getenforce; then
-    echo "Not SELinux" >&2
-    return
-  fi
-  if [[ "$(getenforce)" != "Enforcing" ]]; then
-    echo "SELinux is not in enforcing mode." >&2
-    return
-  fi
-
-  # Parameters: SELinux type, protocol (tcp/udp), port range or single port
-  local SEL_TYPE=$1
-  local PROTOCOL=$2
-  local PORT_RANGE=$3
-
-  if [[ -z "$SEL_TYPE" || -z "$PROTOCOL" || -z "$PORT_RANGE" ]]; then
-    echo "Usage: create_selinux_policy_for_ports SEL_TYPE PROTOCOL PORT_RANGE" >&2
-    return
-  fi
-
-  # Add or modify the port context
-  $SUDO semanage port -a -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE 2>/dev/null || \
-  $SUDO semanage port -m -t $SEL_TYPE -p $PROTOCOL $PORT_RANGE
-
-  # Generate and compile a custom policy module if required
-  $SUDO grep AVC /var/log/audit/audit.log | audit2allow -M my_custom_policy_module
-  $SUDO semodule -i my_custom_policy_module.pp
-  rm my_custom_policy_module.*
-
-  echo "SELinux policy created and loaded for $PORT_RANGE on $PROTOCOL with type $SEL_TYPE." >&2
 }
 
 open_firewall_port_range() {
