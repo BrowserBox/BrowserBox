@@ -764,8 +764,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   for( const target of startupTargets ) {
     try {
       const {targetId, url} = target;
-      if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) {
-        await send("Target.closeTarget, {targetId});
+      if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
+        await send("Target.closeTarget", {targetId});
       } else {
         await send("Target.attachToTarget", {targetId, flatten: true});
       }
