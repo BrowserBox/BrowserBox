@@ -153,6 +153,7 @@ export class HardenedApplication {
 
     if (currentContent.trim() !== manifestContent.trim()) {
       // If they differ, either a file changed or something is tampered
+      fs.writeFileSync('calculated-manifest.txt', currentContent.trim());
       throw new Error('Current file hashes do not match the manifest.');
     }
 
