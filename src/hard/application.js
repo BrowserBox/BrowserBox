@@ -18,7 +18,7 @@
 // Initialize HardenedApplication with necessary configurations
 const hardenedApp = new HardenedApplication({
   appDir: path.resolve(__dirname(), '..', '..'), // Directory containing your application files
-  certificatePath: CERTIFICATE_PATH,
+  certificatePath: path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro', 'certificate.json'),
   licenseServerUrl: LICENSE_SERVER_URL,
   apiVersion: API_VERSION,
   // instanceId is generated internally
