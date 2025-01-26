@@ -20,6 +20,7 @@
   let lastDebugOrderId = -Infinity;
   let server;
   let targetSaver;
+  let licenseValid;
   //let zombie_started = false;
 
   if ( GO_SECURE && start_mode == "signup" ) {
@@ -37,8 +38,8 @@
   }
   
   try {
-    const result = await applicationCheck();
-    console.log({result});
+    licenseValid = await applicationCheck();
+    console.log({licenseValid});
   } catch(e) {
     console.warn(`Application check error:`, e);
   }
