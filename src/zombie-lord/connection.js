@@ -11,6 +11,8 @@ import {WebSocket} from 'ws';
 import {SocksProxyAgent} from 'socks-proxy-agent';
 
 import {
+  WrongOnes,
+  AttachmentTypes,
   debounce,
   OurWorld,
   StartupTabs,
@@ -513,7 +515,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   }
 
   console.log({port});
-  const {send,on, ons} = connection.zombie;
+  const {send,on, ons, startupTargets} = connection.zombie;
 
   const document = new Document({send, on, ons});
 
@@ -757,7 +759,23 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       permissions: GrantedPermissions
     }
   );
-  
+
+  const WO = [...WrongOnes];
+  for( const target of startupTargets ) {
+    try {
+      const {targetId, url} = target;
+      if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
+        await send("Target.closeTarget", {targetId});
+      } else {
+        await send("Target.attachToTarget", {targetId, flatten: true});
+      }
+    } catch(e) {
+      console.log(`Error attaching to startup target`, e, {target});
+    }
+  }
+
+  return connection;
+
   function sendFrameToClient({message, sessionId}) {
     if ( DEBUG.logFileCommands && LOG_FILE.Commands.has(message.method) ) {
       const {params: {data, metadata}, method, sessionId} = message;
@@ -1495,8 +1513,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       console.warn("Unknown message from target", message);
     }
   }
-
-  return connection;
 
   async function setupTab({attached}) {
     const {waitingForDebugger, sessionId, targetInfo} = attached;
@@ -3011,17 +3027,21 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
     let resolve;
     const promise = new Promise(res => resolve = res);
 
-    socket.on('open', () => {
+    socket.on('open', async () => {
       Zombie.disconnected = false;
-      resolve();
+      let {targetInfos:targets} = await send("Target.getTargets", {targetFilter:[{type:"browser",exclude:true}]});
+      targets = targets.filter(t => AttachmentTypes.has(t.type));
+      console.log(JSON.stringify({targets},null,2));
+      resolve({startupTargets:targets});
     });
 
-    await promise;
+    const {startupTargets} = await promise;
 
     Object.assign(Zombie, {
       send,
       on, ons,
-      _socket: socket
+      _socket: socket,
+      startupTargets,
     });
 
     return Zombie;

@@ -382,6 +382,9 @@ export const localBlockList = process.platform == 'darwin'
     /^10./,
     /^172.(1[6-9]|2[0-9]|3[01])./,
 ];
+export const WrongOnes = new Set([
+  "chrome://newtab/",
+]);
 export const AttachmentTypes = new Set([
   'page', 
   ...(DEBUG.attachToServiceWorkers ? [
