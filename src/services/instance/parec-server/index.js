@@ -596,12 +596,9 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 server.listen(port, () => {
-<<<<<<< HEAD
   console.info(`Audio up on port: ${port}`);
-=======
   // warmup
   getEncoder();
->>>>>>> 4a4cbc47a9c92ca3e0581fd2b54c3140f2164fbf
 });
 
 if ( ! process.platform.startsWith('win') && ! process.platform.startsWith('darwin') ) {
