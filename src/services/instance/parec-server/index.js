@@ -26,16 +26,16 @@ import {
 } from '../../../common.js';
 const DEBUG = {
   debugRetries: true,
-  showAllData: false,
-  showPacketPushes: false,
-  showDroppedSilents: false,
-  showPrimeFilter: false,
-  showPrimeChecks: false,
-  showAllMessages: false,
-  showAcks: false,
+  showAllData: true,
+  showPacketPushes: true,
+  showDroppedSilents: true,
+  showPrimeFilter: true,
+  showPrimeChecks: true,
+  showAllMessages: true,
+  showAcks: true,
   showConnections: true,
-  showClients: false,
-  val: 0,
+  showClients: true,
+  val: 5,
   showFormat: true,
   mode: 'prod',
   goSecure: true
@@ -596,6 +596,7 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 server.listen(port, () => {
+  console.info(`Audio up on port: ${port}`);
   // warmup
   getEncoder();
 });
