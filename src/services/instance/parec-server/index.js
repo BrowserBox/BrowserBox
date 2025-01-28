@@ -25,18 +25,18 @@ import {
   CONFIG, sleep
 } from '../../../common.js';
 const DEBUG = {
-  debugRetries: true,
-  showAllData: true,
-  showPacketPushes: true,
-  showDroppedSilents: true,
-  showPrimeFilter: true,
-  showPrimeChecks: true,
-  showAllMessages: true,
-  showAcks: true,
-  showConnections: true,
-  showClients: true,
-  val: 5,
-  showFormat: true,
+  debugRetries: false,
+  showAllData: false,
+  showPacketPushes: false,
+  showDroppedSilents: false,
+  showPrimeFilter: false,
+  showPrimeChecks: false,
+  showAllMessages: false,
+  showAcks: false,
+  showConnections: false,
+  showClients: false,
+  val: 0,
+  showFormat: false,
   mode: 'prod',
   goSecure: true
 }
@@ -57,12 +57,12 @@ const sockets = new Set();
 const SAMPLE_RATE = DEBUG.windowsUses48KAudio && process.platform.startsWith('win') ? 48000 : 44100;
 const FORMAT_BIT_DEPTH = 16;
 const BYTE_ALIGNMENT = FORMAT_BIT_DEPTH >> 3;
-const MAX_DATA_SIZE = 1200; //SAMPLE_RATE * (FORMAT_BIT_DEPTH/8) // we actually only get around 300 bytes per chunk on average, ~ 3 msec;
+const MAX_DATA_SIZE = 10000; //SAMPLE_RATE * (FORMAT_BIT_DEPTH/8) // we actually only get around 300 bytes per chunk on average, ~ 3 msec;
 const CutOff = {};
 const primeCache = [2, 3, 5];
 let Encoders = new Set();
 let primeSet = new Set(primeCache);
-const SparsePrimes = createSparsePrimes(MAX_DATA_SIZE);
+let SparsePrimes = createSparsePrimes(MAX_DATA_SIZE);
 
 const argv = process.argv;
 let device = argv[3] || 'rtp.monitor' || 'auto_null.monitor';
@@ -502,14 +502,20 @@ socketWaveStreamer.on('connection',  wrap(async (ws, req) => {
 
     function checks(dat) {
       const sz = dat.length;
-      if ( sz < 3 ) return true;
+      let fac = 1;
+      if (sz > SparsePrimes.length) {
+        setTimeout(() => {
+          //SparsePrimes = createSparsePrimes(sz);
+        }, 50);
+        fac = sz/SparsePrimes.length;
+      }
       const pr = SparsePrimes.slice(0, CutOff[sz]);
       const P = pr.length;
       DEBUG.showPrimeChecks && console.log(
         "miss end by", dat.length - 1 - pr[pr.length-1], "last dat at", dat.length - 1, "last check at", pr[pr.length-1]
       );
       for(let i = 0, p; i < P; i++) {
-        p = pr[i];
+        p = Math.floor(fac*pr[i]);
         if ( dat[p] !== 0 ) {
           DEBUG.showPrimeChecks && console.log({p, datp: dat[p], p, len: dat.length});
           return false;
