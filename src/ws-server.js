@@ -35,6 +35,8 @@
   import {timedSend, eventSendLoop} from './server.js';
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
 
+  const { exec, execSync } = child_process;
+
   let WRTC;
   try { 
     await import('@roamhq/wrtc').then(module => WRTC = module.default);
@@ -114,8 +116,7 @@
       `
     });
     
-    const ConstrainedRateLimiter = rateLimit({
-      windowMs: 10000,
+    const ConstrainedRateLimiter = rateLimit({ windowMs: 10000,
       max: 1,
       message: `
         Too many requests from this IP. Please try again in a little while.
@@ -968,12 +969,17 @@
     return server;
 
     function addHandlers() {
+      const CACHE_EXPIRY = 3 * 60 * 1000;
+      let torExitList;
+      let cachExpired = true;
       // core app interface functions
         app.get(`/api/${version}/tabs`, wrap(async (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          const st = req.query.sessionToken;
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
           DEBUG.debugCookie && console.log('all cookies', req.cookies);
-          if ( (cookie !== allowed_user_cookie) ) {
+          res.type('json');
+          if ( (cookie !== allowed_user_cookie) && st !== session_token ) {
             return res.status(401).send('{"err":"forbidden"}');
           }
           requestId++;
@@ -1045,10 +1051,11 @@
         }));
         app.get(`/extensions`, VeryConstrainedRateLimiter, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          const st = req.query.sessionToken;
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
           DEBUG.debugCookie && console.log('all cookies', req.cookies);
           res.type('json');
-          if ( (cookie !== allowed_user_cookie) ) {
+          if ( (cookie !== allowed_user_cookie) && st !== session_token ) {
             return res.status(401).send('{"err":"forbidden"}');
           }
           res.set('Cache-Control', 'public, max-age=13');
@@ -1057,10 +1064,11 @@
         });
         app.get(`/isTor`, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          const st = req.query.sessionToken;
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
           DEBUG.debugCookie && console.log('all cookies', req.cookies);
           res.type('json');
-          if ( (cookie !== allowed_user_cookie) ) {
+          if ( (cookie !== allowed_user_cookie) && st !== session_token ) {
             return res.status(401).send('{"err":"forbidden"}');
           }
           const data = {};
@@ -1081,7 +1089,11 @@
           clientIP = clientIP.replace('::ffff:', '');
             
           try {
-            const torExitList = await fetch('https://check.torproject.org/torbulkexitlist').then(r => r.text());
+            if ( ! torExitList || cacheExpired ) {
+              cacheExpired = false;
+              torExitList = await fetch('https://check.torproject.org/torbulkexitlist').then(r => r.text());
+              setTimeout(() => cacheExpired = true, CACHE_EXPIRY);
+            }
             const torExitSet = new Set(
               torExitList
                 .split(/\n/g)
@@ -1097,10 +1109,11 @@
         }));
         app.get(`/isSubscriber`, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          const st = req.query.sessionToken;
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
           DEBUG.debugCookie && console.log('all cookies', req.cookies);
           res.type('json');
-          if ( (cookie !== allowed_user_cookie) ) {
+          if ( (cookie !== allowed_user_cookie) && st !== session_token ) {
             return res.status(401).send('{"err":"forbidden"}');
           }
           const data = {};
@@ -1113,10 +1126,11 @@
         });
         app.get(`/expiry_time`, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          const st = req.query.sessionToken;
           DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
           DEBUG.debugCookie && console.log('all cookies', req.cookies);
           res.type('json');
-          if ( (cookie !== allowed_user_cookie) ) {
+          if ( (cookie !== allowed_user_cookie) && st !== session_token ) {
             return res.status(401).send('{"err":"forbidden"}');
           }
           const data = {};
@@ -1135,7 +1149,10 @@
         });
         app.get("/settings_modal", (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
-          if ( (cookie !== allowed_user_cookie) ) { 
+          const st = req.query.sessionToken;
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          if ( (cookie !== allowed_user_cookie) && st !== session_token ) {
             return res.status(401).send('{"err":"forbidden"}');
           }
           res.status(200).send(` 
@@ -1212,6 +1229,20 @@
           forceMeta({fileChooserClosed:{sessionId}});
           DEBUG.fileDebug && console.log('force meta called');
         }); 
+      // fun / extra app data getters
+        app.get('/tabs/:tabId', wrap(async (req, res) => {
+          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
+          DEBUG.debugCookie && console.log('look for cookie', COOKIENAME+port, 'found: ', {cookie, allowed_user_cookie});
+          DEBUG.debugCookie && console.log('all cookies', req.cookies);
+          res.type('json');
+          if ( (cookie !== allowed_user_cookie) ) {
+            return res.status(401).send('{"err":"forbidden"}');
+          }
+          const data = await runCurl(`curl http://${DEBUG.useLoopbackIP ? '127.0.0.1' : 'localhost'}:${zombie_port}/json`);
+          const targets = JSON.parse(data);
+          const target = targets.filter(({id:t}) => t == req.params.tabId);
+          res.send(JSON.stringify({target},null,2));
+        }));
       // app meta controls
         app.post("/restart_app", ConstrainedRateLimiter, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
@@ -1598,3 +1629,34 @@
     }
     DEBUG.showExtensions && console.log({extensions});
   }
+
+  /**
+   * Wrapper to run curl commands in Node.js
+   * @param {string} command - The curl command to execute.
+   * @param {boolean} isAsync - Whether to run the command asynchronously. Default is true.
+   * @returns {Promise<string> | string} - Resolves with the output if async, or returns the output if sync.
+   */
+  function runCurl(command, isAsync = true) {
+    if (!command.startsWith('curl')) {
+      throw new Error('Command must start with "curl".');
+    }
+
+    if (isAsync) {
+      return new Promise((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+          if (error) {
+            reject(`Error: ${stderr || error.message}`);
+            return;
+          }
+          resolve(stdout);
+        });
+      });
+    } else {
+      try {
+        return execSync(command, { encoding: 'utf-8' });
+      } catch (error) {
+        throw new Error(`Error: ${error.stderr || error.message}`);
+      }
+    }
+  }
+
