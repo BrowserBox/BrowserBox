@@ -160,7 +160,7 @@
         const isSubscriber = {};
 
         try {
-          fetch('/isSubscriber').then(r => r.json()).then(resp => {
+          fetch(`/isSubscriber?sessionToken=${sessionToken}`).then(r => r.json()).then(resp => {
             // gotta make money
             Object.assign(isSubscriber, resp || {});
           }).catch(e => console.warn(`Could not determine if user is a subscriber`, e));
@@ -172,7 +172,7 @@
         const browserExpiresAt = {};
 
         try {
-          fetch('/expiry_time').then(r => r.json()).then(resp => {
+          fetch(`/expiry_time?sessionToken=${sessionToken}`).then(r => r.json()).then(resp => {
             // gotta make money
             const time = Number(resp?.expiry_time);
             if ( Number.isNaN(time) ) {
