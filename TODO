@@ -1,2 +1,3 @@
+- expirty_time and isSubscriber don't seem to be authing properly on safari. Maybe need to send sess explicitly with
 - implement wide ext support via: attach to sw, runtime.enable, then eval in context of sw, { <key api shims> <sw code> }, use runtime.consoleapicalled to get any useful data, and eval to call any useful functions (like those added to action.onClick.addListener etc)
 
