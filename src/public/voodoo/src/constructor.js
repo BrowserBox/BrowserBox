@@ -158,7 +158,6 @@
 
       // account
         const isSubscriber = {};
-        const sessionToken = globalThis._sessionToken();
 
         try {
           fetch(`/isSubscriber?sessionToken=${sessionToken}`).then(r => r.json()).then(resp => {
