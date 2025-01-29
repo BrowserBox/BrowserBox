@@ -57,7 +57,7 @@ const sockets = new Set();
 const SAMPLE_RATE = DEBUG.windowsUses48KAudio && process.platform.startsWith('win') ? 48000 : 44100;
 const FORMAT_BIT_DEPTH = 16;
 const BYTE_ALIGNMENT = FORMAT_BIT_DEPTH >> 3;
-const MAX_DATA_SIZE = 10000; //SAMPLE_RATE * (FORMAT_BIT_DEPTH/8) // we actually only get around 300 bytes per chunk on average, ~ 3 msec;
+const MAX_DATA_SIZE = 5837; //SAMPLE_RATE * (FORMAT_BIT_DEPTH/8) // we actually only get around 300 bytes per chunk on average, ~ 3 msec;
 const CutOff = {};
 const primeCache = [2, 3, 5];
 let Encoders = new Set();
@@ -497,19 +497,21 @@ socketWaveStreamer.on('connection',  wrap(async (ws, req) => {
     reader.on('data', processData);
 
     function isSilent(data) {
-      return data[0] === 0 && data[data.length-1] === 0 && checks(data);
+      return data[0] === 0 && data[data.length-1] === 0 && data[data.length-2] === 0 && checks(data);
     }
 
     function checks(dat) {
       const sz = dat.length;
       let fac = 1;
+      let cutoff = CutOff[sz];
       if (sz > SparsePrimes.length) {
         setTimeout(() => {
           //SparsePrimes = createSparsePrimes(sz);
         }, 50);
         fac = sz/SparsePrimes.length;
+        cutoff = SparsePrimes.length;
       }
-      const pr = SparsePrimes.slice(0, CutOff[sz]);
+      const pr = SparsePrimes.slice(0, cutoff);
       const P = pr.length;
       DEBUG.showPrimeChecks && console.log(
         "miss end by", dat.length - 1 - pr[pr.length-1], "last dat at", dat.length - 1, "last check at", pr[pr.length-1]
@@ -867,7 +869,7 @@ function shutDown(...args) {
 function createSparsePrimes(len) {
   // take the primes up to len and then weed out 61.8 % of them
   const primes = primesUpTo(len);
-  const filteredPrimes = primes.filter(() => Math.random() <= 0.618);
+  const filteredPrimes = primes.filter(() => Math.random() <= 0.5);
 
   for(let j = 1, end = 0, p = filteredPrimes[0], nextP = filteredPrimes[1]; j < filteredPrimes.length && end < MAX_DATA_SIZE; end++) {
     if ( end > nextP ) {
