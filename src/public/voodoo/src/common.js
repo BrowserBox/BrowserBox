@@ -24,6 +24,7 @@ const OPEN_SERVICES_IN_BROWSER = false; // true is within BrowserBox tabs, false
 let authToken;
 
 export const OPTIONS = {
+  audioGain: 1.0,
   showBWStatus: true,
   showTorStatus: true,
   showAudioStatus: true,
@@ -210,6 +211,7 @@ export const DEBUG = Object.freeze({
 });
 
 export const CONFIG = Object.freeze({
+  hearingProtectionMaxGain: 1.3,
   alwaysSendTopLevel: false,
   get isCT() {
     return globalThis?.location?.hostname?.endsWith?.('.cloudtabs.net');

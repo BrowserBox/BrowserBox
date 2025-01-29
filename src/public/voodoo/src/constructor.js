@@ -834,7 +834,7 @@
                               if ( ctx.state == 'suspended' ) return setTimeout(ensureResume, 500);
                             });
                             gain = ctx.createGain();
-                            gain.gain.value = 1.217;
+                            gain.gain.value = Math.min(OPTIONS.audioGain, CONFIG.hearingProtectionMaxGain);
                             gain.connect( ctx.destination );
                           }
 

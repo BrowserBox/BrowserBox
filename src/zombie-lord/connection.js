@@ -266,6 +266,7 @@ const WorkerCommands = new Set([
   "Runtime.runIfWaitingForDebugger",
 ]);
 const settingUp = new Map();
+const attaching = new Set();
 const Reloaders = new Map();
 //const originalMessage = new Map();
 const DownloadPath = path.resolve(CONFIG.baseDir , 'browser-downloads');
@@ -559,7 +560,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     targets.add(targetId);
     tabs.set(targetId,targetInfo);
     connection.forceMeta({created:targetInfo,targetInfo});
-    if ( targetInfo.type == "page" && !DEBUG.attachImmediately ) {
+    if ( targetInfo.type == "page" && !DEBUG.attachImmediately && ! attaching.has(targetId) ) {
+      attaching.add(targetId);
       await send("Target.attachToTarget", {targetId, flatten:true});
     }
     DEBUG.val && consolelog('create 2', targetInfo);
@@ -766,7 +768,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const {targetId, url} = target;
       if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
         await send("Target.closeTarget", {targetId});
-      } else {
+      } else if ( ! attaching.has(targetId) ){
+        attaching.add(targetId);
         await send("Target.attachToTarget", {targetId, flatten: true});
       }
     } catch(e) {

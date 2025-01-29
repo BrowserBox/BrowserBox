@@ -25,6 +25,8 @@ import {
   CONFIG, sleep
 } from '../../../common.js';
 const DEBUG = {
+  showSentData: true,
+  debugAudioSilenceFilter: false,
   debugRetries: false,
   showAllData: false,
   showPacketPushes: false,
@@ -460,6 +462,7 @@ socketWaveStreamer.on('connection',  wrap(async (ws, req) => {
       DEBUG.showAllData && console.log(`Got data with length`, data.length);
       if ( CONFIG.audioDropPossiblySilentFrames && isSilent(data) ) {
         DEBUG.showDroppedSilents && console.log('drop', data.length, data);
+        DEBUG.debugAudioSilenceFilter && console.log('Dropped Packet', data.toString('base64url'))
         client.packet.length = 0;
         totalLength = 0;
         client.buffer.length = 0;
@@ -484,6 +487,7 @@ socketWaveStreamer.on('connection',  wrap(async (ws, req) => {
 
         client.buffer.push(packet);
         DEBUG.showPacketPushes && console.log(`Pushing packet length: ${packet.length}`);
+        (DEBUG.debugAudioSilenceFilter || DEBUG.showSentData) && console.log('Packet', packet.toString('base64url'))
       }
       while ( client.buffer.length > client.BUF_WINDOW ) {
         client.buffer.shift();
@@ -504,7 +508,7 @@ socketWaveStreamer.on('connection',  wrap(async (ws, req) => {
       const sz = dat.length;
       let fac = 1;
       let cutoff = CutOff[sz];
-      if (sz > SparsePrimes.length) {
+      if (sz > SparsePrimes[SparsePrimes.length-1]) {
         setTimeout(() => {
           //SparsePrimes = createSparsePrimes(sz);
         }, 50);
@@ -516,10 +520,11 @@ socketWaveStreamer.on('connection',  wrap(async (ws, req) => {
       DEBUG.showPrimeChecks && console.log(
         "miss end by", dat.length - 1 - pr[pr.length-1], "last dat at", dat.length - 1, "last check at", pr[pr.length-1]
       );
+      DEBUG.debugAudioSilenceFilter && console.log({sz,fac, cutoff, pr, P});
       for(let i = 0, p; i < P; i++) {
         p = Math.floor(fac*pr[i]);
+        (DEBUG.showPrimeChecks) && console.log({p, datp: dat[p], p, len: dat.length});
         if ( dat[p] !== 0 ) {
-          DEBUG.showPrimeChecks && console.log({p, datp: dat[p], p, len: dat.length});
           return false;
         }
       }
