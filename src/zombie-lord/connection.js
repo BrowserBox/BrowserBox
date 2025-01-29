@@ -267,6 +267,7 @@ const WorkerCommands = new Set([
 ]);
 const settingUp = new Map();
 const attaching = new Set();
+const startingTabs = new Set();
 const Reloaders = new Map();
 //const originalMessage = new Map();
 const DownloadPath = path.resolve(CONFIG.baseDir , 'browser-downloads');
@@ -766,6 +767,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   for( const target of startupTargets ) {
     try {
       const {targetId, url} = target;
+      startingTabs.add(targetId);
       if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
         await send("Target.closeTarget", {targetId});
       } else if ( ! attaching.has(targetId) ){
@@ -1522,6 +1524,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     if ( settingUp.has(targetId) ) return;
     DEBUG.debugSetupReload && consolelog(`Running setup for `, attached);
     settingUp.set(targetId, attached);
+    if ( startingTabs.has(targetId) ) {
+      // needed to refresh sometimes
+      // but maybe this should go after set up tab?
+      await send("Page.reload", {}, sessionId);
+    }
     DEBUG.attachImmediately && DEBUG.worldDebug && console.log({waitingForDebugger, targetInfo});
 
     try {
