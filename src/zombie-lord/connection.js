@@ -1289,16 +1289,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( worldName == WorldName ) {
         SetupTabs.set(sessionId, {worldName});
         OurWorld.set(sessionId, contextId);
-        /*
         await send(
           "Runtime.addBinding", 
           {
             name: CONFIG.BINDING_NAME, 
-            executionContextId: contextId
+            executionContextName: WorldName
           },
           sessionId
         );
-        */
       } else if ( DEBUG.manuallyInjectIntoEveryCreatedContext && SetupTabs.get(sessionId)?.worldName !== WorldName ) {
         const targetId = sessions.get(sessionId);
         const expression = saveTargetIdAsGlobal(targetId) + manualInjectionsScroll;
