@@ -25,7 +25,7 @@ import {
   CONFIG, sleep
 } from '../../../common.js';
 const DEBUG = {
-  showSentData: true,
+  showSentData: false,
   debugAudioSilenceFilter: false,
   debugRetries: false,
   showAllData: false,
