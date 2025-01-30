@@ -266,6 +266,7 @@ const WorkerCommands = new Set([
   "Runtime.runIfWaitingForDebugger",
 ]);
 const settingUp = new Map();
+const setupComplete = new Set();
 const attaching = new Set();
 const startingTabs = new Set();
 const Reloaders = new Map();
@@ -771,8 +772,16 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
         await send("Target.closeTarget", {targetId});
       } else if ( ! attaching.has(targetId) ){
+        console.log('Starting tab', {target});
         attaching.add(targetId);
-        await send("Target.attachToTarget", {targetId, flatten: true});
+        if ( target.attached ) {
+          await sleep(40);
+          if ( !(settingUp.has(targetId) || setupComplete.has(targetId) || sessions.has(targetId)) ) {
+            await send("Target.attachToTarget", {targetId, flatten: true});
+          }
+        } else {
+          await send("Target.attachToTarget", {targetId, flatten: true});
+        }
       }
     } catch(e) {
       console.log(`Error attaching to startup target`, e, {target});
@@ -1520,15 +1529,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   async function setupTab({attached}) {
     const {waitingForDebugger, sessionId, targetInfo} = attached;
     const {targetId} = targetInfo;
+    console.log('Setup called for', attached);
     DEBUG.debugSetupReload && consolelog(`Called setup for `, attached);
     if ( settingUp.has(targetId) ) return;
     DEBUG.debugSetupReload && consolelog(`Running setup for `, attached);
     settingUp.set(targetId, attached);
-    if ( startingTabs.has(targetId) ) {
-      // needed to refresh sometimes
-      // but maybe this should go after set up tab?
-      await send("Page.reload", {}, sessionId);
-    }
     DEBUG.attachImmediately && DEBUG.worldDebug && console.log({waitingForDebugger, targetInfo});
 
     try {
@@ -1851,6 +1856,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     } catch(e) {
       console.warn("Error setting up", e, targetId, sessionId);
     }
+    setupComplete.add(targetId);
     settingUp.delete(targetId);
     DEBUG.debugSetupReload && console.log(`Reloading after setup`, {attached});
     reloadAfterSetup(sessionId, {reason:'post-setup'});
@@ -1862,6 +1868,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     //  await sleep(5000);
     //  reloadAfterSetup(sessionId, {reason:'post-setup'});
     //}
+    if ( startingTabs.has(targetId) ) {
+      // needed to refresh sometimes
+      // but maybe this should go after set up tab?
+      console.log('Reloading starting tab');
+      reloadAfterSetup(sessionId, {reason:'post-setup'});
+    }
   }
 
   async function setupWorker({attached}) {
@@ -1956,7 +1968,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     } catch(e) {
       console.warn("Error setting up", e, targetId, sessionId);
     }
+
     settingUp.delete(targetId);
+
     DEBUG.debugSetupReload && console.log(`Reloading after setup`, {attached});
     reloadAfterSetup(sessionId, {reason:'post-setup'});
   }
