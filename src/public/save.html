@@ -1,0 +1,1186 @@
+
+    <!DOCTYPE html>
+      <meta charset=utf-8>
+      <meta name=viewport content=width=device-width,initial-scale=1,user-scalable=no>
+      <title>
+        BrowserBox &mdash; Remote browser isolation
+      </title>
+      <link rel=stylesheet href=/styles/main.css>
+      <link rel=stylesheet href=/styles/logo.css>
+      <div class=header-background>
+        <header role=banner aria-label="Page header after scrolling page down past the top">
+          <nav>
+            <a class=drawer href=#main-menu-open>&#x2630;</a>
+            <a href=/>
+              <aside class=logo>
+                <h1>
+                  <span class=browser>
+                    <span class=inner>
+                      Browser
+                    </span>
+                  </span>
+                  <span class=gap>
+                    <span class=inner>
+                      Gap
+                    </span>
+                  </span>
+                </h1>
+              </aside>
+            </a>
+            <ul>
+              <li>
+                <a href=#top class=drawer>Close</a>
+              </li>
+              <li>
+                <a href=/pages/remote-cloud-browser-service.html#cloud-browsers>
+                  Cloud browsers
+                </a>
+              </li>
+              <li>
+                <a href=/pages/per-seat-subscription-pricing.html#pricing>
+                  Pricing
+                </a>
+              </li>
+              <li>
+                <a href=/pages/five-elements-technology-reading-room.html#five-elements>
+                  Five Elements     
+                </a>
+              </li>
+              <li>
+                <a href=/pages/tutorials-and-support-reading-room.html#reading-room>
+                  Reading Room
+                </a>
+              </li>
+              <li>
+                <a href=#membership-application class="register toggle-opener">
+                  <span class=verbose-name>
+                    Membership&nbsp;Application
+                  </span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </header>
+      </div>
+      <div class=diagonal-background></div>
+      <header role=banner aria-label="Page header when page is scrolled to the top">
+        <nav>
+          <a class=drawer href=#main-menu-open>&#x2630;</a>
+          <a href=/>
+            <aside class=logo>
+              <h1>
+                <span class=browser>
+                  <span class=inner>
+                    Browser
+                  </span>
+                </span>
+                <span class=gap>
+                  <span class=inner>
+                    Gap
+                  </span>
+                </span>
+              </h1>
+            </aside>
+          </a>
+          <ul id=main-menu-open>
+            <li>
+              <a href=#top class=drawer>Close</a>
+            </li>
+            <li>
+              <a href=/pages/remote-cloud-browser-service.html#cloud-browsers>
+                Cloud browsers
+              </a>
+            </li>
+            <li>
+              <a href=/pages/per-seat-subscription-pricing.html#pricing>
+                Pricing
+              </a>
+            </li>
+            <li>
+              <a href=/pages/five-elements-technology-reading-room.html#five-elements>
+                Five Elements     
+              </a>
+            </li>
+            <li>
+              <a href=/pages/tutorials-and-support-reading-room.html#reading-room>
+                Reading Room
+              </a>
+            </li>
+            <li>
+              <a href=#membership-application class="register toggle-opener">
+                <span class=verbose-name>
+                  Membership&nbsp;Application
+                </span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <form id=membership-application method=GET action=#register class=registration>
+          <fieldset role=dialog>
+            <legend>Membership Application</legend>
+            <p>
+              <label>
+                Salutation
+                <input autofocus required type=text autocomplete=honorific-prefix 
+                  list=honorifics
+                  maxlength=50
+                  name=salutation placeholder="Major">
+                </input>
+              </label>
+              <datalist id=honorifics>
+                <option value="Admiral">
+                <option value="Air Cdre">
+                <option value="Air Marshal">
+                <option value="Alderman">
+                <option value="Ambassador">
+                <option value="Archbishop">
+                <option value="Archdeacon">
+                <option value="Baron of Lewes">
+                <option value="Baron">
+                <option value="Baroness">
+                <option value="Bishop">
+                <option value="Brigadier">
+                <option value="Brother">
+                <option value="Buergermeister">
+                <option value="Canon">
+                <option value="Captain">
+                <option value="Catholic Chaplain">
+                <option value="Chairman">
+                <option value="Chevalier">
+                <option value="Chief Constable">
+                <option value="Chief Fire Officer">
+                <option value="Chief Inspector">
+                <option value="Chief Rabbi Sir">
+                <option value="Chief Supt">
+                <option value="Chief">
+                <option value="Colonel Dr">
+                <option value="Colonel">
+                <option value="Commander">
+                <option value="Commodore">
+                <option value="Comte">
+                <option value="Consort to the Deputy Mayor of Wirral">
+                <option value="Consul">
+                <option value="Councillor Mrs">
+                <option value="Councillor">
+                <option value="Count">
+                <option value="Countess">
+                <option value="Dame">
+                <option value="Dato'">
+                <option value="Datuk">
+                <option value="Dean">
+                <option value="Deputy Mayor of Sefton Councillor">
+                <option value="Deputy Vice-Chancellor Professor">
+                <option value="District Attorney">
+                <option value="District Judge">
+                <option value="Doctor">
+                <option value="Dott.">
+                <option value="Dr">
+                <option value="Duchess">
+                <option value="Duke">
+                <option value="Earl">
+                <option value="Emeritus Professor">
+                <option value="Eng">
+                <option value="Eur Ing">
+                <option value="Father">
+                <option value="Fiona">
+                <option value="Flt Lt">
+                <option value="Frau">
+                <option value="Frú">
+                <option value="General">
+                <option value="Governor">
+                <option value="Group Captain">
+                <option value="Her Excellency">
+                <option value="Her Honour Judge">
+                <option value="Her Honour">
+                <option value="Her Royal Highness Princess">
+                <option value="Her Royal Highness">
+                <option value="Herr">
+                <option value="High Sheriff of Merseyside">
+                <option value="His Excellency Chief">
+                <option value="His Excellency">
+                <option value="His Grace the Duke of Westminster">
+                <option value="His Grace The Duke">
+                <option value="His Grace">
+                <option value="His Honour Judge">
+                <option value="His Honour">
+                <option value="His Royal Highness Prince">
+                <option value="His Royal Highness">
+                <option value="Hon. Lord">
+                <option value="Hon">
+                <option value="Honourable">
+                <option value="HRH Princess">
+                <option value="Ing">
+                <option value="Judge">
+                <option value="Justice">
+                <option value="Lady Mayoress">
+                <option value="Lady">
+                <option value="Lieutenant Colonel">
+                <option value="Lieutenant Commander">
+                <option value="Lieutenant">
+                <option value="Lord Lieutenant of Merseyside Dame">
+                <option value="Lord Lieutenant of Merseyside Dr">
+                <option value="Lord Lieutenant">
+                <option value="Lord Mayor">
+                <option value="Lord">
+                <option value="Lt Cdr">
+                <option value="Lt Colonel">
+                <option value="Madam">
+                <option value="Mademoiselle">
+                <option value="Major">
+                <option value="Majors">
+                <option value="Mar">
+                <option value="Marchioness">
+                <option value="Master">
+                <option value="Mayor">
+                <option value="Mayoress">
+                <option value="Messrs">
+                <option value="Methodist Chaplain">
+                <option value="Miss">
+                <option value="Mme">
+                <option value="Monsieur">
+                <option value="Monsignor">
+                <option value="Mr and Mrs">
+                <option value="Mr Justice">
+                <option value="Mr">
+                <option value="Mrs">
+                <option value="Ms">
+                <option value="Mx">
+                <option value="M">
+                <option value="of Birkenhead">
+                <option value="of Quarry Bank">
+                <option value="Pastor">
+                <option value="Police Constable">
+                <option value="Pr Eng">
+                <option value="Prebendary">
+                <option value="President">
+                <option value="Prince">
+                <option value="Princess">
+                <option value="Pro-Vice-Chancellor Professor">
+                <option value="Pro-Vice-Chancellor">
+                <option value="Professor Dame">
+                <option value="Professor Lord">
+                <option value="Professor Sir">
+                <option value="Professor the Lord">
+                <option value="Professor">
+                <option value="QPM">
+                <option value="Rabbi">
+                <option value="Revd. Cannon Dr.">
+                <option value="Reverend Brother">
+                <option value="Reverend Canon">
+                <option value="Reverend Dr">
+                <option value="Reverend Father">
+                <option value="Reverend Professor">
+                <option value="Reverend Sister">
+                <option value="Reverend">
+                <option value="Right Reverend">
+                <option value="Rt Hon">
+                <option value="Rt. Hon. Dame">
+                <option value="Rt. Hon. Lord Justice">
+                <option value="Rt. Hon. Sir">
+                <option value="Senator">
+                <option value="Senior Executive Assistant">
+                <option value="Sergent">
+                <option value="Sheikh">
+                <option value="Sir">
+                <option value="Sister">
+                <option value="Squadron Leader">
+                <option value="Sub Lt">
+                <option value="The Countess of">
+                <option value="The Duke of">
+                <option value="The Earl of">
+                <option value="The Editor">
+                <option value="The High Sheriff of Merseyside Dr.">
+                <option value="The High Sheriff">
+                <option value="The Hon Dame">
+                <option value="The Hon. Dr.">
+                <option value="The Hon. Mr. Justice">
+                <option value="The Hon. Mr">
+                <option value="The Honorable Dame">
+                <option value="The Honorable Mrs">
+                <option value="The Honorable Sir">
+                <option value="The Honorable">
+                <option value="The Lord">
+                <option value="The Mayor-Elec of Wirral Councillor">
+                <option value="The Mayor">
+                <option value="The Most Rev">
+                <option value="The Right Hon. Lord Justice">
+                <option value="The Right Hon. the Lord">
+                <option value="The Right Honourable">
+                <option value="The Rt Hon Lady Justice">
+                <option value="The Rt Hon Lord">
+                <option value="The Rt Hon Mrs">
+                <option value="The Rt Hon the Lady">
+                <option value="The Rt Hon the Lord">
+                <option value="The Rt Hon">
+                <option value="The Rt Honourable Earl of">
+                <option value="The Rt Rev Bishop">
+                <option value="The Rt Rev Dr">
+                <option value="The Rt Rev">
+                <option value="The Rt. Hon the Lord">
+                <option value="The Rt. Hon. Dame">
+                <option value="The Rt. Hon. Lady Justice">
+                <option value="The Rt. Hon. Lord">
+                <option value="The Rt. Hon. The Baroness">
+                <option value="The Rt. Hon. the Earl of">
+                <option value="The Rt. Hon. The Lady">
+                <option value="The Rt. Hon. The Lord">
+                <option value="The Rt. Hon.">
+                <option value="The Rt. Hon">
+                <option value="The Rt. Rev. Dr.">
+                <option value="The Rt. Revd. Dr.">
+                <option value="The Rt. Worshipful">
+                <option value="The Rt. Worshipfull">
+                <option value="The Very Revd. Dr.">
+                <option value="The Very Reverend">
+                <option value="The Worship the Mayor of Wirral">
+                <option value="The Worship the Mayor">
+                <option value="The Worshipful the Lord Mayor of Liverpool">
+                <option value="The Worshipful the Lord Mayor">
+                <option value="The Worshipful the Mayor of Halton">
+                <option value="The Worshipful the Mayor of Knowsley">
+                <option value="The Worshipful the Mayor of Sefton">
+                <option value="The Worshipful the Mayor of St. Helens">
+                <option value="The Worshipful the Mayor of">
+                <option value="The Worshipful the Mayor">
+                <option value="Venerable">
+                <option value="Very Reverend">
+                <option value="Vice Admiral Sir">
+                <option value="Vice-Chancellor Professor">
+                <option value="Vice-Chancellor">
+                <option value="Viscount">
+                <option value="Viscountess">
+                <option value="Wing Commander">		
+              </datalist>
+              <label>
+                Your given name
+                <input type=text autocomplete=given-name 
+                  maxlength=100
+                  name=given-name placeholder="Motoko">
+              </label>
+              <label>
+                Your family name
+                <input required type=text autocomplete=family-name 
+                  maxlength=100
+                  name=family-name placeholder="Kusanagi">
+              </label>
+            <p>
+              <label>
+                Your organization
+                <input type=text autocomplete=organization 
+                  maxlength=100
+                  name=email placeholder="Public Security Section 9">
+              </label>
+              <label>
+                Your work email
+                <input required type=email autocomplete=email 
+                  maxlength=128
+                  name=email placeholder="major@sec9.neotokyo.go.jp">
+              </label>
+            <p>
+              <label>
+                Your timezone
+                <input required type=text autocomplete=on 
+                  maxlength=64
+                  list=timezones
+                  name=timezone placeholder="UTC+9">
+              </label>
+              <datalist id=timezones>
+                <option value="(GMT-11:00) Niue">
+                <option value="(GMT-11:00) Pago Pago">
+                <option value="(GMT-10:00) Hawaii Time">
+                <option value="(GMT-10:00) Rarotonga">
+                <option value="(GMT-10:00) Tahiti">
+                <option value="(GMT-9:30) Marquesas">
+                <option value="(GMT-9:00) Alaska Time">
+                <option value="(GMT-9:00) Gambier">
+                <option value="(GMT-8:00) Pacific Time">
+                <option value="(GMT-8:00) Pacific Time - Tijuana">
+                <option value="(GMT-8:00) Pacific Time - Vancouver">
+                <option value="(GMT-8:00) Pacific Time - Whitehorse">
+                <option value="(GMT-8:00) Pitcairn">
+                <option value="(GMT-7:00) Mountain Time">
+                <option value="(GMT-7:00) Mountain Time - Arizona">
+                <option value="(GMT-7:00) Mountain Time - Chihuahua, Mazatlan">
+                <option value="(GMT-7:00) Mountain Time - Dawson Creek">
+                <option value="(GMT-7:00) Mountain Time - Edmonton">
+                <option value="(GMT-7:00) Mountain Time - Hermosillo">
+                <option value="(GMT-7:00) Mountain Time - Yellowknife">
+                <option value="(GMT-6:00) Belize">
+                <option value="(GMT-6:00) Central Time">
+                <option value="(GMT-6:00) Central Time - Mexico City">
+                <option value="(GMT-6:00) Central Time - Regina">
+                <option value="(GMT-6:00) Central Time - Tegucigalpa">
+                <option value="(GMT-6:00) Central Time - Winnipeg">
+                <option value="(GMT-6:00) Costa Rica">
+                <option value="(GMT-6:00) El Salvador">
+                <option value="(GMT-6:00) Galapagos">
+                <option value="(GMT-6:00) Guatemala">
+                <option value="(GMT-6:00) Managua">
+                <option value="(GMT-5:00) America Cancun">
+                <option value="(GMT-5:00) Bogota">
+                <option value="(GMT-5:00) Easter Island">
+                <option value="(GMT-5:00) Eastern Time">
+                <option value="(GMT-5:00) Eastern Time - Iqaluit">
+                <option value="(GMT-5:00) Eastern Time - Toronto">
+                <option value="(GMT-5:00) Guayaquil">
+                <option value="(GMT-5:00) Havana">
+                <option value="(GMT-5:00) Jamaica">
+                <option value="(GMT-5:00) Lima">
+                <option value="(GMT-5:00) Nassau">
+                <option value="(GMT-5:00) Panama">
+                <option value="(GMT-5:00) Port-au-Prince">
+                <option value="(GMT-5:00) Rio Branco">
+                <option value="(GMT-4:00) Atlantic Time - Halifax">
+                <option value="(GMT-4:00) Barbados">
+                <option value="(GMT-4:00) Bermuda">
+                <option value="(GMT-4:00) Boa Vista">
+                <option value="(GMT-4:00) Caracas">
+                <option value="(GMT-4:00) Curacao">
+                <option value="(GMT-4:00) Grand Turk">
+                <option value="(GMT-4:00) Guyana">
+                <option value="(GMT-4:00) La Paz">
+                <option value="(GMT-4:00) Manaus">
+                <option value="(GMT-4:00) Martinique">
+                <option value="(GMT-4:00) Port of Spain">
+                <option value="(GMT-4:00) Porto Velho">
+                <option value="(GMT-4:00) Puerto Rico">
+                <option value="(GMT-4:00) Santo Domingo">
+                <option value="(GMT-4:00) Thule">
+                <option value="(GMT-3:30) Newfoundland Time - St. Johns">
+                <option value="(GMT-3:00) Araguaina">
+                <option value="(GMT-3:00) Asuncion">
+                <option value="(GMT-3:00) Belem">
+                <option value="(GMT-3:00) Buenos Aires">
+                <option value="(GMT-3:00) Campo Grande">
+                <option value="(GMT-3:00) Cayenne">
+                <option value="(GMT-3:00) Cuiaba">
+                <option value="(GMT-3:00) Fortaleza">
+                <option value="(GMT-3:00) Godthab">
+                <option value="(GMT-3:00) Maceio">
+                <option value="(GMT-3:00) Miquelon">
+                <option value="(GMT-3:00) Montevideo">
+                <option value="(GMT-3:00) Palmer">
+                <option value="(GMT-3:00) Paramaribo">
+                <option value="(GMT-3:00) Punta Arenas">
+                <option value="(GMT-3:00) Recife">
+                <option value="(GMT-3:00) Rothera">
+                <option value="(GMT-3:00) Salvador">
+                <option value="(GMT-3:00) Santiago">
+                <option value="(GMT-3:00) Stanley">
+                <option value="(GMT-2:00) Noronha">
+                <option value="(GMT-2:00) Sao Paulo">
+                <option value="(GMT-2:00) South Georgia">
+                <option value="(GMT-1:00) Azores">
+                <option value="(GMT-1:00) Cape Verde">
+                <option value="(GMT-1:00) Scoresbysund">
+                <option value="(GMT+0:00) Abidjan">
+                <option value="(GMT+0:00) Accra">
+                <option value="(GMT+0:00) Bissau">
+                <option value="(GMT+0:00) Canary Islands">
+                <option value="(GMT+0:00) Casablanca">
+                <option value="(GMT+0:00) Danmarkshavn">
+                <option value="(GMT+0:00) Dublin">
+                <option value="(GMT+0:00) El Aaiun">
+                <option value="(GMT+0:00) Faeroe">
+                <option value="(GMT+0:00) GMT (no daylight saving)">
+                <option value="(GMT+0:00) Lisbon">
+                <option value="(GMT+0:00) London">
+                <option value="(GMT+0:00) Monrovia">
+                <option value="(GMT+0:00) Reykjavik">
+                <option value="(GMT+1:00) Algiers">
+                <option value="(GMT+1:00) Amsterdam">
+                <option value="(GMT+1:00) Andorra">
+                <option value="(GMT+1:00) Berlin">
+                <option value="(GMT+1:00) Brussels">
+                <option value="(GMT+1:00) Budapest">
+                <option value="(GMT+1:00) Central European Time - Belgrade">
+                <option value="(GMT+1:00) Central European Time - Prague">
+                <option value="(GMT+1:00) Ceuta">
+                <option value="(GMT+1:00) Copenhagen">
+                <option value="(GMT+1:00) Gibraltar">
+                <option value="(GMT+1:00) Lagos">
+                <option value="(GMT+1:00) Luxembourg">
+                <option value="(GMT+1:00) Madrid">
+                <option value="(GMT+1:00) Malta">
+                <option value="(GMT+1:00) Monaco">
+                <option value="(GMT+1:00) Ndjamena">
+                <option value="(GMT+1:00) Oslo">
+                <option value="(GMT+1:00) Paris">
+                <option value="(GMT+1:00) Rome">
+                <option value="(GMT+1:00) Stockholm">
+                <option value="(GMT+1:00) Tirane">
+                <option value="(GMT+1:00) Tunis">
+                <option value="(GMT+1:00) Vienna">
+                <option value="(GMT+1:00) Warsaw">
+                <option value="(GMT+1:00) Zurich">
+                <option value="(GMT+2:00) Amman">
+                <option value="(GMT+2:00) Athens">
+                <option value="(GMT+2:00) Beirut">
+                <option value="(GMT+2:00) Bucharest">
+                <option value="(GMT+2:00) Cairo">
+                <option value="(GMT+2:00) Chisinau">
+                <option value="(GMT+2:00) Damascus">
+                <option value="(GMT+2:00) Gaza">
+                <option value="(GMT+2:00) Helsinki">
+                <option value="(GMT+2:00) Jerusalem">
+                <option value="(GMT+2:00) Johannesburg">
+                <option value="(GMT+2:00) Khartoum">
+                <option value="(GMT+2:00) Kiev">
+                <option value="(GMT+2:00) Maputo">
+                <option value="(GMT+2:00) Moscow-1 - Kaliningrad">
+                <option value="(GMT+2:00) Nicosia">
+                <option value="(GMT+2:00) Riga">
+                <option value="(GMT+2:00) Sofia">
+                <option value="(GMT+2:00) Tallinn">
+                <option value="(GMT+2:00) Tripoli">
+                <option value="(GMT+2:00) Vilnius">
+                <option value="(GMT+2:00) Windhoek">
+                <option value="(GMT+3:00) Baghdad">
+                <option value="(GMT+3:00) Istanbul">
+                <option value="(GMT+3:00) Minsk">
+                <option value="(GMT+3:00) Moscow+0 - Moscow">
+                <option value="(GMT+3:00) Nairobi">
+                <option value="(GMT+3:00) Qatar">
+                <option value="(GMT+3:00) Riyadh">
+                <option value="(GMT+3:00) Syowa">
+                <option value="(GMT+3:30) Tehran">
+                <option value="(GMT+4:00) Baku">
+                <option value="(GMT+4:00) Dubai">
+                <option value="(GMT+4:00) Mahe">
+                <option value="(GMT+4:00) Mauritius">
+                <option value="(GMT+4:00) Moscow+1 - Samara">
+                <option value="(GMT+4:00) Reunion">
+                <option value="(GMT+4:00) Tbilisi">
+                <option value="(GMT+4:00) Yerevan">
+                <option value="(GMT+4:30) Kabul">
+                <option value="(GMT+5:00) Aqtau">
+                <option value="(GMT+5:00) Aqtobe">
+                <option value="(GMT+5:00) Ashgabat">
+                <option value="(GMT+5:00) Dushanbe">
+                <option value="(GMT+5:00) Karachi">
+                <option value="(GMT+5:00) Kerguelen">
+                <option value="(GMT+5:00) Maldives">
+                <option value="(GMT+5:00) Mawson">
+                <option value="(GMT+5:00) Moscow+2 - Yekaterinburg">
+                <option value="(GMT+5:00) Tashkent">
+                <option value="(GMT+5:30) Colombo">
+                <option value="(GMT+5:30) India Standard Time">
+                <option value="(GMT+5:45) Kathmandu">
+                <option value="(GMT+6:00) Almaty">
+                <option value="(GMT+6:00) Bishkek">
+                <option value="(GMT+6:00) Chagos">
+                <option value="(GMT+6:00) Dhaka">
+                <option value="(GMT+6:00) Moscow+3 - Omsk">
+                <option value="(GMT+6:00) Thimphu">
+                <option value="(GMT+6:00) Vostok">
+                <option value="(GMT+6:30) Cocos">
+                <option value="(GMT+6:30) Rangoon">
+                <option value="(GMT+7:00) Bangkok">
+                <option value="(GMT+7:00) Christmas">
+                <option value="(GMT+7:00) Davis">
+                <option value="(GMT+7:00) Hanoi">
+                <option value="(GMT+7:00) Hovd">
+                <option value="(GMT+7:00) Jakarta">
+                <option value="(GMT+7:00) Moscow+4 - Krasnoyarsk">
+                <option value="(GMT+8:00) Brunei">
+                <option value="(GMT+8:00) China Time - Beijing">
+                <option value="(GMT+8:00) Choibalsan">
+                <option value="(GMT+8:00) Hong Kong">
+                <option value="(GMT+8:00) Kuala Lumpur">
+                <option value="(GMT+8:00) Macau">
+                <option value="(GMT+8:00) Makassar">
+                <option value="(GMT+8:00) Manila">
+                <option value="(GMT+8:00) Moscow+5 - Irkutsk">
+                <option value="(GMT+8:00) Singapore">
+                <option value="(GMT+8:00) Taipei">
+                <option value="(GMT+8:00) Ulaanbaatar">
+                <option value="(GMT+8:00) Western Time - Perth">
+                <option value="(GMT+8:30) Pyongyang">
+                <option value="(GMT+9:00) Dili">
+                <option value="(GMT+9:00) Jayapura">
+                <option value="(GMT+9:00) Moscow+6 - Yakutsk">
+                <option value="(GMT+9:00) Palau">
+                <option value="(GMT+9:00) Seoul">
+                <option value="(GMT+9:00) Tokyo">
+                <option value="(GMT+9:30) Central Time - Darwin">
+                <option value="(GMT+10:00) Dumont D'Urville">
+                <option value="(GMT+10:00) Eastern Time - Brisbane">
+                <option value="(GMT+10:00) Guam">
+                <option value="(GMT+10:00) Moscow+7 - Vladivostok">
+                <option value="(GMT+10:00) Port Moresby">
+                <option value="(GMT+10:00) Truk">
+                <option value="(GMT+10:30) Central Time - Adelaide">
+                <option value="(GMT+11:00) Casey">
+                <option value="(GMT+11:00) Eastern Time - Hobart">
+                <option value="(GMT+11:00) Eastern Time - Melbourne, Sydney">
+                <option value="(GMT+11:00) Efate">
+                <option value="(GMT+11:00) Guadalcanal">
+                <option value="(GMT+11:00) Kosrae">
+                <option value="(GMT+11:00) Moscow+8 - Magadan">
+                <option value="(GMT+11:00) Norfolk">
+                <option value="(GMT+11:00) Noumea">
+                <option value="(GMT+11:00) Ponape">
+                <option value="(GMT+12:00) Funafuti">
+                <option value="(GMT+12:00) Kwajalein">
+                <option value="(GMT+12:00) Majuro">
+                <option value="(GMT+12:00) Moscow+9 - Petropavlovsk-Kamchatskiy">
+                <option value="(GMT+12:00) Nauru">
+                <option value="(GMT+12:00) Tarawa">
+                <option value="(GMT+12:00) Wake">
+                <option value="(GMT+12:00) Wallis">
+                <option value="(GMT+13:00) Auckland">
+                <option value="(GMT+13:00) Enderbury">
+                <option value="(GMT+13:00) Fakaofo">
+                <option value="(GMT+13:00) Fiji">
+                <option value="(GMT+13:00) Tongatapu">
+                <option value="(GMT+14:00) Apia">
+                <option value="(GMT+14:00) Kiritimati">
+                <option value="(UTC-11:00) Niue">
+                <option value="(UTC-11:00) Pago Pago">
+                <option value="(UTC-10:00) Hawaii Time">
+                <option value="(UTC-10:00) Rarotonga">
+                <option value="(UTC-10:00) Tahiti">
+                <option value="(UTC-9:30) Marquesas">
+                <option value="(UTC-9:00) Alaska Time">
+                <option value="(UTC-9:00) Gambier">
+                <option value="(UTC-8:00) Pacific Time">
+                <option value="(UTC-8:00) Pacific Time - Tijuana">
+                <option value="(UTC-8:00) Pacific Time - Vancouver">
+                <option value="(UTC-8:00) Pacific Time - Whitehorse">
+                <option value="(UTC-8:00) Pitcairn">
+                <option value="(UTC-7:00) Mountain Time">
+                <option value="(UTC-7:00) Mountain Time - Arizona">
+                <option value="(UTC-7:00) Mountain Time - Chihuahua, Mazatlan">
+                <option value="(UTC-7:00) Mountain Time - Dawson Creek">
+                <option value="(UTC-7:00) Mountain Time - Edmonton">
+                <option value="(UTC-7:00) Mountain Time - Hermosillo">
+                <option value="(UTC-7:00) Mountain Time - Yellowknife">
+                <option value="(UTC-6:00) Belize">
+                <option value="(UTC-6:00) Central Time">
+                <option value="(UTC-6:00) Central Time - Mexico City">
+                <option value="(UTC-6:00) Central Time - Regina">
+                <option value="(UTC-6:00) Central Time - Tegucigalpa">
+                <option value="(UTC-6:00) Central Time - Winnipeg">
+                <option value="(UTC-6:00) Costa Rica">
+                <option value="(UTC-6:00) El Salvador">
+                <option value="(UTC-6:00) Galapagos">
+                <option value="(UTC-6:00) Guatemala">
+                <option value="(UTC-6:00) Managua">
+                <option value="(UTC-5:00) America Cancun">
+                <option value="(UTC-5:00) Bogota">
+                <option value="(UTC-5:00) Easter Island">
+                <option value="(UTC-5:00) Eastern Time">
+                <option value="(UTC-5:00) Eastern Time - Iqaluit">
+                <option value="(UTC-5:00) Eastern Time - Toronto">
+                <option value="(UTC-5:00) Guayaquil">
+                <option value="(UTC-5:00) Havana">
+                <option value="(UTC-5:00) Jamaica">
+                <option value="(UTC-5:00) Lima">
+                <option value="(UTC-5:00) Nassau">
+                <option value="(UTC-5:00) Panama">
+                <option value="(UTC-5:00) Port-au-Prince">
+                <option value="(UTC-5:00) Rio Branco">
+                <option value="(UTC-4:00) Atlantic Time - Halifax">
+                <option value="(UTC-4:00) Barbados">
+                <option value="(UTC-4:00) Bermuda">
+                <option value="(UTC-4:00) Boa Vista">
+                <option value="(UTC-4:00) Caracas">
+                <option value="(UTC-4:00) Curacao">
+                <option value="(UTC-4:00) Grand Turk">
+                <option value="(UTC-4:00) Guyana">
+                <option value="(UTC-4:00) La Paz">
+                <option value="(UTC-4:00) Manaus">
+                <option value="(UTC-4:00) Martinique">
+                <option value="(UTC-4:00) Port of Spain">
+                <option value="(UTC-4:00) Porto Velho">
+                <option value="(UTC-4:00) Puerto Rico">
+                <option value="(UTC-4:00) Santo Domingo">
+                <option value="(UTC-4:00) Thule">
+                <option value="(UTC-3:30) Newfoundland Time - St. Johns">
+                <option value="(UTC-3:00) Araguaina">
+                <option value="(UTC-3:00) Asuncion">
+                <option value="(UTC-3:00) Belem">
+                <option value="(UTC-3:00) Buenos Aires">
+                <option value="(UTC-3:00) Campo Grande">
+                <option value="(UTC-3:00) Cayenne">
+                <option value="(UTC-3:00) Cuiaba">
+                <option value="(UTC-3:00) Fortaleza">
+                <option value="(UTC-3:00) Godthab">
+                <option value="(UTC-3:00) Maceio">
+                <option value="(UTC-3:00) Miquelon">
+                <option value="(UTC-3:00) Montevideo">
+                <option value="(UTC-3:00) Palmer">
+                <option value="(UTC-3:00) Paramaribo">
+                <option value="(UTC-3:00) Punta Arenas">
+                <option value="(UTC-3:00) Recife">
+                <option value="(UTC-3:00) Rothera">
+                <option value="(UTC-3:00) Salvador">
+                <option value="(UTC-3:00) Santiago">
+                <option value="(UTC-3:00) Stanley">
+                <option value="(UTC-2:00) Noronha">
+                <option value="(UTC-2:00) Sao Paulo">
+                <option value="(UTC-2:00) South Georgia">
+                <option value="(UTC-1:00) Azores">
+                <option value="(UTC-1:00) Cape Verde">
+                <option value="(UTC-1:00) Scoresbysund">
+                <option value="(UTC+0:00) Abidjan">
+                <option value="(UTC+0:00) Accra">
+                <option value="(UTC+0:00) Bissau">
+                <option value="(UTC+0:00) Canary Islands">
+                <option value="(UTC+0:00) Casablanca">
+                <option value="(UTC+0:00) Danmarkshavn">
+                <option value="(UTC+0:00) Dublin">
+                <option value="(UTC+0:00) El Aaiun">
+                <option value="(UTC+0:00) Faeroe">
+                <option value="(UTC+0:00) UTC (no daylight saving)">
+                <option value="(UTC+0:00) Lisbon">
+                <option value="(UTC+0:00) London">
+                <option value="(UTC+0:00) Monrovia">
+                <option value="(UTC+0:00) Reykjavik">
+                <option value="(UTC+1:00) Algiers">
+                <option value="(UTC+1:00) Amsterdam">
+                <option value="(UTC+1:00) Andorra">
+                <option value="(UTC+1:00) Berlin">
+                <option value="(UTC+1:00) Brussels">
+                <option value="(UTC+1:00) Budapest">
+                <option value="(UTC+1:00) Central European Time - Belgrade">
+                <option value="(UTC+1:00) Central European Time - Prague">
+                <option value="(UTC+1:00) Ceuta">
+                <option value="(UTC+1:00) Copenhagen">
+                <option value="(UTC+1:00) Gibraltar">
+                <option value="(UTC+1:00) Lagos">
+                <option value="(UTC+1:00) Luxembourg">
+                <option value="(UTC+1:00) Madrid">
+                <option value="(UTC+1:00) Malta">
+                <option value="(UTC+1:00) Monaco">
+                <option value="(UTC+1:00) Ndjamena">
+                <option value="(UTC+1:00) Oslo">
+                <option value="(UTC+1:00) Paris">
+                <option value="(UTC+1:00) Rome">
+                <option value="(UTC+1:00) Stockholm">
+                <option value="(UTC+1:00) Tirane">
+                <option value="(UTC+1:00) Tunis">
+                <option value="(UTC+1:00) Vienna">
+                <option value="(UTC+1:00) Warsaw">
+                <option value="(UTC+1:00) Zurich">
+                <option value="(UTC+2:00) Amman">
+                <option value="(UTC+2:00) Athens">
+                <option value="(UTC+2:00) Beirut">
+                <option value="(UTC+2:00) Bucharest">
+                <option value="(UTC+2:00) Cairo">
+                <option value="(UTC+2:00) Chisinau">
+                <option value="(UTC+2:00) Damascus">
+                <option value="(UTC+2:00) Gaza">
+                <option value="(UTC+2:00) Helsinki">
+                <option value="(UTC+2:00) Jerusalem">
+                <option value="(UTC+2:00) Johannesburg">
+                <option value="(UTC+2:00) Khartoum">
+                <option value="(UTC+2:00) Kiev">
+                <option value="(UTC+2:00) Maputo">
+                <option value="(UTC+2:00) Moscow-1 - Kaliningrad">
+                <option value="(UTC+2:00) Nicosia">
+                <option value="(UTC+2:00) Riga">
+                <option value="(UTC+2:00) Sofia">
+                <option value="(UTC+2:00) Tallinn">
+                <option value="(UTC+2:00) Tripoli">
+                <option value="(UTC+2:00) Vilnius">
+                <option value="(UTC+2:00) Windhoek">
+                <option value="(UTC+3:00) Baghdad">
+                <option value="(UTC+3:00) Istanbul">
+                <option value="(UTC+3:00) Minsk">
+                <option value="(UTC+3:00) Moscow+0 - Moscow">
+                <option value="(UTC+3:00) Nairobi">
+                <option value="(UTC+3:00) Qatar">
+                <option value="(UTC+3:00) Riyadh">
+                <option value="(UTC+3:00) Syowa">
+                <option value="(UTC+3:30) Tehran">
+                <option value="(UTC+4:00) Baku">
+                <option value="(UTC+4:00) Dubai">
+                <option value="(UTC+4:00) Mahe">
+                <option value="(UTC+4:00) Mauritius">
+                <option value="(UTC+4:00) Moscow+1 - Samara">
+                <option value="(UTC+4:00) Reunion">
+                <option value="(UTC+4:00) Tbilisi">
+                <option value="(UTC+4:00) Yerevan">
+                <option value="(UTC+4:30) Kabul">
+                <option value="(UTC+5:00) Aqtau">
+                <option value="(UTC+5:00) Aqtobe">
+                <option value="(UTC+5:00) Ashgabat">
+                <option value="(UTC+5:00) Dushanbe">
+                <option value="(UTC+5:00) Karachi">
+                <option value="(UTC+5:00) Kerguelen">
+                <option value="(UTC+5:00) Maldives">
+                <option value="(UTC+5:00) Mawson">
+                <option value="(UTC+5:00) Moscow+2 - Yekaterinburg">
+                <option value="(UTC+5:00) Tashkent">
+                <option value="(UTC+5:30) Colombo">
+                <option value="(UTC+5:30) India Standard Time">
+                <option value="(UTC+5:45) Kathmandu">
+                <option value="(UTC+6:00) Almaty">
+                <option value="(UTC+6:00) Bishkek">
+                <option value="(UTC+6:00) Chagos">
+                <option value="(UTC+6:00) Dhaka">
+                <option value="(UTC+6:00) Moscow+3 - Omsk">
+                <option value="(UTC+6:00) Thimphu">
+                <option value="(UTC+6:00) Vostok">
+                <option value="(UTC+6:30) Cocos">
+                <option value="(UTC+6:30) Rangoon">
+                <option value="(UTC+7:00) Bangkok">
+                <option value="(UTC+7:00) Christmas">
+                <option value="(UTC+7:00) Davis">
+                <option value="(UTC+7:00) Hanoi">
+                <option value="(UTC+7:00) Hovd">
+                <option value="(UTC+7:00) Jakarta">
+                <option value="(UTC+7:00) Moscow+4 - Krasnoyarsk">
+                <option value="(UTC+8:00) Brunei">
+                <option value="(UTC+8:00) China Time - Beijing">
+                <option value="(UTC+8:00) Choibalsan">
+                <option value="(UTC+8:00) Hong Kong">
+                <option value="(UTC+8:00) Kuala Lumpur">
+                <option value="(UTC+8:00) Macau">
+                <option value="(UTC+8:00) Makassar">
+                <option value="(UTC+8:00) Manila">
+                <option value="(UTC+8:00) Moscow+5 - Irkutsk">
+                <option value="(UTC+8:00) Singapore">
+                <option value="(UTC+8:00) Taipei">
+                <option value="(UTC+8:00) Ulaanbaatar">
+                <option value="(UTC+8:00) Western Time - Perth">
+                <option value="(UTC+8:30) Pyongyang">
+                <option value="(UTC+9:00) Dili">
+                <option value="(UTC+9:00) Jayapura">
+                <option value="(UTC+9:00) Moscow+6 - Yakutsk">
+                <option value="(UTC+9:00) Palau">
+                <option value="(UTC+9:00) Seoul">
+                <option value="(UTC+9:00) Tokyo">
+                <option value="(UTC+9:30) Central Time - Darwin">
+                <option value="(UTC+10:00) Dumont D'Urville">
+                <option value="(UTC+10:00) Eastern Time - Brisbane">
+                <option value="(UTC+10:00) Guam">
+                <option value="(UTC+10:00) Moscow+7 - Vladivostok">
+                <option value="(UTC+10:00) Port Moresby">
+                <option value="(UTC+10:00) Truk">
+                <option value="(UTC+10:30) Central Time - Adelaide">
+                <option value="(UTC+11:00) Casey">
+                <option value="(UTC+11:00) Eastern Time - Hobart">
+                <option value="(UTC+11:00) Eastern Time - Melbourne, Sydney">
+                <option value="(UTC+11:00) Efate">
+                <option value="(UTC+11:00) Guadalcanal">
+                <option value="(UTC+11:00) Kosrae">
+                <option value="(UTC+11:00) Moscow+8 - Magadan">
+                <option value="(UTC+11:00) Norfolk">
+                <option value="(UTC+11:00) Noumea">
+                <option value="(UTC+11:00) Ponape">
+                <option value="(UTC+12:00) Funafuti">
+                <option value="(UTC+12:00) Kwajalein">
+                <option value="(UTC+12:00) Majuro">
+                <option value="(UTC+12:00) Moscow+9 - Petropavlovsk-Kamchatskiy">
+                <option value="(UTC+12:00) Nauru">
+                <option value="(UTC+12:00) Tarawa">
+                <option value="(UTC+12:00) Wake">
+                <option value="(UTC+12:00) Wallis">
+                <option value="(UTC+13:00) Auckland">
+                <option value="(UTC+13:00) Enderbury">
+                <option value="(UTC+13:00) Fakaofo">
+                <option value="(UTC+13:00) Fiji">
+                <option value="(UTC+13:00) Tongatapu">
+                <option value="(UTC+14:00) Apia">
+                <option value="(UTC+14:00) Kiritimati">
+              </datalist>
+            <p>
+              <button>Submit request</button>
+              <br>
+              <a class=cancel href=#top>I'm happy with my current solution.</a>
+          </fieldset>
+        </form>
+        <form  id=account-login method=GET action=#login class=authentication>
+          <fieldset role=dialog>
+            <p>
+              <label>
+                Login email
+                <input autofocus required type=email 
+                  maxlength=128
+                  name=email placeholder="major@sec9.neotokyo.go.jp">
+              </label>
+            <p>
+              <label>
+                Login password
+                <input required type=password 
+                  maxlength=128 
+                  name=password placeholder="**********************">
+              </label>
+            <p>
+              <button>Login</button>
+              <a class=cancel href=#top>Not now</a>
+          </fieldset>
+        </form>
+      </header>
+      <main>
+        
+          <section class=content>
+            <section class=introduction tabindex=0>
+              <div class=story>
+                <h1>BrowserBox. Welcome to safe browsing.</h1>
+                <p>
+                  In a world of risks, we offer you the simplest and best browser isolation 
+                  platform. 
+                </p>
+              </div>
+              <div class=graphic>
+                <img src=/images/3rd-party/undraw/security.svg>
+              </div>
+            </section>
+          </section>
+     
+        <div class=wrapper>
+          
+            <section class=content>
+              <section class=introduction tabindex=0>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/securityon.svg>
+                </div>
+                <div class=story>
+                  <h1>BrowserBox. Customer-first security.</h1>
+                  <p>
+                    We put the customer first, and provide the 
+                    most similar experience to browsing on your normal insecure browser, without
+                    the risks. Our fault-tolerant browser-as-a-service infrastructure 
+                    enables the secure and reliable provision of fully managed, 
+                    fully hosted and fully remote cloud browsers, at whatever scale you require.
+                    Our familiar web client looks and feels just like using your regular insecure browser, 
+                    and runs in all modern and legacy platforms, no downloads required, even on mobile.
+                  </p>
+                </div>
+              </section>
+              <section class=protection tabindex=0>
+                <div class=story>
+                  <h1>More private. More secure. More control.</h1>
+                  <p>
+                    BrowserBox never runsany JavaScript, applets, CSS or HTML from the remote page on your machine or network. By totally isolating your infrastructure form the risks of the web, it means that malware, exploits, ransomware, adware and other web risks cannot harm you operations.
+                  </p>
+                </div>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/safe.svg>
+                </div>
+              </section>
+              <section class=security tabindex=0>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/container.svg>
+                </div>
+                <div class=story>
+                  <h1>The highest security. Complete isolation.</h1>
+                  <p>
+                    BrowserBox never runs any remote code on your machine. Ever. We never run any JavaScript, applets, CSS and not even one tag of HTML on your machine that comes from the remote browser. Our platform is the only browser isolation system that can run on any device, and never runs any code on your machine. We provide a fully interactive image of the remote web page, that looks and feels just like browsing on your favorite consumer browser, but without any of the regular risks associated with that. 
+                  </p>
+                </div>
+              </section>
+              <section class=introduction tabindex=0>
+                <hr class=diagonal>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/future.svg>
+                </div>
+                <div class=story>
+                  <h1>What is Browser isolation?</h1>
+                  <p>
+                    Browser isolation is a security practise where you isolate 
+                    your network from the internet. All browsing is conducted over a secure channel, using an isolated, and remote, cloud browser. 
+                  </p>
+                </div>
+              </section>
+              <section class=introduction tabindex=0>
+                <div class=points>
+                  <h1>What is BrowserBox?</h1>
+                  <ul>
+                    <li>Secure browsing, familiar interface. 
+                    <li>Browser isolation vendor
+                    <li>Cloud browser provider
+                    <li>Remote browser product
+                    <li>No install or download required.
+                    <li>Browser-as-a-service
+                  </ul>
+                </div>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/question.svg>
+                </div>
+              </section>
+              <section class=introduction tabindex=0>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/helpfulsign.svg>
+                </div>
+                <div class=story>
+                  <h1>BrowserBox. The difference is the way it works.</h1>
+                  <p>
+                    BrowserBox is just one of many browser isolation vendors. You should pick the best vendor for your particular needs. BrowserBox focuses on providing excellent customer support, and the most similar user interface and experience to a regular insecure browser, without the risks. 
+                  </p>
+                </div>
+              </section>
+              <section class=security tabindex=0>
+                <div class=points>
+                  <h1>How does BrowserBox protect my privacy and security?</h1>
+                  <ul>
+                    <li>Remote cloud browsers
+                    <li>Complete browser isolation
+                    <li>Threat containment
+                    <li>All execution happens in remote DMZ
+                    <li>Codeless "interactive image" technology
+                    <li>Zero trust security
+                    <li>No JavaScript, cookies, HTML/CSS from the remote web page are sent to you, ever.
+                  </ul>
+                </div>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/privacy.svg>
+                </div>
+              </section>
+              <section class=introduction tabindex=0>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/undraw_hologram_fjwp.svg>
+                </div>
+                <div class=story>
+                  <h1>How does browser isolation help secure my network?</h1>
+                  <p>
+                    Our full isolation system means never is any JavaScript code, images, HTML, CSS or other assets from a remote page sent to you. You interact with the internet via a secure layer, similar to a scientist doing experiments in a fume hood or hazmat isolation in a biological safety cabinet. The principle is very similar with our total isolation system ensuring a constant "negative pressure" from the web to you. Meaning that no web content actually reaches you, except via a holographic image of that content that is fully interactive yet totally inert. 
+                  </p>
+                </div>
+              </section>
+              <section class=protection tabindex=0>
+                <div class=points>
+                  <h1>What does BrowserBox stop?</h1>
+                  <ul>
+                    <li>Zero-day exploits
+                    <li>Malicious websites and webapps
+                    <li>Browser exploitation
+                    <li>Malware and viruses
+                    <li>Device rootkits
+                    <li>Adware and tracking
+                    <li>Ransomware
+                  </ul>
+                </div>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/cleanup.svg>
+                </div>
+              </section>
+              <section class=reliability tabindex=0>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/mobilebrowsers.svg>
+                </div>
+                <div class=story>
+                  <h1>Looks and feels just like a normal browser.</h1>
+                  <p>
+                    BrowserBox provides a fully interactive image of the remote web page, that looks and feels just like browsing on your favorite consumer browser, but without any of the regular risks associated with that. You can easily open new tabs, watch video (at a reduced frame rate), download files and even play audio.
+                  </p>
+                </div>
+              </section>
+              <section class=reliability tabindex=0>
+                <div class=points>
+                  <h1>How high-maintenance is BrowserBox?</h1>
+                  <ul>
+                    <li>Fully managed
+                    <li>Fully hosted
+                    <li>Completely familiar browser interface
+                    <li>Zero or minimal training required
+                    <li>Per-seat, subscription pricing
+                  </ul>
+                </div>
+                <div class=graphic>
+                  <img src=/images/3rd-party/undraw/chill.svg>
+                </div>
+              </section>
+              <section class=cta>
+                <a href=#membership-application class="register toggle-opener">
+                  <span class=verbose-name>Apply for Membership</span> Now
+                </a>
+              </section>
+            </section>
+  
+          <footer>
+            <author> 
+              <aside class=logo>
+                <h1>
+                  <span class=browser>
+                    <span class=inner>
+                      Browser
+                    </span>
+                  </span>
+                  <span class=gap>
+                    <span class=inner>
+                      Gap
+                    </span>
+                  </span>
+                </h1>
+              </aside>
+              <p>
+                The simplest and best browser isolation 
+                platform. We provide completely isolated, fully managed,
+                fully hosted, remote cloud browsers, via our fault-tolerant
+                browser-as-a-service infrastructure.
+              </p>
+              <p>
+                <cite>
+                  Copyright &copy; 2019
+                  The Dosyago Corporation, 
+                  All rights reserved.
+                </cite>
+              </p>
+            </author>
+            <nav>
+              <ul>
+                <h1>Need help?</h1>
+                <li>
+                  <a href=#support>
+                    Support room
+                  </a>
+                </li>
+                <li>
+                  <a href=#tickets>
+                    Open a ticket
+                  </a>
+                </li>
+                <li>
+                  <a href=#contact>
+                    Training & Tutorials
+                  </a>
+                </li>
+              </ul>
+              <ul>
+                <h1>Company</h1>
+                <li>
+                  <a href=#about>
+                    About us
+                  </a>
+                </li>
+                <li>
+                  <a href=#careers>
+                    Careers
+                  </a>
+                </li>
+                <li>
+                  <a href=#contact>
+                    Contact
+                  </a>
+                </li>
+              </ul>
+              <ul>
+                <h1>Legal Room</h1>
+                <li>
+                  <a href=#terms>
+                    Terms of service
+                  </a>
+                </li>
+                <li>
+                  <a href=#privacy>
+                    Privacy policy
+                  </a>
+                </li>
+                <li>
+                  <a href=#security>
+                    Security
+                  </a>
+                </li>
+              </ul>
+            </nav>
+            <a id=authentication href=#account-login class="authenticate toggle-opener">
+                    Member&nbsp;Login
+                  </a>
+          </footer>
+        </div>
+      </main>
+  

@@ -1,0 +1,58 @@
+@import url("themes/blank.css");
+
+aside.panel {
+  position: absolute;
+  z-index: 12000;
+  background: var(--bg);
+  color: var(--fg);
+  border: thin solid var(--contrast) ;
+  width: min(80vw, 200px);
+  max-height: min(85vw, 300px);
+  overflow-y: auto;
+  padding: 0.3em 0 0.5em;
+  right: 1px;
+  box-shadow: 1px 1px 1px var(--fg);
+}
+
+aside.panel.visible {
+  display: block;
+}
+
+aside.panel:not(.visible) {
+  display: none;
+}
+
+ul {
+  margin: 0;
+}
+
+ul li {
+  user-select: none;
+  cursor: default;
+  display: flex;
+  box-sizing: border-box;
+  width: min(80vw, 200px);
+  padding: 0 0.75em;
+  justify-content: space-between;
+  align-items: center;
+}
+
+ul li.all-link {
+  margin-bottom: 0.2em;
+}
+
+ul li:hover {
+  background: var(--contrast);
+}
+
+ul li > a {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: smaller;
+}
+
+ul li > button {
+  margin-right: 0;
+  min-width: 1.625em;
+}

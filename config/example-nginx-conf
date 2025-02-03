@@ -1,0 +1,55 @@
+# Example Nginx Config
+
+# The config below is used for the https://lon.cloudtabs.net server's reverse proxy. We map ports on the proxied server to domains like
+# p${port}.lon.cloudtabs.net on the reverse proxy. This ensures that BrowserBox can work on networks that restrict non-standard ports.
+
+# A file like below should go into /etc/nginx/sites-available/${domain} with a link from 
+# that file to /etc/nginx/sites-available/${domain}
+
+# You also require a wildcard TLS certificate for "*.${domain}". In the below example, LetsEncrypt is used.
+
+server {
+  listen 80;
+  server_name ~^p(?<port>\d+)\.lon\.cloudtabs\.net$;
+  return 301 https://$host$request_uri;
+}
+
+server {
+  listen 443 ssl;
+  server_name ~^p(?<port>\d+)\.lon\.cloudtabs\.net$;
+
+  ssl_certificate /etc/letsencrypt/live/lon.cloudtabs.net/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/lon.cloudtabs.net/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_prefer_server_ciphers on;
+
+  # Increase timeout settings for WebSocket connections
+  keepalive_timeout 70s;
+  proxy_connect_timeout 7s;
+  proxy_send_timeout 120s;
+  proxy_read_timeout 120s;
+  send_timeout 120s;
+
+  # Disable proxy buffering
+  proxy_buffering off;
+
+  location / {
+    resolver 8.8.8.8 8.8.4.4 valid=300s;  # Google's public DNS servers
+    resolver_timeout 5s;
+
+    set $backend "https://lon.cloudtabs.net:$port";  # Replace with your backend's hostname
+
+    proxy_pass $backend;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+
+
+
+    # Error logging for debugging
+    error_log /var/log/nginx/proxy_error.log debug;
+  }
+}
+

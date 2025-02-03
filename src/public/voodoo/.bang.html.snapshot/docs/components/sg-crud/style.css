@@ -1,0 +1,56 @@
+
+.layout {
+  --gap: 0.75rem;
+  display: grid;
+  grid-gap: var(--gap);
+  grid-template-areas: 
+    "filter-box ."
+    "names-list edit"
+    "commit commit";
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: auto auto;
+  padding: 0.25rem;
+}
+
+.filter {
+  grid-area: filter-box;
+}
+
+[name="names"] {
+  grid-area: names-list;
+  min-height: 150px;
+  max-width: 450px;
+  cursor: pointer;
+}
+
+fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+[name="edit"] {
+  grid-area: edit;
+  display: flex;
+  flex-direction: column;
+}
+
+[name="edit"] label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+[name="edit"] label input {
+  margin-left: 0.25rem;
+}
+
+[name="commit"] {
+  grid-area: commit;
+}
+
+[name="commit"] button {
+  margin-right: var(--gap);
+  padding: 0 var(--gap);
+}
+

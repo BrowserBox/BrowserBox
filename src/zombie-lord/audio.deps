@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+sudo $APT install -y ffmpeg

@@ -1,0 +1,8 @@
+.layout {
+  display: flex;
+  flex-direction: column;
+}
+
+input:invalid {
+  background: tomato;
+}

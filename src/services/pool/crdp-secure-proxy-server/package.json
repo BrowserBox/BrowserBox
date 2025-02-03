@@ -1,0 +1,21 @@
+{
+  "name": "@browserbox/remote-devtools",
+  "type": "module",
+  "version": "8.1.0",
+  "description": "Serve and proxy Chrome's devtools front-end securely and remotely",
+  "main": "index.js",
+  "scripts": {
+    "test": "node-dev index.js 8003 xxxcookie token2"
+  },
+  "author": "@dosy",
+  "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
+  "dependencies": {
+    "compression": "^1.7.4",
+    "cookie-parser": "latest",
+    "exit-on-epipe": "^1.0.1",
+    "express": "latest",
+    "express-rate-limit": "^7.2.0",
+    "is-docker": "^3.0.0",
+    "ws": "^7.5.4"
+  }
+}

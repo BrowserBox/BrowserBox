@@ -1,0 +1,2 @@
+
+sudo $APT install -y pulseaudio pulseaudio-utils lame

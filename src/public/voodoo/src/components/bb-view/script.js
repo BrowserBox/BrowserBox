@@ -1,0 +1,3 @@
+class BBView extends Base {
+
+}

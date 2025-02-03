@@ -1,0 +1,35 @@
+{
+  "name": "@dosy-private/socket-puppet-service",
+  "version": "1.2.3",
+  "private": true,
+  "type": "module",
+  "description": "SocketPuppet service",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "nodemon src/server.js 8080 human",
+    "start": "node src/server.js 443"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crisdosyago/socket-puppet-service.git"
+  },
+  "keywords": [
+    "socketpuppet",
+    "back-end",
+    "service"
+  ],
+  "author": "@dosy",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "bugs": {
+    "url": "https://github.com/crisdosyago/socket-puppet-service/issues"
+  },
+  "homepage": "https://github.com/crisdosyago/socket-puppet-service#readme",
+  "dependencies": {
+    "body-parser": "latest",
+    "cookie-parser": "latest",
+    "cors": "latest",
+    "express": "latest",
+    "express-basic-auth": "latest",
+    "helmet": "latest"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@dosy-private/socket-puppet-landing",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "landing page for socket puppet demo and signup",
+  "main": "index.html",
+  "scripts": {
+    "test": "npx serve -p 8080"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/crisdosyago/socket-puppet-landing.git"
+  },
+  "keywords": [
+    "socketpuppet"
+  ],
+  "author": "@dosy",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "bugs": {
+    "url": "https://github.com/crisdosyago/socket-puppet-landing/issues"
+  },
+  "homepage": "https://github.com/crisdosyago/socket-puppet-landing#readme"
+}

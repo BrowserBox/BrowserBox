@@ -1,0 +1,11 @@
+@import url("themes/blank.css");
+
+textarea:focus {
+  outline: thin solid dodgerblue;
+}
+
+article.copy textarea {
+  max-width: 80vw;
+  max-height: 80vh;
+  min-height: 3em;
+}

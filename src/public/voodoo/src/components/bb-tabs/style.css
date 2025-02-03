@@ -1,0 +1,14 @@
+@import url("themes/blank.css");
+
+nav.targets {
+  overflow-x: auto;
+  overflow-y: visible;
+  margin: 0;
+  font-size: 0; 
+
+  & bb-select-tab.active {
+    border-top: medium solid var(--ultra-contrast);
+  }
+}
+
+

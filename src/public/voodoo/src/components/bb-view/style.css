@@ -1,0 +1,15 @@
+@import url("themes/blank.css");
+
+audio#audio, video#audio {
+  display: none;
+}
+
+canvas {
+  filter: contrast(1.0317) saturate(1.309);
+  image-rendering: optimizequality;
+  image-rendering: smooth;
+  image-rendering: high-quality;
+  touch-action: none;
+}
+
+

@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# <UDF name="useremail" label="signature email: I agree to the T&Cs" example="jcitizen@website.net" />
+# <UDF name="hostname" label="hostname:  FQDN you will point to this host in your DNS." example="hello.example.com" />
+# <UDF name="token" label="Token: Login with HOSTNAME:8080/login?token=TOKEN" />
+# <UDF name="install_doc_viewer" label="Install doc viewer for PDFs? Takes longer" oneOf="true,false" default="false" />
+# <UDF name="understanding" label="I will open ports tcp:8078-8082 and add DNS A record" oneOf="true,false" default="true" />
+
+set -x
+
+# Function to determine the Linux Distribution
+get_distro() {
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    echo "$ID"
+  else
+    echo "Distribution not supported" >&2
+    shutdown now &
+    exit 1
+  fi
+}
+
+signature="yes"
+# Check if essential fields are present
+if [ -z "$HOSTNAME" ] || [ -z "$USEREMAIL" ]; then
+  echo "Both 'HOSTNAME' and 'USEREMAIL' are required to proceed." >&2
+  shutdown now &
+  exit 1
+fi
+
+# Check if the user has agreed to the terms and conditions
+if [ "$signature" != "yes" ]; then
+  echo "You must agree to the terms and conditions to use this StackScript." >&2
+  shutdown now &
+  exit 1
+fi
+
+sleep 15
+
+# Update and install git non-interactively
+distro=$(get_distro)
+case $distro in
+  debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
+    export DEBIAN_FRONTEND=noninteractive
+    export NEEDRESTART_SUSPEND=1
+    export NEEDRESTART_MODE=a
+    apt-get update && apt-get -y upgrade
+    apt-get install -y git
+    ;;
+  centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
+    yum update -y
+    yum install -y git
+    ;;
+  *)
+    echo "Unsupported distribution: $distro"
+    shutdown now & 
+    exit 1
+    ;;
+esac
+
+# Function to add a user non-interactively
+add_user() {
+  local username=$1
+  local distro=$(get_distro)
+
+  case $distro in
+    debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
+      adduser --gecos "" --disabled-password "$username"
+      ;;
+    centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
+      adduser "$username"
+      passwd -d "$username"
+      ;;
+    *)
+      echo "Unsupported distribution: $distro" >&2
+      return 1
+      ;;
+  esac
+}
+
+# Create a new user and add to sudoers
+username="pro"
+if ! id "$username" &>/dev/null; then
+  add_user "$username"
+  echo "$username ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/$username
+  chmod 0440 /etc/sudoers.d/$username
+fi
+
+# Switch to the new user and run the scripts
+su - "$username" <<EOF
+  cd "/home/${username}" || cd "$HOME"
+  git clone https://github.com/BrowserBox/BrowserBox.git
+  cd BrowserBox
+  ./deploy-scripts/wait_for_hostname.sh "$HOSTNAME"
+  export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
+  yes | ./deploy-scripts/global_install.sh "$HOSTNAME" "$USEREMAIL"
+  if [[ -z "$TOKEN" ]]; then
+    setup_bbpro --port 8080 
+  else
+    setup_bbpro --port 8080 --token "$TOKEN"
+  fi
+  bbpro
+EOF

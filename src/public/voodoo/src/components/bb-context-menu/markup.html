@@ -1,0 +1,27 @@
+<aside class=context-menu
+  role=menu
+  bond=${_top.contextMenuBondTasks}
+  contextmenu=${e => (
+    /* don't trigger within the menu */
+    !DEBUG.allowContextMenuOnContextMenu && (
+      e.preventDefault(),
+      e.stopPropagation()
+    )
+  )}
+  ${DEBUG.debugContextMenu ? 
+    (() => {
+      console.log('Context menu rendered', {_self, _host});
+      return '';
+    })()
+    :
+    ''
+  }
+>
+  <menu>
+    ${_host.menuItems.map(({title,func,hr}, index) => F`${{key:`menuItem${index}`}}
+      ${hr ? F`${{key:`hr${index}`}}<hr>` : ''}
+      <li click="${func.name}(event)">${title}</li>
+    `)}
+  </menu>
+  <span id=load-test></span>
+</aside>

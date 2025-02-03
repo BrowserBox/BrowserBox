@@ -1,0 +1,23 @@
+{
+  "name": "@browserbox/deploy-tools",
+  "type": "module",
+  "version": "8.1.0",
+  "description": "Tools to assist in deploying BrowserBox at scale",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "bash ./scripts/test.sh",
+    "start": "bash ./scripts/start.sh"
+  },
+  "author": "@dosy",
+  "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
+  "dependencies": {
+    "body-parser": "^1.20.1",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.18.2",
+    "express-basic-auth": "^1.2.1",
+    "express-rate-limit": "^6.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}

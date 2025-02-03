@@ -1,0 +1,5 @@
+- clear history by deleting the relevant directory of user profile directory
+- wipe everyting by deleting the relevant direcotry of user profile directory
+- put a "blank slate" or "bin" next to the browser on button. This will wipe the user profile directory totally clean. Actually it will delete that user from that machine. We throw a confirm up. Then delete that user from the selected machine. "There is no recovery". 
+- create a "print" dialog to intercept the window.print function or beforeprint event. Throw up our own config modal and use printToPDF (ensure secure so no active scripts in pdf).
+

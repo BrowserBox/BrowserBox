@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="favicon.ico" />
+    <title>Safari Permission Request Page</title>
+    <link rel="stylesheet" href="/styleSPL.css" />
+    <script src="/scriptSPL.js" defer></script>
+  </head>
+  <body>
+    <div class=step1>
+      <form method=GET action=/SPLgenerate target=_blank>
+        <p class=message>
+          Safari needs to generate a unique code to log you in securely.
+        </p>
+        <p>
+          <button id=generator>Generate</button>
+        </p>
+      </form>
+    </div>
+    <div class=step2>
+      <p class=message>
+        Safari needs enhanced permissions to login to this application. 
+        <br>
+        Enable them now.
+      </p>
+      <p>
+        <button id=enabler>Enable</button>
+      </p>
+    </div>
+  </body>
+</html>
+

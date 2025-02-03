@@ -1,0 +1,339 @@
+language,filename,blank,comment,code,"github.com/AlDanial/cloc v 1.81  T=0.36 s (925.2 files/s, 112451.7 lines/s)"
+JavaScript,./typetests/inject.js,160,631,10875
+JavaScript,./typetests/server.js,4,178,3136
+HTML,./public/save.html,6,0,1180
+JavaScript,./plugins/appminifier/injections.js,58,28,716
+JavaScript,./public/voodoo/src/constructor.js,107,66,698
+JavaScript,./zombie-lord/connection.js,65,65,682
+JavaScript,./public/voodoo/src/styles.js,111,37,645
+JavaScript,./public/translateVoodooCRDP.js,12,26,612
+JavaScript,./public/voodoo/src/eventQueue.js,42,34,483
+HTML,./public/pages/legal-room/terms.html,49,3,406
+HTML,./public/pages/case-study/uk-corporate-website-malware-attack.html,6,3,390
+HTML,./public/pages/five-elements-technology-reading-room.html,6,3,385
+HTML,./public/pages/per-seat-subscription-pricing.html,6,3,380
+HTML,./public/pages/legal-room/privacy.html,15,3,375
+HTML,./public/pages/remote-cloud-browser-service.html,6,3,371
+HTML,./public/pages/legal-room/security-responsible-vulernability-disclosure-policy.html,6,3,356
+HTML,./public/pages/legal-room/security-responsible-vulnerability-disclosure-policy.html,6,3,354
+HTML,./public/pages/tutorials-and-support-reading-room.html,6,3,352
+HTML,./public/pages/about-browsergap.html,6,3,348
+HTML,./public/pages/document-reading-room/history-of-browser-gap.html,6,3,343
+HTML,./public/pages/document-reading-room/browser-gap-an-overview-of-features.html,7,3,329
+HTML,./public/pages/document-reading-room/threats-facing-the-web-user.html,7,3,329
+JavaScript,./public/pages/boilerplate.js,0,0,323
+JavaScript,./public/voodoo/src/subviews/contextMenu.js,25,57,322
+TypeScript,./zombie-lord/custom-launcher/src/chrome-launcher.ts,58,24,293
+JavaScript,./ws-server.js,32,7,291
+JavaScript,./public/data/timezones.js,2,38,288
+JavaScript,./public/plugins/appminifier/translateAppminifierCRDP.js,14,18,281
+JavaScript,./zombie-lord/custom-launcher/dist/chrome-launcher.js,1,27,265
+HTML,./public/index.html,23,0,264
+JavaScript,./public/voodoo/src/subviews/other.js,24,5,263
+JavaScript,./public/kbd.js,2,2,251
+JavaScript,./public/voodoo/src/view.js,22,17,250
+JavaScript,./zombie-lord/injections/pageContext/botDetectionEvasions.js,29,33,250
+JavaScript,./public/plugins/demo/treeUpdate.js,23,10,227
+JavaScript,./public/plugins/appminifier/scripts/treeUpdate.js,23,10,227
+JavaScript,./public/voodoo/src/transformEvent.js,15,8,219
+JavaScript,./zombie-lord/controller.js,18,19,216
+JavaScript,./public/voodoo/src/subviews/controls.js,14,29,189
+CSS,./public/old/styles/main.css,41,23,188
+HTML,./public/pages/demos/point-field-demo.html,18,0,187
+JavaScript,./zombie-lord/custom-launcher/dist/chrome-finder.js,0,28,184
+TypeScript,./zombie-lord/custom-launcher/src/chrome-finder.ts,41,27,183
+JavaScript,./public/landing.js,1,0,178
+CSS,./public/style.css,33,7,145
+JavaScript,./zombie-lord/screenShots.js,14,2,141
+TypeScript,./zombie-lord/custom-launcher/test/chrome-launcher-test.ts,33,7,139
+CSS,./public/plugins/appminifier/styles/oldstyle.css,34,11,131
+JavaScript,./public/serviceWorker.js,23,4,126
+Markdown,./zombie-lord/custom-launcher/README.md,52,0,122
+JavaScript,./zombie-lord/custom-launcher/dist/utils.js,0,7,111
+Markdown,./zombie-lord/custom-launcher/docs/chrome-flags-for-tools.md,39,0,108
+Markdown,./zombie-lord/custom-launcher/changelog.md,19,0,104
+CSS,./public/plugins/demo/styles/styletidyup.css,27,2,104
+JavaScript,./public/voodoo/src/handlers/demo.js,6,0,101
+JavaScript,./public/pages/legal-room/terms.js,43,0,99
+JavaScript,./server.js,13,8,99
+JavaScript,./public/plugins/demo/createListener.js,3,9,97
+JavaScript,./public/plugins/appminifier/scripts/createListener.js,3,9,97
+JavaScript,./public/plugins/projector/scripts/createListener.js,4,9,97
+JavaScript,./public/plugins/demo/translateAppminifierCRDP.js,13,1,96
+JavaScript,./public/voodoo/src/subviews/pluginsMenu.js,2,1,95
+JavaScript,./public/voodoo/src/pluginsMenu.js,2,0,95
+JavaScript,./zombie-lord/launcher.js,8,2,91
+JavaScript,./public/plugins/appminifier/page/listen.js,11,3,83
+TypeScript,./zombie-lord/custom-launcher/src/utils.ts,18,6,82
+JavaScript,./public/pages/case-study/ukCorpWebCaseStudy.js,0,0,82
+JavaScript,./public/pages/fiveElements.js,0,0,77
+JavaScript,./zombie-lord/newtab/overrideNewtab.js,9,9,77
+CSS,./public/styles/typesetting.css,22,1,76
+JavaScript,./zombie-lord/demoblocking/blockSites.js,8,6,75
+JavaScript,./public/voodoo/src/subviews/omniBox.js,5,1,74
+CSS,./public/styles/logo.css,12,15,73
+JavaScript,./parec-server/index.js,16,13,72
+JavaScript,./public/pages/pricing.js,0,0,72
+CSS,./public/plugins/demo/styles/basic.css,12,0,70
+TypeScript,./zombie-lord/custom-launcher/dist/chrome-launcher.d.ts,0,0,69
+JavaScript,./public/render_static.js,11,9,68
+JavaScript,./public/pages/legal-room/privacy.js,9,0,68
+JavaScript,./plugins/projector/injections.js,11,2,68
+JavaScript,./public/voodoo/src/common.js,13,3,68
+JavaScript,./public/pages/readingRoom.js,0,0,66
+CSS,./public/styles/theme.css,9,11,66
+CSS,./public/styles/main.css,18,0,66
+JavaScript,./public/plugins/appminifier/installPlugin.js,12,8,65
+Markdown,./README.md,44,0,65
+JavaScript,./zombie-lord/injections/scrollNotify.js,7,9,63
+JavaScript,./public/pages/cloudBrowsers.js,0,0,63
+JavaScript,./public/plugins/appminifier/page/serializeEvent.js,16,0,61
+CSS,./public/styles/colors.css,19,6,60
+JavaScript,./zombie-lord/injections/selectDropdownEvents.js,13,15,59
+Markdown,./CODE_OF_CONDUCT.md,19,0,57
+JavaScript,./zombie-lord/injections/keysCanInput.js,9,11,56
+JavaScript,./public/voodoo/index.js,10,3,54
+JavaScript,./spdy-server.js,17,0,54
+JavaScript,./zombie-lord/injections/favicon.js,5,2,54
+JavaScript,./public/plugins/projector/translateProjectorCRDP.js,4,1,51
+JavaScript,./zombie-lord/adblocking/blockAds.js,3,2,50
+JavaScript,./public/plugins/projector/installPlugin.js,10,11,50
+JavaScript,./public/voodoo/src/subviews/tabList.js,4,0,49
+HTML,./public/factory.html,0,0,49
+HTML,./public/custom.html,0,0,49
+JavaScript,./public/pages/legal-room/security.js,0,0,47
+JavaScript,./zombie-lord/injections/elementInfo.js,7,3,47
+JavaScript,./public/plugins/demo/listen.js,1,1,45
+JavaScript,./public/pages/training.js,0,0,44
+JavaScript,./public/voodoo/src/handlers/targetInfo.js,3,5,43
+Markdown,./public/voodoo/README.md,17,0,42
+HTML,./public/signup.html,0,0,42
+JavaScript,./public/plugins/appminifier/page/exceptions.js,7,0,41
+JavaScript,./public/plugins/demo/installPlugin.js,9,5,41
+JavaScript,./public/pages/about.js,0,0,40
+CSS,./public/plugins/appminifier/styles/styletidyup.css,9,0,40
+CSS,./public/styles/header.css,8,3,40
+CSS,./public/styles/backgrounds.css,8,4,39
+HTML,./public/image.html,0,0,39
+JavaScript,./public/plugins/appminifier/page/helpers.js,5,0,38
+CSS,./public/styles/z-stack.css,14,1,38
+HTML,./public/old/pages/demos/lottery.html,1,0,37
+HTML,./public/pages/demos/lottery.html,1,0,37
+CSS,./public/styles/register-form.css,8,2,37
+JavaScript,./public/pages/document-reading-room/history.js,0,0,35
+JavaScript,./sm.js,5,3,34
+CSS,./public/styles/auth-form.css,9,2,34
+JavaScript,./common.js,9,2,34
+TypeScript,./zombie-lord/custom-launcher/dist/utils.d.ts,0,0,33
+JavaScript,./zombie-lord/adblocking/blockedResponse.js,4,0,31
+Bourne Shell,./zombie-lord/start_chrome.sh,10,25,31
+Markdown,./.github/ISSUE_TEMPLATE/bug_report.md,8,0,30
+JavaScript,./rollup.config.js,1,0,30
+JavaScript,./public/plugins/appminifier/page/listeners/scroll.js,2,0,29
+Bourne Shell,./bg_frb_setup.sh,1,1,29
+JavaScript,./public/voodoo/src/subviews/loadingIndicator.js,6,0,29
+JavaScript,./public/plugins/appminifier/page/listeners/hash.js,4,4,28
+Markdown,./parec-server/README.md,14,0,28
+JavaScript,./zombie-lord/custom-launcher/manual-chrome-launcher.js,9,15,28
+JavaScript,./public/voodoo/src/handlers/keysCanInput.js,1,0,27
+JavaScript,./public/error_catchers.js,7,2,27
+JavaScript,./public/plugins/projector/scripts/treeUpdate.js,15,136,26
+CSS,./public/styles/footer.css,6,1,25
+YAML,./zombie-lord/custom-launcher/.appveyor.yml,7,5,25
+Bourne Shell,./aws-yum-installzanj.sh,0,2,24
+YAML,./zombie-lord/custom-launcher/.travis.yml,0,0,24
+JavaScript,./public/voodoo/src/subviews/bandwidthIndicator.js,3,0,24
+JavaScript,./zombie-lord/injections/textComposition.js,1,6,23
+Bourne Shell,./zombie-lord/scripts/get_download_view_url.sh,6,3,23
+HTML,./public/spdy.html,0,9,22
+JavaScript,./public/pages/document-reading-room/features.js,1,0,21
+TypeScript,./zombie-lord/custom-launcher/test/launch-signature-test.ts,6,5,21
+JavaScript,./public/pages/document-reading-room/threats.js,1,0,21
+JavaScript,./public/scripts/populateHonorifics.js,8,2,21
+HTML,./public/pages/demos/logo.html,0,0,20
+JavaScript,./public/plugins/demo/page.js,0,0,20
+JavaScript,./public/voodoo/src/subviews/pluginsMenuButton.js,5,2,20
+TypeScript,./zombie-lord/custom-launcher/test/utils-test.ts,4,15,20
+CSS,./public/styles/content.css,6,1,19
+JavaScript,./public/plugins/appminifier/page/listeners/focus.js,4,4,19
+JavaScript,./public/voodoo/src/handlers/favicon.js,4,0,19
+HTML,./public/plugins/appminifier/index.html,1,6,19
+JavaScript,./public/plugins/demo/programmaticClickIntervention.js,1,0,18
+CSS,./public/styles/fonts.css,4,1,18
+JavaScript,./zombie-lord/custom-launcher/dist/flags.js,0,20,17
+JavaScript,./zombie-lord/demoblocking/blockedResponse.js,3,0,16
+TypeScript,./zombie-lord/custom-launcher/src/flags.ts,1,19,16
+Bourne Shell,./zombie-lord/custom-launcher/scripts/download-chrome.sh,5,6,15
+HTML,./public/plugins/demo/index.html,1,0,15
+JavaScript,./public/voodoo/src/handlers/loadingIndicator.js,2,0,15
+Markdown,./.github/ISSUE_TEMPLATE/feature_request.md,5,0,15
+JavaScript,./public/voodoo/src/handlers/selectInput.js,2,2,15
+JavaScript,./zombie-lord/custom-launcher/dist/random-port.js,0,9,15
+JavaScript,./public/voodoo/src/handlers/elementInfo.js,1,0,15
+JavaScript,./public/old/scripts/currentPageAnchor.js,2,2,15
+Markdown,./remote-browser-isolation.md,14,0,15
+JavaScript,./public/scripts/currentPageAnchor.js,2,4,15
+JavaScript,./public/prod/ask-before-unload.js,2,0,14
+JavaScript,./zombie-lord/newtab/newtabResponse.js,3,0,14
+TypeScript,./zombie-lord/custom-launcher/src/random-port.ts,2,8,14
+Bourne Shell,./setup_machine.sh,1,0,13
+Bourne Shell,./zombie-lord/custom-launcher/test/check-formatting.sh,2,0,13
+JavaScript,./zombie-lord/injections/.eslintrc.js,0,0,13
+Dockerfile,./Dockerfile,2,0,13
+CSS,./public/styles/document.css,1,0,13
+JavaScript,./.eslintrc.js,0,0,13
+Bourne Shell,./fullinstall.sh,10,2,12
+HTML,./public/plugins/appminifier/bundle.html,1,6,12
+JavaScript,./public/start-demo-app.js,2,0,12
+XML,./public/sitemap.xml,2,1,12 
+JavaScript,./public/dist-start.js,2,0,12
+CSS,./public/styles/elements.css,4,1,12
+JavaScript,./public/getAPI.js,0,0,12
+JavaScript,./public/image-start-app.js,2,0,11
+JavaScript,./zombie-lord/custom-launcher/compiled-check.js,2,0,11
+HTML,./public/plugins/projector/index.html,1,0,11
+JavaScript,./public/plugins/demo/stripe.js,0,0,11
+JavaScript,./public/custom-start-app.js,2,0,11
+Bourne Shell,./test.sh,3,0,11
+CSS,./public/styles/points.css,3,1,11
+JavaScript,./zombie-lord/adblocking/blocking.js,1,3,11
+JavaScript,./public/canvas-start-app.js,2,0,11
+JavaScript,./public/factory-start-app.js,2,0,11
+JavaScript,./public/prod/setup-service-worker.js,2,0,11
+Markdown,./SECURITY.md,7,0,10
+TypeScript,./zombie-lord/custom-launcher/test/random-port-test.ts,2,16,10
+CSS,./public/styles/form.css,2,1,10
+Bourne Shell,./clean.sh,3,0,10
+Bourne Shell,./gglint.sh,2,0,9
+Bourne Shell,./install.sh,0,0,9
+JavaScript,./public/voodoo/src/subviews/index.js,0,0,9
+Bourne Shell,./public/voodoo/asset-imports/nhsuk-icons/import.sh,3,0,9
+Bourne Shell,./lw.sh,3,0,9
+JavaScript,./public/plugins/demo/doingit.js,0,0,8
+CSS,./public/plugins/demo/styles/darkmode.css,1,0,8
+Bourne Shell,./postinstall.sh,4,6,8
+Bourne Shell,./zombie-lord/monitor.sh,3,0,8
+Bourne Shell,./upgrade.sh,4,6,8
+JavaScript,./public/pages/index.js,0,0,8
+CSS,./public/styles/graphic.css,2,1,8
+Markdown,./zombie-lord/README.md,11,0,8
+CSS,./public/plugins/demo/styles/geocitiesmode.css,1,0,7
+Bourne Shell,./zombie-lord/cgroup_create.sh,5,5,7
+JavaScript,./zombie-lord/api.js,2,0,7
+JavaScript,./args.js,0,0,6
+JavaScript,./zombie-lord/custom-launcher/dist/index.js,0,1,6
+JavaScript,./public/plugins/appminifier/am_start.js,3,0,6
+JavaScript,./public/meta.js,0,0,5
+Bourne Shell,./public/test.sh,2,1,5
+JavaScript,./zombie-lord/demoblocking/whitelist.js,1,0,5
+Bourne Shell,./zombie-lord/dlchrome.sh,1,2,5
+JavaScript,./public/voodoo/src/subviews/copyModal.js,2,1,5
+Bourne Shell,./tsc-check.sh,2,0,5
+Bourne Shell,./run_docker.sh,1,0,5
+Bourne Shell,./public/voodoo/import-assets.sh,3,0,5
+Bourne Shell,./make_bundle.sh,3,0,5
+JavaScript,./public/index.js,1,0,4
+TypeScript,./zombie-lord/custom-launcher/dist/chrome-finder.d.ts,0,6,4
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-cross.svg,0,0,4
+CSS,./public/styles/story.css,2,1,4
+Markdown,./public/README.md,5,0,4
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-arrow-right-circle.svg,0,0,4
+JavaScript,./public/custom_polyfills.js,4,5,4
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-plus.svg,0,0,4
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-minus.svg,0,0,4
+Bourne Shell,./getstats.sh,2,0,4
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-search.svg,0,0,3
+JavaScript,./public/pages/document-reading-room/index.js,0,0,3
+Bourne Shell,./zombie-lord/custom-launcher/scripts/format.sh,2,0,3
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-chevron-right.svg,0,0,3
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-tick.svg,0,0,3
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-emdash-small.svg,0,0,3
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-emdash.svg,0,0,3
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-arrow-right.svg,0,0,3
+JavaScript,./public/voodoo/src/handlers/scrollNotify.js,0,0,3
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-chevron-left.svg,0,0,3
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-arrow-left.svg,0,0,3
+JavaScript,./public/pages/legal-room/index.js,0,0,3
+JavaScript,./public/voodoo/src/handlers/takeShot.js,2,0,3
+SVG,./public/voodoo/asset-imports/nhsuk-icons/icon-close.svg,0,0,3
+JavaScript,./public/update_render.js,1,2,3
+JavaScript,./zombie-lord/index.js,0,2,2
+JavaScript,./public/voodoo/src/subviews/faviconDataURL.js,2,0,2
+Bourne Shell,./installstats.sh,0,0,2
+JavaScript,./automation/corrector.js,2,4,2
+Bourne Shell,./install_bundle_deps.sh,1,0,2
+Bourne Shell,./build_docker.sh,1,0,2
+XML,./public/browserconfig.xml,0,0,2 
+Markdown,./sslcert/staging/README.md,1,0,2
+JavaScript,./index.js,0,2,2
+Bourne Shell,./limited_test.sh,1,0,2
+JavaScript,./automation/transformer.js,2,6,2
+JavaScript,./public/site.js,0,2,2
+Bourne Shell,./dev.sh,1,0,2
+Bourne Shell,./global_install_bundle_deps.sh,1,0,2
+SVG,./public/old/images/3rd-party/undraw/undraw_female_avatar_l3ey.svg,0,0,1
+Bourne Shell,./zombie-lord/record-audio.sh,1,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_online_art_bgb4.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_next_option_2ajo.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/sourcecontrol.svg,0,0,1
+JavaScript,./public/pages/case-study/index.js,0,0,1
+SVG,./public/old/images/3rd-party/undraw/scary.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_male_avatar_323b.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/inbloom.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/secserver.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/container.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/question.svg,0,0,1
+Bourne Shell,./startdevpostclone.sh,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_thought_process_67my.svg,0,0,1
+CSS,./public/plugins/demo/styles/light.css,0,1,1
+SVG,./public/old/images/3rd-party/undraw/team.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_master_plan_95wa.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_helpful_sign_s6al.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/omega.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_new_ideas_jdea.svg,0,0,1
+JavaScript,./zombie-lord/custom-launcher/chrome-launcher/index.js,1,2,1
+SVG,./public/old/images/3rd-party/undraw/familiar.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/software.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/instruct.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_cloud_docs_p4ob.svg,0,0,1
+CSS,./public/plugins/demo/styles/dark.css,0,1,1
+TypeScript,./zombie-lord/custom-launcher/dist/index.d.ts,0,0,1
+SVG,./public/old/images/3rd-party/undraw/webdevice.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/connection.svg,0,0,1
+HTML,./public/online-test.html,0,0,1
+SVG,./public/old/images/3rd-party/undraw/world.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/solution.svg,0,0,1
+TypeScript,./zombie-lord/custom-launcher/src/index.ts,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_people_tax5.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_newspaper_k72w.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_hologram_fjwp.svg,0,0,1
+Markdown,./CONTRIBUTING.md,1,0,1
+SVG,./public/old/images/3rd-party/undraw/safe.svg,0,0,1
+YAML,./.github/FUNDING.yml,2,1,1
+SVG,./public/old/images/3rd-party/undraw/undraw_circuit_sdmr.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_certificate_343v.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/mobilebrowsers.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/chill.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/serious.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/cleanup.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/five.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/backintheday.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/hacker.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/panel.svg,0,0,1
+Bourne Shell,./make_views.sh,2,2,1
+TypeScript,./zombie-lord/custom-launcher/dist/random-port.d.ts,0,3,1
+SVG,./public/old/images/3rd-party/undraw/securityon.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/future.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/escape.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_windy_day_x63l.svg,0,0,1
+TypeScript,./zombie-lord/custom-launcher/dist/flags.d.ts,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_access_denied_6w73.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/undraw_letter_2k4m.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/dash.svg,0,0,1
+SVG,./public/old/images/3rd-party/undraw/logistic.svg,0,0,1
+HTML,./zombie-lord/injections/pageContext/test.html,0,0,1
+SVG,./public/old/images/3rd-party/undraw/security.svg,0,0,1
+JavaScript,./public/plugins/projector/page/listen.js,0,0,1
+SVG,./public/old/images/3rd-party/undraw/privacy.svg,0,0,1
+SVG,./public/voodoo/assets/globe.svg,0,0,1
+SUM,,2344,2152,36464

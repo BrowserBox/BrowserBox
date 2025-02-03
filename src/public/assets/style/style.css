@@ -1,0 +1,16 @@
+
+  :root, body {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+  }
+  #og-flash {
+    box-sizing: border-box;
+    object-position: 50% 50%;
+    object-fit: contain;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    margin: 0 auto;
+  }

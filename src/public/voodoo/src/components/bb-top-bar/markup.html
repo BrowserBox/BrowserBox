@@ -1,0 +1,73 @@
+<header class="topbar ${state.cloudTabsStatusLine ? 'align-right' : ''}" stylist=styleTopBar>
+  ${state.cloudTabsStatusLine ? F`
+    ${!_host.vanish ? F`
+      <div id="download-status-bar" class="status-bar ${_host.downloadState.activeDownloads ? "progress" : "done"}" title="${_host.downloadState.completedDownloads} completed download${_host.plural ? "s" : ""}">
+        ${_host.totalFiles > 1 ? F`
+          <span class="super download-count">
+            ${_host.downloadState.completedDownloads}/${_host.totalFiles}
+          </span>
+          <span class="super wide-word">&nbsp;downloaded</span>
+        ` : F`
+          <span class="super wide-word">1&nbsp;download</span>
+        `}
+        <progress class="download-meter" 
+          min=0 
+          step=0.01
+          max="${Math.max(_host.totalFiles, 1)}"
+          value="${_host.progressValue}"
+        ></progress>       
+        <span class="super download-mb">
+          ${_host.megabytesReceived} MB
+        </span>
+      </div>` : F`<!-- download progress -->`
+    }
+    ${!state?.isSubscriber?.isSubscriber ? F`
+      <button
+        class=ct-extend
+        title="Subscribe for endless, unrestricted, 24/7 browsing" class="ct-extend-session"
+        target=_top
+        onclick="goToExtend"
+        >
+        Upgrade
+      </button>
+    ` : F`<!-- subscriber -->`
+    }
+    <span 
+      id=cloudtabs-session-clock 
+      title="Session time remaining. Top up to extend your session or Subscribe for unlimited sessions."
+      ></span>
+    <script></script>
+    <a target=_top title="Go to your CloudTabs Dashboard" class="ct-home" href="https://browse.cloudtabs.net">
+      CloudTabs
+    </a>
+  `: F`
+    <span title="Number of co-browsing clients connected" class="super online-count">${state.onlineCount || 1} client${state.onlineCount > 1 ? 's' : ''}</span>
+    <span title="Network connectivity status" class="super network-status ${state.Connectivity.checker.status}">${state.Connectivity.checker.status}</span>
+    <span title="Server status" class="super connection-status">${state.serverConnected ? '' : 'hangup'}</span>
+    <span title="Tor status" class="super tor-status">${_top.OPTIONS.showTorStatus && state.isTor ? 'tor' : ''}</span>
+    <span title="Audio status" class="super audio-status">${_top.OPTIONS.showAudioStatus && state.audioConnected ? 'sound' : ''}</span>
+    <span title="WebRTC active" class="super webrtc-status">${_top.OPTIONS.showWebRTCStatus && state.webrtcConnected ? 'webrtc' : ''}</span>
+    <span title="Bandwidth issue" class="super bw-status">${_top.OPTIONS.showBWStatus && state.showBandwidthIssue ? 'bandwidth issue' : ''}</span>
+    ${!_host.vanish ? F`
+      <div id="download-status-bar" class="status-bar ${_host.downloadState.activeDownloads ? "progress" : "done"}" title="${_host.downloadState.completedDownloads} completed download${_host.plural ? "s" : ""}">
+        ${_host.totalFiles > 1 ? F`
+          <span class=download-count>
+            ${_host.downloadState.completedDownloads}/${_host.totalFiles}
+          </span>
+          <span class=wide-word>&nbsp;downloaded</span>
+        ` : F`
+          <span class="super wide-word">1&nbsp;download</span>
+        `}
+        <progress class="download-meter" 
+          min=0 
+          step=0.01
+          max="${Math.max(_host.totalFiles, 1)}"
+          value="${_host.progressValue}"
+        ></progress>       
+        <span class="super download-mb">
+          ${_host.megabytesReceived} MB
+        </span>
+      </div>` : F`<!-- download progress -->`
+    }
+  `}
+</header>

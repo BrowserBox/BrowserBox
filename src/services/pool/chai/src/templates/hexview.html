@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${filePath} | HexView</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/hex-favicon.svg">
+  <style>
+    /* Global Styles */
+      :root {
+        font-size: 16px;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #000;
+        color: #0f0;
+        font-family: 'Courier New', Courier, monospace;
+      }
+
+    /* Top Bar */
+      header {
+        background-color: #111;
+        color: #0f0;
+        padding: 10px;
+        text-align: center;
+        position: fixed;
+        width: 100%;
+        top: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      header svg {
+        vertical-align: middle;
+        transform: scale(0.618);
+      }
+
+    /* Content Pane */
+      main {
+        margin-top: 50px;
+      }
+
+    /* Form */
+      nav {
+        display: flex;
+        justify-content: center;
+        align-items: stretch;
+        justify-items: stretch;
+        background-color: #222;
+        padding: 15px;
+      }
+
+      form {
+        display: flex;
+      }
+
+    /* Buttons */
+      button {
+        font-size: 1rem;
+        background-color: #444;
+        color: #0f0;
+        border: none;
+        padding: 10px 17px;
+        cursor: pointer;
+        margin: 0 0.5rem;
+        border-radius: 3px;
+        transition: background 0.3s;
+      }
+      button:not([disabled]):hover {
+        background-color: #555;
+      }
+      button[disabled], button:disabled {
+        filter: grayscale(1.0);
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+    /* Number input */
+      input[type="number"] {
+        text-align: right;
+        padding: 0 0.3rem;
+        width: calc(1.9rem + 5ch);
+        background: rgb(50,50,50);
+        border: medium solid darkslategray;
+        font-weight: 400;
+        font-family: Courier, monospace;
+        color: lime;
+      }
+
+      input[type="number"]:focus {
+        outline: 2px solid lime;
+      }
+
+      input[type="number"]::-webkit-inner-spin-button {
+        margin-left: 0.5rem;
+      }
+
+    /* Hex Data */
+      pre {
+        background-color: #111;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        width: 70ch;
+        max-width: 99vw;
+        margin: 0 auto;
+      }
+
+    /* overrides and pixel perfect alignment */
+      .hex-icon {
+        display: inline-block;
+        transform: translate(9.5px, -1.25px);
+      }
+
+      .file-icon {
+        display: inline-block;
+        transform: translate(0.75px, 1.75px);
+      }
+
+      .search-icon {
+        display: inline-block;
+        transform: translate(-3.25px, 3.2px);
+      }
+
+    @media screen and (max-width: 600px) {
+      nav {
+        flex-direction: column;
+      }
+    }
+  </style>
+  <script>
+    setTimeout(syncURLParams, 3457);
+
+    function syncURLParams() {
+      const filePath = "${filePath}";
+      const cursor = ${cursor};
+      const command = "next";
+      const url = new URL(location.href);
+      url.searchParams.set('filePath', filePath);
+      url.searchParams.set('cursor', cursor);
+      url.searchParams.set('command', command);
+      history.replaceState({filePath, cursor, command}, "", url.href);
+    }
+  </script>
+  <script>
+    function isMobile() {
+      return /windows phone|android|iPad|iPhone|iPod/i.test(navigator.userAgent);
+    }
+  </script>
+</head>
+<body>
+  <header role="banner" title="${filePath}">
+    <span class="hex-icon">
+      <svg width="30" height="30" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 105 100">
+        <polygon points="52.5 5 100 30 100 70 52.5 95 5 70 5 30 52.5 5" style="fill:#0f0; stroke:#000; stroke-width:1" />
+      </svg>
+    </span>
+    <span class="text">HexView &ndash;</span>
+    <span class="file-icon">📁</span>
+    <span class="file-name">${filePath}</span>
+    <span class="search-icon">🔍</span>
+  </header>
+  <main role="main">
+    <nav role="navigation">
+      <form id="hexForm" action="/hex/command" method="post">
+        <input required type="hidden" name="filePath" value="${filePath}">
+        
+        <button type="submit" name="command" value="prev" aria-label="Previous Chunk" ${cursor <= 0 ? "disabled" : ""}>⬅️ Previous Chunk</button>
+        
+        <!-- Numeric input spinner -->
+        <input autofocus 
+          required
+          type="number" name="cursor" 
+          value="${cursor}" min="0" 
+          onkeydown="if ( event.key == 'Enter' ) { event.preventDefault(); event.stopPropagation(); this.blur(); this.focus(); }"
+          onfocus="if ( isMobile() ) this.blur(); else this.select();"
+          onchange="submitForm(event);" aria-label="Go to page"
+         >
+        
+        <button type="submit" name="command" value="next" aria-label="Next Chunk" ${done ? "disabled": ""}>Next Chunk ➡️</button>
+      </form>
+    </nav>
+    <pre role="presentation">${escapeHTML(hexData)}</pre>
+  </main>
+  <script>
+    const form = document.querySelector('#hexForm');
+    const previousValue = parseInt(form.cursor.value);
+
+    function submitForm(event) { 
+      const prevButton = form.command[0];
+      const nextButton = form.command[1];
+      const currentValue = parseInt(form.cursor.value);
+      const delta = Math.sign(currentValue - previousValue);
+      if ( delta > 0 ) {
+        form.cursor.value = currentValue - 1;
+        if ( !nextButton.disabled ) {
+          nextButton.click();
+        }
+      } else {
+        form.cursor.value = currentValue + 1;
+        if ( !prevButton.disabled ) {
+          prevButton.click();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
+

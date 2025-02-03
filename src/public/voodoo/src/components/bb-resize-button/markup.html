@@ -1,0 +1,12 @@
+<nav
+  class="controls viewport-reset-button aux"
+  stylist="styleNavControl styleViewportResetButton">
+  <form submit=${[
+    e => e.preventDefault(),
+    () => window._voodoo_asyncSizeTab({resetRequested:true})
+  ]}>
+    <button title="Resize viewport" accesskey=v>
+      <img src="voodoo/assets/icons/scaling.svg">
+    </button>
+  </form>
+</nav>

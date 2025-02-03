@@ -1,0 +1,63 @@
+{
+  "name": "bang.html",
+  "version": "7.0.7",
+  "description": "BANG! Web Component custom elements with async templating, smooth syntax and custom void  tags!",
+  "main": "dist/pack.bang.js",
+  "scripts": {
+    "type": "npx tsc --allowJS --checkJS --outDir .types --target es6 src/bang.js",
+    "lint": "clear && npx eslint src/bang.js || : && npx eslint src/vv/vanillaview.js",
+    "dev": "npm run clean && watch -n 5 ./scripts/cpfiles.sh & npx serve -p 8080 docs/",
+    "test": "npm run clean && watch -n 5 ./scripts/build.sh & npx serve -p 8080 docs/",
+    "7guis": "npm run clean && watch -n 5 ./scripts/build.sh & npx serve -p 8080 docs/",
+    "7guis-dev": "npm run clean && watch -n 5 ./scripts/cpfiles.sh & npx serve -p 8080 docs/",
+    "prod": "npm run clean && watch -n 10 npm run build& npx serve -p 8080 docs/",
+    "clean": "rm -rf .types || : && rm -rf .build-temp || : && rm -rf dist/ || : && rm -rf docs/vv || : && rm docs/*.js || : && rm docs/7guis/*.js || :",
+    "prepublishOnly": "killall npx watch serve || : &&npm run build",
+    "build": "export BANG_PROD=test || set BANG_PROD=test&&./scripts/build.sh && cp .build-temp/bang.js dist/pack.bang.js && rm -rf .build-temp || : ./scripts/cpfiles.sh",
+    "compress": "export BANG_PROD=test || set BANG_PROD=test&&killall watch npx serve || : &&./scripts/build.sh && npx roadroller -t text -a eval .build-temp/bang.js -o dist/pack.bang.js && rm -rf .build-temp || : && ./scripts/cpfiles.sh",
+    "tutorial": "npm run test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/o0101/good.html.git"
+  },
+  "keywords": [
+    "bang!",
+    "custom-elements",
+    "web-components",
+    "async",
+    "smooth-syntax",
+    "void-tags",
+    "self-closing-tags",
+    "bang",
+    "front-end",
+    "framework",
+    "javascript",
+    "view",
+    "dosy",
+    "dosyago",
+    "dosycorp"
+  ],
+  "author": "@dosy",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "latest",
+    "@babel/eslint-parser": "latest",
+    "@babel/plugin-proposal-private-methods": "latest",
+    "@babel/plugin-transform-modules-commonjs": "latest",
+    "@babel/plugin-transform-strict-mode": "latest",
+    "babel-core": "^4.7.16",
+    "babel-loader": "latest",
+    "babel-preset-env": "^0.0.0",
+    "css-loader": "latest",
+    "eslint": "latest",
+    "html-loader": "latest",
+    "html-webpack-plugin": "latest",
+    "roadroller": "latest",
+    "rollup": "latest",
+    "serve": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  }
+}

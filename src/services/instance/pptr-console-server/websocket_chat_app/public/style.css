@@ -1,0 +1,201 @@
+@import url(theme.css);
+
+/* general element overrides */
+  ul {
+    display: flex;
+    padding-left: 0;
+    margin: 0;
+  }
+
+  li {
+    display: inline-block;
+    padding: var(--gap3) var(--gap1);
+    margin: var(--gap1);
+  }
+
+/* specific app components */
+article.app {
+  display: grid;
+  grid-template-areas:
+    "nav"
+    "scroller"
+    "footer";
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr;
+  grid-gap: var(--gap1);
+  max-height: 100vh;
+  padding: 0.5rem;
+}
+
+/* nav */
+  nav {
+    grid-area: nav;
+    text-align: right;
+  }
+
+  nav a {
+    text-decoration: none;
+    font-size: smaller;
+    color: inherit;
+  }
+
+  nav a.active {
+    text-decoration: underline;
+  }
+
+/* chat */
+  ul.chat, form.settings fieldset {
+    grid-area: scroller;
+    max-height: 100vh;
+    overflow: auto;
+    margin: 0;
+  }
+
+  ul.chat {
+    flex-direction: column;
+  }
+
+  form.messager {
+    grid-area: footer;
+    display: flex;
+    margin: 0;
+  }
+
+  form.messager .composer {
+    flex-grow: 1;
+    padding: var(--gap3);
+    resize: none;
+    margin-right: 0.25rem;
+  }
+
+  .composer:focus, 
+  .composer:active {
+  }
+
+  button {
+  }
+
+/* chat messages */
+  /* add padding at the bottom of the scroller */
+  ul.chat::after {
+    display: block;
+    content: "\200c";
+    height: 32px;
+  }
+
+  /* message list item */
+    li.message, li.room-note {
+      max-width: var(--maxmessagewidth);
+      background: lightcyan;
+      border-radius: 0.5rem;
+    }
+
+    li.message {
+      align-self: start;
+    }
+
+    li.room-note {
+      align-self: start;
+    }
+
+    li.from-me {
+      align-self: flex-end;
+      text-align: right;
+    }
+
+  /* message components */
+    li div.metadata {
+      text-align: left;
+    }
+
+    li q {
+      display: inline-block;
+      quotes: none;
+    }
+
+    li q, li cite {
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      hyphens: auto;
+      word-break: break-word;
+    }
+
+    li time {
+      font-size: x-small;
+    }
+
+    li cite {
+      font-size: smaller;
+    }
+
+  /* specific class overrides */
+    li.from-me q {
+      text-align: right;
+    }
+
+/* settings */
+  form.settings {
+    position: relative;
+  }
+
+  fieldset {
+    max-height: 100%;
+    box-sizing: border-box;
+    border: 0;
+  }
+
+  /* we used fieldset legend as a handy notification spot */
+  fieldset legend {
+    position: fixed;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: var(--gap3);
+  }
+
+  fieldset legend:empty {
+    display: none;
+  }
+
+  button.defaults {
+    text-align: center;
+  }
+
+/* integration overrides */
+:root {
+  font-size: smaller;
+}
+
+body {
+}
+
+fieldset {
+  background: lightcyan;
+  border-radius: 0.25rem;
+}
+
+input, button, select, textarea, [contenteditable] {
+  font-family: system-ui, Arial, Helvetica, sans-serif, monospace, system;
+  border: 0;
+  background: white;
+  border-radius: 0.25rem;
+  padding: 0.25rem;
+  padding-bottom: 0.35rem;
+}
+
+a {
+  display: inline-block;
+  background: lightcyan;
+  border-radius: 1px;
+  padding: 2px 0.2em;
+  padding-bottom: 1px;
+}
+
+textarea {
+  background: lightcyan;
+}
+
+body, :root, article.app {
+  margin: 0;
+  height: 100%;
+  box-sizing: border-box;
+}

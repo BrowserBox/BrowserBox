@@ -1,0 +1,16 @@
+node_modules
+public/assets/ruffle
+public/assets/flash/*.swf
+public/assets/flash/*.as
+public/assets/flash/*.fla
+public/assets/flash/*.jsfl
+BrowserBox.exe
+BrowserBox.win*
+BrowserBox.nix*
+BrowserBox.mac*
+typetests
+public/fonts
+public/old
+public/images/3rd-party/undraw
+sslcert
+

@@ -1,0 +1,33 @@
+{
+  "name": "@dosy-private/voodoo",
+  "type": "module",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A browser API for performing actions on a bitmap representation of a browser tab, and viewing the changes.",
+  "main": "index.js",
+  "scripts": {
+    "test": "serve -p 8080",
+    "postinstall": "node exec.js \"./expose_externals.sh\"",
+    "prepublishOnly": "echo 'do not publish this' && fail"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/dosycorp/voodoo.git"
+  },
+  "author": "@dosy",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://gitlab.com/dosycorp/voodoo/issues"
+  },
+  "homepage": "https://gitlab.com/dosycorp/voodoo#readme",
+  "dependencies": {
+    "bang.html": "latest",
+    "lucide-static": "latest",
+    "style.dss": "latest",
+    "vanillatype": "latest"
+  },
+  "devDependencies": {
+    "@babel/runtime": "latest",
+    "simple-peer": "latest"
+  }
+}

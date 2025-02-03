@@ -1,0 +1,29 @@
+{
+  "name": "vanillaviewjs",
+  "version": "1.3.0",
+  "description": "VanillaView",
+  "main": "vanillaview.js",
+  "scripts": {
+    "test": "serve -p 8080",
+    "build": "parcel build --no-source-maps vanillaview.js"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "parcel-bundler": "^1.12.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/c9fe/vanillaviewjs.git"
+  },
+  "keywords": [
+    "vanillaview"
+  ],
+  "author": "@dosy",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/c9fe/vanillaviewjs/issues"
+  },
+  "homepage": "https://github.com/c9fe/vanillaviewjs#readme"
+}

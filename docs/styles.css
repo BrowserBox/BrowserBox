@@ -1,0 +1,499 @@
+body {
+  background-color: #f1f1f1;
+  margin: 0;
+}
+
+header, nav {
+  background-color: #007bff;
+}
+
+nav h1 {
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #007bff;
+}
+
+a {
+  color: #007bff;
+}
+
+a:hover {
+  color: #ffa500;
+}
+
+.menu-icon .nav-icon,
+.cta-button {
+  background-color: #007bff;
+}
+
+.cta-button:hover {
+  background-color: #ffa500;
+}
+
+/* Add more specific styles for the navigation, header, and other sections later */
+
+body {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 300;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 500;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000000;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  color: #fff;
+  justify-content: space-between;
+}
+
+.logo-container img {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+}
+
+.menu {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu li {
+  margin-left: 20px;
+}
+
+.menu a {
+  text-decoration: none;
+  color: #fff;
+  transition: color 0.3s ease;
+}
+
+.menu a:hover {
+  color: #ffa500;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+  padding: 0 20px;
+  color: #fff;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+
+header h2 {
+  font-size: 24px;
+}
+
+#features {
+  padding: 50px 20px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  padding: 20px;
+  border: 1px solid #007bff;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card h3 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.card p {
+  font-size: 16px;
+}
+
+#testimonials {
+  padding: 50px 20px;
+}
+
+.testimonial-item {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.testimonial-item p {
+  font-size: 18px;
+  font-style: italic;
+  margin-bottom: 10px;
+}
+
+.testimonial-item h4 {
+  font-size: 16px;
+}
+
+#cta {
+  background-color: #007bff;
+  text-align: center;
+  padding: 50px 20px;
+}
+
+#cta h2 {
+  color: #fff;
+  font-size: 36px;
+  margin-bottom: 20px;
+}
+
+.cta-button {
+  display: inline-block;
+  padding: 10px 20px;
+  color: #fff;
+  font-size: 18px;
+  text-decoration: none;
+  border: none;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.cta-button:hover {
+  background-color: #ffa500;
+  color: #f1f1f1;
+}
+
+#video {
+  padding: 50px 20px;
+}
+
+.video-container {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio for responsive video */
+  height: 0;
+  overflow: hidden;
+}
+
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#pricing {
+  padding: 50px 20px;
+}
+
+#faq {
+  padding: 50px 20px;
+}
+
+.faq-item {
+  margin-bottom: 30px;
+}
+
+.faq-item h3 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.faq-item p {
+  font-size: 16px;
+}
+
+footer {
+  background-color: #007bff;
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.footer-link {
+  color: #fff;
+  margin: 0 10px;
+  text-decoration: none;
+}
+
+.dosyago {
+  font-weight: 500;
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+  padding: 0 20px;
+  color: #fff;
+  text-align: center;
+  background-image: url('hero-background.jpg'); /* Replace 'hero-background.jpg' with your image path */
+  background-size: cover;
+  background-position: center;
+}
+
+header h1 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+header h2 {
+  font-size: 24px;
+}
+
+.logo-container h1 {
+  color: #fff; /* Set the appropriate color for the BrowserBox name */
+}
+
+.menu-btn {
+  display: none; /* Hide the checkbox for the accordion header */
+}
+
+#menu-btn:checked ~ .menu {
+  display: block;
+  animation: fadeInDown 0.5s ease; /* Add animation to show the accordion nav bar header */
+}
+
+@keyframes fadeInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* existing styles... */
+
+/* Hide the checkbox */
+.menu-btn {
+  display: none;
+}
+
+/* Style the navigation icon (hamburger icon) */
+.nav-icon {
+  width: 30px;
+  height: 2px;
+  background-color: var(--secondary);
+  display: block;
+  position: relative;
+}
+
+.nav-icon::before,
+.nav-icon::after {
+  content: "";
+  height: 2px;
+  width: 30px;
+  background-color: var(--secondary);
+  position: absolute;
+  left: 0;
+}
+
+.nav-icon::before {
+  top: -10px;
+}
+
+.nav-icon::after {
+  bottom: -10px;
+}
+
+/* Style the menu label to look like a button */
+.menu-icon {
+  display: none;
+  cursor: pointer;
+}
+
+/* Hide the menu by default */
+.menu {
+  overflow: hidden;
+  transition: max-height 0.2s ease-out;
+}
+
+.highlight {
+  color: white;
+}
+
+header * {
+  color: aqua;
+}
+
+@media screen and (max-width: 768px) {
+  header h1:first-of-type {
+    margin-top: 3.1em;
+  }
+
+  .menu-btn:not(:checked) ~ .logo-container {
+    width: 100%;
+  }
+
+  /* Show the menu when the checkbox is checked */
+  .menu-btn:checked ~ .menu {
+    max-height: 10em;  /* Adjust as needed */
+  }
+
+  .menu {
+    display: none;
+    max-height: 0;
+  }
+
+  .menu-icon {
+    display: block;
+  }
+
+  .menu-btn:checked ~ .menu-icon .nav-icon::before {
+    transform: rotate(-45deg);
+  }
+
+  .menu-btn:checked ~ .menu-icon .nav-icon::after {
+    transform: rotate(45deg);
+  }
+
+  .menu-btn:checked ~ .menu-icon .nav-icon {
+    background: transparent;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  nav {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .menu {
+    display: none;
+  }
+
+  .menu-btn {
+    cursor: pointer;
+  }
+
+  .menu-icon {
+    display: flex;
+    align-items: center;
+    height: 30px;
+    position: relative;
+  }
+
+  .menu-icon .nav-icon {
+    width: 30px;
+    height: 3px;
+    background-color: #fff;
+    position: relative;
+  }
+
+  .menu-icon .nav-icon:before,
+  .menu-icon .nav-icon:after {
+    content: '';
+    width: 30px;
+    height: 3px;
+    background-color: #fff;
+    position: absolute;
+    left: 0;
+    transition: transform 0.3s ease;
+  }
+
+  .menu-icon .nav-icon:before {
+    top: -10px;
+  }
+
+  .menu-icon .nav-icon:after {
+    top: 10px;
+  }
+
+  #menu-btn:checked ~ .menu {
+    display: block;
+  }
+
+  #menu-btn:checked ~ .menu .menu-item {
+    animation: fadeInRight 0.5s ease forwards;
+  }
+
+  @keyframes fadeInRight {
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .menu li {
+    margin-left: 0;
+    margin-bottom: 10px;
+  }
+
+  header {
+    height: 60vh;
+  }
+
+  header h1 {
+    font-size: 32px;
+  }
+
+  header h2 {
+    font-size: 18px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  .cta-button {
+    padding: 15px 30px;
+    font-size: 16px;
+  }
+
+  .testimonial-item {
+    margin-bottom: 20px;
+  }
+
+  .testimonial-item p {
+    font-size: 16px;
+  }
+
+  #pricing {
+    padding: 30px 20px;
+  }
+
+  .faq-item {
+    margin-bottom: 20px;
+  }
+
+  .faq-item h3 {
+    font-size: 22px;
+  }
+
+  .faq-item p {
+    font-size: 14px;
+  }
+}
+

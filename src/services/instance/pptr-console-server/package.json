@@ -1,0 +1,21 @@
+{
+  "name": "@browserbox/puppeteer-console",
+  "type": "module",
+  "version": "8.1.0",
+  "description": "Run puppeteer scripts in a sandboxed node environment inside your BrowserBox instance",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --watch index.js 8001 xxxcookie token2"
+  },
+  "author": "@dosy",
+  "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
+  "dependencies": {
+    "compression": "latest",
+    "cookie-parser": "latest",
+    "exit-on-epipe": "latest",
+    "express": "latest",
+    "express-rate-limit": "latest",
+    "helmet": "latest",
+    "puppeteer": "latest"
+  }
+}

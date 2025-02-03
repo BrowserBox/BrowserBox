@@ -1,0 +1,3 @@
+class BBTabs extends Base {
+
+}

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+if [[ -z "$1" ]]; then
+  echo "no domain in first position. renew_tls failing"
+  exit 1
+fi
+
+if [[ -z "$2" ]]; then
+  echo "no user in second position. renew_tls failing"
+  exit 1
+fi
+
+sudo cp ./deploy-scripts/renew_tls.sh /root/renew_tls.sh
+
+# add our job to crontab if it's not there already
+if ! sudo crontab -l 2>/dev/null | grep -q "renew_tls.sh $1"; then
+  (sudo crontab -l 2>/dev/null; echo "*/5 * * * * /root/renew_tls.sh $1 $2") | sudo crontab -
+fi
+
+

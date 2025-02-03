@@ -1,0 +1,816 @@
+/* The W3C Core Styles Copyright (c) 1998 W3C (mit, inria, Keio), All Rights
+Reserved. W3C liability, trademark, document use and software licensing rules
+apply. See http://www.w3.org/Consortium/Legal/ipr-notice.html
+
+This stylesheet has been served in a form to avoid known bugs in your user
+agent's css implementation. Copying and serving this stylesheet to other
+agents may lead to unexpected results. Please refer to its address rather than
+copy it. */
+
+
+
+
+
+	/* begin body type */	/* 1 - humanist sans a */
+
+body	{	
+	font-size:	1em;
+	font-weight:	normal;
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	font-family:	Verdana, Myriad Web, Syntax, sans-serif;
+	font-size-adjust:	.58;
+	}	
+
+p, blockquote, ul, ol, dl, dd, li, dir, menu	{	
+	/* inherit from body */	
+	}	
+
+small	{	
+	font-size:	.92em;
+	}	
+
+big	{	
+	font-size:	1.17em;
+	}	
+
+pre	{	
+	font-family:	'Monotype.com', Courier New, monospace;
+	}	
+
+ol li	{	
+	list-style-type:	decimal;
+	}	
+
+ol ol li	{	
+	list-style-type:	lower-alpha;
+	}	
+
+ol ol ol li	{	
+	list-style-type:	lower-roman;
+	}	
+
+table, tbody, tr, td	{	
+	font-size:	1em;
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	font-family:	Verdana, Myriad Web, Syntax, sans-serif;
+	font-size-adjust:	.58;
+	}	
+
+	/* end body type */	
+
+
+
+
+	/* begin header type */	/* 7 - humanist sans b */
+		
+h1	{	
+	font-family:	Trebuchet ms, Verdana, Myriad Web, Syntax, sans-serif;
+	font-size-adjust:	.53;
+	font-size:	2em;
+	font-weight:	400;
+	font-style:	normal;
+	text-decoration:	none;
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	}	
+		
+h2	{	
+	font-family:	Trebuchet ms, Verdana, Myriad Web, Syntax, sans-serif;
+	font-size-adjust:	.53;
+	font-size:	1.75em;
+	font-weight:	400;
+	font-style:	normal;
+	text-decoration:	none;
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	}	
+		
+h3	{	
+	font-family:	Trebuchet ms, Verdana, Myriad Web, Syntax, sans-serif;
+	font-size-adjust:	.53;
+	font-size:	1.58em;
+	font-weight:	400;
+	font-style:	normal;
+	text-decoration:	none;
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	}	
+		
+h4	{	
+	font-family:	Trebuchet ms, Verdana, Myriad Web, Syntax, sans-serif;
+	font-size-adjust:	.53;
+	font-size:	1.33em;
+	font-weight:	500;
+	font-style:	normal;
+	text-decoration:	none;
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	}	
+		
+h5, dt	{	
+	font-family:	Trebuchet ms, Verdana, Myriad Web, Syntax, sans-serif;
+	font-size-adjust:	.53;
+	font-size:	1.17em;
+	font-weight:	600;
+	font-style:	normal;
+	text-decoration:	none;
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	}	
+		
+h6	{	
+	font-family:	Trebuchet ms, Verdana, Myriad Web, Syntax, sans-serif;
+	font-size-adjust:	.53;
+	font-size:	1em;
+	font-weight:	700;
+	font-style:	normal;
+	text-decoration:	none;
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	}	
+		
+tfoot, thead	{	
+	font-size:	1em;
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	font-family:	Trebuchet ms, Verdana, Myriad Web, Syntax, sans-serif;
+	font-size-adjust:	.53;
+	}	
+		
+th	{	
+	vertical-align:	baseline;
+	font-size:	1em;
+	font-weight:	bold;
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	font-family:	Trebuchet ms, Verdana, Myriad Web, Syntax, sans-serif;
+	font-size-adjust:	.53;
+	}	
+		
+hr	{	
+	visibility:	hidden;
+	}	
+		
+	/* end header type */	
+
+
+
+
+	/* begin affordances */	/* 3 - mint reverse */
+		
+a, address, blockquote, body, cite, code, dd, del, dfn,		
+div, dl, dt, em, form, h1, h2, h3, h4, h5, h6, iframe, img, kbd,		
+li, object, ol, p, q, samp, small, span, strong, sub, sup, ul, var, 		
+applet, big, center, dir, font, hr, menu, pre,		
+abbr, acronym, bdo, button, fieldset, ins, label	{	
+	word-spacing:	normal;
+	letter-spacing:	normal;
+	text-transform:	none;
+	text-decoration:	none;
+	border-color:	#ccc;
+	border-style:	none;
+	}	
+		
+body	{	
+	color:	#D0FFD0;
+	background:	#212121;
+	}	
+		
+em	{	
+	font-style:	normal;
+	font-weight:	bold;
+	color:	#D0FFD0;
+	background:	#212121;
+	}	
+		
+strong	{	
+	font-style:	italic;
+	background:	#212121;
+	font-weight:	bold;
+	color:	#D0FFD0;
+	}	
+		
+em strong, strong em	{	
+	text-transform:	uppercase;
+	font-style:	normal;
+	font-weight:	bolder;
+	background:	#212121;
+	color:	#D0FFD0;
+	}	
+		
+b	{
+	font-weight:	bold;
+	}
+	
+i	{
+	font-style:	italic;
+	}
+		
+.warning	{	
+	text-transform:	none;
+	font-style:	normal;
+	font-weight:	bolder;
+	background:	yellow;
+	color:	black;
+	}	
+		
+del	{	
+	text-decoration:	line-through;
+	background:	#900;
+	}	
+		
+ins	{	
+	text-decoration:	none;
+	background:	#060;
+	}	
+		
+var, cite, dfn, .note	{	
+	font-style:	italic;
+	}	
+		
+address	{	
+	font-style:	normal;
+	letter-spacing:	.1em;
+	}	
+		
+acronym	{	
+	font-variant:	small-caps;
+	letter-spacing:	0.1em;
+	}	
+		
+h1, h2, h3, h4, h5, h6, dt, th, thead, tfoot	{	
+	color:	rgb(245,245,245);
+	background:	#212121;
+	}	
+		
+hr	{	
+	color:	#ccc;
+	}	
+		
+#colophon	{	
+	display:	none;
+	}	
+		
+col, colgroup, table, tbody, td, tr	{	
+	color:	#D0FFD0;
+	text-decoration:	none;
+	border-color:	#ccc;
+	border-style:	none;
+	background:	#212121;
+	}	
+		
+a:link	{	
+	text-decoration:	none;
+	font-weight:	bold;
+	color:	#F60;
+	background:	#212121;
+	}	
+		
+a:visited	{	
+	text-decoration:	none;
+	font-weight:	bold;
+	color:	#C96;
+	background:	#212121;
+	}	
+		
+a:active	{	
+	text-decoration:	none;
+	font-weight:	bold;
+	color:	#ffc;
+	background:	#212121;
+	}	
+		
+a:hover	{	
+	text-decoration:	none;
+	color:	#FC0;
+	background:	#212121;
+	}	
+		
+a.offsite	{	
+	text-decoration:	none;
+	font-weight:	normal;
+	color:	#F60;
+	background:	#212121;
+	}	
+		
+	/* end affordances */	
+
+
+
+
+	/* begin vertical */	/* 1 - pentatonic a */
+		
+a, address, blockquote, cite, code, dd, del, dfn,		
+div, dl, dt, em, form, h1, h2, h3, h4, h5, h6, iframe, img, kbd,		
+li, object, ol, p, q, samp, small, span, strong, sub, sup, ul, var, 		
+applet, b, big, center, dir, font, hr, i, menu, pre, s, strike, tt,		
+u, abbr, acronym, bdo, button, fieldset, ins, label	{	
+	margin-top:	0;
+	margin-bottom:	0;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	vertical-align:	baseline;
+	}	
+		
+body	{	
+	line-height:	1.58em;
+	}	
+		
+div > p:first-child, body > p:first-child, td > p:first-child	{	
+	margin-top:	.75em;
+	margin-bottom:	.75em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p, div + p, p.initial	{	
+	margin-top:	.75em;
+	margin-bottom:	.75em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+h1, h2, h3, h4, h5, h6	{	
+	line-height:	1.33em;
+	}	
+		
+h1	{	
+	margin-top:	1.33em;
+	margin-bottom:	.33em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+h2	{	
+	margin-top:	1.75em;
+	margin-bottom:	.33em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+h3	{	
+	margin-top:	1.58em;
+	margin-bottom:	.33em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+h4	{	
+	margin-top:	1.33em;
+	margin-bottom:	.33em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+h5	{	
+	margin-top:	1.17em;
+	margin-bottom:	.33em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+h6	{	
+	margin-top:	1em;
+	margin-bottom:	.33em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+p	{	
+	margin-top:	.75em;
+	margin-bottom:	.75em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+blockquote, fieldset, form, ul, ol, dl, dir, menu	{	
+	margin-top:	.75em;
+	margin-bottom:	.75em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+dt	{	
+	margin-top:	0;
+	margin-bottom:	0;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+dd	{	
+	margin-top:	0;
+	margin-bottom:	.75em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+ul ul, ol ol, li address, li dl, li ol, li p, li ul, li dir, li hr, li menu, li pre, li h1, li h2, li h3, li h4, li h5, li h6, dd address, dd dl, dd ol, dd p, dd ul, dd dir, dd hr, dd menu, dd pre, dd h1, dd h2, dd h3, dd h4, dd h5, dd h6	{	
+	margin-top:	0;
+	margin-bottom:	0;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+li	{	
+	margin-top:	0;
+	margin-bottom:	0;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+address	{	
+	margin-top:	1.58em;
+	margin-bottom:	1.58em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+pre	{	
+	margin-top:	.75em;
+	margin-bottom:	.75em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	line-height:	1.25em;
+	}	
+		
+hr	{	
+	margin-top:	.75em;
+	margin-bottom:	.75em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	height:	1px;
+	}	
+		
+div, center	{	
+	margin-top:	0;
+	margin-bottom:	0;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+.subhead	{	
+	margin-top:	.75em;
+	margin-bottom:	.75em;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+.stb	{	
+	margin-top:	2.17em;
+	margin-bottom:	.75em;
+	padding-top:	2.17em;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	border-style:	solid
+	}	
+		
+.mtb	{	
+	margin-top:	3.08em;
+	margin-bottom:	.75em;
+	padding-top:	3.08em;
+	padding-bottom:	0;
+	border-top:	.1em;
+	border-bottom:	0;
+	border-style:	solid
+	}	
+		
+.ltb	{	
+	margin-top:	4.34em;
+	margin-bottom:	.75em;
+	padding-top:	4.34em;
+	padding-bottom:	0;
+	border-top:	.25em;
+	border-bottom:	0;
+	border-style:	solid
+	}	
+		
+col, colgroup, table, tbody, td, tfoot, th, thead, tr	{	
+	margin-top:	0;
+	margin-bottom:	0;
+	padding-top:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-bottom:	0;
+	}	
+		
+td, th	{	
+	line-height:	1.33em;
+	}	
+		
+	/* end vertical */	
+
+
+
+
+	/* begin horizontal */	/* 1 - compact */
+		
+a, address, blockquote, cite, code, dd, del, dfn,		
+div, dl, dt, em, form, h1, h2, h3, h4, h5, h6, iframe, img, kbd,		
+li, object, ol, p, q, samp, small, span, strong, sub, sup, ul, var, 		
+applet, b, big, center, dir, font, hr, i, menu, pre, s, strike, tt,		
+u, abbr, acronym, bdo, button, fieldset, ins, label	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	float:	none;
+	clear:	none;
+	list-style-position:	outside;
+	}	
+		
+address, blockquote, dl, fieldset, form, ol, 		
+p, ul,  dir, hr, menu, pre	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	}	
+		
+div > p:first-child, body > p:first-child, td > p:first-child	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	text-indent:	0;
+	}	
+		
+h1 + p, h2 + p, h3 + p, h4 + p, h5 + p, h6 + p, div + p, p.initial	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	text-indent:	0;
+	}	
+		
+h1	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	}	
+		
+h2	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	}	
+		
+h3	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	}	
+		
+h4	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	}	
+		
+h5	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	}	
+		
+h6	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	}	
+		
+p	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-indent:	0;
+	}	
+		
+blockquote	{	
+	margin-left:	1.58em;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	}	
+		
+address	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	}	
+		
+pre	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	}	
+		
+li	{	
+	margin-left:	3.16em;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	}	
+		
+dt	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	}	
+		
+dd	{	
+	margin-left:	1.58em;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	}	
+		
+ul ul, ol ol, li address, li dl, li ol, li p, li ul, li dir, li hr, li menu, li pre, li h1, li h2, li h3, li h4, li h5, li h6, dd address, dd dl, dd ol, dd p, dd ul, dd dir, dd hr, dd menu, dd pre, dd h1, dd h2, dd h3, dd h4, dd h5, dd h6	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	}
+			
+hr	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	width:	100%;
+	}	
+		
+center	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	text-align:	left;
+	}	
+		
+col, colgroup, table, tbody, td, tfoot, th, thead, tr	{	
+	margin-left:	0;
+	margin-right:	0;
+	padding-left:	0;
+	padding-right:	0;
+	border-left:	0;
+	border-right:	0;
+	float:	none;
+	clear:	none;
+	}	
+		
+table	{	
+	text-align:	left;
+	}	
+		
+td	{	
+	text-align:	left;
+	}	
+		
+th	{	
+	text-align:	left;
+	}	
+		
+caption	{	
+	text-align:	left;
+	}	
+		
+	/* end horizontal */	
+
+
+
+
+	/* begin body box */	/* 5 - 'ninths symmetric' */
+
+body	{
+	margin-top:	1.58em;
+	margin-left:	11%;
+	margin-right:	8%;
+	margin-bottom:	1.58em;
+	padding-top:	0;
+	padding-left:	0;
+	padding-right:	0;
+	padding-bottom:	0;
+	border-top:	0;
+	border-left:	0;
+	border-bottom:	0;
+	border-right:	0;
+	width:	auto;
+	}
+	/* end body box */
+
+
+
+

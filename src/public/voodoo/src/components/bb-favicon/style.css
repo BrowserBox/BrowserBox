@@ -1,0 +1,6 @@
+@import url("themes/blank.css");
+
+img.favicon {
+  max-width: 2rem;
+  transition: 0.5s all;
+}

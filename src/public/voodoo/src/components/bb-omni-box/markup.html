@@ -1,0 +1,37 @@
+<nav class="controls url" stylist=styleNavControl>
+	<!--URL-->
+		<form class=url stylist=styleURLForm submit=${e => _top.go(e, _top)}
+				click=${_top.saveClick}>
+			<input
+				maxlength=3000
+				title="Search or address"
+				bond=${el => {
+					omniBoxInput = el;
+					_top.viewState.omniBoxInput = omniBoxInput;
+					if ( state.refocus ) {
+						state.refocus = false;
+						omniBoxInput.focus();
+					}
+				}}
+				stylist=styleOmniBox
+				autocomplete=off ${_top.tabs.length==0?'aria-disabled':''}
+				name=address
+				placeholder="${
+					_top.tabs.length?
+						'Search or address' :
+						'Open a tab first'
+				}"
+				type=search
+				value="${_top.activeTab().url == 'about:blank' ? '' : _top.activeTab().url || ''}"
+			>
+			<button 
+        ${disabled() ? 'disabled' : ''} 
+        class=go
+        title="${
+          disabled()? '(Go) Open a tab first' : 'Navigate, search or reload'
+        }" 
+      >
+        <img src="voodoo/assets/icons/refresh-ccw.svg">
+			</button>
+		</form>
+</nav>
