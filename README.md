@@ -31,14 +31,8 @@ when you view BrowserBox on a mobile device, you get a mobile browser on the ser
 
 **[TRY NOW!][PLAY1]**
 
-[![Screenshot of BrowserBox embedded, in this case on Puter.com Internet OS Web Desktop][IMG2]][PLAY2]
-
-**[TRY NOW on Puter.com!][PLAY2]**
-
 [PLAY1]: https://browse.cloudtabs.net/ss
-[PLAY2]: https://puter.com/app/the-browser
 [IMG1]: https://github.com/BrowserBox/BrowserBox/assets/22254235/599945e3-f2f9-416f-9a0e-fd0720fa8e87
-[IMG2]: https://github.com/BrowserBox/BrowserBox/assets/22254235/bfdbe7b2-a713-4add-83f7-9e10a9fd3e2f
 
 <a href="https://www.producthunt.com/posts/cloudtabs-1?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-cloudtabs&#0045;1" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=449256&theme=neutral" alt="CloudTabs - A&#0032;browser&#0032;in&#0032;a&#0032;computer&#0032;in&#0032;your&#0032;browser | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
