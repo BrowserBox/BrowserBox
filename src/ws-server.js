@@ -1613,7 +1613,7 @@
             const extensionSettings = preferences.extensions.settings[extensionId];
             const localizedManifest = localizeExtensionManifest({extensionSettings, extensionPath, manifest});
             // check for a well known popup location
-            if ( ! localizedManifest.action.default_popup && fs.existsSync(path.resolve(path.dirname(manifestPath), 'popup.html'));
+            if ( ! localizedManifest.action.default_popup && fs.existsSync(path.resolve(path.dirname(manifestPath), 'popup.html')) ) {
               localizedManifest.action.default_popup = 'popup.html';
             }
             if ( localizedManifest.display_in_launcher !== false ) {

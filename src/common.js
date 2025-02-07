@@ -72,7 +72,7 @@ export const LOG_FILE = {
 
 export const DEBUG = Object.freeze({
   revealChromeJSIntercepts: false,
-  debugSetupWorker: false,
+  debugSetupWorker: true,
   attachToServiceWorkers: true,
   showServerWorkersAsTabs: false,
   extensionsAccess: true,
