@@ -40,7 +40,6 @@ class BBExtensionsButton extends Base {
         type: 'actionOnClicked',
         data: {id}
       });
-      
     }
   }
 
