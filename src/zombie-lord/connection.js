@@ -48,6 +48,7 @@ import {extensions, getInjectableAssetPath, fileChoosers} from '../ws-server.js'
 //import {blockSites,onInterceptRequest as whitelistIntercept} from './demoblocking/blockSites.js';
 
 // limitations ( we do not attach to these as doing so ruins some Google websites )
+const WO = [...WrongOnes];
 const INTERNAL_WORKERS = new Set([
   'ghbmnnjooekpmoecnnnilnnbdlolhkhi', // Google docs offline
   'nmmhkkegccagdldgiimedpiccmgmieda', // Some kind of Google / YouTube related extension
@@ -558,7 +559,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   on("Target.targetCreated", async ({targetInfo}) => {
     DEBUG.val && consolelog('create 1', targetInfo);
     DEBUG.debugAttach && consolelog('create 1', targetInfo);
-    const {targetId} = targetInfo;
+    const {targetId, url} = targetInfo;
+    if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
+      await send("Target.closeTarget", {targetId});
+      return;
+    }
     targets.add(targetId);
     tabs.set(targetId,targetInfo);
     connection.forceMeta({created:targetInfo,targetInfo});
@@ -571,7 +576,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
   on("Target.targetInfoChanged", async ({targetInfo}) => {
     DEBUG.debugInfoChanged && consolelog('change 1', targetInfo);
-    const {targetId} = targetInfo;
+    const {targetId, url} = targetInfo;
+    if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
+      await send("Target.closeTarget", {targetId});
+      return;
+    }
     if ( tabs.has(targetId) ) {
       tabs.set(targetId,targetInfo);
       connection.meta.push({changed:targetInfo,targetInfo});
@@ -764,7 +773,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     }
   );
 
-  const WO = [...WrongOnes];
   for( const target of startupTargets ) {
     try {
       const {targetId, url} = target;
@@ -1893,8 +1901,18 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         loadings.set(sessionId,loading);
       }
 
-      await send(
+      send(
         "Runtime.enable", 
+        {},
+        sessionId
+      );
+      send(
+        "Debugger.enable", 
+        {},
+        sessionId
+      );
+      await send(
+        "Runtime.runIfWaitingForDebugger", 
         {},
         sessionId
       );

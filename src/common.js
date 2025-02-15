@@ -384,6 +384,7 @@ export const localBlockList = process.platform == 'darwin'
 ];
 export const WrongOnes = new Set([
   "chrome://newtab/",
+  "devtools://"
 ]);
 export const AttachmentTypes = new Set([
   'page', 
