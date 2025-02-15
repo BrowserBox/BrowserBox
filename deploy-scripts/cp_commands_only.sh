@@ -30,6 +30,12 @@ $SUDO cp $INSTALL_DIR/deploy-scripts/install_node.sh $COMMAND_DIR/install_node.s
 
 echo "Copied!"
 
+echo -n "Copying bbcertify command to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/deploy-scripts/_bbcertify.sh $COMMAND_DIR/bbcertify
+
+echo "Copied!"
+
 echo -n "Copying bbpro command to $COMMAND_DIR/ ..."
 
 $SUDO cp $INSTALL_DIR/deploy-scripts/_bbpro.sh $COMMAND_DIR/bbpro
