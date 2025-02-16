@@ -2698,6 +2698,20 @@ export function getWorker(id) {
   return Workers.get(id);
 }
 
+export function shouldBeWorker(extensionId) {
+ 	const extensionManifest = extensions.find(({id}) => id == extensionId);
+ 	const swPath = extensionManifest?.background?.service_worker;
+ 	if ( ! swPath ) return false;
+ 	const swPathParts = swPath.split(/\//g);
+ 	const swContentPath = path.resolve(EXTENSIONS_PATH, extensionId, `${extensionManifest?.version || '1.0.0'}_0`, ...swPathParts);
+ 	try {
+ 		fs.readFileSync(swContentPath);
+ 		return true;
+	} catch(e) {
+ 		return false;
+ 	}
+}
+
 export function workerAllows(name) {
   return WorkerCommands.has(name);
 }
@@ -3118,6 +3132,13 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
             const result = await this.getObject(`document.querySelector('${selector}')`);
             return !!result;
           }, { errorMessage: `Timeout waiting for selector: ${selector}` });
+        }
+
+        async untilObject(jsCode) {
+          return await this.untilTrue(async () => {
+            const result = await this.getObject(jsCode);
+            return result !== undefined;
+          }, { errorMessage: `Timeout waiting for object: ${jsCode}` });
         }
 
         async getObject(jsCode) {

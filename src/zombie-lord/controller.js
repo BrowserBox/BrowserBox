@@ -1,7 +1,7 @@
 import os from 'os';
 import {spawn} from 'node:child_process';
 import Connect from './connection.js';
-import {workerAllows, getWorker, updateTargetsOnCommonChanged, executeBinding, getViewport} from './connection.js';
+import {workerAllows, getWorker, shouldBeWorker, updateTargetsOnCommonChanged, executeBinding, getViewport} from './connection.js';
 import {LOG_FILE,CONFIG,COMMAND_MAX_WAIT,throwAfter, untilTrue, sleep, throttle, DEBUG} from '../common.js';
 import {MAX_FRAMES, MIN_TIME_BETWEEN_SHOTS, ACK_COUNT, MAX_ROUNDTRIP, MIN_SPOT_ROUNDTRIP, MIN_ROUNDTRIP, BUF_SEND_TIMEOUT, RACE_SAMPLE} from './screenShots.js';
 import fs from 'fs';
@@ -571,8 +571,30 @@ const controller_api = {
           case "Connection.extensions.actionOnClicked": {
             const {id} = command.params;
             const worker = getWorker(id);
-            if ( ! worker ) {
+            if ( ! worker && shouldBeWorker(id) ) {
               console.warn(`Worker unknown for extension: ${id}`);
+              console.log(`Will create worker`);
+              const {ChromeTab} = connection.zombie;
+              try {
+                const devModeToggleSelector = "document.querySelector('extensions-manager').shadowRoot.querySelector('extensions-toolbar').shadowRoot.querySelector('cr-toolbar').querySelector('cr-toggle#devMode')";
+                const inspectViewsLinkSelector = "document.querySelector('extensions-manager').shadowRoot.querySelector('cr-view-manager').querySelector('extensions-detail-view').shadowRoot.querySelector('a.inspectable-view')";
+
+                const tab = await ChromeTab.create(`chrome://extensions?id=${id}`);
+                await tab.untilObject(devModeToggleSelector);
+
+                if (!(await tab.getObject(devModeToggleSelector))?.selected) {
+                  await tab.clickSelector(devModeToggleSelector);
+                }
+
+                await tab.untilObject(inspectViewsLinkSelector);
+                await tab.clickSelector(inspectViewsLinkSelector);
+
+                await tab.untilTrue(() => !!getWorker(id), { errorMessage: "Worker initialization timeout" });
+
+                tab.close();
+              } catch (error) {
+                console.error("Script error:", error);
+              }
               return;
               // we could fall back to
               //connection.forceMeta({createTab:{opts:{url:`chrome-extension://${id}/popup.html`}}});
