@@ -1,11 +1,1 @@
-- easy tab api
-- const tab = await chrome.makeTab("chrome://extensions?id="+id);
-  await tab.untilSelector(devModeToggleSelector);
-  if ( !(await tab.getObject(jsCodeReturningDevToggle)).selected ) {
-    await tab.clickSelector(devModeToggleSelector);
-  }
-  await tab.untilSelector(inspectViewsLinkSelector);
-  await tab.clickSelector(inspectViewsLinkSelector);
-  await untilTrue(() => !!getWorker(id));
-  tab.close();
-   
+- lock out the bg utility pages we open for creating workers from normal set up flow otherwise it might interfere with our stuff.
