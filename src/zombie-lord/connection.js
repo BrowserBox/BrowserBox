@@ -3077,9 +3077,113 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
 
     const {startupTargets} = await promise;
 
+    // ChromeTab easy api
+      class ChromeTab {
+        #tabId;
+        #sessionId;
+        #send;
+
+        constructor(tabId, sessionId, send) {
+          this.#tabId = tabId;
+          this.#sessionId = sessionId;
+          this.#send = send;
+        }
+
+        static async create(url) {
+          try {
+            const { targetId } = await send("Target.createTarget", { url });
+            const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
+            return new ChromeTab(targetId, sessionId, (method, params, sessionId) => send(method, params, sessionId));
+          } catch (error) {
+            console.error("Failed to create ChromeTab:", error);
+            throw error;
+          }
+        }
+
+        async untilTrue(conditionFunc, { interval = 100, timeout = 5000, errorMessage = "Condition timed out" } = {}) {
+          const start = Date.now();
+          while (Date.now() - start < timeout) {
+            try {
+              if (await conditionFunc()) return;
+            } catch (error) {
+              console.warn("Condition function error:", error);
+            }
+            await new Promise((resolve) => setTimeout(resolve, interval));
+          }
+          throw new Error(errorMessage);
+        }
+
+        async untilSelector(selector) {
+          await this.untilTrue(async () => {
+            const result = await this.getObject(`document.querySelector('${selector}')`);
+            return !!result;
+          }, { errorMessage: `Timeout waiting for selector: ${selector}` });
+        }
+
+        async getObject(jsCode) {
+          try {
+            const result = await this.#send("Runtime.evaluate", {
+              expression: jsCode,
+              returnByValue: true,
+            }, this.#sessionId);
+            return result?.result?.value ?? undefined;
+          } catch (error) {
+            console.error("Error evaluating JS:", jsCode, error);
+            return undefined;
+          }
+        }
+
+        async clickSelector(selector) {
+          try {
+            await this.#send("Runtime.evaluate", {
+              expression: `document.querySelector('${selector}')?.click()`
+            }, this.#sessionId);
+          } catch (error) {
+            console.error("Failed to click selector:", selector, error);
+          }
+        }
+
+        async close() {
+          try {
+            await this.#send("Page.close", {}, this.#sessionId);
+          } catch (error) {
+            console.error("Error closing tab:", error);
+          }
+        }
+      }
+
+    // Usage Example
+      /**
+        (async () => {
+          try {
+            const id = "your-extension-id";
+            const devModeToggleSelector = "#devModeToggle";
+            const inspectViewsLinkSelector = "#inspectViews";
+            const jsCodeReturningDevToggle = "document.querySelector('#devModeToggle')";
+
+            const tab = await ChromeTab.create(`chrome://extensions?id=${id}`);
+            await tab.untilSelector(devModeToggleSelector);
+
+            if (!(await tab.getObject(jsCodeReturningDevToggle))?.selected) {
+              await tab.clickSelector(devModeToggleSelector);
+            }
+
+            await tab.untilSelector(inspectViewsLinkSelector);
+            await tab.clickSelector(inspectViewsLinkSelector);
+
+            await tab.untilTrue(() => !!getWorker(id), { errorMessage: "Worker initialization timeout" });
+
+            tab.close();
+          } catch (error) {
+            console.error("Script error:", error);
+          }
+        })();
+      **/
+
     Object.assign(Zombie, {
       send,
       on, ons,
+      ChromeTab,
       _socket: socket,
       startupTargets,
     });
