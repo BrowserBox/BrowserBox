@@ -1,11 +1,1 @@
-- easy tab api
-- const tab = await chrome.makeTab("chrome://extensions?id="+id);
-  await tab.untilSelector(devModeToggleSelector);
-  if ( !(await tab.getObject(jsCodeReturningDevToggle)).selected ) {
-    await tab.clickSelector(devModeToggleSelector);
-  }
-  await tab.untilSelector(inspectViewsLinkSelector);
-  await tab.clickSelector(inspectViewsLinkSelector);
-  await untilTrue(() => !!getWorker(id));
-  tab.close();
-   
+- lock out extensions utility pages we open to create service workers from normal setup and display flow 
