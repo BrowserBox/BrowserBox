@@ -104,7 +104,6 @@
     "helmet": "latest",
     "is-docker": "latest",
     "multer": "latest",
-    "parcel": "^2.13.3",
     "patch-package": "latest",
     "simple-peer": "latest",
     "socks-proxy-agent": "latest",
@@ -114,10 +113,7 @@
     "yargs": "^17.7.2"
   },
   "devDependencies": {
-    "@babel/core": "latest",
     "@mapbox/node-pre-gyp": "latest",
-    "@parcel/packager-raw-url": "latest",
-    "@parcel/transformer-webmanifest": "latest",
     "@types/body-parser": "latest",
     "@types/cookie-parser": "latest",
     "@types/current-git-branch": "latest",
@@ -128,11 +124,6 @@
     "@types/node-fetch": "latest",
     "@types/ws": "latest",
     "@vertx/core": "latest",
-    "eslint": "latest",
-    "jsdom": "^25.0.0",
-    "node-loader": "latest",
-    "parcel-resolver-ignore": "latest",
-    "svgo": "^3.3.2",
     "whatwg-fetch": "^3.6.20"
   }
 }

@@ -27,7 +27,6 @@
     "vanillatype": "latest"
   },
   "devDependencies": {
-    "@babel/runtime": "latest",
     "simple-peer": "latest"
   }
 }

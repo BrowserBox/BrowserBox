@@ -570,38 +570,42 @@ const controller_api = {
           break;
           case "Connection.extensions.actionOnClicked": {
             const {id} = command.params;
-            const worker = getWorker(id);
+            let worker = getWorker(id);
             if ( ! worker && shouldBeWorker(id) ) {
-              console.warn(`Worker unknown for extension: ${id}`);
-              console.log(`Will create worker`);
+              DEBUG.debugSetupWorker && console.warn(`Worker unknown for extension: ${id}`);
+              DEBUG.debugSetupWorker && console.log(`Will create worker`);
               const {ChromeTab} = connection.zombie;
               try {
-                const devModeToggleSelector = "document.querySelector('extensions-manager').shadowRoot.querySelector('extensions-toolbar').shadowRoot.querySelector('cr-toolbar').querySelector('cr-toggle#devMode')";
+                const devModeToggleSelector = "document?.querySelector?.('extensions-manager')?.shadowRoot?.querySelector?.('extensions-toolbar')?.shadowRoot?.querySelector?.('cr-toolbar')?.querySelector?.('cr-toggle#devMode')";
                 const inspectViewsLinkSelector = "document.querySelector('extensions-manager').shadowRoot.querySelector('cr-view-manager').querySelector('extensions-detail-view').shadowRoot.querySelector('a.inspectable-view')";
 
                 const tab = await ChromeTab.create(`chrome://extensions?id=${id}`);
+                DEBUG.debugSetupWorker && console.log(`Waiting for dev mode selector`);
                 await tab.untilObject(devModeToggleSelector);
-
-                if (!(await tab.getObject(devModeToggleSelector))?.selected) {
+                DEBUG.debugSetupWorker && console.log(`Checking selected`);
+                const obj = await tab.getObject(devModeToggleSelector);
+                DEBUG.debugSetupWorker && console.log(`Object`, obj);
+                if (!(await tab.getObject(devModeToggleSelector + '.checked'))) {
                   await tab.clickSelector(devModeToggleSelector);
                 }
 
                 await tab.untilObject(inspectViewsLinkSelector);
-                await tab.clickSelector(inspectViewsLinkSelector);
+                await tab.eval(inspectViewsLinkSelector + ".click()");
 
-                await tab.untilTrue(() => !!getWorker(id), { errorMessage: "Worker initialization timeout" });
+                await tab.untilTrue(() => !!getWorker(id)?.sessionId, { errorMessage: "Worker initialization timeout" });
+                worker = getWorker(id);
 
                 tab.close();
               } catch (error) {
                 console.error("Script error:", error);
+                return;
               }
-              return;
               // we could fall back to
               //connection.forceMeta({createTab:{opts:{url:`chrome-extension://${id}/popup.html`}}});
             }
             const {width,height} = connection.bounds;
             const expression = `__currentViewport = {left:0,top:0,...${JSON.stringify({width,height})}};__hear({name:"actionOnClicked"});`
-            console.log(`ok`, expression);
+            DEBUG.debugSetupWorker && console.log(`ok`, expression);
             //connection.zombie.send("Target.activateTarget", { targetId: worker.targetId }, worker.sessionId).catch(err => console.warn(`Error activate target`));
             connection.zombie.send("Runtime.evaluate", 
               {

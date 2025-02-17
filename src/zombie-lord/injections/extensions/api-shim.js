@@ -55,6 +55,13 @@
         Listeners.action.add(listener);
       };
 
+      const OG_SP_O_REF = chrome.sidePanel.setOptions;
+      chrome.sidePanel.setOptions = opts => {
+        console.log(`Received options`, opts, `for execution regarding Side Panel`);
+        say({sidePanel:{opts}});  
+        OG_SP_O_REF.call(chrome.sidePanel, opts);
+      };
+
       chrome.tabs.remove = (id, cb) => { typeof cb == 'function' && setTimeout(cb, 0); void 0 };
       chrome.windows.remove = (id, cb) => { typeof cb == 'function' && setTimeout(cb, 0); void 0 };
 
