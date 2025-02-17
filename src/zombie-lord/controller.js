@@ -572,20 +572,20 @@ const controller_api = {
             const {id} = command.params;
             let worker = getWorker(id);
             if ( ! worker && shouldBeWorker(id) ) {
-              console.warn(`Worker unknown for extension: ${id}`);
-              console.log(`Will create worker`);
+              DEBUG.debugSetupWorker && console.warn(`Worker unknown for extension: ${id}`);
+              DEBUG.debugSetupWorker && console.log(`Will create worker`);
               const {ChromeTab} = connection.zombie;
               try {
                 const devModeToggleSelector = "document?.querySelector?.('extensions-manager')?.shadowRoot?.querySelector?.('extensions-toolbar')?.shadowRoot?.querySelector?.('cr-toolbar')?.querySelector?.('cr-toggle#devMode')";
                 const inspectViewsLinkSelector = "document.querySelector('extensions-manager').shadowRoot.querySelector('cr-view-manager').querySelector('extensions-detail-view').shadowRoot.querySelector('a.inspectable-view')";
 
                 const tab = await ChromeTab.create(`chrome://extensions?id=${id}`);
-                console.log(`Waiting for dev mode selector`);
+                DEBUG.debugSetupWorker && console.log(`Waiting for dev mode selector`);
                 await tab.untilObject(devModeToggleSelector);
-                console.log(`Checking selected`);
+                DEBUG.debugSetupWorker && console.log(`Checking selected`);
                 const obj = await tab.getObject(devModeToggleSelector);
-                console.log(`Object`, obj);
-                if (!(await tab.getObject(devModeToggleSelector))?.selected) {
+                DEBUG.debugSetupWorker && console.log(`Object`, obj);
+                if (!(await tab.getObject(devModeToggleSelector + '.checked'))) {
                   await tab.clickSelector(devModeToggleSelector);
                 }
 
@@ -605,7 +605,7 @@ const controller_api = {
             }
             const {width,height} = connection.bounds;
             const expression = `__currentViewport = {left:0,top:0,...${JSON.stringify({width,height})}};__hear({name:"actionOnClicked"});`
-            console.log(`ok`, expression);
+            DEBUG.debugSetupWorker && console.log(`ok`, expression);
             //connection.zombie.send("Target.activateTarget", { targetId: worker.targetId }, worker.sessionId).catch(err => console.warn(`Error activate target`));
             connection.zombie.send("Runtime.evaluate", 
               {

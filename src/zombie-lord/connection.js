@@ -3126,7 +3126,7 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
           }
         }
 
-        async untilTrue(conditionFunc, { interval = 100, timeout = 50000, errorMessage = "Condition timed out" } = {}) {
+        async untilTrue(conditionFunc, { interval = 100, timeout = 20000, errorMessage = "Condition timed out" } = {}) {
           const start = Date.now();
           let i = 0;
           while ((Date.now() - start) < timeout) {
