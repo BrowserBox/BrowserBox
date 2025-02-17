@@ -576,18 +576,21 @@ const controller_api = {
               console.log(`Will create worker`);
               const {ChromeTab} = connection.zombie;
               try {
-                const devModeToggleSelector = "document.querySelector('extensions-manager').shadowRoot.querySelector('extensions-toolbar').shadowRoot.querySelector('cr-toolbar').querySelector('cr-toggle#devMode')";
+                const devModeToggleSelector = "document?.querySelector?.('extensions-manager')?.shadowRoot?.querySelector?.('extensions-toolbar')?.shadowRoot?.querySelector?.('cr-toolbar')?.querySelector?.('cr-toggle#devMode')";
                 const inspectViewsLinkSelector = "document.querySelector('extensions-manager').shadowRoot.querySelector('cr-view-manager').querySelector('extensions-detail-view').shadowRoot.querySelector('a.inspectable-view')";
 
                 const tab = await ChromeTab.create(`chrome://extensions?id=${id}`);
+                console.log(`Waiting for dev mode selector`);
                 await tab.untilObject(devModeToggleSelector);
-
+                console.log(`Checking selected`);
+                const obj = await tab.getObject(devModeToggleSelector);
+                console.log(`Object`, obj);
                 if (!(await tab.getObject(devModeToggleSelector))?.selected) {
                   await tab.clickSelector(devModeToggleSelector);
                 }
 
                 await tab.untilObject(inspectViewsLinkSelector);
-                await tab.clickSelector(inspectViewsLinkSelector);
+                await tab.eval(inspectViewsLinkSelector + ".click()");
 
                 await tab.untilTrue(() => !!getWorker(id), { errorMessage: "Worker initialization timeout" });
 

@@ -698,6 +698,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   });
 
   on("Target.detachedFromTarget", ({sessionId}) => {
+    console.log("Detached", sessionId);
     const detached = {sessionId};
     const targetId = sessions.get(sessionId);
     if ( Workers.has(sessionId) ) {
@@ -3106,7 +3107,13 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
         static async create(url) {
           try {
             const { targetId } = await send("Target.createTarget", { url });
-            const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
+            //const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
+            await untilTrue(() => sessions.has(targetId));
+            const sessionId = sessions.get(targetId);
+            await send("Runtime.enable", {}, sessionId);
+            await send("Runtime.runIfWaitingForDebugger", {}, sessionId);
+            await send("Debugger.enable", {}, sessionId);
+            await send("Debugger.setPauseOnExceptions", {state:'none'}, sessionId);
             return new ChromeTab(targetId, sessionId, (method, params, sessionId) => send(method, params, sessionId));
           } catch (error) {
             console.error("Failed to create ChromeTab:", error);
@@ -3114,43 +3121,75 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
           }
         }
 
-        async untilTrue(conditionFunc, { interval = 100, timeout = 5000, errorMessage = "Condition timed out" } = {}) {
+        async untilTrue(conditionFunc, { interval = 100, timeout = 50000, errorMessage = "Condition timed out" } = {}) {
           const start = Date.now();
-          while (Date.now() - start < timeout) {
+          let i = 0;
+          while ((Date.now() - start) < timeout) {
+            console.log('Wait loop ', i++);
+            console.log('Session id', sessions.get(this.#tabId));
             try {
-              if (await conditionFunc()) return;
+              console.log('Waiting for', conditionFunc.toString());
+              const conditionResult = await conditionFunc();
+              console.log({conditionResult});
+              if (conditionResult) return;
             } catch (error) {
               console.warn("Condition function error:", error);
             }
-            await new Promise((resolve) => setTimeout(resolve, interval));
+            console.log('Sleeping for ', interval, 'ms');
+            await sleep(interval);
           }
+          console.warn('Timed out');
           throw new Error(errorMessage);
         }
 
         async untilSelector(selector) {
+          const that = this;
           await this.untilTrue(async () => {
-            const result = await this.getObject(`document.querySelector('${selector}')`);
+            const result = await that.getObject(`document.querySelector('${selector}')`);
             return !!result;
           }, { errorMessage: `Timeout waiting for selector: ${selector}` });
         }
 
         async untilObject(jsCode) {
+          const that = this;
           return await this.untilTrue(async () => {
-            const result = await this.getObject(jsCode);
-            return result !== undefined;
+            try {
+              console.log('Evaluate', jsCode, that);
+              const result = await that.getObject(jsCode);
+              console.log(result);
+              return result !== undefined;
+            } catch(e) {
+              console.warn('Issue in until true', e);
+            }
           }, { errorMessage: `Timeout waiting for object: ${jsCode}` });
         }
 
         async getObject(jsCode) {
           try {
+            console.log('Evaluating', jsCode, this, this.#send, this.#sessionId);
             const result = await this.#send("Runtime.evaluate", {
               expression: jsCode,
-              returnByValue: true,
+              timeout: 1000,
+              generatePreview: true,
             }, this.#sessionId);
-            return result?.result?.value ?? undefined;
+            console.log({result});
+            return result?.result?.preview ?? undefined;
           } catch (error) {
             console.error("Error evaluating JS:", jsCode, error);
             return undefined;
+          }
+        }
+
+        async eval(jsCode) {
+          try {
+            console.log('Evaluating', jsCode, this, this.#send, this.#sessionId);
+            const result = await this.#send("Runtime.evaluate", {
+              expression: jsCode,
+              timeout: 1000,
+              generatePreview: true,
+            }, this.#sessionId);
+          } catch (error) {
+            console.error("Error evaluating JS:", jsCode, error);
           }
         }
 
