@@ -262,6 +262,7 @@ const Workers = new Map();
 const WorkerCommands = new Set([
   "Target.activateTarget",
   "Runtime.enable",
+  "Debugger.enable",
   "Runtime.evaluate",
   "Network.enable",
   "Runtime.runIfWaitingForDebugger",
@@ -646,7 +647,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.worldDebug && consolelog('attached 1', targetInfo);
       DEBUG.val && consolelog('attached 1', targetInfo);
       const attached = {sessionId,targetInfo,waitingForDebugger};
-      const {targetId} = targetInfo;
+      const {targetId,url} = targetInfo;
+      if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
+        await send("Target.closeTarget", {targetId});
+        return;
+      }
       TargetReloads.set(sessionId, {reloads: 0, queue: [], reasons:[], firstReloadStatus: 'waiting-to-setup'});
       addSession(targetId, sessionId);
       DEBUG.val && consolelog("Attached to target", sessionId, targetId);

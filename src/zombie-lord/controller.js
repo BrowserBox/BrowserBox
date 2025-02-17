@@ -570,7 +570,7 @@ const controller_api = {
           break;
           case "Connection.extensions.actionOnClicked": {
             const {id} = command.params;
-            const worker = getWorker(id);
+            let worker = getWorker(id);
             if ( ! worker && shouldBeWorker(id) ) {
               console.warn(`Worker unknown for extension: ${id}`);
               console.log(`Will create worker`);
@@ -592,13 +592,14 @@ const controller_api = {
                 await tab.untilObject(inspectViewsLinkSelector);
                 await tab.eval(inspectViewsLinkSelector + ".click()");
 
-                await tab.untilTrue(() => !!getWorker(id), { errorMessage: "Worker initialization timeout" });
+                await tab.untilTrue(() => !!getWorker(id)?.sessionId, { errorMessage: "Worker initialization timeout" });
+                worker = getWorker(id);
 
                 tab.close();
               } catch (error) {
                 console.error("Script error:", error);
+                return;
               }
-              return;
               // we could fall back to
               //connection.forceMeta({createTab:{opts:{url:`chrome-extension://${id}/popup.html`}}});
             }
