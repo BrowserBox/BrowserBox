@@ -3,7 +3,7 @@
   import fs from 'fs';
   import os from 'os';
   import path from 'path';
-  import child_process from 'child_process';	
+  import child_process from 'child_process';  
 
   import express from 'express';
   import compression from 'compression';
@@ -1613,8 +1613,11 @@
             const extensionSettings = preferences.extensions.settings[extensionId];
             const localizedManifest = localizeExtensionManifest({extensionSettings, extensionPath, manifest});
             // check for a well known popup location
-            if ( ! localizedManifest.action.default_popup && fs.existsSync(path.resolve(path.dirname(manifestPath), 'popup.html')) ) {
+            if ( ! localizedManifest?.action?.default_popup && fs.existsSync(path.resolve(path.dirname(manifestPath), 'popup.html')) ) {
               localizedManifest.action.default_popup = 'popup.html';
+            }
+            if ( ! localizedManifest?.side_panel?.default_path && fs.existsSync(path.resolve(path.dirname(manifestPath), 'sidepanel.html')) ) {
+              localizedManifest.action.default_path = 'sidepanel.html';
             }
             if ( localizedManifest.display_in_launcher !== false ) {
               if ( extensionSettings.state === 0 ) {
