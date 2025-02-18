@@ -1001,7 +1001,7 @@
               latestFrameId = -1;
               this.publics.state.clearBrowser();
               this.publics.state.setTopState();
-              this.publics.state.writeCanvas("No connection to server");
+              this.publics.state.debouncedWriteCanvas("No connection to server");
               this.senders = null;
               connecting = false;
               (DEBUG.cnx || DEBUG.debugConnect) && console.info("Socket disconnected. Will attempt reconnect if online", e, this.websockets);

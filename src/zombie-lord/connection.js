@@ -267,6 +267,14 @@ const WorkerCommands = new Set([
   "Network.enable",
   "Runtime.runIfWaitingForDebugger",
 ]);
+const WebstoreBlock = new Set([
+  "Navigation.setUserAgentOverride",
+  "Emulation.deviceMetricsOverride",
+  "Emulation.setUserAgentOverride",
+]);
+const DesktopOnly = new Set([
+  "chromewebstore.google.com",
+]);
 const settingUp = new Map();
 const setupComplete = new Set();
 const attaching = new Set();
@@ -2523,6 +2531,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.debugSetupWorker && console.info(`Blocking ${command.name} from worker`);
       return {};
     }
+    if (  CONFIG.isCT && DEBUG.extensionsAccess && WebstoreBlock.has(command.name) ) {
+      const isWebstore = new URL(tabs.get(targetId).url).hostname == "chromewebstore.google.com";
+      if ( isWebstore ) {
+        console.info(`Blocking ${command.name} from chrome webstore`);
+        return {};
+      }
+    }
     if ( command.name.startsWith("Target") || ! sessionId ) {
       if ( command.name.startsWith("Page") || command.name.startsWith("Runtime") || command.name.startsWith("Emulation") ) {
         sessionId = that.sessionId;
@@ -2880,6 +2895,13 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
     console.log('sessionid', sessionId);
     DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
     if (!sessionId) continue;
+    let isDesktopOnly = false;
+    try {
+      const url = new URL(tabs.get(targetId).url);
+      isDesktopOnly = DesktopOnly.has(url.hostname) || DesktopOnly.has(url.href);
+    } catch(e) {
+      console.warn(`Could not construct url from tab`, targetId, e);
+    }
     try {
       await send("Runtime.evaluate", {
         expression: `navigator.userAgent`,
@@ -2901,7 +2923,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
         */
         DEBUG.traceViewportUpdateFuncs && console.log('Retrieved userAgent:', userAgent);
         //console.log(`Session ${sessionId} has user agent ${userAgent}`);
-        const desiredUserAgent = mobile ? mobUA : deskUA;
+        const desiredUserAgent = mobile && ! isDesktopOnly ? mobUA : deskUA;
         connection.navigator.userAgent = desiredUserAgent;
         DEBUG.traceViewportUpdateFuncs && console.log('Determined desiredUserAgent:', desiredUserAgent);
         DEBUG.debugUserAgent && console.log({mobile, targetId, userAgent, desiredUserAgent});
