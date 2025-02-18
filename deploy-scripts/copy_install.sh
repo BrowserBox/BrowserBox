@@ -24,17 +24,20 @@ else
   mkdir -p $COMMAND_DIR
 fi
 
-if [[ -f /etc/os-release ]]; then
-  . /etc/os-release
-  if [[ $ID == *"bsd" ]]; then
-    echo "Skipping build step as on a bsd flavor" >&2
-  fi
-else
-  bundle="$(cd src; node -e "import('./common.js').then(({DEBUG}) => console.log(DEBUG.bundleClientCode))")"
-  if [[ "$bundle" != "false" ]]; then
-    npm run parcel
-  fi
-fi
+# we don't bundle client code at this time due to instability in transpiled js
+#if [[ -f /etc/os-release ]]; then
+#  . /etc/os-release
+#  if [[ $ID == *"bsd" ]]; then
+#    echo "Skipping build step as on a bsd flavor" >&2
+#  else
+#    npm run parcel
+#  fi
+#else
+#  bundle="$(cd src; node -e "import('./common.js').then(({DEBUG}) => console.log(DEBUG.bundleClientCode))")"
+#  if [[ "$bundle" != "false" ]]; then
+#    npm run parcel
+#  fi
+#fi
 
 echo "INSTALL_DIR: $INSTALL_DIR"
 echo -n "Copying bbpro application files to /usr/local/share/dosyago/ ..."
