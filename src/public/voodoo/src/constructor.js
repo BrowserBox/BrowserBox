@@ -1187,7 +1187,7 @@
               modal: {
                 type: 'notice',
                 title: 'CloudTabs Extensions',
-                message: 'Installing your extension now. Close this message to reload and check progress.'
+                message: 'Please wait while your extension is installed. Close this message to check progress.'
               }
             });
             state.viewState.modalComponent.addEventListener(
@@ -1195,14 +1195,18 @@
               () => {
                 const maxWaits = 150;
                 let waits = 0;
-                //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
-                setInterval(async () => {
-                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                let waiter = setInterval(async () => {
                   waits++;
                   if ( waits > maxWaits ) {
                     alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                    clearInterval(watier);
+                    return;
                   }
-                  location.reload();
+                  writeCanvas("Waiting for browser...");
+                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                  clearInterval(watier);
+                  setTimeout(() => location.reload(), 1000);
+                  alert('Browser is back up. Reloading your app.');
                 }, 2003);
               },
               {once: true, capture: true}
@@ -1215,7 +1219,7 @@
               modal: {
                 type: 'notice',
                 title: 'CloudTabs Extensions',
-                message: 'Removing your extension now. Close this message to reload and check progress.'
+                message: 'Please wait while your extension is removed. Close this message to check progress.'
               }
             });
             state.viewState.modalComponent.addEventListener(
@@ -1224,13 +1228,18 @@
                 const maxWaits = 150;
                 let waits = 0;
                 //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
-                setInterval(async () => {
-                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                let waiter = setInterval(async () => {
                   waits++;
                   if ( waits > maxWaits ) {
-                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                    alert(`Something weird happened and your browser did not seem to restart after removing the extension.`);
+                    clearInterval(watier);
+                    return;
                   }
-                  location.reload();
+                  writeCanvas("Waiting for browser...");
+                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                  clearInterval(watier);
+                  setTimeout(() => location.reload(), 1000);
+                  alert('Browser is back up. Reloading your app.');
                 }, 2003);
               },
               {once: true, capture: true}
@@ -1243,7 +1252,7 @@
               modal: {
                 type: 'notice',
                 title: 'CloudTabs Extensions',
-                message: 'Modifying your extension now. Close this message to reload and check progress.'
+                message: 'Please wait while your extension is modified. Close this message to check progress.'
               }
             });
             state.viewState.modalComponent.addEventListener(
@@ -1252,13 +1261,18 @@
                 const maxWaits = 150;
                 let waits = 0;
                 //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
-                setInterval(async () => {
-                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                let waiter = setInterval(async () => {
                   waits++;
                   if ( waits > maxWaits ) {
-                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                    alert(`Something weird happened and your browser did not seem to restart after modifying the extension.`);
+                    clearInterval(watier);
+                    return;
                   }
-                  location.reload();
+                  writeCanvas("Waiting for browser...");
+                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
+                  clearInterval(watier);
+                  setTimeout(() => location.reload(), 1000);
+                  alert('Browser is back up. Reloading your app.');
                 }, 2003);
               },
               {once: true, capture: true}
