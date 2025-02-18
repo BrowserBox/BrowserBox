@@ -150,6 +150,9 @@
         });
         const updateTabs = debounce(rawUpdateTabs, LONG_DELAY);
 
+        // debug
+        globalThis.writeCanvas = writeCanvas;
+
         // MIGRATE (go)
         const {
           go,
@@ -402,6 +405,7 @@
           // for offline
           OPTIONS,
           writeCanvas,
+          debouncedWriteCanvas: debounce(writeCanvas, 5000),
           get setTopState() {
             return () => {
               setState('bbpro', state); 
@@ -1195,19 +1199,23 @@
               () => {
                 const maxWaits = 150;
                 let waits = 0;
-                let waiter = setInterval(async () => {
+                let waiter = async () => {
                   waits++;
                   if ( waits > maxWaits ) {
                     alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
-                    clearInterval(watier);
+                    clearInterval(waiter);
                     return;
                   }
                   writeCanvas("Waiting for browser...");
-                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
-                  clearInterval(watier);
-                  setTimeout(() => location.reload(), 1000);
-                  alert('Browser is back up. Reloading your app.');
-                }, 2003);
+                  try {
+                    const {isTor} = await Promise.race([throwAfter(1500), await uberFetch('/isTor').then(async r => await r.json())]);
+                    setTimeout(() => location.reload(), 1000);
+                    alert('Browser is back up. Reloading your app.');
+                  } catch(e) {
+                    setTimeout(waiter, 2003);
+                  }
+                }
+                waiter();
               },
               {once: true, capture: true}
             );
@@ -1228,19 +1236,23 @@
                 const maxWaits = 150;
                 let waits = 0;
                 //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
-                let waiter = setInterval(async () => {
+                let waiter = async () => {
                   waits++;
                   if ( waits > maxWaits ) {
-                    alert(`Something weird happened and your browser did not seem to restart after removing the extension.`);
-                    clearInterval(watier);
+                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                    clearInterval(waiter);
                     return;
                   }
                   writeCanvas("Waiting for browser...");
-                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
-                  clearInterval(watier);
-                  setTimeout(() => location.reload(), 1000);
-                  alert('Browser is back up. Reloading your app.');
-                }, 2003);
+                  try {
+                    const {isTor} = await Promise.race([throwAfter(1500), await uberFetch('/isTor').then(async r => await r.json())]);
+                    setTimeout(() => location.reload(), 1000);
+                    alert('Browser is back up. Reloading your app.');
+                  } catch(e) {
+                    setTimeout(waiter, 2003);
+                  }
+                }
+                waiter();
               },
               {once: true, capture: true}
             );
@@ -1261,19 +1273,23 @@
                 const maxWaits = 150;
                 let waits = 0;
                 //setTimeout(() => location.reload(), 6242), {once:true, capture:true};
-                let waiter = setInterval(async () => {
+                let waiter = async () => {
                   waits++;
                   if ( waits > maxWaits ) {
-                    alert(`Something weird happened and your browser did not seem to restart after modifying the extension.`);
-                    clearInterval(watier);
+                    alert(`Something weird happened and your browser did not seem to restart after installing the extension.`);
+                    clearInterval(waiter);
                     return;
                   }
                   writeCanvas("Waiting for browser...");
-                  const {isTor} = await uberFetch('/isTor').then(async r => await r.json());
-                  clearInterval(watier);
-                  setTimeout(() => location.reload(), 1000);
-                  alert('Browser is back up. Reloading your app.');
-                }, 2003);
+                  try {
+                    const {isTor} = await Promise.race([throwAfter(1500), await uberFetch('/isTor').then(async r => await r.json())]);
+                    setTimeout(() => location.reload(), 1000);
+                    alert('Browser is back up. Reloading your app.');
+                  } catch(e) {
+                    setTimeout(waiter, 2003);
+                  }
+                }
+                waiter();
               },
               {once: true, capture: true}
             );
@@ -1785,7 +1801,7 @@
           if ( !noClear ) {
             ctx.fillRect(0, 0, canv.width, canv.height);
           }
-          ctx.fillStyle = 'silver';
+          ctx.fillStyle = 'white';
           ctx.font = '3vmax sans-serif';
           ctx.textAlign = "center";
           let x = canv.width/2;
