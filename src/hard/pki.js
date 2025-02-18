@@ -11,6 +11,7 @@ import {
   MASTER_CONFIG_DIR,
   STADIUMS_CONFIG_DIR,
   SEATS_DIR,
+  TICKET_DIR,
   TICKET_HOLDER_DIR,
   LICENSE_SERVER_URL,
   LICENSE_KEY,
@@ -164,7 +165,7 @@ export class PKI {
 
     // CHANGED: Fetch master certificate from filesystem (unchanged for now)
     const masterCertificate = JSON.parse(
-      fs.readFileSync(path.join(MASTER_CONFIG_DIR, 'ticket.json'), 'utf-8')
+      fs.readFileSync(path.join(MASTER_CONFIG_DIR, 'certificate.json'), 'utf-8')
     );
 
     const seatData = {
@@ -411,7 +412,7 @@ export class PKI {
   }
 
   getTicketDirectory(ticketId) {
-    return path.join(TICKET_HOLDER_DIR, ticketId);
+    return path.join(TICKET_DIR);
   }
 
   getTicketPrivateKeyPath() {
@@ -495,7 +496,7 @@ export class PKI {
         masterCertificateData.publicKey
       );
       fs.writeFileSync(
-        path.join(MASTER_CONFIG_DIR, 'ticket.json'),
+        path.join(MASTER_CONFIG_DIR, 'certificate.json'),
         JSON.stringify(masterCertificate, null, 2)
       );
 
@@ -543,7 +544,7 @@ export class PKI {
         stadiumCertificateData.publicKey
       );
       fs.writeFileSync(
-        path.join(stadiumConfigDir, 'ticket.json'),
+        path.join(stadiumConfigDir, 'certificate.json'),
         JSON.stringify(stadiumCertificate, null, 2)
       );
 
