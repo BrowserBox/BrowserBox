@@ -71,6 +71,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  allowPuter: false,
   revealChromeJSIntercepts: false,
   debugSetupWorker: true,
   attachToServiceWorkers: true,
@@ -289,9 +290,11 @@ DEBUG.showDebug && console.log(DEBUG);
 
 export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   "https://cloudtabs.net",
-  "https://*.puter.com",
-  "https://puter.com",
-  "https://*.puter.site",
+  ...(DEBUG.allowPuter ? [
+    "https://*.puter.com",
+    "https://puter.com",
+    "https://*.puter.site",
+  ] : []),
   "https://*.cloudtabs.net",
   "https://localhost:*",
   ...(
