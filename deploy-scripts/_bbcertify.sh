@@ -4,7 +4,7 @@
 set -e
 
 # Config locations
-CONFIG_DIR="$HOME/.config/dosyago/bbpro/tickets/"
+CONFIG_DIR="$HOME/.config/dosyago/bbpro/tickets"
 if [[ ! -d "$CONFIG_DIR" ]]; then
   mkdir -p "$CONFIG_DIR"
 fi
