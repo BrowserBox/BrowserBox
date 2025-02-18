@@ -4,7 +4,10 @@
 set -e
 
 # Config locations
-CONFIG_DIR="$HOME/.bbcertify"
+CONFIG_DIR="$HOME/.config/dosyago/bbpro/tickets/"
+if [[ ! -d "$CONFIG_DIR" ]]; then
+  mkdir -p "$CONFIG_DIR"
+fi
 TICKET_FILE="$CONFIG_DIR/ticket.json"
 
 # API endpoints (adjust these URLs as needed for your server)
@@ -62,8 +65,8 @@ get_vacant_seat() {
     exit 1
   fi
 
-  # Extract vacant seat ID
-  VACANT_SEAT=$(echo "$VACANT_SEAT_RESPONSE" | grep -o '"vacantSeat":"[^"]*"' | cut -d'"' -f4)
+  # Extract vacant seat ID using jq
+  VACANT_SEAT=$(echo "$VACANT_SEAT_RESPONSE" | jq -r '.vacantSeat')
   if [[ -z "$VACANT_SEAT" ]]; then
     echo "No vacant seat available. Server response:" >&2
     echo "$VACANT_SEAT_RESPONSE" >&2
@@ -75,7 +78,6 @@ get_vacant_seat() {
 }
 
 # Create config directory if it doesn't exist
-mkdir -p "$CONFIG_DIR"
 
 # Get the vacant seat ID from the server
 SEAT_ID=$(get_vacant_seat)
@@ -97,7 +99,8 @@ if [[ -z "$TICKET_RESPONSE" ]]; then
   exit 1
 fi
 
-if echo "$TICKET_RESPONSE" | grep -q '"ticket":'; then
+# Check if the ticket field exists in the response and save the ticket if present
+if echo "$TICKET_RESPONSE" | jq -e '.ticket' > /dev/null; then
   echo "Ticket issued successfully!" >&2
   echo "$TICKET_RESPONSE" > "$TICKET_FILE"
   echo "Ticket saved to $TICKET_FILE" >&2
