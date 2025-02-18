@@ -1,5 +1,5 @@
 #!/bin/bash
-# bbcertify.sh - Obtain a free seat via the API and issue a ticket, then save the ticket JSON
+# bbcertify.sh - Obtain a vacant seat via the API and issue a ticket, then save the ticket JSON
 
 set -e
 
@@ -10,7 +10,7 @@ TICKET_FILE="$CONFIG_DIR/ticket.json"
 # API endpoints (adjust these URLs as needed for your server)
 API_VERSION="v1"
 API_BASE="https://master.dosaygo.com/${API_VERSION}"
-FREE_SEAT_ENDPOINT="$API_BASE/free-seat"
+VACANT_SEAT_ENDPOINT="$API_BASE/vacant-seat"
 ISSUE_TICKET_ENDPOINT="$API_BASE/tickets"
 
 # Function to display usage information
@@ -18,7 +18,7 @@ usage() {
   cat <<EOF
 Usage: $0 [-h|--help]
 
-This script requests a free seat from the licensing server and issues a ticket.
+This script requests a vacant seat from the licensing server and issues a ticket.
 The ticket is saved to: $TICKET_FILE
 
 Environment Variables:
@@ -51,34 +51,34 @@ if [[ -z "$LICENSE_KEY" ]]; then
   exit 1
 fi
 
-# Function to fetch a free seat from the server
-get_free_seat() {
-  echo "Requesting a free seat from the server..." >&2
-  FREE_SEAT_RESPONSE=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$FREE_SEAT_ENDPOINT")
+# Function to fetch a vacant seat from the server
+get_vacant_seat() {
+  echo "Requesting a vacant seat from the server..." >&2
+  VACANT_SEAT_RESPONSE=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$VACANT_SEAT_ENDPOINT")
 
   # Check if response is empty
-  if [[ -z "$FREE_SEAT_RESPONSE" ]]; then
+  if [[ -z "$VACANT_SEAT_RESPONSE" ]]; then
     echo "Error: No response from server." >&2
     exit 1
   fi
 
-  # Extract free seat ID
-  FREE_SEAT=$(echo "$FREE_SEAT_RESPONSE" | grep -o '"freeSeat":"[^"]*"' | cut -d'"' -f4)
-  if [[ -z "$FREE_SEAT" ]]; then
-    echo "No free seat available. Server response:" >&2
-    echo "$FREE_SEAT_RESPONSE" >&2
+  # Extract vacant seat ID
+  VACANT_SEAT=$(echo "$VACANT_SEAT_RESPONSE" | grep -o '"vacantSeat":"[^"]*"' | cut -d'"' -f4)
+  if [[ -z "$VACANT_SEAT" ]]; then
+    echo "No vacant seat available. Server response:" >&2
+    echo "$VACANT_SEAT_RESPONSE" >&2
     exit 1
   fi
 
-  echo "Obtained free seat: $FREE_SEAT" >&2
-  echo "$FREE_SEAT"  # Key result to stdout
+  echo "Obtained vacant seat: $VACANT_SEAT" >&2
+  echo "$VACANT_SEAT"  # Key result to stdout
 }
 
 # Create config directory if it doesn't exist
 mkdir -p "$CONFIG_DIR"
 
-# Get the free seat ID from the server
-SEAT_ID=$(get_free_seat)
+# Get the vacant seat ID from the server
+SEAT_ID=$(get_vacant_seat)
 
 # Define a time slot (current timestamp) and a device ID (hostname)
 TIME_SLOT=$(date +%s)
