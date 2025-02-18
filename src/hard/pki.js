@@ -164,7 +164,7 @@ export class PKI {
 
     // CHANGED: Fetch master certificate from filesystem (unchanged for now)
     const masterCertificate = JSON.parse(
-      fs.readFileSync(path.join(MASTER_CONFIG_DIR, 'certificate.json'), 'utf-8')
+      fs.readFileSync(path.join(MASTER_CONFIG_DIR, 'ticket.json'), 'utf-8')
     );
 
     const seatData = {
@@ -495,7 +495,7 @@ export class PKI {
         masterCertificateData.publicKey
       );
       fs.writeFileSync(
-        path.join(MASTER_CONFIG_DIR, 'certificate.json'),
+        path.join(MASTER_CONFIG_DIR, 'ticket.json'),
         JSON.stringify(masterCertificate, null, 2)
       );
 
@@ -543,7 +543,7 @@ export class PKI {
         stadiumCertificateData.publicKey
       );
       fs.writeFileSync(
-        path.join(stadiumConfigDir, 'certificate.json'),
+        path.join(stadiumConfigDir, 'ticket.json'),
         JSON.stringify(stadiumCertificate, null, 2)
       );
 
