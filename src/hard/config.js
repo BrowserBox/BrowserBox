@@ -32,7 +32,7 @@ export const ROOT_PUBLIC_KEY_PATH = path.join(ROOT_CONFIG_DIR, 'public.pem');
 export const APP_PUBLIC_KEY_PATH = path.join(DIST_DIR, 'public.pem');
 export const APP_SIGNATURE_PATH = path.join(DIST_DIR, 'app.signature');
 export const CERTIFICATES_PATH = path.join(DIST_DIR, 'certificates.json');
-export const CERTIFICATE_PATH = path.join(DIST_DIR, 'certificate.json');
+export const CERTIFICATE_PATH = path.join(DIST_DIR, 'ticket.json');
 export const NODE_EXTRA_CA_CERTS = path.join(SSL_CERTS_DIR, 'rootCA.pem');
 // test values
 export const APP_SOURCE = path.join(LIB_DIR, 'application.js');
