@@ -11,6 +11,7 @@ import {
   MASTER_CONFIG_DIR,
   STADIUMS_CONFIG_DIR,
   SEATS_DIR,
+  TICKET_DIR,
   TICKET_HOLDER_DIR,
   LICENSE_SERVER_URL,
   LICENSE_KEY,
@@ -411,7 +412,7 @@ export class PKI {
   }
 
   getTicketDirectory(ticketId) {
-    return path.join(TICKET_HOLDER_DIR, ticketId);
+    return path.join(TICKET_DIR);
   }
 
   getTicketPrivateKeyPath() {

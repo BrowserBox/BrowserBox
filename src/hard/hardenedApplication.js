@@ -52,8 +52,8 @@ export class HardenedApplication {
         '.git',
         '.sig',
         'timechain_proof.json',
-        'certificates.json',
-        'certificate.json',
+        'tickets.json',
+        'ticket.json',
         'manifest.txt',
         'manifest.txt.sig'
       ],
