@@ -33,7 +33,9 @@ class BBExtensionsButton extends Base {
     DEBUG.debugExtensions && console.log('action', id, manifest);
 
     if ( manifest?.action?.default_popup ) {
-      this.state.createTab(null, `chrome-extension://${id}/${manifest.action.default_popup}`);
+      if ( ! manifest?.background?.service_worker ) {
+        this.state.createTab(null, `chrome-extension://${id}/${manifest.action.default_popup}`);
+      }
     } else if ( manifest?.side_panel?.default_path ) {
       this.state.createTab(null, `chrome-extension://${id}/${manifest.side_panel.default_path}`);
     }
