@@ -4,4 +4,3 @@
 - ensure everything else works properly including:
    - extensions work as we expect
    - tabs are sized to correct viewport on app load (regression?)
-- merge license control
