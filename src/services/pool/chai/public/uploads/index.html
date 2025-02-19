@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<title>View Document</title>
+<meta charset=utf-8>
+<meta name=viewport content=width=device-width,initial-scale=1>
+<style>
+  :root {
+    --bg-color: whitesmoke;
+    --button-color: #f5f5f5;
+    --button-hover-color: #e0e0e0;
+    --icon-color: #333;
+    --icon-button-size: 36px;
+  }
+
+  body {
+    background: var(--bg-color);
+    font-family: system-ui, Arial, sans-serif;
+    margin: 0;
+    padding-top: 60px; /* Space for fixed header */
+  }
+
+  header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5em;
+  }
+
+  .nav-group {
+    display: flex;
+    align-items: center;
+    margin: 0 0.25em;
+  }
+
+  .icon-button, .page-number-input, .icon-link {
+    border: 1px solid #dcdcdc;
+    padding: 0 0.25em;
+    margin-right: 0.25em;
+    background: var(--button-color);
+    border-radius: 4px;
+    height: var(--icon-button-size);
+    text-decoration: none;
+    color: var(--icon-color);
+    min-width: 40px;
+    font-size: 1em;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .icon-link i {
+    margin-right: 0.25em;
+  }
+
+  .icon-link:last-child {
+    margin-right: 0;
+  }
+
+  .page-number-input {
+    width: 4em; /* Adjust as needed */
+    box-sizing: border-box;
+    text-align: right;
+  }
+
+  .icon-button:hover, .icon-link:hover {
+    background: var(--button-hover-color);
+    cursor: pointer;
+  }
+
+  .icon-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 0.5em;
+  }
+
+  nav > div {
+    display: flex;
+    align-items: stretch;
+  }
+
+  @media (max-width: 768px) {
+    .icon-link span {
+      display: none; /* Hide text on smaller screens */
+    }
+    nav {
+      padding: 0.25em;
+    }
+    .nav-group {
+      margin: 0 0.125em;
+    }
+    .icon-link {
+      padding: 0 0.25em;
+    }
+    .icon-button, .page-number-input, .icon-link {
+      min-width: 32px;
+    }
+    .page-number-input {
+      width: 2.5em; /* Adjust as needed */
+    }
+    ::placeholder {
+      color: transparent;
+    }
+    ::-webkit-input-placeholder {
+      color: transparent;
+    }
+    ::-moz-placeholder {
+      color: transparent;
+    }
+    .icon-button i, .icon-link i {
+      margin-right: 0;
+    }
+    .icon-button, .page-number-input, .icon-link {
+      margin-right: 1px;
+    }
+  }
+
+  /* Accessibility: Outlines for focus states */
+  .icon-button:focus, .page-number-input:focus, .icon-link:focus {
+    outline: 2px dashed dodgerblue;
+    outline-offset: 2px;
+  }
+
+  img {
+    display: block;
+    box-shadow: 0 1px 2px silver;
+    margin: 3em auto;
+    width: 61.8%;
+    text-align: center;
+    font-style: italic;
+  }
+
+  #loading {
+    margin-top: 1.5rem;
+    cursor: wait !important;
+    text-align: center;
+  }
+</style>
+<link rel="stylesheet" href="css/fa.min.css">
+<header>
+  <nav>
+    <!-- Group 1: Page Navigation -->
+    <div class="nav-group page-navigation">
+      <button id="prev" title="Previous page" class="icon-button">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <input type="number" id="pageNumberInput" class="page-number-input" min="1" placeholder="Page">
+      <button id="next" title="Next page" class="icon-button">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+
+    <!-- Group 2: View Controls -->
+    <div class="nav-group view-controls">
+      <button id="zoomOut" title="Zoom out" class="icon-button">
+        <i class="fas fa-search-minus"></i>
+      </button>
+      <button id="rotate" title="Rotate page" class="icon-button">
+        <i class="fas fa-sync"></i>
+      </button>
+      <button id="zoomIn" title="Zoom in" class="icon-button">
+        <i class="fas fa-search-plus"></i>
+      </button>
+    </div>
+
+    <!-- Group 3: Links -->
+    <div class="nav-group link-controls">
+      <a id="hex-view-link" title="View hex of original" class="icon-link" href="/hex/command" target="_blank">
+        <i class="fas fa-code"></i><span class="text">HexView</span>
+      </a>
+      <a id="download-link" title="Download original" class="icon-link" rel="canonical" download href="#">
+        <i class="fas fa-download"></i><span class="text">Download</span>
+      </a>
+    </div>
+  </nav>
+</header>
+<p id=loading>
+  Converting&hellip;
+</p>
+<img id=page alt="Waiting for image of first page...">
+<script>
+  const FORMAT = `$$FORMAT$$`;
+  const path = location.pathname;
+  const imgUrl = i => path.replace(/\.html$/,`-${i.toString().padStart(4,'0')}.${FORMAT}`);
+  const documentFileName = path.replace(/\.html$/, '');
+  const noConvertUrl = documentFileName + '.noconvert';
+  console.log({documentFileName});
+  const hexView = document.querySelector('#hex-view-link');
+  const anchor = document.querySelector('#download-link');
+  anchor.setAttribute('href', documentFileName);
+  const CRAM_WAIT = 349;
+  const MAX_TIME_TO_WAIT_FOR_CONVERSION = 8*60*1000; // 8 minutes
+  let noCram = false;
+  let succeeded = false;
+  let failed = false;
+  let pageNumber = 0;
+  let ang = 0;
+  let stopCheck = false;
+
+  let hexLink = new URL(hexView.href);
+  hexLink.searchParams.set('filePath', documentFileName);
+  hexLink.searchParams.set('command', 'next');
+  hexView.href = hexLink;
+  hexView.target = btoa(documentFileName);
+
+  page.onerror = () => {
+    if ( stopCheck ) return;
+    setTimeout(checkFirstPage, 1001);
+  }
+  page.onload = () => {
+    succeeded = true;
+    loading.innerText = ''; 
+    page.alt = `Image of page ${pageNumber +1}`
+    page.onerror = checkFirstPage;
+    const pageNumberInput = document.getElementById("pageNumberInput");
+    pageNumberInput.value = pageNumber + 1; // Adjust for display
+  }
+  checkFirstPage();
+  prev.onclick = () => {
+    const nextUrl = imgUrl(--pageNumber);
+    if ( noCram ) {
+      clearTimeout(noCram);
+      noCram = setTimeout(() => {
+        noCram = false;
+        page.src = nextUrl;
+      }, CRAM_WAIT);
+    } else {
+      page.src = nextUrl;
+    }
+    if ( pageNumber >= 0 ) {
+      pagenumber.innerText = `page ${(pageNumber + 1)}`;
+    }
+  };
+  next.onclick = () => {
+    const nextUrl = imgUrl(++pageNumber);
+    if ( noCram ) {
+      clearTimeout(noCram);
+      noCram = setTimeout(() => {
+        noCram = false;
+        page.src = nextUrl;
+      }, CRAM_WAIT);
+    } else {
+      page.src = nextUrl;
+    }
+    pagenumber.innerText = `page ${(pageNumber + 1)}`;
+  }
+  rotate.onclick = () => {
+    ang = (ang + 90) % 360;
+    page.style.transform = `rotate(${ang}deg)`;
+  }
+
+  function checkFirstPage() {
+    if ( failed ) {
+      loading.innerText = 'No such file, or conversion failed.';
+      return;
+    } else if ( stopCheck ) {
+      return;
+    }
+    checkNoConvert();
+    pageNumber = 0;
+    page.src = imgUrl(pageNumber);
+    loading.innerHTML = 'Converting&hellip;';
+  }
+
+  setTimeout(() => {
+    if ( ! succeeded ) {
+      failed = true;
+    }
+  }, MAX_TIME_TO_WAIT_FOR_CONVERSION);
+
+    // Function to resize image based on slider value
+  function resizeImage() {
+    const slider = document.getElementById("resizeSlider");
+    const image = document.getElementById("page");
+    const zoomLevel = slider.value;
+    image.style.width = zoomLevel + "%";
+  }
+
+  // Add event listener to the slider
+  document.addEventListener("DOMContentLoaded", function() {
+    const slider = document.getElementById("resizeSlider");
+    slider.addEventListener("input", resizeImage);
+  });
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const downloadLink = document.getElementById("download-link"); // Replace with the actual ID of your Download anchor link
+
+    downloadLink.addEventListener("click", function(event) {
+      const userConfirmed = confirm("This file could harm your computer. Are you sure you want to download?");
+      if (!userConfirmed) {
+        event.preventDefault();
+      } else if ( globalThis.puterAbilityConfirmed ) {
+        event.preventDefault();
+        console.log(JSON.stringify({
+          puterCustomDownload: {
+            url: downloadLink.href,
+          }
+        }));
+      } else if ( globalThis.location.hostname.endsWith('.cloudtabs.net') ) {
+        event.preventDefault();
+        console.log(JSON.stringify({
+          ctCustomDownload: {
+            url: downloadLink.href,
+          }
+        }));
+      }
+    });
+
+    // Event listeners for zoom buttons
+    document.getElementById("zoomIn").addEventListener("click", function() { adjustZoom(true); });
+    document.getElementById("zoomOut").addEventListener("click", function() { adjustZoom(false); });
+
+    // Event listener for page number input
+    document.getElementById("pageNumberInput").addEventListener("change", updatePageNumber);
+  });
+
+  async function checkNoConvert() {
+    console.log(noConvertUrl);
+    const resp = await fetch(noConvertUrl);
+    if ( resp.ok ) {
+      const reason = await resp.text() || 'reasons unkown';
+      console.warn(`File did not convert. Reason: ${reason}`);
+      console.log(`Stopping checking for the first page...`);
+      stopCheck = true;
+      clearTimeout(noCram);
+      console.log(`Stopped.`);
+      loading.innerHTML = `${reason} <br>Please see the hex viewer if you want to review its contents.`;
+      // remove the image element used to display the current page
+      globalThis?.page?.remove?.();
+    }
+  }
+
+  // Function to adjust zoom
+  function adjustZoom(zoomIn) {
+    const image = document.getElementById("page");
+    let width = parseInt(image.style.width) || 61.8; // Default zoom level
+    const zoomStep = 10; // The amount by which the zoom changes
+
+    if (zoomIn) {
+      width += zoomStep;
+    } else {
+      width -= zoomStep;
+    }
+
+    // Limit zoom bounds (example: 10% to 200%)
+    width = Math.max(10, Math.min(200, width));
+
+    image.style.width = width + "%";
+  }
+
+  // Function to update page number
+  function updatePageNumber() {
+    const pageNumberInput = document.getElementById("pageNumberInput");
+    pageNumber = parseInt(pageNumberInput.value) - 1; // Adjust because pages are zero-indexed
+    const nextUrl = imgUrl(pageNumber);
+
+    // Update image source
+    page.src = nextUrl;
+
+    // Update page number display
+    pageNumberInput.value = pageNumber + 1; // Adjust for display
+  }
+</script>
+<script>
+  if ( globalThis.location.hostname.endsWith('cloudtabs.net') ) {
+    const maxTimes = 150; // check for some time
+    let times = 0;
+    let int = setInterval(() => {
+      times++;
+      if ( (times > maxTimes) || globalThis.puterAbilityConfirmed ) {
+        clearInterval(int);
+        return;
+      }
+      // this will be picked up and passed to the meta listener
+      console.log(JSON.stringify({
+        hasPuterAbility : {
+          msg: "Checking puter ability for custom download plugin: 'save to puter desktop'"
+        }
+      }));
+    }, 1001);
+  }
+</script>

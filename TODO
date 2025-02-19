@@ -1,0 +1,6 @@
+- merge license control
+- lock out the bg utility pages we open for creating workers from normal set up flow otherwise it might interfere with our stuff.
+- ensure we can not display offscreen pages from extensions. (one way to tell is we never get a screencastFrame from the session even tho visibility of screencast is visibile according to the change event). This may be more reliable than the extension way I am exploring.
+- ensure everything else works properly including:
+   - extensions work as we expect
+   - tabs are sized to correct viewport on app load (regression?)

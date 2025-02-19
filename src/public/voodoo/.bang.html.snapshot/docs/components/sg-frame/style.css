@@ -1,0 +1,70 @@
+:host {
+  position: relative;
+  display: flex;
+  --gap: 0.5rem;
+  --gap2: 0.5rem;
+  width: -moz-fit-content;
+  width: fit-content;
+  --border-color: silver;
+  box-shadow: 0px 0.5rem 1rem 0rem #10202080;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  border: thin solid var(--border-color);
+  font-family: system-ui, sans-serif;
+  max-height: 100%;
+  filter: saturation(61.8%);
+  box-sizing: border-box;
+  margin: 1.5rem 0.5rem;
+}
+
+:host([fill]) {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  --gap: 0;
+}
+
+:host([resize]) {
+  overflow: hidden;
+  max-width: unset;
+  max-height: unset;
+  resize: both;
+}
+
+.frame {
+  display: grid;
+  width: 100%;
+  grid-template-areas: 
+    "top-bar"
+    "content";
+  grid-template-rows: auto 1fr;
+  max-height: 100%;
+}
+
+.top-bar {
+  border-bottom: thin solid var(--border-color);
+  background: gainsboro;
+  text-align: center;
+}
+
+.top-bar a, .top-bar :link, .top-bar :visited {
+  color: darkslategray; 
+  text-decoration: none;
+}
+
+.content {
+  background: mintcream;
+  overflow: auto;
+  max-height: 100%;
+}
+
+.top-bar {
+  padding: var(--gap2);
+}
+.content {
+  padding: var(--gap);
+}
+
+:host-context([fill]) .content {
+  padding: 0;
+}

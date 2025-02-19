@@ -1,0 +1,46 @@
+:host([hidden]) {
+  display: none;
+}
+
+:host {
+  position: absolute;
+  display: flex;
+  text-align: center;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+* {
+  user-select: none;
+  touch-action: pan-x;
+}
+
+dialog {
+  background: azure;
+  top: 0.5rem;
+  position: relative;
+  border: thin solid lightslategray;
+  padding: 0.75rem;
+  margin: 0.25rem auto;
+  min-height: 2.5rem;
+  max-height: 4.5rem;
+  width: 85%;
+  box-sizing: border-box;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  justify-content: space-between;
+  cursor: auto;
+}
+
+input[type="range"] {
+  margin: 4px auto 2px;
+  width: 100%;
+}

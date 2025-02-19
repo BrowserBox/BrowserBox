@@ -1,0 +1,3 @@
+class BBCtrl extends Base {
+
+}

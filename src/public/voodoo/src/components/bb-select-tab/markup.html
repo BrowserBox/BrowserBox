@@ -1,0 +1,16 @@
+${{key: tab.targetId}}
+<span class="tab-selector ${active?'active':''}" stylist="styleTabSelector"
+    click=${click => _top.activateTab(click, tab, {forceFrame:true})}
+  >
+    <bb-favicon state=${tab}></bb-favicon>
+    <a
+      mousedown=${() => {
+        _top.viewState.lastActive = document.deepActiveElement;
+      }}
+      title="${title || 'Bring to front'}"
+      href=/tabs/${tab.targetId}>${title}</a>
+    <button class=close title="Close tab" ${active?'accesskey=d':''}
+      click=${click => _top.closeTab(click, tab, index)}>
+      <img class=small src="voodoo/assets/icons/trash-2.svg">
+    </button>
+</span>

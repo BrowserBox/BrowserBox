@@ -1,0 +1,93 @@
+BB: Embeddable, multiplayer browser for RBI and web.
+
+======================================================
+                             BROWSERBOX STACKSCRIPT
+======================================================
+
+  "Secure private browsing, and next gen web integrations!"
+
+======================================================
+                                          OVERVIEW
+======================================================
+
+- BBPRO: A gateway to secure, isolated, and integrated web browsing!
+- Ideal for developers integrating web content and cybersecurity pros 
+  seeking robust remote browser isolation (RBI).
+- Advanced protection against web threats and zero-day exploits.
+
+======================================================
+                                      KEY FEATURES
+======================================================
+
+- Lightweight VPN for Browser Virtualization: Conceal your real IP and 
+  encrypt your connection for privacy and security.
+- Safe investigation of web malware with remote DevTools, secure document 
+  viewer, and hex viewer for downloads.
+- A two-way double reverse web proxy that operates on pixel data.
+- Upcoming Features: BrowserBox over Tor in a future StackScript.
+- Embed BrowserBox in an iframe for super-iframe capabilities, or utilize 
+  our upcoming Custom Element Developer API. Details on GitHub!
+
+======================================================
+                                 AGREEMENT TO TERMS
+======================================================
+
+- Using BrowserBox for free implies agreement to our terms, including 
+  Polyform Noncommercial License 1.0, or your valid commercial license
+  purchased at https://dosyago.com or via licenses@dosyago.com
+- Review our detailed terms, privacy policy, and licenses:
+  
+  Licenses:
+  https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md
+  
+  Terms:
+  https://dosyago.com/terms.txt
+  
+  Privacy Policy:
+  https://dosyago.com/privacy.txt
+
+- For commercial licenses, visit https://dosyago.com 
+  or contact sales@dosyago.com for inquiries.
+
+======================================================
+                                       GETTING STARTED
+======================================================
+
+- Complete all required fields in this StackScript for setup.
+- Add a DNS a record from HOSTNAME to your Linode's IP address.
+- If you leave TOKEN blank we'll make a random one, and you 
+  obtain this random login link via SSH:
+  ssh root@<your Linode IP> cat /home/pro/.config/dosyago/bbpro/login.link
+- If you supply token, you can simply compute it as 
+  https://HOSTNAME:8080/login?token=TOKEN
+- Open TCP ports 8078-8082 in any firewall added to the instance.
+- Need help? Open an issue or discussion at
+  https://github.com/BrowserBox/BrowserBox
+  or Email 
+  support@dosyago.com 
+  for assistance.
+
+======================================================
+                                      DNS CONFIGURATION
+======================================================
+
+- After deployment, configure DNS to connect your instance's hostname 
+  to your Linode's IP:
+  1. Set an A record with your DNS provider.
+  2. Point HOSTNAME_FIELD to your Linode's IP.
+  3. Your secure login link: 
+     https://<HOSTNAME_FIELD>:8080/login?token=<TOKEN_FIELD>
+
+- Secure this link; it's your gateway to remote browsing!
+
+======================================================
+                                    TECHNICAL DETAILS
+======================================================
+
+- Find open-source repository and instructions at:
+  https://github.com/BrowserBox/BrowserBox
+
+======================================================
+                           "Happy Browsing with BrowserBox!"
+======================================================
+

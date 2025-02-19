@@ -1,0 +1,47 @@
+:host {
+  --measure-width: 200px;
+  --height: 2rem;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  align-items: end;
+}
+
+meter {
+  width: 100%;
+  height: var(--height);
+  border-radius: 0;
+  color: turquoise;
+}
+
+meter, input[type="range"] {
+  width: 61.8%;
+  min-width: var(--measure-width);
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+input[type="range"] {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.25rem 0;
+}
+
+label.elapsed {
+  line-height: var(--height);
+}
+
+span.time {
+  width: var(--measure-width);
+}
+
+button {
+  align-self: stretch;
+  padding: 0.25rem;
+}

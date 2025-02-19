@@ -1,0 +1,328 @@
+<aside class="modals ${!!viewState.currentModal ? 'active' : ''}" stylist="styleModals" b:click=${click => _host.closeModal(click)}>
+  <article role=dialog bond=${el => viewState.ModalRef.alert = el} class="alert ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.alert ) ? 'open' : '' 
+    }">
+    <form method=dialog>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/octagon-alert.svg">
+            Alert
+          </h1>
+        </legend>
+        <p class=message value=message>${viewState?.currentModal?.msg||'You are alerted.'}</p>
+        <p>
+          <button type=reset class=ok title="OK, I got it." value=ok>Got it.</button>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.confirm = el} class="confirm ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.confirm ) ? 'open' : '' 
+    }">
+    <form method=dialog>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/circle-help.svg">
+            Confirm
+          </h1>
+        </legend>
+        <p class=message value=message>${viewState?.currentModal?.msg||'You are asked to confirm'}</p>
+        <p>
+          <button type=reset class=cancel title="Deny" value=cancel>No</button>
+          <button type=submit class=ok title="Confirm" value=ok>Yes</button>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.prompt = el} class="prompt ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.prompt ) ? 'open' : '' 
+    }">
+    <form method=dialog>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/pencil.svg">
+            Prompt
+          </h1>
+        </legend>
+        <p class=message value=message><label for=prompt-response>${viewState?.currentModal?.msg||'You are prompted for information:'}</label></p>
+        <p>
+          <input id=prompt-response type=text name=response>
+        </p>
+        <p>
+          <button type=reset class=cancel title="Dismiss" value=cancel>Dismiss</button>
+          <button type=submit class=ok title="Send" value=ok>Send</button>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.paste = el} class="paste ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.paste ) ? 'open' : '' 
+    }">
+    <form method=dialog>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/clipboard.svg">
+            Paste into Page
+          </h1>
+        </legend>
+        <p class=message value=message><label for=paste-response>${viewState?.currentModal?.msg||'Enter information to paste'}</label></p>
+        <p>
+          <textarea id=paste-response name=response maxlen=32000 autofocus></textarea>
+        </p>
+        <p>
+          <button type=reset class=cancel title="Dismiss" value=cancel>Dismiss</button>
+          <button type=submit click=${click => _host.sendPaste(click, state)}>Paste</button>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.beforeunload = el} class="beforeunload ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.beforeunload ) ? 'open' : '' 
+    }">
+    <form method=dialog>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/log-out.svg">
+            Reload Site?
+          </h1>
+          <i>
+            Your changes may not be saved. The page unloading asks
+          </i>
+        </legend>
+        <p class=message value=message>${viewState?.currentModal?.msg||'Are you sure you wish to leave?'}</p>
+        <p>
+          <button type=reset class=cancel title="Remain" value=cancel>Remain</button>
+          <button type=submit class=ok title="Leave" value=ok>Leave</button>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.infobox = el} class="infobox ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.infobox ) ? 'open' : '' 
+    }">
+    <form method=dialog>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/info.svg">
+            ${viewState?.currentModal?.title || 'Info'}
+          </h1>
+        </legend>
+        <p>
+          <textarea readonly class=message value=message rows=${Math.ceil(viewState?.currentModal?.msg.length/25)+1}
+          >${viewState?.currentModal?.msg}</textarea>
+        </p>
+        <p>
+          <button type=submit class=ok title="Got it" value=ok>Dismiss</button>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.notice = el} class="notice ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.notice ) ? 'open' : '' 
+    }">
+    <form method=dialog>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/bell.svg">
+            ${viewState?.currentModal?.title || 'Notice'}
+          </h1>
+        </legend>
+        <p>
+        <p class=message value=message>${viewState?.currentModal?.msg||'Empty notice'}</p>
+        <p>
+          ${viewState?.currentModal?.link ?
+            G`<a title="${viewState?.currentModal?.link.title}" target=${viewState?.currentModal?.link.target} href=${viewState?.currentModal?.link.href}>${viewState?.currentModal?.link.title}</a>` 
+            :
+            G`<!-- link -->`
+          }
+          ${viewState?.currentModal?.otherButton ?
+            (DEBUG.debugOtherButton && console.log('Have other button'), G`<button title="${viewState?.currentModal?.otherButton.title}" click=${viewState?.currentModal?.otherButton.onClick}>${viewState?.currentModal?.otherButton.title}</button>`)
+            :
+            (DEBUG.debugOtherButton  && console.log('No have other button'), G`<!-- other button -->`)
+          }
+          <button type=submit class=ok title=Acknowledge value=ok>OK</button>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.copy = el} class="copy ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.copy ) ? 'open' : '' 
+    }">
+    <form method=dialog>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/bell.svg">
+            <span onbond=${el => _host.copyBoxTitle = el} class=title>${state.title || 'Copy'}</span>
+          </h1>
+        </legend>
+        <p>
+        <textarea cols=80 rows=5 onbond=${(el) => {
+            _host.copyBoxTextarea = el; 
+          }} readonly class=message value=message>${viewState?.currentModal?.msg||'No text to copy'}</textarea>
+        <p>
+          ${viewState?.currentModal?.link ?
+            G`<a title="${viewState?.currentModal?.link.title}" target=${viewState?.currentModal?.link.target} href=${viewState?.currentModal?.link.href}>${viewState?.currentModal?.link.title}</a>` 
+            :
+            G`<!-- link -->`
+          }
+          ${viewState?.currentModal?.otherButton ?
+            (DEBUG.debugOtherButton && console.log('Have other button'), G`<button title="${viewState?.currentModal?.otherButton.title}" click=${viewState?.currentModal?.otherButton.onClick}>${viewState?.currentModal?.otherButton.title}</button>`)
+            :
+            (DEBUG.debugOtherButton  && console.log('No have other button'), G`<!-- other button -->`)
+          }
+          <button type=submit class=ok title=Acknowledge value=ok>OK</button>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.auth = el} class="auth ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.auth ) ? 'open' : '' 
+    }">
+    <form method=dialog>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/shield-alert.svg">
+            ${title || 'Authentication'}
+          </h1>
+          <i>${viewState?.currentModal?.msg||''}</i>
+        </legend>
+        <input type=hidden name=requestid value=${requestId}>
+        <p>
+          <input type=text 
+            autocomplete=username
+            name=username placeholder=username maxlength=140>
+        <p>
+          <input type=password 
+            autocomplete=current-password
+            name=password placeholder=password maxlength=140>
+        <p>
+          <button type=reset value=cancel click=${click => _host.respondWithCancel(click, state)}>Cancel</button>
+          <button type=submit value=ok click=${click => _host.respondWithAuth(click, state)}>Submit</button>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.filechooser = el} class="filechooser ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.filechooser ) ? 'open' : '' 
+    }">
+    <form method=POST action=/file enctype=multipart/form-data>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/folder-up.svg">
+            ${viewState?.currentModal?.title || 'File Upload'}
+          </h1>
+          <i>${viewState?.currentModal?.msg||''}</i>
+        </legend>
+        <input type=hidden name=sessionid value=${viewState?.currentModal?.sessionId}>
+        <input type=hidden name=token value=${viewState?.currentModal?.token}>
+        <p>
+          <label>
+            Select ${viewState?.currentModal?.multiple?'one or more files':'one file'}.
+            <input type=file name=files ${viewState?.currentModal?.multiple?'multiple':''} accept="${viewState?.currentModal?.accept}">
+          </label>
+        <p>
+          <button 
+            type=reset
+            value=cancel
+            ${viewState?.currentModal?.working?'disabled':''} 
+            click=${click => _host.cancelFileChooser(click)}
+          >${viewState?.currentModal?.cancelText || 'Cancel'}</button>
+          <button 
+            type=submit
+            value=ok
+            ${viewState?.currentModal?.working?'disabled':''} 
+            click=${click => _host.chooseFile(click)}
+          >${viewState?.currentModal?.submitText || 'Upload'}</button>
+      </fieldset>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.intentPrompt = el} class="intent-prompt ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.intentPrompt ) ? 'open' : '' 
+    }">
+    <form method=GET action="${viewState?.currentModal?.url}" target=_top submit=${submission => {
+        submission.preventDefault(); 
+        const target = CONFIG.useBlankWindowForProtocolLaunch ? 
+          globalThis.window.open("about:blank") 
+          : 
+          window.top
+        ;
+        const url = submission.target.action;
+        DEBUG.debugIntentPrompts && console.log("intent prompt", {target, url});
+        setTimeout(() => {
+          window._voodoo_noUnloadDelay = true;
+          target.location.href = url;
+          setTimeout(() => window._voodoo_noUnloadDelay = false, 300);
+          DEBUG.debugIntentPrompts && console.log(target.location);
+        }, 300);
+      }}>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/external-link.svg">
+            ${viewState?.currentModal?.title || 'Open app'}
+          </h1>
+        </legend>
+        <p class=message value=message>${
+          `This page is asking to open an external app using URL: ${viewState?.currentModal?.url ? 
+              viewState?.currentModal?.url?.slice?.(0,140) + (viewState?.currentModal?.url?.length > 140 ? '...' : '')
+              : 'unknown URL'
+          }`
+        }</p>
+      <p>
+        <button type=reset value=cancel>Stop it</button>
+        <button type=submit value=ok>Open external app</button>
+      </p>
+    </form>
+  </article>
+  <article role=dialog bond=${el => viewState.ModalRef.settings = el} class="settings ${
+      !!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.settings ) ? 'open' : '' 
+    }">
+    <form method=GET action="${viewState?.currentModal?.url}" target=_top submit=${submission => {
+        submission.preventDefault(); 
+        alert("Save settings");
+      }}>
+      <fieldset>
+        <legend>
+          <h1>
+            <img src="voodoo/assets/icons/cog.svg">
+            BrowserBox Pro Settings
+          </h1>
+        </legend>
+      <p>
+        <label>
+          <span class=legend 
+          >Show audio status</span>
+          <label class="switch">
+            <input type="checkbox">
+            <span class="slider round"></span>
+          </label>
+        </label>
+      <p>
+        <label>
+          <span class=legend 
+          >Show WebRTC status</span>
+          <label class="switch">
+            <input type="checkbox">
+            <span class="slider round"></span>
+          </label>
+        </label>
+      <p>
+        <button type=reset value=cancel click=${() => confirm("Sure?")}>Reset to defaults</button>
+        <button type=submit value=ok>Save</button>
+      </p>
+    </form>
+    ${!!viewState?.currentModal?.el && (viewState?.currentModal?.el === viewState.ModalRef.settings ) ? 
+      Fskip(await uberFetch('/settings_modal').then(r => r.text())) : F`<!-- settings modal spot -->`
+    }
+  </article>
+</aside>

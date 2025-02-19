@@ -1,0 +1,20 @@
+{
+  "name": "@browserbox/audio-server",
+  "type": "module",
+  "version": "8.1.0",
+  "description": "Record pulseaudio, or windows monitor and serve ws or http streams",
+  "main": "index.js",
+  "scripts": {
+    "clean": "node exec.js \"./scripts/clean.sh\"",
+    "postinstall": "node exec.js  \"./scripts/install_config.sh\"",
+    "test": "node index.js"
+  },
+  "author": "@dosy, forked and modified from work by original author, Jerko Steiner",
+  "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
+  "dependencies": {
+    "@dosy/wav": "latest",
+    "cors": "latest",
+    "exit-on-epipe": "latest",
+    "ws": "latest"
+  }
+}

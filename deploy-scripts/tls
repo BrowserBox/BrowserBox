@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+
+set -x
+
+sudo="$(command -v sudo)"
+SUDO="$sudo"
+
+os_type() {
+  case "$(uname -s)" in
+    Darwin*) echo "macOS";;
+    Linux*)  echo "Linux";;
+    MING*)   echo "win";;
+    *)       echo "unknown";;
+  esac
+}
+
+initialize_package_manager() {
+  local package_manager
+  local amzn_release_info
+
+  if command -v brew &>/dev/null; then
+    package_manager=$(command -v brew)
+  elif [[ "$(uname)" == "Darwin" ]]; then
+    echo "ERROR: Homebrew not present. Please install Homebrew, or install certbot or letsencrypt client equivalent for macOS manually. But you may be better of using self-signed mkcert certificates if you are testing locally. If so please install and run:" >&2
+    echo "brew install mkcert nss && mkcert -install && mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1" >&2
+    exit 1
+  elif command -v apt >/dev/null; then
+    package_manager=$(command -v apt)
+  elif command -v pkg &>/dev/null; then
+    package_manager="$(command -v pkg)"
+  elif command -v dnf >/dev/null; then
+    package_manager=$(command -v dnf)
+    $sudo dnf config-manager --set-enabled crb
+    $sudo dnf -y upgrade --refresh
+  elif command -v yum >/dev/null && [[ -f /etc/system-release ]]; then
+    amzn_release_info=$(cat /etc/system-release)
+    if [[ $amzn_release_info == *"Amazon Linux"* ]]; then
+      package_manager=$(command -v yum)
+      # Additional commands for Amazon Linux here if needed
+    fi
+  else
+    echo "No supported package manager found. Exiting."
+    return 1
+  fi
+
+  echo "Using package manager: $package_manager"
+  export APT=$package_manager
+}
+
+# Call the function to initialize and export the APT variable
+initialize_package_manager
+
+# Check for certbot and install if not found, specific actions for Amazon Linux
+if ! command -v certbot >/dev/null; then
+  if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    if [[ $ID == "centos" || $ID == "rhel" || $ID == "fedora" || $ID_LIKE == *"centos"* || $ID_LIKE == *"rhel"* || $ID_LIKE == *"fedora"* || "$ID" == "almalinux" ]]; then
+        # Install Certbot for CentOS/RHEL/Fedora based distributions (including Amazon Linux)
+        $sudo yum install -y python3 augeas-libs
+        $sudo python3 -m venv /opt/certbot/
+        $sudo /opt/certbot/bin/pip install --upgrade pip
+        $sudo /opt/certbot/bin/pip install certbot certbot-nginx
+        $sudo ln -sf /opt/certbot/bin/certbot /usr/bin/certbot
+        if ([ "$ID" = "almalinux" ] || [ "$ID" = "centos" ] || [ "$ID" = "rhel" ]) && [[ "$VERSION_ID" == 8* ]]; then
+          echo "Detected AlmaLinux version starting with 8. Installing certbot and python3-certbot-apache."
+          $sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+          $sudo dnf upgrade
+          $sudo subscription-manager repos --enable "rhel-*-optional-rpms" --enable "rhel-*-extras-rpms"
+          $sudo yum update
+          $sudo dnf install -y certbot python3-certbot-apache
+        fi
+    elif [[ $ID == *"bsd" ]]; then
+      $sudo $APT install -y py311-certbot curl
+    else
+        # Install Certbot for other distributions
+        $sudo $APT install -y certbot curl
+    fi
+  else
+    if [[ "$(uname)" == "Darwin" ]]; then
+      $APT install certbot curl
+    else
+      $sudo $APT install -y certbot curl
+    fi
+  fi
+fi
+
+install_crontab() {
+  if ! command -v crontab &>/dev/null; then
+    echo "Crontab not found. Installing..."
+    if [ "$(os_type)" == "macOS" ]; then
+      brew install cronie
+    elif [[ "$APT" == *yum || "$APT" == *dnf ]]; then
+      $sudo $APT install -y cronie
+      $sudo systemctl enable crond
+      $sudo systemctl start crond
+    else
+      $sudo $APT install -y cron
+      $sudo systemctl enable cron
+      $sudo systemctl start cron
+    fi
+    echo "Crontab installation complete."
+  else
+    echo "Crontab is already installed."
+  fi
+}
+
+install_crontab
+
+if [[ -z "$1" ]]; then
+  echo "Supply a domain name as first argument" >&2
+  exit 1
+fi
+
+if [[ -z "${BB_USER_EMAIL}" ]]; then
+  echo "Supply BB_USER_EMAIL environment variable" >&2
+  exit 1
+fi
+
+if [[ "$1" != "localhost" ]] && $sudo certbot certonly --standalone --keep -d $1 --agree-tos -m "${BB_USER_EMAIL}" --no-eff-email; then
+  $sudo systemctl start certbot-renew.timer
+  ./deploy-scripts/auto_cert_renew $1 $USER
+else
+  echo "ERROR: Certbot failed. Will use mkcert for local certs" >&2
+  if ! command -v jq &>/dev/null; then
+    if [ "$(os_type)" == "macOS" ]; then
+      brew install jq
+    else
+      $sudo $APT install -y jq
+    fi
+  fi
+
+  hostname="$1"
+  amd64=""
+
+  if ! command -v mkcert &>/dev/null; then
+    if [ "$(os_type)" == "macOS" ]; then
+      brew install nss mkcert
+    elif [ "$(os_type)" == "win" ]; then
+      choco install mkcert || scoop bucket add extras && scoop install mkcert
+    else
+      amd64=$(dpkg --print-architecture || uname -m)
+      $SUDO $APT install -y libnss3-tools
+      curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
+      chmod +x mkcert-v*-linux-$amd64
+      $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
+      rm mkcert-v*
+    fi
+  fi
+  mkcert -install
+  if [[ ! -f "$HOME/sslcerts/privkey.pem" || ! -f "$HOME/sslcerts/fullchain.pem" ]]; then
+    mkdir -p $HOME/sslcerts
+    pwd=$(pwd)
+    cd $HOME/sslcerts
+    mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
+    cd $pwd
+  else
+    echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We are not overwriting them."
+  fi
+fi
+mkdir -p $HOME/sslcerts
+if [[ -f ./cp_certs ]]; then
+  $sudo -u root ./cp_certs $1 $HOME/sslcerts/
+elif [[ -f ./deploy-scripts/cp_certs ]]; then
+  $sudo -u root ./deploy-scripts/cp_certs $1 $HOME/sslcerts/
+else
+  $sudo -u root bash -c "bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/boss/deploy-scripts/cp_certs) $1 $HOME/sslcerts/"
+fi
+$sudo chown $USER:$USER $HOME/sslcerts/*
+chmod 600 $HOME/sslcerts/*
+

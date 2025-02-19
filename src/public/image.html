@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html stylist="styleDocument" lang="en-US">
+  <head>
+    <meta charset=utf8>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name=theme-color content=aquamarine>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="aquamarine">
+    <meta name="msapplication-TileColor" content="#1e90ff">
+    <title>Loading BB...</title>
+    <link rel="icon" href="favicon.svg">
+    <link rel=preload href=style.css as=style>
+    <link rel="preload" href="hourglass.gif" as=image>
+    <link rel="preload" href="themes/WebPlus_IBM_VGA_9x14.woff" crossorigin as=font>
+    <link rel=manifest href=./manifest.webmanifest>
+    <link rel=stylesheet href=style.css>
+    <link rel=stylesheet href=voodoo/src/components/style.css>
+    <link rel=stylesheet href=voodoo/node_modules/bang.html/src/style.css></script>
+    <link rel=stylesheet href=splash/styles.css>
+    <script src=load_local_cookie.js></script>
+    <!-- sw loader should not be a module, otherwise it will come in async which will make it weird -->
+    <script src=register_sw.js?v10.1></script>
+    <script src=tor_detection.js?v1></script>
+  </head>
+  <body>
+    <div tabindex=-1 id=debugBox></div>
+    <div id=splash>
+      <div class=image><img src=hourglass.gif /></div>
+      <span class=text>Loading</span>
+      <script src=splash-load.js></script>
+    </div>
+    <script src=simplepeer.min.js?latestv10></script>
+    <script type=module src=check_load.js?v10></script>
+    <script type=module src=save_tor_params.js?v10></script>
+    <script type=module src=resize_helper.js?v10></script>
+    <script type=module src=error_catchers.js?v10></script>
+    <script type=module src=prod/ask-before-unload.js?v10></script>
+    <script type=application/javascript src=voodoo/node_modules/bang.html/src/bang.js?v10></script>
+    <script type=module src=image-start-app.js?v10></script>
+    <script type=module src=load-bang.js?v10></script>
+    <bb-view state=bbpro></bb-view>
+    <script type=module src=set-title.js?v10></script>
+  </body>
+</html>

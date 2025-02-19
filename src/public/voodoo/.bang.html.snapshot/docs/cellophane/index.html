@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang=en>
+<title>Spreadsheet with JavaScript Scripting | Cellophane Spreadsheet Component | BANG! Web Compoment Framework</title>
+<meta name=theme-color content=turquoise>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<meta name=description content="This is a spreadsheet with JavaScript scripting, called the Cellophane Spreadsheet Component. It is built with the BANG! Web Component framework">
+<link rel=stylesheet href=./style.css>
+<style>
+  :root, body {
+    margin: 0; 
+    padding: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+<script src=err.js></script>
+<script type=application/javascript src=./bang.js?2.718></script>
+<script>
+  bangLoaded().then(() => {
+    use('sg-table');
+    use('sg-cell');
+    use('sg-frame');
+
+    const compKey = Math.random().toFixed(18);
+    const State = {
+      key: compKey,
+      title: 'Cellophane',
+      sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/tree/main/docs/components/sg-table',
+      columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+      rowNames: Array(100).join('.').split('').map((_,i) => i+1),
+      selections: [
+        /*
+          {
+            key: Math.random()+'',
+            left: 200,
+            top: 200,
+            width: 300,
+            height: 64
+          }
+        */
+      ]
+    };
+    State.cell = Object.fromEntries((function () {
+      const entries = [];
+      State.columnNames.forEach(col => {
+        State.rowNames.forEach(row => {
+          const key = `${compKey}:${col}${row}`;
+          const value = {key, value: '', formula: '', editFormula: false};
+          entries.push([key, value]);
+        });
+      });
+      return entries;
+    }()));
+
+    setState('data', State, {save:true});
+  });
+</script>
+<main>
+  <!sg-table fill super lazy state=data />
+</main>

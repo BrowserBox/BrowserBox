@@ -1,0 +1,292 @@
+<title>SocketPuppet Dashboard</title>
+<link rel=stylesheet href=normalize.css>
+<link rel=stylesheet href=sakura-vader.css>
+<style>
+  :root {
+    --nav-bar-width: auto;
+    --grid-gap: 0.5rem;
+    --header-height: 3em;
+  }
+  body {
+    max-width: 100vw;
+    margin: 0;
+    padding: 0;
+  }
+  :is(article, aside, main, section) h1 {
+    font-size: 1.5em;
+  }
+  :is(article, aside, main, section) 
+  :is(article, aside, main, section) h1 {
+    font-size: 1.17em;
+  }
+  :root[full-height] :is(body, main, article.content) {
+    height: 100%;
+    min-height: 100%;
+  }
+  main {
+    position: relative;
+    display: grid;
+    grid-template-areas: 
+      "header header"
+      "nav content"
+    ;
+    grid-template-rows: var(--header-height) 1fr;
+    grid-template-columns: var(--nav-bar-width) 1fr;
+    grid-gap: var(--grid-gap);
+  }
+  main > header {
+    grid-area: header;
+    position: sticky;
+    top: 0;
+    background-color: var(--bg-color);
+  }
+  main > nav {
+    grid-area: nav;
+    padding-right: 0.5em;
+  }
+  main > .content {
+    grid-area: content;
+    padding-left: 1.5em;
+    padding-right: 0.5em;
+    border-left: thin solid;
+  }
+  main > .content:not(:target) {
+    display: none;
+  }
+  main > :not(:target) ~ .content:last-of-type {
+    display: block;
+  }
+  main > :target ~ .content:last-of-type {
+    display: none;
+  }
+  header h1 {
+    margin: 0.35em 0.125em;
+  }
+  nav ul {
+    list-style-type: none;
+    padding-left: var(--grid-gap);
+    position: sticky;
+    top: var(--header-height);
+  }
+  article.flex-row {
+    padding-top: var(--header-height);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  article.flex-row > * {
+    max-width: 40%;
+    min-width: 185px;
+  }
+  form {
+    max-width: 800px;
+    width: fit-content;
+  }
+  fieldset {
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+  }
+
+  .small {
+    font-size: smaller;
+    color: gray;
+  }
+</style>
+<main>
+  <header>
+    <h1><a href=/>SocketPuppet</a></h1>
+  </header>
+  <nav>
+    <ul>
+      <li><a href=#new-connection>New Connection</a></li>
+      <li><a href=#active-connections>Active Connections</a></li>
+      <li><a href=#plans>Plans</a></li>
+      <li><a href=#support>Support</a></li>
+    </ul>
+  </nav>
+  <article class="flex-row content" id=plans>
+    <form method=GET action=https://buy.stripe.com/dR64hscC566D5HOcNt target=_blank>
+      <fieldset>
+        <legend>Individual</legend>
+        <label for=sub-indi>
+          Subscribe to Individual for USD$14.99 a month.
+        </label>
+        <h1>Features</h1>
+        <ul>
+          <li>Connect to 1 browser at a time.
+        </ul>
+        <button id=sub-indi>Get Individual</button>
+      </fieldset>
+    </form>
+    <form method=GET action=https://buy.stripe.com/cN2eW6atXeD93zG7t8 target=_blank>
+      <fieldset>
+        <legend>Team</legend>
+        <label for=sub-team>
+          Subscribe to Team for USD$69 a month.
+        </label>
+        <h1>Features</h1>
+        <ul>
+          <li>Everything in Individual, plus:
+          <li>Up to 20 browsers at a time.
+          <li>Co-browsing mode: 5 team-members can connect to a single browser at once.
+        </ul>
+        <button id=sub-team>Get Team</button>
+      </fieldset>
+    </form>
+    <form method=GET action=/mailto target=_blank>
+      <fieldset>
+        <legend>Infinity</legend>
+        <input type=hidden name=subject value="SocketPuppet Sales Inquiry">
+        <textarea hidden name=body autocomplete=new-password>Hi Cris,
+        </textarea>
+        <label for=contact-sales>
+          Need more? Contact Sales.
+        </label>
+        <h1>Features</h1>
+        <ul>
+          <li>Larger deployments
+          <li>More support
+          <li>Custom options
+        </ul>
+        <button id=contact-sales>Get started</button>
+      </fieldset>
+    </form>
+  </article>
+  <article class=content id=active-connections>
+    <form>
+      <fieldset>
+        <legend>Active connections</legend>
+        <ul class=list>
+          <li>
+            <p>
+              This list is <em>hidden</em> on the open server. 
+              <a href=#plans>Subscribe to a plan</a> 
+              to see your private list of active connections.
+            </p>
+          </li>
+        </ul>
+      </fieldset>
+    </form>
+  </article>
+  <article class=content id=support>
+    <form method=GET action=/mailto old=mailto:cris@dosycorp.com target=_blank> 
+      <fieldset>
+        <legend>Contact support</legend>
+        <p>
+          <label>
+            Subject
+            <br>
+            <select name=subject>
+              <option value="Feedback and requests">Feedback and requests</option> 
+              <option value="Something's not working">Something's not working</option> 
+              <option value="Browser connection issue">Browser connection issue</option> 
+              <option value="License agreements">License agreements</option> 
+            </select>
+          </label>
+        </p>
+        <p>
+          <label>
+            How can I help you today?
+            <br>
+            <textarea name=body autocomplete=off>Hi Cris,
+            </textarea>
+          </label>
+        </p>
+        <p>
+          <label>
+            <button>Contact support</button>
+          </label>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+  <article class=content id=new-connection>
+    <form method=POST action=/connect target=_blank>
+      <fieldset>
+        <legend>Connect to a Browser</legend>
+        <p>
+          <label>
+            Websocket endpoint
+            <input type=url required 
+              name=ws_endpoint
+              placeholder="wss://chrome.browserless.io/?token=abcdef..."
+            >
+            <button>Connect</button>
+          </label>
+        </p>
+        <p>
+          <details class=small>
+            <summary>Help! I don't want to expose my BrowserStack or Browserless access credentials.</summary>
+            Run 
+            <a 
+              href=https://gist.github.com/crisdosyago/3bee14b0149eae581036f8b5c9054004 
+              target=_blank>
+              your own websocket proxy
+            </a> (or search the web for more examples). This will mask your tokens while allowing us to connect to the endpoint.
+          </details>
+        </p>
+        <p>
+          <label>
+          </label>
+        </p>
+      </fieldset>
+    </form>
+  </article>
+</main>
+<script type=module>
+  window.addEventListener('hashchange', () => {
+    if ( location.hash === '#active-connections' ) {
+      templateActive();
+    }
+  });
+  window.addEventListener('load', () => {
+    if ( location.hash === '#active-connections' ) {
+      templateActive();
+    }
+  });
+  async function templateActive() {
+    const oldList = document.querySelector('#active-connections .list');
+    const active = await fetch('/active').then(r => r.json());
+    let list;
+    if ( active.length ) {
+      list = `
+        <ul class=list>${active.map(({loginLink, active, chrome_port}) => `<li>
+          <a href=${loginLink} target=_blank>
+            ${new URL(chrome_port).hostname}
+            <span class="status ${active? 'active' : 'inactive'}">
+              ${active ? 'RUNNING' : 'CLOSED'}
+            </span>
+          </a>
+        </li>`).join('\n')}</ul>
+      `;
+    } else {
+      /*
+      list = `
+        <ul class=list>
+          <li>
+            <p>
+              None.
+              <label>
+                <button formaction=#new-connection>Create one</button>
+              </label>
+            </p>
+          </li>
+        </ul>
+      `;
+      */
+      list = `
+        <ul class=list>
+          <li>
+            <p>
+              This list is <em>hidden</em> on the open server. 
+              <a href=#plans>Subscribe to a plan</a> 
+              to see your private list of active connections.
+            </p>
+          </li>
+        </ul>
+      `;
+    }
+      oldList.outerHTML = list;
+  }
+</script>

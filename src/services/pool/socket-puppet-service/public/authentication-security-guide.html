@@ -1,0 +1,113 @@
+<title>SocketPuppet</title>
+<link rel=stylesheet href=normalize.css>
+<link rel=stylesheet href=sakura-vader.css>
+<style>
+  :is(article, aside, main, section) h1 {
+    font-size: 1.5em;
+  }
+  :is(article, aside, main, section) 
+  :is(article, aside, main, section) h1 {
+    font-size: 1.17em;
+  }
+</style>
+<main>
+  <article>
+    <h1>Authentication</h1>
+    <details>
+      <summary>Security considerations</summary>
+      <p>
+        It's understandable to not trust some new and unknown service with your API key. If there was another way to demonstrate an integration with Browserless I would add that as an option, but as the only documented way to access Browserless' service is using the API key token, this limits the options for you trying SocketPuppet without feeling scared about exposing your API key token. Which is completely understandable. Also I would prefer to not have any touchpoints on that API key token at all to limit my company's exposure in the event of a breach. In any case, the integration is cool enough and I want it enough that I'm choosing to engage with the risk and provide Browserless' hosted service as an integration anyway.</p>
+      <p>
+    </details>
+      There are multiple options for using SocketPuppet with Browserless or BrowserStack, some more secure than others, each having a somewhat different risk profile.
+    </p>
+    <ul>
+      <li>
+        <h1>Using SocketPuppet with Browserstack (<code>wss://cdp.browserstack.com</code>)</h1>
+        <p>
+          Follow the instructions at <a href=https://www.browserstack.com/docs/automate/puppeteer>The BrowserStack puppeteer integration guide</a> to connect your BrowserStack tests to your SocketPuppet, by pasting your <code>browserWSEndpoint</code> URL into the connect box.
+        </p>
+      </li>
+      <li>
+        <h1>Using SocketPuppet with Browserless (<code>wss://chrome.browserless.io</code>)</h1>
+        <p>Here are some options for connecting to your Browserless jobs using SocketPuppet.</p>
+        <ol>
+          <li>
+            <strong>Browserless service</strong>
+            <p>
+              Pass your connection URL (including API key token) to SocketPuppet. In other words, paste the URL (like <code>wss://chrome.browserless.io/?token=abcdef-<...more UUID token here...>-123</code>) into the box on the <a href=https://socketpuppet.dosyago.com/>SocketPuppet Run page</a>. Or pass the same connection URL to <a href=https://socketpuppet.dosyago.com/apidocs.html>SocketPuppet API</a> to get a <a href=https://socketpuppet.dosyago.com/apidocs.html#login-links>LoginLink</a> to your SocketPuppet instance.
+            </p>
+            <details>
+              <summary><em>See why we don't recommend this</em></summary>
+              <p><small>This is a security risk and while we don't recommend it, because how can you trust us? And even if you trust us...how can you trust that we won't be breached. We take your privacy and security seriously and while SocketPuppet does not store your connection URL (including API key token) for longer than the duration of your SocketPuppet instance connection, there's always the chance that our systems could be compromised by an internal or external bad actor. Such compromise would expose your Browserless API key to these bad actors and may end up costing you Browserless credits and allowing them to use your API key token for nefarious browsing.</small>
+              </p>
+            </details>
+          </li>
+          <li>
+            <strong>Browserless service API</strong>
+            <p>
+              If you have a Browserless Dedicated account (<em>unfortunately, Browserless doesn't support the Sessions API for usage-based accounts</em>), use the <a href=https://chrome.browserless.io/docs/#/Management%20API/get_sessions>Browserless Sessions API</a> to get the browserWSEndpoint, and pass that as a connection URL to SocketPuppet, just like <a href=https://github.com/joelgriffith>@joelgriffith</a> suggests <a href=https://github.com/browserless/chrome/issues/1887#issuecomment-964477280>in this comment.</a>
+            </p>
+            <p>
+              In other words, paste the WSS URL you get from the Sessions API into the box on the <a href=https://socketpuppet.dosyago.com/>SocketPuppet Run page</a>. Or pass the same connection URL to <a href=https://socketpuppet.dosyago.com/apidocs.html>SocketPuppet API</a> to get a <a href=https://socketpuppet.dosyago.com/apidocs.html#login-links>LoginLink</a> to your SocketPuppet instance.
+            </p>
+            <details>
+              <summary><em>More information</em></summary>
+              <p>
+                <small>
+                  This is a good solution, but only works if you have a Browserless dedicated account.
+                </small>
+              </p>
+            </details>
+          </li>
+          <li>
+            <strong>Self-hosted Browserless</strong>
+            <p>
+              Run the <a href=https://github.com/browserless/chrome>Browserless self-hosted Docker image</a> yourself and expose that to the web, while <a href=https://docs.browserless.io/docs/docker.html#securing-your-instance>securing your instance</a> with a custom token. Then <em>pass that</em> token to SocketPuppet (either the API or the Run page), as a connect URL, like <code>ws://yourdomain:your_port?token=2cbc5771-38f2-4dcf-8774-50ad51a971b8</code>
+            </p>
+            <details>
+              <summary><em>More information</em></summary>
+              <p>
+                <small>
+                  This is OK, but requires some configuration and you need to self host the Browserless Docker image, and expose it to the inernet. But creating an exposing a token like this for a service you control is much more secure than exposing your Browserless API key token.
+                </small>
+              </p>
+            </details>
+          </li>
+          <li>
+            <strong>Browserless service with a BYO websocket proxy</strong>
+            <p>
+              In this integration, you keep your Browserless API key token secret by running your own HTTPS/TLS (wss) websocket proxy, and: 
+            </p>
+            <ol>
+              <li>
+                exposing the external side of that proxy to the internet (securing it anyway you like), and 
+              </li>
+              <li>
+                connecting the internal side of that proxy to the Browserless Chrome service (<code>wss://chrome.browserles.io</code>) using your Browserless API key token. 
+              </li>
+            </ol>
+            <p>
+              This means that only your Websocket Proxy that you run on your own server/hardware knows your browserless API key token, and it is not available for compromise via exposure to SocketPuppet.
+            </p>
+            <details>
+              <summary><em>More information</em></summary>
+              <p>
+                <small>
+                  This requires some setup but there are plenty of guides and example code for running your own WebSocket proxy.
+                </small>
+              </p>
+            </details>
+          </li>
+        </ol>
+      </li>
+    </ul>
+  </article>
+  <article>
+    <h1>FAQ</h1>
+    <dl>
+      <dt>I don't want to give you my Browserless API key token, but I want to try this. What can I do?
+      <dd>It's understandable. Try one of the options above for masking your API key token.
+    </dl>
+  </article>
+</main>

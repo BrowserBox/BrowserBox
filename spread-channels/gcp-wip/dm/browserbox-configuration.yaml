@@ -1,0 +1,11 @@
+imports:
+  - path: browserbox-template.jinja
+
+resources:
+  - name: browserbox-deployment
+    type: browserbox-template.jinja
+    properties:
+      zone: us-central1-f
+      machineType: n1-standard-1
+      sourceImage: projects/debian-cloud/global/images/family/debian-12
+

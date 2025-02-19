@@ -1,0 +1,56 @@
+${{key}}
+<sg-frame state=${(console.warn('hey',{_self}), _self)} fill resize>
+  <div class=box 
+      b:passive:touchstart=Resize
+      b:passive:pointerdown=Resize 
+      b:passive:pointerup=Resize
+      b:passive:touchend=Resize
+      b:passive:touchcancel=Resize
+      b:passive:focusin=SelectColumn 
+      b:passive:focusout=DeselectColumn
+
+      oncontextmenu=Resize
+      onpointermove=Resize 
+      ontouchmove=Resize
+    >
+    <table>
+      <colgroup>
+        <col class="row-header" name="top-left">
+        ${columnNames.map(name => F`${{key:`${key}col${name}`}}
+        <col name=${name} width=101px>
+        `)}
+      </colgroup>
+      <thead>
+        <tr class="label column column-header">
+          <th scope=col class=top-left name="">
+          </th>
+          ${columnNames.map(name => F`${{key:`${key}colheader${name}`}}
+          <th scope=col name=${name} tabindex=1>
+            <span class="column sizer"></span>
+          </th>
+          `)}
+        </tr>
+      </thead>
+      <tbody>${schedule(rowNames, async rowName =>  await F`${{key:`${key}row${rowName}`}} <tr>
+          <th scope=row class="label row" tabindex=1>
+            <div class="row sizer"></div>
+            ${rowName}
+          </th>
+          ${schedule(columnNames, async colName => {
+            const cellKey = `${key}:${colName}${rowName}`;
+            return await F`${{key:cellKey}}
+          <td>
+            <sg-cell data-key=${cellKey} state=${cell[cellKey]} ></sg-cell>
+          </td>
+          `}, {batchSize: 5})}
+        </tr>
+      `, {batchSize: 1})
+      }</tbody>
+      <tbody class=overlay>${selections.map(sel => F`${{key:sel.key}}
+        <tr style="
+          top: ${sel.top}px; left: ${sel.left}px; width: ${sel.width}px; height: ${sel.height}px;
+        "></tr>
+      `)}</tbody>
+    </table>
+  </div>
+</sg-frame>

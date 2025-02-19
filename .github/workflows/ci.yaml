@@ -1,0 +1,114 @@
+# Preamble
+# Hello GitHub Folken - if this is violating the terms of service and you work for GitHub, 
+#  please let me know and I will remove this action ASAP!
+#  to make any automated removal easy I add the following pseudo key metadata
+# _meta_action_id: dosyago/BrowserBoxPro/tech-prototype/july-2023
+# Do not remove this preamble
+# Purpose
+# Run BrowserBox Pro on GitHub Actions Runner to Integration Test
+#  This is intended as a useful technology prototype showing the ability to run the BrowserBoxPro remote browser
+#  on GitHub Actions Runners. This makes it easy to see if the application is working correctly, and to test 
+#  any modifications you make. This is not an endorsement or encouragement to utilize GitHub Actions in a way that violates
+#  the terms of service, as using this in excess may do that. Don't abuse the power and benevolence of the platform.
+# End preamble
+
+name: CI
+
+on:
+  pull_request:
+    types: [synchronize, opened, reopened]
+  push:
+    branches:
+      - boss
+
+concurrency:
+  group: ${{ github.repository }}-ci
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check if actor is repository owner or me
+      run: |
+        if [[ "${{ github.actor }}" != "o0101" ]]; then
+          echo "Actor is not me. Not running CI"
+          exit 1
+        fi
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libnss3 libnspr4 libasound2t64 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0
+
+    - name: Install ngrok
+      run: npm install ngrok -g
+
+    - name: Configure ngrok
+      run: ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+
+    - name: Install application
+      run: yes | ./deploy-scripts/global_install.sh localhost
+
+    - name: Configure application
+      id: setup
+      run: |
+        output=$(setup_bbpro --port 8080)
+        echo "::set-output name=suffix::${output#*https://localhost:8080}"
+
+    - name: Create BBPRO.INTEGRITY file
+      run: |
+        random_string=$(openssl rand -base64 32) # Generate a random string
+        echo "$random_string" > $HOME/BBPRO.INTEGRITY
+
+    - name: Start server & ngrok tunnel
+      run: |
+        bbpro &
+        sleep 5
+        ngrok http https://localhost:8080 &
+        sleep 5
+
+    - name: Get ngrok public URL
+      id: ngrok
+      run: |
+        url=$(curl http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+        suffix=${{ steps.setup.outputs.suffix }}
+        complete_url="${url}${suffix}"
+        echo "::set-output name=url::$complete_url"
+        echo $complete_url
+
+    - name: Check integrity route
+      run: |
+        base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oP 'https?://[^/]+')
+        token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oP 'token=\K[^&]+') # Extract the token parameter
+        integrity_url="${base_url}/integrity?session_token=${token}" # Construct the integrity URL
+        integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
+        success=0
+        for i in {1..10}; do
+          echo "Attempt $i to check integrity..."
+          integrity_content=$(curl -L -s "$integrity_url")
+          echo "base url: $base_url" 
+          echo "token: $token" 
+          echo "iurl: $integrity_url" 
+          echo "ic: $integrity_content" 
+          echo "ifc: $integrity_file_content"
+          if [[ "$integrity_content" == "$integrity_file_content" ]]; then
+            success=1
+            break
+          fi
+          sleep 7
+        done
+        if [[ "$success" -eq 0 ]]; then
+          echo "Error: Integrity check failed for application after 10 attempts."
+          exit 1
+        fi
+
+    - name: Print ngrok URL
+      run: echo "The complete ngrok URL is ${{ steps.ngrok.outputs.url }}"
+
+    - name: Keep alive
+      run: sleep 300
+

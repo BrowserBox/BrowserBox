@@ -1,0 +1,129 @@
+name: Personal ephemeral Tor hidden service running BrowserBox
+
+on:
+  issues:
+    types: [opened, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create_hidden_service:
+    if: github.event.issue.title == 'BrowserBox Tor Hidden Service'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check if actor is collaborator or repository owner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COLLABORATORS=$(curl -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/${{ github.repository }}/collaborators" \
+              | jq -r '.[] | .login')
+          
+          if [[ $COLLABORATORS == *"${{ github.actor }}"* || "${{ github.actor }}" == "${{ github.repository_owner }}" ]]; then
+            echo "ACTOR_IS_COLLABORATOR_OR_OWNER=true" >> $GITHUB_ENV
+          else
+            echo "ACTOR_IS_COLLABORATOR_OR_OWNER=false" >> $GITHUB_ENV
+          fi
+
+      - name: Comment and potentially close the issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const actor = context.actor;
+            const actorIsCool = process.env.ACTOR_IS_COLLABORATOR_OR_OWNER;
+            let message;
+            let shouldClose = false;
+
+            if (actorIsCool === "false") {
+              message = `### Hey @${actor}! :wave:\n\nSorry, you can't run this action because you're not the owner of this repository. Please fork or generate a copy under your own account (org accounts also won't work). Open an issue on your own copy to try again.`;
+              shouldClose = true;
+            } else {
+              message = `### Awesome @${actor}! :tada:\n\nYour job is starting! You are good to go for the next steps.\n\nDon't go away! Your login link will appear here after setup completes.\n\nEnhance your calm, as set up will take about **6 minutes** from here. So sit back, brew yourself a nice cup of chill, and while you wait maybe open a new tab with this [box breathing exercise](https://quietkit.com/box-breathing/).\n\nWhen you come back, keep an eye out for further instructions.`;
+            }
+
+            github.rest.issues.createComment({
+              issue_number: issue_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+            if (shouldClose) {
+              github.rest.issues.update({
+                issue_number: issue_number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: "closed"
+              });
+              setTimeout(() => process.exit(1), 4000);
+            }
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install application and dependencies
+        run: yes | ./deploy-scripts/global_install.sh localhost
+
+      - name: Configure application
+        id: setup
+        run: |
+          setup_bbpro --port 11111
+
+      - name: Start server with torbb
+        run: torbb > torbb_output.txt
+
+      - name: Retrieve .onion URL and rootCA.pem download link
+        id: tor
+        run: |
+          onion_url=$(grep -m 1 "http" torbb_output.txt)
+          echo "::set-output name=url::$onion_url"
+          echo "The .onion URL is: $onion_url"
+
+          onion_origin=$(echo "$onion_url" | awk -F/ '{print $1 "//" $3}')
+          torca_link="${onion_origin}/torca/rootCA.pem"
+          echo "::set-output name=torcaLink::$torca_link"
+          echo "The rootCA.pem download link is: $torca_link"
+
+      - name: Comment on issue with output URL and tag owner/actor
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const issue_number = context.issue.number;
+            const actor = context.actor;
+            const url = `${{ steps.tor.outputs.url }}`;  // Output URL from Tor
+            const torcaLink = `${{ steps.tor.outputs.torcaLink }}`; // Output optional pem DL URL
+            const commentBody = `Hey @${actor}, your personalized BrowserBox Tor hidden service is up and running! :sparkles:\n\nHere's your unique .onion address that you need to open in [**The Tor Browser**](https://www.torproject.org/download/):\n\n${url}\n\n**Important**: To ensure full functionality, especially for audio features, please download and trust our \`rootCA.pem\` file. Keep in mind, you might hesitate to do this due to potential security concerns, and that's absolutely fine :thumbsup: it's all about your comfort with the risks. Trusting the certificate eliminates HTTPS warnings in Tor browsers and enables audio streaming functionality. You can find it here: ${torcaLink}.\n\nNeed help importing the certificate on macOS? Check out this [handy video guide](https://youtu.be/ADN26iqtSZ8). For other operating systems, follow our detailed instructions [here](https://github.com/BrowserBox/BrowserBox/blob/boss/src/public/torca/rootca-import-guidance.md).\n\nEnjoy a seamless and secure browsing experience! :rocket:`;
+            github.rest.issues.createComment({
+              issue_number: issue_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            });
+
+      - name: Keep alive
+        run: sleep 1111
+
+      - name: Close issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `Your BrowserBox Tor hidden service session has ended. Thank you for using our service! Remember, for future sessions, ensure you've installed our \`rootCA.pem\` for the best experience. Looking forward to seeing you again! :star2:\n\nInterested in more? Consider a license purchase at [our website](https://dosyago.com).`
+            });
+
+            github.rest.issues.update({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "closed"
+            });
+
+            setTimeout(() => console.log('Done!'), 1234);
+

@@ -1,0 +1,188 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to deploy BrowserBox with configurable options. After creating your Stack, visit its Outputs tab to find your BrowserBox Login Link and IP address. While setup completes, ensure you add the DNS A Record mapping your HostName to this IP address, using your registrar. Then, wait a few minutes for your instance to be ready.
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t2.small
+    Description: "[required] EC2 instance type. Larger instances gives more performance but event the smallest should work. See available values here: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-instance.html#cfn-ec2-instance-instancetype"
+    AllowedPattern: .+
+
+  HostName:
+    Type: String
+    Description: "[required] Fully-qualified domain name for the running BrowserBox instance to serve from. Create an A record from there to this EC2 instance's IP address."
+    AllowedPattern: .+
+    MaxLength: 300
+
+  UserEmail:
+    Type: String
+    Description: "[required] Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs. By continuing, you agree to our terms, privacy policy and licensing (https://dosyago.com/terms.txt, https://dosyago.com/privacy.txt, https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md) and LetsEncrypt's terms. After creating your Stack, visit its Outputs tab to find your BrowserBox Login Link and IP address. While setup completes, ensure you add a DNS A Record mapping your HostName to this IP address, using your registrar. Then, wait a few minutes for your instance to be ready."
+    AllowedPattern: .+
+    MaxLength: 300
+
+  Token:
+    Type: String
+    Description: "[conditional: cannot omit both Token and SSHKeyName, one or both must be present] Token is a secret token to construction your login link. Leave blank for a random token to be created. Treat it like a password. If you supply token you can login via https://<HostName>:8080/login?token=<Token> but if you leave blank you need to obtain your login link via SSHing into your instance and running cat ~/.config/dosaygo/bbpro/login.link"
+    MaxLength: 300
+
+  InstallDocViewer:
+    Type: String
+    Description: "[optional] Whether to install document viewer. Makes install take a lot longer, but gives you a secure viewer for PDFs, DOCX, etc. (true/false)"
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+
+  VPCId:
+    Type: AWS::EC2::VPC::Id
+    Description: "[required] VPC ID where the instance will be deployed. It MUST be your accounts Default VPC ID created with an Admin user. If you know how to make CF EC2 instance creation work with any VPC, even non-default, please reach out to us at opensource@dosyago.com or contribute on https://github.com/BrowserBox/BrowserBox"
+    AllowedPattern: .+
+
+  SSHKeyName:
+    Type: String
+    Description: "[conditional: cannot omit both SSHKeyName and Token, one or both must be present] SSHKeyName is the name of an existing EC2 KeyPair to enable SSH access to your BrowserBox instance. If you don't set a Token for the login link you'll need SSH access to retrieve your randomly generated login link."
+    Default: ""
+    MaxLength: 300
+
+  AMI:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64'
+    Description: "[required] AMI ID for the instance (by default the latest Amazon Linux 2023)."
+    AllowedPattern: .+
+
+Conditions:
+  KeyNameProvided: !Not [!Equals [!Ref SSHKeyName, ""]]
+  TokenProvided: !Not [!Equals [!Ref Token, ""]]
+  EitherKeyNameOrToken: !Or [!Not [!Equals [!Ref SSHKeyName, ""]], !Not [!Equals [!Ref Token, ""]]]
+  
+Resources:
+  BrowserBoxInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMI
+      InstanceType: !Ref InstanceType
+      KeyName: 
+        Fn::If:
+          - KeyNameProvided
+          - !Ref SSHKeyName
+          - !Ref AWS::NoValue
+      SecurityGroupIds:
+        - Ref: BrowserBoxSecurityGroup
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/usr/bin/env bash
+
+            # Check if both KeyName and Token are not provided
+            if [[ -z "${SSHKeyName}" && -z "${Token}" ]]; then
+              echo "Error: Either KeyName or Token must be provided."
+              exit 1
+            fi
+
+            # Function to determine the Linux Distribution
+            get_distro() {
+              if [ -f /etc/os-release ]; then
+                . /etc/os-release
+                echo "$ID"
+              else
+                echo "unknown"
+              fi
+            }
+
+            # Function to add a user non-interactively
+            add_user() {
+              local username=$1
+              local distro="$(get_distro)"
+
+              case $distro in
+                "debian" | "ubuntu")
+                  adduser --gecos "" --disabled-password "$username"
+                  ;;
+                "centos" | "rhel" | "fedora" | "almalinux" | "amzn")
+                  adduser "$username"
+                  passwd -d "$username"
+                  ;;
+                *)
+                  echo "Unsupported distribution: $distro" >&2
+                  return 1
+                  ;;
+              esac
+            }
+
+            # Define new user (change as needed)
+            NEW_USER="pro"
+
+            # Check if ec2-user exists
+            if id "ec2-user" &>/dev/null; then
+              USER="ec2-user"
+            else
+              # Create a new user with sudo privileges if ec2-user doesn't exist
+              USER=$NEW_USER
+              add_user "$USER"
+              echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+              # Set up user's home directory (optional)
+              su - $USER -c "mkdir -p /home/$USER/.ssh"
+              su - $USER -c "chmod 700 /home/$USER/.ssh"
+            fi
+
+            # Your existing setup script, run as the determined user
+            su - "$USER" <<'EOF'
+              cd "$HOME" || cd "/home/$USER"
+              sudo yum update -y
+              sudo yum install -y git
+              git clone https://github.com/BrowserBox/BrowserBox.git || exit 1
+              cd BrowserBox || exit 1
+              ./deploy-scripts/wait_for_hostname.sh "${HostName}" 
+              export INSTALL_DOC_VIEWER="${InstallDocViewer}"
+              yes | ./deploy-scripts/global_install.sh "${HostName}" "${UserEmail}"
+              export TOKEN="${Token}"
+              if [[ -z "$TOKEN" ]]; then
+                setup_bbpro --port 8080 || exit 1
+              else
+                setup_bbpro --port 8080 --token "$TOKEN" || exit 1
+              fi
+              bbpro || exit 1
+            EOF
+
+  BrowserBoxSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for BrowserBox
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8078
+          ToPort: 8082
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  LoginLink:
+    Description: "Login link for your BrowserBox instance. Wait a few minutes for setup to complete, then click this link to log into it. While you wait for setup to complete, please add the DNS A record mapping this IP to your instance's HostName, because BrowserBox requires this record to start setting up. In order to minimize setup time, we suggest you add this record now."
+    Value: 
+      Fn::If:
+        - TokenProvided
+        - !Sub "https://${HostName}:8080/login?token=${Token}"
+        - "You need to SSH into your instance and run 'cat ~/.config/dosyago/bbpro/login.link' to obtain your login link."
+  ValidationOutput:
+    Description: "Validates that either KeyName or Token is provided."
+    Value: 
+      Fn::If:
+        - EitherKeyNameOrToken
+        - "Valid Configuration"
+        - Fn::Cidr: ["0.0.0.0/0", 1, 1]  # This will fail if EitherKeyNameOrToken is false
+  PublicIP:
+    Description: The Public IP address of your BrowserBox's EC2 instance. While you wait for setup to complete, please add the DNS A record mapping this IP to your instance's HostName, because BrowserBox requires this record to begin setting up. In order to minimize setup time, we suggest you do this early on.
+    Value: !GetAtt BrowserBoxInstance.PublicIp
+  InstanceId:
+    Description: The Instance ID of the BrowserBox server. Find and manage your BrowserBox instance's Virtual Machine in your EC2 dashboard with this Instance ID.
+    Value: !Ref BrowserBoxInstance
+

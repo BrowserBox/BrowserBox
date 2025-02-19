@@ -1,0 +1,52 @@
+@import url("themes/blank.css");
+
+:host {
+  display: contents;
+  --block-size: min(8vw, 192px);
+  --font-size: min(4vw, 96px);
+}
+
+nav.bar {
+  border: thin solid lime;
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  z-index: 10000000;
+}
+
+nav menu {
+  display: flex;
+  align-items: space-equally;
+  padding: 0.5rem;
+  gap: 0.5rem;
+}
+
+menu li {
+  width: var(--block-size);
+  font-size: var(--font-size);
+  aspect-ratio: 1 / 1;
+  line-height: var(--block-size);
+  background-color: lime;
+  text-align: center;
+  color: black;
+  cursor: pointer;
+}
+
+menu li:is(:hover, :focus) {
+  filter: invert(1.0);
+}
+
+nav.bar, li {
+  border-radius: 0.25rem;
+}
+
+@media screen and (min-width: 1600px) {
+
+}
+
+@media screen and (max-width: 600px) {
+  :host {
+    --block-size: min(10vw, 192px);
+    --font-size: min(5vw, 96px);
+  }
+}

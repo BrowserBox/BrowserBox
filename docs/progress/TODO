@@ -1,0 +1,7 @@
+- make can keys input and sync typing penetrate shadow roots
+- add an show keyboard to mobile context menu
+- an a highlight mode (in a menu tab at right, so when we scroll over elements we can get a highlight over them)
+- if we have one safari connection, only send jpeg to that connection. In other words, connection.isSafari si not global, but instead based on connectionId
+- separate ignore hash from other ways to force frame (such as ack, etc) because we might want to get rid of hashes since we can ack everything
+- send an ack number that gets depleted by each frame, so we only need to ack every nth frame
+- add element stack visualizer at right as well, to allow us to see (not just the highlight, but also) the stack of elements (including shadow boundaries, iframes, document fragments, etc) under the pointer). ensure this keeps updated even when menu closed so on mobile we can tap something, then open the menu and see the stack. 

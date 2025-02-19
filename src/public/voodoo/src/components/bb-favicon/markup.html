@@ -1,0 +1,27 @@
+${{key: `favicon-${targetId}`}}
+  <img class=favicon 
+    error=${err => {
+      DEBUG.debugFavicon && console.warn('error in favicon', err);
+      if ( ! _self.usingDefaultFavicon ) {
+        _self.setDefaultFavicon();
+        _host.rerender();
+      }
+    }} 
+    src="${_self.faviconDataURI}"
+    alt="Favorite icon for ${(() => {
+      try {
+        return new URL(url).origin;
+      } catch(e) {
+        return 'page';
+      }
+    })()}"
+    title="Favorite icon for ${(() => {
+      try {
+        return new URL(url).origin;
+      } catch(e) {
+        return 'page';
+      }
+    })()}"
+    data-target-id="${targetId}" 
+    bond=${el => _self.favicon = el.getRootNode().host}
+  >

@@ -1,0 +1,90 @@
+resources:
+  - name: browserbox-instance
+    type: compute.v1.instance
+    properties:
+      zone: {{ properties["zone"] }}
+      machineType: {{ properties["machineType"] }}
+      disks:
+        - deviceName: boot
+          type: PERSISTENT
+          boot: true
+          autoDelete: true
+          initializeParams:
+            sourceImage: {{ properties["sourceImage"] }}
+      networkInterfaces:
+        - network: global/networks/default
+          accessConfigs:
+            - name: External NAT
+              type: ONE_TO_ONE_NAT
+      metadata:
+        items:
+          - key: startup-script
+            value: |
+              #!/usr/bin/env bash
+
+              # Function to determine the Linux Distribution
+              get_distro() {
+                if [ -f /etc/os-release ]; then
+                  . /etc/os-release
+                  echo "$ID"
+                else
+                  echo "unknown"
+                fi
+              }
+
+              # Function to add a user non-interactively
+              add_user() {
+                local username={{ properties["username"] }}
+                local distro="$(get_distro)"
+
+                case $distro in
+                  "debian" | "ubuntu")
+                    adduser --gecos "" --disabled-password "$username"
+                    ;;
+                  "centos" | "rhel" | "fedora" | "almalinux" | "amzn")
+                    adduser "$username"
+                    passwd -d "$username"
+                    ;;
+                  *)
+                    echo "Unsupported distribution: $distro" >&2
+                    return 1
+                    ;;
+                esac
+              }
+
+              add_user
+              USER="{{ properties["username"] }}"
+              echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+              # Set up user's home directory (optional)
+              su - $USER -c "mkdir -p /home/$USER/.ssh"
+              su - $USER -c "chmod 700 /home/$USER/.ssh"
+
+              # Setup script
+              su - $USER <<'EOF'
+                cd "$HOME" || cd "/home/$USER"
+                sudo apt-get update -y
+                sudo apt-get install -y git
+                git clone https://github.com/BrowserBox/BrowserBox.git || exit 1
+                cd BrowserBox || exit 1
+                ./deploy-scripts/wait_for_hostname.sh {{ properties["hostName"] }} || exit 1
+                export INSTALL_DOC_VIEWER={{ properties["installDocViewer"] }}
+                yes | ./deploy-scripts/global_install.sh {{ properties["hostName"] }} {{ properties["userEmail"] }}
+                export TOKEN={{ properties["token"] }}
+                if [[ -z "$TOKEN" ]]; then
+                  setup_bbpro --port 8080 || exit 1
+                else
+                  setup_bbpro --port 8080 --token "$TOKEN" || exit 1
+                fi
+                bbpro || exit 1
+              EOF
+
+  - name: browserbox-firewall
+    type: compute.v1.firewall
+    properties:
+      network: global/networks/default
+      sourceRanges: [0.0.0.0/0]
+      allowed:
+        - IPProtocol: TCP
+          ports: [8078, 8079, 8080, 8081, 8082, 22, 80]
+
