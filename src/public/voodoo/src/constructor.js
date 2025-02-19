@@ -405,7 +405,7 @@
           // for offline
           OPTIONS,
           writeCanvas,
-          debouncedWriteCanvas: debounce(writeCanvas, 5000),
+          throttledWriteCanvas: throttle(writeCanvas, 5000),
           get setTopState() {
             return () => {
               setState('bbpro', state); 
