@@ -49,6 +49,15 @@
         }
       };
 
+      const OG_COSD_REF = chrome?.offscreen?.createDocument;
+      if ( OG_COSD_REF ) {
+        chrome.offscreen.createDocument = opts => {
+          console.log(`Received options`, opts, `for creation of offscreen document.`);
+          say({offscreen:{opts}});
+          OG_COSD_REF.call(chrome.offscreen, opts); 
+        };
+      }
+
       const OG_AOCAL_REF = chrome?.action?.onClicked?.addListener;
       if ( OG_AOCAL_REF ) {
         chrome.action.onClicked.addListener = listener => {
