@@ -798,6 +798,9 @@
                       return false;
                     }
                   }
+                  if ( zl.act.isOffscreen(url, zombie_port) ) {
+                    return false;
+                  }
                   return true;
                 });
                 targets = targets.map(t => {
@@ -1025,6 +1028,9 @@
                   } else {
                     return false;
                   }
+                }
+                if ( zl.act.isOffscreen(url, zombie_port) ) {
+                  return false;
                 }
                 return true;
               });
