@@ -355,6 +355,11 @@ const controller_api = {
     connection.hiddenTargetId = targetId;
   },
 
+  isOffscreen(url, port) {
+    const connection = connections.get(port);
+    return connection.OffscreenPages.has(url);
+  },
+
   addTargets(tabs, port) {
     if ( ! tabs ) throw new TypeError(`No tabs provided.`);
     const connection = connections.get(port);
@@ -613,9 +618,22 @@ const controller_api = {
                 expression,
               }, 
               worker.sessionId,
-            ).then(sendResult => {
+            ).then(async sendResult => {
               if ( DEBUG.debugSetupWorker ) {
                 console.info(`Telling extension worker to execute action on clicked code results in: `, sendResult, {worker, command, expression});
+              }
+              await sleep(800);
+              if ( ! [...connection.tabs.values()].some(({url}) => {
+                const hostname = new URL(url).hostname;
+                if ( hostname == id && (url.endsWith('.html') || url.endsWith('.htm')) ) {
+                  return true;
+                }
+                return false;
+              }) ) {
+                const popup = worker?.manifest?.action?.default_popup || 'popup.html';
+                connection.zombie.send("Target.createTarget", {
+                  url: `chrome-extension://${id}/${popup}`
+                });
               }
             }).catch(err => console.warn(`Error trying to send command: %s to extension`, command.name, err, {command}, {port}));
           }

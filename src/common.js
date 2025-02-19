@@ -73,11 +73,11 @@ export const LOG_FILE = {
 export const DEBUG = Object.freeze({
   allowPuter: false,
   revealChromeJSIntercepts: false,
-  debugSetupWorker: true,
+  debugSetupWorker: false,
   attachToServiceWorkers: true,
   showServerWorkersAsTabs: false,
   extensionsAccess: true,
-  showExtensions: true,
+  showExtensions: false,
   debugReconnect: true,
   fileDebug: false,
   debugScreenSize: false,
@@ -85,11 +85,11 @@ export const DEBUG = Object.freeze({
   debugCast: false,
   lowEndDefault: false,
   debugSession: false,
-  traceViewportUpdateFuncs: false,
+  traceViewportUpdateFuncs: true,
   debugReload: false,
   debugInfoChanged: false,
   attachDebug: false,
-  debugSetupReload: false,
+  debugSetupReload: true,
   blockDebug: false,
   debugDebounce: false,
   adjustHeightForHeadfulUI: true,
@@ -167,7 +167,7 @@ export const DEBUG = Object.freeze({
   showResizeEvents: false,
   logRestartCast: false,
   get showErrorSources() {
-    return this.logFileCommands || this.commands || false;
+    return this.logFileCommands || this.commands || true;
   },
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,
