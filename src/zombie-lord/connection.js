@@ -2988,51 +2988,70 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
 }
 
 async function updateAllTargetsToViewport({commonViewport, connection, skipSelf = false}) {
-  const {send,on, ons} = connection.zombie;
+  DEBUG.traceViewportUpdateFuncs && console.log('Entering updateAllTargetsToViewport');
+  const {send, on, ons} = connection.zombie;
+  DEBUG.traceViewportUpdateFuncs && console.log('Retrieved zombie properties from connection', connection.targets.values());
+  
   const windows = new Set();
   SCREEN_OPTS.maxWidth = commonViewport.width;
   SCREEN_OPTS.maxHeight = commonViewport.height;
-  for ( const targetId of connection.targets.values() ) {
+  
+  for (const targetId of connection.targets.values()) {
+    DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);
     await untilTrueOrTimeout(() => sessions.has(targetId), 10);
     const sessionId = sessions.get(targetId);
-    if ( Workers.has(sessionId) ) continue;
-    if ( ! sessionId ) {
+    
+    if (Workers.has(sessionId)) continue;
+    DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
+    if (!sessionId) {
       console.log('SKIPPING', {targetId, sessionId});
       continue;
     }
-    //if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
+    
     let width, height, screenWidth, screenHeight;
     try {
       const {windowId} = await send("Browser.getWindowForTarget", {targetId});
-      if ( !windows.has(windowId) ) {
+      DEBUG.traceViewportUpdateFuncs && console.log('Retrieved windowId:', windowId);
+      
+      if (!windows.has(windowId)) {
         windows.add(windowId);
-        let {width,height} = commonViewport;
-        DEBUG.debugViewportDImensions && console.log({width,height,windowId});
-        if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+        let {width, height} = commonViewport;
+        DEBUG.debugViewportDimensions && console.log({width, height, windowId});
+        
+        if (DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI) {
           height += HeightAdjust;
         }
-        await send("Browser.setWindowBounds", {bounds:{width,height}, windowId})
+        
+        DEBUG.traceViewportUpdateFuncs && console.log('Setting window bounds for windowId:', windowId, {width, height});
+        await send("Browser.setWindowBounds", {bounds: {width, height}, windowId});
       }
-      ({result:{value:{width,height,screenWidth,screenHeight}}} = await send("Runtime.evaluate", {
+      
+      ({result: {value: {width, height, screenWidth, screenHeight}}} = await send("Runtime.evaluate", {
         expression: `
           (function () {
             return {width: window.innerWidth, height: window.innerHeight, screenWidth: screen?.width, screenHeight: screen?.height};
           }())
         `,
-        returnByValue: true 
+        returnByValue: true
       }, sessionId));
-      DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width,height}, 'Sending', {commonViewport});
-      DEBUG.debugScreenSize && console.log('Actual page dimensions', {width,height,screenWidth,screenHeight}, 'Sending', {commonViewport}, 'to', tabs.get(targetId));
-      if ( width == commonViewport.width && height == commonViewport.height && screenWidth == commonViewport.width && (screenHeight - commonViewport.height) < 100) {
+      
+      DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width, height}, 'Sending', {commonViewport});
+      DEBUG.debugScreenSize && console.log('Actual page dimensions', {width, height, screenWidth, screenHeight}, 'Sending', {commonViewport}, 'to', tabs.get(targetId));
+      
+      if (width == commonViewport.width && height == commonViewport.height && screenWidth == commonViewport.width && (screenHeight - commonViewport.height) < 100) {
+        DEBUG.traceViewportUpdateFuncs && console.log('Viewport already matches, skipping update for target:', targetId);
         continue;
       }
-      //send("Emulation.clearDeviceMetricsOverride", {}, sessionId);
+      
+      DEBUG.traceViewportUpdateFuncs && console.log('Updating viewport for target:', targetId);
       commonViewport.dontSetVisibleSize = true;
       send("Emulation.setDeviceMetricsOverride", commonViewport, sessionId);
-    } catch(err) {
+      DEBUG.traceViewportUpdateFuncs && console.log('Sent Emulation.setDeviceMetricsOverride');
+    } catch (err) {
       console.warn(`Error updating viewport to reflect change, during all targets update loop`, {targetId, sessionId}, err);
     }
   }
+  DEBUG.traceViewportUpdateFuncs && console.log('Exiting updateAllTargetsToViewport');
 }
 
 export async function executeBinding({message, sessionId, connection, send, on, ons}) {
