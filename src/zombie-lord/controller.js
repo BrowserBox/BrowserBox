@@ -623,14 +623,14 @@ const controller_api = {
                 console.info(`Telling extension worker to execute action on clicked code results in: `, sendResult, {worker, command, expression});
               }
               await sleep(800);
+              const popup = worker?.manifest?.action?.default_popup || 'popup.html';
               if ( ! [...connection.tabs.values()].some(({url}) => {
                 const hostname = new URL(url).hostname;
-                if ( hostname == id && (url.endsWith('.html') || url.endsWith('.htm')) ) {
+                if ( hostname == id && url.includes(popup) ) {
                   return true;
                 }
                 return false;
               }) ) {
-                const popup = worker?.manifest?.action?.default_popup || 'popup.html';
                 connection.zombie.send("Target.createTarget", {
                   url: `chrome-extension://${id}/${popup}`
                 });
