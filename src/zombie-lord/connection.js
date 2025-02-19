@@ -237,6 +237,7 @@ DEBUG.debugNavigator && console.log({UA, mobUA, deskUA, Plat});
 
 const MAX_RELOAD_MEMORY = 25;
 const TargetReloads = new Map();
+const OffscreenPages = new Set();
 const AllowedReloadReasons = new Set([
   'user-agent',
   'post-setup'
@@ -413,6 +414,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     sessions,
     targets,
     tabs,
+    OffscreenPages,
     favicons,
     sessionId: null,
     bounds: Object.assign({}, COMMON_FORMAT),
@@ -1308,6 +1310,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                   connection.forceMeta({modifyExtension:{error:"Could not modify", err}});
                 });
               }, 2);
+            } else if ( Message.offscreen ) {
+              const {url} = Message.offscreen;
+              OffscreenPages.add(url);
             }
             connection.forceMeta(Message);
           }
@@ -2723,6 +2728,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
 export function getWorker(id) {
   return Workers.get(id);
+}
+
+export function isOffscreen(url) {
+  return OffscreenPages.has(url);
 }
 
 export function shouldBeWorker(extensionId) {
