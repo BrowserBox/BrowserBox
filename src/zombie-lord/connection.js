@@ -237,6 +237,7 @@ DEBUG.debugNavigator && console.log({UA, mobUA, deskUA, Plat});
 
 const MAX_RELOAD_MEMORY = 25;
 const TargetReloads = new Map();
+const OffscreenPages = new Set();
 const AllowedReloadReasons = new Set([
   'user-agent',
   'post-setup'
@@ -413,6 +414,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     sessions,
     targets,
     tabs,
+    OffscreenPages,
     favicons,
     sessionId: null,
     bounds: Object.assign({}, COMMON_FORMAT),
@@ -576,7 +578,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     targets.add(targetId);
     tabs.set(targetId,targetInfo);
     connection.forceMeta({created:targetInfo,targetInfo});
-    if ( targetInfo.type == "page" && !DEBUG.attachImmediately && ! attaching.has(targetId) ) {
+    if ( AttachmentTypes.has(targetInfo.type) && !attaching.has(targetId) && ! settingUp.has(targetId) ) {
       attaching.add(targetId);
       await send("Target.attachToTarget", {targetId, flatten:true});
     }
@@ -693,7 +695,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       } else if ( targetInfo.type == 'service_worker' ) {
         const url = new URL(targetInfo.url);
         if ( url.protocol.startsWith('chrome-extension') && !INTERNAL_WORKERS.has(url.hostname) ) {
+          const extensionId = url.hostname;
           Workers.set(sessionId, {});
+          Workers.set(extensionId, {});
           setupWorker({attached});
         } else {
           return;
@@ -721,10 +725,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.debugSetupWorker && console.log(`Worker: ${sessionId} going down.`);
     }
     const targetInfo = tabs.get(targetId);
+    console.log({targetInfo});
     if ( targetInfo ) {
       const {type} = targetInfo;
       const url = new URL(targetInfo.url);
-      if ( type == 'page' && url.protocol == "chrome-extension:" && url.hostname.length == 32 ) {
+      if ( (type == "page" || type == "other") && url.protocol == "chrome-extension:" && url.hostname.length == 32 ) {
         DEBUG.debugSetupWorker && console.log(`Removing target from extension, so triggering window close logic in extension.`);
         const id = url.hostname;
         const worker = Workers.get(id);
@@ -1305,6 +1310,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                   connection.forceMeta({modifyExtension:{error:"Could not modify", err}});
                 });
               }, 2);
+            } else if ( Message.offscreen ) {
+              const {url} = Message.offscreen;
+              OffscreenPages.add(url);
             }
             connection.forceMeta(Message);
           }
@@ -1920,11 +1928,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {},
         sessionId
       );
+      /*
       send(
         "Debugger.enable", 
         {},
         sessionId
       );
+      */
       await send(
         "Runtime.runIfWaitingForDebugger", 
         {},
@@ -1936,10 +1946,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const url = new URL(result.value);
       DEBUG.debugSetupWorker && console.log({url});
       if ( url.protocol == 'chrome-extension:' && url.hostname.length == 32 && !url.pathname.endsWith('.html') && ! PROTECTED_EXTENSIONS.has(url.hostname) ) {
-        Workers.set(sessionId, {});
         console.log('Attached to extension service worker. Preparing inject');
         const swPathParts = url.pathname.split(path.sep);
         const extensionId = url.hostname;
+        await untilTrue(() => extensions.some(({id}) => id == extensionId));
         const extensionManifest = extensions.find(({id}) => id == extensionId);
         let swContentPath = path.resolve(EXTENSIONS_PATH, extensionId, `${extensionManifest?.version || '1.0.0'}_0`, ...swPathParts);
         if ( ! fs.existsSync(swContentPath) ) {
@@ -1948,7 +1958,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         console.log('Will fetch extension service worker content from ', swContentPath);
         const swContent = fs.readFileSync(swContentPath).toString();
         const wrappedSwContent = `{void 0;${keyExtensionAPIShims};${swContent}}`;
-        console.log({wrappedSwContent});
 
         const workerInfo = {
           id: extensionId, 
@@ -1959,10 +1968,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         Workers.set(sessionId, workerInfo);
         Workers.set(extensionId, workerInfo);
+        DEBUG.debugSetupWorker && console.log(Workers, {extensionId, workerInfo});
 
         const evalResult = await send(
           "Runtime.evaluate", 
           {
+            contextId: 1,
             expression: wrappedSwContent
           }, 
           sessionId
@@ -2532,7 +2543,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       return {};
     }
     if (  CONFIG.isCT && DEBUG.extensionsAccess && WebstoreBlock.has(command.name) ) {
-      const isWebstore = new URL(tabs.get(targetId).url).hostname == "chromewebstore.google.com";
+      const isWebstore = tabs.has(targetId) ? new URL(tabs.get(targetId).url).hostname == "chromewebstore.google.com" : false;
       if ( isWebstore ) {
         console.info(`Blocking ${command.name} from chrome webstore`);
         return {};
@@ -2717,6 +2728,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
 export function getWorker(id) {
   return Workers.get(id);
+}
+
+export function isOffscreen(url) {
+  return OffscreenPages.has(url);
 }
 
 export function shouldBeWorker(extensionId) {
@@ -2973,51 +2988,70 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
 }
 
 async function updateAllTargetsToViewport({commonViewport, connection, skipSelf = false}) {
-  const {send,on, ons} = connection.zombie;
+  DEBUG.traceViewportUpdateFuncs && console.log('Entering updateAllTargetsToViewport');
+  const {send, on, ons} = connection.zombie;
+  DEBUG.traceViewportUpdateFuncs && console.log('Retrieved zombie properties from connection', connection.targets.values());
+  
   const windows = new Set();
   SCREEN_OPTS.maxWidth = commonViewport.width;
   SCREEN_OPTS.maxHeight = commonViewport.height;
-  for ( const targetId of connection.targets.values() ) {
+  
+  for (const targetId of connection.targets.values()) {
+    DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);
     await untilTrueOrTimeout(() => sessions.has(targetId), 10);
     const sessionId = sessions.get(targetId);
-    if ( Workers.has(sessionId) ) continue;
-    if ( ! sessionId ) {
+    
+    if (Workers.has(sessionId)) continue;
+    DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
+    if (!sessionId) {
       console.log('SKIPPING', {targetId, sessionId});
       continue;
     }
-    //if ( sessionId == connection.sessionId && skipSelf ) continue; // because we will send it in the command that triggered this check
+    
     let width, height, screenWidth, screenHeight;
     try {
       const {windowId} = await send("Browser.getWindowForTarget", {targetId});
-      if ( !windows.has(windowId) ) {
+      DEBUG.traceViewportUpdateFuncs && console.log('Retrieved windowId:', windowId);
+      
+      if (!windows.has(windowId)) {
         windows.add(windowId);
-        let {width,height} = commonViewport;
-        DEBUG.debugViewportDImensions && console.log({width,height,windowId});
-        if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+        let {width, height} = commonViewport;
+        DEBUG.debugViewportDimensions && console.log({width, height, windowId});
+        
+        if (DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI) {
           height += HeightAdjust;
         }
-        await send("Browser.setWindowBounds", {bounds:{width,height}, windowId})
+        
+        DEBUG.traceViewportUpdateFuncs && console.log('Setting window bounds for windowId:', windowId, {width, height});
+        await send("Browser.setWindowBounds", {bounds: {width, height}, windowId});
       }
-      ({result:{value:{width,height,screenWidth,screenHeight}}} = await send("Runtime.evaluate", {
+      
+      ({result: {value: {width, height, screenWidth, screenHeight}}} = await send("Runtime.evaluate", {
         expression: `
           (function () {
             return {width: window.innerWidth, height: window.innerHeight, screenWidth: screen?.width, screenHeight: screen?.height};
           }())
         `,
-        returnByValue: true 
+        returnByValue: true
       }, sessionId));
-      DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width,height}, 'Sending', {commonViewport});
-      DEBUG.debugScreenSize && console.log('Actual page dimensions', {width,height,screenWidth,screenHeight}, 'Sending', {commonViewport}, 'to', tabs.get(targetId));
-      if ( width == commonViewport.width && height == commonViewport.height && screenWidth == commonViewport.width && (screenHeight - commonViewport.height) < 100) {
+      
+      DEBUG.debugViewportDimensions && console.log('Actual page dimensions', {width, height}, 'Sending', {commonViewport});
+      DEBUG.debugScreenSize && console.log('Actual page dimensions', {width, height, screenWidth, screenHeight}, 'Sending', {commonViewport}, 'to', tabs.get(targetId));
+      
+      if (width == commonViewport.width && height == commonViewport.height && screenWidth == commonViewport.width && (screenHeight - commonViewport.height) < 100) {
+        DEBUG.traceViewportUpdateFuncs && console.log('Viewport already matches, skipping update for target:', targetId);
         continue;
       }
-      //send("Emulation.clearDeviceMetricsOverride", {}, sessionId);
+      
+      DEBUG.traceViewportUpdateFuncs && console.log('Updating viewport for target:', targetId);
       commonViewport.dontSetVisibleSize = true;
       send("Emulation.setDeviceMetricsOverride", commonViewport, sessionId);
-    } catch(err) {
+      DEBUG.traceViewportUpdateFuncs && console.log('Sent Emulation.setDeviceMetricsOverride');
+    } catch (err) {
       console.warn(`Error updating viewport to reflect change, during all targets update loop`, {targetId, sessionId}, err);
     }
   }
+  DEBUG.traceViewportUpdateFuncs && console.log('Exiting updateAllTargetsToViewport');
 }
 
 export async function executeBinding({message, sessionId, connection, send, on, ons}) {

@@ -31,7 +31,7 @@
     if ( target.shadowRoot ) {
       // contains a shadow, so will not be the actual event target
       // but this will be
-      target = e.path[0];
+      target = e?.path?.[0] || e?.composedPath?.()?.[0];
     }
     const condition = !!target && target.matches && target.matches('select:not([multiple])');
     if ( ! condition ) return;
