@@ -1,5 +1,5 @@
+- merge license control
 - ensure we can not display offscreen pages from extensions. (one way to tell is we never get a screencastFrame from the session even tho visibility of screencast is visibile according to the change event). This may be more reliable than the extension way I am exploring.
 - ensure everything else works properly including:
    - extensions work as we expect
    - tabs are sized to correct viewport on app load (regression?)
-- merge license control
