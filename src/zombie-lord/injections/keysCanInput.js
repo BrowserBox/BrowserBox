@@ -45,8 +45,11 @@
   function monitorActiveElementNextTick(e = {target:document.activeElement}, {alwaysNotify = false} = {}) {
     let focusDestination =  document.activeElement;
     let condition;
-    if ( !e.path ) {
-      e.path = e?.composedPath?.() || getAncestors(target);
+    if ( !e.path || e?.path?.length === 0) {
+      e.path = e?.composedPath?.();
+      if ( !e.path || e?.path?.length === 0) {
+        e.path = getAncestors(target);
+      }
     }
     setTimeout(() => {
       condition = focusDestination.matches(KEYINPUT_ELEMENT);
@@ -77,8 +80,11 @@
   function monitorActiveElement(e = {target:document.activeElement}, {alwaysNotify:alwaysNotify = false} = {}) {
     let target = e.target;
     if ( ! target || ! target.matches ) return;
-    if ( !e.path ) {
-      e.path = e?.composedPath?.() || getAncestors(target);
+    if ( !e.path || e?.path?.length === 0) {
+      e.path = e?.composedPath?.();
+      if ( !e.path || e?.path?.length === 0) {
+        e.path = getAncestors(target);
+      }
     }
     let condition;
     setTimeout(() => {
