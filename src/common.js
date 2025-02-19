@@ -77,7 +77,7 @@ export const DEBUG = Object.freeze({
   attachToServiceWorkers: true,
   showServerWorkersAsTabs: false,
   extensionsAccess: true,
-  showExtensions: true,
+  showExtensions: false,
   debugReconnect: true,
   fileDebug: false,
   debugScreenSize: false,
@@ -89,7 +89,7 @@ export const DEBUG = Object.freeze({
   debugReload: false,
   debugInfoChanged: false,
   attachDebug: false,
-  debugSetupReload: false,
+  debugSetupReload: true,
   blockDebug: false,
   debugDebounce: false,
   adjustHeightForHeadfulUI: true,
@@ -167,7 +167,7 @@ export const DEBUG = Object.freeze({
   showResizeEvents: false,
   logRestartCast: false,
   get showErrorSources() {
-    return this.logFileCommands || this.commands || false;
+    return this.logFileCommands || this.commands || true;
   },
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,
