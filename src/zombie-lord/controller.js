@@ -355,9 +355,9 @@ const controller_api = {
     connection.hiddenTargetId = targetId;
   },
 
-  isOffscreen(url, port) {
+  isOffscreen(targetId, port) {
     const connection = connections.get(port);
-    return connection.OffscreenPages.has(url);
+    return connection.OffscreenPages.has(targetId);
   },
 
   addTargets(tabs, port) {

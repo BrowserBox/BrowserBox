@@ -691,6 +691,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
       connection.meta.push({attached});
       if ( targetInfo.type == 'page' ) {
+        tabs.set(targetId, targetInfo);
         await setupTab({attached});
       } else if ( targetInfo.type == 'service_worker' ) {
         const url = new URL(targetInfo.url);
@@ -1312,7 +1313,13 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               }, 2);
             } else if ( Message.offscreen ) {
               const {opts:{url}} = Message.offscreen;
-              OffscreenPages.add(url);
+              // we don't add url here we add targetid because offscreen-ness is nature of the target not of the url
+              //OffscreenPages.add(url);
+              const targetId = [...tabs.values()].find(({url: tabUrl}) => url == tabUrl)?.targetId;
+              if ( targetId ) {
+                OffscreenPages.add(targetId);
+                console.log(`Adding offscreen page`, targetId);
+              }
             }
             connection.forceMeta(Message);
           }
@@ -1783,13 +1790,31 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {hidden:connection.isMobile || false},
         sessionId
       );
-      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
-      connection.latestWindowId = windowId;
-      let {width,height} = connection.bounds;
-      if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
-        height += HeightAdjust;
+      let windowId;
+      try {
+        DEBUG.debugBrowserWindow && console.log(`Requesting window for target`, targetId);
+        ({windowId} = await send("Browser.getWindowForTarget", {targetId}));
+        DEBUG.debugBrowserWindow && console.log(`Got window for target`, {windowId, targetId});
+      } catch(e) {
+        DEBUG.debugBrowserWindow && console.log(`Error getting browser window id for target`, {err: e, windowId, targetId, cachedWindowId, latest: connection.latestWindowId});
       }
-      await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
+      connection.latestWindowId = windowId || cachedWindowId;
+      cachedWindowId = connection.latestWindowId;
+      if ( !! windowId ) { 
+        let {width,height} = connection.bounds;
+        if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+          height += HeightAdjust;
+        }
+        await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
+      } else {
+        DEBUG.debugBrowserWindow && console.log(`Will add offscreen page for extension`, {targetId, tab: tabs.get(targetId)});
+        OffscreenPages.add(targetId);
+        console.log(`Adding offscreen page`, targetId);
+        if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') ) {
+          OffscreenPages.add(targetId);
+          console.log(`Adding offscreen page`, targetId);
+        }
+      }
       //id = await overrideNewtab(connection.zombie, sessionId, id);
       if ( AD_BLOCK_ON ) {
         await blockAds(/*connection.zombie, sessionId*/);
@@ -2224,6 +2249,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( !command.params.targetId ) {
           command.params.targetId = connection.hiddenTargetId;
         }
+        DEBUG.debugBrowserWindow && console.log(`Requesting window for target from sent command`, command.params.targetId);
         /*
         if ( that.latestWindowId ) {
           return {windowId: that.lastestWindowId};
@@ -2240,6 +2266,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         if ( command.params.windowId ) {
           connection.latestWindowId = command.params.windowId;
+          cachedWindowId = connection.latestWindowId;
         }
         const viewport = getViewport(...connection.viewports.values());
 
@@ -2509,7 +2536,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               timeout: CONFIG.SHORT_TIMEOUT
             }, sessionId);
             send("Page.screencastFrameAck", {
-              sessionId: castInfo.castSessionId
+              sessionId: castInfo.castSessionId || 1
             }, sessionId);
             await sleep(200);
             send("Runtime.evaluate", {
@@ -2523,7 +2550,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           // ALWAYS send an ack on activate
           await sleep(50);
           send("Page.screencastFrameAck", {
-            sessionId: castInfo.castSessionId
+            sessionId: castInfo.castSessionId || 1
           }, sessionId);
         }
         if ( DEBUG.dontSendActivate ) {
@@ -2728,8 +2755,8 @@ export function getWorker(id) {
   return Workers.get(id);
 }
 
-export function isOffscreen(url) {
-  return OffscreenPages.has(url);
+export function isOffscreen(targetId) {
+  return OffscreenPages.has(targetId);
 }
 
 export function shouldBeWorker(extensionId) {
@@ -3002,15 +3029,38 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
     if (Workers.has(sessionId)) continue;
     DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
     if (!sessionId) {
-      console.log('SKIPPING', {targetId, sessionId});
+      console.log('SKIPPING as no sessionId', {targetId, sessionId});
       continue;
     }
     
     let width, height, screenWidth, screenHeight;
+    let windowId;
     try {
-      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
+      DEBUG.debugBrowserWindow && console.log(`Requesting window for target`, targetId);
+      ({windowId} = await send("Browser.getWindowForTarget", {targetId}));
+      DEBUG.debugBrowserWindow && console.log(`Got window for target`, {windowId, targetId});
       DEBUG.traceViewportUpdateFuncs && console.log('Retrieved windowId:', windowId);
+    } catch(e) {
+      DEBUG.debugBrowserWindow && console.log(`Error getting browser window id for target`, {err: e, windowId, targetId, cachedWindowId, latest: connection.latestWindowId});
+    }
+
+    if ( ! windowId ) {
+      console.log('SKIPPING as no window id', {targetId, sessionId});
+      // as far as i know offscreen is only a characteristic of extensions
+      DEBUG.debugBrowserWindow && console.log(`Will add offscreen page for extension`, {targetId, tab: tabs.get(targetId)});
+      OffscreenPages.add(targetId);
+      console.log(`Adding offscreen page`, targetId);
+      if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') ) {
+        OffscreenPages.add(targetId);
+        console.log(`Adding offscreen page`, targetId);
+      }
+      continue;
+    } else {
+      connection.latestWindowId = windowId || cachedWindowId;
+      cachedWindowId = connection.latestWindowId;
+    }
       
+    try {
       if (!windows.has(windowId)) {
         windows.add(windowId);
         let {width, height} = commonViewport;
