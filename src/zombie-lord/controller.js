@@ -622,18 +622,20 @@ const controller_api = {
               if ( DEBUG.debugSetupWorker ) {
                 console.info(`Telling extension worker to execute action on clicked code results in: `, sendResult, {worker, command, expression});
               }
-              await sleep(800);
-              const popup = worker?.manifest?.action?.default_popup || 'popup.html';
-              if ( ! [...connection.tabs.values()].some(({url}) => {
-                const hostname = new URL(url).hostname;
-                if ( hostname == id && url.includes(popup) ) {
-                  return true;
+              await sleep(1618);
+              const popup = worker?.manifest?.action?.default_popup;
+              if ( !! popup ) {
+                if ( ! [...connection.tabs.values()].some(({url}) => {
+                  const hostname = new URL(url).hostname;
+                  if ( hostname == id && url.includes(popup) ) {
+                    return true;
+                  }
+                  return false;
+                }) ) {
+                  connection.zombie.send("Target.createTarget", {
+                    url: `chrome-extension://${id}/${popup}`
+                  });
                 }
-                return false;
-              }) ) {
-                connection.zombie.send("Target.createTarget", {
-                  url: `chrome-extension://${id}/${popup}`
-                });
               }
             }).catch(err => console.warn(`Error trying to send command: %s to extension`, command.name, err, {command}, {port}));
           }

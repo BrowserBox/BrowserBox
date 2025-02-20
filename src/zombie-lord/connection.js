@@ -572,7 +572,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     DEBUG.debugAttach && consolelog('create 1', targetInfo);
     const {targetId, url} = targetInfo;
     if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
-      await send("Target.closeTarget", {targetId});
+      send("Target.closeTarget", {targetId});
       return;
     }
     targets.add(targetId);
@@ -589,7 +589,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     DEBUG.debugInfoChanged && consolelog('change 1', targetInfo);
     const {targetId, url} = targetInfo;
     if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
-      await send("Target.closeTarget", {targetId});
+      send("Target.closeTarget", {targetId});
       return;
     }
     if ( tabs.has(targetId) ) {
@@ -659,7 +659,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const attached = {sessionId,targetInfo,waitingForDebugger};
       const {targetId,url} = targetInfo;
       if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
-        await send("Target.closeTarget", {targetId});
+        send("Target.closeTarget", {targetId});
         return;
       }
       TargetReloads.set(sessionId, {reloads: 0, queue: [], reasons:[], firstReloadStatus: 'waiting-to-setup'});
@@ -797,7 +797,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const {targetId, url} = target;
       startingTabs.add(targetId);
       if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
-        await send("Target.closeTarget", {targetId});
+        send("Target.closeTarget", {targetId});
       } else if ( ! attaching.has(targetId) ){
         console.log('Starting tab', {target});
         attaching.add(targetId);
@@ -1928,13 +1928,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {},
         sessionId
       );
-      /*
       send(
         "Debugger.enable", 
         {},
         sessionId
       );
-      */
       await send(
         "Runtime.runIfWaitingForDebugger", 
         {},
