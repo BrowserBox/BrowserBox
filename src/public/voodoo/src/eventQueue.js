@@ -1474,7 +1474,7 @@
         DEBUG.logFrameIds && console.log(`Drawing frameId ${frameId}`);
         image.src = `data:${ITYPE};base64,${img}`;
         frameDrawing = true;
-        state.screenshotReceived = {frameId, castSessionId:0xCC55151C};
+        state.screenshotReceived = {frameId, castSessionId:0X7FFFFFFF};
         //alert('log ack3');
       }
     }

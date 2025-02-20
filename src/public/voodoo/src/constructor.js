@@ -368,7 +368,7 @@
           // shot acks
           screenshotReceived: false,
           latestFrameReceived: 0,
-          latestCastSession: 0xCC55151C,
+          latestCastSession: 0X7FFFFFFF,
 
           // for bang!
           DEBUG,

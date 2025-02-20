@@ -345,7 +345,7 @@ export function makeCamera(connection) {
 
           const header = Buffer.alloc(28);
           /* magic instead of cast session Id when not in cast mode */
-          header.writeUInt32LE(0xCC55151C, 0); 
+          header.writeUInt32LE(0X7FFFFFFF, 0); 
           header.writeUInt32LE(F.frameId, 4);
           header.writeUInt32LE(parseInt(F.targetId.slice(0,8), 16), 8);
           header.writeUInt32LE(parseInt(F.targetId.slice(8,16), 16), 12);
