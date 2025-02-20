@@ -800,7 +800,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
         send("Target.closeTarget", {targetId});
       } else if ( ! attaching.has(targetId) ){
-        console.log('Starting tab', {target});
+        DEBUG.debugStartupTargets && console.log('Starting tab', {target});
         attaching.add(targetId);
         if ( target.attached ) {
           await sleep(40);
@@ -1566,7 +1566,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   async function setupTab({attached}) {
     const {waitingForDebugger, sessionId, targetInfo} = attached;
     const {targetId} = targetInfo;
-    console.log('Setup called for', attached);
+    DEBUG.debugSetupTab && console.log('Setup called for', attached);
     DEBUG.debugSetupReload && consolelog(`Called setup for `, attached);
     if ( settingUp.has(targetId) ) return;
     DEBUG.debugSetupReload && consolelog(`Running setup for `, attached);
@@ -1926,7 +1926,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     if ( startingTabs.has(targetId) ) {
       // needed to refresh sometimes
       // but maybe this should go after set up tab?
-      console.log('Reloading starting tab');
+      DEBUG.debugStartupTargets && console.log('Reloading starting tab');
       reloadAfterSetup(sessionId, {reason:'post-setup'});
     }
   }
@@ -1969,7 +1969,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const url = new URL(result.value);
       DEBUG.debugSetupWorker && console.log({url});
       if ( url.protocol == 'chrome-extension:' && url.hostname.length == 32 && !url.pathname.endsWith('.html') && ! PROTECTED_EXTENSIONS.has(url.hostname) ) {
-        console.log('Attached to extension service worker. Preparing inject');
+        DEBUG.debugSetupWorker && console.log('Attached to extension service worker. Preparing inject', {targetId, url});
         const swPathParts = url.pathname.split(path.sep);
         const extensionId = url.hostname;
         await untilTrue(() => extensions.some(({id}) => id == extensionId));
@@ -1978,7 +1978,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( ! fs.existsSync(swContentPath) ) {
           swContentPath = extractExtSWContentPath(extensionManifest, url);
         }
-        console.log('Will fetch extension service worker content from ', swContentPath);
+        DEBUG.debugSetupWorker && console.log('Will fetch extension service worker content from ', swContentPath);
         const swContent = fs.readFileSync(swContentPath).toString();
         const wrappedSwContent = `{void 0;${keyExtensionAPIShims};${swContent}}`;
 
@@ -2002,7 +2002,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           sessionId
         );
 
-        console.log({evalResult});
+        DEBUG.debugSetupWorker && console.log({evalResult});
       }
 
       await send("Network.enable", {}, sessionId);
@@ -3195,7 +3195,7 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
       Zombie.disconnected = false;
       let {targetInfos:targets} = await send("Target.getTargets", {targetFilter:[{type:"browser",exclude:true}]});
       targets = targets.filter(t => AttachmentTypes.has(t.type));
-      console.log(JSON.stringify({targets},null,2));
+      DEBUG.debugStartupTargets && console.log(JSON.stringify({targets},null,2));
       resolve({startupTargets:targets});
     });
 
@@ -3456,6 +3456,8 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
       const {id, result, error} = message;
 
       if ( error ) {
+        const key = `${sessionId||ROOT_SESSION}:${id}`;
+        const resolve = Resolvers[key];
         if ( message?.error?.message == "Internal error" || message?.error?.code == -32603 ) {
           const sessionToReload = message.sessionId;
           // this usually fixes it
@@ -3463,7 +3465,6 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
         }
         if ( DEBUG.errors || DEBUG.showErrorSources ) {
           console.warn("\nBrowser backend Error message", message);
-          const key = `${sessionId||ROOT_SESSION}:${id}`;
           const originalCommand = Resolvers?.[key]?._originalCommand;
           const stack = Resolvers?.[key]?._stack;
           if ( originalCommand ) {
@@ -3472,6 +3473,16 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
             console.log(`Can't find original command as no id, but last ${LAST_COMMANDS_WINDOW} commands sent were:`, lastCommands);
           }
           console.log('');
+        }
+        if ( ! resolve ) {
+          console.warn(`No resolver for key`, key, stringMessage.slice(0,140));
+        } else {
+          Resolvers[key] = undefined;
+          try {
+            await resolve(result);
+          } catch(e) {
+            console.warn(`Resolver failed`, e, key, stringMessage.slice(0,140), resolve);
+          }
         }
       } else if ( id ) {
         const key = `${sessionId||ROOT_SESSION}:${id}`;

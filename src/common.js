@@ -71,7 +71,9 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  debugBrowserWindow: true,
+  debugStartupTargets: false,
+  debugSetupTab: false,
+  debugBrowserWindow: false,
   allowPuter: false,
   revealChromeJSIntercepts: false,
   debugSetupWorker: false,
