@@ -726,12 +726,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.debugSetupWorker && console.log(`Worker: ${sessionId} going down.`);
     }
     const targetInfo = tabs.get(targetId);
-    console.log({targetInfo});
+    DEBUG.debugExtensions && console.log({targetInfo});
     if ( targetInfo ) {
       const {type} = targetInfo;
       const url = new URL(targetInfo.url);
       if ( (type == "page" || type == "other") && url.protocol == "chrome-extension:" && url.hostname.length == 32 ) {
-        DEBUG.debugSetupWorker && console.log(`Removing target from extension, so triggering window close logic in extension.`);
+        DEBUG.debugExtensions && console.log(`Removing target from extension, so triggering window close logic in extension.`);
         const id = url.hostname;
         const worker = Workers.get(id);
         if ( worker ) {
@@ -739,7 +739,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           send("Runtime.evaluate", {
             contextId: 1,
             expression,
-          }, worker.sessionId).then(res => console.log(`Evaluate result`, res)).catch(err => console.warn(`Err`, err));
+          }, worker.sessionId).then(res => DEBUG.debugExtensions && console.log(`Evaluate result`, res)).catch(err => console.warn(`Err`, err));
         }
       }
     }
@@ -1316,9 +1316,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               // we don't add url here we add targetid because offscreen-ness is nature of the target not of the url
               //OffscreenPages.add(url);
               const targetId = [...tabs.values()].find(({url: tabUrl}) => url == tabUrl)?.targetId;
-              if ( targetId ) {
+              if ( targetId && ! OffscreenPages.has(targetId) ) {
                 OffscreenPages.add(targetId);
-                console.log(`Adding offscreen page`, targetId);
+                DEBUG.debugOffscreenPages && console.log(`Adding offscreen page`, targetId);
               }
             }
             connection.forceMeta(Message);
@@ -1808,11 +1808,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
       } else {
         DEBUG.debugBrowserWindow && console.log(`Will add offscreen page for extension`, {targetId, tab: tabs.get(targetId)});
-        OffscreenPages.add(targetId);
-        console.log(`Adding offscreen page`, targetId);
-        if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') ) {
+        if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') && ! OffscreenPages.has(targetId) ) {
           OffscreenPages.add(targetId);
-          console.log(`Adding offscreen page`, targetId);
+          DEBUG.debugOffscreenPages && console.log(`Adding offscreen page`, targetId);
         }
       }
       //id = await overrideNewtab(connection.zombie, sessionId, id);
@@ -3048,11 +3046,9 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
       console.log('SKIPPING as no window id', {targetId, sessionId});
       // as far as i know offscreen is only a characteristic of extensions
       DEBUG.debugBrowserWindow && console.log(`Will add offscreen page for extension`, {targetId, tab: tabs.get(targetId)});
-      OffscreenPages.add(targetId);
-      console.log(`Adding offscreen page`, targetId);
-      if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') ) {
+      if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') && ! OffscreenPages.has(targetId) ) {
         OffscreenPages.add(targetId);
-        console.log(`Adding offscreen page`, targetId);
+        DEBUG.debugOffscreenPages && console.log(`Adding offscreen page`, targetId);
       }
       continue;
     } else {
@@ -3475,7 +3471,7 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
           console.log('');
         }
         if ( ! resolve ) {
-          console.warn(`No resolver for key`, key, stringMessage.slice(0,140));
+          console.warn(`No resolver for key`, key, stringMessage.toString().slice(0,140));
         } else {
           Resolvers[key] = undefined;
           try {
@@ -3488,7 +3484,7 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
         const key = `${sessionId||ROOT_SESSION}:${id}`;
         const resolve = Resolvers[key];
         if ( ! resolve ) {
-          console.warn(`No resolver for key`, key, stringMessage.slice(0,140));
+          console.warn(`No resolver for key`, key, stringMessage.toString().slice(0,140));
         } else {
           Resolvers[key] = undefined;
           try {
