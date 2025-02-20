@@ -572,7 +572,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     DEBUG.debugAttach && consolelog('create 1', targetInfo);
     const {targetId, url} = targetInfo;
     if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
-      await send("Target.closeTarget", {targetId});
+      send("Target.closeTarget", {targetId});
       return;
     }
     targets.add(targetId);
@@ -589,7 +589,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     DEBUG.debugInfoChanged && consolelog('change 1', targetInfo);
     const {targetId, url} = targetInfo;
     if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
-      await send("Target.closeTarget", {targetId});
+      send("Target.closeTarget", {targetId});
       return;
     }
     if ( tabs.has(targetId) ) {
@@ -659,7 +659,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const attached = {sessionId,targetInfo,waitingForDebugger};
       const {targetId,url} = targetInfo;
       if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
-        await send("Target.closeTarget", {targetId});
+        send("Target.closeTarget", {targetId});
         return;
       }
       TargetReloads.set(sessionId, {reloads: 0, queue: [], reasons:[], firstReloadStatus: 'waiting-to-setup'});
@@ -691,6 +691,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       checkSetup.set(targetId, {val:MAX_TRIES_TO_LOAD, checking:false, needsReload: StartupTabs.has(targetId)});
       connection.meta.push({attached});
       if ( targetInfo.type == 'page' ) {
+        tabs.set(targetId, targetInfo);
         await setupTab({attached});
       } else if ( targetInfo.type == 'service_worker' ) {
         const url = new URL(targetInfo.url);
@@ -725,12 +726,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.debugSetupWorker && console.log(`Worker: ${sessionId} going down.`);
     }
     const targetInfo = tabs.get(targetId);
-    console.log({targetInfo});
+    DEBUG.debugExtensions && console.log({targetInfo});
     if ( targetInfo ) {
       const {type} = targetInfo;
       const url = new URL(targetInfo.url);
       if ( (type == "page" || type == "other") && url.protocol == "chrome-extension:" && url.hostname.length == 32 ) {
-        DEBUG.debugSetupWorker && console.log(`Removing target from extension, so triggering window close logic in extension.`);
+        DEBUG.debugExtensions && console.log(`Removing target from extension, so triggering window close logic in extension.`);
         const id = url.hostname;
         const worker = Workers.get(id);
         if ( worker ) {
@@ -738,7 +739,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           send("Runtime.evaluate", {
             contextId: 1,
             expression,
-          }, worker.sessionId).then(res => console.log(`Evaluate result`, res)).catch(err => console.warn(`Err`, err));
+          }, worker.sessionId).then(res => DEBUG.debugExtensions && console.log(`Evaluate result`, res)).catch(err => console.warn(`Err`, err));
         }
       }
     }
@@ -797,9 +798,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const {targetId, url} = target;
       startingTabs.add(targetId);
       if ( WrongOnes.has(url) || WO.some(u => url.startsWith(u) ) ) {
-        await send("Target.closeTarget", {targetId});
+        send("Target.closeTarget", {targetId});
       } else if ( ! attaching.has(targetId) ){
-        console.log('Starting tab', {target});
+        DEBUG.debugStartupTargets && console.log('Starting tab', {target});
         attaching.add(targetId);
         if ( target.attached ) {
           await sleep(40);
@@ -1311,8 +1312,14 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                 });
               }, 2);
             } else if ( Message.offscreen ) {
-              const {url} = Message.offscreen;
-              OffscreenPages.add(url);
+              const {opts:{url}} = Message.offscreen;
+              // we don't add url here we add targetid because offscreen-ness is nature of the target not of the url
+              //OffscreenPages.add(url);
+              const targetId = [...tabs.values()].find(({url: tabUrl}) => url == tabUrl)?.targetId;
+              if ( targetId && ! OffscreenPages.has(targetId) ) {
+                OffscreenPages.add(targetId);
+                DEBUG.debugOffscreenPages && console.log(`Adding offscreen page`, targetId);
+              }
             }
             connection.forceMeta(Message);
           }
@@ -1559,7 +1566,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   async function setupTab({attached}) {
     const {waitingForDebugger, sessionId, targetInfo} = attached;
     const {targetId} = targetInfo;
-    console.log('Setup called for', attached);
+    DEBUG.debugSetupTab && console.log('Setup called for', attached);
     DEBUG.debugSetupReload && consolelog(`Called setup for `, attached);
     if ( settingUp.has(targetId) ) return;
     DEBUG.debugSetupReload && consolelog(`Running setup for `, attached);
@@ -1783,13 +1790,29 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {hidden:connection.isMobile || false},
         sessionId
       );
-      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
-      connection.latestWindowId = windowId;
-      let {width,height} = connection.bounds;
-      if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
-        height += HeightAdjust;
+      let windowId;
+      try {
+        DEBUG.debugBrowserWindow && console.log(`Requesting window for target`, targetId);
+        ({windowId} = await send("Browser.getWindowForTarget", {targetId}));
+        DEBUG.debugBrowserWindow && console.log(`Got window for target`, {windowId, targetId});
+      } catch(e) {
+        DEBUG.debugBrowserWindow && console.log(`Error getting browser window id for target`, {err: e, windowId, targetId, cachedWindowId, latest: connection.latestWindowId});
       }
-      await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
+      connection.latestWindowId = windowId || cachedWindowId;
+      cachedWindowId = connection.latestWindowId;
+      if ( !! windowId ) { 
+        let {width,height} = connection.bounds;
+        if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
+          height += HeightAdjust;
+        }
+        await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
+      } else {
+        DEBUG.debugBrowserWindow && console.log(`Will add offscreen page for extension`, {targetId, tab: tabs.get(targetId)});
+        if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') && ! OffscreenPages.has(targetId) ) {
+          OffscreenPages.add(targetId);
+          DEBUG.debugOffscreenPages && console.log(`Adding offscreen page`, targetId);
+        }
+      }
       //id = await overrideNewtab(connection.zombie, sessionId, id);
       if ( AD_BLOCK_ON ) {
         await blockAds(/*connection.zombie, sessionId*/);
@@ -1901,7 +1924,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     if ( startingTabs.has(targetId) ) {
       // needed to refresh sometimes
       // but maybe this should go after set up tab?
-      console.log('Reloading starting tab');
+      DEBUG.debugStartupTargets && console.log('Reloading starting tab');
       reloadAfterSetup(sessionId, {reason:'post-setup'});
     }
   }
@@ -1928,13 +1951,11 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         {},
         sessionId
       );
-      /*
       send(
         "Debugger.enable", 
         {},
         sessionId
       );
-      */
       await send(
         "Runtime.runIfWaitingForDebugger", 
         {},
@@ -1946,7 +1967,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const url = new URL(result.value);
       DEBUG.debugSetupWorker && console.log({url});
       if ( url.protocol == 'chrome-extension:' && url.hostname.length == 32 && !url.pathname.endsWith('.html') && ! PROTECTED_EXTENSIONS.has(url.hostname) ) {
-        console.log('Attached to extension service worker. Preparing inject');
+        DEBUG.debugSetupWorker && console.log('Attached to extension service worker. Preparing inject', {targetId, url});
         const swPathParts = url.pathname.split(path.sep);
         const extensionId = url.hostname;
         await untilTrue(() => extensions.some(({id}) => id == extensionId));
@@ -1955,7 +1976,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( ! fs.existsSync(swContentPath) ) {
           swContentPath = extractExtSWContentPath(extensionManifest, url);
         }
-        console.log('Will fetch extension service worker content from ', swContentPath);
+        DEBUG.debugSetupWorker && console.log('Will fetch extension service worker content from ', swContentPath);
         const swContent = fs.readFileSync(swContentPath).toString();
         const wrappedSwContent = `{void 0;${keyExtensionAPIShims};${swContent}}`;
 
@@ -1979,7 +2000,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           sessionId
         );
 
-        console.log({evalResult});
+        DEBUG.debugSetupWorker && console.log({evalResult});
       }
 
       await send("Network.enable", {}, sessionId);
@@ -2226,6 +2247,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( !command.params.targetId ) {
           command.params.targetId = connection.hiddenTargetId;
         }
+        DEBUG.debugBrowserWindow && console.log(`Requesting window for target from sent command`, command.params.targetId);
         /*
         if ( that.latestWindowId ) {
           return {windowId: that.lastestWindowId};
@@ -2242,6 +2264,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         if ( command.params.windowId ) {
           connection.latestWindowId = command.params.windowId;
+          cachedWindowId = connection.latestWindowId;
         }
         const viewport = getViewport(...connection.viewports.values());
 
@@ -2511,7 +2534,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               timeout: CONFIG.SHORT_TIMEOUT
             }, sessionId);
             send("Page.screencastFrameAck", {
-              sessionId: castInfo.castSessionId
+              sessionId: castInfo.castSessionId || 1
             }, sessionId);
             await sleep(200);
             send("Runtime.evaluate", {
@@ -2525,7 +2548,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           // ALWAYS send an ack on activate
           await sleep(50);
           send("Page.screencastFrameAck", {
-            sessionId: castInfo.castSessionId
+            sessionId: castInfo.castSessionId || 1
           }, sessionId);
         }
         if ( DEBUG.dontSendActivate ) {
@@ -2730,8 +2753,8 @@ export function getWorker(id) {
   return Workers.get(id);
 }
 
-export function isOffscreen(url) {
-  return OffscreenPages.has(url);
+export function isOffscreen(targetId) {
+  return OffscreenPages.has(targetId);
 }
 
 export function shouldBeWorker(extensionId) {
@@ -3004,15 +3027,36 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
     if (Workers.has(sessionId)) continue;
     DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
     if (!sessionId) {
-      console.log('SKIPPING', {targetId, sessionId});
+      console.log('SKIPPING as no sessionId', {targetId, sessionId});
       continue;
     }
     
     let width, height, screenWidth, screenHeight;
+    let windowId;
     try {
-      const {windowId} = await send("Browser.getWindowForTarget", {targetId});
+      DEBUG.debugBrowserWindow && console.log(`Requesting window for target`, targetId);
+      ({windowId} = await send("Browser.getWindowForTarget", {targetId}));
+      DEBUG.debugBrowserWindow && console.log(`Got window for target`, {windowId, targetId});
       DEBUG.traceViewportUpdateFuncs && console.log('Retrieved windowId:', windowId);
+    } catch(e) {
+      DEBUG.debugBrowserWindow && console.log(`Error getting browser window id for target`, {err: e, windowId, targetId, cachedWindowId, latest: connection.latestWindowId});
+    }
+
+    if ( ! windowId ) {
+      console.log('SKIPPING as no window id', {targetId, sessionId});
+      // as far as i know offscreen is only a characteristic of extensions
+      DEBUG.debugBrowserWindow && console.log(`Will add offscreen page for extension`, {targetId, tab: tabs.get(targetId)});
+      if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') && ! OffscreenPages.has(targetId) ) {
+        OffscreenPages.add(targetId);
+        DEBUG.debugOffscreenPages && console.log(`Adding offscreen page`, targetId);
+      }
+      continue;
+    } else {
+      connection.latestWindowId = windowId || cachedWindowId;
+      cachedWindowId = connection.latestWindowId;
+    }
       
+    try {
       if (!windows.has(windowId)) {
         windows.add(windowId);
         let {width, height} = commonViewport;
@@ -3147,7 +3191,7 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
       Zombie.disconnected = false;
       let {targetInfos:targets} = await send("Target.getTargets", {targetFilter:[{type:"browser",exclude:true}]});
       targets = targets.filter(t => AttachmentTypes.has(t.type));
-      console.log(JSON.stringify({targets},null,2));
+      DEBUG.debugStartupTargets && console.log(JSON.stringify({targets},null,2));
       resolve({startupTargets:targets});
     });
 
@@ -3408,6 +3452,8 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
       const {id, result, error} = message;
 
       if ( error ) {
+        const key = `${sessionId||ROOT_SESSION}:${id}`;
+        const resolve = Resolvers[key];
         if ( message?.error?.message == "Internal error" || message?.error?.code == -32603 ) {
           const sessionToReload = message.sessionId;
           // this usually fixes it
@@ -3415,7 +3461,6 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
         }
         if ( DEBUG.errors || DEBUG.showErrorSources ) {
           console.warn("\nBrowser backend Error message", message);
-          const key = `${sessionId||ROOT_SESSION}:${id}`;
           const originalCommand = Resolvers?.[key]?._originalCommand;
           const stack = Resolvers?.[key]?._stack;
           if ( originalCommand ) {
@@ -3425,11 +3470,21 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
           }
           console.log('');
         }
+        if ( ! resolve ) {
+          console.warn(`No resolver for key`, key, stringMessage.toString().slice(0,140));
+        } else {
+          Resolvers[key] = undefined;
+          try {
+            await resolve(result);
+          } catch(e) {
+            console.warn(`Resolver failed`, e, key, stringMessage.slice(0,140), resolve);
+          }
+        }
       } else if ( id ) {
         const key = `${sessionId||ROOT_SESSION}:${id}`;
         const resolve = Resolvers[key];
         if ( ! resolve ) {
-          console.warn(`No resolver for key`, key, stringMessage.slice(0,140));
+          console.warn(`No resolver for key`, key, stringMessage.toString().slice(0,140));
         } else {
           Resolvers[key] = undefined;
           try {

@@ -798,7 +798,7 @@
                       return false;
                     }
                   }
-                  if ( zl.act.isOffscreen(url, zombie_port) ) {
+                  if ( zl.act.isOffscreen(targetId, zombie_port) ) {
                     return false;
                   }
                   return true;
@@ -1029,7 +1029,7 @@
                     return false;
                   }
                 }
-                if ( zl.act.isOffscreen(url, zombie_port) ) {
+                if ( zl.act.isOffscreen(targetId, zombie_port) ) {
                   return false;
                 }
                 return true;
