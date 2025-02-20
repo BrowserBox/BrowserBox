@@ -167,7 +167,7 @@ export const DEBUG = Object.freeze({
   showResizeEvents: false,
   logRestartCast: false,
   get showErrorSources() {
-    return this.logFileCommands || this.commands || true;
+    return this.logFileCommands || this.commands || false;
   },
   showNoSessionIdWarnings: false,
   showBlockedCaptureScreenshots: false,

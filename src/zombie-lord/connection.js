@@ -1311,7 +1311,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                 });
               }, 2);
             } else if ( Message.offscreen ) {
-              const {url} = Message.offscreen;
+              const {opts:{url}} = Message.offscreen;
               OffscreenPages.add(url);
             }
             connection.forceMeta(Message);
