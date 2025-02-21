@@ -186,7 +186,7 @@ const launcher_api = {
     const CHROME_FLAGS = Array.from(DEFAULT_FLAGS);
     if (!process.env.DEBUG_SKATEBOARD) {
       if ( DEBUG.useNewAsgardHeadless && ! isDocker() ) {
-        //CHROME_FLAGS.push('--headless=new');
+        CHROME_FLAGS.push('--headless=new');
       } else {
         CHROME_FLAGS.push('--headless');
       }
