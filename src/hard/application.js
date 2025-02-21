@@ -69,15 +69,6 @@ export async function applicationCheck() {
     // Start application logic
     log('Application', 'Application started.');
 
-    /*
-    console.log('Hello world');
-    const waitSeconds = 5;
-    await hardenedApp.securelyMarkTime(waitSeconds, () => console.log(`Approximately ${waitSeconds} seconds was marked securely.`));
-
-    // Release license
-    await hardenedApp.releaseLicense();
-    log('Application', 'Application finished.');
-    */
     return true;
   } catch (error) {
     console.warn(error);

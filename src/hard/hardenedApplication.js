@@ -297,6 +297,8 @@ export class HardenedApplication {
       throw new Error('License validation configuration is incomplete.');
     }
 
+    console.log({certPath: this.#certificatePath });
+
     const certificateJson = readFile(this.#certificatePath);
 
     // Perform local validation using PKI
