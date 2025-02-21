@@ -55,7 +55,9 @@ export class HardenedApplication {
         'tickets.json',
         'ticket.json',
         'manifest.txt',
-        'manifest.txt.sig'
+        'manifest.txt.sig',
+        'certificate.json',
+        'certificates.json'
       ],
       certificatePath = null,
       licenseServerUrl = null,
