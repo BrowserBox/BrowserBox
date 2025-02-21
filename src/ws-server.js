@@ -32,7 +32,7 @@
     EXTENSIONS_PATH,
     throttle,
   } from './common.js';
-  import {timedSend, eventSendLoop} from './server.js';
+  import {releaseLicense, timedSend, eventSendLoop} from './server.js';
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
 
   const { exec, execSync } = child_process;
@@ -517,7 +517,7 @@
       perMessageDeflate: false
     });
     let shuttingDown = false;
-    const shutDown = (sig) => {
+    const shutDown = async (sig) => {
       console.log(`Shutdown requested. Signal: ${sig}`);
       if ( shuttingDown ) return;
       shuttingDown = true;
@@ -541,6 +541,7 @@
           DEBUG.socDebug && console.warn(`MAIN SERVER: port ${server_port}, error closing socket`, e) 
         }
       });
+      await releaseLicense();
       process.exit(0);
     };
 
@@ -962,6 +963,8 @@
     });
 
     process.on('SIGINT', shutDown);
+    process.on('SIGHUP', shutDown);
+    process.on('SIGTERM', shutDown);
     process.on('SIGUSR1', shutDown);
     process.on('SIGUSR2', shutDown);
     process.on('beforeExit', shutDown);
