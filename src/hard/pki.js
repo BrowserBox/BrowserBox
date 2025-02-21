@@ -347,6 +347,12 @@ export class PKI {
         return false;
       }
 
+      if (stadiumCertificate.stadiumId != issuingCertificate.stadiumId || stadiumCertificate.publicKey != issuingCertificate.publicKey || 
+       stadiumCertificate.signature != issuingCertificate.signature) {
+        log('PKI', 'Issuing certificate validation failed.');
+        return false;
+      }
+
       const stadiumPublicKey = stadiumCertificate.publicKey;
 
       const seatValidStadium = this.validateSignature(seatData, seatCertificate.stadiumSignature, stadiumPublicKey);
