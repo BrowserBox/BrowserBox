@@ -1518,6 +1518,7 @@
               message: `Provide credentials to continue`,
               title: `HTTP Authentication`,
             };
+            DEBUG.debugAuth && console.log('Auth required modal', modal);
             state.viewState.modalComponent.openModal({modal});
           });
 

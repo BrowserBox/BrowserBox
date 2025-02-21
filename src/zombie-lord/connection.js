@@ -1553,6 +1553,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const {requestId, request, /*frameId, */ resourceType, authChallenge} = message.params;
       connection.pausing.set(requestId, request.url);
       connection.pausing.set(request.url, requestId);
+      DEBUG.debugAuth && console.log(connection.pausing, {url:request.url, requestId});
       const authRequired = {authChallenge, requestId, resourceType};
       (DEBUG.debugAuth || DEBUG.val) && console.log({authRequired});
       connection.forceMeta({authRequired});
@@ -2428,8 +2429,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }; break;
       case "Fetch.continueWithAuth": {
         const {requestId} = command.params;
+        DEBUG.debugAuth && console.log(connection.pausing, {requestId});
         const url = connection.pausing.get(requestId);
-        DEBUG.debugAuth && console.log({auth:{url,command}})
+        DEBUG.debugAuth && console.log(JSON.stringify({auth:{url,command}},null,2))
         connection.pausing.delete(requestId);
         connection.pausing.delete(url);
       }; break;
