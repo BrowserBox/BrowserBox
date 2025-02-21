@@ -1,6 +1,7 @@
   /* entry point */
   import fs from 'fs';
   import path from 'path';
+  import {spawn} from 'child_process';
   import exitOnExpipe from 'exit-on-epipe';
   import express from 'express';
   import zl from './zombie-lord/index.js';
@@ -42,6 +43,14 @@
     console.log({licenseValid});
   } catch(e) {
     console.warn(`Application check error:`, e);
+    licenseValid = false;
+  }
+  if ( ! licenseValid ) {
+    spawn('stop_bbpro', [], {
+      detached: true,
+      stdio: 'ignore' // Detach completely from parent's stdio
+    }).unref(); // Ensure parent doesn’t wait for child
+    process.exit(1);
   }
 
   process.on('uncaughtException', err => {
