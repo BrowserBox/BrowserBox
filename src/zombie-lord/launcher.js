@@ -136,6 +136,8 @@ const launcher_api = {
       `--profile-directory="${CHROME_PROFILE}"`,
       '--no-first-run',
       //'--metrics-recording-only',
+      `--no-default-browser-check`,
+      `--test-type`,
       '--disable-infobars',
       `--noerrdialogs`,
       ...(
@@ -204,7 +206,7 @@ const launcher_api = {
       CHROME_FLAGS.push("--disable-dev-shm-usage");
     }
     if ( DEBUG.disable3PC ) {
-      CHROME_FLAGS.push(`--test-third-party-cookie-phaseout`);
+      //CHROME_FLAGS.push(`--test-third-party-cookie-phaseout`);
       CHROME_FLAGS.push(`--disable-features=PrivacySandboxSettings4`);
     }
     if ( DEBUG.disableIso && ! isDocker() ) {
@@ -260,7 +262,7 @@ const launcher_api = {
         "--disable-extensions",
         "--disable-hang-monitor",
         "--noerrdialogs",
-        "--no-sandbox",
+        //"--no-sandbox",
         "--disable-dev-shm-usage"
       ]);
       // the commented out flags below ruined video on Docker (at least on macOS)
@@ -270,7 +272,7 @@ const launcher_api = {
       CHROME_FLAGS.push('--disable-file-system');
       //CHROME_FLAGS.push('--enable-features=Vulkan,UseSkiaRenderer,VaapiVideoEncoder,VaapiVideoDecoder,CanvasOopRasterization');
       CHROME_FLAGS.push('--ignore-gpu-blocklist');
-      CHROME_FLAGS.push('--disable-seccomp-filter-sandbox');
+      //CHROME_FLAGS.push('--disable-seccomp-filter-sandbox');
       //CHROME_FLAGS.push('--use-gl=egl');
       //CHROME_FLAGS.push('--disable-software-rasterizer');
       CHROME_FLAGS.push('--disable-dev-shm-usage');

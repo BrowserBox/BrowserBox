@@ -195,7 +195,7 @@
           </h1>
           <i>${viewState?.currentModal?.msg||''}</i>
         </legend>
-        <input type=hidden name=requestid value=${requestId}>
+        <input type=hidden name=requestid value=${viewState?.currentModal?.requestId}>
         <p>
           <input type=text 
             autocomplete=username

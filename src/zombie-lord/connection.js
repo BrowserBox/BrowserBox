@@ -1553,6 +1553,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       const {requestId, request, /*frameId, */ resourceType, authChallenge} = message.params;
       connection.pausing.set(requestId, request.url);
       connection.pausing.set(request.url, requestId);
+      DEBUG.debugAuth && console.log(connection.pausing, {url:request.url, requestId});
       const authRequired = {authChallenge, requestId, resourceType};
       (DEBUG.debugAuth || DEBUG.val) && console.log({authRequired});
       connection.forceMeta({authRequired});
@@ -1717,7 +1718,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           castStarting.set(targetId, true);
           updateCast(sessionId, {started:true}, 'start');
           DEBUG.shotDebug && console.log("SCREENCAST", SCREEN_OPTS);
-          const {
+          let {
             format,
             quality, everyNthFrame,
             maxWidth, maxHeight
@@ -1801,11 +1802,12 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       connection.latestWindowId = windowId || cachedWindowId;
       cachedWindowId = connection.latestWindowId;
       if ( !! windowId ) { 
-        let {width,height} = connection.bounds;
+        let {width,height,mobile} = connection.bounds;
         if ( DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI ) {
           height += HeightAdjust;
         }
         await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
+        await send("Emulation.setDeviceMetricsOverride", {width,height});
       } else {
         DEBUG.debugBrowserWindow && console.log(`Will add offscreen page for extension`, {targetId, tab: tabs.get(targetId)});
         if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') && ! OffscreenPages.has(targetId) ) {
@@ -2295,6 +2297,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         DEBUG.debugViewportDimensions && console.log(connection.bounds);
         SCREEN_OPTS.maxWidth = connection.bounds.width;
         SCREEN_OPTS.maxHeight = connection.bounds.height;
+        if (DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI) {
+          SCREEN_OPTS.maxHeight += HeightAdjust;
+        }
+
         DEBUG.debugViewportDimensions && console.log("Screen opts at set window bounds", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
       }; break;
@@ -2346,6 +2352,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( command.params.mobile ) {
           DEVICE_FEATURES.mobile = command.params.mobile;
         } 
+        if (DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI) {
+          SCREEN_OPTS.maxHeight += HeightAdjust;
+        }
         DEBUG.debugViewportDimensions && console.log("Screen opts at device metric override", SCREEN_OPTS);
         DEBUG.debugViewportDimensions && console.log('Connection bounds', connection.bounds);
         // FIXES A big class of bugs with Emulation.setDeviceMetricsOverride 
@@ -2420,8 +2429,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }; break;
       case "Fetch.continueWithAuth": {
         const {requestId} = command.params;
+        DEBUG.debugAuth && console.log(connection.pausing, {requestId});
         const url = connection.pausing.get(requestId);
-        DEBUG.debugAuth && console.log({auth:{url,command}})
+        DEBUG.debugAuth && console.log(JSON.stringify({auth:{url,command}},null,2))
         connection.pausing.delete(requestId);
         connection.pausing.delete(url);
       }; break;
@@ -3018,6 +3028,9 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
   const windows = new Set();
   SCREEN_OPTS.maxWidth = commonViewport.width;
   SCREEN_OPTS.maxHeight = commonViewport.height;
+  if (DEBUG.useNewAsgardHeadless && DEBUG.adjustHeightForHeadfulUI) {
+    SCREEN_OPTS.maxHeight += HeightAdjust;
+  }
   
   for (const targetId of connection.targets.values()) {
     DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);

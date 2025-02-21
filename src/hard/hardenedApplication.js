@@ -55,7 +55,9 @@ export class HardenedApplication {
         'tickets.json',
         'ticket.json',
         'manifest.txt',
-        'manifest.txt.sig'
+        'manifest.txt.sig',
+        'certificate.json',
+        'certificates.json'
       ],
       certificatePath = null,
       licenseServerUrl = null,
@@ -294,6 +296,8 @@ export class HardenedApplication {
     if (!this.#certificatePath || !this.#licenseServerUrl) {
       throw new Error('License validation configuration is incomplete.');
     }
+
+    console.log({certPath: this.#certificatePath });
 
     const certificateJson = readFile(this.#certificatePath);
 

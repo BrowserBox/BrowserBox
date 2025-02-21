@@ -1,13 +1,14 @@
   /* entry point */
   import fs from 'fs';
   import path from 'path';
+  import {spawn} from 'child_process';
   import exitOnExpipe from 'exit-on-epipe';
   import express from 'express';
   import zl from './zombie-lord/index.js';
   import {MAX_FRAMES} from './zombie-lord/screenShots.js';
   import {CONFIG, EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
   import {start_ws_server} from './ws-server.js';
-  import {applicationCheck} from './hard/application.js';
+  import {release,applicationCheck} from './hard/application.js';
 
   const BEGIN_AGAIN = 500;
   import {
@@ -42,6 +43,14 @@
     console.log({licenseValid});
   } catch(e) {
     console.warn(`Application check error:`, e);
+    licenseValid = false;
+  }
+  if ( ! licenseValid ) {
+    spawn('stop_bbpro', [], {
+      detached: true,
+      stdio: 'ignore' // Detach completely from parent's stdio
+    }).unref(); // Ensure parent doesn’t wait for child
+    setTimeout(() => process.exit(1), 1001);
   }
 
   process.on('uncaughtException', err => {
@@ -96,6 +105,10 @@
     if ( ! targetSaver ) {
       targetSaver = setInterval(saveTargetCount, 13001);
     }
+  }
+
+  export async function releaseLicense() {
+    await release();
   }
 
   export async function timedSend(command, port) {

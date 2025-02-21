@@ -9,3 +9,8 @@ article.copy textarea {
   max-height: 80vh;
   min-height: 3em;
 }
+
+button[type="submit"] {
+  background-color: aquamarine;
+  background-color: color-mix(in srgb, aquamarine 75%, transparent);
+}
