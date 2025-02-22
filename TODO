@@ -1,0 +1,1 @@
+- bbcertify should check if ticket timeSlot is still valid and if so not fetch new ticket
