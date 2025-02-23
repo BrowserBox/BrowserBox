@@ -1,5 +1,5 @@
 #!/bin/bash
-# bbcertify.sh - Obtain a vacant seat via the API and issue a ticket, then save the ticket JSON
+# bbcertify.sh - Obtain a vacant seat via the API, issue a ticket, and register it as a certificate
 
 set -e
 
@@ -15,13 +15,14 @@ API_VERSION="v1"
 API_BASE="https://master.dosaygo.com/${API_VERSION}"
 VACANT_SEAT_ENDPOINT="$API_BASE/vacant-seat"
 ISSUE_TICKET_ENDPOINT="$API_BASE/tickets"
+REGISTER_CERT_ENDPOINT="$API_BASE/register-certificates"
 
 # Function to display usage information
 usage() {
   cat <<EOF
 Usage: $0 [-h|--help]
 
-This script requests a vacant seat from the licensing server and issues a ticket.
+This script requests a vacant seat, issues a ticket, and registers it as a certificate.
 The ticket is saved to: $TICKET_FILE
 
 Environment Variables:
@@ -77,7 +78,34 @@ get_vacant_seat() {
   echo "$VACANT_SEAT"  # Key result to stdout
 }
 
-# Create config directory if it doesn't exist
+# Function to register the ticket as a certificate
+register_certificate() {
+  local ticket_json="$1"
+  echo "Registering ticket as certificate..." >&2
+  
+  # Format the ticket into the expected certificates array structure
+  CERT_PAYLOAD=$(jq -n --argjson ticket "$ticket_json" '{certificates: [$ticket]}')
+  
+  # Send the certificate to the register-certificates endpoint
+  REGISTER_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $LICENSE_KEY" \
+    -d "$CERT_PAYLOAD" \
+    "$REGISTER_CERT_ENDPOINT")
+
+  # Check if registration was successful
+  if [[ -z "$REGISTER_RESPONSE" ]]; then
+    echo "Error: No response from server when registering certificate." >&2
+    exit 1
+  fi
+
+  if echo "$REGISTER_RESPONSE" | jq -e '.message == "Certificates registered successfully."' > /dev/null; then
+    echo "Certificate registered successfully!" >&2
+  else
+    echo "Error registering certificate. Server response:" >&2
+    echo "$REGISTER_RESPONSE" >&2
+    exit 1
+  fi
+}
 
 # Get the vacant seat ID from the server
 SEAT_ID=$(get_vacant_seat)
@@ -87,7 +115,7 @@ TIME_SLOT=$(date +%s)
 DEVICE_ID=$(hostname)
 
 echo "Issuing ticket for seat $SEAT_ID..." >&2
-# Issue the ticket using the API; expecting JSON output.
+# Issue the ticket using the API; expecting JSON output
 TICKET_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
   -H "Authorization: Bearer $LICENSE_KEY" \
   -d "{\"seatId\": \"$SEAT_ID\", \"timeSlot\": \"$TIME_SLOT\", \"deviceId\": \"$DEVICE_ID\", \"issuer\": \"master\"}" \
@@ -99,15 +127,21 @@ if [[ -z "$TICKET_RESPONSE" ]]; then
   exit 1
 fi
 
-# Check if the ticket field exists in the response and save the ticket if present
+# Check if the ticket field exists in the response and proceed
 if echo "$TICKET_RESPONSE" | jq -e '.ticket' > /dev/null; then
   echo "Ticket issued successfully!" >&2
-  echo "$TICKET_RESPONSE" > "$TICKET_FILE"
+  # Extract the ticket JSON
+  TICKET_JSON=$(echo "$TICKET_RESPONSE" | jq -e '.ticket')
+  # Save the ticket to file
+  echo "$TICKET_JSON" > "$TICKET_FILE"
   echo "Ticket saved to $TICKET_FILE" >&2
+  
+  # Register the ticket as a certificate
+  register_certificate "$TICKET_JSON"
+  
   echo "$TICKET_FILE"  # Key result to stdout
 else
   echo "Error issuing ticket. Server response:" >&2
   echo "$TICKET_RESPONSE" >&2
   exit 1
 fi
-

@@ -1,4 +1,1 @@
-TODO
-
-- basic auth and modals (see auth dialog title after text copy ! ha ) needs some more testing
-- merge license control
+- bbcertify should check if ticket timeSlot is still valid and if so not fetch new ticket
