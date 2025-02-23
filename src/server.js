@@ -46,11 +46,11 @@
     licenseValid = false;
   }
   if ( ! licenseValid ) {
-    spawn('stop_bbpro', [], {
+    const stopper = spawn('stop_bbpro', [], {
       detached: true,
       stdio: 'ignore' // Detach completely from parent's stdio
     }).unref(); // Ensure parent doesn’t wait for child
-    setTimeout(() => process.exit(1), 1001);
+    stopper.on('spawn', () => setTimeout(() => process.exit(1), 3001) );
   }
 
   process.on('uncaughtException', err => {
