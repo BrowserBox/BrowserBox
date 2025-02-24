@@ -1203,9 +1203,7 @@ Unfotunately if you or your company are an OFAC sanctioned entity or other entit
 
 ### Licensing Summary 
 
-BrowserBox offers flexible licensing options to cater to different usage scenarios. As previously mentioned, BrowserBox software is available for free for non-commercial use under the PolyForm NonCommercial license. This allows individuals and non-profit organizations to enjoy the benefits of BrowserBox without any licensing fees when using the software without any participation in or anticipation of commercial application. The PolyForm NonCommercial license ensures that the software is used strictly for non-commercial purposes, unless purchasing an exemption for commercial use. Commercial use licenses are available for purchase for 1 or more seats at https://dosyago.com or by contacting sales@dosyago.com
-
-Whether it's for non-commercial or commercial purposes, BrowserBox provides a range of licensing options to accommodate different user needs and ensure a secure and powerful browsing experience.
+BrowserBox offers flexible licensing options to cater to different usage scenarios. Commercial use licenses are available for purchase for 1 or more seats at https://dosyago.com or by contacting sales@dosyago.com. Non-commercial licenses are also available for purchase at a discount provided you can supply proof of your non-commercial status. 
 
 -----
 
