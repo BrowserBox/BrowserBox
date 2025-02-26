@@ -8,7 +8,7 @@ import { exec } from 'child_process';
 import { PKI } from './pki.js';
 import { readFile, log } from './utils.js';
 import { generateHardwareId } from './hardware_id.js';
-import { DEBUG, DIST_DIR, DISTRIBUTION_SERVER_URL } from './config.js';
+import { DEBUG, TICKET_DIR, DIST_DIR, DISTRIBUTION_SERVER_URL } from './config.js';
 import { rainstormHash } from '@dosyago/rainsum';
 
 export const __filename = () => fileURLToPath(import.meta.url);
@@ -160,7 +160,7 @@ export class HardenedApplication {
     if (currentContent.trim() !== manifestContent.trim()) {
       // If they differ, either a file changed or something is tampered
       try { 
-        fs.writeFileSync('calculated-manifest.txt', currentContent.trim());
+        fs.writeFileSync(path.resolve(TICKET_DIR, 'calculated-manifest.txt'), currentContent.trim());
       } catch(e) {
         console.warn(`Could not write calculated manifest.`, e);
       }
