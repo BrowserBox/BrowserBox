@@ -52,6 +52,7 @@ export class HardenedApplication {
         'package-lock.json',
         '.git',
         '.sig',
+        '.swp',
         'timechain_proof.json',
         'tickets.json',
         'ticket.json',
