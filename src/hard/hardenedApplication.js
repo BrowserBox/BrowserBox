@@ -49,6 +49,7 @@ export class HardenedApplication {
       ignorePatterns = [
         '.DS_Store',
         'node_modules',
+        'package-lock.json',
         '.git',
         '.sig',
         'timechain_proof.json',
