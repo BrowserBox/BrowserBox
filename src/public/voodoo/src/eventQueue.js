@@ -701,6 +701,9 @@
                               // Skip the pre-request explainer
                               DEBUG.debugSafariWebRTC && console.log(`We already have permissions, no need to explain a request!`);
                             } else {
+                              if ( ! testWebRTC() ) {
+                                reject('WebRTC does not work here');
+                              }
                               if ( deviceIsMobile() && ! globalThis.comingFromTOR ) {
                                 state.micAccessNotAlwaysAllowed  = true;
                                 await showExplainer();
@@ -711,6 +714,15 @@
                             try {
                               if ( deviceIsMobile() && ! globalThis.comingFromTOR ) {
                                 state.micStream = await navigator.mediaDevices.getUserMedia({audio: { echoCancellation: { ideal : false }}});
+                                // Auto drop the mic access after 20 seconds anyway
+                                // this is useful for cases where WebRTC is never established
+                                // Such as with some VPNs
+                                setTimeout(() => {
+                                  state.micStream.getTracks().forEach(function(track) {
+                                    track.stop();
+                                  });
+                                  state.micStream = null;
+                                }, 20000);
                               } else {
                                 //await navigator.mediaDevices.getUserMedia({audio: true});
                                 console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
@@ -1346,7 +1358,7 @@
   async function showExplainer() {
     state.viewState.modalComponent.openModal({modal:{
       type:'notice',
-      message: `We're about to request mic access to improve streaming (because of the Safari bug, below). It's just for setup, not recording, and auto-closes after a fast link is built. Tap Allow in Website Settings to avoid future prompts; or, deny if you prefer, tho it might affect quality. Ready?`,
+      message: `We're about to request mic access to improve streaming (because of the iOS bug, below). It's for setup, not recording, and auto-closes after a fast link is built. Tap Allow in Website Settings to avoid future prompts; or, deny if prefered, tho it may affect quality. Ready?`,
       title: `Safari Permissions`,
       link: {
         title: 'View Bug',
@@ -1542,6 +1554,16 @@
 
   function onLine() {
     return Connectivity.checker.status == 'online';
+  }
+
+  function testWebRTC() {
+    try {
+      const pc = new RTCPeerConnection({ iceServers: [] });
+      pc.close();
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   function talert(msg) {
