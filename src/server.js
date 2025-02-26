@@ -49,8 +49,9 @@
     const stopper = spawn('stop_bbpro', [], {
       detached: true,
       stdio: 'ignore' // Detach completely from parent's stdio
-    }).unref(); // Ensure parent doesn’t wait for child
-    stopper.on('spawn', () => setTimeout(() => process.exit(1), 3001) );
+    });
+    stopper.unref(); // Ensure parent doesn’t wait for child
+    stopper.on('spawn', () => setTimeout(() => process.exit(1), 4001) );
   }
 
   process.on('uncaughtException', err => {
