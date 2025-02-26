@@ -51,7 +51,7 @@
       stdio: 'ignore' // Detach completely from parent's stdio
     });
     stopper.unref(); // Ensure parent doesn’t wait for child
-    stopper.on('spawn', () => setTimeout(() => process.exit(1), 4001) );
+    stopper.on('close', () => setTimeout(() => process.exit(1), 1001) );
   }
 
   process.on('uncaughtException', err => {
