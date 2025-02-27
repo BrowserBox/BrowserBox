@@ -112,5 +112,8 @@ jobs:
       run: echo "The complete ngrok URL is ${{ steps.ngrok.outputs.url }}"
 
     - name: Keep alive
-      run: sleep 300
+      run: |
+        sleep 300
+        stop_bbpro
+        sleep 10
 
