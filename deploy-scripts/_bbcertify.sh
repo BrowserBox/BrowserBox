@@ -79,11 +79,11 @@ check_ticket_validity() {
     local remaining_seconds=$((expiration_time - current_time))
     local remaining_hours=$((remaining_seconds / 3600))
     local remaining_minutes=$(((remaining_seconds % 3600) / 60))
-    echo "Existing ticket is still valid (expires in ${remaining_hours}h ${remaining_minutes}m at $(date -d @$expiration_time))" >&2
+    echo "Existing ticket is still valid (expires in ${remaining_hours}h ${remaining_minutes}m)" >&2
     echo "$TICKET_FILE"  # Output existing ticket file path
     return 0
   else
-    echo "Existing ticket has expired (expired at $(date -d @$expiration_time))" >&2
+    echo "Existing ticket has expired." >&2
     return 1
   fi
 }
