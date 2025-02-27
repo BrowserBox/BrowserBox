@@ -66,6 +66,8 @@ jobs:
 
     - name: Start server & ngrok tunnel
       run: |
+        export LICENSE_KEY=${{ secrets.BB_LICENSE_KEY }}
+        bbcertify
         bbpro &
         sleep 5
         ngrok http https://localhost:8080 &
