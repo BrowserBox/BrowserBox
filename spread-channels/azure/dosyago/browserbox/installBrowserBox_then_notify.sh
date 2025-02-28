@@ -98,7 +98,7 @@ function run_heredoc_script() {
     else
       setup_bbpro --port 8080 --token "$TOKEN"
     fi
-    if [[ -z "$LICENSE_KEY" ]]; then
+    if [[ -n "$LICENSE_KEY" ]]; then
       export LICENSE_KEY="$LICENSE_KEY"
     fi
     bbcertify
