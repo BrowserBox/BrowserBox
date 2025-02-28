@@ -11,7 +11,7 @@
       "metadata": {
         "description": "The base URI where artifacts required by this template are located including a trailing '/'"
       },
-      "defaultValue": "[deployment().properties.templateLink.uri]"
+      "defaultValue": "https://github.com/BrowserBox/BrowserBox/blob/boss/spread-channels/azure/dosyago/browserbox/"
     },
     "_artifactsLocationSasToken": {
       "type": "securestring",
@@ -77,10 +77,10 @@
     },
     "imageChoice": {
       "type": "string",
-      "defaultValue": "Ubuntu 24.04 LTS (gen 2)",
+      "defaultValue": "Ubuntu 24.04 LTS",
       "allowedValues": [
         "Debian 12 (gen 2)",
-        "Ubuntu 24.04 LTS (gen 2)",
+        "Ubuntu 24.04 LTS",
         "RedHat 9 LVM (gen 2)"
       ],
       "metadata": {
@@ -163,11 +163,11 @@
       "offer": "debian-12",
       "sku": "12-gen2"
     },
-    "Ubuntu_24.04_LTS_gen_2": {
+    "Ubuntu_24.04_LTS": {
       "version": "latest",
       "publisher": "Canonical",
-      "offer": "0001-com-ubuntu-server-noble",
-      "sku": "24_04-lts-gen2"
+      "offer": "ubuntu-24_04-lts",
+      "sku": "server"
     },
     "RedHat_9_LVM_gen_2": {
       "version": "latest",
@@ -543,12 +543,13 @@
         "enableAutomaticUpgrade": false,
         "settings": {
           "fileUris": [
-            "[uri(parameters('_artifactsLocation'), concat('installBrowserBox_then_notify.sh', parameters('_artifactsLocationSasToken')))]"
+            "[uri(parameters('_artifactsLocation'), concat('installBrowserBox_then_notify.sh', parameters('_artifactsLocationSasToken')))]",
+            "https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/uaz/spread-channels/azure/dosyago/browserbox/installBrowserBox_then_notify.sh"
           ]
         },
         "suppressFailures": true,
         "protectedSettings": {
-          "commandToExecute": "[concat('bash installBrowserBox_then_notify.sh \"', parameters('adminUsername'), '\" \"', parameters('location'), '\" \"', resourceId('Microsoft.Compute/virtualMachines', variables('vmName')), '\" \"', reference(resourceId('Microsoft.Insights/components', concat('bbNotifications-', variables('uniqueSuffix'))), '2020-02-02', 'Full').properties.connectionString, '\" \"', concat('bbNotifications-', variables('uniqueSuffix')), '\" \"', resourceId('Microsoft.Insights/components', concat('bbNotifications-', variables('uniqueSuffix'))), '\" \"', parameters('userEmail'), '\" \"', variables('realHostname'), '\" \"', variables('realToken'), '\" \"', parameters('installDocViewer'), '\" \"', parameters('understanding'), '\" \"', parameters('licenseKey'), '\" \"', concat(variables('Debian_12_gen_2').sku,'/',variables('Ubuntu_24.04_LTS_gen_2').sku,'/',variables('RedHat_9_LVM_gen_2').sku), '\"')]"
+          "commandToExecute": "[concat('bash installBrowserBox_then_notify.sh \"', parameters('adminUsername'), '\" \"', parameters('location'), '\" \"', resourceId('Microsoft.Compute/virtualMachines', variables('vmName')), '\" \"', reference(resourceId('Microsoft.Insights/components', concat('bbNotifications-', variables('uniqueSuffix'))), '2020-02-02', 'Full').properties.connectionString, '\" \"', concat('bbNotifications-', variables('uniqueSuffix')), '\" \"', resourceId('Microsoft.Insights/components', concat('bbNotifications-', variables('uniqueSuffix'))), '\" \"', parameters('userEmail'), '\" \"', variables('realHostname'), '\" \"', variables('realToken'), '\" \"', parameters('installDocViewer'), '\" \"', parameters('understanding'), '\" \"', parameters('licenseKey'), '\" \"', concat(variables('Debian_12_gen_2').sku,'/',variables('Ubuntu_24.04_LTS').sku,'/',variables('RedHat_9_LVM_gen_2').sku), '\"')]"
         }
       }
     }
