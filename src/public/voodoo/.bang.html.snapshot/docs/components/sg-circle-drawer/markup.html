@@ -1,0 +1,28 @@
+<sg-frame 
+    oncontextmenu=CloseSizer
+    onclick=CloseSizer
+    state=${_self}
+  >
+  <form class=layout onsubmit="event.preventDefault();">
+    <fieldset class=history>
+      <button name=action value=undo ${selected ? 'disabled' : ''} onclick=Undo>Undo</button>
+      <button name=action value=redo ${selected ? 'disabled' : ''} onclick=Redo>Redo</button>
+    </fieldset>
+    <div onclick=AddCircle class=canvas>${circles.map(({key,x,y,radius}) => F`${{key}}
+      <!sg-circle 
+        data-key=${key}
+        onclick=OpenSizer
+        oncontextmenu=OpenSizer
+        class="${selected === key ? 'selected' : ''}"
+        style="left: ${x}px; top: ${y}px; --radius: ${radius}px;" 
+      />
+    `)}</div>
+    <!sg-sizer-modal 
+      onclick=CloseSizer
+      oninput=SizeSelected
+      onchange=SaveCircleSize
+      state=${circles.find(({key}) => key === selected) || {radius:100}}
+      ${selected ? '' : 'hidden' }
+    />
+  </form>
+</sg-frame>

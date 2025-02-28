@@ -1,0 +1,45 @@
+info:
+  title: BrowserBox Deployment
+  author: team@dosyago.com
+  description: Template for deploying BrowserBox
+
+imports:
+  - path: browserbox-template.jinja
+
+required:
+  - zone
+  - machineType
+  - sourceImage
+  - hostName
+  - userEmail
+  - token
+  - installDocViewer
+  - username
+
+properties:
+  zone:
+    type: string
+    description: Zone where the VM will be deployed
+  machineType:
+    type: string
+    description: Type of machine (e.g., n1-standard-1)
+  sourceImage:
+    type: string
+    description: Source image for the boot disk
+  hostName:
+    type: string
+    description: Fully-qualified domain name for the BrowserBox instance
+  userEmail:
+    type: string
+    description: User email for the BrowserBox installation
+  token:
+    type: string
+    description: Secret token for the login link
+  installDocViewer:
+    type: string
+    description: Whether to install document viewer (true/false)
+  username:
+    type: string
+    description: Username for the user to be added to the instance
+
+

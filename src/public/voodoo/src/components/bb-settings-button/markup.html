@@ -1,0 +1,18 @@
+<nav
+  class="controls settings-button aux">
+  <form submit=${[
+    e => e.preventDefault(),
+    () => {
+      state.viewState.modalComponent.openModal({
+        modal: {
+          type: 'settings'
+        }
+      }).then(y => console.log(y));
+      console.log('ok');
+    }
+  ]}>
+    <button title="Settings" accesskey=s>
+      <img src="voodoo/assets/icons/cog.svg">
+    </button>
+  </form>
+</nav>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<meta name=viewport content="width=device-width, initial-scale=1">
+<meta name=theme-color content="navy">
+<meta name=description
+  content="BrowserBox puts you first with the most familiar and secure browser isolation serivce, while our remote and fully isolated cloud browsers protect your network.">
+<meta name=author content="BrowserBox">
+<meta name=copyright content="The Dosyago Corporation, Newark, DE">
+<meta name=robots content="index,follow">
+<title>BrowserBox &mdash; the Space to Browse Securely.</title>
+<style>
+  :root {
+    min-height: 100%;
+    width: 100%;
+    user-select: none;
+    background: linear-gradient(to top right, navy, black);
+  }
+  body {
+    width: 100%;
+    display: table;
+    margin: 0 auto;
+    height: 100%;
+    color: white;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-bottom: 25em;
+  }
+  h2 {
+    font-size: 20vmin;
+    font-family: system-ui;
+    word-break: break-word;
+    background-color: lime;
+    line-height: 1;
+  }
+  a {
+    display: inline-block;
+    margin: 1em 0;
+    font-family: Verdana, Helvetica, Arial, sans-serif;
+    background: linear-gradient(to right, darkorange, crimson);
+  }
+
+  h2 {
+    opacity: 0.8;
+    margin-bottom: 1rem;
+  }
+
+  h3 {
+    background: cyan;
+    font-size: 10vmin;
+    font-family: monospace;
+    color: navy;
+    text-align: center;
+    opacity: 0.7;
+    padding-bottom: 0.1em;
+    display: table;
+    margin: 0 auto;
+  }
+
+  h1, h2, a {
+    color: navy;
+  }
+  
+  a {
+    opacity: 0.9;
+    margin-right: 0.25em;
+    padding-right: 0.1em;
+  }
+
+  h1 {
+    opacity: 0.8;
+    font-size: 22vmin;
+    font-family: monospace;
+    word-break: break-all;
+    text-align: center;
+    text-transform: uppercase;
+    line-height: 0.618;
+    padding: 0.25em 0 0.5em;
+    user-select: text;
+    color: darkorange;
+    margin-bottom: 0;
+  }
+   
+  h1 i {
+    display: inline-block;
+    font-style: normal;
+    transform: translate(0, -0.5em);
+  }
+
+  h1 i:first-of-type {
+    transform: translate(-1.125em, 0.5em);
+  }
+  h1 i:last-of-type {
+    transform: translate(1.125em, 0.5em);
+  }
+</style>
+<h2>Browse the web without the web browsing you.</h2>
+<div dir=rtl>
+  <a href=/evaluation.pdf>View our response to Gartner's Remote Browser Isolation Evaluation Factors.</a>
+  <br>
+  <a href=mailto:cris@dosyago.com?subject=BrowserBox>Contact us to discuss an evaluation or deployment.</a>
+  <br>
+  <a href=https://www.youtube.com/watch?v=SD0Fhl9v87k>Watch the teaser video to see the BrowserBox in action.</a>
+</div>
+<h1>BrowserBox</h1>
+<h3>Browse Anything Securely</h3>
+<style>
+  canvas {
+    position: fixed;
+    top: -25vh;
+    left: -25%;
+    width: 150%;
+    height: 150vh;
+    user-select: none;
+    background: transparent;
+    z-index: -1;
+  }
+</style>
+<canvas>
+  <script>
+    const frameReady = () => new Promise(res => window.requestAnimationFrame(res))
+    const sleep = ms => new Promise(res => setTimeout(res, ms));
+    const ALTERP = 0.618;
+    const DTHRESHOLD = 0.618;
+    const FRAMEDURATION = 40;
+    const F = Math.floor(1000/FRAMEDURATION);
+    const UPDATEP = 2;
+    const XAVAL = 21;
+    const YAVAL = 14;
+    const SIZE = [2,2];
+    const N = 71;
+    const NN = 1;
+    const MAXNN = Math.ceil(Math.sqrt(N));
+    const MAXD = Math.min(window.innerWidth**2, window.innerHeight**2)/9;
+    const C = document.currentScript.parentElement;     
+    const S = C.getContext('2d');
+    const width = window.innerWidth*2;
+    const height = window.innerHeight*2;
+
+    let frameCount = 0;
+    let nnds = +1;
+    let nn = Math.ceil(Math.sqrt(MAXNN * NN));
+    let allPairsCache;
+
+    C.width = width;
+    C.height = height;
+    S.fillStyle = 'white';
+    S.strokeStyle = 'white';
+    S.lineWidth =  1;
+    S.lineJoin = 'round';
+    S.lineCap = 'round';
+
+
+    self.addEventListener('click', () => {
+      nn += nnds;
+      if ( nn > MAXNN ) {
+        nnds *= -1;
+      }
+      if ( nn < NN ) {
+        nnds *= -1;
+      }
+    });
+
+    drawLoop();
+
+    async function drawLoop() {
+      const Points = createPoints(N);
+      while(true) {
+        await sleep(FRAMEDURATION);
+        await frameReady(); 
+        S.clearRect(0,0,width,height);
+        update(Points);
+        draw(Points); 
+        drawTrianglesOnClosest(Points, frameCount);
+        frameCount++;
+      }
+    }
+
+    function update(P) {
+      P.forEach(updateA);
+    }
+
+    function draw(P) {
+      P.forEach(({x,y}) => {
+        //S.fillRect(x,y,...SIZE)
+        S.beginPath();
+        S.arc(x,y,SIZE[0],0,Math.PI*2);
+        S.closePath();
+        S.fill();
+      });
+    }
+
+    function drawTrianglesOnClosest(Points, frameNo) {
+      const found = new Map();
+
+      if ( ! allPairsCache ) {
+        allPairsCache = allPairs(Points)
+          //.map(distance);
+      }
+      allPairsCache
+        .map(frameNo % UPDATEP == 0 ? ranDistance: X => X)
+        //.map(ranDistance)
+        .sort(([{}, {}, d1], [{}, {}, d2]) => d1 - d2)
+        .filter(([P1,P2,d]) => {
+          const ok = (!found.has(P1) || found.get(P1) <= nn) && (!found.has(P2) || found.get(P2) <= nn); 
+          if ( ok ) {
+            found.set(P1, (found.get(P1) || 0)+1);
+            found.set(P2, (found.get(P2) || 0)+1);
+          }
+          return ok && d < MAXD;
+        })
+        .forEach(([P1,P2]) => {
+          S.beginPath();
+          S.moveTo(P1.x, P1.y);
+          S.lineTo(P2.x, P2.y);
+          S.stroke();
+          S.closePath();
+        });
+
+        /**
+          .reduce((T, p, i, P) => {
+            const last = T[T.length-1];
+            if ( last.length == 3 ) {
+              T.push([p]);
+            } else {
+              last.push(p);
+            }
+          }, []);
+        **/
+    }
+
+    function updateA(A) {
+      const randomX = (Math.random() * XAVAL) - XAVAL/2;
+      const randomY = (Math.random() * YAVAL) - YAVAL/2;
+      A.x += randomX;
+      A.y += randomY;
+      return A;
+    }
+
+    function createPoints(n) {
+      const P = [];
+      for( let i = 0; i < n; i++ ) {
+        const Point = {
+          x: random(width),
+          y: random(height),
+          V: {
+            x: random(width/20),
+            y: random(height/20)
+          },
+          A: updateA({x:XAVAL,y:YAVAL})
+        };
+        P.unshift(Point);
+      }
+      return P;
+    }
+
+    function random(max) {
+      return Math.random() * max;
+    }
+
+    function allPairs(A) {
+      const P = [];
+      A.forEach((a,i) => {
+        for( let j = i + 1; j < A.length; j++ ) {
+          const [{x:x1,y:y1},{x:X1,y:Y1}] = [a,A[j]];
+          P.push([a,A[j],0]);
+        }
+      });
+      return P;
+    }
+
+    function distance(P) {
+      const [{x:x1,y:y1},{x:X1,y:Y1}] = P;
+      const d = ((X1-x1)**2+(Y1-y1)**2);
+      P[2] = d;
+      return P;
+    }
+    function ranDistance(P) {
+      const [{x:x1,y:y1},{x:X1,y:Y1}] = P;
+      const d = ((X1-x1)**2+(Y1-y1)**2);
+      if ( Math.random() < ALTERP ) {
+        if ( Math.abs(P[2] - d)/d > DTHRESHOLD ) {
+          P[2] = d;
+        }
+      }
+      return P;
+    }
+  </script>
+</canvas>

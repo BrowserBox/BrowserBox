@@ -1,0 +1,79 @@
+accessing meta []
+{"sendResult":{"data":{},"totalBandwidth":780972}}
+accessing meta []
+accessing meta [{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3}]
+XCHK controller.js call response {
+  name: 'Input.dispatchMouseEvent',
+  params: {
+    x: 609,
+    y: 65,
+    type: 'mousePressed',
+    button: 'left',
+    clickCount: 1,
+    modifiers: 0
+  },
+  requiresShot: true,
+  ignoreHash: true,
+  receivesFrames: true,
+  needsReload: undefined,
+  requiresTask: undefined
+} {} () => clearTimeout(timer)
+accessing meta [{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":2}]
+accessing meta [{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":2}]
+Meta length 2
+accessing meta [{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":2}]
+Sending 2 meta.
+{"sendResult":{"data":{},"meta":[{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":2}],"totalBandwidth":780972}}
+accessing meta []
+accessing meta [{"scroll":{"didScroll":true},"executionContextId":3}]
+accessing meta [{"scroll":{"didScroll":true},"executionContextId":3},{"scroll":{"didScroll":true},"executionContextId":2}]
+accessing meta [{"scroll":{"didScroll":true},"executionContextId":3},{"scroll":{"didScroll":true},"executionContextId":2},{"resource":{"waiting":2,"complete":20,"targetId":"33EA55EF1BA1189C94B087546E0407B3"}}]
+accessing meta [{"scroll":{"didScroll":true},"executionContextId":3},{"scroll":{"didScroll":true},"executionContextId":2},{"resource":{"waiting":2,"complete":20,"targetId":"33EA55EF1BA1189C94B087546E0407B3"}},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3}]
+accessing meta [{"scroll":{"didScroll":true},"executionContextId":3},{"scroll":{"didScroll":true},"executionContextId":2},{"resource":{"waiting":2,"complete":20,"targetId":"33EA55EF1BA1189C94B087546E0407B3"}},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":2}]
+accessing meta [{"scroll":{"didScroll":true},"executionContextId":3},{"scroll":{"didScroll":true},"executionContextId":2},{"resource":{"waiting":2,"complete":20,"targetId":"33EA55EF1BA1189C94B087546E0407B3"}},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":2},{"modal":{"url":"https://javascript.info/alert-prompt-confirm","message":"How old are you?","type":"prompt","hasBrowserHandler":false,"defaultPrompt":"100","sessionId":"5D9FAFED59B7544009CB5137529BB48D"}}]
+accessing meta [{"scroll":{"didScroll":true},"executionContextId":3},{"scroll":{"didScroll":true},"executionContextId":2},{"resource":{"waiting":2,"complete":20,"targetId":"33EA55EF1BA1189C94B087546E0407B3"}},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":2},{"modal":{"url":"https://javascript.info/alert-prompt-confirm","message":"How old are you?","type":"prompt","hasBrowserHandler":false,"defaultPrompt":"100","sessionId":"5D9FAFED59B7544009CB5137529BB48D"}}]
+Meta length 6
+accessing meta [{"scroll":{"didScroll":true},"executionContextId":3},{"scroll":{"didScroll":true},"executionContextId":2},{"resource":{"waiting":2,"complete":20,"targetId":"33EA55EF1BA1189C94B087546E0407B3"}},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":3},{"keyInput":{"keysCanInput":false,"isTextareaOrContenteditable":false},"executionContextId":2},{"modal":{"url":"https://javascript.info/alert-prompt-confirm","message":"How old are you?","type":"prompt","hasBrowserHandler":false,"defaultPrompt":"100","sessionId":"5D9FAFED59B7544009CB5137529BB48D"}}]
+Sending 6 meta.
+
+
+I think it's basically a race condition in here....
+
+we keep starting the function and overwriting the copied meta, before they are sent.
+
+
+accessing meta []
+{"sendResult":{"data":{},"totalBandwidth":780972}}
+accessing meta []
+accessing meta []
+{"sendResult":{"data":{},"totalBandwidth":780972}}
+accessing meta []
+{"sendResult":{"data":{"vmPaused":true},"totalBandwidth":780972}}
+Throwing after
+XCHK controller.js call response {
+  name: 'Input.dispatchMouseEvent',
+  params: {
+    x: 609,
+    y: 65,
+    type: 'mouseReleased',
+    button: 'left',
+    clickCount: 1,
+    modifiers: 0
+  },
+  requiresShot: false,
+  ignoreHash: false,
+  receivesFrames: true,
+  needsReload: undefined,
+  requiresTask: undefined
+} {
+  meta: [
+    {
+      timeoutWarning: true,
+      timedOutAfter: 333,
+      originalCommand: [Object],
+      port: '5002'
+    }
+  ]
+} () => void 0
+accessing meta []
+

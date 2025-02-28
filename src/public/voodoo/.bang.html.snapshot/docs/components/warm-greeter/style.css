@@ -1,0 +1,24 @@
+:host {
+  display: block;
+  background: linear-gradient(to bottom right, mediumspringgreen, turquoise, dodgerblue, midnightblue);
+  font-family: system-ui, sans-serif;
+  padding: 0.5rem;
+}
+
+button {
+  font-size: larger;
+  font-weight: bold;
+  background: mintcream;
+  color: tomato;
+  padding: 0.25em 0.5em;
+  border-radius: 0.25em;
+  cursor: pointer;
+}
+
+ul li .count {
+  font-weight: bold;
+}
+
+ul li time {
+  font-style: italic;
+}

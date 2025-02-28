@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<meta name=viewport content=width=device-width,initial-scale=1>
+<meta name=theme-color content=#909>
+<title>PDF to Image Server</title>
+<style>
+  :root {
+    xbackground: #000084;
+    xbackground: linear-gradient(to top, #000084, white);
+    xcolor: #333;
+    xfont-family: monospace, system-ui;
+    min-height: 100%;
+  }
+
+  body {
+    font-size: 18px;
+  }
+
+  form {
+    xbackground: darkorange;
+    xpadding: 0.5em;
+  }
+
+  button {
+    xbackground: #aaa;
+    xborder-radius: 0.25em;
+    xborder-style: groove;
+    xborder-color: black;
+    xborder-width: thick;
+    xborder-bottom: 0;
+    xborder-left: 0;
+  }
+
+  input, button {
+    xfont-weight: bold;
+    xfont-family: monospace, system-ui;
+    margin: 0.25em 0;
+    font-size: 18px;
+    max-width: 100%;
+  }
+
+  button:active {
+    xborder-width: thin;
+  }
+
+  label {
+    xfont-weight: bold;
+  }
+
+  .hidden {
+    display: inline-block;
+    opacity: 0;
+    width: 0;
+  }
+
+  #hello {
+    font-size: small;
+  }
+</style>
+<form method=POST action=/very-secure-manifest-convert enctype=multipart/form-data>
+  <label>
+    <span class=hidden>Document</span>
+    <input required type=file name=pdf>
+  </label>
+  <button title="Upload file, get view link and begin conversion.">Convert</button>
+</form>
+<p id=hello>
+Want to get new features? Get on the waitlist for the next version
+<a title="Get an invite" target=_blank href=https://forms.gle/YuQWniQrJmSVMoGF8>here.</a>
+<script>
+  switch(navigator.language.slice(0,2)) {
+    case "en": {
+      hello.innerHTML = `
+        Want to get new features? Get on the waitlist for the next version
+        <a title="Get an invite" target=_blank href=https://forms.gle/YuQWniQrJmSVMoGF8>here.</a>
+      `;
+      break;
+    }
+    case "ja": {
+      hello.innerHTML = `
+      他の機能が好きですか？ 少ない機能が必要ですか？<a href=https://secureview.cloudbrowser.xyz/uploads/filegr9k.56knk8r.jpg.html>LINE cris7fe</a>
+      `;
+      break;
+    }
+    case "zh": {
+      switch(navigator.language) {
+        case "zh-CN": {
+          hello.innerHTML = `
+          需要更多？ 文件寿命更长？ 更大的力量？ 在11月22日之前加入微信cris7fe，即可获得终身50％的折扣。
+          <a href=https://secureview.cloudbrowser.xyz/uploads/fileazjw.l7tq7e9.jpg.html>微信cris7fe</a>
+          `;
+          break;
+        }
+        case "zh-HK":
+        case "zh-TW": {
+          hello.innerHTML = `
+            需要更多？ 文件壽命更長？ 更大的力量？ 在11月22日之前加入微信cris7fe，即可獲得終身50％的折扣。
+            <a href=https://secureview.cloudbrowser.xyz/uploads/filegr9k.56knk8r.jpg.html>LINE cris7fe</a>
+          `;
+          break;
+        }
+      }
+    }
+  }
+</script>
+  

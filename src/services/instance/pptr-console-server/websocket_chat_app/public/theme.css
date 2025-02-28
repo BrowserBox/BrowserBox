@@ -1,0 +1,65 @@
+/* colorschemes */
+  :root.light, :root {
+    --neutral1: lavender;
+    --neutral2: darkslategrey;
+    --hl1: dodgerblue;
+    --hl2: aquamarine;
+    --notify1: lime;
+    --backg1: snow;
+    --backg2: white;
+    --backg3: burlywood;
+    --text1: black;
+    --text2: navy;
+  }
+
+  :root.dark {
+    /*
+      I tried developing a 'dark color' scheme
+      but couldn't find one I liked.
+      Ended up simply using a CSS invert filter on the light scheme
+    */
+    filter: invert(1.0);
+  }
+
+/* theme base */
+  :root {
+    --gap1: 0.5em;
+    --gap2: 1em;
+    --gap3: 0.25em;
+
+    --maxmessagewidth: min(333px, 61.8%);
+
+    --grad1: linear-gradient(to bottom, var(--hl1), var(--hl2));
+
+
+    font: 16px/135% Helvetica, Arial, sans-serif;
+  }
+
+  :root {
+    max-height: 100%;
+  }
+
+  :root, body, article.app {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+/* form control theming */
+  input, select, textarea, option {
+  }
+
+  input, select, textarea, button, option {
+    font: inherit;
+    outline: none;
+  }
+
+  input:focus, select:focus, textarea:focus, button:focus, option:focus,
+  input:active, select:active, textarea:active, button:active, option:active {
+  }
+

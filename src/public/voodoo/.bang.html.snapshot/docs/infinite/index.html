@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang=en>
+<title>Spreadsheet with JavaScript Scripting | Infinite Scrolling Component | BANG! Web Compoment Framework</title>
+<meta name=theme-color content=turquoise>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<meta name=description content="Infinite Scrolling Component. It is built with the BANG! Web Component framework">
+<link rel=stylesheet href=./style.css>
+<style>
+  :root, body {
+    margin: 0; 
+    padding: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+<script type=application/javascript src=./bang.js?2.718></script>
+<script>
+  bangLoaded().then(async () => {
+    use('sg-infin');
+    use('sg-frame');
+    use('sg-cell');
+
+    const compKey = Math.random().toFixed(18);
+    const State = {
+      key: compKey,
+      sourceUrl: 'https://github.com/crisdosyago/der.Knall.Gerust/blob/main/docs/components/sg-infin/',
+      title: 'Infinite',
+      columnNames: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').slice(0,8),
+      rowNames: Array(100).join('.').split('').map((_,i) => i+1).slice(0,15),
+      selections: []
+    };
+    State.cell = Object.fromEntries((function () {
+      const entries = [];
+      State.columnNames.forEach(col => {
+        State.rowNames.forEach(row => {
+          const key = `${compKey}:${col}${row}`;
+          const value = {key, value: '', formula: '', editFormula: false};
+          entries.push([key, value]);
+        });
+      });
+      return entries;
+    }()));
+    setState('data', State, {save:true});
+  });
+</script>
+<main>
+  <!sg-infin state=data />
+</main>

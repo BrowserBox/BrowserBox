@@ -1,0 +1,62 @@
+  <!DOCTYPE html>
+  <html lang=en>
+  <meta charset=utf-8>
+  <title>ATC Test Plan</title>
+  <style>
+    /* whatever you like */
+    :root {
+      --my-color-1: lime;
+      --my-color-2: aqua;
+      /* etc */
+    }
+  </style>
+  <form method=POST action=/atc-test-plan/new>
+    <h1>ATC Test Plan</h1>
+    <fieldset>
+      <legend>About You</legend>
+      <p>
+        <label>
+          Your first name
+          <br>
+          <input type=text name=firstName autocomplete=given-name
+            required
+            placeholder="Jane"
+          >
+        </label>
+      <p>
+        <label>
+          Your family name
+          <br>
+          <input type=text name=lastName autocomplete=family-name
+            required
+            placeholder="Citizen"
+          >
+        </label>
+      <p>
+        <label>
+          Your callsign
+          <br>
+          <input type=text name=callsign autocomplete=nickname
+            placeholder="Maverick"
+          >
+        </label>
+      <p>
+        <label>
+          Your email
+          <br>
+          <input type=email name=email autocomplete=email
+            required
+            placeholder="maverickj@flightschool.skies"
+          >
+        </label>    
+    </fieldset>
+    <fieldset>
+      <legend>About your ATC Test Plan</legend>
+      <!-- I'm not an expert on ATC test plans so I'll leave this up to you! -->
+    </fieldset>
+    <p>
+      <button type=reset>Clear all</button>
+      <button>Save plan</button>
+  </form>
+  
+  

@@ -1,0 +1,24 @@
+<sg-frame state=${_self}>
+  <form class=layout onsubmit="event.preventDefault();">
+    <select required name=valence oninput=SetValence>
+      <option ${valence === 'one-way' ? 'selected': ''} value=one-way>One-way flight</option>
+      <option ${valence === 'round-trip' ? 'selected': ''} value=round-trip>Round-trip flight</option>
+    </select>
+    <input required name=out type=date 
+      aria-label="Date of departure flight"
+      value=${out}
+      oninput=SetOut 
+      min=${dateString(new Date)}
+      max=${valence === 'round-trip' ? back : 'any'}>
+    <input required name=back type=date 
+      aria-label="Date of return flight, if any"
+      value=${back}
+      oninput=SetBack 
+      min=${out}
+      ${valence === 'one-way' ? 'disabled' : ''}>
+    <button 
+      onclick=Book
+      ${formValid ? '' : 'disabled'}
+    >Book</button>
+  </form>
+</sg-frame>

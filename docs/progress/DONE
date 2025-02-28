@@ -1,0 +1,3 @@
+DONE - fix reload tab we are still sometimes loading a tab without having it contain scripts, and no favicon and has space-scroll bug
+DONE - get smoothness and cover back of frames
+DONE - add an ack buffer. So buffer the last shot we get when we have no ack. And when we get an ack. If we have an ack buffer, then send it. 

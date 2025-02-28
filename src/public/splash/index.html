@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Splash Page with Animated Logo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <svg class="logo" viewBox="0 0 200 200">
+      <!-- The Ring -->
+      <circle id="ring" cx="100" cy="100" r="50" stroke="url(#gradient)" stroke-width="10" fill="none"></circle>
+      
+      <!-- The Raised Triangle -->
+      <polygon id="triangle" points="100,100 135.76,26.79 64.24,26.79" stroke="black" stroke-width="10" fill="none"></polygon>
+ 
+      <!-- The Bar -->
+      <line id="bar" x1="100" y1="100" x2="100" y2="150" stroke="black" stroke-width="10"></line>
+      
+      <!-- Rainbow Gradient Definition -->
+      <defs>
+        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:red;stop-opacity:1"></stop>
+          <stop offset="20%" style="stop-color:orange;stop-opacity:1"></stop>
+          <stop offset="40%" style="stop-color:yellow;stop-opacity:1"></stop>
+          <stop offset="60%" style="stop-color:green;stop-opacity:1"></stop>
+          <stop offset="80%" style="stop-color:blue;stop-opacity:1"></stop>
+          <stop offset="100%" style="stop-color:purple;stop-opacity:1"></stop>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+  <script src="rotate.js"></script>
+</body>
+</html>
+

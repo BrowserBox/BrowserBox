@@ -1,0 +1,9 @@
+sudo $APT -yq install fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst ttf-ancient-fonts fontconfig psmisc fonts-freefont-ttf
+sudo  $APT -yq install xfonts-utils fonts-droid-fallback xfonts-intl-asian
+sudo $APT -yq install fonts-noto-color-emoji
+sudo $APT -yq install fonts-liberation fonts-unfonts-core fonts-sil-charis xfonts-tipa ttf-dejavu
+sudo apt -yq install libfreetype6 fontconfig libcairo-gobject2 libcairo2
+sudo $APT installfonts-noto-cjk fonts-noto fonts-indic
+sudo cp -r /usr/share/fonts/* /usr/local/share/fonts/*
+sudo fc-cache -f -v
+
