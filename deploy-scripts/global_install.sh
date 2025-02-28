@@ -2,8 +2,10 @@
 
 ZONE=""
 set -x
+source ~/.nvm/nvm.sh
 
 unset npm_config_prefix
+
 
 # flush any partial
 read -p "Enter to continue" -r
