@@ -2,7 +2,6 @@
 #set -xeo pipefail
 set -x
 
-# Assuming the first argument is the admin username
 export adminUsername="${1//[[:space:]]/}"
 export region="${2//[[:space:]]/}"
 export resourceId="${3//[[:space:]]/}"
@@ -12,12 +11,13 @@ export appInsightsResourceId="${6//[[:space:]]/}"
 
 shift 6
 
-# Parameters passed from ARM template
 export USEREMAIL="${1//[[:space:]]/}"
 export HOSTNAME="${2//[[:space:]]/}"
 export TOKEN="${3//[[:space:]]/}"
 export INSTALL_DOC_VIEWER="${4//[[:space:]]/}"
 export UNDERSTANDING="${5//[[:space:]]/}"
+export LICENSE_KEY="${6//[[:space:]]/}"
+export SKU_LIST="${7//[[:space:]]/}"
 
 # Function to determine the Linux Distribution
 get_distro() {
@@ -98,6 +98,11 @@ function run_heredoc_script() {
     else
       setup_bbpro --port 8080 --token "$TOKEN"
     fi
+    if [[ -z "$LICENSE_KEY" ]]; then
+      export LICENSE_KEY="$LICENSE_KEY"
+    fi
+    bbcertify
+    export LICENSE_KEY=""
     bbpro &>/dev/null &
 
   # Inner script starts after this line

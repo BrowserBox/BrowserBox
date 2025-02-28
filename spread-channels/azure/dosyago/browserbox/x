@@ -1,0 +1,1840 @@
+[
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20230531.1397",
+    "version": "0.20230531.1397"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20230612.1409",
+    "version": "0.20230612.1409"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20230711.1438",
+    "version": "0.20230711.1438"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20230723.1450",
+    "version": "0.20230723.1450"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20230802.1460",
+    "version": "0.20230802.1460"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20230910.1499",
+    "version": "0.20230910.1499"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20231004.1523",
+    "version": "0.20231004.1523"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20231013.1532",
+    "version": "0.20231013.1532"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20231210.1590",
+    "version": "0.20231210.1590"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20231210.1591",
+    "version": "0.20231210.1591"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20231228.1609",
+    "version": "0.20231228.1609"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20240102.1614",
+    "version": "0.20240102.1614"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20240201.1644",
+    "version": "0.20240201.1644"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20240211.1654",
+    "version": "0.20240211.1654"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20240415.1718",
+    "version": "0.20240415.1718"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20240429.1732",
+    "version": "0.20240429.1732"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20240507.1740",
+    "version": "0.20240507.1740"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20240701.1795",
+    "version": "0.20240701.1795"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20240702.1796",
+    "version": "0.20240702.1796"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20240717.1811",
+    "version": "0.20240717.1811"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20240901.1857",
+    "version": "0.20240901.1857"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20241004.1890",
+    "version": "0.20241004.1890"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20241110.1927",
+    "version": "0.20241110.1927"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20241125.1942",
+    "version": "0.20241125.1942"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20241201.1948",
+    "version": "0.20241201.1948"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20250112.1990",
+    "version": "0.20250112.1990"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20250115.1993",
+    "version": "0.20250115.1993"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12:12-gen2:0.20250210.2019",
+    "version": "0.20250210.2019"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20220712.1074",
+    "version": "0.20220712.1074"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20220907.1131",
+    "version": "0.20220907.1131"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20221105.1190",
+    "version": "0.20221105.1190"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20221106.1191",
+    "version": "0.20221106.1191"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20221107.1192",
+    "version": "0.20221107.1192"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20221108.1193",
+    "version": "0.20221108.1193"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20221109.1194",
+    "version": "0.20221109.1194"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20221110.1195",
+    "version": "0.20221110.1195"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20221111.1196",
+    "version": "0.20221111.1196"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20221112.1197",
+    "version": "0.20221112.1197"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20221113.1198",
+    "version": "0.20221113.1198"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-01T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241029.1915",
+    "version": "0.20241029.1915"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-02T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241030.1916",
+    "version": "0.20241030.1916"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-03T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241031.1917",
+    "version": "0.20241031.1917"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-04T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241101.1918",
+    "version": "0.20241101.1918"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-06T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241102.1919",
+    "version": "0.20241102.1919"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-06T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241103.1920",
+    "version": "0.20241103.1920"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-07T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241104.1921",
+    "version": "0.20241104.1921"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-08T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241105.1922",
+    "version": "0.20241105.1922"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-09T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241106.1923",
+    "version": "0.20241106.1923"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-10T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241107.1924",
+    "version": "0.20241107.1924"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-11T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241108.1925",
+    "version": "0.20241108.1925"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-17T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241109.1926",
+    "version": "0.20241109.1926"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-17T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241110.1927",
+    "version": "0.20241110.1927"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-17T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241111.1928",
+    "version": "0.20241111.1928"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-17T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241112.1929",
+    "version": "0.20241112.1929"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-17T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241113.1930",
+    "version": "0.20241113.1930"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-17T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241114.1931",
+    "version": "0.20241114.1931"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-19T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241115.1932",
+    "version": "0.20241115.1932"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-19T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241116.1933",
+    "version": "0.20241116.1933"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-20T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241117.1934",
+    "version": "0.20241117.1934"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-21T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241118.1935",
+    "version": "0.20241118.1935"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-22T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241119.1936",
+    "version": "0.20241119.1936"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-23T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241120.1937",
+    "version": "0.20241120.1937"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241121.1938",
+    "version": "0.20241121.1938"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-25T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241122.1939",
+    "version": "0.20241122.1939"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-26T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241123.1940",
+    "version": "0.20241123.1940"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-27T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241124.1941",
+    "version": "0.20241124.1941"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-28T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241125.1942",
+    "version": "0.20241125.1942"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-29T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241126.1943",
+    "version": "0.20241126.1943"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-30T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241127.1944",
+    "version": "0.20241127.1944"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-03-31T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241128.1945",
+    "version": "0.20241128.1945"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-01T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241129.1946",
+    "version": "0.20241129.1946"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-02T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241130.1947",
+    "version": "0.20241130.1947"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-03T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241201.1948",
+    "version": "0.20241201.1948"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-04T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241202.1949",
+    "version": "0.20241202.1949"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-05T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241203.1950",
+    "version": "0.20241203.1950"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-06T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241204.1951",
+    "version": "0.20241204.1951"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-07T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241205.1952",
+    "version": "0.20241205.1952"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-08T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241206.1953",
+    "version": "0.20241206.1953"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-09T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241207.1954",
+    "version": "0.20241207.1954"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-10T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241208.1955",
+    "version": "0.20241208.1955"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-11T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241209.1956",
+    "version": "0.20241209.1956"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-12T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241210.1957",
+    "version": "0.20241210.1957"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-13T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241211.1958",
+    "version": "0.20241211.1958"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-14T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241212.1959",
+    "version": "0.20241212.1959"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-15T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241213.1960",
+    "version": "0.20241213.1960"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-16T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241214.1961",
+    "version": "0.20241214.1961"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-17T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241215.1962",
+    "version": "0.20241215.1962"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-18T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241216.1963",
+    "version": "0.20241216.1963"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-19T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241217.1964",
+    "version": "0.20241217.1964"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-20T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241218.1965",
+    "version": "0.20241218.1965"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-21T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241219.1966",
+    "version": "0.20241219.1966"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-22T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241220.1967",
+    "version": "0.20241220.1967"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-23T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241221.1968",
+    "version": "0.20241221.1968"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241222.1969",
+    "version": "0.20241222.1969"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-25T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241223.1970",
+    "version": "0.20241223.1970"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-26T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241224.1971",
+    "version": "0.20241224.1971"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-27T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241225.1972",
+    "version": "0.20241225.1972"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-28T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241226.1973",
+    "version": "0.20241226.1973"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-29T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241227.1974",
+    "version": "0.20241227.1974"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-04-30T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241228.1975",
+    "version": "0.20241228.1975"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-01T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241229.1976",
+    "version": "0.20241229.1976"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241230.1977",
+    "version": "0.20241230.1977"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20241231.1978",
+    "version": "0.20241231.1978"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250101.1979",
+    "version": "0.20250101.1979"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250102.1980",
+    "version": "0.20250102.1980"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250103.1981",
+    "version": "0.20250103.1981"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250104.1982",
+    "version": "0.20250104.1982"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250105.1983",
+    "version": "0.20250105.1983"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250106.1984",
+    "version": "0.20250106.1984"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250107.1985",
+    "version": "0.20250107.1985"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250108.1986",
+    "version": "0.20250108.1986"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250109.1987",
+    "version": "0.20250109.1987"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250110.1988",
+    "version": "0.20250110.1988"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250111.1989",
+    "version": "0.20250111.1989"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250112.1990",
+    "version": "0.20250112.1990"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250113.1991",
+    "version": "0.20250113.1991"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250114.1992",
+    "version": "0.20250114.1992"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250115.1993",
+    "version": "0.20250115.1993"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250116.1994",
+    "version": "0.20250116.1994"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250117.1995",
+    "version": "0.20250117.1995"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250118.1996",
+    "version": "0.20250118.1996"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-24T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250119.1997",
+    "version": "0.20250119.1997"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-27T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250120.1998",
+    "version": "0.20250120.1998"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-27T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250121.1999",
+    "version": "0.20250121.1999"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-27T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250122.2000",
+    "version": "0.20250122.2000"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-27T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250123.2001",
+    "version": "0.20250123.2001"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-27T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250124.2002",
+    "version": "0.20250124.2002"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "ScheduledForDeprecation",
+      "scheduledDeprecationTime": "2025-05-28T00:00:00+00:00"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250125.2003",
+    "version": "0.20250125.2003"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250126.2004",
+    "version": "0.20250126.2004"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250127.2005",
+    "version": "0.20250127.2005"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250128.2006",
+    "version": "0.20250128.2006"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250129.2007",
+    "version": "0.20250129.2007"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250130.2008",
+    "version": "0.20250130.2008"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250201.2010",
+    "version": "0.20250201.2010"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250202.2011",
+    "version": "0.20250202.2011"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250203.2012",
+    "version": "0.20250203.2012"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250204.2013",
+    "version": "0.20250204.2013"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250205.2014",
+    "version": "0.20250205.2014"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250206.2015",
+    "version": "0.20250206.2015"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250207.2016",
+    "version": "0.20250207.2016"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250208.2017",
+    "version": "0.20250208.2017"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250209.2018",
+    "version": "0.20250209.2018"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250210.2019",
+    "version": "0.20250210.2019"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250211.2020",
+    "version": "0.20250211.2020"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250212.2021",
+    "version": "0.20250212.2021"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250213.2022",
+    "version": "0.20250213.2022"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250214.2023",
+    "version": "0.20250214.2023"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250215.2024",
+    "version": "0.20250215.2024"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250216.2025",
+    "version": "0.20250216.2025"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250217.2026",
+    "version": "0.20250217.2026"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250218.2027",
+    "version": "0.20250218.2027"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250219.2028",
+    "version": "0.20250219.2028"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250220.2029",
+    "version": "0.20250220.2029"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250221.2030",
+    "version": "0.20250221.2030"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250222.2031",
+    "version": "0.20250222.2031"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250223.2032",
+    "version": "0.20250223.2032"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250224.2033",
+    "version": "0.20250224.2033"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250225.2034",
+    "version": "0.20250225.2034"
+  },
+  {
+    "architecture": "x64",
+    "imageDeprecationStatus": {
+      "imageState": "Active"
+    },
+    "offer": "debian-12-daily",
+    "publisher": "Debian",
+    "sku": "12-gen2",
+    "urn": "Debian:debian-12-daily:12-gen2:0.20250226.2035",
+    "version": "0.20250226.2035"
+  }
+]
