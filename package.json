@@ -1,11 +1,11 @@
 {
   "name": "@dosyago/browserbox",
   "type": "module",
-  "version": "9.8.0",
+  "version": "10.0.1",
   "description": "BrowserBox - interactive images that embed web contents. A WebView for the open web, an unrestricted IFRAME element, a CORS-proxy, and reverse proxy. Secure remote browser isolation and document viewer, by DOSAYGO. Plese note this is the last release at the @dosyago namespace on NPM. Going forward, NPM releases will launch from @browserbox",
   "main": "./src/server.js",
   "default": "dist/image.html",
-  "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)",
+  "license": "Dosyago-Commercial-License-1.1.1-or-later",
   "targets": {
     "main": false,
     "default": {
