@@ -1165,11 +1165,15 @@
             return res.status(401).send('{"err":"forbidden"}');
           }
           res.status(200).send(` 
-            <form method=POST target=results>
+            <form method=POST>
               <fieldset>
+                <!--
                 <button formaction=/restart_app>Restart app</button>
-                <button formaction=/stop_app>Stop app</button>
+                !-->
+                <button formaction=/stop_app>Close BrowserBox and release seat</button>
+                <!--
                 <button formaction=/stop_browser>Stop browser</button>
+                !-->
               </fieldset>
             </form>
             <iframe style=display:none name=results>
@@ -1253,63 +1257,6 @@
           res.send(JSON.stringify({target},null,2));
         }));
       // app meta controls
-        app.post("/restart_app", ConstrainedRateLimiter, (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
-          const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
-          const qp = url.searchParams.get('session_token');
-          if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
-            return res.status(401).send('{"err":"forbidden"}');
-          }
-           /**
-              1. queue a restart task
-              2. add an exit handler
-                a. in exit handler check if pm2 is running us
-                process.env.PM2_USAGE && process.env.name exists
-                b. then call child_process.spawn
-              3. call process exit.
-              That's it
-           **/
-          if ( DEBUG.ensureUptimeBeforeRestart && process.uptime() < T2_MINUTES ) {
-            DEBUG.debugRestart && console.info(`Denying restart request, reason: app is up for less than 2 minutes`);
-            return res.status(403).send("deny");
-          }
-          let norestart = false;
-          DEBUG.debugRestart && console.info(`Queueing restart task...`);
-          timer = setTimeout(function () {
-            // Listen for the 'exit' event.
-            // This is emitted when our app exits.
-            DEBUG.debugRestart && console.info(`Adding exit handler`);
-            process.on("exit", function () {
-              if ( process.env.PM2_USAGE && process.env.name ) {
-                DEBUG.debugRestart && console.info(`pm2 is running us, switching off restart and just exiting,
-                  as pm2 will restart us.`);
-                norestart = true;
-              }
-              if ( norestart ) {
-                DEBUG.debugRestart && console.info(`Not restarting this time.`);
-              }
-              DEBUG.debugRestart && console.info(`Spawning new process`, process.argv);
-              child_process.spawn(
-                process.argv.shift(),
-                process.argv,
-                {
-                  cwd: process.cwd(),
-                  detached: true,
-                  stdio: "inherit"
-                }
-              );
-            });
-            DEBUG.debugRestart && console.info(`Exiting parent process`);
-            process.exit();
-          }, 1000);
-          DEBUG.debugRestart && console.info(`Adding SIGINT restart interrupt handler...`);
-          process.on('SIGINT', () => {
-            DEBUG.debugRestart && console.info(`Got SIGINT during restart cycle. Not restarting...`);
-            clearTimeout(timer);
-            norestart = true;
-          });
-          return res.status(200).send("requested");
-        });
         app.post("/stop_app", ConstrainedRateLimiter, (req, res) => {
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
           const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
@@ -1327,7 +1274,8 @@
           if ( process.env.PM2_USAGE && process.env.name ) {
             DEBUG.debugRestart && console.log(`Is pm2. Deleting pm2 name`, process.env.name);
             try {
-              return executeShutdownOfBBPRO();
+              setTimeout(() => executeShutdownOfBBPRO(), 1000);
+              return res.status(200).end('Stopped');
             } catch(e) {
               console.warn(e);
             }
@@ -1335,30 +1283,6 @@
             DEBUG.debugRestart && console.log(`Is not pm2. Exiting process`);
             process.exit(0);
           }
-        });
-        app.post("/stop_browser", async (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
-          const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
-          const qp = url.searchParams.get('session_token');
-          if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
-            return res.status(401).send('{"err":"forbidden"}');
-          }
-          /**
-            kill the browser zombie from its pid file
-          **/
-          await zl.life.kill(zombie_port);
-        });
-        app.post("/start_browser", (req, res) => {
-          const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
-          const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
-          const qp = url.searchParams.get('session_token');
-          if ( (cookie !== allowed_user_cookie) && qp != session_token ) { 
-            return res.status(401).send('{"err":"forbidden"}');
-          }
-          /**
-            launch a new browser (if one is not running)
-          **/
-          throw new Error(`Not implemented`);
         });
       // app integrity check
         app.get("/integrity", ConstrainedRateLimiter, (req, res) => {

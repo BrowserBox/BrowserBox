@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-  "contentVersion": "6.4.0.1",
+  "contentVersion": "10.0.0.1",
   "parameters": {
     "utcValue": {
       "type": "string",
@@ -199,6 +199,7 @@
     "realToken": "[if(equals(parameters('token'), ''), uniqueString(parameters('randomGUID')), parameters('token'))]",
     "realHostname": "[if(equals(parameters('hostname'), ''), variables('actualHostname'), parameters('hostname'))]",
     "loginLink": "[concat('https://', variables('realHostname'), ':8080/login?token=', variables('realToken'))]",
+    "stopLink": "[concat('https://', variables('realHostname'), ':8080/settings_modal?token=', variables('realToken'))]",
     "deploymentLink": "[concat('https://portal.azure.com/#view/HubsExtension/DeploymentDetailsBlade/~/overview/id/%2Fsubscriptions%2F', subscription().subscriptionId, '%2FresourceGroups%2F', resourceGroup().name, '%2Fproviders%2FMicrosoft.Resources%2Fdeployments%2F', deployment().name)]"
   },
   "resources": [
@@ -493,7 +494,7 @@
         "[resourceId('Microsoft.Insights/actionGroups', concat('YourBrowserBoxEmailList', variables('uniqueSuffix')))]"
       ],
       "properties": {
-        "description": "[concat('Your BrowserBox is ready! Click your Login Link:\n', variables('loginLink'), '\n\nFor commercial closed-source use please purchase a license:\nhttps://dosyago.com\n\nFor support, sales and customizations email anytime:\n hey@dosyago.com\n\nTo shut down your BrowserBox or manage this deployment, visit:\n', variables('deploymentLink'), '\n\nThank you for choosing BrowserBox! Have a safe browse!')]",
+        "description": "[concat('Your BrowserBox is ready! Click your Login Link:\n', variables('loginLink'), '\n\nFor support, sales and customizations email:\n sales@dosyago.com\n\nAfter using, ensure you properly stop BrowserBox and release your licensed seat, by visiting:\n', variables('stopLink'), '\n\nTo manage your Azure deployment for BrowserBox, visit:\n', variables('deploymentLink'), '\n\nBrowserBox (c) DOSAYGO 2018 - 2025')]",
         "severity": 3,
         "enabled": true,
         "evaluationFrequency": "PT1M",
