@@ -2,7 +2,6 @@
 
 ZONE=""
 set -x
-source ~/.nvm/nvm.sh
 
 unset npm_config_prefix
 
@@ -382,6 +381,7 @@ cd $INSTALL_DIR
 echo "Ensuring nvm installed..."
 #install_nvm
 install_node
+source ~/.nvm/nvm.sh
 
 echo "Running npm install..."
 
