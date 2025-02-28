@@ -1258,6 +1258,7 @@
         }));
       // app meta controls
         app.post("/stop_app", ConstrainedRateLimiter, (req, res) => {
+          res.type('html');
           const cookie = req.cookies[COOKIENAME+port] || req.query[COOKIENAME+port] || req.headers['x-browserbox-local-auth'];
           const url = new URL(req.url, `${req.protocol}://${req.headers.host}`);
           const qp = url.searchParams.get('session_token');
@@ -1275,7 +1276,7 @@
             DEBUG.debugRestart && console.log(`Is pm2. Deleting pm2 name`, process.env.name);
             try {
               setTimeout(() => executeShutdownOfBBPRO(), 1000);
-              return res.status(200).end('Stopped');
+              return res.status(200).send('Stopped');
             } catch(e) {
               console.warn(e);
             }
