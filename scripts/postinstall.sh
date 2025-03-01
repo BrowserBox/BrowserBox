@@ -8,8 +8,8 @@ export SUDO=$(command -v sudo)
 export sudo=$(command -v sudo)
 
 if "$sudo" -n true &>/dev/null; then
-  sudo="\"$SUDO\" -n"
-  SUDO="\"$SUDO\" -n"
+  sudo="$SUDO -n"
+  SUDO="$SUDO -n"
 fi
 if command -v node.exe &>/dev/null; then
   node=$(command -v node.exe)
