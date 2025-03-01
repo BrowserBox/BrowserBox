@@ -4,9 +4,9 @@
 # current base
 FROM debian:latest
 LABEL org.opencontainers.image.title="BrowserBox" \
-  org.opencontainers.image.description="BrowserBox: Web Isolation, Document Sanitization, and Reverse CORS Proxy in one embeddable iframe. Licensed under Polyform Noncommercial 1.0, with commercial options available. Contact hello@dosyago.com for flexible licensing, support, and customization. Suitable for all sizes of organizations and custom applications." \
-  org.opencontainers.image.version="9.8.3" \
-  org.opencontainers.image.authors="DOSAYGO BrowserBox Team <bb-team@dosyago.com>" \
+  org.opencontainers.image.description="Embeddable remote browser isolation with vettable source https://dosaygo.com" \
+  org.opencontainers.image.version="10.0.1" \
+  org.opencontainers.image.authors="DOSAYGO BrowserBox Team <browserbox@dosaygo.com>" \
   org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox"
 
 SHELL ["/bin/bash", "-c"]
@@ -55,7 +55,7 @@ RUN groupadd browsers && groupadd renice && usermod -a -G browsers bbpro && user
 # RUN apt-get install -y nodejs
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | sudo -E bash -
-RUN . ~/.nvm/nvm.sh ; nvm install v22.10 ; npm i -g npm@latest ; npm i -g pm2@latest ;
+RUN . ~/.nvm/nvm.sh ; nvm install v22 ; npm i -g npm@latest ; npm i -g pm2@latest ; nvm use v22 ; nvm alias default v22
 
 # Define HOME and WORKDIR
 ENV HOME=/home/bbpro
@@ -78,5 +78,5 @@ RUN yes | ./deploy-scripts/global_install.sh localhost
 # RUN chown -R bbpro:bbpro $HOME/sslcerts/
 
 # run the application
-CMD bash -c -l 'cd; source ~/.nvm/nvm.sh; echo $(setup_bbpro --port 8080) > login_link.txt; ( bbpro || true ) && tail -f /dev/null'
+CMD bash -c -l 'cd; source ~/.nvm/nvm.sh; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; export LICENSE_KEY='"$LICENSE_KEY"'; bbcertify; export LICENSE_KEY=""; ( bbpro || true ) && tail -f /dev/null'
 
