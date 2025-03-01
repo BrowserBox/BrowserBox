@@ -38,9 +38,9 @@ fi
 
 # User agreement prompt
 echo "By using this container, you agree to the terms and license at the following locations:"
-echo "License: https://raw.githubusercontent.com/dosyago/BrowserBoxPro/0b3ae2325eb95a2da441adc09411e2623fef6048/LICENSE.md"
-echo "Terms: https://dosyago.com/terms.txt"
-echo "Privacy: https://dosyago.com/privacy.txt"
+echo "License: https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md"
+echo "Terms: https://dosaygo.com/terms.txt"
+echo "Privacy: https://dosaygo.com/privacy.txt"
 read -p "Do you agree to these terms? Enter 'yes' or 'no': " agreement
 
 if [ "$agreement" != "yes" ]; then
@@ -48,7 +48,16 @@ if [ "$agreement" != "yes" ]; then
     exit 1
 fi
 
-echo "Your use is an agreement to the terms, privacy policy and license."
+echo "Your use of BrowserBox is an agreement to the terms, privacy policy and license."
+
+if [[ -z "$LICENSE_KEY" ]]; then
+  read -p "Enter your BrowserBox license key: " LICENSE_KEY
+fi
+
+if [[ -z "$LICENSE_KEY" ]]; then
+  echo "You need a license key to use BrowserBox. Exiting..."
+  exit 1
+fi
 
 # Define directory and file paths
 certDir="${HOME}/sslcerts"
@@ -292,7 +301,7 @@ if [[ "$HOSTNAME" != "localhost" ]]; then
 fi
 
 # Run the container with the appropriate port mappings and capture the container ID
-CONTAINER_ID=$($SUDO docker run --cap-add=sys_nice -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; sudo chown bbpro:bbpro ~/sslcerts/*; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; ( bbpro || true ) && tail -f /dev/null')
+CONTAINER_ID=$($SUDO docker run --cap-add=sys_nice -v $HOME/sslcerts:/home/bbpro/sslcerts -d -p $PORT:$PORT -p $(($PORT-2)):$(($PORT-2)) -p $(($PORT-1)):$(($PORT-1)) -p $(($PORT+1)):$(($PORT+1)) -p $(($PORT+2)):$(($PORT+2)) --cap-add=SYS_ADMIN "${DOCKER_IMAGE_WITH_TAG}" bash -c 'source ~/.nvm/nvm.sh; pm2 delete all; sudo chown bbpro:bbpro ~/sslcerts/*; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; export LICENSE_KEY='"$LICENSE_KEY"'; bbcertify; export LICENSE_KEY=""; ( bbpro || true ) && tail -f /dev/null')
 
 echo "We will now Log You In to your container..."
 echo "[Remember: you can get out of your container anytime by typing 'exit'.]"
