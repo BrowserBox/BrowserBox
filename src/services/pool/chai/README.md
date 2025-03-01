@@ -83,7 +83,7 @@ We recommend a beefy machine with at least 4 cores and 8 GB RAM for a spellbindi
 
 ## 📜 License 📜
 
-Non-commercial (Polyform Noncommercial 1.0) use or commercial licenses purchasable. For custom licensing options, email us at [hello@dosyago.com](mailto:hello@dosyago.com).
+Non-commercial (Polyform Noncommercial 1.0) use or commercial licenses purchasable. For custom licensing options, email us at [hello@dosaygo.com](mailto:hello@dosaygo.com).
 
 ---
 

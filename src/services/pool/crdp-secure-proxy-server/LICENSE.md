@@ -1,13 +1,13 @@
 SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later
 
-Required Notice: Copyright Dosyago Corporation & Contributors 2023 (https://dosyago.com)
+Required Notice: Copyright Dosyago Corporation & Contributors 2023 (https://dosaygo.com)
 
 You must distribute this file and its exact and entire contents when you distribute any copies or works of BrowserBox.
 
 BrowserBox is licensed separately under the following licenses:
 
 - [Polyform Non-Commercial License 1.0](LICENSES/PolyForm-Noncommercial-1.0.0.md)
-- BrowserBox Commercial License, as either perpetual or subscription. Named users or concurrent users are available. Named user licenses are purchasable via [our website](https://dosyago.com).
+- BrowserBox Commercial License, as either perpetual or subscription. Named users or concurrent users are available. Named user licenses are purchasable via [our website](https://dosaygo.com).
 
 ### Purchasing a commercial license
 
@@ -26,15 +26,15 @@ Commercial Licenses are priced per seat. A seat is someone who uses the BrowserB
 
 Commercial Licenses are available in two sizes:
 
-- **License Pack** Available in multiple sizes, from the small to the truly epic, with commensurately epic discounts at scale. These are purchasable at [our main website](https://dosyago.com).
+- **License Pack** Available in multiple sizes, from the small to the truly epic, with commensurately epic discounts at scale. These are purchasable at [our main website](https://dosaygo.com).
 
 By obtaining a commercial license, you gain the freedom to tailor BrowserBox to your specific requirements and integrate it seamlessly into your workflow. This empowers organizations to leverage the advanced features and capabilities of BrowserBox while maintaining full control over its customization and usage. 
 
-Support tiers and customization may be separately negotiated and purchased. To discuss your needs, please [reach out to our helpful support team here](mailto:support@dosyago.com?subject=BrowserBox).
+Support tiers and customization may be separately negotiated and purchased. To discuss your needs, please [reach out to our helpful support team here](mailto:support@dosaygo.com?subject=BrowserBox).
 
 ### Hardware Appliance (OEM) Licensing
 
-Are you an OEM and want to deploy BrowserBox on a hardware device that you sell to your customers? [Contact us for special access to Appliance License pricing with Volume Discounts](mailto:sales@dosyago.com?subject=OEM%20License). This pricing sheet and terms are tailored to suit OEM's delivering security products for business and industry. Please note that if you are supplying government or other non-commercial users you cannot "pass through" DOSYAGO's non-commercial license to your customers without licensing a Commercial license from us. 
+Are you an OEM and want to deploy BrowserBox on a hardware device that you sell to your customers? [Contact us for special access to Appliance License pricing with Volume Discounts](mailto:sales@dosaygo.com?subject=OEM%20License). This pricing sheet and terms are tailored to suit OEM's delivering security products for business and industry. Please note that if you are supplying government or other non-commercial users you cannot "pass through" DOSYAGO's non-commercial license to your customers without licensing a Commercial license from us. 
 
 ### Sanctions Compliance
 

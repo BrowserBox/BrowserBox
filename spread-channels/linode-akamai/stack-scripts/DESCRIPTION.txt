@@ -32,22 +32,22 @@ BB: Embeddable, multiplayer browser for RBI and web.
                                  AGREEMENT TO TERMS
 ======================================================
 
-- Using BrowserBox for free implies agreement to our terms, including 
-  Polyform Noncommercial License 1.0, or your valid commercial license
-  purchased at https://dosyago.com or via licenses@dosyago.com
+- Using BrowserBox implies agreement to our terms, including 
+  your valid license and license key
+  purchased at https://dosaygo.com or via sales@dosaygo.com
 - Review our detailed terms, privacy policy, and licenses:
   
   Licenses:
   https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md
   
   Terms:
-  https://dosyago.com/terms.txt
+  https://dosaygo.com/terms.txt
   
   Privacy Policy:
-  https://dosyago.com/privacy.txt
+  https://dosaygo.com/privacy.txt
 
-- For commercial licenses, visit https://dosyago.com 
-  or contact sales@dosyago.com for inquiries.
+- For commercial licenses, visit https://dosaygo.com 
+  or contact sales@dosaygo.com for inquiries.
 
 ======================================================
                                        GETTING STARTED
@@ -64,7 +64,7 @@ BB: Embeddable, multiplayer browser for RBI and web.
 - Need help? Open an issue or discussion at
   https://github.com/BrowserBox/BrowserBox
   or Email 
-  support@dosyago.com 
+  support@dosaygo.com 
   for assistance.
 
 ======================================================

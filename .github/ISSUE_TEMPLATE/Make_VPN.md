@@ -26,5 +26,5 @@ Once you click **Submit New Issue**, follow-up instructions will appear in the c
 
 ---
 
-*Powered by [DOSYAGO](https://dosyago.com)*
+*Powered by [DOSYAGO](https://dosaygo.com)*
 

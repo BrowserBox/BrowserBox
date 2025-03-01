@@ -2,9 +2,9 @@ BrowserBox End User License Agreement
 
 BrowserBox is provided by The DOSYAGO Corporation, a US corporation. By continuing to install and run the software (BrowserBox) you agree to our terms, privacy policy and the software license.
 
-Terms: https://dosyago.com/terms.txt
-Privacy policy: https://dosyago.com/privacy.txt
-Software license: https://dosyago.com/BrowserBox/BrowserBox/blob/main/LICENSE.md
+Terms: https://dosaygo.com/terms.txt
+Privacy policy: https://dosaygo.com/privacy.txt
+Software license: https://dosaygo.com/BrowserBox/BrowserBox/blob/main/LICENSE.md
 
 Also, please note that:
 

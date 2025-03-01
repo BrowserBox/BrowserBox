@@ -21,11 +21,11 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/depl
 ## 为您的 BrowserBox 授权
 
 - **非商业用途**：可根据 Polyform 非商业许可证 1.0 使用。
-- **商业用途**：灵活的授权选项确保了商业应用的全面支持、更新和定制能力。开始请发送电子邮件至 licenses@dosyago.com。
+- **商业用途**：灵活的授权选项确保了商业应用的全面支持、更新和定制能力。开始请发送电子邮件至 licenses@dosaygo.com。
 
 ## 深入了解并定制
 
-通过我们的详尽文档和视频介绍深入了解 BrowserBox。欲了解更多信息，请访问我们的[官方网站](https://dosyago.com)。开发支持可通过 support@dosyago.com 购买，我们的[主要 README](https://github.com/BrowserBox/BrowserBox) 中有详细信息。
+通过我们的详尽文档和视频介绍深入了解 BrowserBox。欲了解更多信息，请访问我们的[官方网站](https://dosaygo.com)。开发支持可通过 support@dosaygo.com 购买，我们的[主要 README](https://github.com/BrowserBox/BrowserBox) 中有详细信息。
 
 ## 一键云部署
 

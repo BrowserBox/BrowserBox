@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const subject = isPerpetualSelected ? 'Perpetual' : 'Partner/Reseller';
       const customization = isCustomSelected ? ' with Customization' : '';
       const emailSubject = encodeURIComponent(`${subject}${customization} License Inquiry`);
-      const mailtoLink = `mailto:sales@dosyago.com?subject=${emailSubject}`;
+      const mailtoLink = `mailto:sales@dosaygo.com?subject=${emailSubject}`;
 
       emailContainer.innerHTML = `<br><a href="${mailtoLink}" class="mailto-link">Email us to proceed with the purchase</a>`;
     }

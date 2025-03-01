@@ -82,7 +82,7 @@ su - "$username" <<EOF
   # just trigger the install of the tls related tools so they are not needed to be installed later when we are running a background 
   # install task for doc viewer
   ./deploy-scripts/tls "$HOSTNAME"
-  yes | ./deploy-scripts/global_install.sh "localhost" "vultr-marketplace-setup@dosyago.com"
+  yes | ./deploy-scripts/global_install.sh "localhost" "vultr-marketplace-setup@dosaygo.com"
 EOF
 
 su - "$username" <<EOF2 

@@ -6,7 +6,7 @@ export const BLOCKED_BODY = Buffer.from(`
   <details>
     <summary>To block or not to block?</summary>
     <p>
-      Send the link you clicked or the page you were on to: <a style="text-decoration: none; color: inherit;" target=_blank href=mailto:support@dosyago.com>support@dosyago.com</a> to report.
+      Send the link you clicked or the page you were on to: <a style="text-decoration: none; color: inherit;" target=_blank href=mailto:support@dosaygo.com>support@dosaygo.com</a> to report.
     <p>
   </details>
 `).toString("base64");

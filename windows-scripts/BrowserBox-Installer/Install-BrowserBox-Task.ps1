@@ -248,8 +248,8 @@ $Outer = {
     Write-Host "             Optional if not provided, a GUI prompt will request this information."
     Write-Host ""
     Write-Host "Documentation Links:"
-    Write-Host "  Terms of Service: https://dosyago.com/terms.txt"
-    Write-Host "  Privacy Policy:   https://dosyago.com/privacy.txt"
+    Write-Host "  Terms of Service: https://dosaygo.com/terms.txt"
+    Write-Host "  Privacy Policy:   https://dosaygo.com/privacy.txt"
     Write-Host "  License:      https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md"
     Write-Host ""
     Write-Host "Example:"
@@ -1046,7 +1046,7 @@ timeout /t 2
     $termsLink.Text = "Terms of Service"
     $termsLink.AutoSize = $true
     $termsLink.Location = New-Object System.Drawing.Point(20, 160)
-    $termsLink.Add_Click({ Start-Process "https://dosyago.com/terms.txt" })
+    $termsLink.Add_Click({ Start-Process "https://dosaygo.com/terms.txt" })
     $form.Controls.Add($termsLink)
 
     # Add clickable link for Privacy Policy
@@ -1054,7 +1054,7 @@ timeout /t 2
     $privacyLink.Text = "Privacy Policy"
     $privacyLink.AutoSize = $true
     $privacyLink.Location = New-Object System.Drawing.Point(20, 180)
-    $privacyLink.Add_Click({ Start-Process "https://dosyago.com/privacy.txt" })
+    $privacyLink.Add_Click({ Start-Process "https://dosaygo.com/privacy.txt" })
     $form.Controls.Add($privacyLink)
 
     # Add clickable link for License

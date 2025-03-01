@@ -201,14 +201,14 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
           "data:",
           "https://link.local:*",
           "https://localhost:*",
-          "https://*.dosyago.com:*",
+          "https://*.dosaygo.com:*",
           "https://browse.cloudtabs.net:*"
         ],
         frameSrc: [
           "'self'",
-          `https://*.dosyago.com:${PORT+1}`,
-          `https://*.dosyago.com:${PORT+2}`,
-          `https://*.dosyago.com:${PORT+3}`,
+          `https://*.dosaygo.com:${PORT+1}`,
+          `https://*.dosaygo.com:${PORT+2}`,
+          `https://*.dosaygo.com:${PORT+3}`,
           "https://browse.cloudtabs.net:*",
           ...ALLOWED_3RD_PARTY_EMBEDDERS
         ],
@@ -216,7 +216,7 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
           "'self'",
           "https://localhost:*",
           "https://link.local:*",
-          "https://*.dosyago.com:*",
+          "https://*.dosaygo.com:*",
           "https://browse.cloudtabs.net:*",
           ...ALLOWED_3RD_PARTY_EMBEDDERS
         ],
@@ -224,8 +224,8 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
           "'self'",
           "wss://*.link.local:*",
           `https://*.link.local:${PORT+1}`,
-          "wss://*.dosyago.com:*",
-          `https://*.dosyago.com:${PORT+1}`,
+          "wss://*.dosaygo.com:*",
+          `https://*.dosaygo.com:${PORT+1}`,
           "wss://browse.cloudtabs.net:*",
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)

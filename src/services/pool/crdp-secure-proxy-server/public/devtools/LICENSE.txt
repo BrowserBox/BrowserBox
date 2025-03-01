@@ -1,4 +1,4 @@
-Required Notice: Copyright Dosyago Corporation & Cris DOSAYGO 2023 (https://dosyago.com)
+Required Notice: Copyright Dosyago Corporation & Cris DOSAYGO 2023 (https://dosaygo.com)
 
 # PolyForm Noncommercial License 1.0.0
 

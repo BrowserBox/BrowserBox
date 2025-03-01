@@ -39,3 +39,4 @@
 
 <h2>Copyright</h2>
 <p>© 2024 DOSAYGO Corporation USA. All rights reserved.</p>
+<p>All code in this repository is licensed under the terms of [LICENSE.md](LICENSE.md) unless otherwise stated.</P

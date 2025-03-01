@@ -21,11 +21,11 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/depl
 ## Licencier Votre BrowserBox
 
 - **Utilisation Non Commerciale** : Disponible sous la licence Polyform Noncommercial 1.0.
-- **Utilisation Commerciale** : Des options de licence flexibles assurent un support complet, des mises à jour et des capacités de personnalisation pour les applications commerciales. Envoyez un email à licenses@dosyago.com pour commencer.
+- **Utilisation Commerciale** : Des options de licence flexibles assurent un support complet, des mises à jour et des capacités de personnalisation pour les applications commerciales. Envoyez un email à licenses@dosaygo.com pour commencer.
 
 ## Approfondissez et Personnalisez
 
-Explorez BrowserBox plus en détail avec notre documentation exhaustive et les introductions vidéo. Visitez notre [site officiel](https://dosyago.com) pour plus d'informations. Le support de développement peut être acheté à support@dosyago.com, et des informations détaillées se trouvent dans notre [README principal](https://github.com/BrowserBox/BrowserBox).
+Explorez BrowserBox plus en détail avec notre documentation exhaustive et les introductions vidéo. Visitez notre [site officiel](https://dosaygo.com) pour plus d'informations. Le support de développement peut être acheté à support@dosaygo.com, et des informations détaillées se trouvent dans notre [README principal](https://github.com/BrowserBox/BrowserBox).
 
 ## Déploiement sur le Cloud en Un Clic
 

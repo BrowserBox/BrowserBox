@@ -44,7 +44,7 @@ This template deploys BrowserBox, a secure browsing environment, on an Ubuntu Se
 ## Post-Deployment Steps
 - If you used a Custom Domain, rather than the default random `bb<random>.<region>.cloudapp.azure.com` domain that will by default be generated for you, ensure you configure a DNS A record pointing to the public IP of the deployed VM. You can configure Custom Domain settings under Advanced Settings. 
 
-Reach out with support questions any time: support@dosyago.com. 
+Reach out with support questions any time: support@dosaygo.com. 
 
 ## License
 

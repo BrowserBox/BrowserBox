@@ -182,7 +182,7 @@
         "data:",
         "'self'",
         "https://localhost:*",
-        "https://*.dosyago.com:*",
+        "https://*.dosaygo.com:*",
         "https://browse.cloudtabs.net:*",
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port}`]}:*`, // main service (for data: urls seemingly)
@@ -197,7 +197,7 @@
         "https://localhost:*",
         "https://link.local:*",
         "https://browse.cloudtabs.net:*",
-        "https://*.dosyago.com:*",
+        "https://*.dosaygo.com:*",
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
@@ -207,11 +207,11 @@
       ],
       connectSrc: [
         "'self'",
-        "wss://*.dosyago.com:*",
+        "wss://*.dosaygo.com:*",
         "wss://localhost:*",
         "wss://link.local:*",
-        `https://*.dosyago.com:${server_port-1}`,
-        `https://*.dosyago.com:${server_port+1}`,
+        `https://*.dosaygo.com:${server_port-1}`,
+        `https://*.dosaygo.com:${server_port+1}`,
         "https://browse.cloudtabs.net:*",
         "https://browse.cloudtabs.net",
         "wss://browse.cloudtabs.net:*",
@@ -251,7 +251,7 @@
         "'unsafe-eval'",
         "'unsafe-inline'",
         "https://browse.cloudtabs.net:*",
-        "https://*.dosyago.com:*"
+        "https://*.dosaygo.com:*"
       ],
       scriptSrcAttr: [
         "'self'",
@@ -260,7 +260,7 @@
       frameAncestors: [
         "'self'",
         "https://browse.cloudtabs.net:*",
-        "https://*.dosyago.com:*",
+        "https://*.dosaygo.com:*",
         ...ALLOWED_3RD_PARTY_EMBEDDERS
       ],
       objectSrc: ["'none'"],
@@ -284,19 +284,19 @@
             ],
             mediaSrc: [
               "'self'",
-              "https://*.dosyago.com:*"
+              "https://*.dosaygo.com:*"
             ],
             frameSrc: [
               "'self'",
-              "https://*.dosyago.com:*"
+              "https://*.dosaygo.com:*"
             ],
             connectSrc: [
               "'self'",
-              "wss://*.dosyago.com:*",
+              "wss://*.dosaygo.com:*",
               "wss://localhost:*",
               "https://browse.cloudtabs.net",
-              `https://*.dosyago.com:${server_port-1}`,
-              `https://*.dosyago.com:${server_port+1}`,
+              `https://*.dosaygo.com:${server_port-1}`,
+              `https://*.dosaygo.com:${server_port+1}`,
               `https://localhost:${server_port-1}`,
               `https://localhost:${server_port+1}`,
               ...CONFIG.connectivityTests
@@ -317,7 +317,7 @@
               "'self'", 
               "'unsafe-eval'",
               "'unsafe-inline'",
-              "https://*.dosyago.com:*"
+              "https://*.dosaygo.com:*"
             ],
             scriptSrcAttr: [
               "'self'",
@@ -325,7 +325,7 @@
             ],
             frameAncestors: [
               "'self'",
-              "https://*.dosyago.com:*",
+              "https://*.dosaygo.com:*",
               ...ALLOWED_3RD_PARTY_EMBEDDERS
             ],
             objectSrc: ["'none'"],

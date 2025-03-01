@@ -203,7 +203,7 @@ detect_os() {
   elif [[ "$OSTYPE" == "msys"* ]]; then
     distro="win"
   else
-    echo "ERROR: Cannot determine the distribution. Please email support@dosyago.com." >&2
+    echo "ERROR: Cannot determine the distribution. Please email support@dosaygo.com." >&2
     exit 1
   fi
 

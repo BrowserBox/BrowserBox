@@ -31,13 +31,13 @@ bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/depl
 ## רישוי BrowserBox שלך
 
 - **שימוש לא מסחרי**: זמין תחת רישיון Polyform לא מסחרי 1.0.
-- **שימוש מסחרי**: אפשרויות רישוי גמישות מבטיחות תמיכה מלאה, עדכונים ויכולות התאמה אישית ליישומים מסחריים. התחל באמצעות שליחת דוא"ל ל-licenses@dosyago.com.
+- **שימוש מסחרי**: אפשרויות רישוי גמישות מבטיחות תמיכה מלאה, עדכונים ויכולות התאמה אישית ליישומים מסחריים. התחל באמצעות שליחת דוא"ל ל-licenses@dosaygo.com.
 
 ## חקור והתאם אישית בעומק
 
-גלה את BrowserBox עוד יותר עם התיעוד המקיף והמבואות הווידאויים שלנו. בקר ב[אתר הרשמי](https://dosyago.com) שלנו ל
+גלה את BrowserBox עוד יותר עם התיעוד המקיף והמבואות הווידאויים שלנו. בקר ב[אתר הרשמי](https://dosaygo.com) שלנו ל
 
-מידע נוסף. ניתן לרכוש תמיכה בפיתוח באמצעות support@dosyago.com, ומידע מפורט נמצא ב[README הראשי](https://github.com/BrowserBox/BrowserBox) שלנו.
+מידע נוסף. ניתן לרכוש תמיכה בפיתוח באמצעות support@dosaygo.com, ומידע מפורט נמצא ב[README הראשי](https://github.com/BrowserBox/BrowserBox) שלנו.
 
 *[README ראשי (אנגלית)](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#browserbox-)*
 

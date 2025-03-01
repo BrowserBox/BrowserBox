@@ -21,7 +21,7 @@ ModuleVersion = '1.3.1.7'
 GUID = '9242b39a-deff-465a-90ee-3a075c858690'
 
 # Author of this module
-Author = 'team@dosyago.com'
+Author = 'team@dosaygo.com'
 
 # Company or vendor of this module
 CompanyName = 'DOSYAGO'
@@ -100,7 +100,7 @@ PrivateData = @{
     LicenseUri = 'https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md'
 
     # A URL to the main website for this project.
-    ProjectUri = 'https://dosyago.com'
+    ProjectUri = 'https://dosaygo.com'
 
     # A URL to an icon representing this module.
     IconUri = 'https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/docs/icon.svg'

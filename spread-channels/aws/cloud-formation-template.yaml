@@ -16,7 +16,7 @@ Parameters:
 
   UserEmail:
     Type: String
-    Description: "[required] Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs. By continuing, you agree to our terms, privacy policy and licensing (https://dosyago.com/terms.txt, https://dosyago.com/privacy.txt, https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md) and LetsEncrypt's terms. After creating your Stack, visit its Outputs tab to find your BrowserBox Login Link and IP address. While setup completes, ensure you add a DNS A Record mapping your HostName to this IP address, using your registrar. Then, wait a few minutes for your instance to be ready."
+    Description: "[required] Your email address for agreeing to the BrowserBox T&Cs, and LetsEncrypt T&Cs. By continuing, you agree to our terms, privacy policy and licensing (https://dosaygo.com/terms.txt, https://dosaygo.com/privacy.txt, https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md) and LetsEncrypt's terms. After creating your Stack, visit its Outputs tab to find your BrowserBox Login Link and IP address. While setup completes, ensure you add a DNS A Record mapping your HostName to this IP address, using your registrar. Then, wait a few minutes for your instance to be ready."
     AllowedPattern: .+
     MaxLength: 300
 
@@ -35,7 +35,7 @@ Parameters:
 
   VPCId:
     Type: AWS::EC2::VPC::Id
-    Description: "[required] VPC ID where the instance will be deployed. It MUST be your accounts Default VPC ID created with an Admin user. If you know how to make CF EC2 instance creation work with any VPC, even non-default, please reach out to us at opensource@dosyago.com or contribute on https://github.com/BrowserBox/BrowserBox"
+    Description: "[required] VPC ID where the instance will be deployed. It MUST be your accounts Default VPC ID created with an Admin user. If you know how to make CF EC2 instance creation work with any VPC, even non-default, please reach out to us at opensource@dosaygo.com or contribute on https://github.com/BrowserBox/BrowserBox"
     AllowedPattern: .+
 
   SSHKeyName:

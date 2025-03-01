@@ -66,7 +66,7 @@
   };
   const P = [
     'https://google.com',
-    'https://dosyago.com',
+    'https://dosaygo.com',
     'https://duckduckgo.com',
     'https://cnn.com',
     'http://assembler.org',
@@ -115,18 +115,18 @@
             ],
             mediaSrc: [
               "'self'",
-              "https://*.dosyago.com:*"
+              "https://*.dosaygo.com:*"
             ],
             frameSrc: [
               "'self'",
-              `https://*.dosyago.com:${PORT+1}`,
-              `https://*.dosyago.com:${PORT+2}`,
-              `https://*.dosyago.com:${PORT+3}`,
+              `https://*.dosaygo.com:${PORT+1}`,
+              `https://*.dosaygo.com:${PORT+2}`,
+              `https://*.dosaygo.com:${PORT+3}`,
             ],
             connectSrc: [
               "'self'",
-              "wss://*.dosyago.com:*",
-              `https://*.dosyago.com:${PORT+1}`
+              "wss://*.dosaygo.com:*",
+              `https://*.dosaygo.com:${PORT+1}`
             ],
             styleSrc: [
               "'self'", 
@@ -139,7 +139,7 @@
             ],
             frameAncestors: [
               "'self'",
-              "https://*.dosyago.com:*",
+              "https://*.dosaygo.com:*",
             ],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: [],

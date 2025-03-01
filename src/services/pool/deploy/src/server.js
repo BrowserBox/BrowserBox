@@ -532,12 +532,12 @@ export default start;
             <cite>
               All content strictly confidential and
               &copy; 
-              <a rel=author href=https://dosyago.com>Dosyago Corporation</a>
+              <a rel=author href=https://dosaygo.com>Dosyago Corporation</a>
               <date>2023</date>
               |
-              <a href=https://dosyago.com/privacy.txt>Privacy</a>
+              <a href=https://dosaygo.com/privacy.txt>Privacy</a>
               |
-              <a href=https://dosyago.com/terms.txt>Terms</a>
+              <a href=https://dosaygo.com/terms.txt>Terms</a>
             </cite>
           </footer>
         </main>

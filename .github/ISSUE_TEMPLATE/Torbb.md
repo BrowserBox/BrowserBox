@@ -24,7 +24,7 @@ Your `.onion` login link will appear in the comments after a few minutes.
 
 ---
 
-*BrowserBox by [DOSYAGO](https://dosyago.com)*
+*BrowserBox by [DOSYAGO](https://dosaygo.com)*
 
 **Support Tor**: [Donate to Tor](https://donate.torproject.org)
 

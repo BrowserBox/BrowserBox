@@ -14,4 +14,4 @@ From there, you'll be able to *browse the web from a safe distance!*
 
 BrowserBox let's you leverage the power of DOSYAGO's advanced zero-trust remote browser isolation model for a variety of bespoke workloads and challenging application demands, from cybsecurity, integrations, analytics to RPA.
 
-For support, custom work or license purchases, say hello at: [hello@dosyago.com](mailto:hello@dosyago.com?subject=Hello)
+For support, custom work or license purchases, say hello at: [hello@dosaygo.com](mailto:hello@dosaygo.com?subject=Hello)

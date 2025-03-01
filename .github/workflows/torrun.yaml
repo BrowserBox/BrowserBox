@@ -115,7 +115,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Your BrowserBox Tor hidden service session has ended. Thank you for using our service! Remember, for future sessions, ensure you've installed our \`rootCA.pem\` for the best experience. Looking forward to seeing you again! :star2:\n\nInterested in more? Consider a license purchase at [our website](https://dosyago.com).`
+              body: `Your BrowserBox Tor hidden service session has ended. Thank you for using our service! Remember, for future sessions, ensure you've installed our \`rootCA.pem\` for the best experience. Looking forward to seeing you again! :star2:\n\nInterested in more? Consider a license purchase at [our website](https://dosaygo.com).`
             });
 
             github.rest.issues.update({

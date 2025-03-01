@@ -92,14 +92,14 @@
             ],
             mediaSrc: [
               "'self'",
-              "https://*.dosyago.com:*"
+              "https://*.dosaygo.com:*"
             ],
             frameSrc: [
               "'self'",
             ],
             connectSrc: [
               "'self'",
-              "wss://*.dosyago.com:*",
+              "wss://*.dosaygo.com:*",
             ],
             styleSrc: [
               "'self'", 
@@ -111,7 +111,7 @@
             ],
             frameAncestors: [
               "'self'",
-              "https://*.dosyago.com:*",
+              "https://*.dosaygo.com:*",
             ],
             objectSrc: ["'none'"],
             upgradeInsecureRequests: [],
