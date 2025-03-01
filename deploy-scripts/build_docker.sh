@@ -116,9 +116,9 @@ docker buildx build \
   --push \
   --platform linux/amd64,linux/arm64 \
   -t ghcr.io/browserbox/browserbox:latest \
-  -t ghcr.io/browserbox/browserbox:"$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.1")" \
+  -t ghcr.io/browserbox/browserbox:"$(git describe --tags --abbrev=0 2>/dev/null || (cat package.json | jq .version) || echo "v0.0.1")" \
   -t dosyago/browserbox:latest \
-  -t dosyago/browserbox:"$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.1")" \
+  -t dosyago/browserbox:"$(git describe --tags --abbrev=0 2>/dev/null || (cat package.json | jq .version) || echo "v0.0.1")" \
   .
 
 echo "Docker images built and pushed successfully."
