@@ -6,6 +6,16 @@ set -eox
 USER=""
 HOST=""
 
+VERSION=$(git describe --tags --abbrev=0 2>/dev/null || true)
+
+if [[ -z "$VERSION" ]]; then
+  VERSION="v$(jq -r .version package.json 2>/dev/null || true)"
+fi
+
+if [[ -z "$VERSION" || "$VERSION" == "vnull" ]]; then
+  VERSION="v0.0.1"
+fi
+
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -116,7 +126,7 @@ docker buildx build \
   --push \
   --platform linux/amd64,linux/arm64 \
   -t ghcr.io/browserbox/browserbox:latest \
-  -t ghcr.io/browserbox/browserbox:"$(git describe --tags --abbrev=0 2>/dev/null || (cat package.json | jq .version) || echo "v0.0.1")" \
+  -t ghcr.io/browserbox/browserbox:"$(git describe --tags --abbrev=0 2>/dev/null || "v$(cat package.json | jq .version | tr -d '"')" || echo "v0.0.1")" \
   -t dosyago/browserbox:latest \
   -t dosyago/browserbox:"$(git describe --tags --abbrev=0 2>/dev/null || (cat package.json | jq .version) || echo "v0.0.1")" \
   .
