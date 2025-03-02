@@ -98,6 +98,9 @@ if [[ -n "$restart" ]];then
   echo "Docker daemon configuration updated successfully."
 fi
 
+git switch main; git pull;
+ssh ${USER}@${HOST} bash -cl 'cd; cd BrowserBox; git switch main; git pull;'
+
 # Step 0: Remove any old ones
 docker buildx rm container-builder || true
 
