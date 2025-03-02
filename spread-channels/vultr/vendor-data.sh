@@ -14,7 +14,7 @@ install_cloud_init latest
 export HOSTNAME="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-hostname)"
 export TOKEN="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-token)"
 export EMAIL="$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-email)"
-export LICENSE_KEY_PASSWORD="${LICENSE_KEY_PASSWORD:-$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-license_key_password 2>/dev/null)}"
+export LICENSE_KEY="${LICENSE_KEY:-$(curl -s -H "METADATA-TOKEN: vultr" http://169.254.169.254/v1/internal/app-license_key 2>/dev/null)}"
 
 # Default config (can be overridden via Marketplace vars)
 export INSTALL_DOC_VIEWER="${INSTALL_DOC_VIEWER:-false}"
@@ -65,7 +65,7 @@ add_user() {
 }
 
 # Validate inputs
-[ -z "$EMAIL" ] || [ -z "$HOSTNAME" ] || [ -z "$LICENSE_KEY_PASSWORD" ] && fail "EMAIL, HOSTNAME, and LICENSE_KEY_PASSWORD required"
+[ -z "$EMAIL" ] || [ -z "$HOSTNAME" ] || [ -z "$LICENSE_KEY" ] && fail "EMAIL, HOSTNAME, and LICENSE_KEY required"
 
 # Setup system
 install_packages
@@ -83,7 +83,7 @@ su - "$username" <<EOF
   [ -d "BrowserBox" ] || fail "Git clone failed"
   cd BrowserBox || fail "Cannot enter BrowserBox dir"
   
-  export LICENSE_KEY="$LICENSE_KEY_PASSWORD"
+  export LICENSE_KEY="$LICENSE_KEY"
   export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
   export BB_USER_EMAIL="$EMAIL"
   

@@ -1,18 +1,13 @@
-## BrowserBox Vultr Edition
+## BrowserBox Vultr Edition - Unleash the Web, xAI-Style
 
-**WELCOME TO BROWSERBOX - THE BROWSER THAT OWNS THE WEB!**  
-Deployed on Vultr, this open-source beast from DOSYAGO/xAI virtualizes browsing like it’s 1995—with a 2025 twist. Secure, customizable, multiplayer—BrowserBox is your ticket to web domination!
+Say hello to **BrowserBox**, the open-source browser virtualization beast that’s here to turbocharge your web game. Deployed on Vultr, it’s your gateway to next-level browsing power. Here’s what it brings to the table:
 
-### WHY IT ROCKS
-- **Cyber Fort Knox:** Remote browser isolation (RBI) nukes threats—zero-trust style.  
-- **Hack the Web:** Custom mods beyond extension stores—build YOUR browser.  
-- **Bot Power:** RPA automation that bends the web to your will.  
-- **Proxy King:** Reverse & CORS proxies hide your IP, smash cross-site limits.  
-- **Party Mode:** Embeddable, multiplayer browsing—co-surf, watch, or work together!  
+- **Zero-Trust Isolation**: Surf the wild web with a cybersecurity shield—remote browsing, locked and loaded.
+- **Beyond Extensions**: Customize browsers to flex features web stores can only dream of.
+- **RPA Supercharge**: Automate like a pro with browser intervention magic.
+- **Proxy Power**: Reverse content and CORS proxies to cloak your IP and smash cross-site barriers.
+- **Multiplayer Mode**: Embeddable, co-browsing, watch-party-ready—virtual web desktops that vibe together!
 
-### GET IT GOING
-Login: `https://{{hostname}}:8080/login?token={{token}}`  
-License: [sales@dosyago.com](mailto:sales@dosyago.com?subject=BrowserBox%20License)  
-Help: [hello@dosyago.com](mailto:hello@dosyago.com?subject=BrowserBox%20Vultr)  
+Dive deeper into the goodness: [Explore our README](https://github.com/BrowserBox/BrowserBox).
 
-**PLUG IN, POWER UP—BROWSE LIKE A BOSS!**
+BrowserBox is © DOSYAGO 2023. By firing up this app, you’re cool with [our terms](https://dosyago.com/terms.txt), [privacy policy](https://dosyago.com/privacy.txt), [BrowserBox License](https://github.com/BrowserBox/BrowserBox/blob/boss/LICENSE.md), and Let’s Encrypt’s rules. Let’s roll!
