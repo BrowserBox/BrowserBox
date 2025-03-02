@@ -1,11 +1,18 @@
 ## BrowserBox Vultr Edition
 
-Welcome to BrowserBox, your open-source browser virtualization partner. BrowserBox supports a range of advanced browsing use cases, such as:
+**WELCOME TO BROWSERBOX - THE BROWSER THAT OWNS THE WEB!**  
+Deployed on Vultr, this open-source beast from DOSYAGO/xAI virtualizes browsing like it’s 1995—with a 2025 twist. Secure, customizable, multiplayer—BrowserBox is your ticket to web domination!
 
-- remote browser isolation for cybersecurity
-- browser customizations to deliver experiences beyond what's possible using extensions web stores
-- browser automation interventions for RPA
-- reverse content-proxy and CORS-proxy to protect your IP and deliver advanced cross-site integrations 
-- multiplayer embeddable browser for virtual web desktops, co-browsing, watch parties, and more!
+### WHY IT ROCKS
+- **Cyber Fort Knox:** Remote browser isolation (RBI) nukes threats—zero-trust style.  
+- **Hack the Web:** Custom mods beyond extension stores—build YOUR browser.  
+- **Bot Power:** RPA automation that bends the web to your will.  
+- **Proxy King:** Reverse & CORS proxies hide your IP, smash cross-site limits.  
+- **Party Mode:** Embeddable, multiplayer browsing—co-surf, watch, or work together!  
 
-For more information [see our standard README](https://github.com/BrowserBox/BrowserBox)
+### GET IT GOING
+Login: `https://{{hostname}}:8080/login?token={{token}}`  
+License: [sales@dosyago.com](mailto:sales@dosyago.com?subject=BrowserBox%20License)  
+Help: [hello@dosyago.com](mailto:hello@dosyago.com?subject=BrowserBox%20Vultr)  
+
+**PLUG IN, POWER UP—BROWSE LIKE A BOSS!**

@@ -1,17 +1,18 @@
-## BrowserBox Vultr Edition 
+## BrowserBox Vultr Edition
 
-Welcome to BrowserBox! Your virtual BrowserBox browser is setting up now. 
+**WELCOME TO THE ULTIMATE BROWSER BEAST!**  
+Your BrowserBox is firing up on Vultr—get ready to browse like it’s 2025!
 
-### Login 
+### LOGIN & LAUNCH
+Post-setup, hit this link:  
+[**https://{{hostname}}:8080/login?token={{token}}**](https://{{hostname}}:8080/login?token={{token}})  
+Boom—you’re surfing the web, *safely isolated* from threats!
 
-Once setup is complete you can log in:
+### WHY YOU’LL LOVE IT
+BrowserBox by DOSYAGO/xAI rocks zero-trust remote browser isolation (RBI)—think cyber-shielded browsing, dev integrations, analytics, or RPA. It’s lightweight, it’s secure, it’s YOURS.
 
-[**https://{{hostname}}:8080/login?token={{token}}**](https://{{hostname}}:8080/login?token={{token}})
+### NEED MORE?
+- **Support or Custom Builds:** Ping [hello@dosyago.com](mailto:hello@dosyago.com?subject=BrowserBox%20Vultr%20Help).
+- **License Keys:** Unlock full power at [sales@dosyago.com](mailto:sales@dosyago.com?subject=BrowserBox%20License).
 
-From there, you'll be able to *browse the web from a safe distance!*
-
-### Learn More
-
-BrowserBox let's you leverage the power of DOSYAGO's advanced zero-trust remote browser isolation model for a variety of bespoke workloads and challenging application demands, from cybsecurity, integrations, analytics to RPA.
-
-For support, custom work or license purchases, say hello at: [hello@dosaygo.com](mailto:hello@dosaygo.com?subject=Hello)
+**BROWSE BOLD—GO RETRO-SECURE TODAY!**
