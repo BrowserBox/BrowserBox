@@ -76,7 +76,8 @@ print_instructions() {
 }
 
 # Define Docker image details
-DOCKER_IMAGE="ghcr.io/browserbox/browserbox"
+#DOCKER_IMAGE="ghcr.io/browserbox/browserbox"
+DOCKER_IMAGE="dosyago/browserbox"
 DOCKER_TAG="latest"
 DOCKER_IMAGE_WITH_TAG="${DOCKER_IMAGE}:${DOCKER_TAG}"
 
