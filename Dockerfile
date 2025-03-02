@@ -68,5 +68,9 @@ RUN yes | ./deploy-scripts/global_install.sh localhost
 # Ensure Certs Dir is Owned by bbpro (Fix Mount Access)
 RUN mkdir -p $HOME/sslcerts && chown -R bbpro:bbpro $HOME/sslcerts
 
-# Run Application
-CMD ["bash", "-c", "source ~/.nvm/nvm.sh && echo $(setup_bbpro --port ${PORT:-8080}) > login_link.txt && export LICENSE_KEY=${LICENSE_KEY} && bbcertify && export LICENSE_KEY='' && (bbpro || true) && tail -f /dev/null"]
+# Copy the run script and make it executable
+COPY --chown=bbpro:bbpro ./deploy-scripts/drun.sh ./deploy-scripts/
+RUN chmod +x ./deploy-scripts/drun.sh
+
+# Run the application with the shutdown handler
+CMD ["./deploy-scripts/drun.sh"]
