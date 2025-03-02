@@ -78,5 +78,5 @@ RUN yes | ./deploy-scripts/global_install.sh localhost
 # RUN chown -R bbpro:bbpro $HOME/sslcerts/
 
 # run the application
-CMD bash -c -l 'cd; source ~/.nvm/nvm.sh; echo $(setup_bbpro --port '"$PORT"') > login_link.txt; export LICENSE_KEY='"$LICENSE_KEY"'; bbcertify; export LICENSE_KEY=""; tail -f /dev/null'
+CMD ["./deploy-scripts/run.sh"]
 
