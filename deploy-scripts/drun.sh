@@ -3,10 +3,6 @@
 # Source NVM to ensure Node.js is available
 source ~/.nvm/nvm.sh
 
-# Start BrowserBox
-echo "Starting BrowserBox..."
-echo "$(setup_bbpro --port ${PORT:-8080})" > login_link.txt
-
 # Define shutdown function
 shutdown() {
   # Store the bbpro PID
