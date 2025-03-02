@@ -85,8 +85,8 @@ echo -n "Copying bbpro application files to /usr/local/share/dosyago/ ..."
 $SUDO mkdir -p /usr/local/share/dosyago
 
 # Use rsync to copy files and delete anything in destination not in source
-$SUDO rsync -a --delete "$INSTALL_DIR/" "/usr/local/share/dosyago/$INSTALL_NAME/"
 INSTALL_NAME=$(basename "$INSTALL_DIR")
+$SUDO rsync -a --delete "$INSTALL_DIR/" "/usr/local/share/dosyago/$INSTALL_NAME/"
 
 # Remove .git directory if it exists in the destination
 $SUDO rm -rf "/usr/local/share/dosyago/$INSTALL_NAME/.git"
