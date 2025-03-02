@@ -4,7 +4,7 @@ BrowserBox v10 by DOSAYGO—remote browser isolation (RBI) forged for infra, cyb
 
 <h2>🚀 Deploy in One Shot</h2>
 <p><strong>Step 1: Grab Your License!</strong> Hit <a href="mailto:sales@dosaygo.com">sales@dosaygo.com</a>—don’t deploy without it!<br>
-<strong>Step 2: Fire It Up!</strong></p>
+<strong>Step 2: Run It!</strong> Built on a rock-solid Debian base—runs anywhere!</p>
 <code>bash -c "$(curl -fsSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/run_docker.sh)" <PORT> <HOSTNAME> <EMAIL></code>
 <ul>
   <li><strong><PORT></strong>: e.g., 8080 (reserves 8088-8092).</li>
