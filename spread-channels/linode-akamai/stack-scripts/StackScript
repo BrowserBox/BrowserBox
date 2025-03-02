@@ -1,68 +1,49 @@
 #!/usr/bin/env bash
-# <UDF name="useremail" label="signature email: I agree to the T&Cs" example="jcitizen@website.net" />
-# <UDF name="hostname" label="hostname:  FQDN you will point to this host in your DNS." example="hello.example.com" />
-# <UDF name="token" label="Token: Login with HOSTNAME:8080/login?token=TOKEN" />
+# <UDF name="useremail" label="Signature email: I agree to the T&Cs" example="jcitizen@website.net" />
+# <UDF name="hostname" label="Hostname: FQDN you will point to this host in your DNS." example="hello.example.com" />
+# <UDF name="token" label="Token: Login with HOSTNAME:8080/login?token=TOKEN (optional, auto-generated if blank)" default="" />
 # <UDF name="install_doc_viewer" label="Install doc viewer for PDFs? Takes longer" oneOf="true,false" default="false" />
 # <UDF name="understanding" label="I will open ports tcp:8078-8082 and add DNS A record" oneOf="true,false" default="true" />
-# <UDF name="license_key" label="My BrowserBox license key" example="Purchase at sales@dosaygo.com" />
+# <UDF name="license_key_password" label="My BrowserBox license key (masked)" example="Purchase at sales@dosaygo.com" />
+# <UDF name="use_docker" label="Deploy with Docker instead of raw install?" oneOf="true,false" default="false" />
 
 set -x
 
-# Function to determine the Linux Distribution
+# Import Linode Bash Library
+source <ssinclude StackScriptID="1">
+
+# --- Utility Functions ---
+log() { echo "$@" >&2; }
+fail() { log "Error: $1"; shutdown now & exit 1; }
 get_distro() {
-  if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    echo "$ID"
+  [ -f /etc/os-release ] || fail "Cannot determine distribution"
+  . /etc/os-release
+  echo "$ID"
+}
+
+# --- System Setup Functions ---
+install_packages() {
+  system_update  # From Bash Library
+  system_install_package "$1"  # From Bash Library, handles distro differences
+}
+
+check_port() {
+  local port=$1
+  if command -v nc >/dev/null 2>&1; then
+    nc -z localhost "$port" && return 0 || return 1
+  elif command -v ss >/dev/null 2>&1; then
+    ss -tuln | grep -q ":$port" && return 0 || return 1
+  elif command -v netstat >/dev/null 2>&1; then
+    netstat -tuln | grep -q ":$port" && return 0 || return 1
   else
-    echo "Distribution not supported" >&2
-    shutdown now &
-    exit 1
+    log "Warning: No port-checking tool available. Assuming port $port is closed."
+    return 1
   fi
 }
 
-signature="yes"
-# Check if essential fields are present
-if [ -z "$HOSTNAME" ] || [ -z "$USEREMAIL" ] || [ -z "$LICENSE_KEY" ]; then
-  echo "All of 'LICENSE_KEY', 'HOSTNAME' and 'USEREMAIL' are required to proceed." >&2
-  shutdown now &
-  exit 1
-fi
-
-# Check if the user has agreed to the terms and conditions
-if [ "$signature" != "yes" ]; then
-  echo "You must agree to the terms and conditions to use this StackScript." >&2
-  shutdown now &
-  exit 1
-fi
-
-sleep 15
-
-# Update and install git non-interactively
-distro=$(get_distro)
-case $distro in
-  debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
-    export DEBIAN_FRONTEND=noninteractive
-    export NEEDRESTART_SUSPEND=1
-    export NEEDRESTART_MODE=a
-    apt-get update && apt-get -y upgrade
-    apt-get install -y git
-    ;;
-  centos|fedora|rhel|redhatenterpriseserver|almalinux|rocky|ol|oraclelinux|scientific|amzn)
-    yum update -y
-    yum install -y git
-    ;;
-  *)
-    echo "Unsupported distribution: $distro"
-    shutdown now & 
-    exit 1
-    ;;
-esac
-
-# Function to add a user non-interactively
 add_user() {
   local username=$1
   local distro=$(get_distro)
-
   case $distro in
     debian|ubuntu|linuxmint|pop|elementary|kali|mx|mxlinux|zorinos)
       adduser --gecos "" --disabled-password "$username"
@@ -72,35 +53,98 @@ add_user() {
       passwd -d "$username"
       ;;
     *)
-      echo "Unsupported distribution: $distro" >&2
-      return 1
+      fail "Unsupported distribution for user creation: $distro"
       ;;
   esac
 }
 
-# Create a new user and add to sudoers
-username="pro"
-if ! id "$username" &>/dev/null; then
-  add_user "$username"
-  echo "$username ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/$username
-  chmod 0440 /etc/sudoers.d/$username
-fi
+# --- Validation Functions ---
+validate_inputs() {
+  local signature="yes"
+  [ -z "$HOSTNAME" ] || [ -z "$USEREMAIL" ] || [ -z "$LICENSE_KEY_PASSWORD" ] && fail "HOSTNAME, USEREMAIL, and LICENSE_KEY_PASSWORD are required"
+  [ "$signature" != "yes" ] && fail "You must agree to the terms and conditions"
+}
 
-# Switch to the new user and run the scripts
-su - "$username" <<EOF
-  cd "/home/${username}" || cd "$HOME"
-  git clone https://github.com/BrowserBox/BrowserBox.git
-  cd BrowserBox
-  ./deploy-scripts/wait_for_hostname.sh "$HOSTNAME"
-  export LICENSE_KEY="$LICENSE_KEY"
-  export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
-  yes | ./deploy-scripts/global_install.sh "$HOSTNAME" "$USEREMAIL"
-  if [[ -z "$TOKEN" ]]; then
-    setup_bbpro --port 8080 
-  else
-    setup_bbpro --port 8080 --token "$TOKEN"
+# --- Deployment Functions ---
+generate_token() {
+  if [ -z "$TOKEN" ]; then
+    TOKEN=$(openssl rand -hex 16 2>/dev/null || head /dev/urandom | tr -dc 'a-f0-9' | head -c 32)
+    echo "Generated login token: $TOKEN" | tee /home/pro/token.txt
   fi
-  bbcertify
-  export LICENSE_KEY=""
-  bbpro
+}
+
+deploy_docker() {
+  install_packages "docker.io"
+  su - "pro" <<EOF
+    docker pull ghcr.io/browserbox/browserbox:latest
+    docker run -d -p 8080:8080 -p 8078-8082:8078-8082 \
+      -e LICENSE_KEY="$LICENSE_KEY_PASSWORD" \
+      -e INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER" \
+      --name browserbox ghcr.io/browserbox/browserbox:latest
 EOF
+}
+
+deploy_raw() {
+  su - "pro" <<EOF
+    cd "/home/pro" || cd "$HOME"
+    for i in {1..3}; do git clone https://github.com/BrowserBox/BrowserBox.git && break || sleep 5; done
+    [ ! -d "BrowserBox" ] && exit 1
+    cd BrowserBox
+    ./deploy-scripts/wait_for_hostname.sh "$HOSTNAME"
+    export LICENSE_KEY="$LICENSE_KEY_PASSWORD"
+    export INSTALL_DOC_VIEWER="$INSTALL_DOC_VIEWER"
+    yes | ./deploy-scripts/global_install.sh "$HOSTNAME" "$USEREMAIL" | tee /home/pro/install.log
+    setup_bbpro --port 8080 --token "$TOKEN"
+    bbcertify
+    export LICENSE_KEY=""
+    bbpro &>> /home/pro/bbpro.log &
+EOF
+  [ $? -ne 0 ] && fail "Raw deployment failed"
+}
+
+# --- Post-Install Functions ---
+check_ports() {
+  if ! check_port 8080; then
+    log "Warning: Port 8080 not open. Check firewall."
+  fi
+  for port in {8078..8082}; do
+    if ! check_port "$port"; then
+      log "Warning: Port $port not open. WebRTC may fail."
+    fi
+  done
+}
+
+print_success() {
+  echo "BrowserBox deployed successfully!"
+  echo "Access it at: https://$HOSTNAME:8080/login?token=$TOKEN"
+  echo "Logs: /home/pro/install.log, /home/pro/bbpro.log"
+  echo "Linode ID: $LINODE_ID, Data Center ID: $LINODE_DATACENTERID"
+  [ "$USE_DOCKER" == "true" ] && echo "Docker container 'browserbox' running. Use 'docker logs browserbox' to troubleshoot."
+}
+
+cleanup() {
+  rm -f /tmp/*.env 2>/dev/null  # Placeholder for future external file use
+}
+
+# --- Main Execution ---
+main() {
+  validate_inputs
+  sleep 15
+  install_packages "git sudo"
+  if ! id "pro" &>/dev/null; then
+    add_user "pro"
+    echo "pro ALL=(ALL) NOPASSWD:/usr/bin/git,/usr/bin/bash,/usr/bin/docker" > /etc/sudoers.d/pro
+    chmod 0440 /etc/sudoers.d/pro
+  fi
+  generate_token
+  if [ "$USE_DOCKER" == "true" ]; then
+    deploy_docker
+  else
+    deploy_raw
+  fi
+  check_ports
+  print_success
+  cleanup
+}
+
+main

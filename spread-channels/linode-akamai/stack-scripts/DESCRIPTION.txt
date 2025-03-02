@@ -1,93 +1,63 @@
-BB: Embeddable, multiplayer browser for RBI and web.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          *** BROWSERBOX DEPLOYMENT ZINE ***                
+       <<< ISSUE #1 - MARCH 02, 2025 - xAI EDITION >>>     
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-======================================================
-                             BROWSERBOX STACKSCRIPT
-======================================================
+  WELCOME TO THE FUTURE OF SECURE BROWSING, '90S STYLE!
+  -----------------------------------------------
+  Got a Linode? Wanna run BrowserBox - the dope remote
+  browser isolation tool from DOSYAGO/xAI? This StackScript
+  slams it onto your box FAST. Secure web? Check. Zero
+  latency? Check. License key? YOU NEED ONE, fam! Hit up
+  sales@dosaygo.com to grab yours and join the party.
 
-  "Secure private browsing, and next gen web integrations!"
+  HOW TO DEPLOY (7 QUICK FIELDS):
+  -----------------------------
 
-======================================================
-                                          OVERVIEW
-======================================================
+    * useremail: Your email - sign here to agree to T&Cs!
+      - Ex: jcitizen@website.net
+      - We won't spam ya, promise.
 
-- BBPRO: A gateway to secure, isolated, and integrated web browsing!
-- Ideal for developers integrating web content and cybersecurity pros 
-  seeking robust remote browser isolation (RBI).
-- Advanced protection against web threats and zero-day exploits.
+    * hostname: Your FQDN - point DNS here!
+      - Ex: bb.mydomain.com
+      - No DNS? No dice.
 
-======================================================
-                                      KEY FEATURES
-======================================================
+    * token: Login key for https://HOSTNAME:8080/login
+      - Leave blank, we?ll cook one up for ya!
+      - Want your own? Drop it in.
 
-- Lightweight VPN for Browser Virtualization: Conceal your real IP and 
-  encrypt your connection for privacy and security.
-- Safe investigation of web malware with remote DevTools, secure document 
-  viewer, and hex viewer for downloads.
-- A two-way double reverse web proxy that operates on pixel data.
-- Upcoming Features: BrowserBox over Tor in a future StackScript.
-- Embed BrowserBox in an iframe for super-iframe capabilities, or utilize 
-  our upcoming Custom Element Developer API. Details on GitHub!
+    * install_doc_viewer: PDF viewer? Y/N (takes longer)
+      - Yes/No: Pick "true" or "false" (default: false)
+      - Secure docs FTW.
 
-======================================================
-                                 AGREEMENT TO TERMS
-======================================================
+    * understanding: Ports 8078-8082 + DNS A record
+      - Yes/No: "true" = I?ll handle it (default: true)
+      - Don?t skip this or WebRTC cries.
 
-- Using BrowserBox implies agreement to our terms, including 
-  your valid license and license key
-  purchased at https://dosaygo.com or via sales@dosaygo.com
-- Review our detailed terms, privacy policy, and licenses:
-  
-  Licenses:
-  https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md
-  
-  Terms:
-  https://dosaygo.com/terms.txt
-  
-  Privacy Policy:
-  https://dosaygo.com/privacy.txt
+    * license_key_password: YOUR BROWSERBOX KEY (masked)
+      - Ex: Get it @ sales@dosaygo.com
+      - No key, no play - snag one now!
 
-- For commercial licenses, visit https://dosaygo.com 
-  or contact sales@dosaygo.com for inquiries.
+    * use_docker: Docker or raw install?
+      - Yes/No: "true" = Docker, "false" = raw (default: false)
+      - Docker?s cleaner, raw?s old-school.
 
-======================================================
-                                       GETTING STARTED
-======================================================
+  WHAT YOU GET:
+  ------------
+    - BrowserBox Pro slammed onto your Linode.
+    - Ports 8080 + 8078-8082 ready to roll.
+    - Logs + token for easy access.
+    - Works on Ubuntu, Fedora, CentOS, Kali - ALL THE DISTROS!
 
-- Complete all required fields in this StackScript for setup.
-- Add a DNS a record from HOSTNAME to your Linode's IP address.
-- If you leave TOKEN blank we'll make a random one, and you 
-  obtain this random login link via SSH:
-  ssh root@<your Linode IP> cat /home/pro/.config/dosyago/bbpro/login.link
-- If you supply token, you can simply compute it as 
-  https://HOSTNAME:8080/login?token=TOKEN
-- Open TCP ports 8078-8082 in any firewall added to the instance.
-- Need help? Open an issue or discussion at
-  https://github.com/BrowserBox/BrowserBox
-  or Email 
-  support@dosaygo.com 
-  for assistance.
+  PRO TIPS:
+  --------
+    - Open them ports (8078-8082, 8080) or it?s a no-go.
+    - DNS A record to your hostname = must-have.
+    - Check logs at /home/pro/* if ya get stuck.
 
-======================================================
-                                      DNS CONFIGURATION
-======================================================
+  READY? DEPLOY THIS sucker + EMAIL sales@dosaygo.com
+  FOR YOUR LICENSE KEY! LET?S BROWSE SECURELY, RETRO STYLE!
 
-- After deployment, configure DNS to connect your instance's hostname 
-  to your Linode's IP:
-  1. Set an A record with your DNS provider.
-  2. Point HOSTNAME_FIELD to your Linode's IP.
-  3. Your secure login link: 
-     https://<HOSTNAME_FIELD>:8080/login?token=<TOKEN_FIELD>
-
-- Secure this link; it's your gateway to remote browsing!
-
-======================================================
-                                    TECHNICAL DETAILS
-======================================================
-
-- Find open-source repository and instructions at:
-  https://github.com/BrowserBox/BrowserBox
-
-======================================================
-                           "Happy Browsing with BrowserBox!"
-======================================================
-
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *** END OF LINE - STAY RAD, HACKERS! ***             
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
