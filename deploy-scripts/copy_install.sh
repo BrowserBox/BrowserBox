@@ -67,7 +67,7 @@ ensure_rsync() {
     else
       echo "ERROR: Homebrew not found - please install rsync manually on macOS!" >&2
       exit 1
-    }
+    fi
   else
     echo "ERROR: Unsupported OS - please install rsync manually!" >&2
     exit 1
