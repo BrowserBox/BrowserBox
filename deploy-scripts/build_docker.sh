@@ -90,13 +90,16 @@ else
   restart=true
 fi
 
-if [[ -n "$restart" ]];then
+if [[ -n "$restart" ]]; then
   # Restart Docker to apply changes
   echo "Restarting Docker daemon..."
   sudo systemctl restart docker
   echo "Docker daemon restarted."
   echo "Docker daemon configuration updated successfully."
 fi
+
+git switch main; git pull;
+ssh ${USER}@${HOST} bash -cl 'cd; cd BrowserBox; git switch main; git pull;'
 
 # Step 0: Remove any old ones
 docker buildx rm container-builder || true
@@ -120,7 +123,7 @@ docker buildx create \
 echo "Inspecting and bootstrapping the builder..."
 docker buildx inspect --bootstrap
 
-# Build and push multi-platform Docker images
+# Build and push multi-platform Docker images with OCI labels
 echo "Building and pushing Docker images..."
 docker buildx build \
   --push \
@@ -129,6 +132,11 @@ docker buildx build \
   -t ghcr.io/browserbox/browserbox:"${VERSION}" \
   -t dosaygo/browserbox:latest \
   -t dosaygo/browserbox:"${VERSION}" \
+  --label "org.opencontainers.image.title=BrowserBox" \
+  --label "org.opencontainers.image.description=Embeddable remote browser isolation with vettable source - https://dosaygo.com" \
+  --label "org.opencontainers.image.version=${VERSION}" \
+  --label "org.opencontainers.image.authors=DOSAYGO BrowserBox Team <browserbox@dosaygo.com>" \
+  --label "org.opencontainers.image.source=https://github.com/BrowserBox/BrowserBox" \
   .
 
 echo "Docker images built and pushed successfully."
