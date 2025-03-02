@@ -127,8 +127,8 @@ docker buildx build \
   --platform linux/amd64,linux/arm64 \
   -t ghcr.io/browserbox/browserbox:latest \
   -t ghcr.io/browserbox/browserbox:"${VERSION}" \
-  -t dosyago/browserbox:latest \
-  -t dosyago/browserbox:"${VERSION}" \
+  -t dosaygo/browserbox:latest \
+  -t dosaygo/browserbox:"${VERSION}" \
   .
 
 echo "Docker images built and pushed successfully."
