@@ -4,7 +4,7 @@ FROM debian:latest
 
 LABEL org.opencontainers.image.title="BrowserBox" \
       org.opencontainers.image.description="Embeddable remote browser isolation with vettable source - https://dosaygo.com" \
-      org.opencontainers.image.version="10.0.1" \
+      org.opencontainers.image.version="10.0.2" \
       org.opencontainers.image.authors="DOSAYGO BrowserBox Team <browserbox@dosaygo.com>" \
       org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox"
 
@@ -68,5 +68,9 @@ RUN yes | ./deploy-scripts/global_install.sh localhost
 # Ensure Certs Dir is Owned by bbpro (Fix Mount Access)
 RUN mkdir -p $HOME/sslcerts && chown -R bbpro:bbpro $HOME/sslcerts
 
-# Run Application
-CMD ["bash", "-c", "source ~/.nvm/nvm.sh && echo $(setup_bbpro --port ${PORT:-8080}) > login_link.txt && export LICENSE_KEY=${LICENSE_KEY} && bbcertify && export LICENSE_KEY='' && (bbpro || true) && tail -f /dev/null"]
+# Copy the run script and make it executable
+COPY --chown=bbpro:bbpro ./deploy-scripts/drun.sh ./deploy-scripts/
+RUN chmod +x ./deploy-scripts/drun.sh
+
+# Run the application with the shutdown handler
+CMD ["./deploy-scripts/drun.sh"]
