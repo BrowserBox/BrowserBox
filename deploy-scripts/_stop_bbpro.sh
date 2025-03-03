@@ -15,15 +15,13 @@ fi
 command -v pm2 &>/dev/null || npm i -g pm2@latest
 
 # Stop browser processes
-pm2 delete basic-bb-main-service
 pm2 delete run-docspark
 pm2 delete devtools-server
 pm2 delete start_audio
+pm2 delete basic-bb-main-service
 
-if [[ -z "$DO_NOT_KILL_NODE" ]]; then
-  pkill -u "$(whoami)" browserbox
-fi
-
+sleep 1
+pkill -u "$(whoami)" browserbox*
 pkill -u "$(whoami)" chrome
 pulseaudio -k
 pm2 save --force

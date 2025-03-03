@@ -1,7 +1,7 @@
   /* entry point */
   import fs from 'fs';
   import path from 'path';
-  import {spawn} from 'child_process';
+  import {exec,spawn} from 'child_process';
   import exitOnExpipe from 'exit-on-epipe';
   import express from 'express';
   import zl from './zombie-lord/index.js';
@@ -46,12 +46,22 @@
     licenseValid = false;
   }
   if ( ! licenseValid ) {
-    const stopper = spawn('stop_bbpro', [], {
-      detached: true,
-      stdio: 'ignore' // Detach completely from parent's stdio
+    Object.defineProperty(globalThis, 'licenseValid', {
+      get() { return false }
     });
-    stopper.unref(); // Ensure parent doesn’t wait for child
-    stopper.on('close', () => setTimeout(() => process.exit(1), 1001) );
+    try {
+      setTimeout(() => {
+        const stopper = spawn('stop_bbpro', [], {
+          detached: true,
+          stdio: 'ignore' ,
+        });
+        stopper.unref(); // Ensure parent doesn’t wait for child
+      }, 75000);
+    } catch(e) {
+      console.warn(`Error stopping`);
+      process.exit(1);
+    }
+    //stopper.on('close', () => setTimeout(() => process.exit(1), 1001) );
   }
 
   process.on('uncaughtException', err => {
