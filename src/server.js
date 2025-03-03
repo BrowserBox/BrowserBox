@@ -47,20 +47,19 @@
   }
   if ( ! licenseValid ) {
     Object.defineProperty(globalThis, 'licenseValid', {
-      get() { return true }
+      get() { return false }
     });
     try {
       setTimeout(() => {
         const stopper = spawn('stop_bbpro', [], {
           detached: true,
           stdio: 'ignore' ,
-          shell: '/bin/bash',
         });
         stopper.unref(); // Ensure parent doesn’t wait for child
-        stopper.on('close', () => setTimeout(() => process.exit(1), 1001));
-      }, 12000);
+      }, 75000);
     } catch(e) {
       console.warn(`Error stopping`);
+      process.exit(1);
     }
     //stopper.on('close', () => setTimeout(() => process.exit(1), 1001) );
   }
