@@ -60,7 +60,8 @@ export class HardenedApplication {
         'manifest.txt',
         'manifest.txt.sig',
         'certificate.json',
-        'certificates.json'
+        'certificates.json',
+        'src/public/voodoo/assets/icons'
       ],
       certificatePath = null,
       licenseServerUrl = null,
