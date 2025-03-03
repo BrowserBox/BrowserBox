@@ -369,7 +369,11 @@ const launcher_api = {
       zomb.process.on('exit', () => {
         console.warn("Chrome exiting");
         console.info(`Deleting said pid file...`);
-        fs.unlinkSync(zomb.pidFile);
+        try {
+          fs.unlinkSync(zomb.pidFile);
+        } catch(e) {
+          console.warn(`Chrome may not have started`, e);
+        }
         let handlers = deathHandlers.get(port);
         if ( handlers ) {
           for( const handler of handlers ) {
