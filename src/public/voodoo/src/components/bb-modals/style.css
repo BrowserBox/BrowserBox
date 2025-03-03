@@ -12,5 +12,10 @@ article.copy textarea {
 
 button[type="submit"] {
   background-color: aquamarine;
-  background-color: color-mix(in srgb, aquamarine 75%, transparent);
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  button[type="submit"] {
+    background-color: dodgerblue;
+  }
 }
