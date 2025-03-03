@@ -532,6 +532,7 @@
                 (DEBUG.cnx || DEBUG.debugWebRTC) && console.info(`Running connect peer for WebRTC`, (new Error).stack);
                 try {
                   peer = new SimplePeer({trickle: true, initiator: false});
+                  let sentAlready = false;
                   (DEBUG.cnx || DEBUG.debugWebRTC) && console.info(`WebRTC peer created`, peer);
                   peer.on('error', err => (DEBUG.debugWebRTC || DEBUG.cnx) && console.log('webrtc peer error', err));
                   peer.on('close', c => {
@@ -545,8 +546,7 @@
                     }
                   });
                   peer.on('connect', data => {
-                    DEBUG.cnx && console.log('peer connected');
-                    DEBUG.debugWebRTC && console.log('Peer connected', data);
+                    console.log('peer connected');
                     privates.peer = peer;
                     privates.publics.state.webrtcConnected = true;
                     if ( privates.publics.state.micStream ) {
@@ -570,9 +570,10 @@
                     DEBUG.debugWebRTC && console.log('have webrtc signal data', data);
                     messageId++;
                     so({messageId,copeer:{signal:data}});
+                    sentAlready = true;
                   });
                   peer.on('data', MessageData => {
-                    DEBUG.debugConnect && console.log(`got webrtc data frame`, MessageData);
+                    (DEBUG.debugWebRTC || DEBUG.debugConnect) && console.log(`got webrtc data frame`, MessageData);
                     const {img,frameId,castSessionId,targetId} = parse(MessageData);
                     privates.publics.state.latestFrameReceived = frameId;
                     privates.publics.state.latestCastSession = castSessionId;
@@ -674,103 +675,17 @@
 
                 if ( copeer ) {
                   DEBUG.cnx && console.log(`received webrtc signal data from socket`, copeer);
+                  DEBUG.debugWebRTC && console.log(`received webrtc signal data from socket`, copeer);
                   const {signal} = copeer;
                   if ( ! hasWebRTC() ) {
                     globalThis.setupAudio();
                   } else {
-                    untilTrue(() => !!peer).then(async () => {
-                      if ( isSafari() && deviceIsMobile() && ! globalThis.comingFromTOR ) {
-                        if ( !state.safariWebRTCPermsRequestStarted ) {
-                          let resolve;
-                          let reject;
-                          const pr = new Promise((res, rej) => (resolve = res, reject = rej));
-                          state.afterSafariPermsRequested = pr;
-                          state.safariWebRTCPermsRequestStarted = true;
-
-                          try {
-                            DEBUG.debugSafariWebRTC && console.log(`Showing permission explainer`);
-                            await untilTrueOrTimeout(() => !!state?.viewState?.modalComponent, 60);
-                          } catch(e) {
-                            console.warn('Modal component did not load', e);
-                            setTimeout(() => reject(e), 0);
-                            alert(`Loading is slow and some components have not loaded. You may want to reload to try again.`);
-                            throw new Error(`ModalComponent did not load in time.`);
-                          }
-
-                          // wait for any other modals to clear
-                          await untilHuman(() => !state?.viewState.currentModal);
-
-                          if ( !state?.viewState.currentModal ) {
-                            DEBUG.debugSafariWebRTC && console.log(`Requesting media permissions`);
-                            const [{state: state1}, {state: state2}] = (await Promise.all([
-                              navigator.permissions.query({ name: 'microphone' }),
-                              navigator.permissions.query({ name: 'camera' })
-                            ]));
-                            if (state1 === 'granted' || state2 === 'granted') {
-                              // Skip the pre-request explainer
-                              DEBUG.debugSafariWebRTC && console.log(`We already have permissions, no need to explain a request!`);
-                            } else {
-                              if ( ! testWebRTC() ) {
-                                reject('WebRTC does not work here');
-                              }
-                              if ( deviceIsMobile() && ! globalThis.comingFromTOR ) {
-                                state.micAccessNotAlwaysAllowed  = true;
-                                await showExplainer();
-                              } else {
-                                console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
-                              }
-                            }
-                            try {
-                              if ( deviceIsMobile() && ! globalThis.comingFromTOR ) {
-                                state.micStream = await navigator.mediaDevices.getUserMedia({audio: { echoCancellation: { ideal : false }}});
-                                // Auto drop the mic access after 20 seconds anyway
-                                // this is useful for cases where WebRTC is never established
-                                // Such as with some VPNs
-                                setTimeout(() => {
-                                  state.micStream.getTracks().forEach(function(track) {
-                                    track.stop();
-                                  });
-                                  state.micStream = null;
-                                }, 20000);
-                              } else {
-                                //await navigator.mediaDevices.getUserMedia({audio: true});
-                                console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
-                              }
-                              state.safariWebRTCPermsRequested = true;
-                              resolve(true);
-                            } catch(e) {
-                              reject('Could not obtain user media permission', e);
-                            }
-                          }
-                        }
-                        state.afterSafariPermsRequested = state.afterSafariPermsRequested.then(() => {
-                          DEBUG.debugSafariWebRTC && console.log(`Signaling`);
-                          peer.signal(signal);
-                        }).catch(err => {
-                          DEBUG.cnx && console.info(`Safari User Media request to enable WebRTC peering has failed.`);
-                          if ( DEBUG.tryPeeringAnywayEvenIfUserMediaFails ) {
-                            DEBUG.cnx && console.info(`However we will try to peer anyway.`);
-                            peer.signal(signal);
-                          } else {
-                            DEBUG.cnx && console.info(`Will destroy peer as WebRTC data channel peering unsupported in this browser.`);
-                            peer.destroy('WebRTC peering on data channel not supported in this browser'); 
-                          }
-                        }).finally(() => {
-                          setTimeout(async () => {
-                            if ( await globalThis.setupAudio() && deviceIsMobile() ) {
-                              DEBUG.showAudioInstructions && setTimeout(() => alert('Tap the screen to unmute.'), 100);
-                            }
-                          }, 30);
-                        });
-                      } else {
-                        peer.signal(signal);  
-                        setTimeout(async () => {
-                          if ( await globalThis.setupAudio() && deviceIsMobile() ) {
-                            DEBUG.showAudioInstructions && setTimeout(() => alert('Tap the screen to unmute.'), 100);
-                          }
-                        }, 30);
-                      }
-                    });
+                    if ( !! peer ) { 
+                      handleSignal(signal);
+                    } else {
+                      (DEBUG.cnx || DEBUG.debugWebRTC) && console.log(`Waiting for local peer to exist`, peer);
+                      untilTrue(() => !!peer).then(() => handleSignal(signal));
+                    }
                   }
                 }
 
@@ -1044,6 +959,107 @@
               socket.onerror = null;
               (DEBUG.cnx || DEBUG.debugConnect) && console.warn("WebSocket error", e);
               socket.close();
+            };
+            async function handleSignal(signal) {
+              (DEBUG.cnx || DEBUG.debugWebRTC) && console.log(`Local peer exists`, peer);
+              if ( isSafari() && ! globalThis.comingFromTOR ) {
+                if ( !state.safariWebRTCPermsRequestStarted ) {
+                  let resolve;
+                  let reject;
+                  const pr = new Promise((res, rej) => (resolve = res, reject = rej));
+                  state.afterSafariPermsRequested = pr;
+                  state.safariWebRTCPermsRequestStarted = true;
+
+                  try {
+                    DEBUG.debugSafariWebRTC && console.log(`Showing permission explainer`);
+                    await untilTrueOrTimeout(() => !!state?.viewState?.modalComponent, 60);
+                  } catch(e) {
+                    console.warn('Modal component did not load', e);
+                    setTimeout(() => reject(e), 0);
+                    alert(`Loading is slow and some components have not loaded. You may want to reload to try again.`);
+                    throw new Error(`ModalComponent did not load in time.`);
+                  }
+
+                  // wait for any other modals to clear
+                  await untilHuman(() => !state?.viewState.currentModal);
+
+                  if ( !state?.viewState.currentModal ) {
+                    DEBUG.debugSafariWebRTC && console.log(`Requesting media permissions`);
+                    const [{state: state1}, {state: state2}] = (await Promise.all([
+                      navigator.permissions.query({ name: 'microphone' }),
+                      navigator.permissions.query({ name: 'camera' })
+                    ]));
+                    if (state1 === 'granted' || state2 === 'granted') {
+                      // Skip the pre-request explainer
+                      DEBUG.debugSafariWebRTC && console.log(`We already have permissions, no need to explain a request!`);
+                    } else {
+                      if ( ! testWebRTC() ) {
+                        reject('WebRTC does not work here');
+                      }
+                      if ( ! globalThis.comingFromTOR ) {
+                        state.micAccessNotAlwaysAllowed  = true;
+                        await showExplainer();
+                      } else {
+                        console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
+                      }
+                    }
+                    try {
+                      if ( ! globalThis.comingFromTOR ) {
+                        state.micStream = await navigator.mediaDevices.getUserMedia({audio: { echoCancellation: { ideal : false }}});
+                        // Auto drop the mic access after 20 seconds anyway
+                        // this is useful for cases where WebRTC is never established
+                        // Such as with some VPNs
+                        setTimeout(() => {
+                          if ( ! state.micStream ) return;
+                          state.micStream.getTracks().forEach(function(track) {
+                            track.stop();
+                          });
+                          state.micStream = null;
+                        }, 20000);
+                      } else {
+                        //await navigator.mediaDevices.getUserMedia({audio: true});
+                        console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
+                      }
+                      state.safariWebRTCPermsRequested = true;
+                      resolve(true);
+                    } catch(e) {
+                      reject('Could not obtain user media permission', e);
+                    }
+                  }
+                }
+                state.afterSafariPermsRequested = state.afterSafariPermsRequested.then(() => {
+                  DEBUG.debugSafariWebRTC && console.log(`Signaling`);
+                  peer.signal(signal);
+                }).catch(err => {
+                  DEBUG.cnx && console.info(`Safari User Media request to enable WebRTC peering has failed.`);
+                  if ( DEBUG.tryPeeringAnywayEvenIfUserMediaFails ) {
+                    DEBUG.cnx && console.info(`However we will try to peer anyway.`);
+                    peer.signal(signal);
+                  } else {
+                    DEBUG.cnx && console.info(`Will destroy peer as WebRTC data channel peering unsupported in this browser.`);
+                    peer.destroy('WebRTC peering on data channel not supported in this browser'); 
+                  }
+                }).finally(() => {
+                  setTimeout(async () => {
+                    if ( await globalThis.setupAudio() ) {
+                      DEBUG.showAudioInstructions && setTimeout(() => alert('Tap the screen to unmute.'), 100);
+                    }
+                  }, 30);
+                });
+              } else {
+                (DEBUG.cnx || DEBUG.debugWebRTC) && console.log(`Inputting server sent signalling data to webrtc local peer`, {signal});
+
+                try {
+                  peer.signal(signal);  
+                } catch(e) {
+                  console.warn(`Issue signalling web rtc`, e);
+                }
+                setTimeout(async () => {
+                  if ( await globalThis.setupAudio() ) {
+                    DEBUG.showAudioInstructions && setTimeout(() => alert('Tap the screen to unmute.'), 100);
+                  }
+                }, 30);
+              }
             };
           } catch(e) {
             this.publics.state.connected = false;

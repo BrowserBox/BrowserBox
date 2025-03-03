@@ -189,8 +189,10 @@
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+        ]),
+        ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
-        ])
+        ]),
       ],
       frameSrc: [
         "'self'",
@@ -201,9 +203,11 @@
         ...(process.env.TORBB ? [
           `https://${process.env[`ADDR_${server_port - 2}`]}:*`, // audio onion service
         ] : [
-          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
-        ])
+        ]),
+        ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
+          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+        ]),
       ],
       connectSrc: [
         "'self'",
@@ -227,8 +231,10 @@
           `https://${process.env[`ADDR_${server_port + 2}`]}:*`, // docs
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
-          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+        ]),
+        ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
+          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
         // for checking if access via TOR
@@ -864,20 +870,20 @@
           connectPeer();
         }
         function connectPeer() {
-          DEBUG.debugConnect && console.log(`Check 4`);
+          (DEBUG.cnx || DEBUG.debugConnect) && console.log(`Connecting peer`);
           let resolve;
           const pr = new Promise(res => resolve = res);
           peer = new Peer({
             wrtc: WRTC, trickle: true, initiator: true,
             channelConfig: {
-              ordered: true,
-              maxRetransmits: 0,
+              //ordered: true,
+              //maxRetransmits: 0,
               /*maxPacketLifeTime: MIN_TIME_BETWEEN_SHOTS()*/
             }
           });
-          DEBUG.debugConnect && console.log(`Check 5`);
+          (DEBUG.debugConnect || DEBUG.cnx) && console.log(`Server side peer created`);
           peer.on('error', err => {
-            DEBUG.val && console.log('webrtc error', err);
+            (DEBUG.val || DEBUG.cnx) && console.log('webrtc error', err);
             if ( peer ) {
               peers.delete(peer);
               peer = null;
@@ -888,7 +894,7 @@
             }
           });
           peer.on('close', c => {
-            DEBUG.val && console.log('peer closed', c);
+            (DEBUG.val || DEBUG.cnx) && console.log('peer closed', c);
             if ( peer ) {
               peers.delete(peer);
               peer = null;

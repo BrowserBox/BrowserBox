@@ -188,7 +188,7 @@ export const DEBUG = Object.freeze({
   debugViewportChanges: false,
   debugDevtoolsServer: false,
   /* peer and websocket connections */
-  cnx: false, 
+  cnx: false,
   debugClicks: false,
   debugNoticeSignal: false,
   throttleIntentPrompts: false,
@@ -293,6 +293,10 @@ export const DEBUG = Object.freeze({
 
 DEBUG.showDebug && console.log(DEBUG);
 
+if ( ! process.env.DOMAIN ) {
+  process.env.DOMAIN = 'https://dosaygo.com'
+}
+
 export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   "https://cloudtabs.net",
   ...(DEBUG.allowPuter ? [
@@ -304,9 +308,11 @@ export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   "https://localhost:*",
   ...(
   process.env.DOMAIN ? [
-    `https://${process.env.DOMAIN}:*`,
-    `https://*.${process.env.DOMAIN}:*`,
+    `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
   ] : []),
+  ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
+    `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+  ]),
 ];
 export const FLASH_FORMATS = new Set([
   'swf',
