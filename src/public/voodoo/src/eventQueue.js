@@ -529,127 +529,136 @@
               }
 
               async function connectPeer() {
-                peer = new SimplePeer({trickle: true, initiator: false});
-                peer.on('error', err => DEBUG.cnx && console.log('webrtc peer error', err));
-                peer.on('close', c => {
-                  privates.peer = null;
-                  privates.publics.state.webrtcConnected = false;
-                  privates.publics.state.setTopState();
-                  DEBUG.cnx && console.log('peer closed', c);
-                  if ( onLine() ) {
-                    setTimeout(connectPeer, PEER_RECONNECT_MS);
-                  }
-                });
-                peer.on('connect', () => {
-                  DEBUG.cnx && console.log('peer connected');
-                  privates.peer = peer;
-                  privates.publics.state.webrtcConnected = true;
-                  if ( privates.publics.state.micStream ) {
-                    privates.publics.state.micStream.getTracks().forEach(function(track) {
-                      track.stop();
-                    });
-                    privates.publics.state.micStream = null;
-                    if ( privates.publics.state.micAccessNotAlwaysAllowed ) {
-                      // if the user has not set always allow, then notify them about this as they are probably antsy 
-                      // about it and need reassurance which is fine
-                      DEBUG.showAudioInstructions && DEBUG.debugSafariWebRTC && setTimeout(() => alert(`Fast connection established. Mic access dropped!`), 60);
-                      // so we don't do this alert again
-                      privates.publics.state.micAccessNotAlwaysAllowed = false;
+                (DEBUG.cnx || DEBUG.debugWebRTC) && console.info(`Running connect peer for WebRTC`, (new Error).stack);
+                try {
+                  peer = new SimplePeer({trickle: true, initiator: false});
+                  (DEBUG.cnx || DEBUG.debugWebRTC) && console.info(`WebRTC peer created`, peer);
+                  peer.on('error', err => (DEBUG.debugWebRTC || DEBUG.cnx) && console.log('webrtc peer error', err));
+                  peer.on('close', c => {
+                    privates.peer = null;
+                    privates.publics.state.webrtcConnected = false;
+                    privates.publics.state.setTopState();
+                    DEBUG.cnx && console.log('peer closed', c);
+                    DEBUG.debugWebRTC && console.log('peer closed', c);
+                    if ( onLine() ) {
+                      setTimeout(connectPeer, PEER_RECONNECT_MS);
                     }
-                  }
-                  privates.publics.state.setTopState();
-                  privates.publics.state.refreshViews();
-                });
-                peer.on('signal', data => {
-                  DEBUG.cnx && console.log('have webrtc signal data', data);
-                  messageId++;
-                  so({messageId,copeer:{signal:data}});
-                });
-                peer.on('data', MessageData => {
-                  DEBUG.debugConnect && console.log(`got webrtc data frame`, MessageData);
-                  const {img,frameId,castSessionId,targetId} = parse(MessageData);
-                  privates.publics.state.latestFrameReceived = frameId;
-                  privates.publics.state.latestCastSession = castSessionId;
-                  DEBUG.debugFasest && console.log('fastest?');
-                  if ( RACES.has(frameId) && RACES.get(frameId).first === 'websocket' ) {
-                    DEBUG.logRaces && console.log('websocket won');
-                    RACES.delete(frameId);
-                    Scores.push('websocket');
-                    WSScore++;
-                    while ( Scores.length > SCORE_WINDOW ) {
-                      const last = Scores.shift(); 
-                      if ( last === 'websocket' ) {
-                        WSScore--;
-                      } else {
-                        WPScore--;
+                  });
+                  peer.on('connect', data => {
+                    DEBUG.cnx && console.log('peer connected');
+                    DEBUG.debugWebRTC && console.log('Peer connected', data);
+                    privates.peer = peer;
+                    privates.publics.state.webrtcConnected = true;
+                    if ( privates.publics.state.micStream ) {
+                      privates.publics.state.micStream.getTracks().forEach(function(track) {
+                        track.stop();
+                      });
+                      privates.publics.state.micStream = null;
+                      if ( privates.publics.state.micAccessNotAlwaysAllowed ) {
+                        // if the user has not set always allow, then notify them about this as they are probably antsy 
+                        // about it and need reassurance which is fine
+                        DEBUG.showAudioInstructions && DEBUG.debugSafariWebRTC && setTimeout(() => alert(`Fast connection established. Mic access dropped!`), 60);
+                        // so we don't do this alert again
+                        privates.publics.state.micAccessNotAlwaysAllowed = false;
                       }
                     }
-                    if ( Scores.length >= MIN_DECISION_DATA ) {
-                      messageId++;
-                      const msg = {messageId,fastestChannel:{}};
-                      if ( WSScore > WPScore ) {
-                        DEBUG.logRaces && console.log('Switch to websocket');
-                        msg.fastestChannel.websocket = true;
-                      } else {
-                        DEBUG.logRaces && console.log('Switch to webrtc peer');
-                        msg.fastestChannel.webrtcpeer = true;
+                    privates.publics.state.setTopState();
+                    privates.publics.state.refreshViews();
+                  });
+                  peer.on('signal', data => {
+                    DEBUG.cnx && console.log('have webrtc signal data', data);
+                    DEBUG.debugWebRTC && console.log('have webrtc signal data', data);
+                    messageId++;
+                    so({messageId,copeer:{signal:data}});
+                  });
+                  peer.on('data', MessageData => {
+                    DEBUG.debugConnect && console.log(`got webrtc data frame`, MessageData);
+                    const {img,frameId,castSessionId,targetId} = parse(MessageData);
+                    privates.publics.state.latestFrameReceived = frameId;
+                    privates.publics.state.latestCastSession = castSessionId;
+                    DEBUG.debugFasest && console.log('fastest?');
+                    if ( RACES.has(frameId) && RACES.get(frameId).first === 'websocket' ) {
+                      DEBUG.logRaces && console.log('websocket won');
+                      RACES.delete(frameId);
+                      Scores.push('websocket');
+                      WSScore++;
+                      while ( Scores.length > SCORE_WINDOW ) {
+                        const last = Scores.shift(); 
+                        if ( last === 'websocket' ) {
+                          WSScore--;
+                        } else {
+                          WPScore--;
+                        }
                       }
-                      so(msg);
-                    }
-                  } else {
-                    RACES.set(frameId, {first:'peer', at:Date.now()});
-                    if ( targetId !== privates.publics.state.activeTarget ) {
-                      DEBUG.debugFrameDrops &&
-                        console.warn(`Dropping frame for ${targetId} ${frameId} because target not active.`, latestFrameId);
-                      return;
-                    }
-                    if ( DEBUG.logAcks ) {
-                      const measure = Date.now();
-                      const dist = measure - privates.publics.state.lastShotAt
-                      privates.publics.state.lastShotAt = measure;
-                      console.log('Got shot. Time since last', dist);
-                    }
-                    if ( DEBUG.immediateAck ) {
-                      messageId++;
-                      noFrameReceived = 0;
-                      inFrameCount++;
-                      if ( (inFrameCount % DEBUG.ackEvery) == 0 ) {
-                        privates.publics.state.screenshotReceived = {
-                          frameId: privates.publics.state.latestFrameReceived, 
-                          castSessionId: privates.publics.state.latestCastSession
-                        };
+                      if ( Scores.length >= MIN_DECISION_DATA ) {
+                        messageId++;
+                        const msg = {messageId,fastestChannel:{}};
+                        if ( WSScore > WPScore ) {
+                          DEBUG.logRaces && console.log('Switch to websocket');
+                          msg.fastestChannel.websocket = true;
+                        } else {
+                          DEBUG.logRaces && console.log('Switch to webrtc peer');
+                          msg.fastestChannel.webrtcpeer = true;
+                        }
+                        so(msg);
                       }
-                      if ( DEBUG.debugCommandOrder ) {
-                        BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
+                    } else {
+                      RACES.set(frameId, {first:'peer', at:Date.now()});
+                      if ( targetId !== privates.publics.state.activeTarget ) {
+                        DEBUG.debugFrameDrops &&
+                          console.warn(`Dropping frame for ${targetId} ${frameId} because target not active.`, latestFrameId);
+                        return;
                       }
-                      privates.senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: noFrameReceived || privates.screenshotReceived});
-                      privates.publics.state.screenshotReceived = false;
                       if ( DEBUG.logAcks ) {
                         const measure = Date.now();
-                        const dist = measure - privates.lastAckTime;
-                        privates.lastAckTime = measure;
-                        console.log('Ack sent. Time since last ack sent', dist, '. Time since privates shot received', measure - privates.publics.state.lastShotAt);
+                        const dist = measure - privates.publics.state.lastShotAt
+                        privates.publics.state.lastShotAt = measure;
+                        console.log('Got shot. Time since last', dist);
                       }
+                      if ( DEBUG.immediateAck ) {
+                        messageId++;
+                        noFrameReceived = 0;
+                        inFrameCount++;
+                        if ( (inFrameCount % DEBUG.ackEvery) == 0 ) {
+                          privates.publics.state.screenshotReceived = {
+                            frameId: privates.publics.state.latestFrameReceived, 
+                            castSessionId: privates.publics.state.latestCastSession
+                          };
+                        }
+                        if ( DEBUG.debugCommandOrder ) {
+                          BUFFERED_FRAME_EVENT.command.debugOrderId = DEBUG_ORDER_ID++;
+                        }
+                        privates.senders.so({messageId,zombie:{events:[BUFFERED_FRAME_EVENT]},screenshotAck: noFrameReceived || privates.screenshotReceived});
+                        privates.publics.state.screenshotReceived = false;
+                        if ( DEBUG.logAcks ) {
+                          const measure = Date.now();
+                          const dist = measure - privates.lastAckTime;
+                          privates.lastAckTime = measure;
+                          console.log('Ack sent. Time since last ack sent', dist, '. Time since privates shot received', measure - privates.publics.state.lastShotAt);
+                        }
+                      }
+                      if ( (frameId - latestFrameId) < 1 ) {
+                        DEBUG.debugFrameDrops &&
+                          console.warn(`Dropping frame for ${targetId} ${frameId} because old.`, latestFrameId);
+                        return;
+                      }
+                      latestFrameId = frameId;
+                      DEBUG.logFrameIds && console.log(`Drawing frameId ${frameId}`);
+                      drawFrames(
+                        privates.publics.state, 
+                        img,
+                        privates.images.get(url), 
+                        true, 
+                        true,
+                        frameId
+                      );
+                      privates.addBytes(img.byteLength, true);    
+                      setTimeout(() => RACES.delete(frameId), 15000);
                     }
-                    if ( (frameId - latestFrameId) < 1 ) {
-                      DEBUG.debugFrameDrops &&
-                        console.warn(`Dropping frame for ${targetId} ${frameId} because old.`, latestFrameId);
-                      return;
-                    }
-                    latestFrameId = frameId;
-                    DEBUG.logFrameIds && console.log(`Drawing frameId ${frameId}`);
-                    drawFrames(
-                      privates.publics.state, 
-                      img,
-                      privates.images.get(url), 
-                      true, 
-                      true,
-                      frameId
-                    );
-                    privates.addBytes(img.byteLength, true);    
-                    setTimeout(() => RACES.delete(frameId), 15000);
-                  }
-                });
+                  });
+                } catch(e) {
+                  (DEBUG.cnx || DEBUG.debugWebRTC) && console.warn(`Error starting webrtc`, e);
+                }
               }
             };
             socket.onmessage = async message => {
@@ -1352,7 +1361,9 @@
   }
 
   function hasWebRTC() {
-    return !!(window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection);
+    const predicate = !!(window.RTCDataChannel || window.mozRTCDataChannel || window.webkitRTCDataChannel);
+    (DEBUG.cnx || DEBUG.debugWebRTC) && console.info(`Calling hasWebRTC`, (new Error).stack, {predicate});
+    return predicate;
   }
 
   async function showExplainer() {

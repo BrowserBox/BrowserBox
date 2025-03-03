@@ -83,7 +83,8 @@ export const DEBUG = Object.freeze({
   debugActivate: false,
   debugDownloadProgress: false,
   logBandwidthIssueChanges: false,
-  debugSafariWebRTC: false,
+  debugWebRTC: true,
+  debugSafariWebRTC: true,
   debugSetup: false,
   /* debug connections */
   cnx: false,
