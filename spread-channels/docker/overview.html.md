@@ -3,7 +3,7 @@
 BrowserBox v10 by DOSAYGO—remote browser isolation (RBI) forged for infra, cyber, and product teams. Runs anywhere—Linux, macOS, your stack. <strong>LICENSE REQUIRED!</strong> Unlicensed? Shuts down cold. Unlock it now @ <a href="mailto:sales@dosaygo.com?subject=BrowserBox%20Corporate%20License">sales@dosaygo.com</a>—bulk deals waiting!</p>
 
 <h2>🚀 Deploy in One Shot</h2>
-<p><strong>Step 1: Grab Your License!</strong> Hit <a href="mailto:sales@dosaygo.com">sales@dosaygo.com</a>—don’t deploy without it!<br>
+<p><strong>Step 1: Get Your License!</strong> <a href="mailto:sales@dosaygo.com">sales@dosaygo.com</a><br>
 <strong>Step 2: Run It!</strong> Built on a rock-solid Debian base—runs anywhere!</p>
 <code>bash -c "$(curl -fsSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/run_docker.sh)" <PORT> <HOSTNAME> <EMAIL></code>
 <ul>
