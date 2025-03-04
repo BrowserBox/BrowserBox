@@ -412,6 +412,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     worlds: new Map(),
     sessionSend,
     sessions,
+    DesktopOnly,
+    updateAllTargetsToUserAgent,
+    updateAllTargetsToViewport,
     targets,
     tabs,
     OffscreenPages,
@@ -1547,7 +1550,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.fontDebug && message.params.resourceType == 'Font' && console.log({paused:message});
       //newtabIntercept({sessionId, message}, Target);
       if ( AD_BLOCK_ON ) { 
-        await adBlockIntercept({sessionId, message}, connection.zombie);
+        // this is also for catching pdfs and ensuring they are in Desktop only mode
+        await adBlockIntercept({sessionId, message}, connection.zombie, connection);
       }
     } else if ( message.method == "Fetch.authRequired" ) {
       const {requestId, request, /*frameId, */ resourceType, authChallenge} = message.params;
@@ -2933,9 +2937,11 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
   DEBUG.traceViewportUpdateFuncs && console.log('Entering updateAllTargetsToUserAgent');
   const {send, on, ons} = connection.zombie;
   DEBUG.traceViewportUpdateFuncs && console.log('Retrieved zombie properties from connection', connection.targets.values());
+  const oMobile = mobile || connection.isMobile;
   mobile = mobile || connection.isMobile;
   let list = [];
   for (const targetId of connection.targets.values()) {
+    mobile = oMobile;
     DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);
     await untilTrueOrTimeout(() => sessions.has(targetId), 10);
     const sessionId = sessions.get(targetId);
@@ -2950,6 +2956,7 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
     } catch(e) {
       console.warn(`Could not construct url from tab`, targetId, e);
     }
+    if ( isDesktopOnly ) mobile = false;
     try {
       await send("Runtime.evaluate", {
         expression: `navigator.userAgent`,

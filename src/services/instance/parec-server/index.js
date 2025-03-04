@@ -227,10 +227,13 @@ if ( ! APP_DEBUG.noSecurityHeaders ) {
           "wss://*.dosaygo.com:*",
           `https://*.dosaygo.com:${PORT+1}`,
           "wss://browse.cloudtabs.net:*",
-          `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
-          `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
-          `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
-          `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+	...(process.env.DOMAIN?.startsWith?.('*.') ? [
+	  `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+	  `wss://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+	] : [
+	  `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+	  `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+	]),
         ],
         styleSrc: [
           "'self'", 

@@ -157,6 +157,7 @@
   let requestId = 0;
   let TabNumber = 0;
 
+  console.log({DOMAIN:process.env.DOMAIN});
   export async function start_ws_server(
       port, zombie_port, allowed_user_cookie, session_token, 
   ) {
@@ -190,7 +191,9 @@
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
-        ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
+        ...(process.env.DOMAIN?.startsWith?.('*.') ? [
+          `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+        ] : [
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
       ],
@@ -205,7 +208,9 @@
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
-        ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
+        ...(process.env.DOMAIN?.startsWith?.('*.') ? [
+          `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+        ] : [
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
       ],
@@ -233,7 +238,10 @@
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
-        ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
+        ...(process.env.DOMAIN?.startsWith?.('*.') ? [
+          `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+          `wss://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+        ] : [
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),

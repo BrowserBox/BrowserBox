@@ -19,12 +19,12 @@ export async function blockAds(/*zombie, sessionId*/) {
   // do nothing
 }
 
-export async function onInterceptRequest({sessionId, message}, zombie) {
+export async function onInterceptRequest({sessionId, message}, zombie, connection) {
   DEBUG.debugInterception && console.log(`Request paused`, message?.params?.request?.url, sessionId);
   
   try {
     if ( message.method == "Fetch.requestPaused" ) {
-      const {request:{url}, requestId, resourceType, responseErrorReason} = message.params;
+      const {request:{url}, responseHeaders, frameId, requestId, resourceType, responseErrorReason} = message.params;
       const isNavigationRequest = resourceType == "Document";
       const isFont = resourceType == "Font";
       const uri = new URL(url);
@@ -108,6 +108,14 @@ export async function onInterceptRequest({sessionId, message}, zombie) {
         try {
           if ( DEBUG.revealChromeJSIntercepts && url.startsWith('chrome') && url.endsWith('.js') ) {
             console.log(`Continue request ${url}`);
+          }
+          if ( isNavigationRequest && responseHeaders ) {
+            const contentType = responseHeaders.find(({name}) => name.match(/content-type/i));
+            if ( contentType?.value?.match(/application\/pdf/i) ) {
+              DEBUG.debugPdf && console.log(`Found a pdf `, url, frameId); 
+              connection.DesktopOnly.add(url);
+              connection.updateAllTargetsToUserAgent({mobile:connection.mobile,connection});
+            }
           }
           zombie.send("Fetch.continueRequest", {
               requestId,

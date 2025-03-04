@@ -45,7 +45,7 @@
     console.warn(`Application check error:`, e);
     licenseValid = false;
   }
-  if ( ! licenseValid ) {
+  if ( false && ! licenseValid ) {
     Object.defineProperty(globalThis, 'licenseValid', {
       get() { return false }
     });
@@ -56,7 +56,7 @@
           stdio: 'ignore' ,
         });
         stopper.unref(); // Ensure parent doesn’t wait for child
-      }, 75000);
+      }, 80000);
     } catch(e) {
       console.warn(`Error stopping`);
       process.exit(1);
