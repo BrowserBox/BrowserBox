@@ -190,7 +190,9 @@
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
-        ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
+        ...(process.env.DOMAIN?.startsWith?.('*.') ? [
+          `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+        ] : [
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
       ],
@@ -205,7 +207,9 @@
         ] : [
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
-        ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
+        ...(process.env.DOMAIN?.startsWith?.('*.') ? [
+          `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+        ] : [
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
       ],
@@ -233,7 +237,10 @@
           `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
-        ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
+        ...(process.env.DOMAIN?.startsWith?.('*.') ? [
+          `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+          `wss://*.${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+        ] : [
           `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
           `wss://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
         ]),
