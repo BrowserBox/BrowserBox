@@ -306,11 +306,10 @@ export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   ] : []),
   "https://*.cloudtabs.net",
   "https://localhost:*",
-  ...(
-  process.env.DOMAIN ? [
-    `https://${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
-  ] : []),
-  ...(process.env.DOMAIN?.startsWith?.('*.') ? [] : [
+	process.env.DOMAIN,
+  ...(process.env.DOMAIN?.startsWith?.('*.') ? [
+    `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+  ] : [
     `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
   ]),
 ];
