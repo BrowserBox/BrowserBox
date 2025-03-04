@@ -1,4 +1,5 @@
+- audio not work
 - solidify instance hw id
 - analytics
-- find way to fun stop_bbpro on docker stop
+- find way to run stop_bbpro on docker stop
 - provide instructions people need to visit /settings_modal to stop the browser on docker

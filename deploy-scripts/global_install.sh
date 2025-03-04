@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 
+# ANSI color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+BOLD='\033[1m'
+CONFIG_DIR="$HOME/.config/dosyago/bbpro"
 ZONE=""
-set -x
+
+if [[ -n "$BBX_DEBUG" ]]; then
+  set -x
+fi
 
 unset npm_config_prefix
 
-
 # flush any partial
-read -p "Enter to continue" -r
-REPLY=""
 
 SUDO=""
 if [[ -f /etc/os-release ]]; then
@@ -16,7 +24,7 @@ if [[ -f /etc/os-release ]]; then
 fi
 
 if command -v sudo &>/dev/null; then
-  export SUDO="sudo -n"
+  export SUDO="$(command -v sudo) -n"
 fi
 
 if command -v firewall-cmd &>/dev/null; then
@@ -29,7 +37,7 @@ add_hostname_to_hosts() {
 
   # Check if the hostname is already mapped in /etc/hosts
   if ! grep -q "127.0.0.1.*$HOSTNAME" /etc/hosts; then
-    echo "Adding hostname to /etc/hosts..."
+    echo "Adding hostname to /etc/hosts..." >&2
 
     # Backup the current /etc/hosts file
     $SUDO cp /etc/hosts /etc/hosts.backup
@@ -38,9 +46,9 @@ add_hostname_to_hosts() {
     echo "127.0.0.1 $HOSTNAME" | $SUDO tee -a /etc/hosts > /dev/null
     echo "::1 $HOSTNAME" | $SUDO tee -a /etc/hosts > /dev/null
 
-    echo "$HOSTNAME has been added to /etc/hosts."
+    echo "$HOSTNAME has been added to /etc/hosts." >&2
   else
-    echo "Hostname $HOSTNAME is already mapped in /etc/hosts."
+    echo "Hostname $HOSTNAME is already mapped in /etc/hosts." >&2
   fi
 }
 
@@ -187,30 +195,38 @@ install_nvm() {
   fi
 }
 
+# License agreement and terms display
+display_terms() {
+    printf "${BLUE}${BOLD}Welcome to BrowserBox Installation${NC}\n"
+    printf "${YELLOW}Before proceeding, please note:${NC}\n"
+    printf "  - A valid, purchased license is required for use.\n"
+    printf "  - By installing, you agree to the terms in:\n"
+    printf "    * LICENSE: ${BLUE}https://github.com/dosyago/BrowserBoxPro/blob/main/LICENSE.md${NC}\n"
+    printf "    * Terms: ${BLUE}https://dosaygo.com/terms.txt${NC}\n"
+    printf "    * Privacy: ${BLUE}https://dosaygo.com/privacy.txt${NC}\n"
+    printf "  - Commercial use (including evaluation) requires a license.\n"
+    printf "  - Purchase at: ${BLUE}https://dosaygo.com${NC}\n"
+    printf "  - Questions? Contact ${BLUE}sales@dosaygo.com${NC}\n\n"
+}
 
-echo -e "\n\n"
-echo "Welcome to the BrowserBox Pro installation."
-echo "Before proceeding, please note the following:"
-echo -e "\n"
-echo "Summary: without a validly purchased and current commercial license, this product is only valid for noncommercial use or under the terms of the BrowserBox commercial license."
-echo "By proceeding with this installation, you confirm your agreement to the terms and conditions contained within the LICENSE file (https://github.com/dosyago/BrowserBoxPro/blob/main/LICENSE.md), as well as the terms at https://dosaygo.com/terms.txt and https://dosaygo.com/privacy.txt."
-echo -e "\n"
-echo "If you foresee using BrowserBoxPro for commercial purposes, you must purchase a license."
-echo "For large volume purchases, please visit our website: https://dosaygo.com"
-echo -e "\n"
-echo "For other inquiries, you may contact sales@dosaygo.com."
-echo -e "\n"
-read_input "By proceeding with the installation, you confirm your acceptance of these terms and conditions and that you have purchased a license if your use of BrowserBoxPro is intended for commercial applications that do not comply with AGPL-3.0. Do you agree to these terms? (yes/no): " 
+check_agreement() {
+    if [ ! -f "$CONFIG_DIR/.agreed" ]; then
+        display_terms
+        printf "${YELLOW}Do you agree to these terms and confirm a license for commercial use if applicable? (yes/no): ${NC}\n"
+        read -r REPLY
+        if [[ "${REPLY:0:1}" =~ ^[yY]$ ]]; then
+            printf "${GREEN}Terms accepted. Proceeding...${NC}\n"
+            mkdir -p "$CONFIG_DIR"
+            touch "$CONFIG_DIR/.agreed"
+        else
+            printf "${RED}Terms not accepted. Exiting installation.${NC}\n"
+            exit 1
+        fi
+    fi
+}
 
-case ${REPLY:0:1} in
-    y|Y )
-        echo "You have agreed to the terms. Proceeding with the installation..."
-    ;;
-    * )
-        echo "You did not agree to the terms. Exiting the installation..."
-        exit 1
-    ;;
-esac
+# Usage in script (e.g., in global_install.sh or install subcommand)
+check_agreement
 
 function create_selinux_policy_for_ports() {
   # Check if SELinux is enforcing
@@ -302,10 +318,12 @@ fi
 open_firewall_port_range 80 80
 
 
-if [ "$(os_type)" == "macOS" ]; then
-        brew install jq
-else
-        $SUDO $APT install -y jq
+if ! command -v jq &>/dev/null; then
+  if [ "$(os_type)" == "macOS" ]; then
+          brew install jq
+  else
+          $SUDO $APT install -y jq
+  fi
 fi
 
 
@@ -372,7 +390,7 @@ INSTALL_DIR=$(get_latest_dir)
 
 echo "Found bbpro at: $INSTALL_DIR"
 
-read_input "GO?"
+read -p "Enter to continue" -r
 
 echo "Ensuring fully installed..."
 
@@ -405,8 +423,6 @@ else
     $SUDO $APT install -y gnu-getopt
   fi
 fi
-
-read_input "Continue?"
 
 echo "Fully installed!"
 
