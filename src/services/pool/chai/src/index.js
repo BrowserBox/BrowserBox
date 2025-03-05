@@ -100,8 +100,8 @@
     const sleep = ms => new Promise(res => setTimeout(res, ms));
     // adapted from code at source: https://stackoverflow.com/a/22907134/10283964
     const DEBUG = {
-      showHash: true,
-      showFullFile: true,
+      showHash: false,
+      showFullFile: false,
     };
     const uploadPath = Path.resolve(STATIC_DIR, 'uploads');
     const CONVERTER = Path.resolve('.', 'scripts', 'convert.sh');
@@ -336,7 +336,7 @@
             noConvertReason = 'File failed to download. This is probably a rate limit on the file\'s website.';
           }
 
-          DEBUG.showFullFile && console.log('file', size, fs.readFileSync(pdf.path).toString());
+          DEBUG.showFullFile && console.log('file', size, fs.readFileSync(pdf.path).toString().slice(0,1024));
 
           if ( noConvertReason ) {
             fs.writeFileSync(noConvertFilePath, noConvertReason );
