@@ -326,9 +326,10 @@ if [[ "$(uname)" == "Darwin" ]]; then
     # Check the machine architecture
     ARCH="$(uname -m)"
     if [[ "$ARCH" == "arm64" ]]; then
-        echo "This script is not compatible with the MacOS ARM architecture at this time"
-        echo "due to some dependencies having no pre-built binaries for this architecture."
-        echo "Please re-run this script under Rosetta."
+        true
+        #echo "This script is not compatible with the MacOS ARM architecture at this time"
+        #echo "due to some dependencies having no pre-built binaries for this architecture."
+        #echo "Please re-run this script under Rosetta."
         #exit 1
     fi
 fi

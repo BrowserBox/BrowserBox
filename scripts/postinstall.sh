@@ -119,7 +119,8 @@ read_input() {
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
   if [[ "$(arch)" != "i386" ]]; then
-    >&2 echo "Please run this script under Rosetta (i386 architecture)."
+    #>&2 echo "Please run this script under Rosetta (i386 architecture)."
+    true
     #exit 1
   fi
 fi
