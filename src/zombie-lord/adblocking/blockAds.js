@@ -133,7 +133,7 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
               }
             }
           }
-          DEBUG.debugPdf && console.log(`Continuing request`);
+          DEBUG.debugPdf && console.log(`Continuing request`, url);
           zombie.send("Fetch.continueRequest", {
               requestId,
             },
