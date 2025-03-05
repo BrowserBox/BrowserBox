@@ -32,6 +32,7 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
       let blocked = false;
       let wl = false;
       let ri = 0;
+      let isPDF = false;
       if ( CONFIG.hostWL ) {
         const rHost = hostname.split('.').slice(-2).join('.');
         blocked = !CONFIG.hostWL.has(rHost); 
@@ -109,21 +110,59 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
           if ( DEBUG.revealChromeJSIntercepts && url.startsWith('chrome') && url.endsWith('.js') ) {
             console.log(`Continue request ${url}`);
           }
+          let failRequest = false;
+          let resolve;
+          const untilRequestFailed = new Promise(res => resolve = res);
           if ( isNavigationRequest && responseHeaders ) {
             const contentType = responseHeaders.find(({name}) => name.match(/content-type/i));
             if ( contentType?.value?.match(/application\/pdf/i) ) {
+              isPDF = true;
               if ( connection.DesktopOnly.has(url) || connection.DesktopOnly.has(sessionId) ) {
-                console.log(`Do nothing because we already knew this pdf`);
+                console.log(`Do nothing because we already knew this pdf. Just checking user agent:`);
+                    zombie.send("Runtime.evaluate", {
+                      expression: `navigator.userAgent`,
+                      timeout: CONFIG.SHORT_TIMEOUT,
+                      /*
+                      includeCommandLineAPI: false,
+                      userGesture: true,
+                      awaitPromise: true,
+                      */
+                    }, sessionId).then(r => {
+                      //console.log({sessionId,r})
+                      const {result:{value: userAgent}} = r;
+                      DEBUG.debugPdf && console.log(`Page has userAgent: `, userAgent);
+                      zombie.send("Emulations.setDeviceMetricsOverride", {mobile:false}, sessionId);
+                    });
               } else {
+                failRequest = true;
                 connection.DesktopOnly.add(url);
+                connection.DesktopOnly.add(sessionId);
                 DEBUG.debugPdf && console.log(`Found a pdf `, url, frameId, connection.DesktopOnly, {sessionId}, connection.updateTargetsOnCommonChanged); 
                 //connection.zombie.send("Emulation.setDeviceMetricsOverride", {mobile:false}, sessionId);
                 try {
                   console.log(`Trying to call common changed from within fetch intercept`);
+                  const cId = Math.random().toString(36);
+                  connection.viewports.set(cId, {width:800,height:600,mobile:false});
                   connection.updateTargetsOnCommonChanged({connection,command:'all',force:true,noReload:true}).then(async () => {
-                    await sleep(300);
-                    //connection.reloadAfterSetup(sessionId, {reason:'user-agent'}); 
-                    DEBUG.debugPdf && console.info(`Completed update on finding pdf`);
+                    //await untilRequestFailed;
+                    connection.reloadAfterSetup(sessionId, {reason:'user-agent'}); 
+                    connection.viewports.delete(cId);
+                    DEBUG.debugPdf && console.info(`Completed update on finding pdf. Renavigating to pdf url`);
+                    zombie.send("Page.navigate", {url}, sessionId);
+                    await zombie.send("Runtime.evaluate", {
+                      expression: `navigator.userAgent`,
+                      /*
+                      includeCommandLineAPI: false,
+                      userGesture: true,
+                      timeout: CONFIG.SHORT_TIMEOUT,
+                      awaitPromise: true,
+                      */
+                    }, sessionId).then(r => {
+                      //console.log({sessionId,r})
+                      const {result:{value: userAgent}} = r;
+                      DEBUG.debugPdf && console.log(`Page has userAgent: `, userAgent);
+                    });
+                    DEBUG.debugPdf && console.info(`Requested renavigation and UA evaluation`);
                   }).catch(e => {
                     DEBUG.debugPdf && console.info(`Error updating targets on pdf find`, e);
                   });
@@ -131,15 +170,26 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
                   DEBUG.debugPdf && console.info(`Error updating targets on pdf find`, e);
                 }
               }
+              DEBUG.debugPdf && console.log(failRequest ? `Failing request in order to re-navigate to it:` : `Continuing request`, url);
             }
           }
-          DEBUG.debugPdf && console.log(`Continuing request`, url);
-          zombie.send("Fetch.continueRequest", {
-              requestId,
-            },
-            sessionId
-          );
-          DEBUG.debugInterception && console.log(`Continue request complete`);
+          if ( false && failRequest ) {
+            zombie.send("Fetch.failRequest", {
+                requestId,
+                errorReason: "Aborted"
+              },
+              sessionId
+            );
+            resolve();
+          } else {
+            zombie.send("Fetch.continueRequest", {
+                requestId,
+              },
+              sessionId
+            );
+            DEBUG.debugInterception && console.log(`Continue request complete`);
+            ( DEBUG.debugPdf && isPDF ) && console.log(`Continue request complete`); 
+          }
         } catch(e) {
           console.warn("Issue with continuing request", e, message);
         }

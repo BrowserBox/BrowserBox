@@ -1823,7 +1823,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           height += HeightAdjust;
         }
         await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
-        await send("Emulation.setDeviceMetricsOverride", {width,height});
+        await send("Emulation.setDeviceMetricsOverride", {width,height,mobile:DesktopOnly.has(sessionId)},sessionId);
       } else {
         DEBUG.debugBrowserWindow && console.log(`Will add offscreen page for extension`, {targetId, tab: tabs.get(targetId)});
         if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') && ! OffscreenPages.has(targetId) ) {
@@ -2971,7 +2971,7 @@ async function updateAllTargetsToUserAgent({mobile, connection, noReload}) {
       if (!sessionId) continue;
       try {
         const url = new URL(tabs.get(targetId).url);
-        isDesktopOnly = DesktopOnly.has(url.hostname) || DesktopOnly.has(url.href);
+        isDesktopOnly = DesktopOnly.has(url.hostname) || DesktopOnly.has(url.href) || DesktopOnly.has(sessionId);
         DEBUG.debugDesktopOnly && console.log(`DesktopOnly test url`, url, DesktopOnly, {isDesktopOnly});
       } catch(e) {
         console.warn(`Could not construct url from tab`, targetId, e);
