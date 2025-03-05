@@ -336,7 +336,7 @@
             noConvertReason = 'File failed to download. This is probably a rate limit on the file\'s website.';
           }
 
-          DEBUG.showFullFile && console.log('file', size, fs.readFileSync(pdf.path).toString());
+          DEBUG.showFullFile && console.log('file', size, fs.readFileSync(pdf.path).toString().slice(0,1024));
 
           if ( noConvertReason ) {
             fs.writeFileSync(noConvertFilePath, noConvertReason );

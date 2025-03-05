@@ -71,6 +71,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  debugPdf: false,
   debugOffscreenPages: false,
   debugStartupTargets: false,
   debugSetupTab: false,
