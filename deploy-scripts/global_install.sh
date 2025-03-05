@@ -283,10 +283,12 @@ open_firewall_port_range() {
   local end_port=$2
   local complete=""
 
-  if [[ "$start_port" != "$end_port" ]]; then
-    create_selinux_policy_for_ports http_port_t tcp $start_port-$end_port
-  else
-    create_selinux_policy_for_ports http_port_t tcp $start_port
+  if command -v getenforce &>/dev/null; then
+    if [[ "$start_port" != "$end_port" ]]; then
+      create_selinux_policy_for_ports http_port_t tcp $start_port-$end_port
+    else
+      create_selinux_policy_for_ports http_port_t tcp $start_port
+    fi
   fi
 
   # Check for firewall-cmd (firewalld)
@@ -435,8 +437,10 @@ fi
 echo "npm install complete"
 
 if [ "$(os_type)" == "macOS" ]; then
-  if brew install gnu-getopt; then
-    brew link --force gnu-getopt
+  if ( ! command -v getopt ) || [[ "$(getopt --version)" != *"util-linux"* ]]; then
+    if brew install gnu-getopt; then
+      brew link --force gnu-getopt
+    fi
   fi
 else
   if ! command -v getopt &>/dev/null; then
