@@ -34,6 +34,10 @@ get_external_ip() {
   return 1
 }
 
+remove_wildcard() {
+    echo "$1" | sed 's|https://\*\.|https://|'
+}
+
 # Check if the SSL certificates exist
 if [[ -f "$ssl_dir/privkey.pem" && -f "$ssl_dir/fullchain.pem" ]]; then
   # Extract the Common Name (hostname) from the certificate
@@ -55,6 +59,8 @@ fi
 # we don't need to change this for tor because even if we did curl and node fetch for example
 # cannot call onion addresses hahaha 
 provider="https://${output}:${DOCS_PORT}/very-secure-manifest-convert"
+
+provider="$(remove_wildcard "$provider")"
 
 echo "provider: $provider" >&2
 

@@ -100,8 +100,8 @@
     const sleep = ms => new Promise(res => setTimeout(res, ms));
     // adapted from code at source: https://stackoverflow.com/a/22907134/10283964
     const DEBUG = {
-      showHash: false,
-      showFullFile: false,
+      showHash: true,
+      showFullFile: true,
     };
     const uploadPath = Path.resolve(STATIC_DIR, 'uploads');
     const CONVERTER = Path.resolve('.', 'scripts', 'convert.sh');
