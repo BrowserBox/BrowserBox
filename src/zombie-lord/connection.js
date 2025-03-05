@@ -415,6 +415,8 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
     DesktopOnly,
     updateAllTargetsToUserAgent,
     updateAllTargetsToViewport,
+    updateTargetsOnCommonChanged,
+    MainFrames,
     targets,
     tabs,
     OffscreenPages,
@@ -619,6 +621,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         if ( worlds ) {
           const {frameTree} = await send("Page.getFrameTree", {}, sessionId);
           MainFrames.set(sessionId, frameTree.frame.id);
+          MainFrames.set(frameTree.frame.id, sessionId);
           const frameList = enumerateFrames(frameTree, worlds.size);
           missingWorlds = worlds.size < frameList.length;
           DEBUG.worldDebug && consolelog('Frames', frameList, 'worlds', worlds, `world size: ${worlds.size}, frames length: ${frameList.length}`, {missingWorlds});
@@ -1699,6 +1702,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       if ( CONFIG.createPowerSource ) {
         const {frameTree: { frame : { id: frameId } }} = await send("Page.getFrameTree", {}, sessionId);
         MainFrames.set(sessionId, frameId);
+        MainFrames.set(frameId, sessionId);
         const {executionContextId} = await send("Page.createIsolatedWorld", {
           frameId: MainFrames.get(sessionId),
           worldName: 'POWER Source',
@@ -1769,11 +1773,19 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         sessionId
       );
       connection.bounds.dontSetVisibleSize = true;
-      await send(
-        "Emulation.setDeviceMetricsOverride", 
-        connection.bounds,
-        sessionId
-      );
+      if ( DesktopOnly.has(sessionId) ) {
+        await send(
+          "Emulation.setDeviceMetricsOverride", 
+          {...connection.bounds, mobile: false},
+          sessionId
+        );
+      } else {
+        await send(
+          "Emulation.setDeviceMetricsOverride", 
+          connection.bounds,
+          sessionId
+        );
+      }
       /* 
         // notes
           // putting here causes tab startup stability issues, better to wait to apply it later
@@ -2176,6 +2188,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       let rt = TargetReloads.get(sessionId);
       if ( ! rt ) { 
         TargetReloads.set(sessionId, {relaods: 0, queue: [], reasons: [], firstReloadStatus: `initiated-at-${reason}`});
+        rt = TargetReloads.get(sessionId);
       } else {
         if ( ! rt.queue ) {
           rt.queue = [];
@@ -2229,6 +2242,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       DEBUG.val && console.log("Blocking as target does not exist.", targetId);
       return {};
     }
+    if ( !command.name.startsWith("Target") && !(command.name.startsWith("Browser") && command.name != "Browser.getWindowForTarget") ) {
+      sessionId = command.params.sessionId || that.sessionId;
+    } 
     switch( command.name ) {
       case "Page.navigate": {
         let {url} = command.params;
@@ -2366,6 +2382,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         // some amount of existing tabs
         command.params.dontSetVisibleSize = true;
         //await send("Emulation.clearDeviceMetricsOverride", {}, that.sessionId);
+        if ( DesktopOnly.has(sessionId) ) {
+          command.params.mobile = false;
+        }
       }; break;
       case "Emulation.setScrollbarsHidden": {
         DEBUG.debugScrollbars && console.log("setting scrollbars 'hideBars'", command.params.hidden);
@@ -2571,9 +2590,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }
     }
 
-    if ( !command.name.startsWith("Target") && !(command.name.startsWith("Browser") && command.name != "Browser.getWindowForTarget") ) {
-      sessionId = command.params.sessionId || that.sessionId;
-    } 
     const isWorker = (Workers.has(sessions.get(targetId)) || Workers.has(sessionId));
     if (  isWorker && ! WorkerCommands.has(command.name) ) {
       DEBUG.debugSetupWorker && console.info(`Blocking ${command.name} from worker`);
@@ -2830,7 +2846,7 @@ export function getViewport(...viewports) {
   return commonViewport;
 }
 
-export async function updateTargetsOnCommonChanged({connection, command, force = false}) {
+export async function updateTargetsOnCommonChanged({connection, command, force = false, noReload = false}) {
   DEBUG.traceViewportUpdateFuncs && console.log('Entering updateTargetsOnCommonChanged');
   if (updatingTargets) {
     DEBUG.traceViewportUpdateFuncs && console.log('Updating targets in progress, waiting...');
@@ -2886,9 +2902,9 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
         }
 
         DEBUG.traceViewportUpdateFuncs && console.log('Updating all targets to user agent');
-        await updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection});
+        await updateAllTargetsToUserAgent({mobile: commonViewport.mobile, connection, noReload});
         DEBUG.traceViewportUpdateFuncs && console.log('Updated all targets to user agent');
-        await updateAllTargetsToViewport({commonViewport, connection});
+        await updateAllTargetsToViewport({commonViewport, connection, noReload});
         DEBUG.traceViewportUpdateFuncs && console.log('Updated all targets to viewport');
         if (command?.params?.resetRequested) {
           DEBUG.traceViewportUpdateFuncs && console.log('Reset requested in command parameters');
@@ -2933,30 +2949,45 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
   DEBUG.traceViewportUpdateFuncs && console.log('Exiting updateTargetsOnCommonChanged');
 }
 
-async function updateAllTargetsToUserAgent({mobile, connection}) {
+async function updateAllTargetsToUserAgent({mobile, connection, noReload}) {
   DEBUG.traceViewportUpdateFuncs && console.log('Entering updateAllTargetsToUserAgent');
   const {send, on, ons} = connection.zombie;
   DEBUG.traceViewportUpdateFuncs && console.log('Retrieved zombie properties from connection', connection.targets.values());
   const oMobile = mobile || connection.isMobile;
+  let isDesktopOnly = false;
   mobile = mobile || connection.isMobile;
   let list = [];
+  let sessionId;
   for (const targetId of connection.targets.values()) {
-    mobile = oMobile;
-    DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);
-    await untilTrueOrTimeout(() => sessions.has(targetId), 10);
-    const sessionId = sessions.get(targetId);
-    if ( Workers.has(sessionId) ) continue;
-    console.log('sessionid', sessionId);
-    DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
-    if (!sessionId) continue;
-    let isDesktopOnly = false;
     try {
-      const url = new URL(tabs.get(targetId).url);
-      isDesktopOnly = DesktopOnly.has(url.hostname) || DesktopOnly.has(url.href);
+      mobile = oMobile;
+      DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);
+      await untilTrueOrTimeout(() => sessions.has(targetId), 10);
+      sessionId = sessions.get(targetId);
+      if ( Workers.has(sessionId) ) continue;
+      //console.log('sessionid', sessionId);
+      DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
+      DEBUG.debugDesktopOnly && console.log(`Processing user agent for tab`, tabs.get(targetId), {sessionId});
+      if (!sessionId) continue;
+      try {
+        const url = new URL(tabs.get(targetId).url);
+        isDesktopOnly = DesktopOnly.has(url.hostname) || DesktopOnly.has(url.href);
+        DEBUG.debugDesktopOnly && console.log(`DesktopOnly test url`, url, DesktopOnly, {isDesktopOnly});
+      } catch(e) {
+        console.warn(`Could not construct url from tab`, targetId, e);
+      }
+      if ( isDesktopOnly ) {
+        mobile = false;
+        DesktopOnly.add(targetId);
+        DesktopOnly.add(sessionId);
+      } else {
+        DesktopOnly.delete(targetId);
+        DesktopOnly.delete(sessionId);
+      }
+      DEBUG.debugDesktopOnly && console.log({mobile});
     } catch(e) {
-      console.warn(`Could not construct url from tab`, targetId, e);
+      console.warn(`Error in user agent update`, e);
     }
-    if ( isDesktopOnly ) mobile = false;
     try {
       await send("Runtime.evaluate", {
         expression: `navigator.userAgent`,
@@ -3010,24 +3041,27 @@ async function updateAllTargetsToUserAgent({mobile, connection}) {
     } catch (err) {
       console.warn(`Error updating user agent for double-checked target`, {targetId, sessionId}, err);
     }
+    DEBUG.debugDesktopOnly && console.log(`Finished processing user agent for tab`, tabs.get(targetId), {sessionId});
   }
   DEBUG.traceViewportUpdateFuncs && console.log('Finished processing targets, deduplicating sessionId list');
   list = [...(new Set([...list]))];
   DEBUG.traceViewportUpdateFuncs && console.log('Deduplicated sessionId list:', list);
-  for (const sessionId of list) {
-    DEBUG.traceViewportUpdateFuncs && console.log('Reloading after user agent update for sessionId:', sessionId);
-    DEBUG.debugSetupReload && console.log(`Reloading after user agent update`);
-    try {
-      connection.reloadAfterSetup(sessionId, {reason: 'user-agent'});
-      DEBUG.traceViewportUpdateFuncs && console.log('Successfully reloaded sessionId:', sessionId);
-    } catch (err) {
-      console.error('Reload error', err);
+  if ( ! noReload ) {
+    for (const sessionId of list) {
+      DEBUG.traceViewportUpdateFuncs && console.log('Reloading after user agent update for sessionId:', sessionId);
+      DEBUG.debugSetupReload && console.log(`Reloading after user agent update`);
+      try {
+        connection.reloadAfterSetup(sessionId, {reason: 'user-agent'});
+        DEBUG.traceViewportUpdateFuncs && console.log('Successfully reloaded sessionId:', sessionId);
+      } catch (err) {
+        console.error('Reload error', err);
+      }
     }
   }
   DEBUG.traceViewportUpdateFuncs && console.log('Exiting updateAllTargetsToUserAgent');
 }
 
-async function updateAllTargetsToViewport({commonViewport, connection, skipSelf = false}) {
+async function updateAllTargetsToViewport({commonViewport, connection, skipSelf = false, noReload}) {
   DEBUG.traceViewportUpdateFuncs && console.log('Entering updateAllTargetsToViewport');
   const {send, on, ons} = connection.zombie;
   DEBUG.traceViewportUpdateFuncs && console.log('Retrieved zombie properties from connection', connection.targets.values());
@@ -3043,6 +3077,7 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
     DEBUG.traceViewportUpdateFuncs && console.log('Processing targetId:', targetId);
     await untilTrueOrTimeout(() => sessions.has(targetId), 10);
     const sessionId = sessions.get(targetId);
+    DEBUG.debugDesktopOnly && console.log(`processing viewport for tab`, tabs.get(targetId), {sessionId});
     
     if (Workers.has(sessionId)) continue;
     DEBUG.traceViewportUpdateFuncs && console.log('Retrieved sessionId:', sessionId, sessions);
@@ -3109,11 +3144,16 @@ async function updateAllTargetsToViewport({commonViewport, connection, skipSelf 
       
       DEBUG.traceViewportUpdateFuncs && console.log('Updating viewport for target:', targetId);
       commonViewport.dontSetVisibleSize = true;
-      send("Emulation.setDeviceMetricsOverride", commonViewport, sessionId);
+      if ( DesktopOnly.has(sessionId) ) {
+        send("Emulation.setDeviceMetricsOverride", {...commonViewport, mobile: false}, sessionId);
+      } else {
+        send("Emulation.setDeviceMetricsOverride", commonViewport, sessionId);
+      }
       DEBUG.traceViewportUpdateFuncs && console.log('Sent Emulation.setDeviceMetricsOverride');
     } catch (err) {
       console.warn(`Error updating viewport to reflect change, during all targets update loop`, {targetId, sessionId}, err);
     }
+    DEBUG.debugDesktopOnly && console.log(`finished processing viewport for tab`, tabs.get(targetId), {sessionId});
   }
   DEBUG.traceViewportUpdateFuncs && console.log('Exiting updateAllTargetsToViewport');
 }
@@ -3491,7 +3531,7 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
           console.log('');
         }
         if ( ! resolve ) {
-          console.warn(`No resolver for key`, key, stringMessage.toString().slice(0,140));
+          DEBUG.showErrorSources && console.warn(`No resolver for key`, key, stringMessage.toString().slice(0,140));
         } else {
           Resolvers[key] = undefined;
           try {
@@ -3504,7 +3544,7 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
         const key = `${sessionId||ROOT_SESSION}:${id}`;
         const resolve = Resolvers[key];
         if ( ! resolve ) {
-          console.warn(`No resolver for key`, key, stringMessage.toString().slice(0,140));
+          DEBUG.showErrorSources && console.warn(`No resolver for key`, key, stringMessage.toString().slice(0,140));
         } else {
           Resolvers[key] = undefined;
           try {

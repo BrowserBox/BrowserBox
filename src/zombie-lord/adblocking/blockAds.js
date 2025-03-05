@@ -112,11 +112,28 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
           if ( isNavigationRequest && responseHeaders ) {
             const contentType = responseHeaders.find(({name}) => name.match(/content-type/i));
             if ( contentType?.value?.match(/application\/pdf/i) ) {
-              DEBUG.debugPdf && console.log(`Found a pdf `, url, frameId); 
-              connection.DesktopOnly.add(url);
-              connection.updateAllTargetsToUserAgent({mobile:connection.mobile,connection});
+              if ( connection.DesktopOnly.has(url) || connection.DesktopOnly.has(sessionId) ) {
+                console.log(`Do nothing because we already knew this pdf`);
+              } else {
+                connection.DesktopOnly.add(url);
+                DEBUG.debugPdf && console.log(`Found a pdf `, url, frameId, connection.DesktopOnly, {sessionId}, connection.updateTargetsOnCommonChanged); 
+                //connection.zombie.send("Emulation.setDeviceMetricsOverride", {mobile:false}, sessionId);
+                try {
+                  console.log(`Trying to call common changed from within fetch intercept`);
+                  connection.updateTargetsOnCommonChanged({connection,command:'all',force:true,noReload:true}).then(async () => {
+                    await sleep(300);
+                    //connection.reloadAfterSetup(sessionId, {reason:'user-agent'}); 
+                    DEBUG.debugPdf && console.info(`Completed update on finding pdf`);
+                  }).catch(e => {
+                    DEBUG.debugPdf && console.info(`Error updating targets on pdf find`, e);
+                  });
+                } catch(e) {
+                  DEBUG.debugPdf && console.info(`Error updating targets on pdf find`, e);
+                }
+              }
             }
           }
+          DEBUG.debugPdf && console.log(`Continuing request`);
           zombie.send("Fetch.continueRequest", {
               requestId,
             },
