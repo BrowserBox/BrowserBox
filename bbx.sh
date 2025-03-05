@@ -98,8 +98,8 @@ ensure_hosts_entry() {
 
 # Get license key (env var or config, prompt if missing)
 get_license_key() {
-    if [ -n "$BBX_LICENSE_KEY" ]; then
-        LICENSE_KEY="$BBX_LICENSE_KEY"
+    if [ -n "$LICENSE_KEY" ]; then
+        LICENSE_KEY="$LICENSE_KEY"
     elif [ -z "$LICENSE_KEY" ]; then
         read -r -p "Enter License Key (get one at sales@dosaygo.com): " LICENSE_KEY
         [ -n "$LICENSE_KEY" ] || { printf "${RED}ERROR: License key required!${NC}\n"; exit 1; }
@@ -302,6 +302,7 @@ certify() {
 
 run() {
     load_config
+    setup
     local port="${2:-$PORT}"
     local default_hostname=$(get_system_hostname)
     local hostname="${3:-${BBX_HOSTNAME:-$default_hostname}}"

@@ -31,6 +31,28 @@ if command -v firewall-cmd &>/dev/null; then
   ZONE="$($SUDO firewall-cmd --get-default-zone)"
 fi
 
+# Check if hostname is local
+is_local_hostname() {
+    local hostname="$1"
+    local resolved_ip=$(dig +short "$hostname" A | grep -v '\.$' | head -n1)
+    if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
+        return 0  # Local
+    else
+        return 1  # Not local
+    fi
+}
+
+# Ensure hostname is in /etc/hosts, allowing whitespace but not comments
+ensure_hosts_entry() {
+    local hostname="$1"
+    if ! grep -v "^\s*#" /etc/hosts | grep -q "^\s*127\.0\.0\.1.*$hostname"; then
+        printf "${YELLOW}Adding $hostname to /etc/hosts...${NC}\n"
+        echo "127.0.0.1 $hostname" | $SUDO tee -a /etc/hosts > /dev/null || { printf "${RED}Failed to update /etc/hosts${NC}\n"; exit 1; }
+    else
+        printf "${GREEN}$hostname already mapped in /etc/hosts${NC}\n"
+    fi
+}
+
 add_hostname_to_hosts() {
   # Retrieve the current hostname
   HOSTNAME=$(hostname)
@@ -327,13 +349,13 @@ if ! command -v jq &>/dev/null; then
 fi
 
 
-if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
+if [ "$#" -eq 2 ] || is_local_hostname "$1"; then
   hostname="$1"
   export BB_USER_EMAIL="$2"
 
   amd64=""
 
-  if [ "$hostname" == "localhost" ]; then
+  if is_local_hostname "$1"; then
     if ! command -v mkcert &>/dev/null; then
       if [ "$(os_type)" == "macOS" ]; then
         brew install nss mkcert
@@ -370,7 +392,7 @@ if [ "$#" -eq 2 ] || [[ "$1" == "localhost" ]]; then
     fi
   fi
 else
-  if [[ "$1" = "localhost" ]]; then
+  if is_local_hostname "$1"; then
     echo ""
     echo "Usage: $0 <hostname>"
     echo "Please provide a hostname as an argument. This hostname will be where a running bbpro instance is accessible." >&2
