@@ -667,6 +667,22 @@
             DEBUG.debugResize && console.log(`Received resize event from remote browser (server)`, meta);
             clearViewport();
           });
+          queue.addMetaListener('triggerViewport', async viewport => {
+            const normalViewport = await sizeTab({forceFrame:true,resetRequested:true});
+            console.log('Sending viewport from trigger', viewport);
+            await sleep(500);
+            queue.sendViewport(viewport);
+            await sleep(500);
+            queue.sendViewport(normalViewport);
+            await sleep(500);
+            state.go({
+              target: {
+                address: {
+                  value: state.activeTab().url || BLANK 
+                }
+              }
+            }, state);
+          });
           queue.addMetaListener('multiplayer', meta => handleMultiplayerMessage(meta, state));
         
         // download progress

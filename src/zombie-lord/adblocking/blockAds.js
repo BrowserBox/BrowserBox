@@ -32,6 +32,7 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
       let blocked = false;
       let wl = false;
       let ri = 0;
+      let isPDF = false;
       if ( CONFIG.hostWL ) {
         const rHost = hostname.split('.').slice(-2).join('.');
         blocked = !CONFIG.hostWL.has(rHost); 
@@ -53,7 +54,6 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
       blocked = blocked || FORBIDDEN.has(protocol);
       
       DEBUG.debugInterception && console.log(`Is blocked ${blocked}`);
-      //await sleep(3000);
       if ( blocked ) {
         if ( isNavigationRequest ) {
           // we want to provide a response body to indicate that we blocked it via an ad blocker
@@ -109,20 +109,65 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
           if ( DEBUG.revealChromeJSIntercepts && url.startsWith('chrome') && url.endsWith('.js') ) {
             console.log(`Continue request ${url}`);
           }
+          let failRequest = false;
+          let resolve;
+          const untilRequestFailed = new Promise(res => resolve = res);
           if ( isNavigationRequest && responseHeaders ) {
             const contentType = responseHeaders.find(({name}) => name.match(/content-type/i));
             if ( contentType?.value?.match(/application\/pdf/i) ) {
-              DEBUG.debugPdf && console.log(`Found a pdf `, url, frameId); 
-              connection.DesktopOnly.add(url);
-              connection.updateAllTargetsToUserAgent({mobile:connection.mobile,connection});
+              isPDF = true;
+              if ( connection.DesktopOnly.has(url) && connection.DesktopOnly.has(sessionId) ) {
+                console.log(`Do nothing because we already knew this pdf. Just checking user agent:`);
+                if ( DEBUG.debugPdf ) {
+                  zombie.send("Runtime.evaluate", {
+                    expression: `navigator.userAgent`,
+                    timeout: CONFIG.SHORT_TIMEOUT,
+                    /*
+                    includeCommandLineAPI: false,
+                    userGesture: true,
+                    awaitPromise: true,
+                    */
+                  }, sessionId).then(r => {
+                    //console.log({sessionId,r})
+                    const {result:{value: userAgent}} = r;
+                    DEBUG.debugPdf && console.log(`Page has userAgent: `, userAgent);
+                    zombie.send("Emulations.setDeviceMetricsOverride", {mobile:false}, sessionId);
+                  });
+                }
+              } else {
+                //failRequest = true;
+                connection.DesktopOnly.add(url);
+                connection.DesktopOnly.add(sessionId);
+                DEBUG.debugPdf && console.log(`Found a pdf `, url, frameId, connection.DesktopOnly, {sessionId}, connection.updateTargetsOnCommonChanged); 
+                try {
+                  // this funny little hack is the only way to get the chrome native pdf viewier extension to come alive in a mobile context
+                  if ( connection.isMobile ) {
+                    connection.forceMeta({triggerViewport:{width:1920,height:1080,mobile:false}});
+                  }
+                } catch(e) {
+                  DEBUG.debugPdf && console.info(`Error updating targets on pdf find`, e);
+                }
+              }
+              DEBUG.debugPdf && console.log(failRequest ? `Failing request in order to re-navigate to it:` : `Continuing request`, url);
             }
           }
-          zombie.send("Fetch.continueRequest", {
-              requestId,
-            },
-            sessionId
-          );
-          DEBUG.debugInterception && console.log(`Continue request complete`);
+          if ( failRequest ) {
+            zombie.send("Fetch.failRequest", {
+                requestId,
+                errorReason: "Aborted"
+              },
+              sessionId
+            );
+            resolve();
+          } else {
+            zombie.send("Fetch.continueRequest", {
+                requestId,
+              },
+              sessionId
+            );
+            DEBUG.debugInterception && console.log(`Continue request complete`);
+            ( DEBUG.debugPdf && isPDF ) && console.log(`Continue request complete`); 
+          }
         } catch(e) {
           console.warn("Issue with continuing request", e, message);
         }

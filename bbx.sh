@@ -98,8 +98,8 @@ ensure_hosts_entry() {
 
 # Get license key (env var or config, prompt if missing)
 get_license_key() {
-    if [ -n "$BBX_LICENSE_KEY" ]; then
-        LICENSE_KEY="$BBX_LICENSE_KEY"
+    if [ -n "$LICENSE_KEY" ]; then
+        LICENSE_KEY="$LICENSE_KEY"
     elif [ -z "$LICENSE_KEY" ]; then
         read -r -p "Enter License Key (get one at sales@dosaygo.com): " LICENSE_KEY
         [ -n "$LICENSE_KEY" ] || { printf "${RED}ERROR: License key required!${NC}\n"; exit 1; }
@@ -261,35 +261,6 @@ uninstall() {
     printf "${GREEN}Uninstall complete. Run 'bbx install' to reinstall if needed.${NC}\n"
 }
 
-setup() {
-    load_config
-    ensure_deps
-    local port="${2:-$(find_free_port_block)}"
-    local default_hostname=$(get_system_hostname)
-    local hostname="${3:-${BBX_HOSTNAME:-$default_hostname}}"
-    PORT="$port"
-    BBX_HOSTNAME="$hostname"
-    printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
-    if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine’s IP.\n"
-        curl -sL "$REPO_URL/raw/main/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
-        chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
-    else
-        ensure_hosts_entry "$hostname"
-    fi
-    setup_bbpro --port "$port" > "$CONFIG_DIR/setup_output.txt" 2>/dev/null || { printf "${RED}Port range $((port-2))-$((port+2)) not free locally.${NC}\n"; exit 1; }
-    for i in {-2..2}; do
-        test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
-    done
-    test_port_access $((port-3000)) || { printf "${RED}CDP endpoint port $((port-3000)) is blocked. Adjust firewall.${NC}\n"; exit 1; }
-    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
-    setup_bbpro --port "$port" --token "$TOKEN" > "$CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
-    save_config
-    printf "${GREEN}Setup complete.${NC}\n"
-    draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
-}
-
 certify() {
     load_config
     printf "${YELLOW}Certifying BrowserBox license...${NC}\n"
@@ -300,57 +271,11 @@ certify() {
     printf "${GREEN}Certification complete.${NC}\n"
 }
 
-run() {
-    load_config
-    local port="${2:-$PORT}"
-    local default_hostname=$(get_system_hostname)
-    local hostname="${3:-${BBX_HOSTNAME:-$default_hostname}}"
-    [ -n "$port" ] || { printf "${RED}Run 'bbx setup' first to set a port.${NC}\n"; exit 1; }
-    PORT="$port"
-    BBX_HOSTNAME="$hostname"
-    printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
-    if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine’s IP.\n"
-        curl -sL "$REPO_URL/raw/main/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
-        chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
-    else
-        ensure_hosts_entry "$hostname"
-    fi
-    get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
-    bbcertify || { printf "${RED}Certification failed. Invalid or expired license key.${NC}\n"; exit 1; }
-    bbpro || { printf "${RED}Failed to start. Ensure setup is complete and dependencies are installed.${NC}\n"; exit 1; }
-    sleep 2
-    [ -n "$TOKEN" ] || TOKEN=$(cat "$CONFIG_DIR/login.link" | grep -oP 'token=\K[^&]+')
-    draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
-    save_config
-}
-
 stop() {
     load_config
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
     stop_bbpro || { printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"; exit 1; }
     printf "${GREEN}BrowserBox stopped.${NC}\n"
-}
-
-stop_user() {
-    load_config
-    local user="$2"
-    local delay="${3:-0}"
-    if [ -z "$user" ]; then
-        printf "${RED}Usage: bbx stop-user <username> [delay_seconds]${NC}\n"
-        exit 1
-    fi
-    if ! id "$user" >/dev/null 2>&1; then
-        printf "${RED}User $user does not exist.${NC}\n"
-        exit 1
-    fi
-    printf "${YELLOW}Scheduling stop for $user in $delay seconds...${NC}\n"
-    curl -sL "$REPO_URL/raw/main/scale_server/stop_browser.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh" || { printf "${RED}Failed to download stop_browser.sh${NC}\n"; exit 1; }
-    chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh"
-    "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh" "$user" "$delay" || { printf "${RED}Failed to stop $user’s session.${NC}\n"; exit 1; }
-    printf "${GREEN}Stop scheduled for $user.${NC}\n"
 }
 
 logs() {
@@ -391,12 +316,93 @@ status() {
     fi
 }
 
+# setup subcommand
+setup() {
+    load_config
+    ensure_deps
+    local port="${1:-$(find_free_port_block)}"
+    local default_hostname=$(get_system_hostname)
+    local hostname="${2:-${BBX_HOSTNAME:-$default_hostname}}"
+    PORT="$port"
+    BBX_HOSTNAME="$hostname"
+    printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
+    if ! is_local_hostname "$hostname"; then
+        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+        curl -sL "$REPO_URL/raw/main/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+        chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
+        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
+    else
+        ensure_hosts_entry "$hostname"
+    fi
+    setup_bbpro --port "$port" > "$CONFIG_DIR/setup_output.txt" 2>/dev/null || { printf "${RED}Port range $((port-2))-$((port+2)) not free locally.${NC}\n"; exit 1; }
+    for i in {-2..2}; do
+        test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
+    done
+    test_port_access $((port-3000)) || { printf "${RED}CDP endpoint port $((port-3000)) is blocked. Adjust firewall.${NC}\n"; exit 1; }
+    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
+    setup_bbpro --port "$port" --token "$TOKEN" > "$CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+    save_config
+    printf "${GREEN}Setup complete.${NC}\n"
+    draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
+}
+
+# run subcommand
+run() {
+    load_config
+    local port="${1:-$PORT}"
+    local default_hostname=$(get_system_hostname)
+    local hostname="${2:-${BBX_HOSTNAME:-$default_hostname}}"
+    [ -n "$port" ] || { printf "${RED}Run 'bbx setup' first to set a port.${NC}\n"; exit 1; }
+    PORT="$port"
+    BBX_HOSTNAME="$hostname"
+    echo "P $PORT H $BBX_HOSTNAME p $port h $hostname"
+    setup "$port" "$hostname"
+    printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
+    if ! is_local_hostname "$hostname"; then
+        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+        curl -sL "$REPO_URL/raw/main/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+        chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
+        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
+    else
+        ensure_hosts_entry "$hostname"
+    fi
+    get_license_key
+    export LICENSE_KEY="$LICENSE_KEY"
+    bbcertify || { printf "${RED}Certification failed. Invalid or expired license key.${NC}\n"; exit 1; }
+    bbpro || { printf "${RED}Failed to start. Ensure setup is complete and dependencies are installed.${NC}\n"; exit 1; }
+    sleep 2
+    [ -n "$TOKEN" ] || TOKEN=$(cat "$CONFIG_DIR/login.link" | grep -oP 'token=\K[^&]+')
+    draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
+    save_config
+}
+
+# stop-user subcommand
+stop_user() {
+    load_config
+    local user="$1"
+    local delay="${2:-0}"
+    if [ -z "$user" ]; then
+        printf "${RED}Usage: bbx stop-user <username> [delay_seconds]${NC}\n"
+        exit 1
+    fi
+    if ! id "$user" >/dev/null 2>&1; then
+        printf "${RED}User $user does not exist.${NC}\n"
+        exit 1
+    fi
+    printf "${YELLOW}Scheduling stop for $user in $delay seconds...${NC}\n"
+    curl -sL "$REPO_URL/raw/main/scale_server/stop_browser.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh" || { printf "${RED}Failed to download stop_browser.sh${NC}\n"; exit 1; }
+    chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh"
+    "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh" "$user" "$delay" || { printf "${RED}Failed to stop $user's session.${NC}\n"; exit 1; }
+    printf "${GREEN}Stop scheduled for $user.${NC}\n"
+}
+
+# run-as subcommand
 run_as() {
     load_config
     ensure_deps
-    local user="$2"
-    local port="${3:-$(find_free_port_block)}"
-    local hostname="${4:-${BBX_HOSTNAME:-localhost}}"
+    local user="$1"
+    local port="${2:-$(find_free_port_block)}"
+    local hostname="${3:-${BBX_HOSTNAME:-localhost}}"
     if [ -z "$user" ]; then
         printf "${RED}Usage: bbx run-as <username> [port] [hostname]${NC}\n"
         exit 1
@@ -414,7 +420,7 @@ run_as() {
     BBX_HOSTNAME="$hostname"
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
     $SUDO -u "$user" mkdir -p "/home/$user/.config/dosyago/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
-    $SUDO -u "$user" setup_bbpro --port "$port" --token "$TOKEN" > "/home/$user/.config/dosyago/bbpro/login.link" 2>/dev/null || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
+    $SUDO -u "$user" setup_bbpro --port "$port" --token "$TOKEN" > "/home/$user/.config/dosyago/bbpro LOGIN.link" 2>/dev/null || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
@@ -427,6 +433,7 @@ run_as() {
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
     save_config
 }
+
 
 version() {
     printf "${GREEN}bbx version $BBX_VERSION${NC}\n"
@@ -466,20 +473,68 @@ check_agreement() {
 
 [ "$1" != "install" ] && [ "$1" != "uninstall" ] && check_agreement
 case "$1" in
-    install) install ;;
-    uninstall) uninstall ;;
-    setup) setup "$@" ;;
-    certify) certify ;;
-    run) run "$@" ;;
-    stop) stop ;;
-    stop-user) stop_user "$@" ;;
-    logs) logs ;;
-    update) update ;;
-    license) license ;;
-    status) status ;;
-    run-as) run_as "$@" ;;
-    --version|-v) version ;;
-    --help|-h) usage ;;
-    "") usage ;;
-    *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1 ;;
+    install)
+        shift 1
+        install "$@"
+        ;;
+    uninstall)
+        shift 1
+        uninstall "$@"
+        ;;
+    setup)
+        shift 1
+        setup "$@"
+        ;;
+    certify)
+        shift 1
+        certify "$@"
+        ;;
+    run)
+        shift 1
+        run "$@"
+        ;;
+    stop)
+        shift 1
+        stop "$@"
+        ;;
+    stop-user)
+        shift 1
+        stop_user "$@"
+        ;;
+    logs)
+        shift 1
+        logs "$@"
+        ;;
+    update)
+        shift 1
+        update "$@"
+        ;;
+    license.Dropout)
+        shift 1
+        license "$@"
+        ;;
+    status)
+        shift 1
+        status "$@"
+        ;;
+    run-as)
+        shift 1
+        run_as "$@"
+        ;;
+    --version|-v)
+        shift 1
+        version "$@"
+        ;;
+    --help|-h)
+        shift 1
+        usage "$@"
+        ;;
+    "")
+        usage
+        ;;
+    *)
+        printf "${RED}Unknown command: $1${NC}\n"
+        usage
+        exit 1
+        ;;
 esac
