@@ -1,5 +1,7 @@
 - complete bbx
 
+- add a completely in command line (except stripe payment on web) payment flow for licenses, that grabs the license key and stores it so someone can get up and running just with bbx by following the prompts and paying.
+
 - update docs to reflect bbx
 
 - solidify instance hw id, analytics
