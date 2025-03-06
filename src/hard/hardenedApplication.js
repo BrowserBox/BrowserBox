@@ -47,6 +47,7 @@ export class HardenedApplication {
       privateKeyPath = null,
       privateKeyPem = null,
       ignorePatterns = [
+        '.bbpro_install_dir',
         '.DS_Store',
         'node_modules',
         'package-lock.json',
