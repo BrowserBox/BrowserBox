@@ -56,7 +56,7 @@
           stdio: 'ignore' ,
         });
         stopper.unref(); // Ensure parent doesn’t wait for child
-      }, 180000);
+      }, 120000);
     } catch(e) {
       console.warn(`Error stopping`);
       process.exit(1);
