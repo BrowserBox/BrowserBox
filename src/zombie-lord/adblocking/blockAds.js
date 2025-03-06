@@ -54,7 +54,6 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
       blocked = blocked || FORBIDDEN.has(protocol);
       
       DEBUG.debugInterception && console.log(`Is blocked ${blocked}`);
-      //await sleep(3000);
       if ( blocked ) {
         if ( isNavigationRequest ) {
           // we want to provide a response body to indicate that we blocked it via an ad blocker
@@ -117,7 +116,7 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
             const contentType = responseHeaders.find(({name}) => name.match(/content-type/i));
             if ( contentType?.value?.match(/application\/pdf/i) ) {
               isPDF = true;
-              if ( connection.DesktopOnly.has(url) || connection.DesktopOnly.has(sessionId) ) {
+              if ( connection.DesktopOnly.has(url) && connection.DesktopOnly.has(sessionId) ) {
                 console.log(`Do nothing because we already knew this pdf. Just checking user agent:`);
                     zombie.send("Runtime.evaluate", {
                       expression: `navigator.userAgent`,
@@ -134,38 +133,12 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
                       zombie.send("Emulations.setDeviceMetricsOverride", {mobile:false}, sessionId);
                     });
               } else {
-                failRequest = true;
+                //failRequest = true;
                 connection.DesktopOnly.add(url);
                 connection.DesktopOnly.add(sessionId);
                 DEBUG.debugPdf && console.log(`Found a pdf `, url, frameId, connection.DesktopOnly, {sessionId}, connection.updateTargetsOnCommonChanged); 
-                //connection.zombie.send("Emulation.setDeviceMetricsOverride", {mobile:false}, sessionId);
                 try {
-                  console.log(`Trying to call common changed from within fetch intercept`);
-                  const cId = Math.random().toString(36);
-                  connection.viewports.set(cId, {width:800,height:600,mobile:false});
-                  connection.updateTargetsOnCommonChanged({connection,command:'all',force:true,noReload:true}).then(async () => {
-                    //await untilRequestFailed;
-                    connection.reloadAfterSetup(sessionId, {reason:'user-agent'}); 
-                    connection.viewports.delete(cId);
-                    DEBUG.debugPdf && console.info(`Completed update on finding pdf. Renavigating to pdf url`);
-                    zombie.send("Page.navigate", {url}, sessionId);
-                    await zombie.send("Runtime.evaluate", {
-                      expression: `navigator.userAgent`,
-                      /*
-                      includeCommandLineAPI: false,
-                      userGesture: true,
-                      timeout: CONFIG.SHORT_TIMEOUT,
-                      awaitPromise: true,
-                      */
-                    }, sessionId).then(r => {
-                      //console.log({sessionId,r})
-                      const {result:{value: userAgent}} = r;
-                      DEBUG.debugPdf && console.log(`Page has userAgent: `, userAgent);
-                    });
-                    DEBUG.debugPdf && console.info(`Requested renavigation and UA evaluation`);
-                  }).catch(e => {
-                    DEBUG.debugPdf && console.info(`Error updating targets on pdf find`, e);
-                  });
+                  connection.forceMeta({triggerViewport:{width:1920,height:1080,mobile:false}});
                 } catch(e) {
                   DEBUG.debugPdf && console.info(`Error updating targets on pdf find`, e);
                 }
@@ -173,7 +146,7 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
               DEBUG.debugPdf && console.log(failRequest ? `Failing request in order to re-navigate to it:` : `Continuing request`, url);
             }
           }
-          if ( false && failRequest ) {
+          if ( failRequest ) {
             zombie.send("Fetch.failRequest", {
                 requestId,
                 errorReason: "Aborted"

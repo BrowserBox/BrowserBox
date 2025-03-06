@@ -1823,7 +1823,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           height += HeightAdjust;
         }
         await send("Browser.setWindowBounds", {bounds:{width,height},windowId})
-        await send("Emulation.setDeviceMetricsOverride", {width,height,mobile:DesktopOnly.has(sessionId)},sessionId);
+        await send("Emulation.setDeviceMetricsOverride", {width,height,mobile:!DesktopOnly.has(sessionId)},sessionId);
       } else {
         DEBUG.debugBrowserWindow && console.log(`Will add offscreen page for extension`, {targetId, tab: tabs.get(targetId)});
         if ( tabs.get(targetId)?.url?.startsWith?.('chrome-extension') && ! OffscreenPages.has(targetId) ) {
@@ -2345,8 +2345,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           connection.isMobile = true;
           DEBUG.debugUserAgent && console.log('Connection is mobile', viewport, connection.isMobile);
         } else {
-          connection.isMobile = false;
-          DEBUG.debugUserAgent && console.log('Connection is NOT mobile', viewport, connection.isMobile);
+          if ( ! DesktopOnly.has(sessionId) ) {
+            connection.isMobile = false;
+            DEBUG.debugUserAgent && console.log('Connection is NOT mobile', viewport, connection.isMobile);
+          }
         }
         DEBUG.debugViewportDimensions && console.log('Common viewport', viewport);
         if ( ! command.params.resetRequested ) {
@@ -2888,7 +2890,9 @@ export async function updateTargetsOnCommonChanged({connection, command, force =
         if ( commonViewport.mobile ) {
           connection.isMobile = true;
         } else {
-          connection.isMobile = false;
+          if ( ! DesktopOnly.has(thisT) ) { // don't update the connections mobile status if we are a desktop only tab
+            connection.isMobile = false;
+          }
         }
         DEBUG.traceViewportUpdateFuncs && console.log('tabOrViewportChanged:', tabOrViewportChanged, 'viewportChanged:', viewportChanged, 'mobileChanged:', mobileChanged);
         DEBUG.showViewportChanges && console.log(`lastVT: ${lastVT}`);
