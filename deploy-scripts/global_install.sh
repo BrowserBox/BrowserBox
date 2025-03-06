@@ -337,7 +337,7 @@ fi
 if [ "$(os_type)" == "Linux" ]; then
   $SUDO $APT update
   $SUDO $APT -y upgrade
-  $SUDO $APT install -y net-tools 
+  $SUDO $APT install -y net-tools dig
   open_firewall_port_range 80 80
 fi
 open_firewall_port_range 80 80

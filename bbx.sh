@@ -38,6 +38,80 @@ EOF
     printf "${NC}\n"
 }
 
+banner
+
+# Pre-install function to ensure proper setup
+pre_install() {
+    # Check if we're running as root
+    if [ "$(id -u)" -eq 0 ]; then
+        echo "Warning: Do not install as root."
+
+        # Prompt for a non-root user to run the install as
+        read -p "Enter a non-root username to run the installation: " install_user
+
+        # Check if the user exists
+        if id "$install_user" &>/dev/null; then
+            echo "User $install_user found."
+        else
+            echo "User $install_user does not exist. Please create the user first."
+            exit 1
+        fi
+
+        # Check if sudo is installed
+        if ! command -v sudo &>/dev/null; then
+            echo "Sudo not found, installing sudo..."
+            if [ -f /etc/debian_version ]; then
+                # For Debian/Ubuntu
+                apt update && apt install -y sudo
+            elif [ -f /etc/redhat-release ]; then
+                # For RHEL/CentOS
+                yum install -y sudo
+            else
+                echo "Unsupported distribution."
+                exit 1
+            fi
+        fi
+
+        # Ensure passwordless sudo is configured for the 'sudoers' group
+        if ! grep -q "%sudoers" /etc/sudoers; then
+            echo "%sudoers ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
+        fi
+
+        # Add the install user to the 'sudoers' group
+        usermod -aG sudoers "$install_user"
+
+        # Check if curl is installed, and install if missing
+        if ! command -v curl &>/dev/null; then
+            echo "Curl not found, installing curl..."
+            if [ -f /etc/debian_version ]; then
+                apt update && apt install -y curl
+            elif [ -f /etc/redhat-release ]; then
+                yum install -y curl
+            else
+                echo "Unsupported distribution for curl installation."
+                exit 1
+            fi
+        fi
+
+        # Download the install script using curl and save it to a file
+        echo "Downloading the installation script..."
+        curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh -o /tmp/bbx.sh
+
+        # Now switch to the non-root user
+        echo "Switching to user $install_user..."
+        su - "$install_user" -c "
+            # Make the script executable and run it as the non-root user
+            chmod +x /tmp/bbx.sh && /tmp/bbx.sh install
+        "
+
+        # Exit to end the script
+        exit 0
+    else
+        # If not running as root, continue with the normal install
+        echo "Running as non-root user, proceeding with installation..."
+    fi
+}
+
 # Box drawing helpers
 draw_box() {
     local text="$1"
@@ -182,6 +256,7 @@ test_port_access() {
 
 # Subcommands
 install() {
+    pre_install
     load_config
     ensure_deps
     printf "${GREEN}Installing BrowserBox CLI (bbx)...${NC}\n"
