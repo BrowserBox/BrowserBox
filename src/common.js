@@ -71,7 +71,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
-  debugDesktopOnly: true,
+  debugDesktopOnly: false,
   debugPdf: false,
   debugOffscreenPages: false,
   debugStartupTargets: false,
@@ -92,7 +92,7 @@ export const DEBUG = Object.freeze({
   debugCast: false,
   lowEndDefault: false,
   debugSession: false,
-  traceViewportUpdateFuncs: true,
+  traceViewportUpdateFuncs: false,
   debugReload: false,
   debugInfoChanged: false,
   attachDebug: false,
@@ -112,7 +112,7 @@ export const DEBUG = Object.freeze({
   debugViewports: false,
   noteCallStackInLog: true,
   showNoTargets: false,
-  debugUserAgent: true,
+  debugUserAgent: false,
   showSkippedCommandsAfterViewportChangeCheck: false,
   showFaviconErrors: false,
   showUARedux: false,

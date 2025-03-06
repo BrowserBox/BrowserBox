@@ -2959,7 +2959,6 @@ async function updateAllTargetsToUserAgent({mobile, connection, noReload}) {
   DEBUG.traceViewportUpdateFuncs && console.log('Retrieved zombie properties from connection', connection.targets.values());
   const oMobile = mobile || connection.isMobile;
   let isDesktopOnly = false;
-  mobile = mobile || connection.isMobile;
   let list = [];
   let sessionId;
   for (const targetId of connection.targets.values()) {
@@ -2975,7 +2974,7 @@ async function updateAllTargetsToUserAgent({mobile, connection, noReload}) {
       if (!sessionId) continue;
       try {
         const url = new URL(tabs.get(targetId).url);
-        isDesktopOnly = DesktopOnly.has(url.hostname) || DesktopOnly.has(url.href) || DesktopOnly.has(sessionId);
+        isDesktopOnly = DesktopOnly.has(url.hostname) || DesktopOnly.has(url.href);
         DEBUG.debugDesktopOnly && console.log(`DesktopOnly test url`, url, DesktopOnly, {isDesktopOnly});
       } catch(e) {
         console.warn(`Could not construct url from tab`, targetId, e);
@@ -3013,8 +3012,10 @@ async function updateAllTargetsToUserAgent({mobile, connection, noReload}) {
         */
         DEBUG.traceViewportUpdateFuncs && console.log('Retrieved userAgent:', userAgent);
         //console.log(`Session ${sessionId} has user agent ${userAgent}`);
-        const desiredUserAgent = mobile && ! isDesktopOnly ? mobUA : deskUA;
-        connection.navigator.userAgent = desiredUserAgent;
+        const desiredUserAgent = mobile ? mobUA : deskUA;
+        if ( ! isDesktopOnly ) {
+          connection.navigator.userAgent = desiredUserAgent;
+        }
         DEBUG.traceViewportUpdateFuncs && console.log('Determined desiredUserAgent:', desiredUserAgent);
         DEBUG.debugUserAgent && console.log({mobile, targetId, userAgent, desiredUserAgent});
         if (userAgent != desiredUserAgent) {

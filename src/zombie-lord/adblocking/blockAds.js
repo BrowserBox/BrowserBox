@@ -118,27 +118,32 @@ export async function onInterceptRequest({sessionId, message}, zombie, connectio
               isPDF = true;
               if ( connection.DesktopOnly.has(url) && connection.DesktopOnly.has(sessionId) ) {
                 console.log(`Do nothing because we already knew this pdf. Just checking user agent:`);
-                    zombie.send("Runtime.evaluate", {
-                      expression: `navigator.userAgent`,
-                      timeout: CONFIG.SHORT_TIMEOUT,
-                      /*
-                      includeCommandLineAPI: false,
-                      userGesture: true,
-                      awaitPromise: true,
-                      */
-                    }, sessionId).then(r => {
-                      //console.log({sessionId,r})
-                      const {result:{value: userAgent}} = r;
-                      DEBUG.debugPdf && console.log(`Page has userAgent: `, userAgent);
-                      zombie.send("Emulations.setDeviceMetricsOverride", {mobile:false}, sessionId);
-                    });
+                if ( DEBUG.debugPdf ) {
+                  zombie.send("Runtime.evaluate", {
+                    expression: `navigator.userAgent`,
+                    timeout: CONFIG.SHORT_TIMEOUT,
+                    /*
+                    includeCommandLineAPI: false,
+                    userGesture: true,
+                    awaitPromise: true,
+                    */
+                  }, sessionId).then(r => {
+                    //console.log({sessionId,r})
+                    const {result:{value: userAgent}} = r;
+                    DEBUG.debugPdf && console.log(`Page has userAgent: `, userAgent);
+                    zombie.send("Emulations.setDeviceMetricsOverride", {mobile:false}, sessionId);
+                  });
+                }
               } else {
                 //failRequest = true;
                 connection.DesktopOnly.add(url);
                 connection.DesktopOnly.add(sessionId);
                 DEBUG.debugPdf && console.log(`Found a pdf `, url, frameId, connection.DesktopOnly, {sessionId}, connection.updateTargetsOnCommonChanged); 
                 try {
-                  connection.forceMeta({triggerViewport:{width:1920,height:1080,mobile:false}});
+                  // this funny little hack is the only way to get the chrome native pdf viewier extension to come alive in a mobile context
+                  if ( connection.isMobile ) {
+                    connection.forceMeta({triggerViewport:{width:1920,height:1080,mobile:false}});
+                  }
                 } catch(e) {
                   DEBUG.debugPdf && console.info(`Error updating targets on pdf find`, e);
                 }
