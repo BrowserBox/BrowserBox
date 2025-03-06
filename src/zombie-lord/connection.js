@@ -2394,10 +2394,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
       }; break;
       case "Emulation.setUserAgentOverride": {
         let changed = false;
-        //connection.navigator.platform = command.params.platform;
-        //connection.navigator.userAgent = command.params.userAgent;
-        //command.params.userAgent = connection.navigator.userAgent;
-        //command.params.platform = connection.navigator.platform;
 
         changed = connection.navigator.userAgent !== command.params.userAgent;
 
@@ -2406,7 +2402,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
         connection.navigator.platform = command.params.platform;
 
-        connection.navigator.userAgent = command.params.userAgent;
+        if ( ! DesktopOnly.has(sessionId) ) {
+          connection.navigator.userAgent = command.params.userAgent;
+        }
         connection.navigator.acceptLanguage = command.params.acceptLanguage;
 
         if ( changed ) {
