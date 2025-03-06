@@ -307,10 +307,10 @@ license() {
 status() {
     load_config
     printf "${YELLOW}Checking BrowserBox status...${NC}\n"
-    if [ -n "$PORT" ] && curl -s --max-time 2 "http://localhost:$PORT" >/dev/null 2>&1; then
+    if [ -n "$PORT" ] && curl -s --max-time 2 "https://$BBX_HOSTNAME:$PORT" >/dev/null 2>&1; then
         draw_box "Status: Running (port $PORT)"
-    elif command -v pm2 >/dev/null && pm2 list | grep -q "bbpro"; then
-        draw_box "Status: Running (current user via pm2)"
+    elif pgrep -u "$(whoami)" browserbox; then
+        draw_box "Status: Running (current user)"
     else
         draw_box "Status: Not Running"
     fi
@@ -355,7 +355,6 @@ run() {
     [ -n "$port" ] || { printf "${RED}Run 'bbx setup' first to set a port.${NC}\n"; exit 1; }
     PORT="$port"
     BBX_HOSTNAME="$hostname"
-    echo "P $PORT H $BBX_HOSTNAME p $port h $hostname"
     setup "$port" "$hostname"
     printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
