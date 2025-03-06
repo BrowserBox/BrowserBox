@@ -259,4 +259,6 @@ npm i --save-exact esbuild@latest
 
 npm audit fix
 
+echo "$(date)" > .bbpro_install_dir
+
 echo Dependency install complete.
