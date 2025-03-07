@@ -23,6 +23,7 @@ BOLD='\033[1m'
 
 # Version
 BBX_VERSION="10.0.2"
+branch="bx3" # change to main for dist
 
 # ASCII Banner
 banner() {
@@ -97,7 +98,7 @@ pre_install() {
 
         # Download the install script using curl and save it to a file
         echo "Downloading the installation script..."
-        curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh -o /tmp/bbx.sh
+        curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/bx3/bbx.sh -o /tmp/bbx.sh
         chmod +x /tmp/bbx.sh
         chown "${install_user}:${install_user}" /tmp/bbx.sh
 
@@ -336,10 +337,10 @@ install() {
     printf "${GREEN}Installing BrowserBox CLI (bbx)...${NC}\n"
     mkdir -p "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to create $BBX_HOME/BrowserBox${NC}\n"; exit 1; }
     printf "${YELLOW}Fetching BrowserBox repository...${NC}\n"
-    curl -sL "$REPO_URL/archive/refs/heads/main.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
+    curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
     rm -rf $BBX_HOME/BrowserBox/*
     unzip -q "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
-    mv "$BBX_HOME/BrowserBox-zip/BrowserBox-main"/* "$BBX_HOME/BrowserBox/" && rm -rf "$BBX_HOME/BrowserBox-zip"
+    mv "$BBX_HOME/BrowserBox-zip/BrowserBox-${branch}"/* "$BBX_HOME/BrowserBox/" && rm -rf "$BBX_HOME/BrowserBox-zip"
     rm "$BBX_HOME/BrowserBox.zip"
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
     local default_hostname=$(get_system_hostname)
@@ -357,7 +358,7 @@ install() {
         cd "$BBX_HOME/BrowserBox" && (yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL")
     fi
     [ $? -eq 0 ] || { printf "${RED}Installation failed. Check $BBX_HOME/BrowserBox/deploy-scripts/global_install.sh output.${NC}\n"; exit 1; }
-    $SUDO curl -sL "$REPO_URL/raw/main/bbx" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
+    $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
     save_config
     printf "${GREEN}bbx v$BBX_VERSION installed successfully! Run 'bbx --help' for usage.${NC}\n"
@@ -447,7 +448,7 @@ update() {
 license() {
     printf "${BLUE}BrowserBox License Information:${NC}\n"
     draw_box "Terms: https://dosaygo.com/terms.txt"
-    draw_box "License: $REPO_URL/blob/main/LICENSE.md"
+    draw_box "License: $REPO_URL/blob/${branch}/LICENSE.md"
     draw_box "Privacy: https://dosaygo.com/privacy.txt"
     draw_box "Get a License: https://dosaygo.com/license"
     printf "Run 'bbx certify' to enter your license key.\n"
@@ -477,7 +478,7 @@ setup() {
     printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
         printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        curl -sL "$REPO_URL/raw/main/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
         chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
         "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
     else
@@ -508,7 +509,7 @@ run() {
     printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
         printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        curl -sL "$REPO_URL/raw/main/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
         chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
         "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
     else
@@ -538,8 +539,7 @@ stop_user() {
         exit 1
     fi
     printf "${YELLOW}Scheduling stop for $user in $delay seconds...${NC}\n"
-    curl -sL "$REPO_URL/raw/main/scale_server/stop_browser.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh" || { printf "${RED}Failed to download stop_browser.sh${NC}\n"; exit 1; }
-    chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh"
+    # error we need to instalize stop_user from stop_browser here: note to do and request the stop_browser script
     "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh" "$user" "$delay" || { printf "${RED}Failed to stop $user's session.${NC}\n"; exit 1; }
     printf "${GREEN}Stop scheduled for $user.${NC}\n"
 }
@@ -610,7 +610,7 @@ usage() {
 check_agreement() {
     if [ ! -f "$CONFIG_DIR/.agreed" ]; then
         printf "${BLUE}BrowserBox v10 Terms:${NC} https://dosaygo.com/terms.txt\n"
-        printf "${BLUE}License:${NC} $REPO_URL/blob/main/LICENSE.md\n"
+        printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
         printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
         read -r -p " Agree? (yes/no): " AGREE
         [ "$AGREE" = "yes" ] || { printf "${RED}ERROR: Must agree to terms!${NC}\n"; exit 1; }
