@@ -38,6 +38,84 @@ EOF
     printf "${NC}\n"
 }
 
+banner
+
+# Pre-install function to ensure proper setup
+pre_install() {
+    # Check if we're running as root
+    if [ "$(id -u)" -eq 0 ]; then
+        echo "Warning: Do not install as root."
+
+        # Prompt for a non-root user to run the install as
+        read -p "Enter a non-root username to run the installation: " install_user
+
+        # Check if the user exists
+        if id "$install_user" &>/dev/null; then
+            echo "User $install_user found."
+        else
+            echo "User $install_user does not exist. Please create the user first."
+            exit 1
+        fi
+
+        # Check if sudo is installed
+        if ! command -v sudo &>/dev/null; then
+            echo "Sudo not found, installing sudo..."
+            if [ -f /etc/debian_version ]; then
+                # For Debian/Ubuntu
+                apt update && apt install -y sudo
+            elif [ -f /etc/redhat-release ]; then
+                # For RHEL/CentOS
+                yum install -y sudo
+            else
+                echo "Unsupported distribution."
+                exit 1
+            fi
+        fi
+
+        groupadd sudoers
+
+        # Ensure passwordless sudo is configured for the 'sudoers' group
+        if ! grep -q "%sudoers" /etc/sudoers; then
+            echo "%sudoers ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
+        fi
+
+        # Add the install user to the 'sudoers' group
+        usermod -aG sudoers "$install_user"
+
+        # Check if curl is installed, and install if missing
+        if ! command -v curl &>/dev/null; then
+            echo "Curl not found, installing curl..."
+            if [ -f /etc/debian_version ]; then
+                apt update && apt install -y curl
+            elif [ -f /etc/redhat-release ]; then
+                yum install -y curl
+            else
+                echo "Unsupported distribution for curl installation."
+                exit 1
+            fi
+        fi
+
+        # Download the install script using curl and save it to a file
+        echo "Downloading the installation script..."
+        curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh -o /tmp/bbx.sh
+        chmod +x /tmp/bbx.sh
+        chown "${install_user}:${install_user}" /tmp/bbx.sh
+
+        # Now switch to the non-root user
+        echo "Switching to user $install_user..."
+        su - "$install_user" -c "
+            # Make the script executable and run it as the non-root user
+            /tmp/bbx.sh install
+        "
+
+        # Exit to end the script
+        exit 0
+    else
+        # If not running as root, continue with the normal install
+        echo "Running as non-root user, proceeding with installation..."
+    fi
+}
+
 # Box drawing helpers
 draw_box() {
     local text="$1"
@@ -119,20 +197,90 @@ BBX_BIN="/usr/local/bin/bbx"
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
 
+# Parse dependency syntax: <os_label>:<pkg>,<pkg>[/<tool>]
+parse_dep() {
+    local dep="$1"
+    local os_type=""
+    local pkg_name=""
+    local tool_name=""
+
+    # OS detection
+    if [ -f /etc/debian_version ]; then
+        os_type="debian"
+    elif [ -f /etc/redhat-release ]; then
+        os_type="redhat"
+    elif [ "$(uname -s)" = "Darwin" ]; then
+        os_type="darwin"
+    fi
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: OS type is $os_type for dep '$dep'${NC}\n" >&2
+
+    # Split by comma
+    IFS=',' read -r -a parts <<< "$dep"
+    [ ${#parts[@]} -lt 1 ] && { printf "${RED}Invalid dep syntax: '$dep'${NC}\n" >&2; exit 1; }
+
+    # Last part is <pkg>[/<tool>] - portable method
+    local last_part="${parts[$((${#parts[@]} - 1))]}"
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: last_part is '$last_part'${NC}\n" >&2
+
+    # Split last part into pkg and tool (handle optional /)
+    IFS='/' read -r default_pkg tool_name <<< "$last_part"
+    [ -z "$tool_name" ] && tool_name="$default_pkg"  # If no /, tool_name = pkg_name
+    # If last_part has a colon (e.g., darwin:netcat/nc), use only the pkg part after colon as default
+    case "$default_pkg" in
+        *:*)
+            IFS=':' read -r _ pkg_name <<< "$default_pkg"
+            ;;
+        *)
+            pkg_name="$default_pkg"
+            ;;
+    esac
+    [ -z "$pkg_name" ] && { printf "${RED}No package specified in '$dep'${NC}\n" >&2; exit 1; }
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Default pkg_name='$pkg_name', tool_name='$tool_name'${NC}\n" >&2
+
+    # Look for OS-specific package
+    for part in "${parts[@]::${#parts[@]}-1}"; do
+        IFS=':' read -r label pkg <<< "$part"
+        [ -z "$label" ] || [ -z "$pkg" ] && { printf "${RED}Invalid OS label syntax: '$part'${NC}\n" >&2; exit 1; }
+        if [ "$label" = "$os_type" ]; then
+            pkg_name="$pkg"
+            break
+        fi
+    done
+
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Parsed '$dep' -> '$pkg_name:$tool_name'${NC}\n" >&2
+    echo "$pkg_name:$tool_name"
+}
+
 # Dependency check
 ensure_deps() {
-    local deps=("curl" "nc" "at" "unzip")
+    local deps=("curl" "debian:netcat,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl")
     for dep in "${deps[@]}"; do
-        if ! command -v "$dep" >/dev/null 2>&1; then
-            printf "${YELLOW}Installing $dep...${NC}\n"
+        # Parse the dependency
+        IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
+
+        # Check if the tool exists
+        if ! command -v "$tool_name" >/dev/null 2>&1; then
+            printf "${YELLOW}Installing $pkg_name (for $tool_name)...${NC}\n"
+
+            # Install based on OS
             if [ -f /etc/debian_version ]; then
-                $SUDO apt-get update && $SUDO apt-get install -y "$dep"
+                $SUDO apt-get update && $SUDO apt-get install -y "$pkg_name"
             elif [ -f /etc/redhat-release ]; then
-                $SUDO yum install -y "$dep" || $SUDO dnf install -y "$dep"
+                $SUDO yum install -y "$pkg_name" || $SUDO dnf install -y "$pkg_name"
             elif [ "$(uname -s)" = "Darwin" ]; then
-                brew install "$dep"
+                if ! command -v brew >/dev/null; then
+                    printf "${RED}Homebrew not found. Install it first: https://brew.sh${NC}\n"
+                    exit 1
+                fi
+                brew install "$pkg_name"
             else
-                printf "${RED}Cannot install $dep. Please install it manually.${NC}\n"
+                printf "${RED}Cannot install $pkg_name. Unsupported OS. Please install it manually.${NC}\n"
+                exit 1
+            fi
+
+            # Verify installation
+            if ! command -v "$tool_name" >/dev/null 2>&1; then
+                printf "${RED}Failed to install $pkg_name (for $tool_name). Please install it manually.${NC}\n"
                 exit 1
             fi
         fi
@@ -182,6 +330,7 @@ test_port_access() {
 
 # Subcommands
 install() {
+    pre_install
     load_config
     ensure_deps
     printf "${GREEN}Installing BrowserBox CLI (bbx)...${NC}\n"
@@ -307,10 +456,10 @@ license() {
 status() {
     load_config
     printf "${YELLOW}Checking BrowserBox status...${NC}\n"
-    if [ -n "$PORT" ] && curl -s --max-time 2 "http://localhost:$PORT" >/dev/null 2>&1; then
+    if [ -n "$PORT" ] && curl -s --max-time 2 "https://$BBX_HOSTNAME:$PORT" >/dev/null 2>&1; then
         draw_box "Status: Running (port $PORT)"
-    elif command -v pm2 >/dev/null && pm2 list | grep -q "bbpro"; then
-        draw_box "Status: Running (current user via pm2)"
+    elif pgrep -u "$(whoami)" browserbox; then
+        draw_box "Status: Running (current user)"
     else
         draw_box "Status: Not Running"
     fi
@@ -355,7 +504,6 @@ run() {
     [ -n "$port" ] || { printf "${RED}Run 'bbx setup' first to set a port.${NC}\n"; exit 1; }
     PORT="$port"
     BBX_HOSTNAME="$hostname"
-    echo "P $PORT H $BBX_HOSTNAME p $port h $hostname"
     setup "$port" "$hostname"
     printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
