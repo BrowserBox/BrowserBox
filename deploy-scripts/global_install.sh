@@ -163,7 +163,7 @@ read_input() {
 get_latest_dir() {
   # Find potential directories containing .bbpro_install_dir
   pwd="$(pwd)"
-  install_path1=$(find "$HOME" -name .bbpro_install_dir -print 2>/dev/null)
+  install_path1=$(find "$HOME" -name bbpro_dir -print 2>/dev/null)
   current_version=$(jq -r '.version' ./package.json)
 
   # Loop through each found path to check if node_modules also exists in the same directory
@@ -182,7 +182,7 @@ get_latest_dir() {
 
   if [[ "$pwd" != "$HOME" && "$pwd" != "$HOME"/* ]]; then
     echo "\$pwd ($pwd) is not within \$HOME ($HOME)" >&2
-    install_path2=$(find $pwd -name .bbpro_install_dir -print 2>/dev/null)
+    install_path2=$(find $pwd -name bbpro_dir -print 2>/dev/null)
     IFS=$'\n'  # Change Internal Field Separator to newline for iteration
     for path in $install_path2; do
       dir=$(dirname $path)
