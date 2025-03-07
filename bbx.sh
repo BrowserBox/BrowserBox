@@ -193,20 +193,77 @@ BBX_BIN="/usr/local/bin/bbx"
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
 
+# Parse dependency syntax: <os_label>:<pkg>,<pkg>[/<tool>]
+parse_dep() {
+    local dep="$1"
+    local os_type=""
+    local pkg_name=""
+    local tool_name=""
+
+    # OS detection
+    if [ -f /etc/debian_version ]; then
+        os_type="debian"
+    elif [ -f /etc/redhat-release ]; then
+        os_type="redhat"
+    elif [ "$(uname -s)" = "Darwin" ]; then
+        os_type="darwin"
+    fi
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: OS type is $os_type for dep $dep${NC}\n"
+
+    # Split by comma
+    IFS=',' read -r -a parts <<< "$dep"
+    [ ${#parts[@]} -lt 1 ] && { printf "${RED}Invalid dep syntax: $dep${NC}\n"; exit 1; }
+
+    # Last part is <pkg>[/<tool>]
+    local last_part="${parts[-1]}"
+    IFS='/' read -r pkg_name tool_name <<< "$last_part"
+    [ -z "$pkg_name" ] && { printf "${RED}No package specified in $dep${NC}\n"; exit 1; }
+    [ -z "$tool_name" ] && tool_name="$pkg_name"  # If no /, tool_name = pkg_name
+
+    # Look for OS-specific package
+    for part in "${parts[@]::${#parts[@]}-1}"; do
+        IFS=':' read -r label pkg <<< "$part"
+        [ -z "$label" ] || [ -z "$pkg" ] && { printf "${RED}Invalid OS label syntax: $part${NC}\n"; exit 1; }
+        if [ "$label" = "$os_type" ]; then
+            pkg_name="$pkg"
+            break
+        fi
+    done
+
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Parsed $dep -> $pkg_name:$tool_name${NC}\n"
+    echo "$pkg_name:$tool_name"
+}
+
 # Dependency check
 ensure_deps() {
-    local deps=("curl" "nc" "at" "unzip")
+    local deps=("curl" "debian:netcat,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl")
     for dep in "${deps[@]}"; do
-        if ! command -v "$dep" >/dev/null 2>&1; then
-            printf "${YELLOW}Installing $dep...${NC}\n"
+        # Parse the dependency
+        IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
+
+        # Check if the tool exists
+        if ! command -v "$tool_name" >/dev/null 2>&1; then
+            printf "${YELLOW}Installing $pkg_name (for $tool_name)...${NC}\n"
+
+            # Install based on OS
             if [ -f /etc/debian_version ]; then
-                $SUDO apt-get update && $SUDO apt-get install -y "$dep"
+                $SUDO apt-get update && $SUDO apt-get install -y "$pkg_name"
             elif [ -f /etc/redhat-release ]; then
-                $SUDO yum install -y "$dep" || $SUDO dnf install -y "$dep"
+                $SUDO yum install -y "$pkg_name" || $SUDO dnf install -y "$pkg_name"
             elif [ "$(uname -s)" = "Darwin" ]; then
-                brew install "$dep"
+                if ! command -v brew >/dev/null; then
+                    printf "${RED}Homebrew not found. Install it first: https://brew.sh${NC}\n"
+                    exit 1
+                fi
+                brew install "$pkg_name"
             else
-                printf "${RED}Cannot install $dep. Please install it manually.${NC}\n"
+                printf "${RED}Cannot install $pkg_name. Unsupported OS. Please install it manually.${NC}\n"
+                exit 1
+            fi
+
+            # Verify installation
+            if ! command -v "$tool_name" >/dev/null 2>&1; then
+                printf "${RED}Failed to install $pkg_name (for $tool_name). Please install it manually.${NC}\n"
                 exit 1
             fi
         fi
