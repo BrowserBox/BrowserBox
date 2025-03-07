@@ -163,7 +163,7 @@ read_input() {
 get_latest_dir() {
   # Find potential directories containing .bbpro_install_dir
   pwd="$(pwd)"
-  install_path1=$(find $pwd -name .bbpro_install_dir -print 2>/dev/null)
+  install_path1=$(find "$HOME" -name .bbpro_install_dir -print 2>/dev/null)
   current_version=$(jq -r '.version' ./package.json)
 
   # Loop through each found path to check if node_modules also exists in the same directory
@@ -180,19 +180,24 @@ get_latest_dir() {
       fi
   done
 
-  install_path2=$(find "${HOME}/BrowserBox" -name .bbpro_install_dir -print 2>/dev/null)
-  IFS=$'\n'  # Change Internal Field Separator to newline for iteration
-  for path in $install_path2; do
-    dir=$(dirname $path)
-      # Get the version of the found directory's package.json
-      found_version=$(jq -r '.version' "${dir}/package.json")
+  if [[ "$pwd" != "$HOME" && "$pwd" != "$HOME"/* ]]; then
+    echo "\$pwd ($pwd) is not within \$HOME ($HOME)" >&2
+    install_path2=$(find $pwd -name .bbpro_install_dir -print 2>/dev/null)
+    IFS=$'\n'  # Change Internal Field Separator to newline for iteration
+    for path in $install_path2; do
+      dir=$(dirname $path)
+        # Get the version of the found directory's package.json
+        found_version=$(jq -r '.version' "${dir}/package.json")
 
-      # Check if the found version is the same or later than the current version
-      if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then
-        echo "$dir"
-        return 0
-      fi
-  done
+        # Check if the found version is the same or later than the current version
+        if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then
+          echo "$dir"
+          return 0
+        fi
+    done
+  else
+      echo "\$pwd ($pwd) is within \$HOME ($HOME)" >&2
+  fi
 
   echo "No valid install directory found." >&2
   return 1
