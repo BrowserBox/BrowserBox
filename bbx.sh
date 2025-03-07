@@ -18,6 +18,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PINK='\033[95m'  # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
 BOLD='\033[1m'
 
@@ -121,9 +122,9 @@ pre_install() {
 draw_box() {
     local text="$1"
     local width=$((${#text} + 4))
-    printf "┌"; printf "─"%.0s $(seq 1 "$width"); printf "┐\n"
-    printf "│  %-${#text}s  │\n" "$text"
-    printf "└"; printf "─"%.0s $(seq 1 "$width"); printf "┘\n"
+    printf "‚îå"; printf "‚îÄ"%.0s $(seq 1 "$width"); printf "‚îê\n"
+    printf "‚îÇ  %-${#text}s  ‚îÇ\n" "$text"
+    printf "‚îî"; printf "‚îÄ"%.0s $(seq 1 "$width"); printf "‚îò\n"
 }
 
 # Config file
@@ -355,7 +356,7 @@ install() {
     if is_local_hostname "$BBX_HOSTNAME"; then
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
-    [ -n "$EMAIL" ] || read -r -p "Enter your email for Let’s Encrypt (optional for $BBX_HOSTNAME): " EMAIL
+    [ -n "$EMAIL" ] || read -r -p "Enter your email for Let‚Äôs Encrypt (optional for $BBX_HOSTNAME): " EMAIL
     if [ -t 0 ]; then
         printf "${YELLOW}Running BrowserBox installer interactively...${NC}\n"
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL"
@@ -588,7 +589,6 @@ run_as() {
     save_config
 }
 
-
 version() {
     printf "${GREEN}bbx version $BBX_VERSION${NC}\n"
 }
@@ -609,8 +609,12 @@ usage() {
     printf "  ${GREEN}license${NC}      Show license purchase URL\n"
     printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
     printf "  ${GREEN}run-as${NC}       Run as a specific user [username] [port] [hostname]\n"
+    printf "  ${PINK}console${NC}      See and interact with the BrowserBox command stream\n"
+    printf "  ${PINK}automate${NC}     Run pptr or playwright scripts in a running BrowserBox\n"
+    printf "  ${PINK}tor${NC}          Run BrowserBox as an onion site and browse the Tor network\n"
     printf "  ${GREEN}--version${NC}    Show bbx version\n"
     printf "  ${GREEN}--help${NC}       Show this help\n"
+    printf "\n${PINK}*Coming Soon${NC}\n"
 }
 
 check_agreement() {
@@ -663,7 +667,7 @@ case "$1" in
         shift 1
         update "$@"
         ;;
-    license.Dropout)
+    license)
         shift 1
         license "$@"
         ;;
