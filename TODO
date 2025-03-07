@@ -1,3 +1,5 @@
+- installing on ubuntu docker via bbx works, but chrome does not install because on macos the ubuntu is arm. however we have a native arm docker for browserbox, so chrome installs in that, what chrome do we use there? let's try the same here.
+
 - complete bbx
 
 - add a completely in command line (except stripe payment on web) payment flow for licenses, that grabs the license key and stores it so someone can get up and running just with bbx by following the prompts and paying.
