@@ -40,8 +40,6 @@ EOF
     printf "${NC}\n"
 }
 
-banner
-
 # Pre-install function to ensure proper setup
 pre_install() {
     # Check if we're running as root
@@ -338,6 +336,7 @@ test_port_access() {
 
 # Subcommands
 install() {
+    banner
     pre_install
     load_config
     ensure_deps
