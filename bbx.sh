@@ -160,7 +160,13 @@ is_local_hostname() {
     if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
         return 0  # Local
     else
-        return 1  # Not local
+      if command -v getent &>/dev/null; then
+        resolved_ip=$(getent hosts "$hostname" | tail -n1)
+        if [[ "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
+          return 0
+        fi
+      fi
+      return 1  # Not local
     fi
 }
 
