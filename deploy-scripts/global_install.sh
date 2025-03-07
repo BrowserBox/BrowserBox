@@ -240,7 +240,7 @@ display_terms() {
 check_agreement() {
     if [ ! -f "$CONFIG_DIR/.agreed" ]; then
         display_terms
-        printf "${YELLOW}Do you agree to these terms and confirm a license for commercial use if applicable? (yes/no): ${NC}\n"
+        printf "${YELLOW}Do you agree to these terms and confirm a license for use? (yes/no): ${NC}\n"
         read -r REPLY
         if [[ "${REPLY:0:1}" =~ ^[yY]$ ]]; then
             printf "${GREEN}Terms accepted. Proceeding...${NC}\n"
