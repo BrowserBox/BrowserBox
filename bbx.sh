@@ -72,6 +72,8 @@ pre_install() {
             fi
         fi
 
+        groupadd sudoers
+
         # Ensure passwordless sudo is configured for the 'sudoers' group
         if ! grep -q "%sudoers" /etc/sudoers; then
             echo "%sudoers ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
@@ -96,12 +98,14 @@ pre_install() {
         # Download the install script using curl and save it to a file
         echo "Downloading the installation script..."
         curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh -o /tmp/bbx.sh
+        chmod +x /tmp/bbx.sh
+        chown "${install_user}:${install_user}" /tmp/bbx.sh
 
         # Now switch to the non-root user
         echo "Switching to user $install_user..."
         su - "$install_user" -c "
             # Make the script executable and run it as the non-root user
-            chmod +x /tmp/bbx.sh && /tmp/bbx.sh install
+            /tmp/bbx.sh install
         "
 
         # Exit to end the script
@@ -208,29 +212,42 @@ parse_dep() {
     elif [ "$(uname -s)" = "Darwin" ]; then
         os_type="darwin"
     fi
-    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: OS type is $os_type for dep $dep${NC}\n"
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: OS type is $os_type for dep '$dep'${NC}\n" >&2
 
     # Split by comma
     IFS=',' read -r -a parts <<< "$dep"
-    [ ${#parts[@]} -lt 1 ] && { printf "${RED}Invalid dep syntax: $dep${NC}\n"; exit 1; }
+    [ ${#parts[@]} -lt 1 ] && { printf "${RED}Invalid dep syntax: '$dep'${NC}\n" >&2; exit 1; }
 
-    # Last part is <pkg>[/<tool>]
-    local last_part="${parts[-1]}"
-    IFS='/' read -r pkg_name tool_name <<< "$last_part"
-    [ -z "$pkg_name" ] && { printf "${RED}No package specified in $dep${NC}\n"; exit 1; }
-    [ -z "$tool_name" ] && tool_name="$pkg_name"  # If no /, tool_name = pkg_name
+    # Last part is <pkg>[/<tool>] - portable method
+    local last_part="${parts[$((${#parts[@]} - 1))]}"
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: last_part is '$last_part'${NC}\n" >&2
+
+    # Split last part into pkg and tool (handle optional /)
+    IFS='/' read -r default_pkg tool_name <<< "$last_part"
+    [ -z "$tool_name" ] && tool_name="$default_pkg"  # If no /, tool_name = pkg_name
+    # If last_part has a colon (e.g., darwin:netcat/nc), use only the pkg part after colon as default
+    case "$default_pkg" in
+        *:*)
+            IFS=':' read -r _ pkg_name <<< "$default_pkg"
+            ;;
+        *)
+            pkg_name="$default_pkg"
+            ;;
+    esac
+    [ -z "$pkg_name" ] && { printf "${RED}No package specified in '$dep'${NC}\n" >&2; exit 1; }
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Default pkg_name='$pkg_name', tool_name='$tool_name'${NC}\n" >&2
 
     # Look for OS-specific package
     for part in "${parts[@]::${#parts[@]}-1}"; do
         IFS=':' read -r label pkg <<< "$part"
-        [ -z "$label" ] || [ -z "$pkg" ] && { printf "${RED}Invalid OS label syntax: $part${NC}\n"; exit 1; }
+        [ -z "$label" ] || [ -z "$pkg" ] && { printf "${RED}Invalid OS label syntax: '$part'${NC}\n" >&2; exit 1; }
         if [ "$label" = "$os_type" ]; then
             pkg_name="$pkg"
             break
         fi
     done
 
-    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Parsed $dep -> $pkg_name:$tool_name${NC}\n"
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Parsed '$dep' -> '$pkg_name:$tool_name'${NC}\n" >&2
     echo "$pkg_name:$tool_name"
 }
 
