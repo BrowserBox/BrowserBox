@@ -50,7 +50,7 @@ is_docker() {
 }
 
 is_arm() {
-  uname -a | grep -q arm64;
+  uname -a | grep -q -E "arm64|aarch64";
 }
 
 is_macos() { [[ "$(uname -s)" == "Darwin" ]]; }
