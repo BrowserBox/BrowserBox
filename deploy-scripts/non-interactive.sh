@@ -16,7 +16,9 @@ export NEEDRESTART_MODE=a
 export DEBIAN_FRONTEND=noninteractive
 unset UCF_FORCE_CONFOLD
 export UCF_FORCE_CONFNEW=YES
-$SUDO ucf --purge /boot/grub/menu.lst >&2
+if command -v ucf &>/dev/null; then
+  $SUDO ucf --purge /boot/grub/menu.lst >&2
+fi
 
 set_grub_install_device() {
   # Use findmnt to directly get the root device

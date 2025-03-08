@@ -1,12 +1,13 @@
 #!/bin/bash
+# -*- coding: utf-8 -*-
 
 ##########################################################
 #  ____                                  ____
 # | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
 # |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
 # | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
-# |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_
-#
+# |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
+# 
 ##########################################################
 
 if [[ -n "$BBX_DEBUG" ]]; then
@@ -17,28 +18,50 @@ fi
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+PURPLE='\033[95m'  # Bright magenta, defined as purple
 BLUE='\033[0;34m'
+PINK='\033[95m'    # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
 BOLD='\033[1m'
 
 # Version
 BBX_VERSION="10.0.2"
+branch="bx3" # change to main for dist
+banner_color=$BLUE
+
+# Check if in screen or if UTF-8 is not supported
+if [ -n "$STY" ] || ! tput u8 >/dev/null 2>&1; then
+  # Use ASCII characters for borders
+  top_left="+"
+  top_right="+"
+  bottom_left="+"
+  bottom_right="+"
+  horizontal="-"
+  vertical="|"
+else
+  # Use printf to set UTF-8 byte sequences for Unicode borders
+  top_left=$(printf "\xe2\x94\x8c")    # Upper-left corner
+  top_right=$(printf "\xe2\x94\x90")   # Upper-right corner
+  bottom_left=$(printf "\xe2\x94\x94") # Lower-left corner
+  bottom_right=$(printf "\xe2\x94\x98") # Lower-right corner
+  horizontal=$(printf "\xe2\x94\x80")  # Horizontal line
+  vertical=$(printf "\xe2\x94\x82")    # Vertical line
+fi
+
 
 # ASCII Banner
 banner() {
-    printf "${BLUE}${BOLD}"
+    printf "${banner_color}${BOLD}"
     cat << 'EOF'
-  ____                                  ____
- | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
- |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
- | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
- |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_
+   ____                                  ____
+  | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
+  |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
+  | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
+  |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
 
 EOF
     printf "${NC}\n"
 }
-
-banner
 
 # Pre-install function to ensure proper setup
 pre_install() {
@@ -97,7 +120,7 @@ pre_install() {
 
         # Download the install script using curl and save it to a file
         echo "Downloading the installation script..."
-        curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh -o /tmp/bbx.sh
+        curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/bx3/bbx.sh -o /tmp/bbx.sh
         chmod +x /tmp/bbx.sh
         chown "${install_user}:${install_user}" /tmp/bbx.sh
 
@@ -116,13 +139,36 @@ pre_install() {
     fi
 }
 
-# Box drawing helpers
+# Box drawing helper function
 draw_box() {
     local text="$1"
-    local width=$((${#text} + 4))
-    printf "┌"; printf "─"%.0s $(seq 1 "$width"); printf "┐\n"
-    printf "│  %-${#text}s  │\n" "$text"
-    printf "└"; printf "─"%.0s $(seq 1 "$width"); printf "┘\n"
+    local padding_left=1  # Left padding space
+    local padding_right=1 # Right padding space
+    local text_width=${#text}
+    local inner_width=$((text_width + padding_left + padding_right)) # Space inside borders
+
+    # Start with a newline to separate from previous output
+    printf "\n"
+    # Draw top border
+    printf "  %s" "$top_left"
+    for i in $(seq 1 "$inner_width"); do
+        printf "%s" "$horizontal"
+    done
+    printf "%s\n" "$top_right"
+    # Draw text line with padding
+    printf "  %s" "$vertical"
+    printf "%${padding_left}s" " "
+    printf "%-${text_width}s" "$text"
+    printf "%${padding_right}s" " "
+    printf "%s\n" "$vertical"
+    # Draw bottom border
+    printf "  %s" "$bottom_left"
+    for i in $(seq 1 "$inner_width"); do
+        printf "%s" "$horizontal"
+    done
+    printf "%s\n" "$bottom_right"
+    # End with a newline for clean separation
+    printf "\n"
 }
 
 # Config file
@@ -159,7 +205,13 @@ is_local_hostname() {
     if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
         return 0  # Local
     else
-        return 1  # Not local
+      if command -v getent &>/dev/null; then
+        resolved_ip=$(getent hosts "$hostname" | tail -n1)
+        if [[ "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
+          return 0
+        fi
+      fi
+      return 1  # Not local
     fi
 }
 
@@ -253,7 +305,7 @@ parse_dep() {
 
 # Dependency check
 ensure_deps() {
-    local deps=("curl" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl")
+    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl")
     for dep in "${deps[@]}"; do
         # Parse the dependency
         IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
@@ -330,16 +382,17 @@ test_port_access() {
 
 # Subcommands
 install() {
+    banner
     pre_install
     load_config
     ensure_deps
     printf "${GREEN}Installing BrowserBox CLI (bbx)...${NC}\n"
     mkdir -p "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to create $BBX_HOME/BrowserBox${NC}\n"; exit 1; }
     printf "${YELLOW}Fetching BrowserBox repository...${NC}\n"
-    curl -sL "$REPO_URL/archive/refs/heads/main.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
+    curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
     rm -rf $BBX_HOME/BrowserBox/*
     unzip -q "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
-    mv "$BBX_HOME/BrowserBox-zip/BrowserBox-main"/* "$BBX_HOME/BrowserBox/" && rm -rf "$BBX_HOME/BrowserBox-zip"
+    mv "$BBX_HOME/BrowserBox-zip/BrowserBox-${branch}"/* "$BBX_HOME/BrowserBox/" && rm -rf "$BBX_HOME/BrowserBox-zip"
     rm "$BBX_HOME/BrowserBox.zip"
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
     local default_hostname=$(get_system_hostname)
@@ -348,7 +401,7 @@ install() {
     if is_local_hostname "$BBX_HOSTNAME"; then
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
-    [ -n "$EMAIL" ] || read -r -p "Enter your email for Let’s Encrypt (optional for $BBX_HOSTNAME): " EMAIL
+    [ -n "$EMAIL" ] || read -r -p "Enter your email for Let's Encrypt (optional for $BBX_HOSTNAME): " EMAIL
     if [ -t 0 ]; then
         printf "${YELLOW}Running BrowserBox installer interactively...${NC}\n"
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL"
@@ -357,7 +410,7 @@ install() {
         cd "$BBX_HOME/BrowserBox" && (yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL")
     fi
     [ $? -eq 0 ] || { printf "${RED}Installation failed. Check $BBX_HOME/BrowserBox/deploy-scripts/global_install.sh output.${NC}\n"; exit 1; }
-    $SUDO curl -sL "$REPO_URL/raw/main/bbx" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
+    $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
     save_config
     printf "${GREEN}bbx v$BBX_VERSION installed successfully! Run 'bbx --help' for usage.${NC}\n"
@@ -447,7 +500,7 @@ update() {
 license() {
     printf "${BLUE}BrowserBox License Information:${NC}\n"
     draw_box "Terms: https://dosaygo.com/terms.txt"
-    draw_box "License: $REPO_URL/blob/main/LICENSE.md"
+    draw_box "License: $REPO_URL/blob/${branch}/LICENSE.md"
     draw_box "Privacy: https://dosaygo.com/privacy.txt"
     draw_box "Get a License: https://dosaygo.com/license"
     printf "Run 'bbx certify' to enter your license key.\n"
@@ -477,7 +530,7 @@ setup() {
     printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
         printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        curl -sL "$REPO_URL/raw/main/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
         chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
         "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
     else
@@ -497,18 +550,18 @@ setup() {
 
 # run subcommand
 run() {
+    banner
     load_config
     local port="${1:-$PORT}"
     local default_hostname=$(get_system_hostname)
     local hostname="${2:-${BBX_HOSTNAME:-$default_hostname}}"
-    [ -n "$port" ] || { printf "${RED}Run 'bbx setup' first to set a port.${NC}\n"; exit 1; }
     PORT="$port"
     BBX_HOSTNAME="$hostname"
     setup "$port" "$hostname"
     printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
         printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        curl -sL "$REPO_URL/raw/main/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
         chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
         "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
     else
@@ -519,7 +572,13 @@ run() {
     bbcertify || { printf "${RED}Certification failed. Invalid or expired license key.${NC}\n"; exit 1; }
     bbpro || { printf "${RED}Failed to start. Ensure setup is complete and dependencies are installed.${NC}\n"; exit 1; }
     sleep 2
-    [ -n "$TOKEN" ] || TOKEN=$(cat "$CONFIG_DIR/login.link" | grep -oP 'token=\K[^&]+')
+    # Source test.env for TOKEN if available, otherwise parse login.link
+    if [ -f "$CONFIG_DIR/test.env" ]; then
+        source "$CONFIG_DIR/test.env" || { printf "${RED}Failed to source $CONFIG_DIR/test.env${NC}\n"; exit 1; }
+        PORT="${APP_PORT}"
+        TOKEN="${LOGIN_TOKEN}"
+    fi
+    [ -n "$TOKEN" ] || TOKEN=$(cat "$CONFIG_DIR/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
     save_config
 }
@@ -538,8 +597,7 @@ stop_user() {
         exit 1
     fi
     printf "${YELLOW}Scheduling stop for $user in $delay seconds...${NC}\n"
-    curl -sL "$REPO_URL/raw/main/scale_server/stop_browser.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh" || { printf "${RED}Failed to download stop_browser.sh${NC}\n"; exit 1; }
-    chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh"
+    # error we need to instalize stop_user from stop_browser here: note to do and request the stop_browser script
     "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh" "$user" "$delay" || { printf "${RED}Failed to stop $user's session.${NC}\n"; exit 1; }
     printf "${GREEN}Stop scheduled for $user.${NC}\n"
 }
@@ -568,7 +626,7 @@ run_as() {
     BBX_HOSTNAME="$hostname"
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
     $SUDO -u "$user" mkdir -p "/home/$user/.config/dosyago/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
-    $SUDO -u "$user" setup_bbpro --port "$port" --token "$TOKEN" > "/home/$user/.config/dosyago/bbpro LOGIN.link" 2>/dev/null || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
+    $SUDO -u "$user" setup_bbpro --port "$port" --token "$TOKEN" > "/home/$user/.config/dosyago/bbpro/login.link" 2>/dev/null || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
@@ -578,10 +636,15 @@ run_as() {
     $SUDO -u "$user" bbcertify || { printf "${RED}Certification failed for $user. Invalid or expired license key.${NC}\n"; exit 1; }
     $SUDO -u "$user" bbpro || { printf "${RED}Failed to run as $user${NC}\n"; exit 1; }
     sleep 2
+    # Source test.env for TOKEN if available
+    if [ -f "/home/$user/.config/dosyago/bbpro/test.env" ]; then
+        source "/home/$user/.config/dosyago/bbpro/test.env" || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
+        TOKEN="${LOGIN_TOKEN}"
+    fi
+    [ -n "$TOKEN" ] || TOKEN=$(cat "/home/$user/.config/dosyago/bbpro/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
     save_config
 }
-
 
 version() {
     printf "${GREEN}bbx version $BBX_VERSION${NC}\n"
@@ -589,7 +652,9 @@ version() {
 
 usage() {
     banner
-    printf "${BOLD}Usage:${NC} bbx <command> [options]\n\n"
+    printf "${BOLD}Usage:${NC} bbx <command> [options]\n"
+    printf "\n${YELLOW}Note: the bbx tool is still in beta.\n"
+    printf "\n"
     printf "Commands:\n"
     printf "  ${GREEN}install${NC}      Install BrowserBox and bbx CLI\n"
     printf "  ${GREEN}uninstall${NC}    Remove BrowserBox, config, and all related files\n"
@@ -600,23 +665,181 @@ usage() {
     printf "  ${GREEN}stop-user${NC}    Stop BrowserBox for a specific user [username] [delay_seconds]\n"
     printf "  ${GREEN}logs${NC}         Show BrowserBox logs\n"
     printf "  ${GREEN}update${NC}       Update BrowserBox\n"
-    printf "  ${GREEN}license${NC}      Show license purchase URL\n"
+    printf "  ${BLUE}${BOLD}buy-license${NC}  Purchase a license key and seats\n"
     printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
     printf "  ${GREEN}run-as${NC}       Run as a specific user [username] [port] [hostname]\n"
+    printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor [--no-anonymize] [--no-onion]\n"
+    printf "  ${BLUE}${BOLD}console*${NC}     See and interact with the BrowserBox command stream\n"
+    printf "  ${BLUE}${BOLD}automate*${NC}    Run pptr or playwright scripts in a running BrowserBox\n"
     printf "  ${GREEN}--version${NC}    Show bbx version\n"
     printf "  ${GREEN}--help${NC}       Show this help\n"
+    printf "\n${BLUE}${BOLD}*Coming Soon${NC}\n"
 }
 
 check_agreement() {
     if [ ! -f "$CONFIG_DIR/.agreed" ]; then
         printf "${BLUE}BrowserBox v10 Terms:${NC} https://dosaygo.com/terms.txt\n"
-        printf "${BLUE}License:${NC} $REPO_URL/blob/main/LICENSE.md\n"
+        printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
         printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
         read -r -p " Agree? (yes/no): " AGREE
         [ "$AGREE" = "yes" ] || { printf "${RED}ERROR: Must agree to terms!${NC}\n"; exit 1; }
         mkdir -p "$CONFIG_DIR"
         touch "$CONFIG_DIR/.agreed"
     fi
+}
+
+# Tor setup and run function
+tor_run() {
+    banner
+    load_config
+    ensure_deps
+    local anonymize=true onion=true
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --anonymize) anonymize=true; shift ;;
+            --no-anonymize) anonymize=false; shift ;;
+            --onion) onion=true; shift ;;
+            --no-onion) onion=false; shift ;;
+            *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
+        esac
+    done
+
+    # Validate at least one Tor mode is enabled
+    if ! $anonymize && ! $onion; then
+        printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
+        exit 1
+    fi
+
+    # Ensure prior setup
+    [ -n "$PORT" ] || { printf "${RED}ERROR: Run 'bbx setup' first to configure port.${NC}\n"; exit 1; }
+    [ -n "$BBX_HOSTNAME" ] || { printf "${RED}ERROR: Run 'bbx setup' first to configure hostname.${NC}\n"; exit 1; }
+    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)  # Fallback if not set
+
+    printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
+
+    # Setup phase with setup_bbpro
+    local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
+    if $anonymize; then
+        setup_cmd="$setup_cmd --ontor"
+    fi
+    if ! $onion && ! is_local_hostname "$BBX_HOSTNAME"; then
+        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $BBX_HOSTNAME to this machine's IP.\n"
+        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$BBX_HOSTNAME" || { printf "${RED}Hostname $BBX_HOSTNAME not resolving.${NC}\n"; exit 1; }
+    elif ! $onion; then
+        ensure_hosts_entry "$BBX_HOSTNAME"
+    fi
+    $setup_cmd > "$CONFIG_DIR/tor_setup_output.txt" 2>/dev/null || { printf "${RED}Setup failed. Check local port availability ($((PORT-2))-$((PORT+2))).${NC}\n"; tail -n 5 "$CONFIG_DIR/tor_setup_output.txt"; exit 1; }
+
+    # Source test.env to get LOGIN_TOKEN
+    source "$CONFIG_DIR/test.env" || { printf "${RED}Failed to source $CONFIG_DIR/test.env. Run setup again.${NC}\n"; exit 1; }
+    TOKEN="${LOGIN_TOKEN}"  # Use LOGIN_TOKEN from test.env
+
+    # Certify (required for both modes)
+    get_license_key
+    export LICENSE_KEY="$LICENSE_KEY"
+    bbcertify || { printf "${RED}Certification failed.${NC}\n"; exit 1; }
+
+    local login_link=""
+    if $onion; then
+        printf "${YELLOW}Running as onion site (capturing login link)...${NC}\n"
+        # Run torbb once at runtime; stdout is the login link
+        login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
+        if [ $? -ne 0 ]; then
+            printf "${RED}Failed to start onion site. Check $CONFIG_DIR/torbb_errors.txt:${NC}\n"
+            tail -n 5 "$CONFIG_DIR/torbb_errors.txt"
+            exit 1
+        fi
+        if [ -z "$login_link" ]; then
+            printf "${RED}torbb output was empty. Check $CONFIG_DIR/torbb_errors.txt:${NC}\n"
+            tail -n 5 "$CONFIG_DIR/torbb_errors.txt"
+            exit 1
+        fi
+        # Update BBX_HOSTNAME for onion mode
+        BBX_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
+        printf "${YELLOW}Onion mode: Skipping external firewall checks (handled by Tor).${NC}\n"
+    else
+        # Non-onion mode: Run bbpro and construct login link
+        for i in {-2..2}; do
+            test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
+        done
+        test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked. Adjust firewall.${NC}\n"; exit 1; }
+        bbpro || { printf "${RED}Failed to start BrowserBox.${NC}\n"; exit 1; }
+        login_link="https://$BBX_HOSTNAME:$PORT/login?token=$TOKEN"
+    fi
+
+    sleep 2
+    save_config
+    printf "${GREEN}BrowserBox with Tor started.${NC}\n"
+    draw_box "Login Link: $login_link"
+}
+
+buy_license() {
+  local seats="${1:-1}"  # Default to 1 seat, used for UI preselection
+  local session_id=$(openssl rand -hex 16)
+  local metadata=$(printf '{"session_id":"%s"}' "$session_id")  # Only session_id in client_ref_id
+  local client_ref_id=$(echo -n "$metadata" | base64 | tr '+/' '-_' | tr -d '=')  # Base64url encoding
+  local buy_url="https://buy.stripe.com/prctbl_1Qp4l7BKxtsqOlorniy1P0Kk?client_reference_id=$client_ref_id&quantity=$seats"  # Replace with your Pricing Table URL
+
+  banner
+  printf "${YELLOW}Launching Stripe Pricing Table to buy a license for $seats seat(s)...${NC}\n"
+  draw_box "Visit this URL if the browser doesn't open: $buy_url"
+
+  if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$buy_url" 2>/dev/null
+  elif command -v open >/dev/null 2>&1; then
+    open "$buy_url" 2>/dev/null
+  else
+    printf "${RED}Couldn’t open browser. Please visit the URL above manually.${NC}\n"
+  fi
+
+  printf "${YELLOW}Waiting for payment and provisioning (this may take a few minutes)...${NC}\n"
+  local attempts=0
+  local max_attempts=60  # 10 minutes
+  while [ $attempts -lt $max_attempts ]; do
+    local response=$(curl -s "https://browse.cloudtabs.net/api/license-status?session_id=$session_id")
+    local state=$(echo "$response" | jq -r '.state // "unvisited"')
+    local license_key=$(echo "$response" | jq -r '.license_key // ""')
+    local seats_provisioned=$(echo "$response" | jq -r '.seats_provisioned // 0')
+    local total_seats=$(echo "$response" | jq -r '.total_seats // 0')  # Default to 0 until Stripe confirms
+
+    case "$state" in
+      "unvisited")
+        printf "${BLUE}Status: Waiting for you to visit the payment page${NC}\n"
+        ;;
+      "visited_unpaid")
+        printf "${BLUE}Status: Awaiting payment confirmation${NC}\n"
+        ;;
+      "paid_unprovisioned")
+        if [ -n "$license_key" ] && [ -z "$LICENSE_KEY" ]; then
+          LICENSE_KEY="$license_key"
+          SEATS="$total_seats"
+          save_config
+          printf "${GREEN}License key received: $LICENSE_KEY${NC}\n"
+          draw_box "You can start using BrowserBox now! Provisioning $seats_provisioned/$total_seats seats..."
+        else
+          printf "${BLUE}Status: Provisioning $seats_provisioned/$total_seats seats${NC}\n"
+        fi
+        ;;
+      "provisioned_complete")
+        LICENSE_KEY="$license_key"
+        SEATS="$total_seats"
+        save_config
+        printf "${GREEN}Success! License key: $LICENSE_KEY, $SEATS seats fully provisioned.${NC}\n"
+        draw_box "BrowserBox is ready to use with $SEATS seats!"
+        return 0
+        ;;
+      *)
+        printf "${RED}Error: Unknown state or server issue (${state})${NC}\n"
+        return 1
+        ;;
+    esac
+    sleep 10
+    ((attempts++))
+    printf "."
+  done
+
+  printf "\n${RED}Timeout: Provisioning took too long. Check your email for updates.${NC}\n"
+  return 1
 }
 
 [ "$1" != "install" ] && [ "$1" != "uninstall" ] && check_agreement
@@ -657,9 +880,9 @@ case "$1" in
         shift 1
         update "$@"
         ;;
-    license.Dropout)
+    buy-license)
         shift 1
-        license "$@"
+        buy_license "$@"
         ;;
     status)
         shift 1
@@ -668,6 +891,11 @@ case "$1" in
     run-as)
         shift 1
         run_as "$@"
+        ;;
+    tor-run)
+        shift 1
+        banner_color=$PURPLE
+        tor_run "$@"
         ;;
     --version|-v)
         shift 1

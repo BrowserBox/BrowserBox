@@ -38,7 +38,13 @@ is_local_hostname() {
     if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
         return 0  # Local
     else
-        return 1  # Not local
+      if command -v getent &>/dev/null; then
+        resolved_ip=$(getent hosts "$hostname" | tail -n1)
+        if [[ "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
+          return 0
+        fi
+      fi
+      return 1  # Not local
     fi
 }
 
@@ -157,7 +163,7 @@ read_input() {
 get_latest_dir() {
   # Find potential directories containing .bbpro_install_dir
   pwd="$(pwd)"
-  install_path1=$(find $pwd -name .bbpro_install_dir -print 2>/dev/null)
+  install_path1=$(find "$HOME" -name bbpro_dir -print 2>/dev/null)
   current_version=$(jq -r '.version' ./package.json)
 
   # Loop through each found path to check if node_modules also exists in the same directory
@@ -174,19 +180,24 @@ get_latest_dir() {
       fi
   done
 
-  install_path2=$(find "${HOME}/BrowserBox" -name .bbpro_install_dir -print 2>/dev/null)
-  IFS=$'\n'  # Change Internal Field Separator to newline for iteration
-  for path in $install_path2; do
-    dir=$(dirname $path)
-      # Get the version of the found directory's package.json
-      found_version=$(jq -r '.version' "${dir}/package.json")
+  if [[ "$pwd" != "$HOME" && "$pwd" != "$HOME"/* ]]; then
+    echo "\$pwd ($pwd) is not within \$HOME ($HOME)" >&2
+    install_path2=$(find $pwd -name bbpro_dir -print 2>/dev/null)
+    IFS=$'\n'  # Change Internal Field Separator to newline for iteration
+    for path in $install_path2; do
+      dir=$(dirname $path)
+        # Get the version of the found directory's package.json
+        found_version=$(jq -r '.version' "${dir}/package.json")
 
-      # Check if the found version is the same or later than the current version
-      if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then
-        echo "$dir"
-        return 0
-      fi
-  done
+        # Check if the found version is the same or later than the current version
+        if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then
+          echo "$dir"
+          return 0
+        fi
+    done
+  else
+      echo "\$pwd ($pwd) is within \$HOME ($HOME)" >&2
+  fi
 
   echo "No valid install directory found." >&2
   return 1
@@ -234,7 +245,7 @@ display_terms() {
 check_agreement() {
     if [ ! -f "$CONFIG_DIR/.agreed" ]; then
         display_terms
-        printf "${YELLOW}Do you agree to these terms and confirm a license for commercial use if applicable? (yes/no): ${NC}\n"
+        printf "${YELLOW}Do you agree to these terms and confirm a license for use? (yes/no): ${NC}\n"
         read -r REPLY
         if [[ "${REPLY:0:1}" =~ ^[yY]$ ]]; then
             printf "${GREEN}Terms accepted. Proceeding...${NC}\n"
@@ -378,7 +389,7 @@ if [ "$#" -eq 2 ] || is_local_hostname "$1"; then
       mkdir -p $HOME/sslcerts
       pwd=$(pwd)
       cd $HOME/sslcerts
-      mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
+      mkcert --cert-file fullchain.pem --key-file privkey.pem $hostname localhost 127.0.0.1
       cd $pwd
     else 
       echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We are not overwriting them."
