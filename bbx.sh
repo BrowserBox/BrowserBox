@@ -689,15 +689,15 @@ tor_run() {
             exit 1
         fi
         # Extract login link from torbb output
-        login_link=$(echo "$torbb_output" | grep -oP 'https://[a-z2-7]{16,56}\.onion/login\?token=[a-f0-9]+' | head -n1)
+        login_link=$(echo "$torbb_output" | head -n1)
         if [ -z "$login_link" ]; then
             printf "${RED}Failed to extract login link from torbb output:${NC}\n"
             echo "$torbb_output"
             exit 1
         fi
         # Update BBX_HOSTNAME and TOKEN for consistency
-        BBX_HOSTNAME=$(echo "$login_link" | grep -oP '[a-z2-7]{16,56}\.onion')
-        TOKEN=$(echo "$login_link" | grep -oP 'token=\K[a-f0-9]+')
+        BBX_HOSTNAME=$(echo "$login_link" | grep -oE '[a-z2-7]{16,56}\.onion')
+        TOKEN=$(echo "$login_link" | grep -oE 'token=\K[a-f0-9]+')
         printf "${YELLOW}Onion mode: Skipping external firewall checks (handled by Tor).${NC}\n"
     else
         # Non-onion mode: Run bbpro and construct login link
