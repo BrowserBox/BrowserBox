@@ -771,6 +771,75 @@ tor_run() {
     draw_box "Login Link: $login_link"
 }
 
+buy_license() {
+  local seats="${1:-1}"  # Default to 1 seat, used for UI preselection
+  local session_id=$(openssl rand -hex 16)
+  local metadata=$(printf '{"session_id":"%s"}' "$session_id")  # Only session_id in client_ref_id
+  local client_ref_id=$(echo -n "$metadata" | base64 | tr '+/' '-_' | tr -d '=')  # Base64url encoding
+  local buy_url="https://buy.stripe.com/prctbl_1Qp4l7BKxtsqOlorniy1P0Kk?client_reference_id=$client_ref_id&quantity=$seats"  # Replace with your Pricing Table URL
+
+  banner
+  printf "${YELLOW}Launching Stripe Pricing Table to buy a license for $seats seat(s)...${NC}\n"
+  draw_box "Visit this URL if the browser doesn't open: $buy_url"
+
+  if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$buy_url" 2>/dev/null
+  elif command -v open >/dev/null 2>&1; then
+    open "$buy_url" 2>/dev/null
+  else
+    printf "${RED}Couldn’t open browser. Please visit the URL above manually.${NC}\n"
+  fi
+
+  printf "${YELLOW}Waiting for payment and provisioning (this may take a few minutes)...${NC}\n"
+  local attempts=0
+  local max_attempts=60  # 10 minutes
+  while [ $attempts -lt $max_attempts ]; do
+    local response=$(curl -s "https://browse.cloudtabs.net/api/license-status?session_id=$session_id")
+    local state=$(echo "$response" | jq -r '.state // "unvisited"')
+    local license_key=$(echo "$response" | jq -r '.license_key // ""')
+    local seats_provisioned=$(echo "$response" | jq -r '.seats_provisioned // 0')
+    local total_seats=$(echo "$response" | jq -r '.total_seats // 0')  # Default to 0 until Stripe confirms
+
+    case "$state" in
+      "unvisited")
+        printf "${BLUE}Status: Waiting for you to visit the payment page${NC}\n"
+        ;;
+      "visited_unpaid")
+        printf "${BLUE}Status: Awaiting payment confirmation${NC}\n"
+        ;;
+      "paid_unprovisioned")
+        if [ -n "$license_key" ] && [ -z "$LICENSE_KEY" ]; then
+          LICENSE_KEY="$license_key"
+          SEATS="$total_seats"
+          save_config
+          printf "${GREEN}License key received: $LICENSE_KEY${NC}\n"
+          draw_box "You can start using BrowserBox now! Provisioning $seats_provisioned/$total_seats seats..."
+        else
+          printf "${BLUE}Status: Provisioning $seats_provisioned/$total_seats seats${NC}\n"
+        fi
+        ;;
+      "provisioned_complete")
+        LICENSE_KEY="$license_key"
+        SEATS="$total_seats"
+        save_config
+        printf "${GREEN}Success! License key: $LICENSE_KEY, $SEATS seats fully provisioned.${NC}\n"
+        draw_box "BrowserBox is ready to use with $SEATS seats!"
+        return 0
+        ;;
+      *)
+        printf "${RED}Error: Unknown state or server issue (${state})${NC}\n"
+        return 1
+        ;;
+    esac
+    sleep 10
+    ((attempts++))
+    printf "."
+  done
+
+  printf "\n${RED}Timeout: Provisioning took too long. Check your email for updates.${NC}\n"
+  return 1
+}
+
 [ "$1" != "install" ] && [ "$1" != "uninstall" ] && check_agreement
 case "$1" in
     install)
@@ -809,9 +878,9 @@ case "$1" in
         shift 1
         update "$@"
         ;;
-    license)
+    buy-license)
         shift 1
-        license "$@"
+        buy_license "$@"
         ;;
     status)
         shift 1
