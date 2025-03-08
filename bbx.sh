@@ -667,11 +667,11 @@ usage() {
     printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
     printf "  ${GREEN}run-as${NC}       Run as a specific user [username] [port] [hostname]\n"
     printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor [--no-anonymize] [--no-onion]\n"
-    printf "  ${BLUE}console${NC}      See and interact with the BrowserBox command stream\n"
-    printf "  ${BLUE}automate${NC}     Run pptr or playwright scripts in a running BrowserBox\n"
+    printf "  ${BLUE}${BOLD}console*${NC}     See and interact with the BrowserBox command stream\n"
+    printf "  ${BLUE}${BOLD}automate*${NC}    Run pptr or playwright scripts in a running BrowserBox\n"
     printf "  ${GREEN}--version${NC}    Show bbx version\n"
     printf "  ${GREEN}--help${NC}       Show this help\n"
-    printf "\n${BLUE}*Coming Soon${NC} (console, automate)\n"
+    printf "\n${BLUE}${BOLD}*Coming Soon${NC}\n"
 }
 
 check_agreement() {
