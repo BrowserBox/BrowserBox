@@ -673,6 +673,10 @@ tor_run() {
     fi
     $setup_cmd > "$CONFIG_DIR/tor_setup_output.txt" 2>/dev/null || { printf "${RED}Setup failed. Check local port availability ($((PORT-2))-$((PORT+2))).${NC}\n"; tail -n 5 "$CONFIG_DIR/tor_setup_output.txt"; exit 1; }
 
+    # Source test.env to get LOGIN_TOKEN
+    source "$CONFIG_DIR/test.env" || { printf "${RED}Failed to source $CONFIG_DIR/test.env. Run setup again.${NC}\n"; exit 1; }
+    TOKEN="${LOGIN_TOKEN}"  # Use LOGIN_TOKEN from test.env
+
     # Certify (required for both modes)
     get_license_key
     export LICENSE_KEY="$LICENSE_KEY"
@@ -681,23 +685,18 @@ tor_run() {
     local login_link=""
     if $onion; then
         printf "${YELLOW}Running as onion site (capturing login link)...${NC}\n"
-        # Run torbb once at runtime and capture the login link
-        torbb_output=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
+        # Run torbb once at runtime; stdout is the login link
+        login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
         if [ $? -ne 0 ]; then
             printf "${RED}Failed to start onion site. Check $CONFIG_DIR/torbb_errors.txt:${NC}\n"
             tail -n 5 "$CONFIG_DIR/torbb_errors.txt"
             exit 1
         fi
-        # Extract login link from torbb output
-        login_link=$(echo "$torbb_output" | head -n1)
         if [ -z "$login_link" ]; then
-            printf "${RED}Failed to extract login link from torbb output:${NC}\n"
-            echo "$torbb_output"
+            printf "${RED}torbb output was empty. Check $CONFIG_DIR/torbb_errors.txt:${NC}\n"
+            tail -n 5 "$CONFIG_DIR/torbb_errors.txt"
             exit 1
         fi
-        # Update BBX_HOSTNAME and TOKEN for consistency
-        BBX_HOSTNAME=$(echo "$login_link" | grep -oE '[a-z2-7]{16,56}\.onion')
-        TOKEN=$(echo "$login_link" | grep -oE 'token=\K[a-f0-9]+')
         printf "${YELLOW}Onion mode: Skipping external firewall checks (handled by Tor).${NC}\n"
     else
         # Non-onion mode: Run bbpro and construct login link
