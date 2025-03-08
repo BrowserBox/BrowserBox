@@ -652,7 +652,9 @@ version() {
 
 usage() {
     banner
-    printf "${BOLD}Usage:${NC} bbx <command> [options]\n\n"
+    printf "${BOLD}Usage:${NC} bbx <command> [options]\n"
+    printf "\n${YELLOW}Note: the bbx tool is still in beta.\n"
+    printf "\n"
     printf "Commands:\n"
     printf "  ${GREEN}install${NC}      Install BrowserBox and bbx CLI\n"
     printf "  ${GREEN}uninstall${NC}    Remove BrowserBox, config, and all related files\n"
@@ -663,7 +665,7 @@ usage() {
     printf "  ${GREEN}stop-user${NC}    Stop BrowserBox for a specific user [username] [delay_seconds]\n"
     printf "  ${GREEN}logs${NC}         Show BrowserBox logs\n"
     printf "  ${GREEN}update${NC}       Update BrowserBox\n"
-    printf "  ${GREEN}buy-license${NC}  Show license purchase URL\n"
+    printf "  ${BLUE}${BOLD}buy-license${NC}  Purchase a license key and seats\n"
     printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
     printf "  ${GREEN}run-as${NC}       Run as a specific user [username] [port] [hostname]\n"
     printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor [--no-anonymize] [--no-onion]\n"
