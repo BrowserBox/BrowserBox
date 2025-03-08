@@ -1,4 +1,5 @@
 #!/bin/bash
+# -*- coding: utf-8 -*-
 
 ##########################################################
 #  ____                                  ____
@@ -27,6 +28,26 @@ BOLD='\033[1m'
 BBX_VERSION="10.0.2"
 branch="bx3" # change to main for dist
 banner_color=$BLUE
+
+# Check if in screen or if UTF-8 is not supported
+if [ -n "$STY" ] || ! tput u8 >/dev/null 2>&1; then
+  # Use ASCII characters for borders
+  top_left="+"
+  top_right="+"
+  bottom_left="+"
+  bottom_right="+"
+  horizontal="-"
+  vertical="|"
+else
+  # Use printf to set UTF-8 byte sequences for Unicode borders
+  top_left=$(printf "\xe2\x94\x8c")    # Upper-left corner
+  top_right=$(printf "\xe2\x94\x90")   # Upper-right corner
+  bottom_left=$(printf "\xe2\x94\x94") # Lower-left corner
+  bottom_right=$(printf "\xe2\x94\x98") # Lower-right corner
+  horizontal=$(printf "\xe2\x94\x80")  # Horizontal line
+  vertical=$(printf "\xe2\x94\x82")    # Vertical line
+fi
+
 
 # ASCII Banner
 banner() {
@@ -118,13 +139,36 @@ pre_install() {
     fi
 }
 
-# Box drawing helpers
+# Box drawing helper function
 draw_box() {
     local text="$1"
-    local width=$((${#text} + 4))
-    printf "‚Äö√Æ√•"; printf "‚Äö√Æ√Ñ"%.0s $(seq 1 "$width"); printf "‚Äö√Æ√™\n"
-    printf "‚Äö√Æ√á  %-${#text}s  ‚Äö√Æ√á\n" "$text"
-    printf "‚Äö√Æ√Æ"; printf "‚Äö√Æ√Ñ"%.0s $(seq 1 "$width"); printf "‚Äö√Æ√≤\n"
+    local padding_left=1  # Left padding space
+    local padding_right=1 # Right padding space
+    local text_width=${#text}
+    local inner_width=$((text_width + padding_left + padding_right)) # Space inside borders
+
+    # Start with a newline to separate from previous output
+    printf "\n"
+    # Draw top border
+    printf "  %s" "$top_left"
+    for i in $(seq 1 "$inner_width"); do
+        printf "%s" "$horizontal"
+    done
+    printf "%s\n" "$top_right"
+    # Draw text line with padding
+    printf "  %s" "$vertical"
+    printf "%${padding_left}s" " "
+    printf "%-${text_width}s" "$text"
+    printf "%${padding_right}s" " "
+    printf "%s\n" "$vertical"
+    # Draw bottom border
+    printf "  %s" "$bottom_left"
+    for i in $(seq 1 "$inner_width"); do
+        printf "%s" "$horizontal"
+    done
+    printf "%s\n" "$bottom_right"
+    # End with a newline for clean separation
+    printf "\n"
 }
 
 # Config file
@@ -357,7 +401,7 @@ install() {
     if is_local_hostname "$BBX_HOSTNAME"; then
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
-    [ -n "$EMAIL" ] || read -r -p "Enter your email for Let‚Äö√Ñ√¥s Encrypt (optional for $BBX_HOSTNAME): " EMAIL
+    [ -n "$EMAIL" ] || read -r -p "Enter your email for Let's Encrypt (optional for $BBX_HOSTNAME): " EMAIL
     if [ -t 0 ]; then
         printf "${YELLOW}Running BrowserBox installer interactively...${NC}\n"
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL"

@@ -389,7 +389,7 @@ if [ "$#" -eq 2 ] || is_local_hostname "$1"; then
       mkdir -p $HOME/sslcerts
       pwd=$(pwd)
       cd $HOME/sslcerts
-      mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
+      mkcert --cert-file fullchain.pem --key-file privkey.pem $hostname localhost 127.0.0.1
       cd $pwd
     else 
       echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We are not overwriting them."
