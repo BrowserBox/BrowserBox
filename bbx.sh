@@ -6,8 +6,8 @@
 # | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
 # |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
 # | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
-# |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_
-#
+# |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
+# 
 ##########################################################
 
 if [[ -n "$BBX_DEBUG" ]]; then
@@ -53,11 +53,11 @@ fi
 banner() {
     printf "${banner_color}${BOLD}"
     cat << 'EOF'
-  ____                                  ____
- | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
- |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
- | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
- |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_
+   ____                                  ____
+  | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
+  |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
+  | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
+  |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
 
 EOF
     printf "${NC}\n"
@@ -555,7 +555,6 @@ run() {
     local port="${1:-$PORT}"
     local default_hostname=$(get_system_hostname)
     local hostname="${2:-${BBX_HOSTNAME:-$default_hostname}}"
-    [ -n "$port" ] || { printf "${RED}Run 'bbx setup' first to set a port.${NC}\n"; exit 1; }
     PORT="$port"
     BBX_HOSTNAME="$hostname"
     setup "$port" "$hostname"
@@ -576,6 +575,7 @@ run() {
     # Source test.env for TOKEN if available, otherwise parse login.link
     if [ -f "$CONFIG_DIR/test.env" ]; then
         source "$CONFIG_DIR/test.env" || { printf "${RED}Failed to source $CONFIG_DIR/test.env${NC}\n"; exit 1; }
+        PORT="${APP_PORT}"
         TOKEN="${LOGIN_TOKEN}"
     fi
     [ -n "$TOKEN" ] || TOKEN=$(cat "$CONFIG_DIR/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
