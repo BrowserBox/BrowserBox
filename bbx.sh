@@ -17,9 +17,9 @@ fi
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-PURPLE='\033[95m'  # Bright magenta, closest to pink in ANSI
+PURPLE='\033[95m'  # Bright magenta, defined as purple
 BLUE='\033[0;34m'
-PINK='\033[95m'  # Bright magenta, closest to pink in ANSI
+PINK='\033[95m'    # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
 BOLD='\033[1m'
 
@@ -122,9 +122,9 @@ pre_install() {
 draw_box() {
     local text="$1"
     local width=$((${#text} + 4))
-    printf "‚îå"; printf "‚îÄ"%.0s $(seq 1 "$width"); printf "‚îê\n"
-    printf "‚îÇ  %-${#text}s  ‚îÇ\n" "$text"
-    printf "‚îî"; printf "‚îÄ"%.0s $(seq 1 "$width"); printf "‚îò\n"
+    printf "‚Äö√Æ√•"; printf "‚Äö√Æ√Ñ"%.0s $(seq 1 "$width"); printf "‚Äö√Æ√™\n"
+    printf "‚Äö√Æ√á  %-${#text}s  ‚Äö√Æ√á\n" "$text"
+    printf "‚Äö√Æ√Æ"; printf "‚Äö√Æ√Ñ"%.0s $(seq 1 "$width"); printf "‚Äö√Æ√≤\n"
 }
 
 # Config file
@@ -357,7 +357,7 @@ install() {
     if is_local_hostname "$BBX_HOSTNAME"; then
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
-    [ -n "$EMAIL" ] || read -r -p "Enter your email for Let‚Äôs Encrypt (optional for $BBX_HOSTNAME): " EMAIL
+    [ -n "$EMAIL" ] || read -r -p "Enter your email for Let‚Äö√Ñ√¥s Encrypt (optional for $BBX_HOSTNAME): " EMAIL
     if [ -t 0 ]; then
         printf "${YELLOW}Running BrowserBox installer interactively...${NC}\n"
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL"
@@ -529,7 +529,12 @@ run() {
     bbcertify || { printf "${RED}Certification failed. Invalid or expired license key.${NC}\n"; exit 1; }
     bbpro || { printf "${RED}Failed to start. Ensure setup is complete and dependencies are installed.${NC}\n"; exit 1; }
     sleep 2
-    [ -n "$TOKEN" ] || TOKEN=$(cat "$CONFIG_DIR/login.link" | grep -oP 'token=\K[^&]+')
+    # Source test.env for TOKEN if available, otherwise parse login.link
+    if [ -f "$CONFIG_DIR/test.env" ]; then
+        source "$CONFIG_DIR/test.env" || { printf "${RED}Failed to source $CONFIG_DIR/test.env${NC}\n"; exit 1; }
+        TOKEN="${LOGIN_TOKEN}"
+    fi
+    [ -n "$TOKEN" ] || TOKEN=$(cat "$CONFIG_DIR/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
     save_config
 }
@@ -577,7 +582,7 @@ run_as() {
     BBX_HOSTNAME="$hostname"
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
     $SUDO -u "$user" mkdir -p "/home/$user/.config/dosyago/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
-    $SUDO -u "$user" setup_bbpro --port "$port" --token "$TOKEN" > "/home/$user/.config/dosyago/bbpro LOGIN.link" 2>/dev/null || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
+    $SUDO -u "$user" setup_bbpro --port "$port" --token "$TOKEN" > "/home/$user/.config/dosyago/bbpro/login.link" 2>/dev/null || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
@@ -587,6 +592,12 @@ run_as() {
     $SUDO -u "$user" bbcertify || { printf "${RED}Certification failed for $user. Invalid or expired license key.${NC}\n"; exit 1; }
     $SUDO -u "$user" bbpro || { printf "${RED}Failed to run as $user${NC}\n"; exit 1; }
     sleep 2
+    # Source test.env for TOKEN if available
+    if [ -f "/home/$user/.config/dosyago/bbpro/test.env" ]; then
+        source "/home/$user/.config/dosyago/bbpro/test.env" || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
+        TOKEN="${LOGIN_TOKEN}"
+    fi
+    [ -n "$TOKEN" ] || TOKEN=$(cat "/home/$user/.config/dosyago/bbpro/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
     save_config
 }
@@ -611,12 +622,13 @@ usage() {
     printf "  ${GREEN}license${NC}      Show license purchase URL\n"
     printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
     printf "  ${GREEN}run-as${NC}       Run as a specific user [username] [port] [hostname]\n"
-    printf "  ${PURPLE}tor-run${NC}          Run BrowserBox as an onion site and browse the Tor network\n"
+    printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor\n"
+    printf "    [--anonymize|--no-anonymize] [--onion|--no-onion]\n"
     printf "  ${PINK}console${NC}      See and interact with the BrowserBox command stream\n"
     printf "  ${PINK}automate${NC}     Run pptr or playwright scripts in a running BrowserBox\n"
     printf "  ${GREEN}--version${NC}    Show bbx version\n"
     printf "  ${GREEN}--help${NC}       Show this help\n"
-    printf "\n${PINK}*Coming Soon${NC}\n"
+    printf "\n${PINK}*Coming Soon${NC} (console, automate)\n"
 }
 
 check_agreement() {
@@ -697,6 +709,8 @@ tor_run() {
             tail -n 5 "$CONFIG_DIR/torbb_errors.txt"
             exit 1
         fi
+        # Update BBX_HOSTNAME for onion mode
+        BBX_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
         printf "${YELLOW}Onion mode: Skipping external firewall checks (handled by Tor).${NC}\n"
     else
         # Non-onion mode: Run bbpro and construct login link
@@ -765,10 +779,10 @@ case "$1" in
         run_as "$@"
         ;;
     tor-run)
-      shift 1
-      banner_color=$PURPLE
-      tor_run "$@"
-      ;;
+        shift 1
+        banner_color=$PURPLE
+        tor_run "$@"
+        ;;
     --version|-v)
         shift 1
         version "$@"
