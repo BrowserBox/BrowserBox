@@ -17,6 +17,7 @@ fi
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+PURPLE='\033[95m'  # Bright magenta, closest to pink in ANSI
 BLUE='\033[0;34m'
 PINK='\033[95m'  # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
@@ -25,10 +26,11 @@ BOLD='\033[1m'
 # Version
 BBX_VERSION="10.0.2"
 branch="bx3" # change to main for dist
+banner_color=$BLUE
 
 # ASCII Banner
 banner() {
-    printf "${BLUE}${BOLD}"
+    printf "${banner_color}${BOLD}"
     cat << 'EOF'
   ____                                  ____
  | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
@@ -504,6 +506,7 @@ setup() {
 
 # run subcommand
 run() {
+    banner
     load_config
     local port="${1:-$PORT}"
     local default_hostname=$(get_system_hostname)
@@ -608,9 +611,9 @@ usage() {
     printf "  ${GREEN}license${NC}      Show license purchase URL\n"
     printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
     printf "  ${GREEN}run-as${NC}       Run as a specific user [username] [port] [hostname]\n"
+    printf "  ${PURPLE}tor-run${NC}          Run BrowserBox as an onion site and browse the Tor network\n"
     printf "  ${PINK}console${NC}      See and interact with the BrowserBox command stream\n"
     printf "  ${PINK}automate${NC}     Run pptr or playwright scripts in a running BrowserBox\n"
-    printf "  ${PINK}tor${NC}          Run BrowserBox as an onion site and browse the Tor network\n"
     printf "  ${GREEN}--version${NC}    Show bbx version\n"
     printf "  ${GREEN}--help${NC}       Show this help\n"
     printf "\n${PINK}*Coming Soon${NC}\n"
@@ -626,6 +629,90 @@ check_agreement() {
         mkdir -p "$CONFIG_DIR"
         touch "$CONFIG_DIR/.agreed"
     fi
+}
+
+# Tor setup and run function
+tor_run() {
+    banner
+    load_config
+    ensure_deps
+    local anonymize=true onion=true
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --anonymize) anonymize=true; shift ;;
+            --no-anonymize) anonymize=false; shift ;;
+            --onion) onion=true; shift ;;
+            --no-onion) onion=false; shift ;;
+            *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
+        esac
+    done
+
+    # Validate at least one Tor mode is enabled
+    if ! $anonymize && ! $onion; then
+        printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
+        exit 1
+    fi
+
+    # Ensure prior setup
+    [ -n "$PORT" ] || { printf "${RED}ERROR: Run 'bbx setup' first to configure port.${NC}\n"; exit 1; }
+    [ -n "$BBX_HOSTNAME" ] || { printf "${RED}ERROR: Run 'bbx setup' first to configure hostname.${NC}\n"; exit 1; }
+    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)  # Fallback if not set
+
+    printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
+
+    # Setup phase with setup_bbpro
+    local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
+    if $anonymize; then
+        setup_cmd="$setup_cmd --ontor"
+    fi
+    if ! $onion && ! is_local_hostname "$BBX_HOSTNAME"; then
+        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $BBX_HOSTNAME to this machine's IP.\n"
+        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$BBX_HOSTNAME" || { printf "${RED}Hostname $BBX_HOSTNAME not resolving.${NC}\n"; exit 1; }
+    elif ! $onion; then
+        ensure_hosts_entry "$BBX_HOSTNAME"
+    fi
+    $setup_cmd > "$CONFIG_DIR/tor_setup_output.txt" 2>/dev/null || { printf "${RED}Setup failed. Check local port availability ($((PORT-2))-$((PORT+2))).${NC}\n"; tail -n 5 "$CONFIG_DIR/tor_setup_output.txt"; exit 1; }
+
+    # Certify (required for both modes)
+    get_license_key
+    export LICENSE_KEY="$LICENSE_KEY"
+    bbcertify || { printf "${RED}Certification failed.${NC}\n"; exit 1; }
+
+    local login_link=""
+    if $onion; then
+        printf "${YELLOW}Running as onion site (capturing login link)...${NC}\n"
+        # Run torbb once at runtime and capture the login link
+        torbb_output=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
+        if [ $? -ne 0 ]; then
+            printf "${RED}Failed to start onion site. Check $CONFIG_DIR/torbb_errors.txt:${NC}\n"
+            tail -n 5 "$CONFIG_DIR/torbb_errors.txt"
+            exit 1
+        fi
+        # Extract login link from torbb output
+        login_link=$(echo "$torbb_output" | grep -oP 'https://[a-z2-7]{16,56}\.onion/login\?token=[a-f0-9]+' | head -n1)
+        if [ -z "$login_link" ]; then
+            printf "${RED}Failed to extract login link from torbb output:${NC}\n"
+            echo "$torbb_output"
+            exit 1
+        fi
+        # Update BBX_HOSTNAME and TOKEN for consistency
+        BBX_HOSTNAME=$(echo "$login_link" | grep -oP '[a-z2-7]{16,56}\.onion')
+        TOKEN=$(echo "$login_link" | grep -oP 'token=\K[a-f0-9]+')
+        printf "${YELLOW}Onion mode: Skipping external firewall checks (handled by Tor).${NC}\n"
+    else
+        # Non-onion mode: Run bbpro and construct login link
+        for i in {-2..2}; do
+            test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
+        done
+        test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked. Adjust firewall.${NC}\n"; exit 1; }
+        bbpro || { printf "${RED}Failed to start BrowserBox.${NC}\n"; exit 1; }
+        login_link="https://$BBX_HOSTNAME:$PORT/login?token=$TOKEN"
+    fi
+
+    sleep 2
+    save_config
+    printf "${GREEN}BrowserBox with Tor started.${NC}\n"
+    draw_box "Login Link: $login_link"
 }
 
 [ "$1" != "install" ] && [ "$1" != "uninstall" ] && check_agreement
@@ -678,6 +765,11 @@ case "$1" in
         shift 1
         run_as "$@"
         ;;
+    tor-run)
+      shift 1
+      banner_color=$PURPLE
+      tor_run "$@"
+      ;;
     --version|-v)
         shift 1
         version "$@"
