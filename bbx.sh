@@ -113,7 +113,7 @@ pre_install() {
         echo "Warning: Do not install as root."
 
         # Prompt for a non-root user to run the install as
-        read -p "Enter a non-root username to run the installation (will be created if it doesn't exist): " install_user
+        read -p "Enter a regular user to run the installation: " install_user
         if [ -z "$install_user" ]; then
             printf "${RED}ERROR: A username is required${NC}\n"
             exit 1
@@ -134,7 +134,7 @@ pre_install() {
                 printf "${YELLOW}Updated $install_user with passwordless sudo${NC}\n"
             fi
         else
-            printf "${YELLOW}User $install_user does not exist. Creating as master user...${NC}\n"
+            printf "${YELLOW}User $install_user does not exist. Creating...${NC}\n"
             create_master_user "$install_user"
         fi
 
@@ -232,7 +232,7 @@ TOKEN="$TOKEN"
 PORT="$PORT"
 EOF
     chmod 600 "$CONFIG_FILE"
-    printf "${YELLOW}Note: License key stored in plaintext at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
+    printf "${YELLOW}Note: License will be saved unencrypted at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
 }
 
 # Get system hostname
