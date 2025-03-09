@@ -665,7 +665,7 @@ usage() {
     printf "  ${GREEN}stop-user${NC}    Stop BrowserBox for a specific user [username] [delay_seconds]\n"
     printf "  ${GREEN}logs${NC}         Show BrowserBox logs\n"
     printf "  ${GREEN}update${NC}       Update BrowserBox\n"
-    printf "  ${BLUE}${BOLD}buy-license${NC}  Purchase a license key and seats\n"
+    printf "  ${RED}activate${NC}     Activate your copy of BrowserBox by purchasing a license key for 1 or more seats.\n"
     printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
     printf "  ${GREEN}run-as${NC}       Run as a specific user [username] [port] [hostname]\n"
     printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor [--no-anonymize] [--no-onion]\n"
