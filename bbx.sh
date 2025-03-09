@@ -602,9 +602,9 @@ stop_user() {
     printf "${GREEN}Stop scheduled for $user.${NC}\n"
 }
 
-# run-as subcommand
 # Helper: Get user's home directory
-get_home_dir() { local user="$1"
+get_home_dir() {
+    local user="$1"
     if [ "$(uname -s)" = "Darwin" ]; then
         echo "/Users/$user"
     else
@@ -612,28 +612,43 @@ get_home_dir() { local user="$1"
     fi
 }
 
-# Helper: Create a user cross-platform
+# Helper: Create a user mirroring browser.sh's create_new_user
 create_user() {
     local user="$1"
     if [ "$(uname -s)" = "Darwin" ]; then
         $SUDO sysadminctl -deleteUser "$user" -secure 2>/dev/null
         local pw=$(openssl rand -base64 12)
-        $SUDO sysadminctl -addUser "$user" -fullName "BrowserBox User" -password "$pw" -shell /bin/bash
+        $SUDO sysadminctl -addUser "$user" -fullName "BrowserBox user $user" -password "$pw" -home "/Users/$user" -shell /bin/bash
         $SUDO dseditgroup -o edit -a "$user" -t user staff
         $SUDO createhomedir -c -u "$user" >/dev/null
+        $SUDO -u "$user" bash -c 'echo "export PATH=\$PATH:/usr/local/bin" >> ~/.bash_profile'
+        $SUDO -u "$user" bash -c 'echo "export PATH=\$PATH:/usr/local/bin" >> ~/.bashrc'
+        $SUDO -u "$user" security create-keychain -p "$pw" "${user}.keychain"
+        $SUDO -u "$user" security default-keychain -s "${user}.keychain"
+        $SUDO -u "$user" security login-keychain -s "${user}.keychain"
+        $SUDO -u "$user" security set-keychain-settings "${user}.keychain"
+        $SUDO -u "$user" security unlock-keychain -p "$pw" "${user}.keychain"
     else
+        $SUDO groupdel -f "$user" 2>/dev/null
         if [ -f /etc/redhat-release ]; then
             $SUDO useradd -m -s /bin/bash -c "BrowserBox user" "$user"
         else
             $SUDO adduser --disabled-password --gecos "BrowserBox user" "$user" >/dev/null 2>&1
         fi
-        for group in renice browsers sudoers; do
-            if getent group "$group" >/dev/null; then
-                $SUDO usermod -aG "$group" "$user" 2>/dev/null
+        # Add BrowserBox-specific groups
+        for group in browsers renice; do
+            if ! getent group "$group" >/dev/null; then
+                $SUDO groupadd "$group" 2>/dev/null
             fi
+            $SUDO usermod -aG "$group" "$user" 2>/dev/null
         done
+        # Enable lingering for systemd (Linux only)
+        if command -v loginctl >/dev/null 2>&1; then
+            $SUDO loginctl enable-linger "$user" 2>/dev/null
+        fi
     fi
     id "$user" >/dev/null 2>&1 || { printf "${RED}Failed to create user $user${NC}\n"; exit 1; }
+    printf "${GREEN}Created user: $user${NC}\n"
 }
 
 # Updated run-as subcommand
@@ -652,10 +667,10 @@ run_as() {
         local rand=$(openssl rand -hex 4)
         user="bbuser-${epoch}_${rand}"
         create_user "$user"
-        printf "${GREEN}Created temporary user: $user${NC}\n"
     elif ! id "$user" >/dev/null 2>&1; then
-        printf "${RED}User $user does not exist. Use --random or create the user first.${NC}\n"
-        exit 1
+        create_user "$user"
+    else
+        printf "${GREEN}Using existing user: $user${NC}\n"
     fi
     PORT="$port"
     BBX_HOSTNAME="$hostname"
@@ -674,12 +689,15 @@ run_as() {
     done
     test_port_access $((port-3000)) || { printf "${RED}CDP endpoint port $((port-3000)) is blocked for $user${NC}\n"; exit 1; }
 
-    # Certify and run BrowserBox
-    get_license_key
-    $SUDO su - "$user" -c "export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run as $user${NC}\n"; exit 1; }
+    # Use caller's LICENSE_KEY without saving it to user's config
+    if [ -z "$LICENSE_KEY" ]; then
+        printf "${RED}Caller must have a license key set in LICENSE_KEY env var${NC}\n"
+        exit 1
+    fi
+    $SUDO su - "$user" -c "export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
     sleep 2
 
-    # Retrieve token from test.env or login.link (assumes BB tools manage these)
+    # Retrieve token from test.env or login.link
     if $SUDO test -f "$HOME_DIR/.config/dosyago/bbpro/test.env"; then
         TOKEN=$($SUDO su - "$user" -c "source ~/.config/dosyago/bbpro/test.env && echo \$LOGIN_TOKEN") || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
     fi
@@ -689,6 +707,7 @@ run_as() {
     [ -n "$TOKEN" ] || { printf "${RED}Failed to retrieve login token for $user${NC}\n"; exit 1; }
 
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
+    # Note: save_config is called but won't save LICENSE_KEY to user's home since we didn't set it there
     save_config
 }
 
