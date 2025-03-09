@@ -603,6 +603,40 @@ stop_user() {
 }
 
 # run-as subcommand
+# Helper: Get user's home directory
+get_home_dir() { local user="$1"
+    if [ "$(uname -s)" = "Darwin" ]; then
+        echo "/Users/$user"
+    else
+        echo "/home/$user"
+    fi
+}
+
+# Helper: Create a user cross-platform
+create_user() {
+    local user="$1"
+    if [ "$(uname -s)" = "Darwin" ]; then
+        $SUDO sysadminctl -deleteUser "$user" -secure 2>/dev/null
+        local pw=$(openssl rand -base64 12)
+        $SUDO sysadminctl -addUser "$user" -fullName "BrowserBox User" -password "$pw" -shell /bin/bash
+        $SUDO dseditgroup -o edit -a "$user" -t user staff
+        $SUDO createhomedir -c -u "$user" >/dev/null
+    else
+        if [ -f /etc/redhat-release ]; then
+            $SUDO useradd -m -s /bin/bash -c "BrowserBox user" "$user"
+        else
+            $SUDO adduser --disabled-password --gecos "BrowserBox user" "$user" >/dev/null 2>&1
+        fi
+        for group in renice browsers sudoers; do
+            if getent group "$group" >/dev/null; then
+                $SUDO usermod -aG "$group" "$user" 2>/dev/null
+            fi
+        done
+    fi
+    id "$user" >/dev/null 2>&1 || { printf "${RED}Failed to create user $user${NC}\n"; exit 1; }
+}
+
+# Updated run-as subcommand
 run_as() {
     load_config
     ensure_deps
@@ -614,9 +648,10 @@ run_as() {
         exit 1
     fi
     if [ "$user" = "--random" ]; then
-        user="bbuser_$(openssl rand -hex 4)"
-        $SUDO adduser --disabled-password --gecos "BrowserBox user" "$user" || { printf "${RED}Failed to create user $user${NC}\n"; exit 1; }
-        $SUDO usermod -aG renice,browsers "$user" 2>/dev/null
+        local epoch=$(date +%s)
+        local rand=$(openssl rand -hex 4)
+        user="bbuser-${epoch}_${rand}"
+        create_user "$user"
         printf "${GREEN}Created temporary user: $user${NC}\n"
     elif ! id "$user" >/dev/null 2>&1; then
         printf "${RED}User $user does not exist. Use --random or create the user first.${NC}\n"
@@ -625,23 +660,34 @@ run_as() {
     PORT="$port"
     BBX_HOSTNAME="$hostname"
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
-    $SUDO -u "$user" mkdir -p "/home/$user/.config/dosyago/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
-    $SUDO -u "$user" setup_bbpro --port "$port" --token "$TOKEN" > "/home/$user/.config/dosyago/bbpro/login.link" 2>/dev/null || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
+    local HOME_DIR=$(get_home_dir "$user")
+
+    # Ensure config directory exists with proper ownership
+    $SUDO -u "$user" mkdir -p "$HOME_DIR/.config/dosyago/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
+
+    # Run setup_bbpro (assumes it saves the login link automatically)
+    $SUDO su - "$user" -c "setup_bbpro --port $port --token $TOKEN" || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
+
+    # Test port accessibility (basic check, BB code handles firewall)
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
     test_port_access $((port-3000)) || { printf "${RED}CDP endpoint port $((port-3000)) is blocked for $user${NC}\n"; exit 1; }
+
+    # Certify and run BrowserBox
     get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
-    $SUDO -u "$user" bbcertify || { printf "${RED}Certification failed for $user. Invalid or expired license key.${NC}\n"; exit 1; }
-    $SUDO -u "$user" bbpro || { printf "${RED}Failed to run as $user${NC}\n"; exit 1; }
+    $SUDO su - "$user" -c "export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run as $user${NC}\n"; exit 1; }
     sleep 2
-    # Source test.env for TOKEN if available
-    if [ -f "/home/$user/.config/dosyago/bbpro/test.env" ]; then
-        source "/home/$user/.config/dosyago/bbpro/test.env" || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
-        TOKEN="${LOGIN_TOKEN}"
+
+    # Retrieve token from test.env or login.link (assumes BB tools manage these)
+    if $SUDO test -f "$HOME_DIR/.config/dosyago/bbpro/test.env"; then
+        TOKEN=$($SUDO su - "$user" -c "source ~/.config/dosyago/bbpro/test.env && echo \$LOGIN_TOKEN") || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
     fi
-    [ -n "$TOKEN" ] || TOKEN=$(cat "/home/$user/.config/dosyago/bbpro/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
+    if [ -z "$TOKEN" ] && $SUDO test -f "$HOME_DIR/.config/dosyago/bbpro/login.link"; then
+        TOKEN=$($SUDO cat "$HOME_DIR/.config/dosyago/bbpro/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
+    fi
+    [ -n "$TOKEN" ] || { printf "${RED}Failed to retrieve login token for $user${NC}\n"; exit 1; }
+
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
     save_config
 }
