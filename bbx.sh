@@ -63,6 +63,49 @@ EOF
     printf "${NC}\n"
 }
 
+# Helper: Create a master user with passwordless sudo and BB groups
+create_master_user() {
+    local user="$1"
+    if [ "$(uname -s)" = "Darwin" ]; then
+        $SUDO sysadminctl -deleteUser "$user" -secure 2>/dev/null
+        local pw=$(openssl rand -base64 12)
+        $SUDO sysadminctl -addUser "$user" -fullName "BrowserBox Master User" -password "$pw" -home "/Users/$user" -shell /bin/bash
+        $SUDO dseditgroup -o edit -a "$user" -t user staff
+        $SUDO createhomedir -c -u "$user" >/dev/null
+        $SUDO -u "$user" bash -c 'echo "export PATH=$PATH:/usr/local/bin" >> ~/.bash_profile'
+        $SUDO -u "$user" bash -c 'echo "export PATH=$PATH:/usr/local/bin" >> ~/.bashrc'
+        $SUDO -u "$user" security create-keychain -p "$pw" "${user}.keychain"
+        $SUDO -u "$user" security default-keychain -s "${user}.keychain"
+        $SUDO -u "$user" security login-keychain -s "${user}.keychain"
+        $SUDO -u "$user" security set-keychain-settings "${user}.keychain"
+        $SUDO -u "$user" security unlock-keychain -p "$pw" "${user}.keychain"
+    else
+        $SUDO groupdel -f "$user" 2>/dev/null
+        if [ -f /etc/redhat-release ]; then
+            $SUDO useradd -m -s /bin/bash -c "BrowserBox Master User" "$user"
+        else
+            $SUDO adduser --disabled-password --gecos "BrowserBox Master User" "$user" >/dev/null 2>&1
+        fi
+        # Add BrowserBox-specific groups
+        for group in browsers renice sudoers; do
+            if ! getent group "$group" >/dev/null; then
+                $SUDO groupadd "$group" 2>/dev/null
+            fi
+            $SUDO usermod -aG "$group" "$user" 2>/dev/null
+        done
+        # Enable lingering for systemd (Linux only)
+        if command -v loginctl >/dev/null 2>&1; then
+            $SUDO loginctl enable-linger "$user" 2>/dev/null
+        fi
+        # Ensure passwordless sudo
+        if ! grep -q "%sudoers" /etc/sudoers; then
+            echo "%sudoers ALL=(ALL:ALL) NOPASSWD:ALL" | $SUDO tee -a /etc/sudoers >/dev/null
+        fi
+    fi
+    id "$user" >/dev/null 2>&1 || { printf "${RED}Failed to create master user $user${NC}\n"; exit 1; }
+    printf "${GREEN}Created master user: $user with passwordless sudo${NC}\n"
+}
+
 # Pre-install function to ensure proper setup
 pre_install() {
     # Check if we're running as root
@@ -70,40 +113,43 @@ pre_install() {
         echo "Warning: Do not install as root."
 
         # Prompt for a non-root user to run the install as
-        read -p "Enter a non-root username to run the installation: " install_user
+        read -p "Enter a non-root username to run the installation (will be created if it doesn't exist): " install_user
+        if [ -z "$install_user" ]; then
+            printf "${RED}ERROR: A username is required${NC}\n"
+            exit 1
+        fi
 
-        # Check if the user exists
+        # Check if the user exists, offer to create if not
         if id "$install_user" &>/dev/null; then
             echo "User $install_user found."
+            # Ensure the user has passwordless sudo
+            if ! $SUDO -u "$install_user" sudo -n true 2>/dev/null; then
+                if ! getent group sudoers >/dev/null; then
+                    $SUDO groupadd sudoers
+                fi
+                $SUDO usermod -aG sudoers "$install_user"
+                if ! grep -q "%sudoers" /etc/sudoers; then
+                    echo "%sudoers ALL=(ALL:ALL) NOPASSWD:ALL" | $SUDO tee -a /etc/sudoers >/dev/null
+                fi
+                printf "${YELLOW}Updated $install_user with passwordless sudo${NC}\n"
+            fi
         else
-            echo "User $install_user does not exist. Please create the user first."
-            exit 1
+            printf "${YELLOW}User $install_user does not exist. Creating as master user...${NC}\n"
+            create_master_user "$install_user"
         fi
 
         # Check if sudo is installed
         if ! command -v sudo &>/dev/null; then
             echo "Sudo not found, installing sudo..."
             if [ -f /etc/debian_version ]; then
-                # For Debian/Ubuntu
                 apt update && apt install -y sudo
             elif [ -f /etc/redhat-release ]; then
-                # For RHEL/CentOS
                 yum install -y sudo
             else
                 echo "Unsupported distribution."
                 exit 1
             fi
         fi
-
-        groupadd sudoers
-
-        # Ensure passwordless sudo is configured for the 'sudoers' group
-        if ! grep -q "%sudoers" /etc/sudoers; then
-            echo "%sudoers ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
-        fi
-
-        # Add the install user to the 'sudoers' group
-        usermod -aG sudoers "$install_user"
 
         # Check if curl is installed, and install if missing
         if ! command -v curl &>/dev/null; then
@@ -124,14 +170,11 @@ pre_install() {
         chmod +x /tmp/bbx.sh
         chown "${install_user}:${install_user}" /tmp/bbx.sh
 
-        # Now switch to the non-root user
+        # Switch to the non-root user and run install
         echo "Switching to user $install_user..."
-        su - "$install_user" -c "
-            # Make the script executable and run it as the non-root user
-            /tmp/bbx.sh install
-        "
+        su - "$install_user" -c "/tmp/bbx.sh install"
 
-        # Replace the root running bash script with a shell into this non privileged user
+        # Replace the root shell with the new user's shell
         exec su - "$install_user"
     else
         # If not running as root, continue with the normal install
