@@ -26,7 +26,7 @@ BOLD='\033[1m'
 
 # Version
 BBX_VERSION="10.0.2"
-branch="bx3" # change to main for dist
+branch="main" # change to main for dist
 banner_color=$BLUE
 
 # Check if in screen or if UTF-8 is not supported
@@ -120,7 +120,7 @@ pre_install() {
 
         # Download the install script using curl and save it to a file
         echo "Downloading the installation script..."
-        curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/bx3/bbx.sh -o /tmp/bbx.sh
+        curl -sSL "https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/$branch/bbx.sh" -o /tmp/bbx.sh
         chmod +x /tmp/bbx.sh
         chown "${install_user}:${install_user}" /tmp/bbx.sh
 
