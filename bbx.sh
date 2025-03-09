@@ -25,8 +25,8 @@ NC='\033[0m'
 BOLD='\033[1m'
 
 # Version
-BBX_VERSION="10.0.2"
-branch="main" # change to main for dist
+BBX_VERSION="10.0.3"
+branch="bx3" # change to main for dist
 banner_color=$BLUE
 
 # Check if in screen or if UTF-8 is not supported
