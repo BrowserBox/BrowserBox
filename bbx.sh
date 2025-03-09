@@ -119,6 +119,19 @@ pre_install() {
             exit 1
         fi
 
+        # Check if sudo is installed first - we need it before modifying /etc/sudoers
+        if ! command -v sudo &>/dev/null; then
+            echo "Sudo not found, installing sudo..."
+            if [ -f /etc/debian_version ]; then
+                apt update && apt install -y sudo
+            elif [ -f /etc/redhat-release ]; then
+                yum install -y sudo
+            else
+                echo "Unsupported distribution."
+                exit 1
+            fi
+        fi
+
         # Check if the user exists, offer to create if not
         if id "$install_user" &>/dev/null; then
             echo "User $install_user found."
@@ -136,19 +149,6 @@ pre_install() {
         else
             printf "${YELLOW}User $install_user does not exist. Creating as master user...${NC}\n"
             create_master_user "$install_user"
-        fi
-
-        # Check if sudo is installed
-        if ! command -v sudo &>/dev/null; then
-            echo "Sudo not found, installing sudo..."
-            if [ -f /etc/debian_version ]; then
-                apt update && apt install -y sudo
-            elif [ -f /etc/redhat-release ]; then
-                yum install -y sudo
-            else
-                echo "Unsupported distribution."
-                exit 1
-            fi
         fi
 
         # Check if curl is installed, and install if missing
