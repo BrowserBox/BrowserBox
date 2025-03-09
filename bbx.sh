@@ -26,7 +26,7 @@ BOLD='\033[1m'
 
 # Version
 BBX_VERSION="10.0.2"
-branch="bx3" # change to main for dist
+branch="main" # change to main for dist
 banner_color=$BLUE
 
 # Check if in screen or if UTF-8 is not supported
@@ -120,7 +120,7 @@ pre_install() {
 
         # Download the install script using curl and save it to a file
         echo "Downloading the installation script..."
-        curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/bx3/bbx.sh -o /tmp/bbx.sh
+        curl -sSL "https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/$branch/bbx.sh" -o /tmp/bbx.sh
         chmod +x /tmp/bbx.sh
         chown "${install_user}:${install_user}" /tmp/bbx.sh
 
@@ -774,15 +774,16 @@ tor_run() {
 }
 
 buy_license() {
-  local seats="${1:-1}"  # Default to 1 seat, used for UI preselection
+  local seats="${1:-1}"
   local session_id=$(openssl rand -hex 16)
-  local metadata=$(printf '{"session_id":"%s"}' "$session_id")  # Only session_id in client_ref_id
-  local client_ref_id=$(echo -n "$metadata" | base64 | tr '+/' '-_' | tr -d '=')  # Base64url encoding
-  local buy_url="https://buy.stripe.com/prctbl_1Qp4l7BKxtsqOlorniy1P0Kk?client_reference_id=$client_ref_id&quantity=$seats"  # Replace with your Pricing Table URL
+  local metadata=$(printf '{"session_id":"%s"}' "$session_id")
+  local client_ref_id=$(echo -n "$metadata" | base64 | tr '+/' '-_' | tr -d '=')
+  local buy_url="https://browse.cloudtabs.net/l?cri=$client_ref_id&quantity=$seats"
 
   banner
   printf "${YELLOW}Launching Stripe Pricing Table to buy a license for $seats seat(s)...${NC}\n"
-  draw_box "Visit this URL if the browser doesn't open: $buy_url"
+  printf "Visit this URL if the browser doesn't open:\n"
+  draw_box "$buy_url"
 
   if command -v xdg-open >/dev/null 2>&1; then
     xdg-open "$buy_url" 2>/dev/null
@@ -793,52 +794,69 @@ buy_license() {
   fi
 
   printf "${YELLOW}Waiting for payment and provisioning (this may take a few minutes)...${NC}\n"
+
   local attempts=0
-  local max_attempts=60  # 10 minutes
+  local max_attempts=240
+  local poll_interval=10  # 5 seconds
+  local spinner_interval=1  # 0.5 seconds
+  local spinner_chars=$(printf "|/-\|")
+  local spinner_idx=0
+  local counter=0
+  local state="unvisited"
+  local license_key=""
+  local seats_provisioned=0
+  local total_seats=0
+
+  trap 'printf "\nInterrupted\n"; exit 1' INT TERM
+
   while [ $attempts -lt $max_attempts ]; do
-    local response=$(curl -s "https://browse.cloudtabs.net/api/license-status?session_id=$session_id")
-    local state=$(echo "$response" | jq -r '.state // "unvisited"')
-    local license_key=$(echo "$response" | jq -r '.license_key // ""')
-    local seats_provisioned=$(echo "$response" | jq -r '.seats_provisioned // 0')
-    local total_seats=$(echo "$response" | jq -r '.total_seats // 0')  # Default to 0 until Stripe confirms
+    if [ $((counter % spinner_interval)) -eq 0 ]; then
+      spinner_idx=$(( (spinner_idx + 1) % 4 ))
+      local spinner="${spinner_chars:$spinner_idx:1}"
+    fi
+
+    if [ $((counter % poll_interval)) -eq 0 ]; then
+      local response=$(curl -s "https://browse.cloudtabs.net/api/license-status?session_id=$session_id")
+      state=$(echo "$response" | jq -r '.state // "unvisited"')
+      license_key=$(echo "$response" | jq -r '.license_key // ""')
+      seats_provisioned=$(echo "$response" | jq -r '.seats_provisioned // 0')
+      total_seats=$(echo "$response" | jq -r '.total_seats // 0')
+      attempts=$((attempts + 1))
+    fi
 
     case "$state" in
       "unvisited")
-        printf "${BLUE}Status: Waiting for you to visit the payment page${NC}\n"
+        printf "\r${BLUE}Status: Waiting for you to visit the payment page [${attempts}/${max_attempts}]${NC} %s                " "$spinner"
         ;;
       "visited_unpaid")
-        printf "${BLUE}Status: Awaiting payment confirmation${NC}\n"
+        printf "\r${BLUE}Status: Awaiting payment confirmation [${attempts}/${max_attempts}]${NC} %s                " "$spinner"
         ;;
       "paid_unprovisioned")
-        if [ -n "$license_key" ] && [ -z "$LICENSE_KEY" ]; then
-          LICENSE_KEY="$license_key"
-          SEATS="$total_seats"
-          save_config
-          printf "${GREEN}License key received: $LICENSE_KEY${NC}\n"
-          draw_box "You can start using BrowserBox now! Provisioning $seats_provisioned/$total_seats seats..."
-        else
-          printf "${BLUE}Status: Provisioning $seats_provisioned/$total_seats seats${NC}\n"
-        fi
+        printf "\r${BLUE}Status: Payment received, provisioning $total_seats seats [${attempts}/${max_attempts}]${NC} %s                " "$spinner"
         ;;
       "provisioned_complete")
+        printf "\n"
         LICENSE_KEY="$license_key"
         SEATS="$total_seats"
         save_config
         printf "${GREEN}Success! License key: $LICENSE_KEY, $SEATS seats fully provisioned.${NC}\n"
         draw_box "BrowserBox is ready to use with $SEATS seats!"
+        trap - INT TERM
         return 0
         ;;
       *)
-        printf "${RED}Error: Unknown state or server issue (${state})${NC}\n"
+        printf "\n${RED}Error: Unknown state (${state})${NC}\n"
+        trap - INT TERM
         return 1
         ;;
     esac
-    sleep 10
-    ((attempts++))
-    printf "."
+
+    sleep 0.5
+    counter=$((counter + 1))
   done
 
   printf "\n${RED}Timeout: Provisioning took too long. Check your email for updates.${NC}\n"
+  trap - INT TERM
   return 1
 }
 
