@@ -131,8 +131,8 @@ pre_install() {
             /tmp/bbx.sh install
         "
 
-        # Exit to end the script
-        exit 0
+        # Replace the root running bash script with a shell into this non privileged user
+        exec su - "$install_user"
     else
         # If not running as root, continue with the normal install
         echo "Running as non-root user, proceeding with installation..."
@@ -773,7 +773,7 @@ tor_run() {
     draw_box "Login Link: $login_link"
 }
 
-buy_license() {
+activate() {
   local seats="${1:-1}"
   local session_id=$(openssl rand -hex 16)
   local metadata=$(printf '{"session_id":"%s"}' "$session_id")
@@ -898,9 +898,9 @@ case "$1" in
         shift 1
         update "$@"
         ;;
-    buy-license)
+    activate)
         shift 1
-        buy_license "$@"
+        activate "$@"
         ;;
     status)
         shift 1
