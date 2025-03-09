@@ -778,7 +778,7 @@ buy_license() {
   local session_id=$(openssl rand -hex 16)
   local metadata=$(printf '{"session_id":"%s"}' "$session_id")  # Only session_id in client_ref_id
   local client_ref_id=$(echo -n "$metadata" | base64 | tr '+/' '-_' | tr -d '=')  # Base64url encoding
-  local buy_url="https://buy.stripe.com/prctbl_1Qp4l7BKxtsqOlorniy1P0Kk?client_reference_id=$client_ref_id&quantity=$seats"  # Replace with your Pricing Table URL
+  local buy_url="https://browse.cloudtabs.net/license?client_reference_id=$client_ref_id&quantity=$seats"  # Replace with your Pricing Table URL
 
   banner
   printf "${YELLOW}Launching Stripe Pricing Table to buy a license for $seats seat(s)...${NC}\n"
