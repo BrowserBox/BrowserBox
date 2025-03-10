@@ -29,6 +29,19 @@ BBX_VERSION="10.0.3"
 branch="bx3" # change to main for dist
 banner_color=$BLUE
 
+# Sudo check
+SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
+if [ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null; then
+    printf "${RED}ERROR: Requires root or passwordless sudo. Edit /etc/sudoers with visudo if needed.${NC}\n"
+    exit 1
+fi
+
+# Default paths
+BBX_HOME="${HOME}/.bbx"
+COMMAND_DIR=""
+REPO_URL="https://github.com/BrowserBox/BrowserBox"
+BBX_SHARE="/usr/local/share/dosyago"
+
 # Check if in screen or if UTF-8 is not supported
 if [ -n "$STY" ] || ! tput u8 >/dev/null 2>&1; then
   # Use ASCII characters for borders
@@ -47,7 +60,6 @@ else
   horizontal=$(printf "\xe2\x94\x80")  # Horizontal line
   vertical=$(printf "\xe2\x94\x82")    # Vertical line
 fi
-
 
 # ASCII Banner
 banner() {
@@ -217,7 +229,9 @@ draw_box() {
 # Config file
 CONFIG_DIR="$HOME/.config/dosyago/bbpro"
 CONFIG_FILE="$CONFIG_DIR/config"
+TICKET_FILE="$CONFIG_DIR/tickets/ticket.json"
 [ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
+
 load_config() {
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
 }
@@ -232,7 +246,44 @@ TOKEN="$TOKEN"
 PORT="$PORT"
 EOF
     chmod 600 "$CONFIG_FILE"
+    # Warning moved to get_license_key
+}
+
+# Get license key, show warning only on new entry
+get_license_key() {
+    if [ -n "$LICENSE_KEY" ]; then
+        return
+    fi
+    read -r -p "Enter License Key (get one at sales@dosaygo.com): " LICENSE_KEY
+    [ -n "$LICENSE_KEY" ] || { printf "${RED}ERROR: License key required!${NC}\n"; exit 1; }
     printf "${YELLOW}Note: License will be saved unencrypted at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
+}
+
+# Ensure setup_tor is run for the user
+ensure_setup_tor() {
+    local user="$1"
+    if ! id -nG "$user" | grep -qw "debian-tor"; then
+        printf "${YELLOW}Setting up Tor for user $user...${NC}\n"
+        if ! command -v setup_tor >/dev/null 2>&1; then
+            $SUDO curl -sL "https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/$branch/setup_tor" -o /usr/local/bin/setup_tor
+            $SUDO chmod +x /usr/local/bin/setup_tor
+        fi
+        $SUDO setup_tor "$user" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
+    fi
+}
+
+# Certify with retry on expiry
+certify_with_retry() {
+    local output
+    output=$(bbcertify 2>&1)
+    if echo "$output" | grep -q "expired\|less than 1 hour remaining"; then
+        printf "${YELLOW}Ticket expired or near expiry. Renewing...${NC}\n"
+        [ -f "$TICKET_FILE" ] && rm -f "$TICKET_FILE"
+        bbcertify || { printf "${RED}Certification failed${NC}\n"; exit 1; }
+    elif [ $? -ne 0 ]; then
+        printf "${RED}Certification failed: $output${NC}\n"
+        exit 1
+    fi
 }
 
 # Get system hostname
@@ -268,29 +319,6 @@ ensure_hosts_entry() {
         printf "${GREEN}$hostname already mapped in /etc/hosts${NC}\n"
     fi
 }
-
-# Get license key (env var or config, prompt if missing)
-get_license_key() {
-    if [ -n "$LICENSE_KEY" ]; then
-        LICENSE_KEY="$LICENSE_KEY"
-    elif [ -z "$LICENSE_KEY" ]; then
-        read -r -p "Enter License Key (get one at sales@dosaygo.com): " LICENSE_KEY
-        [ -n "$LICENSE_KEY" ] || { printf "${RED}ERROR: License key required!${NC}\n"; exit 1; }
-    fi
-}
-
-# Sudo check
-SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
-if [ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null; then
-    printf "${RED}ERROR: Requires root or passwordless sudo. Edit /etc/sudoers with visudo if needed.${NC}\n"
-    exit 1
-fi
-
-# Default paths
-BBX_HOME="${HOME}/.bbx"
-COMMAND_DIR=""
-REPO_URL="https://github.com/BrowserBox/BrowserBox"
-BBX_SHARE="/usr/local/share/dosyago"
 
 # Parse dependency syntax: <os_label>:<pkg>,<pkg>[/<tool>]
 parse_dep() {
@@ -628,25 +656,17 @@ run() {
     printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
         printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
-        chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
+        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
     else
         ensure_hosts_entry "$hostname"
     fi
     get_license_key
     export LICENSE_KEY="$LICENSE_KEY"
-    bbcertify || { printf "${RED}Certification failed. Invalid or expired license key.${NC}\n"; exit 1; }
-    bbpro || { printf "${RED}Failed to start. Ensure setup is complete and dependencies are installed.${NC}\n"; exit 1; }
+    certify_with_retry
+    bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
     sleep 2
-    # Source test.env for TOKEN if available, otherwise parse login.link
-    if [ -f "$CONFIG_DIR/test.env" ]; then
-        source "$CONFIG_DIR/test.env" || { printf "${RED}Failed to source $CONFIG_DIR/test.env${NC}\n"; exit 1; }
-        PORT="${APP_PORT}"
-        TOKEN="${LOGIN_TOKEN}"
-    fi
-    [ -n "$TOKEN" ] || TOKEN=$(cat "$CONFIG_DIR/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
-    draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
+    local login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
+    draw_box "Login Link: $login_link"
     save_config
 }
 
@@ -921,7 +941,81 @@ check_agreement() {
     fi
 }
 
-# Tor setup and run function
+#!/bin/bash
+# -*- coding: utf-8 -*-
+
+# [Previous boilerplate: color codes, version, banner, etc., unchanged]
+
+# Config file
+CONFIG_DIR="$HOME/.config/dosyago/bbpro"
+CONFIG_FILE="$CONFIG_DIR/config"
+TICKET_FILE="$CONFIG_DIR/tickets/ticket.json"
+[ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
+
+load_config() {
+    [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+}
+
+save_config() {
+    mkdir -p "$CONFIG_DIR"
+    cat > "$CONFIG_FILE" <<EOF
+EMAIL="$EMAIL"
+LICENSE_KEY="$LICENSE_KEY"
+BBX_HOSTNAME="$BBX_HOSTNAME"
+TOKEN="$TOKEN"
+PORT="$PORT"
+EOF
+    chmod 600 "$CONFIG_FILE"
+    # Warning moved to get_license_key
+}
+
+# Get license key, show warning only on new entry
+get_license_key() {
+    if [ -n "$LICENSE_KEY" ]; then
+        return
+    fi
+    read -r -p "Enter License Key (get one at sales@dosaygo.com): " LICENSE_KEY
+    [ -n "$LICENSE_KEY" ] || { printf "${RED}ERROR: License key required!${NC}\n"; exit 1; }
+    printf "${YELLOW}Note: License will be saved unencrypted at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
+}
+
+# Ensure setup_tor is run for the user
+ensure_setup_tor() {
+    local user="$1"
+    if ! id -nG "$user" | grep -qw "debian-tor"; then
+        printf "${YELLOW}Setting up Tor for user $user...${NC}\n"
+        if ! command -v setup_tor >/dev/null 2>&1; then
+            $SUDO curl -sL "https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/$branch/setup_tor" -o /usr/local/bin/setup_tor
+            $SUDO chmod +x /usr/local/bin/setup_tor
+        fi
+        $SUDO setup_tor "$user" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
+    fi
+}
+
+# Certify with retry on expiry
+certify_with_retry() {
+    local output
+    output=$(bbcertify 2>&1)
+    if echo "$output" | grep -q "expired\|less than 1 hour remaining"; then
+        printf "${YELLOW}Ticket expired or near expiry. Renewing...${NC}\n"
+        [ -f "$TICKET_FILE" ] && rm -f "$TICKET_FILE"
+        bbcertify || { printf "${RED}Certification failed${NC}\n"; exit 1; }
+    elif [ $? -ne 0 ]; then
+        printf "${RED}Certification failed: $output${NC}\n"
+        exit 1
+    fi
+}
+
+# [Previous functions: create_master_user, pre_install, etc., unchanged]
+
+install() {
+    # [Previous install logic unchanged until end]
+    $SUDO curl -sL "$REPO_URL/raw/${branch}/setup_tor" -o /usr/local/bin/setup_tor
+    $SUDO chmod +x /usr/local/bin/setup_tor
+    save_config
+    printf "${GREEN}bbx v$BBX_VERSION installed successfully! Run 'bbx --help' for usage.${NC}\n"
+}
+
 tor_run() {
     banner
     load_config
@@ -936,70 +1030,44 @@ tor_run() {
             *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
         esac
     done
-
-    # Validate at least one Tor mode is enabled
     if ! $anonymize && ! $onion; then
         printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
         exit 1
     fi
-
-    # Ensure prior setup
-    [ -n "$PORT" ] || { printf "${RED}ERROR: Run 'bbx setup' first to configure port.${NC}\n"; exit 1; }
-    [ -n "$BBX_HOSTNAME" ] || { printf "${RED}ERROR: Run 'bbx setup' first to configure hostname.${NC}\n"; exit 1; }
-    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)  # Fallback if not set
-
+    [ -n "$PORT" ] || { printf "${RED}ERROR: Run 'bbx setup' first${NC}\n"; exit 1; }
+    [ -n "$BBX_HOSTNAME" ] || { printf "${RED}ERROR: Run 'bbx setup' first${NC}\n"; exit 1; }
+    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
     printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
-
-    # Setup phase with setup_bbpro
+    ensure_setup_tor "$(whoami)"
     local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
     if $anonymize; then
         setup_cmd="$setup_cmd --ontor"
     fi
     if ! $onion && ! is_local_hostname "$BBX_HOSTNAME"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $BBX_HOSTNAME to this machine's IP.\n"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$BBX_HOSTNAME" || { printf "${RED}Hostname $BBX_HOSTNAME not resolving.${NC}\n"; exit 1; }
+        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$BBX_HOSTNAME" || { printf "${RED}Hostname $BBX_HOSTNAME not resolving${NC}\n"; exit 1; }
     elif ! $onion; then
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
-    $setup_cmd > "$CONFIG_DIR/tor_setup_output.txt" 2>/dev/null || { printf "${RED}Setup failed. Check local port availability ($((PORT-2))-$((PORT+2))).${NC}\n"; tail -n 5 "$CONFIG_DIR/tor_setup_output.txt"; exit 1; }
-
-    # Source test.env to get LOGIN_TOKEN
-    source "$CONFIG_DIR/test.env" || { printf "${RED}Failed to source $CONFIG_DIR/test.env. Run setup again.${NC}\n"; exit 1; }
-    TOKEN="${LOGIN_TOKEN}"  # Use LOGIN_TOKEN from test.env
-
-    # Certify (required for both modes)
+    $setup_cmd > "$CONFIG_DIR/tor_setup_output.txt" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; tail -n 5 "$CONFIG_DIR/tor_setup_output.txt"; exit 1; }
+    source "$CONFIG_DIR/test.env" || { printf "${RED}Failed to source test.env${NC}\n"; exit 1; }
+    TOKEN="${LOGIN_TOKEN}"
     get_license_key
     export LICENSE_KEY="$LICENSE_KEY"
-    bbcertify || { printf "${RED}Certification failed.${NC}\n"; exit 1; }
-
+    certify_with_retry
     local login_link=""
     if $onion; then
-        printf "${YELLOW}Running as onion site (capturing login link)...${NC}\n"
-        # Run torbb once at runtime; stdout is the login link
+        printf "${YELLOW}Running as onion site...${NC}\n"
         login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
-        if [ $? -ne 0 ]; then
-            printf "${RED}Failed to start onion site. Check $CONFIG_DIR/torbb_errors.txt:${NC}\n"
-            tail -n 5 "$CONFIG_DIR/torbb_errors.txt"
-            exit 1
-        fi
-        if [ -z "$login_link" ]; then
-            printf "${RED}torbb output was empty. Check $CONFIG_DIR/torbb_errors.txt:${NC}\n"
-            tail -n 5 "$CONFIG_DIR/torbb_errors.txt"
-            exit 1
-        fi
-        # Update BBX_HOSTNAME for onion mode
+        [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$CONFIG_DIR/torbb_errors.txt"; exit 1; }
         BBX_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
-        printf "${YELLOW}Onion mode: Skipping external firewall checks (handled by Tor).${NC}\n"
     else
-        # Non-onion mode: Run bbpro and construct login link
         for i in {-2..2}; do
             test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
         done
-        test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked. Adjust firewall.${NC}\n"; exit 1; }
-        bbpro || { printf "${RED}Failed to start BrowserBox.${NC}\n"; exit 1; }
-        login_link="https://$BBX_HOSTNAME:$PORT/login?token=$TOKEN"
+        test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
+        bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+        login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$BBX_HOSTNAME:$PORT/login?token=$TOKEN")
     fi
-
     sleep 2
     save_config
     printf "${GREEN}BrowserBox with Tor started.${NC}\n"
