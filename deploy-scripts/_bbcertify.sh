@@ -1,16 +1,14 @@
 #!/bin/bash
-# bbcertify.sh - Obtain a vacant seat via the API, issue a ticket, and register it as a certificate
+# bbcertify.sh - Obtain a vacant seat, issue a ticket, and register it as a certificate
 
 set -e
 
 # Config locations
 CONFIG_DIR="$HOME/.config/dosyago/bbpro/tickets"
-if [[ ! -d "$CONFIG_DIR" ]]; then
-  mkdir -p "$CONFIG_DIR"
-fi
+[ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
 TICKET_FILE="$CONFIG_DIR/ticket.json"
 
-# API endpoints (adjust these URLs as needed for your server)
+# API endpoints
 API_VERSION="v1"
 API_BASE="https://master.dosaygo.com/${API_VERSION}"
 VACANT_SEAT_ENDPOINT="$API_BASE/vacant-seat"
@@ -25,11 +23,10 @@ usage() {
   cat <<EOF
 Usage: $0 [-h|--help]
 
-This script requests a vacant seat, issues a ticket, and registers it as a certificate.
-The ticket is saved to: $TICKET_FILE
+Obtains a valid ticket for BrowserBox, renewing if expired. Ticket saved to: $TICKET_FILE
 
 Environment Variables:
-  LICENSE_KEY   Your API key (must be set before running this script)
+  LICENSE_KEY   Your API key (required)
 
 Options:
   -h, --help    Show this help message and exit
@@ -54,119 +51,98 @@ done
 # Ensure LICENSE_KEY is set
 if [[ -z "$LICENSE_KEY" ]]; then
   echo "Error: LICENSE_KEY environment variable is not set." >&2
-  echo "Please set it before running this script." >&2
   exit 1
 fi
 
-# Function to check if existing ticket is still valid
+# Function to check ticket validity
 check_ticket_validity() {
   if [[ ! -f "$TICKET_FILE" ]]; then
     echo "No existing ticket found" >&2
     return 1
   fi
 
-  # Extract timeSlot from ticket
   local timeslot=$(jq -r '.ticket.ticketData.timeSlot' "$TICKET_FILE" 2>/dev/null)
   if [[ -z "$timeslot" || "$timeslot" == "null" ]]; then
-    echo "Invalid or missing timeSlot in existing ticket" >&2
+    echo "Invalid or missing timeSlot in $TICKET_FILE" >&2
     return 1
   fi
 
   local current_time=$(date +%s)
   local expiration_time=$((timeslot + TICKET_VALIDITY_PERIOD))
+  local remaining_seconds=$((expiration_time - current_time))
 
   if [[ $current_time -lt $expiration_time ]]; then
-    local remaining_seconds=$((expiration_time - current_time))
     local remaining_hours=$((remaining_seconds / 3600))
     local remaining_minutes=$(((remaining_seconds % 3600) / 60))
-    echo "Existing ticket is still valid (expires in ${remaining_hours}h ${remaining_minutes}m)" >&2
-    echo "$TICKET_FILE"  # Output existing ticket file path
+    echo "Existing ticket is valid (expires in ${remaining_hours}h ${remaining_minutes}m)" >&2
+    echo "$TICKET_FILE"
     return 0
   else
-    echo "Existing ticket has expired." >&2
+    echo "Existing ticket has expired" >&2
+    rm -f "$TICKET_FILE"
     return 1
   fi
 }
 
-# Function to fetch a vacant seat from the server
+# Function to fetch a vacant seat
 get_vacant_seat() {
-  echo "Requesting a vacant seat from the server..." >&2
-  VACANT_SEAT_RESPONSE=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$VACANT_SEAT_ENDPOINT")
-
-  if [[ -z "$VACANT_SEAT_RESPONSE" ]]; then
-    echo "Error: No response from server." >&2
+  echo "Requesting a vacant seat..." >&2
+  local response=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$VACANT_SEAT_ENDPOINT")
+  local seat=$(echo "$response" | jq -r '.vacantSeat // empty')
+  if [[ -z "$seat" ]]; then
+    echo "Error: No vacant seat available. Response:" >&2
+    echo "$response" >&2
     exit 1
   fi
+  echo "Obtained seat: $seat" >&2
+  echo "$seat"
+}
 
-  VACANT_SEAT=$(echo "$VACANT_SEAT_RESPONSE" | jq -r '.vacantSeat')
-  if [[ -z "$VACANT_SEAT" ]]; then
-    echo "No vacant seat available. Server response:" >&2
-    echo "$VACANT_SEAT_RESPONSE" >&2
+# Function to issue a ticket
+issue_ticket() {
+  local seat_id="$1"
+  local time_slot=$(date +%s)
+  local device_id=$(hostname)
+  echo "Issuing ticket for seat $seat_id..." >&2
+  local response=$(curl -s -X POST -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $LICENSE_KEY" \
+    -d "{\"seatId\": \"$seat_id\", \"timeSlot\": \"$time_slot\", \"deviceId\": \"$device_id\", \"issuer\": \"master\"}" \
+    "$ISSUE_TICKET_ENDPOINT")
+  local ticket=$(echo "$response" | jq -e '.ticket // empty')
+  if [[ -z "$ticket" ]]; then
+    echo "Error issuing ticket. Response:" >&2
+    echo "$response" >&2
     exit 1
   fi
-
-  echo "Obtained vacant seat: $VACANT_SEAT" >&2
-  echo "$VACANT_SEAT"
+  echo "Ticket issued successfully" >&2
+  echo "$ticket" > "$TICKET_FILE"
+  echo "Ticket saved to $TICKET_FILE" >&2
+  echo "$ticket"
 }
 
 # Function to register the ticket as a certificate
 register_certificate() {
   local ticket_json="$1"
   echo "Registering ticket as certificate..." >&2
-  
-  CERT_PAYLOAD=$(jq -n --argjson ticket "$ticket_json" '{certificates: [$ticket]}')
-  
-  REGISTER_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
+  local payload=$(jq -n --argjson ticket "$ticket_json" '{certificates: [$ticket]}')
+  local response=$(curl -s -X POST -H "Content-Type: application/json" \
     -H "Authorization: Bearer $LICENSE_KEY" \
-    -d "$CERT_PAYLOAD" \
-    "$REGISTER_CERT_ENDPOINT")
-
-  if [[ -z "$REGISTER_RESPONSE" ]]; then
-    echo "Error: No response from server when registering certificate." >&2
+    -d "$payload" "$REGISTER_CERT_ENDPOINT")
+  if ! echo "$response" | jq -e '.message == "Certificates registered successfully."' >/dev/null; then
+    echo "Error registering certificate. Response:" >&2
+    echo "$response" >&2
     exit 1
   fi
-
-  if echo "$REGISTER_RESPONSE" | jq -e '.message == "Certificates registered successfully."' > /dev/null; then
-    echo "Certificate registered successfully!" >&2
-  else
-    echo "Error registering certificate. Server response:" >&2
-    echo "$REGISTER_RESPONSE" >&2
-    exit 1
-  fi
+  echo "Certificate registered successfully" >&2
 }
 
-# Check if existing ticket is valid first
+# Main logic
 if check_ticket_validity; then
-  exit 0  # Exit if valid ticket exists
-fi
-
-# If we get here, we need a new ticket
-SEAT_ID=$(get_vacant_seat)
-TIME_SLOT=$(date +%s)
-DEVICE_ID=$(hostname)
-
-echo "Issuing ticket for seat $SEAT_ID..." >&2
-TICKET_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $LICENSE_KEY" \
-  -d "{\"seatId\": \"$SEAT_ID\", \"timeSlot\": \"$TIME_SLOT\", \"deviceId\": \"$DEVICE_ID\", \"issuer\": \"master\"}" \
-  "$ISSUE_TICKET_ENDPOINT")
-
-if [[ -z "$TICKET_RESPONSE" ]]; then
-  echo "Error: No response from server when issuing ticket." >&2
-  exit 1
-fi
-
-if echo "$TICKET_RESPONSE" | jq -e '.ticket' > /dev/null; then
-  echo "Ticket issued successfully!" >&2
-  TICKET_JSON=$(echo "$TICKET_RESPONSE" | jq -e '.ticket')
-  echo "$TICKET_JSON" > "$TICKET_FILE"
-  echo "Ticket saved to $TICKET_FILE" >&2
-  
-  register_certificate "$TICKET_JSON"
-  
-  echo "$TICKET_FILE"
+  exit 0  # Valid ticket exists
 else
-  echo "Error issuing ticket. Server response:" >&2
-  echo "$TICKET_RESPONSE" >&2
-  exit 1
+  # Get a new ticket
+  seat_id=$(get_vacant_seat)
+  ticket_json=$(issue_ticket "$seat_id")
+  register_certificate "$ticket_json"
+  echo "$TICKET_FILE"
 fi
