@@ -350,6 +350,12 @@ pre_install() {
     if [ "$(id -u)" -eq 0 ]; then
         echo "Warning: Do not install as root."
 
+        if [ "$(uname -s)" = "Darwin" ]; then
+          echo "Re-run bbx install from a regular user account. You will need passwordless sudo capabilities."
+          echo "For example, see: https://web.archive.org/web/20241210214342/https://jefftriplett.com/2022/enable-sudo-without-a-password-on-macos/"
+          exit 1
+        fi
+
         # Prompt for a non-root user to run the install as
         read -p "Enter a regular user to run the installation: " install_user
         if [ -z "$install_user" ]; then
@@ -366,6 +372,30 @@ pre_install() {
                 yum install -y sudo
             else
                 echo "Unsupported distribution."
+                exit 1
+            fi
+        fi
+
+        # Check if curl is installed, and install if missing
+        if ! command -v curl &>/dev/null; then
+            echo "Curl not found, installing curl..."
+            if [ -f /etc/debian_version ]; then
+                apt update && apt install -y curl
+            elif [ -f /etc/redhat-release ]; then
+                yum install -y curl
+            else
+                echo "Unsupported distribution for curl installation."
+                exit 1
+            fi
+        fi
+        if ! command -v adduser &>/dev/null; then
+            echo "adduser not found, installing adduser..."
+            if [ -f /etc/debian_version ]; then
+                apt update && apt install -y adduser
+            elif [ -f /etc/redhat-release ]; then
+                yum install -y adduser
+            else
+                echo "Unsupported distribution for adduser installation."
                 exit 1
             fi
         fi
@@ -387,19 +417,6 @@ pre_install() {
         else
             printf "${YELLOW}User $install_user does not exist. Creating...${NC}\n"
             create_master_user "$install_user"
-        fi
-
-        # Check if curl is installed, and install if missing
-        if ! command -v curl &>/dev/null; then
-            echo "Curl not found, installing curl..."
-            if [ -f /etc/debian_version ]; then
-                apt update && apt install -y curl
-            elif [ -f /etc/redhat-release ]; then
-                yum install -y curl
-            else
-                echo "Unsupported distribution for curl installation."
-                exit 1
-            fi
         fi
 
         # Download the install script using curl and save it to a file
@@ -838,7 +855,6 @@ get_home_dir() {
     fi
 }
 
-# Helper: Create a user mirroring browser.sh's create_new_user
 create_user() {
     local user="$1"
     if [ "$(uname -s)" = "Darwin" ]; then
@@ -861,7 +877,7 @@ create_user() {
         else
             $SUDO adduser --disabled-password --gecos "BrowserBox user" "$user" >/dev/null 2>&1
         fi
-        # Add BrowserBox-specific groups
+        # Add BrowserBox-specific groups (no sudoers)
         for group in browsers renice; do
             if ! getent group "$group" >/dev/null; then
                 $SUDO groupadd "$group" 2>/dev/null
@@ -879,6 +895,20 @@ create_user() {
 
 # run-as subcommand
 run_as() {
+    # Initial checks for the calling user
+    if [ "$(id -u)" -eq 0 ]; then
+        printf "${RED}ERROR: Cannot run 'bbx run-as' as root. Use a non-root user with passwordless sudo.${NC}\n"
+        exit 1
+    fi
+    if ! command -v node >/dev/null 2>&1 || ! [ -d "$HOME/.nvm" ]; then
+        printf "${RED}ERROR: Calling user must have Node.js and nvm installed. Install via 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash' and then 'nvm install v22'.${NC}\n"
+        exit 1
+    fi
+    if ! sudo -n true 2>/dev/null; then
+        printf "${RED}ERROR: Calling user must have passwordless sudo. Edit /etc/sudoers with visudo.${NC}\n"
+        exit 1
+    fi
+
     load_config
     ensure_deps
     local user=""
@@ -906,36 +936,29 @@ run_as() {
         esac
     done
 
+    # Generate username if none provided or handle --temporary
+    local epoch=$(date +%s)
+    local rand=$(openssl rand -hex 4)
     if [ -z "$user" ]; then
-        printf "${RED}Usage: bbx run-as [--temporary] <username> [port] [hostname]${NC}\n"
-        printf "${YELLOW}Use --temporary to create a temp user deleted when stop-user is called.${NC}\n"
-        exit 1
-    fi
-
-    if [ "$user" = "--random" ]; then
-        local epoch=$(date +%s)
-        local rand=$(openssl rand -hex 4)
         if $temporary; then
-            user="bbusert-${epoch}_${rand}"
+            user="bbusert${epoch}-${rand}"
         else
-            user="bbuser-${epoch}_${rand}"
+            user="bbuser${epoch}-${rand}"
         fi
-        create_user "$user"
-    elif ! id "$user" >/dev/null 2>&1; then
-        if $temporary; then
-            user="bbusert-$user"
-        fi
+        printf "${YELLOW}No username provided. Generated: $user${NC}\n"
         create_user "$user"
     else
         if $temporary; then
-            user="bbusert-$user"
+            printf "${YELLOW}Ignoring provided username '$user' due to --temporary. Generating temporary user.${NC}\n"
+            user="bbusert${epoch}-${rand}"
+            create_user "$user"
+        else
             if id "$user" >/dev/null 2>&1; then
-                printf "${GREEN}Using existing temporary user: $user${NC}\n"
+                printf "${GREEN}Using existing user: $user${NC}\n"
             else
+                printf "${YELLOW}Creating specified user: $user${NC}\n"
                 create_user "$user"
             fi
-        else
-            printf "${GREEN}Using existing user: $user${NC}\n"
         fi
     fi
 
@@ -946,6 +969,13 @@ run_as() {
 
     # Ensure config directory exists with proper ownership
     $SUDO -u "$user" mkdir -p "$HOME_DIR/.config/dosyago/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
+
+    # Rsync .nvm from calling user to target user
+    printf "${YELLOW}Copying nvm and Node.js from $HOME/.nvm to $HOME_DIR/.nvm...${NC}\n"
+    $SUDO rsync -aq --exclude='.git' "$HOME/.nvm/" "$HOME_DIR/.nvm/" || { printf "${RED}Failed to rsync .nvm directory${NC}\n"; exit 1; }
+    $SUDO chown -R "$user":"$user" "$HOME_DIR/.nvm" || { printf "${RED}Failed to chown .nvm directory${NC}\n"; exit 1; }
+    NODE_VERSION=$($SUDO bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
+    $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
 
     # Run setup_bbpro
     $SUDO su - "$user" -c "setup_bbpro --port $port --token $TOKEN" || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
