@@ -456,7 +456,7 @@ tor_run() {
         printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
         exit 1
     fi
-    [ -n "$PORT" ] || [ -n "$BBX_HOSTNAME" ] {
+    [ -n "$PORT" ] || [ -n "$BBX_HOSTNAME" ] || {
         printf "${RED}Running 'bbx setup' first...${NC}\n";
         bbx setup;
     }
