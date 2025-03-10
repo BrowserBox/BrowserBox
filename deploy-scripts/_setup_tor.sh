@@ -179,7 +179,11 @@ restart_tor_service() {
       if [[ -f /.dockerenv ]] || ! systemctl is-active tor >/dev/null 2>&1; then
           printf "${YELLOW}Detected Docker environment, starting Tor manually...${NC}\n"
           $SUDO pkill -x tor 2>/dev/null # Kill any existing Tor process
-          $SUDO nohup tor &>/dev/null &
+          if [[ "$OS_TYPE" == "redhat" ]]; then
+            $SUDO -u $TOR_GROUP nohup tor &
+          elif [[ "$OS_TYPE" == "debian" ]]; then
+            $SUDO nohup tor &
+          fi
           sleep 2 # Give Tor a moment to start
           if ! pgrep -f tor >/dev/null; then
               printf "${RED}Failed to start Tor manually${NC}\n"
