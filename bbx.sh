@@ -243,7 +243,6 @@ ensure_deps() {
 
         # Check if the tool exists
         if ! command -v "$tool_name" >/dev/null 2>&1; then
-            printf "${YELLOW}Installing $pkg_name (for $tool_name)...${NC}\n"
 
             # Install based on OS
             if [ -f /etc/debian_version ]; then
@@ -254,6 +253,9 @@ ensure_deps() {
                 if ! command -v brew >/dev/null; then
                     printf "${RED}Homebrew not found. Install it first: https://brew.sh${NC}\n"
                     exit 1
+                fi
+                if [[ "$pkg_name" == "util-linux" ]]; then
+                  continue
                 fi
                 brew install "$pkg_name"
             else
@@ -266,6 +268,8 @@ ensure_deps() {
                 printf "${RED}Failed to install $pkg_name (for $tool_name). Please install it manually.${NC}\n"
                 exit 1
             fi
+
+            printf "${YELLOW}Installed $pkg_name (for $tool_name)${NC}\n"
         fi
     done
 }
@@ -453,7 +457,7 @@ run() {
     local port="${PORT:-$(find_free_port_block)}"
     local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
 
-    # Parse named arguments
+    # Parse arguments (named or positional)
     while [ $# -gt 0 ]; do
         case "$1" in
             --port|-p)
@@ -465,16 +469,25 @@ run() {
                 shift 2
                 ;;
             *)
-                printf "${RED}Unknown option: $1${NC}\n"
-                printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
-                exit 1
+                # Handle positional arguments
+                if [[ "$1" =~ ^[0-9]+$ ]] && [ -z "$port_set" ]; then
+                    port="$1"
+                    port_set=true
+                elif [ -n "$1" ] && [ -z "$hostname_set" ]; then
+                    hostname="$1"
+                    hostname_set=true
+                else
+                    printf "${RED}Unknown option or extra argument: $1${NC}\n"
+                    printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+                    exit 1
+                fi
+                shift
                 ;;
         esac
     done
 
     PORT="$port"
     BBX_HOSTNAME="$hostname"
-    setup "$port" "$hostname"  # Call setup with positional args for now (could refactor further)
     printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
         printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
@@ -482,6 +495,7 @@ run() {
     else
         ensure_hosts_entry "$hostname"
     fi
+    setup --port "$port" --hostname "$hostname"  # Use named args for clarity
     get_license_key
     export LICENSE_KEY="$LICENSE_KEY"
     certify_with_retry
@@ -1018,6 +1032,16 @@ run_as() {
         printf "${RED}ERROR: Calling user must have passwordless sudo. Edit /etc/sudoers with visudo.${NC}\n"
         exit 1
     fi
+    if [ -f /etc/debian_version ]; then
+        os_type="debian"
+    elif [ -f /etc/redhat-release ]; then
+        os_type="redhat"
+    elif [ "$(uname -s)" = "Darwin" ]; then
+        os_type="darwin"
+        printf "\n${RED}${BOLD}run-as is not currently supported on Darwin/macOS at the moment.${NC}\n"
+        printf "  Instead you can manually switch to the user you want to run BrowserBox, and use ${GREEN}bbx${NC} from that account.\n\n"
+        exit 1
+    fi
 
     load_config
     ensure_deps
@@ -1116,6 +1140,7 @@ run_as() {
     [ -n "$TOKEN" ] || { printf "${RED}Failed to retrieve login token for $user${NC}\n"; exit 1; }
 
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
+    draw_box "Username: $user"
     save_config
 }
 
