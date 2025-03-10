@@ -26,7 +26,7 @@ BOLD='\033[1m'
 
 # Version
 BBX_VERSION="10.1.0"
-branch="bx3" # change to main for dist
+branch="main" # change to main for dist
 banner_color=$BLUE
 
 # Sudo check
