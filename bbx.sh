@@ -459,6 +459,7 @@ tor_run() {
     [ -n "$PORT" ] || [ -n "$BBX_HOSTNAME" ] || {
         printf "${RED}Running 'bbx setup' first...${NC}\n";
         bbx setup;
+        load_config
     }
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
     printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
