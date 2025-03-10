@@ -132,7 +132,7 @@ echo
 echo
 
 if [[ $PLAT != win* ]]; then
-  read_input "Want to run setup_machine script? (you only need to do this the first time you install BG, or when you update new version) y/n "
+  read_input "Want to run setup_machine script? (you only need to do this the first time you install BrowserBox, or when you update new version) y/n "
   echo
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]];
