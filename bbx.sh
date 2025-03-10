@@ -119,17 +119,6 @@ ensure_setup_tor() {
     if ! $tor_running || ! command -v tor >/dev/null 2>&1; then
         printf "${YELLOW}Setting up Tor for user $user...${NC}\n"
         $SUDO setup_tor "$user" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
-        # Check if we're in Docker and systemctl isn't working
-        if [[ -f /.dockerenv ]] || ! systemctl is-active tor >/dev/null 2>&1; then
-            printf "${YELLOW}Detected Docker environment, starting Tor manually...${NC}\n"
-            $SUDO pkill -x tor 2>/dev/null # Kill any existing Tor process
-            $SUDO nohup tor &>/dev/null &
-            sleep 2 # Give Tor a moment to start
-            if ! pgrep -f tor >/dev/null; then
-                printf "${RED}Failed to start Tor manually${NC}\n"
-                exit 1
-            fi
-        fi
     fi
 }
 

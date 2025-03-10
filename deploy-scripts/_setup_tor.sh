@@ -174,7 +174,18 @@ restart_tor_service() {
     if [[ "$OS_TYPE" == "macos" ]]; then
       brew services restart tor
     else
-      systemctl restart tor || { echo "Failed to restart Tor service" >&2; exit 1; }
+      systemctl restart tor
+      # Check if we're in Docker and systemctl isn't working
+      if [[ -f /.dockerenv ]] || ! systemctl is-active tor >/dev/null 2>&1; then
+          printf "${YELLOW}Detected Docker environment, starting Tor manually...${NC}\n"
+          $SUDO pkill -x tor 2>/dev/null # Kill any existing Tor process
+          $SUDO nohup tor &>/dev/null &
+          sleep 2 # Give Tor a moment to start
+          if ! pgrep -f tor >/dev/null; then
+              printf "${RED}Failed to start Tor manually${NC}\n"
+              exit 1
+          fi
+      fi
     fi
   else
     echo "No changes to torrc; no restart needed" >&2
