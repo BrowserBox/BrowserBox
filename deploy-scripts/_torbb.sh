@@ -295,11 +295,7 @@ configure_and_export_tor() {
 
     if [[ "${OS_TYPE}" != "macos" ]]; then
       $SUDO mkdir -p "$hidden_service_dir"
-      if [[ "${OS_TYPE}" == "centos" ]]; then
-        $SUDO chown toranon:toranon "$hidden_service_dir"
-      else
-        $SUDO chown debian-tor:debian-tor "$hidden_service_dir"
-      fi
+      $SUDO chown $TOR_GROUP:$TOR_GROUP "$hidden_service_dir"
       $SUDO chmod 700 "$hidden_service_dir"
     else
       mkdir -p "$hidden_service_dir"
