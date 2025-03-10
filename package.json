@@ -13,7 +13,7 @@
     }
   },
   "bin": {
-    "bbox": "./deploy-scripts/bbox.sh"
+    "bbx": "./bbx.sh"
   },
   "parcelIgnore": [
     ".*/bang.js",
