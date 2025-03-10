@@ -712,7 +712,30 @@ update() {
     git stash drop
     npm i -g npm@latest
     npm i -g pm2@latest
-    ( yes no | ./deploy-scripts/global_install.sh "${BBX_HOSTNAME:-$(get_system_hostname)}" "$EMAIL") || { printf "${RED}Update failed. Check network or permissions.${NC}\n"; exit 1; }
+    if [ -t 0 ]; then
+        printf "${YELLOW}Running BrowserBox installer interactively...${NC}\n"
+        cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL"
+    else
+        printf "${YELLOW}Running BrowserBox installer non-interactively...${NC}\n"
+        cd "$BBX_HOME/BrowserBox" && (yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL")
+    fi
+    [ $? -eq 0 ] || { printf "${RED}Installation failed${NC}\n"; exit 1; }
+    printf "${YELLOW}Updating npm and pm2...${NC}\n"
+    source "${HOME}/.nvm/nvm.sh"
+    npm i -g npm@latest
+    npm i -g pm2@latest
+    printf "${YELLOW}Installing bbx command globally...${NC}\n"
+    if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
+      COMMAND_DIR="/usr/local/bin"
+    elif $SUDO test -w /usr/bin; then
+      COMMAND_DIR="/usr/bin"
+    else
+      COMMAND_DIR="$HOME/.local/bin"
+      mkdir -p "$COMMAND_DIR"
+    fi
+    BBX_BIN="${COMMAND_DIR}/bbx"
+    $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
+    $SUDO chmod +x "$BBX_BIN"
     printf "${GREEN}Update complete.${NC}\n"
 }
 
