@@ -195,7 +195,7 @@ setup() {
         ensure_hosts_entry "$hostname"
     fi
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
-    setup_bbpro --port "$port" --token "$TOKEN" > "$CONFIG_DIR/setup_output.txt" 2>/dev/null || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
+    setup_bbpro --port "$port" --token "$TOKEN" { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
@@ -292,7 +292,7 @@ tor_run() {
     elif ! $onion; then
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
-    $setup_cmd > "$CONFIG_DIR/tor_setup_output.txt" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; tail -n 5 "$CONFIG_DIR/tor_setup_output.txt"; exit 1; }
+    $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
     source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
     get_license_key
     export LICENSE_KEY="$LICENSE_KEY"
@@ -1039,7 +1039,7 @@ run_as() {
     TOKEN=$(openssl rand -hex 16)
 
     # Run setup_bbpro with explicit PATH and fresh token
-    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH setup_bbpro --port $port --token $TOKEN" > "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt" 2>&1 || { printf "${RED}Setup failed for $user${NC}\n"; cat "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt"; exit 1; }
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH setup_bbpro --port $port --token $TOKEN" || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
 
     # Use caller's LICENSE_KEY
     if [ -z "$LICENSE_KEY" ]; then
