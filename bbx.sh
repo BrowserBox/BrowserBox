@@ -288,7 +288,7 @@ fi
 
 # Default paths
 BBX_HOME="${HOME}/.bbx"
-BBX_BIN="/usr/local/bin/bbx"
+COMMAND_DIR=""
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
 
@@ -453,6 +453,23 @@ install() {
         cd "$BBX_HOME/BrowserBox" && (yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL")
     fi
     [ $? -eq 0 ] || { printf "${RED}Installation failed. Check $BBX_HOME/BrowserBox/deploy-scripts/global_install.sh output.${NC}\n"; exit 1; }
+    printf "${YELLOW}Updating npm and pm2...${NC}\n"
+    npm i -g npm@latest
+    npm i -g pm2@latest
+    printf "${YELLOW}Installing bbx command globally...${NC}\n"
+
+    # Check if /usr/local/bin is in the PATH and is writable
+    if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
+      COMMAND_DIR="/usr/local/bin"
+      $SUDO mkdir -p $COMMAND_DIR
+    elif $SUDO test -w /usr/bin; then
+      COMMAND_DIR="/usr/bin"
+      $SUDO mkdir -p $COMMAND_DIR
+    else
+      COMMAND_DIR="$HOME/.local/bin"
+      mkdir -p $COMMAND_DIR
+    fi
+    BBX_BIN="${COMMAND_DIR}/bbx"
     $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
     save_config
@@ -541,6 +558,8 @@ update() {
     git stash
     git pull
     git stash drop
+    npm i -g npm@latest
+    npm i -g pm2@latest
     ( yes no | ./deploy-scripts/global_install.sh "${BBX_HOSTNAME:-$(get_system_hostname)}" "$EMAIL") || { printf "${RED}Update failed. Check network or permissions.${NC}\n"; exit 1; }
     printf "${GREEN}Update complete.${NC}\n"
 }
