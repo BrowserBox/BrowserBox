@@ -47,6 +47,8 @@ export class HardenedApplication {
       privateKeyPath = null,
       privateKeyPem = null,
       ignorePatterns = [
+        'core',
+        'nohup.out',
         'src/public/assets/ruffle',
         '.bbpro_install_dir',
         '.DS_Store',
