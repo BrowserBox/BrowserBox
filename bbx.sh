@@ -448,12 +448,33 @@ setup() {
 run() {
     banner
     load_config
-    local port="${1:-${PORT:-$(find_free_port_block)}}"
-    local default_hostname=$(get_system_hostname)
-    local hostname="${2:-${BBX_HOSTNAME:-$default_hostname}}"
+
+    # Default values
+    local port="${PORT:-$(find_free_port_block)}"
+    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+
+    # Parse named arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --port|-p)
+                port="$2"
+                shift 2
+                ;;
+            --hostname|-h)
+                hostname="$2"
+                shift 2
+                ;;
+            *)
+                printf "${RED}Unknown option: $1${NC}\n"
+                printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+                exit 1
+                ;;
+        esac
+    done
+
     PORT="$port"
     BBX_HOSTNAME="$hostname"
-    setup "$port" "$hostname"
+    setup "$port" "$hostname"  # Call setup with positional args for now (could refactor further)
     printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
         printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
@@ -1105,23 +1126,27 @@ version() {
 usage() {
     banner
     printf "${BOLD}Usage:${NC} bbx <command> [options]\n"
-    printf "\n${YELLOW}Note: the bbx tool is still in beta.\n"
-    printf "\n"
-    printf "Commands:\n"
+    printf "\n${YELLOW}Note: the bbx tool is still in beta.${NC}\n\n"
+    printf "${BOLD}Commands:${NC}\n"
     printf "  ${GREEN}install${NC}      Install BrowserBox and bbx CLI\n"
     printf "  ${GREEN}uninstall${NC}    Remove BrowserBox, config, and all related files\n"
     printf "  ${RED}activate${NC}     Activate your copy of BrowserBox by purchasing a license key for 1 or more seats.\n"
-    printf "  ${GREEN}setup${NC}        Set up BrowserBox [port] [hostname]\n"
+    printf "                  Usage: bbx activate [seats]\n"
+    printf "  ${GREEN}setup${NC}        Set up BrowserBox\n"
+    printf "                  Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
     printf "  ${GREEN}certify${NC}      Certify your license\n"
-    printf "  ${GREEN}run${NC}          Start BrowserBox [port] [hostname]\n"
+    printf "  ${GREEN}run${NC}          Start BrowserBox\n"
+    printf "                  Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
     printf "  ${GREEN}stop${NC}         Stop BrowserBox (current user)\n"
-    printf "  ${GREEN}run-as${NC}       Run as a specific user [--temporary] [username] [port]\n"
-    printf "                  --temporary: stop-user deletes the user.\n"
-    printf "  ${GREEN}stop-user${NC}    Stop BrowserBox for a specific user [username] [delay_seconds]\n"
+    printf "  ${GREEN}run-as${NC}       Run as a specific user\n"
+    printf "                  Usage: bbx run-as [--temporary] [username] [port]\n"
+    printf "  ${GREEN}stop-user${NC}    Stop BrowserBox for a specific user\n"
+    printf "                  Usage: bbx stop-user <username> [delay_seconds]\n"
     printf "  ${GREEN}logs${NC}         Show BrowserBox logs\n"
     printf "  ${GREEN}update${NC}       Update BrowserBox\n"
     printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
-    printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor [--no-anonymize] [--no-onion]\n"
+    printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor\n"
+    printf "                  Usage: bbx tor-run [--no-anonymize] [--no-onion]\n"
     printf "  ${BLUE}${BOLD}console*${NC}     See and interact with the BrowserBox command stream\n"
     printf "  ${BLUE}${BOLD}automate*${NC}    Run pptr or playwright scripts in a running BrowserBox\n"
     printf "  ${GREEN}--version${NC}    Show bbx version\n"
