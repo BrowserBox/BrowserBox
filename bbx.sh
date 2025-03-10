@@ -399,7 +399,7 @@ setup() {
         ensure_hosts_entry "$hostname"
     fi
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
-    setup_bbpro --port "$port" --token "$TOKEN" { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
+    setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
@@ -1017,7 +1017,6 @@ run_as() {
 
     PORT="$port"
     BBX_HOSTNAME="$hostname"
-    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
     local HOME_DIR=$(get_home_dir "$user")
 
     # Ensure config directory exists with proper ownership
@@ -1039,8 +1038,8 @@ run_as() {
     # Generate fresh token
     TOKEN=$(openssl rand -hex 16)
 
-    # Run setup_bbpro with explicit PATH and fresh token
-    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH setup_bbpro --port $port --token $TOKEN" || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
+    # Run setup_bbpro with explicit PATH and fresh token, redirecting output as the target user
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH setup_bbpro --port $port --token $TOKEN > ~/.config/dosyago/bbpro/setup_output.txt 2>&1" || { printf "${RED}Setup failed for $user${NC}\n"; $SUDO cat "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt"; exit 1; }
 
     # Use caller's LICENSE_KEY
     if [ -z "$LICENSE_KEY" ]; then
@@ -1052,7 +1051,7 @@ run_as() {
 
     # Retrieve token
     if $SUDO test -f "$HOME_DIR/.config/dosyago/bbpro/test.env"; then
-        TOKEN=$($SUDO su - "$user" -c "source ~/.config/dosyago/bbpro/test.env && echo \$LOGIN_TOKEN") || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
+        TOKEN=$($SUDO -u "$user" bash -c "source ~/.config/dosyago/bbpro/test.env && echo \$LOGIN_TOKEN") || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
     fi
     if [ -z "$TOKEN" ] && $SUDO test -f "$HOME_DIR/.config/dosyago/bbpro/login.link"; then
         TOKEN=$($SUDO cat "$HOME_DIR/.config/dosyago/bbpro/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
@@ -1060,6 +1059,7 @@ run_as() {
     [ -n "$TOKEN" ] || { printf "${RED}Failed to retrieve login token for $user${NC}\n"; exit 1; }
 
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
+    save_config
 }
 
 version() {
