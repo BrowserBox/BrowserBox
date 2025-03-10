@@ -747,11 +747,11 @@ update() {
     printf "${YELLOW}Fetching BrowserBox repository (${branch} branch)...${NC}\n"
     curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
 
-    # Remove existing contents and extract new ZIP
-    rm -rf "$BBX_HOME/BrowserBox/*"
+    # Extract ZIP to a temp directory and merge with rsync
+    printf "${YELLOW}Extracting and updating BrowserBox files...${NC}\n"
     unzip -q "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
-    mv "$BBX_HOME/BrowserBox-zip/BrowserBox-${branch}"/* "$BBX_HOME/BrowserBox/" && rm -rf "$BBX_HOME/BrowserBox-zip"
-    rm "$BBX_HOME/BrowserBox.zip"
+    rsync -a --delete "$BBX_HOME/BrowserBox-zip/BrowserBox-${branch}/" "$BBX_HOME/BrowserBox/" || { printf "${RED}Failed to merge updated files${NC}\n"; exit 1; }
+    rm -rf "$BBX_HOME/BrowserBox-zip" "$BBX_HOME/BrowserBox.zip"
 
     # Make global_install.sh executable
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
