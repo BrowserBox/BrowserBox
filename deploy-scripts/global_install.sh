@@ -371,16 +371,51 @@ if [ "$#" -eq 2 ] || is_local_hostname "$1"; then
 
   if is_local_hostname "$1"; then
     if ! command -v mkcert &>/dev/null; then
+      printf "${YELLOW}Installing mkcert...${NC}\n"
       if [ "$(os_type)" == "macOS" ]; then
         brew install nss mkcert
       elif [ "$(os_type)" == "win" ]; then
         choco install mkcert || scoop bucket add extras && scoop install mkcert
       else
-        amd64=$(dpkg --print-architecture || uname -m)
-        $SUDO $APT install -y libnss3-tools
-        curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
-        chmod +x mkcert-v*-linux-$amd64
-        $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
+        # Determine architecture
+        if command -v dpkg &>/dev/null; then
+          arch=$(dpkg --print-architecture)
+        else
+          arch=$(uname -m)
+          if [ "$arch" = "x86_64" ]; then
+            arch="amd64"  # Normalize to mkcert naming
+          fi
+        fi
+        # Install NSS tools based on package manager
+        if command -v apt &>/dev/null; then
+          $SUDO $APT install -y libnss3-tools
+        elif command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+          $SUDO $APT install -y nss-tools  # $APT is dnf/yum here
+        else
+          printf "${RED}No supported package manager for NSS tools. Install manually.${NC}\n"
+          exit 1
+        fi
+        # Ensure wget or curl for downloading
+        if command -v curl &>/dev/null; then
+          downloader="curl -JLO"
+        elif command -v wget &>/dev/null; then
+          downloader="wget"
+        else
+          printf "${RED}Neither curl nor wget found. Installing wget...${NC}\n"
+          if command -v apt &>/dev/null; then
+            $SUDO $APT install -y wget
+          elif command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+            $SUDO $APT install -y wget
+          else
+            printf "${RED}Cannot install wget. Install curl or wget manually.${NC}\n"
+            exit 1
+          fi
+          downloader="wget"
+        fi
+        # Download and install mkcert
+        $downloader "https://dl.filippo.io/mkcert/latest?for=linux/$arch"
+        chmod +x mkcert-v*-linux-$arch
+        $SUDO cp mkcert-v*-linux-$arch /usr/local/bin/mkcert || { printf "${RED}Failed to install mkcert${NC}\n"; exit 1; }
         rm mkcert-v*
       fi
     fi
