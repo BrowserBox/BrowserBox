@@ -257,10 +257,21 @@ tor_run() {
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
     printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
     ensure_setup_tor "$(whoami)"
-    # Refresh group membership for the current user
+
+    # Determine Tor group dynamically
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        TOR_GROUP="_tor"  # Homebrew default
+        TORDIR="$(brew --prefix)/var/lib/tor"
+    else
+        TORDIR="/var/lib/tor"
+        TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) || TOR_GROUP="debian-tor"  # Fallback to debian-tor
+        # Additional fallbacks
+        [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]] && TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1) || TOR_GROUP="debian-tor"
+    fi
+
     local user="$(whoami)"
     if command -v sg >/dev/null 2>&1; then
-        sg debian-tor -c "true" 2>/dev/null || printf "${YELLOW}Warning: Failed to refresh group membership, may need re-login${NC}\n"
+        sg "$TOR_GROUP" -c "true" 2>/dev/null || printf "${YELLOW}Warning: Failed to refresh group membership for $TOR_GROUP, may need re-login${NC}\n"
     fi
     local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
     if $anonymize; then
@@ -279,9 +290,8 @@ tor_run() {
     local login_link=""
     if $onion; then
         printf "${YELLOW}Running as onion site...${NC}\n"
-        # Run torbb with refreshed group membership
         if command -v sg >/dev/null 2>&1; then
-            login_link=$(sg debian-tor -c "torbb" 2> "$CONFIG_DIR/torbb_errors.txt")
+            login_link=$(sg "$TOR_GROUP" -c "torbb" 2> "$CONFIG_DIR/torbb_errors.txt")
         else
             login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
         fi
