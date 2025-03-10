@@ -49,32 +49,23 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
   if [[ "$login_link" == *.onion* ]]; then
     echo "Detected onion address in login link: $login_link"
     
-    # Run Tor cleanup in Tor group context
-    if command -v sg >/dev/null 2>&1; then
-      sg "$TOR_GROUP" -c "
-        # Source the torbb.env file to get onion addresses
-        source \"$torbb_env_file\"
-
-        # Read the Tor authentication cookie and control port with fallback
-        tor_cookie_hex=\$(xxd -p '${TORDIR}/control_auth_cookie' 2>/dev/null || $SUDO xxd -p '${TORDIR}/control_auth_cookie' | tr -d '\n')
-        control_port=\"9051\"
-        
-        # Loop through onion addresses and send DEL_ONION commands
-        for var in \$(compgen -A variable | grep '^ADDR_'); do
-          onion_address=\"\${!var}\"
-          service_id=\"\${onion_address%.onion}\"
-          
-          echo \"Removing onion service: \$service_id\"
-          
-          control_command=\$(printf 'AUTHENTICATE %s\r\nDEL_ONION %s\r\nQUIT\r\n' \"\$tor_cookie_hex\" \"\$service_id\")
-          echo -e \"\$control_command\" | nc localhost \"\$control_port\"
-        done
-      " || { printf "${RED}Failed to remove onion services with sg${NC}\n"; exit 1; }
+    # Check if user is already in TOR_GROUP
+    local user="$(whoami)"
+    local in_tor_group=false
+    if id -G -n "$user" | grep -qw "$TOR_GROUP"; then
+      in_tor_group=true
+      echo "User $user already in group $TOR_GROUP"
+    elif ! command -v sg >/dev/null 2>&1; then
+      echo "sg not found and $user not in $TOR_GROUP, attempting cleanup with sudo fallback"
     else
-      printf "${YELLOW}sg not found, attempting cleanup as current user...${NC}\n"
+      echo "Using sg to run cleanup in $TOR_GROUP context"
+    fi
+    
+    # Define the cleanup script
+    cleanup_script() {
       source "$torbb_env_file"
-      tor_cookie_hex="$(xxd -p "${TORDIR}/control_auth_cookie" 2>/dev/null || $SUDO xxd -p "${TORDIR}/control_auth_cookie" 2>/dev/null)"
-      tor_cookie_hex="$(echo $tor_cookie_hex | tr -d '\n')"
+      tor_cookie_hex=$(xxd -p "${TORDIR}/control_auth_cookie" 2>/dev/null || $SUDO xxd -p "${TORDIR}/control_auth_cookie" 2>/dev/null)
+      tor_cookie_hex=$(echo "$tor_cookie_hex" | tr -d '\n')
       if [[ -z "$tor_cookie_hex" ]]; then 
         echo "Could not get tor cookie due to incorrect permissions" >&2
         exit 1
@@ -87,7 +78,34 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
         control_command=$(printf 'AUTHENTICATE %s\r\nDEL_ONION %s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_id")
         echo -e "$control_command" | nc localhost "$control_port"
       done
+    }
+    
+    # Run cleanup based on group membership
+    if $in_tor_group; then
+      cleanup_script
+    elif command -v sg >/dev/null 2>&1; then
+      sg "$TOR_GROUP" -c bash << 'EOF'
+source "$torbb_env_file"
+tor_cookie_hex=$(xxd -p "${TORDIR}/control_auth_cookie" 2>/dev/null || $SUDO xxd -p "${TORDIR}/control_auth_cookie" 2>/dev/null)
+tor_cookie_hex=$(echo "$tor_cookie_hex" | tr -d '\n')
+if [[ -z "$tor_cookie_hex" ]]; then 
+  echo "Could not get tor cookie due to incorrect permissions" >&2
+  exit 1
+fi
+control_port="9051"
+for var in $(compgen -A variable | grep "^ADDR_"); do
+  onion_address="${!var}"
+  service_id="${onion_address%.onion}"
+  echo "Removing onion service: $service_id"
+  control_command=$(printf 'AUTHENTICATE %s\r\nDEL_ONION %s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_id")
+  echo -e "$control_command" | nc localhost "$control_port"
+done
+EOF
+    else
+      cleanup_script
     fi
+    # Check exit status of last command
+    [ $? -eq 0 ] || { printf "${RED}Failed to remove onion services${NC}\n"; exit 1; }
     rm -f "$torbb_env_file"
     rm -f "$login_link_file"
   else
