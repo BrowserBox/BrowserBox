@@ -264,15 +264,20 @@ tor_run() {
         TORDIR="$(brew --prefix)/var/lib/tor"
     else
         TORDIR="/var/lib/tor"
-        TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) || TOR_GROUP="debian-tor"  # Fallback to debian-tor
-        # Additional fallbacks
+        TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) || TOR_GROUP="debian-tor"
         [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]] && TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1) || TOR_GROUP="debian-tor"
     fi
 
     local user="$(whoami)"
-    if command -v sg >/dev/null 2>&1; then
-        sg "$TOR_GROUP" -c "true" 2>/dev/null || printf "${YELLOW}Warning: Failed to refresh group membership for $TOR_GROUP, may need re-login${NC}\n"
+    # Check if user is already in TOR_GROUP
+    local in_tor_group=false
+    if id -G -n "$user" | grep -qw "$TOR_GROUP"; then
+        in_tor_group=true
+        printf "${GREEN}User $user already in group $TOR_GROUP${NC}\n"
+    elif ! command -v sg >/dev/null 2>&1; then
+        printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
     fi
+
     local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
     if $anonymize; then
         setup_cmd="$setup_cmd --ontor"
@@ -290,9 +295,17 @@ tor_run() {
     local login_link=""
     if $onion; then
         printf "${YELLOW}Running as onion site...${NC}\n"
-        if command -v sg >/dev/null 2>&1; then
-            login_link=$(sg "$TOR_GROUP" -c "torbb" 2> "$CONFIG_DIR/torbb_errors.txt")
+        if $in_tor_group; then
+            # Run torbb directly if user is in TOR_GROUP
+            login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
+        elif command -v sg >/dev/null 2>&1; then
+            # Use sg with heredoc if not in TOR_GROUP
+            login_link=$(sg "$TOR_GROUP" -c bash << 'EOF' 2> "$CONFIG_DIR/torbb_errors.txt"
+torbb
+EOF
+            )
         else
+            # Fallback without sg
             login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
         fi
         [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$CONFIG_DIR/torbb_errors.txt"; exit 1; }
