@@ -384,11 +384,45 @@ install() {
 setup() {
     load_config
     ensure_deps
-    local port="${1:-${PORT:-$(find_free_port_block)}}"
-    local default_hostname=$(get_system_hostname)
-    local hostname="${2:-${BBX_HOSTNAME:-$default_hostname}}"
+
+    # Default values
+    local port="${PORT:-$(find_free_port_block)}"
+    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+    local token="${TOKEN}"
+
+    # Parse named arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --port|-p)
+                port="$2"
+                shift 2
+                ;;
+            --hostname|-h)
+                hostname="$2"
+                shift 2
+                ;;
+            --token|-t)
+                token="$2"
+                shift 2
+                ;;
+            *)
+                printf "${RED}Unknown option: $1${NC}\n"
+                printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
+                exit 1
+                ;;
+        esac
+    done
+
+    # Validate port
+    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
+        printf "${RED}Invalid port: $port. Must be between 1024 and 65535.${NC}\n"
+        exit 1
+    fi
+
     PORT="$port"
     BBX_HOSTNAME="$hostname"
+    TOKEN="${token:-$(openssl rand -hex 16)}"  # Generate token if not provided
+
     printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
         printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
@@ -398,7 +432,7 @@ setup() {
     else
         ensure_hosts_entry "$hostname"
     fi
-    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
+
     setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
