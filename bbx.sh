@@ -158,6 +158,7 @@ install() {
     fi
     [ $? -eq 0 ] || { printf "${RED}Installation failed${NC}\n"; exit 1; }
     printf "${YELLOW}Updating npm and pm2...${NC}\n"
+    source "${HOME}/.nvm/nvm.sh"
     npm i -g npm@latest
     npm i -g pm2@latest
     printf "${YELLOW}Installing bbx command globally...${NC}\n"
