@@ -23,6 +23,12 @@ TOR_USER=""
 RESTART_TOR=false
 COOKIE_AUTH_FILE=""
 
+SUDO=""
+
+if command -v sudo &>/dev/null; then
+  export SUDO="$(command -v sudo) -n"
+fi
+
 # Function to detect the operating system
 detect_os() {
   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
