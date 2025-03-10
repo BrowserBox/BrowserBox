@@ -252,13 +252,13 @@ tor_run() {
         printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
         exit 1
     fi
-    [ -n "$PORT" ] || { 
-      printf "${RED}Running 'bbx setup' first...${NC}\n";
-      bbx setup;
+    [ -n "$PORT" ] || {
+        printf "${RED}Running 'bbx setup' first...${NC}\n";
+        bbx setup;
     }
-    [ -n "$BBX_HOSTNAME" ] || { 
-      printf "${RED}Running 'bbx setup' first...${NC}\n";
-      bbx setup;
+    [ -n "$BBX_HOSTNAME" ] || {
+        printf "${RED}Running 'bbx setup' first...${NC}\n";
+        bbx setup;
     }
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
     printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
@@ -275,7 +275,6 @@ tor_run() {
     fi
 
     local user="$(whoami)"
-    # Check if user is already in TOR_GROUP
     local in_tor_group=false
     if id | grep -qw "$TOR_GROUP"; then
         in_tor_group=true
@@ -305,8 +304,9 @@ tor_run() {
             # Run torbb directly if user is in TOR_GROUP
             login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
         elif command -v sg >/dev/null 2>&1; then
-            # Use sg with heredoc if not in TOR_GROUP
-            login_link=$(sg "$TOR_GROUP" -c bash << 'EOF' 2> "$CONFIG_DIR/torbb_errors.txt"
+            # Use safe heredoc with env
+            export CONFIG_DIR
+            login_link=$(sg "$TOR_GROUP" -c "env CONFIG_DIR='$CONFIG_DIR' bash" << 'EOF' 2> "$CONFIG_DIR/torbb_errors.txt"
 torbb
 EOF
             )
