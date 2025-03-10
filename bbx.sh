@@ -499,8 +499,15 @@ draw_box() {
 
 # Get system hostname
 get_system_hostname() {
-    # Use $HOSTNAME if set, otherwise fallback to `hostname`
-    echo "${HOSTNAME:-$(hostname)}"
+    # Try HOSTNAME env var, then uname -n, then /proc/sys/kernel/hostname, then fallback
+    local host="${HOSTNAME}"
+    if [ -z "$host" ] && command -v uname &>/dev/null; then
+        host=$(uname -n)
+    fi
+    if [ -z "$host" ] && [ -f /proc/sys/kernel/hostname ]; then
+        host=$(cat /proc/sys/kernel/hostname)
+    fi
+    echo "${host:-unknown}"
 }
 
 # Check if hostname is local

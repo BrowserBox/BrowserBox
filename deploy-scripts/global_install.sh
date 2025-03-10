@@ -60,20 +60,20 @@ ensure_hosts_entry() {
 }
 
 add_hostname_to_hosts() {
-  # Retrieve the current hostname
-  HOSTNAME=$(hostname)
-
-  # Check if the hostname is already mapped in /etc/hosts
+  # Try HOSTNAME env var, then uname -n, then /proc/sys/kernel/hostname, then fallback
+  local HOSTNAME="${HOSTNAME}"
+  if [ -z "$HOSTNAME" ] && command -v uname &>/dev/null; then
+    HOSTNAME=$(uname -n)
+  fi
+  if [ -z "$HOSTNAME" ] && [ -f /proc/sys/kernel/hostname ]; then
+    HOSTNAME=$(cat /proc/sys/kernel/hostname)
+  fi
+  HOSTNAME="${HOSTNAME:-unknown}"
   if ! grep -q "127.0.0.1.*$HOSTNAME" /etc/hosts; then
     echo "Adding hostname to /etc/hosts..." >&2
-
-    # Backup the current /etc/hosts file
     $SUDO cp /etc/hosts /etc/hosts.backup
-
-    # Add the hostname for 127.0.0.1 and ::1
     echo "127.0.0.1 $HOSTNAME" | $SUDO tee -a /etc/hosts > /dev/null
     echo "::1 $HOSTNAME" | $SUDO tee -a /etc/hosts > /dev/null
-
     echo "$HOSTNAME has been added to /etc/hosts." >&2
   else
     echo "Hostname $HOSTNAME is already mapped in /etc/hosts." >&2
