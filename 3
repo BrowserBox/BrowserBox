@@ -536,12 +536,7 @@ logs() {
 update() {
     load_config
     printf "${YELLOW}Updating BrowserBox...${NC}\n"
-    cd "$BBX_HOME/BrowserBox"
-    git add .
-    git stash
-    git pull
-    git stash drop
-    ( yes no | ./deploy-scripts/global_install.sh "${BBX_HOSTNAME:-$(get_system_hostname)}" "$EMAIL") || { printf "${RED}Update failed. Check network or permissions.${NC}\n"; exit 1; }
+    (cd "$BBX_HOME/BrowserBox" && git pull && ./deploy-scripts/global_install.sh "${BBX_HOSTNAME:-localhost}" "$EMAIL") || { printf "${RED}Update failed. Check network or permissions.${NC}\n"; exit 1; }
     printf "${GREEN}Update complete.${NC}\n"
 }
 
@@ -635,7 +630,7 @@ run() {
 stop_user() {
     load_config
     local user="$1"
-    local delay_seconds="${2:-0}"
+    local delay="${2:-0}"
     if [ -z "$user" ]; then
         printf "${RED}Usage: bbx stop-user <username> [delay_seconds]${NC}\n"
         exit 1
@@ -644,70 +639,10 @@ stop_user() {
         printf "${RED}User $user does not exist.${NC}\n"
         exit 1
     fi
-
-    # Ensure 'at' is installed
-    if ! command -v at >/dev/null 2>&1; then
-        printf "${YELLOW}Installing 'at' command...${NC}\n"
-        if [ -f /etc/debian_version ]; then
-            $SUDO apt-get update && $SUDO apt-get install -y at
-        elif [ -f /etc/redhat-release ]; then
-            $SUDO yum install -y at || $SUDO dnf install -y at
-        else
-            printf "${RED}Unsupported OS. Please install 'at' manually.${NC}\n"
-            exit 1
-        fi
-        $SUDO systemctl start atd.service 2>/dev/null || true
-    fi
-
-    printf "${YELLOW}Stopping BrowserBox for $user in $delay_seconds seconds...${NC}\n"
-    local is_temp_user=false
-    if [[ "$user" =~ ^bbusert ]]; then
-        is_temp_user=true
-        printf "${YELLOW}Detected temporary user $user - will remove home directory and user after stopping.${NC}\n"
-    fi
-
-    local current_time=$(date +%s)
-    local should_schedule=true
-    local home_dir=$(get_home_dir "$user")
-    local expiry_file="$home_dir/.config/dosyago/bbpro/expiry_time"
-
-    # Check for existing expiry time
-    if $SUDO test -f "$expiry_file"; then
-        local existing_expiry_time=$($SUDO cat "$expiry_file")
-        if [[ $existing_expiry_time -lt $current_time ]]; then
-            should_schedule=false
-            printf "${YELLOW}Existing expiry time ($existing_expiry_time) is in the past. Stopping immediately.${NC}\n"
-        fi
-    fi
-
-    if $should_schedule && [ "$delay_seconds" -gt 0 ]; then
-        local delay_minutes=$((delay_seconds / 60))
-        # Cancel existing 'at' jobs for this user
-        existing_jobs=$(atq | awk '{print $1}')
-        for job in $existing_jobs; do
-            if at -c "$job" | grep -q "stop_bbpro.*$user"; then
-                atrm "$job"
-            fi
-        done
-        # Schedule stop_bbpro
-        echo "$SUDO -u \"$user\" stop_bbpro" | at now + "${delay_minutes}" minutes 2>/dev/null
-        # Update expiry time
-        local new_expiry_timestamp=$((current_time + delay_seconds))
-        $SUDO -u "$user" bash -c "mkdir -p \"${home_dir}/.config/dosyago/bbpro\"; echo \"$new_expiry_timestamp\" > \"$expiry_file\""
-        printf "${GREEN}Scheduled stop for $user at $new_expiry_timestamp${NC}\n"
-    else
-        # Immediate stop
-        $SUDO -u "$user" stop_bbpro 2>/dev/null || { printf "${RED}Failed to stop BrowserBox for $user${NC}\n"; exit 1; }
-        printf "${GREEN}BrowserBox stopped for $user${NC}\n"
-    fi
-
-    # If temporary user, nuke it after stopping
-    if $is_temp_user; then
-        printf "${YELLOW}Removing temporary user $user and home directory...${NC}\n"
-        $SUDO pkill -u "$user" 2>/dev/null # Kill any remaining processes
-        $SUDO userdel -r "$user" 2>/dev/null || { printf "${RED}Failed to delete $user${NC}\n"; exit 1; }
-        printf "${GREEN}Temporary user $user removed${NC}\n"
-    fi
+    printf "${YELLOW}Scheduling stop for $user in $delay seconds...${NC}\n"
+    # error we need to instalize stop_user from stop_browser here: note to do and request the stop_browser script
+    "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh" "$user" "$delay" || { printf "${RED}Failed to stop $user's session.${NC}\n"; exit 1; }
+    printf "${GREEN}Stop scheduled for $user.${NC}\n"
 }
 
 # Helper: Get user's home directory
@@ -759,68 +694,27 @@ create_user() {
     printf "${GREEN}Created user: $user${NC}\n"
 }
 
-# run-as subcommand
+# Updated run-as subcommand
 run_as() {
     load_config
     ensure_deps
-    local user=""
-    local port="${PORT:-$(find_free_port_block)}"
-    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
-    local temporary=false
-
-    # Parse arguments
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --temporary)
-                temporary=true
-                shift
-                ;;
-            *)
-                if [ -z "$user" ]; then
-                    user="$1"
-                elif [ -z "$port" ]; then
-                    port="$1"
-                else
-                    hostname="$1"
-                fi
-                shift
-                ;;
-        esac
-    done
-
+    local user="$1"
+    local port="${2:-$(find_free_port_block)}"
+    local hostname="${3:-${BBX_HOSTNAME:-localhost}}"
     if [ -z "$user" ]; then
-        printf "${RED}Usage: bbx run-as [--temporary] <username> [port] [hostname]${NC}\n"
-        printf "${YELLOW}Use --temporary to create a temp user deleted when stop-user is called.${NC}\n"
+        printf "${RED}Usage: bbx run-as <username> [port] [hostname]${NC}\n"
         exit 1
     fi
-
     if [ "$user" = "--random" ]; then
         local epoch=$(date +%s)
         local rand=$(openssl rand -hex 4)
-        if $temporary; then
-            user="bbusert-${epoch}_${rand}"
-        else
-            user="bbuser-${epoch}_${rand}"
-        fi
+        user="bbuser-${epoch}_${rand}"
         create_user "$user"
     elif ! id "$user" >/dev/null 2>&1; then
-        if $temporary; then
-            user="bbusert-$user"
-        fi
         create_user "$user"
     else
-        if $temporary; then
-            user="bbusert-$user"
-            if id "$user" >/dev/null 2>&1; then
-                printf "${GREEN}Using existing temporary user: $user${NC}\n"
-            else
-                create_user "$user"
-            fi
-        else
-            printf "${GREEN}Using existing user: $user${NC}\n"
-        fi
+        printf "${GREEN}Using existing user: $user${NC}\n"
     fi
-
     PORT="$port"
     BBX_HOSTNAME="$hostname"
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
@@ -829,16 +723,16 @@ run_as() {
     # Ensure config directory exists with proper ownership
     $SUDO -u "$user" mkdir -p "$HOME_DIR/.config/dosyago/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
 
-    # Run setup_bbpro
+    # Run setup_bbpro (assumes it saves the login link automatically)
     $SUDO su - "$user" -c "setup_bbpro --port $port --token $TOKEN" || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
 
-    # Test port accessibility
+    # Test port accessibility (basic check, BB code handles firewall)
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
     test_port_access $((port-3000)) || { printf "${RED}CDP endpoint port $((port-3000)) is blocked for $user${NC}\n"; exit 1; }
 
-    # Use caller's LICENSE_KEY
+    # Use caller's LICENSE_KEY without saving it to user's config
     if [ -z "$LICENSE_KEY" ]; then
         printf "${RED}Caller must have a license key set in LICENSE_KEY env var${NC}\n"
         exit 1
@@ -846,7 +740,7 @@ run_as() {
     $SUDO su - "$user" -c "export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
     sleep 2
 
-    # Retrieve token
+    # Retrieve token from test.env or login.link
     if $SUDO test -f "$HOME_DIR/.config/dosyago/bbpro/test.env"; then
         TOKEN=$($SUDO su - "$user" -c "source ~/.config/dosyago/bbpro/test.env && echo \$LOGIN_TOKEN") || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
     fi
@@ -856,6 +750,7 @@ run_as() {
     [ -n "$TOKEN" ] || { printf "${RED}Failed to retrieve login token for $user${NC}\n"; exit 1; }
 
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
+    # Note: save_config is called but won't save LICENSE_KEY to user's home since we didn't set it there
     save_config
 }
 
@@ -871,17 +766,17 @@ usage() {
     printf "Commands:\n"
     printf "  ${GREEN}install${NC}      Install BrowserBox and bbx CLI\n"
     printf "  ${GREEN}uninstall${NC}    Remove BrowserBox, config, and all related files\n"
-    printf "  ${RED}activate${NC}     Activate your copy of BrowserBox by purchasing a license key for 1 or more seats.\n"
     printf "  ${GREEN}setup${NC}        Set up BrowserBox [port] [hostname]\n"
     printf "  ${GREEN}certify${NC}      Certify your license\n"
     printf "  ${GREEN}run${NC}          Start BrowserBox [port] [hostname]\n"
     printf "  ${GREEN}stop${NC}         Stop BrowserBox (current user)\n"
-    printf "  ${GREEN}run-as${NC}       Run as a specific user [--temporary] [username] [port]\n"
-    printf "                  --temporary: stop-user deletes the user.\n"
     printf "  ${GREEN}stop-user${NC}    Stop BrowserBox for a specific user [username] [delay_seconds]\n"
     printf "  ${GREEN}logs${NC}         Show BrowserBox logs\n"
     printf "  ${GREEN}update${NC}       Update BrowserBox\n"
+    printf "  ${RED}activate${NC}     Activate your copy of BrowserBox by purchasing a license key for 1 or more seats.\n"
     printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
+    printf "  ${GREEN}run-as${NC}       Run as a specific user [--temporary] [username] [port]\n"
+    printf "                   ${YELLOW}--temporary: user is deleted on stop-user.${NC}\n"
     printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor [--no-anonymize] [--no-onion]\n"
     printf "  ${BLUE}${BOLD}console*${NC}     See and interact with the BrowserBox command stream\n"
     printf "  ${BLUE}${BOLD}automate*${NC}    Run pptr or playwright scripts in a running BrowserBox\n"
