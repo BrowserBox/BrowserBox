@@ -18,10 +18,10 @@ USERNAME="$1"
 OS_TYPE=""
 TORRC=""
 TORDIR=""
-TOR_GROUP="tor"
+TOR_GROUP=""
 TOR_USER=""
 RESTART_TOR=false
-COOKIE_AUTH_FILE="/var/lib/tor/control_auth_cookie"
+COOKIE_AUTH_FILE=""
 
 # Function to detect the operating system
 detect_os() {
@@ -30,22 +30,32 @@ detect_os() {
       OS_TYPE="debian"
       TOR_GROUP="debian-tor"
       TOR_USER="debian-tor"
-    elif [ -f /etc/centos-release ] || [ -f /etc/redhat-release ]; then
-      OS_TYPE="centos"
+      TORRC="/etc/tor/torrc"
+      TORDIR="/var/lib/tor"
+      COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+    elif [ -f /etc/redhat-release ] || [ -f /etc/centos-release ]; then
+      OS_TYPE="redhat"
       TOR_GROUP="toranon"
       TOR_USER="toranon"
-    elif [ -f /etc/arch-release ]; then
-      OS_TYPE="arch"
-      TOR_GROUP="tor"
-      TOR_USER="tor"
+      TORRC="/etc/tor/torrc"
+      TORDIR="/var/lib/tor"
+      COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
     else
       echo "Unsupported Linux distribution" >&2
       exit 1
     fi
   elif [[ "$OSTYPE" == "darwin"* ]]; then
     OS_TYPE="macos"
-    TOR_GROUP="admin"
-    TOR_USER="$(id -un)"  # On macOS, Tor runs as the current user by default
+    TOR_GROUP="_tor"  # macOS Homebrew uses _tor group
+    TOR_USER="$(id -un)"  # Tor runs as the current user by default with brew
+    if ! command -v brew &>/dev/null; then
+      echo "Homebrew is not installed. Please install Homebrew first: https://brew.sh" >&2
+      exit 1
+    fi
+    local prefix=$(brew --prefix)
+    TORRC="${prefix}/etc/tor/torrc"
+    TORDIR="${prefix}/var/lib/tor"
+    COOKIE_AUTH_FILE="${prefix}/var/lib/tor/control_auth_cookie"
   else
     echo "Unsupported Operating System" >&2
     exit 1
@@ -55,52 +65,53 @@ detect_os() {
 # Function to add Tor repository and install Tor for Debian/Ubuntu
 add_tor_repository_debian() {
   echo "Adding Tor repository for Debian/Ubuntu..." >&2
-  $SUDO apt-get update
-  $SUDO apt-get install -y apt-transport-https gpg
-  wget -qO- https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --import
-  gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | $SUDO apt-key add -
-  echo "deb https://deb.torproject.org/torproject.org $(lsb_release -sc) main" | $SUDO tee /etc/apt/sources.list.d/tor.list
-  $SUDO apt-get update
-  $SUDO apt-get install -y tor deb.torproject.org-keyring
-  TOR_INSTALLED=true
+  apt-get update
+  apt-get install -y apt-transport-https gpg
+  # Use modern keyring method instead of deprecated apt-key
+  curl -s https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg >/dev/null
+  # Fallback to 'stable' if VERSION_CODENAME is unavailable
+  local codename=$(grep -oP '(?<=^VERSION_CODENAME=).+' /etc/os-release || echo 'stable')
+  echo "deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org $codename main" > /etc/apt/sources.list.d/tor.list
+  apt-get update
+  apt-get install -y tor deb.torproject.org-keyring
 }
 
 # Function to install Tor based on OS
 install_tor() {
+  if command -v tor &>/dev/null; then
+    echo "Tor is already installed" >&2
+    return 0
+  fi
   case $OS_TYPE in
     debian)
       add_tor_repository_debian
       ;;
-    centos)
-      $SUDO yum install -y epel-release || $SUDO dnf install -y epel-release
-      $SUDO yum install -y tor || $SUDO dnf install -y tor
-      TOR_INSTALLED=true
+    redhat)
+      yum install -y epel-release || dnf install -y epel-release
+      yum install -y tor || dnf install -y tor
       ;;
     macos)
       brew install tor
-      TOR_INSTALLED=true
       ;;
   esac
+  command -v tor &>/dev/null || { echo "Failed to install Tor" >&2; exit 1; }
 }
 
-# Function to find the torrc file
+# Function to find or create the torrc file
 find_torrc_path() {
   if [[ "$OS_TYPE" == "macos" ]]; then
-    if ! command -v brew &>/dev/null; then
-      echo "Homebrew is not installed. Please install Homebrew first." >&2
-      exit 1
-    fi
-    local prefix
-    prefix=$(brew --prefix)
+    local prefix=$(brew --prefix)
     TORRC="${prefix}/etc/tor/torrc"
     TORDIR="${prefix}/var/lib/tor"
     COOKIE_AUTH_FILE="${prefix}/var/lib/tor/control_auth_cookie"
+    # Create torrc if it doesn’t exist
+    [ -d "$(dirname "$TORRC")" ] || mkdir -p "$(dirname "$TORRC")"
+    [ -f "$TORRC" ] || touch "$TORRC"
   else
     TORRC="/etc/tor/torrc"
     TORDIR="/var/lib/tor"
-    COOKIE_AUTH_FILE="/var/lib/tor/control_auth_cookie"
+    COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
   fi
-
   # Ensure torrc exists
   if [ ! -f "$TORRC" ]; then
     echo "Tor configuration file not found at $TORRC" >&2
@@ -108,69 +119,29 @@ find_torrc_path() {
   fi
 }
 
-# Function to add the user to the tor group
+# Function to add the user to the Tor group
 add_user_to_tor_group() {
-  if id -nG "$USERNAME" | grep -qw "$TOR_GROUP"; then
-    echo "User $USERNAME is already in the $TOR_GROUP group." >&2
+  if [[ "$OS_TYPE" == "macos" ]]; then
+    # On macOS, Homebrew Tor runs as the user, so no group addition is needed
+    echo "On macOS, Tor runs as the current user ($USERNAME); no group addition needed" >&2
+  elif id -nG "$USERNAME" | grep -qw "$TOR_GROUP"; then
+    echo "User $USERNAME is already in the $TOR_GROUP group" >&2
   else
-    usermod -a -G "$TOR_GROUP" "$USERNAME"
-    echo "Added user $USERNAME to group $TOR_GROUP." >&2
+    usermod -aG "$TOR_GROUP" "$USERNAME"
+    echo "Added user $USERNAME to group $TOR_GROUP" >&2
   fi
 }
 
 # Function to configure torrc
 configure_torrc() {
   local torrc_modified=false
-  local control_port_configured=false
-  local cookie_auth_configured=false
-  local cookie_auth_group_readable_configured=false
-  local cookie_auth_file_configured=false
-
-  # Check if ControlPort is configured
-  if grep -qE '^\s*ControlPort\s+9051' "$TORRC"; then
-    control_port_configured=true
-  fi
-
-  # Check if CookieAuthentication is enabled
-  if grep -qE '^\s*CookieAuthentication\s+1' "$TORRC"; then
-    cookie_auth_configured=true
-  fi
-
-  # Check if CookieAuthFileGroupReadable is enabled
-  if grep -qE '^\s*CookieAuthFileGroupReadable\s+1' "$TORRC"; then
-    cookie_auth_group_readable_configured=true
-  fi
-
-  # Check if CookieAuthFile is explicitly set
-  if grep -qE "^\s*CookieAuthFile\s+$COOKIE_AUTH_FILE" "$TORRC"; then
-    cookie_auth_file_configured=true
-  fi
-
-  # Update torrc if necessary
-  if ! $control_port_configured; then
-    echo "Configuring ControlPort in torrc..." >&2
-    echo "ControlPort 9051" >> "$TORRC"
-    torrc_modified=true
-  fi
-
-  if ! $cookie_auth_configured; then
-    echo "Enabling CookieAuthentication in torrc..." >&2
-    echo "CookieAuthentication 1" >> "$TORRC"
-    torrc_modified=true
-  fi
-
-  if ! $cookie_auth_group_readable_configured; then
-    echo "Setting CookieAuthFileGroupReadable in torrc..." >&2
-    echo "CookieAuthFileGroupReadable 1" >> "$TORRC"
-    torrc_modified=true
-  fi
-
-  if ! $cookie_auth_file_configured; then
-    echo "Setting CookieAuthFile in torrc..." >&2
-    echo "CookieAuthFile $COOKIE_AUTH_FILE" >> "$TORRC"
-    torrc_modified=true
-  fi
-
+  for line in "ControlPort 9051" "CookieAuthentication 1" "CookieAuthFileGroupReadable 1" "CookieAuthFile $COOKIE_AUTH_FILE"; do
+    if ! grep -q "^$line" "$TORRC"; then
+      echo "$line" >> "$TORRC"
+      torrc_modified=true
+      echo "Added $line to $TORRC" >&2
+    fi
+  done
   if $torrc_modified; then
     RESTART_TOR=true
   fi
@@ -179,21 +150,20 @@ configure_torrc() {
 # Function to adjust permissions on Tor directories and files
 adjust_permissions() {
   echo "Adjusting permissions on Tor directories and files..." >&2
-
-  # Set group ownership of the Tor data directory
-  chown -R "$TOR_USER":"$TOR_GROUP" "$TORDIR"
-  chmod -R 750 "$TORDIR"
-
-  # Ensure the control_auth_cookie is group-readable
-  local control_auth_cookie
-  control_auth_cookie="$(find "$TORDIR" -name 'control_auth_cookie' 2>/dev/null | head -n 1)"
-
-  if [ -f "$control_auth_cookie" ]; then
-    chown "$TOR_USER":"$TOR_GROUP" "$control_auth_cookie"
-    chmod 640 "$control_auth_cookie"
-    echo "Set permissions on $control_auth_cookie" >&2
+  if [[ "$OS_TYPE" == "macos" ]]; then
+    # On macOS, ensure the user has access (Homebrew runs as user)
+    chown -R "$TOR_USER" "$TORDIR"
+    chmod -R 700 "$TORDIR"  # Stricter permissions since no group sharing is needed
+    [ -f "$COOKIE_AUTH_FILE" ] && chown "$TOR_USER" "$COOKIE_AUTH_FILE" && chmod 600 "$COOKIE_AUTH_FILE"
   else
-    echo "control_auth_cookie not found. It may be created when Tor starts." >&2
+    chown -R "$TOR_USER:$TOR_GROUP" "$TORDIR"
+    chmod -R 750 "$TORDIR"
+    [ -f "$COOKIE_AUTH_FILE" ] && chown "$TOR_USER:$TOR_GROUP" "$COOKIE_AUTH_FILE" && chmod 640 "$COOKIE_AUTH_FILE"
+  fi
+  if [ -f "$COOKIE_AUTH_FILE" ]; then
+    echo "Set permissions on $COOKIE_AUTH_FILE" >&2
+  else
+    echo "control_auth_cookie not found; it will be created when Tor starts" >&2
   fi
 }
 
@@ -204,27 +174,24 @@ restart_tor_service() {
     if [[ "$OS_TYPE" == "macos" ]]; then
       brew services restart tor
     else
-      systemctl restart tor
+      systemctl restart tor || { echo "Failed to restart Tor service" >&2; exit 1; }
     fi
   else
-    echo "No changes to torrc; no need to restart Tor." >&2
+    echo "No changes to torrc; no restart needed" >&2
   fi
 }
 
 # Main execution flow
 main() {
   detect_os
-  if ! command -v tor &>/dev/null; then
-    install_tor
-  fi
+  install_tor
   find_torrc_path
   add_user_to_tor_group
   configure_torrc
   adjust_permissions
   restart_tor_service
-  echo "Tor setup complete for user $USERNAME." >&2
+  echo "Tor setup complete for user $USERNAME" >&2
 }
 
 # Invoke the main function
 main
-
