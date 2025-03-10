@@ -119,6 +119,17 @@ ensure_setup_tor() {
     if ! $tor_running || ! command -v tor >/dev/null 2>&1; then
         printf "${YELLOW}Setting up Tor for user $user...${NC}\n"
         $SUDO setup_tor "$user" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
+        # Check if we're in Docker and systemctl isn't working
+        if [[ -f /.dockerenv ]] || ! systemctl is-active tor >/dev/null 2>&1; then
+            printf "${YELLOW}Detected Docker environment, starting Tor manually...${NC}\n"
+            $SUDO pkill -f tor 2>/dev/null # Kill any existing Tor process
+            $SUDO nohup tor &>/dev/null &
+            sleep 2 # Give Tor a moment to start
+            if ! pgrep -f tor >/dev/null; then
+                printf "${RED}Failed to start Tor manually${NC}\n"
+                exit 1
+            fi
+        fi
     fi
 }
 
@@ -257,6 +268,11 @@ tor_run() {
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
     printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
     ensure_setup_tor "$(whoami)"
+    # Refresh group membership for the current user
+    local user="$(whoami)"
+    if command -v sg >/dev/null 2>&1; then
+        sg debian-tor -c "true" 2>/dev/null || printf "${YELLOW}Warning: Failed to refresh group membership, may need re-login${NC}\n"
+    fi
     local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
     if $anonymize; then
         setup_cmd="$setup_cmd --ontor"
@@ -274,7 +290,12 @@ tor_run() {
     local login_link=""
     if $onion; then
         printf "${YELLOW}Running as onion site...${NC}\n"
-        login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
+        # Run torbb with refreshed group membership
+        if command -v sg >/dev/null 2>&1; then
+            login_link=$(sg debian-tor -c "torbb" 2> "$CONFIG_DIR/torbb_errors.txt")
+        else
+            login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
+        fi
         [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$CONFIG_DIR/torbb_errors.txt"; exit 1; }
         BBX_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
     else
