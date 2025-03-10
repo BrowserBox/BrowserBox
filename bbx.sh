@@ -118,7 +118,7 @@ ensure_setup_tor() {
     fi
     if ! $tor_running || ! command -v tor >/dev/null 2>&1; then
         printf "${YELLOW}Setting up Tor for user $user...${NC}\n"
-        $SUDO setup_tor "$user" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
+        $SUDO bash -c "PATH=/usr/local/bin:\$PATH setup_tor '$user'" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
     fi
 }
 
@@ -884,7 +884,7 @@ stop_user() {
         printf "${GREEN}Scheduled stop for $user at $new_expiry_timestamp${NC}\n"
     else
         # Immediate stop
-        $SUDO -u "$user" stop_bbpro 2>/dev/null || { printf "${RED}Failed to stop BrowserBox for $user${NC}\n"; exit 1; }
+        $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH stop_bbpro" 2>/dev/null || { printf "${RED}Failed to stop BrowserBox for $user${NC}\n"; exit 1; }
         printf "${GREEN}BrowserBox stopped for $user${NC}\n"
     fi
 
@@ -1029,21 +1029,24 @@ run_as() {
     NODE_VERSION=$($SUDO bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
     $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
 
-    # Run setup_bbpro
-    $SUDO su - "$user" -c "setup_bbpro --port $port --token $TOKEN" || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
-
     # Test port accessibility
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
     test_port_access $((port-3000)) || { printf "${RED}CDP endpoint port $((port-3000)) is blocked for $user${NC}\n"; exit 1; }
 
+    # Generate fresh token
+    TOKEN=$(openssl rand -hex 16)
+
+    # Run setup_bbpro with explicit PATH and fresh token
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH setup_bbpro --port $port --token $TOKEN" > "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt" 2>&1 || { printf "${RED}Setup failed for $user${NC}\n"; cat "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt"; exit 1; }
+
     # Use caller's LICENSE_KEY
     if [ -z "$LICENSE_KEY" ]; then
         printf "${RED}Caller must have a license key set in LICENSE_KEY env var${NC}\n"
         exit 1
     fi
-    $SUDO su - "$user" -c "export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH; export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
     sleep 2
 
     # Retrieve token
@@ -1056,7 +1059,6 @@ run_as() {
     [ -n "$TOKEN" ] || { printf "${RED}Failed to retrieve login token for $user${NC}\n"; exit 1; }
 
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
-    save_config
 }
 
 version() {
