@@ -50,9 +50,9 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
     echo "Detected onion address in login link: $login_link"
     
     # Check if user is already in TOR_GROUP
-    local user="$(whoami)"
-    local in_tor_group=false
-    if id -G -n "$user" | grep -qw "$TOR_GROUP"; then
+    user="$(whoami)"
+    in_tor_group=false
+    if id | grep -qw "$TOR_GROUP"; then
       in_tor_group=true
       echo "User $user already in group $TOR_GROUP"
     elif ! command -v sg >/dev/null 2>&1; then
