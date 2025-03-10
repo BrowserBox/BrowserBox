@@ -8,11 +8,17 @@ if command -v sudo &>/dev/null; then
 fi
 
 if [[ "$OSTYPE" == darwin* ]]; then
-  TORDIR="$(brew --prefix)/var/lib/tor"
-  TOR_GROUP="_tor"  # Homebrew default
+    TOR_GROUP="_tor"  # Homebrew default
+    TORDIR="$(brew --prefix)/var/lib/tor"
 else
-  TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) || TOR_GROUP="debian-tor"
-  [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]] && TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1) || TOR_GROUP="debian-tor"
+    TORDIR="/var/lib/tor"
+    TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) 
+    if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
+      TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1) 
+    fi
+    if [[ -z "$TOR_GROUP" ]]; then
+      TOR_GROUP="debian-tor"
+    fi
 fi
 
 # Ensure pm2 is available
