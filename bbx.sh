@@ -25,13 +25,25 @@ NC='\033[0m'
 BOLD='\033[1m'
 
 # Version
-BBX_VERSION="10.0.2"
+BBX_VERSION="10.1.0"
 branch="main" # change to main for dist
 banner_color=$BLUE
 
+# Sudo check
+SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
+if [ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null; then
+    printf "${RED}ERROR: Requires root or passwordless sudo. Edit /etc/sudoers with visudo if needed.${NC}\n"
+    exit 1
+fi
+
+# Default paths
+BBX_HOME="${HOME}/.bbx"
+COMMAND_DIR=""
+REPO_URL="https://github.com/BrowserBox/BrowserBox"
+BBX_SHARE="/usr/local/share/dosyago"
+
 # Check if in screen or if UTF-8 is not supported
 if [ -n "$STY" ] || ! tput u8 >/dev/null 2>&1; then
-  # Use ASCII characters for borders
   top_left="+"
   top_right="+"
   bottom_left="+"
@@ -39,7 +51,6 @@ if [ -n "$STY" ] || ! tput u8 >/dev/null 2>&1; then
   horizontal="-"
   vertical="|"
 else
-  # Use printf to set UTF-8 byte sequences for Unicode borders
   top_left=$(printf "\xe2\x94\x8c")    # Upper-left corner
   top_right=$(printf "\xe2\x94\x90")   # Upper-right corner
   bottom_left=$(printf "\xe2\x94\x94") # Lower-left corner
@@ -47,7 +58,6 @@ else
   horizontal=$(printf "\xe2\x94\x80")  # Horizontal line
   vertical=$(printf "\xe2\x94\x82")    # Vertical line
 fi
-
 
 # ASCII Banner
 banner() {
@@ -63,80 +73,38 @@ EOF
     printf "${NC}\n"
 }
 
-# Pre-install function to ensure proper setup
-pre_install() {
-    # Check if we're running as root
-    if [ "$(id -u)" -eq 0 ]; then
-        echo "Warning: Do not install as root."
+# Config file (secondary to test.env and login.link)
+CONFIG_DIR="$HOME/.config/dosyago/bbpro"
+CONFIG_FILE="$CONFIG_DIR/config"
+TICKET_FILE="$CONFIG_DIR/tickets/ticket.json"
+[ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
 
-        # Prompt for a non-root user to run the install as
-        read -p "Enter a non-root username to run the installation: " install_user
+load_config() {
+    [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
+    # Override with test.env if it exists
+    [ -f "$CONFIG_DIR/test.env" ] && source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}"
+}
 
-        # Check if the user exists
-        if id "$install_user" &>/dev/null; then
-            echo "User $install_user found."
-        else
-            echo "User $install_user does not exist. Please create the user first."
-            exit 1
-        fi
+save_config() {
+    mkdir -p "$CONFIG_DIR"
+    cat > "$CONFIG_FILE" <<EOF
+EMAIL="${EMAIL:-}"
+LICENSE_KEY="${LICENSE_KEY:-}"
+BBX_HOSTNAME="${BBX_HOSTNAME:-}"
+TOKEN="${TOKEN:-}"
+PORT="${PORT:-}"
+EOF
+    chmod 600 "$CONFIG_FILE"
+}
 
-        # Check if sudo is installed
-        if ! command -v sudo &>/dev/null; then
-            echo "Sudo not found, installing sudo..."
-            if [ -f /etc/debian_version ]; then
-                # For Debian/Ubuntu
-                apt update && apt install -y sudo
-            elif [ -f /etc/redhat-release ]; then
-                # For RHEL/CentOS
-                yum install -y sudo
-            else
-                echo "Unsupported distribution."
-                exit 1
-            fi
-        fi
-
-        groupadd sudoers
-
-        # Ensure passwordless sudo is configured for the 'sudoers' group
-        if ! grep -q "%sudoers" /etc/sudoers; then
-            echo "%sudoers ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers
-        fi
-
-        # Add the install user to the 'sudoers' group
-        usermod -aG sudoers "$install_user"
-
-        # Check if curl is installed, and install if missing
-        if ! command -v curl &>/dev/null; then
-            echo "Curl not found, installing curl..."
-            if [ -f /etc/debian_version ]; then
-                apt update && apt install -y curl
-            elif [ -f /etc/redhat-release ]; then
-                yum install -y curl
-            else
-                echo "Unsupported distribution for curl installation."
-                exit 1
-            fi
-        fi
-
-        # Download the install script using curl and save it to a file
-        echo "Downloading the installation script..."
-        curl -sSL "https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/$branch/bbx.sh" -o /tmp/bbx.sh
-        chmod +x /tmp/bbx.sh
-        chown "${install_user}:${install_user}" /tmp/bbx.sh
-
-        # Now switch to the non-root user
-        echo "Switching to user $install_user..."
-        su - "$install_user" -c "
-            # Make the script executable and run it as the non-root user
-            /tmp/bbx.sh install
-        "
-
-        # Exit to end the script
-        exit 0
-    else
-        # If not running as root, continue with the normal install
-        echo "Running as non-root user, proceeding with installation..."
+# Get license key, show warning only on new entry
+get_license_key() {
+    if [ -n "$LICENSE_KEY" ]; then
+        return
     fi
+    read -r -p "Enter License Key (get one at sales@dosaygo.com): " LICENSE_KEY
+    [ -n "$LICENSE_KEY" ] || { printf "${RED}ERROR: License key required!${NC}\n"; exit 1; }
+    printf "${YELLOW}Note: License will be saved unencrypted at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
 }
 
 # Box drawing helper function
@@ -171,31 +139,17 @@ draw_box() {
     printf "\n"
 }
 
-# Config file
-CONFIG_DIR="$HOME/.config/dosyago/bbpro"
-CONFIG_FILE="$CONFIG_DIR/config"
-[ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
-load_config() {
-    [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
-}
-
-save_config() {
-    mkdir -p "$CONFIG_DIR"
-    cat > "$CONFIG_FILE" <<EOF
-EMAIL="$EMAIL"
-LICENSE_KEY="$LICENSE_KEY"
-BBX_HOSTNAME="$BBX_HOSTNAME"
-TOKEN="$TOKEN"
-PORT="$PORT"
-EOF
-    chmod 600 "$CONFIG_FILE"
-    printf "${YELLOW}Note: License key stored in plaintext at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
-}
-
 # Get system hostname
 get_system_hostname() {
-    # Use $HOSTNAME if set, otherwise fallback to `hostname`
-    echo "${HOSTNAME:-$(hostname)}"
+    # Try HOSTNAME env var, then uname -n, then /proc/sys/kernel/hostname, then fallback
+    local host="${HOSTNAME}"
+    if [ -z "$host" ] && command -v uname &>/dev/null; then
+        host=$(uname -n)
+    fi
+    if [ -z "$host" ] && [ -f /proc/sys/kernel/hostname ]; then
+        host=$(cat /proc/sys/kernel/hostname)
+    fi
+    echo "${host:-unknown}"
 }
 
 # Check if hostname is local
@@ -225,29 +179,6 @@ ensure_hosts_entry() {
         printf "${GREEN}$hostname already mapped in /etc/hosts${NC}\n"
     fi
 }
-
-# Get license key (env var or config, prompt if missing)
-get_license_key() {
-    if [ -n "$LICENSE_KEY" ]; then
-        LICENSE_KEY="$LICENSE_KEY"
-    elif [ -z "$LICENSE_KEY" ]; then
-        read -r -p "Enter License Key (get one at sales@dosaygo.com): " LICENSE_KEY
-        [ -n "$LICENSE_KEY" ] || { printf "${RED}ERROR: License key required!${NC}\n"; exit 1; }
-    fi
-}
-
-# Sudo check
-SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
-if [ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null; then
-    printf "${RED}ERROR: Requires root or passwordless sudo. Edit /etc/sudoers with visudo if needed.${NC}\n"
-    exit 1
-fi
-
-# Default paths
-BBX_HOME="${HOME}/.bbx"
-BBX_BIN="/usr/local/bin/bbx"
-REPO_URL="https://github.com/BrowserBox/BrowserBox"
-BBX_SHARE="/usr/local/share/dosyago"
 
 # Parse dependency syntax: <os_label>:<pkg>,<pkg>[/<tool>]
 parse_dep() {
@@ -305,7 +236,7 @@ parse_dep() {
 
 # Dependency check
 ensure_deps() {
-    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl")
+    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg")
     for dep in "${deps[@]}"; do
         # Parse the dependency
         IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
@@ -380,7 +311,27 @@ test_port_access() {
     fi
 }
 
-# Subcommands
+# Ensure setup_tor is run for the user (assume global, check Tor service)
+ensure_setup_tor() {
+    local user="$1"
+    local tor_running=false
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        brew services list | grep -q "tor.*started" && tor_running=true
+    else
+        systemctl is-active tor >/dev/null 2>&1 && tor_running=true
+    fi
+    if ! $tor_running || ! command -v tor >/dev/null 2>&1; then
+        printf "${YELLOW}Setting up Tor for user $user...${NC}\n"
+        $SUDO bash -c "PATH=/usr/local/bin:\$PATH setup_tor '$user'" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
+    fi
+}
+
+# Certify with updated bbcertify behavior
+certify_with_retry() {
+    bbcertify || { printf "${RED}Certification failed. Check LICENSE_KEY or server status.${NC}\n"; exit 1; }
+    printf "${GREEN}Certification complete.${NC}\n"
+}
+
 install() {
     banner
     pre_install
@@ -390,7 +341,7 @@ install() {
     mkdir -p "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to create $BBX_HOME/BrowserBox${NC}\n"; exit 1; }
     printf "${YELLOW}Fetching BrowserBox repository...${NC}\n"
     curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
-    rm -rf $BBX_HOME/BrowserBox/*
+    rm -rf "$BBX_HOME/BrowserBox/*"
     unzip -q "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
     mv "$BBX_HOME/BrowserBox-zip/BrowserBox-${branch}"/* "$BBX_HOME/BrowserBox/" && rm -rf "$BBX_HOME/BrowserBox-zip"
     rm "$BBX_HOME/BrowserBox.zip"
@@ -406,15 +357,375 @@ install() {
         printf "${YELLOW}Running BrowserBox installer interactively...${NC}\n"
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL"
     else
-        printf "${YELLOW}Running BrowserBox installer non-interactively (auto-accepting prompts)...${NC}\n"
+        printf "${YELLOW}Running BrowserBox installer non-interactively...${NC}\n"
         cd "$BBX_HOME/BrowserBox" && (yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL")
     fi
-    [ $? -eq 0 ] || { printf "${RED}Installation failed. Check $BBX_HOME/BrowserBox/deploy-scripts/global_install.sh output.${NC}\n"; exit 1; }
+    [ $? -eq 0 ] || { printf "${RED}Installation failed${NC}\n"; exit 1; }
+    printf "${YELLOW}Updating npm and pm2...${NC}\n"
+    source "${HOME}/.nvm/nvm.sh"
+    npm i -g npm@latest
+    npm i -g pm2@latest
+    printf "${YELLOW}Installing bbx command globally...${NC}\n"
+    if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
+      COMMAND_DIR="/usr/local/bin"
+    elif $SUDO test -w /usr/bin; then
+      COMMAND_DIR="/usr/bin"
+    else
+      COMMAND_DIR="$HOME/.local/bin"
+      mkdir -p "$COMMAND_DIR"
+    fi
+    BBX_BIN="${COMMAND_DIR}/bbx"
     $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
     save_config
     printf "${GREEN}bbx v$BBX_VERSION installed successfully! Run 'bbx --help' for usage.${NC}\n"
 }
+
+setup() {
+    load_config
+    ensure_deps
+
+    # Default values
+    local port="${PORT:-$(find_free_port_block)}"
+    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+    local token="${TOKEN}"
+
+    # Parse named arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --port|-p)
+                port="$2"
+                shift 2
+                ;;
+            --hostname|-h)
+                hostname="$2"
+                shift 2
+                ;;
+            --token|-t)
+                token="$2"
+                shift 2
+                ;;
+            *)
+                printf "${RED}Unknown option: $1${NC}\n"
+                printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
+                exit 1
+                ;;
+        esac
+    done
+
+    # Validate port
+    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
+        printf "${RED}Invalid port: $port. Must be between 1024 and 65535.${NC}\n"
+        exit 1
+    fi
+
+    PORT="$port"
+    BBX_HOSTNAME="$hostname"
+    TOKEN="${token:-$(openssl rand -hex 16)}"  # Generate token if not provided
+
+    printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
+    if ! is_local_hostname "$hostname"; then
+        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+        chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
+        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
+    else
+        ensure_hosts_entry "$hostname"
+    fi
+
+    setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
+    for i in {-2..2}; do
+        test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
+    done
+    test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
+    setup_bbpro --port "$port" --token "$TOKEN" > "$CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+    source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+    save_config
+    printf "${GREEN}Setup complete.${NC}\n"
+    draw_box "Login Link: $(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")"
+}
+
+run() {
+    banner
+    load_config
+
+    # Default values
+    local port="${PORT:-$(find_free_port_block)}"
+    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+
+    # Parse named arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --port|-p)
+                port="$2"
+                shift 2
+                ;;
+            --hostname|-h)
+                hostname="$2"
+                shift 2
+                ;;
+            *)
+                printf "${RED}Unknown option: $1${NC}\n"
+                printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+                exit 1
+                ;;
+        esac
+    done
+
+    PORT="$port"
+    BBX_HOSTNAME="$hostname"
+    setup "$port" "$hostname"  # Call setup with positional args for now (could refactor further)
+    printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
+    if ! is_local_hostname "$hostname"; then
+        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
+    else
+        ensure_hosts_entry "$hostname"
+    fi
+    get_license_key
+    export LICENSE_KEY="$LICENSE_KEY"
+    certify_with_retry
+    bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+    sleep 2
+    source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+    local login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
+    draw_box "Login Link: $login_link"
+    save_config
+}
+
+tor_run() {
+    banner
+    load_config
+    ensure_deps
+    local anonymize=true onion=true
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --anonymize) anonymize=true; shift ;;
+            --no-anonymize) anonymize=false; shift ;;
+            --onion) onion=true; shift ;;
+            --no-onion) onion=false; shift ;;
+            *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
+        esac
+    done
+    if ! $anonymize && ! $onion; then
+        printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
+        exit 1
+    fi
+    ([ -n "$PORT" ] && [ -n "$BBX_HOSTNAME" ]) || {
+        printf "${RED}Running 'bbx setup' first...${NC}\n";
+        bbx setup;
+        load_config
+    }
+    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
+    printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
+    ensure_setup_tor "$(whoami)"
+
+    # Determine Tor group dynamically
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        TOR_GROUP="_tor"  # Homebrew default
+        TORDIR="$(brew --prefix)/var/lib/tor"
+    else
+        TORDIR="/var/lib/tor"
+        TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) 
+        if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
+          TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1) 
+        fi
+        if [[ -z "$TOR_GROUP" ]]; then
+          TOR_GROUP="debian-tor"
+        fi
+    fi
+
+    local user="$(whoami)"
+    local in_tor_group=false
+    if id | grep -qw "$TOR_GROUP"; then
+        in_tor_group=true
+        printf "${GREEN}User $user already in group $TOR_GROUP${NC}\n"
+    elif ! command -v sg >/dev/null 2>&1; then
+        printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
+    fi
+
+    local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
+    if $anonymize; then
+        setup_cmd="$setup_cmd --ontor"
+    fi
+    if ! $onion && ! is_local_hostname "$BBX_HOSTNAME"; then
+        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$BBX_HOSTNAME" || { printf "${RED}Hostname $BBX_HOSTNAME not resolving${NC}\n"; exit 1; }
+    elif ! $onion; then
+        ensure_hosts_entry "$BBX_HOSTNAME"
+    fi
+    $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+    source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+    get_license_key
+    export LICENSE_KEY="$LICENSE_KEY"
+    certify_with_retry
+    local login_link=""
+    if $onion; then
+        printf "${YELLOW}Running as onion site...${NC}\n"
+        if $in_tor_group; then
+            # Run torbb directly if user is in TOR_GROUP
+            login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
+        elif command -v sg >/dev/null 2>&1; then
+            # Use safe heredoc with env
+            export CONFIG_DIR
+            login_link=$(sg "$TOR_GROUP" -c "env CONFIG_DIR='$CONFIG_DIR' bash" << 'EOF' 2> "$CONFIG_DIR/torbb_errors.txt"
+torbb
+EOF
+            )
+        else
+            # Fallback without sg
+            login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
+        fi
+        [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$CONFIG_DIR/torbb_errors.txt"; exit 1; }
+        BBX_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
+    else
+        for i in {-2..2}; do
+            test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
+        done
+        test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
+        bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+        login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$BBX_HOSTNAME:$PORT/login?token=$TOKEN")
+    fi
+    sleep 2
+    printf "${GREEN}BrowserBox with Tor started.${NC}\n"
+    draw_box "Login Link: $login_link"
+}
+
+# Helper: Create a master user with passwordless sudo and BB groups
+create_master_user() {
+    local user="$1"
+    if [ "$(uname -s)" = "Darwin" ]; then
+        $SUDO sysadminctl -deleteUser "$user" -secure 2>/dev/null
+        local pw=$(openssl rand -base64 12)
+        $SUDO sysadminctl -addUser "$user" -fullName "BrowserBox Master User" -password "$pw" -home "/Users/$user" -shell /bin/bash
+        $SUDO dseditgroup -o edit -a "$user" -t user staff
+        $SUDO createhomedir -c -u "$user" >/dev/null
+        $SUDO -u "$user" bash -c 'echo "export PATH=$PATH:/usr/local/bin" >> ~/.bash_profile'
+        $SUDO -u "$user" bash -c 'echo "export PATH=$PATH:/usr/local/bin" >> ~/.bashrc'
+        $SUDO -u "$user" security create-keychain -p "$pw" "${user}.keychain"
+        $SUDO -u "$user" security default-keychain -s "${user}.keychain"
+        $SUDO -u "$user" security login-keychain -s "${user}.keychain"
+        $SUDO -u "$user" security set-keychain-settings "${user}.keychain"
+        $SUDO -u "$user" security unlock-keychain -p "$pw" "${user}.keychain"
+    else
+        $SUDO groupdel -f "$user" 2>/dev/null
+        if [ -f /etc/redhat-release ]; then
+            $SUDO useradd -m -s /bin/bash -c "BrowserBox Master User" "$user"
+        else
+            $SUDO adduser --disabled-password --gecos "BrowserBox Master User" "$user" >/dev/null 2>&1
+        fi
+        # Add BrowserBox-specific groups
+        for group in browsers renice sudoers; do
+            if ! getent group "$group" >/dev/null; then
+                $SUDO groupadd "$group" 2>/dev/null
+            fi
+            $SUDO usermod -aG "$group" "$user" 2>/dev/null
+        done
+        # Enable lingering for systemd (Linux only)
+        if command -v loginctl >/dev/null 2>&1; then
+            $SUDO loginctl enable-linger "$user" 2>/dev/null
+        fi
+        # Ensure passwordless sudo
+        if ! grep -q "%sudoers" /etc/sudoers; then
+            echo "%sudoers ALL=(ALL:ALL) NOPASSWD:ALL" | $SUDO tee -a /etc/sudoers >/dev/null
+        fi
+    fi
+    id "$user" >/dev/null 2>&1 || { printf "${RED}Failed to create master user $user${NC}\n"; exit 1; }
+    printf "${GREEN}Created master user: $user with passwordless sudo${NC}\n"
+}
+
+# Pre-install function to ensure proper setup
+pre_install() {
+    # Check if we're running as root
+    if [ "$(id -u)" -eq 0 ]; then
+        echo "Warning: Do not install as root."
+
+        if [ "$(uname -s)" = "Darwin" ]; then
+          echo "Re-run bbx install from a regular user account. You will need passwordless sudo capabilities."
+          echo "For example, see: https://web.archive.org/web/20241210214342/https://jefftriplett.com/2022/enable-sudo-without-a-password-on-macos/"
+          exit 1
+        fi
+
+        # Prompt for a non-root user to run the install as
+        read -p "Enter a regular user to run the installation: " install_user
+        if [ -z "$install_user" ]; then
+            printf "${RED}ERROR: A username is required${NC}\n"
+            exit 1
+        fi
+
+        # Check if sudo is installed first - we need it before modifying /etc/sudoers
+        if ! command -v sudo &>/dev/null; then
+            echo "Sudo not found, installing sudo..."
+            if [ -f /etc/debian_version ]; then
+                apt update && apt install -y sudo
+            elif [ -f /etc/redhat-release ]; then
+                yum install -y sudo
+            else
+                echo "Unsupported distribution."
+                exit 1
+            fi
+        fi
+
+        # Check if curl is installed, and install if missing
+        if ! command -v curl &>/dev/null; then
+            echo "Curl not found, installing curl..."
+            if [ -f /etc/debian_version ]; then
+                apt update && apt install -y curl
+            elif [ -f /etc/redhat-release ]; then
+                yum install -y curl
+            else
+                echo "Unsupported distribution for curl installation."
+                exit 1
+            fi
+        fi
+        if ! command -v adduser &>/dev/null; then
+            echo "adduser not found, installing adduser..."
+            if [ -f /etc/debian_version ]; then
+                apt update && apt install -y adduser
+            elif [ -f /etc/redhat-release ]; then
+                yum install -y adduser
+            else
+                echo "Unsupported distribution for adduser installation."
+                exit 1
+            fi
+        fi
+
+        # Check if the user exists, offer to create if not
+        if id "$install_user" &>/dev/null; then
+            echo "User $install_user found."
+            # Ensure the user has passwordless sudo
+            if ! $SUDO -u "$install_user" sudo -n true 2>/dev/null; then
+                if ! getent group sudoers >/dev/null; then
+                    $SUDO groupadd sudoers
+                fi
+                $SUDO usermod -aG sudoers "$install_user"
+                if ! grep -q "%sudoers" /etc/sudoers; then
+                    echo "%sudoers ALL=(ALL:ALL) NOPASSWD:ALL" | $SUDO tee -a /etc/sudoers >/dev/null
+                fi
+                printf "${YELLOW}Updated $install_user with passwordless sudo${NC}\n"
+            fi
+        else
+            printf "${YELLOW}User $install_user does not exist. Creating...${NC}\n"
+            create_master_user "$install_user"
+        fi
+
+        # Download the install script using curl and save it to a file
+        echo "Downloading the installation script..."
+        curl -sSL "https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/$branch/bbx.sh" -o /tmp/bbx.sh
+        chmod +x /tmp/bbx.sh
+        chown "${install_user}:${install_user}" /tmp/bbx.sh
+
+        # Switch to the non-root user and run install
+        echo "Switching to user $install_user..."
+        su - "$install_user" -c "/tmp/bbx.sh install"
+
+        # Replace the root shell with the new user's shell
+        exec su - "$install_user"
+    else
+        # If not running as root, continue with the normal install
+        echo "Running as non-root user, proceeding with installation..."
+    fi
+}
+
 
 uninstall() {
     printf "${YELLOW}Uninstalling BrowserBox...${NC}\n"
@@ -493,7 +804,54 @@ logs() {
 update() {
     load_config
     printf "${YELLOW}Updating BrowserBox...${NC}\n"
-    (cd "$BBX_HOME/BrowserBox" && git pull && ./deploy-scripts/global_install.sh "${BBX_HOSTNAME:-localhost}" "$EMAIL") || { printf "${RED}Update failed. Check network or permissions.${NC}\n"; exit 1; }
+    
+    # Check and reset hostname if unresolvable
+    if ! is_local_hostname "$BBX_HOSTNAME" && ! dig +short "$BBX_HOSTNAME" A >/dev/null 2>&1; then
+        printf "${YELLOW}Current hostname $BBX_HOSTNAME not resolvable, resetting to default...${NC}\n"
+        BBX_HOSTNAME=$(get_system_hostname)
+    fi
+    
+    # Ensure BBX_HOME exists
+    mkdir -p "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to create $BBX_HOME/BrowserBox${NC}\n"; exit 1; }
+    
+    # Fetch the latest ZIP from GitHub
+    printf "${YELLOW}Fetching BrowserBox repository (${branch} branch)...${NC}\n"
+    curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
+    
+    # Clean temp directory, extract ZIP, and merge with rsync
+    printf "${YELLOW}Extracting and updating BrowserBox files...${NC}\n"
+    rm -rf "$BBX_HOME/BrowserBox-zip"  # Ensure temp dir is fresh
+    unzip -q -o "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
+    rsync -a --delete "$BBX_HOME/BrowserBox-zip/BrowserBox-${branch}/" "$BBX_HOME/BrowserBox/" || { printf "${RED}Failed to merge updated files${NC}\n"; exit 1; }
+    rm -rf "$BBX_HOME/BrowserBox-zip" "$BBX_HOME/BrowserBox.zip"
+    
+    # Make global_install.sh executable
+    chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
+    
+    # Run unattended global install with existing hostname and email
+    printf "${YELLOW}Running BrowserBox installer non-interactively...${NC}\n"
+    cd "$BBX_HOME/BrowserBox" && (yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") || { printf "${RED}Installation failed${NC}\n"; exit 1; }
+    
+    # Update npm and pm2
+    printf "${YELLOW}Updating npm and pm2...${NC}\n"
+    source "${HOME}/.nvm/nvm.sh"
+    npm i -g npm@latest
+    npm i -g pm2@latest
+    
+    # Install bbx command globally
+    printf "${YELLOW}Installing bbx command globally...${NC}\n"
+    if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
+      COMMAND_DIR="/usr/local/bin"
+    elif $SUDO test -w /usr/bin; then
+      COMMAND_DIR="/usr/bin"
+    else
+      COMMAND_DIR="$HOME/.local/bin"
+      mkdir -p "$COMMAND_DIR"
+    fi
+    BBX_BIN="${COMMAND_DIR}/bbx"
+    $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
+    $SUDO chmod +x "$BBX_BIN"
+    
     printf "${GREEN}Update complete.${NC}\n"
 }
 
@@ -518,76 +876,11 @@ status() {
     fi
 }
 
-# setup subcommand
-setup() {
-    load_config
-    ensure_deps
-    local port="${1:-$(find_free_port_block)}"
-    local default_hostname=$(get_system_hostname)
-    local hostname="${2:-${BBX_HOSTNAME:-$default_hostname}}"
-    PORT="$port"
-    BBX_HOSTNAME="$hostname"
-    printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
-    if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
-        chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
-    else
-        ensure_hosts_entry "$hostname"
-    fi
-    setup_bbpro --port "$port" > "$CONFIG_DIR/setup_output.txt" 2>/dev/null || { printf "${RED}Port range $((port-2))-$((port+2)) not free locally.${NC}\n"; exit 1; }
-    for i in {-2..2}; do
-        test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
-    done
-    test_port_access $((port-3000)) || { printf "${RED}CDP endpoint port $((port-3000)) is blocked. Adjust firewall.${NC}\n"; exit 1; }
-    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
-    setup_bbpro --port "$port" --token "$TOKEN" > "$CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
-    save_config
-    printf "${GREEN}Setup complete.${NC}\n"
-    draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
-}
-
-# run subcommand
-run() {
-    banner
-    load_config
-    local port="${1:-$PORT}"
-    local default_hostname=$(get_system_hostname)
-    local hostname="${2:-${BBX_HOSTNAME:-$default_hostname}}"
-    PORT="$port"
-    BBX_HOSTNAME="$hostname"
-    setup "$port" "$hostname"
-    printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
-    if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
-        chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving. Set up DNS and try again.${NC}\n"; exit 1; }
-    else
-        ensure_hosts_entry "$hostname"
-    fi
-    get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
-    bbcertify || { printf "${RED}Certification failed. Invalid or expired license key.${NC}\n"; exit 1; }
-    bbpro || { printf "${RED}Failed to start. Ensure setup is complete and dependencies are installed.${NC}\n"; exit 1; }
-    sleep 2
-    # Source test.env for TOKEN if available, otherwise parse login.link
-    if [ -f "$CONFIG_DIR/test.env" ]; then
-        source "$CONFIG_DIR/test.env" || { printf "${RED}Failed to source $CONFIG_DIR/test.env${NC}\n"; exit 1; }
-        PORT="${APP_PORT}"
-        TOKEN="${LOGIN_TOKEN}"
-    fi
-    [ -n "$TOKEN" ] || TOKEN=$(cat "$CONFIG_DIR/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
-    draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
-    save_config
-}
-
 # stop-user subcommand
 stop_user() {
     load_config
     local user="$1"
-    local delay="${2:-0}"
+    local delay_seconds="${2:-0}"
     if [ -z "$user" ]; then
         printf "${RED}Usage: bbx stop-user <username> [delay_seconds]${NC}\n"
         exit 1
@@ -596,52 +889,232 @@ stop_user() {
         printf "${RED}User $user does not exist.${NC}\n"
         exit 1
     fi
-    printf "${YELLOW}Scheduling stop for $user in $delay seconds...${NC}\n"
-    # error we need to instalize stop_user from stop_browser here: note to do and request the stop_browser script
-    "$BBX_HOME/BrowserBox/deploy-scripts/stop_browser.sh" "$user" "$delay" || { printf "${RED}Failed to stop $user's session.${NC}\n"; exit 1; }
-    printf "${GREEN}Stop scheduled for $user.${NC}\n"
+
+    # Ensure 'at' is installed
+    if ! command -v at >/dev/null 2>&1; then
+        printf "${YELLOW}Installing 'at' command...${NC}\n"
+        if [ -f /etc/debian_version ]; then
+            $SUDO apt-get update && $SUDO apt-get install -y at
+        elif [ -f /etc/redhat-release ]; then
+            $SUDO yum install -y at || $SUDO dnf install -y at
+        else
+            printf "${RED}Unsupported OS. Please install 'at' manually.${NC}\n"
+            exit 1
+        fi
+        $SUDO systemctl start atd.service 2>/dev/null || true
+    fi
+
+    printf "${YELLOW}Stopping BrowserBox for $user in $delay_seconds seconds...${NC}\n"
+    local is_temp_user=false
+    if [[ "$user" =~ ^bbusert ]]; then
+        is_temp_user=true
+        printf "${YELLOW}Detected temporary user $user - will remove home directory and user after stopping.${NC}\n"
+    fi
+
+    local current_time=$(date +%s)
+    local should_schedule=true
+    local home_dir=$(get_home_dir "$user")
+    local expiry_file="$home_dir/.config/dosyago/bbpro/expiry_time"
+
+    # Check for existing expiry time
+    if $SUDO test -f "$expiry_file"; then
+        local existing_expiry_time=$($SUDO cat "$expiry_file")
+        if [[ $existing_expiry_time -lt $current_time ]]; then
+            should_schedule=false
+            printf "${YELLOW}Existing expiry time ($existing_expiry_time) is in the past. Stopping immediately.${NC}\n"
+        fi
+    fi
+
+    if $should_schedule && [ "$delay_seconds" -gt 0 ]; then
+        local delay_minutes=$((delay_seconds / 60))
+        # Cancel existing 'at' jobs for this user
+        existing_jobs=$(atq | awk '{print $1}')
+        for job in $existing_jobs; do
+            if at -c "$job" | grep -q "stop_bbpro.*$user"; then
+                atrm "$job"
+            fi
+        done
+        # Schedule stop_bbpro
+        echo "$SUDO -u \"$user\" stop_bbpro" | at now + "${delay_minutes}" minutes 2>/dev/null
+        # Update expiry time
+        local new_expiry_timestamp=$((current_time + delay_seconds))
+        $SUDO -u "$user" bash -c "mkdir -p \"${home_dir}/.config/dosyago/bbpro\"; echo \"$new_expiry_timestamp\" > \"$expiry_file\""
+        printf "${GREEN}Scheduled stop for $user at $new_expiry_timestamp${NC}\n"
+    else
+        # Immediate stop
+        $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH stop_bbpro" 2>/dev/null || { printf "${RED}Failed to stop BrowserBox for $user${NC}\n"; exit 1; }
+        printf "${GREEN}BrowserBox stopped for $user${NC}\n"
+    fi
+
+    # If temporary user, nuke it after stopping
+    if $is_temp_user; then
+        printf "${YELLOW}Removing temporary user $user and home directory...${NC}\n"
+        $SUDO pkill -u "$user" 2>/dev/null # Kill any remaining processes
+        $SUDO userdel -r "$user" 2>/dev/null || { printf "${RED}Failed to delete $user${NC}\n"; exit 1; }
+        printf "${GREEN}Temporary user $user removed${NC}\n"
+    fi
+}
+
+# Helper: Get user's home directory
+get_home_dir() {
+    local user="$1"
+    if [ "$(uname -s)" = "Darwin" ]; then
+        echo "/Users/$user"
+    else
+        echo "/home/$user"
+    fi
+}
+
+create_user() {
+    local user="$1"
+    if [ "$(uname -s)" = "Darwin" ]; then
+        $SUDO sysadminctl -deleteUser "$user" -secure 2>/dev/null
+        local pw=$(openssl rand -base64 12)
+        $SUDO sysadminctl -addUser "$user" -fullName "BrowserBox user $user" -password "$pw" -home "/Users/$user" -shell /bin/bash
+        $SUDO dseditgroup -o edit -a "$user" -t user staff
+        $SUDO createhomedir -c -u "$user" >/dev/null
+        $SUDO -u "$user" bash -c 'echo "export PATH=\$PATH:/usr/local/bin" >> ~/.bash_profile'
+        $SUDO -u "$user" bash -c 'echo "export PATH=\$PATH:/usr/local/bin" >> ~/.bashrc'
+        $SUDO -u "$user" security create-keychain -p "$pw" "${user}.keychain"
+        $SUDO -u "$user" security default-keychain -s "${user}.keychain"
+        $SUDO -u "$user" security login-keychain -s "${user}.keychain"
+        $SUDO -u "$user" security set-keychain-settings "${user}.keychain"
+        $SUDO -u "$user" security unlock-keychain -p "$pw" "${user}.keychain"
+    else
+        $SUDO groupdel -f "$user" 2>/dev/null
+        if [ -f /etc/redhat-release ]; then
+            $SUDO useradd -m -s /bin/bash -c "BrowserBox user" "$user"
+        else
+            $SUDO adduser --disabled-password --gecos "BrowserBox user" "$user" >/dev/null 2>&1
+        fi
+        # Add BrowserBox-specific groups (no sudoers)
+        for group in browsers renice; do
+            if ! getent group "$group" >/dev/null; then
+                $SUDO groupadd "$group" 2>/dev/null
+            fi
+            $SUDO usermod -aG "$group" "$user" 2>/dev/null
+        done
+        # Enable lingering for systemd (Linux only)
+        if command -v loginctl >/dev/null 2>&1; then
+            $SUDO loginctl enable-linger "$user" 2>/dev/null
+        fi
+    fi
+    id "$user" >/dev/null 2>&1 || { printf "${RED}Failed to create user $user${NC}\n"; exit 1; }
+    printf "${GREEN}Created user: $user${NC}\n"
 }
 
 # run-as subcommand
 run_as() {
+    # Initial checks for the calling user
+    if [ "$(id -u)" -eq 0 ]; then
+        printf "${RED}ERROR: Cannot run 'bbx run-as' as root. Use a non-root user with passwordless sudo.${NC}\n"
+        exit 1
+    fi
+    if ! command -v node >/dev/null 2>&1 || ! [ -d "$HOME/.nvm" ]; then
+        printf "${RED}ERROR: Calling user must have Node.js and nvm installed. Install via 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash' and then 'nvm install v22'.${NC}\n"
+        exit 1
+    fi
+    if ! sudo -n true 2>/dev/null; then
+        printf "${RED}ERROR: Calling user must have passwordless sudo. Edit /etc/sudoers with visudo.${NC}\n"
+        exit 1
+    fi
+
     load_config
     ensure_deps
-    local user="$1"
-    local port="${2:-$(find_free_port_block)}"
-    local hostname="${3:-${BBX_HOSTNAME:-localhost}}"
+    local user=""
+    local port="${PORT:-$(find_free_port_block)}"
+    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+    local temporary=false
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --temporary)
+                temporary=true
+                shift
+                ;;
+            *)
+                if [ -z "$user" ]; then
+                    user="$1"
+                elif [ -z "$port" ]; then
+                    port="$1"
+                else
+                    hostname="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    # Generate username if none provided or handle --temporary
+    local epoch=$(date +%s)
+    local rand=$(openssl rand -hex 4)
     if [ -z "$user" ]; then
-        printf "${RED}Usage: bbx run-as <username> [port] [hostname]${NC}\n"
-        exit 1
+        if $temporary; then
+            user="bbusert${epoch}-${rand}"
+        else
+            user="bbuser${epoch}-${rand}"
+        fi
+        printf "${YELLOW}No username provided. Generated: $user${NC}\n"
+        create_user "$user"
+    else
+        if $temporary; then
+            printf "${YELLOW}Ignoring provided username '$user' due to --temporary. Generating temporary user.${NC}\n"
+            user="bbusert${epoch}-${rand}"
+            create_user "$user"
+        else
+            if id "$user" >/dev/null 2>&1; then
+                printf "${GREEN}Using existing user: $user${NC}\n"
+            else
+                printf "${YELLOW}Creating specified user: $user${NC}\n"
+                create_user "$user"
+            fi
+        fi
     fi
-    if [ "$user" = "--random" ]; then
-        user="bbuser_$(openssl rand -hex 4)"
-        $SUDO adduser --disabled-password --gecos "BrowserBox user" "$user" || { printf "${RED}Failed to create user $user${NC}\n"; exit 1; }
-        $SUDO usermod -aG renice,browsers "$user" 2>/dev/null
-        printf "${GREEN}Created temporary user: $user${NC}\n"
-    elif ! id "$user" >/dev/null 2>&1; then
-        printf "${RED}User $user does not exist. Use --random or create the user first.${NC}\n"
-        exit 1
-    fi
+
     PORT="$port"
     BBX_HOSTNAME="$hostname"
-    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
-    $SUDO -u "$user" mkdir -p "/home/$user/.config/dosyago/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
-    $SUDO -u "$user" setup_bbpro --port "$port" --token "$TOKEN" > "/home/$user/.config/dosyago/bbpro/login.link" 2>/dev/null || { printf "${RED}Setup failed for $user${NC}\n"; exit 1; }
+    local HOME_DIR=$(get_home_dir "$user")
+
+    # Ensure config directory exists with proper ownership
+    $SUDO -u "$user" mkdir -p "$HOME_DIR/.config/dosyago/bbpro" || { printf "${RED}Failed to create config dir for $user${NC}\n"; exit 1; }
+
+    # Rsync .nvm from calling user to target user
+    printf "${YELLOW}Copying nvm and Node.js from $HOME/.nvm to $HOME_DIR/.nvm...${NC}\n"
+    $SUDO rsync -aq --exclude='.git' "$HOME/.nvm/" "$HOME_DIR/.nvm/" || { printf "${RED}Failed to rsync .nvm directory${NC}\n"; exit 1; }
+    $SUDO chown -R "$user":"$user" "$HOME_DIR/.nvm" || { printf "${RED}Failed to chown .nvm directory${NC}\n"; exit 1; }
+    NODE_VERSION=$($SUDO bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
+    $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
+
+    # Test port accessibility
     for i in {-2..2}; do
         test_port_access $((port+i)) || { printf "${RED}Adjust firewall for $user to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
     done
     test_port_access $((port-3000)) || { printf "${RED}CDP endpoint port $((port-3000)) is blocked for $user${NC}\n"; exit 1; }
-    get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
-    $SUDO -u "$user" bbcertify || { printf "${RED}Certification failed for $user. Invalid or expired license key.${NC}\n"; exit 1; }
-    $SUDO -u "$user" bbpro || { printf "${RED}Failed to run as $user${NC}\n"; exit 1; }
-    sleep 2
-    # Source test.env for TOKEN if available
-    if [ -f "/home/$user/.config/dosyago/bbpro/test.env" ]; then
-        source "/home/$user/.config/dosyago/bbpro/test.env" || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
-        TOKEN="${LOGIN_TOKEN}"
+
+    # Generate fresh token
+    TOKEN=$(openssl rand -hex 16)
+
+    # Run setup_bbpro with explicit PATH and fresh token, redirecting output as the target user
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH setup_bbpro --port $port --token $TOKEN > ~/.config/dosyago/bbpro/setup_output.txt 2>&1" || { printf "${RED}Setup failed for $user${NC}\n"; $SUDO cat "$HOME_DIR/.config/dosyago/bbpro/setup_output.txt"; exit 1; }
+
+    # Use caller's LICENSE_KEY
+    if [ -z "$LICENSE_KEY" ]; then
+        printf "${RED}Caller must have a license key set in LICENSE_KEY env var${NC}\n"
+        exit 1
     fi
-    [ -n "$TOKEN" ] || TOKEN=$(cat "/home/$user/.config/dosyago/bbpro/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
+    $SUDO -u "$user" bash -c "PATH=/usr/local/bin:\$PATH; export LICENSE_KEY='$LICENSE_KEY'; bbcertify && bbpro" || { printf "${RED}Failed to run BrowserBox as $user${NC}\n"; exit 1; }
+    sleep 2
+
+    # Retrieve token
+    if $SUDO test -f "$HOME_DIR/.config/dosyago/bbpro/test.env"; then
+        TOKEN=$($SUDO -u "$user" bash -c "source ~/.config/dosyago/bbpro/test.env && echo \$LOGIN_TOKEN") || { printf "${RED}Failed to source test.env for $user${NC}\n"; exit 1; }
+    fi
+    if [ -z "$TOKEN" ] && $SUDO test -f "$HOME_DIR/.config/dosyago/bbpro/login.link"; then
+        TOKEN=$($SUDO cat "$HOME_DIR/.config/dosyago/bbpro/login.link" | grep -oE 'token=[^&]+' | sed 's/token=//')
+    fi
+    [ -n "$TOKEN" ] || { printf "${RED}Failed to retrieve login token for $user${NC}\n"; exit 1; }
+
     draw_box "Login Link: https://$hostname:$port/login?token=$TOKEN"
     save_config
 }
@@ -653,22 +1126,27 @@ version() {
 usage() {
     banner
     printf "${BOLD}Usage:${NC} bbx <command> [options]\n"
-    printf "\n${YELLOW}Note: the bbx tool is still in beta.\n"
-    printf "\n"
-    printf "Commands:\n"
+    printf "\n${YELLOW}Note: the bbx tool is still in beta.${NC}\n\n"
+    printf "${BOLD}Commands:${NC}\n"
     printf "  ${GREEN}install${NC}      Install BrowserBox and bbx CLI\n"
     printf "  ${GREEN}uninstall${NC}    Remove BrowserBox, config, and all related files\n"
-    printf "  ${GREEN}setup${NC}        Set up BrowserBox [port] [hostname]\n"
+    printf "  ${RED}activate${NC}     Activate your copy of BrowserBox by purchasing a license key for 1 or more seats.\n"
+    printf "                  Usage: bbx activate [seats]\n"
+    printf "  ${GREEN}setup${NC}        Set up BrowserBox\n"
+    printf "                  Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
     printf "  ${GREEN}certify${NC}      Certify your license\n"
-    printf "  ${GREEN}run${NC}          Start BrowserBox [port] [hostname]\n"
+    printf "  ${GREEN}run${NC}          Start BrowserBox\n"
+    printf "                  Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
     printf "  ${GREEN}stop${NC}         Stop BrowserBox (current user)\n"
-    printf "  ${GREEN}stop-user${NC}    Stop BrowserBox for a specific user [username] [delay_seconds]\n"
+    printf "  ${GREEN}run-as${NC}       Run as a specific user\n"
+    printf "                  Usage: bbx run-as [--temporary] [username] [port]\n"
+    printf "  ${GREEN}stop-user${NC}    Stop BrowserBox for a specific user\n"
+    printf "                  Usage: bbx stop-user <username> [delay_seconds]\n"
     printf "  ${GREEN}logs${NC}         Show BrowserBox logs\n"
     printf "  ${GREEN}update${NC}       Update BrowserBox\n"
-    printf "  ${BLUE}${BOLD}buy-license${NC}  Purchase a license key and seats\n"
     printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
-    printf "  ${GREEN}run-as${NC}       Run as a specific user [username] [port] [hostname]\n"
-    printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor [--no-anonymize] [--no-onion]\n"
+    printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor\n"
+    printf "                  Usage: bbx tor-run [--no-anonymize] [--no-onion]\n"
     printf "  ${BLUE}${BOLD}console*${NC}     See and interact with the BrowserBox command stream\n"
     printf "  ${BLUE}${BOLD}automate*${NC}    Run pptr or playwright scripts in a running BrowserBox\n"
     printf "  ${GREEN}--version${NC}    Show bbx version\n"
@@ -688,92 +1166,7 @@ check_agreement() {
     fi
 }
 
-# Tor setup and run function
-tor_run() {
-    banner
-    load_config
-    ensure_deps
-    local anonymize=true onion=true
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --anonymize) anonymize=true; shift ;;
-            --no-anonymize) anonymize=false; shift ;;
-            --onion) onion=true; shift ;;
-            --no-onion) onion=false; shift ;;
-            *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
-        esac
-    done
-
-    # Validate at least one Tor mode is enabled
-    if ! $anonymize && ! $onion; then
-        printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
-        exit 1
-    fi
-
-    # Ensure prior setup
-    [ -n "$PORT" ] || { printf "${RED}ERROR: Run 'bbx setup' first to configure port.${NC}\n"; exit 1; }
-    [ -n "$BBX_HOSTNAME" ] || { printf "${RED}ERROR: Run 'bbx setup' first to configure hostname.${NC}\n"; exit 1; }
-    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)  # Fallback if not set
-
-    printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
-
-    # Setup phase with setup_bbpro
-    local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
-    if $anonymize; then
-        setup_cmd="$setup_cmd --ontor"
-    fi
-    if ! $onion && ! is_local_hostname "$BBX_HOSTNAME"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $BBX_HOSTNAME to this machine's IP.\n"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$BBX_HOSTNAME" || { printf "${RED}Hostname $BBX_HOSTNAME not resolving.${NC}\n"; exit 1; }
-    elif ! $onion; then
-        ensure_hosts_entry "$BBX_HOSTNAME"
-    fi
-    $setup_cmd > "$CONFIG_DIR/tor_setup_output.txt" 2>/dev/null || { printf "${RED}Setup failed. Check local port availability ($((PORT-2))-$((PORT+2))).${NC}\n"; tail -n 5 "$CONFIG_DIR/tor_setup_output.txt"; exit 1; }
-
-    # Source test.env to get LOGIN_TOKEN
-    source "$CONFIG_DIR/test.env" || { printf "${RED}Failed to source $CONFIG_DIR/test.env. Run setup again.${NC}\n"; exit 1; }
-    TOKEN="${LOGIN_TOKEN}"  # Use LOGIN_TOKEN from test.env
-
-    # Certify (required for both modes)
-    get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
-    bbcertify || { printf "${RED}Certification failed.${NC}\n"; exit 1; }
-
-    local login_link=""
-    if $onion; then
-        printf "${YELLOW}Running as onion site (capturing login link)...${NC}\n"
-        # Run torbb once at runtime; stdout is the login link
-        login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
-        if [ $? -ne 0 ]; then
-            printf "${RED}Failed to start onion site. Check $CONFIG_DIR/torbb_errors.txt:${NC}\n"
-            tail -n 5 "$CONFIG_DIR/torbb_errors.txt"
-            exit 1
-        fi
-        if [ -z "$login_link" ]; then
-            printf "${RED}torbb output was empty. Check $CONFIG_DIR/torbb_errors.txt:${NC}\n"
-            tail -n 5 "$CONFIG_DIR/torbb_errors.txt"
-            exit 1
-        fi
-        # Update BBX_HOSTNAME for onion mode
-        BBX_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
-        printf "${YELLOW}Onion mode: Skipping external firewall checks (handled by Tor).${NC}\n"
-    else
-        # Non-onion mode: Run bbpro and construct login link
-        for i in {-2..2}; do
-            test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
-        done
-        test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked. Adjust firewall.${NC}\n"; exit 1; }
-        bbpro || { printf "${RED}Failed to start BrowserBox.${NC}\n"; exit 1; }
-        login_link="https://$BBX_HOSTNAME:$PORT/login?token=$TOKEN"
-    fi
-
-    sleep 2
-    save_config
-    printf "${GREEN}BrowserBox with Tor started.${NC}\n"
-    draw_box "Login Link: $login_link"
-}
-
-buy_license() {
+activate() {
   local seats="${1:-1}"
   local session_id=$(openssl rand -hex 16)
   local metadata=$(printf '{"session_id":"%s"}' "$session_id")
@@ -862,73 +1255,21 @@ buy_license() {
 
 [ "$1" != "install" ] && [ "$1" != "uninstall" ] && check_agreement
 case "$1" in
-    install)
-        shift 1
-        install "$@"
-        ;;
-    uninstall)
-        shift 1
-        uninstall "$@"
-        ;;
-    setup)
-        shift 1
-        setup "$@"
-        ;;
-    certify)
-        shift 1
-        certify "$@"
-        ;;
-    run)
-        shift 1
-        run "$@"
-        ;;
-    stop)
-        shift 1
-        stop "$@"
-        ;;
-    stop-user)
-        shift 1
-        stop_user "$@"
-        ;;
-    logs)
-        shift 1
-        logs "$@"
-        ;;
-    update)
-        shift 1
-        update "$@"
-        ;;
-    buy-license)
-        shift 1
-        buy_license "$@"
-        ;;
-    status)
-        shift 1
-        status "$@"
-        ;;
-    run-as)
-        shift 1
-        run_as "$@"
-        ;;
-    tor-run)
-        shift 1
-        banner_color=$PURPLE
-        tor_run "$@"
-        ;;
-    --version|-v)
-        shift 1
-        version "$@"
-        ;;
-    --help|-h)
-        shift 1
-        usage "$@"
-        ;;
-    "")
-        usage
-        ;;
-    *)
-        printf "${RED}Unknown command: $1${NC}\n"
-        usage
-        exit 1
-        ;;
+    install) shift 1; install "$@";;
+    uninstall) shift 1; uninstall "$@";;
+    setup) shift 1; setup "$@";;
+    certify) shift 1; certify "$@";;
+    run) shift 1; run "$@";;
+    stop) shift 1; stop "$@";;
+    stop-user) shift 1; stop_user "$@";;
+    logs) shift 1; logs "$@";;
+    update) shift 1; update "$@";;
+    activate) shift 1; activate "$@";;
+    status) shift 1; status "$@";;
+    run-as) shift 1; run_as "$@";;
+    tor-run) shift 1; banner_color=$PURPLE; tor_run "$@";;
+    --version|-v) shift 1; version "$@";;
+    --help|-h) shift 1; usage "$@";;
+    "") usage;;
+    *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac

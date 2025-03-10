@@ -60,20 +60,20 @@ ensure_hosts_entry() {
 }
 
 add_hostname_to_hosts() {
-  # Retrieve the current hostname
-  HOSTNAME=$(hostname)
-
-  # Check if the hostname is already mapped in /etc/hosts
+  # Try HOSTNAME env var, then uname -n, then /proc/sys/kernel/hostname, then fallback
+  local HOSTNAME="${HOSTNAME}"
+  if [ -z "$HOSTNAME" ] && command -v uname &>/dev/null; then
+    HOSTNAME=$(uname -n)
+  fi
+  if [ -z "$HOSTNAME" ] && [ -f /proc/sys/kernel/hostname ]; then
+    HOSTNAME=$(cat /proc/sys/kernel/hostname)
+  fi
+  HOSTNAME="${HOSTNAME:-unknown}"
   if ! grep -q "127.0.0.1.*$HOSTNAME" /etc/hosts; then
     echo "Adding hostname to /etc/hosts..." >&2
-
-    # Backup the current /etc/hosts file
     $SUDO cp /etc/hosts /etc/hosts.backup
-
-    # Add the hostname for 127.0.0.1 and ::1
     echo "127.0.0.1 $HOSTNAME" | $SUDO tee -a /etc/hosts > /dev/null
     echo "::1 $HOSTNAME" | $SUDO tee -a /etc/hosts > /dev/null
-
     echo "$HOSTNAME has been added to /etc/hosts." >&2
   else
     echo "Hostname $HOSTNAME is already mapped in /etc/hosts." >&2
@@ -371,16 +371,51 @@ if [ "$#" -eq 2 ] || is_local_hostname "$1"; then
 
   if is_local_hostname "$1"; then
     if ! command -v mkcert &>/dev/null; then
+      printf "${YELLOW}Installing mkcert...${NC}\n"
       if [ "$(os_type)" == "macOS" ]; then
         brew install nss mkcert
       elif [ "$(os_type)" == "win" ]; then
         choco install mkcert || scoop bucket add extras && scoop install mkcert
       else
-        amd64=$(dpkg --print-architecture || uname -m)
-        $SUDO $APT install -y libnss3-tools
-        curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/$amd64"
-        chmod +x mkcert-v*-linux-$amd64
-        $SUDO cp mkcert-v*-linux-$amd64 /usr/local/bin/mkcert
+        # Determine architecture
+        if command -v dpkg &>/dev/null; then
+          arch=$(dpkg --print-architecture)
+        else
+          arch=$(uname -m)
+          if [ "$arch" = "x86_64" ]; then
+            arch="amd64"  # Normalize to mkcert naming
+          fi
+        fi
+        # Install NSS tools based on package manager
+        if command -v apt &>/dev/null; then
+          $SUDO $APT install -y libnss3-tools
+        elif command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+          $SUDO $APT install -y nss-tools  # $APT is dnf/yum here
+        else
+          printf "${RED}No supported package manager for NSS tools. Install manually.${NC}\n"
+          exit 1
+        fi
+        # Ensure wget or curl for downloading
+        if command -v curl &>/dev/null; then
+          downloader="curl -JLO"
+        elif command -v wget &>/dev/null; then
+          downloader="wget"
+        else
+          printf "${RED}Neither curl nor wget found. Installing wget...${NC}\n"
+          if command -v apt &>/dev/null; then
+            $SUDO $APT install -y wget
+          elif command -v dnf &>/dev/null || command -v yum &>/dev/null; then
+            $SUDO $APT install -y wget
+          else
+            printf "${RED}Cannot install wget. Install curl or wget manually.${NC}\n"
+            exit 1
+          fi
+          downloader="wget"
+        fi
+        # Download and install mkcert
+        $downloader "https://dl.filippo.io/mkcert/latest?for=linux/$arch"
+        chmod +x mkcert-v*-linux-$arch
+        $SUDO cp mkcert-v*-linux-$arch /usr/local/bin/mkcert || { printf "${RED}Failed to install mkcert${NC}\n"; exit 1; }
         rm mkcert-v*
       fi
     fi
@@ -401,7 +436,7 @@ if [ "$#" -eq 2 ] || is_local_hostname "$1"; then
       ./deploy-scripts/wait_for_hostname.sh "$hostname"
       ./deploy-scripts/tls "$hostname"
     else
-      echo "The provided hostname could not be resolved. Please ensure that you've added a DNS A/AAAA record pointing from the hostname to this machine's public IP address."
+      echo "The provided hostname ($hostname) could not be resolved. Please ensure that you've added a DNS A/AAAA record pointing from the hostname to this machine's public IP address."
       exit 1
     fi
   fi

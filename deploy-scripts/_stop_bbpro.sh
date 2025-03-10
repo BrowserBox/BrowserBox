@@ -8,7 +8,17 @@ if command -v sudo &>/dev/null; then
 fi
 
 if [[ "$OSTYPE" == darwin* ]]; then
-  TORDIR="$(brew --prefix)/var/lib/tor"
+    TOR_GROUP="_tor"  # Homebrew default
+    TORDIR="$(brew --prefix)/var/lib/tor"
+else
+    TORDIR="/var/lib/tor"
+    TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) 
+    if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
+      TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1) 
+    fi
+    if [[ -z "$TOR_GROUP" ]]; then
+      TOR_GROUP="debian-tor"
+    fi
 fi
 
 # Ensure pm2 is available
@@ -45,28 +55,65 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
   if [[ "$login_link" == *.onion* ]]; then
     echo "Detected onion address in login link: $login_link"
     
-    # Source the torbb.env file to get onion addresses
-    source "$torbb_env_file"
-
-    # Read the Tor authentication cookie and control port
-    tor_cookie_hex="$(xxd -p "${TORDIR}/control_auth_cookie" | tr -d '\n')"
-    control_port="9051"
+    # Check if user is already in TOR_GROUP
+    user="$(whoami)"
+    in_tor_group=false
+    if id | grep -qw "$TOR_GROUP"; then
+      in_tor_group=true
+      echo "User $user already in group $TOR_GROUP"
+    elif ! command -v sg >/dev/null 2>&1; then
+      echo "sg not found and $user not in $TOR_GROUP, attempting cleanup with sudo fallback"
+    else
+      echo "Using sg to run cleanup in $TOR_GROUP context"
+    fi
     
-    # Loop through onion addresses and send DEL_ONION commands to the Tor control port
-    for var in $(compgen -A variable | grep "^ADDR_"); do
-      onion_address="${!var}"
-
-      # Remove the .onion suffix to get the service ID
-      service_id="${onion_address%.onion}"
-      
-      # Remove the onion address
-      control_command=$(printf 'AUTHENTICATE %s\r\nDEL_ONION %s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_id")
-      
-      echo "Removing onion service: $service_id"
-
-      # Send the command to the Tor control port
-      echo -e "$control_command" | nc localhost "$control_port"
-    done
+    # Define the cleanup script for direct execution
+    cleanup_script() {
+      source "$torbb_env_file"
+      tor_cookie_hex=$(xxd -p "${TORDIR}/control_auth_cookie" 2>/dev/null || $SUDO xxd -p "${TORDIR}/control_auth_cookie" 2>/dev/null)
+      tor_cookie_hex=$(echo "$tor_cookie_hex" | tr -d '\n')
+      if [[ -z "$tor_cookie_hex" ]]; then 
+        echo "Could not get tor cookie due to incorrect permissions" >&2
+        exit 1
+      fi
+      control_port="9051"
+      for var in $(compgen -A variable | grep "^ADDR_"); do
+        onion_address="${!var}"
+        service_id="${onion_address%.onion}"
+        echo "Removing onion service: $service_id"
+        control_command=$(printf 'AUTHENTICATE %s\r\nDEL_ONION %s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_id")
+        echo -e "$control_command" | nc localhost "$control_port"
+      done
+    }
+    
+    # Run cleanup based on group membership
+    if $in_tor_group; then
+      cleanup_script
+    elif command -v sg >/dev/null 2>&1; then
+      # Export variables needed in the heredoc
+      export TORDIR SUDO torbb_env_file
+      sg "$TOR_GROUP" -c "env TORDIR='$TORDIR' SUDO='$SUDO' torbb_env_file='$torbb_env_file' bash" << 'EOF'
+source "$torbb_env_file"
+tor_cookie_hex=$($SUDO xxd -p "$TORDIR/control_auth_cookie" 2>/dev/null || $SUDO xxd -p "$TORDIR/control_auth_cookie" 2>/dev/null)
+tor_cookie_hex=$(echo "$tor_cookie_hex" | tr -d '\n')
+if [[ -z "$tor_cookie_hex" ]]; then 
+  echo "Could not get tor cookie due to incorrect permissions" >&2
+  exit 1
+fi
+control_port="9051"
+for var in $(compgen -A variable | grep "^ADDR_"); do
+  onion_address="${!var}"
+  service_id="${onion_address%.onion}"
+  echo "Removing onion service: $service_id"
+  control_command=$(printf 'AUTHENTICATE %s\r\nDEL_ONION %s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_id")
+  echo -e "$control_command" | nc localhost "$control_port"
+done
+EOF
+    else
+      cleanup_script
+    fi
+    # Check exit status of last command
+    [ $? -eq 0 ] || { printf "${RED}Failed to remove onion services${NC}\n"; exit 1; }
     rm -f "$torbb_env_file"
     rm -f "$login_link_file"
   else
@@ -74,5 +121,5 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
   fi
 fi
 
+echo "BrowserBox stopped."
 exit 0
-

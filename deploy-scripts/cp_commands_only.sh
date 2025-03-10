@@ -91,6 +91,12 @@ $SUDO cp $INSTALL_DIR/monitor-scripts/* $COMMAND_DIR/
 
 echo "Copied!"
 
+echo -n "Copying bbx command to $COMMAND_DIR/ ..."
+
+$SUDO cp $INSTALL_DIR/bbx.sh $COMMAND_DIR/bbx
+
+echo "Copied!"
+
 echo -n "Copying sslcerts to /usr/local/share/dosyago/sslcerts ..."
 
 $SUDO mkdir -p /usr/local/share/dosyago/sslcerts/
