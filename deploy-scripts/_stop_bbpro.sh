@@ -8,8 +8,9 @@ if command -v sudo &>/dev/null; then
 fi
 
 if [[ "$OSTYPE" == darwin* ]]; then
-    TOR_GROUP="_tor"  # Homebrew default
-    TORDIR="$(brew --prefix)/var/lib/tor"
+    TOR_GROUP="admin"  # Homebrew default
+    prefix=$(brew --prefix tor)
+    TORDIR=$(node -p "path.resolve('${prefix}/../../var/lib/tor')")
 else
     TORDIR="/var/lib/tor"
     TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) 

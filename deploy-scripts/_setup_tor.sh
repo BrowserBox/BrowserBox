@@ -52,16 +52,20 @@ detect_os() {
     fi
   elif [[ "$OSTYPE" == "darwin"* ]]; then
     OS_TYPE="macos"
-    TOR_GROUP="_tor"  # macOS Homebrew uses _tor group
+    TOR_GROUP="admin"  # macOS Homebrew uses _tor group
     TOR_USER="$(id -un)"  # Tor runs as the current user by default with brew
     if ! command -v brew &>/dev/null; then
       echo "Homebrew is not installed. Please install Homebrew first: https://brew.sh" >&2
       exit 1
     fi
-    local prefix=$(brew --prefix)
-    TORRC="${prefix}/etc/tor/torrc"
-    TORDIR="${prefix}/var/lib/tor"
-    COOKIE_AUTH_FILE="${prefix}/var/lib/tor/control_auth_cookie"
+    local prefix=$(brew --prefix tor)
+    TORRC=$(node -p "path.resolve('${prefix}/../../etc/tor/torrc')")
+    TORDIR=$(node -p "path.resolve('${prefix}/../../var/lib/tor')")
+    COOKIE_AUTH_FILE="${TORDIR}/control_auth_cookie"
+    mkdir -p "$TORDIR"
+    if [[ ! -f "$TORRC" ]]; then
+      cp "$(dirname "$TORRC")/torrc.sample" "$(dirname "$TORRC")/torrc" || touch "$TORRC"
+    fi
   else
     echo "Unsupported Operating System" >&2
     exit 1
@@ -106,11 +110,10 @@ install_tor() {
 # Function to find or create the torrc file
 find_torrc_path() {
   if [[ "$OS_TYPE" == "macos" ]]; then
-    local prefix=$(brew --prefix)
-    TORRC="${prefix}/etc/tor/torrc"
-    TORDIR="${prefix}/var/lib/tor"
-    COOKIE_AUTH_FILE="${prefix}/var/lib/tor/control_auth_cookie"
-    # Create torrc if it doesn’t exist
+    local prefix=$(brew --prefix tor)
+    TORRC=$(node -p "path.resolve('${prefix}/../../etc/tor/torrc')")
+    TORDIR=$(node -p "path.resolve('${prefix}/../../var/lib/tor')")
+    COOKIE_AUTH_FILE="${TORDIR}/control_auth_cookie"
     [ -d "$(dirname "$TORRC")" ] || mkdir -p "$(dirname "$TORRC")"
     [ -f "$TORRC" ] || touch "$TORRC"
   else

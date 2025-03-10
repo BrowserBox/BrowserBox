@@ -536,8 +536,8 @@ tor_run() {
 
     # Determine Tor group dynamically
     if [[ "$(uname -s)" == "Darwin" ]]; then
-        TOR_GROUP="_tor"  # Homebrew default
-        TORDIR="$(brew --prefix)/var/lib/tor"
+        TOR_GROUP="admin"  # Homebrew default
+        TORDIR="$(brew --prefix tor)/var/lib/tor"
     else
         TORDIR="/var/lib/tor"
         TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) 

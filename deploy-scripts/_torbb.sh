@@ -310,6 +310,20 @@ configure_and_export_tor() {
     $SUDO systemctl restart tor &> /dev/null
   fi
 
+  if [[ -f /.dockerenv ]] || ! systemctl is-active tor >/dev/null 2>&1; then
+      $SUDO pkill -x tor 2>/dev/null # Kill any existing Tor process
+      if [[ "$OS_TYPE" == "redhat" ]]; then
+        $SUDO -u $TOR_GROUP nohup tor &
+      elif [[ "$OS_TYPE" == "debian" ]]; then
+        $SUDO nohup tor &
+      fi
+      sleep 2 # Give Tor a moment to start
+      if ! pgrep -f tor >/dev/null; then
+          printf "${RED}Failed to start Tor manually${NC}\n"
+          exit 1
+      fi
+  fi
+
   echo "Waiting for onion services to connect..." >&2
   wait_for_hostnames
 
