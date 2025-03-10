@@ -401,7 +401,7 @@ if [ "$#" -eq 2 ] || is_local_hostname "$1"; then
       ./deploy-scripts/wait_for_hostname.sh "$hostname"
       ./deploy-scripts/tls "$hostname"
     else
-      echo "The provided hostname could not be resolved. Please ensure that you've added a DNS A/AAAA record pointing from the hostname to this machine's public IP address."
+      echo "The provided hostname ($hostname) could not be resolved. Please ensure that you've added a DNS A/AAAA record pointing from the hostname to this machine's public IP address."
       exit 1
     fi
   fi
