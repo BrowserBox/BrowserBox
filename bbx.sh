@@ -252,8 +252,14 @@ tor_run() {
         printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
         exit 1
     fi
-    [ -n "$PORT" ] || { printf "${RED}ERROR: Run 'bbx setup' first${NC}\n"; exit 1; }
-    [ -n "$BBX_HOSTNAME" ] || { printf "${RED}ERROR: Run 'bbx setup' first${NC}\n"; exit 1; }
+    [ -n "$PORT" ] || { 
+      printf "${RED}Running 'bbx setup' first...${NC}\n";
+      bbx setup;
+    }
+    [ -n "$BBX_HOSTNAME" ] || { 
+      printf "${RED}Running 'bbx setup' first...${NC}\n";
+      bbx setup;
+    }
     [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
     printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
     ensure_setup_tor "$(whoami)"
@@ -271,7 +277,7 @@ tor_run() {
     local user="$(whoami)"
     # Check if user is already in TOR_GROUP
     local in_tor_group=false
-    if id -G -n "$user" | grep -qw "$TOR_GROUP"; then
+    if id | grep -qw "$TOR_GROUP"; then
         in_tor_group=true
         printf "${GREEN}User $user already in group $TOR_GROUP${NC}\n"
     elif ! command -v sg >/dev/null 2>&1; then

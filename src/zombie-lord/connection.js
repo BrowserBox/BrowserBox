@@ -3508,6 +3508,9 @@ async function makeZombie({port:port = 9222} = {}, {noExit = false} = {}) {
     }
 
     async function handle(message) {
+      if ( typeof message != "string" ) {
+        message = message.toString();
+      }
       const stringMessage = message;
       message = JSON.parse(message);
       const {sessionId} = message;
