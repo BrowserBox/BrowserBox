@@ -170,7 +170,7 @@ adjust_permissions() {
     echo "Set permissions on $COOKIE_AUTH_FILE" >&2
   else
     echo "control_auth_cookie not found; it will be created when Tor starts" >&2
-    RESTART_TOR=True
+    RESTART_TOR="true"
   fi
 }
 
