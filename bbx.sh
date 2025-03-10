@@ -107,6 +107,210 @@ get_license_key() {
     printf "${YELLOW}Note: License will be saved unencrypted at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
 }
 
+# Box drawing helper function
+draw_box() {
+    local text="$1"
+    local padding_left=1  # Left padding space
+    local padding_right=1 # Right padding space
+    local text_width=${#text}
+    local inner_width=$((text_width + padding_left + padding_right)) # Space inside borders
+
+    # Start with a newline to separate from previous output
+    printf "\n"
+    # Draw top border
+    printf "  %s" "$top_left"
+    for i in $(seq 1 "$inner_width"); do
+        printf "%s" "$horizontal"
+    done
+    printf "%s\n" "$top_right"
+    # Draw text line with padding
+    printf "  %s" "$vertical"
+    printf "%${padding_left}s" " "
+    printf "%-${text_width}s" "$text"
+    printf "%${padding_right}s" " "
+    printf "%s\n" "$vertical"
+    # Draw bottom border
+    printf "  %s" "$bottom_left"
+    for i in $(seq 1 "$inner_width"); do
+        printf "%s" "$horizontal"
+    done
+    printf "%s\n" "$bottom_right"
+    # End with a newline for clean separation
+    printf "\n"
+}
+
+# Get system hostname
+get_system_hostname() {
+    # Try HOSTNAME env var, then uname -n, then /proc/sys/kernel/hostname, then fallback
+    local host="${HOSTNAME}"
+    if [ -z "$host" ] && command -v uname &>/dev/null; then
+        host=$(uname -n)
+    fi
+    if [ -z "$host" ] && [ -f /proc/sys/kernel/hostname ]; then
+        host=$(cat /proc/sys/kernel/hostname)
+    fi
+    echo "${host:-unknown}"
+}
+
+# Check if hostname is local
+is_local_hostname() {
+    local hostname="$1"
+    local resolved_ip=$(dig +short "$hostname" A | grep -v '\.$' | head -n1)
+    if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
+        return 0  # Local
+    else
+      if command -v getent &>/dev/null; then
+        resolved_ip=$(getent hosts "$hostname" | tail -n1)
+        if [[ "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
+          return 0
+        fi
+      fi
+      return 1  # Not local
+    fi
+}
+
+# Ensure hostname is in /etc/hosts, allowing whitespace but not comments
+ensure_hosts_entry() {
+    local hostname="$1"
+    if ! grep -v "^\s*#" /etc/hosts | grep -q "^\s*127\.0\.0\.1.*$hostname"; then
+        printf "${YELLOW}Adding $hostname to /etc/hosts...${NC}\n"
+        echo "127.0.0.1 $hostname" | $SUDO tee -a /etc/hosts > /dev/null || { printf "${RED}Failed to update /etc/hosts${NC}\n"; exit 1; }
+    else
+        printf "${GREEN}$hostname already mapped in /etc/hosts${NC}\n"
+    fi
+}
+
+# Parse dependency syntax: <os_label>:<pkg>,<pkg>[/<tool>]
+parse_dep() {
+    local dep="$1"
+    local os_type=""
+    local pkg_name=""
+    local tool_name=""
+
+    # OS detection
+    if [ -f /etc/debian_version ]; then
+        os_type="debian"
+    elif [ -f /etc/redhat-release ]; then
+        os_type="redhat"
+    elif [ "$(uname -s)" = "Darwin" ]; then
+        os_type="darwin"
+    fi
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: OS type is $os_type for dep '$dep'${NC}\n" >&2
+
+    # Split by comma
+    IFS=',' read -r -a parts <<< "$dep"
+    [ ${#parts[@]} -lt 1 ] && { printf "${RED}Invalid dep syntax: '$dep'${NC}\n" >&2; exit 1; }
+
+    # Last part is <pkg>[/<tool>] - portable method
+    local last_part="${parts[$((${#parts[@]} - 1))]}"
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: last_part is '$last_part'${NC}\n" >&2
+
+    # Split last part into pkg and tool (handle optional /)
+    IFS='/' read -r default_pkg tool_name <<< "$last_part"
+    [ -z "$tool_name" ] && tool_name="$default_pkg"  # If no /, tool_name = pkg_name
+    # If last_part has a colon (e.g., darwin:netcat/nc), use only the pkg part after colon as default
+    case "$default_pkg" in
+        *:*)
+            IFS=':' read -r _ pkg_name <<< "$default_pkg"
+            ;;
+        *)
+            pkg_name="$default_pkg"
+            ;;
+    esac
+    [ -z "$pkg_name" ] && { printf "${RED}No package specified in '$dep'${NC}\n" >&2; exit 1; }
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Default pkg_name='$pkg_name', tool_name='$tool_name'${NC}\n" >&2
+
+    # Look for OS-specific package
+    for part in "${parts[@]::${#parts[@]}-1}"; do
+        IFS=':' read -r label pkg <<< "$part"
+        [ -z "$label" ] || [ -z "$pkg" ] && { printf "${RED}Invalid OS label syntax: '$part'${NC}\n" >&2; exit 1; }
+        if [ "$label" = "$os_type" ]; then
+            pkg_name="$pkg"
+            break
+        fi
+    done
+
+    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Parsed '$dep' -> '$pkg_name:$tool_name'${NC}\n" >&2
+    echo "$pkg_name:$tool_name"
+}
+
+# Dependency check
+ensure_deps() {
+    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg")
+    for dep in "${deps[@]}"; do
+        # Parse the dependency
+        IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
+
+        # Check if the tool exists
+        if ! command -v "$tool_name" >/dev/null 2>&1; then
+            printf "${YELLOW}Installing $pkg_name (for $tool_name)...${NC}\n"
+
+            # Install based on OS
+            if [ -f /etc/debian_version ]; then
+                $SUDO apt-get update && $SUDO apt-get install -y "$pkg_name"
+            elif [ -f /etc/redhat-release ]; then
+                $SUDO yum install -y "$pkg_name" || $SUDO dnf install -y "$pkg_name"
+            elif [ "$(uname -s)" = "Darwin" ]; then
+                if ! command -v brew >/dev/null; then
+                    printf "${RED}Homebrew not found. Install it first: https://brew.sh${NC}\n"
+                    exit 1
+                fi
+                brew install "$pkg_name"
+            else
+                printf "${RED}Cannot install $pkg_name. Unsupported OS. Please install it manually.${NC}\n"
+                exit 1
+            fi
+
+            # Verify installation
+            if ! command -v "$tool_name" >/dev/null 2>&1; then
+                printf "${RED}Failed to install $pkg_name (for $tool_name). Please install it manually.${NC}\n"
+                exit 1
+            fi
+        fi
+    done
+}
+
+# Find a free block of 5 ports + CDP endpoint
+find_free_port_block() {
+    local start_port=4024
+    local end_port=65533
+    for ((port=start_port+2; port<=end_port-2; port++)); do
+        local free=true
+        for ((i=-2; i<=2; i++)); do
+            if ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port+i))" 2>/dev/null; then
+                : # Port is free
+            else
+                free=false
+                break
+            fi
+        done
+        if $free && ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port-3000))" 2>/dev/null; then
+            echo "$port"
+            return 0
+        fi
+    done
+    printf "${RED}No free 5-port block + CDP endpoint (port-3000) found between 4024-65533.${NC}\n"
+    exit 1
+}
+
+# Test port accessibility via firewall
+test_port_access() {
+    local port="$1"
+    printf "${YELLOW}Testing port $port accessibility...${NC}\n"
+    (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | nc -l "$port" >/dev/null 2>&1) &
+    local pid=$!
+    sleep 1
+    if curl -s --max-time 2 "http://localhost:$port" | grep -q "OK"; then
+        printf "${GREEN}Port $port is accessible.${NC}\n"
+        kill $pid 2>/dev/null
+        return 0
+    else
+        printf "${RED}Port $port is blocked by firewall. Open with ufw/firewall-cmd.${NC}\n"
+        kill $pid 2>/dev/null
+        return 1
+    fi
+}
+
 # Ensure setup_tor is run for the user (assume global, check Tor service)
 ensure_setup_tor() {
     local user="$1"
@@ -465,209 +669,6 @@ pre_install() {
     fi
 }
 
-# Box drawing helper function
-draw_box() {
-    local text="$1"
-    local padding_left=1  # Left padding space
-    local padding_right=1 # Right padding space
-    local text_width=${#text}
-    local inner_width=$((text_width + padding_left + padding_right)) # Space inside borders
-
-    # Start with a newline to separate from previous output
-    printf "\n"
-    # Draw top border
-    printf "  %s" "$top_left"
-    for i in $(seq 1 "$inner_width"); do
-        printf "%s" "$horizontal"
-    done
-    printf "%s\n" "$top_right"
-    # Draw text line with padding
-    printf "  %s" "$vertical"
-    printf "%${padding_left}s" " "
-    printf "%-${text_width}s" "$text"
-    printf "%${padding_right}s" " "
-    printf "%s\n" "$vertical"
-    # Draw bottom border
-    printf "  %s" "$bottom_left"
-    for i in $(seq 1 "$inner_width"); do
-        printf "%s" "$horizontal"
-    done
-    printf "%s\n" "$bottom_right"
-    # End with a newline for clean separation
-    printf "\n"
-}
-
-# Get system hostname
-get_system_hostname() {
-    # Try HOSTNAME env var, then uname -n, then /proc/sys/kernel/hostname, then fallback
-    local host="${HOSTNAME}"
-    if [ -z "$host" ] && command -v uname &>/dev/null; then
-        host=$(uname -n)
-    fi
-    if [ -z "$host" ] && [ -f /proc/sys/kernel/hostname ]; then
-        host=$(cat /proc/sys/kernel/hostname)
-    fi
-    echo "${host:-unknown}"
-}
-
-# Check if hostname is local
-is_local_hostname() {
-    local hostname="$1"
-    local resolved_ip=$(dig +short "$hostname" A | grep -v '\.$' | head -n1)
-    if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
-        return 0  # Local
-    else
-      if command -v getent &>/dev/null; then
-        resolved_ip=$(getent hosts "$hostname" | tail -n1)
-        if [[ "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
-          return 0
-        fi
-      fi
-      return 1  # Not local
-    fi
-}
-
-# Ensure hostname is in /etc/hosts, allowing whitespace but not comments
-ensure_hosts_entry() {
-    local hostname="$1"
-    if ! grep -v "^\s*#" /etc/hosts | grep -q "^\s*127\.0\.0\.1.*$hostname"; then
-        printf "${YELLOW}Adding $hostname to /etc/hosts...${NC}\n"
-        echo "127.0.0.1 $hostname" | $SUDO tee -a /etc/hosts > /dev/null || { printf "${RED}Failed to update /etc/hosts${NC}\n"; exit 1; }
-    else
-        printf "${GREEN}$hostname already mapped in /etc/hosts${NC}\n"
-    fi
-}
-
-# Parse dependency syntax: <os_label>:<pkg>,<pkg>[/<tool>]
-parse_dep() {
-    local dep="$1"
-    local os_type=""
-    local pkg_name=""
-    local tool_name=""
-
-    # OS detection
-    if [ -f /etc/debian_version ]; then
-        os_type="debian"
-    elif [ -f /etc/redhat-release ]; then
-        os_type="redhat"
-    elif [ "$(uname -s)" = "Darwin" ]; then
-        os_type="darwin"
-    fi
-    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: OS type is $os_type for dep '$dep'${NC}\n" >&2
-
-    # Split by comma
-    IFS=',' read -r -a parts <<< "$dep"
-    [ ${#parts[@]} -lt 1 ] && { printf "${RED}Invalid dep syntax: '$dep'${NC}\n" >&2; exit 1; }
-
-    # Last part is <pkg>[/<tool>] - portable method
-    local last_part="${parts[$((${#parts[@]} - 1))]}"
-    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: last_part is '$last_part'${NC}\n" >&2
-
-    # Split last part into pkg and tool (handle optional /)
-    IFS='/' read -r default_pkg tool_name <<< "$last_part"
-    [ -z "$tool_name" ] && tool_name="$default_pkg"  # If no /, tool_name = pkg_name
-    # If last_part has a colon (e.g., darwin:netcat/nc), use only the pkg part after colon as default
-    case "$default_pkg" in
-        *:*)
-            IFS=':' read -r _ pkg_name <<< "$default_pkg"
-            ;;
-        *)
-            pkg_name="$default_pkg"
-            ;;
-    esac
-    [ -z "$pkg_name" ] && { printf "${RED}No package specified in '$dep'${NC}\n" >&2; exit 1; }
-    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Default pkg_name='$pkg_name', tool_name='$tool_name'${NC}\n" >&2
-
-    # Look for OS-specific package
-    for part in "${parts[@]::${#parts[@]}-1}"; do
-        IFS=':' read -r label pkg <<< "$part"
-        [ -z "$label" ] || [ -z "$pkg" ] && { printf "${RED}Invalid OS label syntax: '$part'${NC}\n" >&2; exit 1; }
-        if [ "$label" = "$os_type" ]; then
-            pkg_name="$pkg"
-            break
-        fi
-    done
-
-    [ -n "$BBX_DEBUG" ] && printf "${YELLOW}DEBUG: Parsed '$dep' -> '$pkg_name:$tool_name'${NC}\n" >&2
-    echo "$pkg_name:$tool_name"
-}
-
-# Dependency check
-ensure_deps() {
-    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg")
-    for dep in "${deps[@]}"; do
-        # Parse the dependency
-        IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
-
-        # Check if the tool exists
-        if ! command -v "$tool_name" >/dev/null 2>&1; then
-            printf "${YELLOW}Installing $pkg_name (for $tool_name)...${NC}\n"
-
-            # Install based on OS
-            if [ -f /etc/debian_version ]; then
-                $SUDO apt-get update && $SUDO apt-get install -y "$pkg_name"
-            elif [ -f /etc/redhat-release ]; then
-                $SUDO yum install -y "$pkg_name" || $SUDO dnf install -y "$pkg_name"
-            elif [ "$(uname -s)" = "Darwin" ]; then
-                if ! command -v brew >/dev/null; then
-                    printf "${RED}Homebrew not found. Install it first: https://brew.sh${NC}\n"
-                    exit 1
-                fi
-                brew install "$pkg_name"
-            else
-                printf "${RED}Cannot install $pkg_name. Unsupported OS. Please install it manually.${NC}\n"
-                exit 1
-            fi
-
-            # Verify installation
-            if ! command -v "$tool_name" >/dev/null 2>&1; then
-                printf "${RED}Failed to install $pkg_name (for $tool_name). Please install it manually.${NC}\n"
-                exit 1
-            fi
-        fi
-    done
-}
-
-# Find a free block of 5 ports + CDP endpoint
-find_free_port_block() {
-    local start_port=4024
-    local end_port=65533
-    for ((port=start_port+2; port<=end_port-2; port++)); do
-        local free=true
-        for ((i=-2; i<=2; i++)); do
-            if ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port+i))" 2>/dev/null; then
-                : # Port is free
-            else
-                free=false
-                break
-            fi
-        done
-        if $free && ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port-3000))" 2>/dev/null; then
-            echo "$port"
-            return 0
-        fi
-    done
-    printf "${RED}No free 5-port block + CDP endpoint (port-3000) found between 4024-65533.${NC}\n"
-    exit 1
-}
-
-# Test port accessibility via firewall
-test_port_access() {
-    local port="$1"
-    printf "${YELLOW}Testing port $port accessibility...${NC}\n"
-    (echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" | nc -l "$port" >/dev/null 2>&1) &
-    local pid=$!
-    sleep 1
-    if curl -s --max-time 2 "http://localhost:$port" | grep -q "OK"; then
-        printf "${GREEN}Port $port is accessible.${NC}\n"
-        kill $pid 2>/dev/null
-        return 0
-    else
-        printf "${RED}Port $port is blocked by firewall. Open with ufw/firewall-cmd.${NC}\n"
-        kill $pid 2>/dev/null
-        return 1
-    fi
-}
 
 uninstall() {
     printf "${YELLOW}Uninstalling BrowserBox...${NC}\n"
