@@ -122,7 +122,7 @@ ensure_setup_tor() {
         # Check if we're in Docker and systemctl isn't working
         if [[ -f /.dockerenv ]] || ! systemctl is-active tor >/dev/null 2>&1; then
             printf "${YELLOW}Detected Docker environment, starting Tor manually...${NC}\n"
-            $SUDO pkill -f tor 2>/dev/null # Kill any existing Tor process
+            $SUDO pkill -x tor 2>/dev/null # Kill any existing Tor process
             $SUDO nohup tor &>/dev/null &
             sleep 2 # Give Tor a moment to start
             if ! pgrep -f tor >/dev/null; then
@@ -553,7 +553,7 @@ parse_dep() {
 
 # Dependency check
 ensure_deps() {
-    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:shadow-utils/sg")
+    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg")
     for dep in "${deps[@]}"; do
         # Parse the dependency
         IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
