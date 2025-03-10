@@ -739,33 +739,40 @@ logs() {
 update() {
     load_config
     printf "${YELLOW}Updating BrowserBox...${NC}\n"
-
+    
+    # Check and reset hostname if unresolvable
+    if ! is_local_hostname "$BBX_HOSTNAME" && ! dig +short "$BBX_HOSTNAME" A >/dev/null 2>&1; then
+        printf "${YELLOW}Current hostname $BBX_HOSTNAME not resolvable, resetting to default...${NC}\n"
+        BBX_HOSTNAME=$(get_system_hostname)
+    fi
+    
     # Ensure BBX_HOME exists
     mkdir -p "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to create $BBX_HOME/BrowserBox${NC}\n"; exit 1; }
-
+    
     # Fetch the latest ZIP from GitHub
     printf "${YELLOW}Fetching BrowserBox repository (${branch} branch)...${NC}\n"
     curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
-
-    # Extract ZIP to a temp directory and merge with rsync
+    
+    # Clean temp directory, extract ZIP, and merge with rsync
     printf "${YELLOW}Extracting and updating BrowserBox files...${NC}\n"
-    unzip -q "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
+    rm -rf "$BBX_HOME/BrowserBox-zip"  # Ensure temp dir is fresh
+    unzip -q -o "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
     rsync -a --delete "$BBX_HOME/BrowserBox-zip/BrowserBox-${branch}/" "$BBX_HOME/BrowserBox/" || { printf "${RED}Failed to merge updated files${NC}\n"; exit 1; }
     rm -rf "$BBX_HOME/BrowserBox-zip" "$BBX_HOME/BrowserBox.zip"
-
+    
     # Make global_install.sh executable
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
-
+    
     # Run unattended global install with existing hostname and email
     printf "${YELLOW}Running BrowserBox installer non-interactively...${NC}\n"
     cd "$BBX_HOME/BrowserBox" && (yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") || { printf "${RED}Installation failed${NC}\n"; exit 1; }
-
+    
     # Update npm and pm2
     printf "${YELLOW}Updating npm and pm2...${NC}\n"
     source "${HOME}/.nvm/nvm.sh"
     npm i -g npm@latest
     npm i -g pm2@latest
-
+    
     # Install bbx command globally
     printf "${YELLOW}Installing bbx command globally...${NC}\n"
     if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
@@ -779,7 +786,7 @@ update() {
     BBX_BIN="${COMMAND_DIR}/bbx"
     $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
-
+    
     printf "${GREEN}Update complete.${NC}\n"
 }
 
