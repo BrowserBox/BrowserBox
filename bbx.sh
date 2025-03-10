@@ -325,7 +325,6 @@ EOF
         login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$BBX_HOSTNAME:$PORT/login?token=$TOKEN")
     fi
     sleep 2
-    save_config
     printf "${GREEN}BrowserBox with Tor started.${NC}\n"
     draw_box "Login Link: $login_link"
 }
@@ -740,25 +739,34 @@ logs() {
 update() {
     load_config
     printf "${YELLOW}Updating BrowserBox...${NC}\n"
-    cd "$BBX_HOME/BrowserBox"
-    git add .
-    git stash
-    git pull
-    git stash drop
-    npm i -g npm@latest
-    npm i -g pm2@latest
-    if [ -t 0 ]; then
-        printf "${YELLOW}Running BrowserBox installer interactively...${NC}\n"
-        cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL"
-    else
-        printf "${YELLOW}Running BrowserBox installer non-interactively...${NC}\n"
-        cd "$BBX_HOME/BrowserBox" && (yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL")
-    fi
-    [ $? -eq 0 ] || { printf "${RED}Installation failed${NC}\n"; exit 1; }
+
+    # Ensure BBX_HOME exists
+    mkdir -p "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to create $BBX_HOME/BrowserBox${NC}\n"; exit 1; }
+
+    # Fetch the latest ZIP from GitHub
+    printf "${YELLOW}Fetching BrowserBox repository (${branch} branch)...${NC}\n"
+    curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
+
+    # Remove existing contents and extract new ZIP
+    rm -rf "$BBX_HOME/BrowserBox/*"
+    unzip -q "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
+    mv "$BBX_HOME/BrowserBox-zip/BrowserBox-${branch}"/* "$BBX_HOME/BrowserBox/" && rm -rf "$BBX_HOME/BrowserBox-zip"
+    rm "$BBX_HOME/BrowserBox.zip"
+
+    # Make global_install.sh executable
+    chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
+
+    # Run unattended global install with existing hostname and email
+    printf "${YELLOW}Running BrowserBox installer non-interactively...${NC}\n"
+    cd "$BBX_HOME/BrowserBox" && (yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") || { printf "${RED}Installation failed${NC}\n"; exit 1; }
+
+    # Update npm and pm2
     printf "${YELLOW}Updating npm and pm2...${NC}\n"
     source "${HOME}/.nvm/nvm.sh"
     npm i -g npm@latest
     npm i -g pm2@latest
+
+    # Install bbx command globally
     printf "${YELLOW}Installing bbx command globally...${NC}\n"
     if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
       COMMAND_DIR="/usr/local/bin"
@@ -771,6 +779,7 @@ update() {
     BBX_BIN="${COMMAND_DIR}/bbx"
     $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
     $SUDO chmod +x "$BBX_BIN"
+
     printf "${GREEN}Update complete.${NC}\n"
 }
 
