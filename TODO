@@ -1,4 +1,4 @@
-- enhance run-tor by displaying the tor service's connectivity status
+- enhance run-tor by displaying the tor service's connectivity status (use the _tor_status_poc :))))
 
 - find way to run stop_bbpro on docker stop, provide instructions people need to visit /settings_modal to stop the browser on docker
 
