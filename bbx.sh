@@ -104,6 +104,15 @@ EOF
     chmod 600 "$CONFIG_FILE"
 }
 
+ensure_nvm() {
+    if [ -f "$HOME/.nvm/nvm.sh" ]; then
+        source "$HOME/.nvm/nvm.sh" || { printf "${RED}Failed to source nvm.sh${NC}\n"; exit 1; }
+    else
+        printf "${RED}nvm not found at $HOME/.nvm/nvm.sh. Install it first.${NC}\n"
+        exit 1
+    fi
+}
+
 # Get license key, show warning only on new entry
 get_license_key() {
     if [ -n "$LICENSE_KEY" ]; then
@@ -374,7 +383,7 @@ install() {
     fi
     [ $? -eq 0 ] || { printf "${RED}Installation failed${NC}\n"; exit 1; }
     printf "${YELLOW}Updating npm and pm2...${NC}\n"
-    source "${HOME}/.nvm/nvm.sh"
+    ensure_nvm
     npm i -g npm@latest
     npm i -g pm2@latest
     timeout 5s pm2 update
@@ -816,6 +825,7 @@ stop() {
 
 logs() {
     printf "${YELLOW}Displaying BrowserBox logs...${NC}\n"
+    ensure_nvm
     if command -v pm2 >/dev/null; then
         pm2 logs || { printf "${RED}pm2 logs failed${NC}\n"; exit 1; }
     else
@@ -857,9 +867,10 @@ update() {
     
     # Update npm and pm2
     printf "${YELLOW}Updating npm and pm2...${NC}\n"
-    source "${HOME}/.nvm/nvm.sh"
+    ensure_nvm
     npm i -g npm@latest
     npm i -g pm2@latest
+    timeout 5s pm2 update
     
     # Install bbx command globally
     printf "${YELLOW}Installing bbx command globally...${NC}\n"
@@ -1059,20 +1070,24 @@ run_as() {
     local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
     local temporary=false
 
-    # Parse arguments
+    # Parse arguments with named flags
     while [ $# -gt 0 ]; do
         case "$1" in
             --temporary)
                 temporary=true
                 shift
                 ;;
+            --port|-p)
+                port="$2"
+                shift 2
+                ;;
             *)
                 if [ -z "$user" ]; then
-                    user="$1"
-                elif [ -z "$port" ]; then
-                    port="$1"
+                    user="$1"  # First non-flag argument is the username
                 else
-                    hostname="$1"
+                    printf "${RED}Unknown or extra argument: $1${NC}\n"
+                    printf "Usage: bbx run-as [--temporary] [--port|-p <port>] <username>${NC}\n"
+                    exit 1
                 fi
                 shift
                 ;;
@@ -1116,7 +1131,7 @@ run_as() {
     printf "${YELLOW}Copying nvm and Node.js from $HOME/.nvm to $HOME_DIR/.nvm...${NC}\n"
     $SUDO rsync -aq --exclude='.git' "$HOME/.nvm/" "$HOME_DIR/.nvm/" || { printf "${RED}Failed to rsync .nvm directory${NC}\n"; exit 1; }
     $SUDO chown -R "$user":"$user" "$HOME_DIR/.nvm" || { printf "${RED}Failed to chown .nvm directory${NC}\n"; exit 1; }
-    NODE_VERSION=$($SUDO bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
+    NODE_VERSION=$($SUDO -u $user bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
     $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
 
     # Test port accessibility

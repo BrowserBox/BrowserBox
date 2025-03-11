@@ -56,11 +56,11 @@ detect_os() {
       exit 1
     fi
     local prefix=$($SUDO -u $SUDO_USER brew --prefix tor)
-    TORRC="$prefix/etc/tor/torrc"
-    TORDIR="$prefix/var/lib/tor"
+    TORRC=$($SUDO -u $SUDO_USER bash -c "cd; source .nvm/nvm.sh; node -p \"path.resolve('${prefix}/../../etc/tor/torrc')\"")
+    TORDIR=$($SUDO -u $SUDO_USER bash -c "cd; source .nvm/nvm.sh; node -p \"path.resolve('${prefix}/../../var/lib/tor')\"")
     COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
     mkdir -p "$TORDIR"
-    [ -f "$TORRC" ] || cp "$prefix/etc/tor/torrc.sample" "$TORRC"
+    [ -f "$TORRC" ] || cp "${TORRC}.sample" "$TORRC"
   else
     echo "Unsupported Operating System" >&2
     exit 1
@@ -155,7 +155,7 @@ restart_tor_service() {
   if $RESTART_TOR; then
     echo "Restarting Tor service..." >&2
     if [[ "$OS_TYPE" == "macos" ]]; then
-      $SUDO -u $SUDO_USER brew services restart tor
+      $SUDO su - $SUD_USER -c "bash -cl 'brew services restart tor'"
     else
       systemctl restart "$TOR_SERVICE"
       # Check if we're in Docker or systemd isn't working
