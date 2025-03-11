@@ -166,7 +166,7 @@ adjust_permissions() {
     [ -f "$COOKIE_AUTH_FILE" ] && chown "$TOR_USER" "$COOKIE_AUTH_FILE" && chmod 600 "$COOKIE_AUTH_FILE"
   else
     chown -R "$TOR_USER:$TOR_GROUP" "$TORDIR"
-    chmod -R 750 "$TORDIR"
+    chmod -R 700 "$TORDIR"
     [ -f "$COOKIE_AUTH_FILE" ] && chown "$TOR_USER:$TOR_GROUP" "$COOKIE_AUTH_FILE" && chmod 640 "$COOKIE_AUTH_FILE"
   fi
   if [ -f "$COOKIE_AUTH_FILE" ]; then
