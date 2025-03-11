@@ -1,7 +1,7 @@
 {
-  "name": "@browserbox/browserbox",
+  "name": "@dosaygo/browserbox",
   "type": "module",
-  "version": "10.1.1",
+  "version": "10.1.2",
   "description": "BrowserBox - embeddable remote browser isolation. A WebView for the open web, an unrestricted IFRAME element, a CORS-proxy, and reverse proxy. And secure document viewer. All produced by DOSAYGO.",
   "main": "./src/server.js",
   "default": "dist/image.html",
