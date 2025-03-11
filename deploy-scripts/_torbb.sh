@@ -225,10 +225,20 @@ add_hidden_service_via_control_port() {
   local service_port="$1"
   local tor_control_port=9051
   local tor_cookie_file="$COOKIE_AUTH_FILE"
-  if [[ ! -f "$tor_cookie_file" ]]; then
+  if ! sudo test -f "$tor_cookie_file" && [[ -f "${HOME}/.tor/control_auth_cookie" ]]; then
     tor_cookie_file="${HOME}/.tor/control_auth_cookie"
   fi
-  local tor_cookie_hex=$( [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]] && xxd -u -p -c32 < "$tor_cookie_file" || $SUDO xxd -u -p -c32 < "$tor_cookie_file" )
+  local tor_cookie_hex=""
+  if [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]]; then
+    tor_cookie_hex=$(cat "$tor_cookie_file" | xxd -u -p | tr -d '\n')
+  else
+    tor_cookie_hex=$($SUDO cat "$tor_cookie_file" | xxd -u -p | tr -d '\n')
+  fi
+
+  if [[ -z "$tor_cookie_hex" ]]; then
+    echo "Failed to read Tor control cookie from $tor_cookie_file" >&2
+    exit 1
+  fi
   local control_command=$(printf 'AUTHENTICATE %s\r\nADD_ONION NEW:ED25519-V3 Flags=Detach Port=443,127.0.0.1:%s\r\nQUIT\r\n' "$tor_cookie_hex" "$service_port")
   echo "Using Tor command: $control_command" >&2
   local response=$(echo -e "$control_command" | nc localhost $tor_control_port)

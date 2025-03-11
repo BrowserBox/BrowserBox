@@ -351,11 +351,12 @@ install() {
     printf "${GREEN}Installing BrowserBox CLI (bbx)...${NC}\n"
     mkdir -p "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to create $BBX_HOME/BrowserBox${NC}\n"; exit 1; }
     printf "${YELLOW}Fetching BrowserBox repository...${NC}\n"
+    $SUDO rm -rf $BBX_HOME/BrowserBox*
     curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
-    rm -rf "$BBX_HOME/BrowserBox/*"
-    unzip -q "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
-    mv "$BBX_HOME/BrowserBox-zip/BrowserBox-${branch}"/* "$BBX_HOME/BrowserBox/" && rm -rf "$BBX_HOME/BrowserBox-zip"
-    rm "$BBX_HOME/BrowserBox.zip"
+    unzip -o -q "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
+    mv $BBX_HOME/BrowserBox-zip/BrowserBox-${branch} $BBX_HOME/BrowserBox 
+    $SUDO rm -rf $BBX_HOME/BrowserBox-zip
+    $SUDO rm -f $BBX_HOME/BrowserBox.zip
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
     local default_hostname=$(get_system_hostname)
     [ -n "$BBX_HOSTNAME" ] || read -r -p "Enter hostname (default: $default_hostname): " BBX_HOSTNAME
