@@ -1,3 +1,10 @@
+- run as ignores the port argument after username (should be a --arg anyway). 
+
+- run-as has a point after copying nvm to user where it is like /root/.nvm not exist so we have some borked syntax
+
+- source .nvm/nvm.sh for bbx logs and other such commands
+
+- enhance run-tor by displaying the tor service's connectivity status
 
 - find way to run stop_bbpro on docker stop, provide instructions people need to visit /settings_modal to stop the browser on docker
 
