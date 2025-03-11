@@ -42,7 +42,7 @@ COMMAND_DIR=""
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
 
-if ! test -d "${BBX_HOME}/BrowserBox/node_modules" || ! test -d "${BBX_HOME}/BrowserBox/.bbpro_install_dir"; then
+if ! test -d "${BBX_HOME}/BrowserBox/node_modules" || ! test -f "${BBX_HOME}/BrowserBox/.bbpro_install_dir"; then
   if [[ "$1" != "install" ]] && [[ "$1" != "uinstall" ]]; then
     printf "\n${RED}Run bbx install first.${NC}\n"
     exit 1
@@ -377,6 +377,7 @@ install() {
     source "${HOME}/.nvm/nvm.sh"
     npm i -g npm@latest
     npm i -g pm2@latest
+    timeout 5s pm2 update
     printf "${YELLOW}Installing bbx command globally...${NC}\n"
     if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
       COMMAND_DIR="/usr/local/bin"
