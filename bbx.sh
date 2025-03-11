@@ -42,6 +42,13 @@ COMMAND_DIR=""
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
 
+if ! test -d "${BBX_HOME}/BrowserBox/node_modules" || ! test -d "${BBX_HOME}/BrowserBox/.bbpro_install_dir"; then
+  if [[ "$1" != "install" ]] && [[ "$1" != "uinstall" ]]; then
+    printf "\n${RED}Run bbx install first.${NC}\n"
+    exit 1
+  fi
+fi
+
 # Check if in screen or if UTF-8 is not supported
 if [ -n "$STY" ] || ! tput u8 >/dev/null 2>&1; then
   top_left="+"

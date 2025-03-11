@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 # Global Variables
 OS_TYPE=""
 TOR_INSTALLED=false
@@ -299,8 +301,8 @@ configure_and_export_tor() {
 
     if [[ "${OS_TYPE}" != "macos" ]]; then
       $SUDO mkdir -p "$hidden_service_dir"
-      $SUDO chown $TOR_GROUP:$TOR_GROUP "$hidden_service_dir"
-      $SUDO chmod 700 "$hidden_service_dir"
+      $SUDO chown root:$TOR_GROUP "$hidden_service_dir"
+      $SUDO chmod 770 "$hidden_service_dir"
     else
       mkdir -p "$hidden_service_dir"
       chmod 700 "$hidden_service_dir"
