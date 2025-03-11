@@ -213,6 +213,10 @@ add_hidden_service_via_control_port() {
   local tor_control_port=9051
   local tor_cookie_file="${TORDIR}/control_auth_cookie"
 
+  if [[ ! -f "$tor_cookie_file" ]]; then
+    tor_cookie_file="${HOME}/.tor/control_auth_cookie"
+  fi
+
   # Read the authentication cookie
   local tor_cookie_hex="$(xxd -u -p -c32 < "$tor_cookie_file")"
 
