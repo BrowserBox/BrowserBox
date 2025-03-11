@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 # This script must be run with sudo privileges
 if [ "$(id -u)" -ne 0 ]; then
   echo "This script must be run as root. Please use sudo." >&2
@@ -55,7 +57,7 @@ detect_os() {
       echo "Homebrew not installed. Install it: https://brew.sh" >&2
       exit 1
     fi
-    local prefix=$(brew --prefix tor)
+    local prefix=$($SUDO -u $SUDO_USER brew --prefix tor)
     TORRC="$prefix/etc/tor/torrc"
     TORDIR="$prefix/var/lib/tor"
     COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
@@ -98,7 +100,7 @@ install_tor() {
   case $OS_TYPE in
     debian) install_tor_debian ;;
     redhat) install_tor_redhat ;;
-    macos) brew install tor ;;
+    macos) $SUDO -u $SUDO_USER brew install tor ;;
   esac
   command -v tor &>/dev/null || { echo "Failed to install Tor" >&2; exit 1; }
 }
@@ -155,7 +157,7 @@ restart_tor_service() {
   if $RESTART_TOR; then
     echo "Restarting Tor service..." >&2
     if [[ "$OS_TYPE" == "macos" ]]; then
-      brew services restart tor
+      $SUDO -u $SUDO_USER brew services restart tor
     else
       systemctl restart "$TOR_SERVICE"
       # Check if we're in Docker or systemd isn't working
