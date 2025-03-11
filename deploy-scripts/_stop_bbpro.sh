@@ -8,8 +8,9 @@ if command -v sudo &>/dev/null; then
 fi
 
 if [[ "$OSTYPE" == darwin* ]]; then
-    TOR_GROUP="_tor"  # Homebrew default
-    TORDIR="$(brew --prefix)/var/lib/tor"
+    TOR_GROUP="admin"  # Homebrew default
+    prefix=$(brew --prefix tor)
+    TORDIR=$(node -p "path.resolve('${prefix}/../../var/lib/tor')")
 else
     TORDIR="/var/lib/tor"
     TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) 
@@ -94,7 +95,7 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
       export TORDIR SUDO torbb_env_file
       sg "$TOR_GROUP" -c "env TORDIR='$TORDIR' SUDO='$SUDO' torbb_env_file='$torbb_env_file' bash" << 'EOF'
 source "$torbb_env_file"
-tor_cookie_hex=$($SUDO xxd -p "$TORDIR/control_auth_cookie" 2>/dev/null || $SUDO xxd -p "$TORDIR/control_auth_cookie" 2>/dev/null)
+tor_cookie_hex=$(xxd -p "$TORDIR/control_auth_cookie" 2>/dev/null || $SUDO xxd -p "$TORDIR/control_auth_cookie" 2>/dev/null)
 tor_cookie_hex=$(echo "$tor_cookie_hex" | tr -d '\n')
 if [[ -z "$tor_cookie_hex" ]]; then 
   echo "Could not get tor cookie due to incorrect permissions" >&2
