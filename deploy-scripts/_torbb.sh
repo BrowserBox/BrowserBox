@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 # Global Variables
 OS_TYPE=""
 TOR_INSTALLED=false

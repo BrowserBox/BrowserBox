@@ -588,17 +588,17 @@ tor_run() {
         printf "${YELLOW}Running as onion site...${NC}\n"
         if $in_tor_group; then
             # Run torbb directly if user is in TOR_GROUP
-            login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
+            login_link=$(torbb)
         elif command -v sg >/dev/null 2>&1; then
             # Use safe heredoc with env
             export CONFIG_DIR
-            login_link=$(sg "$TOR_GROUP" -c "env CONFIG_DIR='$CONFIG_DIR' bash" << 'EOF' 2> "$CONFIG_DIR/torbb_errors.txt"
+            login_link=$(sg "$TOR_GROUP" -c "env CONFIG_DIR='$CONFIG_DIR' bash" << 'EOF' 
 torbb
 EOF
             )
         else
             # Fallback without sg
-            login_link=$(torbb 2> "$CONFIG_DIR/torbb_errors.txt")
+            login_link=$(torbb)
         fi
         [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$CONFIG_DIR/torbb_errors.txt"; exit 1; }
         BBX_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')

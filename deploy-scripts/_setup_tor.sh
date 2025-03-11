@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 # This script must be run with sudo privileges
 if [ "$(id -u)" -ne 0 ]; then
   echo "This script must be run as root. Please use sudo." >&2
