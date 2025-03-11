@@ -163,7 +163,11 @@ read_input() {
 get_latest_dir() {
   # Find potential directories containing .bbpro_install_dir
   pwd="$(pwd)"
-  install_path1=$(find "$HOME/.bbx" -name bbpro_dir -print 2>/dev/null)
+  if [[ -f "${HOME}/.bbx/BrowserBox/bbpro_dir" ]]; then
+    install_path1=$(find "$HOME/.bbx" -name bbpro_dir -print 2>/dev/null)
+  else
+    install_path1=$(find "$HOME" -name bbpro_dir -print 2>/dev/null)
+  fi
   current_version=$(jq -r '.version' ./package.json)
 
   # Loop through each found path to check if node_modules also exists in the same directory
