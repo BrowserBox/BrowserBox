@@ -731,7 +731,7 @@ docker_run() {
 
     local output_file="$CONFIG_DIR/docker_run_output_$port.txt"
     printf "${YELLOW}Running run_docker.sh, output saved to $output_file${NC}\n"
-    bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' orig_dir='$orig_dir' port='$port' hostname='$hostname' email='$email' bash" << 'EOF' #> "$output_file" 2>&1
+    bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' orig_dir='$orig_dir' port='$port' hostname='$hostname' email='$email' bash" << 'EOF' > "$output_file" 2>&1
 set -x  # Enable debug output
 cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
 yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email"
@@ -806,11 +806,11 @@ docker_stop() {
     $SUDO docker exec "$container_id" bash -c "stop_bbpro" || {
         printf "${RED}Warning: Failed to run stop_bbpro in container${NC}\n"
     }
-    printf "${YELLOW}Waiting 10 seconds for license release...${NC}\n"
-    sleep 10
+    printf "${YELLOW}Waiting 1 second for license release...${NC}\n"
+    sleep 1
 
     # Stop the container
-    $SUDO docker stop --time 3 "$container_id" || {
+    $SUDO docker stop --timeout 3 "$container_id" || {
         printf "${RED}Failed to stop container $container_id${NC}\n"
         exit 1
     }
