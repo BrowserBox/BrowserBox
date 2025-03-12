@@ -4,8 +4,8 @@
 
 get_install_dir() {
   echo "Finding bbpro installation..." >&2
-  install_path1=$(find /usr/local/share -name .bbpro_install_dir -print -quit 2>/dev/null)
-  install_path2=$(find "$HOME" -name .bbpro_install_dir -print -quit 2>/dev/null)
+  install_path1=$(find /usr/local/share/dosyago -name .bbpro_install_dir -print -quit 2>/dev/null)
+  install_path2=$(find "$HOME/.bbx" -name .bbpro_install_dir -print -quit 2>/dev/null)
   install_dir=$(dirname $install_path1)
   if [ -z "$install_dir" ]; then
     install_dir=$(dirname $install_path2)
