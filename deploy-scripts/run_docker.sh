@@ -36,94 +36,115 @@ echo "BrowserBox v10 Terms: https://dosaygo.com/terms.txt | License: https://git
   exit 1
 }
 
+# Check if hostname is local (copied from bbx.sh)
+is_local_hostname() {
+    local hostname="$1"
+    local resolved_ip=$(dig +short "$hostname" A | grep -v '\.$' | head -n1)
+    if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
+        return 0  # Local
+    else
+        if command -v getent >/dev/null; then
+            resolved_ip=$(getent hosts "$hostname" | tail -n1)
+            if [[ "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
+                return 0
+            fi
+        fi
+        return 1  # Not local
+    fi
+}
+
 # Port Availability (Cross-Platform)
 check_port() {
-  local p=$1
-  if [[ "$OS" = "Darwin" ]]; then
-    lsof -iTCP -P -n | grep -q "LISTEN.*:$p" && { echo "ERROR: Port $p in use!" >&2; return 1; } || return 0
-  else
-    $SUDO bash -c "exec 6<>/dev/tcp/127.0.0.1/$p" 2>/dev/null && { echo "ERROR: Port $p in use!" >&2; return 1; } || return 0
-  fi
+    local p=$1
+    if [[ "$OS" = "Darwin" ]]; then
+        lsof -iTCP -P -n | grep -q "LISTEN.*:$p" && { echo "ERROR: Port $p in use!" >&2; return 1; } || return 0
+    else
+        $SUDO bash -c "exec 6<>/dev/tcp/127.0.0.1/$p" 2>/dev/null && { echo "ERROR: Port $p in use!" >&2; return 1; } || return 0
+    fi
 }
 for p in $(seq $((PORT-2)) $((PORT+2))); do
-  check_port "$p" || exit 1
+    check_port "$p" || exit 1
 done
 
 # Firewall Open (Cross-Platform)
 open_ports() {
-  local start=$1 end=$2
-  if [[ "$OS" = "Darwin" ]]; then
-    echo "pass in proto tcp from any to any port $start:$end" | $SUDO pfctl -ef - 2>/dev/null || echo "WARNING: Firewall tweak failed—open $start-$end/tcp manually!" >&2
-  elif command -v firewall-cmd >/dev/null; then
-    $SUDO firewall-cmd --permanent --add-port="$start-$end/tcp" && $SUDO firewall-cmd --reload || echo "WARNING: firewalld failed—open $start-$end/tcp manually!" >&2
-  elif command -v ufw >/dev/null; then
-    $SUDO ufw allow "$start:$end/tcp" || echo "WARNING: ufw failed—open $start-$end/tcp manually!" >&2
-  else
-    echo "WARNING: No firewall tool found—open $start-$end/tcp manually!" >&2
-  fi
+    local start=$1 end=$2
+    if [[ "$OS" = "Darwin" ]]; then
+        echo "pass in proto tcp from any to any port $start:$end" | $SUDO pfctl -ef - 2>/dev/null || echo "WARNING: Firewall tweak failed—open $start-$end/tcp manually!" >&2
+    elif command -v firewall-cmd >/dev/null; then
+        $SUDO firewall-cmd --permanent --add-port="$start-$end/tcp" && $SUDO firewall-cmd --reload || echo "WARNING: firewalld failed—open $start-$end/tcp manually!" >&2
+    elif command -v ufw >/dev/null; then
+        $SUDO ufw allow "$start:$end/tcp" || echo "WARNING: ufw failed—open $start-$end/tcp manually!" >&2
+    else
+        echo "WARNING: No firewall tool found—open $start-$end/tcp manually!" >&2
+    fi
 }
 [ "$HOSTNAME" != "localhost" ] && open_ports 80 80
 open_ports $((PORT-2)) $((PORT+2))
 
 # External IP (Cross-Platform)
 get_ip() {
-  curl -4s --connect-timeout 5 "https://icanhazip.com" || curl -4s --connect-timeout 5 "https://ifconfig.me" || {
-    echo "ERROR: Can’t fetch IP—check network!" >&2
-    exit 1
-  }
+    curl -4s --connect-timeout 5 "https://icanhazip.com" || curl -4s --connect-timeout 5 "https://ifconfig.me" || {
+        echo "ERROR: Can’t fetch IP—check network!" >&2
+        exit 1
+    }
 }
 
 # Certs Fetch (Cross-Platform)
 fetch_certs() {
-  mkdir -p "$CERT_DIR"
-  if [ ! -f "$CERT_DIR/fullchain.pem" ] || [ ! -f "$CERT_DIR/privkey.pem" ] || [ "$(openssl x509 -in "$CERT_DIR/fullchain.pem" -noout -subject | grep -o "$HOSTNAME")" != "$HOSTNAME" ]; then
-    echo "Fetching certs for $HOSTNAME (DNS A record to $(get_ip) required)..." >&2
-    $SUDO bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/wait_for_hostname.sh) "$HOSTNAME" || {
-      echo "ERROR: Hostname $HOSTNAME not resolving!" >&2
-      exit 1
-    }
-    BB_USER_EMAIL="$EMAIL" $SUDO bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/tls) "$HOSTNAME" || {
-      echo "ERROR: Cert fetch failed!" >&2
-      exit 1
-    }
-  fi
-  $SUDO chmod 600 "$CERT_DIR"/*.pem
+    mkdir -p "$CERT_DIR"
+    if [ ! -f "$CERT_DIR/fullchain.pem" ] || [ ! -f "$CERT_DIR/privkey.pem" ] || [ "$(openssl x509 -in "$CERT_DIR/fullchain.pem" -noout -subject | grep -o "$HOSTNAME")" != "$HOSTNAME" ]; then
+        echo "Fetching certs for $HOSTNAME (DNS A record to $(get_ip) required)..." >&2
+        $SUDO bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/wait_for_hostname.sh) "$HOSTNAME" || {
+            echo "ERROR: Hostname $HOSTNAME not resolving!" >&2
+            exit 1
+        }
+        BB_USER_EMAIL="$EMAIL" $SUDO bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/tls) "$HOSTNAME" || {
+            echo "ERROR: Cert fetch failed!" >&2
+            exit 1
+        }
+    fi
+    $SUDO chmod 600 "$CERT_DIR"/*.pem
 }
-[ "$HOSTNAME" != "localhost" ] && fetch_certs
+if ! is_local_hostname "$HOSTNAME"; then
+    fetch_certs
+else
+    echo "Skipping cert fetch for local hostname $HOSTNAME" >&2
+fi
 
 # Docker Image Pull (Check Both Repos)
 DOCKER_IMAGE=""
 if $SUDO docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^$DOCKER_IMAGE_DOSAYGO$"; then
-  DOCKER_IMAGE="$DOCKER_IMAGE_DOSAYGO"
-  echo "Found $DOCKER_IMAGE locally—using it!" >&2
+    DOCKER_IMAGE="$DOCKER_IMAGE_DOSAYGO"
+    echo "Found $DOCKER_IMAGE locally—using it!" >&2
 elif $SUDO docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^$DOCKER_IMAGE_GHCR$"; then
-  DOCKER_IMAGE="$DOCKER_IMAGE_GHCR"
-  echo "Found $DOCKER_IMAGE locally—using it!" >&2
-else
-  echo "Pulling latest $DOCKER_IMAGE_DOSAYGO..." >&2
-  $SUDO docker pull "$DOCKER_IMAGE_DOSAYGO" && DOCKER_IMAGE="$DOCKER_IMAGE_DOSAYGO" || {
-    echo "Falling back to $DOCKER_IMAGE_GHCR..." >&2
-    $SUDO docker pull "$DOCKER_IMAGE_GHCR" || { echo "ERROR: Failed to pull image!" >&2; exit 1; }
     DOCKER_IMAGE="$DOCKER_IMAGE_GHCR"
-  }
+    echo "Found $DOCKER_IMAGE locally—using it!" >&2
+else
+    echo "Pulling latest $DOCKER_IMAGE_DOSAYGO..." >&2
+    $SUDO docker pull "$DOCKER_IMAGE_DOSAYGO" && DOCKER_IMAGE="$DOCKER_IMAGE_DOSAYGO" || {
+        echo "Falling back to $DOCKER_IMAGE_GHCR..." >&2
+        $SUDO docker pull "$DOCKER_IMAGE_GHCR" || { echo "ERROR: Failed to pull image!" >&2; exit 1; }
+        DOCKER_IMAGE="$DOCKER_IMAGE_GHCR"
+    }
 fi
 
 # Docker Run (Capture setup_bbpro Output)
 echo "Starting BrowserBox on $HOSTNAME:$PORT..." >&2
 CONTAINER_ID=$($SUDO docker run --cap-add=SYS_NICE -d \
-  -p "$PORT:$PORT" -p "$((PORT-2)):$((PORT-2))" -p "$((PORT-1)):$((PORT-1))" \
-  -p "$((PORT+1)):$((PORT+1))" -p "$((PORT+2)):$((PORT+2))" \
-  -v "$CERT_DIR:/home/bbpro/sslcerts" -e "LICENSE_KEY=$LICENSE_KEY" \
-  "$DOCKER_IMAGE" bash -c "cd; cd bbpro; setup_bbpro --port $PORT > login_link.txt && bbcertify && bbpro && ./deploy-scripts/drun.sh") || {
+    -p "$PORT:$PORT" -p "$((PORT-2)):$((PORT-2))" -p "$((PORT-1)):$((PORT-1))" \
+    -p "$((PORT+1)):$((PORT+1))" -p "$((PORT+2)):$((PORT+2))" \
+    -v "$CERT_DIR:/home/bbpro/sslcerts" -e "LICENSE_KEY=$LICENSE_KEY" \
+    "$DOCKER_IMAGE" bash -c "cd; cd bbpro; setup_bbpro --port $PORT > login_link.txt && bbcertify && bbpro && ./deploy-scripts/drun.sh") || {
     echo "ERROR: Docker run failed!" >&2
     exit 1
-  }
+}
 
 # Login Link
 sleep 5
 $SUDO docker cp "$CONTAINER_ID:/home/bbpro/bbpro/login_link.txt" ./login_link.txt 2>/dev/null || {
-  echo "WARNING: Login link not ready—check logs with: docker logs $CONTAINER_ID" >&2
-  LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
+    echo "WARNING: Login link not ready—check logs with: docker logs $CONTAINER_ID" >&2
+    LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
 }
 [ -f "login_link.txt" ] && LOGIN_LINK=$(cat login_link.txt | sed "s/localhost/$HOSTNAME/") || LOGIN_LINK="https://$HOSTNAME:$PORT/login?token=<check_logs>"
 

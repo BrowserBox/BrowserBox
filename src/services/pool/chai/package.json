@@ -1,6 +1,6 @@
 {
   "name": "@browserbox/chai",
-  "version": "8.1.0",
+  "version": "10.1.5",
   "type": "module",
   "description": "chai - convert your documents to images by way of PDF",
   "main": "src/index.js",
@@ -36,5 +36,5 @@
     "multer": "latest",
     "serve-index": "latest"
   },
-  "license": "(PolyForm-Noncommercial-1.0.0 OR Dosyago-Commercial-License-1.1.1-or-later)"
+  "license": "Dosyago-Commercial-License-1.1.1-or-later"
 }

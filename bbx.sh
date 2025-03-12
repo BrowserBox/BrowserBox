@@ -16,25 +16,19 @@ fi
 
 # ANSI color codes
 RED='\033[0;31m'
-GREEN='\033[0;32m'
+GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
-PURPLE='\033[95m'  # Bright magenta, defined as purple
-BLUE='\033[0;34m'
-PINK='\033[95m'    # Bright magenta, closest to pink in ANSI
+CYAN='\033[1;36m'
+PURPLE='\033[1;95m'  # Bright magenta, defined as purple
+BLUE='\033[1;34m'
+PINK='\033[1;95m'    # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
 BOLD='\033[1m'
 
 # Version
 BBX_VERSION="10.1.0"
-branch="main" # change to main for dist
-banner_color=$BLUE
-
-# Sudo check
-SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
-if [ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null; then
-    printf "${RED}ERROR: Requires root or passwordless sudo. Edit /etc/sudoers with visudo if needed.${NC}\n"
-    exit 1
-fi
+branch="docker-imps" # change to main for dist
+banner_color=$CYAN
 
 # Default paths
 BBX_HOME="${HOME}/.bbx"
@@ -42,9 +36,43 @@ COMMAND_DIR=""
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
 
+# Config file (secondary to test.env and login.link)
+CONFIG_DIR="$HOME/.config/dosyago/bbpro"
+CONFIG_FILE="$CONFIG_DIR/config"
+TICKET_FILE="$CONFIG_DIR/tickets/ticket.json"
+[ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
+
+DOCKER_CONTAINERS_FILE="$CONFIG_DIR/docker_containers.json"
+[ ! -f "$DOCKER_CONTAINERS_FILE" ] && echo "{}" > "$DOCKER_CONTAINERS_FILE"
+
+# ASCII Banner
+banner() {
+    printf "${banner_color}${BOLD}"
+    cat << 'EOF'
+   ____                                  ____
+  | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
+  |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
+  | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
+  |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
+
+EOF
+    printf "${NC}\n"
+}
+
+# Sudo check
+SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
+if ([ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null); then
+    banner
+    printf "${RED}Warning: ${NC}${BOLD}bbx${NC}${RED} is easier to use with passwordless sudo, and may misfunction without it.${NC}\n\tEdit /etc/sudoers with visudo to enable.\n"
+    exit 1
+fi
+
+
 if ! test -d "${BBX_HOME}/BrowserBox/node_modules" || ! test -f "${BBX_HOME}/BrowserBox/.bbpro_install_dir"; then
-  if [[ "$1" != "install" ]] && [[ "$1" != "uinstall" ]]; then
-    printf "\n${RED}Run bbx install first.${NC}\n"
+  if [ $# -gt 0 ] && [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]] && [[ "$1" != "docker-"* ]]; then
+    banner
+    printf "\n${RED}Run ${NC}${BOLD}bbx install${NC}${RED} first.${NC}\n"
+    printf "\tYou may need to run bbx uninstall to remove any previous or broken installation.\n"
     exit 1
   fi
 fi
@@ -66,26 +94,6 @@ else
   vertical=$(printf "\xe2\x94\x82")    # Vertical line
 fi
 
-# ASCII Banner
-banner() {
-    printf "${banner_color}${BOLD}"
-    cat << 'EOF'
-   ____                                  ____
-  | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
-  |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
-  | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
-  |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
-
-EOF
-    printf "${NC}\n"
-}
-
-# Config file (secondary to test.env and login.link)
-CONFIG_DIR="$HOME/.config/dosyago/bbpro"
-CONFIG_FILE="$CONFIG_DIR/config"
-TICKET_FILE="$CONFIG_DIR/tickets/ticket.json"
-[ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
-
 load_config() {
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
     # Override with test.env if it exists
@@ -102,6 +110,15 @@ TOKEN="${TOKEN:-}"
 PORT="${PORT:-}"
 EOF
     chmod 600 "$CONFIG_FILE"
+}
+
+ensure_nvm() {
+    if [ -f "$HOME/.nvm/nvm.sh" ]; then
+        source "$HOME/.nvm/nvm.sh" || { printf "${RED}Failed to source nvm.sh${NC}\n"; exit 1; }
+    else
+        printf "${RED}nvm not found at $HOME/.nvm/nvm.sh. Install it first.${NC}\n"
+        exit 1
+    fi
 }
 
 # Get license key, show warning only on new entry
@@ -374,7 +391,7 @@ install() {
     fi
     [ $? -eq 0 ] || { printf "${RED}Installation failed${NC}\n"; exit 1; }
     printf "${YELLOW}Updating npm and pm2...${NC}\n"
-    source "${HOME}/.nvm/nvm.sh"
+    ensure_nvm
     npm i -g npm@latest
     npm i -g pm2@latest
     timeout 5s pm2 update
@@ -613,6 +630,202 @@ EOF
     draw_box "Login Link: $login_link"
 }
 
+docker_run() {
+    banner
+    load_config
+    ensure_deps  # Ensure docker is installed
+
+    # Default values
+    local nickname=""
+    local port="${PORT:-$(find_free_port_block)}"
+    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+    local email="${EMAIL:-$USER@$hostname}"
+    local orig_dir="$PWD"  # Store current working directory
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --port|-p)
+                port="$2"
+                shift 2
+                ;;
+            *)
+                if [ -z "$nickname" ]; then
+                    nickname="$1"
+                else
+                    printf "${RED}Unknown or extra argument: $1${NC}\n"
+                    printf "Usage: bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
+                    exit 1
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    # Generate random nickname if none provided
+    if [ -z "$nickname" ]; then
+        nickname=$(head -c8 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c6)
+        printf "${YELLOW}No nickname provided. Generated: $nickname${NC}\n"
+    fi
+
+    # Validate nickname
+    [[ "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]] || {
+        printf "${RED}Invalid nickname: Must be alphanumeric with dashes or underscores${NC}\n"
+        exit 1
+    }
+
+    # Validate port
+    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 4024 ] || [ "$port" -gt 65533 ]; then
+        printf "${RED}Invalid port: $port. Must be between 4024 and 65533.${NC}\n"
+        exit 1
+    fi
+
+    # Check if Docker is installed
+    if ! command -v docker >/dev/null 2>&1; then
+        printf "${YELLOW}Installing Docker...${NC}\n"
+        if [ -f /etc/debian_version ]; then
+            $SUDO apt-get update && $SUDO apt-get install -y docker.io
+            $SUDO systemctl start docker
+            $SUDO systemctl enable docker
+        elif [ -f /etc/redhat-release ]; then
+            $SUDO yum install -y docker || $SUDO dnf install -y docker
+            $SUDO systemctl start docker
+            $SUDO systemctl enable docker
+        elif [ "$(uname -s)" = "Darwin" ]; then
+            printf "${RED}Please install Docker Desktop manually on macOS: https://docs.docker.com/desktop/mac/install/${NC}\n"
+            exit 1
+        else
+            printf "${RED}Unsupported OS. Install Docker manually: https://docs.docker.com/get-docker/${NC}\n"
+            exit 1
+        fi
+    fi
+
+    # Get license key
+    get_license_key
+
+    # Download docker-run.sh script if not present
+    local run_docker_script="$BBX_HOME/BrowserBox/deploy-scripts/run_docker.sh"
+    if [ ! -f "$run_docker_script" ]; then
+        printf "${YELLOW}Fetching run_docker.sh script...${NC}\n"
+        mkdir -p "$BBX_HOME/BrowserBox/deploy-scripts"
+        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker.sh" -o "$run_docker_script" || {
+            printf "${RED}Failed to download run_docker.sh script${NC}\n"
+            exit 1
+        }
+        chmod +x "$run_docker_script"
+    fi
+
+    # Ensure BrowserBox directory exists
+    if [ ! -d "$BBX_HOME/BrowserBox" ]; then
+        printf "${RED}BrowserBox directory not found. Run 'bbx install' first.${NC}\n"
+        exit 1
+    fi
+
+    # Run Docker container using heredoc
+    printf "${YELLOW}Starting Dockerized BrowserBox on $hostname:$port...${NC}\n"
+    if ! is_local_hostname "$hostname"; then
+        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+    else
+        ensure_hosts_entry "$hostname"
+    fi
+
+    local output_file="$CONFIG_DIR/docker_run_output_$port.txt"
+    printf "${YELLOW}Running run_docker.sh, output saved to $output_file${NC}\n"
+    bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' orig_dir='$orig_dir' port='$port' hostname='$hostname' email='$email' bash" << 'EOF' > "$output_file" 2>&1
+set -x  # Enable debug output
+cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
+yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email"
+cd "$orig_dir" || { echo "Failed to return to $orig_dir"; exit 1; }
+EOF
+    local run_status=$?
+    if [ $run_status -ne 0 ]; then
+        printf "${RED}Docker run failed with status $run_status${NC}\n"
+        printf "${YELLOW}Output file contents:${NC}\n"
+        cat "$output_file"
+        printf "${YELLOW}Output file retained at $output_file for inspection${NC}\n"
+        exit 1
+    fi
+
+    # Extract container ID and login link
+    local container_id=$(grep "Container ID:" "$output_file" | awk '{print $NF}' | tail -n1)
+    local login_link=$(grep "Login Link:" "$output_file" | sed 's/Login Link: //' | tail -n1)
+    printf "${YELLOW}Extracted container_id: '$container_id', login_link: '$login_link'${NC}\n"  # Debug output
+    rm -f "$output_file"
+
+    [ -n "$container_id" ] || {
+        printf "${RED}Failed to get container ID. Check $output_file if retained${NC}\n"
+        exit 1
+    }
+    [ -n "$login_link" ] || login_link="https://$hostname:$port/login?token=<check_logs>"
+
+    # Store container info
+    local tmp_file=$(mktemp)
+    jq --arg nick "$nickname" --arg cid "$container_id" --arg port "$port" \
+       '.[$nick] = {"container_id": $cid, "port": $port}' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
+       mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+
+    # Display output
+    printf "${CYAN}Dockerized BrowserBox started.${NC}\n"  # Using your bright cyan!
+    draw_box "Login Link: $login_link"
+    draw_box "Nickname: $nickname"
+    draw_box "Stop Command: bbx docker-stop $nickname"
+}
+
+docker_stop() {
+    banner
+    load_config
+
+    local nickname="$1"
+    if [ -z "$nickname" ]; then
+        printf "${RED}Usage: bbx docker-stop <nickname>${NC}\n"
+        exit 1
+    fi
+
+    # Check if nickname exists
+    local container_id=$(jq -r --arg nick "$nickname" '.[$nick].container_id // ""' "$DOCKER_CONTAINERS_FILE")
+    local port=$(jq -r --arg nick "$nickname" '.[$nick].port // ""' "$DOCKER_CONTAINERS_FILE")
+    if [ -z "$container_id" ]; then
+        printf "${RED}No container found with nickname: $nickname${NC}\n"
+        printf "${YELLOW}If you used a raw container ID, run: docker stop <container_id>${NC}\n"
+        exit 1
+    fi
+
+    # Check if container is running
+    if ! $SUDO docker ps -q --filter "id=$container_id" | grep -q .; then
+        printf "${YELLOW}Container $nickname ($container_id) is not running.${NC}\n"
+        # Remove from config anyway
+        local tmp_file=$(mktemp)
+        jq --arg nick "$nickname" 'del(.[$nick])' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
+            mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+        printf "${GREEN}Removed $nickname from tracking.${NC}\n"
+        exit 0
+    fi
+
+    printf "${YELLOW}Stopping BrowserBox for $nickname ($container_id)...${NC}\n"
+    # Run stop_bbpro inside the container
+    $SUDO docker exec "$container_id" bash -c "stop_bbpro" || {
+        printf "${RED}Warning: Failed to run stop_bbpro in container${NC}\n"
+    }
+    printf "${YELLOW}Waiting 1 second for license release...${NC}\n"
+    sleep 1
+
+    # Stop the container
+    $SUDO docker stop --timeout 3 "$container_id" || {
+        printf "${RED}Failed to stop container $container_id${NC}\n"
+        exit 1
+    }
+
+    # Remove from config
+    local tmp_file=$(mktemp)
+    jq --arg nick "$nickname" 'del(.[$nick])' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
+        mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+
+    printf "${GREEN}Dockerized BrowserBox ($nickname) stopped and removed from tracking.${NC}\n"
+    draw_box "Nickname: $nickname"
+    draw_box "Container ID: $container_id"
+    draw_box "Port: $port"
+}
+
 # Helper: Create a master user with passwordless sudo and BB groups
 create_master_user() {
     local user="$1"
@@ -816,6 +1029,7 @@ stop() {
 
 logs() {
     printf "${YELLOW}Displaying BrowserBox logs...${NC}\n"
+    ensure_nvm
     if command -v pm2 >/dev/null; then
         pm2 logs || { printf "${RED}pm2 logs failed${NC}\n"; exit 1; }
     else
@@ -857,9 +1071,10 @@ update() {
     
     # Update npm and pm2
     printf "${YELLOW}Updating npm and pm2...${NC}\n"
-    source "${HOME}/.nvm/nvm.sh"
+    ensure_nvm
     npm i -g npm@latest
     npm i -g pm2@latest
+    timeout 5s pm2 update
     
     # Install bbx command globally
     printf "${YELLOW}Installing bbx command globally...${NC}\n"
@@ -1059,20 +1274,24 @@ run_as() {
     local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
     local temporary=false
 
-    # Parse arguments
+    # Parse arguments with named flags
     while [ $# -gt 0 ]; do
         case "$1" in
             --temporary)
                 temporary=true
                 shift
                 ;;
+            --port|-p)
+                port="$2"
+                shift 2
+                ;;
             *)
                 if [ -z "$user" ]; then
-                    user="$1"
-                elif [ -z "$port" ]; then
-                    port="$1"
+                    user="$1"  # First non-flag argument is the username
                 else
-                    hostname="$1"
+                    printf "${RED}Unknown or extra argument: $1${NC}\n"
+                    printf "Usage: bbx run-as [--temporary] [--port|-p <port>] <username>${NC}\n"
+                    exit 1
                 fi
                 shift
                 ;;
@@ -1116,7 +1335,7 @@ run_as() {
     printf "${YELLOW}Copying nvm and Node.js from $HOME/.nvm to $HOME_DIR/.nvm...${NC}\n"
     $SUDO rsync -aq --exclude='.git' "$HOME/.nvm/" "$HOME_DIR/.nvm/" || { printf "${RED}Failed to rsync .nvm directory${NC}\n"; exit 1; }
     $SUDO chown -R "$user":"$user" "$HOME_DIR/.nvm" || { printf "${RED}Failed to chown .nvm directory${NC}\n"; exit 1; }
-    NODE_VERSION=$($SUDO bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
+    NODE_VERSION=$($SUDO -u $user bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
     $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
 
     # Test port accessibility
@@ -1160,31 +1379,27 @@ version() {
 usage() {
     banner
     printf "${BOLD}Usage:${NC} bbx <command> [options]\n"
-    printf "\n${YELLOW}Note: the bbx tool is still in beta.${NC}\n\n"
     printf "${BOLD}Commands:${NC}\n"
-    printf "  ${GREEN}install${NC}      Install BrowserBox and bbx CLI\n"
-    printf "  ${GREEN}uninstall${NC}    Remove BrowserBox, config, and all related files\n"
-    printf "  ${RED}activate${NC}     Activate your copy of BrowserBox by purchasing a license key for 1 or more seats.\n"
-    printf "                  Usage: bbx activate [seats]\n"
-    printf "  ${GREEN}setup${NC}        Set up BrowserBox\n"
-    printf "                  Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
-    printf "  ${GREEN}certify${NC}      Certify your license\n"
-    printf "  ${GREEN}run${NC}          Start BrowserBox\n"
-    printf "                  Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
-    printf "  ${GREEN}stop${NC}         Stop BrowserBox (current user)\n"
-    printf "  ${GREEN}run-as${NC}       Run as a specific user\n"
-    printf "                  Usage: bbx run-as [--temporary] [username] [port]\n"
-    printf "  ${GREEN}stop-user${NC}    Stop BrowserBox for a specific user\n"
-    printf "                  Usage: bbx stop-user <username> [delay_seconds]\n"
-    printf "  ${GREEN}logs${NC}         Show BrowserBox logs\n"
-    printf "  ${GREEN}update${NC}       Update BrowserBox\n"
-    printf "  ${GREEN}status${NC}       Check BrowserBox status\n"
-    printf "  ${PURPLE}tor-run${NC}      Run BrowserBox with Tor\n"
-    printf "                  Usage: bbx tor-run [--no-anonymize] [--no-onion]\n"
-    printf "  ${BLUE}${BOLD}console*${NC}     See and interact with the BrowserBox command stream\n"
-    printf "  ${BLUE}${BOLD}automate*${NC}    Run pptr or playwright scripts in a running BrowserBox\n"
-    printf "  ${GREEN}--version${NC}    Show bbx version\n"
-    printf "  ${GREEN}--help${NC}       Show this help\n"
+    printf "  ${GREEN}install${NC}        Install BrowserBox and bbx CLI\n"
+    printf "  ${GREEN}uninstall${NC}      Remove BrowserBox, config, and all related files\n"
+    printf "  ${CYAN}activate${NC}       Activate your copy of BrowserBox by purchasing a license key for 1 or more seats\n"
+    printf "                   \t\t\t\t\t${BOLD}${CYAN}bbx activate [seats]${NC}\n"
+    printf "  ${GREEN}setup${NC}          Set up BrowserBox \t\t\t${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>]${NC}\n"
+    printf "  ${GREEN}certify${NC}        Certify your license\n"
+    printf "  ${GREEN}run${NC}            Run BrowserBox \t\t\t${BOLD}bbx run [--port|-p <port>] [--hostname|-h <hostname>]${NC}\n"
+    printf "  ${GREEN}stop${NC}           Stop BrowserBox (current user)\n"
+    printf "  ${GREEN}run-as${NC}         Run as a specific user \t\t${BOLD}bbx run-as [--temporary] [username] [port]${NC}\n"
+    printf "  ${GREEN}stop-user${NC}      Stop BrowserBox for a specific user \t${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
+    printf "  ${GREEN}logs${NC}           Show BrowserBox logs\n"
+    printf "  ${GREEN}update${NC}         Update BrowserBox\n"
+    printf "  ${GREEN}status${NC}         Check BrowserBox status\n"
+    printf "  ${PURPLE}tor-run${NC}        Run BrowserBox with Tor \t\t${BOLD}bbx tor-run [--no-anonymize] [--no-onion]${NC}\n"
+    printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
+    printf "  ${GREEN}docker-stop${NC}    Stop a Dockerized BrowserBox \t\t${BOLD}bbx docker-stop <nickname>${NC}\n"
+    printf "  ${BLUE}${BOLD}console*${NC}       See and interact with the BrowserBox command stream\n"
+    printf "  ${BLUE}${BOLD}automate*${NC}      Run pptr or playwright scripts in a running BrowserBox\n"
+    printf "  ${GREEN}--version${NC}      Show bbx version\n"
+    printf "  ${GREEN}--help${NC}         Show this help\n"
     printf "\n${BLUE}${BOLD}*Coming Soon${NC}\n"
 }
 
@@ -1302,6 +1517,8 @@ case "$1" in
     status) shift 1; status "$@";;
     run-as) shift 1; run_as "$@";;
     tor-run) shift 1; banner_color=$PURPLE; tor_run "$@";;
+    docker-run) shift 1; docker_run "$@";;
+    docker-stop) shift 1; docker_stop "$@";;
     --version|-v) shift 1; version "$@";;
     --help|-h) shift 1; usage "$@";;
     "") usage;;

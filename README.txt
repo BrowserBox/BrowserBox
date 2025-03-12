@@ -1,0 +1,134 @@
+  * * * * * * * * * * * * * * * * * * * * * *
+  |        BROWSERBOX - PHREAK THE WEB       |
+  |        B R O W S E R B O X  ROCKS       |
+  * * * * * * * * * * * * * * * * * * * * * *
+
+  WELCOME TO THE UNDERGROUND, SKIDZ! THIS AIN'T YOUR GRANDMA'S BROWSER --
+  BROWSERBOX IS THE FUCKING TIGHTEST REMOTE BROWSER ISOLATION (RBI) HACK
+  TOOL OF 2025, STRAIGHT OUTTA THE 90s PHREAK SCENE! BUILT BY DOSAYGO,
+  IT'S ALL ABOUT LOCKING DOWN YOUR SHIT WHILE KEEPING THE NET WIDE OPEN.
+  READY TO JACK IN? LET'S BLAST THIS FUCKING SHIT UP!
+
+  =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+  |      TABLE OF CONTENTS - NAV THIS ZINE LIKE A BOSS            |
+  =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+  [1] WHASSUP WITH BROWSERBOX? - THE SCOOP ON THIS BEAST
+  [2] WHY YOU NEED A LICENSE - NO FREE RIDES, PHREAK
+  [3] BBX - YOUR CLI SIDEKICK FROM THE DEPTHS
+  [4] DEPLOYMENT - SLAM IT DOWN LIKE A 300 BAUD JAMMER
+  [5] FAQ - STUPID QUESTIONS, KILLER ANSWERS
+  [6] SUPPORT - WHEN YOU SCREW THE POOCH (AND YOU WILL)
+  [7] LEGAL JUNK - READ IT OR EAT IT
+  =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+  [1] WHASSUP WITH BROWSERBOX?
+  -----------------------------
+  BROWSERBOX IS THE REAL SHIT - A REMOTE BROWSER RUNNING IN A DAMN
+  BUNKER, KEEPING YOUR NETWORK SAFE FROM MALWARE, RANSOMWARE, AND ALL
+  THOSE ASSHOLE ZERO-DAY TRICKS. IT'S LIKE A 486 DX2 IN THE CLOUD,
+  RIPPING THROUGH WEB CRAP WITHOUT FUCKING UP YOUR LOCAL RIG. SYSADMINS,
+  HACKERS, PHREAKS - THIS IS YOUR GOLDEN TICKET TO SURF THE NET WITHOUT
+  GETTING OWNED!
+
+  FEATURES THAT KICK ASS:
+  - ISOLATION TIGHTER THAN A DRUM, EVEN MITNICK COULDN'T BUST IT
+  - ZERO LATENCY MODE (NEW IN v10 - FUCK YEAH!)
+  - MOBILE-READY, CHROME-POWERED AWESOMENESS
+  - TWEAK THAT SHIT TO YOUR HEART'S DELIGHT
+
+  [2] WHY YOU NEED A LICENSE
+  ---------------------------
+  THIS AIN'T NO FREEWARE, BRO! BROWSERBOX v10 DEMANDS A LICENSE KEY TO
+  ROLL. NO KEY? YOU GET A 2-MINUTE HEADS-UP THEN BAM - SHIT'S OVER.
+  SCORE ONE AT sales@dosaygo.com FOR COMMERCIAL USE OR HIT THE NON-
+  COMMERCIAL WAITLIST AT tally.so/r/nPvb1x. WHY? 'CAUSE WE'RE KEEPING
+  THIS FUCKING THING LEGIT AND ALIVE, NOT SOME LAME WAREZ THAT CRASHES
+  OUT LIKE A BITCH.
+
+  LICENSED GOODIES:
+  - FULL ACCESS TO THE JUICY STUFF (NO CRIPPLED MODE)
+  - KEEP THE SUITS OFF YOUR ASS (WE TRACK USAGE - SEE PRIVACY.TXT)
+  - FUCK WITH LICENSING AND WE'LL KICK YOUR DAMN BUTT (TERMS.TXT, DUDE)
+
+  [3] BBX - YOUR CLI SIDEKICK FROM THE DEPTHS
+  --------------------------------------------
+  MEET `BBX` - THE COMMAND LINE TOOL THAT MAKES BROWSERBOX SCREAM! IT'S
+  LIKE A PHREAKER'S LEATHERMAN IN YOUR TERM - NO GUI NONSENSE, JUST PURE
+  FUCKING POWER. HERE'S THE DIRTY LOWDOWN:
+
+  **INSTALL THAT SHIT**
+  - VIA BASH PIPE:
+    $ bash <(curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/docker-imps/bbx.sh) install
+  - VIA NPM (GLOBAL STYLE):
+    $ npm i -g @browserbox/browserbox
+  - BOTH DROP BROWSERBOX AND BBX LIKE A TON OF FUCKING BRICKS. NEED
+    PASSWORDLESS SUDO (EDIT /etc/sudoers OR BAIL).
+
+  **ACTIVATE YOUR LICENSE**
+  $ bbx activate [seats]
+  - GRAB A KEY FOR YOUR POSSE (1 SEAT DEFAULT). PAY VIA STRIPE, GET
+    LEGIT. NON-COMMERCIAL? WAITLIST THAT SHIT!
+
+  **COMMAND LINE MADNESS**
+  - bbx install        - SLAM IT DOWN, SET IT UP
+  - bbx uninstall      - NUKE EVERYTHING, GONE LIKE A BAD DREAM
+  - bbx activate [seats] - BUY YOUR WAY IN (SEATS = USERS)
+  - bbx setup [-p <port>] [-h <host>] [-t <token>] - TUNE THAT BEAST
+  - bbx certify        - LOCK IN YOUR KEY, MAKE IT REAL
+  - bbx run [-p <port>] [-h <host>] - LAUNCH BROWSERBOX, SURF HARD
+  - bbx stop           - KILL IT DEAD (CURRENT USER ONLY)
+  - bbx run-as [--temporary] <user> [<port>] - RUN AS ANOTHER DUDE, TEMP
+    WIPES 'EM OUT
+  - bbx stop-user <user> [<delay>] - SMASH A USER'S RUN, DELAY IN SECS
+  - bbx logs           - PEEK AT THE LOGS, KNOW THE SCORE
+  - bbx update         - SNAG THE LATEST, KEEP IT FRESH
+  - bbx status         - IS IT ALIVE OR TOAST?
+  - bbx tor-run [--no-anonymize] [--no-onion] - GO DARK WITH TOR, SCREW
+    THE SYSTEM
+  - bbx docker-run [<nick>] [-p <port>] - SPIN UP A DOCKER MONSTER, NAME IT
+  - bbx docker-stop <nick> - SHUT THAT DOCKER CRAP DOWN
+  - bbx --version      - FLEX YOUR BUILD NUMBER
+  - bbx --help         - READ THE FUCKING MANUAL, NEWBIE
+
+  EXAMPLE RAMPAGE:
+  $ bbx docker-run hackmaster -p 666
+  - FIRES UP A DOCKERIZED BROWSERBOX ON PORT 666, CALLS IT "HACKMASTER"
+  $ bbx docker-stop hackmaster
+  - BLASTS THAT SHIT TO HELL
+
+  [4] DEPLOYMENT - SLAM IT DOWN LIKE A 300 BAUD JAMMER
+  ----------------------------------------------------
+  GOT NPM? DOCKER? ONE-CLICK CLOUD GIZMOS? BROWSERBOX RUNS EVERYWHERE:
+  - NPM: SHOVE IT IN YOUR NODE GUTS (npm i -g @browserbox/browserbox)
+  - DOCKER: CONTAINERIZE THAT BITCH (CHECK BBX DOCKER COMMANDS)
+  - CLOUD: VULTR, AWS, AZURE, LINODE - ONE CLICK AND YOU'RE ROLLING
+  JUST GET THAT LICENSE KEY OR IT'S CURTAINS AFTER 2 MINS, SUCKER!
+
+  [5] FAQ - STUPID QUESTIONS, KILLER ANSWERS
+  ------------------------------------------
+  Q: WHY A LICENSE, DUDE?
+  A: FULL POWER, SUPPORT, AND WE AIN'T LETTING THIS DIE LIKE NETSCAPE.
+
+  Q: HOW DO I GET ONE?
+  A: sales@dosaygo.com FOR CASH, tally.so/r/nPvb1x FOR FREE WAITLIST.
+
+  Q: CAN I CRACK IT WITHOUT A KEY?
+  A: TRY IT, GET FUCKED. 2 MIN WARNING THEN POOF - GONE.
+
+  [6] SUPPORT - WHEN YOU SCREW THE POOCH (AND YOU WILL)
+  -----------------------------------------------------
+  - ISSUES: github.com/BrowserBox/BrowserBox/issues
+  - EMAIL: support@dosaygo.com
+  - DON'T WHINE IF YOU DIDN'T READ THE SHITTY MANUAL FIRST!
+
+  [7] LEGAL JUNK - READ IT OR EAT IT
+  -----------------------------------
+  (c) 2025 DOSAYGO CORP USA - ALL RIGHTS DAMN WELL RESERVED
+  CODE'S UNDER LICENSE.md - STEAL IT AND WE'LL BREAK YOUR KNEES
+  PRIVACY: dosaygo.com/privacy.txt
+  TERMS: dosaygo.com/terms.txt
+  MESS WITH OUR LICENSING, WE MESS YOU UP - GOT IT?
+
+  * * * * * * * * * * * * * * * * * * * * * *
+  |  BROWSERBOX - JACK IN AND OWN THE NET!  |
+  * * * * * * * * * * * * * * * * * * * * * *
