@@ -1,7 +1,5 @@
 - update bang to remove licenses copied throughout
 
-- fix license no release on stop intermittent issue
-
 - enhance run-tor by displaying the tor service's connectivity status (use the _tor_status_poc :))))
 
 - solidify instance hw id, analytics

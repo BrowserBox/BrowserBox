@@ -25,16 +25,27 @@ fi
 # Ensure pm2 is available
 command -v pm2 &>/dev/null || npm i -g pm2@latest
 
-# Stop browser processes
-kill HUP $(pgrep -x browserbox -u "$(whoami)")
+# Stop main process with a headsup in case pm2 rushes the shutdown
+# because we need to ensure our shutdown tasks like releasing license occur
+bpid="$(pgrep -x browserbox -u "$(whoami)")"
+if [[ -n "$bpid" ]]; then
+  kill HUP $bpid
+fi
+
 pm2 delete run-docspark
 pm2 delete devtools-server
 pm2 delete start_audio
+
 sleep 3
+
 pm2 stop basic-bb-main-service 
+
 sleep 2
+
 pm2 delete basic-bb-main-service
+
 sleep 1
+
 pkill -u "$(whoami)" browserbox*
 pkill -u "$(whoami)" chrome
 pulseaudio -k
