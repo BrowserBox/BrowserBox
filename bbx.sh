@@ -26,7 +26,7 @@ NC='\033[0m'
 BOLD='\033[1m'
 
 # Version
-BBX_VERSION="10.2.0"
+BBX_VERSION="10.2.1"
 branch="fl" # change to main for dist
 banner_color=$CYAN
 
