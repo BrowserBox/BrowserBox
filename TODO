@@ -1,6 +1,4 @@
-- update bang to remove licenses copied throughout
-
-- enhance run-tor by displaying the tor service's connectivity status (use the _tor_status_poc :))))
+- fix multiarch Docker to have a manifest so OCI labels are surfaced properly. 
 
 - solidify instance hw id, analytics
 
