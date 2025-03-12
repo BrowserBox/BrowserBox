@@ -69,7 +69,7 @@ fi
 
 
 if ! test -d "${BBX_HOME}/BrowserBox/node_modules" || ! test -f "${BBX_HOME}/BrowserBox/.bbpro_install_dir"; then
-  if [ $# -gt 0 ] && [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]]; then
+  if [ $# -gt 0 ] && [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]] && [[ "$1" != "docker-"* ]]; then
     banner
     printf "\n${RED}Run ${NC}${BOLD}bbx install${NC}${RED} first.${NC}\n"
     printf "\tYou may need to run bbx uninstall to remove any previous or broken installation.\n"
