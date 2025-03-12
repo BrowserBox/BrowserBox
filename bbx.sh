@@ -1182,27 +1182,20 @@ usage() {
     printf "${BOLD}Commands:${NC}\n"
     printf "  ${GREEN}install${NC}        Install BrowserBox and bbx CLI\n"
     printf "  ${GREEN}uninstall${NC}      Remove BrowserBox, config, and all related files\n"
-    printf "  ${RED}activate${NC}       Activate your copy of BrowserBox by purchasing a license key for 1 or more seats.\n"
-    printf "                   + ${BOLD}bbx activate [seats]${NC}\n"
-    printf "  ${GREEN}setup${NC}          Set up BrowserBox\n"
-    printf "                   + ${BOLD}bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]${NC}\n"
+    printf "  ${RED}activate${NC}       Activate your copy of BrowserBox by purchasing a license key for 1 or more seats\n"
+    printf "                   \t\t\t\t\t${BOLD}bbx activate [seats]${NC}\n"
+    printf "  ${GREEN}setup${NC}          Set up BrowserBox \t\t\t${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>]${NC}\n"
     printf "  ${GREEN}certify${NC}        Certify your license\n"
-    printf "  ${GREEN}run${NC}            Run BrowserBox\n"
-    printf "                   + ${BOLD}bbx run [--port|-p <port>] [--hostname|-h <hostname>]${NC}\n"
+    printf "  ${GREEN}run${NC}            Run BrowserBox \t\t\t${BOLD}bbx run [--port|-p <port>] [--hostname|-h <hostname>]${NC}\n"
     printf "  ${GREEN}stop${NC}           Stop BrowserBox (current user)\n"
-    printf "  ${GREEN}run-as${NC}         Run as a specific user\n"
-    printf "                   + ${BOLD}bbx run-as [--temporary] [username] [port]${NC}\n"
-    printf "  ${GREEN}stop-user${NC}      Stop BrowserBox for a specific user\n"
-    printf "                   + ${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
+    printf "  ${GREEN}run-as${NC}         Run as a specific user \t\t${BOLD}bbx run-as [--temporary] [username] [port]${NC}\n"
+    printf "  ${GREEN}stop-user${NC}      Stop BrowserBox for a specific user \t${BOLD}bbx stop-user <username> [delay_seconds]${NC}\n"
     printf "  ${GREEN}logs${NC}           Show BrowserBox logs\n"
     printf "  ${GREEN}update${NC}         Update BrowserBox\n"
     printf "  ${GREEN}status${NC}         Check BrowserBox status\n"
-    printf "  ${PURPLE}tor-run${NC}        Run BrowserBox with Tor\n"
-    printf "                   + ${BOLD}bbx tor-run [--no-anonymize] [--no-onion]${NC}\n"
-    printf "  ${BLUE}${BOLD}docker-run*${NC}    Run BrowserBox using Docker [nickname] [--port|-p <port>]\n"
-    printf "                   + ${BOLD}bbx docker-run penguin-space123 --port 9992${NC}\n"
-    printf "  ${BLUE}${BOLD}docker-stop*${NC}   Stop a Dockerized BrowserBox [nickname]\n"
-    printf "                   + ${BOLD}bbx docker-stop penguin-space123${NC}\n"
+    printf "  ${PURPLE}tor-run${NC}        Run BrowserBox with Tor \t\t${BOLD}bbx tor-run [--no-anonymize] [--no-onion]${NC}\n"
+    printf "  ${GREEN}docker-run${NC}     Run BrowserBox using Docker \t\t${BOLD}bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
+    printf "  ${GREEN}docker-stop${NC}    Stop a Dockerized BrowserBox \t\t${BOLD}bbx docker-stop <nickname>${NC}\n"
     printf "  ${BLUE}${BOLD}console*${NC}       See and interact with the BrowserBox command stream\n"
     printf "  ${BLUE}${BOLD}automate*${NC}      Run pptr or playwright scripts in a running BrowserBox\n"
     printf "  ${GREEN}--version${NC}      Show bbx version\n"
@@ -1324,6 +1317,8 @@ case "$1" in
     status) shift 1; status "$@";;
     run-as) shift 1; run_as "$@";;
     tor-run) shift 1; banner_color=$PURPLE; tor_run "$@";;
+    docker-run) shift 1; docker_run "$@";;
+    docker-stop) shift 1; docker_stop "$@";;
     --version|-v) shift 1; version "$@";;
     --help|-h) shift 1; usage "$@";;
     "") usage;;
