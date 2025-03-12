@@ -2,6 +2,11 @@
 
 #set -x
 
+if [[ ! -f bbpro_dir ]]; then
+  echo "Not called from BrowserBox directory. Exiting..."
+  exit 0
+fi
+
 unset npm_config_prefix
 export node=$(command -v node)
 export SUDO=$(command -v sudo)
