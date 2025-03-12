@@ -626,6 +626,61 @@ EOF
     draw_box "Login Link: $login_link"
 }
 
+docker_stop() {
+    banner
+    load_config
+
+    local nickname="$1"
+    if [ -z "$nickname" ]; then
+        printf "${RED}Usage: bbx docker-stop <nickname>${NC}\n"
+        exit 1
+    fi
+
+    # Check if nickname exists
+    local container_id=$(jq -r --arg nick "$nickname" '.[$nick].container_id // ""' "$DOCKER_CONTAINERS_FILE")
+    local port=$(jq -r --arg nick "$nickname" '.[$nick].port // ""' "$DOCKER_CONTAINERS_FILE")
+    if [ -z "$container_id" ]; then
+        printf "${RED}No container found with nickname: $nickname${NC}\n"
+        printf "${YELLOW}If you used a raw container ID, run: docker stop <container_id>${NC}\n"
+        exit 1
+    fi
+
+    # Check if container is running
+    if ! $SUDO docker ps -q --filter "id=$container_id" | grep -q .; then
+        printf "${YELLOW}Container $nickname ($container_id) is not running.${NC}\n"
+        # Remove from config anyway
+        local tmp_file=$(mktemp)
+        jq --arg nick "$nickname" 'del(.[$nick])' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
+            mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+        printf "${GREEN}Removed $nickname from tracking.${NC}\n"
+        exit 0
+    fi
+
+    printf "${YELLOW}Stopping BrowserBox for $nickname ($container_id)...${NC}\n"
+    # Run stop_bbpro inside the container
+    $SUDO docker exec "$container_id" bash -c "stop_bbpro" || {
+        printf "${RED}Warning: Failed to run stop_bbpro in container${NC}\n"
+    }
+    printf "${YELLOW}Waiting 10 seconds for license release...${NC}\n"
+    sleep 10
+
+    # Stop the container
+    $SUDO docker stop --time 3 "$container_id" || {
+        printf "${RED}Failed to stop container $container_id${NC}\n"
+        exit 1
+    }
+
+    # Remove from config
+    local tmp_file=$(mktemp)
+    jq --arg nick "$nickname" 'del(.[$nick])' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
+        mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+
+    printf "${GREEN}Dockerized BrowserBox ($nickname) stopped and removed from tracking.${NC}\n"
+    draw_box "Nickname: $nickname"
+    draw_box "Container ID: $container_id"
+    draw_box "Port: $port"
+}
+
 # Helper: Create a master user with passwordless sudo and BB groups
 create_master_user() {
     local user="$1"
