@@ -26,7 +26,7 @@ NC='\033[0m'
 BOLD='\033[1m'
 
 # Version
-BBX_VERSION="10.2.0"
+BBX_VERSION="10.2.1"
 branch="main" # change to main for dist
 banner_color=$CYAN
 
@@ -121,14 +121,43 @@ ensure_nvm() {
     fi
 }
 
-# Get license key, show warning only on new entry
+# Get license key, loop until valid format and bbcertify passes
 get_license_key() {
-    if [ -n "$LICENSE_KEY" ]; then
+    load_config
+    if [ -n "$LICENSE_KEY" ] && bbcertify >/dev/null 2>&1; then
+        # Existing key is valid, no need to prompt
         return
     fi
-    read -r -p "Enter License Key (get one at sales@dosaygo.com): " LICENSE_KEY
-    [ -n "$LICENSE_KEY" ] || { printf "${RED}ERROR: License key required!${NC}\n"; exit 1; }
+
+    local valid_format=false
+    local valid_cert=false
+    while true; do
+        read -r -p "Enter License Key (e.g., U0TZ-GNMD-S889-RETG-YMCH-EAMR-ZOKU-2KRO): " LICENSE_KEY
+        if [ -z "$LICENSE_KEY" ]; then
+            printf "${RED}ERROR: License key cannot be empty. Try again.${NC}\n"
+            continue
+        fi
+
+        # Validate format: 8 stanzas of 4 A-Z0-9 chars, separated by hyphens
+        if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
+            valid_format=true
+        else
+            printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
+            continue
+        fi
+
+        # Validate with bbcertify
+        export LICENSE_KEY
+        if bbcertify >/dev/null 2>&1; then
+            valid_cert=true
+            break
+        else
+            printf "${RED}ERROR: License key failed certification. Check your key and try again.${NC}\n"
+        fi
+    done
+
     printf "${YELLOW}Note: License will be saved unencrypted at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
+    save_config
 }
 
 # Box drawing helper function
@@ -560,15 +589,17 @@ tor_run() {
     printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
     ensure_setup_tor "$(whoami)"
 
-    # Determine Tor group dynamically
+    # Determine Tor group and cookie file dynamically
     if [[ "$(uname -s)" == "Darwin" ]]; then
         TOR_GROUP="admin"  # Homebrew default
-        TORDIR="$(brew --prefix tor)/var/lib/tor"
+        TORDIR="$(brew --prefix)/var/lib/tor"
+        COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
     else
         TORDIR="/var/lib/tor"
-        TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null) 
+        COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+        TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null)
         if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
-          TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1) 
+          TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1)
         fi
         if [[ -z "$TOR_GROUP" ]]; then
           TOR_GROUP="debian-tor"
@@ -607,7 +638,7 @@ tor_run() {
         elif command -v sg >/dev/null 2>&1; then
             # Use safe heredoc with env
             export CONFIG_DIR
-            login_link=$(sg "$TOR_GROUP" -c "env CONFIG_DIR='$CONFIG_DIR' bash" << 'EOF' 
+            login_link=$(sg "$TOR_GROUP" -c "env CONFIG_DIR='$CONFIG_DIR' bash" << 'EOF'
 torbb
 EOF
             )
@@ -616,33 +647,125 @@ EOF
             login_link=$(torbb)
         fi
         [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$CONFIG_DIR/torbb_errors.txt"; exit 1; }
-        BBX_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
+        TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
     else
         for i in {-2..2}; do
             test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
         done
         test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
         bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-        login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$BBX_HOSTNAME:$PORT/login?token=$TOKEN")
+        login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$TEMP_HOSTNAME:$PORT/login?token=$TOKEN")
     fi
     sleep 2
     printf "${GREEN}BrowserBox with Tor started.${NC}\n"
     draw_box "Login Link: $login_link"
+    save_config
+
+    # Tor status display functions
+    get_tor_status() {
+        local cookie_hex=""
+        if [ -r "$COOKIE_AUTH_FILE" ]; then
+            cookie_hex=$(xxd -u -p -c32 "$COOKIE_AUTH_FILE" | tr -d '\n')
+        elif $SUDO test -r "$COOKIE_AUTH_FILE"; then
+            cookie_hex=$($SUDO xxd -u -p -c32 "$COOKIE_AUTH_FILE" | tr -d '\n')
+        fi
+        if [ -z "$cookie_hex" ]; then
+            printf "${YELLOW}Warning: Failed to read Tor cookie${NC}\n" >&2
+            return 1
+        fi
+
+        local cmd=$(printf 'AUTHENTICATE %s\r\nGETINFO status/bootstrap-phase\r\nQUIT\r\n' "$cookie_hex")
+        local response=$(echo -e "$cmd" | nc -w 5 127.0.0.1 9051 2>/dev/null)
+
+        if [ -z "$response" ]; then
+            printf "${YELLOW}Warning: Tor control port not responding${NC}\n" >&2
+            return 1
+        fi
+
+        local status_line=$(echo "$response" | grep "250-status/bootstrap-phase=")
+        if [ -z "$status_line" ]; then
+            printf "${YELLOW}Warning: Invalid response from Tor control port${NC}\n" >&2
+            return 1
+        fi
+
+        if echo "$status_line" | grep -q "SUMMARY=\"Done\""; then
+            echo "100"
+        else
+            local progress=$(echo "$status_line" | grep -o "PROGRESS=[0-9]*" | cut -d'=' -f2)
+            [ -n "$progress" ] && echo "$progress" || echo "0"
+        fi
+    }
+
+    draw_progress_bar() {
+        local percent=$1
+        local bar_width=30
+        local filled=$((percent * bar_width / 100))
+        local empty=$((bar_width - filled))
+
+        printf "\rTor Progress: [${GREEN}"
+        for ((i = 0; i < filled; i++)); do printf "█"; done
+        printf "${NC}"
+        for ((i = 0; i < empty; i++)); do printf " "; done
+        printf "] %3d%%" "$percent"
+    }
+
+    show_tor_status() {
+        local max_attempts=240  # 120 seconds total with 0.5s sleep
+        local poll_interval=10  # Check every 5 seconds (10 * 0.5s)
+        local spinner_chars="|/-\|"
+        local attempts=0
+        local counter=0
+        local spinner_idx=0
+        local percent=0
+
+        printf "${YELLOW}Checking Tor connection status...${NC}\n" >&2
+        while [ $attempts -lt "$max_attempts" ]; do
+            if [ $((counter % 2)) -eq 0 ]; then
+                spinner_idx=$(( (spinner_idx + 1) % 4 ))
+                local spinner="${spinner_chars:$spinner_idx:1}"
+            fi
+
+            if [ $((counter % poll_interval)) -eq 0 ]; then
+                percent=$(get_tor_status) || percent=0
+                attempts=$((attempts + 1))
+                if [ "$percent" -eq 100 ]; then
+                    draw_progress_bar 100
+                    printf "\n${GREEN}Tor is fully connected and ready.${NC}\n" >&2
+                    return 0
+                fi
+            fi
+
+            draw_progress_bar "$percent"
+            sleep 0.5
+            counter=$((counter + 1))
+        done
+
+        draw_progress_bar "$percent"
+        printf "\n${YELLOW}Warning: Tor not fully connected after 120 seconds (progress at $percent%%).${NC}\n" >&2
+        printf "${YELLOW}BrowserBox may still work, but Tor connectivity might be incomplete.${NC}\n" >&2
+        return 1
+    }
+
+    # Display Tor status without restarting
+    if ! [ -r "$COOKIE_AUTH_FILE" ] && ! $SUDO test -r "$COOKIE_AUTH_FILE"; then
+        printf "${YELLOW}Warning: Tor cookie file ($COOKIE_AUTH_FILE) not accessible. Skipping status check.${NC}\n"
+    else
+        show_tor_status
+    fi
 }
 
+# Updated docker_run to rely on saved LICENSE_KEY
 docker_run() {
     banner
-    load_config
-    ensure_deps  # Ensure docker is installed
+    load_config  # Load LICENSE_KEY if it exists
+    ensure_deps
 
-    # Default values
     local nickname=""
     local port="${PORT:-$(find_free_port_block)}"
     local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
     local email="${EMAIL:-$USER@$hostname}"
-    local orig_dir="$PWD"  # Store current working directory
+    local orig_dir="$PWD"
 
-    # Parse arguments
     while [ $# -gt 0 ]; do
         case "$1" in
             --port|-p)
@@ -662,25 +785,21 @@ docker_run() {
         esac
     done
 
-    # Generate random nickname if none provided
     if [ -z "$nickname" ]; then
         nickname=$(head -c8 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c6)
         printf "${YELLOW}No nickname provided. Generated: $nickname${NC}\n"
     fi
 
-    # Validate nickname
     [[ "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]] || {
         printf "${RED}Invalid nickname: Must be alphanumeric with dashes or underscores${NC}\n"
         exit 1
     }
 
-    # Validate port
     if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 4024 ] || [ "$port" -gt 65533 ]; then
         printf "${RED}Invalid port: $port. Must be between 4024 and 65533.${NC}\n"
         exit 1
     fi
 
-    # Check if Docker is installed
     if ! command -v docker >/dev/null 2>&1; then
         printf "${YELLOW}Installing Docker...${NC}\n"
         if [ -f /etc/debian_version ]; then
@@ -700,10 +819,9 @@ docker_run() {
         fi
     fi
 
-    # Get license key
-    get_license_key
+    get_license_key  # Will prompt only if not already set, then save
+    # No need to prompt again; LICENSE_KEY is now set
 
-    # Download docker-run.sh script if not present
     local run_docker_script="$BBX_HOME/BrowserBox/deploy-scripts/run_docker.sh"
     if [ ! -f "$run_docker_script" ]; then
         printf "${YELLOW}Fetching run_docker.sh script...${NC}\n"
@@ -715,16 +833,14 @@ docker_run() {
         chmod +x "$run_docker_script"
     fi
 
-    # Ensure BrowserBox directory exists
     if [ ! -d "$BBX_HOME/BrowserBox" ]; then
         printf "${RED}BrowserBox directory not found. Run 'bbx install' first.${NC}\n"
         exit 1
     fi
 
-    # Run Docker container using heredoc
     printf "${YELLOW}Starting Dockerized BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine’s IP.\n"
     else
         ensure_hosts_entry "$hostname"
     fi
@@ -732,7 +848,7 @@ docker_run() {
     local output_file="$CONFIG_DIR/docker_run_output_$port.txt"
     printf "${YELLOW}Running run_docker.sh, output saved to $output_file${NC}\n"
     bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' orig_dir='$orig_dir' port='$port' hostname='$hostname' email='$email' bash" << 'EOF' > "$output_file" 2>&1
-set -x  # Enable debug output
+set -x
 cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
 yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email"
 cd "$orig_dir" || { echo "Failed to return to $orig_dir"; exit 1; }
@@ -740,35 +856,31 @@ EOF
     local run_status=$?
     if [ $run_status -ne 0 ]; then
         printf "${RED}Docker run failed with status $run_status${NC}\n"
-        printf "${YELLOW}Output file contents:${NC}\n"
         cat "$output_file"
         printf "${YELLOW}Output file retained at $output_file for inspection${NC}\n"
         exit 1
     fi
 
-    # Extract container ID and login link
     local container_id=$(grep "Container ID:" "$output_file" | awk '{print $NF}' | tail -n1)
     local login_link=$(grep "Login Link:" "$output_file" | sed 's/Login Link: //' | tail -n1)
-    printf "${YELLOW}Extracted container_id: '$container_id', login_link: '$login_link'${NC}\n"  # Debug output
     rm -f "$output_file"
 
     [ -n "$container_id" ] || {
-        printf "${RED}Failed to get container ID. Check $output_file if retained${NC}\n"
+        printf "${RED}Failed to get container ID${NC}\n"
         exit 1
     }
     [ -n "$login_link" ] || login_link="https://$hostname:$port/login?token=<check_logs>"
 
-    # Store container info
     local tmp_file=$(mktemp)
     jq --arg nick "$nickname" --arg cid "$container_id" --arg port "$port" \
        '.[$nick] = {"container_id": $cid, "port": $port}' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
        mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
 
-    # Display output
-    printf "${CYAN}Dockerized BrowserBox started.${NC}\n"  # Using your bright cyan!
+    printf "${CYAN}Dockerized BrowserBox started.${NC}\n"
     draw_box "Login Link: $login_link"
     draw_box "Nickname: $nickname"
     draw_box "Stop Command: bbx docker-stop $nickname"
+    save_config  # Ensure config is saved after run
 }
 
 docker_stop() {
@@ -1010,15 +1122,54 @@ uninstall() {
     printf "${GREEN}Uninstall complete. Run 'bbx install' to reinstall if needed.${NC}\n"
 }
 
+# Certify command to allow entering a new license key
 certify() {
     load_config
     printf "${YELLOW}Certifying BrowserBox license...${NC}\n"
-    get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
-    bbcertify || { printf "${RED}Certification failed. Check your license key.${NC}\n"; exit 1; }
+    printf "${BLUE}Enter a new license key to update your existing one, or press Enter to use the current key ($LICENSE_KEY):${NC}\n"
+    local new_key
+    read -r -p "New License Key (leave blank to keep current): " new_key
+
+    if [ -n "$new_key" ]; then
+        LICENSE_KEY="$new_key"
+        local valid_format=false
+        local valid_cert=false
+
+        # Validate format
+        if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
+            valid_format=true
+        else
+            printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
+            exit 1
+        fi
+
+        # Validate with bbcertify
+        export LICENSE_KEY
+        if bbcertify >/dev/null 2>&1; then
+            valid_cert=true
+            save_config
+            printf "${GREEN}New license key certified and saved.${NC}\n"
+        else
+            printf "${RED}ERROR: Certification failed. Check your license key.${NC}\n"
+            exit 1
+        fi
+    else
+        # Use existing key if provided and valid
+        if [ -n "$LICENSE_KEY" ]; then
+            export LICENSE_KEY
+            bbcertify || { printf "${RED}Certification failed. Check your license key.${NC}\n"; exit 1; }
+            printf "${GREEN}Current license key certified.${NC}\n"
+        else
+            printf "${RED}No license key found. Please enter one.${NC}\n"
+            get_license_key
+            export LICENSE_KEY
+            bbcertify || { printf "${RED}Certification failed. Check your license key.${NC}\n"; exit 1; }
+            printf "${GREEN}Certification complete.${NC}\n"
+        fi
+    fi
     save_config
-    printf "${GREEN}Certification complete.${NC}\n"
 }
+
 
 stop() {
     load_config

@@ -394,7 +394,7 @@ const launcher_api = {
       process.on('SIGTERM', undoChrome);
       process.on('SIGINT', undoChrome);
       process.on('beforeExit', undoChrome);
-    }, 1001);
+    }, 2222);
 
     return retVal;
 
@@ -420,10 +420,8 @@ const launcher_api = {
           deathHandlers.set(port, newHandlers);
         }
         await zomb.kill();
-        process.exit(0);
       } catch(e) {
         console.warn("Error on kill chrome on exit", e);
-        process.exit(0);
       }
     }
   },

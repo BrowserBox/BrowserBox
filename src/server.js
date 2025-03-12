@@ -119,7 +119,7 @@
   }
 
   export async function releaseLicense() {
-    await release();
+    return await release();
   }
 
   export async function timedSend(command, port) {

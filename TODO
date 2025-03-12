@@ -1,3 +1,5 @@
+- update bang to remove licenses copied throughout
+
 - enhance run-tor by displaying the tor service's connectivity status (use the _tor_status_poc :))))
 
 - solidify instance hw id, analytics

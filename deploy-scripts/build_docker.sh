@@ -132,11 +132,11 @@ docker buildx build \
   -t ghcr.io/browserbox/browserbox:"${VERSION}" \
   -t dosaygo/browserbox:latest \
   -t dosaygo/browserbox:"${VERSION}" \
-  --label "org.opencontainers.image.title=BrowserBox" \
-  --label "org.opencontainers.image.description=Embeddable remote browser isolation with vettable source - https://dosaygo.com" \
-  --label "org.opencontainers.image.version=${VERSION}" \
-  --label "org.opencontainers.image.authors=DOSAYGO BrowserBox Team <browserbox@dosaygo.com>" \
-  --label "org.opencontainers.image.source=https://github.com/BrowserBox/BrowserBox" \
+  --label org.opencontainers.image.title="BrowserBox" \
+  --label org.opencontainers.image.description="Embeddable remote browser isolation with vettable source - https://dosaygo.com" \
+  --label org.opencontainers.image.version="${VERSION}" \
+  --label org.opencontainers.image.authors="DOSAYGO BrowserBox Team <browserbox@dosaygo.com>" \
+  --label org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox" \
   .
 
 echo "Docker images built and pushed successfully."

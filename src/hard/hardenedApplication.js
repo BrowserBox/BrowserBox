@@ -367,6 +367,8 @@ export class HardenedApplication {
     }
 
     console.log(`License released for instance ${this.#instanceId}.`);
+    
+    return await response.json();
   }
 
   /**
