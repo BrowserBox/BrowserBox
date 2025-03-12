@@ -728,19 +728,18 @@ EOF
     fi
 }
 
+# Updated docker_run to rely on saved LICENSE_KEY
 docker_run() {
     banner
-    load_config
-    ensure_deps  # Ensure docker is installed
+    load_config  # Load LICENSE_KEY if it exists
+    ensure_deps
 
-    # Default values
     local nickname=""
     local port="${PORT:-$(find_free_port_block)}"
     local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
     local email="${EMAIL:-$USER@$hostname}"
-    local orig_dir="$PWD"  # Store current working directory
+    local orig_dir="$PWD"
 
-    # Parse arguments
     while [ $# -gt 0 ]; do
         case "$1" in
             --port|-p)
@@ -760,25 +759,21 @@ docker_run() {
         esac
     done
 
-    # Generate random nickname if none provided
     if [ -z "$nickname" ]; then
         nickname=$(head -c8 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c6)
         printf "${YELLOW}No nickname provided. Generated: $nickname${NC}\n"
     fi
 
-    # Validate nickname
     [[ "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]] || {
         printf "${RED}Invalid nickname: Must be alphanumeric with dashes or underscores${NC}\n"
         exit 1
     }
 
-    # Validate port
     if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 4024 ] || [ "$port" -gt 65533 ]; then
         printf "${RED}Invalid port: $port. Must be between 4024 and 65533.${NC}\n"
         exit 1
     fi
 
-    # Check if Docker is installed
     if ! command -v docker >/dev/null 2>&1; then
         printf "${YELLOW}Installing Docker...${NC}\n"
         if [ -f /etc/debian_version ]; then
@@ -798,10 +793,9 @@ docker_run() {
         fi
     fi
 
-    # Get license key
-    get_license_key
+    get_license_key  # Will prompt only if not already set, then save
+    # No need to prompt again; LICENSE_KEY is now set
 
-    # Download docker-run.sh script if not present
     local run_docker_script="$BBX_HOME/BrowserBox/deploy-scripts/run_docker.sh"
     if [ ! -f "$run_docker_script" ]; then
         printf "${YELLOW}Fetching run_docker.sh script...${NC}\n"
@@ -813,16 +807,14 @@ docker_run() {
         chmod +x "$run_docker_script"
     fi
 
-    # Ensure BrowserBox directory exists
     if [ ! -d "$BBX_HOME/BrowserBox" ]; then
         printf "${RED}BrowserBox directory not found. Run 'bbx install' first.${NC}\n"
         exit 1
     fi
 
-    # Run Docker container using heredoc
     printf "${YELLOW}Starting Dockerized BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine’s IP.\n"
     else
         ensure_hosts_entry "$hostname"
     fi
@@ -830,7 +822,7 @@ docker_run() {
     local output_file="$CONFIG_DIR/docker_run_output_$port.txt"
     printf "${YELLOW}Running run_docker.sh, output saved to $output_file${NC}\n"
     bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' orig_dir='$orig_dir' port='$port' hostname='$hostname' email='$email' bash" << 'EOF' > "$output_file" 2>&1
-set -x  # Enable debug output
+set -x
 cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
 yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email"
 cd "$orig_dir" || { echo "Failed to return to $orig_dir"; exit 1; }
@@ -838,36 +830,31 @@ EOF
     local run_status=$?
     if [ $run_status -ne 0 ]; then
         printf "${RED}Docker run failed with status $run_status${NC}\n"
-        printf "${YELLOW}Output file contents:${NC}\n"
         cat "$output_file"
         printf "${YELLOW}Output file retained at $output_file for inspection${NC}\n"
         exit 1
     fi
 
-    # Extract container ID and login link
     local container_id=$(grep "Container ID:" "$output_file" | awk '{print $NF}' | tail -n1)
     local login_link=$(grep "Login Link:" "$output_file" | sed 's/Login Link: //' | tail -n1)
-    printf "${YELLOW}Extracted container_id: '$container_id', login_link: '$login_link'${NC}\n"  # Debug output
     rm -f "$output_file"
 
     [ -n "$container_id" ] || {
-        printf "${RED}Failed to get container ID. Check $output_file if retained${NC}\n"
+        printf "${RED}Failed to get container ID${NC}\n"
         exit 1
     }
     [ -n "$login_link" ] || login_link="https://$hostname:$port/login?token=<check_logs>"
 
-    # Store container info
     local tmp_file=$(mktemp)
     jq --arg nick "$nickname" --arg cid "$container_id" --arg port "$port" \
        '.[$nick] = {"container_id": $cid, "port": $port}' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
        mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
 
-    # Display output
-    printf "${CYAN}Dockerized BrowserBox started.${NC}\n"  # Using your bright cyan!
+    printf "${CYAN}Dockerized BrowserBox started.${NC}\n"
     draw_box "Login Link: $login_link"
     draw_box "Nickname: $nickname"
     draw_box "Stop Command: bbx docker-stop $nickname"
-    save_config
+    save_config  # Ensure config is saved after run
 }
 
 docker_stop() {
