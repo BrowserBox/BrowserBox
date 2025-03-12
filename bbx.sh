@@ -626,6 +626,130 @@ EOF
     draw_box "Login Link: $login_link"
 }
 
+docker_run() {
+    banner
+    load_config
+    ensure_deps  # Ensure docker is installed
+
+    # Default values
+    local nickname=""
+    local port="${PORT:-$(find_free_port_block)}"
+    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+    local email="${EMAIL:-}"
+
+    # Parse arguments
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --port|-p)
+                port="$2"
+                shift 2
+                ;;
+            *)
+                if [ -z "$nickname" ]; then
+                    nickname="$1"
+                else
+                    printf "${RED}Unknown or extra argument: $1${NC}\n"
+                    printf "Usage: bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
+                    exit 1
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    # Validate nickname (optional)
+    [ -n "$nickname" ] && [[ "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]] || {
+        printf "${RED}Invalid nickname: Must be alphanumeric with dashes or underscores${NC}\n"
+        exit 1
+    }
+
+    # Validate port
+    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 4024 ] || [ "$port" -gt 65533 ]; then
+        printf "${RED}Invalid port: $port. Must be between 4024 and 65533.${NC}\n"
+        exit 1
+    }
+
+    # Check if Docker is installed
+    if ! command -v docker >/dev/null 2>&1; then
+        printf "${YELLOW}Installing Docker...${NC}\n"
+        if [ -f /etc/debian_version ]; then
+            $SUDO apt-get update && $SUDO apt-get install -y docker.io
+            $SUDO systemctl start docker
+            $SUDO systemctl enable docker
+        elif [ -f /etc/redhat-release ]; then
+            $SUDO yum install -y docker || $SUDO dnf install -y docker
+            $SUDO systemctl start docker
+            $SUDO systemctl enable docker
+        elif [ "$(uname -s)" = "Darwin" ]; then
+            printf "${RED}Please install Docker Desktop manually on macOS: https://docs.docker.com/desktop/mac/install/${NC}\n"
+            exit 1
+        else
+            printf "${RED}Unsupported OS. Install Docker manually: https://docs.docker.com/get-docker/${NC}\n"
+            exit 1
+        fi
+    fi
+
+    # Get license key
+    get_license_key
+
+    # Download run_docker script if not present
+    local run_docker_script="$BBX_HOME/BrowserBox/deploy-scripts/run_docker"
+    if [ ! -f "$run_docker_script" ]; then
+        printf "${YELLOW}Fetching run_docker script...${NC}\n"
+        mkdir -p "$BBX_HOME/BrowserBox/deploy-scripts"
+        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker" -o "$run_docker_script" || {
+            printf "${RED}Failed to download run_docker script${NC}\n"
+            exit 1
+        }
+        chmod +x "$run_docker_script"
+    fi
+
+    # Run Docker container
+    printf "${YELLOW}Starting Dockerized BrowserBox on $hostname:$port...${NC}\n"
+    if ! is_local_hostname "$hostname"; then
+        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+    else
+        ensure_hosts_entry "$hostname"
+    fi
+
+    # Export LICENSE_KEY and run the script
+    export LICENSE_KEY="$LICENSE_KEY"
+    local output_file="$CONFIG_DIR/docker_run_output_$port.txt"
+    "$run_docker_script" "$port" "$hostname" "$email" > "$output_file" 2>&1 || {
+        printf "${RED}Docker run failed${NC}\n"
+        cat "$output_file"
+        rm -f "$output_file"
+        exit 1
+    }
+
+    # Extract container ID and login link
+    local container_id=$(grep "Container ID:" "$output_file" | awk '{print $NF}')
+    local login_link=$(grep "Login Link:" "$output_file" | sed 's/Login Link: //')
+    rm -f "$output_file"
+
+    [ -n "$container_id" ] || { printf "${RED}Failed to get container ID${NC}\n"; exit 1; }
+    [ -n "$login_link" ] || login_link="https://$hostname:$port/login?token=<check_logs>"
+
+    # Store container info
+    if [ -n "$nickname" ]; then
+        local tmp_file=$(mktemp)
+        jq --arg nick "$nickname" --arg cid "$container_id" --arg port "$port" \
+           '.[$nick] = {"container_id": $cid, "port": $port}' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
+           mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+    fi
+
+    # Display output
+    printf "${GREEN}Dockerized BrowserBox started.${NC}\n"
+    draw_box "Login Link: $login_link"
+    if [ -n "$nickname" ]; then
+        draw_box "Nickname: $nickname"
+        draw_box "Stop Command: bbx docker-stop $nickname"
+    else
+        draw_box "Container ID: $container_id"
+        draw_box "Stop Command: docker stop $container_id"
+    fi
+}
+
 docker_stop() {
     banner
     load_config
