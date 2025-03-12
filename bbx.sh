@@ -27,7 +27,7 @@ BOLD='\033[1m'
 
 # Version
 BBX_VERSION="10.1.0"
-branch="main" # change to main for dist
+branch="docker-imps" # change to main for dist
 banner_color=$CYAN
 
 # Default paths
@@ -639,7 +639,7 @@ docker_run() {
     local nickname=""
     local port="${PORT:-$(find_free_port_block)}"
     local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
-    local email="${EMAIL:-}"
+    local email="${EMAIL:-$USER@$hostname}"
     local orig_dir="$PWD"  # Store current working directory
 
     # Parse arguments
@@ -664,7 +664,6 @@ docker_run() {
 
     # Generate random nickname if none provided
     if [ -z "$nickname" ]; then
-        # Generate a random string with ~34 bits of entropy (e.g., 6 base64 chars from urandom)
         nickname=$(head -c8 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c6)
         printf "${YELLOW}No nickname provided. Generated: $nickname${NC}\n"
     fi
@@ -704,13 +703,13 @@ docker_run() {
     # Get license key
     get_license_key
 
-    # Download run_docker script if not present
+    # Download docker-run.sh script if not present
     local run_docker_script="$BBX_HOME/BrowserBox/deploy-scripts/run_docker.sh"
     if [ ! -f "$run_docker_script" ]; then
-        printf "${YELLOW}Fetching run_docker script...${NC}\n"
+        printf "${YELLOW}Fetching run_docker.sh script...${NC}\n"
         mkdir -p "$BBX_HOME/BrowserBox/deploy-scripts"
         curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker.sh" -o "$run_docker_script" || {
-            printf "${RED}Failed to download run_docker script${NC}\n"
+            printf "${RED}Failed to download run_docker.sh script${NC}\n"
             exit 1
         }
         chmod +x "$run_docker_script"
@@ -730,26 +729,33 @@ docker_run() {
         ensure_hosts_entry "$hostname"
     fi
 
-    export LICENSE_KEY="$LICENSE_KEY"
     local output_file="$CONFIG_DIR/docker_run_output_$port.txt"
-    bash <<EOF #> "$output_file" 2>&1
+    printf "${YELLOW}Running run_docker.sh, output saved to $output_file${NC}\n"
+    bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' orig_dir='$orig_dir' port='$port' hostname='$hostname' email='$email' bash" << 'EOF' #> "$output_file" 2>&1
+set -x  # Enable debug output
 cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
 yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email"
 cd "$orig_dir" || { echo "Failed to return to $orig_dir"; exit 1; }
 EOF
-    [ $? -eq 0 ] || {
-        printf "${RED}Docker run failed${NC}\n"
+    local run_status=$?
+    if [ $run_status -ne 0 ]; then
+        printf "${RED}Docker run failed with status $run_status${NC}\n"
+        printf "${YELLOW}Output file contents:${NC}\n"
         cat "$output_file"
-        rm -f "$output_file"
+        printf "${YELLOW}Output file retained at $output_file for inspection${NC}\n"
         exit 1
-    }
+    fi
 
     # Extract container ID and login link
-    local container_id=$(grep "Container ID:" "$output_file" | awk '{print $NF}')
-    local login_link=$(grep "Login Link:" "$output_file" | sed 's/Login Link: //')
+    local container_id=$(grep "Container ID:" "$output_file" | awk '{print $NF}' | tail -n1)
+    local login_link=$(grep "Login Link:" "$output_file" | sed 's/Login Link: //' | tail -n1)
+    printf "${YELLOW}Extracted container_id: '$container_id', login_link: '$login_link'${NC}\n"  # Debug output
     rm -f "$output_file"
 
-    [ -n "$container_id" ] || { printf "${RED}Failed to get container ID${NC}\n"; exit 1; }
+    [ -n "$container_id" ] || {
+        printf "${RED}Failed to get container ID. Check $output_file if retained${NC}\n"
+        exit 1
+    }
     [ -n "$login_link" ] || login_link="https://$hostname:$port/login?token=<check_logs>"
 
     # Store container info
@@ -759,7 +765,7 @@ EOF
        mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
 
     # Display output
-    printf "${GREEN}Dockerized BrowserBox started.${NC}\n"
+    printf "${CYAN}Dockerized BrowserBox started.${NC}\n"  # Using your bright cyan!
     draw_box "Login Link: $login_link"
     draw_box "Nickname: $nickname"
     draw_box "Stop Command: bbx docker-stop $nickname"
