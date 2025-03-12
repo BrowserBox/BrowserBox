@@ -535,7 +535,14 @@
       console.log(`Shutdown requested. Signal: ${sig}`);
       if ( shuttingDown ) return;
       shuttingDown = true;
-      releaseLicense().then(() => setTimeout(() => process.exit(0), 1111));
+      let markOtherTasksComplete;
+      const otherTasks = new Promise(res => markOtherTasksComplete = res);
+      releaseLicense().then(async resp => {
+        console.log(resp);
+        await otherTasks;
+        setTimeout(() => process.exit(0), 1111);
+      });
+
       setTimeout(() => process.exit(0), 22222);
       server.close(() => console.info(`Server closed on SIGINT`));
       peers.forEach(peer => {
@@ -557,6 +564,7 @@
           DEBUG.socDebug && console.warn(`MAIN SERVER: port ${server_port}, error closing socket`, e) 
         }
       });
+      markOtherTasksComplete();
     };
 
     server.on('connection', socket => {

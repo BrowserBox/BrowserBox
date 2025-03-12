@@ -26,12 +26,13 @@ fi
 command -v pm2 &>/dev/null || npm i -g pm2@latest
 
 # Stop browser processes
+kill -HUP $(pgrep -x browserbox -u "$(whoami)")
 pm2 delete run-docspark
 pm2 delete devtools-server
 pm2 delete start_audio
 pm2 delete basic-bb-main-service
 
-sleep 1
+sleep 3
 pkill -u "$(whoami)" browserbox*
 pkill -u "$(whoami)" chrome
 pulseaudio -k
