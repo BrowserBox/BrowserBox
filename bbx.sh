@@ -26,8 +26,8 @@ NC='\033[0m'
 BOLD='\033[1m'
 
 # Version
-BBX_VERSION="10.1.0"
-branch="docker-imps" # change to main for dist
+BBX_VERSION="10.1.5"
+branch="main" # change to main for dist
 banner_color=$CYAN
 
 # Default paths
