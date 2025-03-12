@@ -1,3 +1,7 @@
+- fully vamp windows support !!! :P ;) xx ;p
+
+- fix bbx bash curl link in readme, branch is incorrect
+
 - fix multiarch Docker to have a manifest so OCI labels are surfaced properly. 
 
 - solidify instance hw id, analytics
