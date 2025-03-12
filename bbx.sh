@@ -16,18 +16,19 @@ fi
 
 # ANSI color codes
 RED='\033[0;31m'
-GREEN='\033[0;32m'
+GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
-PURPLE='\033[95m'  # Bright magenta, defined as purple
-BLUE='\033[0;34m'
-PINK='\033[95m'    # Bright magenta, closest to pink in ANSI
+CYAN='\033[1;36m'
+PURPLE='\033[1;95m'  # Bright magenta, defined as purple
+BLUE='\033[1;34m'
+PINK='\033[1;95m'    # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
 BOLD='\033[1m'
 
 # Version
 BBX_VERSION="10.1.0"
 branch="main" # change to main for dist
-banner_color=$BLUE
+banner_color=$CYAN
 
 # Default paths
 BBX_HOME="${HOME}/.bbx"
@@ -40,6 +41,9 @@ CONFIG_DIR="$HOME/.config/dosyago/bbpro"
 CONFIG_FILE="$CONFIG_DIR/config"
 TICKET_FILE="$CONFIG_DIR/tickets/ticket.json"
 [ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
+
+DOCKER_CONTAINERS_FILE="$CONFIG_DIR/docker_containers.json"
+[ ! -f "$DOCKER_CONTAINERS_FILE" ] && echo "{}" > "$DOCKER_CONTAINERS_FILE"
 
 # ASCII Banner
 banner() {
@@ -636,6 +640,7 @@ docker_run() {
     local port="${PORT:-$(find_free_port_block)}"
     local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
     local email="${EMAIL:-}"
+    local orig_dir="$PWD"  # Store current working directory
 
     # Parse arguments
     while [ $# -gt 0 ]; do
@@ -657,8 +662,15 @@ docker_run() {
         esac
     done
 
-    # Validate nickname (optional)
-    [ -n "$nickname" ] && [[ "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]] || {
+    # Generate random nickname if none provided
+    if [ -z "$nickname" ]; then
+        # Generate a random string with ~34 bits of entropy (e.g., 6 base64 chars from urandom)
+        nickname=$(head -c8 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c6)
+        printf "${YELLOW}No nickname provided. Generated: $nickname${NC}\n"
+    fi
+
+    # Validate nickname
+    [[ "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]] || {
         printf "${RED}Invalid nickname: Must be alphanumeric with dashes or underscores${NC}\n"
         exit 1
     }
@@ -667,7 +679,7 @@ docker_run() {
     if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 4024 ] || [ "$port" -gt 65533 ]; then
         printf "${RED}Invalid port: $port. Must be between 4024 and 65533.${NC}\n"
         exit 1
-    }
+    fi
 
     # Check if Docker is installed
     if ! command -v docker >/dev/null 2>&1; then
@@ -704,7 +716,13 @@ docker_run() {
         chmod +x "$run_docker_script"
     fi
 
-    # Run Docker container
+    # Ensure BrowserBox directory exists
+    if [ ! -d "$BBX_HOME/BrowserBox" ]; then
+        printf "${RED}BrowserBox directory not found. Run 'bbx install' first.${NC}\n"
+        exit 1
+    fi
+
+    # Run Docker container using heredoc
     printf "${YELLOW}Starting Dockerized BrowserBox on $hostname:$port...${NC}\n"
     if ! is_local_hostname "$hostname"; then
         printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
@@ -712,10 +730,14 @@ docker_run() {
         ensure_hosts_entry "$hostname"
     fi
 
-    # Export LICENSE_KEY and run the script
     export LICENSE_KEY="$LICENSE_KEY"
     local output_file="$CONFIG_DIR/docker_run_output_$port.txt"
-    "$run_docker_script" "$port" "$hostname" "$email" > "$output_file" 2>&1 || {
+    $SUDO bash <<EOF > "$output_file" 2>&1
+cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
+./deploy-scripts/run_docker "$port" "$hostname" "$email"
+cd "$orig_dir" || { echo "Failed to return to $orig_dir"; exit 1; }
+EOF
+    [ $? -eq 0 ] || {
         printf "${RED}Docker run failed${NC}\n"
         cat "$output_file"
         rm -f "$output_file"
@@ -731,23 +753,16 @@ docker_run() {
     [ -n "$login_link" ] || login_link="https://$hostname:$port/login?token=<check_logs>"
 
     # Store container info
-    if [ -n "$nickname" ]; then
-        local tmp_file=$(mktemp)
-        jq --arg nick "$nickname" --arg cid "$container_id" --arg port "$port" \
-           '.[$nick] = {"container_id": $cid, "port": $port}' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
-           mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
-    fi
+    local tmp_file=$(mktemp)
+    jq --arg nick "$nickname" --arg cid "$container_id" --arg port "$port" \
+       '.[$nick] = {"container_id": $cid, "port": $port}' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
+       mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
 
     # Display output
     printf "${GREEN}Dockerized BrowserBox started.${NC}\n"
     draw_box "Login Link: $login_link"
-    if [ -n "$nickname" ]; then
-        draw_box "Nickname: $nickname"
-        draw_box "Stop Command: bbx docker-stop $nickname"
-    else
-        draw_box "Container ID: $container_id"
-        draw_box "Stop Command: docker stop $container_id"
-    fi
+    draw_box "Nickname: $nickname"
+    draw_box "Stop Command: bbx docker-stop $nickname"
 }
 
 docker_stop() {
@@ -1361,8 +1376,8 @@ usage() {
     printf "${BOLD}Commands:${NC}\n"
     printf "  ${GREEN}install${NC}        Install BrowserBox and bbx CLI\n"
     printf "  ${GREEN}uninstall${NC}      Remove BrowserBox, config, and all related files\n"
-    printf "  ${RED}activate${NC}       Activate your copy of BrowserBox by purchasing a license key for 1 or more seats\n"
-    printf "                   \t\t\t\t\t${BOLD}bbx activate [seats]${NC}\n"
+    printf "  ${CYAN}activate${NC}       Activate your copy of BrowserBox by purchasing a license key for 1 or more seats\n"
+    printf "                   \t\t\t\t\t${BOLD}${CYAN}bbx activate [seats]${NC}\n"
     printf "  ${GREEN}setup${NC}          Set up BrowserBox \t\t\t${BOLD}bbx setup [--port|-p <p>] [--hostname|-h <h>] [--token|-t <t>]${NC}\n"
     printf "  ${GREEN}certify${NC}        Certify your license\n"
     printf "  ${GREEN}run${NC}            Run BrowserBox \t\t\t${BOLD}bbx run [--port|-p <port>] [--hostname|-h <hostname>]${NC}\n"
