@@ -535,6 +535,8 @@
       console.log(`Shutdown requested. Signal: ${sig}`);
       if ( shuttingDown ) return;
       shuttingDown = true;
+      releaseLicense().then(() => setTimeout(() => process.exit(0), 1111));
+      setTimeout(() => process.exit(0), 22222);
       server.close(() => console.info(`Server closed on SIGINT`));
       peers.forEach(peer => {
         try {
@@ -555,8 +557,6 @@
           DEBUG.socDebug && console.warn(`MAIN SERVER: port ${server_port}, error closing socket`, e) 
         }
       });
-      await releaseLicense();
-      process.exit(0);
     };
 
     server.on('connection', socket => {
