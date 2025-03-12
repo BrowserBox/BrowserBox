@@ -705,11 +705,11 @@ docker_run() {
     get_license_key
 
     # Download run_docker script if not present
-    local run_docker_script="$BBX_HOME/BrowserBox/deploy-scripts/run_docker"
+    local run_docker_script="$BBX_HOME/BrowserBox/deploy-scripts/run_docker.sh"
     if [ ! -f "$run_docker_script" ]; then
         printf "${YELLOW}Fetching run_docker script...${NC}\n"
         mkdir -p "$BBX_HOME/BrowserBox/deploy-scripts"
-        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker" -o "$run_docker_script" || {
+        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker.sh" -o "$run_docker_script" || {
             printf "${RED}Failed to download run_docker script${NC}\n"
             exit 1
         }
@@ -732,9 +732,9 @@ docker_run() {
 
     export LICENSE_KEY="$LICENSE_KEY"
     local output_file="$CONFIG_DIR/docker_run_output_$port.txt"
-    $SUDO bash <<EOF > "$output_file" 2>&1
+    bash <<EOF #> "$output_file" 2>&1
 cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
-./deploy-scripts/run_docker "$port" "$hostname" "$email"
+yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email"
 cd "$orig_dir" || { echo "Failed to return to $orig_dir"; exit 1; }
 EOF
     [ $? -eq 0 ] || {
