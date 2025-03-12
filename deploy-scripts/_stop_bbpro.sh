@@ -29,7 +29,7 @@ command -v pm2 &>/dev/null || npm i -g pm2@latest
 # because we need to ensure our shutdown tasks like releasing license occur
 bpid="$(pgrep -x browserbox -u "$(whoami)")"
 if [[ -n "$bpid" ]]; then
-  kill HUP $bpid
+  kill -HUP $bpid
 fi
 
 pm2 delete run-docspark
