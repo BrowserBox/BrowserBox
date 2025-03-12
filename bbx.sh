@@ -29,18 +29,40 @@ BBX_VERSION="10.1.0"
 branch="main" # change to main for dist
 banner_color=$BLUE
 
-# Sudo check
-SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
-if [ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null; then
-    printf "${RED}ERROR: Requires root or passwordless sudo. Edit /etc/sudoers with visudo if needed.${NC}\n"
-    exit 1
-fi
-
 # Default paths
 BBX_HOME="${HOME}/.bbx"
 COMMAND_DIR=""
 REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
+
+# Config file (secondary to test.env and login.link)
+CONFIG_DIR="$HOME/.config/dosyago/bbpro"
+CONFIG_FILE="$CONFIG_DIR/config"
+TICKET_FILE="$CONFIG_DIR/tickets/ticket.json"
+[ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
+
+# ASCII Banner
+banner() {
+    printf "${banner_color}${BOLD}"
+    cat << 'EOF'
+   ____                                  ____
+  | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
+  |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
+  | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
+  |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
+
+EOF
+    printf "${NC}\n"
+}
+
+# Sudo check
+SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
+if ([ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null); then
+    banner
+    printf "${RED}Warning: ${NC}${BOLD}bbx${NC}${RED} is easier to use with passwordless sudo, and may misfunction without it.${NC}\n\tEdit /etc/sudoers with visudo to enable.\n"
+    exit 1
+fi
+
 
 if ! test -d "${BBX_HOME}/BrowserBox/node_modules" || ! test -f "${BBX_HOME}/BrowserBox/.bbpro_install_dir"; then
   if [ $# -gt 0 ] && [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]]; then
@@ -67,26 +89,6 @@ else
   horizontal=$(printf "\xe2\x94\x80")  # Horizontal line
   vertical=$(printf "\xe2\x94\x82")    # Vertical line
 fi
-
-# ASCII Banner
-banner() {
-    printf "${banner_color}${BOLD}"
-    cat << 'EOF'
-   ____                                  ____
-  | __ ) _ __ _____      _____  ___ _ __| __ )  _____  __
-  |  _ \| '__/ _ \ \ /\ / / __|/ _ \ '__|  _ \ / _ \ \/ /
-  | |_) | | | (_) \ V  V /\__ \  __/ |  | |_) | (_) >  <
-  |____/|_|  \___/ \_/\_/ |___/\___|_|  |____/ \___/_/\_\
-
-EOF
-    printf "${NC}\n"
-}
-
-# Config file (secondary to test.env and login.link)
-CONFIG_DIR="$HOME/.config/dosyago/bbpro"
-CONFIG_FILE="$CONFIG_DIR/config"
-TICKET_FILE="$CONFIG_DIR/tickets/ticket.json"
-[ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
 
 load_config() {
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
