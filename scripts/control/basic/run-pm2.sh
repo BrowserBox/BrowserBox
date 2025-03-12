@@ -58,7 +58,7 @@ pm2 start ./scripts/global/start_audio.sh -- $1
 echo "Starting main bbpro service..."
 echo "Install dir: $INSTALL_DIR"
 cd "$INSTALL_DIR"
-pm2 start ./scripts/basic-bb-main-service.sh -- $1
+pm2 start ./scripts/basic-bb-main-service.sh --kill-timeout 5000 --restart-delay 5000 -- $1
 
 echo "Starting secure remote devtools service..."
 cd src/services/pool/crdp-secure-proxy-server

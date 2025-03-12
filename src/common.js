@@ -322,12 +322,13 @@ export const FLASH_FORMATS = new Set([
   'jsfl',
 ]);
 export const CONFIG = Object.freeze({
+  tryRestartingChrome: false,
   useRedirectBlock: true,
   blockedRedirectLocation: 'https://browse.cloudtabs.net/blocked',
   isCT,
   hostWL,
   expiryTimeFilePath,
-  homePage: 'https://bing.com',
+  homePage: 'https://chatgpt.com',
   BINDING_NAME: 'bb',
   devapi: true,
   inspectMode: false, // right now Overlay.setInspectMode does nothing, circle back to this

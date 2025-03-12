@@ -78,7 +78,7 @@ export async function applicationCheck() {
 }
 
 export async function release() {
-  await hardenedApp.releaseLicense();
+  return await hardenedApp.releaseLicense();
 }
 
 // Export the runApplication function

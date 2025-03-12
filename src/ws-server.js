@@ -532,40 +532,58 @@
     });
     let shuttingDown = false;
     const shutDown = async (sig) => {
-      console.log(`Shutdown requested. Signal: ${sig}`);
-      if ( shuttingDown ) return;
-      shuttingDown = true;
-      let markOtherTasksComplete;
-      const otherTasks = new Promise(res => markOtherTasksComplete = res);
-      releaseLicense().then(async resp => {
-        console.log(resp);
-        await otherTasks;
-        setTimeout(() => process.exit(0), 1111);
-      });
+      console.log(`Shutdown requested. Signal: ${sig}`, {shuttingDown});
+      try {
+        if ( shuttingDown ) return;
+        shuttingDown = true;
+        let markOtherTasksComplete;
+        let markLicenseReleased;
+        let licenseReleased = new Promise(res => markLicenseReleased = res);
+        const otherTasks = new Promise(res => markOtherTasksComplete = res);
+        console.log('Releasing license');
+        releaseLicense().then(async resp => {
+          console.log(resp);
+          markLicenseReleased();
+          await otherTasks;
+          console.log('Queueing exit for 1 second later');
+          setTimeout(() => process.exit(0), 1111);
+        });
 
-      setTimeout(() => process.exit(0), 22222);
-      server.close(() => console.info(`Server closed on SIGINT`));
-      peers.forEach(peer => {
-        try {
-          peer.destroy(`Server going down.`);
-        } catch(e) {
-          DEBUG.debugConnect && console.info(`Error closing peer`, e, peer);
-        }
-      });
-      websockets.forEach(ws => {
-        try {
-          ws.close(1001, "server going down");
-        } catch(e) {
-          DEBUG.debugConnect && console.info(`Error closing websocket`, e, ws);
-        }
-      });
-      sockets.forEach(socket => {
-        try { socket.destroy() } catch(e) { 
-          DEBUG.socDebug && console.warn(`MAIN SERVER: port ${server_port}, error closing socket`, e) 
-        }
-      });
-      markOtherTasksComplete();
+        setTimeout(() => {
+          console.warn(`We do not terminate normally within more than 20 seconds, so shutting down now.`);
+          return process.exit(0);
+        }, 22222);
+
+        server.close(() => console.info(`Server closed on ${sig}`));
+        peers.forEach(peer => {
+          try {
+            peer.destroy(`Server going down.`);
+          } catch(e) {
+            DEBUG.debugConnect && console.info(`Error closing peer`, e, peer);
+          }
+        });
+        websockets.forEach(ws => {
+          try {
+            ws.close(1001, "server going down");
+          } catch(e) {
+            DEBUG.debugConnect && console.info(`Error closing websocket`, e, ws);
+          }
+        });
+        sockets.forEach(socket => {
+          try { socket.destroy() } catch(e) { 
+            DEBUG.socDebug && console.warn(`MAIN SERVER: port ${server_port}, error closing socket`, e) 
+          }
+        });
+        console.log('Complete shutdown stanza');
+        markOtherTasksComplete();
+        console.log('Waiting license released...');
+        await licenseReleased;
+        console.log('License is released.');
+      } catch(e) {
+        console.warn(`Error during shutdown`, e);
+      }
     };
+    globalThis.shutDown = shutDown;
 
     server.on('connection', socket => {
       sockets.add(socket);
@@ -615,36 +633,40 @@
         zl.life.onDeath(zombie_port,  () => {
           console.info("Zombie/chrome closed or crashed.");
           zl.act.deleteConnection(zombie_port);
-          if ( fs.existsSync(path.join(os.homedir(), 'restart_chrome')) ) {
-            fs.unlinkSync(path.join(os.homedir(), 'restart_chrome'));
-            console.log(`Restarting chrome on request`);
-            const MAX_RETRIES = 10;
-            let count = 0;
+          if ( CONFIG.tryRestartingChrome ) {
+            if ( fs.existsSync(path.join(os.homedir(), 'restart_chrome')) ) {
+              fs.unlinkSync(path.join(os.homedir(), 'restart_chrome'));
+              console.log(`Restarting chrome on request`);
+              const MAX_RETRIES = 10;
+              let count = 0;
 
-            restart();
+              restart();
 
-            async function restart() {
-              let port;
-              try {
-                ({port} = await zl.life.newZombie({port: zombie_port})); 
-              } catch(e) {
-                console.warn(`Error starting chrome`);
-                zl.life.kill(zombie_port);
-              }
-              if ( port != zombie_port ) {
-                console.log(`Zombie port mismatch`, {zombie_port, acquired_port: port});
-                if ( port ) { 
-                  zl.life.kill(port);
+              async function restart() {
+                let port;
+                try {
+                  ({port} = await zl.life.newZombie({port: zombie_port})); 
+                } catch(e) {
+                  console.warn(`Error starting chrome`);
+                  zl.life.kill(zombie_port);
                 }
-                await sleep(500);
-                if ( count++ < MAX_RETRIES ) {
-                  console.log(`Retrying...`);
-                  setTimeout(() => restart(), 0);
-                } else {
-                  console.warn(new Error(`Failed to restart chrome. Retry count exceeded`));
+                if ( port != zombie_port ) {
+                  console.log(`Zombie port mismatch`, {zombie_port, acquired_port: port});
+                  if ( port ) { 
+                    zl.life.kill(port);
+                  }
+                  await sleep(500);
+                  if ( count++ < MAX_RETRIES ) {
+                    console.log(`Retrying...`);
+                    setTimeout(() => restart(), 0);
+                  } else {
+                    console.warn(new Error(`Failed to restart chrome. Retry count exceeded`));
+                  }
                 }
               }
             }
+          } else {
+            shutDown();
           }
           //console.log("Closing as zombie crashed.");
           //ws.close();
@@ -970,7 +992,7 @@
     server.listen(server_port, async err => {
       if ( err ) {
         console.error('err', err);
-        process.exit(0);
+        shutDown();
       } else {
         addHandlers();
         DEBUG.val && console.log({uptime:new Date, message:'websocket server up', server_port});
@@ -1304,7 +1326,7 @@
             }
           } else {
             DEBUG.debugRestart && console.log(`Is not pm2. Exiting process`);
-            process.exit(0);
+            shutDown();
           }
         });
       // app integrity check
@@ -1382,12 +1404,11 @@
         if ( ! socket && websockets.size === 0 && zl.act.zombieIsDead(zombie_port) ) {
           console.log(`Zombie Chrome is dead and there are no clients. Shutting down.`);
           try {
-            process.kill(process.pid, 'SIGINT');
             shutDown();
           } catch(e2) {
             console.warn(`error exit`, e2);
           }
-          process.exit(0);
+          shutDown();
         }
       }
     }
