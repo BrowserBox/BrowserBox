@@ -123,12 +123,15 @@ ensure_nvm() {
 
 # Get license key, show warning only on new entry
 get_license_key() {
+    load_config
     if [ -n "$LICENSE_KEY" ]; then
+        save_config
         return
     fi
     read -r -p "Enter License Key (get one at sales@dosaygo.com): " LICENSE_KEY
     [ -n "$LICENSE_KEY" ] || { printf "${RED}ERROR: License key required!${NC}\n"; exit 1; }
     printf "${YELLOW}Note: License will be saved unencrypted at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
+    save_config
 }
 
 # Box drawing helper function
@@ -618,18 +621,19 @@ EOF
             login_link=$(torbb)
         fi
         [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$CONFIG_DIR/torbb_errors.txt"; exit 1; }
-        BBX_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
+        TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
     else
         for i in {-2..2}; do
             test_port_access $((PORT+i)) || { printf "${RED}Adjust firewall for ports $((PORT-2))-$((PORT+2))/tcp${NC}\n"; exit 1; }
         done
         test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
         bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-        login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$BBX_HOSTNAME:$PORT/login?token=$TOKEN")
+        login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$TEMP_HOSTNAME:$PORT/login?token=$TOKEN")
     fi
     sleep 2
     printf "${GREEN}BrowserBox with Tor started.${NC}\n"
     draw_box "Login Link: $login_link"
+    save_config
 
     # Tor status display functions
     get_tor_status() {
@@ -863,6 +867,7 @@ EOF
     draw_box "Login Link: $login_link"
     draw_box "Nickname: $nickname"
     draw_box "Stop Command: bbx docker-stop $nickname"
+    save_config
 }
 
 docker_stop() {
