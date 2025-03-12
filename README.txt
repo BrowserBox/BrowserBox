@@ -10,7 +10,7 @@
   READY TO JACK IN? LET'S BLAST THIS FUCKING SHIT UP!
 
   =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-  | TABLE OF CONTENTS - NAV THIS ZINE LIKE A BOSS            |
+  |      TABLE OF CONTENTS - NAV THIS ZINE LIKE A BOSS            |
   =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
   [1] WHASSUP WITH BROWSERBOX? - THE SCOOP ON THIS BEAST
   [2] WHY YOU NEED A LICENSE - NO FREE RIDES, PHREAK
@@ -130,5 +130,5 @@
   MESS WITH OUR LICENSING, WE MESS YOU UP - GOT IT?
 
   * * * * * * * * * * * * * * * * * * * * * *
-  | BROWSERBOX - JACK IN AND OWN THE NET! |
+  |  BROWSERBOX - JACK IN AND OWN THE NET!  |
   * * * * * * * * * * * * * * * * * * * * * *
