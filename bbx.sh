@@ -121,15 +121,41 @@ ensure_nvm() {
     fi
 }
 
-# Get license key, show warning only on new entry
+# Get license key, loop until valid format and bbcertify passes
 get_license_key() {
     load_config
-    if [ -n "$LICENSE_KEY" ]; then
-        save_config
+    if [ -n "$LICENSE_KEY" ] && bbcertify >/dev/null 2>&1; then
+        # Existing key is valid, no need to prompt
         return
     fi
-    read -r -p "Enter License Key (get one at sales@dosaygo.com): " LICENSE_KEY
-    [ -n "$LICENSE_KEY" ] || { printf "${RED}ERROR: License key required!${NC}\n"; exit 1; }
+
+    local valid_format=false
+    local valid_cert=false
+    while true; do
+        read -r -p "Enter License Key (e.g., U0TZ-GNMD-S889-RETG-YMCH-EAMR-ZOKU-2KRO): " LICENSE_KEY
+        if [ -z "$LICENSE_KEY" ]; then
+            printf "${RED}ERROR: License key cannot be empty. Try again.${NC}\n"
+            continue
+        fi
+
+        # Validate format: 8 stanzas of 4 A-Z0-9 chars, separated by hyphens
+        if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
+            valid_format=true
+        else
+            printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
+            continue
+        fi
+
+        # Validate with bbcertify
+        export LICENSE_KEY
+        if bbcertify >/dev/null 2>&1; then
+            valid_cert=true
+            break
+        else
+            printf "${RED}ERROR: License key failed certification. Check your key and try again.${NC}\n"
+        fi
+    done
+
     printf "${YELLOW}Note: License will be saved unencrypted at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
     save_config
 }
@@ -1096,15 +1122,54 @@ uninstall() {
     printf "${GREEN}Uninstall complete. Run 'bbx install' to reinstall if needed.${NC}\n"
 }
 
+# Certify command to allow entering a new license key
 certify() {
     load_config
     printf "${YELLOW}Certifying BrowserBox license...${NC}\n"
-    get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
-    bbcertify || { printf "${RED}Certification failed. Check your license key.${NC}\n"; exit 1; }
+    printf "${BLUE}Enter a new license key to update your existing one, or press Enter to use the current key ($LICENSE_KEY):${NC}\n"
+    local new_key
+    read -r -p "New License Key (leave blank to keep current): " new_key
+
+    if [ -n "$new_key" ]; then
+        LICENSE_KEY="$new_key"
+        local valid_format=false
+        local valid_cert=false
+
+        # Validate format
+        if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
+            valid_format=true
+        else
+            printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
+            exit 1
+        fi
+
+        # Validate with bbcertify
+        export LICENSE_KEY
+        if bbcertify >/dev/null 2>&1; then
+            valid_cert=true
+            save_config
+            printf "${GREEN}New license key certified and saved.${NC}\n"
+        else
+            printf "${RED}ERROR: Certification failed. Check your license key.${NC}\n"
+            exit 1
+        fi
+    else
+        # Use existing key if provided and valid
+        if [ -n "$LICENSE_KEY" ]; then
+            export LICENSE_KEY
+            bbcertify || { printf "${RED}Certification failed. Check your license key.${NC}\n"; exit 1; }
+            printf "${GREEN}Current license key certified.${NC}\n"
+        else
+            printf "${RED}No license key found. Please enter one.${NC}\n"
+            get_license_key
+            export LICENSE_KEY
+            bbcertify || { printf "${RED}Certification failed. Check your license key.${NC}\n"; exit 1; }
+            printf "${GREEN}Certification complete.${NC}\n"
+        fi
+    fi
     save_config
-    printf "${GREEN}Certification complete.${NC}\n"
 }
+
 
 stop() {
     load_config
