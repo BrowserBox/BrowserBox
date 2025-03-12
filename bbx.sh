@@ -592,7 +592,7 @@ tor_run() {
     # Determine Tor group and cookie file dynamically
     if [[ "$(uname -s)" == "Darwin" ]]; then
         TOR_GROUP="admin"  # Homebrew default
-        TORDIR="$(brew --prefix tor)/var/lib/tor"
+        TORDIR="$(brew --prefix)/var/lib/tor"
         COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
     else
         TORDIR="/var/lib/tor"

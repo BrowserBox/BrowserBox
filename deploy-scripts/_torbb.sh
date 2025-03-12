@@ -38,7 +38,7 @@ detect_os() {
   elif [[ "$OSTYPE" == "darwin"* ]]; then
     OS_TYPE="macos"
     TOR_GROUP="admin"
-    prefix=$(brew --prefix tor)
+    prefix=$(brew --prefix)
     TORRC="$prefix/etc/tor/torrc"
     TORDIR="$prefix/var/lib/tor"
     mkdir -p "$TORDIR"
