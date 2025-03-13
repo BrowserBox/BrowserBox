@@ -10,7 +10,7 @@ Secure your web with BrowserBox—a cutting-edge remote browser isolation (RBI) 
 - **[Purchase a Commercial License](https://browse.cloudtabs.net/l)**  
 - **[Join the Non-Commercial Waitlist](https://tally.so/r/nPvb1x)**  
 
->[!WARNING]  
+>[!CAUTION]  
 >Unlicensed instances display a warning and shut down after 2 minutes.
 
 ---
@@ -131,17 +131,14 @@ The `bbx` CLI manages all aspects of BrowserBox, including installation, configu
 
 We enforce licensing to protect your investment. Usage data ensures compliance—see our [Privacy Policy](https://dosaygo.com/privacy.txt) and [Terms](https://dosaygo.com/terms). Bypassing licensing violates our terms and may lead to legal action.
 
->[!INFO]  
+>[!IMPORTANT]  
 >A license unlocks full features and ensures a supported, secure solution.
 
 ---
 
 ## FAQ
 
-**Why a license?**  
-Unlocks full functionality and supports ongoing development of a secure RBI solution.
-
-**How do I get one?**  
+**How do I get a license?**  
 - Commercial: Purchase at [https://browse.cloudtabs.net/l](https://browse.cloudtabs.net/l).  
 - Non-commercial: Join the [waitlist](https://tally.so/r/nPvb1x).
 
@@ -152,7 +149,6 @@ Email [sales@dosaygo.com](mailto:sales@dosaygo.com).
 
 ## Support
 
-- **Issues**: [GitHub](https://github.com/BrowserBox/BrowserBox/issues)  
 - **Email**: [support@dosaygo.com](mailto:support@dosaygo.com)  
 
 ---
