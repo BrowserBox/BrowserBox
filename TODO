@@ -1,6 +1,8 @@
-- update bang to remove licenses copied throughout
+- fully vamp windows support !!! :P ;) xx ;p
 
-- enhance run-tor by displaying the tor service's connectivity status (use the _tor_status_poc :))))
+- fix bbx bash curl link in readme, branch is incorrect
+
+- fix multiarch Docker to have a manifest so OCI labels are surfaced properly. 
 
 - solidify instance hw id, analytics
 
