@@ -1,3 +1,7 @@
+- bbx certify should check validity
+
+- we seem to be asking for key every time. should ask once then save
+
 - fully vamp windows support !!! :P ;) xx ;p
 
 - fix multiarch Docker to have a manifest so OCI labels are surfaced properly. 
