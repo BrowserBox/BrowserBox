@@ -25,23 +25,34 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
 
 ---
 
+## Features
+
+- **1-Click Cloud Deployment**: Deploy BrowserBox on Vultr, AWS, Azure, or Linode with a single click.  
+- **Cross-Platform Support**: Compatible with Ubuntu, Debian, RHEL, CentOS, Windows, and more.  
+- **Docker Integration**: Run BrowserBox in a container using `bbx docker-run` (see "Using `bbx` Commands" below).  
+- **Tor Support**: Enable anonymity and onion routing with `bbx tor-run` (requires Tor installed).  
+- **Automation Ready**: Run Puppeteer (PPtr) or Playwright scripts for automation with `bbx automate` (coming soon).  
+
+---
+
 ## Get Started
 
-### 1. Deploy BrowserBox
-Choose your preferred method (license key required):  
-- **NPM**: Install globally using: `npm i -g @browserbox/browserbox`  
-- **1-Click Cloud**: Deploy on Vultr, AWS, Azure, or Linode.
+### 1. Install the `bbx` CLI
+The `bbx` CLI is the central tool to manage, install, and run your BrowserBox instance. Install it globally via NPM:
 
->[!NOTE]  
->Docker deployment is handled via `bbx docker-run`. See the "Using `bbx` Commands" section below for details.
+`npm i -g @browserbox/browserbox`
 
-### 2. Install the `bbx` CLI
-The `bbx` tool simplifies installation and management. Ensure `curl` is installed, then run:
+Alternatively, you can install `bbx` using a script. Ensure `curl` is installed, then run:
 
 `bash <(curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh) install`
 
 >[!NOTE]  
 >You’ll need a user with passwordless sudo privileges. See [macOS setup](https://web.archive.org/web/20241210214342/https://jefftriplett.com/2022/enable-sudo-without-a-password-on-macos/) or edit `/etc/sudoers` on Linux.
+
+### 2. Install BrowserBox
+Use `bbx` to install BrowserBox on your system:
+
+`bbx install`
 
 ### 3. Activate Your License
 For commercial use, activate a license:
@@ -148,7 +159,5 @@ Email [sales@dosaygo.com](mailto:sales@dosaygo.com).
 
 ## Copyright
 
-© 2024 DOSAYGO Corporation USA. All rights reserved. 
-
+© 2024 DOSAYGO Corporation USA. All rights reserved.  
 All code in this repository is licensed under [LICENSE.md](LICENSE.md) unless otherwise stated.
----
