@@ -562,61 +562,62 @@ setup() {
 }
 
 run() {
-    banner
+  banner
+  load_config
+
+  # Ensure setup has been run
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
+    printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
+    setup
     load_config
+  fi
 
-    # Default values
-    local port="${PORT:-$(find_free_port_block)}"
-    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+  # Default values (should be set by setup, but fallback for safety)
+  local port="${PORT}"
+  local hostname="${BBX_HOSTNAME}"
 
-    # Parse arguments (named or positional)
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --port|-p)
-                port="$2"
-                shift 2
-                ;;
-            --hostname|-h)
-                hostname="$2"
-                shift 2
-                ;;
-            *)
-                # Handle positional arguments
-                if [[ "$1" =~ ^[0-9]+$ ]] && [ -z "$port_set" ]; then
-                    port="$1"
-                    port_set=true
-                elif [ -n "$1" ] && [ -z "$hostname_set" ]; then
-                    hostname="$1"
-                    hostname_set=true
-                else
-                    printf "${RED}Unknown option or extra argument: $1${NC}\n"
-                    printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
-                    exit 1
-                fi
-                shift
-                ;;
-        esac
-    done
+  # Parse arguments to override if provided
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --port|-p)
+        port="$2"
+        shift 2
+        ;;
+      --hostname|-h)
+        hostname="$2"
+        shift 2
+        ;;
+      *)
+        printf "${RED}Unknown option or extra argument: $1${NC}\n"
+        printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+        exit 1
+        ;;
+    esac
+  done
 
-    PORT="$port"
-    BBX_HOSTNAME="$hostname"
-    printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
-    if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
-    else
-        ensure_hosts_entry "$hostname"
-    fi
-    setup --port "$port" --hostname "$hostname"  # Use named args for clarity
-    get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
-    certify_with_retry
-    bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-    sleep 2
-    source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-    local login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
-    draw_box "Login Link: $login_link"
-    save_config
+  PORT="$port"
+  BBX_HOSTNAME="$hostname"
+  printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
+  if ! is_local_hostname "$hostname"; then
+    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+    "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
+  else
+    ensure_hosts_entry "$hostname"
+  fi
+
+  # Validate existing license key
+  if ! bbcertify >/dev/null 2>&1; then
+    printf "${RED}License key invalid or missing. Run 'bbx setup' or 'bbx certify' to configure a valid key.${NC}\n"
+    exit 1
+  fi
+
+  certify_with_retry
+  bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+  sleep 2
+  source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+  local login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
+  draw_box "Login Link: $login_link"
+  save_config
 }
 
 tor_run() {
