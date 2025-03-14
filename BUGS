@@ -1,2 +1,4 @@
 - chrome://dino should not trigger "external app request" lol
 
+- disk partition extension func at start of install failing on RHEL
+
