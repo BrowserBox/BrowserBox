@@ -101,46 +101,37 @@ else
 fi
 
 # 10. Test Docker-run (if Docker is installed)
-if command -v docker >/dev/null 2>&1; then
-  echo "Running Dockerized BrowserBox..."
-  ./bbx.sh docker-run mydockertest --port 4027
-  sleep 5  # Wait for Docker instance to start
+echo "Running Dockerized BrowserBox..."
+./bbx.sh docker-run mydockertest --port 4027
+sleep 5  # Wait for Docker instance to start
+if [ $? -eq 0 ]; then
+  echo "Dockerized BrowserBox started."
+  # 11. Stop Docker instance
+  echo "Stopping Dockerized BrowserBox..."
+  ./bbx.sh docker-stop mydockertest
   if [ $? -eq 0 ]; then
-    echo "Dockerized BrowserBox started."
-    # 11. Stop Docker instance
-    echo "Stopping Dockerized BrowserBox..."
-    ./bbx.sh docker-stop mydockertest
-    if [ $? -eq 0 ]; then
-      echo "Dockerized BrowserBox stopped successfully."
-    else
-      echo "Warning: Failed to stop Dockerized BrowserBox."
-    fi
+    echo "Dockerized BrowserBox stopped successfully."
   else
-    echo "Warning: Failed to start Dockerized BrowserBox."
+    echo "Warning: Failed to stop Dockerized BrowserBox."
   fi
 else
-  echo "Docker not found, skipping Docker tests."
+  echo "Warning: Failed to start Dockerized BrowserBox."
 fi
 
-# 12. Test Tor-run (if Tor is installed)
-if command -v tor >/dev/null 2>&1; then
-  echo "Running BrowserBox with Tor..."
-  ./bbx.sh tor-run
-  sleep 5  # Wait for Tor service to start
+echo "Running BrowserBox with Tor..."
+./bbx.sh tor-run
+sleep 5  # Wait for Tor service to start
+if [ $? -eq 0 ]; then
+  echo "BrowserBox with Tor started."
+  # Stop the service (assuming tor-run starts it)
+  ./bbx.sh stop
   if [ $? -eq 0 ]; then
-    echo "BrowserBox with Tor started."
-    # Stop the service (assuming tor-run starts it)
-    ./bbx.sh stop
-    if [ $? -eq 0 ]; then
-      echo "Tor BrowserBox stopped successfully."
-    else
-      echo "Warning: Failed to stop Tor BrowserBox."
-    fi
+    echo "Tor BrowserBox stopped successfully."
   else
-    echo "Warning: Failed to start BrowserBox with Tor."
+    echo "Warning: Failed to stop Tor BrowserBox."
   fi
 else
-  echo "Tor not found, skipping Tor tests."
+  echo "Warning: Failed to start BrowserBox with Tor."
 fi
 
 echo "Test complete."

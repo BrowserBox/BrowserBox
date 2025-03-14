@@ -2,3 +2,7 @@
 
 - disk partition extension func at start of install failing on RHEL
 
+- some deps are not found on rhel (not majro problem)
+
+- rhel issues with installing audo conf files and no linger : perm denied
+
