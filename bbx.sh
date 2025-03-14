@@ -219,7 +219,7 @@ get_system_hostname() {
 # Check if hostname is local
 is_local_hostname() {
     local hostname="$1"
-    local resolved_ip=$(dig +short "$hostname" A | grep -v '\.$' | head -n1)
+    local resolved_ip=$(timeout 8s dig +short "$hostname" A | grep -v '\.$' | head -n1)
     if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
         return 0  # Local
     else
@@ -399,6 +399,7 @@ ensure_setup_tor() {
 
 install() {
     banner
+    check_agreement
     pre_install
     load_config
     ensure_deps
@@ -413,13 +414,28 @@ install() {
     $SUDO rm -f $BBX_HOME/BrowserBox.zip
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
     local default_hostname=$(get_system_hostname)
-    [ -n "$BBX_HOSTNAME" ] || read -r -p "Enter hostname (default: $default_hostname): " BBX_HOSTNAME
+
+
+    if [ -z "$BBX_HOSTNAME" ]; then
+      if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
+        BBX_HOSTNAME="localhost"
+      else
+        read -r -p "Enter hostname (default: $default_hostname): " BBX_HOSTNAME
+      fi
+    fi
     BBX_HOSTNAME="${BBX_HOSTNAME:-$default_hostname}"
     if is_local_hostname "$BBX_HOSTNAME"; then
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
-    [ -n "$EMAIL" ] || read -r -p "Enter your email for Let's Encrypt (optional for $BBX_HOSTNAME): " EMAIL
-    if [ -t 0 ]; then
+    if [ -z "$EMAIL" ]; then
+      if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
+        EMAIL=""
+      else
+        read -r -p "Enter your email for Let's Encrypt (optional for $BBX_HOSTNAME): " EMAIL
+      fi
+    fi
+    
+    if [ -t 0 ] && [[ -z "$BBX_TEST_AGREEMENT" ]]; then
         printf "${YELLOW}Running BrowserBox installer interactively...${NC}\n"
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL"
     else
@@ -1210,7 +1226,7 @@ update() {
     printf "${YELLOW}Updating BrowserBox...${NC}\n"
     
     # Check and reset hostname if unresolvable
-    if ! is_local_hostname "$BBX_HOSTNAME" && ! dig +short "$BBX_HOSTNAME" A >/dev/null 2>&1; then
+    if ! is_local_hostname "$BBX_HOSTNAME" && ! timeout 8s dig +short "$BBX_HOSTNAME" A >/dev/null 2>&1; then
         printf "${YELLOW}Current hostname $BBX_HOSTNAME not resolvable, resetting to default...${NC}\n"
         BBX_HOSTNAME=$(get_system_hostname)
     fi
@@ -1571,6 +1587,9 @@ usage() {
 }
 
 check_agreement() {
+    if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
+      return 0
+    fi
     if [ ! -f "$CONFIG_DIR/.agreed" ]; then
         printf "${BLUE}BrowserBox v10 Terms:${NC} https://dosaygo.com/terms.txt\n"
         printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
@@ -1669,7 +1688,7 @@ activate() {
   return 1
 }
 
-[ "$1" != "install" ] && [ "$1" != "uninstall" ] && check_agreement
+[ "$1" != "uninstall" ] && check_agreement
 case "$1" in
     install) shift 1; install "$@";;
     uninstall) shift 1; uninstall "$@";;

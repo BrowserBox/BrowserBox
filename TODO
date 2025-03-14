@@ -1,6 +1,6 @@
-- bbx certify should check validity
+- bbx should accept some test env vars to be unattended (ie, email, accept, etc)
 
-- we seem to be asking for key every time. should ask once then save
+- new ci workflow to test bbx full saga
 
 - browserbox embedding api client side 
 
