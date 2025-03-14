@@ -121,6 +121,56 @@ ensure_nvm() {
     fi
 }
 
+# Validate license key with server, loop until valid
+validate_license_key() {
+  local force_prompt="${1:-false}"  # Force prompt in certify mode
+  load_config
+
+  # Skip prompt if key exists and is valid, unless forced
+  if [ "$force_prompt" != "true" ] && [ -n "$LICENSE_KEY" ] && bbcertify >/dev/null 2>&1; then
+    printf "${GREEN}Using existing valid license key.${NC}\n"
+    export LICENSE_KEY
+    return 0
+  fi
+
+  local valid_format=false
+  local valid_server=false
+
+  while true; do
+    if [ -z "$LICENSE_KEY" ] || [ "$force_prompt" = "true" ]; then
+      read -r -p "Enter License Key (e.g., U0TZ-GNMD-S889-RETG-YMCH-EAMR-ZOKU-2KRO): " LICENSE_KEY
+      if [ -z "$LICENSE_KEY" ]; then
+        printf "${RED}ERROR: License key cannot be empty. Try again.${NC}\n"
+        continue
+      fi
+    fi
+
+    # Validate format: 8 stanzas of 4 A-Z0-9 chars, separated by hyphens
+    if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
+      valid_format=true
+    else
+      printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
+      LICENSE_KEY=""  # Reset to force re-prompt
+      continue
+    fi
+
+    # Validate with server via bbcertify
+    export LICENSE_KEY
+    if bbcertify >/dev/null 2>&1; then
+      valid_server=true
+      printf "${GREEN}License key validated with server.${NC}\n"
+      save_config
+      break
+    else
+      printf "${RED}ERROR: License key invalid or server unreachable. Please check and try again.${NC}\n"
+      LICENSE_KEY=""  # Reset to force re-prompt
+      if [ "$force_prompt" != "true" ]; then
+        printf "${YELLOW}Falling back to prompt...${NC}\n"
+      fi
+    fi
+  done
+}
+
 # Get license key, loop until valid format and bbcertify passes
 get_license_key() {
     load_config
@@ -441,67 +491,74 @@ install() {
 }
 
 setup() {
-    load_config
-    ensure_deps
+  load_config
+  ensure_deps
 
-    # Default values
-    local port="${PORT:-$(find_free_port_block)}"
-    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
-    local token="${TOKEN}"
+  # Default values
+  local port="${PORT:-$(find_free_port_block)}"
+  local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+  local token="${TOKEN}"
 
-    # Parse named arguments
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --port|-p)
-                port="$2"
-                shift 2
-                ;;
-            --hostname|-h)
-                hostname="$2"
-                shift 2
-                ;;
-            --token|-t)
-                token="$2"
-                shift 2
-                ;;
-            *)
-                printf "${RED}Unknown option: $1${NC}\n"
-                printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
-                exit 1
-                ;;
-        esac
-    done
-
-    # Validate port
-    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
-        printf "${RED}Invalid port: $port. Must be between 1024 and 65535.${NC}\n"
+  # Parse named arguments
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --port|-p)
+        port="$2"
+        shift 2
+        ;;
+      --hostname|-h)
+        hostname="$2"
+        shift 2
+        ;;
+      --token|-t)
+        token="$2"
+        shift 2
+        ;;
+      *)
+        printf "${RED}Unknown option: $1${NC}\n"
+        printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
         exit 1
-    fi
+        ;;
+    esac
+  done
 
-    PORT="$port"
-    BBX_HOSTNAME="$hostname"
-    TOKEN="${token:-$(openssl rand -hex 16)}"  # Generate token if not provided
+  # Validate port
+  if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
+    printf "${RED}Invalid port: $port. Must be between 1024 and 65535.${NC}\n"
+    exit 1
+  fi
 
-    printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
-    if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
-        chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
-    else
-        ensure_hosts_entry "$hostname"
-    fi
+  PORT="$port"
+  BBX_HOSTNAME="$hostname"
+  TOKEN="${token:-$(openssl rand -hex 16)}"  # Generate token if not provided
 
-    setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
-    for i in {-2..2}; do
-        test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
-    done
-    test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
-    setup_bbpro --port "$port" --token "$TOKEN" > "$CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
-    source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-    save_config
-    printf "${GREEN}Setup complete.${NC}\n"
-    draw_box "Login Link: $(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")"
+  printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
+  if ! is_local_hostname "$hostname"; then
+    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+    curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+    chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
+    "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
+  else
+    ensure_hosts_entry "$hostname"
+  fi
+
+  # Acquire and validate license key during setup
+  if [ -z "$LICENSE_KEY" ] || ! bbcertify >/dev/null 2>&1; then
+    validate_license_key  # Prompt and validate if missing or invalid
+  else
+    printf "${GREEN}Using existing valid license key.${NC}\n"
+  fi
+
+  setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
+  for i in {-2..2}; do
+    test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
+  done
+  test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
+  setup_bbpro --port "$port" --token "$TOKEN" > "$CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+  save_config
+  printf "${GREEN}Setup complete.${NC}\n"
+  draw_box "Login Link: $(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")"
 }
 
 run() {
@@ -1124,50 +1181,18 @@ uninstall() {
 
 # Certify command to allow entering a new license key
 certify() {
-    load_config
-    printf "${YELLOW}Certifying BrowserBox license...${NC}\n"
-    printf "${BLUE}Enter a new license key to update your existing one, or press Enter to use the current key ($LICENSE_KEY):${NC}\n"
-    local new_key
-    read -r -p "New License Key (leave blank to keep current): " new_key
+  load_config
+  printf "${YELLOW}Certifying BrowserBox license...${NC}\n"
+  printf "${BLUE}Enter a new license key to update, or press Enter to validate the current key ($LICENSE_KEY):${NC}\n"
+  read -r -p "New License Key (leave blank to check current): " new_key
 
-    if [ -n "$new_key" ]; then
-        LICENSE_KEY="$new_key"
-        local valid_format=false
-        local valid_cert=false
+  if [ -n "$new_key" ]; then
+    LICENSE_KEY="$new_key"
+  fi
 
-        # Validate format
-        if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
-            valid_format=true
-        else
-            printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
-            exit 1
-        fi
-
-        # Validate with bbcertify
-        export LICENSE_KEY
-        if bbcertify >/dev/null 2>&1; then
-            valid_cert=true
-            save_config
-            printf "${GREEN}New license key certified and saved.${NC}\n"
-        else
-            printf "${RED}ERROR: Certification failed. Check your license key.${NC}\n"
-            exit 1
-        fi
-    else
-        # Use existing key if provided and valid
-        if [ -n "$LICENSE_KEY" ]; then
-            export LICENSE_KEY
-            bbcertify || { printf "${RED}Certification failed. Check your license key.${NC}\n"; exit 1; }
-            printf "${GREEN}Current license key certified.${NC}\n"
-        else
-            printf "${RED}No license key found. Please enter one.${NC}\n"
-            get_license_key
-            export LICENSE_KEY
-            bbcertify || { printf "${RED}Certification failed. Check your license key.${NC}\n"; exit 1; }
-            printf "${GREEN}Certification complete.${NC}\n"
-        fi
-    fi
-    save_config
+  # Force server validation
+  validate_license_key "true"  # Pass true to force prompt/validation
+  printf "${GREEN}License certified.${NC}\n"
 }
 
 
