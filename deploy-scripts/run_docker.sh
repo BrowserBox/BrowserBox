@@ -84,7 +84,7 @@ open_ports() {
         echo "WARNING: No firewall tool found—open $start-$end/tcp manually!" >&2
     fi
 }
-[ "$HOSTNAME" != "localhost" ] && open_ports 80 80
+! is_local_hostname "$HOSTNAME" && open_ports 80 80
 open_ports $((PORT-2)) $((PORT+2))
 
 # External IP (Cross-Platform)
@@ -99,23 +99,22 @@ get_ip() {
 fetch_certs() {
     mkdir -p "$CERT_DIR"
     if [ ! -f "$CERT_DIR/fullchain.pem" ] || [ ! -f "$CERT_DIR/privkey.pem" ] || [ "$(openssl x509 -in "$CERT_DIR/fullchain.pem" -noout -subject | grep -o "$HOSTNAME")" != "$HOSTNAME" ]; then
-        echo "Fetching certs for $HOSTNAME (DNS A record to $(get_ip) required)..." >&2
-        $SUDO bash <(curl -s "https://raw.githubusercontent.com/BrowserBox/BrowserBox/${branch}/deploy-scripts/wait_for_hostname.sh") "$HOSTNAME" || {
-            echo "ERROR: Hostname $HOSTNAME not resolving!" >&2
-            exit 1
-        }
-        BB_USER_EMAIL="$EMAIL" $SUDO bash <(curl -s "https://raw.githubusercontent.com/BrowserBox/BrowserBox/${branch}/deploy-scripts/tls") "$HOSTNAME" || {
+        if ! is_local_hostname "$HOSTNAME"; then
+          echo "Fetching certs for $HOSTNAME (DNS A record to $(get_ip) required)..." >&2
+          bash <(curl -s "https://raw.githubusercontent.com/BrowserBox/BrowserBox/${branch}/deploy-scripts/wait_for_hostname.sh") "$HOSTNAME" || {
+              echo "ERROR: Hostname $HOSTNAME not resolving!" >&2
+              exit 1
+          }
+        fi
+        BB_USER_EMAIL="$EMAIL" bash <(curl -s "https://raw.githubusercontent.com/BrowserBox/BrowserBox/${branch}/deploy-scripts/tls") "$HOSTNAME" || {
             echo "ERROR: Cert fetch failed!" >&2
             exit 1
         }
     fi
     $SUDO chmod 600 "$CERT_DIR"/*.pem
 }
-if ! is_local_hostname "$HOSTNAME"; then
-    fetch_certs
-else
-    echo "Skipping cert fetch for local hostname $HOSTNAME" >&2
-fi
+
+fetch_certs
 
 # Docker Image Pull (Check Both Repos)
 DOCKER_IMAGE=""
