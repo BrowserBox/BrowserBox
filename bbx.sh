@@ -27,7 +27,7 @@ BOLD='\033[1m'
 
 # Version
 BBX_VERSION="10.2.1"
-branch="main" # change to main for dist
+branch="bogs2" # change to main for dist
 banner_color=$CYAN
 
 # Default paths
