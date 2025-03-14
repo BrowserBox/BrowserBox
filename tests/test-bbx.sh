@@ -6,7 +6,7 @@
 # Set environment variables to avoid interactive prompts
 export BBX_HOSTNAME="localhost"
 export EMAIL="test@example.com"
-export LICENSE_KEY="TEST-KEY-1234-5678-90AB-CDEF-GHIJ-KLMN-OPQR"
+export LICENSE_KEY="${1:-TEST-KEY-1234-5678-90AB-CDEF-GHIJ-KLMN-OPQR"
 
 # Mock the bbcertify function to bypass license validation
 function bbcertify() {
