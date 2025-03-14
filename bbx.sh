@@ -39,7 +39,6 @@ BBX_SHARE="/usr/local/share/dosyago"
 # Config file (secondary to test.env and login.link)
 CONFIG_DIR="$HOME/.config/dosyago/bbpro"
 CONFIG_FILE="$CONFIG_DIR/config"
-TICKET_FILE="$CONFIG_DIR/tickets/ticket.json"
 [ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
 
 DOCKER_CONTAINERS_FILE="$CONFIG_DIR/docker_containers.json"
@@ -101,15 +100,16 @@ load_config() {
 }
 
 save_config() {
-    mkdir -p "$CONFIG_DIR"
-    cat > "$CONFIG_FILE" <<EOF
+  mkdir -p "$CONFIG_DIR"
+  chmod 700 "$CONFIG_DIR"  # Restrict to owner only
+  cat > "$CONFIG_FILE" <<EOF
 EMAIL="${EMAIL:-}"
 LICENSE_KEY="${LICENSE_KEY:-}"
 BBX_HOSTNAME="${BBX_HOSTNAME:-}"
 TOKEN="${TOKEN:-}"
 PORT="${PORT:-}"
 EOF
-    chmod 600 "$CONFIG_FILE"
+  chmod 600 "$CONFIG_FILE"
 }
 
 ensure_nvm() {
@@ -160,48 +160,6 @@ validate_license_key() {
       return 1
     fi
   fi
-}
-
-# Get license key, loop until valid format and bbcertify passes
-get_license_key() {
-    load_config
-    if [ -n "$LICENSE_KEY" ]; then
-      export LICENSE_KEY
-      if bbcertify >/dev/null 2>&1; then
-        # Existing key is valid, no need to prompt
-        return
-      fi
-    fi
-
-    local valid_format=false
-    local valid_cert=false
-    while true; do
-        read -r -p "Enter License Key (e.g., U0TZ-GNMD-S889-RETG-YMCH-EAMR-ZOKU-2KRO): " LICENSE_KEY
-        if [ -z "$LICENSE_KEY" ]; then
-            printf "${RED}ERROR: License key cannot be empty. Try again.${NC}\n"
-            continue
-        fi
-
-        # Validate format: 8 stanzas of 4 A-Z0-9 chars, separated by hyphens
-        if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
-            valid_format=true
-        else
-            printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
-            continue
-        fi
-
-        # Validate with bbcertify
-        export LICENSE_KEY
-        if bbcertify >/dev/null 2>&1; then
-            valid_cert=true
-            break
-        else
-            printf "${RED}ERROR: License key failed certification. Check your key and try again.${NC}\n"
-        fi
-    done
-
-    printf "${YELLOW}Note: License will be saved unencrypted at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
-    save_config
 }
 
 # Box drawing helper function
@@ -376,27 +334,30 @@ ensure_deps() {
     done
 }
 
-# Find a free block of 5 ports + CDP endpoint
 find_free_port_block() {
-    local start_port=4024
-    local end_port=65533
-    for ((port=start_port+2; port<=end_port-2; port++)); do
-        local free=true
-        for ((i=-2; i<=2; i++)); do
-            if ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port+i))" 2>/dev/null; then
-                : # Port is free
-            else
-                free=false
-                break
-            fi
-        done
-        if $free && ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port-3000))" 2>/dev/null; then
-            echo "$port"
-            return 0
-        fi
+  local start_port=4024
+  local end_port=65533
+  for ((port=start_port+2; port<=end_port-2; port++)); do
+    local cdp_port=$((port-3000))
+    if [ "$cdp_port" -lt 1024 ]; then
+      continue
+    fi
+    local free=true
+    for ((i=-2; i<=2; i++)); do
+      if ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port+i))" 2>/dev/null; then
+        : # Port is free
+      else
+        free=false
+        break
+      fi
     done
-    printf "${RED}No free 5-port block + CDP endpoint (port-3000) found between 4024-65533.${NC}\n"
-    exit 1
+    if $free && ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$cdp_port" 2>/dev/null; then
+      echo "$port"
+      return 0
+    fi
+  done
+  printf "${RED}No free 5-port block + CDP endpoint (port-3000) found between 4024-65533.${NC}\n"
+  exit 1
 }
 
 # Test port accessibility via firewall
@@ -430,13 +391,6 @@ ensure_setup_tor() {
         printf "${YELLOW}Setting up Tor for user $user...${NC}\n"
         $SUDO bash -c "PATH=/usr/local/bin:\$PATH setup_tor '$user'" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
     fi
-}
-
-# Certify with updated bbcertify behavior
-certify_with_retry() {
-    export LICENSE_KEY
-    bbcertify || { printf "${RED}Certification failed. Check LICENSE_KEY or server status.${NC}\n"; exit 1; }
-    printf "${GREEN}Certification complete.${NC}\n"
 }
 
 install() {
@@ -607,8 +561,8 @@ run() {
     printf "${RED}License key invalid or missing. Run 'bbx setup' or 'bbx certify' to configure a valid key.${NC}\n"
     exit 1
   fi
+  printf "${GREEN}Certification complete.${NC}\n"
 
-  certify_with_retry
   bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
   sleep 2
   source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
@@ -661,7 +615,8 @@ tor_run() {
         TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1)
       fi
       if [[ -z "$TOR_GROUP" ]]; then
-        TOR_GROUP="debian-tor"
+        TOR_GROUP="${TOR_GROUP:-debian-tor}"  # Allow env override
+        printf "${YELLOW}Warning: Could not detect Tor group. Using default: $TOR_GROUP. Set TOR_GROUP env var if incorrect.${NC}\n"
       fi
   fi
 
@@ -691,8 +646,8 @@ tor_run() {
       printf "${RED}License key invalid or missing. Run 'bbx setup' or 'bbx certify' to configure a valid key.${NC}\n"
       exit 1
     fi
+    printf "${GREEN}Certification complete.${NC}\n"
 
-    certify_with_retry
     local login_link=""
     if $onion; then
         printf "${YELLOW}Running as onion site...${NC}\n"
@@ -875,20 +830,24 @@ docker_run() {
 
   if ! command -v docker >/dev/null 2>&1; then
     printf "${YELLOW}Installing Docker...${NC}\n"
-    if [ -f /etc/debian_version ]; then
-      $SUDO apt-get update && $SUDO apt-get install -y docker.io
-      $SUDO systemctl start docker
-      $SUDO systemctl enable docker
-    elif [ -f /etc/redhat-release ]; then
-      $SUDO yum install -y docker || $SUDO dnf install -y docker
-      $SUDO systemctl start docker
-      $SUDO systemctl enable docker
-    elif [ "$(uname -s)" = "Darwin" ]; then
-      printf "${RED}Please install Docker Desktop manually on macOS: https://docs.docker.com/desktop/mac/install/${NC}\n"
-      exit 1
-    else
-      printf "${RED}Unsupported OS. Install Docker manually: https://docs.docker.com/get-docker/${NC}\n"
-      exit 1
+    if ! command -v docker >/dev/null 2>&1; then
+      printf "${YELLOW}Installing Docker...${NC}\n"
+      if [ -f /etc/debian_version ]; then
+        $SUDO apt-get update && $SUDO apt-get install -y docker.io
+        $SUDO systemctl start docker
+        $SUDO systemctl enable docker
+      elif [ -f /etc/redhat-release ]; then
+        $SUDO yum install -y docker || $SUDO dnf install -y docker
+        $SUDO systemctl start docker
+        $SUDO systemctl enable docker
+      elif [ "$(uname -s)" = "Darwin" ]; then
+        printf "${RED}Please install Docker Desktop manually on macOS: https://docs.docker.com/desktop/mac/install/${NC}\n"
+        exit 1
+      else
+        printf "${RED}Unsupported OS. Install Docker manually: https://docs.docker.com/get-docker/${NC}\n"
+        exit 1
+      fi
+      command -v docker >/dev/null 2>&1 || { printf "${RED}Docker installation failed${NC}\n"; exit 1; }
     fi
   fi
 
