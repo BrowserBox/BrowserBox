@@ -832,7 +832,7 @@ docker_run() {
     exit 1
   }
 
-  local drun_file="$CONFIG_DIR/docker-${nickname}"
+  local drun_file="$BBX_CONFIG_DIR/docker-${nickname}"
 
   if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 4024 ] || [ "$port" -gt 65533 ]; then
     printf "${RED}Invalid port: $port. Must be between 4024 and 65533.${NC}\n"
