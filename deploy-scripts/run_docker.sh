@@ -159,3 +159,4 @@ echo "===========================================" >&2
 # Cleanup Choice
 read -p "Keep running? (n/no to stop, else continues): " KEEP
 [[ "$KEEP" = "n" || "$KEEP" = "no" ]] && $SUDO docker stop --time 3 "$CONTAINER_ID" && echo "Stopped!" >&2
+exit 0

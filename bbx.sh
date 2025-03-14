@@ -904,8 +904,12 @@ docker_run() {
   printf "${YELLOW}Running run_docker.sh...${NC}\n"
 
   local docker_output="$(bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' drun_file='$drun_file' port='$port' hostname='$hostname' email='$email' bash" << 'EOF'
-cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
-yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email" 2>&1 && ( echo "success" > "$drun_file" )
+  cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
+  if yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email" 2>&1; then 
+    echo "success" > "$drun_file"
+  else
+    :
+  fi
 EOF
   )"
   if [[ ! -f "$drun_file" ]] || [[ "$(cat "$drun_file")" != "success" ]]; then
