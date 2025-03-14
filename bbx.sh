@@ -27,7 +27,7 @@ BOLD='\033[1m'
 
 # Version
 BBX_VERSION="10.2.1"
-branch="bogs2" # change to main for dist
+branch="main" # change to main for dist
 if [[ "$branch" != "main" ]]; then
   export BBX_BRANCH="$branch"
 fi
