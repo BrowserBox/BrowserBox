@@ -896,7 +896,7 @@ docker_run() {
 
   printf "${YELLOW}Starting Dockerized BrowserBox on $hostname:$port...${NC}\n"
   if ! is_local_hostname "$hostname"; then
-    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine’s IP.\n"
+    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
   else
     ensure_hosts_entry "$hostname"
   fi
