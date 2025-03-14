@@ -10,12 +10,6 @@ export LICENSE_KEY="${1:-TEST-KEY-1234-5678-90AB-CDEF-GHIJ-KLMN-OPQR}"
 export BBX_TEST_AGREEMENT="true"
 
 # Mock the bbcertify function to bypass license validation
-function bbcertify() {
-  echo "Mock bbcertify: simulating successful certification for testing"
-  return 0
-}
-export -f bbcertify
-
 echo "Starting bbx test..."
 
 # 1. Uninstall existing installation
@@ -78,11 +72,13 @@ fi
 
 # 7. View logs
 echo "Viewing logs..."
-./bbx.sh logs
-if [ $? -eq 0 ]; then
-  echo "Logs retrieved successfully."
+timeout 15s ./bbx.sh logs &  # Run with timeout in background
+logs_pid=$!
+wait $logs_pid 2>/dev/null  # Wait for it to finish or timeout
+if [ $? -eq 124 ]; then      # 124 is timeout’s exit code when it kills the process
+  echo "Logs process was still alive after 15 seconds - success."
 else
-  echo "Warning: Failed to retrieve logs."
+  echo "Warning: Logs process exited before 15 seconds."
 fi
 
 # 8. Stop BrowserBox
