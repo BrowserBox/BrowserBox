@@ -28,6 +28,9 @@ BOLD='\033[1m'
 # Version
 BBX_VERSION="10.2.1"
 branch="bogs2" # change to main for dist
+if [[ "$branch" != "main" ]]; then
+  export BBX_BRANCH="$branch"
+fi
 banner_color=$CYAN
 
 # Default paths
@@ -903,7 +906,7 @@ docker_run() {
 
   printf "${YELLOW}Running run_docker.sh...${NC}\n"
 
-  export BBX_DEBUG
+  export BBX_DEBUG BBX_BRANCH
   local docker_output="$(bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' drun_file='$drun_file' port='$port' hostname='$hostname' email='$email' bash" << 'EOF'
   if [[ -n "$BBX_DEBUG" ]]; then
     set -x

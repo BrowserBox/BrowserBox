@@ -16,6 +16,7 @@ DOCKER_IMAGE_GHCR="ghcr.io/browserbox/browserbox:latest"
 CERT_DIR="$HOME/sslcerts"
 SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
 OS=$(uname)
+branch="${BBX_BRANCH:-main}"
 
 # Root/Sudo Check (Cross-Platform)
 if [ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null; then
@@ -99,11 +100,11 @@ fetch_certs() {
     mkdir -p "$CERT_DIR"
     if [ ! -f "$CERT_DIR/fullchain.pem" ] || [ ! -f "$CERT_DIR/privkey.pem" ] || [ "$(openssl x509 -in "$CERT_DIR/fullchain.pem" -noout -subject | grep -o "$HOSTNAME")" != "$HOSTNAME" ]; then
         echo "Fetching certs for $HOSTNAME (DNS A record to $(get_ip) required)..." >&2
-        $SUDO bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/wait_for_hostname.sh) "$HOSTNAME" || {
+        $SUDO bash <(curl -s "https://raw.githubusercontent.com/BrowserBox/BrowserBox/${branch}/deploy-scripts/wait_for_hostname.sh") "$HOSTNAME" || {
             echo "ERROR: Hostname $HOSTNAME not resolving!" >&2
             exit 1
         }
-        BB_USER_EMAIL="$EMAIL" $SUDO bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/tls) "$HOSTNAME" || {
+        BB_USER_EMAIL="$EMAIL" $SUDO bash <(curl -s "https://raw.githubusercontent.com/BrowserBox/BrowserBox/${branch}/deploy-scripts/tls") "$HOSTNAME" || {
             echo "ERROR: Cert fetch failed!" >&2
             exit 1
         }
