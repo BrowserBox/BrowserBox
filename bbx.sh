@@ -903,7 +903,9 @@ docker_run() {
 
   printf "${YELLOW}Running run_docker.sh...${NC}\n"
 
+  export BBX_DEBUG
   local docker_output="$(bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' drun_file='$drun_file' port='$port' hostname='$hostname' email='$email' bash" << 'EOF'
+  set -x
   cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
   if yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email" 2>&1; then 
     echo "success" > "$drun_file"

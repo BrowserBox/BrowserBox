@@ -3,6 +3,10 @@ set -e  # Exit on error
 trap 'echo "Error: Bailed! Check output..." >&2' ERR
 trap 'echo "Done!" >&2' EXIT
 
+if [[ -n "$BBX_DEBUG" ]]; then
+  set -x
+fi
+
 # Vars & Defaults
 PORT="${1:-}"  # Main port (e.g., 8080)
 HOSTNAME="${2:-}"  # DNS hostname
