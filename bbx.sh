@@ -1182,8 +1182,10 @@ certify() {
   printf "${YELLOW}Certifying BrowserBox license...${NC}\n"
   if [ -n "$LICENSE_KEY" ]; then
     printf "${BLUE}Current key: $LICENSE_KEY${NC}\n"
-    printf "Press Enter to validate it, or enter a new key to update: "
-    read -r new_key
+    if [[ -z "$BBX_TEST_AGREEMENT" ]]; then
+      printf "Press Enter to validate it, or enter a new key to update: "
+      read -r new_key
+    fi
     if [ -n "$new_key" ]; then
       LICENSE_KEY="$new_key"
       validate_license_key "true"  # Force prompt and validation for new key
