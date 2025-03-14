@@ -15,7 +15,8 @@ sudo certbot renew --quiet --deploy-hook "touch task_copy_certs_and_restart"
 if [ -f task_copy_certs_and_restart ]; then
   mkdir -p /home/$2/sslcerts
   sudo -u root cp_certs $1 /home/$2/sslcerts/
-  sudo chown $2:$2 /home/$2/sslcerts/*
+  GROUP="$(id -gn "$2")"
+  sudo chown "${2}:${GROUP}" /home/$2/sslcerts/*
   sudo shutdown -r +5
   rm task_copy_certs_and_restart
 fi

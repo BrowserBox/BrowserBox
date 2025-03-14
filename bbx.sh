@@ -1127,7 +1127,8 @@ pre_install() {
         echo "Downloading the installation script..."
         curl -sSL "https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/$branch/bbx.sh" -o /tmp/bbx.sh
         chmod +x /tmp/bbx.sh
-        chown "${install_user}:${install_user}" /tmp/bbx.sh
+        install_group="$(id -gn "$install_user")"
+        chown "${install_user}:${install_group}" /tmp/bbx.sh
 
         # Switch to the non-root user and run install
         echo "Switching to user $install_user..."
@@ -1531,7 +1532,8 @@ run_as() {
     # Rsync .nvm from calling user to target user
     printf "${YELLOW}Copying nvm and Node.js from $HOME/.nvm to $HOME_DIR/.nvm...${NC}\n"
     $SUDO rsync -aq --exclude='.git' "$HOME/.nvm/" "$HOME_DIR/.nvm/" || { printf "${RED}Failed to rsync .nvm directory${NC}\n"; exit 1; }
-    $SUDO chown -R "$user":"$user" "$HOME_DIR/.nvm" || { printf "${RED}Failed to chown .nvm directory${NC}\n"; exit 1; }
+    GROUP="$(id -gn "$user")"
+    $SUDO chown -R "$user":"$GROUP" "$HOME_DIR/.nvm" || { printf "${RED}Failed to chown .nvm directory${NC}\n"; exit 1; }
     NODE_VERSION=$($SUDO -u $user bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
     $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
 

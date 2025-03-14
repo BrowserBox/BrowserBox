@@ -37,7 +37,7 @@ initialize_package_manager() {
     package_manager=$(command -v brew)
   elif [[ "$(uname)" == "Darwin" ]]; then
     echo "ERROR: Homebrew not present. Please install Homebrew, or install certbot or letsencrypt client equivalent for macOS manually. But you may be better off using self-signed mkcert certificates if you are testing locally. If so please install and run:" >&2
-    echo "brew install mkcert nss && mkcert -install && mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1" >&2
+    echo "brew install mkcert nss && mkcert -install && mkcert --cert-file fullchain.pem --key-file privkey.pem "$1" localhost 127.0.0.1" >&2
     exit 1
   elif command -v apt >/dev/null; then
     package_manager=$(command -v apt)
@@ -164,14 +164,15 @@ else
   fi
   mkcert -install
   if [[ ! -f "$HOME/sslcerts/privkey.pem" || ! -f "$HOME/sslcerts/fullchain.pem" ]]; then
-    mkdir -p "$HOME/sslcerts"
-    pwd=$(pwd)
-    cd "$HOME/sslcerts"
-    mkcert --cert-file fullchain.pem --key-file privkey.pem localhost 127.0.0.1
-    cd "$pwd"
+    :
   else
-    echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We are not overwriting them."
+    echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We ARE overwriting them."
   fi
+  mkdir -p "$HOME/sslcerts"
+  pwd=$(pwd)
+  cd "$HOME/sslcerts"
+  mkcert --cert-file fullchain.pem --key-file privkey.pem $1 localhost 127.0.0.1
+  cd "$pwd"
 fi
 
 mkdir -p "$HOME/sslcerts"
@@ -182,5 +183,6 @@ elif [[ -f ./deploy-scripts/cp_certs ]]; then
 else
   $sudo -u root bash -c "bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/cp_certs) \"$1\" \"$HOME/sslcerts/\""
 fi
-$sudo chown "$USER:$USER" "$HOME/sslcerts/"*
+GROUP="$(id -gn || echo "$USER")"
+$sudo chown "${USER}:${GROUP}" "$HOME/sslcerts/"*
 chmod 600 "$HOME/sslcerts/"*
