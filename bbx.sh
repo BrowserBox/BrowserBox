@@ -123,60 +123,54 @@ ensure_nvm() {
 
 # Validate license key with server, loop until valid
 validate_license_key() {
-  local force_prompt="${1:-false}"  # Force prompt in certify mode
+  local force_prompt="${1:-false}"  # Only force prompt if explicitly requested
   load_config
 
-  # Skip prompt if key exists and is valid, unless forced
-  if [ "$force_prompt" != "true" ] && [ -n "$LICENSE_KEY" ] && bbcertify >/dev/null 2>&1; then
-    printf "${GREEN}Using existing valid license key.${NC}\n"
-    export LICENSE_KEY
-    return 0
-  fi
-
-  local valid_format=false
-  local valid_server=false
-
-  while true; do
-    if [ -z "$LICENSE_KEY" ] || [ "$force_prompt" = "true" ]; then
+  # If no key exists or we're forcing a new one, prompt
+  if [ -z "$LICENSE_KEY" ] || [ "$force_prompt" = "true" ]; then
+    while true; do
       read -r -p "Enter License Key (e.g., U0TZ-GNMD-S889-RETG-YMCH-EAMR-ZOKU-2KRO): " LICENSE_KEY
       if [ -z "$LICENSE_KEY" ]; then
         printf "${RED}ERROR: License key cannot be empty. Try again.${NC}\n"
         continue
       fi
-    fi
-
-    # Validate format: 8 stanzas of 4 A-Z0-9 chars, separated by hyphens
-    if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
-      valid_format=true
-    else
-      printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
-      LICENSE_KEY=""  # Reset to force re-prompt
-      continue
-    fi
-
-    # Validate with server via bbcertify
+      if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
+        export LICENSE_KEY
+        if bbcertify >/dev/null 2>&1; then
+          printf "${GREEN}License key validated with server.${NC}\n"
+          save_config
+          return 0
+        else
+          printf "${RED}ERROR: License key invalid or server unreachable. Try again.${NC}\n"
+          LICENSE_KEY=""
+        fi
+      else
+        printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
+        LICENSE_KEY=""
+      fi
+    done
+  else
+    # Validate existing key
     export LICENSE_KEY
     if bbcertify >/dev/null 2>&1; then
-      valid_server=true
-      printf "${GREEN}License key validated with server.${NC}\n"
-      save_config
-      break
+      printf "${GREEN}Existing license key is valid.${NC}\n"
+      return 0
     else
-      printf "${RED}ERROR: License key invalid or server unreachable. Please check and try again.${NC}\n"
-      LICENSE_KEY=""  # Reset to force re-prompt
-      if [ "$force_prompt" != "true" ]; then
-        printf "${YELLOW}Falling back to prompt...${NC}\n"
-      fi
+      printf "${RED}Current license key ($LICENSE_KEY) is invalid. Run 'bbx certify' to update it.${NC}\n"
+      return 1
     fi
-  done
+  fi
 }
 
 # Get license key, loop until valid format and bbcertify passes
 get_license_key() {
     load_config
-    if [ -n "$LICENSE_KEY" ] && bbcertify >/dev/null 2>&1; then
+    if [ -n "$LICENSE_KEY" ]; then
+      export LICENSE_KEY
+      if bbcertify >/dev/null 2>&1; then
         # Existing key is valid, no need to prompt
         return
+      fi
     fi
 
     local valid_format=false
@@ -213,6 +207,11 @@ get_license_key() {
 # Box drawing helper function
 draw_box() {
     local text="$1"
+    if [[ -n "$BBX_DEBUG" ]]; then
+      echo "Skipping draw box for debug, just outputting message..." >&2
+      echo "$text"
+      return 0
+    fi
     local padding_left=1  # Left padding space
     local padding_right=1 # Right padding space
     local text_width=${#text}
@@ -421,13 +420,13 @@ test_port_access() {
 # Ensure setup_tor is run for the user (assume global, check Tor service)
 ensure_setup_tor() {
     local user="$1"
-    local tor_running=false
+    local tor_is_running=false
     if [[ "$(uname -s)" == "Darwin" ]]; then
-        brew services list | grep -q "tor.*started" && tor_running=true
+        brew services list | grep -q "tor.*started" && tor_is_running=true
     else
-        systemctl is-active tor >/dev/null 2>&1 && tor_running=true
+        systemctl is-active tor >/dev/null 2>&1 && tor_is_running=true
     fi
-    if ! $tor_running || ! command -v tor >/dev/null 2>&1; then
+    if ! $tor_is_running || ! command -v tor >/dev/null 2>&1; then
         printf "${YELLOW}Setting up Tor for user $user...${NC}\n"
         $SUDO bash -c "PATH=/usr/local/bin:\$PATH setup_tor '$user'" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
     fi
@@ -435,6 +434,7 @@ ensure_setup_tor() {
 
 # Certify with updated bbcertify behavior
 certify_with_retry() {
+    export LICENSE_KEY
     bbcertify || { printf "${RED}Certification failed. Check LICENSE_KEY or server status.${NC}\n"; exit 1; }
     printf "${GREEN}Certification complete.${NC}\n"
 }
@@ -494,12 +494,10 @@ setup() {
   load_config
   ensure_deps
 
-  # Default values
   local port="${PORT:-$(find_free_port_block)}"
   local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
   local token="${TOKEN}"
 
-  # Parse named arguments
   while [ $# -gt 0 ]; do
     case "$1" in
       --port|-p)
@@ -522,7 +520,6 @@ setup() {
     esac
   done
 
-  # Validate port
   if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
     printf "${RED}Invalid port: $port. Must be between 1024 and 65535.${NC}\n"
     exit 1
@@ -530,7 +527,7 @@ setup() {
 
   PORT="$port"
   BBX_HOSTNAME="$hostname"
-  TOKEN="${token:-$(openssl rand -hex 16)}"  # Generate token if not provided
+  TOKEN="${token:-$(openssl rand -hex 16)}"
 
   printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
   if ! is_local_hostname "$hostname"; then
@@ -542,11 +539,10 @@ setup() {
     ensure_hosts_entry "$hostname"
   fi
 
-  # Acquire and validate license key during setup
-  if [ -z "$LICENSE_KEY" ] || ! bbcertify >/dev/null 2>&1; then
-    validate_license_key  # Prompt and validate if missing or invalid
-  else
-    printf "${GREEN}Using existing valid license key.${NC}\n"
+  # Ensure we have a valid license key
+  if ! validate_license_key; then
+    printf "${YELLOW}Setting up a new license key...${NC}\n"
+    validate_license_key "true"  # Force prompt if invalid or missing
   fi
 
   setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
@@ -606,6 +602,7 @@ run() {
   fi
 
   # Validate existing license key
+  export LICENSE_KEY;
   if ! bbcertify >/dev/null 2>&1; then
     printf "${RED}License key invalid or missing. Run 'bbx setup' or 'bbx certify' to configure a valid key.${NC}\n"
     exit 1
@@ -621,57 +618,61 @@ run() {
 }
 
 tor_run() {
-    banner
+  banner
+  load_config
+  ensure_deps
+
+  local anonymize=true onion=true
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --anonymize) anonymize=true; shift ;;
+      --no-anonymize) anonymize=false; shift ;;
+      --onion) onion=true; shift ;;
+      --no-onion) onion=false; shift ;;
+      *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
+    esac
+  done
+  if ! $anonymize && ! $onion; then
+    printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
+    exit 1
+  fi
+
+  # Trigger setup if not fully configured
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
+    printf "${RED}Running 'bbx setup' first...${NC}\n"
+    setup
     load_config
-    ensure_deps
-    local anonymize=true onion=true
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --anonymize) anonymize=true; shift ;;
-            --no-anonymize) anonymize=false; shift ;;
-            --onion) onion=true; shift ;;
-            --no-onion) onion=false; shift ;;
-            *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
-        esac
-    done
-    if ! $anonymize && ! $onion; then
-        printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
-        exit 1
-    fi
-    ([ -n "$PORT" ] && [ -n "$BBX_HOSTNAME" ]) || {
-        printf "${RED}Running 'bbx setup' first...${NC}\n";
-        bbx setup;
-        load_config
-    }
-    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
-    printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
-    ensure_setup_tor "$(whoami)"
+  fi
 
-    # Determine Tor group and cookie file dynamically
-    if [[ "$(uname -s)" == "Darwin" ]]; then
-        TOR_GROUP="admin"  # Homebrew default
-        TORDIR="$(brew --prefix)/var/lib/tor"
-        COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
-    else
-        TORDIR="/var/lib/tor"
-        COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
-        TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null)
-        if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
-          TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1)
-        fi
-        if [[ -z "$TOR_GROUP" ]]; then
-          TOR_GROUP="debian-tor"
-        fi
-    fi
+  [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
+  printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
+  ensure_setup_tor "$(whoami)"
 
-    local user="$(whoami)"
-    local in_tor_group=false
-    if id | grep -qw "$TOR_GROUP"; then
-        in_tor_group=true
-        printf "${GREEN}User $user already in group $TOR_GROUP${NC}\n"
-    elif ! command -v sg >/dev/null 2>&1; then
-        printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
-    fi
+  # Determine Tor group and cookie file dynamically
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+      TOR_GROUP="admin"  # Homebrew default
+      TORDIR="$(brew --prefix)/var/lib/tor"
+      COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+  else
+      TORDIR="/var/lib/tor"
+      COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+      TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null)
+      if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
+        TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1)
+      fi
+      if [[ -z "$TOR_GROUP" ]]; then
+        TOR_GROUP="debian-tor"
+      fi
+  fi
+
+  local user="$(whoami)"
+  local in_tor_group=false
+  if id | grep -qw "$TOR_GROUP"; then
+      in_tor_group=true
+      printf "${GREEN}User $user already in group $TOR_GROUP${NC}\n"
+  elif ! command -v sg >/dev/null 2>&1; then
+      printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
+  fi
 
     local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
     if $anonymize; then
@@ -684,8 +685,13 @@ tor_run() {
     fi
     $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
     source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-    get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
+    # Validate existing license key
+    export LICENSE_KEY
+    if ! bbcertify >/dev/null 2>&1; then
+      printf "${RED}License key invalid or missing. Run 'bbx setup' or 'bbx certify' to configure a valid key.${NC}\n"
+      exit 1
+    fi
+
     certify_with_retry
     local login_link=""
     if $onion; then
@@ -1180,22 +1186,31 @@ uninstall() {
     printf "${GREEN}Uninstall complete. Run 'bbx install' to reinstall if needed.${NC}\n"
 }
 
-# Certify command to allow entering a new license key
 certify() {
   load_config
   printf "${YELLOW}Certifying BrowserBox license...${NC}\n"
-  printf "${BLUE}Enter a new license key to update, or press Enter to validate the current key ($LICENSE_KEY):${NC}\n"
-  read -r -p "New License Key (leave blank to check current): " new_key
-
-  if [ -n "$new_key" ]; then
-    LICENSE_KEY="$new_key"
+  if [ -n "$LICENSE_KEY" ]; then
+    printf "${BLUE}Current key: $LICENSE_KEY${NC}\n"
+    printf "Press Enter to validate it, or enter a new key to update: "
+    read -r new_key
+    if [ -n "$new_key" ]; then
+      LICENSE_KEY="$new_key"
+      validate_license_key "true"  # Force prompt and validation for new key
+    else
+      # Validate existing key without forcing a prompt
+      if validate_license_key; then
+        printf "${GREEN}License certified.${NC}\n"
+      else
+        printf "${YELLOW}Current key is invalid. Please enter a new one.${NC}\n"
+        validate_license_key "true"  # Force prompt if validation fails
+      fi
+    fi
+  else
+    printf "${BLUE}No license key found. Please enter one.${NC}\n"
+    validate_license_key "true"  # Force prompt for initial setup
   fi
-
-  # Force server validation
-  validate_license_key "true"  # Pass true to force prompt/validation
-  printf "${GREEN}License certified.${NC}\n"
+  printf "${GREEN}Certification complete.${NC}\n"
 }
-
 
 stop() {
     load_config
