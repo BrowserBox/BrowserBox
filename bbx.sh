@@ -37,11 +37,11 @@ REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
 
 # Config file (secondary to test.env and login.link)
-CONFIG_DIR="$HOME/.config/dosyago/bbpro"
-CONFIG_FILE="$CONFIG_DIR/config"
-[ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
+BB_CONFIG_DIR="$HOME/.config/dosyago/bbpro"
+CONFIG_FILE="$BB_CONFIG_DIR/config"
+[ ! -d "$BB_CONFIG_DIR" ] && mkdir -p "$BB_CONFIG_DIR"
 
-DOCKER_CONTAINERS_FILE="$CONFIG_DIR/docker_containers.json"
+DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
 [ ! -f "$DOCKER_CONTAINERS_FILE" ] && echo "{}" > "$DOCKER_CONTAINERS_FILE"
 
 # ASCII Banner
@@ -96,7 +96,7 @@ fi
 load_config() {
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
     # Override with test.env if it exists
-    [ -f "$CONFIG_DIR/test.env" ] && source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}"
+    [ -f "$BB_CONFIG_DIR/test.env" ] && source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}"
 }
 
 load_config
@@ -104,8 +104,8 @@ load_config
 trap save_config EXIT
 
 save_config() {
-  mkdir -p "$CONFIG_DIR"
-  chmod 700 "$CONFIG_DIR"  # Restrict to owner only
+  mkdir -p "$BB_CONFIG_DIR"
+  chmod 700 "$BB_CONFIG_DIR"  # Restrict to owner only
   cat > "$CONFIG_FILE" <<EOF
 EMAIL="${EMAIL:-}"
 LICENSE_KEY="${LICENSE_KEY:-}"
@@ -524,11 +524,11 @@ setup() {
     test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
   done
   test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
-  setup_bbpro --port "$port" --token "$TOKEN" > "$CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
-  source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+  setup_bbpro --port "$port" --token "$TOKEN" > "$BB_CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   save_config
   printf "${GREEN}Setup complete.${NC}\n"
-  draw_box "Login Link: $(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")"
+  draw_box "Login Link: $(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")"
 }
 
 run() {
@@ -585,8 +585,8 @@ run() {
 
   bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
   sleep 2
-  source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-  local login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
+  source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+  local login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
   draw_box "Login Link: $login_link"
   save_config
 }
@@ -659,7 +659,7 @@ tor_run() {
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
     $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
-    source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+    source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
     # Validate existing license key
     export LICENSE_KEY
     if ! bbcertify >/dev/null 2>&1; then
@@ -676,8 +676,8 @@ tor_run() {
             login_link=$(torbb)
         elif command -v sg >/dev/null 2>&1; then
             # Use safe heredoc with env
-            export CONFIG_DIR
-            login_link=$(sg "$TOR_GROUP" -c "env CONFIG_DIR='$CONFIG_DIR' bash" << 'EOF'
+            export BB_CONFIG_DIR
+            login_link=$(sg "$TOR_GROUP" -c "env BB_CONFIG_DIR='$BB_CONFIG_DIR' bash" << 'EOF'
 torbb
 EOF
             )
@@ -685,7 +685,7 @@ EOF
             # Fallback without sg
             login_link=$(torbb)
         fi
-        [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$CONFIG_DIR/torbb_errors.txt"; exit 1; }
+        [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$BB_CONFIG_DIR/torbb_errors.txt"; exit 1; }
         TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
     else
         for i in {-2..2}; do
@@ -693,7 +693,7 @@ EOF
         done
         test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
         bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-        login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$TEMP_HOSTNAME:$PORT/login?token=$TOKEN")
+        login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$TEMP_HOSTNAME:$PORT/login?token=$TOKEN")
     fi
     sleep 2
     printf "${GREEN}BrowserBox with Tor started.${NC}\n"
@@ -802,7 +802,6 @@ docker_run() {
   local port="${PORT:-$(find_free_port_block)}"
   local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
   local email="${EMAIL:-$USER@$hostname}"
-  local orig_dir="$PWD"
 
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -832,6 +831,8 @@ docker_run() {
     printf "${RED}Invalid nickname: Must be alphanumeric with dashes or underscores${NC}\n"
     exit 1
   }
+
+  local drun_file="$CONFIG_DIR/docker-${nickname}"
 
   if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 4024 ] || [ "$port" -gt 65533 ]; then
     printf "${RED}Invalid port: $port. Must be between 4024 and 65533.${NC}\n"
@@ -900,25 +901,25 @@ docker_run() {
     ensure_hosts_entry "$hostname"
   fi
 
-  local output_file="$CONFIG_DIR/docker_run_output_$port.txt"
-  printf "${YELLOW}Running run_docker.sh, output saved to $output_file${NC}\n"
-  bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' orig_dir='$orig_dir' port='$port' hostname='$hostname' email='$email' bash" << 'EOF' > "$output_file" 2>&1
-set -x
+  printf "${YELLOW}Running run_docker.sh...${NC}\n"
+
+  local docker_output="$(bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' drun_file='$drun_file' port='$port' hostname='$hostname' email='$email' bash" << 'EOF'
 cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
-yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email"
-cd "$orig_dir" || { echo "Failed to return to $orig_dir"; exit 1; }
+yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email" 2>&1 && ( echo "success" > "$drun_file" )
 EOF
-  local run_status=$?
-  if [ $run_status -ne 0 ]; then
-    printf "${RED}Docker run failed with status $run_status${NC}\n"
-    cat "$output_file"
-    printf "${YELLOW}Output file retained at $output_file for inspection${NC}\n"
+  )"
+  if [[ ! -f "$drun_file" ]] || [[ "$(cat "$drun_file")" != "success" ]]; then
+    printf "${RED}Docker run failed${NC}\n"
+    echo "Docker run output:"
+    echo ""
+    echo "$docker_output"
+    echo ""
     exit 1
   fi
+  rm -f "$drun_file"
 
-  local container_id=$(grep "Container ID:" "$output_file" | awk '{print $NF}' | tail -n1)
-  local login_link=$(grep "Login Link:" "$output_file" | sed 's/Login Link: //' | tail -n1)
-  rm -f "$output_file"
+  local container_id=$(echo "$docker_output" | grep "Container ID:" | awk '{print $NF}' | tail -n1)
+  local login_link=$(echo "$docker_output" | grep "Login Link:" | sed 's/Login Link: //' | tail -n1)
 
   [ -n "$container_id" ] || {
     printf "${RED}Failed to get container ID${NC}\n"
@@ -1138,13 +1139,13 @@ uninstall() {
         printf "${RED}Uninstall cancelled.${NC}\n"
         exit 0
     fi
-    if [ -d "$CONFIG_DIR" ]; then
-        printf "${YELLOW}Removing config directory: $CONFIG_DIR...${NC}\n"
-        read -r -p "Confirm removal of $CONFIG_DIR? (yes/no): " CONFIRM_CONFIG
+    if [ -d "$BB_CONFIG_DIR" ]; then
+        printf "${YELLOW}Removing config directory: $BB_CONFIG_DIR...${NC}\n"
+        read -r -p "Confirm removal of $BB_CONFIG_DIR? (yes/no): " CONFIRM_CONFIG
         if [ "$CONFIRM_CONFIG" = "yes" ]; then
-            rm -rf "$CONFIG_DIR" && printf "${GREEN}Removed $CONFIG_DIR${NC}\n" || printf "${RED}Failed to remove $CONFIG_DIR${NC}\n"
+            rm -rf "$BB_CONFIG_DIR" && printf "${GREEN}Removed $BB_CONFIG_DIR${NC}\n" || printf "${RED}Failed to remove $BB_CONFIG_DIR${NC}\n"
         else
-            printf "${YELLOW}Skipping $CONFIG_DIR removal${NC}\n"
+            printf "${YELLOW}Skipping $BB_CONFIG_DIR removal${NC}\n"
         fi
     fi
     if [ -d "$BBX_HOME" ]; then
@@ -1592,14 +1593,14 @@ check_agreement() {
     if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
       return 0
     fi
-    if [ ! -f "$CONFIG_DIR/.agreed" ]; then
+    if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
         printf "${BLUE}BrowserBox v10 Terms:${NC} https://dosaygo.com/terms.txt\n"
         printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
         printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
         read -r -p " Agree? (yes/no): " AGREE
         [ "$AGREE" = "yes" ] || { printf "${RED}ERROR: Must agree to terms!${NC}\n"; exit 1; }
-        mkdir -p "$CONFIG_DIR"
-        touch "$CONFIG_DIR/.agreed"
+        mkdir -p "$BB_CONFIG_DIR"
+        touch "$BB_CONFIG_DIR/.agreed"
     fi
 }
 
