@@ -99,6 +99,10 @@ load_config() {
     [ -f "$CONFIG_DIR/test.env" ] && source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}"
 }
 
+load_config
+# Trap EXIT signal to save config on script termination
+trap save_config EXIT
+
 save_config() {
   mkdir -p "$CONFIG_DIR"
   chmod 700 "$CONFIG_DIR"  # Restrict to owner only
