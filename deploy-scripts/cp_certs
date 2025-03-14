@@ -11,7 +11,9 @@ if [[ -z "$2" ]]; then
 fi
 
 mkdir -p $2
-. /etc/os-release
+if [ -f /etc/os-release ]; then
+  . /etc/os-release
+fi
 if [[ $ID == *"bsd" ]] || [[ -d /usr/local/etc/letsencrypt/live/$1 ]]; then
   cp -r -L /usr/local/etc/letsencrypt/live/$1/* $2
 else

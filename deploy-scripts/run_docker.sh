@@ -3,6 +3,10 @@ set -e  # Exit on error
 trap 'echo "Error: Bailed! Check output..." >&2' ERR
 trap 'echo "Done!" >&2' EXIT
 
+if [[ -n "$BBX_DEBUG" ]]; then
+  set -x
+fi
+
 # Vars & Defaults
 PORT="${1:-}"  # Main port (e.g., 8080)
 HOSTNAME="${2:-}"  # DNS hostname
@@ -12,6 +16,7 @@ DOCKER_IMAGE_GHCR="ghcr.io/browserbox/browserbox:latest"
 CERT_DIR="$HOME/sslcerts"
 SUDO=$(command -v sudo >/dev/null && echo "sudo -n" || echo "")
 OS=$(uname)
+branch="${BBX_BRANCH:-main}"
 
 # Root/Sudo Check (Cross-Platform)
 if [ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null; then
@@ -79,7 +84,7 @@ open_ports() {
         echo "WARNING: No firewall tool found—open $start-$end/tcp manually!" >&2
     fi
 }
-[ "$HOSTNAME" != "localhost" ] && open_ports 80 80
+! is_local_hostname "$HOSTNAME" && open_ports 80 80
 open_ports $((PORT-2)) $((PORT+2))
 
 # External IP (Cross-Platform)
@@ -94,23 +99,22 @@ get_ip() {
 fetch_certs() {
     mkdir -p "$CERT_DIR"
     if [ ! -f "$CERT_DIR/fullchain.pem" ] || [ ! -f "$CERT_DIR/privkey.pem" ] || [ "$(openssl x509 -in "$CERT_DIR/fullchain.pem" -noout -subject | grep -o "$HOSTNAME")" != "$HOSTNAME" ]; then
-        echo "Fetching certs for $HOSTNAME (DNS A record to $(get_ip) required)..." >&2
-        $SUDO bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/wait_for_hostname.sh) "$HOSTNAME" || {
-            echo "ERROR: Hostname $HOSTNAME not resolving!" >&2
-            exit 1
-        }
-        BB_USER_EMAIL="$EMAIL" $SUDO bash <(curl -s https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/deploy-scripts/tls) "$HOSTNAME" || {
+        if ! is_local_hostname "$HOSTNAME"; then
+          echo "Fetching certs for $HOSTNAME (DNS A record to $(get_ip) required)..." >&2
+          bash <(curl -s "https://raw.githubusercontent.com/BrowserBox/BrowserBox/${branch}/deploy-scripts/wait_for_hostname.sh") "$HOSTNAME" || {
+              echo "ERROR: Hostname $HOSTNAME not resolving!" >&2
+              exit 1
+          }
+        fi
+        BB_USER_EMAIL="$EMAIL" bash <(curl -s "https://raw.githubusercontent.com/BrowserBox/BrowserBox/${branch}/deploy-scripts/tls") "$HOSTNAME" || {
             echo "ERROR: Cert fetch failed!" >&2
             exit 1
         }
     fi
     $SUDO chmod 600 "$CERT_DIR"/*.pem
 }
-if ! is_local_hostname "$HOSTNAME"; then
-    fetch_certs
-else
-    echo "Skipping cert fetch for local hostname $HOSTNAME" >&2
-fi
+
+fetch_certs
 
 # Docker Image Pull (Check Both Repos)
 DOCKER_IMAGE=""
@@ -159,3 +163,4 @@ echo "===========================================" >&2
 # Cleanup Choice
 read -p "Keep running? (n/no to stop, else continues): " KEEP
 [[ "$KEEP" = "n" || "$KEEP" = "no" ]] && $SUDO docker stop --time 3 "$CONTAINER_ID" && echo "Stopped!" >&2
+exit 0

@@ -28,6 +28,9 @@ BOLD='\033[1m'
 # Version
 BBX_VERSION="10.2.1"
 branch="main" # change to main for dist
+if [[ "$branch" != "main" ]]; then
+  export BBX_BRANCH="$branch"
+fi
 banner_color=$CYAN
 
 # Default paths
@@ -37,12 +40,11 @@ REPO_URL="https://github.com/BrowserBox/BrowserBox"
 BBX_SHARE="/usr/local/share/dosyago"
 
 # Config file (secondary to test.env and login.link)
-CONFIG_DIR="$HOME/.config/dosyago/bbpro"
-CONFIG_FILE="$CONFIG_DIR/config"
-TICKET_FILE="$CONFIG_DIR/tickets/ticket.json"
-[ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
+BB_CONFIG_DIR="$HOME/.config/dosyago/bbpro"
+CONFIG_FILE="$BB_CONFIG_DIR/config"
+[ ! -d "$BB_CONFIG_DIR" ] && mkdir -p "$BB_CONFIG_DIR"
 
-DOCKER_CONTAINERS_FILE="$CONFIG_DIR/docker_containers.json"
+DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
 [ ! -f "$DOCKER_CONTAINERS_FILE" ] && echo "{}" > "$DOCKER_CONTAINERS_FILE"
 
 # ASCII Banner
@@ -97,19 +99,24 @@ fi
 load_config() {
     [ -f "$CONFIG_FILE" ] && source "$CONFIG_FILE"
     # Override with test.env if it exists
-    [ -f "$CONFIG_DIR/test.env" ] && source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}"
+    [ -f "$BB_CONFIG_DIR/test.env" ] && source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}"
 }
 
+load_config
+# Trap EXIT signal to save config on script termination
+trap save_config EXIT
+
 save_config() {
-    mkdir -p "$CONFIG_DIR"
-    cat > "$CONFIG_FILE" <<EOF
+  mkdir -p "$BB_CONFIG_DIR"
+  chmod 700 "$BB_CONFIG_DIR"  # Restrict to owner only
+  cat > "$CONFIG_FILE" <<EOF
 EMAIL="${EMAIL:-}"
 LICENSE_KEY="${LICENSE_KEY:-}"
 BBX_HOSTNAME="${BBX_HOSTNAME:-}"
 TOKEN="${TOKEN:-}"
 PORT="${PORT:-}"
 EOF
-    chmod 600 "$CONFIG_FILE"
+  chmod 600 "$CONFIG_FILE"
 }
 
 ensure_nvm() {
@@ -121,48 +128,55 @@ ensure_nvm() {
     fi
 }
 
-# Get license key, loop until valid format and bbcertify passes
-get_license_key() {
-    load_config
-    if [ -n "$LICENSE_KEY" ] && bbcertify >/dev/null 2>&1; then
-        # Existing key is valid, no need to prompt
-        return
-    fi
+# Validate license key with server, loop until valid
+validate_license_key() {
+  local force_prompt="${1:-false}"  # Only force prompt if explicitly requested
+  load_config
 
-    local valid_format=false
-    local valid_cert=false
+  # If no key exists or we're forcing a new one, prompt
+  if [ -z "$LICENSE_KEY" ] || [ "$force_prompt" = "true" ]; then
     while true; do
-        read -r -p "Enter License Key (e.g., U0TZ-GNMD-S889-RETG-YMCH-EAMR-ZOKU-2KRO): " LICENSE_KEY
-        if [ -z "$LICENSE_KEY" ]; then
-            printf "${RED}ERROR: License key cannot be empty. Try again.${NC}\n"
-            continue
-        fi
-
-        # Validate format: 8 stanzas of 4 A-Z0-9 chars, separated by hyphens
-        if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
-            valid_format=true
-        else
-            printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
-            continue
-        fi
-
-        # Validate with bbcertify
+      read -r -p "Enter License Key (e.g., U0TZ-GNMD-S889-RETG-YMCH-EAMR-ZOKU-2KRO): " LICENSE_KEY
+      if [ -z "$LICENSE_KEY" ]; then
+        printf "${RED}ERROR: License key cannot be empty. Try again.${NC}\n"
+        continue
+      fi
+      if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
         export LICENSE_KEY
         if bbcertify >/dev/null 2>&1; then
-            valid_cert=true
-            break
+          printf "${GREEN}License key validated with server.${NC}\n"
+          save_config
+          return 0
         else
-            printf "${RED}ERROR: License key failed certification. Check your key and try again.${NC}\n"
+          printf "${RED}ERROR: License key invalid or server unreachable. Try again.${NC}\n"
+          LICENSE_KEY=""
         fi
+      else
+        printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
+        LICENSE_KEY=""
+      fi
     done
-
-    printf "${YELLOW}Note: License will be saved unencrypted at $CONFIG_FILE. Ensure file permissions are restricted (e.g., chmod 600).${NC}\n"
-    save_config
+  else
+    # Validate existing key
+    export LICENSE_KEY
+    if bbcertify >/dev/null 2>&1; then
+      printf "${GREEN}Existing license key is valid.${NC}\n"
+      return 0
+    else
+      printf "${RED}Current license key ($LICENSE_KEY) is invalid. Run 'bbx certify' to update it.${NC}\n"
+      return 1
+    fi
+  fi
 }
 
 # Box drawing helper function
 draw_box() {
     local text="$1"
+    if [[ -n "$BBX_DEBUG" ]]; then
+      echo "Skipping draw box for debug, just outputting message..." >&2
+      echo "$text"
+      return 0
+    fi
     local padding_left=1  # Left padding space
     local padding_right=1 # Right padding space
     local text_width=${#text}
@@ -208,7 +222,7 @@ get_system_hostname() {
 # Check if hostname is local
 is_local_hostname() {
     local hostname="$1"
-    local resolved_ip=$(dig +short "$hostname" A | grep -v '\.$' | head -n1)
+    local resolved_ip=$(timeout 8s dig +short "$hostname" A | grep -v '\.$' | head -n1)
     if [[ "$hostname" == "localhost" || "$hostname" =~ \.local$ || "$resolved_ip" =~ ^(127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|::1) ]]; then
         return 0  # Local
     else
@@ -327,27 +341,30 @@ ensure_deps() {
     done
 }
 
-# Find a free block of 5 ports + CDP endpoint
 find_free_port_block() {
-    local start_port=4024
-    local end_port=65533
-    for ((port=start_port+2; port<=end_port-2; port++)); do
-        local free=true
-        for ((i=-2; i<=2; i++)); do
-            if ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port+i))" 2>/dev/null; then
-                : # Port is free
-            else
-                free=false
-                break
-            fi
-        done
-        if $free && ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port-3000))" 2>/dev/null; then
-            echo "$port"
-            return 0
-        fi
+  local start_port=4024
+  local end_port=65533
+  for ((port=start_port+2; port<=end_port-2; port++)); do
+    local cdp_port=$((port-3000))
+    if [ "$cdp_port" -lt 1024 ]; then
+      continue
+    fi
+    local free=true
+    for ((i=-2; i<=2; i++)); do
+      if ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$((port+i))" 2>/dev/null; then
+        : # Port is free
+      else
+        free=false
+        break
+      fi
     done
-    printf "${RED}No free 5-port block + CDP endpoint (port-3000) found between 4024-65533.${NC}\n"
-    exit 1
+    if $free && ! bash -c "exec 6<>/dev/tcp/127.0.0.1/$cdp_port" 2>/dev/null; then
+      echo "$port"
+      return 0
+    fi
+  done
+  printf "${RED}No free 5-port block + CDP endpoint (port-3000) found between 4024-65533.${NC}\n"
+  exit 1
 }
 
 # Test port accessibility via firewall
@@ -371,26 +388,21 @@ test_port_access() {
 # Ensure setup_tor is run for the user (assume global, check Tor service)
 ensure_setup_tor() {
     local user="$1"
-    local tor_running=false
+    local tor_is_running=false
     if [[ "$(uname -s)" == "Darwin" ]]; then
-        brew services list | grep -q "tor.*started" && tor_running=true
+        brew services list | grep -q "tor.*started" && tor_is_running=true
     else
-        systemctl is-active tor >/dev/null 2>&1 && tor_running=true
+        systemctl is-active tor >/dev/null 2>&1 && tor_is_running=true
     fi
-    if ! $tor_running || ! command -v tor >/dev/null 2>&1; then
+    if ! $tor_is_running || ! command -v tor >/dev/null 2>&1; then
         printf "${YELLOW}Setting up Tor for user $user...${NC}\n"
         $SUDO bash -c "PATH=/usr/local/bin:\$PATH setup_tor '$user'" || { printf "${RED}Failed to setup Tor for $user${NC}\n"; exit 1; }
     fi
 }
 
-# Certify with updated bbcertify behavior
-certify_with_retry() {
-    bbcertify || { printf "${RED}Certification failed. Check LICENSE_KEY or server status.${NC}\n"; exit 1; }
-    printf "${GREEN}Certification complete.${NC}\n"
-}
-
 install() {
     banner
+    check_agreement
     pre_install
     load_config
     ensure_deps
@@ -405,13 +417,28 @@ install() {
     $SUDO rm -f $BBX_HOME/BrowserBox.zip
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
     local default_hostname=$(get_system_hostname)
-    [ -n "$BBX_HOSTNAME" ] || read -r -p "Enter hostname (default: $default_hostname): " BBX_HOSTNAME
+
+
+    if [ -z "$BBX_HOSTNAME" ]; then
+      if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
+        BBX_HOSTNAME="localhost"
+      else
+        read -r -p "Enter hostname (default: $default_hostname): " BBX_HOSTNAME
+      fi
+    fi
     BBX_HOSTNAME="${BBX_HOSTNAME:-$default_hostname}"
     if is_local_hostname "$BBX_HOSTNAME"; then
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
-    [ -n "$EMAIL" ] || read -r -p "Enter your email for Let's Encrypt (optional for $BBX_HOSTNAME): " EMAIL
-    if [ -t 0 ]; then
+    if [ -z "$EMAIL" ]; then
+      if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
+        EMAIL=""
+      else
+        read -r -p "Enter your email for Let's Encrypt (optional for $BBX_HOSTNAME): " EMAIL
+      fi
+    fi
+    
+    if [ -t 0 ] && [[ -z "$BBX_TEST_AGREEMENT" ]]; then
         printf "${YELLOW}Running BrowserBox installer interactively...${NC}\n"
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL"
     else
@@ -441,179 +468,189 @@ install() {
 }
 
 setup() {
-    load_config
-    ensure_deps
+  load_config
+  ensure_deps
 
-    # Default values
-    local port="${PORT:-$(find_free_port_block)}"
-    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
-    local token="${TOKEN}"
+  local port="${PORT:-$(find_free_port_block)}"
+  local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+  local token="${TOKEN}"
 
-    # Parse named arguments
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --port|-p)
-                port="$2"
-                shift 2
-                ;;
-            --hostname|-h)
-                hostname="$2"
-                shift 2
-                ;;
-            --token|-t)
-                token="$2"
-                shift 2
-                ;;
-            *)
-                printf "${RED}Unknown option: $1${NC}\n"
-                printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
-                exit 1
-                ;;
-        esac
-    done
-
-    # Validate port
-    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
-        printf "${RED}Invalid port: $port. Must be between 1024 and 65535.${NC}\n"
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --port|-p)
+        port="$2"
+        shift 2
+        ;;
+      --hostname|-h)
+        hostname="$2"
+        shift 2
+        ;;
+      --token|-t)
+        token="$2"
+        shift 2
+        ;;
+      *)
+        printf "${RED}Unknown option: $1${NC}\n"
+        printf "Usage: bbx setup [--port|-p <port>] [--hostname|-h <hostname>] [--token|-t <token>]\n"
         exit 1
-    fi
+        ;;
+    esac
+  done
 
-    PORT="$port"
-    BBX_HOSTNAME="$hostname"
-    TOKEN="${token:-$(openssl rand -hex 16)}"  # Generate token if not provided
+  if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1024 ] || [ "$port" -gt 65535 ]; then
+    printf "${RED}Invalid port: $port. Must be between 1024 and 65535.${NC}\n"
+    exit 1
+  fi
 
-    printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
-    if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
-        chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
-    else
-        ensure_hosts_entry "$hostname"
-    fi
+  PORT="$port"
+  BBX_HOSTNAME="$hostname"
+  TOKEN="${token:-$(openssl rand -hex 16)}"
 
-    setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
-    for i in {-2..2}; do
-        test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
-    done
-    test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
-    setup_bbpro --port "$port" --token "$TOKEN" > "$CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
-    source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-    save_config
-    printf "${GREEN}Setup complete.${NC}\n"
-    draw_box "Login Link: $(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")"
+  printf "${YELLOW}Setting up BrowserBox on $hostname:$port...${NC}\n"
+  if ! is_local_hostname "$hostname"; then
+    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+    curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/wait_for_hostname.sh" -o "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" || { printf "${RED}Failed to download wait_for_hostname.sh${NC}\n"; exit 1; }
+    chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh"
+    "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
+  else
+    ensure_hosts_entry "$hostname"
+  fi
+
+  # Ensure we have a valid license key
+  if ! validate_license_key; then
+    printf "${YELLOW}Setting up a new license key...${NC}\n"
+    validate_license_key "true"  # Force prompt if invalid or missing
+  fi
+
+  setup_bbpro --port "$port" --token "$TOKEN" || { printf "${RED}Port range $((port-2))-$((port+2)) not free${NC}\n"; exit 1; }
+  for i in {-2..2}; do
+    test_port_access $((port+i)) || { printf "${RED}Adjust firewall to allow ports $((port-2))-$((port+2))/tcp${NC}\n"; exit 1; }
+  done
+  test_port_access $((port-3000)) || { printf "${RED}CDP port $((port-3000)) blocked${NC}\n"; exit 1; }
+  setup_bbpro --port "$port" --token "$TOKEN" > "$BB_CONFIG_DIR/login.link" 2>/dev/null || { printf "${RED}Setup failed${NC}\n"; exit 1; }
+  source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+  save_config
+  printf "${GREEN}Setup complete.${NC}\n"
+  draw_box "Login Link: $(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")"
 }
 
 run() {
-    banner
+  banner
+  load_config
+
+  # Ensure setup has been run
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
+    printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
+    setup
     load_config
+  fi
 
-    # Default values
-    local port="${PORT:-$(find_free_port_block)}"
-    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+  # Default values (should be set by setup, but fallback for safety)
+  local port="${PORT}"
+  local hostname="${BBX_HOSTNAME}"
 
-    # Parse arguments (named or positional)
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --port|-p)
-                port="$2"
-                shift 2
-                ;;
-            --hostname|-h)
-                hostname="$2"
-                shift 2
-                ;;
-            *)
-                # Handle positional arguments
-                if [[ "$1" =~ ^[0-9]+$ ]] && [ -z "$port_set" ]; then
-                    port="$1"
-                    port_set=true
-                elif [ -n "$1" ] && [ -z "$hostname_set" ]; then
-                    hostname="$1"
-                    hostname_set=true
-                else
-                    printf "${RED}Unknown option or extra argument: $1${NC}\n"
-                    printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
-                    exit 1
-                fi
-                shift
-                ;;
-        esac
-    done
+  # Parse arguments to override if provided
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --port|-p)
+        port="$2"
+        shift 2
+        ;;
+      --hostname|-h)
+        hostname="$2"
+        shift 2
+        ;;
+      *)
+        printf "${RED}Unknown option or extra argument: $1${NC}\n"
+        printf "Usage: bbx run [--port|-p <port>] [--hostname|-h <hostname>]\n"
+        exit 1
+        ;;
+    esac
+  done
 
-    PORT="$port"
-    BBX_HOSTNAME="$hostname"
-    printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
-    if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
-        "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
-    else
-        ensure_hosts_entry "$hostname"
-    fi
-    setup --port "$port" --hostname "$hostname"  # Use named args for clarity
-    get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
-    certify_with_retry
-    bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-    sleep 2
-    source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-    local login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
-    draw_box "Login Link: $login_link"
-    save_config
+  PORT="$port"
+  BBX_HOSTNAME="$hostname"
+  printf "${YELLOW}Starting BrowserBox on $hostname:$port...${NC}\n"
+  if ! is_local_hostname "$hostname"; then
+    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+    "$BBX_HOME/BrowserBox/deploy-scripts/wait_for_hostname.sh" "$hostname" || { printf "${RED}Hostname $hostname not resolving${NC}\n"; exit 1; }
+  else
+    ensure_hosts_entry "$hostname"
+  fi
+
+  # Validate existing license key
+  export LICENSE_KEY;
+  if ! bbcertify >/dev/null 2>&1; then
+    printf "${RED}License key invalid or missing. Run 'bbx setup' or 'bbx certify' to configure a valid key.${NC}\n"
+    exit 1
+  fi
+  printf "${GREEN}Certification complete.${NC}\n"
+
+  bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
+  sleep 2
+  source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+  local login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
+  draw_box "Login Link: $login_link"
+  save_config
 }
 
 tor_run() {
-    banner
+  banner
+  load_config
+  ensure_deps
+
+  local anonymize=true onion=true
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --anonymize) anonymize=true; shift ;;
+      --no-anonymize) anonymize=false; shift ;;
+      --onion) onion=true; shift ;;
+      --no-onion) onion=false; shift ;;
+      *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
+    esac
+  done
+  if ! $anonymize && ! $onion; then
+    printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
+    exit 1
+  fi
+
+  # Trigger setup if not fully configured
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
+    printf "${RED}Running 'bbx setup' first...${NC}\n"
+    setup
     load_config
-    ensure_deps
-    local anonymize=true onion=true
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --anonymize) anonymize=true; shift ;;
-            --no-anonymize) anonymize=false; shift ;;
-            --onion) onion=true; shift ;;
-            --no-onion) onion=false; shift ;;
-            *) printf "${RED}Unknown option: $1${NC}\n"; exit 1 ;;
-        esac
-    done
-    if ! $anonymize && ! $onion; then
-        printf "${RED}ERROR: At least one of --anonymize or --onion must be enabled.${NC}\n"
-        exit 1
-    fi
-    ([ -n "$PORT" ] && [ -n "$BBX_HOSTNAME" ]) || {
-        printf "${RED}Running 'bbx setup' first...${NC}\n";
-        bbx setup;
-        load_config
-    }
-    [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
-    printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
-    ensure_setup_tor "$(whoami)"
+  fi
 
-    # Determine Tor group and cookie file dynamically
-    if [[ "$(uname -s)" == "Darwin" ]]; then
-        TOR_GROUP="admin"  # Homebrew default
-        TORDIR="$(brew --prefix)/var/lib/tor"
-        COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
-    else
-        TORDIR="/var/lib/tor"
-        COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
-        TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null)
-        if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
-          TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1)
-        fi
-        if [[ -z "$TOR_GROUP" ]]; then
-          TOR_GROUP="debian-tor"
-        fi
-    fi
+  [ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 16)
+  printf "${YELLOW}Starting BrowserBox with Tor...${NC}\n"
+  ensure_setup_tor "$(whoami)"
 
-    local user="$(whoami)"
-    local in_tor_group=false
-    if id | grep -qw "$TOR_GROUP"; then
-        in_tor_group=true
-        printf "${GREEN}User $user already in group $TOR_GROUP${NC}\n"
-    elif ! command -v sg >/dev/null 2>&1; then
-        printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
-    fi
+  # Determine Tor group and cookie file dynamically
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+      TOR_GROUP="admin"  # Homebrew default
+      TORDIR="$(brew --prefix)/var/lib/tor"
+      COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+  else
+      TORDIR="/var/lib/tor"
+      COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+      TOR_GROUP=$(ls -ld "$TORDIR" | awk '{print $4}' 2>/dev/null)
+      if [[ -z "$TOR_GROUP" || "$TOR_GROUP" == "root" ]]; then
+        TOR_GROUP=$(getent group | grep -E 'tor|debian-tor|toranon' | cut -d: -f1 | head -n1)
+      fi
+      if [[ -z "$TOR_GROUP" ]]; then
+        TOR_GROUP="${TOR_GROUP:-debian-tor}"  # Allow env override
+        printf "${YELLOW}Warning: Could not detect Tor group. Using default: $TOR_GROUP. Set TOR_GROUP env var if incorrect.${NC}\n"
+      fi
+  fi
+
+  local user="$(whoami)"
+  local in_tor_group=false
+  if id | grep -qw "$TOR_GROUP"; then
+      in_tor_group=true
+      printf "${GREEN}User $user already in group $TOR_GROUP${NC}\n"
+  elif ! command -v sg >/dev/null 2>&1; then
+      printf "${YELLOW}sg not found and $user not in $TOR_GROUP, may fail without Tor group access${NC}\n"
+  fi
 
     local setup_cmd="setup_bbpro --port $PORT --token $TOKEN"
     if $anonymize; then
@@ -625,10 +662,15 @@ tor_run() {
         ensure_hosts_entry "$BBX_HOSTNAME"
     fi
     $setup_cmd || { printf "${RED}Setup failed${NC}\n"; exit 1; }
-    source "$CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
-    get_license_key
-    export LICENSE_KEY="$LICENSE_KEY"
-    certify_with_retry
+    source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$PORT}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
+    # Validate existing license key
+    export LICENSE_KEY
+    if ! bbcertify >/dev/null 2>&1; then
+      printf "${RED}License key invalid or missing. Run 'bbx setup' or 'bbx certify' to configure a valid key.${NC}\n"
+      exit 1
+    fi
+    printf "${GREEN}Certification complete.${NC}\n"
+
     local login_link=""
     if $onion; then
         printf "${YELLOW}Running as onion site...${NC}\n"
@@ -637,8 +679,8 @@ tor_run() {
             login_link=$(torbb)
         elif command -v sg >/dev/null 2>&1; then
             # Use safe heredoc with env
-            export CONFIG_DIR
-            login_link=$(sg "$TOR_GROUP" -c "env CONFIG_DIR='$CONFIG_DIR' bash" << 'EOF'
+            export BB_CONFIG_DIR
+            login_link=$(sg "$TOR_GROUP" -c "env BB_CONFIG_DIR='$BB_CONFIG_DIR' bash" << 'EOF'
 torbb
 EOF
             )
@@ -646,7 +688,7 @@ EOF
             # Fallback without sg
             login_link=$(torbb)
         fi
-        [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$CONFIG_DIR/torbb_errors.txt"; exit 1; }
+        [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$BB_CONFIG_DIR/torbb_errors.txt"; exit 1; }
         TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
     else
         for i in {-2..2}; do
@@ -654,7 +696,7 @@ EOF
         done
         test_port_access $((PORT-3000)) || { printf "${RED}CDP port $((PORT-3000)) blocked${NC}\n"; exit 1; }
         bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-        login_link=$(cat "$CONFIG_DIR/login.link" 2>/dev/null || echo "https://$TEMP_HOSTNAME:$PORT/login?token=$TOKEN")
+        login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$TEMP_HOSTNAME:$PORT/login?token=$TOKEN")
     fi
     sleep 2
     printf "${GREEN}BrowserBox with Tor started.${NC}\n"
@@ -754,133 +796,158 @@ EOF
     fi
 }
 
-# Updated docker_run to rely on saved LICENSE_KEY
 docker_run() {
-    banner
-    load_config  # Load LICENSE_KEY if it exists
-    ensure_deps
+  banner
+  load_config  # Load existing config, including LICENSE_KEY
+  ensure_deps
 
-    local nickname=""
-    local port="${PORT:-$(find_free_port_block)}"
-    local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
-    local email="${EMAIL:-$USER@$hostname}"
-    local orig_dir="$PWD"
+  local nickname=""
+  local port="${PORT:-$(find_free_port_block)}"
+  local hostname="${BBX_HOSTNAME:-$(get_system_hostname)}"
+  local email="${EMAIL:-$USER@$hostname}"
 
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --port|-p)
-                port="$2"
-                shift 2
-                ;;
-            *)
-                if [ -z "$nickname" ]; then
-                    nickname="$1"
-                else
-                    printf "${RED}Unknown or extra argument: $1${NC}\n"
-                    printf "Usage: bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
-                    exit 1
-                fi
-                shift
-                ;;
-        esac
-    done
-
-    if [ -z "$nickname" ]; then
-        nickname=$(head -c8 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c6)
-        printf "${YELLOW}No nickname provided. Generated: $nickname${NC}\n"
-    fi
-
-    [[ "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]] || {
-        printf "${RED}Invalid nickname: Must be alphanumeric with dashes or underscores${NC}\n"
-        exit 1
-    }
-
-    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 4024 ] || [ "$port" -gt 65533 ]; then
-        printf "${RED}Invalid port: $port. Must be between 4024 and 65533.${NC}\n"
-        exit 1
-    fi
-
-    if ! command -v docker >/dev/null 2>&1; then
-        printf "${YELLOW}Installing Docker...${NC}\n"
-        if [ -f /etc/debian_version ]; then
-            $SUDO apt-get update && $SUDO apt-get install -y docker.io
-            $SUDO systemctl start docker
-            $SUDO systemctl enable docker
-        elif [ -f /etc/redhat-release ]; then
-            $SUDO yum install -y docker || $SUDO dnf install -y docker
-            $SUDO systemctl start docker
-            $SUDO systemctl enable docker
-        elif [ "$(uname -s)" = "Darwin" ]; then
-            printf "${RED}Please install Docker Desktop manually on macOS: https://docs.docker.com/desktop/mac/install/${NC}\n"
-            exit 1
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --port|-p)
+        port="$2"
+        shift 2
+        ;;
+      *)
+        if [ -z "$nickname" ]; then
+          nickname="$1"
         else
-            printf "${RED}Unsupported OS. Install Docker manually: https://docs.docker.com/get-docker/${NC}\n"
-            exit 1
+          printf "${RED}Unknown or extra argument: $1${NC}\n"
+          printf "Usage: bbx docker-run [nickname] [--port|-p <port>]${NC}\n"
+          exit 1
         fi
-    fi
+        shift
+        ;;
+    esac
+  done
 
-    get_license_key  # Will prompt only if not already set, then save
-    # No need to prompt again; LICENSE_KEY is now set
+  if [ -z "$nickname" ]; then
+    nickname=$(head -c8 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c6)
+    printf "${YELLOW}No nickname provided. Generated: $nickname${NC}\n"
+  fi
 
-    local run_docker_script="$BBX_HOME/BrowserBox/deploy-scripts/run_docker.sh"
-    if [ ! -f "$run_docker_script" ]; then
-        printf "${YELLOW}Fetching run_docker.sh script...${NC}\n"
-        mkdir -p "$BBX_HOME/BrowserBox/deploy-scripts"
-        curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker.sh" -o "$run_docker_script" || {
-            printf "${RED}Failed to download run_docker.sh script${NC}\n"
-            exit 1
-        }
-        chmod +x "$run_docker_script"
-    fi
+  [[ "$nickname" =~ ^[a-zA-Z0-9_-]+$ ]] || {
+    printf "${RED}Invalid nickname: Must be alphanumeric with dashes or underscores${NC}\n"
+    exit 1
+  }
 
-    if [ ! -d "$BBX_HOME/BrowserBox" ]; then
-        printf "${RED}BrowserBox directory not found. Run 'bbx install' first.${NC}\n"
+  local drun_file="$BB_CONFIG_DIR/docker-${nickname}"
+
+  if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 4024 ] || [ "$port" -gt 65533 ]; then
+    printf "${RED}Invalid port: $port. Must be between 4024 and 65533.${NC}\n"
+    exit 1
+  fi
+
+  # Trigger setup if not fully configured
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
+    printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
+    setup
+    load_config
+  fi
+
+  PORT="$port"  # Override PORT if specified
+  BBX_HOSTNAME="$hostname"
+
+  if ! command -v docker >/dev/null 2>&1; then
+    printf "${YELLOW}Installing Docker...${NC}\n"
+    if ! command -v docker >/dev/null 2>&1; then
+      printf "${YELLOW}Installing Docker...${NC}\n"
+      if [ -f /etc/debian_version ]; then
+        $SUDO apt-get update && $SUDO apt-get install -y docker.io
+        $SUDO systemctl start docker
+        $SUDO systemctl enable docker
+      elif [ -f /etc/redhat-release ]; then
+        $SUDO yum install -y docker || $SUDO dnf install -y docker
+        $SUDO systemctl start docker
+        $SUDO systemctl enable docker
+      elif [ "$(uname -s)" = "Darwin" ]; then
+        printf "${RED}Please install Docker Desktop manually on macOS: https://docs.docker.com/desktop/mac/install/${NC}\n"
         exit 1
-    fi
-
-    printf "${YELLOW}Starting Dockerized BrowserBox on $hostname:$port...${NC}\n"
-    if ! is_local_hostname "$hostname"; then
-        printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine’s IP.\n"
-    else
-        ensure_hosts_entry "$hostname"
-    fi
-
-    local output_file="$CONFIG_DIR/docker_run_output_$port.txt"
-    printf "${YELLOW}Running run_docker.sh, output saved to $output_file${NC}\n"
-    bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' orig_dir='$orig_dir' port='$port' hostname='$hostname' email='$email' bash" << 'EOF' > "$output_file" 2>&1
-set -x
-cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
-yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email"
-cd "$orig_dir" || { echo "Failed to return to $orig_dir"; exit 1; }
-EOF
-    local run_status=$?
-    if [ $run_status -ne 0 ]; then
-        printf "${RED}Docker run failed with status $run_status${NC}\n"
-        cat "$output_file"
-        printf "${YELLOW}Output file retained at $output_file for inspection${NC}\n"
+      else
+        printf "${RED}Unsupported OS. Install Docker manually: https://docs.docker.com/get-docker/${NC}\n"
         exit 1
+      fi
+      command -v docker >/dev/null 2>&1 || { printf "${RED}Docker installation failed${NC}\n"; exit 1; }
     fi
+  fi
 
-    local container_id=$(grep "Container ID:" "$output_file" | awk '{print $NF}' | tail -n1)
-    local login_link=$(grep "Login Link:" "$output_file" | sed 's/Login Link: //' | tail -n1)
-    rm -f "$output_file"
+  # Validate existing license key
+  if ! validate_license_key; then
+    printf "${RED}License key invalid. Run 'bbx certify' to update it.${NC}\n"
+    exit 1
+  fi
 
-    [ -n "$container_id" ] || {
-        printf "${RED}Failed to get container ID${NC}\n"
-        exit 1
+  local run_docker_script="$BBX_HOME/BrowserBox/deploy-scripts/run_docker.sh"
+  if [ ! -f "$run_docker_script" ]; then
+    printf "${YELLOW}Fetching run_docker.sh script...${NC}\n"
+    mkdir -p "$BBX_HOME/BrowserBox/deploy-scripts"
+    curl -sL "$REPO_URL/raw/${branch}/deploy-scripts/run_docker.sh" -o "$run_docker_script" || {
+      printf "${RED}Failed to download run_docker.sh script${NC}\n"
+      exit 1
     }
-    [ -n "$login_link" ] || login_link="https://$hostname:$port/login?token=<check_logs>"
+    chmod +x "$run_docker_script"
+  fi
 
-    local tmp_file=$(mktemp)
-    jq --arg nick "$nickname" --arg cid "$container_id" --arg port "$port" \
-       '.[$nick] = {"container_id": $cid, "port": $port}' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
-       mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+  if [ ! -d "$BBX_HOME/BrowserBox" ]; then
+    printf "${RED}BrowserBox directory not found. Run 'bbx install' first.${NC}\n"
+    exit 1
+  fi
 
-    printf "${CYAN}Dockerized BrowserBox started.${NC}\n"
-    draw_box "Login Link: $login_link"
-    draw_box "Nickname: $nickname"
-    draw_box "Stop Command: bbx docker-stop $nickname"
-    save_config  # Ensure config is saved after run
+  printf "${YELLOW}Starting Dockerized BrowserBox on $hostname:$port...${NC}\n"
+  if ! is_local_hostname "$hostname"; then
+    printf "${BLUE}DNS Note:${NC} Ensure an A/AAAA record points from $hostname to this machine's IP.\n"
+  else
+    ensure_hosts_entry "$hostname"
+  fi
+
+  printf "${YELLOW}Running run_docker.sh...${NC}\n"
+
+  export BBX_DEBUG BBX_BRANCH
+  local docker_output="$(bash -c "env LICENSE_KEY='$LICENSE_KEY' BBX_HOME='$BBX_HOME' drun_file='$drun_file' port='$port' hostname='$hostname' email='$email' bash" << 'EOF'
+  if [[ -n "$BBX_DEBUG" ]]; then
+    set -x
+  fi
+  cd "$BBX_HOME/BrowserBox" || { echo "Failed to cd to $BBX_HOME/BrowserBox"; exit 1; }
+  if yes yes | ./deploy-scripts/run_docker.sh "$port" "$hostname" "$email" 2>&1; then 
+    echo "success" > "$drun_file"
+  else
+    :
+  fi
+EOF
+  )"
+  if [[ ! -f "$drun_file" ]] || [[ "$(cat "$drun_file")" != "success" ]]; then
+    printf "${RED}Docker run failed${NC}\n"
+    echo "Docker run output:"
+    echo ""
+    echo "$docker_output"
+    echo ""
+    exit 1
+  fi
+  rm -f "$drun_file"
+
+  local container_id=$(echo "$docker_output" | grep "Container ID:" | awk '{print $NF}' | tail -n1)
+  local login_link=$(echo "$docker_output" | grep "Login Link:" | sed 's/Login Link: //' | tail -n1)
+
+  [ -n "$container_id" ] || {
+    printf "${RED}Failed to get container ID${NC}\n"
+    exit 1
+  }
+  [ -n "$login_link" ] || login_link="https://$hostname:$port/login?token=<check_logs>"
+
+  local tmp_file=$(mktemp)
+  jq --arg nick "$nickname" --arg cid "$container_id" --arg port "$port" \
+     '.[$nick] = {"container_id": $cid, "port": $port}' "$DOCKER_CONTAINERS_FILE" > "$tmp_file" && \
+     mv "$tmp_file" "$DOCKER_CONTAINERS_FILE"
+
+  printf "${CYAN}Dockerized BrowserBox started.${NC}\n"
+  draw_box "Login Link: $login_link"
+  draw_box "Nickname: $nickname"
+  draw_box "Stop Command: bbx docker-stop $nickname"
+  save_config
 }
 
 docker_stop() {
@@ -922,7 +989,7 @@ docker_stop() {
     sleep 1
 
     # Stop the container
-    $SUDO docker stop --timeout 3 "$container_id" || {
+    $SUDO docker stop --timeout 3 "$container_id" || $SUDO docker stop --time 3 "$container_id" || {
         printf "${RED}Failed to stop container $container_id${NC}\n"
         exit 1
     }
@@ -1060,7 +1127,8 @@ pre_install() {
         echo "Downloading the installation script..."
         curl -sSL "https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/$branch/bbx.sh" -o /tmp/bbx.sh
         chmod +x /tmp/bbx.sh
-        chown "${install_user}:${install_user}" /tmp/bbx.sh
+        install_group="$(id -gn "$install_user")"
+        chown "${install_user}:${install_group}" /tmp/bbx.sh
 
         # Switch to the non-root user and run install
         echo "Switching to user $install_user..."
@@ -1083,13 +1151,13 @@ uninstall() {
         printf "${RED}Uninstall cancelled.${NC}\n"
         exit 0
     fi
-    if [ -d "$CONFIG_DIR" ]; then
-        printf "${YELLOW}Removing config directory: $CONFIG_DIR...${NC}\n"
-        read -r -p "Confirm removal of $CONFIG_DIR? (yes/no): " CONFIRM_CONFIG
+    if [ -d "$BB_CONFIG_DIR" ]; then
+        printf "${YELLOW}Removing config directory: $BB_CONFIG_DIR...${NC}\n"
+        read -r -p "Confirm removal of $BB_CONFIG_DIR? (yes/no): " CONFIRM_CONFIG
         if [ "$CONFIRM_CONFIG" = "yes" ]; then
-            rm -rf "$CONFIG_DIR" && printf "${GREEN}Removed $CONFIG_DIR${NC}\n" || printf "${RED}Failed to remove $CONFIG_DIR${NC}\n"
+            rm -rf "$BB_CONFIG_DIR" && printf "${GREEN}Removed $BB_CONFIG_DIR${NC}\n" || printf "${RED}Failed to remove $BB_CONFIG_DIR${NC}\n"
         else
-            printf "${YELLOW}Skipping $CONFIG_DIR removal${NC}\n"
+            printf "${YELLOW}Skipping $BB_CONFIG_DIR removal${NC}\n"
         fi
     fi
     if [ -d "$BBX_HOME" ]; then
@@ -1122,54 +1190,33 @@ uninstall() {
     printf "${GREEN}Uninstall complete. Run 'bbx install' to reinstall if needed.${NC}\n"
 }
 
-# Certify command to allow entering a new license key
 certify() {
-    load_config
-    printf "${YELLOW}Certifying BrowserBox license...${NC}\n"
-    printf "${BLUE}Enter a new license key to update your existing one, or press Enter to use the current key ($LICENSE_KEY):${NC}\n"
-    local new_key
-    read -r -p "New License Key (leave blank to keep current): " new_key
-
-    if [ -n "$new_key" ]; then
-        LICENSE_KEY="$new_key"
-        local valid_format=false
-        local valid_cert=false
-
-        # Validate format
-        if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
-            valid_format=true
-        else
-            printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
-            exit 1
-        fi
-
-        # Validate with bbcertify
-        export LICENSE_KEY
-        if bbcertify >/dev/null 2>&1; then
-            valid_cert=true
-            save_config
-            printf "${GREEN}New license key certified and saved.${NC}\n"
-        else
-            printf "${RED}ERROR: Certification failed. Check your license key.${NC}\n"
-            exit 1
-        fi
-    else
-        # Use existing key if provided and valid
-        if [ -n "$LICENSE_KEY" ]; then
-            export LICENSE_KEY
-            bbcertify || { printf "${RED}Certification failed. Check your license key.${NC}\n"; exit 1; }
-            printf "${GREEN}Current license key certified.${NC}\n"
-        else
-            printf "${RED}No license key found. Please enter one.${NC}\n"
-            get_license_key
-            export LICENSE_KEY
-            bbcertify || { printf "${RED}Certification failed. Check your license key.${NC}\n"; exit 1; }
-            printf "${GREEN}Certification complete.${NC}\n"
-        fi
+  load_config
+  printf "${YELLOW}Certifying BrowserBox license...${NC}\n"
+  if [ -n "$LICENSE_KEY" ]; then
+    printf "${BLUE}Current key: $LICENSE_KEY${NC}\n"
+    if [[ -z "$BBX_TEST_AGREEMENT" ]]; then
+      printf "Press Enter to validate it, or enter a new key to update: "
+      read -r new_key
     fi
-    save_config
+    if [ -n "$new_key" ]; then
+      LICENSE_KEY="$new_key"
+      validate_license_key "true"  # Force prompt and validation for new key
+    else
+      # Validate existing key without forcing a prompt
+      if validate_license_key; then
+        printf "${GREEN}License certified.${NC}\n"
+      else
+        printf "${YELLOW}Current key is invalid. Please enter a new one.${NC}\n"
+        validate_license_key "true"  # Force prompt if validation fails
+      fi
+    fi
+  else
+    printf "${BLUE}No license key found. Please enter one.${NC}\n"
+    validate_license_key "true"  # Force prompt for initial setup
+  fi
+  printf "${GREEN}Certification complete.${NC}\n"
 }
-
 
 stop() {
     load_config
@@ -1194,7 +1241,7 @@ update() {
     printf "${YELLOW}Updating BrowserBox...${NC}\n"
     
     # Check and reset hostname if unresolvable
-    if ! is_local_hostname "$BBX_HOSTNAME" && ! dig +short "$BBX_HOSTNAME" A >/dev/null 2>&1; then
+    if ! is_local_hostname "$BBX_HOSTNAME" && ! timeout 8s dig +short "$BBX_HOSTNAME" A >/dev/null 2>&1; then
         printf "${YELLOW}Current hostname $BBX_HOSTNAME not resolvable, resetting to default...${NC}\n"
         BBX_HOSTNAME=$(get_system_hostname)
     fi
@@ -1485,7 +1532,8 @@ run_as() {
     # Rsync .nvm from calling user to target user
     printf "${YELLOW}Copying nvm and Node.js from $HOME/.nvm to $HOME_DIR/.nvm...${NC}\n"
     $SUDO rsync -aq --exclude='.git' "$HOME/.nvm/" "$HOME_DIR/.nvm/" || { printf "${RED}Failed to rsync .nvm directory${NC}\n"; exit 1; }
-    $SUDO chown -R "$user":"$user" "$HOME_DIR/.nvm" || { printf "${RED}Failed to chown .nvm directory${NC}\n"; exit 1; }
+    GROUP="$(id -gn "$user")"
+    $SUDO chown -R "$user":"$GROUP" "$HOME_DIR/.nvm" || { printf "${RED}Failed to chown .nvm directory${NC}\n"; exit 1; }
     NODE_VERSION=$($SUDO -u $user bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
     $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
 
@@ -1555,14 +1603,17 @@ usage() {
 }
 
 check_agreement() {
-    if [ ! -f "$CONFIG_DIR/.agreed" ]; then
+    if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
+      return 0
+    fi
+    if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
         printf "${BLUE}BrowserBox v10 Terms:${NC} https://dosaygo.com/terms.txt\n"
         printf "${BLUE}License:${NC} $REPO_URL/blob/${branch}/LICENSE.md\n"
         printf "${BLUE}Privacy:${NC} https://dosaygo.com/privacy.txt\n"
         read -r -p " Agree? (yes/no): " AGREE
         [ "$AGREE" = "yes" ] || { printf "${RED}ERROR: Must agree to terms!${NC}\n"; exit 1; }
-        mkdir -p "$CONFIG_DIR"
-        touch "$CONFIG_DIR/.agreed"
+        mkdir -p "$BB_CONFIG_DIR"
+        touch "$BB_CONFIG_DIR/.agreed"
     fi
 }
 
@@ -1653,7 +1704,7 @@ activate() {
   return 1
 }
 
-[ "$1" != "install" ] && [ "$1" != "uninstall" ] && check_agreement
+[ "$1" != "uninstall" ] && check_agreement
 case "$1" in
     install) shift 1; install "$@";;
     uninstall) shift 1; uninstall "$@";;

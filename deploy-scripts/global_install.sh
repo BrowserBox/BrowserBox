@@ -247,6 +247,9 @@ display_terms() {
 }
 
 check_agreement() {
+    if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
+      return 0
+    fi
     if [ ! -f "$CONFIG_DIR/.agreed" ]; then
         display_terms
         printf "${YELLOW}Do you agree to these terms and confirm a license for use? (yes/no): ${NC}\n"
