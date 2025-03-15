@@ -1,6 +1,9 @@
 #!/bin/bash
 # bbcertify.sh - Obtain a vacant seat, issue a ticket, and register it as a certificate
 
+if [[ -n "$BBX_DEBUG" ]]; then
+  set -x
+fi
 set -e
 
 # Config locations
@@ -14,6 +17,7 @@ API_BASE="https://master.dosaygo.com/${API_VERSION}"
 VACANT_SEAT_ENDPOINT="$API_BASE/vacant-seat"
 ISSUE_TICKET_ENDPOINT="$API_BASE/tickets"
 REGISTER_CERT_ENDPOINT="$API_BASE/register-certificates"
+VALIDATE_TICKET_ENDPOINT="$API_BASE/tickets/validate"
 
 # Ticket validity period in seconds (10 hours)
 TICKET_VALIDITY_PERIOD=$((10 * 60 * 60))  # 36000 seconds
@@ -30,7 +34,7 @@ Environment Variables:
 
 Options:
   -h, --help    Show this help message and exit
-  --force       Force a new ticket to be issued, even if a valid one exists
+  --force       Validate ticket with server if valid, otherwise force a new ticket
 EOF
 }
 
@@ -60,7 +64,7 @@ if [[ -z "$LICENSE_KEY" ]]; then
   exit 1
 fi
 
-# Function to check ticket validity
+# Function to check ticket validity locally
 check_ticket_validity() {
   if [[ ! -f "$TICKET_FILE" ]]; then
     echo "No existing ticket found" >&2
@@ -85,6 +89,24 @@ check_ticket_validity() {
     return 0
   else
     echo "Existing ticket has expired" >&2
+    rm -f "$TICKET_FILE"
+    return 1
+  fi
+}
+
+# Function to validate ticket with server
+validate_ticket_with_server() {
+  local ticket_json=$(cat "$TICKET_FILE")
+  echo "Checking ticket validity with server..." >&2
+  local response=$(curl -s -X POST -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $LICENSE_KEY" \
+    -d "{\"ticketChain\": $ticket_json}" "$VALIDATE_TICKET_ENDPOINT")
+  local is_valid=$(echo "$response" | jq -r '.isValid // false')
+  if [[ "$is_valid" == "true" ]]; then
+    echo "Server confirmed: Ticket is valid" >&2
+    return 0
+  else
+    echo "Server response: Ticket is invalid. Response: $response" >&2
     rm -f "$TICKET_FILE"
     return 1
   fi
@@ -143,15 +165,21 @@ register_certificate() {
 }
 
 # Main logic
-if [[ "$FORCE" == "false" ]] && check_ticket_validity; then
-  exit 0  # Valid ticket exists and --force is not set
-else
-  # Get a new ticket, either because --force is set or no valid ticket exists
-  if [[ "$FORCE" == "true" ]]; then
-    echo "Forcing new ticket issuance due to --force option" >&2
+if [[ "$FORCE" == "true" ]] && check_ticket_validity; then
+  if validate_ticket_with_server; then
+    echo "Ticket is valid according to server, keeping existing ticket" >&2
+    exit 0
+  else
+    echo "Ticket is invalid on server, proceeding to get a new one..." >&2
   fi
-  seat_id=$(get_vacant_seat)
-  ticket_json=$(issue_ticket "$seat_id")
-  register_certificate "$ticket_json"
-  echo "$TICKET_FILE"
+elif [[ "$FORCE" == "false" ]] && check_ticket_validity; then
+  echo "Using existing valid ticket" >&2
+  exit 0
 fi
+
+# If we reach here, either --force was used and ticket is invalid, or no valid ticket exists
+seat_id=$(get_vacant_seat)
+ticket_json=$(issue_ticket "$seat_id")
+register_certificate "$ticket_json"
+echo "$TICKET_FILE"
+exit 0
