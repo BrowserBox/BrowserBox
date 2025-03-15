@@ -6,12 +6,10 @@ if [[ -n "$BBX_DEBUG" ]]; then
 fi
 set -e
 
-# Config locations
+# Configuration
 CONFIG_DIR="$HOME/.config/dosyago/bbpro/tickets"
 [ ! -d "$CONFIG_DIR" ] && mkdir -p "$CONFIG_DIR"
 TICKET_FILE="$CONFIG_DIR/ticket.json"
-
-# API endpoints
 API_VERSION="v1"
 API_SERVER="https://master.dosaygo.com"
 API_BASE="${API_SERVER}/${API_VERSION}"
@@ -19,14 +17,12 @@ VACANT_SEAT_ENDPOINT="${API_BASE}/vacant-seat"
 ISSUE_TICKET_ENDPOINT="${API_BASE}/tickets"
 REGISTER_CERT_ENDPOINT="${API_BASE}/register-certificates"
 VALIDATE_TICKET_ENDPOINT="${API_SERVER}/tickets/validate"
+TICKET_VALIDITY_PERIOD=$((10 * 60 * 60))  # 10 hours in seconds
 
-# Ticket validity period in seconds (10 hours)
-TICKET_VALIDITY_PERIOD=$((10 * 60 * 60))  # 36000 seconds
-
-# Function to display usage information
+# Usage information
 usage() {
   cat <<EOF
-Usage: $0 [-h|--help] [--force]
+Usage: $0 [-h|--help] [--force-ticket] [--force-license]
 
 Obtains a valid ticket for BrowserBox, renewing if expired. Ticket saved to: $TICKET_FILE
 
@@ -34,38 +30,19 @@ Environment Variables:
   LICENSE_KEY   Your API key (required)
 
 Options:
-  -h, --help    Show this help message and exit
-  --force       Validate ticket with server if valid, otherwise force a new ticket
+  -h, --help       Show this help message and exit
+  --force-ticket   Validate existing ticket with server; renew if invalid
+  --force-license  Check license validity by attempting to issue a new ticket without overwriting valid existing ticket
 EOF
 }
 
-# Argument parsing
-FORCE=false
-while [[ "$#" -gt 0 ]]; do
-  case "$1" in
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    --force)
-      FORCE=true
-      shift
-      ;;
-    *)
-      echo "Unknown option: $1" >&2
-      usage
-      exit 1
-      ;;
-  esac
-done
-
-# Ensure LICENSE_KEY is set
+# Check for required environment variable
 if [[ -z "$LICENSE_KEY" ]]; then
   echo "Error: LICENSE_KEY environment variable is not set." >&2
   exit 1
 fi
 
-# Function to check ticket validity locally
+# Check local ticket validity
 check_ticket_validity() {
   if [[ ! -f "$TICKET_FILE" ]]; then
     echo "No existing ticket found" >&2
@@ -86,7 +63,6 @@ check_ticket_validity() {
     local remaining_hours=$((remaining_seconds / 3600))
     local remaining_minutes=$(((remaining_seconds % 3600) / 60))
     echo "Existing ticket is valid (expires in ${remaining_hours}h ${remaining_minutes}m)" >&2
-    echo "$TICKET_FILE"
     return 0
   else
     echo "Existing ticket has expired" >&2
@@ -95,7 +71,7 @@ check_ticket_validity() {
   fi
 }
 
-# Function to validate ticket with server
+# Validate ticket with server
 validate_ticket_with_server() {
   local ticket_json=$(cat "$TICKET_FILE")
   echo "Checking ticket validity with server..." >&2
@@ -113,7 +89,7 @@ validate_ticket_with_server() {
   fi
 }
 
-# Function to fetch a vacant seat
+# Fetch vacant seat
 get_vacant_seat() {
   echo "Requesting a vacant seat..." >&2
   local response=$(curl -s -H "Authorization: Bearer $LICENSE_KEY" "$VACANT_SEAT_ENDPOINT")
@@ -127,7 +103,7 @@ get_vacant_seat() {
   echo "$seat"
 }
 
-# Function to issue a ticket
+# Issue a ticket
 issue_ticket() {
   local seat_id="$1"
   local time_slot=$(date +%s)
@@ -144,12 +120,10 @@ issue_ticket() {
     exit 1
   fi
   echo "Ticket issued successfully" >&2
-  echo "$ticket" > "$TICKET_FILE"
-  echo "Ticket saved to $TICKET_FILE" >&2
   echo "$ticket"
 }
 
-# Function to register the ticket as a certificate
+# Register ticket as certificate
 register_certificate() {
   local ticket_json="$1"
   echo "Registering ticket as certificate..." >&2
@@ -165,24 +139,81 @@ register_certificate() {
   echo "Certificate registered successfully" >&2
 }
 
+
+# Argument parsing
+FORCE_TICKET=false
+FORCE_LICENSE=false
+while [[ "$#" -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --force-ticket)
+      FORCE_TICKET=true
+      shift
+      ;;
+    --force-license)
+      FORCE_LICENSE=true
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -n "$FORCE_TICKET" ]] && [[ -n "$FORCE_LICENSE" ]]; then
+  echo "Error: Use only --force-ticket or --force-license but not both" >&2
+  usage
+  exit 1
+fi
+
 # Main logic
-if check_ticket_validity; then
-  if [[ "$FORCE" == "true" ]]; then
+main() {
+  local ticket_valid=false
+  if check_ticket_validity; then
+    ticket_valid=true
+  fi
+
+  if [[ "$FORCE_TICKET" == "true" && "$ticket_valid" == "true" ]]; then
     if validate_ticket_with_server; then
       echo "Ticket is valid according to server, keeping existing ticket" >&2
+      echo "$TICKET_FILE"
       exit 0
     else
       echo "Ticket is invalid on server, proceeding to get a new one..." >&2
+      ticket_valid=false
     fi
-  else
+  elif [[ "$FORCE_TICKET" == "false" && "$ticket_valid" == "true" && "$FORCE_LICENSE" == "false" ]]; then
     echo "Using existing valid ticket" >&2
+    echo "$TICKET_FILE"
     exit 0
   fi
-fi
 
-# If we reach here, either no valid ticket exists or --force found it invalid on server
-seat_id=$(get_vacant_seat)
-ticket_json=$(issue_ticket "$seat_id")
-register_certificate "$ticket_json"
-echo "$TICKET_FILE"
-exit 0
+  if [[ "$FORCE_LICENSE" == "true" ]]; then
+    seat_id=$(get_vacant_seat)
+    ticket_json=$(issue_ticket "$seat_id")
+    if [[ "$ticket_valid" == "false" ]]; then
+      echo "$ticket_json" > "$TICKET_FILE"
+      register_certificate "$ticket_json"
+      echo "New ticket saved to $TICKET_FILE" >&2
+    else
+      echo "License is valid, but keeping existing valid ticket" >&2
+    fi
+    echo "$TICKET_FILE"
+    exit 0
+  fi
+
+  # Default case: get new ticket if none exists or it's invalid
+  seat_id=$(get_vacant_seat)
+  ticket_json=$(issue_ticket "$seat_id")
+  echo "$ticket_json" > "$TICKET_FILE"
+  register_certificate "$ticket_json")
+  echo "$TICKET_FILE"
+  exit 0
+}
+
+main
