@@ -165,7 +165,7 @@ while [[ "$#" -gt 0 ]]; do
   esac
 done
 
-if [[ -n "$FORCE_TICKET" ]] && [[ -n "$FORCE_LICENSE" ]]; then
+if [[ "$FORCE_TICKET" == "true" ]] && [[ "$FORCE_LICENSE" == "true" ]]; then
   echo "Error: Use only --force-ticket or --force-license but not both" >&2
   usage
   exit 1
@@ -211,7 +211,7 @@ main() {
   seat_id=$(get_vacant_seat)
   ticket_json=$(issue_ticket "$seat_id")
   echo "$ticket_json" > "$TICKET_FILE"
-  register_certificate "$ticket_json")
+  register_certificate "$ticket_json"
   echo "$TICKET_FILE"
   exit 0
 }
