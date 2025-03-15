@@ -13,11 +13,12 @@ TICKET_FILE="$CONFIG_DIR/ticket.json"
 
 # API endpoints
 API_VERSION="v1"
-API_BASE="https://master.dosaygo.com/${API_VERSION}"
-VACANT_SEAT_ENDPOINT="$API_BASE/vacant-seat"
-ISSUE_TICKET_ENDPOINT="$API_BASE/tickets"
-REGISTER_CERT_ENDPOINT="$API_BASE/register-certificates"
-VALIDATE_TICKET_ENDPOINT="$API_BASE/tickets/validate"
+API_SERVER="https://master.dosaygo.com"
+API_BASE="${API_SERVER}/${API_VERSION}"
+VACANT_SEAT_ENDPOINT="${API_BASE}/vacant-seat"
+ISSUE_TICKET_ENDPOINT="${API_BASE}/tickets"
+REGISTER_CERT_ENDPOINT="${API_BASE}/register-certificates"
+VALIDATE_TICKET_ENDPOINT="${API_SERVER}/tickets/validate"
 
 # Ticket validity period in seconds (10 hours)
 TICKET_VALIDITY_PERIOD=$((10 * 60 * 60))  # 36000 seconds
@@ -98,9 +99,9 @@ check_ticket_validity() {
 validate_ticket_with_server() {
   local ticket_json=$(cat "$TICKET_FILE")
   echo "Checking ticket validity with server..." >&2
+  local payload=$(jq -n --argjson ticket "$ticket_json" '{"certificateJson": $ticket}')
   local response=$(curl -s -X POST -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $LICENSE_KEY" \
-    -d "{\"ticketChain\": $ticket_json}" "$VALIDATE_TICKET_ENDPOINT")
+    -d "$payload" "$VALIDATE_TICKET_ENDPOINT")
   local is_valid=$(echo "$response" | jq -r '.isValid // false')
   if [[ "$is_valid" == "true" ]]; then
     echo "Server confirmed: Ticket is valid" >&2
