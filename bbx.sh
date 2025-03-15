@@ -161,7 +161,7 @@ validate_license_key() {
   else
     # Validate existing key
     export LICENSE_KEY
-    if bbcertify --force >/dev/null 2>&1; then
+    if eval "bbcertify --force $REDIRECT 2>&1"; then
       printf "${GREEN}Existing license key is valid.${NC}\n"
       return 0
     else

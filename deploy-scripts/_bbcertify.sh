@@ -165,19 +165,21 @@ register_certificate() {
 }
 
 # Main logic
-if [[ "$FORCE" == "true" ]] && check_ticket_validity; then
-  if validate_ticket_with_server; then
-    echo "Ticket is valid according to server, keeping existing ticket" >&2
-    exit 0
+if check_ticket_validity; then
+  if [[ "$FORCE" == "true" ]]; then
+    if validate_ticket_with_server; then
+      echo "Ticket is valid according to server, keeping existing ticket" >&2
+      exit 0
+    else
+      echo "Ticket is invalid on server, proceeding to get a new one..." >&2
+    fi
   else
-    echo "Ticket is invalid on server, proceeding to get a new one..." >&2
+    echo "Using existing valid ticket" >&2
+    exit 0
   fi
-elif [[ "$FORCE" == "false" ]] && check_ticket_validity; then
-  echo "Using existing valid ticket" >&2
-  exit 0
 fi
 
-# If we reach here, either --force was used and ticket is invalid, or no valid ticket exists
+# If we reach here, either no valid ticket exists or --force found it invalid on server
 seat_id=$(get_vacant_seat)
 ticket_json=$(issue_ticket "$seat_id")
 register_certificate "$ticket_json"
