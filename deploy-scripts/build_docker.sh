@@ -6,6 +6,8 @@ set -eox
 USER=""
 HOST=""
 
+cd BrowserBox
+
 VERSION=$(git describe --tags --abbrev=0 2>/dev/null || true)
 
 if [[ -z "$VERSION" ]]; then
@@ -123,46 +125,50 @@ docker buildx create \
 echo "Inspecting and bootstrapping the builder..."
 docker buildx inspect --bootstrap
 
-# Build and push multi-platform Docker images (without labels at this stage)
-echo "Building and pushing Docker images..."
-docker buildx build \
-  --push \
-  --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/browserbox/browserbox:latest \
-  -t ghcr.io/browserbox/browserbox:"${VERSION}" \
-  -t dosaygo/browserbox:latest \
-  -t dosaygo/browserbox:"${VERSION}" \
-  .
+REPOS=("ghcr.io/browserbox/browserbox" "dosaygo/browserbox")
+TAGS=("latest" "${VERSION}")
+ANNOTATIONS=(
+  "--annotation" "index:org.opencontainers.image.title=BrowserBox"
+  "--annotation" "index:org.opencontainers.image.description=Embeddable remote browser isolation with vettable source - https://dosaygo.com"
+  "--annotation" "index:org.opencontainers.image.version=${VERSION}"
+  "--annotation" "index:org.opencontainers.image.authors=DOSAYGO BrowserBox Team <browserbox@dosaygo.com>"
+  "--annotation" "index:org.opencontainers.image.source=https://github.com/BrowserBox/BrowserBox"
+)
 
-# Create and annotate manifest lists for each tag
-for TAG in "ghcr.io/browserbox/browserbox:latest" "ghcr.io/browserbox/browserbox:${VERSION}" "dosaygo/browserbox:latest" "dosaygo/browserbox:${VERSION}"; do
-  echo "Creating and annotating manifest for ${TAG}..."
+# Build and push multi-arch images
+build_and_push() {
+  echo "Building and pushing multi-arch images..."
+  docker buildx build \
+    --push \
+    --platform linux/amd64,linux/arm64 \
+    -t "${REPOS[0]}:latest" \
+    -t "${REPOS[0]}:${VERSION}" \
+    -t "${REPOS[1]}:latest" \
+    -t "${REPOS[1]}:${VERSION}" \
+    .
+}
 
-  # Create the manifest list
-  docker manifest create "${TAG}" \
-    "${TAG}-amd64" \
-    "${TAG}-arm64"
+# Annotate manifest
+annotate_manifest() {
+  local tag="$1"
+  echo "Annotating manifest for ${tag}..."
+  if ! docker buildx imagetools inspect "${tag}" &> /dev/null; then
+    echo "Error: Manifest list for ${tag} does not exist."
+  fi
+  docker buildx imagetools create \
+    "${ANNOTATIONS[@]}" \
+    --tag "${tag}" \
+    "${tag}"
+}
 
-  # Annotate each architecture with its platform (optional but good practice)
-  docker manifest annotate "${TAG}" "${TAG}-amd64" --arch amd64 --os linux
-  docker manifest annotate "${TAG}" "${TAG}-arm64" --arch arm64 --os linux
-
-  # Add OCI labels to the manifest
-  docker manifest annotate "${TAG}" \
-    --annotation "org.opencontainers.image.title=BrowserBox" \
-    --annotation "org.opencontainers.image.description=Embeddable remote browser isolation with vettable source - https://dosaygo.com" \
-    --annotation "org.opencontainers.image.version=${VERSION}" \
-    --annotation "org.opencontainers.image.authors=DOSAYGO BrowserBox Team <browserbox@dosaygo.com>" \
-    --annotation "org.opencontainers.image.source=https://github.com/BrowserBox/BrowserBox"
+# Execute
+build_and_push
+for repo in "${REPOS[@]}"; do
+  for tag in "${TAGS[@]}"; do
+    annotate_manifest "${repo}:${tag}"
+  done
 done
 
-# Push the annotated manifests
-echo "Pushing annotated manifests..."
-docker manifest push "ghcr.io/browserbox/browserbox:latest"
-docker manifest push "ghcr.io/browserbox/browserbox:${VERSION}"
-docker manifest push "dosaygo/browserbox:latest"
-docker manifest push "dosaygo/browserbox:${VERSION}"
-
-echo "Docker images and manifests built, annotated, and pushed successfully."
-
-echo "Docker images built and pushed successfully."
+echo "All done! Docker images and manifests built, annotated, and pushed successfully."
+echo ""
+exit 0
