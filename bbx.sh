@@ -145,7 +145,7 @@ validate_license_key() {
       fi
       if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
         export LICENSE_KEY
-        if bbcertify --force $REDIRECT 2>&1; then
+        if eval "bbcertify --force $REDIRECT 2>&1"; then
           printf "${GREEN}License key validated with server.${NC}\n"
           save_config
           return 0
@@ -1213,7 +1213,7 @@ certify() {
         LICENSE_KEY="$new_key"
         if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
           export LICENSE_KEY
-          if bbcertify --force $REDIRECT 2>&1; then
+          if eval "bbcertify --force $REDIRECT 2>&1"; then
             printf "${GREEN}License key validated with server.${NC}\n"
             save_config
           else
