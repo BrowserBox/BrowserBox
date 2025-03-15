@@ -5,7 +5,7 @@
 FROM debian:latest
 LABEL org.opencontainers.image.title="BrowserBox" \
   org.opencontainers.image.description="Embeddable remote browser isolation with vettable source https://dosaygo.com" \
-  org.opencontainers.image.version="10.2.1" \
+  org.opencontainers.image.version="10.3.0" \
   org.opencontainers.image.authors="DOSAYGO BrowserBox Team <browserbox@dosaygo.com>" \
   org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox"
 
