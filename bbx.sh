@@ -143,7 +143,7 @@ validate_license_key() {
       fi
       if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
         export LICENSE_KEY
-        if bbcertify >/dev/null 2>&1; then
+        if bbcertify --force >/dev/null 2>&1; then
           printf "${GREEN}License key validated with server.${NC}\n"
           save_config
           return 0
@@ -159,7 +159,7 @@ validate_license_key() {
   else
     # Validate existing key
     export LICENSE_KEY
-    if bbcertify >/dev/null 2>&1; then
+    if bbcertify --force >/dev/null 2>&1; then
       printf "${GREEN}Existing license key is valid.${NC}\n"
       return 0
     else
@@ -1198,17 +1198,38 @@ certify() {
     if [[ -z "$BBX_TEST_AGREEMENT" ]]; then
       printf "Press Enter to validate it, or enter a new key to update: "
       read -r new_key
-    fi
-    if [ -n "$new_key" ]; then
-      LICENSE_KEY="$new_key"
-      validate_license_key "true"  # Force prompt and validation for new key
+      if [ -z "$new_key" ]; then
+        # Empty input: validate the current key
+        if validate_license_key; then
+          printf "${GREEN}License certified.${NC}\n"
+        else
+          printf "${YELLOW}Current key is invalid. Please enter a new one.${NC}\n"
+          validate_license_key "true"  # Force prompt for a new key if validation fails
+        fi
+      else
+        # Non-empty input: use it as the new key and validate
+        LICENSE_KEY="$new_key"
+        if [[ "$LICENSE_KEY" =~ ^[A-Z0-9]{4}(-[A-Z0-9]{4}){7}$ ]]; then
+          export LICENSE_KEY
+          if bbcertify --force >/dev/null 2>&1; then
+            printf "${GREEN}License key validated with server.${NC}\n"
+            save_config
+          else
+            printf "${RED}ERROR: License key invalid or server unreachable.${NC}\n"
+            validate_license_key "true"  # Fall back to full prompt loop if invalid
+          fi
+        else
+          printf "${RED}ERROR: Invalid format. Must be 8 groups of 4 uppercase A-Z0-9 characters, separated by hyphens.${NC}\n"
+          validate_license_key "true"  # Fall back to full prompt loop if format is wrong
+        fi
+      fi
     else
-      # Validate existing key without forcing a prompt
+      # BBX_TEST_AGREEMENT is set, skip interactive prompt and validate current key
       if validate_license_key; then
         printf "${GREEN}License certified.${NC}\n"
       else
-        printf "${YELLOW}Current key is invalid. Please enter a new one.${NC}\n"
-        validate_license_key "true"  # Force prompt if validation fails
+        printf "${RED}Current key ($LICENSE_KEY) is invalid in test mode.${NC}\n"
+        exit 1
       fi
     fi
   else

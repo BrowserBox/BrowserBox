@@ -21,7 +21,7 @@ TICKET_VALIDITY_PERIOD=$((10 * 60 * 60))  # 36000 seconds
 # Function to display usage information
 usage() {
   cat <<EOF
-Usage: $0 [-h|--help]
+Usage: $0 [-h|--help] [--force]
 
 Obtains a valid ticket for BrowserBox, renewing if expired. Ticket saved to: $TICKET_FILE
 
@@ -30,15 +30,21 @@ Environment Variables:
 
 Options:
   -h, --help    Show this help message and exit
+  --force       Force a new ticket to be issued, even if a valid one exists
 EOF
 }
 
 # Argument parsing
+FORCE=false
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
     -h|--help)
       usage
       exit 0
+      ;;
+    --force)
+      FORCE=true
+      shift
       ;;
     *)
       echo "Unknown option: $1" >&2
@@ -137,10 +143,13 @@ register_certificate() {
 }
 
 # Main logic
-if check_ticket_validity; then
-  exit 0  # Valid ticket exists
+if [[ "$FORCE" == "false" ]] && check_ticket_validity; then
+  exit 0  # Valid ticket exists and --force is not set
 else
-  # Get a new ticket
+  # Get a new ticket, either because --force is set or no valid ticket exists
+  if [[ "$FORCE" == "true" ]]; then
+    echo "Forcing new ticket issuance due to --force option" >&2
+  fi
   seat_id=$(get_vacant_seat)
   ticket_json=$(issue_ticket "$seat_id")
   register_certificate "$ticket_json"
