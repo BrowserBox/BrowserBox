@@ -4,7 +4,8 @@
 
 - some deps are not found on rhel (not majro problem)
 
-- rhel issues with installing audo conf files and no linger : perm denied
-- this is also an issue on Deb/Ub: ./scripts/setup_machine.sh: line 119: /usr/local/lib/systemd/logind.conf.d/nokill.conf: Permission denied
+- linger issue:
+  - rhel issues with installing audo conf files and no linger : perm denied
+  - this is also an issue on Deb/Ub: ./scripts/setup_machine.sh: line 119: /usr/local/lib/systemd/logind.conf.d/nokill.conf: Permission denied
 
 
