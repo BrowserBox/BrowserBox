@@ -100,8 +100,7 @@ validate_ticket_with_server() {
   local ticket_json=$(cat "$TICKET_FILE")
   echo "Checking ticket validity with server..." >&2
   local payload=$(jq -n --argjson ticket "$ticket_json" '{"certificateJson": $ticket}')
-  echo $payload
-  local response=$(curl -v -X POST -H "Content-Type: application/json" \
+  local response=$(curl -s -X POST -H "Content-Type: application/json" \
     -d "$payload" "$VALIDATE_TICKET_ENDPOINT")
   local is_valid=$(echo "$response" | jq -r '.isValid // false')
   if [[ "$is_valid" == "true" ]]; then
