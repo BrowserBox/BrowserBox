@@ -123,7 +123,7 @@ docker buildx create \
 echo "Inspecting and bootstrapping the builder..."
 docker buildx inspect --bootstrap
 
-# Build and push multi-platform Docker images with OCI labels
+# Build and push multi-platform Docker images (without labels at this stage)
 echo "Building and pushing Docker images..."
 docker buildx build \
   --push \
@@ -132,11 +132,37 @@ docker buildx build \
   -t ghcr.io/browserbox/browserbox:"${VERSION}" \
   -t dosaygo/browserbox:latest \
   -t dosaygo/browserbox:"${VERSION}" \
-  --label org.opencontainers.image.title="BrowserBox" \
-  --label org.opencontainers.image.description="Embeddable remote browser isolation with vettable source - https://dosaygo.com" \
-  --label org.opencontainers.image.version="${VERSION}" \
-  --label org.opencontainers.image.authors="DOSAYGO BrowserBox Team <browserbox@dosaygo.com>" \
-  --label org.opencontainers.image.source="https://github.com/BrowserBox/BrowserBox" \
   .
+
+# Create and annotate manifest lists for each tag
+for TAG in "ghcr.io/browserbox/browserbox:latest" "ghcr.io/browserbox/browserbox:${VERSION}" "dosaygo/browserbox:latest" "dosaygo/browserbox:${VERSION}"; do
+  echo "Creating and annotating manifest for ${TAG}..."
+
+  # Create the manifest list
+  docker manifest create "${TAG}" \
+    "${TAG}-amd64" \
+    "${TAG}-arm64"
+
+  # Annotate each architecture with its platform (optional but good practice)
+  docker manifest annotate "${TAG}" "${TAG}-amd64" --arch amd64 --os linux
+  docker manifest annotate "${TAG}" "${TAG}-arm64" --arch arm64 --os linux
+
+  # Add OCI labels to the manifest
+  docker manifest annotate "${TAG}" \
+    --annotation "org.opencontainers.image.title=BrowserBox" \
+    --annotation "org.opencontainers.image.description=Embeddable remote browser isolation with vettable source - https://dosaygo.com" \
+    --annotation "org.opencontainers.image.version=${VERSION}" \
+    --annotation "org.opencontainers.image.authors=DOSAYGO BrowserBox Team <browserbox@dosaygo.com>" \
+    --annotation "org.opencontainers.image.source=https://github.com/BrowserBox/BrowserBox"
+done
+
+# Push the annotated manifests
+echo "Pushing annotated manifests..."
+docker manifest push "ghcr.io/browserbox/browserbox:latest"
+docker manifest push "ghcr.io/browserbox/browserbox:${VERSION}"
+docker manifest push "dosaygo/browserbox:latest"
+docker manifest push "dosaygo/browserbox:${VERSION}"
+
+echo "Docker images and manifests built, annotated, and pushed successfully."
 
 echo "Docker images built and pushed successfully."
