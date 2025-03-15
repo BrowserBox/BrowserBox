@@ -1,5 +1,3 @@
-- chrome://dino should not trigger "external app request" lol
-
 - disk partition extension func at start of install failing on RHEL
 
 - some deps are not found on rhel (not majro problem)

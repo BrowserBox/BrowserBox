@@ -1505,7 +1505,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
 
           message.frameId = frameId;
           DEBUG.val && console.log({failedURL:url});
-          if ( !(url.startsWith('http')) ) {
+          if ( !(url.startsWith('http')) && !(url.startsWith('chrome')) ) { // chrome urls like 
+                                                                            // chrome://dino should not be read as 
+                                                                            // external app requests, ie, 'intent prompts'
             const modal = {
               type: 'intentPrompt',
               title: 'External App Request',
@@ -1525,7 +1527,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
               connection.lastIntentPromptAt = now;
               connection.forceMeta({modal});
             }
-          } else {
+          } else if ( !url.startsWith('chrome') ) { // chrome urls will not trigger downloads
             setTimeout(() => {
               if ( someFileName == connection.lastDownloadFileName ) {
                 // this is not a failure 
