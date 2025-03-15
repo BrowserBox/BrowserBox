@@ -323,7 +323,7 @@ export class HardenedApplication {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: { certificateJson: fullChain, instanceId: this.#instanceId },
+        body: JSON.stringify({ certificateJson: fullChain, instanceId: this.#instanceId }),
         agent: new https.Agent({ rejectUnauthorized: true }),
       }
     );
