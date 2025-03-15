@@ -1,5 +1,3 @@
-- run bbx test saga on different machines
-
 - new ci workflow to test bbx full saga
 
 - browserbox embedding api client side 
