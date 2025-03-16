@@ -6,14 +6,15 @@ import base64
 import requests
 import websocket
 import ssl
-from http.client import HTTPSConnection
+import traceback
 import numpy as np
 import easyocr
+import cv2
 from blessed import Terminal
 
 # Parse command-line arguments
 if len(sys.argv) != 2:
-    print(json.dumps({"error": "Usage: ./bbreader.py <login-link>"}))
+    print(json.dumps({"error": "Usage: ./easy_bbxc_ocr.py <login-link>"}))
     sys.exit(1)
 login_link = sys.argv[1]
 
@@ -33,7 +34,7 @@ message_id = 1
 term = Terminal()
 
 # Initialize EasyOCR
-reader = easyocr.Reader(['en'], gpu=False)  # CPU mode; set gpu=True if you have CUDA
+reader = easyocr.Reader(['en'], gpu=False)
 
 def parse_binary_screenshot(buffer):
     if len(buffer) < 28:
@@ -46,44 +47,53 @@ def parse_binary_screenshot(buffer):
     if frame_id <= 0 or cast_session_id <= 0 or not all(c in '0123456789ABCDEF' for c in target_id) or len(target_id) != 32:
         return None
     img = buffer[28:]
-    return {"frameId": frame_id, "castSessionId": cast_session_id, "targetId": target_id, "img": base64.b64encode(img).decode('utf-8')}
+    return {"frameId": int(frame_id), "castSessionId": int(cast_session_id), "targetId": target_id, "img": base64.b64encode(img).decode('utf-8')}
 
 def send_ack(ws, frame_id, cast_session_id):
     global message_id
-    ack_message = {
-        "messageId": message_id,
-        "screenshotAck": {"frameId": frame_id, "castSessionId": cast_session_id},
-        "zombie": {"events": [{"type": "buffered-results-collection", "command": {"isBufferedResultsCollectionOnly": True, "params": {}}}]}
-    }
-    message_id += 1
-    ws.send(json.dumps(ack_message))
+    try:
+        ack_message = {
+            "messageId": message_id,
+            "screenshotAck": {"frameId": int(frame_id), "castSessionId": int(cast_session_id)},
+            "zombie": {"events": [{"type": "buffered-results-collection", "command": {"isBufferedResultsCollectionOnly": True, "params": {}}}]}
+        }
+        message_id += 1
+        ws.send(json.dumps(ack_message))
+    except Exception as e:
+        error_msg = f"Send ACK error: {str(e)}\n{traceback.format_exc()}"
+        print(term.move_to(1, 1) + term.red(error_msg))
 
 def process_screenshot(base64_data):
     try:
         img_bytes = base64.b64decode(base64_data)
-        # EasyOCR expects image as numpy array; convert bytes to numpy
         img_array = np.frombuffer(img_bytes, np.uint8)
-        results = reader.readtext(img_array, paragraph=True)  # Group text into paragraphs
-        # Convert EasyOCR output ([bbox, text, confidence]) to desired format
-        return [
-            {
-                "bbox": [
-                    [bbox[0][0], bbox[0][1]],  # Top-left
-                    [bbox[1][0], bbox[1][1]],  # Top-right
-                    [bbox[2][0], bbox[2][1]],  # Bottom-right
-                    [bbox[3][0], bbox[3][1]]   # Bottom-left
+        img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        if img is None:
+            raise ValueError("Failed to decode image with OpenCV - invalid image data")
+        
+        results = reader.readtext(img, paragraph=True)
+        # Return in the format you like: [[[bbox], text], ...]
+        processed_results = [
+            [
+                [
+                    [bbox[0][0], bbox[0][1]],
+                    [bbox[1][0], bbox[1][1]],
+                    [bbox[2][0], bbox[2][1]],
+                    [bbox[3][0], bbox[3][1]]
                 ],
-                "text": text,
-                "confidence": confidence
-            }
-            for bbox, text, confidence in results
+                text
+            ]
+            for bbox, text in results  
         ]
+        return processed_results
     except Exception as e:
+        error_msg = f"OCR error: {str(e)}\n{traceback.format_exc()}"
+        print(term.move_to(1, 1) + term.red(error_msg))
         return []
 
 def render_terminal(results, img_width=1920, img_height=1080):
     with term.fullscreen():
-        print(term.clear())
+        # print(term.clear())
         if not results or not isinstance(results, list):
             print(term.move_to(1, 1) + term.red("No text detected"))
             return
@@ -93,8 +103,14 @@ def render_terminal(results, img_width=1920, img_height=1080):
         max_width = term.width - 2
 
         for result in results:
-            bbox, text, confidence = result["bbox"], result["text"], result["confidence"]
-            if not bbox or len(bbox) < 4 or not text:
+            # Expecting [bbox, text] format
+            if not isinstance(result, list) or len(result) != 2:
+                print(term.move_to(1, 1) + term.red("Invalid result format: expected [bbox, text]"))
+                continue
+
+            bbox, text = result
+            if not isinstance(bbox, list) or len(bbox) < 4 or not isinstance(text, str):
+                print(term.move_to(1, 1) + term.red("Invalid bbox or text format"))
                 continue
 
             x0, y0 = bbox[0]  # Top-left
@@ -104,22 +120,10 @@ def render_terminal(results, img_width=1920, img_height=1080):
             text_width = int((x1 - x0) * x_scale)
             text_height = int((y1 - y0) * y_scale)
 
-            lines = text.split('\n')
-            for i, line in enumerate(lines):
-                if i >= text_height:
-                    break
-                display_text = line
-                if text_width > 0 and len(line) > text_width:
-                    display_text = line[:text_width]
-                if len(display_text) > max_width - term_x + 1:
-                    display_text = display_text[:max_width - term_x + 1]
-                if term_y + i <= term.height:
-                    print(term.move_to(term_x, term_y + i) + 
-                          (term.green if confidence > 0.7 else term.red)(display_text))
+            print(term.move_to(term_x, term_y) + term.white(text))
 
 def main():
     try:
-        # Initial HTTP request
         response = requests.get(api_url, headers={"Accept": "application/json"}, verify=False)
         if not response.ok:
             raise Exception(f"Failed to fetch initial tabs: {response.status_code}")
@@ -128,7 +132,7 @@ def main():
         ws.connect(ws_url, header={"x-browserbox-local-auth": token})
 
         with term.fullscreen():
-            print(term.clear() + term.move_to(1, 1) + term.green("Connected to WebSocket"))
+            print(term.move_to(1, 1) + term.green("Connected to WebSocket"))
             ws.send(json.dumps({
                 "messageId": message_id,
                 "tabs": True,
@@ -140,14 +144,25 @@ def main():
                 data = ws.recv()
                 try:
                     if isinstance(data, bytes):
-                        try:
-                            json.loads(data.decode('utf-8'))  # Check if JSON, ignore if so
-                        except json.JSONDecodeError:
-                            screenshot = parse_binary_screenshot(data)
-                            if screenshot:
-                                results = process_screenshot(screenshot["img"])
-                                render_terminal(results)
-                                send_ack(ws, screenshot["frameId"], screenshot["castSessionId"])
+                        screenshot = parse_binary_screenshot(data)
+                        if screenshot:
+                            results = process_screenshot(screenshot["img"])
+                            render_terminal(results)
+                            send_ack(ws, screenshot["frameId"], screenshot["castSessionId"])
+                        else:
+                            try:
+                                message = json.loads(data.decode('utf-8'))
+                                if "frameBuffer" in message and isinstance(message["frameBuffer"], list):
+                                    for idx, frame in enumerate(message["frameBuffer"]):
+                                        frame_id = frame.get("frameId", message["messageId"] * 1000 + idx)
+                                        cast_session_id = frame.get("castSessionId", 0x7FFFFFFF)
+                                        img_data = frame.get("img", frame)
+                                        if isinstance(img_data, str):
+                                            results = process_screenshot(img_data)
+                                            render_terminal(results)
+                                            send_ack(ws, frame_id, cast_session_id)
+                            except json.JSONDecodeError:
+                                pass
                     else:
                         message = json.loads(data)
                         if "frameBuffer" in message and isinstance(message["frameBuffer"], list):
@@ -160,9 +175,11 @@ def main():
                                     render_terminal(results)
                                     send_ack(ws, frame_id, cast_session_id)
                 except Exception as e:
-                    print(term.clear() + term.move_to(1, 1) + term.red(f"Processing error: {str(e)}"))
+                    error_msg = f"Processing error: {str(e)}\n{traceback.format_exc()}"
+                    print(term.move_to(1, 1) + term.red(error_msg))
     except Exception as e:
-        print(term.clear() + term.move_to(1, 1) + term.red(f"Error: {str(e)}"))
+        error_msg = f"Main error: {str(e)}\n{traceback.format_exc()}"
+        print(term.move_to(1, 1) + term.red(error_msg))
         sys.exit(1)
     finally:
         ws.close()
@@ -172,5 +189,5 @@ if __name__ == "__main__":
         with term.cbreak():
             main()
     except KeyboardInterrupt:
-        print(term.clear() + term.move_to(1, 1) + term.yellow("Shutting down..."))
+        print(term.move_to(1, 1) + term.yellow("Shutting down..."))
         sys.exit(0)
