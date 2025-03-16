@@ -1,10 +1,9 @@
-- no install dir found /pwd in home/ issue
-
 - disk partition extension func at start of install failing on RHEL
 
 - some deps are not found on rhel (not majro problem)
 
 - install find issue:
+  - no install dir found /pwd in home/ issue, aka
   - sometimes (trad setup / trad install) w global_install from a $HOME/BrowserBox directory
   it seems that bbpro or an install process part says: " < some dir > is inside < $HOME > " or maybe " $PWD is inside < HOME > " 
   and then "No valid install directory found". 
