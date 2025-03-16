@@ -1,3 +1,5 @@
+- no install dir found /pwd in home/ issue
+
 - disk partition extension func at start of install failing on RHEL
 
 - some deps are not found on rhel (not majro problem)

@@ -308,12 +308,28 @@ export const ALLOWED_3RD_PARTY_EMBEDDERS = [
   ] : []),
   "https://*.cloudtabs.net",
   "https://localhost:*",
-	process.env.DOMAIN,
+  // ensure we have both DOMAIN' and *.DOMAIN' where DOMAIN' is process.env.DOMAIN without any leading *.
+	`https://${process.env.DOMAIN}:*`,
   ...(process.env.DOMAIN?.startsWith?.('*.') ? [
-    `https://${process.env.DOMAIN.slice(2)}:*`, // main service (for data: urls seemingly)
+    `https://${process.env.DOMAIN.slice(2)}:*`, 
   ] : [
-    `https://*.${process.env.DOMAIN}:*`, // main service (for data: urls seemingly)
+    `https://*.${process.env.DOMAIN}:*`, 
   ]),
+  ...(process.env.ALLOWED_EMBEDDING_ORIGINS ? process.env.ALLOWED_EMBEDDING_ORIGINS
+      .split(/\s+/g).filter(origin => {
+        const nonZero = origin.trim().length;
+        let validUrl = false;
+        try {
+          new URL(origin); 
+          validUrl = true;
+        } catch(e) {
+          console.info(`Included ALLOWED_EMBEDDING_ORIGIN is invalid: ${origin}`, e);
+        }
+        return nonZero && validUrl;
+      })
+    :
+      []
+  )
 ];
 export const FLASH_FORMATS = new Set([
   'swf',
