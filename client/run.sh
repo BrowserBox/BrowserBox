@@ -7,6 +7,9 @@ fi
 
 source ~/surya_venv/bin/activate
 
-#./bbxc.js "$1" | ./surya_bbxc_orc.py
+if command -v mkcert &>/dev/null; then
+  export NODE_EXTRA_CA_CERTS="$(mkcert -CAROOT)/rootCA.pem"
+fi
+
 ./bbxc.js "$1" | ./easy_bbxc_ocr.py
 
