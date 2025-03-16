@@ -24,19 +24,22 @@ try {
 
 const token = urlObj.searchParams.get('token');
 const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
-const apiUrl = `${baseUrl}/api/v10/tabs?sessionToken=${token}`; // Adjust version if needed
+const apiUrl = `${baseUrl}/api/v10/tabs?sessionToken=${token}`; // Updated to v10
 const wsUrl = `${baseUrl.replace('http', 'ws')}?session_token=${token}`;
 
 let messageId = 1;
 
-// Parse binary screenshot header
+// Parse binary screenshot header (returns null if invalid)
 function parseBinaryScreenshot(buffer) {
+  if (buffer.length < 28) return null; // HEADER_BYTE_LEN = 28
   const u32 = new Uint32Array(buffer.buffer, 0, 7); // 28 bytes / 4 = 7 Uint32
   const isLittleEndian = true; // Node.js is little-endian
   let castSessionId = isLittleEndian ? u32[0] : swap32(u32[0]);
   let frameId = isLittleEndian ? u32[1] : swap32(u32[1]);
   let targetId = `${u32[2].toString(16).padStart(8, '0')}${u32[3].toString(16).padStart(8, '0')}${u32[4].toString(16).padStart(8, '0')}${u32[5].toString(16).padStart(8, '0')}`.toUpperCase();
-  const img = buffer.slice(28); // HEADER_BYTE_LEN = 28
+  // Basic validation: frameId and castSessionId should be positive and reasonable
+  if (frameId <= 0 || castSessionId <= 0 || !targetId.match(/^[0-9A-F]{32}$/)) return null;
+  const img = buffer.slice(28);
   return { frameId, castSessionId, targetId, img: img.toString('base64') };
 }
 
@@ -82,7 +85,6 @@ async function main() {
 
     ws.on('open', () => {
       console.log(JSON.stringify({ status: 'WebSocket connected' }));
-      // Request initial tabs and start screenshot flow
       ws.send(JSON.stringify({
         messageId: messageId++,
         tabs: true,
@@ -93,33 +95,51 @@ async function main() {
 
     ws.on('message', (data) => {
       if (Buffer.isBuffer(data)) {
-        // Binary screenshot
-        const { frameId, castSessionId, targetId, img } = parseBinaryScreenshot(data);
-        const frameData = {
-          type: 'screenshot',
-          frameId,
-          castSessionId,
-          targetId,
-          data: img,
-          timestamp: new Date().toISOString(),
-        };
-        console.log(JSON.stringify(frameData, null, 2));
-        sendAck(ws, frameId, castSessionId);
+        const decoded = Buffer.from(data, 'base64');
+        let content;
+        try {
+          content = JSON.parse(decoded.toString('utf8'));
+          console.log(JSON.stringify(content, null, 2));
+        } catch(e) {
+          try {
+            const screenshot = parseBinaryScreenshot(decoded);
+            if (screenshot) {
+              const frameData = {
+                type: 'screenshot',
+                frameId: screenshot.frameId,
+                castSessionId: screenshot.castSessionId,
+                targetId: screenshot.targetId,
+                data: screenshot.img,
+                timestamp: new Date().toISOString(),
+              };
+              console.log(JSON.stringify(frameData, null, 2));
+              sendAck(ws, screenshot.frameId, screenshot.castSessionId);
+            }
+          } catch (e) {
+            console.error(JSON.stringify({ error: `Failed to decode binary message as JSON: ${e.message}`, raw: data.toString('base64') }));
+          }
+        }
       } else {
-        // JSON message
-        const message = JSON.parse(data.toString());
-        console.log(JSON.stringify(message, null, 2));
+        // JSON message (string)
+        let message;
+        try {
+          message = JSON.parse(data.toString());
+          console.log(JSON.stringify(message, null, 2));
+        } catch (e) {
+          console.error(JSON.stringify({ error: `Failed to parse JSON message: ${e.message}`, raw: data.toString() }));
+          return;
+        }
 
-        // Handle frameBuffer (base64 screenshots)
+        // Handle frameBuffer screenshots
         if (message.frameBuffer && Array.isArray(message.frameBuffer) && message.frameBuffer.length > 0) {
           message.frameBuffer.forEach((frame, index) => {
-            const frameId = frame.frameId || (message.messageId * 1000 + index); // Fallback if frameId not provided
-            const castSessionId = frame.castSessionId || 0x7FFFFFFF; // Default from client
+            const frameId = frame.frameId || (message.messageId * 1000 + index);
+            const castSessionId = frame.castSessionId || 0x7FFFFFFF;
             const frameData = {
               type: 'screenshot',
               frameId,
               castSessionId,
-              data: frame.img || frame, // Handle {img} or raw base64
+              data: frame.img || frame,
               timestamp: new Date().toISOString(),
             };
             console.log(JSON.stringify(frameData, null, 2));
@@ -127,7 +147,7 @@ async function main() {
           });
         }
 
-        // Handle meta messages (no screenshot-specific ack needed)
+        // Handle meta messages
         if (message.meta && Array.isArray(message.meta)) {
           message.meta.forEach((metaItem) => {
             const metaKeys = Object.keys(metaItem);
@@ -155,7 +175,6 @@ async function main() {
       process.exit(0);
     });
 
-    // Handle Ctrl+C gracefully
     process.on('SIGINT', () => {
       ws.close();
       process.exit(0);
