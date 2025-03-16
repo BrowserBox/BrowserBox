@@ -59,7 +59,7 @@ export async function applicationCheck() {
 
   try {
     // Verify application integrity
-    //await hardenedApp.verifyManifest();
+    await hardenedApp.verifyManifest();
     log('Application', 'Application integrity check passed.');
 
     // Validate license

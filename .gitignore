@@ -18,7 +18,6 @@ src/public/assets/flash/*.swf
 src/public/assets/flash/*.as
 src/public/assets/flash/*.fla
 src/public/assets/flash/*.jsfl
-BrowserBox*js
 typetests
 vim.exe.stackdump
 pptr-console-server/*.png
