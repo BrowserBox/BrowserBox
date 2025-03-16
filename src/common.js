@@ -320,7 +320,7 @@ export const ALLOWED_3RD_PARTY_EMBEDDERS = [
         const nonZero = origin.trim().length;
         let validUrl = false;
         try {
-          new URL(origin); 
+          new URL(origin.replace(/:\*/, '')); 
           validUrl = true;
         } catch(e) {
           console.info(`Included ALLOWED_EMBEDDING_ORIGIN is invalid: ${origin}`, e);
