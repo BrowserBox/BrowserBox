@@ -7,5 +7,6 @@ fi
 
 source ~/surya_venv/bin/activate
 
-./bbxc.js "$1" | ./surya_bbxc_orc.py
+#./bbxc.js "$1" | ./surya_bbxc_orc.py
+./bbxc.js "$1" | ./easy_bbxc_ocr.py
 
