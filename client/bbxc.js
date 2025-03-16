@@ -29,10 +29,10 @@ const wsUrl = `${baseUrl.replace('http', 'ws')}?session_token=${token}`;
 
 let messageId = 1;
 
-// Parse binary screenshot header (mimics client's parse function)
+// Parse binary screenshot header
 function parseBinaryScreenshot(buffer) {
-  const u32 = new Uint32Array(buffer.buffer, 0, 7); // HEADER_BYTE_LEN / 4 = 28 / 4 = 7
-  const isLittleEndian = true; // Node.js is typically little-endian
+  const u32 = new Uint32Array(buffer.buffer, 0, 7); // 28 bytes / 4 = 7 Uint32
+  const isLittleEndian = true; // Node.js is little-endian
   let castSessionId = isLittleEndian ? u32[0] : swap32(u32[0]);
   let frameId = isLittleEndian ? u32[1] : swap32(u32[1]);
   let targetId = `${u32[2].toString(16).padStart(8, '0')}${u32[3].toString(16).padStart(8, '0')}${u32[4].toString(16).padStart(8, '0')}${u32[5].toString(16).padStart(8, '0')}`.toUpperCase();
@@ -45,10 +45,25 @@ function swap32(val) {
   return ((val & 0xFF) << 24) | ((val & 0xFF00) << 8) | ((val >> 8) & 0xFF00) | ((val >> 24) & 0xFF);
 }
 
+// Send screenshot acknowledgment
+function sendAck(ws, frameId, castSessionId) {
+  const ackMessage = {
+    messageId: messageId++,
+    screenshotAck: { frameId, castSessionId },
+    zombie: {
+      events: [{
+        type: 'buffered-results-collection',
+        command: { isBufferedResultsCollectionOnly: true, params: {} },
+      }],
+    },
+  };
+  ws.send(JSON.stringify(ackMessage));
+}
+
 // Main async function
 async function main() {
   try {
-    // Step 1: Fetch initial tab data
+    // Fetch initial tab data
     const initialResponse = await fetch(apiUrl, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
@@ -60,7 +75,7 @@ async function main() {
     const initialData = await initialResponse.json();
     console.log(JSON.stringify(initialData, null, 2));
 
-    // Step 2: Establish WebSocket connection
+    // Establish WebSocket connection
     const ws = new WebSocket(wsUrl, {
       headers: { 'x-browserbox-local-auth': token },
     });
@@ -71,7 +86,7 @@ async function main() {
       ws.send(JSON.stringify({
         messageId: messageId++,
         tabs: true,
-        screenshotAck: 1, // Initial ack to start screenshots
+        screenshotAck: 1, // Initial ack
         zombie: { events: [] },
       }));
     });
@@ -89,23 +104,17 @@ async function main() {
           timestamp: new Date().toISOString(),
         };
         console.log(JSON.stringify(frameData, null, 2));
-
-        // Send ack for this screenshot
-        ws.send(JSON.stringify({
-          messageId: messageId++,
-          screenshotAck: { frameId, castSessionId },
-          zombie: { events: [{ type: 'buffered-results-collection', command: { isBufferedResultsCollectionOnly: true, params: {} } }] },
-        }));
+        sendAck(ws, frameId, castSessionId);
       } else {
         // JSON message
         const message = JSON.parse(data.toString());
         console.log(JSON.stringify(message, null, 2));
 
-        // Check for frameBuffer (base64 screenshots)
+        // Handle frameBuffer (base64 screenshots)
         if (message.frameBuffer && Array.isArray(message.frameBuffer) && message.frameBuffer.length > 0) {
           message.frameBuffer.forEach((frame, index) => {
-            const frameId = message.messageId * 1000 + index; // Fake frameId if not provided
-            const castSessionId = 0x7FFFFFFF; // Default from client
+            const frameId = frame.frameId || (message.messageId * 1000 + index); // Fallback if frameId not provided
+            const castSessionId = frame.castSessionId || 0x7FFFFFFF; // Default from client
             const frameData = {
               type: 'screenshot',
               frameId,
@@ -114,13 +123,24 @@ async function main() {
               timestamp: new Date().toISOString(),
             };
             console.log(JSON.stringify(frameData, null, 2));
+            sendAck(ws, frameId, castSessionId);
+          });
+        }
 
-            // Send ack for this screenshot
-            ws.send(JSON.stringify({
-              messageId: messageId++,
-              screenshotAck: { frameId, castSessionId },
-              zombie: { events: [{ type: 'buffered-results-collection', command: { isBufferedResultsCollectionOnly: true, params: {} } }] },
-            }));
+        // Handle meta messages (no screenshot-specific ack needed)
+        if (message.meta && Array.isArray(message.meta)) {
+          message.meta.forEach((metaItem) => {
+            const metaKeys = Object.keys(metaItem);
+            metaKeys.forEach((key) => {
+              const metaData = {
+                type: 'meta',
+                subtype: key,
+                data: metaItem[key],
+                messageId: message.messageId,
+                timestamp: new Date().toISOString(),
+              };
+              console.log(JSON.stringify(metaData, null, 2));
+            });
           });
         }
       }
