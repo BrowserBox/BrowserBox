@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { WebSocket } from 'ws';
+import { Agent } from 'https';
 
 // Parse command-line arguments
 const args = process.argv.slice(2);
@@ -24,31 +25,33 @@ try {
 
 const token = urlObj.searchParams.get('token');
 const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
-const apiUrl = `${baseUrl}/api/v10/tabs?sessionToken=${token}`; // Updated to v10
+const apiUrl = `${baseUrl}/api/v10/tabs?sessionToken=${token}`;
 const wsUrl = `${baseUrl.replace('http', 'ws')}?session_token=${token}`;
 
 let messageId = 1;
 
+// Custom HTTPS agent to bypass SSL verification (for mkcert/local testing)
+const agent = new Agent({
+  rejectUnauthorized: false, // WARNING: Use only for local testing!
+});
+
 // Parse binary screenshot header (returns null if invalid)
 function parseBinaryScreenshot(buffer) {
-  if (buffer.length < 28) return null; // HEADER_BYTE_LEN = 28
-  const u32 = new Uint32Array(buffer.buffer, 0, 7); // 28 bytes / 4 = 7 Uint32
-  const isLittleEndian = true; // Node.js is little-endian
+  if (buffer.length < 28) return null;
+  const u32 = new Uint32Array(buffer.buffer, 0, 7);
+  const isLittleEndian = true;
   let castSessionId = isLittleEndian ? u32[0] : swap32(u32[0]);
   let frameId = isLittleEndian ? u32[1] : swap32(u32[1]);
   let targetId = `${u32[2].toString(16).padStart(8, '0')}${u32[3].toString(16).padStart(8, '0')}${u32[4].toString(16).padStart(8, '0')}${u32[5].toString(16).padStart(8, '0')}`.toUpperCase();
-  // Basic validation: frameId and castSessionId should be positive and reasonable
   if (frameId <= 0 || castSessionId <= 0 || !targetId.match(/^[0-9A-F]{32}$/)) return null;
   const img = buffer.slice(28);
   return { frameId, castSessionId, targetId, img: img.toString('base64') };
 }
 
-// Swap bytes for big-endian (if needed)
 function swap32(val) {
   return ((val & 0xFF) << 24) | ((val & 0xFF00) << 8) | ((val >> 8) & 0xFF00) | ((val >> 24) & 0xFF);
 }
 
-// Send screenshot acknowledgment
 function sendAck(ws, frameId, castSessionId) {
   const ackMessage = {
     messageId: messageId++,
@@ -63,13 +66,13 @@ function sendAck(ws, frameId, castSessionId) {
   ws.send(JSON.stringify(ackMessage));
 }
 
-// Main async function
 async function main() {
   try {
-    // Fetch initial tab data
+    // Fetch initial tab data with custom agent
     const initialResponse = await fetch(apiUrl, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
+      agent, // Bypass SSL verification
     });
     if (!initialResponse.ok) {
       const errorText = await initialResponse.text();
@@ -78,9 +81,10 @@ async function main() {
     const initialData = await initialResponse.json();
     console.log(JSON.stringify(initialData));
 
-    // Establish WebSocket connection
+    // Establish WebSocket connection with custom agent
     const ws = new WebSocket(wsUrl, {
       headers: { 'x-browserbox-local-auth': token },
+      agent, // Pass agent via WebSocket options (works in ws v8+)
     });
 
     ws.on('open', () => {
@@ -88,7 +92,7 @@ async function main() {
       ws.send(JSON.stringify({
         messageId: messageId++,
         tabs: true,
-        screenshotAck: 1, // Initial ack
+        screenshotAck: 1,
         zombie: { events: [] },
       }));
     });
@@ -100,7 +104,7 @@ async function main() {
         try {
           content = JSON.parse(decoded.toString('utf8'));
           console.log(JSON.stringify(content));
-        } catch(e) {
+        } catch (e) {
           try {
             const screenshot = parseBinaryScreenshot(decoded);
             if (screenshot) {
@@ -116,11 +120,10 @@ async function main() {
               sendAck(ws, screenshot.frameId, screenshot.castSessionId);
             }
           } catch (e) {
-            console.error(JSON.stringify({ error: `Failed to decode binary message as JSON: ${e.message}`, raw: data.toString('base64') }));
+            console.error(JSON.stringify({ error: `Failed to decode binary message: ${e.message}`, raw: data.toString('base64') }));
           }
         }
       } else {
-        // JSON message (string)
         let message;
         try {
           message = JSON.parse(data.toString());
@@ -130,7 +133,6 @@ async function main() {
           return;
         }
 
-        // Handle frameBuffer screenshots
         if (message.frameBuffer && Array.isArray(message.frameBuffer) && message.frameBuffer.length > 0) {
           message.frameBuffer.forEach((frame, index) => {
             const frameId = frame.frameId || (message.messageId * 1000 + index);
@@ -147,7 +149,6 @@ async function main() {
           });
         }
 
-        // Handle meta messages
         if (message.meta && Array.isArray(message.meta)) {
           message.meta.forEach((metaItem) => {
             const metaKeys = Object.keys(metaItem);
