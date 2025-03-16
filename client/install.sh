@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Script: install_surya.sh
-# Purpose: Install Surya OCR and dependencies in a virtual environment
+# Script: install_easyocr.sh
+# Purpose: Install EasyOCR and dependencies in a virtual environment
 
 # Exit on error
 set -e
 
 # Variables
-MIN_PYTHON_VERSION="3.10"
-VENV_DIR="$HOME/surya_venv"
-SURYA_VERSION="0.13.0" # Latest as of recent data, adjust if needed
+MIN_PYTHON_VERSION="3.8" # EasyOCR supports Python 3.8+
+VENV_DIR="$HOME/easyocr_venv"
+EASYOCR_VERSION="1.7.1" # Latest stable version as of recent data
 
-# Check for Python 3.10+
+# Check for Python 3.8+
 if ! command -v python3 &> /dev/null; then
   echo "Error: Python 3 is not installed. Please install Python $MIN_PYTHON_VERSION or higher."
   exit 1
@@ -20,7 +20,7 @@ fi
 # Get Python version
 PYTHON_VERSION=$(python3 --version | cut -d' ' -f2)
 PYTHON_MAJOR_MINOR=$(echo "$PYTHON_VERSION" | cut -d'.' -f1,2)
-if ! echo "$PYTHON_MAJOR_MINOR" | grep -qE "^[3]\.[1][0-9]$|^[3]\.[2-9]$"; then
+if ! echo "$PYTHON_MAJOR_MINOR" | grep -qE "^[3]\.[8-9]$|^[3]\.[1-9][0-9]$|^[4]\.[0-9]$"; then
   echo "Error: Python $MIN_PYTHON_VERSION or higher is required. Found: $PYTHON_VERSION"
   exit 1
 fi
@@ -40,18 +40,25 @@ pip install --upgrade pip
 echo "Installing PyTorch (CPU version)..."
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
-# Install Pillow (PIL)
-echo "Installing Pillow..."
-pip install Pillow
+# Install EasyOCR
+echo "Installing EasyOCR version $EASYOCR_VERSION..."
+pip install easyocr==$EASYOCR_VERSION
 
-# Install Surya OCR
-echo "Installing Surya OCR version $SURYA_VERSION..."
-pip install surya-ocr==$SURYA_VERSION
+# Install additional dependencies for HTTP and WebSocket
+echo "Installing HTTP and WebSocket dependencies..."
+pip install requests websocket-client
+
+# Install terminal-kit equivalent (blessed for TUI)
+echo "Installing Blessed for terminal UI..."
+pip install blessed
 
 # Verify installation
-echo "Verifying Surya installation..."
-python -c "import surya; print('Surya OCR installed successfully:', surya.__version__)"
-python -c "import PIL; print('Pillow installed successfully:', PIL.__version__)"
+echo "Verifying installations..."
+python -c "import easyocr; print('EasyOCR installed successfully:', easyocr.__version__)"
+python -c "import torch; print('PyTorch installed successfully:', torch.__version__)"
+python -c "import requests; print('Requests installed successfully')"
+python -c "import websocket; print('WebSocket installed successfully')"
+python -c "import blessed; print('Blessed installed successfully')"
 
 # Deactivate virtual environment
 deactivate
