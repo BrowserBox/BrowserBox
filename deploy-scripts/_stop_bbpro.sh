@@ -36,25 +36,24 @@ pm2 delete run-docspark
 pm2 delete devtools-server
 pm2 delete start_audio
 
-sleep 3
+sleep 2
 
 pm2 stop basic-bb-main-service 
 
 sleep 2
 
 pm2 delete basic-bb-main-service
+pm2 save --force
+# Kill pm2 if no processes are running
+if [[ "$(pm2 jlist)" == "[]" ]]; then
+  pm2 kill
+fi
 
 sleep 1
 
 pkill -u "$(whoami)" browserbox*
 pkill -u "$(whoami)" chrome
 pulseaudio -k
-pm2 save --force
-
-# Kill pm2 if no processes are running
-if [[ "$(pm2 jlist)" == "[]" ]]; then
-  pm2 kill
-fi
 
 # Check if the login link is an onion address and torbb.env exists
 login_link_file="$HOME/.config/dosyago/bbpro/login.link"
