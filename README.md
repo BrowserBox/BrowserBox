@@ -87,7 +87,7 @@ Bring secure, remote browsing to your web apps with the BrowserBox Embedding API
 
 That’s it—secure browsing, embedded effortlessly.
 
-For more details, check the full WebView API script in the [browserbox-webview.js file](https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/api/browserbox-webview.js).
+For more details, check the full WebView API script in the [browserbox-webview.js file](https://github.com/BrowserBox/BrowserBox/blob/main/api/browserbox-webview.js).
 
 ---
 
