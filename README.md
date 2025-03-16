@@ -15,6 +15,30 @@ Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI
 
 ---
 
+# Get our new [`bbx`](https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#get-started) tool
+
+<a href="https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#get-started"><img width="1204" alt="Get our New bbx tool" src="https://github.com/user-attachments/assets/4d549f18-1fbb-463d-bf6a-4b2ce121dea2" /></a>
+
+
+# `bbx` lets you
+
+- manage and activate your BrowserBox copy 📝
+- purchase a BrowserBox license key 🔐
+- run BrowsreBox as multiple users on the one machine 👨‍🦲👱‍♀️👷‍♂️
+- run BrowserBox inside docker 🟦🐳
+- run BrowserBox through tor 🟣🧅
+- easily install and update BrowserBox ⬇️✔️
+- And more!
+
+# Userful Links
+
+- [Purchase a BrowserBox Commercial License for 1 or more seats](https://browse.cloudtabs.net/l)
+- [CloudTabs - Managed BrowserBox&trade; SaaS](https://browse.cloudtabs.net)
+- [Visit the DOSAYGO website](https://dosaygo.com)
+- [Read the Rest of this README](#table-of-contents)
+
+---
+
 ## Table of Contents
 
 1. [Why BrowserBox?](#why-browserbox)
