@@ -428,14 +428,15 @@ if [ "$#" -eq 2 ] || is_local_hostname "$1"; then
     fi
     mkcert -install
     if [[ ! -f "$HOME/sslcerts/privkey.pem" || ! -f "$HOME/sslcerts/fullchain.pem" ]]; then
-      mkdir -p $HOME/sslcerts
-      pwd=$(pwd)
-      cd $HOME/sslcerts
-      mkcert --cert-file fullchain.pem --key-file privkey.pem $hostname localhost 127.0.0.1
-      cd $pwd
-    else 
-      echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We are not overwriting them."
+      :
+    else
+      echo "IMPORTANT: sslcerts already exist in $HOME/sslcerts directory. We ARE overwriting them." >&2
     fi
+    mkdir -p $HOME/sslcerts
+    pwd=$(pwd)
+    cd $HOME/sslcerts
+    mkcert --cert-file fullchain.pem --key-file privkey.pem $hostname localhost 127.0.0.1
+    cd $pwd
   else
     ip=$(getent hosts "$hostname" | awk '{ print $1 }')
 
