@@ -2,6 +2,7 @@
 
 if [[ -z "$1" ]]; then
   echo "Usage: $0 <login-link>"
+  exit 1
 fi
 
 source ~/surya_venv/bin/activate

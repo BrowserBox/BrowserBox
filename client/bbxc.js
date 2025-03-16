@@ -76,7 +76,7 @@ async function main() {
       throw new Error(`Failed to fetch initial tabs: ${initialResponse.status} - ${errorText}`);
     }
     const initialData = await initialResponse.json();
-    console.log(JSON.stringify(initialData, null, 2));
+    console.log(JSON.stringify(initialData));
 
     // Establish WebSocket connection
     const ws = new WebSocket(wsUrl, {
@@ -99,7 +99,7 @@ async function main() {
         let content;
         try {
           content = JSON.parse(decoded.toString('utf8'));
-          console.log(JSON.stringify(content, null, 2));
+          console.log(JSON.stringify(content));
         } catch(e) {
           try {
             const screenshot = parseBinaryScreenshot(decoded);
@@ -112,7 +112,7 @@ async function main() {
                 data: screenshot.img,
                 timestamp: new Date().toISOString(),
               };
-              console.log(JSON.stringify(frameData, null, 2));
+              console.log(JSON.stringify(frameData));
               sendAck(ws, screenshot.frameId, screenshot.castSessionId);
             }
           } catch (e) {
@@ -124,7 +124,7 @@ async function main() {
         let message;
         try {
           message = JSON.parse(data.toString());
-          console.log(JSON.stringify(message, null, 2));
+          console.log(JSON.stringify(message));
         } catch (e) {
           console.error(JSON.stringify({ error: `Failed to parse JSON message: ${e.message}`, raw: data.toString() }));
           return;
@@ -142,7 +142,7 @@ async function main() {
               data: frame.img || frame,
               timestamp: new Date().toISOString(),
             };
-            console.log(JSON.stringify(frameData, null, 2));
+            console.log(JSON.stringify(frameData));
             sendAck(ws, frameId, castSessionId);
           });
         }
@@ -159,7 +159,7 @@ async function main() {
                 messageId: message.messageId,
                 timestamp: new Date().toISOString(),
               };
-              console.log(JSON.stringify(metaData, null, 2));
+              console.log(JSON.stringify(metaData));
             });
           });
         }
