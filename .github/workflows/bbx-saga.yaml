@@ -1,4 +1,4 @@
-name: BBX Saga Test Suite
+name: bbx Saga Test Suite
 
 # Trigger on pull requests and pushes to main
 on:
@@ -16,7 +16,6 @@ concurrency:
 
 jobs:
   build:
-    name: bbx saga test
     # Use a matrix to run on multiple operating systems
     continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:

@@ -12,6 +12,8 @@
 #  the terms of service, as using this in excess may do that. Don't abuse the power and benevolence of the platform.
 # End preamble
 
+name: BrowserBox Basic Install Test
+
 on:
   pull_request:
     types: [synchronize, opened, reopened]
@@ -25,7 +27,7 @@ concurrency:
 
 jobs:
   build:
-    name: BrowserBox Basic Install Test
+    name: browserbox basic install
     # Use a matrix to run on multiple operating systems
     continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
