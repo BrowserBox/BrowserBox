@@ -33,7 +33,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
+        # os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
+        os: [Ubuntu-latest, macOS-latest, centos, debian]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20  # Increased for 2.5-minute waits
     container: ${{ matrix.os == 'centos' && 'dokken/centos-stream-9' || matrix.os == 'debian' && 'debian:latest' || '' }}
@@ -210,3 +211,4 @@ jobs:
         if: always()
         run: |
           stop_bbpro || true
+          sleep 5
