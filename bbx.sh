@@ -405,7 +405,7 @@ ensure_setup_tor() {
 install() {
     banner
     check_agreement
-    pre_install
+    pre_install || return 0
     load_config
     ensure_deps
     printf "${GREEN}Installing BrowserBox CLI (bbx)...${NC}\n"
@@ -1134,13 +1134,18 @@ pre_install() {
 
         # Switch to the non-root user and run install
         echo "Switching to user $install_user..."
-        su - "$install_user" -c "/tmp/bbx.sh install"
+        su - "$install_user" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; /tmp/bbx.sh install"
 
-        # Replace the root shell with the new user's shell
-        exec su - "$install_user"
+        if [[ -z "$BBX_TEST_AGREEMENT" ]] || [ -t 0 ]; then
+          # Replace the root shell with the new user's shell
+          exec su - "$install_user" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; bash -l"
+        else
+          return 1
+        fi
     else
         # If not running as root, continue with the normal install
         echo "Running as non-root user, proceeding with installation..."
+        return 0
     fi
 }
 

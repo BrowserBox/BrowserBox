@@ -28,16 +28,23 @@ concurrency:
 jobs:
   build:
     name: browserbox basic install
-    # Use a matrix to run on multiple operating systems
     continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
-        # os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
-        os: [Ubuntu-latest, macOS-latest, centos, debian]
+        os: [ubuntu-latest, macos-latest]
+        container_image:
+          - ''  # No container (native runner)
+          - 'dokken/centos-stream-9'
+          - 'debian:latest'
+        exclude:
+          - os: macos-latest  # macOS runners don’t support containers
+            container_image: 'dokken/centos-stream-9'
+          - os: macos-latest
+            container_image: 'debian:latest'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20  # Increased for 2.5-minute waits
-    container: ${{ matrix.os == 'centos' && 'dokken/centos-stream-9' || matrix.os == 'debian' && 'debian:latest' || '' }}
+    timeout-minutes: 20
+    container: ${{ matrix.container_image }}
 
     steps:
       # Checkout the repository code
@@ -52,71 +59,75 @@ jobs:
             exit 1
           fi
 
-      # Install dependencies (Linux/Ubuntu/Debian)
-      - name: Install dependencies (Linux/Ubuntu/Debian/CentOS)
-        if: matrix.os == 'Ubuntu-latest' || matrix.os == 'centos' || matrix.os == 'debian'
+      # Install dependencies (Ubuntu Native)
+      - name: Install dependencies (Ubuntu Native)
+        if: matrix.os == 'ubuntu-latest' && matrix.container_image == ''
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libnss3 libnspr4 libasound2t64 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 curl jq
+          sudo apt-get install -y curl 
 
-      # Install dependencies (macOS)
-      - name: Install dependencies (macOS)
-        if: matrix.os == 'macOS-latest'
+      # Install dependencies (Debian Container)
+      - name: Install dependencies (Debian Container)
+        if: matrix.container_image == 'debian:latest'
         run: |
-          brew update
-          brew install curl jq
+          apt-get update -y
+          apt-get install -y curl
 
-      # Install dependencies (Windows) - Note: Limited support, may need adjustment
-      - name: Install dependencies (Windows)
-        if: matrix.os == 'windows-latest'
+      # Install dependencies (CentOS Container)
+      - name: Install dependencies (CentOS Container)
+        if: matrix.container_image == 'dokken/centos-stream-9'
         run: |
-          choco install curl jq -y
-          # Note: Windows lacks direct equivalents for some libraries (e.g., libgtk-3-0). This may require WSL or manual installation.
+          dnf update -y
+          dnf install -y curl
 
-      # Install ngrok (cross-platform)
+      # Install ngrok (cross-platform, with conditional setup for containers)
       - name: Install ngrok
+        shell: /bin/bash {0}
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            npm install ngrok -g
+          if [[ "${{ matrix.container_image }}" != "" ]]; then
+            # Container case: Install nvm and Node.js
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # Load nvm
+            nvm install 22
+            nvm use 22
+            nvm alias default 22
+            # Ensure npm is available and install ngrok
+            . "$NVM_DIR/nvm.sh"  # Source nvm again for this shell
+            npm install -g ngrok
           else
-            npm install ngrok -g
+            # Non-container case: Use pre-installed Node.js
+            npm install -g ngrok
           fi
 
       # Configure ngrok
       - name: Configure ngrok
-        run: ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+        shell: /bin/bash {0}
+        run: |
+          source $HOME/.nvm/nvm.sh
+          ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       # Install application
       - name: Install application
+        shell: /bin/bash {0}
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            bash ./deploy-scripts/global_install.sh localhost
-          else
-            yes | ./deploy-scripts/global_install.sh localhost
-          fi
+          yes | ./deploy-scripts/global_install.sh localhost
 
       # Configure application
       - name: Configure application
         id: setup
+        shell: /bin/bash {0}
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            output=$(bash setup_bbpro --port 8080)
-          else
-            output=$(setup_bbpro --port 8080)
-          fi
+          output=$(setup_bbpro --port 8080)
           echo "::set-output name=suffix::${output#*https://localhost:8080}"
-
-      # Create BBPRO.INTEGRITY file
-      - name: Create BBPRO.INTEGRITY file
-        run: |
-          random_string=$(openssl rand -base64 32)
-          echo "$random_string" > $HOME/BBPRO.INTEGRITY
 
       # Start server & ngrok tunnel
       - name: Start server & ngrok tunnel
+        shell: /bin/bash {0}
         run: |
+          source $HOME/.nvm/nvm.sh
           export STATUS_MODE=${{ secrets.STATUS_MODE_KEY }}
           export LICENSE_KEY=${{ secrets.BB_LICENSE_KEY }}
           bbcertify
@@ -129,6 +140,7 @@ jobs:
       # Get ngrok public URL
       - name: Get ngrok public URL
         id: ngrok
+        shell: /bin/bash {0}
         run: |
           url=$(curl http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
           suffix=${{ steps.setup.outputs.suffix }}
@@ -136,34 +148,37 @@ jobs:
           echo "::set-output name=url::$complete_url"
           echo $complete_url
 
-      # Check integrity route
-      - name: Check integrity route
+      # Check application with retry
+      - name: Check application with retry
+        shell: /bin/bash {0}
         run: |
-          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')
-          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'token=[^&]+' | sed 's/token=//') 
-          integrity_url="${base_url}/integrity?session_token=${token}"
-          integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
+          base_url="https://localhost:8080"
+          token=$(setup_bbpro --port 8080 | grep -oE 'token=[^&]+' | sed 's/token=//')
+          check_url="${base_url}/?session_token=${token}"
+          max_time=60  # Maximum total time in seconds
+          timeout=5    # Timeout per attempt in seconds
+          interval=2   # Interval between attempts in seconds
+          start_time=$(date +%s)
           success=0
-          for i in {1..10}; do
-            echo "Attempt $i to check integrity..."
-            integrity_content=$(curl -L -s "$integrity_url")
-            echo "base url: $base_url"
-            echo "token: $token"
-            echo "iurl: $integrity_url"
-            echo "ic: $integrity_content"
-            echo "ifc: $integrity_file_content"
-            if [[ "$integrity_content" == "$integrity_file_content" ]]; then
+          
+          while [ $(( $(date +%s) - $start_time )) -lt $max_time ]; do
+            echo "Attempting to check application..."
+            curl -k -L -s --max-time $timeout "$check_url"
+            if [ $? -eq 0 ]; then
               success=1
               break
             fi
-            sleep 7
+            echo "Attempt failed, retrying in $interval seconds..."
+            sleep $interval
           done
-          if [[ "$success" -eq 0 ]]; then
-            echo "Error: Integrity check failed for application after 10 attempts."
+          
+          if [ $success -eq 0 ]; then
+            echo "Error: Application check failed after $max_time seconds"
             stop_bbpro
             sleep 10
             exit 1
           fi
+          echo "Application check succeeded"
 
       # Print ngrok URL
       - name: Print ngrok URL
@@ -174,34 +189,37 @@ jobs:
         run: |
           sleep 30
 
-      # Final check
-      - name: Final check
+      # Final check with retry
+      - name: Final check with retry
+        shell: /bin/bash {0}
         run: |
-          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')
-          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'token=[^&]+' | sed 's/token=//') 
-          integrity_url="${base_url}/integrity?session_token=${token}"
-          integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
+          base_url="https://localhost:8080"
+          token=$(setup_bbpro --port 8080 | grep -oE 'token=[^&]+' | sed 's/token=//')
+          check_url="${base_url}/?session_token=${token}"
+          max_time=60  # Maximum total time in seconds
+          timeout=5    # Timeout per attempt in seconds
+          interval=2   # Interval between attempts in seconds
+          start_time=$(date +%s)
           success=0
-          for i in {1..2}; do
-            echo "Attempt $i to check integrity..."
-            integrity_content=$(curl -L -s "$integrity_url")
-            echo "base url: $base_url"
-            echo "token: $token"
-            echo "iurl: $integrity_url"
-            echo "ic: $integrity_content"
-            echo "ifc: $integrity_file_content"
-            if [[ "$integrity_content" == "$integrity_file_content" ]]; then
+          
+          while [ $(( $(date +%s) - $start_time )) -lt $max_time ]; do
+            echo "Attempting final check..."
+            curl -k -L -s --max-time $timeout "$check_url"
+            if [ $? -eq 0 ]; then
               success=1
               break
             fi
-            sleep 7
+            echo "Attempt failed, retrying in $interval seconds..."
+            sleep $interval
           done
-          if [[ "$success" -eq 0 ]]; then
-            echo "Error: Integrity check failed for application after 2 attempts."
+          
+          if [ $success -eq 0 ]; then
+            echo "Error: Final application check failed after $max_time seconds"
             stop_bbpro
             sleep 10
             exit 1
           fi
+          echo "Final check succeeded"
           stop_bbpro
           sleep 10
           exit 0

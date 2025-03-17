@@ -1,38 +1,41 @@
 name: bbx Saga Test Suite
 
-# Trigger on pull requests and pushes to main
 on:
   pull_request:
     types: [synchronize, opened, reopened]
-    branches: [ main ]
+    branches: [main]
   push:
     branches:
       - main
 
-# Ensure only one job runs at a time per runner type
 concurrency:
   group: ${{ github.repository }}-bbx-saga
   cancel-in-progress: true
 
 jobs:
   build:
-    # Use a matrix to run on multiple operating systems
     continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
-        # os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
-        os: [Ubuntu-latest, macOS-latest, centos, debian]
+        os: [ubuntu-latest, macos-latest]  # Use valid hosted runner labels
+        container_image: 
+          - ''  # No container (native runner)
+          - 'dokken/centos-stream-9'
+          - 'debian:latest'
+        exclude:
+          - os: macos-latest  # macOS runners don’t support containers
+            container_image: 'dokken/centos-stream-9'
+          - os: macos-latest
+            container_image: 'debian:latest'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20  # Increased for 2.5-minute waits
-    container: ${{ matrix.os == 'centos' && 'dokken/centos-stream-9' || matrix.os == 'debian' && 'debian:latest' || '' }}
+    timeout-minutes: 20
+    container: ${{ matrix.container_image }}  # Apply container if specified
 
     steps:
-      # Checkout the repository code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Check if actor is repository owner or me
       - name: Check if actor is repository owner or me
         run: |
           if [[ "${{ github.actor }}" != "o0101" ]]; then
@@ -40,65 +43,32 @@ jobs:
             exit 1
           fi
 
-      # Debug: Check Homebrew version on macOS
-      - name: Check Homebrew version (macOS)
-        if: matrix.os == 'macOS-latest'
-        run: |
-          brew --version
-          brew update
-          brew install curl jq
-
-      # Install required tools in CentOS container (dokken/centos-stream-9)
-      - name: Install dependencies in CentOS container
-        if: matrix.os == 'centos'
-        run: |
-          dnf update -y
-          dnf install -y curl bash which git
-          # Install Tor for tor-run tests
-          dnf install -y epel-release
-          dnf install -y tor
-
-      # Make test script executable (Linux/macOS/CentOS)
-      - name: Prepare test script (Linux/macOS/CentOS)
+      - name: Prepare test script
         if: matrix.os != 'windows-latest'
         run: chmod +x tests/test-bbx.sh
 
-      # Run the BBX test saga script (Linux/macOS/CentOS)
-      - name: Execute BBX Test Saga (Linux/macOS/CentOS)
-        if: matrix.os != 'windows-latest'
+      - name: Execute BBX Test Saga
         run: |
+          # Explicitly export variables
+          export BBX_HOSTNAME="localhost"
+          export EMAIL="test@example.com"
+          export LICENSE_KEY="${{ secrets.BB_LICENSE_KEY }}"
+          export BBX_TEST_AGREEMENT="true"
+          export STATUS_MODE="${{ secrets.STATUS_MODE_KEY }}"
+
+          # Debug safely: Check if variables are set without printing their values
+          if [ -z "$BBX_HOSTNAME" ]; then echo "BBX_HOSTNAME is not set"; else echo "BBX_HOSTNAME is set"; fi
+          if [ -z "$EMAIL" ]; then echo "EMAIL is not set"; else echo "EMAIL is set"; fi
+          if [ -z "$LICENSE_KEY" ]; then echo "LICENSE_KEY is not set"; else echo "LICENSE_KEY is set"; fi
+          if [ -z "$BBX_TEST_AGREEMENT" ]; then echo "BBX_TEST_AGREEMENT is not set"; else echo "BBX_TEST_AGREEMENT is set"; fi
+          if [ -z "$STATUS_MODE" ]; then echo "STATUS_MODE is not set"; else echo "STATUS_MODE is set"; fi
+
+          # Run the script
           ./tests/test-bbx.sh
-        env:
-          BBX_HOSTNAME: "localhost"
-          EMAIL: "test@example.com"
-          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
-          BBX_TEST_AGREEMENT: "true"
-          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
         continue-on-error: false
 
-      # Run the BBX test saga script (Windows)
-      - name: Execute BBX Test Saga (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          bash ./tests/test-bbx.sh
-        env:
-          BBX_HOSTNAME: "localhost"
-          EMAIL: "test@example.com"
-          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
-          BBX_TEST_AGREEMENT: "true"
-          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
-        continue-on-error: false
-
-      # Cleanup (Linux/macOS/CentOS)
-      - name: Cleanup (Linux/macOS/CentOS)
-        if: always() && (matrix.os == 'Ubuntu-latest' || matrix.os == 'macOS-latest' || matrix.os == 'centos')
-        run: |
-          bbx stop || true
-          sleep 5
-
-      # Cleanup (Windows)
-      - name: Cleanup (Windows)
-        if: always() && matrix.os == 'windows-latest'
+      - name: Cleanup
+        if: always()
         run: |
           bbx stop || true
           sleep 5
