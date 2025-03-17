@@ -112,7 +112,7 @@ fetch_certs() {
         }
     fi
     $SUDO chmod 600 "$CERT_DIR"/*.pem
-    $SUDO chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER} "$CERT_DIR"/*.pem
+    $SUDO chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "$CERT_DIR"/*.pem
 }
 
 fetch_certs
