@@ -139,8 +139,8 @@ jobs:
       # Check integrity route
       - name: Check integrity route
         run: |
-          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -E -o 'https?://[^/]+')
-          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -E -o 'token=\K[^&]+')
+          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')
+          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'token=[^&]+' | sed 's/token=//') 
           integrity_url="${base_url}/integrity?session_token=${token}"
           integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
           success=0
