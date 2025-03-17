@@ -7,8 +7,17 @@
 
 Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI) technology. BrowserBox requires a **license key** for all usage. Unlock advanced security and productivity today!
 
-- **[Purchase a Commercial License](https://browse.cloudtabs.net/l)**  
-- **[Join the Non-Commercial Waitlist](https://tally.so/r/nPvb1x)**  
+<ul>
+  <li>
+    <a href="https://browse.cloudtabs.net/l" class="cta-button">Get a Commercial License</a>
+  </li>
+  <li>
+    <a href="https://browse.cloudtabs.net/M/jl" class="cta-button">Get a Non-Commercial License</a>
+  </li>
+  <li>
+    <a href="https://tally.so/r/wkv4aM" class="cta-button secondary-cta">Join Evaluation Waitlist</a>    
+  </li>
+</ul>
 
 >[!CAUTION]  
 >Unlicensed instances display a warning and shut down after 2 minutes.
@@ -142,10 +151,25 @@ We enforce licensing to protect your investment. Usage data ensures compliance. 
 ## FAQ
 
 **How do I get a license?**  
-- Commercial: Purchase at [https://browse.cloudtabs.net/l](https://browse.cloudtabs.net/l).  
-- Non-commercial: Join the [waitlist](https://tally.so/r/nPvb1x).
+
+<ul>
+  <li>
+    <a href="https://browse.cloudtabs.net/l" class="cta-button">Get a Commercial License</a>
+  </li>
+  <li>
+    <a href="https://browse.cloudtabs.net/M/jl" class="cta-button">Get a Non-Commercial License</a>
+  </li>
+  <li>
+    <a href="https://tally.so/r/wkv4aM" class="cta-button secondary-cta">Join Evaluation Waitlist</a>    
+  </li>
+</ul>
+
+**Why pay for a license for a browser? Browser's are free!!!**
+
+Yeah, they're *free*, when *you're* the product. With BrowserBox, you are not the product. So pay money, instead of choosing a product where you pay with your data.
 
 **Questions?**  
+
 Email [sales@dosaygo.com](mailto:sales@dosaygo.com).
 
 ---
@@ -158,6 +182,6 @@ Email [sales@dosaygo.com](mailto:sales@dosaygo.com).
 
 ## Copyright
 
-&copy; 205 DOSAYGO Corporation USA. All rights reserved.
+BrowserBox&trade; is &copy; 2025 DOSAYGO Corporation USA. All rights reserved. Since 2018.
 All code in this repository is licensed under [LICENSE.md](LICENSE.md) unless otherwise stated.  
 
