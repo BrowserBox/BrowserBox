@@ -55,8 +55,10 @@
           detached: true,
           stdio: 'ignore' ,
         });
+        stopper.on('error', () => {console.log('Error running stop_bbpro'); process.exit(1);});
         stopper.unref(); // Ensure parent doesn’t wait for child
-      }, 120000);
+        setTimeout(() => process.exit(1), 15500); // exit anyway if still open 
+      }, 130000);
     } catch(e) {
       console.warn(`Error stopping`);
       process.exit(1);

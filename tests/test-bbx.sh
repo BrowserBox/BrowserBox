@@ -50,7 +50,7 @@ test_login_link() {
   local timeout=5
   local success=0                # Flag to track success
   local http_code=""             # Variable to store the HTTP status code
-  local curl_opts="-s -k -L -w '\n%{http_code}' --max-time $timeout | tail -n 1"
+  local curl_opts="-s -k -L -w %{http_code} --max-time $timeout --head --fail --output /dev/null"
 
   # Add Tor SOCKS proxy if specified
   if [ "$use_tor" = "tor" ]; then
@@ -63,7 +63,7 @@ test_login_link() {
   # Loop until max_time is reached or success is achieved
   while [ $(( $(date +%s) - start_time )) -lt $max_time ]; do
     # Execute curl with the constructed options
-    http_code=$(curl $curl_opts "$link")
+    http_code="$(curl $curl_opts "$link")"
 
     # Check if the status code starts with '2' (indicating 2xx success)
     if [[ "$http_code" =~ ^2 ]]; then
