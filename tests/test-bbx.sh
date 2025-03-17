@@ -3,6 +3,21 @@
 # Test script for bbx CLI in BrowserBox repository
 # Displays output directly in terminal
 
+if [[ -z "$STATUS_MODE" ]]; then
+  echo "Set status mode env" >&2
+  exit 1
+fi
+
+export STATUS_MODE="${STATUS_MODE}"
+
+if [[ -z "$LICENSE_KEY" ]]; then
+  echo "Set license key env" >&2
+  exit 1
+fi
+export LICENSE_KEY="${LICENSE_KEY}"
+
+rm $(bbcertify)
+
   # ANSI colors
   RED='\033[0;31m'
   GREEN='\033[0;32m'
@@ -55,8 +70,8 @@
       # Add Tor SOCKS proxy if specified
       if [ "$use_tor" = "tor" ]; then
         curl_opts="$curl_opts --proxy socks5h://127.0.0.1:9050"
-        interval=15
-        timeout=30
+        interval=5
+        timeout=25
         max_time=120
         echo -n "Testing Tor login link $link with retries... "
       else
@@ -110,7 +125,7 @@
 
     test_install() {
       echo "Installing bbx... "
-      ./bbx.sh install
+      yes yes | ./bbx.sh install
       if [ $? -eq 0 ]; then
         echo -e "${GREEN}✔ Success${NC}"
         ((passed++))
@@ -155,9 +170,9 @@
         return 1
       fi
       
-      # Wait 150 seconds and test again
-      echo "Waiting 150 seconds to check instance activity... "
-      sleep 150
+      # Wait 25 seconds and test again
+      echo "Waiting 25 seconds to check instance activity... "
+      sleep 25 
       echo -e "${GREEN}✔ Wait complete${NC}"
       ((passed++))
       if ! test_login_link "$login_link"; then
@@ -189,8 +204,8 @@
         return 1
       fi
       
-      # Wait 150 seconds and test again
-      echo "Waiting 150 seconds to check instance activity... "
+      # Wait 25 seconds and test again
+      echo "Waiting 25 seconds to check instance activity... "
       sleep 150
       echo -e "${GREEN}✔ Wait complete${NC}"
       ((passed++))
@@ -220,19 +235,19 @@
       
       # Test login link
       if test_login_link "$login_link"; then 
-        ./bbx.sh stop-docker $nickname ;
+        ./bbx.sh docker-stop $nickname ;
         return 1
       fi
 
-      # Wait 150 seconds and test again
-      echo "Waiting 150 seconds to check instance activity... "
+      # Wait 25 seconds and test again
+      echo "Waiting 25 seconds to check instance activity... "
       sleep 150
       echo -e "${GREEN}✔ Wait complete${NC}"
       ((passed++))
 
       # Test login link
       if test_login_link "$login_link"; then 
-        ./bbx.sh stop-docker $nickname ;
+        ./bbx.sh docker-stop $nickname ;
         return 1
       fi
       
@@ -253,10 +268,10 @@
   echo "Starting bbx Test Saga..."
 
   # Run tests
-  #test_uninstall
-  #test_install || exit 1
-  #test_setup || exit 1
-  #test_run || exit 1
+  test_uninstall
+  test_install || exit 1
+  test_setup || exit 1
+  test_run || exit 1
   test_tor_run || exit 1
   test_docker_run || exit 1
 
