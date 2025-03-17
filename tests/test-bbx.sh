@@ -47,9 +47,10 @@ test_login_link() {
   local start_time=$(date +%s)   # Record the start time in seconds
   local max_time=30              # Maximum wait time in seconds
   local interval=2               # Time between retries in seconds
+  local timeout=5
   local success=0                # Flag to track success
   local http_code=""             # Variable to store the HTTP status code
-  local curl_opts="-k -L -s -o /dev/null -w '%{http_code}' --max-time $interval"
+  local curl_opts="-s -k -L -w '\n%{http_code}' --max-time $timeout | tail -n 1"
 
   # Add Tor SOCKS proxy if specified
   if [ "$use_tor" = "tor" ]; then
