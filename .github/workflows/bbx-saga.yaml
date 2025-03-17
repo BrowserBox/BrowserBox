@@ -19,12 +19,13 @@ jobs:
     # Use a matrix to run on multiple operating systems
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest, centos]
+        os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
       fail-fast: false  # Continue running other matrix jobs even if one fails
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20  # Increased for 2.5-minute waits
-    container: ${{ matrix.os == 'centos' && 'centos:7' || '' }}  # Use CentOS 7 container for 'centos' entry
+    container: ${{ matrix.os == 'centos' && 'dokken/centos-stream-9' || matrix.os == 'debian' && 'debian:latest' || '' }}
 
     steps:
       # Checkout the repository code
@@ -39,19 +40,25 @@ jobs:
             exit 1
           fi
 
+      # Debug: Check Homebrew version on macOS
+      - name: Check Homebrew version (macOS)
+        if: matrix.os == 'macOS-latest'
+        run: brew --version
+
+      # Install required tools in CentOS container (dokken/centos-stream-9)
+      - name: Install dependencies in CentOS container
+        if: matrix.os == 'centos'
+        run: |
+          dnf update -y
+          dnf install -y curl bash which git
+          # Install Tor for tor-run tests
+          dnf install -y epel-release
+          dnf install -y tor
+
       # Make test script executable (Linux/macOS/CentOS)
       - name: Prepare test script (Linux/macOS/CentOS)
         if: matrix.os != 'windows-latest'
         run: chmod +x tests/test-bbx.sh
-
-      # Install required tools in CentOS container
-      - name: Install dependencies in CentOS container
-        if: matrix.os == 'centos'
-        run: |
-          yum update -y
-          yum install -y curl bash which git
-          # Ensure Docker and Tor are available if needed by bbx (bbx should handle this)
-          # Note: Docker and Tor might need manual setup in the container; bbx may handle this
 
       # Run the BBX test saga script (Linux/macOS/CentOS)
       - name: Execute BBX Test Saga (Linux/macOS/CentOS)
@@ -81,7 +88,7 @@ jobs:
 
       # Cleanup (Linux/macOS/CentOS)
       - name: Cleanup (Linux/macOS/CentOS)
-        if: always() && (matrix.os == 'ubuntu-latest' || matrix.os == 'macOS-latest' || matrix.os == 'centos')
+        if: always() && (matrix.os == 'Ubuntu-latest' || matrix.os == 'macOS-latest' || matrix.os == 'centos')
         run: |
           ./bbx.sh stop || true
           ./bbx.sh docker-stop all || true
