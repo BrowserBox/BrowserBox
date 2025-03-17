@@ -28,16 +28,23 @@ concurrency:
 jobs:
   build:
     name: browserbox basic install
-    # Use a matrix to run on multiple operating systems
     continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       fail-fast: false
       matrix:
-        # os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
-        os: [Ubuntu-latest, macOS-latest, centos, debian]
+        os: [ubuntu-latest, macos-latest]
+        container_image:
+          - ''  # No container (native runner)
+          - 'dokken/centos-stream-9'
+          - 'debian:latest'
+        exclude:
+          - os: macos-latest  # macOS runners don’t support containers
+            container_image: 'dokken/centos-stream-9'
+          - os: macos-latest
+            container_image: 'debian:latest'
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20  # Increased for 2.5-minute waits
-    container: ${{ matrix.os == 'centos' && 'dokken/centos-stream-9' || matrix.os == 'debian' && 'debian:latest' || '' }}
+    timeout-minutes: 20
+    container: ${{ matrix.container_image }}
 
     steps:
       # Checkout the repository code
@@ -52,35 +59,38 @@ jobs:
             exit 1
           fi
 
-      # Install dependencies (Linux/Ubuntu/Debian)
-      - name: Install dependencies (Linux/Ubuntu/Debian/CentOS)
-        if: matrix.os == 'Ubuntu-latest' || matrix.os == 'centos' || matrix.os == 'debian'
+      # Install dependencies (Ubuntu Native)
+      - name: Install dependencies (Ubuntu Native)
+        if: matrix.os == 'ubuntu-latest' && matrix.container_image == ''
         run: |
           sudo apt-get update -y
           sudo apt-get install -y libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libnss3 libnspr4 libasound2t64 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 curl jq
 
+      # Install dependencies (Debian Container)
+      - name: Install dependencies (Debian Container)
+        if: matrix.container_image == 'debian:latest'
+        run: |
+          apt-get update -y
+          apt-get install -y libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libnss3 libnspr4 libasound2 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 curl jq
+
+      # Install dependencies (CentOS Container)
+      - name: Install dependencies (CentOS Container)
+        if: matrix.container_image == 'dokken/centos-stream-9'
+        run: |
+          dnf update -y
+          dnf install -y libX11-xcb libXcomposite libXdamage libXext libXfixes nss nspr alsa-lib atk at-spi2-atk cups-libs libXrandr pango gtk3 curl jq
+
       # Install dependencies (macOS)
       - name: Install dependencies (macOS)
-        if: matrix.os == 'macOS-latest'
+        if: matrix.os == 'macos-latest' && matrix.container_image == ''
         run: |
           brew update
           brew install curl jq
 
-      # Install dependencies (Windows) - Note: Limited support, may need adjustment
-      - name: Install dependencies (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          choco install curl jq -y
-          # Note: Windows lacks direct equivalents for some libraries (e.g., libgtk-3-0). This may require WSL or manual installation.
-
       # Install ngrok (cross-platform)
       - name: Install ngrok
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            npm install ngrok -g
-          else
-            npm install ngrok -g
-          fi
+          npm install ngrok -g
 
       # Configure ngrok
       - name: Configure ngrok
@@ -91,21 +101,13 @@ jobs:
       # Install application
       - name: Install application
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            bash ./deploy-scripts/global_install.sh localhost
-          else
-            yes | ./deploy-scripts/global_install.sh localhost
-          fi
+          yes | ./deploy-scripts/global_install.sh localhost
 
       # Configure application
       - name: Configure application
         id: setup
         run: |
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            output=$(bash setup_bbpro --port 8080)
-          else
-            output=$(setup_bbpro --port 8080)
-          fi
+          output=$(setup_bbpro --port 8080)
           echo "::set-output name=suffix::${output#*https://localhost:8080}"
 
       # Create BBPRO.INTEGRITY file
