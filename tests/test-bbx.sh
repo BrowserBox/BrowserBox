@@ -234,7 +234,7 @@ rm $(bbcertify)
       ((passed++))
       
       # Test login link
-      if test_login_link "$login_link"; then 
+      if ! test_login_link "$login_link"; then 
         ./bbx.sh docker-stop $nickname ;
         return 1
       fi
@@ -246,7 +246,7 @@ rm $(bbcertify)
       ((passed++))
 
       # Test login link
-      if test_login_link "$login_link"; then 
+      if ! test_login_link "$login_link"; then 
         ./bbx.sh docker-stop $nickname ;
         return 1
       fi
