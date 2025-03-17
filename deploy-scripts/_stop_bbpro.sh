@@ -106,7 +106,7 @@ if [[ -f "$login_link_file" && -f "$torbb_env_file" ]]; then
     elif command -v sg >/dev/null 2>&1; then
       # Export variables needed in the heredoc
       export TORDIR SUDO torbb_env_file
-      sg "$TOR_GROUP" -c "env TORDIR='$TORDIR' SUDO='$SUDO' torbb_env_file='$torbb_env_file' bash" << 'EOF'
+      $SUDO -u ${SUDO_USER:-$USER} sg "$TOR_GROUP" -c "env TORDIR='$TORDIR' SUDO='$SUDO' torbb_env_file='$torbb_env_file' bash" << 'EOF'
 source "$torbb_env_file"
 tor_cookie_hex=$(xxd -p "$TORDIR/control_auth_cookie" 2>/dev/null || $SUDO xxd -p "$TORDIR/control_auth_cookie" 2>/dev/null)
 tor_cookie_hex=$(echo "$tor_cookie_hex" | tr -d '\n')

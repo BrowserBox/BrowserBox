@@ -12,7 +12,7 @@
 #  the terms of service, as using this in excess may do that. Don't abuse the power and benevolence of the platform.
 # End preamble
 
-name: CI
+name: BrowserBox Basic Install Test
 
 on:
   pull_request:
@@ -22,19 +22,18 @@ on:
       - main
 
 concurrency:
-  group: ${{ github.repository }}-ci-${{ matrix.os }}
+  group: ${{ github.repository }}-basic-install
   cancel-in-progress: true
 
 jobs:
   build:
-    name: BrowserBox Basic Install Test
+    name: browserbox basic install
     # Use a matrix to run on multiple operating systems
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
+      fail-fast: false
       matrix:
         os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-      fail-fast: false  # Continue running other matrix jobs even if one fails
-
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20  # Increased for 2.5-minute waits
     container: ${{ matrix.os == 'centos' && 'dokken/centos-stream-9' || matrix.os == 'debian' && 'debian:latest' || '' }}
@@ -64,7 +63,7 @@ jobs:
         if: matrix.os == 'macOS-latest'
         run: |
           brew update
-          brew install libx11 libxcomposite libxdamage libxext libxfixes nss nspr alsa-lib atk atk-bridge cups libxrandr pango gtk+3 curl jq
+          brew install curl jq
 
       # Install dependencies (Windows) - Note: Limited support, may need adjustment
       - name: Install dependencies (Windows)
@@ -139,8 +138,8 @@ jobs:
       # Check integrity route
       - name: Check integrity route
         run: |
-          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -E -o 'https?://[^/]+')
-          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -E -o 'token=\K[^&]+')
+          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')
+          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'token=[^&]+' | sed 's/token=//') 
           integrity_url="${base_url}/integrity?session_token=${token}"
           integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
           success=0
@@ -177,8 +176,8 @@ jobs:
       # Final check
       - name: Final check
         run: |
-          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -E -o 'https?://[^/]+')
-          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -E -o 'token=\K[^&]+')
+          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')
+          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'token=[^&]+' | sed 's/token=//') 
           integrity_url="${base_url}/integrity?session_token=${token}"
           integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
           success=0

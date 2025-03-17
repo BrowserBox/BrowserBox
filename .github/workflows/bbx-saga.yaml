@@ -1,4 +1,4 @@
-name: BBX Saga Test Suite
+name: bbx Saga Test Suite
 
 # Trigger on pull requests and pushes to main
 on:
@@ -11,19 +11,17 @@ on:
 
 # Ensure only one job runs at a time per runner type
 concurrency:
-  group: ${{ github.repository }}-ci-${{ matrix.os }}
+  group: ${{ github.repository }}-bbx-saga
   cancel-in-progress: true
 
 jobs:
   build:
-    name: bbx saga test
     # Use a matrix to run on multiple operating systems
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
+      fail-fast: false
       matrix:
         os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-      fail-fast: false  # Continue running other matrix jobs even if one fails
-
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20  # Increased for 2.5-minute waits
     container: ${{ matrix.os == 'centos' && 'dokken/centos-stream-9' || matrix.os == 'debian' && 'debian:latest' || '' }}
@@ -44,7 +42,10 @@ jobs:
       # Debug: Check Homebrew version on macOS
       - name: Check Homebrew version (macOS)
         if: matrix.os == 'macOS-latest'
-        run: brew --version
+        run: |
+          brew --version
+          brew update
+          brew install curl jq
 
       # Install required tools in CentOS container (dokken/centos-stream-9)
       - name: Install dependencies in CentOS container

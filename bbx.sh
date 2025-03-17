@@ -678,19 +678,19 @@ tor_run() {
         printf "${YELLOW}Running as onion site...${NC}\n"
         if $in_tor_group; then
             # Run torbb directly if user is in TOR_GROUP
-            login_link=$(torbb)
+            login_link="$(torbb)"
         elif command -v sg >/dev/null 2>&1; then
             # Use safe heredoc with env
             export BB_CONFIG_DIR
-            login_link=$(sg "$TOR_GROUP" -c "env BB_CONFIG_DIR='$BB_CONFIG_DIR' bash" << 'EOF'
+            login_link="$($SUDO -u ${SUDO_USER:-$USER} sg "$TOR_GROUP" -c "env BB_CONFIG_DIR='$BB_CONFIG_DIR' bash" << 'EOF'
 torbb
 EOF
-            )
+            )"
         else
             # Fallback without sg
-            login_link=$(torbb)
+            login_link="$(torbb)"
         fi
-        [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$BB_CONFIG_DIR/torbb_errors.txt"; exit 1; }
+        [ $? -eq 0 ] && [ -n "$login_link" ] || { printf "${RED}torbb failed${NC}\n"; tail -n 5 "$BB_CONFIG_DIR/torbb_errors.txt"; echo "$login_link"; exit 1; }
         TEMP_HOSTNAME=$(echo "$login_link" | sed 's|https://\([^/]*\)/login?token=.*|\1|')
     else
         for i in {-2..2}; do
