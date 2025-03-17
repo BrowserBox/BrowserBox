@@ -1134,10 +1134,10 @@ pre_install() {
 
         # Switch to the non-root user and run install
         echo "Switching to user $install_user..."
-        su - "$install_user" -c "/tmp/bbx.sh install"
+        su - "$install_user" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; /tmp/bbx.sh install"
 
         # Replace the root shell with the new user's shell
-        exec su - "$install_user"
+        exec su - "$install_user" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; bash -"
     else
         # If not running as root, continue with the normal install
         echo "Running as non-root user, proceeding with installation..."
