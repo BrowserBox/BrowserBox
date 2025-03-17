@@ -1136,9 +1136,9 @@ pre_install() {
         echo "Switching to user $install_user..."
         su - "$install_user" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; /tmp/bbx.sh install"
 
-        if [[ -z "$BBX_TEST_AGREEMENT" ]]; then
+        if [[ -z "$BBX_TEST_AGREEMENT" ]] || [ -t 0 ]; then
           # Replace the root shell with the new user's shell
-          exec su - "$install_user" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; bash -"
+          exec su - "$install_user" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; bash -l"
         else
           return 1
         fi
