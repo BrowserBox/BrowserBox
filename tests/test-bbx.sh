@@ -158,7 +158,7 @@ test_run() {
   echo "Running bbx... "
   output="$(./bbx.sh run 2>&1)"
   exit_code=$?
-  login_link="$(extract_login_link "$output")"
+  login_link="$(extract_login_link "$output" | tail -n 1)"
   if [ -z "$login_link" ] || [ $exit_code -ne 0 ]; then
     echo -e "${RED}✘ Failed (No login link or run failed)${NC}"
     echo "$output"
@@ -234,7 +234,7 @@ test_docker_run() {
   output="$(./bbx.sh docker-run $nickname 2>&1)"
   echo "$output"
   exit_code=$?
-  login_link="$(extract_login_link "$output")"
+  login_link="$(extract_login_link "$output" | tail -n 1)"
   if [ -z "$login_link" ] || [ -z "$nickname" ] || [ $exit_code -ne 0 ]; then
     echo -e "${RED}✘ Failed (No login link, nickname, or docker-run failed)${NC}"
     echo "$output"
