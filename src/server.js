@@ -4,6 +4,7 @@
   import {exec,spawn} from 'child_process';
   import exitOnExpipe from 'exit-on-epipe';
   import express from 'express';
+  import { rainstormHash } from '@dosyago/rainsum';
   import zl from './zombie-lord/index.js';
   import {MAX_FRAMES} from './zombie-lord/screenShots.js';
   import {CONFIG, EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
@@ -58,7 +59,7 @@
         stopper.on('error', () => {console.log('Error running stop_bbpro'); process.exit(1);});
         stopper.unref(); // Ensure parent doesn’t wait for child
         setTimeout(() => process.exit(1), 15500); // exit anyway if still open 
-      }, 130000);
+      }, process.env.MODE_STATUS && rainstormHash(256, 0, process.env.MODE_STATUS) == "bcdfe6a73b7f805e3fbec6acee89483910ebb6ca3306e4278b8d0aed7d74c46c"? 22000 : 130000);
     } catch(e) {
       console.warn(`Error stopping`);
       process.exit(1);
