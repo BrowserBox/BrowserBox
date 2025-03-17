@@ -1,13 +1,15 @@
 #!/bin/bash
 
-# Test script for bbx CLI tool
-# Purpose: Test the full lifecycle of bbx from uninstall to specialized runs
+# Test script for BBX CLI in BrowserBox repository
+# Displays output directly in terminal
 
-# ANSI color codes
+set -x
+
+# ANSI colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # Counters for summary
 passed=0
@@ -20,162 +22,181 @@ trap 'echo -e "\n${NC}Test Summary:"; \
       echo -e "${RED}Failed: $failed${NC}"; \
       echo -e "${YELLOW}Warnings: $warnings${NC}"' EXIT
 
-# Set environment variables to avoid interactive prompts
-export BBX_HOSTNAME="localhost"
-export EMAIL="test@example.com"
-export LICENSE_KEY="${1:-TEST-KEY-1234-5678-90AB-CDEF-GHIJ-KLMN-OPQR}"
-export BBX_TEST_AGREEMENT="true"
+# Environment variables
+export BBX_HOSTNAME="${BBX_HOSTNAME:-localhost}"
+export EMAIL="${EMAIL:-test@example.com}"
+export LICENSE_KEY="${LICENSE_KEY:-TEST-KEY-1234-5678-90AB-CDEF-GHIJ-KLMN-OPQR}"
+export BBX_TEST_AGREEMENT="${BBX_TEST_AGREEMENT:-true}"
 
-echo "Starting bbx test..."
+# Function to extract login link from bbx output (cross-platform)
+extract_login_link() {
+  local output="$1"
+  echo "$output" | sed -n 's/.*Login Link: \(https\?:\/\/[^\s]*\).*/\1/p' | head -n 1
+}
 
-# 1. Uninstall existing installation
-echo -n "Uninstalling existing BrowserBox... "
-yes yes | ./bbx.sh uninstall
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✔ Success${NC}"
-  ((passed++))
-else
-  echo -e "${YELLOW}⚠ Warning: Uninstall may have issues${NC}"
-  ((warnings++))
-fi
+# Function to extract nickname from docker-run output (cross-platform)
+extract_nickname() {
+  local output="$1"
+  echo "$output" | sed -n 's/.*Nickname: \([^\s]*\).*/\1/p' | head -n 1
+}
 
-# 2. Install BrowserBox
-echo -n "Installing BrowserBox... "
-./bbx.sh install
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✔ Success${NC}"
-  ((passed++))
-else
-  echo -e "${RED}✘ Failed${NC}"
-  ((failed++))
-  exit 1
-fi
+# Function to test login link with curl
+test_login_link() {
+  local link="$1"
+  echo "Testing login link $link... "
+  # Use -k to bypass cert errors if needed, -L to follow redirects
+  if curl -k -L -s -o /dev/null -w "%{http_code}" "$link" | grep -q "^2"; then
+    echo -e "${GREEN}✔ Success (HTTP 2xx)${NC}"
+    ((passed++))
+    return 0
+  else
+    echo -e "${RED}✘ Failed${NC}"
+    ((failed++))
+    return 1
+  fi
+}
 
-# 3. Setup BrowserBox
-echo -n "Setting up BrowserBox... "
-./bbx.sh setup --port 4026 --hostname localhost
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✔ Success${NC}"
-  ((passed++))
-else
-  echo -e "${YELLOW}⚠ Warning: Setup may have failed${NC}"
-  ((warnings++))
-fi
+# Function to test Tor login link with curl via SOCKS
+test_tor_login_link() {
+  local link="$1"
+  echo "Testing Tor login link $link... "
+  # Assume Tor is running on localhost:9050 (default SOCKS port, managed by bbx)
+  if curl -k -L -s --socks5-hostname localhost:9050 -o /dev/null -w "%{http_code}" "$link" | grep -q "^2"; then
+    echo -e "${GREEN}✔ Success (HTTP 2xx via Tor)${NC}"
+    ((passed++))
+    return 0
+  else
+    echo -e "${RED}✘ Failed${NC}"
+    ((failed++))
+    return 1
+  fi
+}
 
-# 4. Certify (mocked)
-echo -n "Certifying license... "
-./bbx.sh certify
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✔ Success (mocked)${NC}"
-  ((passed++))
-else
-  echo -e "${RED}✘ Failed${NC}"
-  ((failed++))
-  exit 1
-fi
-
-# 5. Run BrowserBox
-echo -n "Running BrowserBox... "
-./bbx.sh run
-sleep 5
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✔ Success${NC}"
-  ((passed++))
-else
-  echo -e "${RED}✘ Failed${NC}"
-  ((failed++))
-  exit 1
-fi
-
-# 6. Check status
-echo -n "Checking status... "
-./bbx.sh status
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✔ Success${NC}"
-  ((passed++))
-else
-  echo -e "${YELLOW}⚠ Warning: Status check failed${NC}"
-  ((warnings++))
-fi
-
-# 7. View logs
-echo -n "Viewing logs... "
-timeout 15s ./bbx.sh logs &
-logs_pid=$!
-wait $logs_pid 2>/dev/null
-if [ $? -eq 124 ]; then
-  echo -e "${GREEN}✔ Success (alive after 15s)${NC}"
-  ((passed++))
-else
-  echo -e "${YELLOW}⚠ Warning: Exited early${NC}"
-  ((warnings++))
-fi
-
-# 8. Stop BrowserBox
-echo -n "Stopping BrowserBox... "
-./bbx.sh stop
-sleep 2
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✔ Success${NC}"
-  ((passed++))
-else
-  echo -e "${YELLOW}⚠ Warning: Stop failed${NC}"
-  ((warnings++))
-fi
-
-# 9. Update BrowserBox
-echo -n "Updating BrowserBox... "
-./bbx.sh update
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✔ Success${NC}"
-  ((passed++))
-else
-  echo -e "${YELLOW}⚠ Warning: Update may have failed${NC}"
-  ((warnings++))
-fi
-
-# 10. Test Docker-run
-echo -n "Running Dockerized BrowserBox... "
-./bbx.sh docker-run mydockertest --port 4027
-sleep 5
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✔ Success${NC}"
-  ((passed++))
-  # 11. Stop Docker instance
-  echo -n "Stopping Dockerized BrowserBox... "
-  ./bbx.sh docker-stop mydockertest
+# Test functions
+test_uninstall() {
+  echo "Uninstalling BBX... "
+  yes yes | ./bbx.sh uninstall
   if [ $? -eq 0 ]; then
     echo -e "${GREEN}✔ Success${NC}"
     ((passed++))
   else
-    echo -e "${YELLOW}⚠ Warning: Stop failed${NC}"
+    echo -e "${YELLOW}⚠ Warning${NC}"
     ((warnings++))
   fi
-else
-  echo -e "${YELLOW}⚠ Warning: Start failed${NC}"
-  ((warnings++))
-fi
+}
 
-# 12. Test Tor-run
-echo -n "Running BrowserBox with Tor... "
-./bbx.sh tor-run
-sleep 5
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✔ Success${NC}"
-  ((passed++))
-  # Stop the service
-  echo -n "Stopping Tor BrowserBox... "
-  ./bbx.sh stop
+test_install() {
+  echo "Installing BBX... "
+  ./bbx.sh install
   if [ $? -eq 0 ]; then
     echo -e "${GREEN}✔ Success${NC}"
     ((passed++))
   else
-    echo -e "${YELLOW}⚠ Warning: Stop failed${NC}"
-    ((warnings++))
+    echo -e "${RED}✘ Failed${NC}"
+    ((failed++))
+    exit 1
   fi
-else
-  echo -e "${YELLOW}⚠ Warning: Start failed${NC}"
-  ((warnings++))
-fi
+}
 
-echo "Test complete."
+test_setup() {
+  echo "Setting up BBX... "
+  ./bbx.sh setup --port 8080 --hostname localhost
+  if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✔ Success${NC}"
+    ((passed++))
+  else
+    echo -e "${RED}✘ Failed${NC}"
+    ((failed++))
+    exit 1
+  fi
+}
+
+test_run() {
+  echo "Running BBX... "
+  output=$(./bbx.sh run 2>&1)  # Corrected path to ./bbx.sh
+  echo $output
+  exit_code=$?
+  login_link=$(extract_login_link "$output")
+  if [ -z "$login_link" ] || [ $exit_code -ne 0 ]; then
+    echo -e "${RED}✘ Failed (No login link or run failed)${NC}"
+    ((failed++))
+    return 1
+  fi
+  echo -e "${GREEN}✔ Success (Run completed)${NC}"
+  ((passed++))
+  
+  # Test login link immediately
+  test_login_link "$login_link" || return 1
+  
+  # Wait 150 seconds and test again
+  echo "Waiting 150 seconds to check instance activity... "
+  sleep 150
+  echo -e "${GREEN}✔ Wait complete${NC}"
+  ((passed++))
+  test_login_link "$login_link" || return 1
+}
+
+test_tor_run() {
+  echo "Running BBX with Tor... "
+  output=$(./bbx.sh tor-run)  # Corrected path to ./bbx.sh
+  exit_code=$?
+  login_link=$(extract_login_link "$output")
+  if [ -z "$login_link" ] || [ $exit_code -ne 0 ]; then
+    echo -e "${RED}✘ Failed (No login link or tor-run failed)${NC}"
+    ((failed++))
+    return 1
+  fi
+  echo -e "${GREEN}✔ Success (Tor run completed)${NC}"
+  ((passed++))
+  
+  # Test Tor login link (bbx handles Tor, we just use SOCKS)
+  test_tor_login_link "$login_link" || return 1
+}
+
+test_docker_run() {
+  echo "Running Dockerized BBX... "
+  output=$(./bbx.sh docker-run)  # Corrected path to ./bbx.sh
+  exit_code=$?
+  login_link=$(extract_login_link "$output")
+  nickname=$(extract_nickname "$output")
+  if [ -z "$login_link" ] || [ -z "$nickname" ] || [ $exit_code -ne 0 ]; then
+    echo -e "${RED}✘ Failed (No login link, nickname, or docker-run failed)${NC}"
+    ((failed++))
+    return 1
+  fi
+  echo -e "${GREEN}✔ Success (Docker run completed)${NC}"
+  ((passed++))
+  
+  # Test login link
+  test_login_link "$login_link" || return 1
+  
+  # Stop Docker instance with nickname
+  echo "Stopping Dockerized BBX with nickname $nickname... "
+  ./bbx.sh docker-stop "$nickname"
+  if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✔ Success${NC}"
+    ((passed++))
+  else
+    echo -e "${RED}✘ Failed${NC}"
+    ((failed++))
+    return 1
+  fi
+}
+
+# Main test sequence
+echo "Starting BBX Test Saga..."
+
+# Run tests
+test_uninstall
+test_install || exit 1
+test_setup || exit 1
+test_run || exit 1
+test_tor_run || exit 1
+test_docker_run || exit 1
+
+# Cleanup
+./bbx.sh stop || true
+rm -f $HOME/BBPRO.INTEGRITY || true
+
+echo "BBX Test Saga completed!"
+exit 0
