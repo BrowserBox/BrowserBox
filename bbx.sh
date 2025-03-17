@@ -682,7 +682,7 @@ tor_run() {
         elif command -v sg >/dev/null 2>&1; then
             # Use safe heredoc with env
             export BB_CONFIG_DIR
-            login_link="$($SUDO sg "$TOR_GROUP" -c "env BB_CONFIG_DIR='$BB_CONFIG_DIR' bash" << 'EOF'
+            login_link="$($SUDO -u ${SUDO_USER:-USER} sg "$TOR_GROUP" -c "env BB_CONFIG_DIR='$BB_CONFIG_DIR' bash" << 'EOF'
 torbb
 EOF
             )"
