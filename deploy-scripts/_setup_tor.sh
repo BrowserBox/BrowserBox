@@ -179,7 +179,7 @@ restart_tor_service() {
 # Main execution
 main() {
   detect_os
-  install_tor
+  command -v tor &>/dev/null || install_tor
   add_user_to_tor_group
   configure_torrc
   adjust_permissions
