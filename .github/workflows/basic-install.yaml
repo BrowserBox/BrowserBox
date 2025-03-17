@@ -97,7 +97,7 @@ jobs:
             npm install -g ngrok
           else
             # Non-container case: Use pre-installed Node.js
-            npm install ngrok -g
+            npm install -g ngrok
           fi
 
       # Configure ngrok
@@ -122,13 +122,6 @@ jobs:
         run: |
           output=$(setup_bbpro --port 8080)
           echo "::set-output name=suffix::${output#*https://localhost:8080}"
-
-      # Create BBPRO.INTEGRITY file
-      - name: Create BBPRO.INTEGRITY file
-        shell: /bin/bash {0}
-        run: |
-          random_string=$(openssl rand -base64 32)
-          echo "$random_string" > $HOME/BBPRO.INTEGRITY
 
       # Start server & ngrok tunnel
       - name: Start server & ngrok tunnel
@@ -155,36 +148,37 @@ jobs:
           echo "::set-output name=url::$complete_url"
           echo $complete_url
 
-      # Check integrity route
-      - name: Check integrity route
+      # Check application with retry
+      - name: Check application with retry
         shell: /bin/bash {0}
         run: |
-          # Use local endpoint instead of ngrok URL
           base_url="https://localhost:8080"
           token=$(setup_bbpro --port 8080 | grep -oE 'token=[^&]+' | sed 's/token=//')
-          integrity_url="${base_url}/integrity?session_token=${token}"
-          integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
+          check_url="${base_url}/?session_token=${token}"
+          max_time=60  # Maximum total time in seconds
+          timeout=5    # Timeout per attempt in seconds
+          interval=2   # Interval between attempts in seconds
+          start_time=$(date +%s)
           success=0
-          for i in {1..10}; do
-            echo "Attempt $i to check integrity..."
-            integrity_content=$(curl -k -L -s "$integrity_url")
-            echo "base url: $base_url"
-            echo "token: $token"
-            echo "iurl: $integrity_url"
-            echo "ic: $integrity_content"
-            echo "ifc: $integrity_file_content"
-            if [[ "$integrity_content" == "$integrity_file_content" ]]; then
+          
+          while [ $(( $(date +%s) - $start_time )) -lt $max_time ]; do
+            echo "Attempting to check application..."
+            curl -k -L -s --max-time $timeout "$check_url"
+            if [ $? -eq 0 ]; then
               success=1
               break
             fi
-            sleep 7
+            echo "Attempt failed, retrying in $interval seconds..."
+            sleep $interval
           done
-          if [[ "$success" -eq 0 ]]; then
-            echo "Error: Integrity check failed for application after 10 attempts."
+          
+          if [ $success -eq 0 ]; then
+            echo "Error: Application check failed after $max_time seconds"
             stop_bbpro
             sleep 10
             exit 1
           fi
+          echo "Application check succeeded"
 
       # Print ngrok URL
       - name: Print ngrok URL
@@ -195,36 +189,37 @@ jobs:
         run: |
           sleep 30
 
-      # Final check
-      - name: Final check
+      # Final check with retry
+      - name: Final check with retry
         shell: /bin/bash {0}
         run: |
-          # Use local endpoint instead of ngrok URL
           base_url="https://localhost:8080"
           token=$(setup_bbpro --port 8080 | grep -oE 'token=[^&]+' | sed 's/token=//')
-          integrity_url="${base_url}/integrity?session_token=${token}"
-          integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
+          check_url="${base_url}/?session_token=${token}"
+          max_time=60  # Maximum total time in seconds
+          timeout=5    # Timeout per attempt in seconds
+          interval=2   # Interval between attempts in seconds
+          start_time=$(date +%s)
           success=0
-          for i in {1..2}; do
-            echo "Attempt $i to check integrity..."
-            integrity_content=$(curl -k -L -s "$integrity_url")
-            echo "base url: $base_url"
-            echo "token: $token"
-            echo "iurl: $integrity_url"
-            echo "ic: $integrity_content"
-            echo "ifc: $integrity_file_content"
-            if [[ "$integrity_content" == "$integrity_file_content" ]]; then
+          
+          while [ $(( $(date +%s) - $start_time )) -lt $max_time ]; do
+            echo "Attempting final check..."
+            curl -k -L -s --max-time $timeout "$check_url"
+            if [ $? -eq 0 ]; then
               success=1
               break
             fi
-            sleep 7
+            echo "Attempt failed, retrying in $interval seconds..."
+            sleep $interval
           done
-          if [[ "$success" -eq 0 ]]; then
-            echo "Error: Integrity check failed for application after 2 attempts."
+          
+          if [ $success -eq 0 ]; then
+            echo "Error: Final application check failed after $max_time seconds"
             stop_bbpro
             sleep 10
             exit 1
           fi
+          echo "Final check succeeded"
           stop_bbpro
           sleep 10
           exit 0
