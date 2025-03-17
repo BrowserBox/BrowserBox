@@ -12,8 +12,6 @@
 #  the terms of service, as using this in excess may do that. Don't abuse the power and benevolence of the platform.
 # End preamble
 
-name: CI
-
 on:
   pull_request:
     types: [synchronize, opened, reopened]
