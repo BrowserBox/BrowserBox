@@ -32,7 +32,7 @@ let messageId = 1;
 
 // Custom HTTPS agent to bypass SSL verification (for mkcert/local testing)
 const agent = new Agent({
-  rejectUnauthorized: false, // WARNING: Use only for local testing!
+  rejectUnauthorized: process.env.NODE_ENV === 'development' ? false : true, // WARNING: Use only for local testing!
 });
 
 // Parse binary screenshot header (returns null if invalid)
