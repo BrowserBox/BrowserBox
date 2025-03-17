@@ -541,7 +541,7 @@ run() {
   load_config
 
   # Ensure setup has been run
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
@@ -617,8 +617,8 @@ tor_run() {
   fi
 
   # Trigger setup if not fully configured
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
-    printf "${RED}Running 'bbx setup' first...${NC}\n"
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
+    printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
   fi
@@ -845,7 +845,7 @@ docker_run() {
   fi
 
   # Trigger setup if not fully configured
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
