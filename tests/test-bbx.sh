@@ -3,13 +3,13 @@
 # Test script for bbx CLI in BrowserBox repository
 # Displays output directly in terminal
 
-  set -x
-
   # ANSI colors
   RED='\033[0;31m'
   GREEN='\033[0;32m'
   YELLOW='\033[0;33m'
   NC='\033[0m'
+
+  trap './bbx.sh stop &>/dev/null' EXIT
 
   # Counters for summary
   passed=0
@@ -155,6 +155,7 @@
       echo -e "${GREEN}✔ Wait complete${NC}"
       ((passed++))
       test_login_link "$login_link" || ( ./bbx.sh stop; return 1 )
+      ./bbx.sh stop
     }
 
     test_tor_run() {
@@ -180,6 +181,7 @@
       echo -e "${GREEN}✔ Wait complete${NC}"
       ((passed++))
       test_login_link "$login_link" "tor" || ( ./bbx.sh stop; return 1 )
+      ./bbx.sh stop
     }
 
     test_docker_run() {
@@ -236,7 +238,6 @@
 
   # Cleanup
   ./bbx.sh stop || true
-  rm -f $HOME/BBPRO.INTEGRITY || true
 
   echo "bbx Test Saga completed!"
   exit 0
