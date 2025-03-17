@@ -1557,7 +1557,7 @@ run_as() {
     $SUDO rsync -aq --exclude='.git' "$HOME/.nvm/" "$HOME_DIR/.nvm/" || { printf "${RED}Failed to rsync .nvm directory${NC}\n"; exit 1; }
     GROUP="$(id -gn "$user")"
     $SUDO chown -R "$user":"$GROUP" "$HOME_DIR/.nvm" || { printf "${RED}Failed to chown .nvm directory${NC}\n"; exit 1; }
-    NODE_VERSION=$($SUDO -u $user bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
+    NODE_VERSION="v22"
     $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
 
     # Test port accessibility

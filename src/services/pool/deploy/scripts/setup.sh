@@ -2,6 +2,8 @@
 
 SUDO=""
 
+source ~/.nvm/nvm.sh;
+
 if command -v sudo; then
   SUDO="sudo"
   if sudo -n true &>/dev/null; then
