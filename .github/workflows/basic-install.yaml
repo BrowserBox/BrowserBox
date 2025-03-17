@@ -29,12 +29,11 @@ jobs:
   build:
     name: BrowserBox Basic Install Test
     # Use a matrix to run on multiple operating systems
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
+      fail-fast: false
       matrix:
         os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
-      fail-fast: false
-      continue-on-error: ${{ matrix.os == 'windows-latest' }}
-
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20  # Increased for 2.5-minute waits
     container: ${{ matrix.os == 'centos' && 'dokken/centos-stream-9' || matrix.os == 'debian' && 'debian:latest' || '' }}
