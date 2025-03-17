@@ -223,8 +223,8 @@ test_tor_run() {
 
 test_docker_run() {
   # Self-detect if running in a Docker container
-  if [ -f /.dockerenv ]; then
-    echo "Skipping Dockerized bbx test (detected running in Docker container)"
+  if [ -f /.dockerenv ] || ([[ "$(uname -s)" == "Darwin" ]] && ! command -v docker &>/dev/null); then
+    echo "Skipping Dockerized bbx test (detected running in Docker container or macOS)"
     ((passed++))  # Increment passed to maintain test count
     return 0
   fi

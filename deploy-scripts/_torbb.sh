@@ -291,8 +291,9 @@ configure_and_export_tor() {
         echo "HiddenServicePort 443 127.0.0.1:$service_port" | $SUDO tee -a "$TORRC"
       fi
       $SUDO mkdir -p "$hidden_service_dir"
-      # $SUDO chown "$TOR_USER:$TOR_GROUP" "$hidden_service_dir"
-      $SUDO chmod 770 "$hidden_service_dir"
+      GROUP="$(id -gn)"
+      $SUDO chown "$USER:$GROUP" "$hidden_service_dir"
+      $SUDO chmod 700 "$hidden_service_dir"
     else
       $SUDO test -d "$hidden_service_dir" && $SUDO rm -rf "$hidden_service_dir"
       if ! grep -qF -- "$dirLine" "$TORRC"; then
@@ -307,7 +308,7 @@ configure_and_export_tor() {
 
   echo "Restarting tor..." >&2
   if [[ "$OS_TYPE" == "macos" ]]; then
-    brew services restart tor &>/dev/null
+    brew services restart tor &>/dev/null || ( pkill -x tor || true ) && nohup tor &
   elif [[ "$OS_TYPE" == "win" ]]; then
     echo "Restart Tor manually on Windows" >&2
     # Could add taskkill /IM tor.exe /F && start tor.exe if automated
