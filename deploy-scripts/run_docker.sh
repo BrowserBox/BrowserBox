@@ -112,6 +112,7 @@ fetch_certs() {
         }
     fi
     $SUDO chmod 600 "$CERT_DIR"/*.pem
+    $SUDO chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER} "$CERT_DIR"/*.pem
 }
 
 fetch_certs
@@ -139,7 +140,7 @@ CONTAINER_ID=$($SUDO docker run --cap-add=SYS_NICE -d \
     -p "$PORT:$PORT" -p "$((PORT-2)):$((PORT-2))" -p "$((PORT-1)):$((PORT-1))" \
     -p "$((PORT+1)):$((PORT+1))" -p "$((PORT+2)):$((PORT+2))" \
     -v "$CERT_DIR:/home/bbpro/sslcerts" -e "LICENSE_KEY=$LICENSE_KEY" \
-    "$DOCKER_IMAGE" bash -c "cd; cd bbpro; setup_bbpro --port $PORT > login_link.txt && bbcertify && bbpro && ./deploy-scripts/drun.sh") || {
+    "$DOCKER_IMAGE" bash -c "cd; cd sslcerts; sudo chown bbpro:bbpro *.pem; cd; cd bbpro; setup_bbpro --port $PORT > login_link.txt && bbcertify && bbpro && ./deploy-scripts/drun.sh") || {
     echo "ERROR: Docker run failed!" >&2
     exit 1
 }

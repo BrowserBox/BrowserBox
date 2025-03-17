@@ -6,6 +6,7 @@ TOR_INSTALLED=false
 SUDO=""
 TORRC=""
 TORDIR=""
+TOR_USER=""
 TOR_GROUP=""
 TOR_SERVICE="tor@default"  # Added for Linux instance-based setups
 torsslcerts="tor-sslcerts"
@@ -19,15 +20,19 @@ detect_os() {
   if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     if [ -f /etc/debian_version ]; then
       OS_TYPE="debian"
+      TOR_USER="debian-tor"
       TOR_GROUP="debian-tor"
     elif [ -f /etc/centos-release ] || [ -f /etc/redhat-release ]; then
       OS_TYPE="centos"
+      TOR_USER="toranon"
       TOR_GROUP="toranon"
     elif [ -f /etc/arch-release ]; then
       OS_TYPE="arch"
+      TOR_USER="tor"
       TOR_GROUP="tor"
     elif [ -f /etc/amazon-linux-release ]; then
       OS_TYPE="centos"  # Treat Amazon Linux as CentOS-like
+      TOR_USER="toranon"
       TOR_GROUP="toranon"
     else
       echo "Unsupported Linux distribution" >&2
@@ -37,6 +42,7 @@ detect_os() {
     TORDIR="/var/lib/tor"
   elif [[ "$OSTYPE" == "darwin"* ]]; then
     OS_TYPE="macos"
+    TOR_USER="$USERNAME"
     TOR_GROUP="admin"
     prefix=$(brew --prefix)
     TORRC="$prefix/etc/tor/torrc"
@@ -45,6 +51,7 @@ detect_os() {
     [ -f "$TORRC" ] || cp "$prefix/etc/tor/torrc.sample" "$TORRC"
   elif [[ "$OSTYPE" == "MINGW"* || "$OSTYPE" == "MSYS"* || "$OSTYPE" == "cygwin"* ]]; then
     OS_TYPE="win"
+    TOR_USER="$USERNAME"
     TOR_GROUP=""  # Windows doesn’t use groups this way
     TORRC="$HOME/tor/torrc"  # Adjust as needed for Windows Tor install
     TORDIR="$HOME/tor/data"
@@ -260,7 +267,7 @@ wait_for_hostnames() {
       local service_port=$((base_port + i))
       local hidden_service_dir="$TORDIR/hidden_service_$service_port"
       if [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]]; then
-        [ -f "$hidden_service_dir/hostname" ] || all_exist=0
+        [ -f "$hidden_service_dir/hostname" ] || $SUDO test -f "$hidden_service_dir/hostname" || all_exist=0
       else
         $SUDO test -f "$hidden_service_dir/hostname" || all_exist=0
       fi
@@ -278,13 +285,15 @@ configure_and_export_tor() {
     local hidden_service_dir="$TORDIR/hidden_service_$service_port"
     local dirLine="HiddenServiceDir $hidden_service_dir"
     if [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]]; then
-      [ -d "$hidden_service_dir" ] && rm -rf "$hidden_service_dir"
+      $SUDO test -d "$hidden_service_dir" && $SUDO rm -rf "$hidden_service_dir"
       if ! grep -qF -- "$dirLine" "$TORRC"; then
-        echo "$dirLine" >> "$TORRC"
-        echo "HiddenServicePort 443 127.0.0.1:$service_port" >> "$TORRC"
+        echo "$dirLine" | $SUDO tee -a "$TORRC"
+        echo "HiddenServicePort 443 127.0.0.1:$service_port" | $SUDO tee -a "$TORRC"
       fi
-      mkdir -p "$hidden_service_dir"
-      chmod 700 "$hidden_service_dir"
+      $SUDO mkdir -p "$hidden_service_dir"
+      GROUP="$(id -gn)"
+      $SUDO chown "$USER:$GROUP" "$hidden_service_dir"
+      $SUDO chmod 700 "$hidden_service_dir"
     else
       $SUDO test -d "$hidden_service_dir" && $SUDO rm -rf "$hidden_service_dir"
       if ! grep -qF -- "$dirLine" "$TORRC"; then
@@ -299,7 +308,7 @@ configure_and_export_tor() {
 
   echo "Restarting tor..." >&2
   if [[ "$OS_TYPE" == "macos" ]]; then
-    brew services restart tor &>/dev/null
+    brew services restart tor &>/dev/null || ( pkill -x tor || true ) && nohup tor &
   elif [[ "$OS_TYPE" == "win" ]]; then
     echo "Restart Tor manually on Windows" >&2
     # Could add taskkill /IM tor.exe /F && start tor.exe if automated

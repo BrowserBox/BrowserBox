@@ -305,7 +305,7 @@ parse_dep() {
 
 # Dependency check
 ensure_deps() {
-    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg")
+    local deps=("curl" "rsync" "debian:netcat-openbsd,redhat:nmap-ncat,darwin:netcat/nc" "at" "unzip" "debian:dnsutils,redhat:bind-utils,darwin:bind/dig" "git" "openssl" "debian:login,redhat:util-linux/sg" "darwin:coreutils/timeout")
     for dep in "${deps[@]}"; do
         # Parse the dependency
         IFS=':' read -r pkg_name tool_name <<< "$(parse_dep "$dep")"
@@ -541,7 +541,7 @@ run() {
   load_config
 
   # Ensure setup has been run
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
@@ -617,8 +617,8 @@ tor_run() {
   fi
 
   # Trigger setup if not fully configured
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
-    printf "${RED}Running 'bbx setup' first...${NC}\n"
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
+    printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
   fi
@@ -845,7 +845,7 @@ docker_run() {
   fi
 
   # Trigger setup if not fully configured
-  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ]; then
+  if [ -z "$PORT" ] || [ -z "$BBX_HOSTNAME" ] || [ -z "$LICENSE_KEY" ] || [[ ! -f "$BB_CONFIG_DIR/test.env" ]] ; then
     printf "${YELLOW}BrowserBox not fully set up. Running 'bbx setup' first...${NC}\n"
     setup
     load_config
@@ -1557,7 +1557,7 @@ run_as() {
     $SUDO rsync -aq --exclude='.git' "$HOME/.nvm/" "$HOME_DIR/.nvm/" || { printf "${RED}Failed to rsync .nvm directory${NC}\n"; exit 1; }
     GROUP="$(id -gn "$user")"
     $SUDO chown -R "$user":"$GROUP" "$HOME_DIR/.nvm" || { printf "${RED}Failed to chown .nvm directory${NC}\n"; exit 1; }
-    NODE_VERSION=$($SUDO -u $user bash -c 'source ~/.nvm/nvm.sh; nvm current') || NODE_VERSION="v22"
+    NODE_VERSION="v22"
     $SUDO -i -u "$user" bash -c "source ~/.nvm/nvm.sh; nvm use $NODE_VERSION; nvm alias default $NODE_VERSION;" || { printf "${RED}Failed to set up nvm for $user${NC}\n"; exit 1; }
 
     # Test port accessibility

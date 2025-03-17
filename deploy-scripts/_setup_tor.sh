@@ -43,6 +43,10 @@ detect_os() {
       TORRC="/etc/tor/torrc"
       TORDIR="/var/lib/tor"
       COOKIE_AUTH_FILE="$TORDIR/control_auth_cookie"
+    elif [ -f /etc/arch-release ]; then
+      OS_TYPE="arch"
+      TOR_USER="tor"
+      TOR_GROUP="tor"
     else
       echo "Unsupported Linux distribution" >&2
       exit 1
