@@ -22,7 +22,7 @@ on:
       - main
 
 concurrency:
-  group: ${{ github.repository }}-ci
+  group: ${{ github.repository }}-basic-install
   cancel-in-progress: true
 
 jobs:
