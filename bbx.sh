@@ -405,7 +405,7 @@ ensure_setup_tor() {
 install() {
     banner
     check_agreement
-    pre_install || exit 0
+    pre_install || return 0
     load_config
     ensure_deps
     printf "${GREEN}Installing BrowserBox CLI (bbx)...${NC}\n"
