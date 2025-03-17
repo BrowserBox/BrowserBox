@@ -64,33 +64,40 @@ jobs:
         if: matrix.os == 'ubuntu-latest' && matrix.container_image == ''
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libnss3 libnspr4 libasound2t64 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 curl jq
+          sudo apt-get install -y curl 
 
       # Install dependencies (Debian Container)
       - name: Install dependencies (Debian Container)
         if: matrix.container_image == 'debian:latest'
         run: |
           apt-get update -y
-          apt-get install -y libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libnss3 libnspr4 libasound2 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 curl jq
+          apt-get install -y curl
 
       # Install dependencies (CentOS Container)
       - name: Install dependencies (CentOS Container)
         if: matrix.container_image == 'dokken/centos-stream-9'
         run: |
           dnf update -y
-          dnf install -y libX11-xcb libXcomposite libXdamage libXext libXfixes nss nspr alsa-lib atk at-spi2-atk cups-libs libXrandr pango gtk3 curl jq
+          dnf install -y curl
 
-      # Install dependencies (macOS)
-      - name: Install dependencies (macOS)
-        if: matrix.os == 'macos-latest' && matrix.container_image == ''
-        run: |
-          brew update
-          brew install curl jq
-
-      # Install ngrok (cross-platform)
+      # Install ngrok (cross-platform, with conditional setup for containers)
       - name: Install ngrok
         run: |
-          npm install ngrok -g
+          if [[ "${{ matrix.container_image }}" != "" ]]; then
+            # Container case: Install nvm and Node.js
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # Load nvm
+            nvm install 22
+            nvm use 22
+            nvm alias default 22
+            # Ensure npm is available and install ngrok
+            . "$NVM_DIR/nvm.sh"  # Source nvm again for this shell
+            npm install -g ngrok
+          else
+            # Non-container case: Use pre-installed Node.js
+            npm install ngrok -g
+          fi
 
       # Configure ngrok
       - name: Configure ngrok

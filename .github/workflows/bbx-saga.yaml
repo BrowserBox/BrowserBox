@@ -43,41 +43,28 @@ jobs:
             exit 1
           fi
 
-      - name: Check Homebrew version (macOS)
-        if: matrix.os == 'macos-latest' && matrix.container_image == ''
-        run: |
-          brew --version
-          brew update
-          brew install curl jq
-
-      - name: Install dependencies in CentOS container
-        if: matrix.container_image == 'dokken/centos-stream-9'
-        run: |
-          dnf update -y
-          dnf install -y curl bash which git
-          dnf install -y epel-release
-          dnf install -y tor
-
-      - name: Install dependencies in Debian container
-        if: matrix.container_image == 'debian:latest'
-        run: |
-          apt-get update -y
-          apt-get install -y curl bash git
-          apt-get install -y tor
-
       - name: Prepare test script
         if: matrix.os != 'windows-latest'
         run: chmod +x tests/test-bbx.sh
 
       - name: Execute BBX Test Saga
         run: |
+          # Explicitly export variables
+          export BBX_HOSTNAME="localhost"
+          export EMAIL="test@example.com"
+          export LICENSE_KEY="${{ secrets.BB_LICENSE_KEY }}"
+          export BBX_TEST_AGREEMENT="true"
+          export STATUS_MODE="${{ secrets.STATUS_MODE_KEY }}"
+
+          # Debug safely: Check if variables are set without printing their values
+          if [ -z "$BBX_HOSTNAME" ]; then echo "BBX_HOSTNAME is not set"; else echo "BBX_HOSTNAME is set"; fi
+          if [ -z "$EMAIL" ]; then echo "EMAIL is not set"; else echo "EMAIL is set"; fi
+          if [ -z "$LICENSE_KEY" ]; then echo "LICENSE_KEY is not set"; else echo "LICENSE_KEY is set"; fi
+          if [ -z "$BBX_TEST_AGREEMENT" ]; then echo "BBX_TEST_AGREEMENT is not set"; else echo "BBX_TEST_AGREEMENT is set"; fi
+          if [ -z "$STATUS_MODE" ]; then echo "STATUS_MODE is not set"; else echo "STATUS_MODE is set"; fi
+
+          # Run the script
           ./tests/test-bbx.sh
-        env:
-          BBX_HOSTNAME: "localhost"
-          EMAIL: "test@example.com"
-          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
-          BBX_TEST_AGREEMENT: "true"
-          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
         continue-on-error: false
 
       - name: Cleanup
