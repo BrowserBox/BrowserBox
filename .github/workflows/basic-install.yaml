@@ -63,7 +63,7 @@ jobs:
         if: matrix.os == 'macOS-latest'
         run: |
           brew update
-          brew install libx11 libxcomposite libxdamage libxext libxfixes nss nspr alsa-lib atk atk-bridge cups libxrandr pango gtk+3 curl jq
+          brew install curl jq
 
       # Install dependencies (Windows) - Note: Limited support, may need adjustment
       - name: Install dependencies (Windows)

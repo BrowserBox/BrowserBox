@@ -43,7 +43,10 @@ jobs:
       # Debug: Check Homebrew version on macOS
       - name: Check Homebrew version (macOS)
         if: matrix.os == 'macOS-latest'
-        run: brew --version
+        run: |
+          brew --version
+          brew update
+          brew install curl jq
 
       # Install required tools in CentOS container (dokken/centos-stream-9)
       - name: Install dependencies in CentOS container
