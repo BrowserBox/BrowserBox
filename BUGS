@@ -1,3 +1,7 @@
+- first tab on tor seems to not start screen cast.
+  - possibly related, if we set mic to always allow and reload page a few times, tab might 'lock up'. 
+  - i've noticed predicate failed after 4 seconds, connection.forceMeta -- related to this? a race or delay thing?
+
 - disk partition extension func at start of install failing on RHEL
 
 - some deps are not found on rhel (not majro problem)
