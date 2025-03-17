@@ -159,14 +159,15 @@ jobs:
       - name: Check integrity route
         shell: /bin/bash {0}
         run: |
-          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')
-          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'token=[^&]+' | sed 's/token=//') 
+          # Use local endpoint instead of ngrok URL
+          base_url="https://localhost:8080"
+          token=$(setup_bbpro --port 8080 | grep -oE 'token=[^&]+' | sed 's/token=//')
           integrity_url="${base_url}/integrity?session_token=${token}"
           integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
           success=0
           for i in {1..10}; do
             echo "Attempt $i to check integrity..."
-            integrity_content=$(curl -L -s "$integrity_url")
+            integrity_content=$(curl -k -L -s "$integrity_url")
             echo "base url: $base_url"
             echo "token: $token"
             echo "iurl: $integrity_url"
@@ -196,15 +197,17 @@ jobs:
 
       # Final check
       - name: Final check
+        shell: /bin/bash {0}
         run: |
-          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')
-          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'token=[^&]+' | sed 's/token=//') 
+          # Use local endpoint instead of ngrok URL
+          base_url="https://localhost:8080"
+          token=$(setup_bbpro --port 8080 | grep -oE 'token=[^&]+' | sed 's/token=//')
           integrity_url="${base_url}/integrity?session_token=${token}"
           integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
           success=0
           for i in {1..2}; do
             echo "Attempt $i to check integrity..."
-            integrity_content=$(curl -L -s "$integrity_url")
+            integrity_content=$(curl -k -L -s "$integrity_url")
             echo "base url: $base_url"
             echo "token: $token"
             echo "iurl: $integrity_url"
