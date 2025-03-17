@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   build:
+    name: bbx saga test
     # Use a matrix to run on multiple operating systems
     strategy:
       matrix:
