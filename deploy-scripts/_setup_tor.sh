@@ -155,7 +155,7 @@ restart_tor_service() {
   if $RESTART_TOR; then
     echo "Restarting Tor service..." >&2
     if [[ "$OS_TYPE" == "macos" ]]; then
-      $SUDO su - $SUD_USER -c "bash -cl 'brew services restart tor'"
+      $SUDO su - $SUDO_USER -c "bash -cl 'brew services restart tor'"
     else
       systemctl restart "$TOR_SERVICE"
       # Check if we're in Docker or systemd isn't working
@@ -179,7 +179,7 @@ restart_tor_service() {
 # Main execution
 main() {
   detect_os
-  install_tor
+  command -v tor &>/dev/null || install_tor
   add_user_to_tor_group
   configure_torrc
   adjust_permissions

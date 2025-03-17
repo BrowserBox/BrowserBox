@@ -1,0 +1,213 @@
+# Preamble
+# Hello GitHub Folken - if this is violating the terms of service and you work for GitHub, 
+#  please let me know and I will remove this action ASAP!
+#  to make any automated removal easy I add the following pseudo key metadata
+# _meta_action_id: dosyago/BrowserBox/tech-prototype/july-2023
+# Do not remove this preamble
+# Purpose
+# Run BrowserBox on GitHub Actions Runner to Integration Test
+#  This is intended as a useful technology prototype showing the ability to run the BrowserBox remote browser
+#  on GitHub Actions Runners. This makes it easy to see if the application is working correctly, and to test 
+#  any modifications you make. This is not an endorsement or encouragement to utilize GitHub Actions in a way that violates
+#  the terms of service, as using this in excess may do that. Don't abuse the power and benevolence of the platform.
+# End preamble
+
+name: CI
+
+on:
+  pull_request:
+    types: [synchronize, opened, reopened]
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.repository }}-ci-${{ matrix.os }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: BrowserBox Basic Install Test
+    # Use a matrix to run on multiple operating systems
+    strategy:
+      matrix:
+        os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
+      fail-fast: false  # Continue running other matrix jobs even if one fails
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20  # Increased for 2.5-minute waits
+    container: ${{ matrix.os == 'centos' && 'dokken/centos-stream-9' || matrix.os == 'debian' && 'debian:latest' || '' }}
+
+    steps:
+      # Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Check if actor is repository owner or me
+      - name: Check if actor is repository owner or me
+        run: |
+          if [[ "${{ github.actor }}" != "o0101" ]]; then
+            echo "Actor is not me. Not running CI"
+            exit 1
+          fi
+
+      # Install dependencies (Linux/Ubuntu/Debian)
+      - name: Install dependencies (Linux/Ubuntu/Debian/CentOS)
+        if: matrix.os == 'Ubuntu-latest' || matrix.os == 'centos' || matrix.os == 'debian'
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y libx11-xcb1 libxcomposite1 libxdamage1 libxext6 libxfixes3 libnss3 libnspr4 libasound2t64 libatk1.0-0 libatk-bridge2.0-0 libcups2 libxrandr2 libpangocairo-1.0-0 libgtk-3-0 curl jq
+
+      # Install dependencies (macOS)
+      - name: Install dependencies (macOS)
+        if: matrix.os == 'macOS-latest'
+        run: |
+          brew update
+          brew install libx11 libxcomposite libxdamage libxext libxfixes nss nspr alsa-lib atk atk-bridge cups libxrandr pango gtk+3 curl jq
+
+      # Install dependencies (Windows) - Note: Limited support, may need adjustment
+      - name: Install dependencies (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install curl jq -y
+          # Note: Windows lacks direct equivalents for some libraries (e.g., libgtk-3-0). This may require WSL or manual installation.
+
+      # Install ngrok (cross-platform)
+      - name: Install ngrok
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            npm install ngrok -g
+          else
+            npm install ngrok -g
+          fi
+
+      # Configure ngrok
+      - name: Configure ngrok
+        run: ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+        env:
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+
+      # Install application
+      - name: Install application
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            bash ./deploy-scripts/global_install.sh localhost
+          else
+            yes | ./deploy-scripts/global_install.sh localhost
+          fi
+
+      # Configure application
+      - name: Configure application
+        id: setup
+        run: |
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            output=$(bash setup_bbpro --port 8080)
+          else
+            output=$(setup_bbpro --port 8080)
+          fi
+          echo "::set-output name=suffix::${output#*https://localhost:8080}"
+
+      # Create BBPRO.INTEGRITY file
+      - name: Create BBPRO.INTEGRITY file
+        run: |
+          random_string=$(openssl rand -base64 32)
+          echo "$random_string" > $HOME/BBPRO.INTEGRITY
+
+      # Start server & ngrok tunnel
+      - name: Start server & ngrok tunnel
+        run: |
+          export STATUS_MODE=${{ secrets.STATUS_MODE_KEY }}
+          export LICENSE_KEY=${{ secrets.BB_LICENSE_KEY }}
+          bbcertify
+          export LICENSE_KEY=""
+          bbpro &
+          sleep 5
+          ngrok http https://localhost:8080 &
+          sleep 5
+
+      # Get ngrok public URL
+      - name: Get ngrok public URL
+        id: ngrok
+        run: |
+          url=$(curl http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+          suffix=${{ steps.setup.outputs.suffix }}
+          complete_url="${url}${suffix}"
+          echo "::set-output name=url::$complete_url"
+          echo $complete_url
+
+      # Check integrity route
+      - name: Check integrity route
+        run: |
+          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -E -o 'https?://[^/]+')
+          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -E -o 'token=\K[^&]+')
+          integrity_url="${base_url}/integrity?session_token=${token}"
+          integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
+          success=0
+          for i in {1..10}; do
+            echo "Attempt $i to check integrity..."
+            integrity_content=$(curl -L -s "$integrity_url")
+            echo "base url: $base_url"
+            echo "token: $token"
+            echo "iurl: $integrity_url"
+            echo "ic: $integrity_content"
+            echo "ifc: $integrity_file_content"
+            if [[ "$integrity_content" == "$integrity_file_content" ]]; then
+              success=1
+              break
+            fi
+            sleep 7
+          done
+          if [[ "$success" -eq 0 ]]; then
+            echo "Error: Integrity check failed for application after 10 attempts."
+            stop_bbpro
+            sleep 10
+            exit 1
+          fi
+
+      # Print ngrok URL
+      - name: Print ngrok URL
+        run: echo "The complete ngrok URL is ${{ steps.ngrok.outputs.url }}"
+
+      # Keep alive
+      - name: Keep alive
+        run: |
+          sleep 30
+
+      # Final check
+      - name: Final check
+        run: |
+          base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -E -o 'https?://[^/]+')
+          token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -E -o 'token=\K[^&]+')
+          integrity_url="${base_url}/integrity?session_token=${token}"
+          integrity_file_content=$(cat $HOME/BBPRO.INTEGRITY)
+          success=0
+          for i in {1..2}; do
+            echo "Attempt $i to check integrity..."
+            integrity_content=$(curl -L -s "$integrity_url")
+            echo "base url: $base_url"
+            echo "token: $token"
+            echo "iurl: $integrity_url"
+            echo "ic: $integrity_content"
+            echo "ifc: $integrity_file_content"
+            if [[ "$integrity_content" == "$integrity_file_content" ]]; then
+              success=1
+              break
+            fi
+            sleep 7
+          done
+          if [[ "$success" -eq 0 ]]; then
+            echo "Error: Integrity check failed for application after 2 attempts."
+            stop_bbpro
+            sleep 10
+            exit 1
+          fi
+          stop_bbpro
+          sleep 10
+          exit 0
+
+      # Cleanup
+      - name: Cleanup
+        if: always()
+        run: |
+          stop_bbpro || true

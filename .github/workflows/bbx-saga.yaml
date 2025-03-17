@@ -1,0 +1,102 @@
+name: BBX Saga Test Suite
+
+# Trigger on pull requests and pushes to main
+on:
+  pull_request:
+    types: [synchronize, opened, reopened]
+    branches: [ main ]
+  push:
+    branches:
+      - main
+
+# Ensure only one job runs at a time per runner type
+concurrency:
+  group: ${{ github.repository }}-ci-${{ matrix.os }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: bbx saga test
+    # Use a matrix to run on multiple operating systems
+    strategy:
+      matrix:
+        os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
+      fail-fast: false  # Continue running other matrix jobs even if one fails
+
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20  # Increased for 2.5-minute waits
+    container: ${{ matrix.os == 'centos' && 'dokken/centos-stream-9' || matrix.os == 'debian' && 'debian:latest' || '' }}
+
+    steps:
+      # Checkout the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Check if actor is repository owner or me
+      - name: Check if actor is repository owner or me
+        run: |
+          if [[ "${{ github.actor }}" != "o0101" ]]; then
+            echo "Actor is not me. Not running CI"
+            exit 1
+          fi
+
+      # Debug: Check Homebrew version on macOS
+      - name: Check Homebrew version (macOS)
+        if: matrix.os == 'macOS-latest'
+        run: brew --version
+
+      # Install required tools in CentOS container (dokken/centos-stream-9)
+      - name: Install dependencies in CentOS container
+        if: matrix.os == 'centos'
+        run: |
+          dnf update -y
+          dnf install -y curl bash which git
+          # Install Tor for tor-run tests
+          dnf install -y epel-release
+          dnf install -y tor
+
+      # Make test script executable (Linux/macOS/CentOS)
+      - name: Prepare test script (Linux/macOS/CentOS)
+        if: matrix.os != 'windows-latest'
+        run: chmod +x tests/test-bbx.sh
+
+      # Run the BBX test saga script (Linux/macOS/CentOS)
+      - name: Execute BBX Test Saga (Linux/macOS/CentOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          ./tests/test-bbx.sh
+        env:
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+        continue-on-error: false
+
+      # Run the BBX test saga script (Windows)
+      - name: Execute BBX Test Saga (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          bash ./tests/test-bbx.sh
+        env:
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+        continue-on-error: false
+
+      # Cleanup (Linux/macOS/CentOS)
+      - name: Cleanup (Linux/macOS/CentOS)
+        if: always() && (matrix.os == 'Ubuntu-latest' || matrix.os == 'macOS-latest' || matrix.os == 'centos')
+        run: |
+          ./bbx.sh stop || true
+          ./bbx.sh docker-stop all || true
+
+      # Cleanup (Windows)
+      - name: Cleanup (Windows)
+        if: always() && matrix.os == 'windows-latest'
+        run: |
+          bash ./bbx.sh stop || true
+          bash ./bbx.sh docker-stop all || true

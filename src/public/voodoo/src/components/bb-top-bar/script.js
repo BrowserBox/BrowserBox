@@ -40,7 +40,7 @@ class BBTopBar extends Base {
         }
       }
 
-      if (display) {
+      if (display && timerSpan) {
         timerSpan.textContent = display;
       } else {
         if ( timerSpan?.style ) {

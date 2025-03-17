@@ -337,7 +337,7 @@ const launcher_api = {
               retVal.port = port;
               zomb.process = new EventEmitter();
               zomb.kill = async () => {
-                process.kill(zomb.pid, 'SIGKILL');
+                process.kill(zomb.pid, 'SIGINT');
                 await sleep(500);
                 process.kill(zomb.pid, 'SIGKILL');
               }
@@ -394,7 +394,7 @@ const launcher_api = {
       process.on('SIGTERM', undoChrome);
       process.on('SIGINT', undoChrome);
       process.on('beforeExit', undoChrome);
-    }, 2222);
+    }, 888);
 
     return retVal;
 
