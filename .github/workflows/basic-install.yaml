@@ -22,7 +22,7 @@ on:
       - main
 
 concurrency:
-  group: ${{ github.repository }}-ci-${{ matrix.os }}
+  group: ${{ github.repository }}-ci
   cancel-in-progress: true
 
 jobs:

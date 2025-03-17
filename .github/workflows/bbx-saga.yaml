@@ -11,7 +11,7 @@ on:
 
 # Ensure only one job runs at a time per runner type
 concurrency:
-  group: ${{ github.repository }}-ci-${{ matrix.os }}
+  group: ${{ github.repository }}-ci
   cancel-in-progress: true
 
 jobs:
