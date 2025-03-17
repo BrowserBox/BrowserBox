@@ -267,7 +267,7 @@ wait_for_hostnames() {
       local service_port=$((base_port + i))
       local hidden_service_dir="$TORDIR/hidden_service_$service_port"
       if [[ "$OS_TYPE" == "macos" || "$OS_TYPE" == "win" ]]; then
-        [ -f "$hidden_service_dir/hostname" ] || all_exist=0
+        [ -f "$hidden_service_dir/hostname" ] || $SUDO test -f "$hidden_service_dir/hostname" || all_exist=0
       else
         $SUDO test -f "$hidden_service_dir/hostname" || all_exist=0
       fi
@@ -291,7 +291,7 @@ configure_and_export_tor() {
         echo "HiddenServicePort 443 127.0.0.1:$service_port" | $SUDO tee -a "$TORRC"
       fi
       $SUDO mkdir -p "$hidden_service_dir"
-      $SUDO chown "$TOR_USER:$TOR_GROUP" "$hidden_service_dir"
+      # $SUDO chown "$TOR_USER:$TOR_GROUP" "$hidden_service_dir"
       $SUDO chmod 770 "$hidden_service_dir"
     else
       $SUDO test -d "$hidden_service_dir" && $SUDO rm -rf "$hidden_service_dir"
