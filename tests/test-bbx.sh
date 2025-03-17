@@ -133,12 +133,12 @@
 
     test_run() {
       echo "Running bbx... "
-      output=$(./bbx.sh run 2>&1)  # Corrected path to ./bbx.sh
-      echo $output
+      output="$(./bbx.sh run 2>&1)" # Corrected path to ./bbx.sh
       exit_code=$?
-      login_link=$(extract_login_link "$output")
+      login_link="$(extract_login_link "$output")"
       if [ -z "$login_link" ] || [ $exit_code -ne 0 ]; then
         echo -e "${RED}✘ Failed (No login link or run failed)${NC}"
+        echo $output
         ((failed++))
         ./bbx.sh stop
         return 1
@@ -147,40 +147,54 @@
       ((passed++))
       
       # Test login link immediately
-      test_login_link "$login_link" || ( ./bbx.sh stop; return 1 )
+      if ! test_login_link "$login_link"; then
+        ./bbx.sh stop; 
+        return 1
+      fi
       
       # Wait 150 seconds and test again
       echo "Waiting 150 seconds to check instance activity... "
       sleep 150
       echo -e "${GREEN}✔ Wait complete${NC}"
       ((passed++))
-      test_login_link "$login_link" || ( ./bbx.sh stop; return 1 )
+      if ! test_login_link "$login_link"; then
+        ./bbx.sh stop; 
+        return 1
+      fi
       ./bbx.sh stop
     }
 
     test_tor_run() {
       echo "Running bbx with Tor... "
-      output=$(./bbx.sh tor-run 2>&1)  # Corrected path to ./bbx.sh
+      output="$(./bbx.sh tor-run 2>&1)"  # Corrected path to ./bbx.sh
       echo $output
       exit_code=$?
-      login_link=$(extract_login_link "$output")
+      login_link="$(extract_login_link "$output" | tail -n 1)"
       if [ -z "$login_link" ] || [ $exit_code -ne 0 ]; then
         echo -e "${RED}✘ Failed (No login link or tor-run failed)${NC}"
+        echo $output
         ((failed++))
+        ./bbx.sh stop;
         return 1
       fi
       echo -e "${GREEN}✔ Success (Tor run completed)${NC}"
       ((passed++))
       
       # Test login link immediately
-      test_login_link "$login_link" "tor" || ( ./bbx.sh stop; return 1 )
+      if ! test_login_link "$login_link" "tor"; then
+        ./bbx.sh stop; 
+        return 1
+      fi
       
       # Wait 150 seconds and test again
       echo "Waiting 150 seconds to check instance activity... "
       sleep 150
       echo -e "${GREEN}✔ Wait complete${NC}"
       ((passed++))
-      test_login_link "$login_link" "tor" || ( ./bbx.sh stop; return 1 )
+      if ! test_login_link "$login_link" "tor"; then
+        ./bbx.sh stop; 
+        return 1
+      fi
       ./bbx.sh stop
     }
 
@@ -193,6 +207,7 @@
       login_link="$(extract_login_link "$output")"
       if [ -z "$login_link" ] || [ -z "$nickname" ] || [ $exit_code -ne 0 ]; then
         echo -e "${RED}✘ Failed (No login link, nickname, or docker-run failed)${NC}"
+        echo $output
         ((failed++))
         ./bbx.sh docker-stop $nickname
         return 1
@@ -201,7 +216,10 @@
       ((passed++))
       
       # Test login link
-      test_login_link "$login_link" || ( ./bbx.sh stop-docker $nickname ; return 1 )
+      if test_login_link "$login_link"; then 
+        ./bbx.sh stop-docker $nickname ;
+        return 1
+      fi
 
       # Wait 150 seconds and test again
       echo "Waiting 150 seconds to check instance activity... "
@@ -210,7 +228,10 @@
       ((passed++))
 
       # Test login link
-      test_login_link "$login_link" || ( ./bbx.sh stop-docker $nickname ; return 1 )
+      if test_login_link "$login_link"; then 
+        ./bbx.sh stop-docker $nickname ;
+        return 1
+      fi
       
       # Stop Docker instance with nickname
       echo "Stopping Dockerized bbx with nickname $nickname... "
