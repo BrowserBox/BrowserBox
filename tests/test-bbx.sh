@@ -206,7 +206,7 @@ rm $(bbcertify)
       
       # Wait 25 seconds and test again
       echo "Waiting 25 seconds to check instance activity... "
-      sleep 150
+      sleep 25
       echo -e "${GREEN}✔ Wait complete${NC}"
       ((passed++))
       if ! test_login_link "$login_link" "tor"; then
@@ -241,7 +241,7 @@ rm $(bbcertify)
 
       # Wait 25 seconds and test again
       echo "Waiting 25 seconds to check instance activity... "
-      sleep 150
+      sleep 25
       echo -e "${GREEN}✔ Wait complete${NC}"
       ((passed++))
 
