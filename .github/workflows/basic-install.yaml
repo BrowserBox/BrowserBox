@@ -149,16 +149,6 @@ jobs:
         id: ngrok
         shell: /bin/bash {0}
         run: |
-          source $HOME/.nvm/nvm.sh
-          export STATUS_MODE=${{ secrets.STATUS_MODE_KEY }}
-          export LICENSE_KEY=${{ secrets.BB_LICENSE_KEY }}
-          bbcertify
-          export LICENSE_KEY=""
-          bbpro &
-          sleep 5
-          ngrok http https://localhost:8080 &
-          sleep 5
-        run: |
           url=$(curl http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
           suffix=${{ steps.setup.outputs.suffix }}
           complete_url="${url}${suffix}"
