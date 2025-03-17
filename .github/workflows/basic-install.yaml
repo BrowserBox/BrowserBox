@@ -102,31 +102,39 @@ jobs:
 
       # Configure ngrok
       - name: Configure ngrok
-        run: ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+        shell: /bin/bash {0}
+        run: |
+          source $HOME/.nvm/nvm.sh
+          ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
         env:
           NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
 
       # Install application
       - name: Install application
+        shell: /bin/bash {0}
         run: |
           yes | ./deploy-scripts/global_install.sh localhost
 
       # Configure application
       - name: Configure application
         id: setup
+        shell: /bin/bash {0}
         run: |
           output=$(setup_bbpro --port 8080)
           echo "::set-output name=suffix::${output#*https://localhost:8080}"
 
       # Create BBPRO.INTEGRITY file
       - name: Create BBPRO.INTEGRITY file
+        shell: /bin/bash {0}
         run: |
           random_string=$(openssl rand -base64 32)
           echo "$random_string" > $HOME/BBPRO.INTEGRITY
 
       # Start server & ngrok tunnel
       - name: Start server & ngrok tunnel
+        shell: /bin/bash {0}
         run: |
+          source $HOME/.nvm/nvm.sh
           export STATUS_MODE=${{ secrets.STATUS_MODE_KEY }}
           export LICENSE_KEY=${{ secrets.BB_LICENSE_KEY }}
           bbcertify
@@ -139,6 +147,17 @@ jobs:
       # Get ngrok public URL
       - name: Get ngrok public URL
         id: ngrok
+        shell: /bin/bash {0}
+        run: |
+          source $HOME/.nvm/nvm.sh
+          export STATUS_MODE=${{ secrets.STATUS_MODE_KEY }}
+          export LICENSE_KEY=${{ secrets.BB_LICENSE_KEY }}
+          bbcertify
+          export LICENSE_KEY=""
+          bbpro &
+          sleep 5
+          ngrok http https://localhost:8080 &
+          sleep 5
         run: |
           url=$(curl http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
           suffix=${{ steps.setup.outputs.suffix }}
@@ -148,6 +167,7 @@ jobs:
 
       # Check integrity route
       - name: Check integrity route
+        shell: /bin/bash {0}
         run: |
           base_url=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'https?://[^/]+')
           token=$(echo "${{ steps.ngrok.outputs.url }}" | grep -oE 'token=[^&]+' | sed 's/token=//') 
