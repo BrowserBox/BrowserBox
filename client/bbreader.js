@@ -38,7 +38,7 @@ const term = new terminal();
 (async () => {
   const worker = await createWorker('eng', 1);
 
-  const agent = new Agent({ rejectUnauthorized: false });
+  const agent = new Agent({ rejectUnauthorized: true });
 
   function parseBinaryScreenshot(buffer) {
     if (buffer.length < 28) return null;
