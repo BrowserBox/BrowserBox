@@ -82,6 +82,7 @@ jobs:
 
       # Install ngrok (cross-platform, with conditional setup for containers)
       - name: Install ngrok
+        shell: /bin/bash {0}
         run: |
           if [[ "${{ matrix.container_image }}" != "" ]]; then
             # Container case: Install nvm and Node.js
