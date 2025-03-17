@@ -21,8 +21,8 @@ jobs:
     strategy:
       matrix:
         os: [Ubuntu-latest, macOS-latest, windows-latest, centos, debian]
-        continue-on-error: ${{ matrix.os == 'windows-latest' }}
-      fail-fast: false  # Continue running other matrix jobs even if one fails
+      fail-fast: false
+      continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20  # Increased for 2.5-minute waits
