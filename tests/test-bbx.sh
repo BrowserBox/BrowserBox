@@ -141,7 +141,7 @@ test_install() {
   fi
   # if we just installed as root, then we have created a correct user called yes so let's hand off install script to them :)
   if [ "$(id -u)" -eq 0 ]; then
-    exec su - "yes" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; $0"
+    exec su - "yes" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; bash -cl 'cd; cd .bbx/BrowserBox; ./tests/test-bbx.sh ;'"
   fi
 }
 
