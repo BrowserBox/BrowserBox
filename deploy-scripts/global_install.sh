@@ -25,6 +25,16 @@ fi
 
 if command -v sudo &>/dev/null; then
   export SUDO="$(command -v sudo) -n"
+elif command -v apt &>/dev/null; then
+  apt update; apt install -y sudo
+elif command -v dnf &>/dev/null; then
+  dnf update; dnf install -y sudo
+fi
+
+if command -v sudo &>/dev/null; then
+  export SUDO="$(command -v sudo) -n"
+else
+  echo "Warning could not install sudo. There may be problems..." >&2
 fi
 
 if command -v firewall-cmd &>/dev/null; then
