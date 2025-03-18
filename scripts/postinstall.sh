@@ -47,8 +47,8 @@ initialize_package_manager() {
     package_manager="$(command -v dnf) --best --allowerasing --skip-broken"
     $SUDO dnf config-manager --set-enabled crb
     $SUDO dnf -y upgrade --refresh
-    $SUDO dnf install https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
-    $SUDO dnf install https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
+    $SUDO dnf install -y https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
+    $SUDO dnf install -y https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
     $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=http
     $SUDO firewall-cmd --permanent --zone="$ZONE" --add-service=https
     $SUDO firewall-cmd --reload

@@ -74,7 +74,7 @@ if ! command -v certbot >/dev/null; then
       $sudo ln -sf /opt/certbot/bin/certbot /usr/bin/certbot
       if ([ "$ID" = "almalinux" ] || [ "$ID" = "centos" ] || [ "$ID" = "rhel" ]) && [[ "$VERSION_ID" == 8* ]]; then
         echo "Detected AlmaLinux version starting with 8. Installing certbot and python3-certbot-apache."
-        $sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+        $sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
         $sudo dnf upgrade
         $sudo subscription-manager repos --enable "rhel-*-optional-rpms" --enable "rhel-*-extras-rpms"
         $sudo yum update
