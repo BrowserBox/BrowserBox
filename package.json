@@ -13,7 +13,7 @@
     }
   },
   "bin": {
-    "bbx": "./launch-bbx.cjs"
+    "bbx": "./bbx.sh"
   },
   "parcelIgnore": [
     ".*/bang.js",
