@@ -27,13 +27,14 @@ if (-not $pwshPath) {
 # Install nvm-windows
 if (-not (Get-Command nvm -ErrorAction SilentlyContinue)) {
     Write-Host "Installing nvm-windows..."
-    Invoke-WebRequest -Uri $nvmUrl -OutFile $nvmZip
-    Expand-Archive -Path $nvmZip -DestinationPath "$env:TEMP\nvm-install" -Force
-    & "$env:TEMP\nvm-install\nvm-setup.exe" /SILENT
-    Remove-Item "$env:TEMP\nvm-install" -Recurse
-    Remove-Item $nvmZip
-    $env:Path += ";$env:ProgramFiles\nvm"
+    New-Item -ItemType Directory -Path 'C:\NVM'
+    Invoke-WebRequest -Uri 'https://github.com/coreybutler/nvm-windows/releases/download/1.1.8/nvm-setup.zip' -OutFile 'C:\NVM\nvm-setup.zip'
+    Expand-Archive -Path 'C:\NVM\nvm-setup.zip' -DestinationPath 'C:\NVM'
+    Set-Location -Path 'C:\NVM'
+    Start-Process -FilePath 'C:\NVM\nvm-setup.exe' -ArgumentList '/quiet' -Wait
+    if (Test-Path -Path 'C:\Users\<username>\AppData\Roaming\nvm') { Write-Host 'NVM has been installed successfully.' } else { Write-Host 'NVM installation failed.' }
 }
+
 
 # Install Node.js LTS
 Write-Host "Installing Node.js LTS..."
