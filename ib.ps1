@@ -13,7 +13,6 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 $bbxUrl = "https://github.com/BrowserBox/BrowserBox/releases/latest/download/browserbox-win.zip"
 $tempZip = "$env:TEMP\browserbox-win.zip"
 $installDir = "C:\Program Files\browserbox"
-$mkcertUrl = "https://github.com/FiloSottile/mkcert/releases/latest/download/mkcert-v1.4.4-windows-amd64.exe"
 
 # winget
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
@@ -26,18 +25,14 @@ if (-not $wingetPath) {
 $pwshPath = (Get-Command pwsh -ErrorAction SilentlyContinue).Path
 if (-not $pwshPath) {
     Write-Host "Installing PowerShell 7..."
-    winget install --id Microsoft.PowerShell --silent --accept-source-agreements
+    winget install --id Microsoft.PowerShell --silent --accept-source-agreements --accept-package-agreements
     $env:Path += ";$env:ProgramFiles\PowerShell\7"
 }
 
-# Node.js (replacing nvm)
-$nodePath = (Get-Command node -ErrorAction SilentlyContinue).Path
-if (-not $nodePath) {
-    Write-Host "Installing Node.js latest..."
-    winget install --id OpenJS.NodeJS --silent --accept-source-agreements --accept-package-agreements
-    # Update PATH for this session (winget adds to system PATH, but not always current session)
-    $env:Path += ";$env:ProgramFiles\nodejs"
-}
+Write-Host "Installing Node.js latest..."
+winget install --id OpenJS.NodeJS.LTS --silent --accept-source-agreements --accept-package-agreements
+# Update PATH for this session (winget adds to system PATH, but not always current session)
+$env:Path += ";$env:ProgramFiles\nodejs"
 
 # Verify Node.js and npm
 $nodeVersion = & node --version
@@ -51,14 +46,11 @@ if ($nodeVersion -and $npmVersion) {
 
 # mkcert
 Write-Host "Installing mkcert..."
-if (-not (Test-Path "$installDir\mkcert.exe")) {
-    New-Item -ItemType Directory -Path $installDir -Force | Out-Null
-    Invoke-WebRequest -Uri $mkcertUrl -OutFile "$installDir\mkcert.exe"
-}
+winget install --id FiloSottile.mkcert --silent --accept-source-agreements --accept-package-agreements
 
 # Certbot
 Write-Host "Installing Certbot..."
-winget install --id Certbot.Certbot --silent --accept-source-agreements
+winget install --id EFF.Certbot --silent --accept-source-agreements --accept-package-agreements
 
 # BrowserBox
 Write-Host "Downloading BrowserBox..."
