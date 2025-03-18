@@ -51,6 +51,7 @@ winget install --id FiloSottile.mkcert --silent --accept-source-agreements --acc
 # Certbot
 Write-Host "Installing Certbot..."
 winget install --id EFF.Certbot --silent --accept-source-agreements --accept-package-agreements
+$env:Path += ";$env:ProgramFiles\Certbot\bin"
 
 # BrowserBox
 Write-Host "Downloading BrowserBox..."
