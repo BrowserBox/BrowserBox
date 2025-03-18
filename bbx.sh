@@ -1069,6 +1069,9 @@ pre_install() {
             exit 1
         fi
 
+        mkdir -p "$BB_CONFIG_DIR"
+        echo "$install_user" > "$BB_CONFIG_DIR"/.install_user
+
         # Check if sudo is installed first - we need it before modifying /etc/sudoers
         if ! command -v sudo &>/dev/null; then
             echo "Sudo not found, installing sudo..."
@@ -1632,6 +1635,9 @@ usage() {
 
 check_agreement() {
     if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
+      if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
+        echo "$(date)" > "$BB_CONFIG_DIR/.agreed"
+      fi
       return 0
     fi
     if [ ! -f "$BB_CONFIG_DIR/.agreed" ]; then
@@ -1642,6 +1648,7 @@ check_agreement() {
         [ "$AGREE" = "yes" ] || { printf "${RED}ERROR: Must agree to terms!${NC}\n"; exit 1; }
         mkdir -p "$BB_CONFIG_DIR"
         touch "$BB_CONFIG_DIR/.agreed"
+        echo "$(date)" > "$BB_CONFIG_DIR/.agreed"
     fi
 }
 
