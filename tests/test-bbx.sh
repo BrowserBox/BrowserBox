@@ -30,6 +30,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 PWD="$(pwd)"
+BB_CONFIG_DIR="$HOME/.config/dosyago/bbpro"
 
 trap './bbx.sh stop &>/dev/null' EXIT
 
@@ -140,10 +141,11 @@ test_install() {
     ((failed++))
     exit 1
   fi
-  # if we just installed as root, then we have created a correct user called yes so let's hand off install script to them :)
+  # if we just installed as root, then we have created a correct user called something or yes so let's hand off install script to them :)
   if [ "$(id -u)" -eq 0 ]; then
     sudo -u yes bash -c "cd; cp -r .bbx/BrowserBox . ;"
-    exec su - "yes" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; bash -cl 'cd; cd BrowserBox; ./tests/test-bbx.sh ;'"
+    install_user="$(cat "$BB_CONFIG_DIR"/.install_user)"
+    exec su - "${install_user:-yes}" -c "export BBX_HOSTNAME=\"$BBX_HOSTNAME\"; export EMAIL=\"$EMAIL\"; export LICENSE_KEY=\"$LICENSE_KEY\"; export BBX_TEST_AGREEMENT=\"$BBX_TEST_AGREEMENT\"; export STATUS_MODE=\"$STATUS_MODE\"; bash -cl 'cd; cd BrowserBox; ./tests/test-bbx.sh ;'"
   fi
 }
 
