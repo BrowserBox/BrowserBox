@@ -13,10 +13,10 @@ if command -v sudo &> /dev/null; then
 fi
 
 # Check if /usr/local/bin is in the PATH and is writable
-if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && sudo test -w /usr/local/bin; then
+if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
   COMMAND_DIR="/usr/local/bin"
   $SUDO mkdir -p $COMMAND_DIR
-elif sudo test -w /usr/bin; then
+elif $SUDO test -w /usr/bin; then
   COMMAND_DIR="/usr/bin"
   $SUDO mkdir -p $COMMAND_DIR
 else
