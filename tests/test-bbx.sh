@@ -3,8 +3,6 @@
 # Test script for bbx CLI in BrowserBox repository
 # Displays output directly in terminal
 
-export BBX_DEBUG=true
-
 if [[ -z "$STATUS_MODE" ]]; then
   echo "Set status mode env" >&2
   exit 1

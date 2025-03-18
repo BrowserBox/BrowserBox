@@ -10,8 +10,6 @@
 # 
 ##########################################################
 
-export BBX_DEBUG=true
-
 REDIRECT=">/dev/null"
 if [[ -n "$BBX_DEBUG" ]]; then
   set -x
