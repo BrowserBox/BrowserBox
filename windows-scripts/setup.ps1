@@ -102,7 +102,7 @@ function Generate-Certificates {
     if (Is-LocalHostname $Hostname) {
         Write-Host "Local hostname detected ($Hostname). Using mkcert..." -ForegroundColor Cyan
         & mkcert -install *>$null  # Redirect output to avoid hangs
-        & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1 *>$null
+        & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1 
         if ($LASTEXITCODE -ne 0) {
             Write-Error "mkcert failed to generate certificates for $Hostname."
             exit 1
@@ -131,6 +131,7 @@ function Generate-Certificates {
     }
     icacls "$certFile" /inheritance:r /grant:r "$env:USERNAME:RX"
     icacls "$keyFile" /inheritance:r /grant:r "$env:USERNAME:RX"
+    Write-Host "Generated certificates." -ForegroundColor Cyan
 }
 
 # Main Logic
