@@ -26,7 +26,8 @@ $tempExtractDir = "$env:TEMP\browserbox-extract-$branch"  # Temp staging folder
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
 if (-not $wingetPath -or $ForceAll) {
     Write-Host "Installing winget..."
-    Start-Process powershell -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "&([ScriptBlock]::Create((Invoke-RestMethod 'https://asheroto.com/winget'))) -Force" -Wait -NoNewWindow
+    # Backport: Use a single string for -ArgumentList, avoid array parsing issues in 5.1
+    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { IEX ((New-Object Net.WebClient).DownloadString('https://asheroto.com/winget')) } -Force`"" -Wait -NoNewWindow
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
     $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
     if (-not $wingetPath) {
@@ -43,14 +44,14 @@ $nodePath = (Get-Command node -ErrorAction SilentlyContinue).Path
 if (-not $nodePath -or $ForceAll) {
     Write-Host "Installing Node.js LTS..."
     winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
-    $env:Path += ";$env:ProgramFiles\nodejs"
+    $env:Path = "$env:Path;$env:ProgramFiles\nodejs"
 } else {
     Write-Host "Node.js already installed at $nodePath—skipping."
 }
 
 # Verify Node.js and npm
-$nodeVersion = & node --version
-$npmVersion = & npm --version
+$nodeVersion = & node --version 2>$null
+$npmVersion = & npm --version 2>$null
 if ($nodeVersion -and $npmVersion) {
     Write-Host "Node.js $nodeVersion and npm $npmVersion installed successfully."
 } else {
@@ -62,7 +63,7 @@ $mkcertPath = (Get-Command mkcert -ErrorAction SilentlyContinue).Path
 if (-not $mkcertPath -or $ForceAll) {
     Write-Host "Installing mkcert..."
     winget install --id FiloSottile.mkcert --accept-source-agreements --accept-package-agreements --Location "$env:ProgramFiles\mkcert"
-    $env:Path += ";$env:ProgramFiles\mkcert"
+    $env:Path = "$env:Path;$env:ProgramFiles\mkcert"
 } else {
     Write-Host "mkcert already installed at $mkcertPath—skipping."
 }
@@ -72,7 +73,7 @@ $certbotPath = (Get-Command certbot -ErrorAction SilentlyContinue).Path
 if (-not $certbotPath -or $ForceAll) {
     Write-Host "Installing Certbot..."
     winget install --id EFF.Certbot --accept-source-agreements --accept-package-agreements
-    $env:Path += ";$env:ProgramFiles\Certbot\bin"
+    $env:Path = "$env:Path;$env:ProgramFiles\Certbot\bin"
 } else {
     Write-Host "Certbot already installed at $certbotPath—skipping."
 }
@@ -88,7 +89,7 @@ if (-not $chromePath -or $ForceAll) {
 
 # BrowserBox
 Write-Host "Downloading BrowserBox from branch '$branch'..."
-(New-Object System.Net.WebClient).DownloadFile($bbxUrl, $tempZip)
+(New-Object Net.WebClient).DownloadFile($bbxUrl, $tempZip)
 Read-Host "Downloaded ZIP to $tempZip. Press Enter to continue..."
 
 Write-Host "Cleaning existing install at $installDir..."
@@ -133,13 +134,13 @@ Read-Host "Updated PATH with $bbxDir (if needed). Press Enter to continue..."
 Write-Host "BrowserBox installed! Running 'bbx --help'..." -ForegroundColor Green
 $bbxPath = "$bbxDir\bbx.ps1"
 if (Test-Path $bbxPath) {
-    & powershell -NoProfile -ExecutionPolicy Bypass -Command "& `"$bbxPath`" --help"
+    & powershell -NoProfile -ExecutionPolicy Bypass -File "$bbxPath" --help
 } else {
     Write-Warning "bbx.ps1 not found at $bbxPath! Searching for it..."
     $foundBbx = Get-ChildItem -Path $installDir -Filter "bbx.ps1" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($foundBbx) {
         Write-Host "Found bbx.ps1 at $($foundBbx.FullName), running it..."
-        & powershell -NoProfile -ExecutionPolicy Bypass -Command "& `"$($foundBbx.FullName)`" --help"
+        & powershell -NoProfile -ExecutionPolicy Bypass -File "$($foundBbx.FullName)" --help
     } else {
         Write-Error "bbx.ps1 not found anywhere in $installDir! Check ZIP structure for branch '$branch'."
     }
