@@ -156,7 +156,7 @@ jobs:
             Write-Error "Node processes still running after stop: $($nodeProcs | Format-List Name, Id | Out-String)"
             exit 1
           } else {
-            Write-Host "No Node processes remain—cleanup successful."
+            Write-Host "No Node processes remain -- cleanup successful."
           }
 
       - name: Cleanup (Unix)
@@ -166,9 +166,3 @@ jobs:
           bbx stop || true
           sleep 5
 
-      - name: Cleanup (Windows)
-        if: always() && matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          bbx stop
-          Start-Sleep -Seconds 5
