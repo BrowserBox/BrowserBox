@@ -1,4 +1,5 @@
 # ib.ps1
+
 # Hosted at dosaygo.com/browserbox (or raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/win/ib.ps1)
 $ProgressPreference = 'SilentlyContinue'
 
