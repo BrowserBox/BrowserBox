@@ -101,7 +101,7 @@ function Generate-Certificates {
     New-Item -ItemType Directory -Path $sslcerts -Force | Out-Null
     if (Is-LocalHostname $Hostname) {
         Write-Host "Local hostname detected ($Hostname). Using mkcert..." -ForegroundColor Cyan
-        & mkcert -install *>$null  # Redirect output to avoid hangs
+        & mkcert -install 
         & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1 
         if ($LASTEXITCODE -ne 0) {
             Write-Error "mkcert failed to generate certificates for $Hostname."
