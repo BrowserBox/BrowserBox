@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]  # Use valid hosted runner labels
+        os: [ubuntu-latest, macos-latest, windows-latest]
         container_image: 
           - ''  # No container (native runner)
           - 'dokken/centos-stream-9'
@@ -28,47 +28,159 @@ jobs:
             container_image: 'dokken/centos-stream-9'
           - os: macos-latest
             container_image: 'debian:latest'
+          - os: windows-latest  # Windows doesn’t support containers
+            container_image: 'dokken/centos-stream-9'
+          - os: windows-latest
+            container_image: 'debian:latest'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
-    container: ${{ matrix.container_image }}  # Apply container if specified
+    container: ${{ matrix.container_image }}  # Apply container if specified (Unix only)
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Check if actor is repository owner or me
+        shell: bash
         run: |
           if [[ "${{ github.actor }}" != "o0101" ]]; then
             echo "Actor is not me. Not running CI"
             exit 1
           fi
 
-      - name: Prepare test script
+      - name: Prepare test script (Unix)
         if: matrix.os != 'windows-latest'
+        shell: bash
         run: chmod +x tests/test-bbx.sh
 
-      - name: Execute BBX Test Saga
+      - name: Install BrowserBox (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
         run: |
-          # Explicitly export variables
-          export BBX_HOSTNAME="localhost"
-          export EMAIL="test@example.com"
-          export LICENSE_KEY="${{ secrets.BB_LICENSE_KEY }}"
-          export BBX_TEST_AGREEMENT="true"
-          export STATUS_MODE="${{ secrets.STATUS_MODE_KEY }}"
+          Invoke-RestMethod -Uri "https://bbx.dosaygo.com" -OutFile "install.ps1"
+          .\install.ps1
+          if (-not (Get-Command bbx -ErrorAction SilentlyContinue)) {
+            Write-Error "bbx not found in PATH after install"
+            exit 1
+          }
 
-          # Debug safely: Check if variables are set without printing their values
-          if [ -z "$BBX_HOSTNAME" ]; then echo "BBX_HOSTNAME is not set"; else echo "BBX_HOSTNAME is set"; fi
-          if [ -z "$EMAIL" ]; then echo "EMAIL is not set"; else echo "EMAIL is set"; fi
-          if [ -z "$LICENSE_KEY" ]; then echo "LICENSE_KEY is not set"; else echo "LICENSE_KEY is set"; fi
-          if [ -z "$BBX_TEST_AGREEMENT" ]; then echo "BBX_TEST_AGREEMENT is not set"; else echo "BBX_TEST_AGREEMENT is set"; fi
-          if [ -z "$STATUS_MODE" ]; then echo "STATUS_MODE is not set"; else echo "STATUS_MODE is set"; fi
+      - name: Setup BrowserBox (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        env:
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+        run: |
+          bbx setup -Hostname $env:BBX_HOSTNAME -Email $env:EMAIL
+          $loginLink = Get-Content "$env:USERPROFILE\.config\dosyago\bbpro\login.link"
+          Write-Host "Login link: $loginLink"
+          # Set login link as an environment variable for later steps
+          Write-Output "LOGIN_LINK=$loginLink" | Out-File -Append -FilePath $env:GITHUB_ENV
 
-          # Run the script
+      - name: Execute BBX Test Saga (Unix)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        env:
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+        run: |
+          [ -z "$BBX_HOSTNAME" ] && echo "BBX_HOSTNAME is not set" || echo "BBX_HOSTNAME is set"
+          [ -z "$EMAIL" ] && echo "EMAIL is not set" || echo "EMAIL is set"
+          [ -z "$LICENSE_KEY" ] && echo "LICENSE_KEY is not set" || echo "LICENSE_KEY is set"
+          [ -z "$BBX_TEST_AGREEMENT" ] && echo "BBX_TEST_AGREEMENT is not set" || echo "BBX_TEST_AGREEMENT is set"
+          [ -z "$STATUS_MODE" ] && echo "STATUS_MODE is not set" || echo "STATUS_MODE is set"
           ./tests/test-bbx.sh
         continue-on-error: false
 
-      - name: Cleanup
-        if: always()
+      - name: Execute BBX Test Saga (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        env:
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+        run: |
+          # Debug variables
+          if (-not $env:BBX_HOSTNAME) { Write-Host "BBX_HOSTNAME is not set" } else { Write-Host "BBX_HOSTNAME is set" }
+          if (-not $env:EMAIL) { Write-Host "EMAIL is not set" } else { Write-Host "EMAIL is set" }
+          if (-not $env:LICENSE_KEY) { Write-Host "LICENSE_KEY is not set" } else { Write-Host "LICENSE_KEY is set" }
+          if (-not $env:BBX_TEST_AGREEMENT) { Write-Host "BBX_TEST_AGREEMENT is not set" } else { Write-Host "BBX_TEST_AGREEMENT is set" }
+          if (-not $env:STATUS_MODE) { Write-Host "STATUS_MODE is not set" } else { Write-Host "STATUS_MODE is set" }
+
+          # Start BrowserBox
+          bbx run
+
+          # Curl with retries (ignore cert errors)
+          $loginLink = $env:LOGIN_LINK
+          Write-Host "Testing URL: $loginLink"
+          $maxRetries = 5
+          $retryCount = 0
+          $success = $false
+          while ($retryCount -lt $maxRetries -and -not $success) {
+            try {
+              [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+              $response = Invoke-WebRequest -Uri $loginLink -TimeoutSec 10
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Initial connection successful: $($response.StatusCode)"
+                $success = $true
+              }
+            } catch {
+              Write-Host "Retry $($retryCount + 1)/$maxRetries failed: $_"
+              Start-Sleep -Seconds 5
+              $retryCount++
+            }
+          }
+          if (-not $success) {
+            Write-Error "Failed to connect to $loginLink after $maxRetries retries."
+            exit 1
+          }
+
+          # Wait 25 seconds and verify again
+          Write-Host "Waiting 25 seconds to verify link stability..."
+          Start-Sleep -Seconds 25
+          try {
+            $response = Invoke-WebRequest -Uri $loginLink -TimeoutSec 10
+            if ($response.StatusCode -eq 200) {
+              Write-Host "Second verification successful: $($response.StatusCode)"
+            } else {
+              Write-Error "Second verification failed: Status $($response.StatusCode)"
+              exit 1
+            }
+          } catch {
+            Write-Error "Second verification failed after 25s: $_"
+            exit 1
+          }
+
+          # Stop services
+          bbx stop
+
+          # Check no Node processes remain
+          $nodeProcs = Get-Process -Name "browserbox", "browserbox-devtools", "node" -ErrorAction SilentlyContinue
+          if ($nodeProcs) {
+            Write-Error "Node processes still running after stop: $($nodeProcs | Format-List Name, Id | Out-String)"
+            exit 1
+          } else {
+            Write-Host "No Node processes remain—cleanup successful."
+          }
+
+      - name: Cleanup (Unix)
+        if: always() && matrix.os != 'windows-latest'
+        shell: bash
         run: |
           bbx stop || true
           sleep 5
+
+      - name: Cleanup (Windows)
+        if: always() && matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          bbx stop
+          Start-Sleep -Seconds 5

@@ -1,0 +1,74 @@
+name: bbx Saga Test Suite
+
+on:
+  pull_request:
+    types: [synchronize, opened, reopened]
+    branches: [main]
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.repository }}-bbx-saga
+  cancel-in-progress: true
+
+jobs:
+  build:
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]  # Use valid hosted runner labels
+        container_image: 
+          - ''  # No container (native runner)
+          - 'dokken/centos-stream-9'
+          - 'debian:latest'
+        exclude:
+          - os: macos-latest  # macOS runners don’t support containers
+            container_image: 'dokken/centos-stream-9'
+          - os: macos-latest
+            container_image: 'debian:latest'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    container: ${{ matrix.container_image }}  # Apply container if specified
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if actor is repository owner or me
+        run: |
+          if [[ "${{ github.actor }}" != "o0101" ]]; then
+            echo "Actor is not me. Not running CI"
+            exit 1
+          fi
+
+      - name: Prepare test script
+        if: matrix.os != 'windows-latest'
+        run: chmod +x tests/test-bbx.sh
+
+      - name: Execute BBX Test Saga
+        run: |
+          # Explicitly export variables
+          export BBX_HOSTNAME="localhost"
+          export EMAIL="test@example.com"
+          export LICENSE_KEY="${{ secrets.BB_LICENSE_KEY }}"
+          export BBX_TEST_AGREEMENT="true"
+          export STATUS_MODE="${{ secrets.STATUS_MODE_KEY }}"
+
+          # Debug safely: Check if variables are set without printing their values
+          if [ -z "$BBX_HOSTNAME" ]; then echo "BBX_HOSTNAME is not set"; else echo "BBX_HOSTNAME is set"; fi
+          if [ -z "$EMAIL" ]; then echo "EMAIL is not set"; else echo "EMAIL is set"; fi
+          if [ -z "$LICENSE_KEY" ]; then echo "LICENSE_KEY is not set"; else echo "LICENSE_KEY is set"; fi
+          if [ -z "$BBX_TEST_AGREEMENT" ]; then echo "BBX_TEST_AGREEMENT is not set"; else echo "BBX_TEST_AGREEMENT is set"; fi
+          if [ -z "$STATUS_MODE" ]; then echo "STATUS_MODE is not set"; else echo "STATUS_MODE is set"; fi
+
+          # Run the script
+          ./tests/test-bbx.sh
+        continue-on-error: false
+
+      - name: Cleanup
+        if: always()
+        run: |
+          bbx stop || true
+          sleep 5
