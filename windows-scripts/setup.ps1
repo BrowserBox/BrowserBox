@@ -110,20 +110,18 @@ function Generate-Certificates {
         if ($process.HasExited) {
             if ($process.ExitCode -ne 0) {
                 Write-Error "mkcert -install failed with exit code $($process.ExitCode)."
-                exit 1
             }
             Write-Host "mkcert -install completed successfully." -ForegroundColor Cyan
         } else {
             Write-Warning "mkcert -install timed out after $timeoutSeconds seconds. Terminating process..."
             $process | Stop-Process -Force
             Start-Sleep -Seconds 1  # Give it a moment to terminate
-            Write-Error "mkcert -install was terminated due to timeout."
+            Write-Host "mkcert -install was terminated due to timeout."
         }
 
         & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1 
         if ($LASTEXITCODE -ne 0) {
             Write-Error "mkcert failed to generate certificates for $Hostname."
-            exit 1
         }
     } else {
         if (-not $Email) {
