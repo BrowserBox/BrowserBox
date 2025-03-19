@@ -157,7 +157,7 @@ $minPort = 4024
 $maxPort = 65533
 $portsToCheck = @()
 if (($PortInt - 2) -ge $minPort -and ($PortInt + 1) -le $maxPort) {
-    $portsToCheck = @($PortInt, ($PortInt - 2), ($PortInt + 1(, ($PortInt - 1))
+    $portsToCheck = @($PortInt, ($PortInt - 2), ($PortInt + 1), ($PortInt - 1))
     Write-Host "Ports to check: $portsToCheck" -ForegroundColor Cyan  # Debug output
 } else {
     Write-Error "Port calculations would result in invalid ports outside range $minPort-$maxPort. Adjust the main port ($PortInt)."
