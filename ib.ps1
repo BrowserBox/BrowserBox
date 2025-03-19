@@ -1,5 +1,5 @@
 # ib.ps1
-# Hosted at dosaygo.com/browserbox (or raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/win/ib.ps1)
+# Hosted at dosaygo.com/browserbox (or raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/win/windows-scripts/install.ps1)
 $ProgressPreference = 'SilentlyContinue'
 
 # Set the branch here
@@ -120,7 +120,7 @@ if ($Debug) { Read-Host "Moved contents to $installDir and cleaned up temp files
 
 # Debug: Show extracted contents
 Write-Host "Checking install directory contents..."
-Get-ChildItem $installDir -Recurse | ForEach-Object { Write-Host "Found: $($_.FullName)" }
+Get-ChildItem $installDir -Recurse | ForEach-Object { if ($Debug) { Write-Host "Found: $($_.FullName)" } }
 if ($Debug) { Read-Host "Listed contents of $installDir. Press Enter to continue..." }
 
 # PATH (add bbx.ps1 directory)
