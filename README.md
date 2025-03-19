@@ -84,20 +84,29 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
 ## Get Started
 
 1. **Install the `bbx` CLI**
+
+   **On Windows:**
+
+   ```powershell
+   irm bbx.dosaygo.com | iex
+   ```
+
    ```bash
    bash <(curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh) install
    ```
 
-2. **Install BrowserBox**
-   ```bash
-   bbx install
-   ```
-
-3. **Activate Your License**
-   ```bash
+2. **Purchase a License and Activate Your Copy of BrowserBox**
+   ```console
    bbx activate [seats]
    ```
 
+3. **Use BrowserBox**
+   ```console
+   bbx --help
+   bbx setup
+   bbx run
+   bbx stop
+   ```
 ---
 
 ## Embed BrowserBox Anywhere with Ease

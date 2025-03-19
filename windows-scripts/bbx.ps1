@@ -14,7 +14,7 @@ $commands = @{
     "uninstall" = "uninstall.ps1"
     # "prepare"   = "prepare.ps1"  # New! - but no need to include in CLI as called internally by install
     "setup"     = "setup.ps1"
-    "start"     = "start.ps1"
+    "run"       = "start.ps1"
     "stop"      = "stop.ps1"
 }
 
