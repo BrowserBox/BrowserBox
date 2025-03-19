@@ -118,7 +118,6 @@ function Generate-Certificates {
             $process | Stop-Process -Force
             Start-Sleep -Seconds 1  # Give it a moment to terminate
             Write-Error "mkcert -install was terminated due to timeout."
-            exit 1
         }
 
         & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1 
