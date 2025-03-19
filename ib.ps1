@@ -16,7 +16,7 @@ $installDir = "C:\Program Files\browserbox"
 
 # winget
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
-if (-not $wingetPath) {
+# if (-not $wingetPath) {
     Write-Host "Installing winget..."
     # Run in a subprocess and wait for completion
     Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"irm asheroto.com/winget | iex`"" -Wait -NoNewWindow
@@ -28,7 +28,7 @@ if (-not $wingetPath) {
         exit 1
     }
     Write-Host "winget installed successfully."
-}
+# }
 
 # Rest of the script...
 Write-Host "Installing Node.js latest..."
