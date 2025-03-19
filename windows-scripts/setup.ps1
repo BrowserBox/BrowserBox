@@ -104,7 +104,7 @@ function Generate-Certificates {
         Write-Host "Local hostname detected ($Hostname). Using mkcert..." -ForegroundColor Cyan
 
         # Run mkcert -install with an 8-second timeout
-        $process = Start-Process -FilePath "mkcert" -ArgumentList "-install" -NoNewWindow -PassThru -RedirectStandardOutput "NUL" -RedirectStandardError "NUL"
+        $process = Start-Process -FilePath "mkcert" -ArgumentList "-install" -NoNewWindow -PassThru 
         $timeoutSeconds = 8
         $process | Wait-Process -Timeout $timeoutSeconds -ErrorAction SilentlyContinue
         if ($process.HasExited) {
