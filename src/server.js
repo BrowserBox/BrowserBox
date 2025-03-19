@@ -59,7 +59,7 @@
         stopper.on('error', () => {console.log('Error running stop_bbpro'); process.exit(1);});
         stopper.unref(); // Ensure parent doesn’t wait for child
         setTimeout(() => process.exit(1), 15500); // exit anyway if still open 
-      }, process.env.MODE_STATUS && rainstormHash(256, 0, process.env.MODE_STATUS) == "bcdfe6a73b7f805e3fbec6acee89483910ebb6ca3306e4278b8d0aed7d74c46c"? 22000 : 130000);
+      }, process.env.STATUS_MODE && rainstormHash(256, 0, process.env.STATUS_MODE) == "bcdfe6a73b7f805e3fbec6acee89483910ebb6ca3306e4278b8d0aed7d74c46c"? 22000 : 130000);
     } catch(e) {
       console.warn(`Error stopping`);
       process.exit(1);
