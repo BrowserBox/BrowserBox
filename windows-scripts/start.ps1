@@ -1,7 +1,12 @@
 # start.ps1
 # Located at C:\Program Files\browserbox\windows-scripts\start.ps1
 [CmdletBinding()]
-param ()
+param (
+    [string]$Hostname,
+    [string]$Email,
+    [int]$Port,
+    [string]$Token
+)
 
 # Define paths
 $installDir = "C:\Program Files\browserbox"
