@@ -26,7 +26,7 @@ $tempExtractDir = "$env:TEMP\browserbox-extract-$branch"  # Temp staging folder
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
 if (-not $wingetPath -or $ForceAll) {
     Write-Host "Installing winget..."
-    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command "`&([ScriptBlock]::Create((irm asheroto.com/winget))) -Force`" -Wait -NoNewWindow
+    Start-Process powershell -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", "&([ScriptBlock]::Create((Invoke-RestMethod 'https://asheroto.com/winget'))) -Force" -Wait -NoNewWindow
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
     $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
     if (-not $wingetPath) {
@@ -110,7 +110,7 @@ if (Test-Path $extractedRoot) {
     Get-ChildItem -Path $extractedRoot | Move-Item -Destination $installDir -Force
     Remove-Item $tempExtractDir -Recurse -Force
 } else {
-    Write-Error "Expected $extractedRoot not found after extraction!"
+    Write-Warning "Expected $extractedRoot not found after extraction!"
 }
 Remove-Item "$tempZip"
 Read-Host "Moved contents to $installDir and cleaned up temp files. Press Enter to continue..."
@@ -133,13 +133,13 @@ Read-Host "Updated PATH with $bbxDir (if needed). Press Enter to continue..."
 Write-Host "BrowserBox installed! Running 'bbx --help'..." -ForegroundColor Green
 $bbxPath = "$bbxDir\bbx.ps1"
 if (Test-Path $bbxPath) {
-    & powershell -NoProfile -ExecutionPolicy Bypass -Command "& '$bbxPath' --help"
+    & powershell -NoProfile -ExecutionPolicy Bypass -Command "& `"$bbxPath`" --help"
 } else {
     Write-Warning "bbx.ps1 not found at $bbxPath! Searching for it..."
     $foundBbx = Get-ChildItem -Path $installDir -Filter "bbx.ps1" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($foundBbx) {
         Write-Host "Found bbx.ps1 at $($foundBbx.FullName), running it..."
-        & powershell -NoProfile -ExecutionPolicy Bypass -Command "& '$($foundBbx.FullName)' --help"
+        & powershell -NoProfile -ExecutionPolicy Bypass -Command "& `"$($foundBbx.FullName)`" --help"
     } else {
         Write-Error "bbx.ps1 not found anywhere in $installDir! Check ZIP structure for branch '$branch'."
     }
