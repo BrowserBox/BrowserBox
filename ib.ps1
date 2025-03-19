@@ -21,14 +21,6 @@ if (-not $wingetPath) {
     irm asheroto.com/winget | iex
 }
 
-# PowerShell 7
-$pwshPath = (Get-Command pwsh -ErrorAction SilentlyContinue).Path
-if (-not $pwshPath) {
-    Write-Host "Installing PowerShell 7..."
-    winget install --id Microsoft.PowerShell --silent --accept-source-agreements --accept-package-agreements
-    $env:Path += ";$env:ProgramFiles\PowerShell\7"
-}
-
 Write-Host "Installing Node.js latest..."
 winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
 # Update PATH for this session (winget adds to system PATH, but not always current session)
