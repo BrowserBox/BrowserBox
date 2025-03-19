@@ -79,7 +79,7 @@ function Test-PortFree {
         $listener.Stop()
         return $true
     } catch {
-        Write-Error "Failed to test port $Port: $_"
+        Write-Error "Failed to test port ${Port}: $_"
         return $false
     }
 }
