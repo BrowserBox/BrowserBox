@@ -59,7 +59,7 @@ winget install --id Google.Chrome.EXE --accept-source-agreements --aceept-packag
 
 # BrowserBox
 Write-Host "Downloading BrowserBox..."
-Invoke-WebRequest -Uri $bbxUrl -OutFile $tempZip
+(New-Object System.Net.WebClient).DownloadFile($bbxUrl, $tempZip)
 Write-Host "Installing to $installDir..."
 Expand-Archive -Path $tempZip -DestinationPath $installDir -Force
 Remove-Item $tempZip
