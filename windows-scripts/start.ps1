@@ -34,16 +34,30 @@ foreach ($var in $requiredVars) {
 # Start main service (server.js)
 $mainScript = Join-Path $installDir "src\server.js"
 $chromePort = [int]$env:APP_PORT - 3000
-$mainArgs = @($mainScript, $chromePort, $env:APP_PORT, $env:COOKIE_VALUE, $env:USER, $env:LOGIN_TOKEN)
+$mainArgs = @(
+    "`"$mainScript`""  # Quote the path to handle spaces
+    $chromePort
+    $env:APP_PORT
+    $env:COOKIE_VALUE
+    $env:USER
+    $env:LOGIN_TOKEN
+)
 if ($env:NODE_ARGS) {
     $nodeArgs = $env:NODE_ARGS -split ' '
     $mainArgs = $nodeArgs + $mainArgs
 }
+Write-Host "Starting main service with args: $mainArgs" -ForegroundColor Cyan  # Debug
 Start-Process -FilePath "node" -ArgumentList $mainArgs -NoNewWindow
 
 # Start devtools service (index.js)
 $devtoolsScript = Join-Path $installDir "src\services\pool\crdp-secure-proxy-server\index.js"
-$devtoolsArgs = @($devtoolsScript, $env:DEVTOOLS_PORT, $env:COOKIE_VALUE, $env:LOGIN_TOKEN)
+$devtoolsArgs = @(
+    "`"$devtoolsScript`""  # Quote the path to handle spaces
+    $env:DEVTOOLS_PORT
+    $env:COOKIE_VALUE
+    $env:LOGIN_TOKEN
+)
+Write-Host "Starting devtools service with args: $devtoolsArgs" -ForegroundColor Cyan  # Debug
 Start-Process -FilePath "node" -ArgumentList $devtoolsArgs -NoNewWindow
 
 Write-Host "BrowserBox services started successfully." -ForegroundColor Green
