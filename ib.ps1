@@ -55,7 +55,7 @@ winget install --id EFF.Certbot --accept-source-agreements --accept-package-agre
 $env:Path += ";$env:ProgramFiles\Certbot\bin"
 
 Write-Host "Installing Google Chrome..."
-winget install --id Google.Chrome.EXE --accept-source-agreements --aceept-package-agreements
+winget install --id Google.Chrome.EXE --accept-source-agreements --accept-package-agreements
 
 # BrowserBox
 Write-Host "Downloading BrowserBox..."
