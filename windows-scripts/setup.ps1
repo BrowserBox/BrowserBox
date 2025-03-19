@@ -147,8 +147,8 @@ function Generate-Certificates {
         Copy-Item -Path $certbotCert -Destination $certFile -Force
         Copy-Item -Path $certbotKey -Destination $keyFile -Force
     }
-    icacls "$certFile" /inheritance:r /grant:r "$env:USERNAME:RX"
-    icacls "$keyFile" /inheritance:r /grant:r "$env:USERNAME:RX"
+    icacls "$certFile" /inheritance:r /grant:r "${env:USERNAME}:RX"
+    icacls "$keyFile" /inheritance:r /grant:r "${env:USERNAME}:RX"
     Write-Host "Generated certificates." -ForegroundColor Cyan
 }
 
