@@ -212,15 +212,19 @@ if (Test-Path $testEnvPath) {
     Generate-Certificates -Hostname $Hostname -Email $Email
 }
 
+# Define port variables
 $APP_PORT = $PortInt
 $AUDIO_PORT = $PortInt - 2
 $DEVTOOLS_PORT = $PortInt + 1
 $DOCS_PORT = $PortInt - 1
+$COOKIE_VALUE = if ($env:COOKIE_VALUE) { $env:COOKIE_VALUE } else { [System.Guid]::NewGuid().ToString() }
 
+# Create or update test.env file
 $envContent = @"
 APP_PORT=$APP_PORT
 AUDIO_PORT=$AUDIO_PORT
 LOGIN_TOKEN=$Token
+COOKIE_VALUE=$COOKIE_VALUE
 DEVTOOLS_PORT=$DEVTOOLS_PORT
 DOCS_PORT=$DOCS_PORT
 SSLCERTS_DIR="$env:USERPROFILE\sslcerts"
@@ -229,6 +233,7 @@ DOMAIN="$Hostname"
 $envContent | Out-File "$CONFIG_DIR\test.env" -Encoding utf8
 Write-Host "Updated test.env with configuration." -ForegroundColor Cyan
 
+# Generate and display login link
 $loginLink = "https://${Hostname}:${PORT}/login?token=$Token"
 Write-Host "Login link for this instance:" -ForegroundColor Green
 Write-Host $loginLink
