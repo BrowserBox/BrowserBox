@@ -19,7 +19,9 @@ $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
 # if (-not $wingetPath) {
     Write-Host "Installing winget..."
     # Run in a subprocess and wait for completion
-    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"irm asheroto.com/winget | iex`"" -Wait -NoNewWindow
+    # Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"irm asheroto.com/winget | iex`"" -Wait -NoNewWindow
+    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"&([ScriptBlock]::Create((irm asheroto.com/winget))) -Force`"" -Wait -NoNewWindow
+
     # Refresh PATH to find winget
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
     $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
