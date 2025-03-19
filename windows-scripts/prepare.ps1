@@ -19,14 +19,15 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# Install pm2 globally if missing
-if (-not (Get-Command pm2 -ErrorAction SilentlyContinue)) {
-    Write-Host "Installing pm2 globally..." -ForegroundColor Cyan
-    & npm i -g pm2@latest
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Failed to install pm2 globally -- continuing anyway."
-    }
-}
+# we don't need pm2 on windows right now as we just handle it ourselves (tho no restarts like pm2)
+# # Install pm2 globally if missing
+# if (-not (Get-Command pm2 -ErrorAction SilentlyContinue)) {
+#     Write-Host "Installing pm2 globally..." -ForegroundColor Cyan
+#     & npm i -g pm2@latest
+#     if ($LASTEXITCODE -ne 0) {
+#         Write-Warning "Failed to install pm2 globally -- continuing anyway."
+#     }
+# }
 
 # Copy custom binding.js (if config dir exists)
 $bindingSrc = Join-Path $installDir "config/roamhq-wrtc-lib-binding.js"
