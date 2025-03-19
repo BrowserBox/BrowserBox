@@ -18,7 +18,8 @@ $installDir = "C:\Program Files\browserbox"
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
 if (-not $wingetPath) {
     Write-Host "Installing winget..."
-    irm asheroto.com/winget | iex
+    &([ScriptBlock]::Create((irm asheroto.com/winget))) -Force
+    # irm asheroto.com/winget | iex
 }
 
 Write-Host "Installing Node.js latest..."
