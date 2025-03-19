@@ -2,7 +2,7 @@
 # Located at C:\Program Files\browserbox\windows-scripts\install.ps1
 $ProgressPreference = 'SilentlyContinue'
 
-$branch = 'dist1742404738'
+$branch = 'dist1742408547'
 $ForceAll = $false
 $Debug = $false
 
