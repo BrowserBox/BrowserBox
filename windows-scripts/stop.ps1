@@ -1,7 +1,11 @@
 # stop.ps1
-# Located at C:\Program Files\browserbox\windows-scripts\stop.ps1
 [CmdletBinding()]
-param ()
+param (
+    [string]$Hostname,
+    [string]$Email,
+    [int]$Port,
+    [string]$Token
+)
 
 # Define paths
 $configDir = "$env:USERPROFILE\.config\dosyago\bbpro"
