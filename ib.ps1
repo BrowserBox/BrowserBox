@@ -61,8 +61,8 @@ winget install --id Google.Chrome.EXE --accept-source-agreements --accept-packag
 Write-Host "Downloading BrowserBox..."
 (New-Object System.Net.WebClient).DownloadFile($bbxUrl, $tempZip)
 Write-Host "Installing to $installDir..."
-Expand-Archive -Path $tempZip -DestinationPath $installDir -Force
-Remove-Item $tempZip
+Expand-Archive -Path $tempZip -DestinationPath "$installDir" -Force
+Remove-Item "$tempZip"
 
 # PATH
 $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
@@ -74,4 +74,4 @@ if ($currentPath -notlike "*$installDir*") {
 
 # Verify
 Write-Host "BrowserBox installed! Run 'bbx --help'." -ForegroundColor Green
-& pwsh -Command "$installDir\bbx.ps1" --help
+& powershell -Command "$installDir\bbx.ps1"
