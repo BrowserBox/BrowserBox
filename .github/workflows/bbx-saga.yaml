@@ -100,7 +100,7 @@ jobs:
           }
 
           # Setup BrowserBox
-          bbx setup -Hostname $env:BBX_HOSTNAME -Email $env:EMAIL
+          bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL"
           $loginLink = Get-Content "$env:USERPROFILE\.config\dosyago\bbpro\login.link"
           Write-Host "Login link: $loginLink"
 
