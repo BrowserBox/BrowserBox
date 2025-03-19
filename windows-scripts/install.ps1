@@ -112,7 +112,6 @@ Remove-Item "$tempZip"
 if ($Debug) { Read-Host "Moved contents to $installDir and cleaned up temp files. Press Enter to continue..." }
 
 # Prepare step
-Write-Host "Preparing BrowserBox..." -ForegroundColor Cyan
 $prepareScript = "$bbxDir\prepare.ps1"
 if (Test-Path $prepareScript) {
     & powershell -NoProfile -ExecutionPolicy Bypass -File "$prepareScript"
