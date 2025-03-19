@@ -26,7 +26,7 @@ $tempExtractDir = "$env:TEMP\browserbox-extract-$branch"  # Temp staging folder
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
 if (-not $wingetPath -or $ForceAll) {
     Write-Host "Installing winget..."
-    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"&([ScriptBlock]::Create((irm asheroto.com/winget))) -Force`"" -Wait -NoNewWindow
+    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"&([ScriptBlock]::Create((irm asheroto.com/winget))) -Force`" -Wait -NoNewWindow
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
     $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
     if (-not $wingetPath) {
