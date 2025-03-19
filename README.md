@@ -39,6 +39,46 @@ Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI
 - easily install and update BrowserBox ⬇️✔️
 - And more!
 
+## Get Started
+
+1. **Install the `bbx` CLI**
+
+   **On Windows:**
+
+   ```powershell
+   irm bbx.dosaygo.com | iex
+   ```
+
+   **Everywhere else:**
+
+   ```bash
+   bash <(curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh) install
+   ```
+
+2. **Purchase a License and Activate Your Copy of BrowserBox**
+
+   **On Windows:** Head to [our website to purchase a license](https://dosaygo.com)
+
+   **Everywhere else:**
+
+   Use our website to purchase a license, or the command line:
+
+   ```console
+   bbx activate [seats]
+   ```
+
+3. **Use BrowserBox**
+   ```console
+   bbx --help
+   bbx setup
+   bbx run
+   bbx stop
+   ```
+
+   And access the **Login Link** you get from any browser on any device. (Make sure you set up your DNS records correctly if connecting over the public Internet).
+
+---
+
 # Userful Links
 
 - [Purchase a BrowserBox Commercial License for 1 or more seats](https://browse.cloudtabs.net/l)
@@ -84,19 +124,40 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
 ## Get Started
 
 1. **Install the `bbx` CLI**
+
+   **On Windows:**
+
+   ```powershell
+   irm bbx.dosaygo.com | iex
+   ```
+
+   **Everywhere else:**
+
    ```bash
    bash <(curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh) install
    ```
 
-2. **Install BrowserBox**
-   ```bash
-   bbx install
-   ```
+2. **Purchase a License and Activate Your Copy of BrowserBox**
 
-3. **Activate Your License**
-   ```bash
+   **On Windows:** Head to [our website to purchase a license](https://dosaygo.com)
+
+   **Everywhere else:**
+
+   Use our website to purchase a license, or the command line:
+
+   ```console
    bbx activate [seats]
    ```
+
+3. **Use BrowserBox**
+   ```console
+   bbx --help
+   bbx setup
+   bbx run
+   bbx stop
+   ```
+
+   And access the **Login Link** you get from any browser on any device. (Make sure you set up your DNS records correctly if connecting over the public Internet).
 
 ---
 
