@@ -54,7 +54,7 @@ if (Test-Path "package.json") {
     Write-Warning "No package.json found in $installDir -- skipping root npm install."
 }
 
-# Subdirectory npm installs
+# Subdirectory npm installs and voodoo prep
 $subDirs = @(
     "src/zombie-lord",
     "src/public/voodoo",
@@ -74,6 +74,44 @@ foreach ($subDir in $subDirs) {
                 Write-Warning "npm install failed in $dirPath -- continuing."
             }
             & npm audit fix
+
+            # Voodoo-specific prep
+            if ($subDir -eq "src/public/voodoo") {
+                # Copy bang.html assets to .bang.html.snapshot
+                $bangSrc = Join-Path $dirPath "node_modules/bang.html"
+                $bangDest = Join-Path $dirPath ".bang.html.snapshot"
+                if (Test-Path $bangSrc) {
+                    Write-Host "Copying bang.html assets to $bangDest..." -ForegroundColor Cyan
+                    New-Item -ItemType Directory -Path $bangDest -Force | Out-Null
+                    Copy-Item -Path "$bangSrc\*" -Destination $bangDest -Recurse -Force
+                    # Remove LICENSE files
+                    Get-ChildItem -Path $bangDest -Filter "LICENSE" -File -Recurse | Remove-Item -Force
+                } else {
+                    Write-Warning "bang.html not found in $dirPath\node_modules -- skipping copy."
+                }
+
+                # Copy simple-peer JS
+                $peerSrc = Join-Path $dirPath "node_modules/simple-peer/simplepeer.min.js"
+                $peerDest = Join-Path $dirPath "src"
+                if (Test-Path $peerSrc) {
+                    Write-Host "Copying simplepeer.min.js to $peerDest..." -ForegroundColor Cyan
+                    New-Item -ItemType Directory -Path $peerDest -Force | Out-Null
+                    Copy-Item -Path $peerSrc -Destination $peerDest -Force
+                } else {
+                    Write-Warning "simple-peer not found in $dirPath\node_modules -- skipping copy."
+                }
+
+                # Copy lucide-static icons
+                $lucideSrc = Join-Path $dirPath "node_modules/lucide-static/icons"
+                $lucideDest = Join-Path $dirPath "assets/icons"
+                if (Test-Path $lucideSrc) {
+                    Write-Host "Copying lucide-static icons to $lucideDest..." -ForegroundColor Cyan
+                    New-Item -ItemType Directory -Path $lucideDest -Force | Out-Null
+                    Copy-Item -Path "$lucideSrc\*.svg" -Destination $lucideDest -Force
+                } else {
+                    Write-Warning "lucide-static not found in $dirPath\node_modules -- skipping copy."
+                }
+            }
         }
     } else {
         Write-Warning "Directory $dirPath not found -- skipping."
