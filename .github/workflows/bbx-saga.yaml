@@ -58,8 +58,12 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          irm bbx.dosaygo.com | iex
-          winget install cURL.cURL
+          Invoke-RestMethod -Uri "https://bbx.dosaygo.com" -OutFile "install.ps1"
+          .\install.ps1
+          if (-not (Get-Command bbx -ErrorAction SilentlyContinue)) {
+            Write-Error "bbx not found in PATH after install"
+            exit 1
+          }
 
       - name: Setup BrowserBox (Windows)
         if: matrix.os == 'windows-latest'
