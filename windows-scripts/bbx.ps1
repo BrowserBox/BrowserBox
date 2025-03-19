@@ -1,7 +1,7 @@
 # bbx.ps1
 [CmdletBinding()]
 param (
-    [Parameter(Position=0, Mandatory=$true)]
+    [Parameter(Position=0)]
     [string]$Command,
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Args
@@ -25,7 +25,8 @@ function Show-Help {
     Write-Host "Run 'bbx <command> --help' for command-specific options." -ForegroundColor Gray
 }
 
-if ($Command -eq "--help") {
+# Show help if no command is provided or if --help is specified
+if (-not $Command -or $Command -eq "--help") {
     Show-Help
     exit 0
 }
