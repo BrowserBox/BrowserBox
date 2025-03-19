@@ -36,13 +36,12 @@ if (-not $wingetPath -or $ForceAll) {
 
 # Node.js
 $nodePath = (Get-Command node -ErrorAction SilentlyContinue).Path
-if (-not $nodePath -or $ForceAll) {
-    Write-Host "Installing Node.js LTS..."
-    winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
-    $env:Path = "$env:Path;$env:ProgramFiles\nodejs"
-} else {
-    Write-Host "Node.js already installed at $nodePath -- skipping."
+if ($nodePath) {
+    Write-Host "Node.js already installed at $nodePath -- installing LTS anyway..."
 }
+Write-Host "Installing Node.js LTS..."
+winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
+$env:Path = "$env:Path;$env:ProgramFiles\nodejs"
 
 # Verify Node.js and npm
 $nodeVersion = & node --version 2>$null
