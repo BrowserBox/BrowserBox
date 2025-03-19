@@ -1,35 +1,30 @@
 # bbx.ps1
-# PowerShell wrapper for BrowserBox CLI on Windows
 [CmdletBinding()]
 param (
-    [Parameter(Position=0, Mandatory=$false)]
+    [Parameter(Position=0)]
     [string]$Command,
     [Parameter(ValueFromRemainingArguments)]
     [string[]]$Args
 )
 
-# Set script directory
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-
-# Define available commands and their scripts
+$installDir = "C:\Program Files\browserbox"  # Match ib.ps1
 $commands = @{
+    "install"   = "install.ps1"  # Will point to ib.ps1 logic
+    "uninstall" = "uninstall.ps1"
     "setup"     = "setup.ps1"
     "start"     = "start.ps1"
     "stop"      = "stop.ps1"
-    "uninstall" = "uninstall.ps1"
-    # Add more as needed, e.g., "docker-start" = "docker-start.ps1"
 }
 
-# Help function
 function Show-Help {
     Write-Host "bbx CLI (Windows)" -ForegroundColor Green
     Write-Host "Usage: bbx <command> [args]" -ForegroundColor Yellow
     Write-Host "Commands:" -ForegroundColor Cyan
-    $commands.Keys | ForEach-Object { Write-Host "  $_" -ForegroundColor White }
+    $commands.Keys | Sort-Object | ForEach-Object { Write-Host "  $_" -ForegroundColor White }
     Write-Host "Run 'bbx <command> --help' for command-specific options." -ForegroundColor Gray
 }
 
-# Main logic
 if (-not $Command -or $Command -eq "--help") {
     Show-Help
     exit 0
@@ -37,20 +32,20 @@ if (-not $Command -or $Command -eq "--help") {
 
 if ($commands.ContainsKey($Command)) {
     $scriptPath = Join-Path $scriptDir $commands[$Command]
-    if (Test-Path $scriptPath) {
-        Write-Host "Running bbx $Command..." -ForegroundColor Cyan
-        try {
-            & $scriptPath @Args
-            if ($LASTEXITCODE -ne 0) {
-                Write-Error "Command '$Command' failed with exit code $LASTEXITCODE"
-                exit $LASTEXITCODE
-            }
-        } catch {
-            Write-Error "Error running '$Command': $_"
+    if ($Command -eq "install") {
+        # Special case: install calls ib.ps1 from installDir
+        $installScript = Join-Path $installDir "ib.ps1"
+        if (Test-Path $installScript) {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File "$installScript" @Args
+        } else {
+            Write-Error "Install script not found at $installScript. Run 'irm raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/win/ib.ps1 | iex' first."
             exit 1
         }
+    } elseif (Test-Path $scriptPath) {
+        & $scriptPath @Args
     } else {
         Write-Error "Script for '$Command' not found at $scriptPath"
+        Show-Help
         exit 1
     }
 } else {
