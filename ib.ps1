@@ -146,4 +146,5 @@ if (Test-Path $bbxPath) {
         Write-Error "bbx.ps1 not found anywhere in $installDir! Check ZIP structure for branch '$branch'."
     }
 }
+
 Read-Host "Ran 'bbx --help' (or tried to). Press Enter to finish..."
