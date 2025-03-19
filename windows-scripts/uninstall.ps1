@@ -49,7 +49,7 @@ if ($certbotPath -and (Confirm-Action "Remove Certbot?")) {
 }
 
 # Remove install directory
-if (Test-Path $installDir -and (Confirm-Action "Remove BrowserBox install directory ($installDir)?")) {
+if ((Test-Path $installDir) -and (Confirm-Action "Remove BrowserBox install directory ($installDir)?")) {
     Remove-Item $installDir -Recurse -Force
     Write-Host "Removed $installDir."
 } else {
@@ -67,6 +67,4 @@ if ($currentPath -like "*$bbxDir*" -and (Confirm-Action "Remove $bbxDir from PAT
 }
 
 Write-Host "BrowserBox uninstall complete!" -ForegroundColor Green
-if (-not $Force) {
-    Read-Host "Press Enter to exit..."
-}
+if (-not $Force) { Read-Host "Press Enter to exit..." }
