@@ -14,8 +14,9 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 
 # Paths and URLs
 $bbxUrl = "https://github.com/BrowserBox/BrowserBox/archive/refs/heads/$branch.zip"
-$tempZip = "$env:TEMP\browserbox-$branch.zip"  # Include branch in temp file name for clarity
+$tempZip = "$env:TEMP\browserbox-$branch.zip"
 $installDir = "C:\Program Files\browserbox"
+$bbxDir = "$installDir\windows-scripts"  # Where bbx.ps1 lives
 
 # winget
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
@@ -71,17 +72,17 @@ if (Test-Path $extractedDir) {
 }
 Remove-Item "$tempZip"
 
-# PATH
+# PATH (add bbx.ps1 directory)
 $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
-if ($currentPath -notlike "*$installDir*") {
-    Write-Host "Adding to PATH..."
-    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$installDir", "Machine")
+if ($currentPath -notlike "*$bbxDir*") {
+    Write-Host "Adding '$bbxDir' to PATH..."
+    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$bbxDir", "Machine")
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
 }
 
 # Verify
 Write-Host "BrowserBox installed! Running 'bbx --help'..." -ForegroundColor Green
-$bbxPath = "$installDir\windows-scripts\bbx.ps1"  # Assuming windows-scripts subfolder
+$bbxPath = "$bbxDir\bbx.ps1"
 if (Test-Path $bbxPath) {
     & powershell -NoProfile -ExecutionPolicy Bypass -Command "& '$bbxPath' --help"
 } else {
