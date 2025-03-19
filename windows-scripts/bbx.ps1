@@ -10,8 +10,9 @@ param (
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $installDir = "C:\Program Files\browserbox"
 $commands = @{
-    "install"   = "install.ps1"  # Will point to ib.ps1 logic
+    "install"   = "install.ps1"
     "uninstall" = "uninstall.ps1"
+    "prepare"   = "prepare.ps1"  # New!
     "setup"     = "setup.ps1"
     "start"     = "start.ps1"
     "stop"      = "stop.ps1"
@@ -34,13 +35,10 @@ if ($commands.ContainsKey($Command)) {
     $scriptPath = Join-Path $scriptDir $commands[$Command]
     if (Test-Path $scriptPath) {
         Write-Host "Running bbx $Command..." -ForegroundColor Cyan
-        if ($Args) {
-            & $scriptPath @Args  # Only splat if $Args has content
-        } else {
-            & $scriptPath        # No args, just run it
-        }
+        if ($Args) { & $scriptPath @Args } else { & $scriptPath }
     } else {
         Write-Error "Script for '$Command' not found at $scriptPath"
+        if ($Command -eq "install") { Write-Host "Try running 'irm raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/win/windows-scripts/install.ps1 | iex' first." -ForegroundColor Yellow }
         Show-Help
         exit 1
     }
