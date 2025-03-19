@@ -102,7 +102,25 @@ function Generate-Certificates {
     New-Item -ItemType Directory -Path $sslcerts -Force | Out-Null
     if (Is-LocalHostname $Hostname) {
         Write-Host "Local hostname detected ($Hostname). Using mkcert..." -ForegroundColor Cyan
-        & mkcert -install  # Redirect output to avoid hangs
+
+        # Run mkcert -install with an 8-second timeout
+        $process = Start-Process -FilePath "mkcert" -ArgumentList "-install" -NoNewWindow -PassThru -RedirectStandardOutput "NUL" -RedirectStandardError "NUL"
+        $timeoutSeconds = 8
+        $process | Wait-Process -Timeout $timeoutSeconds -ErrorAction SilentlyContinue
+        if ($process.HasExited) {
+            if ($process.ExitCode -ne 0) {
+                Write-Error "mkcert -install failed with exit code $($process.ExitCode)."
+                exit 1
+            }
+            Write-Host "mkcert -install completed successfully." -ForegroundColor Cyan
+        } else {
+            Write-Warning "mkcert -install timed out after $timeoutSeconds seconds. Terminating process..."
+            $process | Stop-Process -Force
+            Start-Sleep -Seconds 1  # Give it a moment to terminate
+            Write-Error "mkcert -install was terminated due to timeout."
+            exit 1
+        }
+
         & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1 
         if ($LASTEXITCODE -ne 0) {
             Write-Error "mkcert failed to generate certificates for $Hostname."
