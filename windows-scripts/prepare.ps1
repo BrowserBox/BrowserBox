@@ -59,9 +59,9 @@ $subDirs = @(
     "src/zombie-lord",
     "src/public/voodoo",
     "src/zombie-lord/custom-launcher",
-    "services/instance/parec-server",
-    "services/pool/crdp-secure-proxy-server",
-    "services/chai"
+    "src/services/instance/parec-server",
+    "src/services/pool/crdp-secure-proxy-server",
+    "src/services/pool/chai"
 )
 foreach ($subDir in $subDirs) {
     $dirPath = Join-Path $installDir $subDir
