@@ -16,7 +16,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 $bbxUrl = "https://github.com/BrowserBox/BrowserBox/archive/refs/heads/$branch.zip"
 $tempZip = "$env:TEMP\browserbox-$branch.zip"
 $installDir = "C:\Program Files\browserbox"
-$bbxDir = "$installDir\windows-scripts"  # Where bbx.ps1 lives
+$bbxDir = "$installDir\windows-scripts"  # Where bbx.ps1 should live
 
 # winget
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
@@ -27,9 +27,11 @@ if (-not $wingetPath) {
     $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
     if (-not $wingetPath) {
         Write-Error "winget installation failed or not found in PATH!"
-        exit 1
+        # Don’t exit, just warn
+        Write-Warning "Continuing without winget—some installs may fail."
+    } else {
+        Write-Host "winget installed successfully."
     }
-    Write-Host "winget installed successfully."
 }
 
 Write-Host "Installing Node.js LTS..."
@@ -43,7 +45,7 @@ if ($nodeVersion -and $npmVersion) {
     Write-Host "Node.js $nodeVersion and npm $npmVersion installed successfully."
 } else {
     Write-Error "Node.js or npm installation failed!"
-    exit 1
+    Write-Warning "Continuing anyway—BBX may not work without Node.js."
 }
 
 # mkcert
@@ -70,6 +72,10 @@ Write-Host "Installing to $installDir..."
 Expand-Archive -Path $tempZip -DestinationPath "$installDir" -Force
 Remove-Item "$tempZip"
 
+# Debug: Show extracted contents
+Write-Host "Checking install directory contents..."
+Get-ChildItem $installDir -Recurse | ForEach-Object { Write-Host "Found: $($_.FullName)" }
+
 # PATH (add bbx.ps1 directory)
 $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
 if ($currentPath -notlike "*$bbxDir*") {
@@ -84,6 +90,12 @@ $bbxPath = "$bbxDir\bbx.ps1"
 if (Test-Path $bbxPath) {
     & powershell -NoProfile -ExecutionPolicy Bypass -Command "& '$bbxPath' --help"
 } else {
-    Write-Error "bbx.ps1 not found at $bbxPath! Check ZIP structure for branch '$branch'."
-    exit 1
+    Write-Warning "bbx.ps1 not found at $bbxPath! Searching for it..."
+    $foundBbx = Get-ChildItem -Path $installDir -Filter "bbx.ps1" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($foundBbx) {
+        Write-Host "Found bbx.ps1 at $($foundBbx.FullName), running it..."
+        & powershell -NoProfile -ExecutionPolicy Bypass -Command "& '$($foundBbx.FullName)' --help"
+    } else {
+        Write-Error "bbx.ps1 not found anywhere in $installDir! Check ZIP structure for branch '$branch'."
+    }
 }
