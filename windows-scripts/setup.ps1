@@ -18,7 +18,7 @@ param (
 # Helper Functions
 function Is-LocalHostname {
     param ([string]$Hostname)
-    if (-not $Hostname) { return $true }  # No hostname provided, treat as local
+    if (-not $Hostname) { return $true }
     if ($Hostname -eq "localhost" -or $Hostname -like "*.local") { return $true }
     try {
         $ipAddresses = [System.Net.Dns]::GetHostAddresses($Hostname)
@@ -30,7 +30,7 @@ function Is-LocalHostname {
             }
         }
     } catch {
-        return $false  # Failed resolution means we'll treat it as non-local and wait
+        Write-Warning "Failed to resolve hostname: $Hostname. Assuming non-local."
     }
     return $false
 }
@@ -88,7 +88,6 @@ function Generate-Certificates {
     $certFile = "$sslcerts\fullchain.pem"
     $keyFile = "$sslcerts\privkey.pem"
 
-    # Check if certs exist and match hostname
     if (Test-Path $certFile -and Test-Path $keyFile) {
         $certText = & openssl x509 -in $certFile -noout -text
         $sans = ($certText | Select-String "Subject Alternative Name" -Context 0,1).Context.PostContext[0].Trim().Split(',') | ForEach-Object { $_.Trim().Replace("DNS:", "") }
@@ -132,14 +131,12 @@ function Generate-Certificates {
 # Main Logic
 Write-Host "Starting BrowserBox setup on Windows..." -ForegroundColor Cyan
 
-# Default to system hostname if not provided
 if (-not $Hostname) {
     $Hostname = $env:COMPUTERNAME
     Write-Host "No hostname provided. Using system hostname: $Hostname" -ForegroundColor Yellow
 }
 
-# Validate and open ports
-$portsToCheck = @($Port, $Port - 2, $Port + 1, $Port - 1) # APP_PORT, AUDIO_PORT, DEVTOOLS_PORT, DOCS_PORT
+$portsToCheck = @($Port, $Port - 2, $Port + 1, $Port - 1)
 foreach ($p in $portsToCheck) {
     if (-not (Test-PortFree $p)) {
         Write-Error "Port $p is already in use or invalid."
@@ -148,19 +145,16 @@ foreach ($p in $portsToCheck) {
     Open-FirewallPort $p
 }
 
-# Generate token if not provided
 if (-not $Token) {
     $Token = [System.Guid]::NewGuid().ToString()
     Write-Host "Generated token: $Token" -ForegroundColor Cyan
 }
 
-# Set up configuration directory
 $CONFIG_DIR = "$env:USERPROFILE\.config\dosyago\bbpro"
 New-Item -ItemType Directory -Path $CONFIG_DIR -Force | Out-Null
 Get-Date | Out-File "$CONFIG_DIR\.bbpro_config_dir" -Encoding utf8
 Write-Host "Created config directory at $CONFIG_DIR." -ForegroundColor Cyan
 
-# Load existing config if present
 $testEnvPath = "$CONFIG_DIR\test.env"
 if (Test-Path $testEnvPath) {
     $existingConfig = Get-Content $testEnvPath | ForEach-Object {
@@ -176,13 +170,11 @@ if (Test-Path $testEnvPath) {
     Generate-Certificates -Hostname $Hostname -Email $Email
 }
 
-# Define port variables
 $APP_PORT = $Port
 $AUDIO_PORT = $Port - 2
 $DEVTOOLS_PORT = $Port + 1
 $DOCS_PORT = $Port - 1
 
-# Create or update test.env file
 $envContent = @"
 APP_PORT=$APP_PORT
 AUDIO_PORT=$AUDIO_PORT
@@ -195,8 +187,7 @@ DOMAIN="$Hostname"
 $envContent | Out-File "$CONFIG_DIR\test.env" -Encoding utf8
 Write-Host "Updated test.env with configuration." -ForegroundColor Cyan
 
-# Generate and display login link
-$loginLink = "https://$HOSTNAME:$PORT/login?token=$Token"
+$loginLink = "https://$Hostname:$PORT/login?token=$Token"
 Write-Host "Login link for this instance:" -ForegroundColor Green
 Write-Host $loginLink
 $loginLink | Out-File "$CONFIG_DIR\login.link" -Encoding utf8
