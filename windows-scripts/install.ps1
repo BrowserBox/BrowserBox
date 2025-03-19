@@ -1,29 +1,22 @@
-# ib.ps1
-# Hosted at dosaygo.com/browserbox (or raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/win/windows-scripts/install.ps1)
+# install.ps1
+# Located at C:\Program Files\browserbox\windows-scripts\install.ps1
 $ProgressPreference = 'SilentlyContinue'
 
-# Set the branch here
-$branch = 'win'  # Change to 'main' or any branch as needed
-
-# Force all installs (set to $true for production, $false for dev speed)
+$branch = 'win'
 $ForceAll = $false
-
-# Debug mode (set to $true to enable Read-Host prompts, $false for silent install)
 $Debug = $false
 
-# Ensure admin privileges
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Host "Relaunching as Administrator..."
     Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
     exit
 }
 
-# Paths and URLs
 $bbxUrl = "https://github.com/BrowserBox/BrowserBox/archive/refs/heads/$branch.zip"
 $tempZip = "$env:TEMP\browserbox-$branch.zip"
 $installDir = "C:\Program Files\browserbox"
-$bbxDir = "$installDir\windows-scripts"  # Where bbx.ps1 should live
-$tempExtractDir = "$env:TEMP\browserbox-extract-$branch"  # Temp staging folder
+$bbxDir = "$installDir\windows-scripts"
+$tempExtractDir = "$env:TEMP\browserbox-extract-$branch"
 
 # winget
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
@@ -118,9 +111,21 @@ if (Test-Path $extractedRoot) {
 Remove-Item "$tempZip"
 if ($Debug) { Read-Host "Moved contents to $installDir and cleaned up temp files. Press Enter to continue..." }
 
+# Prepare step
+Write-Host "Preparing BrowserBox..." -ForegroundColor Cyan
+$prepareScript = "$bbxDir\prepare.ps1"
+if (Test-Path $prepareScript) {
+    & powershell -NoProfile -ExecutionPolicy Bypass -File "$prepareScript"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning "Preparation step failed -- continuing anyway."
+    }
+} else {
+    Write-Warning "prepare.ps1 not found at $prepareScript -- skipping preparation."
+}
+
 # Debug: Show extracted contents
 Write-Host "Checking install directory contents..."
-Get-ChildItem $installDir -Recurse | ForEach-Object { if ($Debug) { Write-Host "Found: $($_.FullName)" } }
+Get-ChildItem $installDir -Recurse | ForEach-Object { Write-Host "Found: $($_.FullName)" }
 if ($Debug) { Read-Host "Listed contents of $installDir. Press Enter to continue..." }
 
 # PATH (add bbx.ps1 directory)
