@@ -7,12 +7,22 @@ param ()
 $installDir = "C:\Program Files\browserbox"
 $configDir = "$env:USERPROFILE\.config\dosyago\bbpro"
 $envFile = "$configDir\test.env"
+$logDir = "$configDir\logs"
 
 # Check if configuration file exists
 if (-not (Test-Path $envFile)) {
     Write-Error "Configuration file not found at $envFile. Please run 'bbx setup' first."
     exit 1
 }
+
+# Create logs directory
+New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+
+# Define log files
+$mainOutLog = "$logDir\browserbox-main-out.log"
+$mainErrLog = "$logDir\browserbox-main-err.log"
+$devtoolsOutLog = "$logDir\browserbox-devtools-out.log"
+$devtoolsErrLog = "$logDir\browserbox-devtools-err.log"
 
 # Load environment variables from test.env
 Get-Content $envFile | ForEach-Object {
@@ -35,7 +45,7 @@ foreach ($var in $requiredVars) {
 $mainScript = Join-Path $installDir "src\server.js"
 $chromePort = [int]$env:APP_PORT - 3000
 $mainArgs = @(
-    "`"$mainScript`""  # Quote the path to handle spaces
+    "`"$mainScript`""  # Quote the path
     $chromePort
     $env:APP_PORT
     $env:COOKIE_VALUE
@@ -46,18 +56,18 @@ if ($env:NODE_ARGS) {
     $nodeArgs = $env:NODE_ARGS -split ' '
     $mainArgs = $nodeArgs + $mainArgs
 }
-Write-Host "Starting main service with args: $mainArgs" -ForegroundColor Cyan  # Debug
-Start-Process -FilePath "node" -ArgumentList $mainArgs -NoNewWindow
+Write-Host "Starting main service. stdout: $mainOutLog, stderr: $mainErrLog" -ForegroundColor Cyan
+Start-Process -FilePath "node" -ArgumentList $mainArgs -NoNewWindow -RedirectStandardOutput $mainOutLog -RedirectStandardError $mainErrLog
 
 # Start devtools service (index.js)
 $devtoolsScript = Join-Path $installDir "src\services\pool\crdp-secure-proxy-server\index.js"
 $devtoolsArgs = @(
-    "`"$devtoolsScript`""  # Quote the path to handle spaces
+    "`"$devtoolsScript`""  # Quote the path
     $env:DEVTOOLS_PORT
     $env:COOKIE_VALUE
     $env:LOGIN_TOKEN
 )
-Write-Host "Starting devtools service with args: $devtoolsArgs" -ForegroundColor Cyan  # Debug
-Start-Process -FilePath "node" -ArgumentList $devtoolsArgs -NoNewWindow
+Write-Host "Starting devtools service. stdout: $devtoolsOutLog, stderr: $devtoolsErrLog" -ForegroundColor Cyan
+Start-Process -FilePath "node" -ArgumentList $devtoolsArgs -NoNewWindow -RedirectStandardOutput $devtoolsOutLog -RedirectStandardError $devtoolsErrLog
 
 Write-Host "BrowserBox services started successfully." -ForegroundColor Green
