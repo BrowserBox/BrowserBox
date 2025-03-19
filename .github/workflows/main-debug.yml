@@ -11,9 +11,7 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-latest
           - windows-latest
-          - macos-latest
 
     steps:
       # Checkout the repository code
