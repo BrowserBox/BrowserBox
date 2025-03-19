@@ -25,7 +25,6 @@ function Show-Help {
     Write-Host "Run 'bbx <command> --help' for command-specific options." -ForegroundColor Gray
 }
 
-# Show help if no command is provided or if --help is specified
 if (-not $Command -or $Command -eq "--help") {
     Show-Help
     exit 0
@@ -35,7 +34,7 @@ if ($commands.ContainsKey($Command)) {
     $scriptPath = Join-Path $scriptDir $commands[$Command]
     if (Test-Path $scriptPath) {
         Write-Host "Running bbx $Command..." -ForegroundColor Cyan
-        if ($Args) {
+        if ($Args -and $Args.Count -gt 0) {
             # Parse arguments into a hashtable
             $params = @{}
             for ($i = 0; $i -lt $Args.Length; $i++) {
@@ -49,10 +48,10 @@ if ($commands.ContainsKey($Command)) {
                     }
                 }
             }
-            # Invoke the script with splatted parameters
+            # Invoke with splatted parameters if not empty
             & $scriptPath @params
         } else {
-            # Invoke the script without arguments
+            # Invoke without parameters if no args
             & $scriptPath
         }
     } else {
