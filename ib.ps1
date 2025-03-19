@@ -74,4 +74,4 @@ if ($currentPath -notlike "*$installDir*") {
 
 # Verify
 Write-Host "BrowserBox installed! Run 'bbx --help'." -ForegroundColor Green
-& pwsh -Command "$installDir\bbx.ps1 --help"
+& pwsh -Command "$installDir\bbx.ps1" --help
