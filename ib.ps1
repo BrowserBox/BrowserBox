@@ -62,14 +62,12 @@ winget install --id Google.Chrome.EXE --accept-source-agreements --accept-packag
 # BrowserBox
 Write-Host "Downloading BrowserBox from branch '$branch'..."
 (New-Object System.Net.WebClient).DownloadFile($bbxUrl, $tempZip)
+Write-Host "Cleaning existing install at $installDir..."
+if (Test-Path $installDir) {
+    Remove-Item $installDir -Recurse -Force
+}
 Write-Host "Installing to $installDir..."
 Expand-Archive -Path $tempZip -DestinationPath "$installDir" -Force
-# Adjust for ZIP structure (e.g., BrowserBox-win or BrowserBox-main)
-$extractedDir = "$installDir\BrowserBox-$branch"
-if (Test-Path $extractedDir) {
-    Get-ChildItem -Path $extractedDir | Move-Item -Destination $installDir -Force
-    Remove-Item $extractedDir -Recurse -Force
-}
 Remove-Item "$tempZip"
 
 # PATH (add bbx.ps1 directory)
