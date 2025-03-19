@@ -9,6 +9,7 @@ param (
     [string]$Email,
 
     [Parameter(Mandatory = $false, HelpMessage = "Specify the main port for BrowserBox (default: 8080).")]
+    [ValidateRange(4024, 65533)]
     [int]$Port = 8080,
 
     [Parameter(Mandatory = $false, HelpMessage = "Provide a specific login token (optional).")]
@@ -37,7 +38,7 @@ function Is-LocalHostname {
 
 function Wait-ForDnsResolution {
     param ([string]$Hostname)
-    $maxAttempts = 30  # ~5 minutes (30 * 10s)
+    $maxAttempts = 30
     $attempt = 0
     Write-Host "Checking DNS resolution for $Hostname..." -ForegroundColor Cyan
     while ($attempt -lt $maxAttempts) {
@@ -88,7 +89,7 @@ function Generate-Certificates {
     $certFile = "$sslcerts\fullchain.pem"
     $keyFile = "$sslcerts\privkey.pem"
 
-    if (Test-Path $certFile -and Test-Path $keyFile) {
+    if ((Test-Path $certFile) -and (Test-Path $keyFile)) {
         $certText = & openssl x509 -in $certFile -noout -text
         $sans = ($certText | Select-String "Subject Alternative Name" -Context 0,1).Context.PostContext[0].Trim().Split(',') | ForEach-Object { $_.Trim().Replace("DNS:", "") }
         if ($sans -contains $Hostname) {
@@ -100,8 +101,12 @@ function Generate-Certificates {
     New-Item -ItemType Directory -Path $sslcerts -Force | Out-Null
     if (Is-LocalHostname $Hostname) {
         Write-Host "Local hostname detected ($Hostname). Using mkcert..." -ForegroundColor Cyan
-        & mkcert -install
-        & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1
+        & mkcert -install *>$null  # Redirect output to avoid hangs
+        & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1 *>$null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "mkcert failed to generate certificates for $Hostname."
+            exit 1
+        }
     } else {
         if (-not $Email) {
             Write-Host "Non-local hostname ($Hostname) requires an email for Let's Encrypt. Please provide one:" -ForegroundColor Yellow
@@ -136,7 +141,8 @@ if (-not $Hostname) {
     Write-Host "No hostname provided. Using system hostname: $Hostname" -ForegroundColor Yellow
 }
 
-$portsToCheck = @($Port, $Port - 2, $Port + 1, $Port - 1)
+[int]$PortInt = $Port  # Force integer conversion
+$portsToCheck = @($PortInt, $PortInt - 2, $PortInt + 1, $PortInt - 1)
 foreach ($p in $portsToCheck) {
     if (-not (Test-PortFree $p)) {
         Write-Error "Port $p is already in use or invalid."
@@ -170,10 +176,10 @@ if (Test-Path $testEnvPath) {
     Generate-Certificates -Hostname $Hostname -Email $Email
 }
 
-$APP_PORT = $Port
-$AUDIO_PORT = $Port - 2
-$DEVTOOLS_PORT = $Port + 1
-$DOCS_PORT = $Port - 1
+$APP_PORT = $PortInt
+$AUDIO_PORT = $PortInt - 2
+$DEVTOOLS_PORT = $PortInt + 1
+$DOCS_PORT = $PortInt - 1
 
 $envContent = @"
 APP_PORT=$APP_PORT
@@ -187,7 +193,7 @@ DOMAIN="$Hostname"
 $envContent | Out-File "$CONFIG_DIR\test.env" -Encoding utf8
 Write-Host "Updated test.env with configuration." -ForegroundColor Cyan
 
-$loginLink = "https://$Hostname:$PORT/login?token=$Token"
+$loginLink = "https://${Hostname}:${PORT}/login?token=$Token"
 Write-Host "Login link for this instance:" -ForegroundColor Green
 Write-Host $loginLink
 $loginLink | Out-File "$CONFIG_DIR\login.link" -Encoding utf8
