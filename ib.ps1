@@ -10,7 +10,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 }
 
 # Paths and URLs
-$bbxUrl = "https://github.com/BrowserBox/BrowserBox/releases/latest/download/browserbox-win.zip"
+$bbxUrl = "https://github.com/BrowserBox/BrowserBox/archive/refs/heads/win.zip"
 $tempZip = "$env:TEMP\browserbox-win.zip"
 $installDir = "C:\Program Files\browserbox"
 
