@@ -59,10 +59,6 @@ $mainArgs = @(
     $env:USER
     $env:LOGIN_TOKEN
 )
-if ($env:NODE_ARGS) {
-    $nodeArgs = $env:NODE_ARGS -split ' '
-    $mainArgs = $nodeArgs + $mainArgs
-}
 Write-Host "Starting main service. stdout: $mainOutLog, stderr: $mainErrLog, PID file: $mainPidFile" -ForegroundColor Cyan
 $mainProcess = Start-Process -FilePath "node" -ArgumentList $mainArgs -NoNewWindow -RedirectStandardOutput $mainOutLog -RedirectStandardError $mainErrLog -PassThru
 $mainProcess.Id | Out-File $mainPidFile -Force
