@@ -18,11 +18,13 @@ if (-not (Test-Path $envFile)) {
 # Create logs directory
 New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 
-# Define log files
+# Define log and PID files
 $mainOutLog = "$logDir\browserbox-main-out.log"
 $mainErrLog = "$logDir\browserbox-main-err.log"
+$mainPidFile = "$logDir\browserbox-main.pid"
 $devtoolsOutLog = "$logDir\browserbox-devtools-out.log"
 $devtoolsErrLog = "$logDir\browserbox-devtools-err.log"
+$devtoolsPidFile = "$logDir\browserbox-devtools.pid"
 
 # Load environment variables from test.env
 Get-Content $envFile | ForEach-Object {
@@ -56,8 +58,9 @@ if ($env:NODE_ARGS) {
     $nodeArgs = $env:NODE_ARGS -split ' '
     $mainArgs = $nodeArgs + $mainArgs
 }
-Write-Host "Starting main service. stdout: $mainOutLog, stderr: $mainErrLog" -ForegroundColor Cyan
-Start-Process -FilePath "node" -ArgumentList $mainArgs -NoNewWindow -RedirectStandardOutput $mainOutLog -RedirectStandardError $mainErrLog
+Write-Host "Starting main service. stdout: $mainOutLog, stderr: $mainErrLog, PID file: $mainPidFile" -ForegroundColor Cyan
+$mainProcess = Start-Process -FilePath "node" -ArgumentList $mainArgs -NoNewWindow -RedirectStandardOutput $mainOutLog -RedirectStandardError $mainErrLog -PassThru
+$mainProcess.Id | Out-File $mainPidFile -Force
 
 # Start devtools service (index.js)
 $devtoolsScript = Join-Path $installDir "src\services\pool\crdp-secure-proxy-server\index.js"
@@ -67,7 +70,8 @@ $devtoolsArgs = @(
     $env:COOKIE_VALUE
     $env:LOGIN_TOKEN
 )
-Write-Host "Starting devtools service. stdout: $devtoolsOutLog, stderr: $devtoolsErrLog" -ForegroundColor Cyan
-Start-Process -FilePath "node" -ArgumentList $devtoolsArgs -NoNewWindow -RedirectStandardOutput $devtoolsOutLog -RedirectStandardError $devtoolsErrLog
+Write-Host "Starting devtools service. stdout: $devtoolsOutLog, stderr: $devtoolsErrLog, PID file: $devtoolsPidFile" -ForegroundColor Cyan
+$devtoolsProcess = Start-Process -FilePath "node" -ArgumentList $devtoolsArgs -NoNewWindow -RedirectStandardOutput $devtoolsOutLog -RedirectStandardError $devtoolsErrLog -PassThru
+$devtoolsProcess.Id | Out-File $devtoolsPidFile -Force
 
 Write-Host "BrowserBox services started successfully." -ForegroundColor Green
