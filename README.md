@@ -96,6 +96,13 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
    ```
 
 2. **Purchase a License and Activate Your Copy of BrowserBox**
+
+   **On Windows:** Head to [our website to purchase a license](https://dosaygo.com)
+
+   **Everywhere else:**
+
+   Use our website to purchase a license, or the command line:
+
    ```console
    bbx activate [seats]
    ```
@@ -107,6 +114,9 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
    bbx run
    bbx stop
    ```
+
+   And access the **Login Link** you get from any browser on any device. (Make sure you set up your DNS records correctly if connecting over the public Internet).
+
 ---
 
 ## Embed BrowserBox Anywhere with Ease
