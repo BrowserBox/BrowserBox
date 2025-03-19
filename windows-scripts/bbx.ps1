@@ -31,29 +31,18 @@ if (-not $Command -or $Command -eq "--help") {
 }
 
 if ($commands.ContainsKey($Command)) {
-    if ($Command -eq "install") {
-        $installScript = Join-Path $installDir "ib.ps1"
-        if (Test-Path $installScript) {
-            Write-Host "Running BrowserBox install..." -ForegroundColor Cyan
-            & powershell -NoProfile -ExecutionPolicy Bypass -File "$installScript" @Args
+    $scriptPath = Join-Path $scriptDir $commands[$Command]
+    if (Test-Path $scriptPath) {
+        Write-Host "Running bbx $Command..." -ForegroundColor Cyan
+        if ($Args) {
+            & $scriptPath @Args  # Only splat if $Args has content
         } else {
-            Write-Error "Install script not found at $installScript. Run 'irm raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/win/ib.ps1 | iex' first."
-            exit 1
+            & $scriptPath        # No args, just run it
         }
     } else {
-        $scriptPath = Join-Path $scriptDir $commands[$Command]
-        if (Test-Path $scriptPath) {
-            Write-Host "Running bbx $Command..." -ForegroundColor Cyan
-            if ($Args) {
-                & $scriptPath @Args  # Only splat if $Args has content
-            } else {
-                & $scriptPath        # No args, just run it
-            }
-        } else {
-            Write-Error "Script for '$Command' not found at $scriptPath"
-            Show-Help
-            exit 1
-        }
+        Write-Error "Script for '$Command' not found at $scriptPath"
+        Show-Help
+        exit 1
     }
 } else {
     Write-Error "Unknown command: $Command"
