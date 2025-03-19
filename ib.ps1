@@ -30,7 +30,7 @@ if (-not $pwshPath) {
 }
 
 Write-Host "Installing Node.js latest..."
-winget install --id OpenJS.NodeJS.LTS --silent --accept-source-agreements --accept-package-agreements
+winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
 # Update PATH for this session (winget adds to system PATH, but not always current session)
 $env:Path += ";$env:ProgramFiles\nodejs"
 
@@ -46,12 +46,16 @@ if ($nodeVersion -and $npmVersion) {
 
 # mkcert
 Write-Host "Installing mkcert..."
-winget install --id FiloSottile.mkcert --silent --accept-source-agreements --accept-package-agreements
+winget install --id FiloSottile.mkcert --accept-source-agreements --accept-package-agreements --Location "$env:ProgramFiles\mkcert"
+$env:Path += ";$env:ProgramFiles\mkcert"
 
 # Certbot
 Write-Host "Installing Certbot..."
-winget install --id EFF.Certbot --silent --accept-source-agreements --accept-package-agreements
+winget install --id EFF.Certbot --accept-source-agreements --accept-package-agreements
 $env:Path += ";$env:ProgramFiles\Certbot\bin"
+
+Write-Host "Installing Google Chrome..."
+winget install --id Google.Chrome.EXE --accept-source-agreements --aceept-package-agreements
 
 # BrowserBox
 Write-Host "Downloading BrowserBox..."
