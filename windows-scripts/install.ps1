@@ -126,14 +126,28 @@ Write-Host "Checking install directory contents..."
 Get-ChildItem $installDir -Recurse | ForEach-Object { if ($Debug) { Write-Host "Found: $($_.FullName)" } }
 if ($Debug) { Read-Host "Listed contents of $installDir. Press Enter to continue..." }
 
-# PATH (add bbx.ps1 directory)
-$currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
-if ($currentPath -notlike "*$bbxDir*") {
-    Write-Host "Adding '$bbxDir' to PATH..."
-    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$bbxDir", "Machine")
-    $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+# PATH (add bbx.ps1 directory to both Machine and User scopes)
+$bbxDir = "$installDir\windows-scripts"
+
+# Machine PATH
+$currentMachinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+if ($currentMachinePath -notlike "*$bbxDir*") {
+    Write-Host "Adding '$bbxDir' to Machine PATH permanently..." -ForegroundColor Cyan
+    $newMachinePath = "$currentMachinePath;$bbxDir"
+    [Environment]::SetEnvironmentVariable("Path", $newMachinePath, "Machine")
 }
-if ($Debug) { Read-Host "Updated PATH with $bbxDir (if needed). Press Enter to continue..." }
+
+# User PATH
+$currentUserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+if ($currentUserPath -notlike "*$bbxDir*") {
+    Write-Host "Adding '$bbxDir' to User PATH permanently..." -ForegroundColor Cyan
+    $newUserPath = "$currentUserPath;$bbxDir"
+    [Environment]::SetEnvironmentVariable("Path", $newUserPath, "User")
+}
+
+# Update current session PATH
+$env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+if ($Debug) { Read-Host "Updated PATH with $bbxDir (Machine and User). Press Enter to continue..." }
 
 # Verify
 Write-Host "BrowserBox installed! Running 'bbx --help'..." -ForegroundColor Green
