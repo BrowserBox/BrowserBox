@@ -16,15 +16,23 @@ $installDir = "C:\Program Files\browserbox"
 
 # winget
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
-# if (-not $wingetPath) {
+if (-not $wingetPath) {
     Write-Host "Installing winget..."
-    &([ScriptBlock]::Create((irm asheroto.com/winget))) -Force
-    # irm asheroto.com/winget | iex
-# }
+    # Run in a subprocess and wait for completion
+    Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"irm asheroto.com/winget | iex`"" -Wait -NoNewWindow
+    # Refresh PATH to find winget
+    $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+    $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
+    if (-not $wingetPath) {
+        Write-Error "winget installation failed or not found in PATH!"
+        exit 1
+    }
+    Write-Host "winget installed successfully."
+}
 
+# Rest of the script...
 Write-Host "Installing Node.js latest..."
 winget install --id OpenJS.NodeJS.LTS --accept-source-agreements --accept-package-agreements
-# Update PATH for this session (winget adds to system PATH, but not always current session)
 $env:Path += ";$env:ProgramFiles\nodejs"
 
 # Verify Node.js and npm
@@ -67,4 +75,4 @@ if ($currentPath -notlike "*$installDir*") {
 
 # Verify
 Write-Host "BrowserBox installed! Run 'bbx --help'." -ForegroundColor Green
-& powershell -Command "$installDir\bbx.ps1"
+& powershell -Command "`"$installDir\bbx.ps1`""
