@@ -77,4 +77,4 @@ if ($currentPath -notlike "*$installDir*") {
 
 # Verify
 Write-Host "BrowserBox installed! Run 'bbx --help'." -ForegroundColor Green
-& powershell -Command "`"$installDir\bbx.ps1`""
+& powershell -Command $installDir\bbx.ps1
