@@ -7,6 +7,17 @@ if [[ ! -f bbpro_dir ]]; then
   exit 0
 fi
 
+protecc_win_sysadmins() {
+    # Check for Windows environments
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" || -n "$WINDIR" || "$(uname -s)" =~ ^MINGW || "$(uname -s)" =~ ^CYGWIN || -n "$WSL_DISTRO_NAME" ]]; then
+        echo -e "Not running bash postinstall script on Windows."
+        exit 0
+    fi
+}
+
+# Call the function right away
+protecc_win_sysadmins
+
 unset npm_config_prefix
 export node=$(command -v node)
 export SUDO=$(command -v sudo)
