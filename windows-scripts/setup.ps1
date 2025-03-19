@@ -73,12 +73,13 @@ function Test-PortFree {
         Write-Error "Invalid port $Port. Must be between 4024 and 65533."
         exit 1
     }
-    $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Any, $Port)
     try {
+        $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Any, $Port)
         $listener.Start()
         $listener.Stop()
         return $true
     } catch {
+        Write-Error "Failed to test port $Port: $_"
         return $false
     }
 }
@@ -101,7 +102,7 @@ function Generate-Certificates {
     New-Item -ItemType Directory -Path $sslcerts -Force | Out-Null
     if (Is-LocalHostname $Hostname) {
         Write-Host "Local hostname detected ($Hostname). Using mkcert..." -ForegroundColor Cyan
-        & mkcert -install 
+        & mkcert -install *>$null  # Redirect output to avoid hangs
         & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1 
         if ($LASTEXITCODE -ne 0) {
             Write-Error "mkcert failed to generate certificates for $Hostname."
@@ -142,8 +143,27 @@ if (-not $Hostname) {
     Write-Host "No hostname provided. Using system hostname: $Hostname" -ForegroundColor Yellow
 }
 
-[int]$PortInt = $Port  # Force integer conversion
-$portsToCheck = @($PortInt, $PortInt - 2, $PortInt + 1, $PortInt - 1)
+# Ensure Port is a valid integer
+try {
+    [int]$PortInt = [int]::Parse($Port)
+    Write-Host "Port: $Port, PortInt: $PortInt" -ForegroundColor Cyan  # Debug output
+} catch {
+    Write-Error "Failed to convert Port to integer: $_"
+    exit 1
+}
+
+# Check port range and calculate derived ports safely
+$minPort = 4024
+$maxPort = 65533
+$portsToCheck = @()
+if (($PortInt - 2) -ge $minPort -and ($PortInt + 1) -le $maxPort) {
+    $portsToCheck = @($PortInt, $PortInt - 2, $PortInt + 1, $PortInt - 1)
+    Write-Host "Ports to check: $portsToCheck" -ForegroundColor Cyan  # Debug output
+} else {
+    Write-Error "Port calculations would result in invalid ports outside range $minPort-$maxPort. Adjust the main port ($PortInt)."
+    exit 1
+}
+
 foreach ($p in $portsToCheck) {
     if (-not (Test-PortFree $p)) {
         Write-Error "Port $p is already in use or invalid."
