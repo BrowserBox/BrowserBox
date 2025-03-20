@@ -74,17 +74,6 @@ jobs:
           ./tests/test-bbx.sh
         continue-on-error: false
 
-      - name: Install cURL (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          winget install cURL.cURL --silent
-          if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
-            Write-Error "curl.exe not installed"
-            exit 1
-          }
-          Write-Host "curl.exe installed successfully"
-
       - name: Execute BBX Test Saga (Windows)
         if: matrix.os == 'windows-latest'
         shell: powershell
@@ -109,6 +98,12 @@ jobs:
             Write-Error "bbx not found in PATH after install"
             exit 1
           }
+          winget install cURL.cURL --silent
+          if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
+            Write-Error "curl.exe not installed"
+            exit 1
+          }
+          Write-Host "curl.exe installed successfully"
 
           # Setup BrowserBox
           bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL"
