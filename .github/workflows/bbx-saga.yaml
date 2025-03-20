@@ -115,7 +115,7 @@ jobs:
 
           # Curl with retries (ignore cert errors)
           Write-Host "Testing URL: $loginLink"
-          $maxRetries = 5
+          $maxRetries = 10
           $retryCount = 0
           $success = $false
           while ($retryCount -lt $maxRetries -and -not $success) {
