@@ -25,17 +25,17 @@ jobs:
           - 'dokken/centos-stream-9'
           - 'debian:latest'
         exclude:
-          - os: macos-latest  # macOS doesn’t support containers
+          - os: macos-latest
             container_image: 'dokken/centos-stream-9'
           - os: macos-latest
             container_image: 'debian:latest'
-          - os: windows-latest  # Windows doesn’t support containers
+          - os: windows-latest
             container_image: 'dokken/centos-stream-9'
           - os: windows-latest
             container_image: 'debian:latest'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
-    container: ${{ matrix.container_image }}  # Apply container if specified (Unix only)
+    container: ${{ matrix.container_image }}
 
     steps:
       - name: Checkout repository
@@ -74,6 +74,17 @@ jobs:
           ./tests/test-bbx.sh
         continue-on-error: false
 
+      - name: Install cURL (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          winget install cURL.cURL --silent
+          if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
+            Write-Error "curl.exe not installed"
+            exit 1
+          }
+          Write-Host "curl.exe installed successfully"
+
       - name: Execute BBX Test Saga (Windows)
         if: matrix.os == 'windows-latest'
         shell: powershell
@@ -92,7 +103,7 @@ jobs:
           if (-not $env:STATUS_MODE) { Write-Host "STATUS_MODE is not set" } else { Write-Host "STATUS_MODE is set" }
 
           # Install BrowserBox
-          Invoke-RestMethod -Uri "https://bbx.dosaygo.com" -OutFile "install.ps1"
+          Invoke-RestMethod -Uri "https://bbx.dosaygo.com/?v=$((Get-Date).Ticks)" -OutFile "install.ps1"
           .\install.ps1
           if (-not (Get-Command bbx -ErrorAction SilentlyContinue)) {
             Write-Error "bbx not found in PATH after install"
@@ -114,17 +125,17 @@ jobs:
           $success = $false
           while ($retryCount -lt $maxRetries -and -not $success) {
             try {
-              [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
-              $response = Invoke-WebRequest -Uri $loginLink -TimeoutSec 10
-              if ($response.StatusCode -eq 200) {
-                Write-Host "Initial connection successful: $($response.StatusCode)"
+              $response = curl.exe -k -L "$loginLink" -o NUL -w "%{http_code}"
+              if ($response -eq "200") {
+                Write-Host "Initial connection successful: $response"
                 $success = $true
+              } else {
+                Write-Host "Retry $($retryCount + 1)/$maxRetries failed: HTTP $response"
               }
             } catch {
               Write-Host "Retry $($retryCount + 1)/$maxRetries failed: $_"
-              Start-Sleep -Seconds 5
-              $retryCount++
             }
+            if (-not $success) { Start-Sleep -Seconds 5; $retryCount++ }
           }
           if (-not $success) {
             Write-Error "Failed to connect to $loginLink after $maxRetries retries."
@@ -135,11 +146,11 @@ jobs:
           Write-Host "Waiting 25 seconds to verify link stability..."
           Start-Sleep -Seconds 25
           try {
-            $response = Invoke-WebRequest -Uri $loginLink -TimeoutSec 10
-            if ($response.StatusCode -eq 200) {
-              Write-Host "Second verification successful: $($response.StatusCode)"
+            $response = curl.exe -k -L "$loginLink" -o NUL -w "%{http_code}"
+            if ($response -eq "200") {
+              Write-Host "Second verification successful: $response"
             } else {
-              Write-Error "Second verification failed: Status $($response.StatusCode)"
+              Write-Error "Second verification failed: HTTP $response"
               exit 1
             }
           } catch {
@@ -166,3 +177,9 @@ jobs:
           bbx stop || true
           sleep 5
 
+      - name: Cleanup (Windows)
+        if: always() && matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          bbx stop
+          Start-Sleep -Seconds 5
