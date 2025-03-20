@@ -105,7 +105,7 @@ jobs:
           Write-Host "Login link: $loginLink"
 
           # Start BrowserBox
-          bbx run
+          bbx run -Verbose
 
           # Curl with retries (ignore cert errors)
           Write-Host "Testing URL: $loginLink"
