@@ -22,7 +22,9 @@ function Stop-ProcessByPidFile {
         if ($processId -and (Get-Process -Id $processId -ErrorAction SilentlyContinue)) {
             # Step 1: Attempt graceful shutdown with SIGINT
             Write-Host "Attempting graceful shutdown of $ServiceName service (PID: $processId)..." -ForegroundColor Cyan
+
             node -e "process.kill($processId, 'SIGINT')" 
+
             Start-Sleep -Seconds $GraceSeconds # Wait for specified grace period
 
             # Step 2: Check if process is still running, force stop if needed
@@ -54,7 +56,9 @@ $nodeProcs = Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Obje
 if ($nodeProcs) {
     foreach ($proc in $nodeProcs) {
         Write-Host "Attempting graceful shutdown of additional Node.js process (PID: $($proc.Id))..." -ForegroundColor Cyan
+
         node -e "process.kill($($proc.Id), 'SIGINT')"
+
     }
     Start-Sleep -Seconds $GraceSeconds # Wait for specified grace period
 
