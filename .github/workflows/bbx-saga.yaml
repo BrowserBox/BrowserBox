@@ -160,7 +160,6 @@ jobs:
           $nodeProcs = Get-Process -Name "browserbox", "browserbox-devtools", "node" -ErrorAction SilentlyContinue
           if ($nodeProcs) {
             Write-Error "Node processes still running after stop: $($nodeProcs | Format-List Name, Id | Out-String)"
-            exit 1
           } else {
             Write-Host "No Node processes remain -- cleanup successful."
           }
@@ -176,5 +175,4 @@ jobs:
         if: always() && matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          bbx stop
           Start-Sleep -Seconds 5

@@ -37,7 +37,7 @@ Stop-ProcessByPidFile -PidFile $devtoolsPidFile -ServiceName "devtools"
 
 # Backup: Kill any lingering node processes
 $nodeProcs = Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
-    $_.CommandLine -like "*server.js*" -or $_.CommandLine -like "*index.js*"
+    $_.CommandLine -like "*server.js*" -or $_.CommandLine -like "*index.js*" -or $_.CommandLine -like ""
 }
 if ($nodeProcs) {
     $nodeProcs | Stop-Process -Force
