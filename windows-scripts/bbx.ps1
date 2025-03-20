@@ -1,5 +1,5 @@
-# bbx.ps1
-[CmdletBinding()]
+﻿# bbx.ps1
+[CmdletBinding(SupportsShouldProcess=$true)]
 param (
     [Parameter(Position=0)]
     [string]$Command,
@@ -17,6 +17,11 @@ $commands = @{
     "stop"      = "stop.ps1"
 }
 
+Write-Verbose "Script dir: $scriptDir"
+Write-Verbose "Install dir: $installDir"
+Write-Verbose "Command: $Command"
+Write-Verbose "Args: $($Args -join ', ')"
+
 function Show-Help {
     Write-Host "bbx CLI (Windows)" -ForegroundColor Green
     Write-Host "Usage: bbx <command> [args]" -ForegroundColor Yellow
@@ -26,32 +31,39 @@ function Show-Help {
 }
 
 if (-not $Command -or $Command -eq "--help") {
+    Write-Verbose "No command or --help specified—showing help"
     Show-Help
     exit 0
 }
 
 if ($commands.ContainsKey($Command)) {
     $scriptPath = Join-Path $scriptDir $commands[$Command]
+    Write-Verbose "Script path: $scriptPath"
     if (Test-Path $scriptPath) {
         Write-Host "Running bbx $Command..." -ForegroundColor Cyan
         if ($Args -and $Args.Count -gt 0) {
-            # Parse arguments into a hashtable
+            Write-Verbose "Parsing args: $($Args -join ', ')"
             $params = @{}
             for ($i = 0; $i -lt $Args.Length; $i++) {
+                Write-Verbose "Processing arg $i: $($Args[$i])"
                 if ($Args[$i] -match '^-(.+)$') {
                     $paramName = $matches[1]
+                    Write-Verbose "Found param: $paramName"
                     if ($i + 1 -lt $Args.Length -and $Args[$i + 1] -notmatch '^-.+') {
                         $params[$paramName] = $Args[$i + 1]
+                        Write-Verbose "Assigned $paramName = $($Args[$i + 1])"
                         $i++
                     } else {
-                        $params[$paramName] = $true  # Treat as a flag if no value follows
+                        $params[$paramName] = $true
+                        Write-Verbose "Assigned $paramName = $true (flag)"
                     }
                 }
             }
-            # Invoke with splatted parameters if not empty
+            Write-Verbose "Params hashtable: $($params | Out-String)"
+            Write-Verbose "Invoking with params: & $scriptPath @params"
             & $scriptPath @params
         } else {
-            # Invoke without parameters if no args
+            Write-Verbose "No args provided—invoking bare: & $scriptPath"
             & $scriptPath
         }
     } else {
