@@ -45,7 +45,7 @@ if ($commands.ContainsKey($Command)) {
             Write-Verbose "Parsing args: $($Args -join ', ')"
             $params = @{}
             for ($i = 0; $i -lt $Args.Length; $i++) {
-                Write-Verbose "Processing arg $i: $($Args[$i])"
+                Write-Verbose "Processing arg ${i}: $($Args[$i])"
                 if ($Args[$i] -match '^-(.+)$') {
                     $paramName = $matches[1]
                     Write-Verbose "Found param: $paramName"

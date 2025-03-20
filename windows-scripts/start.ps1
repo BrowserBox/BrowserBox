@@ -84,11 +84,6 @@ $mainArgs = @(
     $env:LOGIN_TOKEN
 ) | Where-Object { $_ -ne $null -and $_ -ne "" }
 Write-Verbose "Initial mainArgs: $($mainArgs -join ', ')"
-if ($env:NODE_ARGS -and $env:NODE_ARGS -ne " ") {
-    $nodeArgs = $env:NODE_ARGS -split ' ' | Where-Object { $_ -ne $null -and $_ -ne "" }
-    Write-Verbose "NODE_ARGS split: $($nodeArgs -join ', ')"
-    if ($nodeArgs) { $mainArgs = $nodeArgs + $mainArgs }
-}
 Write-Host "Final mainArgs: $($mainArgs -join ', ')" -ForegroundColor Cyan
 Write-Host "Starting main service. stdout: $mainOutLog, stderr: $mainErrLog, PID file: $mainPidFile" -ForegroundColor Cyan
 $mainProcess = Start-Process -FilePath "node" -ArgumentList $mainArgs -NoNewWindow -RedirectStandardOutput $mainOutLog -RedirectStandardError $mainErrLog -PassThru
