@@ -13,6 +13,11 @@ ZONE=""
 if [[ -n "$BBX_DEBUG" ]]; then
   set -x
 fi
+if [[ -z "$1" ]]; then
+  echo "Supply a hostname as first argument" >&2
+  exit 1
+fi
+  
 
 unset npm_config_prefix
 
@@ -172,49 +177,7 @@ read_input() {
 
 get_latest_dir() {
   # Find potential directories containing .bbpro_install_dir
-  pwd="$(pwd)"
-  if [[ -f "${HOME}/.bbx/BrowserBox/bbpro_dir" ]]; then
-    install_path1=$(find "$HOME/.bbx" -name bbpro_dir -print 2>/dev/null)
-  else
-    install_path1=$(find "$HOME" -name bbpro_dir -print 2>/dev/null)
-  fi
-  current_version=$(jq -r '.version' ./package.json)
-
-  # Loop through each found path to check if node_modules also exists in the same directory
-  IFS=$'\n'  # Change Internal Field Separator to newline for iteration
-  for path in $install_path1; do
-    dir=$(dirname $path)
-      # Get the version of the found directory's package.json
-      found_version=$(jq -r '.version' "${dir}/package.json")
-
-      # Check if the found version is the same or later than the current version
-      if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then
-        echo "$dir"
-        return 0
-      fi
-  done
-
-  if [[ "$pwd" != "$HOME" && "$pwd" != "$HOME"/* ]]; then
-    echo "\$pwd ($pwd) is not within \$HOME ($HOME)" >&2
-    install_path2=$(find $pwd -name bbpro_dir -print 2>/dev/null)
-    IFS=$'\n'  # Change Internal Field Separator to newline for iteration
-    for path in $install_path2; do
-      dir=$(dirname $path)
-        # Get the version of the found directory's package.json
-        found_version=$(jq -r '.version' "${dir}/package.json")
-
-        # Check if the found version is the same or later than the current version
-        if [[ $(echo -e "$current_version\n$found_version" | sort -V | tail -n1) == "$found_version" ]]; then
-          echo "$dir"
-          return 0
-        fi
-    done
-  else
-      echo "\$pwd ($pwd) is within \$HOME ($HOME)" >&2
-  fi
-
-  echo "No valid install directory found." >&2
-  return 1
+  echo "$(pwd)"
 }
 
 os_type() {
@@ -483,7 +446,9 @@ read -p "Enter to continue" -r
 
 echo "Ensuring fully installed..."
 
-cd $INSTALL_DIR
+if [[ -n "$INSTALL_DIR" ]]; then
+  cd $INSTALL_DIR
+fi
 
 echo "Ensuring nvm installed..."
 #install_nvm
