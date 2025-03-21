@@ -230,8 +230,10 @@ if (-not $Token) {
 
 Ensure-OpenSSL  # Add this line
 
-$CONFIG_DIR = "$env:USERPROFILE\.config\dosyago\bbpro\tickets"
+$CONFIG_DIR = "$env:USERPROFILE\.config\dosyago\bbpro"
 New-Item -ItemType Directory -Path $CONFIG_DIR -Force | Out-Null
+$TICKET_DIR = "$env:USERPROFILE\.config\dosyago\bbpro\tickets"
+New-Item -ItemType Directory -Path $TICKET_DIR -Force | Out-Null
 Get-Date | Out-File "$CONFIG_DIR\.bbpro_config_dir" -Encoding utf8
 Write-Host "Created config directory at $CONFIG_DIR." -ForegroundColor Cyan
 
@@ -269,13 +271,13 @@ DOCS_PORT=$DOCS_PORT
 SSLCERTS_DIR="$env:USERPROFILE\sslcerts"
 DOMAIN="$Hostname"
 "@
-$envContent | Out-File "$CONFIG_DIR\test.env" -Encoding utf8
+$envContent | Out-File "${CONFIG_DIR}\test.env" -Encoding utf8
 Write-Host "Updated test.env with configuration." -ForegroundColor Cyan
 
 # Generate and display login link
 $loginLink = "https://${Hostname}:${PORT}/login?token=$Token"
 Write-Host "Login link for this instance:" -ForegroundColor Green
 Write-Host $loginLink
-$loginLink | Out-File "$CONFIG_DIR\login.link" -Encoding utf8
+$loginLink | Out-File "${CONFIG_DIR}\login.link" -Encoding utf8
 
 Write-Host "Setup complete!" -ForegroundColor Green
