@@ -1,4 +1,4 @@
-﻿# install.ps1
+# install.ps1
 # Located at C:\Program Files\browserbox\windows-scripts\install.ps1
 $ProgressPreference = 'SilentlyContinue'
 
@@ -14,12 +14,13 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
         "-Command", "irm bbx.dosaygo.com | iex"
     )
     Start-Process powershell -Verb RunAs -ArgumentList $arguments
+    Start-Sleep -Seconds 2  # Brief pause to confirm 
     exit
 }
 
 # Debug: Confirm elevation worked
 Write-Host "Running as Administrator." -ForegroundColor Green
-Start-Sleep -Seconds 2  # Brief pause to confirm it’s working
+Start-Sleep -Seconds 2  # Brief pause to confirm 
 
 $bbxUrl = "https://github.com/BrowserBox/BrowserBox/archive/refs/heads/$branch.zip"
 $tempZip = "$env:TEMP\browserbox-$branch.zip"
