@@ -4,7 +4,7 @@ import https from 'https';
 import http from 'http';
 import os from 'os';
 import path from 'path';
-import {URL} from 'url';
+import {URL, pathToFileURL} from 'url';
 import {unescape} from 'querystring';
 
 import {WebSocket} from 'ws';
@@ -520,7 +520,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   if ( DEBUG.useFlashEmu ) {
     try {
       templatedInjections.flashEmu = templatedInjections.flashEmu || 
-        await import(path.join(APP_ROOT, 'zombie-lord', 'injections', 'templated', 'flashEmu.js'));
+        await import(pathToFileURL(path.join(APP_ROOT, 'zombie-lord', 'injections', 'templated', 'flashEmu.js')));
     } catch(e) {
       console.warn(`Error importing flashEmu.js`, e);
     }
@@ -528,9 +528,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   if ( DEBUG.useDocCustomDownloadPlugin ) {
     try {
       templatedInjections.docDownloadPlugin = templatedInjections.docDownloadPlugin || 
-        await import(path.join(APP_ROOT, 'zombie-lord', 'injections', 'templated', 'docDownloadPlugin.js'));
+        await import(pathToFileURL(path.join(APP_ROOT, 'zombie-lord', 'injections', 'templated', 'docDownloadPlugin.js')));
     } catch(e) {
-      console.warn(`Error importing flashEmu.js`, e);
+      console.warn(`Error importing custom doc download plugin script`, e);
     }
   }
 
