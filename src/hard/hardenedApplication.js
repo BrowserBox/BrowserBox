@@ -93,7 +93,7 @@ export class HardenedApplication {
    * @returns {string} - A unique hexadecimal string.
    */
   #generateInstanceId() {
-    return `DOSAYGO://${generateHardwareId()}/${crypto.randomBytes(16).toString('hex')}`;
+    return `DOSAYGO://browserbox/${generateHardwareId().hwid}/${crypto.randomBytes(16).toString('hex')}`;
   }
 
   /**

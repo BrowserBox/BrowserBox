@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -35,39 +37,41 @@ export function generateHardwareId() {
   // Generate a diagnostic report and save it to a file
   process.report.writeReport(`${reportPath}`);
 
-  const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  const reportFile = fs.readFileSync(reportPath, 'utf8');
+  const report = JSON.parse(reportFile);
+  const fullReport = JSON.parse(reportFile);
 
   // Extract relevant information
-  const osName = report.header.osName || '';
-  const osRelease = report.header.osRelease || '';
-  const osVersion = report.header.osVersion || '';
-  const osMachine = report.header.osMachine || '';
-  const host = report.header.host || '';
-  const cpus = report.header.cpus
-    ? report.header.cpus.map(cpu => `${cpu.model}-${cpu.speed}`).join(';')
-    : '';
-  const networkInterfaces = report.header.networkInterfaces
-    ? report.header.networkInterfaces
-        .filter(iface => !iface.internal && iface.mac !== '00:00:00:00:00:00')
-        .map(iface => iface.mac)
-        .join(';')
-    : '';
+  const mutables = [
+    "filename", 
+    "dumpEventTime",
+    "dumpEventTimeStamp",
+    "processId",
+    "threadId",
+    "cwd",
+    "commandLine"
+  ];
+  for( const key of mutables ) {
+    delete report.header[key];
+  }
+  report.header.cpus = report.header.cpus.map(({model,speed}) => {model,speed});
+  const headerInfo = JSON.stringify(report.header);
   const totalMemory = report.resourceUsage?.total_memory || '';
 
   // Read SSH host keys
   const sshHostKeys = readSshHostKeys();
 
   // Combine the extracted information and SSH host keys
-  const combinedInfo = `${host}-${osName}-${osRelease}-${osVersion}-${osMachine}-${cpus}-${networkInterfaces}-${totalMemory}-${sshHostKeys}`;
-  //console.error(`fingerprint data: ${combinedInfo}`);
+  const combinedInfo = `${headerInfo}-${totalMemory}-${sshHostKeys}`;
+  console.info(`fingerprint data: ${combinedInfo}`);
 
   // Compute and return the hardware ID
   fs.unlinkSync(reportPath);
-  return computeHash(combinedInfo);
+  return JSON.stringify({fullReport, hwid: computeHash(combinedInfo)});
 }
 
 if ( import.meta.url.endsWith(process.argv[1]) ) {
-  console.log('instance', generateHardwareId());
+  console.log('hwid', generateHardwareId());
 }
 
 

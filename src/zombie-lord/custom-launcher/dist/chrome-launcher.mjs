@@ -194,7 +194,7 @@ export default class Launcher {
     log.verbose('ChromeLauncher', `Launching with command:\n"${execPath}" ${this.flags.join(' ')}`);
     let chrome;
     if ( process.platform == 'win32' ) {
-      chrome = this.spawn(execPath, this.flags, { detached: true, stdio: DEBUG.val ? 'inherit' : ['ignore', this.outFile, this.errFile], env: this.envVars });
+      chrome = this.spawn(execPath, this.flags, { shell: 'cmd.exe', detached: true, stdio: DEBUG.val ? 'inherit' : ['ignore', this.outFile, this.errFile], env: this.envVars, windowsHide: true });
     } else {
       const scriptName = `start_bb_browser.sh`;
       const scriptPath = () => path.resolve(CONFIG.baseDir, 'scripts', scriptName); 

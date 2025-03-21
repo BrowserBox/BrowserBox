@@ -1,11 +1,3 @@
-- nuke nc waitlist and open nc up to all so long as they sign the extra declaration (custom fields) and provide detailed corp info, maybe even verify themselves with stripe identity
-
-- make an evaluation license waitlist. 2 weeks. 1 time.
-
-- new ci workflow to test bbx full saga
-
-- fully vamp windows support !!! :P ;) xx ;p
-
 - solidify instance hw id, analytics
 
 - mitigations
