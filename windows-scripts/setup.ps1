@@ -1,5 +1,3 @@
-# setup.ps1
-# Located at C:\Program Files\browserbox\windows-scripts\setup.ps1
 [CmdletBinding()]
 param (
     [Parameter(Mandatory = $false, HelpMessage = "Specify the hostname for BrowserBox (defaults to system hostname).")]
@@ -13,7 +11,10 @@ param (
     [int]$Port = 8080,
 
     [Parameter(Mandatory = $false, HelpMessage = "Provide a specific login token (optional).")]
-    [string]$Token
+    [string]$Token,
+
+    [Parameter(Mandatory = $false, HelpMessage = "Force regeneration of certificates even if they exist.")]
+    [switch]$Force
 )
 
 # Helper Functions
@@ -34,6 +35,27 @@ function Is-LocalHostname {
         Write-Warning "Failed to resolve hostname: $Hostname. Assuming non-local."
     }
     return $false
+}
+
+# Check if OpenSSL is installed, and install it via winget if not
+function Ensure-OpenSSL {
+    if (-not (Get-Command openssl -ErrorAction SilentlyContinue)) {
+        Write-Host "OpenSSL not found. Installing via winget..." -ForegroundColor Cyan
+        try {
+            winget install --id FireDaemon.OpenSSL --silent --accept-package-agreements --accept-source-agreements
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "OpenSSL installed successfully." -ForegroundColor Green
+                # Refresh the environment to make openssl available in this session
+                $env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path", "User")
+            } else {
+                Write-Error "Failed to install OpenSSL with winget. Exit code: $LASTEXITCODE"
+            }
+        } catch {
+            Write-Error "Error installing OpenSSL: $_"
+        }
+    } else {
+        Write-Host "OpenSSL is already installed." -ForegroundColor Cyan
+    }
 }
 
 function Wait-ForDnsResolution {
@@ -85,12 +107,17 @@ function Test-PortFree {
 }
 
 function Generate-Certificates {
-    param ([string]$Hostname, [string]$Email)
+    param (
+        [string]$Hostname,
+        [string]$Email,
+        [switch]$Force = $false  # New parameter to force regeneration
+    )
     $sslcerts = "$env:USERPROFILE\sslcerts"
     $certFile = "$sslcerts\fullchain.pem"
     $keyFile = "$sslcerts\privkey.pem"
 
-    if ((Test-Path $certFile) -and (Test-Path $keyFile)) {
+    # Check if certificates exist and match the hostname
+    if (-not $Force -and (Test-Path $certFile) -and (Test-Path $keyFile)) {
         $certText = & openssl x509 -in $certFile -noout -text
         $sans = ($certText | Select-String "Subject Alternative Name" -Context 0,1).Context.PostContext[0].Trim().Split(',') | ForEach-Object { $_.Trim().Replace("DNS:", "") }
         if ($sans -contains $Hostname) {
@@ -99,12 +126,18 @@ function Generate-Certificates {
         }
     }
 
+    # Ensure the directory exists
     New-Item -ItemType Directory -Path $sslcerts -Force | Out-Null
+
     if (Is-LocalHostname $Hostname) {
         Write-Host "Local hostname detected ($Hostname). Using mkcert..." -ForegroundColor Cyan
 
-        # Run mkcert -install with an 8-second timeout
-        $process = Start-Process -FilePath "mkcert" -ArgumentList "-install" -NoNewWindow -PassThru 
+        # Remove existing certificates if forcing regeneration
+        if ($Force -and (Test-Path $certFile)) { Remove-Item $certFile -Force }
+        if ($Force -and (Test-Path $keyFile)) { Remove-Item $keyFile -Force }
+
+        # Run mkcert -install with timeout
+        $process = Start-Process -FilePath "mkcert" -ArgumentList "-install" -NoNewWindow -PassThru
         $timeoutSeconds = 8
         $process | Wait-Process -Timeout $timeoutSeconds -ErrorAction SilentlyContinue
         if ($process.HasExited) {
@@ -113,15 +146,16 @@ function Generate-Certificates {
             }
             Write-Host "mkcert -install completed successfully." -ForegroundColor Cyan
         } else {
-            Write-Warning "mkcert -install timed out after $timeoutSeconds seconds. Terminating process..."
+            Write-Warning "mkcert -install timed out after $timeoutSeconds seconds. Terminating..."
             $process | Stop-Process -Force
-            Start-Sleep -Seconds 1  # Give it a moment to terminate
+            Start-Sleep -Seconds 1
             Write-Host "mkcert -install was terminated due to timeout."
         }
 
-        & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1 
+        & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1
         if ($LASTEXITCODE -ne 0) {
             Write-Error "mkcert failed to generate certificates for $Hostname."
+            exit 1
         }
     } else {
         if (-not $Email) {
@@ -145,6 +179,8 @@ function Generate-Certificates {
         Copy-Item -Path $certbotCert -Destination $certFile -Force
         Copy-Item -Path $certbotKey -Destination $keyFile -Force
     }
+
+    # Set permissions after generation
     icacls "$certFile" /inheritance:r /grant:r "${env:USERNAME}:RX"
     icacls "$keyFile" /inheritance:r /grant:r "${env:USERNAME}:RX"
     Write-Host "Generated certificates." -ForegroundColor Cyan
@@ -192,7 +228,9 @@ if (-not $Token) {
     Write-Host "Generated token: $Token" -ForegroundColor Cyan
 }
 
-$CONFIG_DIR = "$env:USERPROFILE\.config\dosyago\bbpro"
+Ensure-OpenSSL  # Add this line
+
+$CONFIG_DIR = "$env:USERPROFILE\.config\dosyago\bbpro\tickets"
 New-Item -ItemType Directory -Path $CONFIG_DIR -Force | Out-Null
 Get-Date | Out-File "$CONFIG_DIR\.bbpro_config_dir" -Encoding utf8
 Write-Host "Created config directory at $CONFIG_DIR." -ForegroundColor Cyan
@@ -203,15 +241,16 @@ if (Test-Path $testEnvPath) {
         if ($_ -match "^([^=]+)=(.*)$") { [PSCustomObject]@{ Name = $Matches[1]; Value = $Matches[2] } }
     }
     $existingHostname = ($existingConfig | Where-Object { $_.Name -eq "DOMAIN" }).Value
-    if ($existingHostname -eq $Hostname) {
+    if ($existingHostname -eq $Hostname -and -not $Force) {
         Write-Host "Setup already completed for $Hostname. Using existing configuration." -ForegroundColor Yellow
     } else {
-        Generate-Certificates -Hostname $Hostname -Email $Email
+        Generate-Certificates -Hostname $Hostname -Email $Email -Force:$Force
     }
 } else {
-    Generate-Certificates -Hostname $Hostname -Email $Email
+    Generate-Certificates -Hostname $Hostname -Email $Email -Force:$Force
 }
 
+Write-Host "Starting BrowserBox setup on Windows..." -ForegroundColor Cyan
 # Define port variables
 $APP_PORT = $PortInt
 $AUDIO_PORT = $PortInt - 2
