@@ -10,7 +10,7 @@ const { terminal } = TK;
 
 const execAsync = promisify(exec);
 
-const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
+const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
 const LOG_FILE = 'cdp-log.txt';
 
 const args = process.argv.slice(2);
@@ -104,38 +104,52 @@ async function printTextLayoutToTerminal({ send, on, sessionId }) {
  * @param {Object} snapshot - The snapshot object from DOMSnapshot.captureSnapshot.
  * @returns {Array} Array of objects with text and boundingBox properties.
  */
+
 function extractTextLayoutBoxes(snapshot) {
   const textLayoutBoxes = [];
   const strings = snapshot.strings;
-  const document = snapshot.documents[0]; // Assuming we work with the first document
-  const nodeTree = document.nodes;
+  const document = snapshot.documents[0];
   const textBoxes = document.textBoxes;
+  const layout = document.layout;
+
+  // Debug: Log snapshot structure
+  terminal.cyan('Snapshot Debug:\n');
+  console.log('Documents:', JSON.stringify(document, null, 2).slice(0, 1000) + '...');
+  console.log('Strings:', strings);
 
   if (!textBoxes || !textBoxes.bounds || !textBoxes.start || !textBoxes.length) {
     terminal.yellow('No text boxes found in snapshot.\n');
     return textLayoutBoxes;
   }
 
-  // Iterate over each text box in TextBoxSnapshot
+  terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
+
   for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
-    const layoutIndex = textBoxes.layoutIndex[i]; // Index into LayoutTreeSnapshot.nodeIndex
-    const bounds = textBoxes.bounds[i]; // [x, y, width, height]
-    const start = textBoxes.start[i]; // Starting character index
-    const length = textBoxes.length[i]; // Number of characters
+    const layoutIndex = textBoxes.layoutIndex[i];
+    const bounds = textBoxes.bounds[i];
+    const start = textBoxes.start[i];
+    const length = textBoxes.length[i];
 
-    // Find the corresponding node in LayoutTreeSnapshot
-    const layoutNodeIndex = document.layout.nodeIndex.indexOf(layoutIndex);
-    if (layoutNodeIndex === -1) continue; // No matching layout node
+    // Skip invalid entries
+    if (layoutIndex === -1 || !bounds || start === -1 || length === -1) {
+      terminal.yellow(`Skipping invalid text box ${i} (layoutIndex: ${layoutIndex})\n`);
+      continue;
+    }
 
-    const textIndex = document.layout.text[layoutNodeIndex]; // StringIndex into strings
-    if (textIndex === undefined || textIndex < 0 || textIndex >= strings.length) continue;
+    // Use layoutIndex directly as index into layout.text
+    const textIndex = layout.text[layoutIndex];
+    if (textIndex === -1 || textIndex >= strings.length) {
+      terminal.yellow(`Invalid text index ${textIndex} for layoutIndex ${layoutIndex}\n`);
+      continue;
+    }
 
-    // Extract the text substring
     const fullText = strings[textIndex];
     const text = fullText.substring(start, start + length).trim();
-    if (!text) continue;
+    if (!text) {
+      terminal.yellow(`Empty text for layoutIndex ${layoutIndex}\n`);
+      continue;
+    }
 
-    // Convert bounds to boundingBox format {x, y, width, height}
     const boundingBox = {
       x: bounds[0],
       y: bounds[1],
@@ -144,21 +158,14 @@ function extractTextLayoutBoxes(snapshot) {
     };
 
     textLayoutBoxes.push({ text, boundingBox });
+    terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y})\n`);
   }
 
   return textLayoutBoxes;
 }
 
 async function getTerminalSize() {
-  try {
-    const { stdout } = await execAsync('stty size');
-    const [rows, columns] = stdout.trim().split(' ').map(Number);
-    return { columns, rows };
-  } catch (error) {
-    if (DEBUG) console.warn(error);
-    terminal.red(`Failed to get terminal size: ${error.message}\n`);
-    return { columns: 80, rows: 24 };
-  }
+  return { columns: terminal.width, rows: terminal.height };
 }
 
 async function connectToBrowser() {
@@ -251,10 +258,10 @@ async function connectToBrowser() {
     try {
       const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
       message = JSON.parse(dataStr);
-      logMessage('RECEIVE', message);
+      DEBUG && logMessage('RECEIVE', message);
     } catch (error) {
       if (DEBUG) console.warn(error);
-      logMessage('RECEIVE_ERROR', { raw: Buffer.isBuffer(data) ? data.toString('base64') : data, error: error.message });
+      DEBUG && logMessage('RECEIVE_ERROR', { raw: Buffer.isBuffer(data) ? data.toString('base64') : data, error: error.message });
       terminal.red(`Invalid message: ${String(data).slice(0, 50)}...\n`);
       return;
     }
@@ -263,7 +270,7 @@ async function connectToBrowser() {
       Resolvers[key](message.result || message.error);
       delete Resolvers[key];
     } else {
-      logMessage('UNHANDLED', message);
+      DEBUG && logMessage('UNHANDLED', message);
     }
   });
 
@@ -326,11 +333,20 @@ async function connectToBrowser() {
     socket = result.socket; // Store socket for cleanup
     await printTextLayoutToTerminal(result);
 
+    // Handle Ctrl+C
     process.on('SIGINT', () => {
-      terminal.yellow('\nShutting down...\n');
+      terminal.grabInput(false); // Release input
+      terminal.clear();
+      terminal.green('Exiting...\n');
       if (socket) socket.close();
       process.exit(0);
     });
+    terminal.on('key', (name) => {
+      if (name === 'CTRL_C') {
+        process.emit('SIGINT'); // Trigger the SIGINT handler
+      }
+    });
+
   } catch (error) {
     if (DEBUG) console.warn(error);
     terminal.red(`Main error: ${error.message}\n`);
