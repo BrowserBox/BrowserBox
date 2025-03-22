@@ -57,12 +57,12 @@ function logMessage(direction, message) {
 
 async function printTextLayoutToTerminal({ send, on, sessionId }) {
   try {
-    terminal.cyan('Enabling DOM and snapshot domains...\n');
+    DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
     send('DOM.enable', {}, sessionId);
-    terminal.cyan('DOM enabled, enabling DOMSnapshot...\n');
+    DEBUG && terminal.cyan('DOM enabled, enabling DOMSnapshot...\n');
     send('DOMSnapshot.enable', {}, sessionId);
     send('Page.reload', {}, sessionId);
-    terminal.cyan('DOMSnapshot enabled, capturing snapshot...\n');
+    DEBUG && terminal.cyan('DOMSnapshot enabled, capturing snapshot...\n');
 
     const snapshot = await send('DOMSnapshot.captureSnapshot', {computedStyles:[]}, sessionId);
     if (!snapshot?.documents?.length) {
@@ -82,7 +82,7 @@ async function printTextLayoutToTerminal({ send, on, sessionId }) {
     const scaleY = termHeight / contentHeight;
 
     terminal.clear();
-    terminal.cyan(`Rendering ${textLayoutBoxes.length} text boxes...\n`);
+    DEBUG && terminal.cyan(`Rendering ${textLayoutBoxes.length} text boxes...\n`);
 
     for (const { text, boundingBox } of textLayoutBoxes) {
       const termX = Math.floor(boundingBox.x * scaleX);
@@ -92,7 +92,7 @@ async function printTextLayoutToTerminal({ send, on, sessionId }) {
       terminal.moveTo(clampedX + 1, clampedY + 1)(text);
     }
 
-    terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
+    DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
   } catch (error) {
     if (DEBUG) console.warn(error);
     terminal.red(`Error printing text layout: ${error.message}\n`);
@@ -113,16 +113,16 @@ function extractTextLayoutBoxes(snapshot) {
   const layout = document.layout;
 
   // Debug: Log snapshot structure
-  terminal.cyan('Snapshot Debug:\n');
-  console.log('Documents:', JSON.stringify(document, null, 2).slice(0, 1000) + '...');
-  console.log('Strings:', strings);
+  DEBUG && terminal.cyan('Snapshot Debug:\n');
+  DEBUG && console.log('Documents:', JSON.stringify(document, null, 2).slice(0, 1000) + '...');
+  DEBUG && console.log('Strings:', strings);
 
   if (!textBoxes || !textBoxes.bounds || !textBoxes.start || !textBoxes.length) {
     terminal.yellow('No text boxes found in snapshot.\n');
     return textLayoutBoxes;
   }
 
-  terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
+  DEBUG && terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
 
   for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
     const layoutIndex = textBoxes.layoutIndex[i];
@@ -146,7 +146,7 @@ function extractTextLayoutBoxes(snapshot) {
     const fullText = strings[textIndex];
     const text = fullText.substring(start, start + length).trim();
     if (!text) {
-      terminal.yellow(`Empty text for layoutIndex ${layoutIndex}\n`);
+      DEBUG && terminal.yellow(`Empty text for layoutIndex ${layoutIndex}\n`);
       continue;
     }
 
@@ -158,7 +158,7 @@ function extractTextLayoutBoxes(snapshot) {
     };
 
     textLayoutBoxes.push({ text, boundingBox });
-    terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y})\n`);
+    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y})\n`);
   }
 
   return textLayoutBoxes;
@@ -189,7 +189,7 @@ async function connectToBrowser() {
     process.exit(1);
   }
 
-  terminal.cyan('Fetching available tabs...\n');
+  DEBUG && terminal.cyan('Fetching available tabs...\n');
   let targets;
   try {
     const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json', 'Cookie': cookieHeader } });
@@ -222,7 +222,7 @@ async function connectToBrowser() {
   const selectedTarget = targets[selection.selectedIndex];
   const targetId = selectedTarget.targetId;
 
-  terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
+  DEBUG && terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
   let wsDebuggerUrl;
   try {
     const response = await fetch(`${proxyBaseUrl}/json/version`, { method: 'GET', headers: { 'Accept': 'application/json', 'x-browserbox-local-auth': cookieValue } });
@@ -238,7 +238,7 @@ async function connectToBrowser() {
 
   wsDebuggerUrl = wsDebuggerUrl.replace('ws://localhost', `wss://${hostname}`);
   wsDebuggerUrl = `${wsDebuggerUrl}/${token}`;
-  terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
+  DEBUG && terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
   const socket = new WebSocket(wsDebuggerUrl, {
     headers: { 'x-browserbox-local-auth': cookieValue },
     agent: new Agent({ rejectUnauthorized: false }),
@@ -291,7 +291,7 @@ async function connectToBrowser() {
     }, 10000); // 10 seconds timeout
 
     try {
-      logMessage('SEND', message);
+      DEBUG && logMessage('SEND', message);
       socket.send(JSON.stringify(message));
     } catch (error) {
       clearTimeout(timeout);
@@ -307,9 +307,9 @@ async function connectToBrowser() {
     socket.on('open', resolve);
     socket.on('error', reject);
   });
-  terminal.green('Connected to WebSocket\n');
+  DEBUG && terminal.green('Connected to WebSocket\n');
 
-  terminal.cyan('Fetching all targets...\n');
+  DEBUG && terminal.cyan('Fetching all targets...\n');
   const { targetInfos } = await send('Target.getTargets', {});
   const pageTarget = targetInfos.find(t => t.type === 'page' && t.url === selectedTarget.url);
   if (!pageTarget) {
@@ -318,9 +318,9 @@ async function connectToBrowser() {
   }
   const finalTargetId = pageTarget.targetId;
 
-  terminal.cyan(`Attaching to target ${finalTargetId}...\n`);
+  DEBUG && terminal.cyan(`Attaching to target ${finalTargetId}...\n`);
   const { sessionId } = await send('Target.attachToTarget', { targetId: finalTargetId, flatten: true });
-  terminal.green(`Attached with session ${sessionId}\n`);
+  DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
 
   return { send, sessionId };
 }
