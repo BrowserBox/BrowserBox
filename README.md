@@ -35,13 +35,15 @@ Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) te
 
 # `bbx` 
 
-- Manage and activate your BrowserBox copy (✓)
-- Purchase a BrowserBox license key (💳)
-- run BrowserBox as multiple users on the one machine 👨‍🦲👱‍♀️👷‍♂️
-- run BrowserBox inside docker 🟦🐳
-- run BrowserBox through tor 🟣🧅
-- easily install and update BrowserBox ⬇️✔️
-- And more!
+# `bbx`
+
+- ✅ Manage and activate your BrowserBox copy
+- 💳 Purchase a BrowserBox license key
+- 👩‍💻👨‍💻 Run BrowserBox as multiple users on one machine
+- 🐳🟦 Run BrowserBox inside Docker
+- 🧅🟣 Run BrowserBox through Tor
+- ⬇️✅ ✨ Easily install and update BrowserBox
+- 🌟 And more!
 
 # Useful Links
 
