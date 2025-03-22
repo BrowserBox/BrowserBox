@@ -28,8 +28,7 @@ Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI
 
 <a href="https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#get-started"><img width="1204" alt="Get our New bbx tool" src="https://github.com/user-attachments/assets/4d549f18-1fbb-463d-bf6a-4b2ce121dea2" /></a>
 
-
-# `bbx` lets you
+# `bbx` 
 
 - manage and activate your BrowserBox copy 📝
 - purchase a BrowserBox license key 🔐
@@ -38,57 +37,6 @@ Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI
 - run BrowserBox through tor 🟣🧅
 - easily install and update BrowserBox ⬇️✔️
 - And more!
-
-## Get Started
-
-1. **Install the `bbx` CLI**
-
-   **On Windows:**
-
-   ```powershell
-   irm bbx.dosaygo.com | iex
-   ```
-
-   **Everywhere else:**
-
-   ```bash
-   bash <(curl -sSL bbx.sh.dosaygo.com) install
-   ```
-
-   **@browserbox/browserbox**
-
-   You can also install from NPM, like so:
-
-   ```bash
-   npm i -g @browserbox/browserbox
-   bbx-install 
-   ```
-   
-   *Which just runs either the above **Windows** or **Everywhere else** installation depending on your OS.*
-
-2. **Purchase a License and Activate Your Copy of BrowserBox**
-
-   **On Windows:** Head to [our website to purchase a license](https://dosaygo.com)
-
-   **Everywhere else:**
-
-   Use our website to purchase a license, or the command line:
-
-   ```console
-   bbx activate [seats]
-   ```
-
-3. **Use BrowserBox**
-   ```console
-   bbx --help
-   bbx setup
-   bbx run
-   bbx stop
-   ```
-
-   And access the **Login Link** you get from any browser on any device. (Make sure you set up your DNS records correctly if connecting over the public Internet).
-
----
 
 # Userful Links
 
@@ -148,15 +96,18 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
    bash <(curl -sSL bbx.sh.dosaygo.com) install
    ```
 
-2. **Purchase a License and Activate Your Copy of BrowserBox**
+   **@browserbox/browserbox**
+
+   You can also install from NPM:
+
+   ```bash
+   npm i -g @browserbox/browserbox
+   bbx-install 
+   ```
+
+2. **Purchase a License**
 
    **On Windows:** Head to [our website to purchase a license](https://dosaygo.com)
-
-   Then before using `bbx` set the `LICENSE_KEY` environment variable:
-
-   ```powershell
-   $Env:LICENSE_KEY = "your license key"
-   ```
 
    **Everywhere else:**
 
@@ -166,10 +117,23 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
    bbx activate [seats]
    ```
 
-   *Note: `LICENSE_KEY` will be saved automatically when using bbx activate. On non-Windows systems you can also set it yourself, 
-   using: `bbx certify`*
+3. **Activate your copy of BrowserBox with a License Key**
 
-3. **Use BrowserBox**
+  **On Windows:**
+  
+  Before using `bbx`, set the `LICENSE_KEY` environment variable:
+
+  ```powershell
+  $Env:LICENSE_KEY = "a valid BrowserBox license key"
+  ``
+
+  **Everywhere else:**`
+
+  Use `bbx certify` to enter a License Key and save it to your config.
+
+  If you used `bbx activate` it will already be saved.
+
+4. **Use BrowserBox**
    ```console
    bbx --help
    bbx setup
@@ -216,13 +180,13 @@ The `bbx` CLI manages all aspects of BrowserBox. Below is a comprehensive list o
 - **`bbx stop`**: Stop BrowserBox.  
 - **`bbx logs`**: Show BrowserBox logs.
 
-For a full list, see the [CLI documentation](#using-bbx-commands).
+For a full list on your OS, run `bbx`
 
 ---
 
 ## License Compliance
 
-We enforce licensing to protect your investment. Usage data ensures compliance. See our [Privacy Policy](https://dosaygo.com/privacy.txt) and [Terms](https://dosaygo.com/terms).
+We enforce licensing and protections for our business. Usage data ensures compliance. See our [Privacy Policy](https://dosaygo.com/privacy.txt) and [Terms](https://dosaygo.com/terms).
 
 >[!IMPORTANT]  
 >A license unlocks full features and ensures a supported, secure solution.
@@ -245,11 +209,33 @@ We enforce licensing to protect your investment. Usage data ensures compliance. 
   </li>
 </ul>
 
-**Why pay for a license for a browser? Browser's are free!!!**
+*I want to buy more licenses, do you offer discounts?*
+
+Yes, see our payment page for volume discounts. These are only available to commercial licensees. Non-commercial (government, non-profit, individuals) keep a flat rate regardless of volume. For any questions regarding volume discounts, support or other custom packages, please contact us: sales@dosaygo.com
+
+*Why pay for a license for a browser? Browser's are **free**!!!*
 
 Yeah, they're *free*, when *you're* the product. With BrowserBox, you are not the product. So pay money, instead of choosing a product where you pay with your data.
 
-**Questions?**  
+*But this used to be **FREE** why do I need to pay now?*
+
+If you don't pay it won't work. Is it right to take, giving nothing in return? Why is anything paid and not free? Because it's valuable. DOSAYGO (the corporation offering BrowserBox) is not a socialist state, it's a federal-tax-paying corporation. Human society functions on exchanges of value. Give and take. Otherwise it's just theft, plunder and abuse. And this is peacetime. 
+
+*But if the code is just there on GitHub, can't I just take it? I mean I can probably modify it and remove the licensing restrictions, can't I?*
+
+Maybe you *can*, but should you? Are you permitted to? No. Because that's theft. Are you really a software pirate? Because that's what that is. There's always software pirates, but BrowserBox is a paid product. The reason the source code is on GitHub (rather than offered as an opaque and obfuscated binary for download), is because there's value in transparency. That way, you also you can trust what you are putting in your computer. 
+
+*But why did it used to be free?*
+
+Actually BrowserBox was never *free*, not even once. Earlier versions used different licenses, including "free software" licenses, but BrowserBox was always offered as a commercial product, with custom licensing and deployments as a paid service, since version 1. A few versions ago, BrowserBox began using stricter commercial licenses, and offered for a while "free for non-commercial use", permitting use of these versions by non-profits, governments and individuals for leisure. Even then, custom work, support and deployments were all paid offerings of DOSAYGO. Today, at version 10, all usage of BrowserBox, whether commercial or non-commercial is paid and requires a license key. This is the Way. 
+
+Use of any code from these versions with earlier versions or forks of BrowserBox is strictly prohibited and violates our business terms. It will likely lead to legal action, and obviously accrues bad karma. Also, reputation is key to consider.
+
+*But we're smarter than you and live far away we can probably get away with it*
+
+We'll see.
+
+**More questions?**  
 
 Email [sales@dosaygo.com](mailto:sales@dosaygo.com).
 
