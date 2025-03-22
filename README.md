@@ -64,14 +64,15 @@ Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI
 
 BrowserBox isolates web content in a secure, remote environment, protecting your network while boosting productivity. With a license, you get:
 
-- **Advanced Security**: Block malware, ransomware, and zero-day threats.  
-- **Seamless Integration**: Embed secure browsing into apps or safeguard local tabs.  
-- **Exclusive Features**: Zero Latency Mode, customizable security, and mobile-ready design (new in v10 with enhanced Chrome compatibility).
+- **Advanced Security**: Block malware, ransomware, and zero-day threats. Securely view documents, archives and files without downloading. 
+- **Seamless Integration**: Embed secure browsing into apps or safeguard local tabs. 
+- **Exclusive Features**: Zero Latency Mode, customizable security, and mobile-first design.
 
 ---
 
 ## Features
 
+- **Clientless RBI**: No-download RBI works in any web browser.
 - **1-Click Cloud Deployment**: Deploy BrowserBox on Vultr, AWS, Azure, or Linode with a single click.  
 - **Cross-Platform Support**: Compatible with Ubuntu, Debian, RHEL, CentOS, Windows, and more.  
 - **Docker Integration**: Run BrowserBox in a container using `bbx docker-run`.  
@@ -195,6 +196,14 @@ We enforce licensing and protections for our business. Usage data ensures compli
 
 ## Advanced Usage
 
+### Securely View Documents without Downloading them
+
+On Linux systems you have the option to install the Secure Document Viewier during `bbx install`. Whenever you click on a document in BrowserBox (e.g. *.doc, .xls, .pages, .pdf, .rtf etc*) the document will automatically be converted to a safe sequence of page images that you can view with the built in viewier. Unsupported formats still have the options of viewing as a binary hex format for analysis using the built-in hex viewer. Also, common archive formats (e.g. *.zip, *.gz, *.7z, *.bz etc*) will be safely expanded remotely and displayed with the built-in file and directory viewier. 
+
+### Inspect the JavaScript and HTML of the remote page with DevTools
+
+When viewing a page just right click (long-tap on mobile) and select "Inspect in DevTools" to open the DevTools viewier for the page. 
+
 ### Tunnel over Tor
 
 BrowserBox supports Tor natively, both accessing the hidden web and running as an `.onion` site:
@@ -211,26 +220,27 @@ You can set up a private SSH tunnel between your machine and your BrowserBox mac
 
 Run `install` and enter `localhost` for the hostname when prompted. The `https://localhost` certificates will be trusted by your local machine so copy them to your remote machine for BrowserBox, and create the SSH tunnel:
 
-```
+```console
 bbx install # enter localhost when prompted
 scp ~/sslcerts/*.pem user@remote_host:~/sslcerts/
 ssh -L 9997:localhost:9997 -L 9998:localhost:9998 -L 9999:localhost:9999 -L 10000:localhost:10000 -L 10001:localhost:10001 user@remote_host
 ```
 
-2. **Your (remote) BrowserBox machine (e.g. user@remote_host)**
+2. **Run BrowserBox on your remote machine (e.g. user@remote_host)**
 
 Run BrowserBox on the remote machine on the same ports you tunneled by specifying the middle port:
 
-```bash
+```console
 bbx setup --hostname localhost --port 9999
 bbx run
 ```
 
-3. **Access remote BrowserBox from your local devices**
+3. **Remote access BrowserBox from your local devices**
 
 Open a web browser on your local device and put the **Login Link** from step 2 into the address bar.
 
-*Windows instructions differ slightly. Consult AI for guidance.*
+>[!TIP]
+>*Windows instructions differ slightly. Consult AI for guidance.*
 
 ## FAQ
 
