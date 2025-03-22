@@ -55,50 +55,6 @@ function logMessage(direction, message) {
   }
 }
 
-async function printTextLayoutToTerminal({ send, on, sessionId }) {
-  try {
-    DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
-    send('DOM.enable', {}, sessionId);
-    DEBUG && terminal.cyan('DOM enabled, enabling DOMSnapshot...\n');
-    send('DOMSnapshot.enable', {}, sessionId);
-    send('Page.reload', {}, sessionId);
-    DEBUG && terminal.cyan('DOMSnapshot enabled, capturing snapshot...\n');
-
-    const snapshot = await send('DOMSnapshot.captureSnapshot', {computedStyles:[]}, sessionId);
-    if (!snapshot?.documents?.length) {
-      throw new Error('No documents in snapshot');
-    }
-
-    const textLayoutBoxes = extractTextLayoutBoxes(snapshot);
-    if (!textLayoutBoxes.length) {
-      terminal.yellow('No text boxes found in snapshot.\n');
-      return;
-    }
-
-    const { columns: termWidth, rows: termHeight } = await getTerminalSize();
-    const { contentWidth, contentHeight } = snapshot.documents[0];
-
-    const scaleX = termWidth / contentWidth;
-    const scaleY = termHeight / contentHeight;
-
-    terminal.clear();
-    DEBUG && terminal.cyan(`Rendering ${textLayoutBoxes.length} text boxes...\n`);
-
-    for (const { text, boundingBox } of textLayoutBoxes) {
-      const termX = Math.floor(boundingBox.x * scaleX);
-      const termY = Math.floor(boundingBox.y * scaleY);
-      const clampedX = Math.max(0, Math.min(termX, termWidth - 1));
-      const clampedY = Math.max(0, Math.min(termY, termHeight - 1));
-      terminal.moveTo(clampedX + 1, clampedY + 1)(text);
-    }
-
-    DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
-  } catch (error) {
-    if (DEBUG) console.warn(error);
-    terminal.red(`Error printing text layout: ${error.message}\n`);
-  }
-}
-
 /**
  * Extracts text and their bounding boxes from a CDP snapshot.
  * @param {Object} snapshot - The snapshot object from DOMSnapshot.captureSnapshot.
@@ -111,11 +67,7 @@ function extractTextLayoutBoxes(snapshot) {
   const document = snapshot.documents[0];
   const textBoxes = document.textBoxes;
   const layout = document.layout;
-
-  // Debug: Log snapshot structure
-  DEBUG && terminal.cyan('Snapshot Debug:\n');
-  DEBUG && console.log('Documents:', JSON.stringify(document, null, 2).slice(0, 1000) + '...');
-  DEBUG && console.log('Strings:', strings);
+  const nodes = document.nodes;
 
   if (!textBoxes || !textBoxes.bounds || !textBoxes.start || !textBoxes.length) {
     terminal.yellow('No text boxes found in snapshot.\n');
@@ -124,22 +76,27 @@ function extractTextLayoutBoxes(snapshot) {
 
   DEBUG && terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
 
+  // Map layoutIndex to nodeIndex
+  const layoutToNode = new Map();
+  layout.nodeIndex.forEach((nodeIdx, layoutIdx) => layoutToNode.set(layoutIdx, nodeIdx));
+
+  // Get clickable node indexes
+  const clickableIndexes = new Set(nodes.isClickable?.index || []);
+
   for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
     const layoutIndex = textBoxes.layoutIndex[i];
     const bounds = textBoxes.bounds[i];
     const start = textBoxes.start[i];
     const length = textBoxes.length[i];
 
-    // Skip invalid entries
     if (layoutIndex === -1 || !bounds || start === -1 || length === -1) {
-      terminal.yellow(`Skipping invalid text box ${i} (layoutIndex: ${layoutIndex})\n`);
+      DEBUG && terminal.yellow(`Skipping invalid text box ${i} (layoutIndex: ${layoutIndex})\n`);
       continue;
     }
 
-    // Use layoutIndex directly as index into layout.text
     const textIndex = layout.text[layoutIndex];
     if (textIndex === -1 || textIndex >= strings.length) {
-      terminal.yellow(`Invalid text index ${textIndex} for layoutIndex ${layoutIndex}\n`);
+      DEBUG && terminal.yellow(`Invalid text index ${textIndex} for layoutIndex ${layoutIndex}\n`);
       continue;
     }
 
@@ -157,11 +114,69 @@ function extractTextLayoutBoxes(snapshot) {
       height: bounds[3],
     };
 
-    textLayoutBoxes.push({ text, boundingBox });
-    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y})\n`);
+    // Check if this text box’s node is clickable
+    const nodeIndex = layoutToNode.get(layoutIndex);
+    const isClickable = nodeIndex !== undefined && clickableIndexes.has(nodeIndex);
+
+    textLayoutBoxes.push({ text, boundingBox, isClickable });
+    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y})${isClickable ? ' [CLICKABLE]' : ''}\n`);
   }
 
   return textLayoutBoxes;
+}
+
+async function printTextLayoutToTerminal({ send, sessionId }) {
+  try {
+    DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
+    send('DOM.enable', {}, sessionId);
+    send('DOMSnapshot.enable', {}, sessionId);
+    send('Page.reload', {}, sessionId);
+    DEBUG && terminal.cyan('Capturing snapshot...\n');
+
+    const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [] }, sessionId);
+    if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
+
+    const textLayoutBoxes = extractTextLayoutBoxes(snapshot);
+    if (!textLayoutBoxes.length) {
+      terminal.yellow('No text boxes found.\n');
+      return;
+    }
+
+    const { columns: termWidth, rows: termHeight } = await getTerminalSize();
+    const { contentWidth, contentHeight } = snapshot.documents[0];
+    const scaleX = termWidth / contentWidth;
+    const scaleY = termHeight / contentHeight;
+
+    terminal.clear();
+    DEBUG && terminal.cyan(`Rendering ${textLayoutBoxes.length} text boxes...\n`);
+
+    const usedCoords = new Set(); // Basic deconfliction
+    for (const { text, boundingBox, isClickable } of textLayoutBoxes) {
+      let termX = Math.floor(boundingBox.x * scaleX);
+      let termY = Math.floor(boundingBox.y * scaleY);
+      termX = Math.max(0, Math.min(termX, termWidth - text.length));
+      termY = Math.max(0, Math.min(termY, termHeight - 1));
+
+      let key = `${termX},${termY}`;
+      while (usedCoords.has(key) && termY < termHeight - 1) {
+        termY++;
+        key = `${termX},${termY}`;
+      }
+      usedCoords.add(key);
+
+      terminal.moveTo(termX + 1, termY + 1);
+      if (isClickable) {
+        terminal.cyan.underline(text);
+      } else {
+        terminal(text);
+      }
+    }
+
+    DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
+  } catch (error) {
+    if (DEBUG) console.warn(error);
+    terminal.red(`Error printing text layout: ${error.message}\n`);
+  }
 }
 
 async function getTerminalSize() {
