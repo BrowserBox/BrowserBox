@@ -134,6 +134,7 @@ async function printTextLayoutToTerminal({ send, sessionId }) {
     DEBUG && terminal.cyan('Capturing snapshot...\n');
 
     const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [] }, sessionId);
+    console.log(JSON.stringify(snapshot));
     if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
 
     const textLayoutBoxes = extractTextLayoutBoxes(snapshot);
