@@ -9,6 +9,9 @@ const { terminal } = TK;
 
 const execAsync = promisify(exec);
 
+// Debug flag for detailed error logging
+const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
+
 // Log file for WebSocket messages
 const LOG_FILE = 'cdp-log.txt';
 
@@ -102,6 +105,7 @@ async function printTextLayoutToTerminal({ send, on, sessionId }) {
 
     terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
   } catch (error) {
+    if (DEBUG) console.warn(error);
     terminal.red(`Error printing text layout: ${error.message}\n`);
   }
 }
@@ -139,6 +143,7 @@ async function getTerminalSize() {
     const [rows, columns] = stdout.trim().split(' ').map(Number);
     return { columns, rows };
   } catch (error) {
+    if (DEBUG) console.warn(error);
     terminal.red(`Failed to get terminal size: ${error.message}\n`);
     return { columns: 80, rows: 24 };
   }
@@ -160,14 +165,15 @@ async function connectToBrowser() {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
     const data = await response.json();
-    targets = data.tabs || [];
+    targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
   } catch (error) {
+    if (DEBUG) console.warn(error);
     terminal.red(`Error fetching tabs: ${error.message}\n`);
     process.exit(1);
   }
 
   if (!targets.length) {
-    terminal.yellow('No tabs available to connect to.\n');
+    terminal.yellow('No page or tab targets available to connect to.\n');
     process.exit(0);
   }
 
@@ -179,15 +185,26 @@ async function connectToBrowser() {
     selection = await terminal.singleColumnMenu(items, {
       style: terminal.white,
       selectedStyle: terminal.green.bgBlack,
-      exitOnUnexpectedKey: true, // Allow Ctrl+C to exit
+      exitOnUnexpectedKey: true,
+      keyBindings: {
+        '1': 'submit',
+        '2': 'submit',
+        '3': 'submit',
+        '4': 'submit',
+        '5': 'submit',
+        '6': 'submit',
+        '7': 'submit',
+        '8': 'submit',
+        '9': 'submit',
+      },
     }).promise;
   } catch (error) {
+    if (DEBUG) console.warn(error);
     terminal.yellow('Selection interrupted. Exiting...\n');
     process.exit(0);
   }
 
   const selectedTarget = targets[selection.selectedIndex];
-  console.log(targets, selection);
   const targetId = selectedTarget.targetId;
 
   // Fetch the WebSocket debugger URL from /json/version on the proxy port
@@ -210,6 +227,7 @@ async function connectToBrowser() {
       throw new Error('No webSocketDebuggerUrl in /json/version response');
     }
   } catch (error) {
+    if (DEBUG) console.warn(error);
     terminal.red(`Error fetching WebSocket debugger URL: ${error.message}\n`);
     process.exit(1);
   }
@@ -228,6 +246,7 @@ async function connectToBrowser() {
   });
 
   socket.on('error', (err) => {
+    if (DEBUG) console.warn(err);
     terminal.red(`WebSocket error: ${err.message}\n`);
   });
 
@@ -241,6 +260,7 @@ async function connectToBrowser() {
       logMessage('SEND', message);
       socket.send(JSON.stringify(message));
     } catch (error) {
+      if (DEBUG) console.warn(error);
       terminal.red(`Send error: ${error.message}\n`);
       throw error;
     }
@@ -255,6 +275,7 @@ async function connectToBrowser() {
         message = JSON.parse(dataStr);
         logMessage('RECEIVE', message);
       } catch (error) {
+        if (DEBUG) console.warn(error);
         logMessage('RECEIVE_ERROR', { raw: Buffer.isBuffer(data) ? data.toString('base64') : data, error: error.message });
         terminal.red(`Invalid message: ${String(data).slice(0, 50)}...\n`);
         return;
@@ -276,7 +297,7 @@ async function connectToBrowser() {
   });
   terminal.green('Connected to WebSocket\n');
 
-  // Get all targets to find the correct target ID (BrowserBox targetId might differ)
+  // Get all targets to find the correct target ID
   terminal.cyan('Fetching all targets...\n');
   const { targetInfos } = await send('Target.getTargets', {});
   const pageTarget = targetInfos.find(t => t.type === 'page' && t.url === selectedTarget.url);
@@ -306,7 +327,7 @@ async function connectToBrowser() {
       process.exit(0);
     });
   } catch (error) {
-    console.warn(error);
+    if (DEBUG) console.warn(error);
     terminal.red(`Main error: ${error.message}\n`);
     process.exit(1);
   }
