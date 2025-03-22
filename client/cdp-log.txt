@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-03-22T10:08:13.952Z",
+  "direction": "SEND",
+  "message": {
+    "method": "Target.attachToTarget",
+    "params": {
+      "targetId": "1EB9DDC6FFBFFF72E24767A6666457DC",
+      "flatten": true
+    },
+    "id": 1
+  }
+}
