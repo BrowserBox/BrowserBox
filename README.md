@@ -125,7 +125,7 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
 
   ```powershell
   $Env:LICENSE_KEY = "a valid BrowserBox license key"
-  ``
+  ```
 
   **Everywhere else:**`
 
