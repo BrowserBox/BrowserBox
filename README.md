@@ -1,11 +1,16 @@
-<p align="center">
+﻿<p align="center">
   <img src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/docs/icon.svg" alt="BrowserBox Logo 2025" width="111" height="111">
 </p>
 
 # [BrowserBox](https://dosaygo.com)
 *by [DOSAYGO](https://dosaygo.com)*
 
-Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI) technology. BrowserBox requires a **license key** for all usage. Unlock advanced security and productivity today!
+Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) technology. Protect your organization from threats and empower your team with seamless, secure browsing. BrowserBox requires a **license key** for all usage—unlock advanced security and productivity today!
+
+## Who It’s For
+- **Businesses**: Safeguard your network and data from web-based threats.
+- **Developers**: Embed secure browsing into your apps with our API.
+- **IT Teams**: Deploy a scalable, isolated browser solution in minutes.
 
 <ul>
   <li>
@@ -32,13 +37,13 @@ Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI
 
 - manage and activate your BrowserBox copy 📝
 - purchase a BrowserBox license key 🔐
-- run BrowsreBox as multiple users on the one machine 👨‍🦲👱‍♀️👷‍♂️
+- run BrowserBox as multiple users on the one machine 👨‍🦲👱‍♀️👷‍♂️
 - run BrowserBox inside docker 🟦🐳
 - run BrowserBox through tor 🟣🧅
 - easily install and update BrowserBox ⬇️✔️
 - And more!
 
-# Userful Links
+# Useful Links
 
 - [Purchase a BrowserBox Commercial License for 1 or more seats](https://browse.cloudtabs.net/l)
 - [CloudTabs - Managed BrowserBox&trade; SaaS](https://browse.cloudtabs.net)
@@ -62,11 +67,16 @@ Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI
 
 ## Why BrowserBox?
 
-BrowserBox isolates web content in a secure, remote environment, protecting your network while boosting productivity. With a license, you get:
+BrowserBox delivers a secure, remote browsing environment that protects your network and boosts efficiency. With a license, you get:
 
-- **Advanced Security**: Block malware, ransomware, and zero-day threats. Securely view documents, archives and files without downloading. 
-- **Seamless Integration**: Embed secure browsing into apps or safeguard local tabs. 
-- **Exclusive Features**: Zero Latency Mode, customizable security, and mobile-first design.
+- **Unmatched Security**: Stop malware, ransomware, and zero-day attacks before they reach your systems—saving you from costly breaches.
+- **Effortless Integration**: Add secure browsing to your apps or protect local tabs with zero friction.
+- **Premium Features**: Enjoy Zero Latency Mode, customizable policies, and a mobile-first experience built for modern teams.
+
+## Trusted by Teams Worldwide
+
+- Used by over 50 companies and organizations worldwide.
+- Join 3000+ users who trust BrowserBox for secure browsing.
 
 ---
 
@@ -107,6 +117,10 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
    ```
 
 2. **Purchase a License**
+
+  - **Commercial**: Starts at $99/user/year, with volume discounts for larger teams—perfect for businesses securing their workforce. See [pricing details](https://dosaygo.com/pricing).
+  - **Non-Commercial**: $39/user/year flat rate—for individuals, non-profits, and government use.
+  - **Evaluation**: Sign up for a 14-day free trial via the [waitlist](https://tally.so/r/wkv4aM).
 
    >[!IMPORTANT]
    >When you purchase a license key you will be emailed a link to view it securely. Save it somewhere safely, you can only view it one time. If you lose your license key Support can roll it to a new key, invalidating the old one. Contact support@dosaygo.com for assistance. Please note: evaluation license keys cannot be rolled.
@@ -199,58 +213,19 @@ We enforce licensing and protections for our business. Usage data ensures compli
 ---
 
 ## Advanced Usage
-
-### Securely View Documents without Downloading them
-
-On Linux systems you have the option to install the Secure Document Viewier during `bbx install`. Whenever you click on a document in BrowserBox (e.g. *.doc, .xls, .pages, .pdf, .rtf etc*) the document will automatically be converted to a safe sequence of page images that you can view with the built in viewier. Unsupported formats still have the options of viewing as a binary hex format for analysis using the built-in hex viewer. Also, common archive formats (e.g. *.zip, *.gz, *.7z, *.bz etc*) will be safely expanded remotely and displayed with the built-in file and directory viewier. 
-
-### Inspect the JavaScript and HTML of the remote page with DevTools
-
-When viewing a page just right click (long-tap on mobile) and select "Inspect in DevTools" to open the DevTools viewier for the page. 
-
-### Tunnel over Tor
-
-BrowserBox supports Tor natively, both accessing the hidden web and running as an `.onion` site:
-
-```bash
-bbx tor-run 
-```
-
-### Tunnel over SSH
-
-You can set up a private SSH tunnel between your machine and your BrowserBox machine (e.g. `user@remote_host`). Then BrowserBox ports are never exposed to the public internet.
-
-1. **Setup your local devices**
-
-Run `install` and enter `localhost` for the hostname when prompted. The `https://localhost` certificates will be trusted by your local machine so copy them to your remote machine for BrowserBox, and create the SSH tunnel:
-
-```console
-bbx install # enter localhost when prompted
-scp ~/sslcerts/*.pem user@remote_host:~/sslcerts/
-ssh -L 9997:localhost:9997 -L 9998:localhost:9998 -L 9999:localhost:9999 -L 10000:localhost:10000 -L 10001:localhost:10001 user@remote_host
-```
-
-2. **Run BrowserBox on your remote machine (e.g. user@remote_host)**
-
-Run BrowserBox on the remote machine on the same ports you tunneled by specifying the middle port:
-
-```console
-bbx setup --hostname localhost --port 9999
-bbx run
-```
-
-3. **Remote access BrowserBox from your local devices**
-
-Open a web browser on your local device and put the **Login Link** from step 2 into the address bar.
-
->[!TIP]
->*Windows instructions differ slightly. Consult AI for guidance.*
+- **Secure Document Viewing**: Safely preview files without downloads (Linux only).
+- **DevTools Access**: Inspect remote pages with a right-click.
+- **Tor & SSH Tunneling**: Run anonymously or privately—see [Advanced Setup Guide](ADVANCE.md#) for details.
 
 ## FAQ
 
 **Do you have perpetual licenses, i.e, without a subscription and frozen to a version?**
 
 Yes, but the ACV is $50,000 and above. Contact us: sales@dosaygo.com
+
+**Why choose BrowserBox over alternatives?**
+
+BrowserBox combines enterprise-grade security with developer-friendly tools and unmatched flexibility—no other RBI solution offers multiple OS compatibility, Docker, and embedding in one package.
 
 **When I purchase a license, what do I get?**
 
@@ -273,6 +248,10 @@ You will get an email with the link to view the license key. This key is good fo
 *I want to buy more licenses, do you offer discounts?*
 
 Yes, see our payment page for volume discounts. These are only available to commercial licensees. Non-commercial (government, non-profit, individuals) keep a flat rate regardless of volume. For any questions regarding volume discounts, support or other custom packages, please contact us: sales@dosaygo.com
+
+*I think I might have used BrowserBox in violation in the past, but now I want to get a license and get compliant, what should I do?*
+
+Contact us as soon as possible, we can forgive and work it out as long as you let us know your situation and get compliant. Email: legal@dosaygo.com
 
 **More questions?**  
 
