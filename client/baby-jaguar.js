@@ -157,15 +157,15 @@ async function connectToBrowser() {
   // First, hit /login to set the cookie
   terminal.cyan('Authenticating to set session cookie...\n');
   let cookieHeader;
+  let cookieValue;
   try {
     const response = await fetch(loginUrl, {
       method: 'GET',
-      headers: { 'Accept': 'text/html' }, // /login might return HTML
+      headers: { 'Accept': 'text/html' },
     });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
-    // Extract the cookie from Set-Cookie header
     const setCookie = response.headers.get('set-cookie');
     if (!setCookie) {
       throw new Error('No Set-Cookie header in /login response');
@@ -174,7 +174,7 @@ async function connectToBrowser() {
     if (!cookieMatch) {
       throw new Error('Could not parse browserbox cookie from Set-Cookie header');
     }
-    const cookieValue = cookieMatch[1];
+    cookieValue = cookieMatch[1];
     const cookieName = setCookie.split('=')[0];
     cookieHeader = `${cookieName}=${cookieValue}`;
     if (DEBUG) console.log(`Captured cookie: ${cookieHeader}`);
@@ -249,7 +249,7 @@ async function connectToBrowser() {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'Cookie': cookieHeader,
+        'x-browserbox-local-auth': token,
       },
     });
     if (!response.ok) {
@@ -266,10 +266,10 @@ async function connectToBrowser() {
     process.exit(1);
   }
 
-  // Connect to the WebSocket debugger URL with the cookie
+  // Connect to the WebSocket debugger URL with the cookie value in x-browserbox-local-auth
   terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
   const socket = new WebSocket(wsDebuggerUrl, {
-    headers: { 'Cookie': cookieHeader },
+    headers: { 'x-browserbox-local-auth': cookieValue },
   });
 
   const Resolvers = {};
