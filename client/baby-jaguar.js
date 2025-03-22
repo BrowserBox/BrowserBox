@@ -153,9 +153,10 @@ async function getTerminalSize() {
  * Connects to the browser and returns CDP send/on functions with a selected session.
  */
 async function connectToBrowser() {
-  // Fetch tabs from BrowserBox API
-  terminal.cyan('Fetching available tabs...\n');
+  // Fetch tabs from BrowserBox API and capture the cookie
+  terminal.cyan('Fetching available tabs and auth cookie...\n');
   let targets;
+  let cookieHeader;
   try {
     const response = await fetch(apiUrl, {
       method: 'GET',
@@ -166,6 +167,21 @@ async function connectToBrowser() {
     }
     const data = await response.json();
     targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
+
+    // Extract the cookie from Set-Cookie header
+    const setCookie = response.headers.get('set-cookie');
+    if (!setCookie) {
+      throw new Error('No Set-Cookie header in response');
+    }
+    // Parse the cookie (e.g., browserbox-1.0-userauth-sec-9321=abc123; Path=/; ...)
+    const cookieMatch = setCookie.match(/browserbox-[^=]+=(.+?)(?:;|$)/);
+    if (!cookieMatch) {
+      throw new Error('Could not parse browserbox cookie from Set-Cookie header');
+    }
+    const cookieValue = cookieMatch[1];
+    const cookieName = setCookie.split('=')[0];
+    cookieHeader = `${cookieName}=${cookieValue}`;
+    if (DEBUG) console.log(`Captured cookie: ${cookieHeader}`);
   } catch (error) {
     if (DEBUG) console.warn(error);
     terminal.red(`Error fetching tabs: ${error.message}\n`);
@@ -215,7 +231,7 @@ async function connectToBrowser() {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'x-browserbox-local-auth': token,
+        'Cookie': cookieHeader,
       },
     });
     if (!response.ok) {
@@ -232,10 +248,10 @@ async function connectToBrowser() {
     process.exit(1);
   }
 
-  // Connect to the WebSocket debugger URL with auth
+  // Connect to the WebSocket debugger URL with the cookie
   terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
   const socket = new WebSocket(wsDebuggerUrl, {
-    headers: { 'x-browserbox-local-auth': token },
+    headers: { 'Cookie': cookieHeader },
   });
 
   const Resolvers = {};
