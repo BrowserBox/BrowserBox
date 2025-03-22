@@ -1,54 +1,75 @@
 #!/usr/bin/env node
 
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const os = require('os');
 
 console.log('Installing BrowserBox CLI (`bbx`)...');
 
-// Function to execute shell commands and handle output
-function runCommand(command) {
+/**
+ * Runs the installation command interactively for the given platform.
+ * @param {string} platform - The OS platform ('win32', 'linux', 'darwin', etc.)
+ * @returns {Promise<void>} - Resolves on success, rejects on failure
+ */
+function runInstallation(platform) {
+  let shell, args;
+
+  if (platform === 'win32') {
+    // Windows: Use PowerShell
+    shell = 'powershell.exe';
+    args = ['-Command', 'irm bbx.dosaygo.com | iex'];
+  } else {
+    // Linux/macOS: Use Bash
+    shell = '/bin/bash';
+    args = ['-c', 'bash <(curl -sSL bbx.sh.dosaygo.com) install'];
+  }
+
   return new Promise((resolve, reject) => {
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error: ${stderr}`);
-        reject(error);
-        return;
+    const child = spawn(shell, args, { stdio: 'inherit' });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`Installation failed with exit code ${code}`));
       }
-      console.log(stdout);
-      resolve(stdout);
+    });
+
+    child.on('error', (err) => {
+      reject(err);
     });
   });
 }
 
-// Detect the operating system and run the appropriate install command
+/**
+ * Main function to install BrowserBox and provide next steps.
+ */
 async function installBrowserBox() {
   const platform = os.platform();
+  console.log(`Detected OS: ${platform}`);
 
   try {
+    // Run the installation interactively
+    await runInstallation(platform);
+    console.log('\nBrowserBox CLI (`bbx`) installed successfully!');
+
+    // Provide platform-specific next steps
     if (platform === 'win32') {
-      // Windows installation
-      console.log('Detected Windows OS. Running PowerShell command...');
-      await runCommand('irm bbx.dosaygo.com | iex');
-      console.log('BrowserBox CLI (`bbx`) installed successfully!');
-      console.log('Next steps for Windows:');
+      console.log('### Next Steps for Windows:');
       console.log('1. Purchase a license at https://dosaygo.com');
       console.log('2. Receive your API key via email after purchase (Note: `bbx activate` is not available on Windows)');
       console.log('3. Run with: bbx setup && bbx run');
     } else {
-      // Linux, macOS, or other Unix-like systems
-      console.log('Detected Unix-like OS (Linux/macOS). Running bash command...');
-      await runCommand('bash <(curl -sSL bbx.sh.dosaygo.com) install');
-      console.log('BrowserBox CLI (`bbx`) installed successfully!');
-      console.log('Next steps for Linux/macOS:');
+      console.log('### Next Steps for Linux/macOS:');
       console.log('1. Purchase a license at https://dosaygo.com');
       console.log('2. Activate with: bbx activate [seats]');
       console.log('3. Run with: bbx setup && bbx run');
     }
   } catch (error) {
-    console.error('Installation failed. Please try manually or contact support@dosaygo.com');
+    console.error(`\nInstallation failed: ${error.message}`);
+    console.error('Please try installing manually or contact support@dosaygo.com');
     process.exit(1);
   }
 }
 
-// Run the installation
+// Execute the installation
 installBrowserBox();
