@@ -13,7 +13,7 @@
     }
   },
   "bin": {
-    "bbx": "./branch-bbx.cjs"
+    "bbx-install": "./branch-bbx.cjs"
   },
   "parcelIgnore": [
     ".*/bang.js",
