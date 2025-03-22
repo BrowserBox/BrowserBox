@@ -133,7 +133,7 @@ BrowserBox delivers a secure, remote browsing environment that protects your net
    ```
 
    >[!IMPORTANT]
-   >When you purchase a license you will be emailed a link to view your **License Key** securely. Save it somewhere safely, you can only view it one time. If you lose your license key Support can roll it to a new key, invalidating the old one. Contact support@dosaygo.com for assistance. Please note: evaluation license keys cannot be rolled.
+   >When you purchase a license you will be emailed a link to view your **License Key** securely. Save it somewhere safely, you can only view it one time. If your license key is lost, <a href=mailto:support@dosaygo.com>Support</a> can roll it to a new key and invalidate the old one. Please note: evaluation license keys cannot be rolled.
 
 3. **Activate your copy of BrowserBox with a License Key**
 
