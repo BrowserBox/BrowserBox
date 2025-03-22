@@ -55,6 +55,17 @@ Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI
    bash <(curl -sSL bbx.sh.dosaygo.com) install
    ```
 
+   ** @browserbox/browserbox **
+
+   You can also install from NPM, like so:
+
+   ```bash
+   npm i -g @browserbox/browserbox
+   bbx-install 
+   ```
+   
+   *Which just runs either the above **Windows** or **Everywhere else** installation depending on your OS.*
+
 2. **Purchase a License and Activate Your Copy of BrowserBox**
 
    **On Windows:** Head to [our website to purchase a license](https://dosaygo.com)
