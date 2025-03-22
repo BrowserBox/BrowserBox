@@ -52,8 +52,19 @@ Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI
    **Everywhere else:**
 
    ```bash
-   bash <(curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh) install
+   bash <(curl -sSL bbx.sh.dosaygo.com) install
    ```
+
+   **@browserbox/browserbox**
+
+   You can also install from NPM, like so:
+
+   ```bash
+   npm i -g @browserbox/browserbox
+   bbx-install 
+   ```
+   
+   *Which just runs either the above **Windows** or **Everywhere else** installation depending on your OS.*
 
 2. **Purchase a License and Activate Your Copy of BrowserBox**
 
@@ -134,7 +145,7 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
    **Everywhere else:**
 
    ```bash
-   bash <(curl -sSL https://raw.githubusercontent.com/BrowserBox/BrowserBox/refs/heads/main/bbx.sh) install
+   bash <(curl -sSL bbx.sh.dosaygo.com) install
    ```
 
 2. **Purchase a License and Activate Your Copy of BrowserBox**
