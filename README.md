@@ -118,12 +118,9 @@ BrowserBox delivers a secure, remote browsing environment that protects your net
 
 2. **Purchase a License**
 
-  - **Commercial**: Starts at $99/user/year, with volume discounts for larger teams—perfect for businesses securing their workforce. See [pricing details](https://dosaygo.com/pricing).
+  - **Commercial**: Starts at $99/user/year, with volume discounts for larger teams—perfect for businesses securing their workforce. See [pricing details](https://dosaygo.com/).
   - **Non-Commercial**: $39/user/year flat rate—for individuals, non-profits, and government use.
   - **Evaluation**: Sign up for a 14-day free trial via the [waitlist](https://tally.so/r/wkv4aM).
-
-   >[!IMPORTANT]
-   >When you purchase a license key you will be emailed a link to view it securely. Save it somewhere safely, you can only view it one time. If you lose your license key Support can roll it to a new key, invalidating the old one. Contact support@dosaygo.com for assistance. Please note: evaluation license keys cannot be rolled.
 
    **On Windows:** Head to [our website to purchase a license](https://dosaygo.com)
 
@@ -134,6 +131,9 @@ BrowserBox delivers a secure, remote browsing environment that protects your net
    ```console
    bbx activate [seats]
    ```
+
+   >[!IMPORTANT]
+   >When you purchase a license you will be emailed a link to view your **License Key** securely. Save it somewhere safely, you can only view it one time. If you lose your license key Support can roll it to a new key, invalidating the old one. Contact support@dosaygo.com for assistance. Please note: evaluation license keys cannot be rolled.
 
 3. **Activate your copy of BrowserBox with a License Key**
 
