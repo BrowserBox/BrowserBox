@@ -193,6 +193,45 @@ We enforce licensing and protections for our business. Usage data ensures compli
 
 ---
 
+## Advanced Usage
+
+### Tunnel over Tor
+
+BrowserBox supports Tor natively, both accessing the hidden web and running as an `.onion` site:
+
+```bash
+bbx tor-run 
+```
+
+### Tunnel over SSH
+
+You can set up a private SSH tunnel between your machine and your BrowserBox machine (e.g. `user@remote_host`). Then BrowserBox ports are never exposed to the public internet.
+
+1. **Setup your local devices**
+
+Run `install` and enter `localhost` for the hostname when prompted. The `https://localhost` certificates will be trusted by your local machine so copy them to your remote machine for BrowserBox, and create the SSH tunnel:
+
+```
+bbx install # enter localhost when prompted
+scp ~/sslcerts/*.pem user@remote_host:~/sslcerts/
+ssh -L 9997:localhost:9997 -L 9998:localhost:9998 -L 9999:localhost:9999 -L 10000:localhost:10000 -L 10001:localhost:10001 user@remote_host
+```
+
+2. **Your (remote) BrowserBox machine (e.g. user@remote_host)**
+
+Run BrowserBox on the remote machine on the same ports you tunneled by specifying the middle port:
+
+```bash
+bbx setup --hostname localhost --port 9999
+bbx run
+```
+
+3. **Access remote BrowserBox from your local devices**
+
+Open a web browser on your local device and put the **Login Link** from step 2 into the address bar.
+
+*Windows instructions differ slightly. Consult AI for guidance.*
+
 ## FAQ
 
 **How do I get a license?**  
@@ -212,32 +251,6 @@ We enforce licensing and protections for our business. Usage data ensures compli
 *I want to buy more licenses, do you offer discounts?*
 
 Yes, see our payment page for volume discounts. These are only available to commercial licensees. Non-commercial (government, non-profit, individuals) keep a flat rate regardless of volume. For any questions regarding volume discounts, support or other custom packages, please contact us: sales@dosaygo.com
-
-*Why pay for a license for a browser? Browser's are **free**!!!*
-
-Yeah, they're *free*, when *you're* the product. With BrowserBox, you are not the product. So pay money, instead of choosing a product where you pay with your data.
-
-*But this used to be **FREE** why do I need to pay now?*
-
-If you don't pay it won't work. Is it right to take, giving nothing in return? Why is anything paid and not free? Because it's valuable. DOSAYGO (the corporation offering BrowserBox) is not a socialist state, it's a federal-tax-paying corporation. Human society functions on exchanges of value. Give and take. Otherwise it's just theft, plunder and abuse. And this is peacetime. 
-
-*But if the code is just there on GitHub, can't I just take it? I mean I can probably modify it and remove the licensing restrictions, can't I?*
-
-Maybe you *can*, but should you? Are you permitted to? No. Because that's theft. Are you really a software pirate? Because that's what that is. There's always software pirates, but BrowserBox is a paid product. The reason the source code is on GitHub (rather than offered as an opaque and obfuscated binary for download), is because there's value in transparency. That way, you also you can trust what you are putting in your computer. 
-
-*But why did it used to be free?*
-
-Actually BrowserBox was never *free*, not even once. Earlier versions used different licenses, including "free software" licenses, but BrowserBox was always offered as a commercial product, with custom licensing and deployments as a paid service, since version 1. A few versions ago, BrowserBox began using stricter commercial licenses, and offered for a while "free for non-commercial use", permitting use of these versions by non-profits, governments and individuals for leisure. Even then, custom work, support and deployments were all paid offerings of DOSAYGO. Today, at version 10, all usage of BrowserBox, whether commercial or non-commercial is paid and requires a license key. This is the Way. 
-
-Use of any code from these versions with earlier versions or forks of BrowserBox is strictly prohibited and violates our business terms. It will likely lead to legal action, and obviously accrues bad karma. Also, reputation is key to consider.
-
-*But we're smarter than you and live far away we can probably get away with it*
-
-We'll see. Smart is as smart does.
-
-*But our company has lots of money and more people than you. We will beat you in court, and we have clever lawyers who will try to rip you off!*
-
-We'll see. But with all that money, what makes it hard for you to pay for BrowserBox?
 
 **More questions?**  
 
