@@ -41,7 +41,8 @@ const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
 const port = parseInt(urlObj.port, 10) || (urlObj.protocol === 'https:' ? 443 : 80);
 const proxyPort = port + 1;
 const proxyBaseUrl = `${urlObj.protocol}//${urlObj.hostname}:${proxyPort}`;
-const apiUrl = `${baseUrl}/api/v10/tabs?sessionToken=${token}`;
+const loginUrl = `${baseUrl}/login?session_token=${token}`;
+const apiUrl = `${baseUrl}/api/v10/tabs`;
 
 /**
  * Logs a message to the log file with a timestamp.
@@ -153,27 +154,22 @@ async function getTerminalSize() {
  * Connects to the browser and returns CDP send/on functions with a selected session.
  */
 async function connectToBrowser() {
-  // Fetch tabs from BrowserBox API and capture the cookie
-  terminal.cyan('Fetching available tabs and auth cookie...\n');
-  let targets;
+  // First, hit /login to set the cookie
+  terminal.cyan('Authenticating to set session cookie...\n');
   let cookieHeader;
   try {
-    const response = await fetch(apiUrl, {
+    const response = await fetch(loginUrl, {
       method: 'GET',
-      headers: { 'Accept': 'application/json' },
+      headers: { 'Accept': 'text/html' }, // /login might return HTML
     });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
-    const data = await response.json();
-    targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
-
     // Extract the cookie from Set-Cookie header
     const setCookie = response.headers.get('set-cookie');
     if (!setCookie) {
-      throw new Error('No Set-Cookie header in response');
+      throw new Error('No Set-Cookie header in /login response');
     }
-    // Parse the cookie (e.g., browserbox-1.0-userauth-sec-9321=abc123; Path=/; ...)
     const cookieMatch = setCookie.match(/browserbox-[^=]+=(.+?)(?:;|$)/);
     if (!cookieMatch) {
       throw new Error('Could not parse browserbox cookie from Set-Cookie header');
@@ -182,6 +178,28 @@ async function connectToBrowser() {
     const cookieName = setCookie.split('=')[0];
     cookieHeader = `${cookieName}=${cookieValue}`;
     if (DEBUG) console.log(`Captured cookie: ${cookieHeader}`);
+  } catch (error) {
+    if (DEBUG) console.warn(error);
+    terminal.red(`Error during login: ${error.message}\n`);
+    process.exit(1);
+  }
+
+  // Fetch tabs from BrowserBox API using the cookie
+  terminal.cyan('Fetching available tabs...\n');
+  let targets;
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Cookie': cookieHeader,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    }
+    const data = await response.json();
+    targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
   } catch (error) {
     if (DEBUG) console.warn(error);
     terminal.red(`Error fetching tabs: ${error.message}\n`);
