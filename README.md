@@ -108,6 +108,9 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
 
 2. **Purchase a License**
 
+   >[!IMPORTANT]
+   >When you purchase a license key you will be emailed a link to view it securely. Save it somewhere safely, you can only view it one time. If you lose your license key Support can roll it to a new key, invalidating the old one. Contact support@dosaygo.com for assistance. Please note: evaluation license keys cannot be rolled.
+
    **On Windows:** Head to [our website to purchase a license](https://dosaygo.com)
 
    **Everywhere else:**
@@ -135,11 +138,12 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
   If you used `bbx activate` it will already be saved.
 
 4. **Use BrowserBox**
+
    ```console
-   bbx --help
-   bbx setup
-   bbx run
-   bbx stop
+     bbx --help
+     bbx setup
+     bbx run
+     bbx stop
    ```
 
    And access the **Login Link** you get from any browser on any device. (Make sure you set up your DNS records correctly if connecting over the public Internet).
@@ -243,6 +247,14 @@ Open a web browser on your local device and put the **Login Link** from step 2 i
 >*Windows instructions differ slightly. Consult AI for guidance.*
 
 ## FAQ
+
+**Do you have perpetual licenses, i.e, without a subscription and frozen to a version?**
+
+Yes, but the ACV is $50,000 and above. Contact us: sales@dosaygo.com
+
+**When I purchase a license, what do I get?**
+
+You will get an email with the link to view the license key. This key is good for the number of seats you purchased. You can adjust the seat count in the **Qty** field on the payment page, after hitting subscribe. 
 
 **How do I get a license?**  
 
