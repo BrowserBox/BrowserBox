@@ -33,17 +33,15 @@ Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) te
 
 <a href="https://github.com/BrowserBox/BrowserBox?tab=readme-ov-file#get-started"><img width="1204" alt="Get our New bbx tool" src="https://github.com/user-attachments/assets/4d549f18-1fbb-463d-bf6a-4b2ce121dea2" /></a>
 
-# `bbx` 
-
 # `bbx`
 
-- ✅ Manage and activate your BrowserBox copy
-- 💳 Purchase a BrowserBox license key
-- 👩‍💻👨‍💻 Run BrowserBox as multiple users on one machine
+- ✅💻 Manage and activate your BrowserBox copy
+- 💳💻 Purchase a BrowserBox license key
+- 👩👨 Run BrowserBox as multiple users on one machine
 - 🐳🟦 Run BrowserBox inside Docker
 - 🧅🟣 Run BrowserBox through Tor
-- ⬇️✅ ✨ Easily install and update BrowserBox
-- 🌟 And more!
+- ⬇️✅✨ Easily install and update BrowserBox
+- 🌟😍 And more!
 
 # Useful Links
 
