@@ -152,6 +152,12 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
 
    **On Windows:** Head to [our website to purchase a license](https://dosaygo.com)
 
+   Then before using `bbx` set the `LICENSE_KEY` environment variable:
+
+   ```powershell
+   $Env:LICENSE_KEY = "your license key"
+   ```
+
    **Everywhere else:**
 
    Use our website to purchase a license, or the command line:
@@ -159,6 +165,9 @@ BrowserBox isolates web content in a secure, remote environment, protecting your
    ```console
    bbx activate [seats]
    ```
+
+   *Note: `LICENSE_KEY` will be saved automatically when using bbx activate. On non-Windows systems you can also set it yourself, 
+   using: `bbx certify`*
 
 3. **Use BrowserBox**
    ```console
