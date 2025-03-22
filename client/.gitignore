@@ -1,2 +1,3 @@
 *.traineddata
 *.log
+*log.txt

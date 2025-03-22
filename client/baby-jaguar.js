@@ -10,13 +10,9 @@ const { terminal } = TK;
 
 const execAsync = promisify(exec);
 
-// Debug flag for detailed error logging
 const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
-
-// Log file for WebSocket messages
 const LOG_FILE = 'cdp-log.txt';
 
-// Parse command-line arguments for login link
 const args = process.argv.slice(2);
 let loginLink;
 if (args.length === 1) {
@@ -43,40 +39,32 @@ const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
 const port = parseInt(urlObj.port, 10) || (urlObj.protocol === 'https:' ? 443 : 80);
 const proxyPort = port + 1;
 const proxyBaseUrl = `${urlObj.protocol}//${urlObj.hostname}:${proxyPort}`;
-const loginUrl = `${baseUrl}/login?token=${token}`; // Use session_token as per BrowserBox
+const loginUrl = `${baseUrl}/login?token=${token}`;
 const apiUrl = `${baseUrl}/api/v10/tabs`;
 
-/**
- * Logs a message to the log file with a timestamp.
- * @param {string} direction - 'SEND' or 'RECEIVE'
- * @param {Object|string} message - The message to log
- */
 function logMessage(direction, message) {
   const timestamp = new Date().toISOString();
   const logEntry = JSON.stringify({ timestamp, direction, message }, null, 2) + '\n';
   try {
     appendFileSync(LOG_FILE, logEntry);
+    // Print to terminal for immediate feedback
+    terminal.magenta(`[${timestamp}] ${direction}: `);
+    terminal(JSON.stringify(message, null, 2) + '\n');
   } catch (error) {
     console.error(`Failed to write to log file: ${error.message}`);
   }
 }
 
-/**
- * Prints text from a web page to scaled terminal coordinates using Chrome DevTools Protocol.
- * @param {Object} params - The API object containing send and on functions.
- * @param {Function} params.send - Function to send CDP commands.
- * @param {Function} params.on - Function to listen for CDP events.
- * @param {string} params.sessionId - Session ID for the target tab.
- */
 async function printTextLayoutToTerminal({ send, on, sessionId }) {
   try {
     terminal.cyan('Enabling DOM and snapshot domains...\n');
-    await send('DOM.enable', {}, sessionId);
-    await send('DOMSnapshot.enable', {}, sessionId);
+    send('DOM.enable', {}, sessionId);
+    terminal.cyan('DOM enabled, enabling DOMSnapshot...\n');
+    send('DOMSnapshot.enable', {}, sessionId);
+    send('Page.reload', {}, sessionId);
+    terminal.cyan('DOMSnapshot enabled, capturing snapshot...\n');
 
-    terminal.cyan('Capturing page snapshot...\n');
-    const snapshot = await send('DOMSnapshot.captureSnapshot', {}, sessionId);
-
+    const snapshot = await send('DOMSnapshot.captureSnapshot', {computedStyles:[]}, sessionId);
     if (!snapshot?.documents?.length) {
       throw new Error('No documents in snapshot');
     }
@@ -99,10 +87,8 @@ async function printTextLayoutToTerminal({ send, on, sessionId }) {
     for (const { text, boundingBox } of textLayoutBoxes) {
       const termX = Math.floor(boundingBox.x * scaleX);
       const termY = Math.floor(boundingBox.y * scaleY);
-
       const clampedX = Math.max(0, Math.min(termX, termWidth - 1));
       const clampedY = Math.max(0, Math.min(termY, termHeight - 1));
-
       terminal.moveTo(clampedX + 1, clampedY + 1)(text);
     }
 
@@ -120,26 +106,49 @@ async function printTextLayoutToTerminal({ send, on, sessionId }) {
  */
 function extractTextLayoutBoxes(snapshot) {
   const textLayoutBoxes = [];
-  const domNodes = snapshot.documents[0].domNodes;
+  const strings = snapshot.strings;
+  const document = snapshot.documents[0]; // Assuming we work with the first document
+  const nodeTree = document.nodes;
+  const textBoxes = document.textBoxes;
 
-  for (const node of domNodes) {
-    if (node.nodeType === 3 && node.textValue) {
-      const textValue = node.textValue.trim();
-      if (!textValue) continue;
-      for (const fragment of node.textFragments || []) {
-        const { range, boundingBox } = fragment;
-        const text = textValue.substring(range.start, range.start + range.length);
-        if (text) textLayoutBoxes.push({ text, boundingBox });
-      }
-    }
+  if (!textBoxes || !textBoxes.bounds || !textBoxes.start || !textBoxes.length) {
+    terminal.yellow('No text boxes found in snapshot.\n');
+    return textLayoutBoxes;
   }
+
+  // Iterate over each text box in TextBoxSnapshot
+  for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
+    const layoutIndex = textBoxes.layoutIndex[i]; // Index into LayoutTreeSnapshot.nodeIndex
+    const bounds = textBoxes.bounds[i]; // [x, y, width, height]
+    const start = textBoxes.start[i]; // Starting character index
+    const length = textBoxes.length[i]; // Number of characters
+
+    // Find the corresponding node in LayoutTreeSnapshot
+    const layoutNodeIndex = document.layout.nodeIndex.indexOf(layoutIndex);
+    if (layoutNodeIndex === -1) continue; // No matching layout node
+
+    const textIndex = document.layout.text[layoutNodeIndex]; // StringIndex into strings
+    if (textIndex === undefined || textIndex < 0 || textIndex >= strings.length) continue;
+
+    // Extract the text substring
+    const fullText = strings[textIndex];
+    const text = fullText.substring(start, start + length).trim();
+    if (!text) continue;
+
+    // Convert bounds to boundingBox format {x, y, width, height}
+    const boundingBox = {
+      x: bounds[0],
+      y: bounds[1],
+      width: bounds[2],
+      height: bounds[3],
+    };
+
+    textLayoutBoxes.push({ text, boundingBox });
+  }
+
   return textLayoutBoxes;
 }
 
-/**
- * Gets the current terminal size in columns and rows.
- * @returns {Promise<Object>} Object with columns and rows properties.
- */
 async function getTerminalSize() {
   try {
     const { stdout } = await execAsync('stty size');
@@ -152,32 +161,17 @@ async function getTerminalSize() {
   }
 }
 
-/**
- * Connects to the browser and returns CDP send/on functions with a selected session.
- */
 async function connectToBrowser() {
-  // First, hit /login to set the cookie
   terminal.cyan('Authenticating to set session cookie...\n');
   let cookieHeader;
   let cookieValue;
   try {
-    const response = await fetch(loginUrl, {
-      method: 'GET',
-      headers: { 'Accept': 'text/html' },
-      redirect: 'manual', // Don't follow redirects
-    });
-    if (response.status !== 302) {
-      throw new Error(`Expected 302 redirect, got HTTP ${response.status}: ${await response.text()}`);
-    }
+    const response = await fetch(loginUrl, { method: 'GET', headers: { 'Accept': 'text/html' }, redirect: 'manual' });
+    if (response.status !== 302) throw new Error(`Expected 302 redirect, got HTTP ${response.status}: ${await response.text()}`);
     const setCookie = response.headers.get('set-cookie');
-    if (DEBUG) console.log(`${loginUrl} Headers:`, response.headers, response.status);
-    if (!setCookie) {
-      throw new Error('No Set-Cookie header in /login response');
-    }
+    if (!setCookie) throw new Error('No Set-Cookie header in /login response');
     const cookieMatch = setCookie.match(/browserbox-[^=]+=(.+?)(?:;|$)/);
-    if (!cookieMatch) {
-      throw new Error('Could not parse browserbox cookie from Set-Cookie header');
-    }
+    if (!cookieMatch) throw new Error('Could not parse browserbox cookie');
     cookieValue = cookieMatch[1];
     const cookieName = setCookie.split('=')[0];
     cookieHeader = `${cookieName}=${cookieValue}`;
@@ -188,20 +182,11 @@ async function connectToBrowser() {
     process.exit(1);
   }
 
-  // Fetch tabs from BrowserBox API using the cookie
   terminal.cyan('Fetching available tabs...\n');
   let targets;
   try {
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Cookie': cookieHeader,
-      },
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-    }
+    const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json', 'Cookie': cookieHeader } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     const data = await response.json();
     targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
   } catch (error) {
@@ -211,67 +196,39 @@ async function connectToBrowser() {
   }
 
   if (!targets.length) {
-    terminal.yellow('No page or tab targets available to connect to.\n');
+    terminal.yellow('No page or tab targets available.\n');
     process.exit(0);
   }
 
-  // Let user select a tab
   terminal.clear().green('Available tabs:\n');
   const items = targets.map((t, i) => `${i + 1}. ${t.title || t.url || t.targetId}`);
-  let selection;
-  try {
-    selection = await terminal.singleColumnMenu(items, {
-      style: terminal.white,
-      selectedStyle: terminal.green.bgBlack,
-      exitOnUnexpectedKey: true,
-      keyBindings: {
-        '1': 'submit',
-        '2': 'submit',
-        '3': 'submit',
-        '4': 'submit',
-        '5': 'submit',
-        '6': 'submit',
-        '7': 'submit',
-        '8': 'submit',
-        '9': 'submit',
-      },
-    }).promise;
-  } catch (error) {
-    if (DEBUG) console.warn(error);
+  const selection = await terminal.singleColumnMenu(items, {
+    style: terminal.white,
+    selectedStyle: terminal.green.bgBlack,
+    exitOnUnexpectedKey: true,
+    keyBindings: { '1': 'submit', '2': 'submit', '3': 'submit', '4': 'submit', '5': 'submit', '6': 'submit', '7': 'submit', '8': 'submit', '9': 'submit' },
+  }).promise.catch(() => {
     terminal.yellow('Selection interrupted. Exiting...\n');
     process.exit(0);
-  }
+  });
 
   const selectedTarget = targets[selection.selectedIndex];
   const targetId = selectedTarget.targetId;
 
-  // Fetch the WebSocket debugger URL from /json/version on the proxy port
   terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
   let wsDebuggerUrl;
   try {
-    const response = await fetch(`${proxyBaseUrl}/json/version`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'x-browserbox-local-auth': cookieValue,
-      },
-    });
-    if (!response.ok) {
-      console.warn(token);
-      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-    }
+    const response = await fetch(`${proxyBaseUrl}/json/version`, { method: 'GET', headers: { 'Accept': 'application/json', 'x-browserbox-local-auth': cookieValue } });
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     const data = await response.json();
     wsDebuggerUrl = data.webSocketDebuggerUrl;
-    if (!wsDebuggerUrl) {
-      throw new Error('No webSocketDebuggerUrl in /json/version response');
-    }
+    if (!wsDebuggerUrl) throw new Error('No webSocketDebuggerUrl in response');
   } catch (error) {
     if (DEBUG) console.warn(error);
     terminal.red(`Error fetching WebSocket debugger URL: ${error.message}\n`);
     process.exit(1);
   }
 
-  // Connect to the WebSocket debugger URL with the cookie value in x-browserbox-local-auth
   wsDebuggerUrl = wsDebuggerUrl.replace('ws://localhost', `wss://${hostname}`);
   wsDebuggerUrl = `${wsDebuggerUrl}/${token}`;
   terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
@@ -283,14 +240,12 @@ async function connectToBrowser() {
   const Resolvers = {};
   let id = 0;
 
-  socket.on('close', () => {
-    terminal.yellow('WebSocket disconnected\n');
-  });
-
+  socket.on('close', () => terminal.yellow('WebSocket disconnected\n'));
   socket.on('error', (err) => {
     if (DEBUG) console.warn(err);
     terminal.red(`WebSocket error: ${err.message}\n`);
   });
+
   socket.on('message', async (data) => {
     let message;
     try {
@@ -303,9 +258,10 @@ async function connectToBrowser() {
       terminal.red(`Invalid message: ${String(data).slice(0, 50)}...\n`);
       return;
     }
-    if (message.id && Resolvers[`${message.sessionId || 'root'}:${message.id}`]) {
-      Resolvers[`${message.sessionId || 'root'}:${message.id}`](message.result || message.error);
-      delete Resolvers[`${message.sessionId || 'root'}:${message.id}`];
+    const key = `${message.sessionId || 'root'}:${message.id}`;
+    if (message.id && Resolvers[key]) {
+      Resolvers[key](message.result || message.error);
+      delete Resolvers[key];
     } else {
       logMessage('UNHANDLED', message);
     }
@@ -314,18 +270,30 @@ async function connectToBrowser() {
   async function send(method, params = {}, sessionId) {
     const message = { method, params, sessionId, id: ++id };
     const key = `${sessionId || 'root'}:${message.id}`;
-    let resolve;
-    const promise = new Promise((res) => (resolve = res));
+    let resolve, reject;
+    const promise = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
     Resolvers[key] = resolve;
+
+    // Add a timeout to detect hangs
+    const timeout = setTimeout(() => {
+      delete Resolvers[key];
+      reject(new Error(`Timeout waiting for response to ${method} (id: ${message.id})`));
+    }, 10000); // 10 seconds timeout
+
     try {
       logMessage('SEND', message);
       socket.send(JSON.stringify(message));
     } catch (error) {
+      clearTimeout(timeout);
+      delete Resolvers[key];
       if (DEBUG) console.warn(error);
       terminal.red(`Send error: ${error.message}\n`);
       throw error;
     }
-    return promise;
+    return promise.finally(() => clearTimeout(timeout));
   }
 
   await new Promise((resolve, reject) => {
@@ -334,7 +302,6 @@ async function connectToBrowser() {
   });
   terminal.green('Connected to WebSocket\n');
 
-  // Get all targets to find the correct target ID
   terminal.cyan('Fetching all targets...\n');
   const { targetInfos } = await send('Target.getTargets', {});
   const pageTarget = targetInfos.find(t => t.type === 'page' && t.url === selectedTarget.url);
@@ -351,16 +318,17 @@ async function connectToBrowser() {
   return { send, sessionId };
 }
 
-// Main execution
 (async () => {
+  let socket;
   try {
     terminal.cyan('Starting browser connection...\n');
-    const { send, on, sessionId } = await connectToBrowser();
-    await printTextLayoutToTerminal({ send, on, sessionId });
+    const result = await connectToBrowser();
+    socket = result.socket; // Store socket for cleanup
+    await printTextLayoutToTerminal(result);
 
     process.on('SIGINT', () => {
-      terminal.yellow('\nShutting down...');
-      socket.close();
+      terminal.yellow('\nShutting down...\n');
+      if (socket) socket.close();
       process.exit(0);
     });
   } catch (error) {
