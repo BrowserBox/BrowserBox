@@ -74,14 +74,19 @@ function extractTextLayoutBoxes(snapshot) {
     return textLayoutBoxes;
   }
 
-  DEBUG && terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
+  terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
 
   // Map layoutIndex to nodeIndex
   const layoutToNode = new Map();
   layout.nodeIndex.forEach((nodeIdx, layoutIdx) => layoutToNode.set(layoutIdx, nodeIdx));
 
+  // Map nodeIndex to parentIndex
+  const nodeToParent = new Map();
+  nodes.parentIndex.forEach((parentIdx, nodeIdx) => nodeToParent.set(nodeIdx, parentIdx));
+
   // Get clickable node indexes
   const clickableIndexes = new Set(nodes.isClickable?.index || []);
+  DEBUG && terminal.blue(`Clickable Indexes: ${JSON.stringify([...clickableIndexes])}\n`);
 
   for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
     const layoutIndex = textBoxes.layoutIndex[i];
@@ -114,12 +119,15 @@ function extractTextLayoutBoxes(snapshot) {
       height: bounds[3],
     };
 
-    // Check if this text box’s node is clickable
+    // Get the nodeIndex for this text box
     const nodeIndex = layoutToNode.get(layoutIndex);
-    const isClickable = nodeIndex !== undefined && clickableIndexes.has(nodeIndex);
+    // Check if this node or its parent is clickable
+    const parentIndex = nodeToParent.get(nodeIndex);
+    const isClickable = (nodeIndex !== undefined && clickableIndexes.has(nodeIndex)) ||
+                       (parentIndex !== undefined && clickableIndexes.has(parentIndex));
 
     textLayoutBoxes.push({ text, boundingBox, isClickable });
-    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y})${isClickable ? ' [CLICKABLE]' : ''}\n`);
+    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y}) | nodeIndex: ${nodeIndex} | parentIndex: ${parentIndex} | isClickable: ${isClickable}\n`);
   }
 
   return textLayoutBoxes;
