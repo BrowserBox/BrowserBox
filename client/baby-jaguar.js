@@ -41,7 +41,7 @@ const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
 const port = parseInt(urlObj.port, 10) || (urlObj.protocol === 'https:' ? 443 : 80);
 const proxyPort = port + 1;
 const proxyBaseUrl = `${urlObj.protocol}//${urlObj.hostname}:${proxyPort}`;
-const loginUrl = `${baseUrl}/login?session_token=${token}`;
+const loginUrl = `${baseUrl}/login?token=${token}`; // Use session_token as per BrowserBox
 const apiUrl = `${baseUrl}/api/v10/tabs`;
 
 /**
@@ -162,11 +162,13 @@ async function connectToBrowser() {
     const response = await fetch(loginUrl, {
       method: 'GET',
       headers: { 'Accept': 'text/html' },
+      redirect: 'manual', // Don't follow redirects
     });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    if (response.status !== 302) {
+      throw new Error(`Expected 302 redirect, got HTTP ${response.status}: ${await response.text()}`);
     }
     const setCookie = response.headers.get('set-cookie');
+    if (DEBUG) console.log(`${loginUrl} Headers:`, response.headers, response.status);
     if (!setCookie) {
       throw new Error('No Set-Cookie header in /login response');
     }
