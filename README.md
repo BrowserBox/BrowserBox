@@ -233,7 +233,11 @@ Use of any code from these versions with earlier versions or forks of BrowserBox
 
 *But we're smarter than you and live far away we can probably get away with it*
 
-We'll see.
+We'll see. Smart is as smart does.
+
+*But our company has lots of money and more people than you. We will beat you in court, and we have clever lawyers who will try to rip you off!*
+
+We'll see. But with all that money, what makes it hard for you to pay for BrowserBox?
 
 **More questions?**  
 
