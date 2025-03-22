@@ -55,7 +55,7 @@ Secure your web with BrowserBox&mdash;cutting-edge remote browser isolation (RBI
    bash <(curl -sSL bbx.sh.dosaygo.com) install
    ```
 
-   ** @browserbox/browserbox **
+   **@browserbox/browserbox**
 
    You can also install from NPM, like so:
 
