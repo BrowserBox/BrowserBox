@@ -3,8 +3,9 @@
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import { WebSocket } from 'ws';
-import TK from 'terminal-kit';
 import { appendFileSync } from 'fs';
+import { Agent } from 'https';
+import TK from 'terminal-kit';
 const { terminal } = TK;
 
 const execAsync = promisify(exec);
@@ -36,6 +37,7 @@ if (args.length === 1) {
 }
 
 const urlObj = new URL(loginLink);
+const hostname = urlObj.hostname;
 const token = urlObj.searchParams.get('token');
 const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
 const port = parseInt(urlObj.port, 10) || (urlObj.protocol === 'https:' ? 443 : 80);
@@ -251,10 +253,11 @@ async function connectToBrowser() {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'x-browserbox-local-auth': token,
+        'x-browserbox-local-auth': cookieValue,
       },
     });
     if (!response.ok) {
+      console.warn(token);
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
     const data = await response.json();
@@ -269,9 +272,12 @@ async function connectToBrowser() {
   }
 
   // Connect to the WebSocket debugger URL with the cookie value in x-browserbox-local-auth
+  wsDebuggerUrl = wsDebuggerUrl.replace('ws://localhost', `wss://${hostname}`);
+  wsDebuggerUrl = `${wsDebuggerUrl}/${token}`;
   terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
   const socket = new WebSocket(wsDebuggerUrl, {
     headers: { 'x-browserbox-local-auth': cookieValue },
+    agent: new Agent({ rejectUnauthorized: false }),
   });
 
   const Resolvers = {};
@@ -284,6 +290,25 @@ async function connectToBrowser() {
   socket.on('error', (err) => {
     if (DEBUG) console.warn(err);
     terminal.red(`WebSocket error: ${err.message}\n`);
+  });
+  socket.on('message', async (data) => {
+    let message;
+    try {
+      const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
+      message = JSON.parse(dataStr);
+      logMessage('RECEIVE', message);
+    } catch (error) {
+      if (DEBUG) console.warn(error);
+      logMessage('RECEIVE_ERROR', { raw: Buffer.isBuffer(data) ? data.toString('base64') : data, error: error.message });
+      terminal.red(`Invalid message: ${String(data).slice(0, 50)}...\n`);
+      return;
+    }
+    if (message.id && Resolvers[`${message.sessionId || 'root'}:${message.id}`]) {
+      Resolvers[`${message.sessionId || 'root'}:${message.id}`](message.result || message.error);
+      delete Resolvers[`${message.sessionId || 'root'}:${message.id}`];
+    } else {
+      logMessage('UNHANDLED', message);
+    }
   });
 
   async function send(method, params = {}, sessionId) {
@@ -301,30 +326,6 @@ async function connectToBrowser() {
       throw error;
     }
     return promise;
-  }
-
-  function on(method, handler) {
-    socket.on('message', async (data) => {
-      let message;
-      try {
-        const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
-        message = JSON.parse(dataStr);
-        logMessage('RECEIVE', message);
-      } catch (error) {
-        if (DEBUG) console.warn(error);
-        logMessage('RECEIVE_ERROR', { raw: Buffer.isBuffer(data) ? data.toString('base64') : data, error: error.message });
-        terminal.red(`Invalid message: ${String(data).slice(0, 50)}...\n`);
-        return;
-      }
-      if (message.method === method) {
-        await handler(message.params);
-      } else if (message.id && Resolvers[`${message.sessionId || 'root'}:${message.id}`]) {
-        Resolvers[`${message.sessionId || 'root'}:${message.id}`](message.result || message.error);
-        delete Resolvers[`${message.sessionId || 'root'}:${message.id}`];
-      } else {
-        logMessage('UNHANDLED', message);
-      }
-    });
   }
 
   await new Promise((resolve, reject) => {
@@ -347,7 +348,7 @@ async function connectToBrowser() {
   const { sessionId } = await send('Target.attachToTarget', { targetId: finalTargetId, flatten: true });
   terminal.green(`Attached with session ${sessionId}\n`);
 
-  return { send, on, sessionId };
+  return { send, sessionId };
 }
 
 // Main execution

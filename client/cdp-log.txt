@@ -10,3 +10,260 @@
     "id": 1
   }
 }
+{
+  "timestamp": "2025-03-22T12:04:47.676Z",
+  "direction": "SEND",
+  "message": {
+    "method": "Target.getTargets",
+    "params": {},
+    "id": 1
+  }
+}
+{
+  "timestamp": "2025-03-22T12:09:39.963Z",
+  "direction": "SEND",
+  "message": {
+    "method": "Target.getTargets",
+    "params": {},
+    "id": 1
+  }
+}
+{
+  "timestamp": "2025-03-22T12:15:01.648Z",
+  "direction": "SEND",
+  "message": {
+    "method": "Target.getTargets",
+    "params": {},
+    "id": 1
+  }
+}
+{
+  "timestamp": "2025-03-22T12:19:06.937Z",
+  "direction": "SEND",
+  "message": {
+    "method": "Target.getTargets",
+    "params": {},
+    "id": 1
+  }
+}
+{
+  "timestamp": "2025-03-22T12:20:39.359Z",
+  "direction": "SEND",
+  "message": {
+    "method": "Target.getTargets",
+    "params": {},
+    "id": 1
+  }
+}
+{
+  "timestamp": "2025-03-22T12:20:39.362Z",
+  "direction": "RECEIVE",
+  "message": {
+    "id": 1,
+    "result": {
+      "targetInfos": [
+        {
+          "targetId": "5AC58BD4522FB046417F83130A400D83",
+          "type": "page",
+          "title": "acknowledging definition at DuckDuckGo",
+          "url": "https://duckduckgo.com/?q=acknowledging+definition&ia=web",
+          "attached": true,
+          "canAccessOpener": false,
+          "browserContextId": "1CE6889B0B04F766708A36E63860AEA7"
+        }
+      ]
+    }
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:38.727Z",
+  "direction": "SEND",
+  "message": {
+    "method": "Target.getTargets",
+    "params": {},
+    "id": 1
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:38.729Z",
+  "direction": "RECEIVE",
+  "message": {
+    "id": 1,
+    "result": {
+      "targetInfos": [
+        {
+          "targetId": "5AC58BD4522FB046417F83130A400D83",
+          "type": "page",
+          "title": "acknowledging definition at DuckDuckGo",
+          "url": "https://duckduckgo.com/?q=acknowledging+definition&ia=web",
+          "attached": true,
+          "canAccessOpener": false,
+          "browserContextId": "1CE6889B0B04F766708A36E63860AEA7"
+        }
+      ]
+    }
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:38.729Z",
+  "direction": "SEND",
+  "message": {
+    "method": "Target.attachToTarget",
+    "params": {
+      "targetId": "5AC58BD4522FB046417F83130A400D83",
+      "flatten": true
+    },
+    "id": 2
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:38.730Z",
+  "direction": "RECEIVE",
+  "message": {
+    "method": "Target.attachedToTarget",
+    "params": {
+      "sessionId": "FEE9D0D526CA03F52C7AA544D9A2FFDF",
+      "targetInfo": {
+        "targetId": "5AC58BD4522FB046417F83130A400D83",
+        "type": "page",
+        "title": "acknowledging definition at DuckDuckGo",
+        "url": "https://duckduckgo.com/?q=acknowledging+definition&ia=web",
+        "attached": true,
+        "canAccessOpener": false,
+        "browserContextId": "1CE6889B0B04F766708A36E63860AEA7"
+      },
+      "waitingForDebugger": false
+    }
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:38.730Z",
+  "direction": "UNHANDLED",
+  "message": {
+    "method": "Target.attachedToTarget",
+    "params": {
+      "sessionId": "FEE9D0D526CA03F52C7AA544D9A2FFDF",
+      "targetInfo": {
+        "targetId": "5AC58BD4522FB046417F83130A400D83",
+        "type": "page",
+        "title": "acknowledging definition at DuckDuckGo",
+        "url": "https://duckduckgo.com/?q=acknowledging+definition&ia=web",
+        "attached": true,
+        "canAccessOpener": false,
+        "browserContextId": "1CE6889B0B04F766708A36E63860AEA7"
+      },
+      "waitingForDebugger": false
+    }
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:38.730Z",
+  "direction": "RECEIVE",
+  "message": {
+    "id": 2,
+    "result": {
+      "sessionId": "FEE9D0D526CA03F52C7AA544D9A2FFDF"
+    }
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:53.899Z",
+  "direction": "SEND",
+  "message": {
+    "method": "Target.getTargets",
+    "params": {},
+    "id": 1
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:53.901Z",
+  "direction": "RECEIVE",
+  "message": {
+    "id": 1,
+    "result": {
+      "targetInfos": [
+        {
+          "targetId": "5AC58BD4522FB046417F83130A400D83",
+          "type": "page",
+          "title": "acknowledging definition at DuckDuckGo",
+          "url": "https://duckduckgo.com/?q=acknowledging+definition&ia=web",
+          "attached": true,
+          "canAccessOpener": false,
+          "browserContextId": "1CE6889B0B04F766708A36E63860AEA7"
+        }
+      ]
+    }
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:53.902Z",
+  "direction": "SEND",
+  "message": {
+    "method": "Target.attachToTarget",
+    "params": {
+      "targetId": "5AC58BD4522FB046417F83130A400D83",
+      "flatten": true
+    },
+    "id": 2
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:53.903Z",
+  "direction": "RECEIVE",
+  "message": {
+    "method": "Target.attachedToTarget",
+    "params": {
+      "sessionId": "358675684C58BAB480F544A7BF012D46",
+      "targetInfo": {
+        "targetId": "5AC58BD4522FB046417F83130A400D83",
+        "type": "page",
+        "title": "acknowledging definition at DuckDuckGo",
+        "url": "https://duckduckgo.com/?q=acknowledging+definition&ia=web",
+        "attached": true,
+        "canAccessOpener": false,
+        "browserContextId": "1CE6889B0B04F766708A36E63860AEA7"
+      },
+      "waitingForDebugger": false
+    }
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:53.903Z",
+  "direction": "UNHANDLED",
+  "message": {
+    "method": "Target.attachedToTarget",
+    "params": {
+      "sessionId": "358675684C58BAB480F544A7BF012D46",
+      "targetInfo": {
+        "targetId": "5AC58BD4522FB046417F83130A400D83",
+        "type": "page",
+        "title": "acknowledging definition at DuckDuckGo",
+        "url": "https://duckduckgo.com/?q=acknowledging+definition&ia=web",
+        "attached": true,
+        "canAccessOpener": false,
+        "browserContextId": "1CE6889B0B04F766708A36E63860AEA7"
+      },
+      "waitingForDebugger": false
+    }
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:53.903Z",
+  "direction": "RECEIVE",
+  "message": {
+    "id": 2,
+    "result": {
+      "sessionId": "358675684C58BAB480F544A7BF012D46"
+    }
+  }
+}
+{
+  "timestamp": "2025-03-22T12:21:53.903Z",
+  "direction": "SEND",
+  "message": {
+    "method": "DOM.enable",
+    "params": {},
+    "sessionId": "358675684C58BAB480F544A7BF012D46",
+    "id": 3
+  }
+}
