@@ -20,7 +20,7 @@ Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) te
     <a href="https://browse.cloudtabs.net/M/jl" class="cta-button">Get a Non-Commercial License</a>
   </li>
   <li>
-    <a href="https://tally.so/r/wkv4aM" class="cta-button secondary-cta">Join Evaluation Waitlist</a>    
+    <a href="https://tally.so/r/wkv4aM" class="cta-button secondary-cta">Try Free for 14-Days</a>    
   </li>
 </ul>
 
@@ -35,8 +35,8 @@ Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) te
 
 # `bbx` 
 
-- manage and activate your BrowserBox copy 📝
-- purchase a BrowserBox license key 🔐
+- Manage and activate your BrowserBox copy (✓)
+- Purchase a BrowserBox license key (💳)
 - run BrowserBox as multiple users on the one machine 👨‍🦲👱‍♀️👷‍♂️
 - run BrowserBox inside docker 🟦🐳
 - run BrowserBox through tor 🟣🧅
@@ -76,7 +76,7 @@ BrowserBox delivers a secure, remote browsing environment that protects your net
 ## Trusted by Teams Worldwide
 
 - Used by over 50 companies and organizations worldwide.
-- Join 3000+ users who trust BrowserBox for secure browsing.
+- Join 3000+ users exploring BrowserBox—ready to secure your team?
 
 ---
 
@@ -121,6 +121,7 @@ BrowserBox delivers a secure, remote browsing environment that protects your net
   - **Commercial**: Starts at $99/user/year, with volume discounts for larger teams—perfect for businesses securing their workforce. See [pricing details](https://dosaygo.com/).
   - **Non-Commercial**: $39/user/year flat rate—for individuals, non-profits, and government use.
   - **Evaluation**: Sign up for a 14-day free trial via the [waitlist](https://tally.so/r/wkv4aM).
+  - Sign up by April 30, 2025, for 10% off your first year!
 
    **On Windows:** Head to [our website to purchase a license](https://dosaygo.com)
 
