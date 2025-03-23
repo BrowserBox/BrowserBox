@@ -21,15 +21,22 @@ BrowserBox runs seamlessly on a wide range of platforms—deploy it wherever you
 <br>
 <p></p>
 
-<div style="text-align: center;" align=center>
-    <img src="readme-files/windows.png" alt="Windows and Windows Server" style="display: inline-block; width: 50px; margin: 0 10px;">
-    <img src="readme-files/debian.png" alt="Debian" style="display: inline-block; width: 50px; margin: 0 10px;">
-    <img src="readme-files/ubuntu.png" alt="Ubuntu" style="display: inline-block; width: 50px; margin: 0 10px;">
-    <img src="readme-files/centosstream.png" alt="CentOS Stream" style="display: inline-block; width: 50px; margin: 0 10px;">
-    <img src="readme-files/rhel.png" alt="Red Hat Enterprise Linux" style="display: inline-block; width: 50px; margin: 0 10px;">
-    <img src="readme-files/docker.png" alt="Docker" style="display: inline-block; width: 50px; margin: 0 10px;">
-    <img src="readme-files/nixos.png" alt="NixOS" style="display: inline-block; width: 50px; margin: 0 10px;">
-    <img src="readme-files/LXC.png" alt="LXC" style="display: inline-block; width: 50px; margin: 0 10px;">
+<div style="text-align: center;" align=center style="vertical-align: middle;">
+  <img src="readme-files/windows.png" alt="Windows and Windows Server" width=200 title="Windows and Windows Server">
+  <span>&nbsp;</span>
+  <img src="readme-files/debian.png" alt="Debian"  height=128 title=Debian>
+  <span>&nbsp;</span>
+  <img src="readme-files/ubuntu.png" alt="Ubuntu"  width=200 title=Ubuntu>
+  <span>&nbsp;</span>
+  <img src="readme-files/centos.png" alt="CentOS Stream"  width=200 title="CentOS Stream">
+  <span>&nbsp;</span>    
+  <img src="readme-files/rhel.png" alt="Red Hat Enterprise Linux" width="200" title="RHEL">
+  <span>&nbsp;</span>
+  <img src="readme-files/docker.png" alt="Docker"  width="200" title="Docker">
+  <span>&nbsp;</span>
+  <img src="readme-files/nixos.png" alt="NixOS" width="200" title="NixOS">
+  <span>&nbsp;</span>
+  <img src="readme-files/LXC.png" alt="LXC" height=128 title="LXC">
 </div>
 
 <p></p>
