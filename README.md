@@ -14,14 +14,34 @@ Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) te
 - **Developers**: Embed secure browsing into your apps with our API.
 - **IT Teams**: Deploy a scalable, isolated browser solution in minutes.
 
+## Compatible With
+
+BrowserBox runs seamlessly on a wide range of platforms—deploy it wherever your team works!
+
+<br>
+<p></p>
+
+<div style="text-align: center;" align=center>
+    <img src="readme-files/windows.png" alt="Windows and Windows Server" style="display: inline-block; width: 50px; margin: 0 10px;">
+    <img src="readme-files/debian.png" alt="Debian" style="display: inline-block; width: 50px; margin: 0 10px;">
+    <img src="readme-files/ubuntu.png" alt="Ubuntu" style="display: inline-block; width: 50px; margin: 0 10px;">
+    <img src="readme-files/centosstream.png" alt="CentOS Stream" style="display: inline-block; width: 50px; margin: 0 10px;">
+    <img src="readme-files/rhel.png" alt="Red Hat Enterprise Linux" style="display: inline-block; width: 50px; margin: 0 10px;">
+    <img src="readme-files/docker.png" alt="Docker" style="display: inline-block; width: 50px; margin: 0 10px;">
+    <img src="readme-files/nixos.png" alt="NixOS" style="display: inline-block; width: 50px; margin: 0 10px;">
+    <img src="readme-files/LXC.png" alt="LXC" style="display: inline-block; width: 50px; margin: 0 10px;">
+</div>
+
+<p></p>
+<br>
+
+## Quick Solutions
+
 <ul>
   <li><a href="https://browse.cloudtabs.net/l" class="cta-button">Get a Commercial License</a></li>
   <li><a href="https://browse.cloudtabs.net/M/jl" class="cta-button">Get a Non-Commercial License</a></li>
   <li><a href="https://tally.so/r/wkv4aM" class="cta-button secondary-cta">Try Free for 14-Days</a></li>
 </ul>
-
->[!CAUTION]  
->Unlicensed instances display a warning and shut down after 2 minutes.
 
 ---
 
@@ -50,14 +70,25 @@ Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) te
 
 ## Table of Contents
 
-1. [Why BrowserBox?](#why-browserbox)
-2. [Features](#features)
-3. [Get Started](#get-started)
-4. [Embed BrowserBox Anywhere with Ease](#embed-browserbox-anywhere-with-ease)
-5. [Using `bbx` Commands](#using-bbx-commands)
-6. [License Compliance](#license-compliance)
-7. [FAQ](#faq)
-8. [Support](#support)
+1. [BrowserBox](#browserbox)
+2. [Who It’s For](#who-its-for)
+3. [Compatible With](#compatible-with)
+4. [Quick Solutions](#quick-solutions)
+5. [Get our new `bbx` tool](#get-our-new-bbx-tool)
+6. [`bbx`](#bbx)
+7. [Useful Links](#useful-links)
+8. [Why BrowserBox?](#why-browserbox)
+9. [Trusted by Teams Worldwide](#trusted-by-teams-worldwide)
+10. [Features](#features)
+11. [Get Started](#get-started)
+12. [Embed BrowserBox Anywhere with Ease](#embed-browserbox-anywhere-with-ease)
+13. [Using `bbx` Commands](#using-bbx-commands)
+14. [License Compliance](#license-compliance)
+15. [Advanced Usage](#advanced-usage)
+16. [FAQ](#faq)
+17. [Support](#support)
+18. [Sponsors](#sponsors)
+19. [Copyright](#copyright)
 
 ---
 
@@ -73,6 +104,11 @@ BrowserBox delivers a secure, remote browsing environment that protects your net
 
 - Used by over 50 companies and organizations worldwide.
 - Join 3000+ users exploring BrowserBox—ready to secure your team?
+
+---
+
+>[!CAUTION]  
+>Unlicensed instances display a warning and shut down after 2 minutes.
 
 ---
 
@@ -97,13 +133,13 @@ BrowserBox delivers a secure, remote browsing environment that protects your net
    irm bbx.dosaygo.com | iex
    ```
 
-   **Everywhere else:**
+   **Everywhere else (i.e., *Debian, Ubuntu, CentOS, RHEL, NixOS, Docker*):**
 
    ```bash
    bash <(curl -sSL bbx.sh.dosaygo.com) install
    ```
 
-   **@browserbox/browserbox**
+   **Or [NPM](https://www.npmjs.com/package/@browserbox/browserbox) @browserbox/browserbox**
 
    You can also install from NPM:
 
@@ -271,6 +307,6 @@ We’re grateful to our sponsors who help make BrowserBox possible. Interested i
 BrowserBox&trade; is &copy; 2025 DOSAYGO Corporation USA. All rights reserved. Since 2018.
 All code in this repository is licensed under [LICENSE.md](LICENSE.md) unless otherwise stated.  
 
---
+---
 
 **Learn more at [dosaygo.com](https://dosaygo.com) | Join the waitlist for a free trial: [tally.so/r/wkv4aM](https://tally.so/r/wkv4aM)**
