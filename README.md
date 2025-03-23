@@ -5,6 +5,8 @@
 # [BrowserBox](https://dosaygo.com)
 *by [DOSAYGO](https://dosaygo.com)*
 
+[![BrowserBox](https://img.shields.io/badge/BrowserBox-Secure%20RBI-blue)](https://dosaygo.com)
+
 Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) technology. Protect your organization from threats and empower your team with seamless, secure browsing. BrowserBox requires a **license key** for all usage—unlock advanced security and productivity today!
 
 ## Who It’s For
@@ -13,15 +15,9 @@ Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) te
 - **IT Teams**: Deploy a scalable, isolated browser solution in minutes.
 
 <ul>
-  <li>
-    <a href="https://browse.cloudtabs.net/l" class="cta-button">Get a Commercial License</a>
-  </li>
-  <li>
-    <a href="https://browse.cloudtabs.net/M/jl" class="cta-button">Get a Non-Commercial License</a>
-  </li>
-  <li>
-    <a href="https://tally.so/r/wkv4aM" class="cta-button secondary-cta">Try Free for 14-Days</a>    
-  </li>
+  <li><a href="https://browse.cloudtabs.net/l" class="cta-button">Get a Commercial License</a></li>
+  <li><a href="https://browse.cloudtabs.net/M/jl" class="cta-button">Get a Non-Commercial License</a></li>
+  <li><a href="https://tally.so/r/wkv4aM" class="cta-button secondary-cta">Try Free for 14-Days</a></li>
 </ul>
 
 >[!CAUTION]  
@@ -266,8 +262,15 @@ Email [sales@dosaygo.com](mailto:sales@dosaygo.com).
 
 ---
 
+## Sponsors
+
+We’re grateful to our sponsors who help make BrowserBox possible. Interested in sponsoring? Contact us at [sales@dosaygo.com](mailto:sales@dosaygo.com).
+
 ## Copyright
 
 BrowserBox&trade; is &copy; 2025 DOSAYGO Corporation USA. All rights reserved. Since 2018.
 All code in this repository is licensed under [LICENSE.md](LICENSE.md) unless otherwise stated.  
 
+--
+
+**Learn more at [dosaygo.com](https://dosaygo.com) | Join the waitlist for a free trial: [tally.so/r/wkv4aM](https://tally.so/r/wkv4aM)**
