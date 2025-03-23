@@ -1,1 +1,4 @@
 *.traineddata
+*.log
+*log.txt
+cdp-log.txt

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { promisify } from 'util';
 import { exec } from 'child_process';
 
@@ -32,7 +34,7 @@ export async function printTextLayoutToTerminal({ send, on }) {
     const scaleY = termHeight / contentHeight;
 
     // Step 7: Clear the terminal
-    process.stdout.write('\033[2J');
+    process.stdout.write('\\033[2J');
 
     // Step 8: Print each text at its scaled terminal position
     for (const { text, boundingBox } of textLayoutBoxes) {
@@ -44,7 +46,7 @@ export async function printTextLayoutToTerminal({ send, on }) {
       const clampedY = Math.max(0, Math.min(termY, termHeight - 1));
 
       // Move cursor to position and print text (ANSI is 1-based)
-      process.stdout.write(`\033[${clampedY + 1};${clampedX + 1}H${text}`);
+      process.stdout.write(`\\033[${clampedY + 1};${clampedX + 1}H${text}`);
     }
 
     console.log('\nText layout printed to terminal successfully!');
