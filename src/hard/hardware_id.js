@@ -67,7 +67,7 @@ export function generateHardwareId() {
 
   // Compute and return the hardware ID
   fs.unlinkSync(reportPath);
-  return JSON.stringify({fullReport, hwid: computeHash(combinedInfo)});
+  return {fullReport, hwid: computeHash(combinedInfo)};
 }
 
 if ( import.meta.url.endsWith(process.argv[1]) ) {
