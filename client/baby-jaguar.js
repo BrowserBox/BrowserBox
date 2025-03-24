@@ -9,8 +9,8 @@ import TK from 'terminal-kit';
 const { terminal } = TK;
 
 // Compression parameters (adjust these to experiment)
-const HORIZONTAL_COMPRESSION = 1; // < 1 to compress, > 1 to expand
-const VERTICAL_COMPRESSION = 1; // < 1 to compress, > 1 to expand
+const HORIZONTAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
+const VERTICAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
 const LINE_SHIFT = 1; // 0 (same line), 1 (next line), 2 (two lines)
 
 const execAsync = promisify(exec);
@@ -166,26 +166,13 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
       if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
 
-      // Get viewport dimensions and scroll offsets using CSS metrics
-      const viewportWidthResult = await send('Runtime.evaluate', {
-        expression: 'window.innerWidth',
-      }, sessionId);
-      const viewportWidth = viewportWidthResult.result.value;
-
-      const viewportHeightResult = await send('Runtime.evaluate', {
-        expression: 'window.innerHeight',
-      }, sessionId);
-      const viewportHeight = viewportHeightResult.result.value;
-
-      const scrollXResult = await send('Runtime.evaluate', {
-        expression: 'window.scrollX',
-      }, sessionId);
-      const viewportX = scrollXResult.result.value;
-
-      const scrollYResult = await send('Runtime.evaluate', {
-        expression: 'window.scrollY',
-      }, sessionId);
-      const viewportY = scrollYResult.result.value;
+      // Get viewport dimensions and scroll offsets using layout metrics
+      const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
+      const viewport = layoutMetrics.visualViewport;
+      const viewportWidth = viewport.clientWidth;
+      const viewportHeight = viewport.clientHeight;
+      const viewportX = viewport.pageX;
+      const viewportY = viewport.pageY;
 
       const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
@@ -237,6 +224,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
         let termX = Math.floor(adjustedX * scaleX);
         let termY = Math.floor(adjustedY * scaleY);
+
+        // Clamp to prevent going over terminal edges
         termX = Math.max(0, Math.min(termX, termWidth - text.length - 1));
         termY = Math.max(0, Math.min(termY, termHeight - 2));
 
@@ -353,7 +342,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       process.emit('SIGINT');
     } else if (name === '<') {
       isListening = false;
-      if (onTabShift) onTabShift();
+      if (onTabSwitch) onTabSwitch();
     }
   });
 
