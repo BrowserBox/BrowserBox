@@ -149,6 +149,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   let isListening = true;
   let scrollDelta = 50; // Pixels to scroll per wheel event
   let renderedBoxes = []; // Store rendered boxes with TUI coordinates
+  let currentScrollY = 0; // Track the current scroll position
 
   const debugLog = (message) => {
     try {
@@ -184,7 +185,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       const viewportWidth = viewport.clientWidth;
       const viewportHeight = viewport.clientHeight;
       const viewportX = document.scrollOffsetX;
-      const viewportY = document.scrollOffsetY;
+      currentScrollY = document.scrollOffsetY; // Update current scroll position
 
       const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
@@ -214,8 +215,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
         const viewportLeft = viewportX;
         const viewportRight = viewportX + viewportWidth;
-        const viewportTop = viewportY;
-        const viewportBottom = viewportY + viewportHeight;
+        const viewportTop = currentScrollY;
+        const viewportBottom = currentScrollY + viewportHeight;
 
         return boxX < viewportRight &&
                boxRight > viewportLeft &&
@@ -225,7 +226,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
       terminal.clear();
       terminal.moveTo(1, 1);
-      DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${viewportY})...\n`);
+      DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
 
       const usedCoords = new Set();
       renderedBoxes = []; // Reset the rendered boxes array
@@ -234,7 +235,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         const { text, boundingBox, isClickable } = visibleBoxes[i];
 
         const adjustedX = boundingBox.x - viewportX;
-        const adjustedY = boundingBox.y - viewportY;
+        const adjustedY = boundingBox.y - currentScrollY;
 
         let termX = Math.ceil(adjustedX * scaleX);
         let termY = Math.ceil(adjustedY * scaleY);
@@ -249,7 +250,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         const shouldShift = visibleBoxes.some((otherBox, j) => {
           if (i === j) return false;
           const otherAdjustedX = otherBox.boundingBox.x - viewportX;
-          const otherAdjustedY = otherBox.boundingBox.y - viewportY;
+          const otherAdjustedY = otherBox.boundingBox.y - currentScrollY;
           const otherTermX = Math.floor(otherAdjustedX * scaleX);
           const otherTermY = Math.floor(otherAdjustedY * scaleY);
           return otherTermX === termX &&
@@ -275,10 +276,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           termY: termY + 1,
           termWidth: text.length,
           termHeight: 1,
-          scaleX,
-          scaleY,
           viewportX,
-          viewportY,
+          viewportY: currentScrollY,
         });
 
         // Log coordinates before and after adjustment
@@ -374,6 +373,13 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       }
     } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
       const deltaY = event === 'MOUSE_WHEEL_UP' ? -scrollDelta : scrollDelta;
+
+      // Prevent scrolling into terminal history if already at the top
+      if (event === 'MOUSE_WHEEL_UP' && currentScrollY <= 0) {
+        debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${currentScrollY})`);
+        return;
+      }
+
       try {
         await send('Input.dispatchMouseEvent', {
           type: 'mouseWheel',
