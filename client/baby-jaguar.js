@@ -66,7 +66,6 @@ function extractTextLayoutBoxes(snapshot) {
   const document = snapshot.documents[0];
   const textBoxes = document.textBoxes;
   const layout = document.layout;
-  const nodes = document.nodes;
 
   if (!textBoxes || !textBoxes.bounds || !textBoxes.start || !textBoxes.length) {
     terminal.yellow('No text boxes found in snapshot.\n');
@@ -78,11 +77,9 @@ function extractTextLayoutBoxes(snapshot) {
   const layoutToNode = new Map();
   layout.nodeIndex.forEach((nodeIdx, layoutIdx) => layoutToNode.set(layoutIdx, nodeIdx));
 
+  const clickableIndexes = new Set(snapshot.nodes.isClickable?.index || []);
   const nodeToParent = new Map();
-  nodes.parentIndex.forEach((parentIdx, nodeIdx) => nodeToParent.set(nodeIdx, parentIdx));
-
-  const clickableIndexes = new Set(nodes.isClickable?.index || []);
-  DEBUG && terminal.blue(`Clickable Indexes: ${JSON.stringify([...clickableIndexes])}\n`);
+  snapshot.nodes.parentIndex.forEach((parentIdx, nodeIdx) => nodeToParent.set(nodeIdx, parentIdx));
 
   function isNodeClickable(nodeIndex) {
     let currentIndex = nodeIndex;
@@ -98,8 +95,9 @@ function extractTextLayoutBoxes(snapshot) {
     const bounds = textBoxes.bounds[i];
     const start = textBoxes.start[i];
     const length = textBoxes.length[i];
+    const clientRect = layout.clientRects[i]; // Use client rects for viewport-relative coords
 
-    if (layoutIndex === -1 || !bounds || start === -1 || length === -1) {
+    if (layoutIndex === -1 || !bounds || !clientRect || start === -1 || length === -1) {
       DEBUG && terminal.yellow(`Skipping invalid text box ${i} (layoutIndex: ${layoutIndex})\n`);
       continue;
     }
@@ -124,6 +122,13 @@ function extractTextLayoutBoxes(snapshot) {
       height: bounds[3],
     };
 
+    const clientBoundingBox = {
+      x: clientRect[0],
+      y: clientRect[1],
+      width: clientRect[2],
+      height: clientRect[3],
+    };
+
     const nodeIndex = layoutToNode.get(layoutIndex);
     const isClickable = nodeIndex !== undefined && isNodeClickable(nodeIndex);
 
@@ -136,8 +141,8 @@ function extractTextLayoutBoxes(snapshot) {
       });
     }
 
-    textLayoutBoxes.push({ text, boundingBox, isClickable });
-    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y}) | nodeIndex: ${nodeIndex} | isClickable: ${isClickable}\n`);
+    textLayoutBoxes.push({ text, boundingBox, clientBoundingBox, isClickable });
+    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at bounding (${boundingBox.x}, ${boundingBox.y}), client (${clientBoundingBox.x}, ${clientBoundingBox.y}) | nodeIndex: ${nodeIndex} | isClickable: ${isClickable}\n`);
   }
 
   return { textLayoutBoxes, clickableElements };
@@ -147,6 +152,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   let clickableElements = [];
   let isListening = true;
   let scrollDelta = 50; // Pixels to scroll per wheel event
+  let currentScrollY = 0; // Track the current scroll position
 
   const debugLog = (message) => {
     try {
@@ -163,15 +169,25 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       await send('DOMSnapshot.enable', {}, sessionId);
       DEBUG && terminal.cyan('Capturing snapshot...\n');
 
-      const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
-      const viewport = layoutMetrics.visualViewport;
-      const viewportWidth = viewport.clientWidth;
-      const viewportHeight = viewport.clientHeight;
-      const viewportX = viewport.pageX;
-      const viewportY = viewport.pageY;
-
-      const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
+      const snapshot = await send('DOMSnapshot.captureSnapshot', {
+        computedStyles: [],
+        includeDOMRects: true, // Include client rects for viewport-relative coords
+      }, sessionId);
       if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
+
+      const document = snapshot.documents[0];
+      const scrollOffsetX = document.scrollOffsetX || 0;
+      const scrollOffsetY = document.scrollOffsetY || 0;
+      const contentWidth = document.contentWidth || 0;
+      const contentHeight = document.contentHeight || 0;
+
+      // Use contentWidth and contentHeight as viewport dimensions
+      const viewportWidth = contentWidth;
+      const viewportHeight = contentHeight;
+      const viewportX = scrollOffsetX;
+      const viewportY = scrollOffsetY;
+
+      debugLog(`Scroll position: scrollOffsetX=${scrollOffsetX}, scrollOffsetY=${scrollOffsetY}`);
 
       const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
@@ -194,15 +210,16 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       const scaleY = baseScaleY * VERTICAL_COMPRESSION;
 
       const visibleBoxes = textLayoutBoxes.filter(box => {
-        const boxX = box.boundingBox.x;
-        const boxY = box.boundingBox.y;
-        const boxRight = boxX + box.boundingBox.width;
-        const boxBottom = boxY + box.boundingBox.height;
+        const boxX = box.clientBoundingBox.x;
+        const boxY = box.clientBoundingBox.y;
+        const boxRight = boxX + box.clientBoundingBox.width;
+        const boxBottom = boxY + box.clientBoundingBox.height;
 
-        const viewportLeft = viewportX;
-        const viewportRight = viewportX + viewportWidth;
-        const viewportTop = viewportY;
-        const viewportBottom = viewportY + viewportHeight;
+        // Since clientBoundingBox is viewport-relative, compare directly to viewport bounds
+        const viewportLeft = 0;
+        const viewportRight = viewportWidth;
+        const viewportTop = 0;
+        const viewportBottom = viewportHeight;
 
         return boxX < viewportRight &&
                boxRight > viewportLeft &&
@@ -216,10 +233,11 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
       const usedCoords = new Set();
       for (let i = 0; i < visibleBoxes.length; i++) {
-        const { text, boundingBox, isClickable } = visibleBoxes[i];
+        const { text, boundingBox, clientBoundingBox, isClickable } = visibleBoxes[i];
 
-        const adjustedX = boundingBox.x - viewportX;
-        const adjustedY = boundingBox.y - viewportY;
+        // Use clientBoundingBox (viewport-relative) for positioning
+        const adjustedX = clientBoundingBox.x;
+        const adjustedY = clientBoundingBox.y;
 
         let termX = Math.floor(adjustedX * scaleX);
         let termY = Math.floor(adjustedY * scaleY);
@@ -233,8 +251,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         const yDiffThreshold = 10;
         const shouldShift = visibleBoxes.some((otherBox, j) => {
           if (i === j) return false;
-          const otherAdjustedX = otherBox.boundingBox.x - viewportX;
-          const otherAdjustedY = otherBox.boundingBox.y - viewportY;
+          const otherAdjustedX = otherBox.clientBoundingBox.x;
+          const otherAdjustedY = otherBox.clientBoundingBox.y;
           const otherTermX = Math.floor(otherAdjustedX * scaleX);
           const otherTermY = Math.floor(otherAdjustedY * scaleY);
           return otherTermX === termX &&
@@ -252,7 +270,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         usedCoords.add(key);
 
         // Log coordinates before and after adjustment
-        debugLog(`Text Box "${text}": Page coords (${boundingBox.x}, ${boundingBox.y}), Adjusted coords (${adjustedX}, ${adjustedY}), Terminal coords (${termX + 1}, ${termY + 1})`);
+        debugLog(`Text Box "${text}": Page coords (${boundingBox.x}, ${boundingBox.y}), Client coords (${adjustedX}, ${adjustedY}), Terminal coords (${termX + 1}, ${termY + 1})`);
 
         if (isClickable) {
           const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
@@ -318,27 +336,32 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
     } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
       const deltaY = event === 'MOUSE_WHEEL_DOWN' ? scrollDelta : -scrollDelta;
       try {
-        // Fetch the scroll position before scrolling
-        const layoutMetricsBefore = await send('Page.getLayoutMetrics', {}, sessionId);
-        const viewportYBefore = layoutMetricsBefore.visualViewport.pageY;
+        // Fetch current scroll position from DOMSnapshot
+        const snapshotBefore = await send('DOMSnapshot.captureSnapshot', {
+          computedStyles: [],
+          includeDOMRects: true,
+        }, sessionId);
+        const viewportYBefore = snapshotBefore.documents[0].scrollOffsetY || 0;
 
-        // Dispatch the scroll event
-        await send('Input.dispatchMouseEvent', {
-          type: 'mouseWheel',
-          x: 0,
-          y: 0,
-          deltaX: 0,
-          deltaY: deltaY,
+        // Calculate new scroll position
+        const newScrollY = viewportYBefore + deltaY;
+
+        // Set the new scroll position
+        await send('Page.evaluate', {
+          expression: `window.scrollTo(0, ${newScrollY})`
         }, sessionId);
 
-        // Wait briefly to ensure the scroll event is processed
+        // Wait for the scroll to take effect
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        // Fetch the scroll position after scrolling
-        const layoutMetricsAfter = await send('Page.getLayoutMetrics', {}, sessionId);
-        const viewportYAfter = layoutMetricsAfter.visualViewport.pageY;
+        // Fetch scroll position after scrolling
+        const snapshotAfter = await send('DOMSnapshot.captureSnapshot', {
+          computedStyles: [],
+          includeDOMRects: true,
+        }, sessionId);
+        const viewportYAfter = snapshotAfter.documents[0].scrollOffsetY || 0;
 
-        // Calculate the actual scroll distance
+        // Log scroll positions
         const deltaYActual = viewportYAfter - viewportYBefore;
         debugLog(`Scroll event: deltaY=${deltaY}, actual scroll distance=${deltaYActual}`);
 
