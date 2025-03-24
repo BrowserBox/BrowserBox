@@ -163,16 +163,15 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       await send('DOMSnapshot.enable', {}, sessionId);
       DEBUG && terminal.cyan('Capturing snapshot...\n');
 
-      const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
-      if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
-
-      // Get viewport dimensions and scroll offsets using layout metrics
       const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
       const viewport = layoutMetrics.visualViewport;
       const viewportWidth = viewport.clientWidth;
       const viewportHeight = viewport.clientHeight;
       const viewportX = viewport.pageX;
       const viewportY = viewport.pageY;
+
+      const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
+      if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
 
       const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
@@ -282,8 +281,6 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
     }
   };
 
-  await refresh();
-
   terminal.on('mouse', async (event, data) => {
     if (!isListening) return;
 
@@ -319,8 +316,13 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         }
       }
     } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
-      const deltaY = event === 'MOUSE_WHEEL_UP' ? -scrollDelta : scrollDelta;
+      const deltaY = event === 'MOUSE_WHEEL_DOWN' ? scrollDelta : -scrollDelta;
       try {
+        // Fetch the scroll position before scrolling
+        const layoutMetricsBefore = await send('Page.getLayoutMetrics', {}, sessionId);
+        const viewportYBefore = layoutMetricsBefore.visualViewport.pageY;
+
+        // Dispatch the scroll event
         await send('Input.dispatchMouseEvent', {
           type: 'mouseWheel',
           x: 0,
@@ -328,6 +330,18 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           deltaX: 0,
           deltaY: deltaY,
         }, sessionId);
+
+        // Wait briefly to ensure the scroll event is processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Fetch the scroll position after scrolling
+        const layoutMetricsAfter = await send('Page.getLayoutMetrics', {}, sessionId);
+        const viewportYAfter = layoutMetricsAfter.visualViewport.pageY;
+
+        // Calculate the actual scroll distance
+        const deltaYActual = viewportYAfter - viewportYBefore;
+        debugLog(`Scroll event: deltaY=${deltaY}, actual scroll distance=${deltaYActual}`);
+
         await refresh();
       } catch (error) {
         terminal.red(`Failed to scroll: ${error.message}\n`);
@@ -345,6 +359,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       if (onTabSwitch) onTabSwitch();
     }
   });
+
+  await refresh();
 
   return () => { isListening = false; };
 }
