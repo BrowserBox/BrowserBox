@@ -134,57 +134,165 @@ function extractTextLayoutBoxes(snapshot) {
 }
 
 async function printTextLayoutToTerminal({ send, sessionId }) {
-  try {
-    DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
-    send('DOM.enable', {}, sessionId);
-    send('DOMSnapshot.enable', {}, sessionId);
-    send('Page.reload', {}, sessionId);
-    DEBUG && terminal.cyan('Capturing snapshot...\n');
+  let clickableElements = [];
+  let isListening = true;
+  let scrollDelta = 50; // Pixels to scroll per wheel event
 
-    const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [] }, sessionId);
-    if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
+  const refresh = async () => {
+    try {
+      DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
+      send('DOM.enable', {}, sessionId);
+      send('DOMSnapshot.enable', {}, sessionId);
+      // Note: Removed Page.reload to preserve scroll position
+      DEBUG && terminal.cyan('Capturing snapshot...\n');
 
-    const textLayoutBoxes = extractTextLayoutBoxes(snapshot);
-    if (!textLayoutBoxes.length) {
-      terminal.yellow('No text boxes found.\n');
-      return;
-    }
+      const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
+      if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
 
-    const { columns: termWidth, rows: termHeight } = await getTerminalSize();
-    const { contentWidth, contentHeight } = snapshot.documents[0];
-    const scaleX = termWidth / contentWidth;
-    const scaleY = termHeight / contentHeight;
+      const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
+      const viewport = layoutMetrics.visualViewport;
+      const viewportX = viewport.pageX;
+      const viewportY = viewport.pageY;
+      const viewportWidth = viewport.clientWidth;
+      const viewportHeight = viewport.clientHeight;
 
-    terminal.clear();
-    DEBUG && terminal.cyan(`Rendering ${textLayoutBoxes.length} text boxes...\n`);
-
-    const usedCoords = new Set(); // Basic deconfliction
-    for (const { text, boundingBox, isClickable } of textLayoutBoxes) {
-      let termX = Math.floor(boundingBox.x * scaleX);
-      let termY = Math.floor(boundingBox.y * scaleY);
-      termX = Math.max(0, Math.min(termX, termWidth - text.length));
-      termY = Math.max(0, Math.min(termY, termHeight - 1));
-
-      let key = `${termX},${termY}`;
-      while (usedCoords.has(key) && termY < termHeight - 1) {
-        termY++;
-        key = `${termX},${termY}`;
+      const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
+      clickableElements = newClickables;
+      if (!textLayoutBoxes.length) {
+        terminal.yellow('No text boxes found.\n');
+        return;
       }
-      usedCoords.add(key);
 
-      terminal.moveTo(termX + 1, termY + 1);
-      if (isClickable) {
-        terminal.cyan.underline(text);
-      } else {
-        terminal(text);
+      const { columns: termWidth, rows: termHeight } = await getTerminalSize();
+      const { contentWidth, contentHeight } = snapshot.documents[0];
+      const scaleX = termWidth / contentWidth;
+      const scaleY = termHeight / contentHeight;
+
+      const visibleBoxes = textLayoutBoxes.filter(box => {
+        const boxX = box.boundingBox.x;
+        const boxY = box.boundingBox.y;
+        const boxRight = boxX + box.boundingBox.width;
+        const boxBottom = boxY + box.boundingBox.height;
+
+        const viewportLeft = viewportX;
+        const viewportRight = viewportX + viewportWidth;
+        const viewportTop = viewportY;
+        const viewportBottom = viewportY + viewportHeight;
+
+        return boxX < viewportRight &&
+               boxRight > viewportLeft &&
+               boxY < viewportBottom &&
+               boxBottom > viewportTop;
+      });
+
+      terminal.clear();
+      DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${viewportY})...\n`);
+
+      const usedCoords = new Set();
+      for (const { text, boundingBox, isClickable } of visibleBoxes) {
+        const adjustedX = boundingBox.x - viewportX;
+        const adjustedY = boundingBox.y - viewportY;
+
+        let termX = Math.floor(adjustedX * scaleX);
+        let termY = Math.floor(adjustedY * scaleY);
+        termX = Math.max(0, Math.min(termX, termWidth - text.length));
+        termY = Math.max(0, Math.min(termY, termHeight - 1));
+
+        let key = `${termX},${termY}`;
+        while (usedCoords.has(key) && termY < termHeight - 1) {
+          termY++;
+          key = `${termX},${termY}`;
+        }
+        usedCoords.add(key);
+
+        if (isClickable) {
+          const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
+          if (clickable) {
+            clickable.termX = termX + 1;
+            clickable.termY = termY + 1;
+            clickable.termWidth = text.length;
+            clickable.termHeight = 1;
+          }
+        }
+
+        terminal.moveTo(termX + 1, termY + 1);
+        if (isClickable) {
+          terminal.cyan.underline(text);
+        } else {
+          terminal(text);
+        }
+      }
+
+      DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
+      terminal.moveTo(1, termHeight - 1).green('Click a link, scroll with mouse wheel, < for tabs, or Ctrl+C to exit.\n');
+    } catch (error) {
+      if (DEBUG) console.warn(error);
+      terminal.red(`Error printing text layout: ${error.message}\n`);
+    }
+  };
+
+  await refresh();
+
+  terminal.on('mouse', async (event, data) => {
+    if (!isListening) return;
+
+    if (event === 'MOUSE_LEFT_BUTTON_PRESSED') {
+      const { x: termX, y: termY } = data;
+      const element = clickableElements.find(el => {
+        return termX >= el.termX &&
+               termX <= el.termX + el.termWidth &&
+               termY >= el.termY &&
+               termY <= el.termY + el.termHeight;
+      });
+
+      if (element) {
+        terminal.yellow(`Clicking link: "${element.text}" at page coordinates (${element.clickX}, ${element.clickY})...\n`);
+        try {
+          await send('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: element.clickX,
+            y: element.clickY,
+            button: 'left',
+            clickCount: 1,
+          }, sessionId);
+          await send('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: element.clickX,
+            y: element.clickY,
+            button: 'left',
+            clickCount: 1,
+          }, sessionId);
+          await refresh();
+        } catch (error) {
+          terminal.red(`Failed to click: ${error.message}\n`);
+        }
+      }
+    } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
+      const deltaY = event === 'MOUSE_WHEEL_UP' ? -scrollDelta : scrollDelta;
+      try {
+        await send('Input.dispatchMouseEvent', {
+          type: 'mouseWheel',
+          x: 0, // Position doesn’t matter for scrolling
+          y: 0,
+          deltaX: 0,
+          deltaY: deltaY,
+        }, sessionId);
+        await refresh();
+      } catch (error) {
+        terminal.red(`Failed to scroll: ${error.message}\n`);
       }
     }
+  });
 
-    DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
-  } catch (error) {
-    if (DEBUG) console.warn(error);
-    terminal.red(`Error printing text layout: ${error.message}\n`);
-  }
+  terminal.on('key', (name) => {
+    if (!isListening) return;
+    if (name === 'CTRL_C') {
+      isListening = false;
+      process.emit('SIGINT');
+    }
+  });
+
+  return () => { isListening = false; };
 }
 
 async function getTerminalSize() {
@@ -350,27 +458,69 @@ async function connectToBrowser() {
 
 (async () => {
   let socket;
+  let cleanup;
+  let targets; // Store tabs for navigation
+
+  const selectTabAndRender = async (send, sessionId) => {
+    if (cleanup) cleanup(); // Stop previous listeners
+
+    terminal.clear().green('Available tabs:\n');
+    const items = targets.map((t, i) => `${i + 1}. ${t.title || t.url || t.targetId}`);
+    const selection = await terminal.singleColumnMenu(items, {
+      style: terminal.white,
+      selectedStyle: terminal.green.bgBlack,
+      exitOnUnexpectedKey: true,
+      keyBindings: { '1': 'submit', '2': 'submit', '3': 'submit', '4': 'submit', '5': 'submit', '6': 'submit', '7': 'submit', '8': 'submit', '9': 'submit' },
+    }).promise.catch(() => {
+      terminal.yellow('Selection interrupted. Exiting...\n');
+      process.exit(0);
+    });
+
+    const selectedTarget = targets[selection.selectedIndex];
+    const finalTargetId = selectedTarget.targetId;
+
+    DEBUG && terminal.cyan(`Attaching to target ${finalTargetId}...\n`);
+    const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId: finalTargetId, flatten: true });
+    DEBUG && terminal.green(`Attached with session ${newSessionId}\n`);
+
+    const stop = await printTextLayoutToTerminal({ send, sessionId: newSessionId });
+    cleanup = stop;
+  };
+
   try {
     terminal.cyan('Starting browser connection...\n');
-    const result = await connectToBrowser();
-    socket = result.socket; // Store socket for cleanup
-    await printTextLayoutToTerminal(result);
+    terminal.grabInput({ mouse: 'button' });
+    const { send, sessionId, socket: wsSocket } = await connectToBrowser();
+    socket = wsSocket;
 
-    // Handle Ctrl+C
+    // Store targets for tab navigation
+    const tabsResponse = await fetch(apiUrl, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json', 'Cookie': cookieHeader },
+    });
+    const tabsData = await tabsResponse.json();
+    targets = (tabsData.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
+
+    await selectTabAndRender(send, sessionId);
+
+    terminal.on('key', async (name) => {
+      if (name === 'CTRL_C') {
+        process.emit('SIGINT');
+      } else if (name === '<') {
+        await selectTabAndRender(send, sessionId);
+      }
+    });
+
     process.on('SIGINT', () => {
-      terminal.grabInput(false); // Release input
+      if (cleanup) cleanup();
+      terminal.grabInput(false);
       terminal.clear();
       terminal.green('Exiting...\n');
       if (socket) socket.close();
       process.exit(0);
     });
-    terminal.on('key', (name) => {
-      if (name === 'CTRL_C') {
-        process.emit('SIGINT'); // Trigger the SIGINT handler
-      }
-    });
-
   } catch (error) {
+    if (cleanup) cleanup();
     if (DEBUG) console.warn(error);
     terminal.red(`Main error: ${error.message}\n`);
     process.exit(1);
