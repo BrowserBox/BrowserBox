@@ -168,177 +168,201 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
     };
   };
 
-  const refresh = async () => {
-    try {
-      DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
-      await send('DOM.enable', {}, sessionId);
-      await send('DOMSnapshot.enable', {}, sessionId);
-      DEBUG && terminal.cyan('Capturing snapshot...\n');
+const refresh = async () => {
+  try {
+    DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
+    await send('DOM.enable', {}, sessionId);
+    await send('DOMSnapshot.enable', {}, sessionId);
+    DEBUG && terminal.cyan('Capturing snapshot...\n');
 
-      const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
-      if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
+    const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
+    if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
 
-      const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
-      const viewport = layoutMetrics.visualViewport;
-      const document = snapshot.documents[0];
-      const viewportWidth = viewport.clientWidth;
-      const viewportHeight = viewport.clientHeight;
-      const viewportX = document.scrollOffsetX;
-      currentScrollY = document.scrollOffsetY;
+    const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
+    const viewport = layoutMetrics.visualViewport;
+    const document = snapshot.documents[0];
+    const viewportWidth = viewport.clientWidth;
+    const viewportHeight = viewport.clientHeight;
+    const viewportX = document.scrollOffsetX;
+    currentScrollY = document.scrollOffsetY;
 
-      const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
-      clickableElements = newClickables;
-      if (!textLayoutBoxes.length) {
-        terminal.yellow('No text boxes found.\n');
-        return;
-      }
+    const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
+    clickableElements = newClickables;
+    if (!textLayoutBoxes.length) {
+      terminal.yellow('No text boxes found.\n');
+      return;
+    }
 
-      const { columns: termWidth, rows: termHeight } = await getTerminalSize();
-      DEBUG && terminal.blue(`Terminal size: ${termWidth}x${termHeight}\n`);
-      debugLog(`Terminal size: ${termWidth}x${termHeight}`);
+    const { columns: termWidth, rows: termHeight } = await getTerminalSize();
+    DEBUG && terminal.blue(`Terminal size: ${termWidth}x${termHeight}\n`);
+    debugLog(`Terminal size: ${termWidth}x${termHeight}`);
 
-      debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
+    debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
 
-      const baseScaleX = termWidth / viewportWidth;
-      const baseScaleY = termHeight / viewportHeight;
-      const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
-      const scaleY = baseScaleY * VERTICAL_COMPRESSION;
+    const baseScaleX = termWidth / viewportWidth;
+    const baseScaleY = termHeight / viewportHeight;
+    const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
+    const scaleY = baseScaleY * VERTICAL_COMPRESSION;
 
-      const visibleBoxes = textLayoutBoxes.filter(box => {
-        const boxX = box.boundingBox.x;
-        const boxY = box.boundingBox.y;
-        const boxRight = boxX + box.boundingBox.width;
-        const boxBottom = boxY + box.boundingBox.height;
-        const viewportLeft = viewportX;
-        const viewportRight = viewportX + viewportWidth;
-        const viewportTop = currentScrollY;
-        const viewportBottom = currentScrollY + viewportHeight;
-        return boxX < viewportRight && boxRight > viewportLeft && boxY < viewportBottom && boxBottom > viewportTop;
-      });
+    const visibleBoxes = textLayoutBoxes.filter(box => {
+      const boxX = box.boundingBox.x;
+      const boxY = box.boundingBox.y;
+      const boxRight = boxX + box.boundingBox.width;
+      const boxBottom = boxY + box.boundingBox.height;
+      const viewportLeft = viewportX;
+      const viewportRight = viewportX + viewportWidth;
+      const viewportTop = currentScrollY;
+      const viewportBottom = currentScrollY + viewportHeight;
+      return boxX < viewportRight && boxRight > viewportLeft && boxY < viewportBottom && boxBottom > viewportTop;
+    });
 
-      terminal.clear();
-      terminal.moveTo(1, 1);
-      DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
+    terminal.clear();
+    terminal.moveTo(1, 1);
+    DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
 
-      // **Step 1: Sort boxes by y, then x**
-      const sortedBoxes = visibleBoxes.sort((a, b) => a.boundingBox.y - b.boundingBox.y || a.boundingBox.x - b.boundingBox.x);
+    // Step 1: Sort boxes by y, then x
+    const sortedBoxes = visibleBoxes.sort((a, b) => a.boundingBox.y - b.boundingBox.y || a.boundingBox.x - b.boundingBox.x);
 
-      // **Step 2: Group boxes into logical lines**
-      const groups = [];
-      let currentGroup = [];
-      let lastY = null;
-      const yThreshold = 10; // Adjust this value to control grouping sensitivity
+    // Step 2: Group boxes into "blocks" based on proximity
+    const groups = [];
+    let currentGroup = [];
+    let lastY = null;
+    let lastX = null;
+    const yThreshold = 10; // Vertical proximity threshold
+    const xThreshold = 50; // Horizontal proximity threshold (adjust as needed)
 
-      for (const box of sortedBoxes) {
-        if (!currentGroup.length || (box.boundingBox.y - lastY) < yThreshold) {
+    for (const box of sortedBoxes) {
+      if (!currentGroup.length) {
+        currentGroup.push(box);
+      } else {
+        const yDiff = Math.abs(box.boundingBox.y - lastY);
+        const xDiff = Math.abs(box.boundingBox.x - lastX);
+        // Group boxes that are close in both x and y (likely part of the same block, e.g., a title)
+        if (yDiff < yThreshold && xDiff < xThreshold) {
           currentGroup.push(box);
         } else {
           groups.push(currentGroup);
           currentGroup = [box];
         }
-        lastY = box.boundingBox.y;
       }
-      if (currentGroup.length) groups.push(currentGroup);
+      lastY = box.boundingBox.y;
+      lastX = box.boundingBox.x;
+    }
+    if (currentGroup.length) groups.push(currentGroup);
 
-      // **Step 3: Render boxes in a flow layout**
-      renderedBoxes = []; // Reset the rendered boxes array
-      let currentY = 1;   // Start at the top of the terminal
+    // Step 3: Calculate minimum termX for each group and sort groups by topmost y
+    const groupsWithMinX = groups.map(group => {
+      const minX = Math.min(...group.map(box => box.boundingBox.x));
+      const minTermX = Math.max(1, Math.ceil((minX - viewportX) * scaleX));
+      const topY = Math.min(...group.map(box => box.boundingBox.y));
+      return { group, minTermX, topY };
+    }).sort((a, b) => a.topY - b.topY);
 
-      for (const group of groups) {
-        let currentX = 1; // Start at the left of each line
+    // Step 4: Render groups in a flow layout with minimum X constraint
+    renderedBoxes = [];
+    let currentY = 1;
+    let currentX = 1;
+
+    for (const { group, minTermX } of groupsWithMinX) {
+      // Calculate the total width of the group (including spaces between boxes)
+      let groupWidth = 0;
+      for (const box of group) {
+        groupWidth += box.text.length;
+        if (group.indexOf(box) < group.length - 1) groupWidth += 1; // Space between boxes
+      }
+
+      // Check if the group fits on the current line starting at minTermX
+      if (currentX < minTermX) {
+        currentX = minTermX; // Move to the minimum X position
+      }
+
+      if (currentX + groupWidth - 1 <= termWidth) {
+        // Group fits on the current line
         for (const box of group) {
-          const text = box.text;
-
-          // Check if the text fits on the current line
-          if (currentX + text.length - 1 <= termWidth) {
-            // Place the text at currentX, currentY
-            terminal.moveTo(currentX, currentY);
-            if (box.isClickable) {
-              terminal.cyan.underline(text);
-            } else {
-              terminal(text);
-            }
-
-            // Store the rendered box
-            renderedBoxes.push({
-              text,
-              boundingBox: box.boundingBox,
-              isClickable: box.isClickable,
-              termX: currentX,
-              termY: currentY,
-              termWidth: text.length,
-              termHeight: 1,
-              viewportX,
-              viewportY: currentScrollY,
-            });
-
-            // Update clickable elements if applicable
-            if (box.isClickable) {
-              const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === box.boundingBox.x && el.boundingBox.y === box.boundingBox.y);
-              if (clickable) {
-                clickable.termX = currentX;
-                clickable.termY = currentY;
-                clickable.termWidth = text.length;
-                clickable.termHeight = 1;
-              }
-            }
-
-            // Move cursor right, add a space between boxes
-            currentX += text.length + 1;
+          terminal.moveTo(currentX, currentY);
+          if (box.isClickable) {
+            terminal.cyan.underline(box.text);
           } else {
-            // Move to the next line if it doesn’t fit
-            currentY++;
-            if (currentY >= termHeight) break; // Stop if we exceed terminal height
-            currentX = 1;
-
-            // Place the text on the new line
-            terminal.moveTo(currentX, currentY);
-            if (box.isClickable) {
-              terminal.cyan.underline(text);
-            } else {
-              terminal(text);
-            }
-
-            // Store the rendered box
-            renderedBoxes.push({
-              text,
-              boundingBox: box.boundingBox,
-              isClickable: box.isClickable,
-              termX: currentX,
-              termY: currentY,
-              termWidth: text.length,
-              termHeight: 1,
-              viewportX,
-              viewportY: currentScrollY,
-            });
-
-            // Update clickable elements if applicable
-            if (box.isClickable) {
-              const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === box.boundingBox.x && el.boundingBox.y === box.boundingBox.y);
-              if (clickable) {
-                clickable.termX = currentX;
-                clickable.termY = currentY;
-                clickable.termWidth = text.length;
-                clickable.termHeight = 1;
-              }
-            }
-
-            currentX += text.length + 1;
+            terminal(box.text);
           }
+
+          renderedBoxes.push({
+            text: box.text,
+            boundingBox: box.boundingBox,
+            isClickable: box.isClickable,
+            termX: currentX,
+            termY: currentY,
+            termWidth: box.text.length,
+            termHeight: 1,
+            viewportX,
+            viewportY: currentScrollY,
+          });
+
+          if (box.isClickable) {
+            const clickable = clickableElements.find(el => el.text === box.text && el.boundingBox.x === box.boundingBox.x && el.boundingBox.y === box.boundingBox.y);
+            if (clickable) {
+              clickable.termX = currentX;
+              clickable.termY = currentY;
+              clickable.termWidth = box.text.length;
+              clickable.termHeight = 1;
+            }
+          }
+
+          currentX += box.text.length + 1; // Move right, add space
         }
-        // Move to the next line for the next group
+      } else {
+        // Group doesn’t fit; move to the next line and start at minTermX
         currentY++;
         if (currentY >= termHeight) break;
+        currentX = minTermX;
+
+        for (const box of group) {
+          terminal.moveTo(currentX, currentY);
+          if (box.isClickable) {
+            terminal.cyan.underline(box.text);
+          } else {
+            terminal(box.text);
+          }
+
+          renderedBoxes.push({
+            text: box.text,
+            boundingBox: box.boundingBox,
+            isClickable: box.isClickable,
+            termX: currentX,
+            termY: currentY,
+            termWidth: box.text.length,
+            termHeight: 1,
+            viewportX,
+            viewportY: currentScrollY,
+          });
+
+          if (box.isClickable) {
+            const clickable = clickableElements.find(el => el.text === box.text && el.boundingBox.x === box.boundingBox.x && el.boundingBox.y === box.boundingBox.y);
+            if (clickable) {
+              clickable.termX = currentX;
+              clickable.termY = currentY;
+              clickable.termWidth = box.text.length;
+              clickable.termHeight = 1;
+            }
+          }
+
+          currentX += box.text.length + 1;
+        }
       }
 
-      DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
-      terminal.moveTo(1, termHeight - 1).green('Click a link, scroll with mouse wheel, < for tabs, Ctrl+C to exit.\n');
-    } catch (error) {
-      if (DEBUG) console.warn(error);
-      terminal.red(`Error printing text layout: ${error.message}\n`);
+      // After placing the group, move to the next line for the next group
+      currentY++;
+      if (currentY >= termHeight) break;
+      currentX = 1; // Reset X for the next group
     }
-  };
 
+    DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
+    terminal.moveTo(1, termHeight - 1).green('Click a link, scroll with mouse wheel, < for tabs, Ctrl+C to exit.\n');
+  } catch (error) {
+    if (DEBUG) console.warn(error);
+    terminal.red(`Error printing text layout: ${error.message}\n`);
+  }
+};
   // Create a debounced version of the refresh function
   const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
 
