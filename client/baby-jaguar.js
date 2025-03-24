@@ -195,8 +195,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       });
 
       terminal.clear();
-      terminal.moveTo(1, 1); // Ensure we start at the top-left
-      terminal.scrolling(false); // Disable terminal history scrolling
+      terminal.moveTo(1, 1); // Start at top-left
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${viewportY})...\n`);
 
       const usedCoords = new Set();
@@ -207,7 +206,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         let termX = Math.floor(adjustedX * adjustedScaleX);
         let termY = Math.floor(adjustedY * adjustedScaleY);
         termX = Math.max(0, Math.min(termX, termWidth - text.length - 1));
-        termY = Math.max(0, Math.min(termY, termHeight - 2));
+        termY = Math.max(0, Math.min(termY, termHeight - 2)); // Leave space for status bar
 
         let key = `${termX},${termY}`;
         let attempts = 0;
@@ -216,7 +215,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           key = `${termX},${termY}`;
           attempts++;
         }
-        if (attempts >= termHeight) continue;
+        if (attempts >= termHeight) continue; // Skip if we can't find a free spot
 
         usedCoords.add(key);
 
