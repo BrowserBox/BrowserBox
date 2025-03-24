@@ -148,6 +148,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   let clickableElements = [];
   let isListening = true;
   let scrollDelta = 50; // Pixels to scroll per wheel event
+  let renderedBoxes = []; // Store rendered boxes with TUI coordinates
 
   const debugLog = (message) => {
     try {
@@ -227,6 +228,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${viewportY})...\n`);
 
       const usedCoords = new Set();
+      renderedBoxes = []; // Reset the rendered boxes array
+
       for (let i = 0; i < visibleBoxes.length; i++) {
         const { text, boundingBox, isClickable } = visibleBoxes[i];
 
@@ -262,6 +265,21 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         if (attempts >= termHeight) continue;
 
         usedCoords.add(key);
+
+        // Store the rendered box with TUI coordinates
+        renderedBoxes.push({
+          text,
+          boundingBox,
+          isClickable,
+          termX: termX + 1, // Adjust for 1-based terminal coordinates
+          termY: termY + 1,
+          termWidth: text.length,
+          termHeight: 1,
+          scaleX,
+          scaleY,
+          viewportX,
+          viewportY,
+        });
 
         // Log coordinates before and after adjustment
         debugLog(`Text Box "${text}": Page coords (${boundingBox.x}, ${boundingBox.y}), Adjusted coords (${adjustedX}, ${adjustedY}), Terminal coords (${termX + 1}, ${termY + 1})`);
@@ -301,27 +319,49 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
     if (event === 'MOUSE_LEFT_BUTTON_PRESSED') {
       const { x: termX, y: termY } = data;
-      const element = clickableElements.find(el => {
-        return termX >= el.termX &&
-               termX <= el.termX + el.termWidth &&
-               termY >= el.termY &&
-               termY <= el.termY + el.termHeight;
-      });
 
-      if (element) {
-        terminal.yellow(`Clicking link: "${element.text}" at page coordinates (${element.clickX}, ${element.clickY})...\n`);
+      // Find the topmost textbox that contains the clicked coordinates
+      let clickedBox = null;
+      for (let i = renderedBoxes.length - 1; i >= 0; i--) { // Iterate in reverse for stacking order
+        const box = renderedBoxes[i];
+        if (termX >= box.termX &&
+            termX <= box.termX + box.termWidth &&
+            termY >= box.termY &&
+            termY <= box.termY + box.termHeight) {
+          clickedBox = box;
+          break;
+        }
+      }
+
+      if (clickedBox && clickedBox.isClickable) {
+        terminal.yellow(`Clicked on "${clickedBox.text}" at TUI coordinates (${termX}, ${termY})...\n`);
+
+        // Calculate the relative position within the textbox (e.g., southwest corner)
+        const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth; // 0 (left) to 1 (right)
+        const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight; // 0 (top) to 1 (bottom)
+
+        // Map the relative position to GUI coordinates within the boundingBox
+        const guiX = clickedBox.boundingBox.x + relativeX * clickedBox.boundingBox.width;
+        const guiY = clickedBox.boundingBox.y + relativeY * clickedBox.boundingBox.height;
+
+        // Adjust for viewport scroll position
+        const clickX = guiX + clickedBox.viewportX;
+        const clickY = guiY + clickedBox.viewportY;
+
+        debugLog(`Transmitting click to GUI coordinates (${clickX}, ${clickY})...`);
+
         try {
           await send('Input.dispatchMouseEvent', {
             type: 'mousePressed',
-            x: element.clickX,
-            y: element.clickY,
+            x: clickX,
+            y: clickY,
             button: 'left',
             clickCount: 1,
           }, sessionId);
           await send('Input.dispatchMouseEvent', {
             type: 'mouseReleased',
-            x: element.clickX,
-            y: element.clickY,
+            x: clickX,
+            y: clickY,
             button: 'left',
             clickCount: 1,
           }, sessionId);
@@ -329,6 +369,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         } catch (error) {
           terminal.red(`Failed to click: ${error.message}\n`);
         }
+      } else {
+        terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
       }
     } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
       const deltaY = event === 'MOUSE_WHEEL_UP' ? -scrollDelta : scrollDelta;
