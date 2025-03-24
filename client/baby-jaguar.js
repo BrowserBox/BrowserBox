@@ -9,9 +9,9 @@ import TK from 'terminal-kit';
 const { terminal } = TK;
 
 // Compression parameters (adjust these to experiment)
-const HORIZONTAL_COMPRESSION = 0.5; // < 1 to compress, > 1 to expand
+const HORIZONTAL_COMPRESSION = 1; // < 1 to compress, > 1 to expand
 const VERTICAL_COMPRESSION = 1; // < 1 to compress, > 1 to expand
-const LINE_SHIFT = 0; // 0 (same line), 1 (next line), 2 (two lines)
+const LINE_SHIFT = 1; // 0 (same line), 1 (next line), 2 (two lines)
 
 const execAsync = promisify(exec);
 
