@@ -141,7 +141,7 @@ function extractTextLayoutBoxes(snapshot) {
 async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   let clickableElements = [];
   let isListening = true;
-  let scrollDelta = 50;
+  let scrollDelta = 50; // Pixels to scroll per wheel event
 
   const refresh = async () => {
     try {
@@ -168,9 +168,14 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       }
 
       const { columns: termWidth, rows: termHeight } = await getTerminalSize();
+      DEBUG && terminal.blue(`Terminal size: ${termWidth}x${termHeight}\n`);
       const { contentWidth, contentHeight } = snapshot.documents[0];
-      const scaleX = termWidth / contentWidth;
-      const scaleY = termHeight / contentHeight;
+      // Adjust scaling to better fit the terminal
+      const scaleX = termWidth / viewportWidth;
+      const scaleY = termHeight / viewportHeight;
+      const minScale = Math.min(scaleX, scaleY, 1); // Prevent over-compression
+      const adjustedScaleX = scaleX * minScale;
+      const adjustedScaleY = scaleY * minScale;
 
       const visibleBoxes = textLayoutBoxes.filter(box => {
         const boxX = box.boundingBox.x;
@@ -190,6 +195,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       });
 
       terminal.clear();
+      terminal.moveTo(1, 1); // Ensure we start at the top-left
+      terminal.scrolling(false); // Disable terminal history scrolling
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${viewportY})...\n`);
 
       const usedCoords = new Set();
@@ -197,16 +204,20 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         const adjustedX = boundingBox.x - viewportX;
         const adjustedY = boundingBox.y - viewportY;
 
-        let termX = Math.floor(adjustedX * scaleX);
-        let termY = Math.floor(adjustedY * scaleY);
-        termX = Math.max(0, Math.min(termX, termWidth - text.length));
-        termY = Math.max(0, Math.min(termY, termHeight - 1));
+        let termX = Math.floor(adjustedX * adjustedScaleX);
+        let termY = Math.floor(adjustedY * adjustedScaleY);
+        termX = Math.max(0, Math.min(termX, termWidth - text.length - 1));
+        termY = Math.max(0, Math.min(termY, termHeight - 2));
 
         let key = `${termX},${termY}`;
-        while (usedCoords.has(key) && termY < termHeight - 1) {
-          termY++;
+        let attempts = 0;
+        while (usedCoords.has(key) && termY < termHeight - 2 && attempts < termHeight) {
+          termY += 2; // Add more vertical spacing to prevent overlap
           key = `${termX},${termY}`;
+          attempts++;
         }
+        if (attempts >= termHeight) continue;
+
         usedCoords.add(key);
 
         if (isClickable) {
@@ -220,6 +231,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         }
 
         terminal.moveTo(termX + 1, termY + 1);
+        DEBUG && terminal.gray(`Drawing "${text}" at terminal (${termX + 1}, ${termY + 1})\n`);
         if (isClickable) {
           terminal.cyan.underline(text);
         } else {
@@ -303,7 +315,12 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 }
 
 async function getTerminalSize() {
-  return { columns: terminal.width, rows: terminal.height };
+  const size = { columns: terminal.width, rows: terminal.height };
+  if (!size.columns || !size.rows) {
+    // Fallback in case terminal size isn't detected
+    return { columns: 80, rows: 24 };
+  }
+  return size;
 }
 
 async function connectToBrowser() {
