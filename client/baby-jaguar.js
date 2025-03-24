@@ -10,8 +10,8 @@ const { terminal } = TK;
 
 // Compression parameters (adjust these to experiment)
 const HORIZONTAL_COMPRESSION = 0.5; // < 1 to compress, > 1 to expand
-const VERTICAL_COMPRESSION = 0.5; // < 1 to compress, > 1 to expand
-const LINE_SHIFT = 1; // 0 (same line), 1 (next line), 2 (two lines)
+const VERTICAL_COMPRESSION = 1; // < 1 to compress, > 1 to expand
+const LINE_SHIFT = 0; // 0 (same line), 1 (next line), 2 (two lines)
 
 const execAsync = promisify(exec);
 
@@ -237,8 +237,6 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
         let termX = Math.floor(adjustedX * scaleX);
         let termY = Math.floor(adjustedY * scaleY);
-
-        // Clamp to prevent going over terminal edges
         termX = Math.max(0, Math.min(termX, termWidth - text.length - 1));
         termY = Math.max(0, Math.min(termY, termHeight - 2));
 
@@ -257,7 +255,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         });
 
         while (shouldShift && usedCoords.has(key) && termY < termHeight - 2 && attempts < termHeight) {
-          termY += LINE_SHIFT; // Shift by parameterized number of lines
+          termY += LINE_SHIFT;
           key = `${termX},${termY}`;
           attempts++;
         }
@@ -355,7 +353,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       process.emit('SIGINT');
     } else if (name === '<') {
       isListening = false;
-      if (onTabSwitch) onTabSwitch();
+      if (onTabShift) onTabShift();
     }
   });
 
@@ -536,7 +534,6 @@ async function connectToBrowser() {
   try {
     terminal.cyan('Starting browser connection...\n');
     terminal.grabInput({ mouse: 'button' });
-    terminal.alternateBuffer();
     const connection = await connectToBrowser();
     send = connection.send;
     socket = connection.socket;
@@ -548,7 +545,6 @@ async function connectToBrowser() {
     process.on('SIGINT', () => {
       if (cleanup) cleanup();
       terminal.grabInput(false);
-      terminal.mainBuffer();
       terminal.clear();
       terminal.green('Exiting...\n');
       if (socket) socket.close();
@@ -556,7 +552,6 @@ async function connectToBrowser() {
     });
   } catch (error) {
     if (cleanup) cleanup();
-    terminal.mainBuffer();
     if (DEBUG) console.warn(error);
     terminal.red(`Main error: ${error.message}\n`);
     process.exit(1);
