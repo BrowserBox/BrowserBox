@@ -12,6 +12,7 @@ const { terminal } = TK;
 const HORIZONTAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
 const VERTICAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
 const LINE_SHIFT = 1; // 0 (same line), 1 (next line), 2 (two lines)
+const DEBOUNCE_DELAY = 100; // Delay in milliseconds for debouncing scroll events
 
 const execAsync = promisify(exec);
 
@@ -156,6 +157,15 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
     }
   };
 
+  // Debounce utility function
+  const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  };
+
   const refresh = async () => {
     try {
       DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
@@ -283,7 +293,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
     }
   };
 
-  await refresh();
+  // Create a debounced version of the refresh function
+  const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
 
   terminal.on('mouse', async (event, data) => {
     if (!isListening) return;
@@ -314,7 +325,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
             button: 'left',
             clickCount: 1,
           }, sessionId);
-          await refresh();
+          await refresh(); // Immediate refresh on click
         } catch (error) {
           terminal.red(`Failed to click: ${error.message}\n`);
         }
@@ -329,7 +340,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           deltaX: 0,
           deltaY: deltaY,
         }, sessionId);
-        await refresh();
+        debouncedRefresh(); // Debounced refresh on scroll
       } catch (error) {
         terminal.red(`Failed to scroll: ${error.message}\n`);
       }
@@ -346,6 +357,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       if (onTabSwitch) onTabSwitch();
     }
   });
+
+  await refresh();
 
   return () => { isListening = false; };
 }
