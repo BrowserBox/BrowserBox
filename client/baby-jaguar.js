@@ -143,6 +143,14 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   let isListening = true;
   let scrollDelta = 50; // Pixels to scroll per wheel event
 
+  const debugLog = (message) => {
+    try {
+      appendFileSync('debug-coords.log', `${new Date().toISOString()} - ${message}\n`);
+    } catch (error) {
+      console.error(`Failed to write to debug log: ${error.message}`);
+    }
+  };
+
   const refresh = async () => {
     try {
       DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
@@ -153,12 +161,26 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
       if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
 
-      const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
-      const viewport = layoutMetrics.visualViewport;
-      const viewportX = viewport.pageX;
-      const viewportY = viewport.pageY;
-      const viewportWidth = viewport.clientWidth;
-      const viewportHeight = viewport.clientHeight;
+      // Get viewport dimensions and scroll offsets using CSS metrics
+      const viewportWidthResult = await send('Runtime.evaluate', {
+        expression: 'window.innerWidth',
+      }, sessionId);
+      const viewportWidth = viewportWidthResult.result.value;
+
+      const viewportHeightResult = await send('Runtime.evaluate', {
+        expression: 'window.innerHeight',
+      }, sessionId);
+      const viewportHeight = viewportHeightResult.result.value;
+
+      const scrollXResult = await send('Runtime.evaluate', {
+        expression: 'window.scrollX',
+      }, sessionId);
+      const viewportX = scrollXResult.result.value;
+
+      const scrollYResult = await send('Runtime.evaluate', {
+        expression: 'window.scrollY',
+      }, sessionId);
+      const viewportY = scrollYResult.result.value;
 
       const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
@@ -169,13 +191,13 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
       const { columns: termWidth, rows: termHeight } = await getTerminalSize();
       DEBUG && terminal.blue(`Terminal size: ${termWidth}x${termHeight}\n`);
-      const { contentWidth, contentHeight } = snapshot.documents[0];
-      // Adjust scaling to better fit the terminal
+
+      // Log viewport dimensions
+      debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
+
+      // Scale based on viewport dimensions to map the visible area to the terminal
       const scaleX = termWidth / viewportWidth;
       const scaleY = termHeight / viewportHeight;
-      const minScale = Math.min(scaleX, scaleY, 1); // Prevent over-compression
-      const adjustedScaleX = scaleX * minScale;
-      const adjustedScaleY = scaleY * minScale;
 
       const visibleBoxes = textLayoutBoxes.filter(box => {
         const boxX = box.boundingBox.x;
@@ -195,29 +217,46 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       });
 
       terminal.clear();
-      terminal.moveTo(1, 1); // Start at top-left
+      terminal.moveTo(1, 1);
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${viewportY})...\n`);
 
       const usedCoords = new Set();
-      for (const { text, boundingBox, isClickable } of visibleBoxes) {
+      for (let i = 0; i < visibleBoxes.length; i++) {
+        const { text, boundingBox, isClickable } = visibleBoxes[i];
+
         const adjustedX = boundingBox.x - viewportX;
         const adjustedY = boundingBox.y - viewportY;
 
-        let termX = Math.floor(adjustedX * adjustedScaleX);
-        let termY = Math.floor(adjustedY * adjustedScaleY);
+        let termX = Math.floor(adjustedX * scaleX);
+        let termY = Math.floor(adjustedY * scaleY);
         termX = Math.max(0, Math.min(termX, termWidth - text.length - 1));
-        termY = Math.max(0, Math.min(termY, termHeight - 2)); // Leave space for status bar
+        termY = Math.max(0, Math.min(termY, termHeight - 2));
 
         let key = `${termX},${termY}`;
         let attempts = 0;
-        while (usedCoords.has(key) && termY < termHeight - 2 && attempts < termHeight) {
-          termY += 2; // Add more vertical spacing to prevent overlap
+        const yDiffThreshold = 10;
+        const shouldShift = visibleBoxes.some((otherBox, j) => {
+          if (i === j) return false;
+          const otherAdjustedX = otherBox.boundingBox.x - viewportX;
+          const otherAdjustedY = otherBox.boundingBox.y - viewportY;
+          const otherTermX = Math.floor(otherAdjustedX * scaleX);
+          const otherTermY = Math.floor(otherAdjustedY * scaleY);
+          return otherTermX === termX &&
+                 otherTermY === termY &&
+                 Math.abs(otherBox.boundingBox.y - boundingBox.y) > yDiffThreshold;
+        });
+
+        while (shouldShift && usedCoords.has(key) && termY < termHeight - 2 && attempts < termHeight) {
+          termY += 2;
           key = `${termX},${termY}`;
           attempts++;
         }
-        if (attempts >= termHeight) continue; // Skip if we can't find a free spot
+        if (attempts >= termHeight) continue;
 
         usedCoords.add(key);
+
+        // Log coordinates before and after adjustment
+        debugLog(`Text Box "${text}": Page coords (${boundingBox.x}, ${boundingBox.y}), Adjusted coords (${adjustedX}, ${adjustedY}), Terminal coords (${termX + 1}, ${termY + 1})`);
 
         if (isClickable) {
           const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
