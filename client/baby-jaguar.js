@@ -178,14 +178,13 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
       if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
 
-      // Get viewport dimensions and scroll offsets using layout metrics
       const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
       const viewport = layoutMetrics.visualViewport;
       const document = snapshot.documents[0];
       const viewportWidth = viewport.clientWidth;
       const viewportHeight = viewport.clientHeight;
       const viewportX = document.scrollOffsetX;
-      currentScrollY = document.scrollOffsetY; // Update current scroll position
+      currentScrollY = document.scrollOffsetY;
 
       const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
@@ -198,10 +197,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       DEBUG && terminal.blue(`Terminal size: ${termWidth}x${termHeight}\n`);
       debugLog(`Terminal size: ${termWidth}x${termHeight}`);
 
-      // Log viewport dimensions
       debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
 
-      // Scale based on viewport dimensions, applying compression
       const baseScaleX = termWidth / viewportWidth;
       const baseScaleY = termHeight / viewportHeight;
       const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
@@ -212,94 +209,126 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         const boxY = box.boundingBox.y;
         const boxRight = boxX + box.boundingBox.width;
         const boxBottom = boxY + box.boundingBox.height;
-
         const viewportLeft = viewportX;
         const viewportRight = viewportX + viewportWidth;
         const viewportTop = currentScrollY;
         const viewportBottom = currentScrollY + viewportHeight;
-
-        return boxX < viewportRight &&
-               boxRight > viewportLeft &&
-               boxY < viewportBottom &&
-               boxBottom > viewportTop;
+        return boxX < viewportRight && boxRight > viewportLeft && boxY < viewportBottom && boxBottom > viewportTop;
       });
 
       terminal.clear();
       terminal.moveTo(1, 1);
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
 
-      const usedCoords = new Set();
-      renderedBoxes = []; // Reset the rendered boxes array
+      // **Step 1: Sort boxes by y, then x**
+      const sortedBoxes = visibleBoxes.sort((a, b) => a.boundingBox.y - b.boundingBox.y || a.boundingBox.x - b.boundingBox.x);
 
-      for (let i = 0; i < visibleBoxes.length; i++) {
-        const { text, boundingBox, isClickable } = visibleBoxes[i];
+      // **Step 2: Group boxes into logical lines**
+      const groups = [];
+      let currentGroup = [];
+      let lastY = null;
+      const yThreshold = 10; // Adjust this value to control grouping sensitivity
 
-        const adjustedX = boundingBox.x - viewportX;
-        const adjustedY = boundingBox.y - currentScrollY;
-
-        let termX = Math.ceil(adjustedX * scaleX);
-        let termY = Math.ceil(adjustedY * scaleY);
-
-        // Clamp to prevent going over terminal edges
-        termX = Math.max(0, Math.min(termX, termWidth - text.length - 1));
-        termY = Math.max(0, Math.min(termY, termHeight - 2));
-
-        let key = `${termX},${termY}`;
-        let attempts = 0;
-        const yDiffThreshold = 10;
-        const shouldShift = visibleBoxes.some((otherBox, j) => {
-          if (i === j) return false;
-          const otherAdjustedX = otherBox.boundingBox.x - viewportX;
-          const otherAdjustedY = otherBox.boundingBox.y - currentScrollY;
-          const otherTermX = Math.floor(otherAdjustedX * scaleX);
-          const otherTermY = Math.floor(otherAdjustedY * scaleY);
-          return otherTermX === termX &&
-                 otherTermY === termY &&
-                 Math.abs(otherBox.boundingBox.y - boundingBox.y) > yDiffThreshold;
-        });
-
-        while (shouldShift && usedCoords.has(key) && termY < termHeight - 2 && attempts < termHeight) {
-          termY += LINE_SHIFT;
-          key = `${termX},${termY}`;
-          attempts++;
+      for (const box of sortedBoxes) {
+        if (!currentGroup.length || (box.boundingBox.y - lastY) < yThreshold) {
+          currentGroup.push(box);
+        } else {
+          groups.push(currentGroup);
+          currentGroup = [box];
         }
-        if (attempts >= termHeight) continue;
+        lastY = box.boundingBox.y;
+      }
+      if (currentGroup.length) groups.push(currentGroup);
 
-        usedCoords.add(key);
+      // **Step 3: Render boxes in a flow layout**
+      renderedBoxes = []; // Reset the rendered boxes array
+      let currentY = 1;   // Start at the top of the terminal
 
-        // Store the rendered box with TUI coordinates
-        renderedBoxes.push({
-          text,
-          boundingBox,
-          isClickable,
-          termX: termX + 1, // Adjust for 1-based terminal coordinates
-          termY: termY + 1,
-          termWidth: text.length,
-          termHeight: 1,
-          viewportX,
-          viewportY: currentScrollY,
-        });
+      for (const group of groups) {
+        let currentX = 1; // Start at the left of each line
+        for (const box of group) {
+          const text = box.text;
 
-        // Log coordinates before and after adjustment
-        debugLog(`Text Box "${text}": Page coords (${boundingBox.x}, ${boundingBox.y}), Adjusted coords (${adjustedX}, ${adjustedY}), Terminal coords (${termX + 1}, ${termY + 1})`);
+          // Check if the text fits on the current line
+          if (currentX + text.length - 1 <= termWidth) {
+            // Place the text at currentX, currentY
+            terminal.moveTo(currentX, currentY);
+            if (box.isClickable) {
+              terminal.cyan.underline(text);
+            } else {
+              terminal(text);
+            }
 
-        if (isClickable) {
-          const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
-          if (clickable) {
-            clickable.termX = termX + 1;
-            clickable.termY = termY + 1;
-            clickable.termWidth = text.length;
-            clickable.termHeight = 1;
+            // Store the rendered box
+            renderedBoxes.push({
+              text,
+              boundingBox: box.boundingBox,
+              isClickable: box.isClickable,
+              termX: currentX,
+              termY: currentY,
+              termWidth: text.length,
+              termHeight: 1,
+              viewportX,
+              viewportY: currentScrollY,
+            });
+
+            // Update clickable elements if applicable
+            if (box.isClickable) {
+              const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === box.boundingBox.x && el.boundingBox.y === box.boundingBox.y);
+              if (clickable) {
+                clickable.termX = currentX;
+                clickable.termY = currentY;
+                clickable.termWidth = text.length;
+                clickable.termHeight = 1;
+              }
+            }
+
+            // Move cursor right, add a space between boxes
+            currentX += text.length + 1;
+          } else {
+            // Move to the next line if it doesn’t fit
+            currentY++;
+            if (currentY >= termHeight) break; // Stop if we exceed terminal height
+            currentX = 1;
+
+            // Place the text on the new line
+            terminal.moveTo(currentX, currentY);
+            if (box.isClickable) {
+              terminal.cyan.underline(text);
+            } else {
+              terminal(text);
+            }
+
+            // Store the rendered box
+            renderedBoxes.push({
+              text,
+              boundingBox: box.boundingBox,
+              isClickable: box.isClickable,
+              termX: currentX,
+              termY: currentY,
+              termWidth: text.length,
+              termHeight: 1,
+              viewportX,
+              viewportY: currentScrollY,
+            });
+
+            // Update clickable elements if applicable
+            if (box.isClickable) {
+              const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === box.boundingBox.x && el.boundingBox.y === box.boundingBox.y);
+              if (clickable) {
+                clickable.termX = currentX;
+                clickable.termY = currentY;
+                clickable.termWidth = text.length;
+                clickable.termHeight = 1;
+              }
+            }
+
+            currentX += text.length + 1;
           }
         }
-
-        terminal.moveTo(termX + 1, termY + 1);
-        DEBUG && terminal.gray(`Drawing "${text}" at terminal (${termX + 1}, ${termY + 1})\n`);
-        if (isClickable) {
-          terminal.cyan.underline(text);
-        } else {
-          terminal(text);
-        }
+        // Move to the next line for the next group
+        currentY++;
+        if (currentY >= termHeight) break;
       }
 
       DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
