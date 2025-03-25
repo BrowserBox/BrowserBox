@@ -74,13 +74,12 @@
       const selectTabAndRender = async () => {
         if (cleanup) cleanup();
 
-        terminal.clear().green('Available tabs:\n');
-        const items = targets.map((t, i) => `${i + 1}. ${t.title || t.url || t.targetId}`);
-        const selection = await terminal.singleColumnMenu(items, {
+        terminal.clear();
+        const items = targets.map((t, i) => `${(t.title || new URL(t.url||'about:blank').hostname).slice(0,Math.round(Math.max(15, terminal.width/3)))}`);
+        const selection = await terminal.singleRowMenu(items, {
           style: terminal.white,
-          selectedStyle: terminal.green.bgBlack,
-          exitOnUnexpectedKey: true,
-          keyBindings: { '1': 'submit', '2': 'submit', '3': 'submit', '4': 'submit', '5': 'submit', '6': 'submit', '7': 'submit', '8': 'submit', '9': 'submit' },
+          selectedStyle: terminal.black.bgGreen,
+          exitOnUnexpectedKey: false,
         }).promise.catch(() => {
           terminal.yellow('Selection interrupted. Exiting...\n');
           process.exit(0);
