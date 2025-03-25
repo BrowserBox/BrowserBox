@@ -302,8 +302,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         const { text, boundingBox, isClickable, termX, termY } = box;
 
         // Clamp to terminal edges (convert to 1-based for rendering)
-        const renderX = Math.max(1, Math.min(termX + 1, termWidth - text.length));
-        const renderY = Math.max(1, Math.min(termY + 1, termHeight - 1));
+        const renderX = Math.max(1, Math.min(termX + 1, termWidth));
+        const renderY = Math.max(1, Math.min(termY + 1, termHeight));
         const key = `${renderX},${renderY}`;
 
         if (usedCoords.has(key)) continue; // Skip if exact start position is taken
