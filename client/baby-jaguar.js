@@ -24,7 +24,7 @@ const CONFIG = {
   GAP_SIZE: 2,
 };
 
-const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
+const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
 const LOG_FILE = 'cdp-log.txt';
 
 const args = process.argv.slice(2);
@@ -209,16 +209,28 @@ function groupBoxes(visibleBoxes, CONFIG) {
   return { groups, boxToGroup };
 }
 
-function getAncestorInfo(nodeIndex, nodes) {
+function getAncestorInfo(nodeIndex, nodes, strings) {
   let currentIndex = nodeIndex;
   while (currentIndex !== -1) {
-    const nodeName = nodes.nodeName[currentIndex];
-    const attributes = nodes.attributes[currentIndex] || {};
-    const isClickable = nodes.isClickable && nodes.isClickable.indexOf(currentIndex) !== -1;
+    const nodeNameIndex = nodes.nodeName[currentIndex];
+    const nodeName = strings[nodeNameIndex];
+    const attributes = nodes.attributes[currentIndex] || [];
+    const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
 
-    if (nodeName === 'A' && (attributes.href || attributes.onclick)) {
+    // Check attributes (they’re in [keyIndex, valueIndex] pairs)
+    let hasHref = false;
+    let hasOnclick = false;
+    for (let i = 0; i < attributes.length; i += 2) {
+      const keyIndex = attributes[i];
+      const valueIndex = attributes[i + 1];
+      const key = strings[keyIndex];
+      if (key === 'href') hasHref = true;
+      if (key === 'onclick') hasOnclick = true;
+    }
+
+    if (nodeName === 'A' && (hasHref || hasOnclick)) {
       return 'hyperlink';
-    } else if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.type === 'button')) {
+    } else if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
       return 'button';
     } else if (isClickable) {
       return 'other_clickable';
