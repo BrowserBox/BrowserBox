@@ -227,8 +227,8 @@ async function handleClick({ termX, termY, renderedBoxes, clickableElements, sen
   // Local visual flash
   terminal.moveTo(clickedBox.termX, clickedBox.termY);
   terminal.yellow(clickedBox.text);
-  await sleep(300); // Flash for 300ms
-  await refresh(); // Restore original style
+  await sleep(300);
+  await refresh();
 
   // Calculate GUI coordinates
   const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
@@ -257,6 +257,15 @@ async function handleClick({ termX, termY, renderedBoxes, clickableElements, sen
   await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
 
+  // Test a simple script to confirm Runtime.evaluate works
+  try {
+    const testScript = `alert('Click ${clickId} at (${clickX}, ${clickY})')`;
+    const testResult = await send('Runtime.evaluate', { expression: testScript }, sessionId);
+    debugLog(`Test script result: ${JSON.stringify(testResult)}`);
+  } catch (error) {
+    debugLog(`Test script failed: ${error.message}`);
+  }
+
   // Inject a black circle with click ID on the remote page
   const circleStyle = `
     position: absolute;
@@ -281,14 +290,20 @@ async function handleClick({ termX, termY, renderedBoxes, clickableElements, sen
       document.body.appendChild(circle);
     })();
   `;
-  await send('Runtime.evaluate', { expression: script }, sessionId);
+  try {
+    debugLog(`Injecting circle script: ${script}`);
+    const result = await send('Runtime.evaluate', { expression: script }, sessionId);
+    debugLog(`Circle injection result: ${JSON.stringify(result)}`);
+  } catch (error) {
+    debugLog(`Circle injection failed: ${error.message}`);
+  }
 
   await refresh();
 }
 
 function getAncestorInfo(nodeIndex, nodes, strings) {
   let currentIndex = nodeIndex;
-  let path = []; // For debugging
+  let path = [];
   while (currentIndex !== -1) {
     if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {
       debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}, path: ${path.join(' -> ')}`);
@@ -305,13 +320,22 @@ function getAncestorInfo(nodeIndex, nodes, strings) {
     const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
     path.push(`${currentIndex}:${nodeName}${isClickable ? '(clickable)' : ''}`);
 
-    // Check for button first
+    // Log attributes for debugging
+    let attrDebug = [];
+    for (let i = 0; i < attributes.length; i += 2) {
+      const keyIndex = attributes[i];
+      const valueIndex = attributes[i + 1];
+      const key = strings[keyIndex];
+      const value = strings[valueIndex];
+      attrDebug.push(`${key}=${value}`);
+    }
+    debugLog(`Node ${currentIndex}: ${nodeName}, clickable: ${isClickable}, attributes: ${attrDebug.join(', ')}`);
+
     if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
       debugLog(`Classified as button at node ${currentIndex}, path: ${path.join(' -> ')}`);
       return 'button';
     }
 
-    // Then check for hyperlink
     let hasHref = false;
     let hasOnclick = false;
     for (let i = 0; i < attributes.length; i += 2) {
@@ -326,7 +350,6 @@ function getAncestorInfo(nodeIndex, nodes, strings) {
       return 'hyperlink';
     }
 
-    // Finally, check for other clickable elements
     if (isClickable) {
       debugLog(`Classified as other_clickable at node ${currentIndex}, path: ${path.join(' -> ')}`);
       return 'other_clickable';
