@@ -177,6 +177,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
       const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
       if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
+      appendFileSync('snapshot.log', JSON.stringify({snapshot},null,2));
 
       const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
       const viewport = layoutMetrics.visualViewport;
