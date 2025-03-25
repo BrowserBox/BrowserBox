@@ -104,6 +104,7 @@
     "helmet": "latest",
     "is-docker": "latest",
     "multer": "latest",
+    "neo-blessed": "^0.2.0",
     "node-native-ocr": "^0.3.9",
     "patch-package": "latest",
     "simple-peer": "latest",

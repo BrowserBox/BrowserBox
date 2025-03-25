@@ -7,6 +7,7 @@
       import { appendFileSync } from 'fs';
       import { Agent } from 'https';
       import TK from 'terminal-kit';
+      import TerminalBrowser from './terminal-browser.js';
       const { terminal } = TK;
 
     // one liners
