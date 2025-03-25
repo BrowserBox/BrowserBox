@@ -24,7 +24,7 @@ const CONFIG = {
   GAP_SIZE: 1,
 };
 
-const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
+const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
 const LOG_FILE = 'cdp-log.txt';
 
 const args = process.argv.slice(2);
@@ -985,7 +985,7 @@ async function connectToBrowser() {
     const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
     DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
 
-    const stop = await printTextLayoutToTerminal({ send, sessionId, onTabSwitch: selectTabAndRender });
+    const stop = await printTextLayoutToTerminal({ send, sessionId, onTabSwitch: selectTabAndRender, targets });
     cleanup = stop;
   };
 
