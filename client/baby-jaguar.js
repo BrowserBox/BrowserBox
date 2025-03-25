@@ -9,6 +9,7 @@ import TK from 'terminal-kit';
 
 const { terminal } = TK;
 const execAsync = promisify(exec);
+const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 // Compression parameters (adjust these to experiment)
 const HORIZONTAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
@@ -228,8 +229,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   const refresh = async () => {
     try {
       DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
-      await send('DOM.enable', {}, sessionId);
-      await send('DOMSnapshot.enable', {}, sessionId);
+      send('DOM.enable', {}, sessionId);
+      send('DOMSnapshot.enable', {}, sessionId);
       DEBUG && terminal.cyan('Capturing snapshot...\n');
 
       const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
@@ -367,7 +368,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
       // Pass 2: Apply gaps between groups on the same row
       const GAP_SIZE = 1;
-      const groupsByRow = new Map(); // row -> array of groups
+      const groupsByRow = new Map();
       for (const group of groups) {
         const row = group[0].termY; // Assume all boxes in group share termY
         if (!groupsByRow.has(row)) {
@@ -398,18 +399,24 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         }
       }
 
-      // Pass 3: Render the de-conflicted and gapped boxes
+      // Pass 3: Render with wrapColumn to prevent overflow
       const usedCoords = new Set();
       renderedBoxes = [];
 
       for (const box of visibleBoxes) {
         const { text, boundingBox, isClickable, termX, termY } = box;
-        const renderX = Math.max(1, termX + 1);
+        const renderX = Math.max(1, termX + 1); // 1-based for terminal
         const renderY = Math.max(1, termY + 1);
         const key = `${renderX},${renderY}`;
 
         if (usedCoords.has(key)) continue;
         usedCoords.add(key);
+
+        // Calculate available width from renderX to termWidth
+        const availableWidth = Math.max(0, termWidth - renderX + 1); // +1 because renderX is 1-based
+
+        // Set wrap column to prevent text from exceeding termWidth
+        terminal.wrapColumn({ x: renderX, width: availableWidth });
 
         renderedBoxes.push({
           text,
@@ -417,7 +424,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           isClickable,
           termX: renderX,
           termY: renderY,
-          termWidth: text.length,
+          termWidth: Math.min(text.length, availableWidth), // Reflect visible width
           termHeight: 1,
           viewportX,
           viewportY: currentScrollY,
@@ -428,18 +435,18 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           if (clickable) {
             clickable.termX = renderX;
             clickable.termY = renderY;
-            clickable.termWidth = text.length;
+            clickable.termWidth = Math.min(text.length, availableWidth);
             clickable.termHeight = 1;
           }
         }
 
-        debugLog(`Rendering "${text}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY})`);
+        debugLog(`Rendering "${text.substring(0, availableWidth)}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY})`);
         terminal.moveTo(renderX, renderY);
-        DEBUG && terminal.gray(`Drawing "${text}" at (${renderX}, ${renderY})\n`);
+        DEBUG && terminal.gray(`Drawing "${text}" at (${renderX}, ${renderY}) with width ${availableWidth}\n`);
         if (isClickable) {
-          terminal.cyan.underline(text);
+          terminal.wrap.cyan.underline(text); // Use .wrap to enforce column width
         } else {
-          terminal(text);
+          terminal.wrap(text); // Use .wrap to enforce column width
         }
       }
 
@@ -452,6 +459,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
   const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
 
+  // [Unchanged event handlers remain the same]
   terminal.on('mouse', async (event, data) => {
     if (!isListening) return;
 
@@ -474,8 +482,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         const clickX = guiX + clickedBox.viewportX;
         const clickY = guiY + clickedBox.viewportY;
         debugLog(`Transmitting click to GUI coordinates (${clickX}, ${clickY})...`);
-        await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
-        await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
+        send('Input.dispatchMouseEvent', { type: 'mousePressed', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
+        send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
         await refresh();
       } else {
         terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
@@ -486,7 +494,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${currentScrollY})`);
         return;
       }
-      await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+      send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
       debouncedRefresh();
     }
   });
@@ -642,6 +650,14 @@ async function connectToBrowser() {
   DEBUG && terminal.green('Connected to WebSocket\n');
 
   return { send, socket, targets, cookieHeader };
+}
+
+function debugLog(message) {
+  try {
+    appendFileSync('debug-coords.log', `${new Date().toISOString()} - ${message}\n`);
+  } catch (error) {
+    console.error(`Failed to write to debug log: ${error.message}`);
+  }
 }
 
 (async () => {
