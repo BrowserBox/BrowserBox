@@ -143,6 +143,7 @@ function extractTextLayoutBoxes(snapshot) {
     const nodeIndex = layoutToNode.get(layoutIndex);
     const parentIndex = nodeToParent.get(nodeIndex);
     const isClickable = nodeIndex !== undefined && isNodeClickable(nodeIndex);
+    const ancestorType = getAncestorInfo(nodeIndex, nodes); // New classification
 
     if (isClickable) {
       clickableElements.push({
@@ -153,8 +154,8 @@ function extractTextLayoutBoxes(snapshot) {
       });
     }
 
-    textLayoutBoxes.push({ text, boundingBox, isClickable, parentIndex });
-    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y}) | parentIndex: ${parentIndex} | isClickable: ${isClickable}\n`);
+    textLayoutBoxes.push({ text, boundingBox, isClickable, parentIndex, ancestorType });
+    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y}) | parentIndex: ${parentIndex} | isClickable: ${isClickable} | ancestorType: ${ancestorType}\n`);
   }
 
   return { textLayoutBoxes, clickableElements };
@@ -206,6 +207,25 @@ function groupBoxes(visibleBoxes, CONFIG) {
 
   debugLog(`Grouped ${visibleBoxes.length} boxes into ${groups.length} groups`);
   return { groups, boxToGroup };
+}
+
+function getAncestorInfo(nodeIndex, nodes) {
+  let currentIndex = nodeIndex;
+  while (currentIndex !== -1) {
+    const nodeName = nodes.nodeName[currentIndex];
+    const attributes = nodes.attributes[currentIndex] || {};
+    const isClickable = nodes.isClickable && nodes.isClickable.indexOf(currentIndex) !== -1;
+
+    if (nodeName === 'A' && (attributes.href || attributes.onclick)) {
+      return 'hyperlink';
+    } else if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.type === 'button')) {
+      return 'button';
+    } else if (isClickable) {
+      return 'other_clickable';
+    }
+    currentIndex = nodes.parentIndex[currentIndex];
+  }
+  return 'normal';
 }
 
 // Pass 1: De-conflict groups by column walk
@@ -327,11 +347,11 @@ function renderBoxes(layoutState) {
   const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
   const usedCoords = new Set();
 
-  renderedBoxes.length = 0; // Reset renderedBoxes
+  renderedBoxes.length = 0;
 
   for (const box of visibleBoxes) {
-    const { text, boundingBox, isClickable, termX, termY } = box;
-    const renderX = Math.max(1, termX + 1); // 1-based for terminal
+    const { text, boundingBox, isClickable, termX, termY, ancestorType } = box;
+    const renderX = Math.max(1, termX + 1);
     const renderY = Math.max(1, termY + 1);
     const key = `${renderX},${renderY}`;
 
@@ -370,13 +390,18 @@ function renderBoxes(layoutState) {
       }
     }
 
-    debugLog(`Rendering "${displayText}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY})`);
+    debugLog(`Rendering "${displayText}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY}), Type: ${ancestorType}`);
     terminal.moveTo(renderX, renderY);
     DEBUG && terminal.gray(`Drawing "${displayText}" at (${renderX}, ${renderY}) with width ${availableWidth}\n`);
-    if (isClickable) {
-      terminal.cyan.underline(displayText);
+
+    if (ancestorType === 'hyperlink') {
+      terminal.blue.underline(displayText); // Blue underline for links
+    } else if (ancestorType === 'button') {
+      terminal.bgGreen.black(displayText); // Green background for buttons
+    } else if (ancestorType === 'other_clickable') {
+      terminal.bold(displayText); // Bold for other clickables
     } else {
-      terminal(displayText);
+      terminal(displayText); // Normal text
     }
   }
 
