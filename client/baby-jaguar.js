@@ -247,25 +247,6 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         let key = `${termX},${termY}`;
         let attempts = 0;
         const yDiffThreshold = 10;
-        const shouldShift = visibleBoxes.some((otherBox, j) => {
-          if (i === j) return false;
-          const otherAdjustedX = otherBox.boundingBox.x - viewportX;
-          const otherAdjustedY = otherBox.boundingBox.y - currentScrollY;
-          const otherTermX = Math.floor(otherAdjustedX * scaleX);
-          const otherTermY = Math.floor(otherAdjustedY * scaleY);
-          return otherTermX === termX &&
-                 otherTermY === termY &&
-                 Math.abs(otherBox.boundingBox.y - boundingBox.y) > yDiffThreshold;
-        });
-
-        while (shouldShift && usedCoords.has(key) && termY < termHeight - 2 && attempts < termHeight) {
-          termY += LINE_SHIFT;
-          key = `${termX},${termY}`;
-          attempts++;
-        }
-        if (attempts >= termHeight) continue;
-
-        usedCoords.add(key);
 
         // Store the rendered box with TUI coordinates
         renderedBoxes.push({
