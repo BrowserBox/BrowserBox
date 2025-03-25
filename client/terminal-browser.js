@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 
 const term = termkit.terminal;
 
-export class TerminalBrowser extends EventEmitter {
+export default class TerminalBrowser extends EventEmitter {
   constructor(options = {}) {
     super();
     this.term = term;
