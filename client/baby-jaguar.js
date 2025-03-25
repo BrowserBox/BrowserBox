@@ -6,15 +6,21 @@ import { WebSocket } from 'ws';
 import { appendFileSync } from 'fs';
 import { Agent } from 'https';
 import TK from 'terminal-kit';
+
 const { terminal } = TK;
+const execAsync = promisify(exec);
 
 // Compression parameters (adjust these to experiment)
 const HORIZONTAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
 const VERTICAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
 const LINE_SHIFT = 1; // 0 (same line), 1 (next line), 2 (two lines)
 const DEBOUNCE_DELAY = 100; // Delay in milliseconds for debouncing scroll events
-
-const execAsync = promisify(exec);
+const CONFIG = {
+  useTextByElementGrouping: true,  // Group text boxes by their parent HTML element
+  useTextGestaltGrouping: false,   // Group by proximity (threshold-based)
+  yThreshold: 10,                  // Vertical proximity threshold in pixels
+  xThreshold: 50                   // Horizontal proximity threshold in pixels
+};
 
 const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
 const LOG_FILE = 'cdp-log.txt';
@@ -83,7 +89,6 @@ function extractTextLayoutBoxes(snapshot) {
   nodes.parentIndex.forEach((parentIdx, nodeIdx) => nodeToParent.set(nodeIdx, parentIdx));
 
   const clickableIndexes = new Set(nodes.isClickable?.index || []);
-  DEBUG && terminal.blue(`Clickable Indexes: ${JSON.stringify([...clickableIndexes])}\n`);
 
   function isNodeClickable(nodeIndex) {
     let currentIndex = nodeIndex;
@@ -126,6 +131,7 @@ function extractTextLayoutBoxes(snapshot) {
     };
 
     const nodeIndex = layoutToNode.get(layoutIndex);
+    const parentIndex = nodeToParent.get(nodeIndex); // Add parentIndex for grouping
     const isClickable = nodeIndex !== undefined && isNodeClickable(nodeIndex);
 
     if (isClickable) {
@@ -137,15 +143,66 @@ function extractTextLayoutBoxes(snapshot) {
       });
     }
 
-    textLayoutBoxes.push({ text, boundingBox, isClickable });
-    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y}) | nodeIndex: ${nodeIndex} | isClickable: ${isClickable}\n`);
+    textLayoutBoxes.push({ text, boundingBox, isClickable, parentIndex });
+    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y}) | parentIndex: ${parentIndex} | isClickable: ${isClickable}\n`);
   }
 
   return { textLayoutBoxes, clickableElements };
 }
 
+function groupBoxes(visibleBoxes, CONFIG) {
+  let groups = [];
+  const boxToGroup = new Map();
+
+  if (CONFIG.useTextByElementGrouping) {
+    // Group by parent HTML element
+    const groupsMap = new Map(); // parentIndex -> array of boxes
+    for (const box of visibleBoxes) {
+      const groupKey = box.parentIndex !== undefined ? box.parentIndex : `individual_${visibleBoxes.indexOf(box)}`;
+      if (!groupsMap.has(groupKey)) {
+        groupsMap.set(groupKey, []);
+      }
+      groupsMap.get(groupKey).push(box);
+    }
+    groups = Array.from(groupsMap.values());
+  } else if (CONFIG.useTextGestaltGrouping) {
+    // Group by proximity
+    const sortedBoxes = visibleBoxes.sort((a, b) => a.boundingBox.y - b.boundingBox.y || a.boundingBox.x - b.boundingBox.x);
+    let currentGroup = [];
+    let lastY = null;
+    let lastX = null;
+    for (const box of sortedBoxes) {
+      if (!currentGroup.length) {
+        currentGroup.push(box);
+      } else {
+        const yDiff = Math.abs(box.boundingBox.y - lastY);
+        const xDiff = Math.abs(box.boundingBox.x - lastX);
+        if (yDiff < CONFIG.yThreshold && xDiff < CONFIG.xThreshold) {
+          currentGroup.push(box);
+        } else {
+          groups.push(currentGroup);
+          currentGroup = [box];
+        }
+      }
+      lastY = box.boundingBox.y;
+      lastX = box.boundingBox.x;
+    }
+    if (currentGroup.length) groups.push(currentGroup);
+  } else {
+    // No grouping: each box is its own group
+    groups = visibleBoxes.map(box => [box]);
+  }
+
+  // Assign group IDs to boxes
+  groups.forEach((group, groupId) => {
+    group.forEach(box => boxToGroup.set(box, groupId));
+  });
+
+  debugLog(`Grouped ${visibleBoxes.length} boxes into ${groups.length} groups`);
+  return { groups, boxToGroup };
+}
+
 async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
-  // [Existing variables unchanged]
   let clickableElements = [];
   let isListening = true;
   let scrollDelta = 50;
@@ -177,7 +234,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
       const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
       if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
-      appendFileSync('snapshot.log', JSON.stringify({snapshot},null,2));
+      appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
 
       const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
       const viewport = layoutMetrics.visualViewport;
@@ -220,7 +277,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       terminal.moveTo(1, 1);
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
 
-      // Add terminal coordinates to boxes and prepare for de-confliction
+      // Add terminal coordinates to boxes
       visibleBoxes.forEach(box => {
         const adjustedX = box.boundingBox.x - viewportX;
         const adjustedY = box.boundingBox.y - currentScrollY;
@@ -229,6 +286,9 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         box.termWidth = box.text.length;
         box.termHeight = 1;
       });
+
+      // Group the boxes
+      const { groups, boxToGroup } = groupBoxes(visibleBoxes, CONFIG);
 
       // Helper functions for de-confliction
       const boxOverlapsThisPosition = (box, col, row) => {
@@ -245,18 +305,25 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         return diff;
       };
 
-      const moveBoxRightwardBy1Column = (box) => {
-        box.termX += 1;
-        debugLog(`Moved "${box.text}" right to termX=${box.termX}`);
+      const moveGroupRightwardBy1Column = (groupId, groups) => {
+        const group = groups[groupId];
+        group.forEach(box => {
+          box.termX += 1;
+          debugLog(`Moved group ${groupId} box "${box.text}" right to termX=${box.termX}`);
+        });
       };
 
-      const selectMainBox = (boxes) => {
-        return [...boxes].reduce((minBox, box) =>
-          (box.termX - (box.shiftCount || 0)) < (minBox.termX - (minBox.shiftCount || 0)) ? box : minBox
-        );
+      const selectMainGroup = (groupIds, groups, boxToGroup) => {
+        return groupIds.reduce((minGroupId, groupId) => {
+          const minBox = groups[minGroupId][0];
+          const currBox = groups[groupId][0];
+          const minOriginalX = minBox.termX - (minBox.shiftCount || 0);
+          const currOriginalX = currBox.termX - (currBox.shiftCount || 0);
+          return currOriginalX < minOriginalX ? groupId : minGroupId;
+        });
       };
 
-      // Pass 1: De-confliction by column walk
+      // Pass 1: De-confliction by column walk (group-based)
       for (let c = 0; c < termWidth; c++) {
         for (let r = 0; r < termHeight; r++) {
           const currentBoxes = new Set();
@@ -277,49 +344,56 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           }
 
           if (oldBoxes.size >= 1) {
-            for (const newBox of newBoxes) {
-              moveBoxRightwardBy1Column(newBox);
-              newBox.shiftCount = (newBox.shiftCount || 0) + 1;
+            const newGroupIds = new Set([...newBoxes].map(box => boxToGroup.get(box)));
+            for (const groupId of newGroupIds) {
+              moveGroupRightwardBy1Column(groupId, groups);
+              groups[groupId].forEach(box => box.shiftCount = (box.shiftCount || 0) + 1);
             }
           }
 
           if (newBoxes.size > 1) {
-            const mainBox = selectMainBox(newBoxes);
-            newBoxes.delete(mainBox);
-            for (const newBox of newBoxes) {
-              moveBoxRightwardBy1Column(newBox);
-              newBox.shiftCount = (newBox.shiftCount || 0) + 1;
+            const newGroupIds = [...new Set([...newBoxes].map(box => boxToGroup.get(box)))];
+            if (newGroupIds.length > 1) {
+              const mainGroupId = selectMainGroup(newGroupIds, groups, boxToGroup);
+              newGroupIds.splice(newGroupIds.indexOf(mainGroupId), 1);
+              for (const groupId of newGroupIds) {
+                moveGroupRightwardBy1Column(groupId, groups);
+                groups[groupId].forEach(box => box.shiftCount = (box.shiftCount || 0) + 1);
+              }
             }
           }
         }
       }
 
-      // Pass 2: Apply gaps between boxes on the same row
-      const GAP_SIZE = 1; // Parameterizable, default 1
-      const boxesByRow = new Map(); // row -> array of boxes
-      for (const box of visibleBoxes) {
-        if (!boxesByRow.has(box.termY)) {
-          boxesByRow.set(box.termY, []);
+      // Pass 2: Apply gaps between groups on the same row
+      const GAP_SIZE = 1;
+      const groupsByRow = new Map(); // row -> array of groups
+      for (const group of groups) {
+        const row = group[0].termY; // Assume all boxes in group share termY
+        if (!groupsByRow.has(row)) {
+          groupsByRow.set(row, []);
         }
-        boxesByRow.get(box.termY).push(box);
+        groupsByRow.get(row).push(group);
       }
 
-      for (const [row, boxes] of boxesByRow) {
-        // Sort boxes by termX to process left-to-right
-        boxes.sort((a, b) => a.termX - b.termX);
-        for (let i = 1; i < boxes.length; i++) {
-          const prevBox = boxes[i - 1];
-          const currBox = boxes[i];
-          const expectedX = prevBox.termX + prevBox.termWidth; // Where prevBox ends
+      for (const [row, rowGroups] of groupsByRow) {
+        rowGroups.sort((a, b) => a[0].termX - b[0].termX);
+        for (let i = 1; i < rowGroups.length; i++) {
+          const prevGroup = rowGroups[i - 1];
+          const currGroup = rowGroups[i];
+          const prevRight = Math.max(...prevGroup.map(box => box.termX + box.termWidth));
+          const currLeft = Math.min(...currGroup.map(box => box.termX));
           let gap = 0;
-          if (prevBox.text.length > 1 || currBox.text.length > 1) {
+          if (prevGroup.some(box => box.text.length > 1) || currGroup.some(box => box.text.length > 1)) {
             gap = GAP_SIZE;
           }
-          const targetX = expectedX + gap;
-          if (currBox.termX < targetX) {
-            const shift = targetX - currBox.termX;
-            currBox.termX += shift;
-            debugLog(`Added gap for "${currBox.text}": shifted from ${currBox.termX - shift} to ${currBox.termX}`);
+          const targetX = prevRight + gap;
+          if (currLeft < targetX) {
+            const shift = targetX - currLeft;
+            currGroup.forEach(box => {
+              box.termX += shift;
+              debugLog(`Added gap for group box "${box.text}": shifted from ${box.termX - shift} to ${box.termX}`);
+            });
           }
         }
       }
@@ -330,8 +404,6 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
       for (const box of visibleBoxes) {
         const { text, boundingBox, isClickable, termX, termY } = box;
-
-        // Convert to 1-based for rendering, no upper clamp
         const renderX = Math.max(1, termX + 1);
         const renderY = Math.max(1, termY + 1);
         const key = `${renderX},${renderY}`;
@@ -372,14 +444,12 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       }
 
       DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
-      // terminal.moveTo(1, termHeight - 1).green('Click a link, scroll with mouse wheel, < for tabs, Ctrl+C to exit.\n');
     } catch (error) {
       if (DEBUG) console.warn(error);
       terminal.red(`Error printing text layout: ${error.message}\n`);
     }
   };
 
-  // [Rest of the function unchanged: debouncedRefresh, event handlers, etc.]
   const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
 
   terminal.on('mouse', async (event, data) => {
