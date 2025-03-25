@@ -145,11 +145,12 @@ function extractTextLayoutBoxes(snapshot) {
 }
 
 async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
+  // [Existing variables unchanged]
   let clickableElements = [];
   let isListening = true;
-  let scrollDelta = 50; // Pixels to scroll per wheel event
-  let renderedBoxes = []; // Store rendered boxes with TUI coordinates
-  let currentScrollY = 0; // Track the current scroll position
+  let scrollDelta = 50;
+  let renderedBoxes = [];
+  let currentScrollY = 0;
 
   const debugLog = (message) => {
     try {
@@ -159,7 +160,6 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
     }
   };
 
-  // Debounce utility function
   const debounce = (func, delay) => {
     let timeoutId;
     return (...args) => {
@@ -250,7 +250,6 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       };
 
       const selectMainBox = (boxes) => {
-        // For simplicity, pick the box with the earliest original termX
         return [...boxes].reduce((minBox, box) =>
           (box.termX - (box.shiftCount || 0)) < (minBox.termX - (minBox.shiftCount || 0)) ? box : minBox
         );
@@ -279,7 +278,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           if (oldBoxes.size >= 1) {
             for (const newBox of newBoxes) {
               moveBoxRightwardBy1Column(newBox);
-              newBox.shiftCount = (newBox.shiftCount || 0) + 1; // Track shifts for mainBox selection
+              newBox.shiftCount = (newBox.shiftCount || 0) + 1;
             }
           }
 
@@ -294,19 +293,49 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         }
       }
 
-      // Pass 2: Render the de-conflicted boxes
+      // Pass 2: Apply gaps between boxes on the same row
+      const GAP_SIZE = 1; // Parameterizable, default 1
+      const boxesByRow = new Map(); // row -> array of boxes
+      for (const box of visibleBoxes) {
+        if (!boxesByRow.has(box.termY)) {
+          boxesByRow.set(box.termY, []);
+        }
+        boxesByRow.get(box.termY).push(box);
+      }
+
+      for (const [row, boxes] of boxesByRow) {
+        // Sort boxes by termX to process left-to-right
+        boxes.sort((a, b) => a.termX - b.termX);
+        for (let i = 1; i < boxes.length; i++) {
+          const prevBox = boxes[i - 1];
+          const currBox = boxes[i];
+          const expectedX = prevBox.termX + prevBox.termWidth; // Where prevBox ends
+          let gap = 0;
+          if (prevBox.text.length > 1 || currBox.text.length > 1) {
+            gap = GAP_SIZE;
+          }
+          const targetX = expectedX + gap;
+          if (currBox.termX < targetX) {
+            const shift = targetX - currBox.termX;
+            currBox.termX += shift;
+            debugLog(`Added gap for "${currBox.text}": shifted from ${currBox.termX - shift} to ${currBox.termX}`);
+          }
+        }
+      }
+
+      // Pass 3: Render the de-conflicted and gapped boxes
       const usedCoords = new Set();
       renderedBoxes = [];
 
       for (const box of visibleBoxes) {
         const { text, boundingBox, isClickable, termX, termY } = box;
 
-        // Clamp to terminal edges (convert to 1-based for rendering)
-        const renderX = Math.max(1, Math.min(termX + 1, termWidth));
-        const renderY = Math.max(1, Math.min(termY + 1, termHeight));
+        // Convert to 1-based for rendering, no upper clamp
+        const renderX = Math.max(1, termX + 1);
+        const renderY = Math.max(1, termY + 1);
         const key = `${renderX},${renderY}`;
 
-        if (usedCoords.has(key)) continue; // Skip if exact start position is taken
+        if (usedCoords.has(key)) continue;
         usedCoords.add(key);
 
         renderedBoxes.push({
@@ -349,7 +378,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
     }
   };
 
-  // Create a debounced version of the refresh function
+  // [Rest of the function unchanged: debouncedRefresh, event handlers, etc.]
   const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
 
   terminal.on('mouse', async (event, data) => {
@@ -357,80 +386,37 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
     if (event === 'MOUSE_LEFT_BUTTON_PRESSED') {
       const { x: termX, y: termY } = data;
-
-      // Find the topmost textbox that contains the clicked coordinates
       let clickedBox = null;
-      for (let i = renderedBoxes.length - 1; i >= 0; i--) { // Iterate in reverse for stacking order
+      for (let i = renderedBoxes.length - 1; i >= 0; i--) {
         const box = renderedBoxes[i];
-        if (termX >= box.termX &&
-            termX <= box.termX + box.termWidth &&
-            termY >= box.termY &&
-            termY <= box.termY + box.termHeight) {
+        if (termX >= box.termX && termX <= box.termX + box.termWidth && termY >= box.termY && termY <= box.termY + box.termHeight) {
           clickedBox = box;
           break;
         }
       }
-
       if (clickedBox && clickedBox.isClickable) {
         terminal.yellow(`Clicked on "${clickedBox.text}" at TUI coordinates (${termX}, ${termY})...\n`);
-
-        // Calculate the relative position within the textbox (e.g., southwest corner)
-        const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth; // 0 (left) to 1 (right)
-        const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight; // 0 (top) to 1 (bottom)
-
-        // Map the relative position to GUI coordinates within the boundingBox
+        const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
+        const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight;
         const guiX = clickedBox.boundingBox.x + relativeX * clickedBox.boundingBox.width;
         const guiY = clickedBox.boundingBox.y + relativeY * clickedBox.boundingBox.height;
-
-        // Adjust for viewport scroll position
         const clickX = guiX + clickedBox.viewportX;
         const clickY = guiY + clickedBox.viewportY;
-
         debugLog(`Transmitting click to GUI coordinates (${clickX}, ${clickY})...`);
-
-        try {
-          await send('Input.dispatchMouseEvent', {
-            type: 'mousePressed',
-            x: clickX,
-            y: clickY,
-            button: 'left',
-            clickCount: 1,
-          }, sessionId);
-          await send('Input.dispatchMouseEvent', {
-            type: 'mouseReleased',
-            x: clickX,
-            y: clickY,
-            button: 'left',
-            clickCount: 1,
-          }, sessionId);
-          await refresh(); // Immediate refresh on click
-        } catch (error) {
-          terminal.red(`Failed to click: ${error.message}\n`);
-        }
+        await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
+        await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
+        await refresh();
       } else {
         terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
       }
     } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
       const deltaY = event === 'MOUSE_WHEEL_UP' ? -scrollDelta : scrollDelta;
-
-      // Prevent scrolling into terminal history if already at the top
       if (event === 'MOUSE_WHEEL_UP' && currentScrollY <= 0) {
         debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${currentScrollY})`);
         return;
       }
-
-      try {
-        await send('Input.dispatchMouseEvent', {
-          type: 'mouseWheel',
-          x: 0,
-          y: 0,
-          deltaX: 0,
-          deltaY: deltaY,
-        }, sessionId);
-        debouncedRefresh(); // Debounced refresh on scroll
-      } catch (error) {
-        terminal.red(`Failed to scroll: ${error.message}\n`);
-      }
+      await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+      debouncedRefresh();
     }
   });
 
@@ -446,7 +432,6 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   });
 
   await refresh();
-
   return () => { isListening = false; };
 }
 
