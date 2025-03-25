@@ -185,8 +185,8 @@
 
         const { columns: termWidth, rows: termHeight } = await getTerminalSize();
         DEBUG && terminal.blue(`Terminal size: ${termWidth}x${termHeight}\n`);
-        debugLog(`Terminal size: ${termWidth}x${termHeight}`);
-        debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
+        DEBUG && debugLog(`Terminal size: ${termWidth}x${termHeight}`);
+        DEBUG && debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
 
         const baseScaleX = termWidth / viewportWidth;
         const baseScaleY = (termHeight - 2) / viewportHeight; // Reserve 2 rows for UI
@@ -324,13 +324,13 @@
         let path = [];
         while (currentIndex !== -1) {
           if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {
-            debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}, path: ${path.join(' -> ')}`);
+            DEBUG && debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}, path: ${path.join(' -> ')}`);
             return 'normal';
           }
 
           const nodeNameIndex = nodes.nodeName[currentIndex];
           if (typeof nodeNameIndex === 'undefined') {
-            debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}, path: ${path.join(' -> ')}`);
+            DEBUG && debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}, path: ${path.join(' -> ')}`);
             return 'normal';
           }
           const nodeName = strings[nodeNameIndex];
@@ -347,10 +347,10 @@
             const value = strings[valueIndex];
             attrDebug.push(`${key}=${value}`);
           }
-          debugLog(`Node ${currentIndex}: ${nodeName}, clickable: ${isClickable}, attributes: ${attrDebug.join(', ')}`);
+          DEBUG && debugLog(`Node ${currentIndex}: ${nodeName}, clickable: ${isClickable}, attributes: ${attrDebug.join(', ')}`);
 
           if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
-            debugLog(`Classified as button at node ${currentIndex}, path: ${path.join(' -> ')}`);
+            DEBUG && debugLog(`Classified as button at node ${currentIndex}, path: ${path.join(' -> ')}`);
             return 'button';
           }
 
@@ -364,18 +364,18 @@
             if (key === 'onclick') hasOnclick = true;
           }
           if (nodeName === 'A' && (hasHref || hasOnclick)) {
-            debugLog(`Classified as hyperlink at node ${currentIndex}, path: ${path.join(' -> ')}`);
+            DEBUG && debugLog(`Classified as hyperlink at node ${currentIndex}, path: ${path.join(' -> ')}`);
             return 'hyperlink';
           }
 
           if (isClickable) {
-            debugLog(`Classified as other_clickable at node ${currentIndex}, path: ${path.join(' -> ')}`);
+            DEBUG && debugLog(`Classified as other_clickable at node ${currentIndex}, path: ${path.join(' -> ')}`);
             return 'other_clickable';
           }
 
           currentIndex = nodes.parentIndex[currentIndex];
         }
-        debugLog(`Classified as normal for nodeIndex ${nodeIndex}, path: ${path.join(' -> ')}`);
+        DEBUG && debugLog(`Classified as normal for nodeIndex ${nodeIndex}, path: ${path.join(' -> ')}`);
         return 'normal';
       }
 
@@ -516,7 +516,7 @@
           const key = `${renderX},${renderY}`;
 
           if (renderX > termWidth) {
-            debugLog(`Skipped "${text}" at (${renderX}, ${renderY}) - beyond termWidth ${termWidth}`);
+            DEBUG && debugLog(`Skipped "${text}" at (${renderX}, ${renderY}) - beyond termWidth ${termWidth}`);
             continue;
           }
 
@@ -555,7 +555,7 @@
             }
           }
 
-          debugLog(`Rendering "${displayText}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY}), Type: ${ancestorType}`);
+          DEBUG && debugLog(`Rendering "${displayText}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY}), Type: ${ancestorType}`);
           terminal.moveTo(renderX, renderY);
           DEBUG && terminal.gray(`Drawing "${displayText}" at (${renderX}, ${renderY}) with width ${availableWidth}\n`);
 
@@ -605,7 +605,7 @@
                 const shift = targetX - currLeft;
                 currGroup.forEach(box => {
                   box.termX += shift;
-                  debugLog(`Added gap for group box "${box.text}": shifted from ${box.termX - shift} to ${box.termX}`);
+                  DEBUG && debugLog(`Added gap for group box "${box.text}": shifted from ${box.termX - shift} to ${box.termX}`);
                 });
               }
             }
@@ -633,7 +633,7 @@
           const group = groups[groupId];
           group.forEach(box => {
             box.termX += 1;
-            debugLog(`Moved group ${groupId} box "${box.text}" right to termX=${box.termX}`);
+            DEBUG && debugLog(`Moved group ${groupId} box "${box.text}" right to termX=${box.termX}`);
           });
         };
 
@@ -663,7 +663,7 @@
 
             const oldBoxes = setDifference(currentBoxes, newBoxes);
             if (oldBoxes.size > 1) {
-              debugLog(`Warning: Multiple old boxes at (${c}, ${r}): ${oldBoxes.size}`);
+              DEBUG && debugLog(`Warning: Multiple old boxes at (${c}, ${r}): ${oldBoxes.size}`);
             }
 
             if (oldBoxes.size >= 1) {
@@ -732,7 +732,7 @@
           group.forEach(box => boxToGroup.set(box, groupId));
         });
 
-        debugLog(`Grouped ${visibleBoxes.length} boxes into ${groups.length} groups`);
+        DEBUG && debugLog(`Grouped ${visibleBoxes.length} boxes into ${groups.length} groups`);
         return { groups, boxToGroup };
       }
 
@@ -746,7 +746,7 @@
 
           if (event === 'MOUSE_LEFT_BUTTON_PRESSED') {
             if (!state.isInitialized) {
-              debugLog(`Click ignored: Terminal not yet initialized`);
+              DEBUG && debugLog(`Click ignored: Terminal not yet initialized`);
               return;
             }
             const { x: termX, y: termY } = data;
@@ -779,7 +779,7 @@
           } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
             const deltaY = event === 'MOUSE_WHEEL_UP' ? -state.scrollDelta : state.scrollDelta;
             if (event === 'MOUSE_WHEEL_UP' && state.currentScrollY <= 0) {
-              debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
+              DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
               return;
             }
             send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
@@ -818,7 +818,7 @@
       }
 
       async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, clickCounter, refresh, layoutToNode, nodeToParent, nodes }) {
-        debugLog(`handleClick called with termX: ${termX}, termY: ${termY}, layoutToNode: ${layoutToNode ? 'defined' : 'undefined'}, nodeToParent: ${nodeToParent ? 'defined' : 'undefined'}, nodes: ${nodes ? 'defined' : 'undefined'}`);
+        DEBUG && debugLog(`handleClick called with termX: ${termX}, termY: ${termY}, layoutToNode: ${layoutToNode ? 'defined' : 'undefined'}, nodeToParent: ${nodeToParent ? 'defined' : 'undefined'}, nodes: ${nodes ? 'defined' : 'undefined'}`);
 
         let clickedBox = null;
         for (let i = renderedBoxes.length - 1; i >= 0; i--) {
@@ -861,7 +861,7 @@
 
         // Ensure required data is available
         if (!layoutToNode || !nodeToParent || !nodes) {
-          debugLog(`Cannot process click: layoutToNode, nodeToParent, or nodes not available. layoutToNode: ${layoutToNode}, nodeToParent: ${nodeToParent}, nodes: ${nodes}`);
+          DEBUG && debugLog(`Cannot process click: layoutToNode, nodeToParent, or nodes not available. layoutToNode: ${layoutToNode}, nodeToParent: ${nodeToParent}, nodes: ${nodes}`);
           return;
         }
 
@@ -883,9 +883,9 @@
         try {
           const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
           objectId = resolveResult.object.objectId;
-          debugLog(`Resolved backendNodeId ${backendNodeId} to objectId ${objectId}`);
+          DEBUG && debugLog(`Resolved backendNodeId ${backendNodeId} to objectId ${objectId}`);
         } catch (error) {
-          debugLog(`Failed to resolve backendNodeId ${backendNodeId}: ${error.message}`);
+          DEBUG && debugLog(`Failed to resolve backendNodeId ${backendNodeId}: ${error.message}`);
           return;
         }
 
@@ -897,9 +897,9 @@
             arguments: [],
             returnByValue: true
           }, sessionId);
-          debugLog(`Click result: ${JSON.stringify(clickResult)}`);
+          DEBUG && debugLog(`Click result: ${JSON.stringify(clickResult)}`);
         } catch (error) {
-          debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
+          DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
         }
 
         // Inject a black circle using getBoundingClientRect for accurate positioning
@@ -917,16 +917,16 @@
           })
         `;
         try {
-          debugLog(`Injecting circle script for objectId ${objectId}`);
+          DEBUG && debugLog(`Injecting circle script for objectId ${objectId}`);
           const circleResult = await send('Runtime.callFunctionOn', {
             objectId,
             functionDeclaration: script,
             arguments: [],
             returnByValue: true
           }, sessionId);
-          debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
+          DEBUG && debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
         } catch (error) {
-          debugLog(`Circle injection failed: ${error.message}`);
+          DEBUG && debugLog(`Circle injection failed: ${error.message}`);
         }
 
         await refresh();
