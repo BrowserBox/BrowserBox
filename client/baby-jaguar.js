@@ -30,7 +30,7 @@
         useTextGestaltGrouping: false,
         yThreshold: 10,
         xThreshold: 50,
-        GAP_SIZE: 2,
+        GAP_SIZE: 1,
       };
 
     // arg processing
@@ -214,7 +214,7 @@
           box.termHeight = 1;
         });
 
-        const { groups, boxToGroup } = groupBoxes(visibleBoxes, CONFIG);
+        const { groups, boxToGroup } = groupBoxes(visibleBoxes);
 
         return {
           visibleBoxes,
@@ -454,9 +454,9 @@
 
     // Layout calculation and Render helpers
       // the layout to the terminal
-      function renderLayout({ layoutState, renderedBoxes, CONFIG }) {
+      function renderLayout({ layoutState, renderedBoxes }) {
         if (!layoutState) return;
-        renderBoxes({ ...layoutState, renderedBoxes, CONFIG }); // No clear here, handled in refreshTerminal
+        renderBoxes({ ...layoutState, renderedBoxes }); // No clear here, handled in refreshTerminal
       }
       // Adjusted refreshTerminal with polling and debug flags
       async function refreshTerminal({ send, sessionId, state, addressBar }) {
@@ -480,13 +480,18 @@
           // Draw address bar
           addressBar.drawAddressBar();
 
-          // Render content
+          // Apply full layout pipeline if layoutState exists
           if (layoutState) {
             state.clickableElements = layoutState.clickableElements;
             state.layoutToNode = layoutState.layoutToNode;
             state.nodeToParent = layoutState.nodeToParent;
             state.nodes = layoutState.nodes;
-            renderLayout({ layoutState, renderedBoxes: state.renderedBoxes, CONFIG });
+            
+            // Restore the three-pass system
+            deconflictGroups(layoutState);
+            applyGaps(layoutState);
+            renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
+            
             state.isInitialized = true;
             DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
           } else {
@@ -497,7 +502,6 @@
           terminal.red(`Error printing text layout: ${error.message}\n`);
         }
       }
-
       // Pass 3: Render boxes with truncation
       function renderBoxes(layoutState) {
         const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
@@ -574,7 +578,7 @@
       }
       // Pass 2: Apply gaps between groups
         function applyGaps(layoutState) {
-          const { groups, CONFIG } = layoutState;
+          const { groups } = layoutState;
           const groupsByRow = new Map();
 
           for (const group of groups) {
@@ -684,7 +688,7 @@
           }
         }
       }
-      function groupBoxes(visibleBoxes, CONFIG) {
+      function groupBoxes(visibleBoxes) {
         let groups = [];
         const boxToGroup = new Map();
 
