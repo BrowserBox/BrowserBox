@@ -99,8 +99,8 @@
 
     (async () => {
       try {
-        terminal.cyan('Starting browser connection...\n');
         terminal.fullscreen();
+        terminal.cyan('Starting browser connection...\n');
         terminal.grabInput({ mouse: 'button' });
         const connection = await connectToBrowser();
         send = connection.send;
