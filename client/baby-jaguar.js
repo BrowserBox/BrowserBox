@@ -3,7 +3,6 @@
 // CyberJaguar - BrowserBox TUI Browser Application
   // Setup
     // imports
-      import { promisify } from 'util';
       import { WebSocket } from 'ws';
       import { appendFileSync } from 'fs';
       import { Agent } from 'https';
@@ -16,21 +15,22 @@
     // Constants
       const BrowserState = {
         targets: [],
-        activeTarget: null
+        activeTarget: null,
+        selectedTabIndex: 0 // Add to track current tab selection
       };
-      const HORIZONTAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
-      const VERTICAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
-      const LINE_SHIFT = 1; // 0 (same line), 1 (next line), 2 (two lines)
-      const DEBOUNCE_DELAY = 100; // Delay in milliseconds for debouncing scroll events
+      const HORIZONTAL_COMPRESSION = 1.0;
+      const VERTICAL_COMPRESSION = 1.0;
+      const LINE_SHIFT = 1;
+      const DEBOUNCE_DELAY = 100;
       const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
       const LOG_FILE = 'cdp-log.txt';
       const args = process.argv.slice(2);
       const CONFIG = {
-        useTextByElementGrouping: true,  // Group text boxes by their parent HTML element
-        useTextGestaltGrouping: false,   // Group by proximity (threshold-based)
-        yThreshold: 10,                  // Vertical proximity threshold in pixels
-        xThreshold: 50,                  // Horizontal proximity threshold in pixels
-        GAP_SIZE: 1,
+        useTextByElementGrouping: true,
+        useTextGestaltGrouping: false,
+        yThreshold: 10,
+        xThreshold: 50,
+        GAP_SIZE: 2,
       };
 
     // arg processing
@@ -64,39 +64,40 @@
       const apiUrl = `${baseUrl}/api/v10/tabs`;
 
   // main logic
+    let socket;
+    let cleanup;
+    let targets;
+    let cookieHeader;
+    let send;
+
+    const selectTabAndRender = async () => {
+      if (cleanup) cleanup();
+
+      terminal.clear();
+      const items = targets.map((t, i) => `${(t.title || new URL(t.url || 'about:blank').hostname).slice(0, Math.round(Math.max(15, terminal.width / 3)))}`);
+      const selection = await terminal.singleRowMenu(items, {
+        style: terminal.white,
+        selectedStyle: terminal.black.bgGreen,
+        exitOnUnexpectedKey: false,
+      }).promise.catch(() => {
+        terminal.yellow('Selection interrupted. Exiting...\n');
+        process.exit(0);
+      });
+
+      const selectedTarget = targets[selection.selectedIndex];
+      const targetId = selectedTarget.targetId;
+      BrowserState.activeTarget = selectedTarget;
+      BrowserState.selectedTabIndex = selection.selectedIndex;
+
+      DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
+      const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+      DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
+
+      const stop = await printTextLayoutToTerminal({ send, sessionId, onTabSwitch: selectTabAndRender });
+      cleanup = stop;
+    };
+
     (async () => {
-      let socket;
-      let cleanup;
-      let targets;
-      let cookieHeader;
-      let send;
-
-      const selectTabAndRender = async () => {
-        if (cleanup) cleanup();
-
-        terminal.clear();
-        const items = targets.map((t, i) => `${(t.title || new URL(t.url||'about:blank').hostname).slice(0,Math.round(Math.max(15, terminal.width/3)))}`);
-        const selection = await terminal.singleRowMenu(items, {
-          style: terminal.white,
-          selectedStyle: terminal.black.bgGreen,
-          exitOnUnexpectedKey: false,
-        }).promise.catch(() => {
-          terminal.yellow('Selection interrupted. Exiting...\n');
-          process.exit(0);
-        });
-
-        const selectedTarget = targets[selection.selectedIndex];
-        const targetId = selectedTarget.targetId;
-        BrowserState.activeTarget = selectedTarget;
-
-        DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
-        const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
-        DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
-
-        const stop = await printTextLayoutToTerminal({ send, sessionId, onTabSwitch: selectTabAndRender });
-        cleanup = stop;
-      };
-
       try {
         terminal.cyan('Starting browser connection...\n');
         terminal.fullscreen();
@@ -127,7 +128,6 @@
 
   // Helpers
     // Data processing helpers
-      // Helper to debounce a function
       const debounce = (func, delay) => {
         let timeoutId;
         return (...args) => {
@@ -136,7 +136,6 @@
         };
       };
 
-      // Initialize state for rendering
       function initializeState() {
         return {
           clickableElements: [],
@@ -152,7 +151,6 @@
         };
       }
 
-      // Fetch and process snapshot data
       async function fetchSnapshot({ send, sessionId }) {
         DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
         await Promise.all([
@@ -178,11 +176,10 @@
         };
       }
 
-      // Prepare layout state for rendering
       async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY }) {
         const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes(snapshot);
         if (!textLayoutBoxes.length) {
-          terminal.yellow('No text boxes found.\n');
+          DEBUG && terminal.yellow('No text boxes found.\n');
           return null;
         }
 
@@ -192,7 +189,7 @@
         debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
 
         const baseScaleX = termWidth / viewportWidth;
-        const baseScaleY = termHeight / viewportHeight;
+        const baseScaleY = (termHeight - 2) / viewportHeight; // Reserve 2 rows for UI
         const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
         const scaleY = baseScaleY * VERTICAL_COMPRESSION;
 
@@ -212,7 +209,7 @@
           const adjustedX = box.boundingBox.x - viewportX;
           const adjustedY = box.boundingBox.y - viewportY;
           box.termX = Math.ceil(adjustedX * scaleX);
-          box.termY = Math.ceil(adjustedY * scaleY);
+          box.termY = Math.ceil(adjustedY * scaleY) + 2; // Shift down 2 rows
           box.termWidth = box.text.length;
           box.termHeight = 1;
         });
@@ -224,7 +221,7 @@
           groups,
           boxToGroup,
           termWidth,
-          termHeight,
+          termHeight: termHeight - 2, // Adjust usable height
           viewportX,
           viewportY,
           viewportWidth,
@@ -459,38 +456,38 @@
       // the layout to the terminal
       function renderLayout({ layoutState, renderedBoxes, CONFIG }) {
         if (!layoutState) return;
-
-        terminal.clear();
-        terminal.moveTo(1, 1);
-        DEBUG && terminal.cyan(`Rendering ${layoutState.visibleBoxes.length} visible text boxes (viewport: ${layoutState.viewportWidth}x${layoutState.viewportHeight} at ${layoutState.viewportX},${layoutState.viewportY})...\n`);
-
-        const fullLayoutState = { ...layoutState, renderedBoxes, CONFIG };
-        deconflictGroups(fullLayoutState);
-        applyGaps(fullLayoutState);
-        renderBoxes(fullLayoutState);
+        renderBoxes({ ...layoutState, renderedBoxes, CONFIG }); // No clear here, handled in refreshTerminal
       }
-
       // Adjusted refreshTerminal with polling and debug flags
       async function refreshTerminal({ send, sessionId, state, addressBar }) {
         try {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
           state.currentScrollY = viewportY;
           const layoutState = await prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY });
+          
+          terminal.clear();
+          
+          // Draw tab row
+          const items = BrowserState.targets.map((t, i) => `${(t.title || new URL(t.url || 'about:blank').hostname).slice(0, Math.round(Math.max(15, terminal.width / 3)))}`);
+          terminal.moveTo(1, 1);
+          terminal.singleRowMenu(items, {
+            style: terminal.white,
+            selectedStyle: terminal.black.bgGreen,
+            selectedIndex: BrowserState.selectedTabIndex,
+            exitOnUnexpectedKey: false,
+          });
+
+          // Draw address bar
+          addressBar.drawAddressBar();
+
+          // Render content
           if (layoutState) {
             state.clickableElements = layoutState.clickableElements;
             state.layoutToNode = layoutState.layoutToNode;
             state.nodeToParent = layoutState.nodeToParent;
             state.nodes = layoutState.nodes;
-
-            // Reserve top row for address bar
-            layoutState.termHeight -= 1;
-            layoutState.visibleBoxes.forEach(box => box.termY += 1);
-
-            terminal.clear();
             renderLayout({ layoutState, renderedBoxes: state.renderedBoxes, CONFIG });
-            addressBar.drawAddressBar(); // Draw address bar last
             state.isInitialized = true;
-
             DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
           } else {
             DEBUG && terminal.yellow('No text boxes found after polling.\n');
@@ -749,6 +746,19 @@
               return;
             }
             const { x: termX, y: termY } = data;
+            if (termY === 1) {
+              // Click on tab row, approximate tab selection
+              const tabWidth = Math.floor(terminal.width / BrowserState.targets.length);
+              const clickedTabIndex = Math.floor(termX / tabWidth);
+              if (clickedTabIndex >= 0 && clickedTabIndex < BrowserState.targets.length) {
+                BrowserState.selectedTabIndex = clickedTabIndex;
+                BrowserState.activeTarget = BrowserState.targets[clickedTabIndex];
+                const targetId = BrowserState.activeTarget.targetId;
+                await send('Target.attachToTarget', { targetId, flatten: true });
+                await refresh();
+              }
+              return;
+            }
             await handleClick({
               termX,
               termY,
@@ -783,9 +793,26 @@
             if (onTabSwitch) onTabSwitch();
           } else if (name === 'a' && !addressBar.isActive()) {
             addressBar.activateAddressBar();
+          } else if (name === 'LEFT' && !addressBar.isActive()) {
+            if (BrowserState.selectedTabIndex > 0) {
+              BrowserState.selectedTabIndex--;
+              BrowserState.activeTarget = BrowserState.targets[BrowserState.selectedTabIndex];
+              const targetId = BrowserState.activeTarget.targetId;
+              await send('Target.attachToTarget', { targetId, flatten: true });
+              await refresh();
+            }
+          } else if (name === 'RIGHT' && !addressBar.isActive()) {
+            if (BrowserState.selectedTabIndex < BrowserState.targets.length - 1) {
+              BrowserState.selectedTabIndex++;
+              BrowserState.activeTarget = BrowserState.targets[BrowserState.selectedTabIndex];
+              const targetId = BrowserState.activeTarget.targetId;
+              await send('Target.attachToTarget', { targetId, flatten: true });
+              await refresh();
+            }
           }
         });
       }
+
       async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, clickCounter, refresh, layoutToNode, nodeToParent, nodes }) {
         debugLog(`handleClick called with termX: ${termX}, termY: ${termY}, layoutToNode: ${layoutToNode ? 'defined' : 'undefined'}, nodeToParent: ${nodeToParent ? 'defined' : 'undefined'}, nodes: ${nodes ? 'defined' : 'undefined'}`);
 
