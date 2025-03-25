@@ -13,6 +13,10 @@
     const sleep = ms => new Promise(res => setTimeout(res, ms));
 
   // Constants
+    const BrowserState = {
+      targets: [],
+      activeTarget: null
+    };
     const HORIZONTAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
     const VERTICAL_COMPRESSION = 1.0; // < 1 to compress, > 1 to expand
     const LINE_SHIFT = 1; // 0 (same line), 1 (next line), 2 (two lines)
@@ -83,6 +87,7 @@
 
       const selectedTarget = targets[selection.selectedIndex];
       const targetId = selectedTarget.targetId;
+      BrowserState.activeTarget = selectedTarget;
 
       DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
       const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
@@ -230,6 +235,7 @@
         nodes,
       };
     }
+
     function extractTextLayoutBoxes(snapshot) {
       const textLayoutBoxes = [];
       const clickableElements = [];
@@ -244,7 +250,7 @@
         return { textLayoutBoxes, clickableElements };
       }
 
-      terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
+      DEBUG && terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
 
       const layoutToNode = new Map();
       layout.nodeIndex.forEach((nodeIdx, layoutIdx) => layoutToNode.set(layoutIdx, nodeIdx));
@@ -376,6 +382,79 @@
       return 'normal';
     }
 
+    // Helper to poll for snapshot until text boxes are found (max 4 attempts, 1s intervals)
+    async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
+        const { textLayoutBoxes } = extractTextLayoutBoxes(snapshot);
+        if (textLayoutBoxes.length > 0) {
+          return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };
+        }
+        DEBUG && terminal.yellow(`Attempt ${attempt}: Found 0 text boxes, retrying in ${interval}ms...\n`);
+        await sleep(interval);
+      }
+      DEBUG && terminal.yellow(`Max attempts reached, proceeding with last snapshot.\n`);
+      return await fetchSnapshot({ send, sessionId }); // Return last snapshot even if empty
+    }
+
+  // Browser UI
+    // Helper to parse and normalize URLs
+    function normalizeUrl(input) {
+      const trimmedInput = input.trim();
+      
+      // Check if it looks like a URL (with or without scheme)
+      const urlPattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/i;
+      if (urlPattern.test(trimmedInput)) {
+        // If it’s a hostname or URL without scheme, add https://
+        if (!/^https?:\/\//i.test(trimmedInput)) {
+          return `https://${trimmedInput}`;
+        }
+        return trimmedInput; // Already has scheme, return as-is
+      }
+      
+      // Otherwise, treat as search keywords and redirect to DuckDuckGo
+      const query = encodeURIComponent(trimmedInput);
+      return `https://duckduckgo.com/?q=${query}`;
+    }
+
+    // Helper to draw and manage the address bar
+    function createAddressBar({ term, send, sessionId, state, refresh }) {
+      let currentUrl = BrowserState.activeTarget.url;
+      let addressBarActive = false;
+
+      const drawAddressBar = () => {
+        term.moveTo(1, 1).eraseLine();
+        term.bgBlue.white(` URL: ${currentUrl} (Press 'a' to edit) `);
+      };
+
+      const activateAddressBar = () => {
+        if (addressBarActive) return;
+        addressBarActive = true;
+        term.moveTo(6, 1).eraseLineAfter();
+        term.inputField(
+          { default: currentUrl, cancelable: true },
+          async (error, input) => {
+            addressBarActive = false;
+            if (!error && input) {
+              const normalizedUrl = normalizeUrl(input);
+              currentUrl = normalizedUrl;
+              DEBUG && term.cyan(`\nNavigating to: ${currentUrl}\n`);
+              try {
+                await send('Page.navigate', { url: currentUrl }, sessionId);
+                await refresh(); // Refresh after navigation with polling
+              } catch (err) {
+                term.red(`Navigation failed: ${err.message}\n`);
+              }
+            } else {
+              refresh(); // Redraw if canceled
+            }
+          }
+        );
+      };
+
+      return { drawAddressBar, activateAddressBar, isActive: () => addressBarActive, getUrl: () => currentUrl };
+    }
+
   // Layout calculation and Render helpers
     // the layout to the terminal
     function renderLayout({ layoutState, renderedBoxes, CONFIG }) {
@@ -391,47 +470,10 @@
       renderBoxes(fullLayoutState);
     }
 
-    // Helper to draw and manage the address bar
-    function createAddressBar({ term, send, sessionId, state, refresh }) {
-      let currentUrl = loginUrl; // Initial URL from global scope
-      let addressBarActive = false;
-
-      const drawAddressBar = () => {
-        term.moveTo(1, 1).eraseLine();
-        term.bgBlue.white(` URL: ${currentUrl} (Press 'a' to edit) `);
-      };
-
-      const activateAddressBar = () => {
-        if (addressBarActive) return;
-        addressBarActive = true;
-        term.moveTo(6, 1).eraseLineAfter(); // Start after "URL: "
-        term.inputField(
-          { default: currentUrl, cancelable: true },
-          async (error, input) => {
-            addressBarActive = false;
-            if (!error && input) {
-              currentUrl = input;
-              term.cyan(`\nNavigating to: ${currentUrl}\n`);
-              try {
-                await send('Page.navigate', { url: currentUrl }, sessionId);
-                await refresh(); // Trigger full refresh after navigation
-              } catch (err) {
-                term.red(`Navigation failed: ${err.message}\n`);
-              }
-            } else {
-              refresh(); // Redraw if canceled
-            }
-          }
-        );
-      };
-
-      return { drawAddressBar, activateAddressBar, isActive: () => addressBarActive, getUrl: () => currentUrl };
-    }
-
-    // Adjusted refreshTerminal to account for address bar
+    // Adjusted refreshTerminal with polling and debug flags
     async function refreshTerminal({ send, sessionId, state, addressBar }) {
       try {
-        const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
+        const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
         state.currentScrollY = viewportY;
         const layoutState = await prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY });
         if (layoutState) {
@@ -446,14 +488,19 @@
 
           terminal.clear();
           renderLayout({ layoutState, renderedBoxes: state.renderedBoxes, CONFIG });
-          addressBar.drawAddressBar(); // Draw address bar first
+          addressBar.drawAddressBar(); // Draw address bar last
           state.isInitialized = true;
+
+          DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
+        } else {
+          DEBUG && terminal.yellow('No text boxes found after polling.\n');
         }
       } catch (error) {
         if (DEBUG) console.warn(error);
         terminal.red(`Error printing text layout: ${error.message}\n`);
       }
     }
+
     // Pass 3: Render boxes with truncation
     function renderBoxes(layoutState) {
       const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
@@ -904,6 +951,7 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         const data = await response.json();
         targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
+        BrowserState.targets = targets;
       } catch (error) {
         if (DEBUG) console.warn(error);
         terminal.red(`Error fetching tabs: ${error.message}\n`);
