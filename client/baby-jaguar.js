@@ -209,6 +209,83 @@ function groupBoxes(visibleBoxes, CONFIG) {
   return { groups, boxToGroup };
 }
 
+async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, clickCounter, refresh }) {
+  let clickedBox = null;
+  for (let i = renderedBoxes.length - 1; i >= 0; i--) {
+    const box = renderedBoxes[i];
+    if (termX >= box.termX && termX <= box.termX + box.termWidth && termY >= box.termY && termY <= box.termY + box.termHeight) {
+      clickedBox = box;
+      break;
+    }
+  }
+
+  if (!clickedBox || !clickedBox.isClickable) {
+    terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
+    return;
+  }
+
+  // Local visual flash
+  terminal.moveTo(clickedBox.termX, clickedBox.termY);
+  terminal.yellow(clickedBox.text);
+  await sleep(300); // Flash for 300ms
+  await refresh(); // Restore original style
+
+  // Calculate GUI coordinates
+  const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
+  const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight;
+  const guiX = clickedBox.boundingBox.x + relativeX * clickedBox.boundingBox.width;
+  const guiY = clickedBox.boundingBox.y + relativeY * clickedBox.boundingBox.height;
+  const clickX = guiX + clickedBox.viewportX;
+  const clickY = guiY + clickedBox.viewportY;
+
+  // Log the click details
+  const clickId = clickCounter.value++;
+  const nodeTag = clickedBox.ancestorType || 'unknown';
+  const nodeText = clickedBox.text;
+  const clickEvent = {
+    mousePressed: { type: 'mousePressed', x: clickX, y: clickY, button: 'left', clickCount: 1 },
+    mouseReleased: { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', clickCount: 1 }
+  };
+  try {
+    appendFileSync('clicks.log', `${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
+  } catch (error) {
+    console.error(`Failed to write to clicks log: ${error.message}`);
+  }
+
+  // Send the click event
+  debugLog(`Transmitting click to GUI coordinates (${clickX}, ${clickY})...`);
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
+
+  // Inject a black circle with click ID on the remote page
+  const circleStyle = `
+    position: absolute;
+    left: ${clickX}px;
+    top: ${clickY}px;
+    width: 20px;
+    height: 20px;
+    background: black;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 20px;
+    font-size: 12px;
+    z-index: 9999;
+  `;
+  const script = `
+    (function() {
+      const circle = document.createElement('div');
+      circle.style.cssText = "${circleStyle}";
+      circle.innerText = "${clickId}";
+      circle.id = "click-trace-${clickId}";
+      document.body.appendChild(circle);
+    })();
+  `;
+  await send('Runtime.evaluate', { expression: script }, sessionId);
+
+  await refresh();
+}
+
 function getAncestorInfo(nodeIndex, nodes, strings) {
   let currentIndex = nodeIndex;
   let path = []; // For debugging
@@ -451,6 +528,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   let scrollDelta = 50;
   let renderedBoxes = [];
   let currentScrollY = 0;
+  let clickCounter = { value: 0 }; // Changed to object for mutability
 
   const debounce = (func, delay) => {
     let timeoutId;
@@ -534,7 +612,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         viewportX,
         viewportY,
         clickableElements,
-        renderedBoxes, // Pass as reference to update globally
+        renderedBoxes,
         CONFIG
       };
 
@@ -555,29 +633,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
     if (event === 'MOUSE_LEFT_BUTTON_PRESSED') {
       const { x: termX, y: termY } = data;
-      let clickedBox = null;
-      for (let i = renderedBoxes.length - 1; i >= 0; i--) {
-        const box = renderedBoxes[i];
-        if (termX >= box.termX && termX <= box.termX + box.termWidth && termY >= box.termY && termY <= box.termY + box.termHeight) {
-          clickedBox = box;
-          break;
-        }
-      }
-      if (clickedBox && clickedBox.isClickable) {
-        terminal.yellow(`Clicked on "${clickedBox.text}" at TUI coordinates (${termX}, ${termY})...\n`);
-        const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
-        const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight;
-        const guiX = clickedBox.boundingBox.x + relativeX * clickedBox.boundingBox.width;
-        const guiY = clickedBox.boundingBox.y + relativeY * clickedBox.boundingBox.height;
-        const clickX = guiX + clickedBox.viewportX;
-        const clickY = guiY + clickedBox.viewportY;
-        debugLog(`Transmitting click to GUI coordinates (${clickX}, ${clickY})...`);
-        send('Input.dispatchMouseEvent', { type: 'mousePressed', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
-        send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
-        await refresh();
-      } else {
-        terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
-      }
+      await handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, clickCounter, refresh });
     } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
       const deltaY = event === 'MOUSE_WHEEL_UP' ? -scrollDelta : scrollDelta;
       if (event === 'MOUSE_WHEEL_UP' && currentScrollY <= 0) {
