@@ -24,7 +24,7 @@ const CONFIG = {
   GAP_SIZE: 1,
 };
 
-const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
+const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
 const LOG_FILE = 'cdp-log.txt';
 
 const args = process.argv.slice(2);
@@ -574,7 +574,7 @@ function renderBoxes(layoutState) {
   DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
 }
 
-async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
+async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch, targets }) {
   let clickableElements = [];
   let isListening = true;
   let scrollDelta = 50;
@@ -584,7 +584,12 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   let layoutToNode = null;
   let nodeToParent = null;
   let nodes = null;
-  let isInitialized = false; // Add to track if refresh has completed
+  let isInitialized = false;
+  let currentUrl = ''; // Track current URL
+  let isAddressBarActive = false; // Track address bar mode
+  let addressBarInput = ''; // Store address bar input
+  let historyEntries = []; // Store history entries
+  let currentHistoryIndex = -1; // Track current history position
 
   const debounce = (func, delay) => {
     let timeoutId;
@@ -613,6 +618,14 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       const viewportX = document.scrollOffsetX;
       currentScrollY = document.scrollOffsetY;
       const viewportY = currentScrollY;
+
+      // Update current URL
+      currentUrl = document.documentURL >= 0 ? snapshot.strings[document.documentURL] : 'about:blank';
+
+      // Update history
+      const historyResult = await send('Page.getNavigationHistory', {}, sessionId);
+      historyEntries = historyResult.entries;
+      currentHistoryIndex = historyResult.currentIndex;
 
       const { textLayoutBoxes, clickableElements: newClickables, layoutToNode: newLayoutToNode, nodeToParent: newNodeToParent, nodes: newNodes } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
@@ -648,13 +661,38 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
       terminal.clear();
       terminal.moveTo(1, 1);
+
+      // Render tab bar
+      const tabTitles = targets.map((t, i) => `${i + 1}. ${t.title || t.url || t.targetId}`);
+      const activeTabIndex = targets.findIndex(t => t.targetId === sessionId);
+      terminal.moveTo(1, 1);
+      for (let i = 0; i < tabTitles.length; i++) {
+        if (i === activeTabIndex) {
+          terminal.bgCyan.black(` ${tabTitles[i]} `);
+        } else {
+          terminal.bgGray.black(` ${tabTitles[i]} `);
+        }
+        terminal(' ');
+      }
+      terminal('\n');
+
+      // Render address bar
+      terminal.moveTo(1, 2);
+      if (isAddressBarActive) {
+        terminal.bgWhite.black(`URL: ${addressBarInput}`);
+      } else {
+        terminal.bgGray.black(`URL: ${currentUrl}`);
+      }
+      terminal('\n');
+
+      // Adjust content rendering to start below tab bar and address bar
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
 
       visibleBoxes.forEach(box => {
         const adjustedX = box.boundingBox.x - viewportX;
         const adjustedY = box.boundingBox.y - currentScrollY;
         box.termX = Math.ceil(adjustedX * scaleX);
-        box.termY = Math.ceil(adjustedY * scaleY);
+        box.termY = Math.ceil(adjustedY * scaleY) + 2; // Offset by 2 lines for tab bar and address bar
         box.termWidth = box.text.length;
         box.termHeight = 1;
       });
@@ -679,7 +717,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       applyGaps(layoutState);
       renderBoxes(layoutState);
 
-      isInitialized = true; // Mark as initialized after first refresh
+      isInitialized = true;
     } catch (error) {
       if (DEBUG) console.warn(error);
       terminal.red(`Error printing text layout: ${error.message}\n`);
@@ -723,12 +761,57 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
   terminal.on('key', async (name) => {
     if (!isListening) return;
+
+    if (isAddressBarActive) {
+      if (name === 'ENTER') {
+        isAddressBarActive = false;
+        if (addressBarInput) {
+          try {
+            await send('Page.navigate', { url: addressBarInput }, sessionId);
+            addressBarInput = '';
+            await refresh();
+          } catch (error) {
+            debugLog(`Failed to navigate to ${addressBarInput}: ${error.message}`);
+          }
+        }
+      } else if (name === 'ESCAPE') {
+        isAddressBarActive = false;
+        addressBarInput = '';
+        await refresh();
+      } else if (name === 'BACKSPACE') {
+        addressBarInput = addressBarInput.slice(0, -1);
+        await refresh();
+      } else if (name.length === 1) {
+        addressBarInput += name;
+        await refresh();
+      }
+      return;
+    }
+
     if (name === 'CTRL_C') {
       isListening = false;
       process.emit('SIGINT');
     } else if (name === '<') {
       isListening = false;
       if (onTabSwitch) onTabSwitch();
+    } else if (name === 'CTRL_A') {
+      isAddressBarActive = true;
+      addressBarInput = '';
+      await refresh();
+    } else if (name === 'CTRL_B') {
+      if (currentHistoryIndex > 0) {
+        const previousEntry = historyEntries[currentHistoryIndex - 1];
+        await send('Page.navigateToHistoryEntry', { entryId: previousEntry.id }, sessionId);
+        await refresh();
+      }
+    } else if (name === 'UP' || name === 'DOWN') {
+      const { rows: termHeight } = await getTerminalSize();
+      const viewportHeight = layoutState.viewportHeight;
+      const scaleY = termHeight / viewportHeight;
+      const deltaPerLine = viewportHeight / termHeight; // Pixels per terminal line
+      const deltaY = name === 'UP' ? -deltaPerLine : deltaPerLine;
+      send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+      debouncedRefresh();
     }
   });
 
