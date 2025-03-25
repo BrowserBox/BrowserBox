@@ -178,13 +178,14 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
       if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
 
+      // Get viewport dimensions and scroll offsets using layout metrics
       const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
       const viewport = layoutMetrics.visualViewport;
       const document = snapshot.documents[0];
       const viewportWidth = viewport.clientWidth;
       const viewportHeight = viewport.clientHeight;
       const viewportX = document.scrollOffsetX;
-      currentScrollY = document.scrollOffsetY;
+      currentScrollY = document.scrollOffsetY; // Update current scroll position
 
       const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
@@ -197,8 +198,10 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       DEBUG && terminal.blue(`Terminal size: ${termWidth}x${termHeight}\n`);
       debugLog(`Terminal size: ${termWidth}x${termHeight}`);
 
+      // Log viewport dimensions
       debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
 
+      // Scale based on viewport dimensions, applying compression
       const baseScaleX = termWidth / viewportWidth;
       const baseScaleY = termHeight / viewportHeight;
       const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
@@ -209,174 +212,27 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         const boxY = box.boundingBox.y;
         const boxRight = boxX + box.boundingBox.width;
         const boxBottom = boxY + box.boundingBox.height;
+
         const viewportLeft = viewportX;
         const viewportRight = viewportX + viewportWidth;
         const viewportTop = currentScrollY;
         const viewportBottom = currentScrollY + viewportHeight;
-        return boxX < viewportRight && boxRight > viewportLeft && boxY < viewportBottom && boxBottom > viewportTop;
+
+        return boxX < viewportRight &&
+               boxRight > viewportLeft &&
+               boxY < viewportBottom &&
+               boxBottom > viewportTop;
       });
 
       terminal.clear();
       terminal.moveTo(1, 1);
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
 
-      // Step 1: Sort boxes by y, then x
-      const sortedBoxes = visibleBoxes.sort((a, b) => a.boundingBox.y - b.boundingBox.y || a.boundingBox.x - b.boundingBox.x);
-
-      // Step 2: Group boxes by proximity
-      const groups = [];
-      let currentGroup = [];
-      let lastY = null;
-      let lastX = null;
-      const yThreshold = 10; // Slightly relaxed vertical threshold to group related lines
-      const xThreshold = 50; // Slightly relaxed horizontal threshold to group related lines
-
-      for (const box of sortedBoxes) {
-        if (!currentGroup.length) {
-          currentGroup.push(box);
-        } else {
-          const yDiff = Math.abs(box.boundingBox.y - lastY);
-          const xDiff = Math.abs(box.boundingBox.x - lastX);
-          if (yDiff < yThreshold && xDiff < xThreshold) {
-            currentGroup.push(box);
-          } else {
-            groups.push(currentGroup);
-            currentGroup = [box];
-          }
-        }
-        lastY = box.boundingBox.y;
-        lastX = box.boundingBox.x;
-      }
-      if (currentGroup.length) groups.push(currentGroup);
-
-      // Step 3: Assign group IDs to boxes for easy lookup
-      const boxToGroup = new Map();
-      for (let groupId = 0; groupId < groups.length; groupId++) {
-        const group = groups[groupId];
-        for (const box of group) {
-          boxToGroup.set(box, groupId);
-        }
-      }
-
-      // Step 4: Iterative dry layout pass to determine shifts
-      const groupShifts = new Map(); // Tracks the shift amount for each group: groupId -> shiftAmount
-      let hasOverlaps = true;
-      let iteration = 0;
-      const maxIterations = 100; // Prevent infinite loops
-
-      while (hasOverlaps && iteration < maxIterations) {
-        hasOverlaps = false;
-        const usedCoordsDry = new Set();
-        const occupiedCellsDry = new Map(); // Tracks occupied terminal cells in dry pass: (termY, termX) -> {box, originalTermX}
-
-        for (let i = 0; i < visibleBoxes.length; i++) {
-          const box = visibleBoxes[i];
-          const { text, boundingBox } = box;
-
-          const adjustedX = boundingBox.x - viewportX;
-          const adjustedY = boundingBox.y - currentScrollY;
-
-          let termX = Math.ceil(adjustedX * scaleX);
-          let termY = Math.ceil(adjustedY * scaleY);
-
-          // Clamp to prevent going over terminal edges vertically
-          termY = Math.max(0, Math.min(termY, termHeight - 2));
-
-          let key = `${termX},${termY}`;
-          let attempts = 0;
-          const yDiffThreshold = 10;
-          const shouldShift = visibleBoxes.some((otherBox, j) => {
-            if (i === j) return false;
-            const otherAdjustedX = otherBox.boundingBox.x - viewportX;
-            const otherAdjustedY = otherBox.boundingBox.y - currentScrollY;
-            const otherTermX = Math.floor(otherAdjustedX * scaleX);
-            const otherTermY = Math.floor(otherAdjustedY * scaleY);
-            return otherTermX === termX &&
-                   otherTermY === termY &&
-                   Math.abs(otherBox.boundingBox.y - boundingBox.y) > yDiffThreshold;
-          });
-
-          while (shouldShift && usedCoordsDry.has(key) && termY < termHeight - 2 && attempts < termHeight) {
-            termY += LINE_SHIFT;
-            key = `${termX},${termY}`;
-            attempts++;
-          }
-          if (attempts >= termHeight) continue;
-
-          // Apply the shift from groupShifts
-          const groupId = boxToGroup.get(box);
-          if (groupId !== undefined && groupShifts.has(groupId)) {
-            termX += groupShifts.get(groupId);
-          }
-
-          // Hit test: Check if the intended position overlaps with occupied cells
-          let shiftAmount = 0;
-          let overlap = true;
-          const originalTermX = termX;
-          while (overlap) {
-            overlap = false;
-            for (let x = termX + shiftAmount; x < termX + shiftAmount + text.length; x++) {
-              const cellKey = `${termY + 1},${x}`;
-              if (occupiedCellsDry.has(cellKey)) {
-                const overlappingBoxInfo = occupiedCellsDry.get(cellKey);
-                const overlappingBox = overlappingBoxInfo.box;
-                const overlappingOriginalTermX = overlappingBoxInfo.originalTermX;
-
-                // Compare original termX values
-                if (originalTermX < overlappingOriginalTermX) {
-                  // Current box should stay; shift the overlapping box (and its group) to the right
-                  const overlappingGroupId = boxToGroup.get(overlappingBox);
-                  if (overlappingGroupId !== undefined) {
-                    const overlappingShift = (termX + shiftAmount + text.length + 1) - overlappingOriginalTermX; // +1 for a small gap
-                    const currentGroupShift = groupShifts.get(overlappingGroupId) || 0;
-                    const newGroupShift = Math.max(currentGroupShift, overlappingShift);
-                    groupShifts.set(overlappingGroupId, newGroupShift);
-                    hasOverlaps = true; // Mark that we need another iteration
-                  }
-                  // Since we shifted the overlapping box, recheck for new overlaps
-                  continue;
-                } else {
-                  // Current box should shift right
-                  overlap = true;
-                  shiftAmount++;
-                  break;
-                }
-              }
-            }
-          }
-
-          // Apply the shift to the current box's group
-          if (groupId !== undefined) {
-            if (groupShifts.has(groupId)) {
-              shiftAmount = Math.max(shiftAmount, groupShifts.get(groupId));
-            }
-            groupShifts.set(groupId, shiftAmount);
-          }
-
-          termX += shiftAmount;
-
-          usedCoordsDry.add(`${termX},${termY}`);
-
-          for (let x = termX; x < termX + text.length; x++) {
-            occupiedCellsDry.set(`${termY + 1},${x}`, { box, originalTermX });
-          }
-        }
-
-        iteration++;
-        if (iteration >= maxIterations) {
-          debugLog('Max iterations reached in dry layout pass; possible infinite loop');
-          break;
-        }
-      }
-
-      // Step 5: Actual layout pass to render boxes at their final positions
-      renderedBoxes = [];
       const usedCoords = new Set();
-      const occupiedCells = new Map(); // Tracks occupied terminal cells: (termY, termX) -> {box, originalTermX}
+      renderedBoxes = []; // Reset the rendered boxes array
 
       for (let i = 0; i < visibleBoxes.length; i++) {
-        const box = visibleBoxes[i];
-        const { text, boundingBox, isClickable } = box;
+        const { text, boundingBox, isClickable } = visibleBoxes[i];
 
         const adjustedX = boundingBox.x - viewportX;
         const adjustedY = boundingBox.y - currentScrollY;
@@ -384,7 +240,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         let termX = Math.ceil(adjustedX * scaleX);
         let termY = Math.ceil(adjustedY * scaleY);
 
-        // Clamp to prevent going over terminal edges vertically
+        // Clamp to prevent going over terminal edges
+        termX = Math.max(0, Math.min(termX, termWidth - text.length - 1));
         termY = Math.max(0, Math.min(termY, termHeight - 2));
 
         let key = `${termX},${termY}`;
@@ -408,26 +265,14 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         }
         if (attempts >= termHeight) continue;
 
-        // Apply the shift from groupShifts and ensure all boxes in the group align
-        const groupId = boxToGroup.get(box);
-        if (groupId !== undefined && groupShifts.has(groupId)) {
-          const groupShift = groupShifts.get(groupId);
-          const group = groups[groupId];
-          const groupMinTermX = Math.min(...group.map(b => Math.ceil((b.boundingBox.x - viewportX) * scaleX)));
-          termX = groupMinTermX + groupShift;
-        }
+        usedCoords.add(key);
 
-        usedCoords.add(`${termX},${termY}`);
-
-        for (let x = termX; x < termX + text.length; x++) {
-          occupiedCells.set(`${termY + 1},${x}`, { box, originalTermX: termX });
-        }
-
+        // Store the rendered box with TUI coordinates
         renderedBoxes.push({
           text,
           boundingBox,
           isClickable,
-          termX: termX,
+          termX: termX + 1, // Adjust for 1-based terminal coordinates
           termY: termY + 1,
           termWidth: text.length,
           termHeight: 1,
@@ -435,20 +280,21 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           viewportY: currentScrollY,
         });
 
-        debugLog(`Text Box "${text}": Page coords (${boundingBox.x}, ${boundingBox.y}), Adjusted coords (${adjustedX}, ${adjustedY}), Terminal coords (${termX}, ${termY + 1})`);
+        // Log coordinates before and after adjustment
+        debugLog(`Text Box "${text}": Page coords (${boundingBox.x}, ${boundingBox.y}), Adjusted coords (${adjustedX}, ${adjustedY}), Terminal coords (${termX + 1}, ${termY + 1})`);
 
         if (isClickable) {
           const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
           if (clickable) {
-            clickable.termX = termX;
+            clickable.termX = termX + 1;
             clickable.termY = termY + 1;
             clickable.termWidth = text.length;
             clickable.termHeight = 1;
           }
         }
 
-        terminal.moveTo(termX, termY + 1);
-        DEBUG && terminal.gray(`Drawing "${text}" at terminal (${termX}, ${termY + 1})\n`);
+        terminal.moveTo(termX + 1, termY + 1);
+        DEBUG && terminal.gray(`Drawing "${text}" at terminal (${termX + 1}, ${termY + 1})\n`);
         if (isClickable) {
           terminal.cyan.underline(text);
         } else {
@@ -461,7 +307,6 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
     } catch (error) {
       if (DEBUG) console.warn(error);
       terminal.red(`Error printing text layout: ${error.message}\n`);
-      throw error;
     }
   };
 
