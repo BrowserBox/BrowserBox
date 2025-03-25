@@ -21,7 +21,7 @@ const CONFIG = {
   useTextGestaltGrouping: false,   // Group by proximity (threshold-based)
   yThreshold: 10,                  // Vertical proximity threshold in pixels
   xThreshold: 50,                  // Horizontal proximity threshold in pixels
-  GAP_SIZE: 2,
+  GAP_SIZE: 1,
 };
 
 const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
@@ -142,6 +142,7 @@ function extractTextLayoutBoxes(snapshot) {
 
     const nodeIndex = layoutToNode.get(layoutIndex);
     const parentIndex = nodeToParent.get(nodeIndex);
+    const backendNodeId = nodes.backendNodeId[nodeIndex]; // Add backendNodeId
     const isClickable = nodeIndex !== undefined && isNodeClickable(nodeIndex);
     const ancestorType = getAncestorInfo(nodeIndex, nodes, strings);
 
@@ -154,11 +155,11 @@ function extractTextLayoutBoxes(snapshot) {
       });
     }
 
-    textLayoutBoxes.push({ text, boundingBox, isClickable, parentIndex, ancestorType });
-    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y}) | parentIndex: ${parentIndex} | isClickable: ${isClickable} | ancestorType: ${ancestorType}\n`);
+    textLayoutBoxes.push({ text, boundingBox, isClickable, parentIndex, ancestorType, backendNodeId, layoutIndex, nodeIndex }); // Add backendNodeId, layoutIndex, nodeIndex
+    DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y}) | parentIndex: ${parentIndex} | backendNodeId: ${backendNodeId} | isClickable: ${isClickable} | ancestorType: ${ancestorType}\n`);
   }
 
-  return { textLayoutBoxes, clickableElements };
+  return { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes }; // Pass these for handleClick
 }
 
 function groupBoxes(visibleBoxes, CONFIG) {
@@ -209,7 +210,9 @@ function groupBoxes(visibleBoxes, CONFIG) {
   return { groups, boxToGroup };
 }
 
-async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, clickCounter, refresh }) {
+async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, clickCounter, refresh, layoutToNode, nodeToParent, nodes }) {
+  debugLog(`handleClick called with termX: ${termX}, termY: ${termY}, layoutToNode: ${layoutToNode ? 'defined' : 'undefined'}, nodeToParent: ${nodeToParent ? 'defined' : 'undefined'}, nodes: ${nodes ? 'defined' : 'undefined'}`);
+
   let clickedBox = null;
   for (let i = renderedBoxes.length - 1; i >= 0; i--) {
     const box = renderedBoxes[i];
@@ -230,7 +233,7 @@ async function handleClick({ termX, termY, renderedBoxes, clickableElements, sen
   await sleep(300);
   await refresh();
 
-  // Calculate GUI coordinates
+  // Calculate GUI coordinates (for logging only, not used for clicking)
   const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
   const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight;
   const guiX = clickedBox.boundingBox.x + relativeX * clickedBox.boundingBox.width;
@@ -242,58 +245,79 @@ async function handleClick({ termX, termY, renderedBoxes, clickableElements, sen
   const clickId = clickCounter.value++;
   const nodeTag = clickedBox.ancestorType || 'unknown';
   const nodeText = clickedBox.text;
-  const clickEvent = {
-    mousePressed: { type: 'mousePressed', x: clickX, y: clickY, button: 'left', clickCount: 1 },
-    mouseReleased: { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', clickCount: 1 }
-  };
+  const clickEvent = { type: 'click' };
   try {
     appendFileSync('clicks.log', `${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
   } catch (error) {
     console.error(`Failed to write to clicks log: ${error.message}`);
   }
 
-  // Send the click event
-  debugLog(`Transmitting click to GUI coordinates (${clickX}, ${clickY})...`);
-  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
-  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: clickX, y: clickY, button: 'left', clickCount: 1 }, sessionId);
-
-  // Test a simple script to confirm Runtime.evaluate works
-  try {
-    const testScript = `alert('Click ${clickId} at (${clickX}, ${clickY})')`;
-    const testResult = await send('Runtime.evaluate', { expression: testScript }, sessionId);
-    debugLog(`Test script result: ${JSON.stringify(testResult)}`);
-  } catch (error) {
-    debugLog(`Test script failed: ${error.message}`);
+  // Ensure required data is available
+  if (!layoutToNode || !nodeToParent || !nodes) {
+    debugLog(`Cannot process click: layoutToNode, nodeToParent, or nodes not available. layoutToNode: ${layoutToNode}, nodeToParent: ${nodeToParent}, nodes: ${nodes}`);
+    return;
   }
 
-  // Inject a black circle with click ID on the remote page
-  const circleStyle = `
-    position: absolute;
-    left: ${clickX}px;
-    top: ${clickY}px;
-    width: 20px;
-    height: 20px;
-    background: black;
-    color: white;
-    border-radius: 50%;
-    text-align: center;
-    line-height: 20px;
-    font-size: 12px;
-    z-index: 9999;
-  `;
+  // Find the nearest clickable element (traverse up if necessary)
+  let backendNodeId = clickedBox.backendNodeId;
+  let currentNodeIndex = layoutToNode.get(clickedBox.layoutIndex);
+  let clickableNodeIndex = currentNodeIndex;
+  while (currentNodeIndex !== -1) {
+    if (nodes.isClickable && nodes.isClickable.index.includes(currentNodeIndex)) {
+      clickableNodeIndex = currentNodeIndex;
+      break;
+    }
+    currentNodeIndex = nodeToParent.get(currentNodeIndex);
+  }
+  backendNodeId = nodes.backendNodeId[clickableNodeIndex];
+
+  // Resolve the node to a RemoteObject
+  let objectId;
+  try {
+    const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
+    objectId = resolveResult.object.objectId;
+    debugLog(`Resolved backendNodeId ${backendNodeId} to objectId ${objectId}`);
+  } catch (error) {
+    debugLog(`Failed to resolve backendNodeId ${backendNodeId}: ${error.message}`);
+    return;
+  }
+
+  // Execute a click on the remote object
+  try {
+    const clickResult = await send('Runtime.callFunctionOn', {
+      objectId,
+      functionDeclaration: 'function() { this.click(); }',
+      arguments: [],
+      returnByValue: true
+    }, sessionId);
+    debugLog(`Click result: ${JSON.stringify(clickResult)}`);
+  } catch (error) {
+    debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
+  }
+
+  // Inject a black circle using getBoundingClientRect for accurate positioning
   const script = `
     (function() {
+      const rect = this.getBoundingClientRect();
+      const clickX = rect.left + rect.width / 2;
+      const clickY = rect.top + rect.height / 2;
       const circle = document.createElement('div');
-      circle.style.cssText = "${circleStyle}";
+      circle.style.cssText = "position: absolute; left: " + clickX + "px; top: " + clickY + "px; width: 20px; height: 20px; background: black; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; z-index: 9999;";
       circle.innerText = "${clickId}";
       circle.id = "click-trace-${clickId}";
       document.body.appendChild(circle);
-    })();
+      return { clickX, clickY };
+    })
   `;
   try {
-    debugLog(`Injecting circle script: ${script}`);
-    const result = await send('Runtime.evaluate', { expression: script }, sessionId);
-    debugLog(`Circle injection result: ${JSON.stringify(result)}`);
+    debugLog(`Injecting circle script for objectId ${objectId}`);
+    const circleResult = await send('Runtime.callFunctionOn', {
+      objectId,
+      functionDeclaration: script,
+      arguments: [],
+      returnByValue: true
+    }, sessionId);
+    debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
   } catch (error) {
     debugLog(`Circle injection failed: ${error.message}`);
   }
@@ -483,7 +507,7 @@ function renderBoxes(layoutState) {
   renderedBoxes.length = 0;
 
   for (const box of visibleBoxes) {
-    const { text, boundingBox, isClickable, termX, termY, ancestorType } = box;
+    const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex } = box;
     const renderX = Math.max(1, termX + 1);
     const renderY = Math.max(1, termY + 1);
     const key = `${renderX},${renderY}`;
@@ -509,7 +533,12 @@ function renderBoxes(layoutState) {
       termHeight: 1,
       viewportX,
       viewportY,
-      originalTermX: termX
+      viewportWidth: layoutState.viewportWidth,
+      viewportHeight: layoutState.viewportHeight,
+      originalTermX: termX,
+      backendNodeId, // Add for handleClick
+      layoutIndex, // Add for handleClick
+      nodeIndex // Add for handleClick
     };
     renderedBoxes.push(renderedBox);
 
@@ -529,16 +558,16 @@ function renderBoxes(layoutState) {
 
     switch (ancestorType) {
       case 'hyperlink':
-        terminal.cyan.underline(displayText); // Cyan underline for links
+        terminal.cyan.underline(displayText);
         break;
       case 'button':
-        terminal.bgGreen.black(displayText); // Green background for buttons
+        terminal.bgGreen.black(displayText);
         break;
       case 'other_clickable':
-        terminal.bold(displayText); // Bold for other clickables
+        terminal.bold(displayText);
         break;
       default:
-        terminal(displayText); // Normal text
+        terminal(displayText);
     }
   }
 
@@ -551,7 +580,11 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   let scrollDelta = 50;
   let renderedBoxes = [];
   let currentScrollY = 0;
-  let clickCounter = { value: 0 }; // Changed to object for mutability
+  let clickCounter = { value: 0 };
+  let layoutToNode = null;
+  let nodeToParent = null;
+  let nodes = null;
+  let isInitialized = false; // Add to track if refresh has completed
 
   const debounce = (func, delay) => {
     let timeoutId;
@@ -581,8 +614,11 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       currentScrollY = document.scrollOffsetY;
       const viewportY = currentScrollY;
 
-      const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
+      const { textLayoutBoxes, clickableElements: newClickables, layoutToNode: newLayoutToNode, nodeToParent: newNodeToParent, nodes: newNodes } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
+      layoutToNode = newLayoutToNode;
+      nodeToParent = newNodeToParent;
+      nodes = newNodes;
       if (!textLayoutBoxes.length) {
         terminal.yellow('No text boxes found.\n');
         return;
@@ -614,17 +650,15 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       terminal.moveTo(1, 1);
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
 
-      // Initialize state with terminal coordinates
       visibleBoxes.forEach(box => {
         const adjustedX = box.boundingBox.x - viewportX;
         const adjustedY = box.boundingBox.y - currentScrollY;
-        box.termX = Math.ceil(adjustedX * scaleX); // 0-based initially
-        box.termY = Math.ceil(adjustedY * scaleY); // 0-based initially
+        box.termX = Math.ceil(adjustedX * scaleX);
+        box.termY = Math.ceil(adjustedY * scaleY);
         box.termWidth = box.text.length;
         box.termHeight = 1;
       });
 
-      // Group the boxes and create layout state
       const { groups, boxToGroup } = groupBoxes(visibleBoxes, CONFIG);
       const layoutState = {
         visibleBoxes,
@@ -634,15 +668,18 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         termHeight,
         viewportX,
         viewportY,
+        viewportWidth,
+        viewportHeight,
         clickableElements,
         renderedBoxes,
         CONFIG
       };
 
-      // Execute the three passes
       deconflictGroups(layoutState);
       applyGaps(layoutState);
       renderBoxes(layoutState);
+
+      isInitialized = true; // Mark as initialized after first refresh
     } catch (error) {
       if (DEBUG) console.warn(error);
       terminal.red(`Error printing text layout: ${error.message}\n`);
@@ -655,8 +692,24 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
     if (!isListening) return;
 
     if (event === 'MOUSE_LEFT_BUTTON_PRESSED') {
+      if (!isInitialized) {
+        debugLog(`Click ignored: Terminal not yet initialized (waiting for first refresh)`);
+        return;
+      }
       const { x: termX, y: termY } = data;
-      await handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, clickCounter, refresh });
+      await handleClick({
+        termX,
+        termY,
+        renderedBoxes,
+        clickableElements,
+        send,
+        sessionId,
+        clickCounter,
+        refresh,
+        layoutToNode,
+        nodeToParent,
+        nodes
+      });
     } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
       const deltaY = event === 'MOUSE_WHEEL_UP' ? -scrollDelta : scrollDelta;
       if (event === 'MOUSE_WHEEL_UP' && currentScrollY <= 0) {
