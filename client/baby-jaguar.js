@@ -211,21 +211,30 @@ function groupBoxes(visibleBoxes, CONFIG) {
 
 function getAncestorInfo(nodeIndex, nodes, strings) {
   let currentIndex = nodeIndex;
+  let path = []; // For debugging
   while (currentIndex !== -1) {
     if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {
-      debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}`);
-      return 'normal'; // Fallback to avoid crash
+      debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}, path: ${path.join(' -> ')}`);
+      return 'normal';
     }
 
     const nodeNameIndex = nodes.nodeName[currentIndex];
     if (typeof nodeNameIndex === 'undefined') {
-      debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}`);
+      debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}, path: ${path.join(' -> ')}`);
       return 'normal';
     }
     const nodeName = strings[nodeNameIndex];
     const attributes = nodes.attributes[currentIndex] || [];
     const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
+    path.push(`${currentIndex}:${nodeName}${isClickable ? '(clickable)' : ''}`);
 
+    // Check for button first
+    if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
+      debugLog(`Classified as button at node ${currentIndex}, path: ${path.join(' -> ')}`);
+      return 'button';
+    }
+
+    // Then check for hyperlink
     let hasHref = false;
     let hasOnclick = false;
     for (let i = 0; i < attributes.length; i += 2) {
@@ -235,16 +244,20 @@ function getAncestorInfo(nodeIndex, nodes, strings) {
       if (key === 'href') hasHref = true;
       if (key === 'onclick') hasOnclick = true;
     }
-
     if (nodeName === 'A' && (hasHref || hasOnclick)) {
+      debugLog(`Classified as hyperlink at node ${currentIndex}, path: ${path.join(' -> ')}`);
       return 'hyperlink';
-    } else if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
-      return 'button';
-    } else if (isClickable) {
+    }
+
+    // Finally, check for other clickable elements
+    if (isClickable) {
+      debugLog(`Classified as other_clickable at node ${currentIndex}, path: ${path.join(' -> ')}`);
       return 'other_clickable';
     }
+
     currentIndex = nodes.parentIndex[currentIndex];
   }
+  debugLog(`Classified as normal for nodeIndex ${nodeIndex}, path: ${path.join(' -> ')}`);
   return 'normal';
 }
 
@@ -416,16 +429,16 @@ function renderBoxes(layoutState) {
 
     switch (ancestorType) {
       case 'hyperlink':
-        terminal.blue.underline(displayText);
+        terminal.cyan.underline(displayText); // Cyan underline for links
         break;
       case 'button':
-        terminal.bgGreen.black(displayText);
+        terminal.bgGreen.black(displayText); // Green background for buttons
         break;
       case 'other_clickable':
-        terminal.bold(displayText);
+        terminal.bold(displayText); // Bold for other clickables
         break;
       default:
-        terminal(displayText);
+        terminal(displayText); // Normal text
     }
   }
 
