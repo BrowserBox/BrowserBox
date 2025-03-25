@@ -24,7 +24,7 @@ const CONFIG = {
   GAP_SIZE: 2,
 };
 
-const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
+const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
 const LOG_FILE = 'cdp-log.txt';
 
 const args = process.argv.slice(2);
@@ -143,7 +143,7 @@ function extractTextLayoutBoxes(snapshot) {
     const nodeIndex = layoutToNode.get(layoutIndex);
     const parentIndex = nodeToParent.get(nodeIndex);
     const isClickable = nodeIndex !== undefined && isNodeClickable(nodeIndex);
-    const ancestorType = getAncestorInfo(nodeIndex, nodes); // New classification
+    const ancestorType = getAncestorInfo(nodeIndex, nodes, strings);
 
     if (isClickable) {
       clickableElements.push({
@@ -212,12 +212,20 @@ function groupBoxes(visibleBoxes, CONFIG) {
 function getAncestorInfo(nodeIndex, nodes, strings) {
   let currentIndex = nodeIndex;
   while (currentIndex !== -1) {
+    if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {
+      debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}`);
+      return 'normal'; // Fallback to avoid crash
+    }
+
     const nodeNameIndex = nodes.nodeName[currentIndex];
+    if (typeof nodeNameIndex === 'undefined') {
+      debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}`);
+      return 'normal';
+    }
     const nodeName = strings[nodeNameIndex];
     const attributes = nodes.attributes[currentIndex] || [];
     const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
 
-    // Check attributes (they’re in [keyIndex, valueIndex] pairs)
     let hasHref = false;
     let hasOnclick = false;
     for (let i = 0; i < attributes.length; i += 2) {
@@ -406,14 +414,18 @@ function renderBoxes(layoutState) {
     terminal.moveTo(renderX, renderY);
     DEBUG && terminal.gray(`Drawing "${displayText}" at (${renderX}, ${renderY}) with width ${availableWidth}\n`);
 
-    if (ancestorType === 'hyperlink') {
-      terminal.blue.underline(displayText); // Blue underline for links
-    } else if (ancestorType === 'button') {
-      terminal.bgGreen.black(displayText); // Green background for buttons
-    } else if (ancestorType === 'other_clickable') {
-      terminal.bold(displayText); // Bold for other clickables
-    } else {
-      terminal(displayText); // Normal text
+    switch (ancestorType) {
+      case 'hyperlink':
+        terminal.blue.underline(displayText);
+        break;
+      case 'button':
+        terminal.bgGreen.black(displayText);
+        break;
+      case 'other_clickable':
+        terminal.bold(displayText);
+        break;
+      default:
+        terminal(displayText);
     }
   }
 
@@ -444,7 +456,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
       const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
       if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
-      appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
+      DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
 
       const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
       const viewport = layoutMetrics.visualViewport;
