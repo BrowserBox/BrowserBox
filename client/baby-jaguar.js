@@ -178,14 +178,13 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
       if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
 
-      // Get viewport dimensions and scroll offsets using layout metrics
       const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
       const viewport = layoutMetrics.visualViewport;
       const document = snapshot.documents[0];
       const viewportWidth = viewport.clientWidth;
       const viewportHeight = viewport.clientHeight;
       const viewportX = document.scrollOffsetX;
-      currentScrollY = document.scrollOffsetY; // Update current scroll position
+      currentScrollY = document.scrollOffsetY;
 
       const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
@@ -197,11 +196,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       const { columns: termWidth, rows: termHeight } = await getTerminalSize();
       DEBUG && terminal.blue(`Terminal size: ${termWidth}x${termHeight}\n`);
       debugLog(`Terminal size: ${termWidth}x${termHeight}`);
-
-      // Log viewport dimensions
       debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
 
-      // Scale based on viewport dimensions, applying compression
       const baseScaleX = termWidth / viewportWidth;
       const baseScaleY = termHeight / viewportHeight;
       const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
@@ -212,70 +208,132 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         const boxY = box.boundingBox.y;
         const boxRight = boxX + box.boundingBox.width;
         const boxBottom = boxY + box.boundingBox.height;
-
         const viewportLeft = viewportX;
         const viewportRight = viewportX + viewportWidth;
         const viewportTop = currentScrollY;
         const viewportBottom = currentScrollY + viewportHeight;
-
-        return boxX < viewportRight &&
-               boxRight > viewportLeft &&
-               boxY < viewportBottom &&
-               boxBottom > viewportTop;
+        return boxX < viewportRight && boxRight > viewportLeft && boxY < viewportBottom && boxBottom > viewportTop;
       });
 
       terminal.clear();
       terminal.moveTo(1, 1);
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
 
+      // Add terminal coordinates to boxes and prepare for de-confliction
+      visibleBoxes.forEach(box => {
+        const adjustedX = box.boundingBox.x - viewportX;
+        const adjustedY = box.boundingBox.y - currentScrollY;
+        box.termX = Math.ceil(adjustedX * scaleX); // 0-based initially
+        box.termY = Math.ceil(adjustedY * scaleY); // 0-based initially
+        box.termWidth = box.text.length;
+        box.termHeight = 1;
+      });
+
+      // Helper functions for de-confliction
+      const boxOverlapsThisPosition = (box, col, row) => {
+        return row === box.termY && col >= box.termX && col < box.termX + box.termWidth;
+      };
+
+      const boxHasLeftEdgeCrossingThisPosition = (box, col, row) => {
+        return row === box.termY && col === box.termX;
+      };
+
+      const setDifference = (setA, setB) => {
+        const diff = new Set(setA);
+        for (const elem of setB) diff.delete(elem);
+        return diff;
+      };
+
+      const moveBoxRightwardBy1Column = (box) => {
+        box.termX += 1;
+        debugLog(`Moved "${box.text}" right to termX=${box.termX}`);
+      };
+
+      const selectMainBox = (boxes) => {
+        // For simplicity, pick the box with the earliest original termX
+        return [...boxes].reduce((minBox, box) =>
+          (box.termX - (box.shiftCount || 0)) < (minBox.termX - (minBox.shiftCount || 0)) ? box : minBox
+        );
+      };
+
+      // Pass 1: De-confliction by column walk
+      for (let c = 0; c < termWidth; c++) {
+        for (let r = 0; r < termHeight; r++) {
+          const currentBoxes = new Set();
+          const newBoxes = new Set();
+
+          for (const box of visibleBoxes) {
+            if (boxOverlapsThisPosition(box, c, r)) {
+              currentBoxes.add(box);
+            }
+            if (boxHasLeftEdgeCrossingThisPosition(box, c, r)) {
+              newBoxes.add(box);
+            }
+          }
+
+          const oldBoxes = setDifference(currentBoxes, newBoxes);
+          if (oldBoxes.size > 1) {
+            debugLog(`Warning: Multiple old boxes at (${c}, ${r}): ${oldBoxes.size}`);
+          }
+
+          if (oldBoxes.size >= 1) {
+            for (const newBox of newBoxes) {
+              moveBoxRightwardBy1Column(newBox);
+              newBox.shiftCount = (newBox.shiftCount || 0) + 1; // Track shifts for mainBox selection
+            }
+          }
+
+          if (newBoxes.size > 1) {
+            const mainBox = selectMainBox(newBoxes);
+            newBoxes.delete(mainBox);
+            for (const newBox of newBoxes) {
+              moveBoxRightwardBy1Column(newBox);
+              newBox.shiftCount = (newBox.shiftCount || 0) + 1;
+            }
+          }
+        }
+      }
+
+      // Pass 2: Render the de-conflicted boxes
       const usedCoords = new Set();
-      renderedBoxes = []; // Reset the rendered boxes array
+      renderedBoxes = [];
 
-      for (let i = 0; i < visibleBoxes.length; i++) {
-        const { text, boundingBox, isClickable } = visibleBoxes[i];
+      for (const box of visibleBoxes) {
+        const { text, boundingBox, isClickable, termX, termY } = box;
 
-        const adjustedX = boundingBox.x - viewportX;
-        const adjustedY = boundingBox.y - currentScrollY;
+        // Clamp to terminal edges (convert to 1-based for rendering)
+        const renderX = Math.max(1, Math.min(termX + 1, termWidth - text.length));
+        const renderY = Math.max(1, Math.min(termY + 1, termHeight - 1));
+        const key = `${renderX},${renderY}`;
 
-        let termX = Math.ceil(adjustedX * scaleX);
-        let termY = Math.ceil(adjustedY * scaleY);
+        if (usedCoords.has(key)) continue; // Skip if exact start position is taken
+        usedCoords.add(key);
 
-        // Clamp to prevent going over terminal edges
-        termX = Math.max(0, Math.min(termX, termWidth - text.length - 1));
-        termY = Math.max(0, Math.min(termY, termHeight - 2));
-
-        let key = `${termX},${termY}`;
-        let attempts = 0;
-        const yDiffThreshold = 10;
-
-        // Store the rendered box with TUI coordinates
         renderedBoxes.push({
           text,
           boundingBox,
           isClickable,
-          termX: termX + 1, // Adjust for 1-based terminal coordinates
-          termY: termY + 1,
+          termX: renderX,
+          termY: renderY,
           termWidth: text.length,
           termHeight: 1,
           viewportX,
           viewportY: currentScrollY,
         });
 
-        // Log coordinates before and after adjustment
-        debugLog(`Text Box "${text}": Page coords (${boundingBox.x}, ${boundingBox.y}), Adjusted coords (${adjustedX}, ${adjustedY}), Terminal coords (${termX + 1}, ${termY + 1})`);
-
         if (isClickable) {
           const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
           if (clickable) {
-            clickable.termX = termX + 1;
-            clickable.termY = termY + 1;
+            clickable.termX = renderX;
+            clickable.termY = renderY;
             clickable.termWidth = text.length;
             clickable.termHeight = 1;
           }
         }
 
-        terminal.moveTo(termX + 1, termY + 1);
-        DEBUG && terminal.gray(`Drawing "${text}" at terminal (${termX + 1}, ${termY + 1})\n`);
+        debugLog(`Rendering "${text}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY})`);
+        terminal.moveTo(renderX, renderY);
+        DEBUG && terminal.gray(`Drawing "${text}" at (${renderX}, ${renderY})\n`);
         if (isClickable) {
           terminal.cyan.underline(text);
         } else {
