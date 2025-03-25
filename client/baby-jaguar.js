@@ -342,7 +342,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       }
 
       DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
-      terminal.moveTo(1, termHeight - 1).green('Click a link, scroll with mouse wheel, < for tabs, Ctrl+C to exit.\n');
+      // terminal.moveTo(1, termHeight - 1).green('Click a link, scroll with mouse wheel, < for tabs, Ctrl+C to exit.\n');
     } catch (error) {
       if (DEBUG) console.warn(error);
       terminal.red(`Error printing text layout: ${error.message}\n`);
