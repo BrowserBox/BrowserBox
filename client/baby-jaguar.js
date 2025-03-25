@@ -502,6 +502,7 @@
           const layoutState = await prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY });
 
           terminal.clear();
+          terminal.bgDefaultColor();
           browser.render(); // Redraw TerminalBrowser UI
 
           if (layoutState) {
@@ -535,11 +536,11 @@
         for (const box of visibleBoxes) {
           const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex } = box;
           const renderX = Math.max(1, termX + 1);
-          const renderY = Math.max(1, termY + 1);
+          const renderY = Math.max(5, termY + 1); // Ensure rendering starts below UI (row 5)
           const key = `${renderX},${renderY}`;
 
-          if (renderX > termWidth) {
-            DEBUG && debugLog(`Skipped "${text}" at (${renderX}, ${renderY}) - beyond termWidth ${termWidth}`);
+          if (renderX > termWidth || renderY > termHeight + 4) { // Adjust for UI offset
+            DEBUG && debugLog(`Skipped "${text}" at (${renderX}, ${renderY}) - beyond bounds`);
             continue;
           }
 
@@ -562,9 +563,9 @@
             viewportWidth: layoutState.viewportWidth,
             viewportHeight: layoutState.viewportHeight,
             originalTermX: termX,
-            backendNodeId, // Add for handleClick
-            layoutIndex, // Add for handleClick
-            nodeIndex // Add for handleClick
+            backendNodeId,
+            layoutIndex,
+            nodeIndex,
           };
           renderedBoxes.push(renderedBox);
 
@@ -580,7 +581,7 @@
 
           DEBUG && debugLog(`Rendering "${displayText}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY}), Type: ${ancestorType}`);
           terminal.moveTo(renderX, renderY);
-          DEBUG && terminal.gray(`Drawing "${displayText}" at (${renderX}, ${renderY}) with width ${availableWidth}\n`);
+          terminal.defaultColor().bgDefaultColor(); // Reset to default colors before drawing
 
           switch (ancestorType) {
             case 'hyperlink':
@@ -597,8 +598,9 @@
           }
         }
 
-        DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
+        DEBUG && terminal.moveTo(1, termHeight + 4).green('Text layout printed successfully!\n'); // Adjust debug message position
       }
+
       // Pass 2: Apply gaps between groups
         function applyGaps(layoutState) {
           const { groups } = layoutState;
@@ -963,7 +965,9 @@
 
         terminal.on('mouse', async (event, data) => {
           if (!state.isListening) return;
-          if (event === 'MOUSE_LEFT_BUTTON_PRESSED' && data.y > 4) { // Below TerminalBrowser UI
+
+          // Handle clicks below the UI
+          if (event === 'MOUSE_LEFT_BUTTON_PRESSED' && data.y > 4) {
             if (!state.isInitialized) {
               DEBUG && debugLog(`Click ignored: Terminal not yet initialized`);
               return;
@@ -981,13 +985,15 @@
               nodeToParent: state.nodeToParent,
               nodes: state.nodes,
             });
-          } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
+          } 
+          // Restore original scrolling behavior for content area
+          else if ((event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') && data.y > 4) {
             const deltaY = event === 'MOUSE_WHEEL_UP' ? -state.scrollDelta : state.scrollDelta;
             if (event === 'MOUSE_WHEEL_UP' && state.currentScrollY <= 0) {
               DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
               return;
             }
-            send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+            await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
             debouncedRefresh();
           }
         });

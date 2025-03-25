@@ -124,7 +124,7 @@ export default class TerminalBrowser extends EventEmitter {
 
   // Setup input handling
   setupInput() {
-    this.term.grabInput(true);
+    this.term.grabInput({mouse:'button'});
     this.term.on('key', async (key) => {
       if (this.focusedElement === 'address') {
         switch (key) {
