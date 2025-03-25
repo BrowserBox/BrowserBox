@@ -20,7 +20,8 @@ const CONFIG = {
   useTextByElementGrouping: true,  // Group text boxes by their parent HTML element
   useTextGestaltGrouping: false,   // Group by proximity (threshold-based)
   yThreshold: 10,                  // Vertical proximity threshold in pixels
-  xThreshold: 50                   // Horizontal proximity threshold in pixels
+  xThreshold: 50,                  // Horizontal proximity threshold in pixels
+  GAP_SIZE: 2,
 };
 
 const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
@@ -367,7 +368,6 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       }
 
       // Pass 2: Apply gaps between groups on the same row
-      const GAP_SIZE = 1;
       const groupsByRow = new Map();
       for (const group of groups) {
         const row = group[0].termY; // Assume all boxes in group share termY
@@ -386,7 +386,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           const currLeft = Math.min(...currGroup.map(box => box.termX));
           let gap = 0;
           if (prevGroup.some(box => box.text.length > 1) || currGroup.some(box => box.text.length > 1)) {
-            gap = GAP_SIZE;
+            gap = CONFIG.GAP_SIZE;
           }
           const targetX = prevRight + gap;
           if (currLeft < targetX) {
@@ -399,7 +399,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         }
       }
 
-      // Pass 3: Render with wrapColumn to prevent overflow
+      // Pass 3: Render with truncation and no wrapping
       const usedCoords = new Set();
       renderedBoxes = [];
 
@@ -409,25 +409,30 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         const renderY = Math.max(1, termY + 1);
         const key = `${renderX},${renderY}`;
 
+        // Skip boxes entirely outside termWidth
+        if (renderX > termWidth) {
+          debugLog(`Skipped "${text}" at (${renderX}, ${renderY}) - beyond termWidth ${termWidth}`);
+          continue;
+        }
+
         if (usedCoords.has(key)) continue;
         usedCoords.add(key);
 
-        // Calculate available width from renderX to termWidth
-        const availableWidth = Math.max(0, termWidth - renderX + 1); // +1 because renderX is 1-based
-
-        // Set wrap column to prevent text from exceeding termWidth
-        terminal.wrapColumn({ x: renderX, width: availableWidth });
+        // Truncate text that overflows termWidth
+        const availableWidth = Math.max(0, termWidth - renderX + 1); // Space from renderX to right edge
+        const displayText = text.substring(0, availableWidth); // Truncate to fit
 
         renderedBoxes.push({
-          text,
+          text, // Full text for future scrolling
           boundingBox,
           isClickable,
           termX: renderX,
           termY: renderY,
-          termWidth: Math.min(text.length, availableWidth), // Reflect visible width
+          termWidth: displayText.length, // Visible width
           termHeight: 1,
           viewportX,
           viewportY: currentScrollY,
+          originalTermX: termX // Store for scrolling
         });
 
         if (isClickable) {
@@ -435,18 +440,18 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
           if (clickable) {
             clickable.termX = renderX;
             clickable.termY = renderY;
-            clickable.termWidth = Math.min(text.length, availableWidth);
+            clickable.termWidth = displayText.length;
             clickable.termHeight = 1;
           }
         }
 
-        debugLog(`Rendering "${text.substring(0, availableWidth)}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY})`);
+        debugLog(`Rendering "${displayText}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY})`);
         terminal.moveTo(renderX, renderY);
-        DEBUG && terminal.gray(`Drawing "${text}" at (${renderX}, ${renderY}) with width ${availableWidth}\n`);
+        DEBUG && terminal.gray(`Drawing "${displayText}" at (${renderX}, ${renderY}) with width ${availableWidth}\n`);
         if (isClickable) {
-          terminal.wrap.cyan.underline(text); // Use .wrap to enforce column width
+          terminal.cyan.underline(displayText); // Render truncated text
         } else {
-          terminal.wrap(text); // Use .wrap to enforce column width
+          terminal(displayText); // Render truncated text
         }
       }
 
@@ -459,7 +464,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
   const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
 
-  // [Unchanged event handlers remain the same]
+  // [Unchanged event handlers]
   terminal.on('mouse', async (event, data) => {
     if (!isListening) return;
 
@@ -513,6 +518,8 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   await refresh();
   return () => { isListening = false; };
 }
+
+// [Rest of your code remains unchanged: getTerminalSize, connectToBrowser, main IIFE]
 
 async function getTerminalSize() {
   const size = { columns: terminal.width, rows: terminal.height };
@@ -695,6 +702,7 @@ function debugLog(message) {
 
   try {
     terminal.cyan('Starting browser connection...\n');
+    terminal.fullscreen();
     terminal.grabInput({ mouse: 'button' });
     const connection = await connectToBrowser();
     send = connection.send;
