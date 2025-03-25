@@ -574,146 +574,179 @@ function renderBoxes(layoutState) {
   DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
 }
 
-async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
-  let clickableElements = [];
-  let isListening = true;
-  let scrollDelta = 50;
-  let renderedBoxes = [];
-  let currentScrollY = 0;
-  let clickCounter = { value: 0 };
-  let layoutToNode = null;
-  let nodeToParent = null;
-  let nodes = null;
-  let isInitialized = false; // Add to track if refresh has completed
-
-  const debounce = (func, delay) => {
-    let timeoutId;
-    return (...args) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => func(...args), delay);
-    };
+// Helper to debounce a function
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
   };
+};
 
-  const refresh = async () => {
-    try {
-      DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
-      send('DOM.enable', {}, sessionId);
-      send('DOMSnapshot.enable', {}, sessionId);
-      DEBUG && terminal.cyan('Capturing snapshot...\n');
+// Initialize state for rendering
+function initializeState() {
+  return {
+    clickableElements: [],
+    isListening: true,
+    scrollDelta: 50,
+    renderedBoxes: [],
+    currentScrollY: 0,
+    clickCounter: { value: 0 },
+    layoutToNode: null,
+    nodeToParent: null,
+    nodes: null,
+    isInitialized: false,
+  };
+}
 
-      const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
-      if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
-      DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
+// Fetch and process snapshot data
+async function fetchSnapshot({ send, sessionId }) {
+  DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
+  await Promise.all([
+    send('DOM.enable', {}, sessionId),
+    send('DOMSnapshot.enable', {}, sessionId),
+  ]);
 
-      const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
-      const viewport = layoutMetrics.visualViewport;
-      const document = snapshot.documents[0];
-      const viewportWidth = viewport.clientWidth;
-      const viewportHeight = viewport.clientHeight;
-      const viewportX = document.scrollOffsetX;
-      currentScrollY = document.scrollOffsetY;
-      const viewportY = currentScrollY;
+  DEBUG && terminal.cyan('Capturing snapshot...\n');
+  const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
+  if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
+  DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
 
-      const { textLayoutBoxes, clickableElements: newClickables, layoutToNode: newLayoutToNode, nodeToParent: newNodeToParent, nodes: newNodes } = extractTextLayoutBoxes(snapshot);
-      clickableElements = newClickables;
-      layoutToNode = newLayoutToNode;
-      nodeToParent = newNodeToParent;
-      nodes = newNodes;
-      if (!textLayoutBoxes.length) {
-        terminal.yellow('No text boxes found.\n');
-        return;
-      }
+  const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
+  const viewport = layoutMetrics.visualViewport;
+  const document = snapshot.documents[0];
 
-      const { columns: termWidth, rows: termHeight } = await getTerminalSize();
-      DEBUG && terminal.blue(`Terminal size: ${termWidth}x${termHeight}\n`);
-      debugLog(`Terminal size: ${termWidth}x${termHeight}`);
-      debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
+  return {
+    snapshot,
+    viewportWidth: viewport.clientWidth,
+    viewportHeight: viewport.clientHeight,
+    viewportX: document.scrollOffsetX,
+    viewportY: document.scrollOffsetY,
+  };
+}
 
-      const baseScaleX = termWidth / viewportWidth;
-      const baseScaleY = termHeight / viewportHeight;
-      const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
-      const scaleY = baseScaleY * VERTICAL_COMPRESSION;
+// Prepare layout state for rendering
+async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY }) {
+  const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes(snapshot);
+  if (!textLayoutBoxes.length) {
+    terminal.yellow('No text boxes found.\n');
+    return null;
+  }
 
-      const visibleBoxes = textLayoutBoxes.filter(box => {
-        const boxX = box.boundingBox.x;
-        const boxY = box.boundingBox.y;
-        const boxRight = boxX + box.boundingBox.width;
-        const boxBottom = boxY + box.boundingBox.height;
-        const viewportLeft = viewportX;
-        const viewportRight = viewportX + viewportWidth;
-        const viewportTop = currentScrollY;
-        const viewportBottom = currentScrollY + viewportHeight;
-        return boxX < viewportRight && boxRight > viewportLeft && boxY < viewportBottom && boxBottom > viewportTop;
-      });
+  const { columns: termWidth, rows: termHeight } = await getTerminalSize();
+  DEBUG && terminal.blue(`Terminal size: ${termWidth}x${termHeight}\n`);
+  debugLog(`Terminal size: ${termWidth}x${termHeight}`);
+  debugLog(`Viewport dimensions: ${viewportWidth}x${viewportHeight}`);
 
-      terminal.clear();
-      terminal.moveTo(1, 1);
-      DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
+  const baseScaleX = termWidth / viewportWidth;
+  const baseScaleY = termHeight / viewportHeight;
+  const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
+  const scaleY = baseScaleY * VERTICAL_COMPRESSION;
 
-      visibleBoxes.forEach(box => {
-        const adjustedX = box.boundingBox.x - viewportX;
-        const adjustedY = box.boundingBox.y - currentScrollY;
-        box.termX = Math.ceil(adjustedX * scaleX);
-        box.termY = Math.ceil(adjustedY * scaleY);
-        box.termWidth = box.text.length;
-        box.termHeight = 1;
-      });
+  const visibleBoxes = textLayoutBoxes.filter(box => {
+    const boxX = box.boundingBox.x;
+    const boxY = box.boundingBox.y;
+    const boxRight = boxX + box.boundingBox.width;
+    const boxBottom = boxY + box.boundingBox.height;
+    const viewportLeft = viewportX;
+    const viewportRight = viewportX + viewportWidth;
+    const viewportTop = viewportY;
+    const viewportBottom = viewportY + viewportHeight;
+    return boxX < viewportRight && boxRight > viewportLeft && boxY < viewportBottom && boxBottom > viewportTop;
+  });
 
-      const { groups, boxToGroup } = groupBoxes(visibleBoxes, CONFIG);
-      const layoutState = {
-        visibleBoxes,
-        groups,
-        boxToGroup,
-        termWidth,
-        termHeight,
-        viewportX,
-        viewportY,
-        viewportWidth,
-        viewportHeight,
-        clickableElements,
-        renderedBoxes,
-        CONFIG
-      };
+  visibleBoxes.forEach(box => {
+    const adjustedX = box.boundingBox.x - viewportX;
+    const adjustedY = box.boundingBox.y - viewportY;
+    box.termX = Math.ceil(adjustedX * scaleX);
+    box.termY = Math.ceil(adjustedY * scaleY);
+    box.termWidth = box.text.length;
+    box.termHeight = 1;
+  });
 
-      deconflictGroups(layoutState);
-      applyGaps(layoutState);
-      renderBoxes(layoutState);
+  const { groups, boxToGroup } = groupBoxes(visibleBoxes, CONFIG);
 
-      isInitialized = true; // Mark as initialized after first refresh
-    } catch (error) {
-      if (DEBUG) console.warn(error);
-      terminal.red(`Error printing text layout: ${error.message}\n`);
+  return {
+    visibleBoxes,
+    groups,
+    boxToGroup,
+    termWidth,
+    termHeight,
+    viewportX,
+    viewportY,
+    viewportWidth,
+    viewportHeight,
+    clickableElements,
+    layoutToNode,
+    nodeToParent,
+    nodes,
+  };
+}
+
+// Render the layout to the terminal
+function renderLayout({ layoutState, renderedBoxes, CONFIG }) {
+  if (!layoutState) return;
+
+  terminal.clear();
+  terminal.moveTo(1, 1);
+  DEBUG && terminal.cyan(`Rendering ${layoutState.visibleBoxes.length} visible text boxes (viewport: ${layoutState.viewportWidth}x${layoutState.viewportHeight} at ${layoutState.viewportX},${layoutState.viewportY})...\n`);
+
+  const fullLayoutState = { ...layoutState, renderedBoxes, CONFIG };
+  deconflictGroups(fullLayoutState);
+  applyGaps(fullLayoutState);
+  renderBoxes(fullLayoutState);
+}
+
+// Main refresh function
+async function refreshTerminal({ send, sessionId, state }) {
+  try {
+    const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
+    state.currentScrollY = viewportY;
+    const layoutState = await prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY });
+    if (layoutState) {
+      state.clickableElements = layoutState.clickableElements;
+      state.layoutToNode = layoutState.layoutToNode;
+      state.nodeToParent = layoutState.nodeToParent;
+      state.nodes = layoutState.nodes;
+      renderLayout({ layoutState, renderedBoxes: state.renderedBoxes, CONFIG });
+      state.isInitialized = true;
     }
-  };
+  } catch (error) {
+    if (DEBUG) console.warn(error);
+    terminal.red(`Error printing text layout: ${error.message}\n`);
+  }
+}
 
+// Setup event handlers
+function setupEventHandlers({ terminal, send, sessionId, state, refresh, onTabSwitch }) {
   const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
 
   terminal.on('mouse', async (event, data) => {
-    if (!isListening) return;
+    if (!state.isListening) return;
 
     if (event === 'MOUSE_LEFT_BUTTON_PRESSED') {
-      if (!isInitialized) {
-        debugLog(`Click ignored: Terminal not yet initialized (waiting for first refresh)`);
+      if (!state.isInitialized) {
+        debugLog(`Click ignored: Terminal not yet initialized`);
         return;
       }
       const { x: termX, y: termY } = data;
       await handleClick({
         termX,
         termY,
-        renderedBoxes,
-        clickableElements,
+        renderedBoxes: state.renderedBoxes,
+        clickableElements: state.clickableElements,
         send,
         sessionId,
-        clickCounter,
+        clickCounter: state.clickCounter,
         refresh,
-        layoutToNode,
-        nodeToParent,
-        nodes
+        layoutToNode: state.layoutToNode,
+        nodeToParent: state.nodeToParent,
+        nodes: state.nodes,
       });
     } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
-      const deltaY = event === 'MOUSE_WHEEL_UP' ? -scrollDelta : scrollDelta;
-      if (event === 'MOUSE_WHEEL_UP' && currentScrollY <= 0) {
-        debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${currentScrollY})`);
+      const deltaY = event === 'MOUSE_WHEEL_UP' ? -state.scrollDelta : state.scrollDelta;
+      if (event === 'MOUSE_WHEEL_UP' && state.currentScrollY <= 0) {
+        debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
         return;
       }
       send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
@@ -722,18 +755,26 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   });
 
   terminal.on('key', async (name) => {
-    if (!isListening) return;
+    if (!state.isListening) return;
     if (name === 'CTRL_C') {
-      isListening = false;
+      state.isListening = false;
       process.emit('SIGINT');
     } else if (name === '<') {
-      isListening = false;
+      state.isListening = false;
       if (onTabSwitch) onTabSwitch();
     }
   });
+}
 
+// Main function
+async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
+  const state = initializeState();
+  const refresh = () => refreshTerminal({ send, sessionId, state });
+
+  setupEventHandlers({ terminal, send, sessionId, state, refresh, onTabSwitch });
   await refresh();
-  return () => { isListening = false; };
+
+  return () => { state.isListening = false; };
 }
 
 async function getTerminalSize() {
