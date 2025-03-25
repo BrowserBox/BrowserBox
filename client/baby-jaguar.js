@@ -68,6 +68,14 @@ function logMessage(direction, message) {
   }
 }
 
+function debugLog(message) {
+  try {
+    appendFileSync('debug-coords.log', `${new Date().toISOString()} - ${message}\n`);
+  } catch (error) {
+    console.error(`Failed to write to debug log: ${error.message}`);
+  }
+}
+
 function extractTextLayoutBoxes(snapshot) {
   const textLayoutBoxes = [];
   const clickableElements = [];
@@ -133,7 +141,7 @@ function extractTextLayoutBoxes(snapshot) {
     };
 
     const nodeIndex = layoutToNode.get(layoutIndex);
-    const parentIndex = nodeToParent.get(nodeIndex); // Add parentIndex for grouping
+    const parentIndex = nodeToParent.get(nodeIndex);
     const isClickable = nodeIndex !== undefined && isNodeClickable(nodeIndex);
 
     if (isClickable) {
@@ -157,8 +165,7 @@ function groupBoxes(visibleBoxes, CONFIG) {
   const boxToGroup = new Map();
 
   if (CONFIG.useTextByElementGrouping) {
-    // Group by parent HTML element
-    const groupsMap = new Map(); // parentIndex -> array of boxes
+    const groupsMap = new Map();
     for (const box of visibleBoxes) {
       const groupKey = box.parentIndex !== undefined ? box.parentIndex : `individual_${visibleBoxes.indexOf(box)}`;
       if (!groupsMap.has(groupKey)) {
@@ -168,7 +175,6 @@ function groupBoxes(visibleBoxes, CONFIG) {
     }
     groups = Array.from(groupsMap.values());
   } else if (CONFIG.useTextGestaltGrouping) {
-    // Group by proximity
     const sortedBoxes = visibleBoxes.sort((a, b) => a.boundingBox.y - b.boundingBox.y || a.boundingBox.x - b.boundingBox.x);
     let currentGroup = [];
     let lastY = null;
@@ -191,11 +197,9 @@ function groupBoxes(visibleBoxes, CONFIG) {
     }
     if (currentGroup.length) groups.push(currentGroup);
   } else {
-    // No grouping: each box is its own group
     groups = visibleBoxes.map(box => [box]);
   }
 
-  // Assign group IDs to boxes
   groups.forEach((group, groupId) => {
     group.forEach(box => boxToGroup.set(box, groupId));
   });
@@ -204,20 +208,187 @@ function groupBoxes(visibleBoxes, CONFIG) {
   return { groups, boxToGroup };
 }
 
+// Pass 1: De-conflict groups by column walk
+function deconflictGroups(layoutState) {
+  const { visibleBoxes, groups, boxToGroup, termWidth, termHeight } = layoutState;
+
+  const boxOverlapsThisPosition = (box, col, row) => {
+    return row === box.termY && col >= box.termX && col < box.termX + box.termWidth;
+  };
+
+  const boxHasLeftEdgeCrossingThisPosition = (box, col, row) => {
+    return row === box.termY && col === box.termX;
+  };
+
+  const setDifference = (setA, setB) => {
+    const diff = new Set(setA);
+    for (const elem of setB) diff.delete(elem);
+    return diff;
+  };
+
+  const moveGroupRightwardBy1Column = (groupId) => {
+    const group = groups[groupId];
+    group.forEach(box => {
+      box.termX += 1;
+      debugLog(`Moved group ${groupId} box "${box.text}" right to termX=${box.termX}`);
+    });
+  };
+
+  const selectMainGroup = (groupIds) => {
+    return groupIds.reduce((minGroupId, groupId) => {
+      const minBox = groups[minGroupId][0];
+      const currBox = groups[groupId][0];
+      const minOriginalX = minBox.termX - (minBox.shiftCount || 0);
+      const currOriginalX = currBox.termX - (currBox.shiftCount || 0);
+      return currOriginalX < minOriginalX ? groupId : minGroupId;
+    });
+  };
+
+  for (let c = 0; c < termWidth; c++) {
+    for (let r = 0; r < termHeight; r++) {
+      const currentBoxes = new Set();
+      const newBoxes = new Set();
+
+      for (const box of visibleBoxes) {
+        if (boxOverlapsThisPosition(box, c, r)) {
+          currentBoxes.add(box);
+        }
+        if (boxHasLeftEdgeCrossingThisPosition(box, c, r)) {
+          newBoxes.add(box);
+        }
+      }
+
+      const oldBoxes = setDifference(currentBoxes, newBoxes);
+      if (oldBoxes.size > 1) {
+        debugLog(`Warning: Multiple old boxes at (${c}, ${r}): ${oldBoxes.size}`);
+      }
+
+      if (oldBoxes.size >= 1) {
+        const newGroupIds = new Set([...newBoxes].map(box => boxToGroup.get(box)));
+        for (const groupId of newGroupIds) {
+          moveGroupRightwardBy1Column(groupId);
+          groups[groupId].forEach(box => box.shiftCount = (box.shiftCount || 0) + 1);
+        }
+      }
+
+      if (newBoxes.size > 1) {
+        const newGroupIds = [...new Set([...newBoxes].map(box => boxToGroup.get(box)))];
+        if (newGroupIds.length > 1) {
+          const mainGroupId = selectMainGroup(newGroupIds);
+          newGroupIds.splice(newGroupIds.indexOf(mainGroupId), 1);
+          for (const groupId of newGroupIds) {
+            moveGroupRightwardBy1Column(groupId);
+            groups[groupId].forEach(box => box.shiftCount = (box.shiftCount || 0) + 1);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Pass 2: Apply gaps between groups
+function applyGaps(layoutState) {
+  const { groups, CONFIG } = layoutState;
+  const groupsByRow = new Map();
+
+  for (const group of groups) {
+    const row = group[0].termY; // Assume all boxes in group share termY
+    if (!groupsByRow.has(row)) {
+      groupsByRow.set(row, []);
+    }
+    groupsByRow.get(row).push(group);
+  }
+
+  for (const [row, rowGroups] of groupsByRow) {
+    rowGroups.sort((a, b) => a[0].termX - b[0].termX);
+    for (let i = 1; i < rowGroups.length; i++) {
+      const prevGroup = rowGroups[i - 1];
+      const currGroup = rowGroups[i];
+      const prevRight = Math.max(...prevGroup.map(box => box.termX + box.termWidth));
+      const currLeft = Math.min(...currGroup.map(box => box.termX));
+      let gap = 0;
+      if (prevGroup.some(box => box.text.length > 1) || currGroup.some(box => box.text.length > 1)) {
+        gap = CONFIG.GAP_SIZE;
+      }
+      const targetX = prevRight + gap;
+      if (currLeft < targetX) {
+        const shift = targetX - currLeft;
+        currGroup.forEach(box => {
+          box.termX += shift;
+          debugLog(`Added gap for group box "${box.text}": shifted from ${box.termX - shift} to ${box.termX}`);
+        });
+      }
+    }
+  }
+}
+
+// Pass 3: Render boxes with truncation
+function renderBoxes(layoutState) {
+  const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
+  const usedCoords = new Set();
+
+  renderedBoxes.length = 0; // Reset renderedBoxes
+
+  for (const box of visibleBoxes) {
+    const { text, boundingBox, isClickable, termX, termY } = box;
+    const renderX = Math.max(1, termX + 1); // 1-based for terminal
+    const renderY = Math.max(1, termY + 1);
+    const key = `${renderX},${renderY}`;
+
+    if (renderX > termWidth) {
+      debugLog(`Skipped "${text}" at (${renderX}, ${renderY}) - beyond termWidth ${termWidth}`);
+      continue;
+    }
+
+    if (usedCoords.has(key)) continue;
+    usedCoords.add(key);
+
+    const availableWidth = Math.max(0, termWidth - renderX + 1);
+    const displayText = text.substring(0, availableWidth);
+
+    const renderedBox = {
+      text,
+      boundingBox,
+      isClickable,
+      termX: renderX,
+      termY: renderY,
+      termWidth: displayText.length,
+      termHeight: 1,
+      viewportX,
+      viewportY,
+      originalTermX: termX
+    };
+    renderedBoxes.push(renderedBox);
+
+    if (isClickable) {
+      const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
+      if (clickable) {
+        clickable.termX = renderX;
+        clickable.termY = renderY;
+        clickable.termWidth = displayText.length;
+        clickable.termHeight = 1;
+      }
+    }
+
+    debugLog(`Rendering "${displayText}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY})`);
+    terminal.moveTo(renderX, renderY);
+    DEBUG && terminal.gray(`Drawing "${displayText}" at (${renderX}, ${renderY}) with width ${availableWidth}\n`);
+    if (isClickable) {
+      terminal.cyan.underline(displayText);
+    } else {
+      terminal(displayText);
+    }
+  }
+
+  DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
+}
+
 async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   let clickableElements = [];
   let isListening = true;
   let scrollDelta = 50;
   let renderedBoxes = [];
   let currentScrollY = 0;
-
-  const debugLog = (message) => {
-    try {
-      appendFileSync('debug-coords.log', `${new Date().toISOString()} - ${message}\n`);
-    } catch (error) {
-      console.error(`Failed to write to debug log: ${error.message}`);
-    }
-  };
 
   const debounce = (func, delay) => {
     let timeoutId;
@@ -245,6 +416,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       const viewportHeight = viewport.clientHeight;
       const viewportX = document.scrollOffsetX;
       currentScrollY = document.scrollOffsetY;
+      const viewportY = currentScrollY;
 
       const { textLayoutBoxes, clickableElements: newClickables } = extractTextLayoutBoxes(snapshot);
       clickableElements = newClickables;
@@ -279,7 +451,7 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
       terminal.moveTo(1, 1);
       DEBUG && terminal.cyan(`Rendering ${visibleBoxes.length} visible text boxes (viewport: ${viewportWidth}x${viewportHeight} at ${viewportX},${currentScrollY})...\n`);
 
-      // Add terminal coordinates to boxes
+      // Initialize state with terminal coordinates
       visibleBoxes.forEach(box => {
         const adjustedX = box.boundingBox.x - viewportX;
         const adjustedY = box.boundingBox.y - currentScrollY;
@@ -289,173 +461,25 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         box.termHeight = 1;
       });
 
-      // Group the boxes
+      // Group the boxes and create layout state
       const { groups, boxToGroup } = groupBoxes(visibleBoxes, CONFIG);
-
-      // Helper functions for de-confliction
-      const boxOverlapsThisPosition = (box, col, row) => {
-        return row === box.termY && col >= box.termX && col < box.termX + box.termWidth;
+      const layoutState = {
+        visibleBoxes,
+        groups,
+        boxToGroup,
+        termWidth,
+        termHeight,
+        viewportX,
+        viewportY,
+        clickableElements,
+        renderedBoxes, // Pass as reference to update globally
+        CONFIG
       };
 
-      const boxHasLeftEdgeCrossingThisPosition = (box, col, row) => {
-        return row === box.termY && col === box.termX;
-      };
-
-      const setDifference = (setA, setB) => {
-        const diff = new Set(setA);
-        for (const elem of setB) diff.delete(elem);
-        return diff;
-      };
-
-      const moveGroupRightwardBy1Column = (groupId, groups) => {
-        const group = groups[groupId];
-        group.forEach(box => {
-          box.termX += 1;
-          debugLog(`Moved group ${groupId} box "${box.text}" right to termX=${box.termX}`);
-        });
-      };
-
-      const selectMainGroup = (groupIds, groups, boxToGroup) => {
-        return groupIds.reduce((minGroupId, groupId) => {
-          const minBox = groups[minGroupId][0];
-          const currBox = groups[groupId][0];
-          const minOriginalX = minBox.termX - (minBox.shiftCount || 0);
-          const currOriginalX = currBox.termX - (currBox.shiftCount || 0);
-          return currOriginalX < minOriginalX ? groupId : minGroupId;
-        });
-      };
-
-      // Pass 1: De-confliction by column walk (group-based)
-      for (let c = 0; c < termWidth; c++) {
-        for (let r = 0; r < termHeight; r++) {
-          const currentBoxes = new Set();
-          const newBoxes = new Set();
-
-          for (const box of visibleBoxes) {
-            if (boxOverlapsThisPosition(box, c, r)) {
-              currentBoxes.add(box);
-            }
-            if (boxHasLeftEdgeCrossingThisPosition(box, c, r)) {
-              newBoxes.add(box);
-            }
-          }
-
-          const oldBoxes = setDifference(currentBoxes, newBoxes);
-          if (oldBoxes.size > 1) {
-            debugLog(`Warning: Multiple old boxes at (${c}, ${r}): ${oldBoxes.size}`);
-          }
-
-          if (oldBoxes.size >= 1) {
-            const newGroupIds = new Set([...newBoxes].map(box => boxToGroup.get(box)));
-            for (const groupId of newGroupIds) {
-              moveGroupRightwardBy1Column(groupId, groups);
-              groups[groupId].forEach(box => box.shiftCount = (box.shiftCount || 0) + 1);
-            }
-          }
-
-          if (newBoxes.size > 1) {
-            const newGroupIds = [...new Set([...newBoxes].map(box => boxToGroup.get(box)))];
-            if (newGroupIds.length > 1) {
-              const mainGroupId = selectMainGroup(newGroupIds, groups, boxToGroup);
-              newGroupIds.splice(newGroupIds.indexOf(mainGroupId), 1);
-              for (const groupId of newGroupIds) {
-                moveGroupRightwardBy1Column(groupId, groups);
-                groups[groupId].forEach(box => box.shiftCount = (box.shiftCount || 0) + 1);
-              }
-            }
-          }
-        }
-      }
-
-      // Pass 2: Apply gaps between groups on the same row
-      const groupsByRow = new Map();
-      for (const group of groups) {
-        const row = group[0].termY; // Assume all boxes in group share termY
-        if (!groupsByRow.has(row)) {
-          groupsByRow.set(row, []);
-        }
-        groupsByRow.get(row).push(group);
-      }
-
-      for (const [row, rowGroups] of groupsByRow) {
-        rowGroups.sort((a, b) => a[0].termX - b[0].termX);
-        for (let i = 1; i < rowGroups.length; i++) {
-          const prevGroup = rowGroups[i - 1];
-          const currGroup = rowGroups[i];
-          const prevRight = Math.max(...prevGroup.map(box => box.termX + box.termWidth));
-          const currLeft = Math.min(...currGroup.map(box => box.termX));
-          let gap = 0;
-          if (prevGroup.some(box => box.text.length > 1) || currGroup.some(box => box.text.length > 1)) {
-            gap = CONFIG.GAP_SIZE;
-          }
-          const targetX = prevRight + gap;
-          if (currLeft < targetX) {
-            const shift = targetX - currLeft;
-            currGroup.forEach(box => {
-              box.termX += shift;
-              debugLog(`Added gap for group box "${box.text}": shifted from ${box.termX - shift} to ${box.termX}`);
-            });
-          }
-        }
-      }
-
-      // Pass 3: Render with truncation and no wrapping
-      const usedCoords = new Set();
-      renderedBoxes = [];
-
-      for (const box of visibleBoxes) {
-        const { text, boundingBox, isClickable, termX, termY } = box;
-        const renderX = Math.max(1, termX + 1); // 1-based for terminal
-        const renderY = Math.max(1, termY + 1);
-        const key = `${renderX},${renderY}`;
-
-        // Skip boxes entirely outside termWidth
-        if (renderX > termWidth) {
-          debugLog(`Skipped "${text}" at (${renderX}, ${renderY}) - beyond termWidth ${termWidth}`);
-          continue;
-        }
-
-        if (usedCoords.has(key)) continue;
-        usedCoords.add(key);
-
-        // Truncate text that overflows termWidth
-        const availableWidth = Math.max(0, termWidth - renderX + 1); // Space from renderX to right edge
-        const displayText = text.substring(0, availableWidth); // Truncate to fit
-
-        renderedBoxes.push({
-          text, // Full text for future scrolling
-          boundingBox,
-          isClickable,
-          termX: renderX,
-          termY: renderY,
-          termWidth: displayText.length, // Visible width
-          termHeight: 1,
-          viewportX,
-          viewportY: currentScrollY,
-          originalTermX: termX // Store for scrolling
-        });
-
-        if (isClickable) {
-          const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
-          if (clickable) {
-            clickable.termX = renderX;
-            clickable.termY = renderY;
-            clickable.termWidth = displayText.length;
-            clickable.termHeight = 1;
-          }
-        }
-
-        debugLog(`Rendering "${displayText}": Page (${boundingBox.x}, ${boundingBox.y}), Terminal (${renderX}, ${renderY})`);
-        terminal.moveTo(renderX, renderY);
-        DEBUG && terminal.gray(`Drawing "${displayText}" at (${renderX}, ${renderY}) with width ${availableWidth}\n`);
-        if (isClickable) {
-          terminal.cyan.underline(displayText); // Render truncated text
-        } else {
-          terminal(displayText); // Render truncated text
-        }
-      }
-
-      DEBUG && terminal.moveTo(1, termHeight).green('Text layout printed successfully!\n');
+      // Execute the three passes
+      deconflictGroups(layoutState);
+      applyGaps(layoutState);
+      renderBoxes(layoutState);
     } catch (error) {
       if (DEBUG) console.warn(error);
       terminal.red(`Error printing text layout: ${error.message}\n`);
@@ -464,7 +488,6 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
 
   const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
 
-  // [Unchanged event handlers]
   terminal.on('mouse', async (event, data) => {
     if (!isListening) return;
 
@@ -519,12 +542,9 @@ async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
   return () => { isListening = false; };
 }
 
-// [Rest of your code remains unchanged: getTerminalSize, connectToBrowser, main IIFE]
-
 async function getTerminalSize() {
   const size = { columns: terminal.width, rows: terminal.height };
   if (!size.columns || !size.rows) {
-    // Fallback in case terminal size isn't detected
     return { columns: 80, rows: 24 };
   }
   return size;
@@ -657,14 +677,6 @@ async function connectToBrowser() {
   DEBUG && terminal.green('Connected to WebSocket\n');
 
   return { send, socket, targets, cookieHeader };
-}
-
-function debugLog(message) {
-  try {
-    appendFileSync('debug-coords.log', `${new Date().toISOString()} - ${message}\n`);
-  } catch (error) {
-    console.error(`Failed to write to debug log: ${error.message}`);
-  }
 }
 
 (async () => {
