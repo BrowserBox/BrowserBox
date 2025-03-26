@@ -178,6 +178,7 @@ export class HardenedApplication {
     }
 
     console.log('Manifest verified successfully. All files match and signature is valid.');
+    return true;
   }
 
   /**
