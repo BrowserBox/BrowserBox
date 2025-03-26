@@ -11,7 +11,7 @@ function computeHash(data) {
   return crypto.createHash('sha256').update(data).digest('hex');
 }
 
-// Function to read SSH host keys
+// Function to read SSH host public keys for the purpose of identifying a machine uniquely
 function readSshHostKeys() {
   const sshKeyPaths = [
     '/etc/ssh/ssh_host_dsa_key.pub',
@@ -23,7 +23,7 @@ function readSshHostKeys() {
 
   sshKeyPaths.forEach((keyPath) => {
     if (fs.existsSync(keyPath)) {
-      sshKeys += fs.readFileSync(keyPath, 'utf8').toString().replace(/\s+/g, '').trim();
+      sshKeys += '::' + fs.readFileSync(keyPath, 'utf8').toString().replace(/\s+/g, '').trim();
     }
   });
 
@@ -63,15 +63,15 @@ export function generateHardwareId() {
 
   // Combine the extracted information and SSH host keys
   const combinedInfo = `${headerInfo}-${totalMemory}-${sshHostKeys}`;
-  console.info(`fingerprint data: ${combinedInfo}`);
+  //console.info(`fingerprint data: ${combinedInfo}`);
 
   // Compute and return the hardware ID
   fs.unlinkSync(reportPath);
-  return {fullReport, hwid: computeHash(combinedInfo)};
+  return {fullReport, hwid: computeHash(combinedInfo), combinedInfo};
 }
 
 if ( import.meta.url.endsWith(process.argv[1]) ) {
-  console.log('hwid', generateHardwareId());
+  console.log(JSON.stringify({hwfp:generateHardwareId()},null,2));
 }
 
 

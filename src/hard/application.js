@@ -73,6 +73,35 @@ export async function applicationCheck() {
   } catch (error) {
     console.warn(error);
     log('Application', `Error: ${error.message}`);
+    return false;
+    //process.exit(1);
+  }
+}
+export async function validityCheck({targets} = {}) {
+  console.log({dn: __dirname(), fn: __filename()});
+
+  let integrity = false;
+  try {
+    // Verify application integrity
+    integrity = await hardenedApp.verifyManifest();
+    log('Application', 'Application integrity check passed.');
+  } catch(e) {
+    log('Application', 'Application integrity check failed.' + e);
+  }
+
+  try {
+    // Validate license
+    await hardenedApp.checkLicense({targets, integrity});
+    log('Application', 'License validation succeeded.');
+
+    // Start application logic
+    log('Application', 'Application started.');
+
+    return true && integrity;
+  } catch (error) {
+    console.warn(error);
+    log('Application', `Error: ${error.message}`);
+    return false;
     //process.exit(1);
   }
 }

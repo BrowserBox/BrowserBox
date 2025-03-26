@@ -178,6 +178,7 @@ export class HardenedApplication {
     }
 
     console.log('Manifest verified successfully. All files match and signature is valid.');
+    return true;
   }
 
   /**
@@ -296,6 +297,57 @@ export class HardenedApplication {
       return fs.readFileSync(this.#privateKeyPath, 'utf8'); // File-based key
     }
     return null;
+  }
+
+  /**
+   * Checks the license by performing local PKI validation and communicating with the license server.
+   * @throws Will throw an error if license validation fails.
+   */
+  async checkLicense({targets, integrity} = {}) {
+    if (!this.#certificatePath || !this.#licenseServerUrl) {
+      throw new Error('License validation configuration is incomplete.');
+    }
+
+    const hwfp = generateHardwareId();
+    hwfp.integrity = {integrity};
+
+    console.log({certPath: this.#certificatePath });
+
+    const certificateJson = readFile(this.#certificatePath);
+
+    // Perform local validation using PKI
+    const fullChain = JSON.parse(certificateJson);
+    const isValidLocal = await this.#pki.validateTicket(fullChain);
+
+    if (!isValidLocal) {
+      throw new Error('Local certificate validation failed.');
+    }
+
+    // Send the certificate to the license server for validation
+    const response = await fetch(
+      `${this.#licenseServerUrl}/tickets/validate`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          certificateJson: fullChain, instanceId: this.#instanceId, revalidateOnly: true,
+          targets, hwfp
+        }),
+        agent: new https.Agent({ rejectUnauthorized: true }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`License server responded with status ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.message !== 'License is valid.') {
+      throw new Error(`License validation failed: ${result.message}`);
+    }
+
+    console.log('License validation succeeded.');
   }
 
   /**

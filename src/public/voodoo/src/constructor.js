@@ -696,6 +696,20 @@
             state.topBarComponent.updateDownloadStatus(downloPro);
           });
 
+        // application
+          queue.addMetaListener('applicationCheck', ({applicationCheck}) => {
+            if ( ! applicationCheck?.licenseValid ) {
+              state.applicationCheck = applicationCheck;
+              state.viewState.modalComponent.openModal({
+                modal: {
+                  type: 'notice',
+                  title: 'BrowserBox Activation',
+                  message: 'Your copy of BrowserBox is not activated. Purchase a License Key at https://dosaygo.com or by contacting sales@dosaygo.com to enjoy uninterrupted usage and ensure full application security.'
+                }
+              });
+            }
+          });
+
         // should go in bb-view script.js 
         // (so we can use el.shadowRoot instead of document)
         // as context for querySelector
@@ -1206,7 +1220,7 @@
             state.viewState.modalComponent.openModal({
               modal: {
                 type: 'notice',
-                title: 'CloudTabs Extensions',
+                title: 'BrowserBox Extensions',
                 message: 'Please wait while your extension is installed. Close this message to check progress.'
               }
             });
@@ -1242,7 +1256,7 @@
             state.viewState.modalComponent.openModal({
               modal: {
                 type: 'notice',
-                title: 'CloudTabs Extensions',
+                title: 'BrowserBox Extensions',
                 message: 'Please wait while your extension is removed. Close this message to check progress.'
               }
             });
@@ -1279,7 +1293,7 @@
             state.viewState.modalComponent.openModal({
               modal: {
                 type: 'notice',
-                title: 'CloudTabs Extensions',
+                title: 'BrowserBox Extensions',
                 message: 'Please wait while your extension is modified. Close this message to check progress.'
               }
             });
