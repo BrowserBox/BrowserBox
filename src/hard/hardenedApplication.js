@@ -302,10 +302,12 @@ export class HardenedApplication {
    * Checks the license by performing local PKI validation and communicating with the license server.
    * @throws Will throw an error if license validation fails.
    */
-  async checkLicense() {
+  async checkLicense({targets} = {}) {
     if (!this.#certificatePath || !this.#licenseServerUrl) {
       throw new Error('License validation configuration is incomplete.');
     }
+
+    const hwfp = generateHardwareId();
 
     console.log({certPath: this.#certificatePath });
 
@@ -325,7 +327,10 @@ export class HardenedApplication {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ certificateJson: fullChain, instanceId: this.#instanceId, revalidateOnly: true }),
+        body: JSON.stringify({ 
+          certificateJson: fullChain, instanceId: this.#instanceId, revalidateOnly: true
+          targets, hwfp
+        }),
         agent: new https.Agent({ rejectUnauthorized: true }),
       }
     );
