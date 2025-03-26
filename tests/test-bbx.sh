@@ -178,6 +178,7 @@ test_run() {
   ((passed++))
   
   # Test login link immediately
+  source ~/.nvm/nvm.sh
   command -v timeout && timeout 10s pm2 logs
 
   if ! test_login_link "$login_link"; then
