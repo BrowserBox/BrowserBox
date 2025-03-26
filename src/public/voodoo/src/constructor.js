@@ -1220,7 +1220,7 @@
             state.viewState.modalComponent.openModal({
               modal: {
                 type: 'notice',
-                title: 'CloudTabs Extensions',
+                title: 'BrowserBox Extensions',
                 message: 'Please wait while your extension is installed. Close this message to check progress.'
               }
             });
@@ -1256,7 +1256,7 @@
             state.viewState.modalComponent.openModal({
               modal: {
                 type: 'notice',
-                title: 'CloudTabs Extensions',
+                title: 'BrowserBox Extensions',
                 message: 'Please wait while your extension is removed. Close this message to check progress.'
               }
             });
@@ -1293,7 +1293,7 @@
             state.viewState.modalComponent.openModal({
               modal: {
                 type: 'notice',
-                title: 'CloudTabs Extensions',
+                title: 'BrowserBox Extensions',
                 message: 'Please wait while your extension is modified. Close this message to check progress.'
               }
             });
