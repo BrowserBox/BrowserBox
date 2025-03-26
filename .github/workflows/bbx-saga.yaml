@@ -176,3 +176,8 @@ jobs:
         shell: powershell
         run: |
           Start-Sleep -Seconds 5
+
+      - name: Setup tmate session on failure
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 5
