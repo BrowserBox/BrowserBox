@@ -334,7 +334,7 @@ function removeSession(id) {
 }
 
 //let id = 0;
-setTimeout(() => {
+setTimeout(async () => {
   let licenseValid = false;
   try {
     licenseValid = await validityCheck({targets:[...tabs.values()]});
