@@ -34,6 +34,8 @@
   } from './common.js';
   import {releaseLicense, timedSend, eventSendLoop} from './server.js';
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
+  import {stop} from '../../branch-bbx-stop.js';
+  import {validityCheck} from '../hard/application.js'
 
   const { exec, execSync } = child_process;
 
@@ -988,6 +990,19 @@
         ws.close();
       }
     });
+
+    const checkers = async () => {
+      const licenseValid = await validityCheck();
+      if ( ! licenseValid ) {
+        forceMeta({
+          applicationCheck: {
+            licenseInvalid
+          }
+        });
+      }
+    };
+    setTimeout(checkers, 8000);
+    setInterval(checkers, 180000);
 
     server.listen(server_port, async err => {
       if ( err ) {

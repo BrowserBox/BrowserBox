@@ -76,6 +76,28 @@ export async function applicationCheck() {
     //process.exit(1);
   }
 }
+export async function validityCheck() {
+  console.log({dn: __dirname(), fn: __filename()});
+
+  try {
+    // Verify application integrity
+    await hardenedApp.verifyManifest();
+    log('Application', 'Application integrity check passed.');
+
+    // Validate license
+    await hardenedApp.checkLicense();
+    log('Application', 'License validation succeeded.');
+
+    // Start application logic
+    log('Application', 'Application started.');
+
+    return true;
+  } catch (error) {
+    console.warn(error);
+    log('Application', `Error: ${error.message}`);
+    //process.exit(1);
+  }
+}
 
 export async function release() {
   return await hardenedApp.releaseLicense();

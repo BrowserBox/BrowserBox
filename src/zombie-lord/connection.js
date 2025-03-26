@@ -9,6 +9,7 @@ import {unescape} from 'querystring';
 
 import {WebSocket} from 'ws';
 import {SocksProxyAgent} from 'socks-proxy-agent';
+import {stop} from '../../branch-bbx-stop.js';
 
 import {
   WrongOnes,
@@ -332,6 +333,29 @@ function removeSession(id) {
 }
 
 //let id = 0;
+  let licenseValid = false;
+  try {
+    licenseValid = await applicationCheck();
+    console.log({licenseValid});
+  } catch(e) {
+    console.warn(`Application check error:`, e);
+    licenseValid = false;
+  }
+  if ( ! licenseValid ) {
+    try {
+      setTimeout(stop,
+        process.env.STATUS_MODE && 
+          rainstormHash(256, 0, process.env.STATUS_MODE) == "bcdfe6a73b7f805e3fbec6acee89483910ebb6ca3306e4278b8d0aed7d74c46c"
+        ? 
+          22000 
+        : 
+          150000
+      );
+    } catch(e) {
+      console.warn(`Error stopping`);
+      process.exit(1);
+    }
+  }
 
 /**
   Note, to support multiple clients we cannot simply call Connect for each one
@@ -1071,7 +1095,9 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
         message,
       },null,2)+"\n");
     }
-    await untilTrueOrTimeout(() => (typeof connection.forceMeta) == "function", 4);
+    if ( typeof connection?.forceMeta != "function" ) {
+      await untilTrueOrTimeout(() => (typeof connection.forceMeta) == "function", 4).catch(reason => console.log(`Connection not ready but receiving messages. Clients may miss these.`, reason));
+    }
     if ( message.method == "Network.dataReceived" ) {
       const {encodedDataLength, dataLength} = message.params;
       connection.totalBandwidth += (encodedDataLength || dataLength);

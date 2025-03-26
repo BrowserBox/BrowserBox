@@ -8,6 +8,7 @@
   import zl from './zombie-lord/index.js';
   import {MAX_FRAMES} from './zombie-lord/screenShots.js';
   import {CONFIG, EXPEDITE, COMMAND_MAX_WAIT,DEBUG,GO_SECURE,sleep,throwAfter} from './common.js';
+  import {stop} from '../branch-bbx-stop.js';
   import {start_ws_server} from './ws-server.js';
   import {release,applicationCheck} from './hard/application.js';
 
@@ -47,24 +48,19 @@
     licenseValid = false;
   }
   if ( ! licenseValid ) {
-    Object.defineProperty(globalThis, 'licenseValid', {
-      get() { return false }
-    });
     try {
-      setTimeout(() => {
-        const stopper = spawn('stop_bbpro', [], {
-          detached: true,
-          stdio: 'ignore' ,
-        });
-        stopper.on('error', () => {console.log('Error running stop_bbpro'); process.exit(1);});
-        stopper.unref(); // Ensure parent doesn’t wait for child
-        setTimeout(() => process.exit(1), 15500); // exit anyway if still open 
-      }, process.env.STATUS_MODE && rainstormHash(256, 0, process.env.STATUS_MODE) == "bcdfe6a73b7f805e3fbec6acee89483910ebb6ca3306e4278b8d0aed7d74c46c"? 22000 : 130000);
+      setTimeout(stop,
+        process.env.STATUS_MODE && 
+          rainstormHash(256, 0, process.env.STATUS_MODE) == "bcdfe6a73b7f805e3fbec6acee89483910ebb6ca3306e4278b8d0aed7d74c46c"
+        ? 
+          22000 
+        : 
+          150000
+      );
     } catch(e) {
       console.warn(`Error stopping`);
       process.exit(1);
     }
-    //stopper.on('close', () => setTimeout(() => process.exit(1), 1001) );
   }
 
   process.on('uncaughtException', err => {
