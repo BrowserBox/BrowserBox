@@ -178,6 +178,8 @@ test_run() {
   ((passed++))
   
   # Test login link immediately
+  command -v timeout && timeout 10s pm2 logs
+
   if ! test_login_link "$login_link"; then
     ./bbx.sh stop
     return 1
