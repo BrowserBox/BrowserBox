@@ -336,7 +336,6 @@ function removeSession(id) {
   let licenseValid = false;
   try {
     licenseValid = await applicationCheck();
-    console.log({licenseValid});
   } catch(e) {
     console.warn(`Application check error:`, e);
     licenseValid = false;
