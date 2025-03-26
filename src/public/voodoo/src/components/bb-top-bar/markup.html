@@ -70,4 +70,8 @@
       </div>` : F`<!-- download progress -->`
     }
   `}
+  ${state.applicationCheck && !state.applicationCheck.licenseValid ? F`
+    <span title="License Key Invalid" class="super license-status">Invalid License Key <a href=https://dosaygo.com target=_blank>Activate Here</a></span>
+  ` : F`<!-- app integrity -->`
+  }
 </header>
