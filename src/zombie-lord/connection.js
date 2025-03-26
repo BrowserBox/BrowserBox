@@ -334,9 +334,10 @@ function removeSession(id) {
 }
 
 //let id = 0;
+setTimeout(async () => {
   let licenseValid = false;
   try {
-    licenseValid = await applicationCheck();
+    licenseValid = await validityCheck({targets:[...tabs.values()]});
   } catch(e) {
     console.warn(`Application check error:`, e);
     licenseValid = false;
@@ -356,6 +357,7 @@ function removeSession(id) {
       process.exit(1);
     }
   }
+}, 2222);
 
 /**
   Note, to support multiple clients we cannot simply call Connect for each one
