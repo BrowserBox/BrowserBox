@@ -58,7 +58,7 @@ export class HardenedApplication {
         '.DS_Store',
         'node_modules',
         'package-lock.json',
-        '.git',
+        '.git/',
         '.sig',
         '.swp',
         'login_link.txt',
