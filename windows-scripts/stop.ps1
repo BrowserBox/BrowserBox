@@ -51,7 +51,7 @@ Stop-ProcessByPidFile -PidFile $devtoolsPidFile -ServiceName "devtools"
 
 # Backup: Kill any lingering node processes with graceful shutdown attempt
 $nodeProcs = Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
-    $_.CommandLine -like "*server.js*" -or $_.CommandLine -like "*index.js*" -or $_.CommandLine -like ""
+    $_.CommandLine -like "*server.js*" -or $_.CommandLine -like "*index.js*" 
 }
 if ($nodeProcs) {
     foreach ($proc in $nodeProcs) {
@@ -75,4 +75,3 @@ if ($nodeProcs) {
 }
 
 Write-Host "BrowserBox services stopped successfully." -ForegroundColor Green
-exit 0
