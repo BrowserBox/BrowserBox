@@ -29,7 +29,7 @@ NC='\033[0m'
 BOLD='\033[1m'
 
 # Version
-BBX_VERSION="10.4.0"
+BBX_VERSION="10.5.0"
 branch="main" # change to main for dist
 if [[ "$branch" != "main" ]]; then
   export BBX_BRANCH="$branch"
