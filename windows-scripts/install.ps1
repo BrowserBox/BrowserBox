@@ -14,19 +14,19 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
         "-Command", "irm bbx.dosaygo.com | iex"
     )
     Start-Process powershell -Verb RunAs -ArgumentList $arguments
-    Start-Sleep -Seconds 2  # Brief pause to confirm 
+    Start-Sleep -Seconds 2
     exit
 }
 
-# Debug: Confirm elevation worked
 Write-Host "Running as Administrator." -ForegroundColor Green
-Start-Sleep -Seconds 2  # Brief pause to confirm 
+Start-Sleep -Seconds 2
 
 $bbxUrl = "https://github.com/BrowserBox/BrowserBox/archive/refs/heads/$branch.zip"
 $tempZip = "$env:TEMP\browserbox-$branch.zip"
 $installDir = "C:\Program Files\browserbox"
 $bbxDir = "$installDir\windows-scripts"
 $tempExtractDir = "$env:TEMP\browserbox-extract-$branch"
+$unzipPath = "C:\Program Files\Git\usr\bin\unzip.exe"
 
 # winget
 $wingetPath = (Get-Command winget -ErrorAction SilentlyContinue).Path
@@ -42,6 +42,21 @@ if (-not $wingetPath -or $ForceAll) {
     }
 } else {
     Write-Host "winget already installed -- skipping." -ForegroundColor Cyan
+}
+
+# Check for unzip (from Git for Windows) and install Git.Git if not found
+if (-not (Test-Path $unzipPath) -or $ForceAll) {
+    Write-Host "unzip not found at $unzipPath. Installing Git for Windows to get it..." -ForegroundColor Cyan
+    winget install --id Git.Git --accept-source-agreements --accept-package-agreements --force
+    $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+    if (Test-Path $unzipPath) {
+        Write-Host "unzip installed successfully via Git.Git." -ForegroundColor Green
+    } else {
+        Write-Error "Failed to find unzip at $unzipPath after installing Git.Git! Check Git installation."
+        return
+    }
+} else {
+    Write-Host "unzip already installed at $unzipPath -- skipping." -ForegroundColor Cyan
 }
 
 # Node.js
@@ -102,11 +117,18 @@ if (Test-Path $installDir) {
 }
 if ($Debug) { Read-Host "Cleaned $installDir (if it existed). Press Enter to continue..." }
 
-Write-Host "Extracting to temporary directory $tempExtractDir..." -ForegroundColor Cyan
+Write-Host "Extracting to temporary directory $tempExtractDir with unzip..." -ForegroundColor Cyan
 if (Test-Path $tempExtractDir) {
     Remove-Item $tempExtractDir -Recurse -Force
 }
-Expand-Archive -Path $tempZip -DestinationPath "$tempExtractDir" -Force
+New-Item -Path $tempExtractDir -ItemType Directory -Force | Out-Null
+& $unzipPath -q $tempZip -d $tempExtractDir
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Extraction completed successfully." -ForegroundColor Green
+} else {
+    Write-Error "Extraction failed with exit code $LASTEXITCODE!"
+    return
+}
 if ($Debug) { Read-Host "Extracted ZIP to $tempExtractDir. Press Enter to continue..." }
 
 Write-Host "Moving to $installDir..." -ForegroundColor Cyan
