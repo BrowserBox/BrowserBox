@@ -436,7 +436,6 @@ install() {
     chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
     local default_hostname=$(get_system_hostname)
 
-
     if [ -z "$BBX_HOSTNAME" ]; then
       if [[ -n "$BBX_TEST_AGREEMENT" ]]; then 
         BBX_HOSTNAME="localhost"
