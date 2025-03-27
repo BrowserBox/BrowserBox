@@ -75,4 +75,3 @@ if ($nodeProcs) {
 }
 
 Write-Host "BrowserBox services stopped successfully." -ForegroundColor Green
-exit 0
