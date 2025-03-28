@@ -8,7 +8,7 @@ param (
 # Configuration
 $ConfigDir = "$env:USERPROFILE\.config\dosyago\bbpro"
 $TestEnvFile = "$ConfigDir\test.env"
-$TicketFile = "$ConfigDir\ticket.json"
+$TicketFile = "$ConfigDir\tickets\ticket.json"
 $ApiVersion = "v1"
 $ApiServer = "https://master.dosaygo.com"
 $ApiBase = "$ApiServer/$ApiVersion"
