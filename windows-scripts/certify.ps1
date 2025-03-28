@@ -57,9 +57,18 @@ function Test-TicketValidity {
     }
 
     $ticketJson = Get-Content $TicketFile -Raw | ConvertFrom-Json
-    $timeSlot = $ticketJson.ticket.ticketData.timeSlot
+    Write-Verbose "Ticket JSON: $($ticketJson | ConvertTo-Json -Compress)"
+
+    # Access the ticket portion of the full ticket JSON
+    $ticket = $ticketJson.ticket
+    if (-not $ticket) {
+        Write-Warning "Invalid ticket structure: 'ticket' property missing in $TicketFile. Ticket JSON: $($ticketJson | ConvertTo-Json -Compress)"
+        return $false
+    }
+
+    $timeSlot = $ticket.ticketData.timeSlot
     if (-not $timeSlot) {
-        Write-Warning "Invalid or missing timeSlot in $TicketFile"
+        Write-Warning "Invalid or missing timeSlot in $TicketFile. Ticket JSON: $($ticketJson | ConvertTo-Json -Compress)"
         return $false
     }
 
@@ -124,20 +133,38 @@ function New-Ticket {
     } | ConvertTo-Json -Compress
     $headers = @{ "Authorization" = "Bearer $LICENSE_KEY"; "Content-Type" = "application/json" }
     $response = Invoke-RestMethod -Uri $IssueTicketEndpoint -Method Post -Headers $headers -Body $payload
+    if (-not $response) {
+        Write-Error "Error issuing ticket. No response from server."
+        exit 1
+    }
+    Write-Verbose "Full ticket response: $($response | ConvertTo-Json -Compress)"
     $ticket = $response.ticket
     if (-not $ticket) {
-        Write-Error "Error issuing ticket. Response: $($response | ConvertTo-Json -Compress)"
+        Write-Error "Error issuing ticket. 'ticket' property missing in response: $($response | ConvertTo-Json -Compress)"
         exit 1
     }
     Write-Host "Ticket issued successfully" -ForegroundColor Green
-    return $ticket
+    Write-Verbose "Issued ticket JSON: $($ticket | ConvertTo-Json -Compress)"
+    return $response  # Return the full response to match ticket.json structure
 }
 
 # Function to register ticket as certificate
 function Register-Certificate {
-    param ([string]$TicketJson)
+    param ([PSObject]$Ticket)
     Write-Host "Registering ticket as certificate..." -ForegroundColor Yellow
-    $payload = @{ certificates = @($TicketJson) } | ConvertTo-Json -Compress
+    # Extract just the ticket portion for registration
+    $ticketPortion = $Ticket.ticket
+    if (-not $ticketPortion) {
+        Write-Error "Invalid ticket structure: 'ticket' property missing. Ticket JSON: $($Ticket | ConvertTo-Json -Compress)"
+        exit 1
+    }
+    if (-not $ticketPortion.ticketData) {
+        Write-Error "Invalid ticket structure: 'ticketData' property missing. Ticket JSON: $($Ticket | ConvertTo-Json -Compress)"
+        exit 1
+    }
+    $certificate = @{ ticket = $ticketPortion }
+    $payload = @{ certificates = @($certificate) } | ConvertTo-Json -Compress
+    Write-Verbose "Register payload: $payload"
     $headers = @{ "Authorization" = "Bearer $LICENSE_KEY"; "Content-Type" = "application/json" }
     $response = Invoke-RestMethod -Uri $RegisterCertEndpoint -Method Post -Headers $headers -Body $payload
     if ($response.message -ne "Certificates registered successfully.") {
@@ -155,10 +182,11 @@ try {
     if ($ForceLicense) {
         Write-Host "Force license mode: Checking license validity without overwriting valid ticket" -ForegroundColor Yellow
         $seatId = Get-VacantSeat
-        $ticketJson = New-Ticket -SeatId $seatId
+        $fullTicket = New-Ticket -SeatId $seatId
         if (-not $ticketValid) {
-            $ticketJson | ConvertTo-Json -Compress | Set-Content $TicketFile -Force
-            Register-Certificate -TicketJson $ticketJson
+            # Save the full ticket response to match ticket.json structure
+            $fullTicket | ConvertTo-Json -Compress | Set-Content $TicketFile -Force
+            Register-Certificate -Ticket $fullTicket
             Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
         } else {
             Write-Host "License is valid, keeping existing valid ticket" -ForegroundColor Green
@@ -168,9 +196,9 @@ try {
             Write-Host "Using existing valid ticket" -ForegroundColor Green
         } else {
             $seatId = Get-VacantSeat
-            $ticketJson = New-Ticket -SeatId $seatId
-            $ticketJson | ConvertTo-Json -Compress | Set-Content $TicketFile -Force
-            Register-Certificate -TicketJson $ticketJson
+            $fullTicket = New-Ticket -SeatId $seatId
+            $fullTicket | ConvertTo-Json -Compress | Set-Content $TicketFile -Force
+            Register-Certificate -Ticket $fullTicket
             Write-Host "New ticket saved to $TicketFile" -ForegroundColor Green
         }
     }
