@@ -1,0 +1,19 @@
+<nav class="controls targets" stylist="styleTabList styleNavControl" role="tablist">
+  ${tabs.map((tab, index) => F`${{key:tab.targetId}}
+  <bb-select-tab role=tab 
+    class="${tab.targetId === state.activeTarget ? 'active' : ''}"
+    state="${{
+      tab,
+      index,
+      title: tab.title === 'about:blank' ? 'blank' : tab.title,
+      active: tab.targetId === state.activeTarget
+    }}" >
+  </bb-select-tab>
+  `)}
+  <span class="new" stylist="styleTabSelector" role="button"
+    click=${click => createTab(click)}>
+    <button class=new title="New tab" accesskey="s">
+      <img src="voodoo/assets/icons/plus.svg">
+    </button>
+  </li>
+</nav>

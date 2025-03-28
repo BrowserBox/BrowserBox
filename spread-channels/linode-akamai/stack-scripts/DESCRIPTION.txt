@@ -1,0 +1,63 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          *** BROWSERBOX DEPLOYMENT ZINE ***                
+       <<< ISSUE #1 - MARCH 02, 2025 - xAI EDITION >>>     
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  WELCOME TO THE FUTURE OF SECURE BROWSING, '90S STYLE!
+  -----------------------------------------------
+  Got a Linode? Wanna run BrowserBox - the dope remote
+  browser isolation tool from DOSYAGO/xAI? This StackScript
+  slams it onto your box FAST. Secure web? Check. Zero
+  latency? Check. License key? YOU NEED ONE, fam! Hit up
+  sales@dosaygo.com to grab yours and join the party.
+
+  HOW TO DEPLOY (7 QUICK FIELDS):
+  -----------------------------
+
+    * useremail: Your email - sign here to agree to T&Cs!
+      - Ex: jcitizen@website.net
+      - We won't spam ya, promise.
+
+    * hostname: Your FQDN - point DNS here!
+      - Ex: bb.mydomain.com
+      - No DNS? No dice.
+
+    * token: Login key for https://HOSTNAME:8080/login
+      - Leave blank, we?ll cook one up for ya!
+      - Want your own? Drop it in.
+
+    * install_doc_viewer: PDF viewer? Y/N (takes longer)
+      - Yes/No: Pick "true" or "false" (default: false)
+      - Secure docs FTW.
+
+    * understanding: Ports 8078-8082 + DNS A record
+      - Yes/No: "true" = I?ll handle it (default: true)
+      - Don?t skip this or WebRTC cries.
+
+    * license_key_password: YOUR BROWSERBOX KEY (masked)
+      - Ex: Get it @ sales@dosaygo.com
+      - No key, no play - snag one now!
+
+    * use_docker: Docker or raw install?
+      - Yes/No: "true" = Docker, "false" = raw (default: false)
+      - Docker?s cleaner, raw?s old-school.
+
+  WHAT YOU GET:
+  ------------
+    - BrowserBox Pro slammed onto your Linode.
+    - Ports 8080 + 8078-8082 ready to roll.
+    - Logs + token for easy access.
+    - Works on Ubuntu, Fedora, CentOS, Kali - ALL THE DISTROS!
+
+  PRO TIPS:
+  --------
+    - Open them ports (8078-8082, 8080) or it?s a no-go.
+    - DNS A record to your hostname = must-have.
+    - Check logs at /home/pro/* if ya get stuck.
+
+  READY? DEPLOY THIS sucker + EMAIL sales@dosaygo.com
+  FOR YOUR LICENSE KEY! LET?S BROWSE SECURELY, RETRO STYLE!
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *** END OF LINE - STAY RAD, HACKERS! ***             
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

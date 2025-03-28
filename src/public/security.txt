@@ -1,0 +1,7 @@
+
+    Contact: security@dosaygo.com
+    Acknowledgments: https://github.com/dosyago/vulnerability-reports
+    Preferred-Languages: EN
+    Canonical: https://dosaygo.com/security.txt
+    Policy: mailto:security@dosaygo.com?subject=Please+send+RDP+Policy
+  

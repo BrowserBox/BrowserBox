@@ -1,0 +1,19 @@
+<sg-frame state=${_self} resize>
+  <form onsubmit="event.preventDefault();">
+    <label class=main-label for=search-select>
+      ${_self.message || "Pick one or more items"}
+    </label>
+    <label for=search-select class=box>
+      <ul>${chosen.map(({key, item}) => F`${{key}}
+        <li>
+          <span class=item>${item}</span>
+          <button type=button name=delete value=${key} onclick=Unchoose>X</button>
+        </li>
+      `)}</ul>
+      <input id=search-select list=my-data onchange=Choose type="${_host.type}">
+    </label>
+    <datalist id=my-data>${list.map((item, i) => F`${{key:`data:${i}:${key}`}}
+      <option value="${item}">
+   `)}</datalist>
+  </form>
+</sg-frame>

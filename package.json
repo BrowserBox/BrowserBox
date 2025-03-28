@@ -1,0 +1,132 @@
+{
+  "name": "@browserbox/browserbox",
+  "type": "module",
+  "version": "10.5.0",
+  "description": "BrowserBox CLI - Secure, cross-platform RBI. See dosaygo.com",
+  "main": "./src/server.js",
+  "default": "dist/image.html",
+  "license": "Dosyago-Commercial-License-1.1.1-or-later",
+  "targets": {
+    "main": false,
+    "default": {
+      "publicUrl": "./"
+    }
+  },
+  "bin": {
+    "bbx-install": "./branch-bbx.cjs"
+  },
+  "parcelIgnore": [
+    ".*/bang.js",
+    ".*vanillaview.js",
+    "sw.js",
+    "register_sw.js"
+  ],
+  "pkg": {
+    "scripts": "dist/*.js",
+    "assets": [
+      "dist/**/*"
+    ],
+    "outputPath": "build/"
+  },
+  "scripts": {
+    "compile": "npm run parcel && npm run build && npm run package",
+    "parcel": "node exec.js \"./scripts/parcel.sh\"",
+    "no-x-parcel": "(rm -rf .parcel-cache/ dist/ || :) && (mkdir dist/ || :) && cp -r src/public/* dist/ && rm dist/image.html &&CONFIG_DIR=./config/ parcel build src/public/image.html --config=./config/parcelrc && cp -r src/public/voodoo/node_modules dist/node_modules",
+    "test": "node exec.js \"./scripts/run-test.sh\"",
+    "stop": "node exec.js \"./scripts/stop-test.sh\"",
+    "start-share": "nohup bash ./share-test.sh > $HOME/.vf.nohup.$(date +\"%y_%m_%d_%H_%M\").out &",
+    "start-single": "(node exec.js \"./kill-pm2.sh || :) && bash ./pm2-run.sh\"",
+    "dev": "node-dev --inspect=127.0.0.1:8111 index.js",
+    "devtest": "node exec.js \"./scripts/devtest.sh\"",
+    "bundle": "node exec.js \"./scripts/make_bundle.sh\"",
+    "start": "node exec.js \"./scripts/dstart.sh\"",
+    "docker_start": "node exec.js \"./scripts/docker_start.sh\"",
+    "x64i": "TARGET_ARCH=x64 npm install",
+    "postinstall": "node exec.js \"./scripts/postinstall.sh\"",
+    "init": "node exec.js \"./reinit_after_restart.sh\"",
+    "clean": "node exec.js \"./scripts/clean.sh\"",
+    "lint": "./scripts/gglint.sh",
+    "tsc-server": "tsc --types node --target ES2020 --checkJs --allowJs --outFile typetests/server.js --module System ./src/server.js ./src/decs.d.ts",
+    "tsc-inject": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System ./src/zombie-lord/injections/**/*.js ./src/decs.d.ts",
+    "tsc-public": "tsc --target ES2020 --checkJs --allowJs --outFile typetests/inject.js --module System ./src/public/*.js ./src/decs.d.ts",
+    "tsc-check": "./scripts/tsc-check.sh",
+    "check": "rm -f ./src/public/*bundle*.js && ( npm run lint || : ) && npm run tsc-check",
+    "build": "node exec.js \"./scripts/only_build.sh\"",
+    "package": "npx pkg --compress GZip . && codesign -vvvv --timestamp -s 'Developer ID Application' --force build/bbpro-macos -i com.DOSYAGO.BBPro",
+    "mac-build": "TARGET_ARCH=x64 npm run clean &&TARGET_ARCH=x64 npm i && npm run parcel && npm run pack && npx pkg --compress GZip --targets=x64 .",
+    "package-small": "npx pkg --compress Brotli .",
+    "release": "npm run parcel && npm run build && npm run package",
+    "x-prepublishOnly": "echo 'do not publish this' && fail"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BrowserBox/BrowserBox.git"
+  },
+  "keywords": [
+    "browser",
+    "headless",
+    "automation",
+    "chrome",
+    "viewfinder",
+    "viewfinderjs",
+    "zanj",
+    "browsergap",
+    "interactive-image",
+    "supreme-architect",
+    "oni",
+    "remoteview",
+    "groundcontrol",
+    "chromescreen",
+    "chrome controller"
+  ],
+  "author": "@dosy",
+  "bugs": {
+    "url": "https://github.com/BrowserBox/BrowserBox/issues"
+  },
+  "homepage": "https://github.com/BrowserBox/BrowserBox",
+  "dependencies": {
+    "@chialab/esbuild-plugin-html": "^0.18.2",
+    "@dosyago/rainsum": "^3.7.2",
+    "@noble/ed25519": "^2.2.3",
+    "@roamhq/wrtc": "^0.7.3",
+    "bang.html": "latest",
+    "binary-bliss": "^2.3.0",
+    "body-parser": "latest",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.0.0",
+    "cors": "latest",
+    "entities": "latest",
+    "esbuild": "0.25.1",
+    "esm": "latest",
+    "exit-on-epipe": "latest",
+    "express": "^4.21.0",
+    "express-rate-limit": "^5.5.1",
+    "helmet": "latest",
+    "is-docker": "latest",
+    "multer": "latest",
+    "node-native-ocr": "^0.3.9",
+    "patch-package": "latest",
+    "simple-peer": "latest",
+    "socks-proxy-agent": "latest",
+    "spdy": "latest",
+    "sshpk": "^1.18.0",
+    "terminal-kit": "^3.1.2",
+    "tesseract.js": "^6.0.0",
+    "ws": "latest",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@mapbox/node-pre-gyp": "latest",
+    "@types/body-parser": "latest",
+    "@types/cookie-parser": "latest",
+    "@types/current-git-branch": "latest",
+    "@types/esm": "latest",
+    "@types/form-data": "latest",
+    "@types/is-docker": "latest",
+    "@types/multer": "latest",
+    "@types/node-fetch": "latest",
+    "@types/ws": "latest",
+    "@vertx/core": "latest",
+    "whatwg-fetch": "^3.6.20"
+  }
+}

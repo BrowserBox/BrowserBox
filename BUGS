@@ -1,0 +1,67 @@
+Error when making zombie TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async makeZombie (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/zombie-lord/connection.js:3235:36)
+    at async Connect (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/zombie-lord/connection.js:398:13)
+    at async Object.send (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/zombie-lord/controller.js:398:22)
+    at async file:///Users/XXXXXXXx/test/dist/BrowserBox/src/ws-server.js:1041:62
+    at async handler (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/ws-server.js:1438:13) {
+  [cause]: Error: connect ECONNREFUSED 127.0.0.1:6321
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1634:16) {
+    errno: -61,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '127.0.0.1',
+    port: 6321
+  }
+} { port: 6321 } { noExit: false }
+Error when recovering from error when making zombie TypeError: fetch failed
+    at node:internal/deps/undici/undici:13502:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async makeZombie (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/zombie-lord/connection.js:3610:20)
+    at async Connect (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/zombie-lord/connection.js:398:13)
+    at async Object.send (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/zombie-lord/controller.js:398:22)
+    at async file:///Users/XXXXXXXx/test/dist/BrowserBox/src/ws-server.js:1041:62
+    at async handler (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/ws-server.js:1438:13) {
+  [cause]: Error: connect ECONNREFUSED 127.0.0.1:6321
+      at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1634:16) {
+    errno: -61,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '127.0.0.1',
+    port: 6321
+  }
+}
+TypeError: Cannot destructure property 'send' of 'connection.zombie' as it is undefined.
+    at Connect (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/zombie-lord/connection.js:538:10)
+    at async Object.send (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/zombie-lord/controller.js:398:22)
+    at async file:///Users/XXXXXXXx/test/dist/BrowserBox/src/ws-server.js:1041:62
+    at async handler (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/ws-server.js:1438:13)
+No target data from chrome. Normally means the VM is paused or Chrome is not open. TypeError: Cannot read properties of undefined (reading 'vmPaused')
+    at Object.send (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/zombie-lord/controller.js:729:21)
+    at async file:///Users/XXXXXXXx/test/dist/BrowserBox/src/ws-server.js:1041:62
+    at async handler (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/ws-server.js:1438:13)
+
+
+
+- first tab on tor seems to not start screen cast.
+  - possibly related, if we set mic to always allow and reload page a few times, tab might 'lock up'. 
+  - i've noticed predicate failed after 4 seconds, connection.forceMeta -- related to this? a race or delay thing?
+
+- disk partition extension func at start of install failing on RHEL
+
+- some deps are not found on rhel (not majro problem)
+
+- install find issue:
+  - no install dir found /pwd in home/ issue, aka
+  - sometimes (trad setup / trad install) w global_install from a $HOME/BrowserBox directory
+  it seems that bbpro or an install process part says: " < some dir > is inside < $HOME > " or maybe " $PWD is inside < HOME > " 
+  and then "No valid install directory found". 
+  This does not occur with the new bbx install however it is likely related to the changes to how we search for directories
+  Likely a little fix in 1 or 2 places will solve this. 
+
+- linger issue:
+  - rhel issues with installing audo conf files and no linger : perm denied
+  - this is also an issue on Deb/Ub: ./scripts/setup_machine.sh: line 119: /usr/local/lib/systemd/logind.conf.d/nokill.conf: Permission denied
+
+

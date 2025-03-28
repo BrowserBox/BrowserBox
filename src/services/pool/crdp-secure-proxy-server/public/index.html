@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<meta name=viewport content=width=device-width,initial-scale=1.0>
+<link rel="icon" href="favicon.svg">
+<title>BB Pro Developer Tools</title>
+<style>
+  :root {
+    font-family: sans-serif;
+    line-height: 1.35;
+  }
+
+  body {
+    margin-top: 1rem;
+  }
+
+  #items a {
+    display: inline-block;
+    background: white;
+    color: initial;
+    padding: 2px 0.25rem 1px;
+    text-decoration: none;
+    border-radius: 0.25rem;
+  }
+
+  cite, small {
+    display: block;
+  }
+
+  footer, small {
+    font-size: smaller;
+  }
+
+  ul {
+    margin: 1.5rem 0;
+    padding-left: 1.5rem;
+    color: lightcyan;
+  }
+
+  li {
+    margin: 0.25rem 0;
+  }
+
+  summary::marker {
+    color: darkturquoise;
+  }
+
+  summary {
+    font-weight: normal;
+    cursor: default;
+    background: white;
+  }
+
+
+  :root {
+    font-size: smaller;
+  }
+  input, button, select, textarea, [contenteditable] {
+    font-family: system-ui, Arial, Helvetica, sans-serif, monospace, system;
+    border: 0;
+    background: white;
+  }
+
+  button {
+    border-radius: 0.2rem;
+    padding: 0.1rem 0.25rem 0.25rem 0.25rem;
+    margin-left: 0.5rem;
+  }
+
+  details {
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: .5em .5em 0;
+    background: lightcyan;
+  }
+
+  summary {
+    border-radius: 0.25rem;
+    font-weight: bold;
+    margin: -.5em -.5em 0;
+    padding: .5em;
+    margin-left: 2px;
+  }
+
+  details[open] {
+    padding: .5em;
+  }
+  footer {
+    margin-top: 1rem;
+  }
+</style>
+<script>
+  const fetchjson = (url) => fetch(url).then(r => r.json());
+
+  function loadData() {
+    const getList = fetchjson("/json/list");
+    const getVersion = fetchjson('/json/version');
+    Promise.all([getList, getVersion]).then(parseResults);
+  }
+
+  function parseResults([listData, versionData]){
+    const version = versionData['WebKit-Version'];
+    const hash = version.match(/\s\(@(\b[0-9a-f]{5,40}\b)/)[1];
+    listData.forEach(item => appendItem(item, hash));
+  }
+
+  function appendItem(item, hash) {
+    let link;
+    if (item.devtoolsFrontendUrl) {
+      link = document.createElement("a");
+      link.href = `https://${location.host}${item.devtoolsFrontendUrl}&remoteFrontend=true`;
+      link.target = "_blank";
+      link.title = item.title;
+    } else {
+      link = document.createElement("div");
+      link.title = "The tab already has active debugging session";
+    }
+
+    var text = document.createElement("span");
+    if (item.title)
+      text.textContent = item.title;
+    else
+      text.textContent = "(untitled tab)";
+    if (item.faviconUrl)
+      text.style.cssText = "background-image:url(" + item.faviconUrl + ")";
+    link.appendChild(text);
+
+    var p = document.createElement("li");
+    p.appendChild(link);
+
+    document.getElementById("items").appendChild(p);
+  }
+</script>
+<body onload='loadData()'>
+  <button onclick='location.reload();'>
+    Refresh tab list
+  </button>
+  <ul id='items'></ul>
+  <footer>
+    <cite>
+      <details>
+        <summary>Legal</summary>
+        <small>
+          Made with
+          <a href=https://github.com/ChromeDevTools/devtools-frontend>devtools-frontend</a> 
+          by the power of 
+          <a href=https://opensource.org/licenses/BSD-3-Clause>BSD-3-Clause</a>.
+          BB Pro Developer Tools has no 
+          affiliation or endorsement expressed or implied with 
+          Google, nor with Chrome, ChromeDevTools or their respective authors.
+          <a href=/devtools/LICENSE.txt>Read devtools-frontend LICENSE</a>
+        </small>
+      </details>
+    </cite>
+  </footer>
+</body>

@@ -1,0 +1,6 @@
+@import url("themes/blank.css");
+
+span.tab-selector {
+  font-size: 1rem;  
+  padding-left: 0.2em;
+}

@@ -1,0 +1,124 @@
+
+/* main theme */
+:root {
+  --font: sans-serif;
+  --lh: 1.35;                       /* line height */
+  --accent: darkturquoise;
+  --br: 0.5em;                     /* border radius */
+}
+
+body {
+  margin: 0 auto;
+  max-width: 62%;
+}
+
+/* color scheme dark / light overrides */
+  :root {
+    --bg: white;
+    --fg: black;
+    --hl: var(--accent);
+    --bg-accent-sub: lightslategray;
+    --bg-accent: silver;
+    --bg-accent-super: whitesmoke;
+  }
+  @media screen and (prefers-color-scheme:light) {
+    :root {
+      --bg: white;
+      --fg: black;
+      --hl: var(--accent);
+      --bg-accent-sub: lightslategray;
+      --bg-accent: silver;
+      --bg-accent-super: whitesmoke;
+    }
+  }
+  @media screen and (prefers-color-scheme:dark) {
+    :root {
+      --bg: black;
+      --fg: white;
+      --hl: var(--accent);
+      --bg-accent-sub: lightgray;
+      --bg-accent: lightslategray;
+      --bg-accent-super: darkslategray;
+    }
+  }
+
+/* basic overrides */
+  :root {
+  }
+
+  :root, input, button, select, textarea {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+  }
+
+  input, button, select, textarea {
+    border-radius: var(--br);
+    border-style: solid;
+    border-width: medium;
+    border-color: transparent;
+    background-color: var(--bg-accent);
+    margin: 0.25em 0.5px;
+    padding: 0.5em 1.25em;
+  }
+
+  input, button, select, textarea, a, span, label, legend {
+    vertical-align: bottom;
+  }
+
+  button, input[type="button"], input[type="reset"], input[type="submit"] {
+    background: var(--accent);
+    color: var(--bg);
+    cursor: pointer;
+  }
+
+  :is(input, select, textarea)::placeholder {
+    color: var(--bg-accent-sub);
+  }
+
+/* animation / state overrides */
+
+  input, button, select, textarea {
+    transition: all ease-in-out 0.1s;
+  }
+
+  :is(input, textarea, select):not([type="button"]):not([type="reset"]):not([type="submit"]):active, 
+  :is(input, textarea, select):not([type="button"]):not([type="reset"]):not([type="submit"]):focus {
+    background: var(--bg-accent-super);
+  }
+
+  button, input[type="button"], input[type="reset"], input[type="submit"],
+  :is(input, textarea, select):active, 
+  :is(input, textarea, select):focus {
+    border-color: var(--accent);  
+    outline: none;
+  }
+
+  :is(button, input[type="button"], input[type="reset"], input[type="submit"]):not([disabled]):hover {
+    filter: brightness(1.2);
+  }
+
+  :is(button, input[type="button"], input[type="reset"], input[type="submit"]):not([disabled]):hover {
+    filter: brightness(1.2);
+  }
+
+/* special stuff */
+  /* search box magnifying glass */
+
+  /* disabled controls "deny" cursor */
+    [disabled] {
+      cursor: not-allowed;
+    }
+
+/* note */
+  /* details */
+    /* commented out stuff that seems to do nothing */
+    /* (or nothing extra to the above) */
+    /* (or nothing that I like) */
+    /* but which I wrote anyway */
+  /* 
+    :root, input, button, select, textarea,
+    p, label, legend, a, a:hover, a:visited, a:link {
+      line-height: var(--lh);
+    }
+  */

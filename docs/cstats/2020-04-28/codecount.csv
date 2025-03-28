@@ -1,0 +1,164 @@
+language,filename,blank,comment,code,"github.com/AlDanial/cloc v 1.70  T=0.82 s (197.7 files/s, 67609.4 lines/s)"
+JavaScript,./public/bundle_start_i.js,1514,439,9635
+JavaScript,./public/bundle_start.js,1579,411,9629
+JavaScript,./public/meta_bundle_i.js,1516,645,6689
+JavaScript,./public/meta_bundle.js,1818,599,6679
+JavaScript,./public/plugins/appminifier/am_bundle.js,197,119,958
+JavaScript,./public/plugins/appminifier/am_start_i.js,197,119,954
+JavaScript,./plugins/appminifier/injections.js,48,17,596
+JavaScript,./endbacker/server.js,64,6,563
+JavaScript,./public/plugins/appminifier/translateAppminifierCRDP.js,14,22,510
+JavaScript,./zombie-lord/connection.js,39,17,489
+JavaScript,./public/voodoo/src/styles.js,81,1,487
+JavaScript,./public/voodoo/src/constructor.js,78,31,461
+JavaScript,./public/plugins/demo/translateAppminifierCRDP.js,13,9,431
+JavaScript,./public/voodoo/src/eventQueue.js,34,16,412
+JavaScript,./public/translateVoodooCRDP.js,11,8,370
+JavaScript,./public/plugins/appminifier/listen.js,36,11,283
+HTML,./endbacker/dosylogo/index.html,7,0,261
+JavaScript,./public/kbd.js,0,0,251
+JavaScript,./public/plugins/appminifier/treeUpdate.js,19,4,222
+JavaScript,./zombie-lord/injections/pageContext/botDetectionEvasions.js,22,31,183
+JavaScript,./public/voodoo/src/view.js,20,13,178
+JavaScript,./public/voodoo/src/transformEvent.js,15,8,178
+JavaScript,./public/voodoo/src/subviews/controls.js,14,16,163
+JavaScript,./ws-server.js,23,2,152
+CSS,./public/style.css,34,5,136
+CSS,./public/plugins/appminifier/styles/oldstyle.css,34,11,130
+JavaScript,./zombie-lord/controller.js,10,4,125
+CSS,./endbacker/views/styles/old-styles.css,27,0,125
+JavaScript,./endbacker/interface/auth.js,18,0,107
+CSS,./public/plugins/demo/styles/styletidyup.css,27,2,104
+JavaScript,./public/voodoo/src/handlers/demo.js,6,0,101
+CSS,./endbacker/views/styles/styles.css,24,2,97
+JavaScript,./public/plugins/appminifier/createListener.js,3,9,97
+JavaScript,./public/plugins/demo/createListener.js,2,2,95
+JavaScript,./public/serviceWorker.js,26,4,91
+JavaScript,./public/plugins/demo/treeUpdate.js,6,9,90
+JavaScript,./endbacker/views/login.js,4,0,88
+JavaScript,./endbacker/views/subscribe.js,3,0,87
+JavaScript,./endbacker/views/landing.js,6,0,86
+JavaScript,./public/voodoo/src/subviews/aux.js,16,3,85
+JavaScript,./endbacker/interface/users.js,25,0,80
+JavaScript,./zombie-lord/adblocking/blockAds.js,9,6,79
+JavaScript,./endbacker/interface/subscriptions.js,22,0,79
+JavaScript,./server.js,12,6,76
+CSS,./public/plugins/demo/styles/basic.css,12,0,70
+JavaScript,./zombie-lord/launcher.js,8,4,70
+JavaScript,./public/plugins/appminifier/install.js,12,8,65
+JavaScript,./public/meta_bundle_ii.js,16,2,64
+JavaScript,./public/voodoo/src/subviews/omniBox.js,5,1,62
+JavaScript,./zombie-lord/injections/keysCanInput.js,9,9,56
+JavaScript,./spdy-server.js,17,0,55
+JavaScript,./zombie-lord/screenShots.js,8,3,55
+JavaScript,./zombie-lord/injections/selectDropdownEvents.js,13,13,55
+JavaScript,./public/voodoo/index.js,10,3,54
+JavaScript,./zombie-lord/injections/favicon.js,5,0,52
+JavaScript,./endbacker/views/logo.js,36,0,52
+JavaScript,./public/voodoo/src/common.js,6,2,48
+JavaScript,./endbacker/views/create.js,2,0,45
+JavaScript,./public/plugins/demo/listen.js,1,1,45
+JavaScript,./public/voodoo/src/subviews/tabList.js,4,0,44
+CSS,./endbacker/views/styles/svg_style.css,0,6,44
+HTML,./public/test.html,2,0,42
+Markdown,./public/voodoo/README.md,17,0,42
+JavaScript,./public/plugins/demo/install.js,9,5,41
+HTML,./endbacker/views/index.html,7,0,40
+CSS,./endbacker/views/styles/basic.css,11,0,39
+JavaScript,./sm.js,6,2,37
+JavaScript,./public/voodoo/src/subviews/pluginsMenu.js,6,1,35
+HTML,./public/index.html,0,0,32
+JavaScript,./endbacker/interface/app.js,11,0,31
+Bourne Shell,./aws-yum-installzanj.sh,2,2,30
+JavaScript,./rollup.config.js,1,0,30
+JavaScript,./public/voodoo/src/handlers/keysCanInput.js,1,0,27
+JavaScript,./public/voodoo/src/handlers/targetInfo.js,2,2,27
+JavaScript,./public/voodoo/src/subviews/bandwidthIndicator.js,3,0,24
+JavaScript,./public/error_catchers.js,7,5,24
+JavaScript,./zombie-lord/injections/textComposition.js,1,4,23
+HTML,./public/canvas.html,1,11,22
+HTML,./public/demo.html,0,0,22
+JavaScript,./common.js,7,0,22
+HTML,./public/bundle.html,0,3,22
+HTML,./public/spdy.html,0,9,22
+HTML,./public/ws.html,0,9,22
+JavaScript,./endbacker/views/profile.js,1,0,21
+JavaScript,./public/plugins/demo/page.js,0,0,20
+JavaScript,./endbacker/create_lw_neon_onetime_products.js,3,0,19
+JavaScript,./public/voodoo/src/handlers/favicon.js,4,0,19
+HTML,./public/plugins/appminifier/index.html,1,6,19
+JavaScript,./public/plugins/demo/programmaticClickIntervention.js,1,0,18
+JavaScript,./endbacker/interface/safe.js,1,0,15
+JavaScript,./public/voodoo/src/handlers/loadingIndicator.js,2,0,15
+JavaScript,./public/voodoo/src/subviews/loadingIndicator.js,4,0,15
+JavaScript,./public/voodoo/src/handlers/selectInput.js,2,2,15
+JavaScript,./zombie-lord/adblocking/blockedResponse.js,3,0,14
+Markdown,./endbacker/README.md,15,0,14
+HTML,./public/plugins/demo/index.html,1,6,14
+JavaScript,./public/start-demo-app.js,2,0,13
+Bourne Shell,./endbacker/scripts/users/create_user1.sh,4,0,13
+JavaScript,./public/prod/ask-before-unload.js,2,0,13
+JavaScript,./endbacker/views/page.js,0,0,12
+JavaScript,./public/start-ext.js,2,0,12
+HTML,./public/plugins/appminifier/bundle.html,1,6,12
+JavaScript,./public/canvas-start-app.js,2,0,12
+JavaScript,./public/plugins/demo/stripe.js,0,0,11
+Ruby,./endbacker/scripts/authin/auth_as.rb,3,0,11
+JavaScript,./public/prod/setup-service-worker.js,2,0,11
+YAML,./endbacker/dosylogo/.gitlab-ci.yml,0,2,11
+Bourne Shell,./endbacker/scripts/users/change_password.sh,4,0,11
+JavaScript,./zombie-lord/adblocking/blocking.js,1,3,10
+Bourne Shell,./zombie-lord/start_chrome.sh,5,9,10
+JavaScript,./endbacker/common.js,5,0,10
+JavaScript,./endbacker/env.js,1,0,10
+Bourne Shell,./lw.sh,3,0,9
+Bourne Shell,./public/voodoo/asset-imports/nhsuk-icons/import.sh,3,0,9
+JavaScript,./public/plugins/demo/doingit.js,0,0,8
+CSS,./public/plugins/demo/styles/darkmode.css,1,0,8
+Markdown,./zombie-lord/README.md,11,0,8
+Bourne Shell,./endbacker/scripts/initiate/start.sh,3,0,8
+Markdown,./README.md,6,0,8
+Bourne Shell,./zombie-lord/monitor.sh,3,0,8
+JavaScript,./public/voodoo/src/subviews/index.js,0,0,7
+Bourne Shell,./endbacker/getlatest.sh,2,0,7
+Bourne Shell,./make_bundle.sh,3,0,7
+CSS,./public/plugins/demo/styles/geocitiesmode.css,1,0,7
+Bourne Shell,./endbacker/scripts/users/create_user2.sh,3,0,7
+JavaScript,./zombie-lord/api.js,2,0,7
+JavaScript,./endbacker/views/index.js,3,0,6
+JavaScript,./public/plugins/appminifier/am_start.js,3,0,6
+CSS,./public/bundle-style.css,1,0,6
+Bourne Shell,./endbacker/scripts/sub/save_sub.sh,3,0,6
+JavaScript,./endbacker/views/scripts/lockbutton.js,1,0,6
+Bourne Shell,./public/voodoo/import-assets.sh,3,0,5
+Bourne Shell,./postinstall.sh,4,0,5
+JavaScript,./public/getAPI.js,0,0,5
+Bourne Shell,./zombie-lord/dlchrome.sh,0,0,5
+JavaScript,./public/meta.js,0,0,5
+Bourne Shell,./endbacker/scripts/users/force_change_password.sh,4,0,5
+Bourne Shell,./endbacker/scripts/users/create_user3.sh,3,0,4
+Bourne Shell,./getstats.sh,2,0,4
+JavaScript,./public/custom_polyfills.js,4,5,4
+JavaScript,./endbacker/interface/index.js,0,0,4
+JavaScript,./endbacker/views/make_index_html.js,2,0,4
+Markdown,./endbacker/dosylogo/README.md,2,0,3
+Bourne Shell,./endbacker/start.sh,2,0,3
+Bourne Shell,./endbacker/scripts/authin/auth_as.rb.install.sh,0,0,2
+Bourne Shell,./test.sh,1,0,2
+Bourne Shell,./installstats.sh,0,0,2
+Bourne Shell,./endbacker/scripts/users/user_exists.sh,1,0,2
+JavaScript,./zombie-lord/index.js,0,0,2
+Markdown,./public/plugins/starmap/README.md,1,0,2
+Markdown,./public/plugins/titor/README.md,1,0,2
+JavaScript,./public/voodoo/src/subviews/faviconDataURL.js,3,0,2
+Bourne Shell,./install_bundle_deps.sh,1,0,2
+Bourne Shell,./global_install_bundle_deps.sh,1,0,2
+Bourne Shell,./endbacker/setenv.sh,1,0,2
+JavaScript,./index.js,0,0,2
+HTML,./public/online-test.html,0,0,1
+HTML,./zombie-lord/injections/pageContext/test.html,0,0,1
+CSS,./public/plugins/demo/styles/dark.css,0,1,1
+JavaScript,./endbacker/api.js,1,0,1
+CSS,./public/plugins/demo/styles/light.css,0,1,1
+Bourne Shell,./zombie-lord/record-audio.sh,1,0,1
+Bourne Shell,./startdevpostclone.sh,0,0,1

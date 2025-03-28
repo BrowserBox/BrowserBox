@@ -1,0 +1,72 @@
+<nav class="controls keyinput aux" stylist="styleNavControl">
+  <!--Text-->
+    <form class=kbd-input submit=${e => e.preventDefault()}>
+      <input tabindex=-1 class=control name=key_input size=5
+        autocomplete=off
+        bond=${[el => state.viewState.keyinput = el, () => state.showIMEUI(true), el => state.detectIMEInput(el, state)]}
+        keypress=${[logitKeyInputEvent, /*pressKey*/]}
+        keydown=${[logitKeyInputEvent,e => state.openKey = e.key, H,limitCursor,e => state.retargetTab(e)]}
+        keyup=${[logitKeyInputEvent,() => state.openKey = '', H,e => state.retargetTab(e)]}
+        focusin=${[() => clearWord(state), () => state.openKey = '', ev => DEBUG.debugFocus && console.log('focusin', ev.target)]}
+        compositionstart=${[logitKeyInputEvent, startComposition, state.showIMEUI]}
+        compositionupdate=${[logitKeyInputEvent,updateComposition]}
+        compositionend=${[logitKeyInputEvent,endComposition]}
+        input=${[logitKeyInputEvent,inputText]}
+        paste=${e => {
+          inputText({type:'paste',data:e.clipboardData.getData('Text')});
+        }}
+        focusout=${[state.hideIMEUI, el => DEBUG.debugFocus && console.log('focusout/blur', el.target)]}
+        >
+      <textarea tabindex=-1 class=control name=textarea_input cols=5 rows=1
+        autocomplete=off
+        bond=${[el => state.viewState.textarea = el, el => state.detectIMEInput(el, state)]}
+        keypress=${[logitKeyInputEvent, /*pressKey*/]}
+        keydown=${[logitKeyInputEvent,e => state.openKey = e.key, H,limitCursor, e => state.retargetTab(e)]}
+        keyup=${[logitKeyInputEvent,() => state.openKey = '', H,e => state.retargetTab(e)]}
+        focusin=${[() => clearWord(state), () => state.openKey = '', el => DEBUG.debugFocus && console.log('focusin', el.target)]}
+        compositionstart=${[logitKeyInputEvent,startComposition, state.showIMEUI]}
+        compositionupdate=${[logitKeyInputEvent,updateComposition]}
+        compositionend=${[logitKeyInputEvent,endComposition]}
+        input=${[logitKeyInputEvent,inputText]}
+        paste=${e => {
+          inputText({type:'paste',data:e.clipboardData.getData('Text')});
+        }}
+        focusout=${[state.hideIMEUI, el => DEBUG.debugFocus && console.log('focusout/blur', el.target)]}
+        ></textarea>
+    </form>
+</nav>
+${state.chromeUI ? F`
+    <div class=ctrl>
+      <nav class="controls history aux" stylist="styleNavControl">
+        <!--History-->
+          <form submit=${e => {
+            DEBUG.debugHistory && console.log(`history event submit`, e);
+            H({ synthetic: true,
+              type: 'history',
+              event: e
+            });
+          }} click=${[e => DEBUG.debugHistory && console.log('history event', e), saveClick]} stylist="styleHistoryForm">
+            <button ${disabled() ? 'disabled' : ''} name=history_action title="${
+              disabled() ? '(Back) Open a tab first' : 'Back in History'
+            }" value=back class=back>
+              <img src="voodoo/assets/icons/arrow-left.svg">
+            </button>
+            <button ${disabled() ? 'disabled' : ''} name=history_action title="${
+              disabled() ? '(Forward) Open a tab first' : 'Forward in History'
+            }" value=forward class=forward>
+              <img src="voodoo/assets/icons/arrow-right.svg">
+            </button>
+            ${(() => {
+              DEBUG.debugHistory && console.log(`History controls rendered`); 
+            })()}
+          </form>
+      </nav>
+      <bb-omni-box state=bbpro ></bb-omni-box>
+      ${DEBUG.extensionsAssemble ? F`<bb-extensions-button state=bbpro></bb-extensions-button>` : F`<!-- bb extensions button -->`}
+      ${DEBUG.clientsCanResetViewport ? F`<bb-resize-button state=bbpro></bb-resize-button>` : F`<!-- resize viewport button -->`}
+      ${CONFIG.settingsButton ? F`<bb-settings-button state=bbpro></bb-settings-button>` : F`<!-- settings button -->`}
+    </div>
+  ` 
+  : 
+  F`<!-- visible controls -->`
+}

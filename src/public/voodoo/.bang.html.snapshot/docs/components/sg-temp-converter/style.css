@@ -1,0 +1,31 @@
+.box {
+  display: flex;
+  align-items: baseline;
+  justify-content: stretch;
+  padding: 0 0.5rem;
+  flex-wrap: wrap;
+}
+
+.box label {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  max-width: calc(calc(100% - 1.5rem) / 2);
+  justify-content: space-around;
+  flex-shrink: 1;
+}
+
+.box span.relation {
+  min-width: 2rem;
+  padding: 0 0.25rem;
+  flex-grow: 1;
+  text-align: center;
+}
+
+.box label input {
+  max-width: 85%;
+  width: 15ex;
+  margin-right: 0.5rem;
+  text-align: right;
+  letter-spacing: 1px;
+}

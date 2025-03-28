@@ -1,0 +1,18 @@
+:root {
+  background: darkturquoise;
+  font-family: system-ui, sans-serif;
+}
+.step1, .step2 {
+  display: none;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+form, p {
+  max-width: 61.8vw;
+  text-align: center;
+}

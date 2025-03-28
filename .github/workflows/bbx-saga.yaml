@@ -1,0 +1,183 @@
+name: bbx Saga Test Suite
+
+on:
+  pull_request:
+    types: [synchronize, opened, reopened]
+    branches: [main]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.repository }}-bbx-saga
+  cancel-in-progress: true
+
+jobs:
+  build:
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        container_image: 
+          - ''  # No container (native runner)
+          - 'dokken/centos-stream-9'
+          - 'debian:latest'
+        exclude:
+          - os: macos-latest
+            container_image: 'dokken/centos-stream-9'
+          - os: macos-latest
+            container_image: 'debian:latest'
+          - os: windows-latest
+            container_image: 'dokken/centos-stream-9'
+          - os: windows-latest
+            container_image: 'debian:latest'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    container: ${{ matrix.container_image }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if actor is repository owner or me
+        shell: bash
+        run: |
+          if [[ "${{ github.actor }}" != "o0101" ]]; then
+            echo "Actor is not me. Not running CI"
+            exit 1
+          fi
+
+      - name: Prepare test script (Unix)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: chmod +x tests/test-bbx.sh
+
+      - name: Execute BBX Test Saga (Unix)
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        env:
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+          INSTALL_DOC_VIEWER: "false"
+        run: |
+          [ -z "$BBX_HOSTNAME" ] && echo "BBX_HOSTNAME is not set" || echo "BBX_HOSTNAME is set"
+          [ -z "$EMAIL" ] && echo "EMAIL is not set" || echo "EMAIL is set"
+          [ -z "$LICENSE_KEY" ] && echo "LICENSE_KEY is not set" || echo "LICENSE_KEY is set"
+          [ -z "$BBX_TEST_AGREEMENT" ] && echo "BBX_TEST_AGREEMENT is not set" || echo "BBX_TEST_AGREEMENT is set"
+          [ -z "$STATUS_MODE" ] && echo "STATUS_MODE is not set" || echo "STATUS_MODE is set"
+          [ -z "$INSTALL_DOC_VIEWER" ] && echo "INSTALL_DOC_VIEWER is not set" || echo "INSTALL_DOC_VIEWER is set to $INSTALL_DOC_VIEWER"
+          ./tests/test-bbx.sh
+        continue-on-error: false
+
+      - name: Execute BBX Test Saga (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        env:
+          BBX_HOSTNAME: "localhost"
+          EMAIL: "test@example.com"
+          LICENSE_KEY: ${{ secrets.BB_LICENSE_KEY }}
+          BBX_TEST_AGREEMENT: "true"
+          STATUS_MODE: ${{ secrets.STATUS_MODE_KEY }}
+        run: |
+          # Debug variables
+          if (-not $env:BBX_HOSTNAME) { Write-Host "BBX_HOSTNAME is not set" } else { Write-Host "BBX_HOSTNAME is set" }
+          if (-not $env:EMAIL) { Write-Host "EMAIL is not set" } else { Write-Host "EMAIL is set" }
+          if (-not $env:LICENSE_KEY) { Write-Host "LICENSE_KEY is not set" } else { Write-Host "LICENSE_KEY is set" }
+          if (-not $env:BBX_TEST_AGREEMENT) { Write-Host "BBX_TEST_AGREEMENT is not set" } else { Write-Host "BBX_TEST_AGREEMENT is set" }
+          if (-not $env:STATUS_MODE) { Write-Host "STATUS_MODE is not set" } else { Write-Host "STATUS_MODE is set" }
+
+          # Install BrowserBox
+          Invoke-RestMethod -Uri "https://bbx.dosaygo.com/?v=$((Get-Date).Ticks)" -OutFile "install.ps1"
+          .\install.ps1
+          if (-not (Get-Command bbx -ErrorAction SilentlyContinue)) {
+            Write-Error "bbx not found in PATH after install"
+            exit 1
+          }
+          winget install cURL.cURL --silent
+          if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) {
+            Write-Error "curl.exe not installed"
+            exit 1
+          }
+          Write-Host "curl.exe installed successfully"
+
+          # Setup BrowserBox
+          bbx setup -Hostname "$env:BBX_HOSTNAME" -Email "$env:EMAIL"
+          $loginLink = Get-Content "$env:USERPROFILE\.config\dosyago\bbpro\login.link"
+          Write-Host "Login link: $loginLink"
+
+          # Start BrowserBox
+          bbx run -Verbose
+
+          # Curl with retries (ignore cert errors)
+          Write-Host "Testing URL: $loginLink"
+          $maxRetries = 10
+          $retryCount = 0
+          $success = $false
+          while ($retryCount -lt $maxRetries -and -not $success) {
+            try {
+              $response = curl.exe -k -L "$loginLink" -o NUL -w "%{http_code}"
+              if ($response -eq "200") {
+                Write-Host "Initial connection successful: $response"
+                $success = $true
+              } else {
+                Write-Host "Retry $($retryCount + 1)/$maxRetries failed: HTTP $response"
+              }
+            } catch {
+              Write-Host "Retry $($retryCount + 1)/$maxRetries failed: $_"
+            }
+            if (-not $success) { Start-Sleep -Seconds 5; $retryCount++ }
+          }
+          if (-not $success) {
+            Write-Error "Failed to connect to $loginLink after $maxRetries retries."
+            exit 1
+          }
+
+          # Wait 25 seconds and verify again
+          Write-Host "Waiting 25 seconds to verify link stability..."
+          Start-Sleep -Seconds 25
+          try {
+            $response = curl.exe -k -L "$loginLink" -o NUL -w "%{http_code}"
+            if ($response -eq "200") {
+              Write-Host "Second verification successful: $response"
+            } else {
+              Write-Error "Second verification failed: HTTP $response"
+              exit 1
+            }
+          } catch {
+            Write-Error "Second verification failed after 25s: $_"
+            exit 1
+          }
+
+          # Stop services
+          bbx stop
+
+          # Check no Node processes remain
+          $nodeProcs = Get-Process -Name "browserbox", "browserbox-devtools", "node" -ErrorAction SilentlyContinue
+          if ($nodeProcs) {
+            Write-Error "Node processes still running after stop: $($nodeProcs | Format-List Name, Id | Out-String)"
+          } else {
+            Write-Host "No Node processes remain -- cleanup successful."
+          }
+
+      - name: Cleanup (Unix)
+        if: always() && matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          bbx stop || true
+          sleep 5
+
+      - name: Cleanup (Windows)
+        if: always() && matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          Start-Sleep -Seconds 5
+
+      - name: Setup tmate session on failure
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 5

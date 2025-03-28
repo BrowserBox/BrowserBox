@@ -1,0 +1,74 @@
+:not(:defined), .bang-el:not(.bang-styled) {
+  visibility: hidden;
+}
+
+body > .bang-el:not(.bang-styled)::before,
+[lazy].bang-el:not(.bang-styled)::before {
+  position: relative;
+  top: 0;
+  margin: 1.5rem 0.5rem;
+  display: inline-block;
+  width: fit-content;
+  max-width: 20px;
+  content: "Loading...";
+  background-image: url(https://user-images.githubusercontent.com/22254235/135793966-edd05c8e-777e-41f1-b228-b3c2c1a7949b.gif);
+  background-size: contain;
+  background-repeat: no-repeat;
+  /*
+  background-color: red;
+  color: blue;
+  */
+  color: transparent;
+  visibility: visible;
+}
+
+:host {
+  display: inline-block;
+  position: relative;
+}
+
+button, input, select, label {
+  font: inherit;
+  font-size: smaller;
+  color: inherit;
+}
+
+button {
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+}
+
+button:active {
+  background: linear-gradient(to bottom, lightskyblue, dodgerblue 25%, dodgerblue 75%, lightskyblue);
+  outline: none;
+  border-color: turquoise;
+  cursor: progress;
+}
+
+:disabled {
+  opacity: 0.5;
+}
+
+button, label {
+  user-select: none;
+}
+
+input[type="range"] {
+  --range-dim: 1.5rem;
+  user-select: none;
+  cursor: ew-resize;
+}
+
+::-webkit-slider-runnable-track { 
+  min-height: var(--range-dim);
+}
+
+::-webkit-slider-thumb {
+  appearance: none;
+  min-height: var(--range-dim);
+  min-width: var(--range-dim);
+  background-color: dodgerblue;
+}
+
+

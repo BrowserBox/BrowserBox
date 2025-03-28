@@ -1,0 +1,3 @@
+class BBSelectTab extends Base {
+
+}
