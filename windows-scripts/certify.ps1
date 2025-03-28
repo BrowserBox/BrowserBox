@@ -153,7 +153,7 @@ function Register-Certificate {
     param ([PSObject]$Ticket)
     Write-Host "Registering ticket as certificate..." -ForegroundColor Yellow
     # Extract just the ticket portion for registration
-    $ticketPortion = $Ticket.ticket
+    $ticketPortion = $Ticket
     if (-not $ticketPortion) {
         Write-Error "Invalid ticket structure: 'ticket' property missing. Ticket JSON: $($Ticket | ConvertTo-Json -Compress)"
         exit 1
