@@ -145,7 +145,7 @@ function New-Ticket {
     }
     Write-Host "Ticket issued successfully" -ForegroundColor Green
     Write-Verbose "Issued ticket JSON: $($ticket | ConvertTo-Json -Compress)"
-    return $response  # Return the full response to match ticket.json structure
+    return $ticket  # Return the full response to match ticket.json structure
 }
 
 # Function to register ticket as certificate
