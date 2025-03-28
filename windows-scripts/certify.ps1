@@ -158,11 +158,11 @@ function Register-Certificate {
         Write-Error "Invalid ticket structure: 'ticket' property missing. Ticket JSON: $($Ticket | ConvertTo-Json -Compress)"
         exit 1
     }
-    if (-not $ticketPortion.ticketData) {
+    if (-not $ticketPortion.ticket.ticketData) {
         Write-Error "Invalid ticket structure: 'ticketData' property missing. Ticket JSON: $($Ticket | ConvertTo-Json -Compress)"
         exit 1
     }
-    $certificate = @{ ticket = $ticketPortion }
+    $certificate = $ticketPortion
     $payload = @{ certificates = @($certificate) } | ConvertTo-Json -Compress
     Write-Verbose "Register payload: $payload"
     $headers = @{ "Authorization" = "Bearer $LICENSE_KEY"; "Content-Type" = "application/json" }
