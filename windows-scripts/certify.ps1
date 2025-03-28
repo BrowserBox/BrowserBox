@@ -152,23 +152,17 @@ function New-Ticket {
 function Register-Certificate {
     param ([PSObject]$Ticket)
     Write-Host "Registering ticket as certificate..." -ForegroundColor Yellow
-    # Extract just the ticket portion for registration
-    $ticketPortion = $Ticket
-    if (-not $ticketPortion) {
-        Write-Error "Invalid ticket structure: 'ticket' property missing. Ticket JSON: $($Ticket | ConvertTo-Json -Compress)"
-        exit 1
-    }
-    if (-not $ticketPortion.ticket.ticketData) {
-        Write-Error "Invalid ticket structure: 'ticketData' property missing. Ticket JSON: $($Ticket | ConvertTo-Json -Compress)"
-        exit 1
-    }
-    $certificate = $ticketPortion
-    $payload = @{ certificates = @($certificate) } | ConvertTo-Json -Compress
+    # Use the full ticket JSON as the certificate, unchanged
+    # Serialize and deserialize to ensure proper JSON structure
+    $ticketJson = $Ticket | ConvertTo-Json -Depth 10 -Compress
+    $ticketDeserialized = $ticketJson | ConvertFrom-Json
+    $certificate = $ticketDeserialized
+    $payload = @{ certificates = @($certificate) } | ConvertTo-Json -Depth 10 -Compress
     Write-Verbose "Register payload: $payload"
     $headers = @{ "Authorization" = "Bearer $LICENSE_KEY"; "Content-Type" = "application/json" }
     $response = Invoke-RestMethod -Uri $RegisterCertEndpoint -Method Post -Headers $headers -Body $payload
     if ($response.message -ne "Certificates registered successfully.") {
-        Write-Error "Error registering certificate. Response: $($response | ConvertTo-Json -Compress)"
+        Write-Error "Error registering certificate. Response: $($response | ConvertTo-Json -Depth 10 -Compress)"
         exit 1
     }
     Write-Host "Certificate registered successfully" -ForegroundColor Green
