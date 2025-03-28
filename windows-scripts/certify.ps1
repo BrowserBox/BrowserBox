@@ -151,8 +151,7 @@ function Register-Certificate {
     param ([PSObject]$Ticket)
     Write-Host "Registering ticket as certificate..." -ForegroundColor Yellow
     # Ensure the full ticket is serialized with sufficient depth
-    $certificateJson = $Ticket | ConvertTo-Json -Depth 10 -Compress
-    $payload = @{ certificates = @($certificateJson) } | ConvertTo-Json -Depth 10 -Compress
+    $payload = @{ certificates = @($Ticket) } | ConvertTo-Json -Depth 10 -Compress
     Write-Verbose "Register payload: $payload"
     $headers = @{ "Authorization" = "Bearer $LICENSE_KEY"; "Content-Type" = "application/json" }
     $response = Invoke-RestMethod -Uri $RegisterCertEndpoint -Method Post -Headers $headers -Body $payload
