@@ -131,16 +131,26 @@ if ($LASTEXITCODE -eq 0) {
 }
 if ($Debug) { Read-Host "Extracted ZIP to $tempExtractDir. Press Enter to continue..." }
 
-Write-Host "Moving to $installDir..." -ForegroundColor Cyan
+Write-Host "Mirroring to $installDir using robocopy..." -ForegroundColor Cyan
 $extractedRoot = "$tempExtractDir\BrowserBox-$branch"
 if (Test-Path $extractedRoot) {
-    Get-ChildItem -Path $extractedRoot | Move-Item -Destination $installDir -Force
-    Remove-Item $tempExtractDir -Recurse -Force
+    # Ensure installDir exists
+    if (-not (Test-Path $installDir)) {
+        New-Item -Path $installDir -ItemType Directory -Force | Out-Null
+    }
+    # Use robocopy to mirror the directory structure
+    robocopy $extractedRoot $installDir /MIR /R:5 /W:5 /MT:8 /SL
+    if ($LASTEXITCODE -le 7) {  # robocopy exit codes 0-7 indicate success
+        Write-Host "Successfully mirrored files to $installDir" -ForegroundColor Green
+        Remove-Item $tempExtractDir -Recurse -Force
+    } else {
+        Write-Error "robocopy failed with exit code $LASTEXITCODE!"
+    }
 } else {
     Write-Warning "Expected $extractedRoot not found after extraction!"
 }
 Remove-Item "$tempZip"
-if ($Debug) { Read-Host "Moved contents to $installDir and cleaned up temp files. Press Enter to continue..." }
+if ($Debug) { Read-Host "Mirrored contents to $installDir and cleaned up temp files. Press Enter to continue..." }
 
 # Prepare step
 $prepareScript = "$bbxDir\prepare.ps1"
