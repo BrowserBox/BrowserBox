@@ -36,7 +36,7 @@ if (Test-Path $TestEnvFile) {
 # Check for required license key (env var takes precedence over config)
 if (-not $env:LICENSE_KEY -and -not $Config["LICENSE_KEY"]) {
     Write-Error "LICENSE_KEY environment variable or config value in $TestEnvFile is not set."
-    exit 1
+    throw "LICENSE Error"
 }
 $LICENSE_KEY = if ($env:LICENSE_KEY) { $env:LICENSE_KEY } else { $Config["LICENSE_KEY"] }
 
@@ -113,7 +113,7 @@ function Get-VacantSeat {
     $seat = $response.vacantSeat
     if (-not $seat) {
         Write-Error "No vacant seat available. Response: $($response | ConvertTo-Json -Compress)"
-        exit 1
+        throw "SEAT Error"
     }
     Write-Host "Obtained seat: $seat" -ForegroundColor Green
     return $seat
@@ -135,13 +135,13 @@ function New-Ticket {
     $response = Invoke-RestMethod -Uri $IssueTicketEndpoint -Method Post -Headers $headers -Body $payload
     if (-not $response) {
         Write-Error "Error issuing ticket. No response from server."
-        exit 1
+        throw "SERVER Error"
     }
     Write-Verbose "Full ticket response: $($response | ConvertTo-Json -Compress)"
     $ticket = $response.ticket
     if (-not $ticket) {
         Write-Error "Error issuing ticket. 'ticket' property missing in response: $($response | ConvertTo-Json -Compress)"
-        exit 1
+        throw "TICKET Error"
     }
     Write-Host "Ticket issued successfully" -ForegroundColor Green
     Write-Verbose "Issued ticket JSON: $($ticket | ConvertTo-Json -Compress)"
@@ -163,7 +163,7 @@ function Register-Certificate {
     $response = Invoke-RestMethod -Uri $RegisterCertEndpoint -Method Post -Headers $headers -Body $payload
     if ($response.message -ne "Certificates registered successfully.") {
         Write-Error "Error registering certificate. Response: $($response | ConvertTo-Json -Depth 10 -Compress)"
-        exit 1
+        throw "REGISTERING Error"
     }
     Write-Host "Certificate registered successfully" -ForegroundColor Green
 }
@@ -202,5 +202,5 @@ try {
     Write-Host "Certification complete." -ForegroundColor Green
 } catch {
     Write-Error "An error occurred during certification: $_"
-    exit 1
+    throw "CERTIFICATION Error"
 }

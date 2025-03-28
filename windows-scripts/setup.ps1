@@ -77,7 +77,7 @@ function Wait-ForDnsResolution {
         }
     }
     Write-Error "Hostname $Hostname did not resolve after $maxAttempts attempts. Please set up DNS records and try again."
-    exit 1
+    throw "DNS Error"
 }
 
 function Open-FirewallPort {
@@ -93,7 +93,7 @@ function Test-PortFree {
     param ([int]$Port)
     if ($Port -lt 4024 -or $Port -gt 65533) {
         Write-Error "Invalid port $Port. Must be between 4024 and 65533."
-        exit 1
+        throw "PORT Error"
     }
     try {
         $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Any, $Port)
@@ -155,7 +155,7 @@ function Generate-Certificates {
         & mkcert -cert-file $certFile -key-file $keyFile $Hostname localhost 127.0.0.1
         if ($LASTEXITCODE -ne 0) {
             Write-Error "mkcert failed to generate certificates for $Hostname."
-            exit 1
+            throw "CERTIFICATE Error"
         }
     } else {
         if (-not $Email) {
@@ -163,7 +163,7 @@ function Generate-Certificates {
             $Email = Read-Host "Enter email address"
             if (-not $Email) {
                 Write-Error "Email is required for non-local hostnames with certbot."
-                exit 1
+                throw "EMAIL Error"
             }
         }
         Write-Host "Non-local hostname detected ($Hostname). Waiting for DNS resolution..." -ForegroundColor Cyan
@@ -172,7 +172,7 @@ function Generate-Certificates {
         & certbot certonly --standalone -d $Hostname --agree-tos -m $Email --no-eff-email --non-interactive --cert-name browserbox
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Certbot failed to generate certificates for $Hostname. Ensure DNS is set up and port 80 is free."
-            exit 1
+            throw "CERTBOT Error"
         }
         $certbotCert = "C:\Certbot\live\browserbox\fullchain.pem"
         $certbotKey = "C:\Certbot\live\browserbox\privkey.pem"
@@ -200,7 +200,7 @@ try {
     Write-Host "Port: $Port, PortInt: $PortInt" -ForegroundColor Cyan  # Debug output
 } catch {
     Write-Error "Failed to convert Port to integer: $_"
-    exit 1
+    throw "PORT Error"
 }
 
 # Check port range and calculate derived ports safely
@@ -212,13 +212,13 @@ if (($PortInt - 2) -ge $minPort -and ($PortInt + 1) -le $maxPort) {
     Write-Host "Ports to check: $portsToCheck" -ForegroundColor Cyan  # Debug output
 } else {
     Write-Error "Port calculations would result in invalid ports outside range $minPort-$maxPort. Adjust the main port ($PortInt)."
-    exit 1
+    throw "PORT Error"
 }
 
 foreach ($p in $portsToCheck) {
     if (-not (Test-PortFree $p)) {
         Write-Error "Port $p is already in use or invalid."
-        exit 1
+        throw "PORT Error"
     }
     Open-FirewallPort $p
 }

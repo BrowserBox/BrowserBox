@@ -8,6 +8,8 @@ param (
 )
 
 # Define paths
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$certifyScriptPath = Join-Path $scriptDir "certify.ps1"
 $installDir = "C:\Program Files\browserbox"
 $configDir = "$env:USERPROFILE\.config\dosyago\bbpro"
 $envFile = "$configDir\test.env"
@@ -20,7 +22,7 @@ Write-Verbose "logDir: $logDir"
 # Check if configuration file exists
 if (-not (Test-Path $envFile)) {
     Write-Error "Configuration file not found at $envFile. Please run 'bbx setup' first."
-    exit 1
+    throw "SETUP Error"
 }
 Write-Verbose "envFile exists"
 
@@ -41,6 +43,9 @@ Write-Verbose "mainPidFile: $mainPidFile"
 Write-Verbose "devtoolsOutLog: $devtoolsOutLog"
 Write-Verbose "devtoolsErrLog: $devtoolsErrLog"
 Write-Verbose "devtoolsPidFile: $devtoolsPidFile"
+
+# Run certify to check license
+& $certifyScriptPath
 
 # Load environment variables from test.env
 Write-Verbose "Loading env vars from $envFile"
@@ -65,7 +70,7 @@ $requiredVars = @("APP_PORT", "COOKIE_VALUE", "LOGIN_TOKEN", "DEVTOOLS_PORT")
 foreach ($var in $requiredVars) {
     if (-not (Get-Item "env:$var" -ErrorAction SilentlyContinue)) {
         Write-Error "Required environment variable $var not found in $envFile."
-        exit 1
+        throw "SETUP Error"
     }
     Write-Verbose "$var validated"
 }

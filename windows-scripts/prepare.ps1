@@ -10,13 +10,13 @@ Write-Host "Preparing BrowserBox..." -ForegroundColor Cyan
 # Check if in installDir
 if (-not (Test-Path $installDir)) {
     Write-Error "BrowserBox install directory ($installDir) not found! Run 'bbx install' first."
-    exit 1
+    return
 }
 
 # Ensure npm is available
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     Write-Error "npm not found! Ensure Node.js is installed."
-    exit 1
+    return
 }
 
 # we don't need pm2 on windows right now as we just handle it ourselves (tho no restarts like pm2)
@@ -47,7 +47,7 @@ if (Test-Path "package.json") {
     & npm i
     if ($LASTEXITCODE -ne 0) {
         Write-Error "npm install failed in $installDir!"
-        exit 1
+        return
     }
     & npm audit fix
     & npm i --save-exact esbuild@latest

@@ -15,7 +15,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     )
     Start-Process powershell -Verb RunAs -ArgumentList $arguments
     Start-Sleep -Seconds 2
-    exit
+    return
 }
 
 Write-Host "Running as Administrator." -ForegroundColor Green
@@ -127,7 +127,7 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "Extraction completed successfully." -ForegroundColor Green
 } else {
     Write-Error "Extraction failed with exit code $LASTEXITCODE!"
-    return
+    throw "INSTALL Error"
 }
 if ($Debug) { Read-Host "Extracted ZIP to $tempExtractDir. Press Enter to continue..." }
 
@@ -204,6 +204,7 @@ if (Test-Path $bbxPath) {
         & powershell -NoProfile -ExecutionPolicy Bypass -File "$($foundBbx.FullName)" --help
     } else {
         Write-Error "bbx.ps1 not found anywhere in $installDir! Check ZIP structure for branch '$branch'."
+        throw "INSTALL Error"
     }
 }
 if ($Debug) { Read-Host "Ran 'bbx --help' (or tried to). Press Enter to finish..." }

@@ -14,6 +14,7 @@ $commands = @{
     "uninstall" = "uninstall.ps1"
     "setup"     = "setup.ps1"
     "run"       = "start.ps1"
+    "certify"   = "certify.ps1"
     "stop"      = "stop.ps1"
 }
 
@@ -33,7 +34,7 @@ function Show-Help {
 if (-not $Command -or $Command -eq "--help") {
     Write-Verbose "No command or --help specified—showing help"
     Show-Help
-    exit 0
+    return
 }
 
 if ($commands.ContainsKey($Command)) {
@@ -72,10 +73,10 @@ if ($commands.ContainsKey($Command)) {
             Write-Host "Try running 'irm bbx.dosaygo.com | iex' first." -ForegroundColor Yellow 
         }
         Show-Help
-        exit 1
+        throw "BBX Error"
     }
 } else {
     Write-Error "Unknown command: $Command"
     Show-Help
-    exit 1
+    throw "COMMAND Error"
 }
