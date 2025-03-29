@@ -17,22 +17,14 @@
       const BrowserState = {
         targets: [],
         activeTarget: null,
-        selectedTabIndex: 0 // Add to track current tab selection
+        selectedTabIndex: 0
       };
       const HORIZONTAL_COMPRESSION = 1.0;
       const VERTICAL_COMPRESSION = 1.0;
-      const LINE_SHIFT = 1;
       const DEBOUNCE_DELAY = 100;
       const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
       const LOG_FILE = 'cdp-log.txt';
       const args = process.argv.slice(2);
-      const CONFIG = {
-        useTextByElementGrouping: true,
-        useTextGestaltGrouping: false,
-        yThreshold: 10,
-        xThreshold: 50,
-        GAP_SIZE: 1,
-      };
 
       let socket;
       let cleanup;
@@ -88,7 +80,7 @@
 
       DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
       const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
-      sessionId = newSessionId; // Update global sessionId
+      sessionId = newSessionId;
       DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
 
       const stop = await printTextLayoutToTerminal({ send, sessionId, onTabSwitch: selectTabAndRender });
@@ -108,14 +100,12 @@
         await send('Target.setDiscoverTargets', { discover: true });
         await send('Target.setAutoAttach', { autoAttac: true, waitForDebuggerOnStart: false, flatten: true });
 
-        // If no targets exist, create a new one
         if (targets.length === 0) {
           const { targetId } = await connection.send('Target.createTarget', { url: 'about:blank' });
           const newTarget = { targetId, title: 'New Tab', url: 'about:blank', type: 'page' };
-          targets.push(newTarget); // Add the new target to the list
+          targets.push(newTarget);
         }
 
-        // Initialize TerminalBrowser
         browser = new TerminalBrowser({
           tabWidth: Math.round(Math.max(15, terminal.width / 3)),
           initialTabs: targets.map(t => ({
@@ -124,8 +114,6 @@
           })),
         });
 
-        // Event handlers for TerminalBrowser
-        // In the main logic’s browser initialization:
         browser.on('tabSelected', async (tab) => {
           const index = browser.getTabs().findIndex(t => t.title === tab.title && t.url === tab.url);
           BrowserState.selectedTabIndex = index;
@@ -135,7 +123,6 @@
           await selectTabAndRender();
         });
 
-        // In the main logic’s (async () => { ... }) block, add this to the browser event handlers:
         browser.on('newTabRequested', async (tab) => {
           DEBUG && terminal.cyan(`Creating new remote tab: ${tab.title}\n`);
           try {
@@ -144,9 +131,8 @@
             targets.push(newTarget);
             BrowserState.targets = targets;
 
-            // Add the tab to the TUI
             browser.addTabToUI({ title: newTarget.title, url: newTarget.url });
-            browser.focusedTabIndex = browser.tabs.length - 1; // Focus the new tab
+            browser.focusedTabIndex = browser.tabs.length - 1;
             browser.selectedTabIndex = browser.focusedTabIndex;
             BrowserState.selectedTabIndex = browser.selectedTabIndex;
             BrowserState.activeTarget = newTarget;
@@ -156,13 +142,7 @@
             DEBUG && terminal.red(`Failed to create new tab: ${error.message}\n`);
           }
         });
-        // Update the existing tabAdded handler to avoid duplication (optional):
-        browser.on('tabAdded', (tab) => {
-          DEBUG && terminal.cyan(`Tab added locally: ${tab.title}\n`);
-          // No need to add to targets here; handled in newTabRequested
-        });
 
-        // Update tabClosed to also close the remote target:
         browser.on('tabClosed', async (index) => {
           const targetId = targets[index].targetId;
           targets.splice(index, 1);
@@ -179,6 +159,7 @@
             await selectTabAndRender();
           }
         });
+
         browser.on('navigate', async (url) => {
           const normalizedUrl = normalizeUrl(url);
           DEBUG && terminal.cyan(`Navigating to: ${normalizedUrl}\n`);
@@ -198,13 +179,6 @@
           if (navigated) {
             await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
           }
-        });
-        browser.on('tabAdded', (tab) => {
-          // Placeholder for new tab creation
-          const newTarget = { title: tab.title, url: tab.url, targetId: `temp-${Date.now()}` };
-          targets.push(newTarget);
-          BrowserState.targets = targets;
-          browser.setTab(browser.getTabs().length - 1, { title: tab.title, url: tab.url });
         });
 
         await selectTabAndRender();
@@ -228,8 +202,7 @@
 
   // Helpers
     // Data processing helpers
-      // Define debouncedRefresh at the top level
-      function debounce (func, delay) {
+      function debounce(func, delay) {
         let timeoutId;
         return (...args) => {
           clearTimeout(timeoutId);
@@ -253,14 +226,10 @@
       }
 
       function updateTabData(targetId, title, url) {
-        // Assuming BrowserState.targets holds the list of targets
         const targetIndex = BrowserState.targets.findIndex(t => t.targetId === targetId);
         if (targetIndex !== -1) {
-          // Update the target's title and URL in state
           BrowserState.targets[targetIndex].title = title;
           BrowserState.targets[targetIndex].url = url;
-
-          // Update the corresponding tab in the UI (e.g., TerminalBrowser.tabs)
           if (targetIndex < browser.tabs.length) {
             browser.setTab(targetIndex, { title, url });
           }
@@ -279,8 +248,7 @@
         DEBUG && terminal.cyan('Capturing snapshot...\n');
         const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
         if (!snapshot?.documents?.length) {
-          // throw new Error('No documents in snapshot');
-          return ;
+          return;
         }
         DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
 
@@ -310,6 +278,7 @@
         const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
         const scaleY = baseScaleY * VERTICAL_COMPRESSION;
 
+        // Filter boxes visible in the viewport and assign terminal coordinates
         const visibleBoxes = textLayoutBoxes.filter(box => {
           const boxX = box.boundingBox.x;
           const boxY = box.boundingBox.y;
@@ -320,51 +289,15 @@
           const viewportTop = viewportY;
           const viewportBottom = viewportY + viewportHeight;
           return boxX < viewportRight && boxRight > viewportLeft && boxY < viewportBottom && boxBottom > viewportTop;
-        });
-
-        visibleBoxes.forEach(box => {
+        }).map(box => {
           const adjustedX = box.boundingBox.x - viewportX;
           const adjustedY = box.boundingBox.y - viewportY;
           box.termX = Math.ceil(adjustedX * scaleX);
-          box.termY = Math.ceil(adjustedY * scaleY) + 4;
+          box.termY = Math.ceil(adjustedY * scaleY) + 4; // Offset for tabs/address bar
           box.termWidth = box.text.length;
           box.termHeight = 1;
+          return box;
         });
-
-        // Build the tree structure
-        const allNodeIndices = new Set();
-        for (const box of visibleBoxes) {
-          let currentIdx = box.nodeIndex;
-          while (currentIdx !== -1 && !allNodeIndices.has(currentIdx)) {
-            allNodeIndices.add(currentIdx);
-            currentIdx = nodeToParent.get(currentIdx);
-          }
-        }
-
-        const childrenMap = new Map();
-        for (const nodeIdx of allNodeIndices) {
-          const parentIdx = nodeToParent.get(nodeIdx);
-          if (parentIdx !== -1 && allNodeIndices.has(parentIdx)) {
-            if (!childrenMap.has(parentIdx)) childrenMap.set(parentIdx, []);
-            childrenMap.get(parentIdx).push(nodeIdx);
-          }
-        }
-
-        const textBoxMap = new Map();
-        for (const box of visibleBoxes) {
-          textBoxMap.set(box.nodeIndex, box);
-        }
-
-        // Find root nodes (nodes with no parent in the subtree)
-        const rootNodes = Array.from(allNodeIndices).filter(nodeIdx => {
-          const parentIdx = nodeToParent.get(nodeIdx);
-          return parentIdx === -1 || !allNodeIndices.has(parentIdx);
-        });
-
-        // Perform hierarchical alignment
-        for (const rootNode of rootNodes) {
-          await processNode(rootNode, childrenMap, textBoxMap);
-        }
 
         return {
           visibleBoxes,
@@ -447,7 +380,7 @@
 
           const nodeIndex = layoutToNode.get(layoutIndex);
           const parentIndex = nodeToParent.get(nodeIndex);
-          const backendNodeId = nodes.backendNodeId[nodeIndex]; // Add backendNodeId
+          const backendNodeId = nodes.backendNodeId[nodeIndex];
           const isClickable = nodeIndex !== undefined && isNodeClickable(nodeIndex);
           const ancestorType = getAncestorInfo(nodeIndex, nodes, strings);
 
@@ -460,11 +393,11 @@
             });
           }
 
-          textLayoutBoxes.push({ text, boundingBox, isClickable, parentIndex, ancestorType, backendNodeId, layoutIndex, nodeIndex }); // Add backendNodeId, layoutIndex, nodeIndex
+          textLayoutBoxes.push({ text, boundingBox, isClickable, parentIndex, ancestorType, backendNodeId, layoutIndex, nodeIndex });
           DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y}) | parentIndex: ${parentIndex} | backendNodeId: ${backendNodeId} | isClickable: ${isClickable} | ancestorType: ${ancestorType}\n`);
         }
 
-        return { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes }; // Pass these for handleClick
+        return { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes };
       }
 
       function getAncestorInfo(nodeIndex, nodes, strings) {
@@ -472,33 +405,20 @@
         let path = [];
         while (currentIndex !== -1) {
           if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {
-            DEBUG && debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}, path: ${path.join(' -> ')}`);
+            DEBUG && debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}`);
             return 'normal';
           }
 
           const nodeNameIndex = nodes.nodeName[currentIndex];
           if (typeof nodeNameIndex === 'undefined') {
-            DEBUG && debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}, path: ${path.join(' -> ')}`);
+            DEBUG && debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}`);
             return 'normal';
           }
           const nodeName = strings[nodeNameIndex];
           const attributes = nodes.attributes[currentIndex] || [];
           const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
-          path.push(`${currentIndex}:${nodeName}${isClickable ? '(clickable)' : ''}`);
-
-          // Log attributes for debugging
-          let attrDebug = [];
-          for (let i = 0; i < attributes.length; i += 2) {
-            const keyIndex = attributes[i];
-            const valueIndex = attributes[i + 1];
-            const key = strings[keyIndex];
-            const value = strings[valueIndex];
-            attrDebug.push(`${key}=${value}`);
-          }
-          DEBUG && debugLog(`Node ${currentIndex}: ${nodeName}, clickable: ${isClickable}, attributes: ${attrDebug.join(', ')}`);
 
           if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
-            DEBUG && debugLog(`Classified as button at node ${currentIndex}, path: ${path.join(' -> ')}`);
             return 'button';
           }
 
@@ -512,22 +432,18 @@
             if (key === 'onclick') hasOnclick = true;
           }
           if (nodeName === 'A' && (hasHref || hasOnclick)) {
-            DEBUG && debugLog(`Classified as hyperlink at node ${currentIndex}, path: ${path.join(' -> ')}`);
             return 'hyperlink';
           }
 
           if (isClickable) {
-            DEBUG && debugLog(`Classified as other_clickable at node ${currentIndex}, path: ${path.join(' -> ')}`);
             return 'other_clickable';
           }
 
           currentIndex = nodes.parentIndex[currentIndex];
         }
-        DEBUG && debugLog(`Classified as normal for nodeIndex ${nodeIndex}, path: ${path.join(' -> ')}`);
         return 'normal';
       }
 
-      // Helper to poll for snapshot until text boxes are found (max 4 attempts, 1s intervals)
       async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
@@ -539,30 +455,23 @@
           await sleep(interval);
         }
         DEBUG && terminal.yellow(`Max attempts reached, proceeding with last snapshot.\n`);
-        return await fetchSnapshot({ send, sessionId }); // Return last snapshot even if empty
+        return await fetchSnapshot({ send, sessionId });
       }
 
     // Browser UI
-      // Helper to parse and normalize URLs
       function normalizeUrl(input) {
         const trimmedInput = input.trim();
-        
-        // Check if it looks like a URL (with or without scheme)
         const urlPattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/i;
         if (urlPattern.test(trimmedInput)) {
-          // If it’s a hostname or URL without scheme, add https://
           if (!/^https?:\/\//i.test(trimmedInput)) {
             return `https://${trimmedInput}`;
           }
-          return trimmedInput; // Already has scheme, return as-is
+          return trimmedInput;
         }
-        
-        // Otherwise, treat as search keywords and redirect to DuckDuckGo
         const query = encodeURIComponent(trimmedInput);
         return `https://duckduckgo.com/?q=${query}`;
       }
 
-      // Helper to draw and manage the address bar
       function createAddressBar({ term, send, sessionId, state, refresh }) {
         let currentUrl = BrowserState.activeTarget.url;
         let addressBarActive = false;
@@ -586,12 +495,12 @@
                 DEBUG && term.cyan(`\nNavigating to: ${currentUrl}\n`);
                 try {
                   await send('Page.navigate', { url: currentUrl }, sessionId);
-                  await refresh(); // Refresh after navigation with polling
+                  await refresh();
                 } catch (err) {
                   term.red(`Navigation failed: ${err.message}\n`);
                 }
               } else {
-                refresh(); // Redraw if canceled
+                refresh();
               }
             }
           );
@@ -601,12 +510,11 @@
       }
 
     // Layout calculation and Render helpers
-      // the layout to the terminal
       function renderLayout({ layoutState, renderedBoxes }) {
         if (!layoutState) return;
-        renderBoxes({ ...layoutState, renderedBoxes }); // No clear here, handled in refreshTerminal
+        renderBoxes({ ...layoutState, renderedBoxes });
       }
-      // Adjusted refreshTerminal with polling and debug flags
+
       async function refreshTerminal({ send, sessionId, state, addressBar }) {
         try {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
@@ -623,9 +531,7 @@
             state.nodeToParent = layoutState.nodeToParent;
             state.nodes = layoutState.nodes;
 
-            // Hierarchical alignment is done in prepareLayoutState
             renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
-
             state.isInitialized = true;
             DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
           } else {
@@ -637,21 +543,16 @@
         }
       }
 
-      // Pass 3: Render boxes with truncation
       function renderBoxes(layoutState) {
         const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
-        const usedCoords = new Set();
         renderedBoxes.length = 0;
 
         for (const box of visibleBoxes) {
           const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex } = box;
-          const renderX = Math.max(1, termX + 1);
-          const renderY = Math.max(5, termY + 1);
-          const key = `${renderX},${renderY}`;
+          const renderX = Math.max(1, termX + 1); // Adjust for 1-based terminal indexing
+          const renderY = Math.max(5, termY + 1); // Offset for UI elements
 
           if (renderX > termWidth || renderY > termHeight + 4) continue;
-          if (usedCoords.has(key)) continue;
-          usedCoords.add(key);
 
           const availableWidth = Math.max(0, termWidth - renderX + 1);
           const displayText = text.substring(0, availableWidth);
@@ -668,7 +569,6 @@
             viewportY,
             viewportWidth: layoutState.viewportWidth,
             viewportHeight: layoutState.viewportHeight,
-            originalTermX: termX,
             backendNodeId,
             layoutIndex,
             nodeIndex,
@@ -703,338 +603,41 @@
         }
       }
 
-      async function processNode(nodeIdx, childrenMap, textBoxMap) {
-        const children = childrenMap.get(nodeIdx) || [];
-
-        // Process children first (post-order)
-        for (const childIdx of children) {
-          await processNode(childIdx, childrenMap, textBoxMap);
-        }
-
-        if (textBoxMap.has(nodeIdx)) {
-          // Text box node
-          const textBox = textBoxMap.get(nodeIdx);
-          textBox.termWidth = Math.max(textBox.termWidth, textBox.text.length);
-          textBox.boundingBox = {
-            minX: textBox.termX,
-            minY: textBox.termY,
-            maxX: textBox.termX + textBox.termWidth - 1,
-            maxY: textBox.termY,
-          };
-        } else if (children.length > 0) {
-          // Container node with children
-          const childBoxes = children.map(childIdx => calculateBoundingBox(childIdx, textBoxMap, childrenMap));
-
-          // Sort children by minX for left-to-right alignment
-          const sortedChildren = children.slice().sort((a, b) => {
-            const boxA = childBoxes[children.indexOf(a)];
-            const boxB = childBoxes[children.indexOf(b)];
-            return boxA.minX - boxB.minX;
-          });
-
-          // Perform horizontal alignment
-          for (let i = 1; i < sortedChildren.length; i++) {
-            const prevChild = sortedChildren[i - 1];
-            const currChild = sortedChildren[i];
-            const prevBox = childBoxes[children.indexOf(prevChild)];
-            const currBox = childBoxes[children.indexOf(currChild)];
-
-            // Check if y-ranges overlap
-            if (prevBox.maxY >= currBox.minY && currBox.maxY >= prevBox.minY) {
-              if (currBox.minX <= prevBox.maxX) {
-                const shift = prevBox.maxX + 1 - currBox.minX;
-                shiftNode(currChild, shift, textBoxMap, childrenMap);
-                currBox.minX += shift;
-                currBox.maxX += shift;
-              }
-            }
-          }
-        }
-      }
-
-      function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
-        if (textBoxMap.has(nodeIdx)) {
-          const textBox = textBoxMap.get(nodeIdx);
-          textBox.termX += shift;
-          textBox.boundingBox.minX += shift;
-          textBox.boundingBox.maxX += shift;
-        } else {
-          const children = childrenMap.get(nodeIdx) || [];
-          for (const childIdx of children) {
-            shiftNode(childIdx, shift, textBoxMap, childrenMap);
-          }
-        }
-      }
-
-      function calculateBoundingBox(nodeIdx, textBoxMap, childrenMap) {
-        if (textBoxMap.has(nodeIdx)) {
-          return textBoxMap.get(nodeIdx).boundingBox;
-        }
-        const children = childrenMap.get(nodeIdx) || [];
-        if (children.length === 0) return null; // Should not happen in this context
-        const childBoxes = children.map(childIdx => calculateBoundingBox(childIdx, textBoxMap, childrenMap));
-        return {
-          minX: Math.min(...childBoxes.map(b => b.minX)),
-          minY: Math.min(...childBoxes.map(b => b.minY)),
-          maxX: Math.max(...childBoxes.map(b => b.maxX)),
-          maxY: Math.max(...childBoxes.map(b => b.maxY)),
-        };
-      }
-      // Pass 1: De-conflict groups by column walk
-      function deconflictGroups(layoutState) {
-        const { visibleBoxes, groups, boxToGroup, termWidth, termHeight } = layoutState;
-
-        const boxOverlapsThisPosition = (box, col, row) => {
-          return row === box.termY && col >= box.termX && col < box.termX + box.termWidth;
-        };
-
-        const boxHasLeftEdgeCrossingThisPosition = (box, col, row) => {
-          return row === box.termY && col === box.termX;
-        };
-
-        const setDifference = (setA, setB) => {
-          const diff = new Set(setA);
-          for (const elem of setB) diff.delete(elem);
-          return diff;
-        };
-
-        const moveGroupRightwardBy1Column = (groupId) => {
-          const group = groups[groupId];
-          group.forEach(box => {
-            box.termX += 1;
-            DEBUG && debugLog(`Moved group ${groupId} box "${box.text}" right to termX=${box.termX}`);
-          });
-        };
-
-        const selectMainGroup = (groupIds) => {
-          return groupIds.reduce((minGroupId, groupId) => {
-            const minBox = groups[minGroupId][0];
-            const currBox = groups[groupId][0];
-            const minOriginalX = minBox.termX - (minBox.shiftCount || 0);
-            const currOriginalX = currBox.termX - (currBox.shiftCount || 0);
-            return currOriginalX < minOriginalX ? groupId : minGroupId;
-          });
-        };
-
-        for (let c = 0; c < termWidth; c++) {
-          for (let r = 0; r < termHeight; r++) {
-            const currentBoxes = new Set();
-            const newBoxes = new Set();
-
-            for (const box of visibleBoxes) {
-              if (boxOverlapsThisPosition(box, c, r)) {
-                currentBoxes.add(box);
-              }
-              if (boxHasLeftEdgeCrossingThisPosition(box, c, r)) {
-                newBoxes.add(box);
-              }
-            }
-
-            const oldBoxes = setDifference(currentBoxes, newBoxes);
-            if (oldBoxes.size > 1) {
-              DEBUG && debugLog(`Warning: Multiple old boxes at (${c}, ${r}): ${oldBoxes.size}`);
-            }
-
-            if (oldBoxes.size >= 1) {
-              const newGroupIds = new Set([...newBoxes].map(box => boxToGroup.get(box)));
-              for (const groupId of newGroupIds) {
-                moveGroupRightwardBy1Column(groupId);
-                groups[groupId].forEach(box => box.shiftCount = (box.shiftCount || 0) + 1);
-              }
-            }
-
-            if (newBoxes.size > 1) {
-              const newGroupIds = [...new Set([...newBoxes].map(box => boxToGroup.get(box)))];
-              if (newGroupIds.length > 1) {
-                const mainGroupId = selectMainGroup(newGroupIds);
-                newGroupIds.splice(newGroupIds.indexOf(mainGroupId), 1);
-                for (const groupId of newGroupIds) {
-                  moveGroupRightwardBy1Column(groupId);
-                  groups[groupId].forEach(box => box.shiftCount = (box.shiftCount || 0) + 1);
-                }
-              }
-            }
-          }
-        }
-      }
-      function groupBoxes(visibleBoxes) {
-        let groups = [];
-        const boxToGroup = new Map();
-
-        if (CONFIG.useTextByElementGrouping) {
-          const groupsMap = new Map();
-          for (const box of visibleBoxes) {
-            const groupKey = box.parentIndex !== undefined ? box.parentIndex : `individual_${visibleBoxes.indexOf(box)}`;
-            if (!groupsMap.has(groupKey)) {
-              groupsMap.set(groupKey, []);
-            }
-            groupsMap.get(groupKey).push(box);
-          }
-          groups = Array.from(groupsMap.values());
-        } else if (CONFIG.useTextGestaltGrouping) {
-          const sortedBoxes = visibleBoxes.sort((a, b) => a.boundingBox.y - b.boundingBox.y || a.boundingBox.x - b.boundingBox.x);
-          let currentGroup = [];
-          let lastY = null;
-          let lastX = null;
-          for (const box of sortedBoxes) {
-            if (!currentGroup.length) {
-              currentGroup.push(box);
-            } else {
-              const yDiff = Math.abs(box.boundingBox.y - lastY);
-              const xDiff = Math.abs(box.boundingBox.x - lastX);
-              if (yDiff < CONFIG.yThreshold && xDiff < CONFIG.xThreshold) {
-                currentGroup.push(box);
-              } else {
-                groups.push(currentGroup);
-                currentGroup = [box];
-              }
-            }
-            lastY = box.boundingBox.y;
-            lastX = box.boundingBox.x;
-          }
-          if (currentGroup.length) groups.push(currentGroup);
-        } else {
-          groups = visibleBoxes.map(box => [box]);
-        }
-
-        groups.forEach((group, groupId) => {
-          group.forEach(box => boxToGroup.set(box, groupId));
-        });
-
-        DEBUG && debugLog(`Grouped ${visibleBoxes.length} boxes into ${groups.length} groups`);
-        return { groups, boxToGroup };
-      }
-
     // Interactivity helpers
-      // Adjusted setupEventHandlers to include address bar key
-      // Get the current navigation history for the tab
       async function getNavigationHistory(sessionId) {
         const { currentIndex, entries } = await send('Page.getNavigationHistory', {}, sessionId);
         return { currentIndex, entries };
       }
 
-      // Navigate to the previous history entry (back)
       async function goBack(sessionId) {
         const { currentIndex, entries } = await getNavigationHistory(sessionId);
         if (currentIndex > 0) {
           const previousEntry = entries[currentIndex - 1];
           await send('Page.navigateToHistoryEntry', { entryId: previousEntry.id }, sessionId);
-          return true; // Navigation occurred
+          return true;
         } else {
           console.log('No previous page in history');
-          return false; // No navigation
+          return false;
         }
       }
 
-      // Navigate to the next history entry (forward)
       async function goForward(sessionId) {
         const { currentIndex, entries } = await getNavigationHistory(sessionId);
         if (currentIndex < entries.length - 1) {
           const nextEntry = entries[currentIndex + 1];
           await send('Page.navigateToHistoryEntry', { entryId: nextEntry.id }, sessionId);
-          return true; // Navigation occurred
+          return true;
         } else {
           console.log('No next page in history');
-          return false; // No navigation
+          return false;
         }
-      }
-      function setupEventHandlers({ terminal, send, sessionId, state, refresh, onTabSwitch, addressBar }) {
-        const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
-
-        terminal.on('mouse', async (event, data) => {
-          if (!state.isListening || addressBar.isActive()) return;
-
-          if (event === 'MOUSE_LEFT_BUTTON_PRESSED') {
-            if (!state.isInitialized) {
-              DEBUG && debugLog(`Click ignored: Terminal not yet initialized`);
-              return;
-            }
-            if (y === 1) { // Tab row
-              if (x >= this.term.width - this.NEW_TAB_WIDTH + 1 && x <= this.term.width) {
-                this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
-                return;
-              }
-
-              let tabX = 1;
-              for (let i = this.tabOffset; i < this.tabs.length && tabX <= this.term.width - this.NEW_TAB_WIDTH; i++) {
-                const tabEnd = tabX + this.options.tabWidth - 1;
-                if (x >= tabX && x <= tabEnd) {
-                  const closeXStart = tabX + this.options.tabWidth - 5;
-                  if (x >= closeXStart && x <= closeXStart + 3) {
-                    this.closeTab(i);
-                  } else {
-                    this.focusedTabIndex = i;
-                    this.selectedTabIndex = i;
-                    this.focusedElement = 'tabs';
-                    this.emit('tabSelected', this.tabs[i]);
-                  }
-                  this.render();
-                  return;
-                }
-                tabX += this.options.tabWidth;
-              }
-            }
-            await handleClick({
-              termX,
-              termY,
-              renderedBoxes: state.renderedBoxes,
-              clickableElements: state.clickableElements,
-              send,
-              sessionId,
-              clickCounter: state.clickCounter,
-              refresh,
-              layoutToNode: state.layoutToNode,
-              nodeToParent: state.nodeToParent,
-              nodes: state.nodes,
-            });
-          } else if (event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') {
-            const deltaY = event === 'MOUSE_WHEEL_UP' ? -state.scrollDelta : state.scrollDelta;
-            if (event === 'MOUSE_WHEEL_UP' && state.currentScrollY <= 0) {
-              DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
-              return;
-            }
-            send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
-            debouncedRefresh();
-          }
-        });
-
-        terminal.on('key', async (name) => {
-          if (!state.isListening) return;
-          if (name === 'CTRL_C') {
-            state.isListening = false;
-            process.emit('SIGINT');
-          } else if (name === '<') {
-            state.isListening = false;
-            if (onTabSwitch) onTabSwitch();
-          } else if (name === 'a' && !addressBar.isActive()) {
-            addressBar.activateAddressBar();
-          } else if (name === 'LEFT' && !addressBar.isActive()) {
-            if (BrowserState.selectedTabIndex > 0) {
-              BrowserState.selectedTabIndex--;
-              BrowserState.activeTarget = BrowserState.targets[BrowserState.selectedTabIndex];
-              const targetId = BrowserState.activeTarget.targetId;
-              await send('Target.attachToTarget', { targetId, flatten: true });
-              await refresh();
-            }
-          } else if (name === 'RIGHT' && !addressBar.isActive()) {
-            if (BrowserState.selectedTabIndex < BrowserState.targets.length - 1) {
-              BrowserState.selectedTabIndex++;
-              BrowserState.activeTarget = BrowserState.targets[BrowserState.selectedTabIndex];
-              const targetId = BrowserState.activeTarget.targetId;
-              await send('Target.attachToTarget', { targetId, flatten: true });
-              await refresh();
-            }
-          }
-        });
       }
 
       async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, clickCounter, refresh, layoutToNode, nodeToParent, nodes }) {
-        DEBUG && debugLog(`handleClick called with termX: ${termX}, termY: ${termY}, layoutToNode: ${layoutToNode ? 'defined' : 'undefined'}, nodeToParent: ${nodeToParent ? 'defined' : 'undefined'}, nodes: ${nodes ? 'defined' : 'undefined'}`);
-
         let clickedBox = null;
         for (let i = renderedBoxes.length - 1; i >= 0; i--) {
           const box = renderedBoxes[i];
-          if (termX >= box.termX && termX < box.termX + box.termWidth && termY === box.termY) { // Simplified to single-line check
+          if (termX >= box.termX && termX < box.termX + box.termWidth && termY === box.termY) {
             clickedBox = box;
             break;
           }
@@ -1044,13 +647,11 @@
           return;
         }
 
-        // Local visual flash
         terminal.moveTo(clickedBox.termX, clickedBox.termY);
         terminal.yellow(clickedBox.text);
         await sleep(300);
         await refresh();
 
-        // Calculate GUI coordinates (for logging only, not used for clicking)
         const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
         const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight;
         const guiX = clickedBox.boundingBox.x + relativeX * clickedBox.boundingBox.width;
@@ -1058,7 +659,6 @@
         const clickX = guiX + clickedBox.viewportX;
         const clickY = guiY + clickedBox.viewportY;
 
-        // Log the click details
         const clickId = clickCounter.value++;
         const nodeTag = clickedBox.ancestorType || 'unknown';
         const nodeText = clickedBox.text;
@@ -1069,13 +669,6 @@
           console.error(`Failed to write to clicks log: ${error.message}`);
         }
 
-        // Ensure required data is available
-        if (!layoutToNode || !nodeToParent || !nodes) {
-          DEBUG && debugLog(`Cannot process click: layoutToNode, nodeToParent, or nodes not available. layoutToNode: ${layoutToNode}, nodeToParent: ${nodeToParent}, nodes: ${nodes}`);
-          return;
-        }
-
-        // Find the nearest clickable element (traverse up if necessary)
         let backendNodeId = clickedBox.backendNodeId;
         let currentNodeIndex = layoutToNode.get(clickedBox.layoutIndex);
         let clickableNodeIndex = currentNodeIndex;
@@ -1088,7 +681,6 @@
         }
         backendNodeId = nodes.backendNodeId[clickableNodeIndex];
 
-        // Resolve the node to a RemoteObject
         let objectId;
         try {
           const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
@@ -1099,7 +691,6 @@
           return;
         }
 
-        // Execute a click on the remote object
         try {
           const clickResult = await send('Runtime.callFunctionOn', {
             objectId,
@@ -1112,7 +703,6 @@
           DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
         }
 
-        // Inject a black circle using getBoundingClientRect for accurate positioning
         const script = `
           (function() {
             const rect = this.getBoundingClientRect();
@@ -1127,7 +717,6 @@
           })
         `;
         try {
-          DEBUG && debugLog(`Injecting circle script for objectId ${objectId}`);
           const circleResult = await send('Runtime.callFunctionOn', {
             objectId,
             functionDeclaration: script,
@@ -1151,7 +740,6 @@
         terminal.on('mouse', async (event, data) => {
           if (!state.isListening) return;
 
-          // Handle clicks below the UI
           if (event === 'MOUSE_LEFT_BUTTON_PRESSED' && data.y > 4) {
             if (!state.isInitialized) {
               DEBUG && debugLog(`Click ignored: Terminal not yet initialized`);
@@ -1170,9 +758,7 @@
               nodeToParent: state.nodeToParent,
               nodes: state.nodes,
             });
-          } 
-          // Restore original scrolling behavior for content area
-          else if ((event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') && data.y > 4) {
+          } else if ((event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') && data.y > 4) {
             const deltaY = event === 'MOUSE_WHEEL_UP' ? -state.scrollDelta : state.scrollDelta;
             if (event === 'MOUSE_WHEEL_UP' && state.currentScrollY <= 0) {
               DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
@@ -1245,7 +831,6 @@
 
         if (!targets.length) {
           terminal.yellow('No page or tab targets available.\n');
-          //process.exit(0);
         }
 
         DEBUG && terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
@@ -1287,7 +872,6 @@
             DEBUG && logMessage('RECEIVE', message);
           } catch (error) {
             if (DEBUG) console.warn(error);
-            DEBUG && logMessage('RECEIVE_ERROR', { raw: Buffer.isBuffer(data) ? data.toString('base64') : data, error: error.message });
             terminal.red(`Invalid message: ${String(data).slice(0, 50)}...\n`);
             return;
           }
@@ -1296,15 +880,10 @@
             Resolvers[key](message.result || message.error);
             delete Resolvers[key];
           } else {
-            DEBUG && logMessage('UNHANDLED', message);
             if (message.method === 'Target.targetInfoChanged') {
               const { targetInfo } = message.params;
               const { targetId, title, url } = targetInfo;
-
-              // Update tab data
               updateTabData(targetId, title, url);
-
-              // Trigger debounced refresh
               debouncedRefresh();
             }
           }
@@ -1322,7 +901,6 @@
 
           const timeout = setTimeout(() => {
             delete Resolvers[key];
-            //reject(new Error(`Timeout waiting for response to ${method} (id: ${message.id})`));
             resolve({});
           }, 10000);
 
@@ -1368,4 +946,3 @@
             console.error(`Failed to write to debug log: ${error.message}`);
           }
         }
-
