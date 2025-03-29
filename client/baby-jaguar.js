@@ -14,6 +14,12 @@
       const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     // Constants and state
+      const BLOCK_LEVEL_TAGS = new Set([
+        'P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+        'UL', 'OL', 'LI', 'TABLE', 'TR', 'TD', 'TH',
+        'FORM', 'SECTION', 'ARTICLE', 'HEADER', 'FOOTER',
+        'MAIN', 'NAV', 'ASIDE'
+      ]);
       const BrowserState = {
         targets: [],
         activeTarget: null,
@@ -27,8 +33,8 @@
       const LOG_FILE = 'cdp-log.txt';
       const args = process.argv.slice(2);
       const CONFIG = {
-        useTextByElementGrouping: true,
-        useTextGestaltGrouping: false,
+        useTextByElementGrouping: false,
+        useTextGestaltGrouping: true,
         yThreshold: 10,
         xThreshold: 50,
         GAP_SIZE: 1,
@@ -335,7 +341,7 @@
           box.termHeight = 1;
         });
 
-        const { groups, boxToGroup } = groupBoxes(visibleBoxes);
+        const { groups, boxToGroup } = groupBoxes(visibleBoxes, nodes, snapshot.strings, layoutToNode);
 
         return {
           visibleBoxes,
@@ -798,51 +804,89 @@
           }
         }
       }
-      function groupBoxes(visibleBoxes) {
+
+      // Find the nearest block-level ancestor for a given node
+      function getNearestBlockAncestor(nodeIndex, nodes, strings) {
+        let currentIndex = nodeIndex;
+        while (currentIndex !== -1) {
+          const nodeNameIndex = nodes.nodeName[currentIndex];
+          if (nodeNameIndex === undefined) {
+            console.debug(`Undefined nodeName for nodeIndex ${currentIndex}`);
+            return null;
+          }
+          const nodeName = strings[nodeNameIndex].toUpperCase();
+          if (BLOCK_LEVEL_TAGS.has(nodeName)) {
+            return currentIndex;
+          }
+          currentIndex = nodes.parentIndex[currentIndex];
+        }
+        return null; // No block-level ancestor found
+      }
+
+      // Group text boxes by combining parent-based and proximity-based grouping
+      function groupBoxes(visibleBoxes, nodes, strings, layoutToNode) {
         let groups = [];
         const boxToGroup = new Map();
 
-        if (CONFIG.useTextByElementGrouping) {
-          const groupsMap = new Map();
-          for (const box of visibleBoxes) {
-            const groupKey = box.parentIndex !== undefined ? box.parentIndex : `individual_${visibleBoxes.indexOf(box)}`;
-            if (!groupsMap.has(groupKey)) {
-              groupsMap.set(groupKey, []);
-            }
-            groupsMap.get(groupKey).push(box);
+        // Step 1: Group by immediate parent (coarse, page-level structure)
+        const parentGroupsMap = new Map();
+        for (const box of visibleBoxes) {
+          const nodeIndex = layoutToNode.get(box.layoutIndex);
+          if (nodeIndex === undefined) {
+            DEBUG && debugLog(`No nodeIndex for layoutIndex ${box.layoutIndex}`);
+            continue;
           }
-          groups = Array.from(groupsMap.values());
-        } else if (CONFIG.useTextGestaltGrouping) {
-          const sortedBoxes = visibleBoxes.sort((a, b) => a.boundingBox.y - b.boundingBox.y || a.boundingBox.x - b.boundingBox.x);
-          let currentGroup = [];
+          const parentIndex = nodes.parentIndex[nodeIndex] !== undefined ? nodes.parentIndex[nodeIndex] : -1;
+          const groupKey = parentIndex !== -1 ? parentIndex : `individual_${visibleBoxes.indexOf(box)}`;
+          if (!parentGroupsMap.has(groupKey)) {
+            parentGroupsMap.set(groupKey, []);
+          }
+          parentGroupsMap.get(groupKey).push(box);
+        }
+
+        // Step 2: Within each parent group, apply proximity-based grouping
+        const parentGroups = Array.from(parentGroupsMap.values());
+        for (const parentGroup of parentGroups) {
+          if (parentGroup.length <= 1) {
+            // If the parent group has only one box, no need for proximity grouping
+            groups.push(parentGroup);
+            continue;
+          }
+
+          // Sort boxes within the parent group by y and x coordinates
+          const sortedBoxes = parentGroup.sort((a, b) => a.boundingBox.y - b.boundingBox.y || a.boundingBox.x - b.boundingBox.x);
+          let currentProximityGroup = [];
           let lastY = null;
           let lastX = null;
+
+          // Apply proximity grouping within the parent group
           for (const box of sortedBoxes) {
-            if (!currentGroup.length) {
-              currentGroup.push(box);
+            if (!currentProximityGroup.length) {
+              currentProximityGroup.push(box);
             } else {
               const yDiff = Math.abs(box.boundingBox.y - lastY);
               const xDiff = Math.abs(box.boundingBox.x - lastX);
               if (yDiff < CONFIG.yThreshold && xDiff < CONFIG.xThreshold) {
-                currentGroup.push(box);
+                currentProximityGroup.push(box);
               } else {
-                groups.push(currentGroup);
-                currentGroup = [box];
+                groups.push(currentProximityGroup);
+                currentProximityGroup = [box];
               }
             }
             lastY = box.boundingBox.y;
             lastX = box.boundingBox.x;
           }
-          if (currentGroup.length) groups.push(currentGroup);
-        } else {
-          groups = visibleBoxes.map(box => [box]);
+          if (currentProximityGroup.length) {
+            groups.push(currentProximityGroup);
+          }
         }
 
+        // Step 3: Assign group IDs to each box
         groups.forEach((group, groupId) => {
           group.forEach(box => boxToGroup.set(box, groupId));
         });
 
-        DEBUG && debugLog(`Grouped ${visibleBoxes.length} boxes into ${groups.length} groups`);
+        DEBUG && debugLog(`Grouped ${visibleBoxes.length} boxes into ${groups.length} groups (parent + proximity)`);
         return { groups, boxToGroup };
       }
 
