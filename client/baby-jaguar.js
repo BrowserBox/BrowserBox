@@ -341,12 +341,12 @@
           box.termHeight = 1;
         });
 
-        const { groups, boxToGroup } = groupBoxes(visibleBoxes, nodes, snapshot.strings, layoutToNode);
+        // Build the hierarchical tree
+        const { rootNode, visibleBoxes: allTextBoxes } = groupBoxes(visibleBoxes, nodes, snapshot.strings, layoutToNode);
 
         return {
-          visibleBoxes,
-          groups,
-          boxToGroup,
+          rootNode, // Pass the tree instead of groups
+          visibleBoxes: allTextBoxes, // Flat list for rendering
           termWidth,
           termHeight: termHeight - 4, // Adjust usable height
           viewportX,
@@ -602,8 +602,9 @@
             state.nodeToParent = layoutState.nodeToParent;
             state.nodes = layoutState.nodes;
 
+            // Deconflict the hierarchical tree
             deconflictGroups(layoutState);
-            applyGaps(layoutState);
+            // Note: applyGaps is removed as deconflicting handles spacing
             renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
 
             state.isInitialized = true;
@@ -728,81 +729,216 @@
           }
         }
       // Pass 1: De-conflict groups by column walk
-      function deconflictGroups(layoutState) {
-        const { visibleBoxes, groups, boxToGroup, termWidth, termHeight } = layoutState;
 
-        const boxOverlapsThisPosition = (box, col, row) => {
-          return row === box.termY && col >= box.termX && col < box.termX + box.termWidth;
+      // Helper to compute the bounding box of a node based on its children
+      function computeBoundingBox(node) {
+        if (node.isTextBox) {
+          // Leaf node: Use the text box's bounding box
+          return {
+            termX: node.textBox.termX,
+            termY: node.textBox.termY,
+            termWidth: node.textBox.termWidth,
+            termHeight: node.textBox.termHeight,
+          };
+        }
+
+        // Internal node: Compute bounding box from children
+        if (!node.children.length) {
+          return { termX: 0, termY: 0, termWidth: 0, termHeight: 0 };
+        }
+
+        const childBoxes = node.children.map(child => child.boundingBox);
+        const minX = Math.min(...childBoxes.map(box => box.termX));
+        const maxX = Math.max(...childBoxes.map(box => box.termX + box.termWidth));
+        const minY = Math.min(...childBoxes.map(box => box.termY));
+        const maxY = Math.max(...childBoxes.map(box => box.termY + box.termHeight));
+
+        return {
+          termX: minX,
+          termY: minY,
+          termWidth: maxX - minX,
+          termHeight: maxY - minY,
         };
+      }
 
-        const boxHasLeftEdgeCrossingThisPosition = (box, col, row) => {
-          return row === box.termY && col === box.termX;
-        };
+      // Helper to check if two bounding boxes overlap horizontally
+      function boxesOverlapHorizontally(box1, box2) {
+        // Check if they are on the same row (y-coordinates match)
+        if (box1.termY !== box2.termY) return false;
 
-        const setDifference = (setA, setB) => {
-          const diff = new Set(setA);
-          for (const elem of setB) diff.delete(elem);
-          return diff;
-        };
+        // Check if they overlap in the x-direction
+        const left1 = box1.termX;
+        const right1 = box1.termX + box1.termWidth;
+        const left2 = box2.termX;
+        const right2 = box2.termX + box2.termWidth;
 
-        const moveGroupRightwardBy1Column = (groupId) => {
-          const group = groups[groupId];
-          group.forEach(box => {
-            box.termX += 1;
-            DEBUG && debugLog(`Moved group ${groupId} box "${box.text}" right to termX=${box.termX}`);
-          });
-        };
+        return left1 < right2 && left2 < right1;
+      }
 
-        const selectMainGroup = (groupIds) => {
-          return groupIds.reduce((minGroupId, groupId) => {
-            const minBox = groups[minGroupId][0];
-            const currBox = groups[groupId][0];
-            const minOriginalX = minBox.termX - (minBox.shiftCount || 0);
-            const currOriginalX = currBox.termX - (currBox.shiftCount || 0);
-            return currOriginalX < minOriginalX ? groupId : minGroupId;
-          });
-        };
+      // Helper to shift a node and all its descendants
+      function shiftNode(node, xShift) {
+        if (node.isTextBox) {
+          node.textBox.termX += xShift;
+          node.boundingBox.termX += xShift;
+          DEBUG && debugLog(`Shifted text box "${node.textBox.text}" to termX=${node.textBox.termX}`);
+        } else {
+          node.children.forEach(child => shiftNode(child, xShift));
+          node.boundingBox.termX += xShift;
+          node.boundingBox.termWidth = computeBoundingBox(node).termWidth; // Recalculate width
+        }
+      }
 
-        for (let c = 0; c < termWidth; c++) {
-          for (let r = 0; r < termHeight; r++) {
-            const currentBoxes = new Set();
-            const newBoxes = new Set();
+      // Deconflict nodes at a single level (scan from left)
+      function deconflictLevel(nodes) {
+        // Sort nodes by their x-coordinate
+        nodes.sort((a, b) => a.boundingBox.termX - b.boundingBox.termX);
 
-            for (const box of visibleBoxes) {
-              if (boxOverlapsThisPosition(box, c, r)) {
-                currentBoxes.add(box);
-              }
-              if (boxHasLeftEdgeCrossingThisPosition(box, c, r)) {
-                newBoxes.add(box);
-              }
-            }
+        // Scan from left to right and resolve overlaps
+        for (let i = 1; i < nodes.length; i++) {
+          const prevNode = nodes[i - 1];
+          const currNode = nodes[i];
 
-            const oldBoxes = setDifference(currentBoxes, newBoxes);
-            if (oldBoxes.size > 1) {
-              DEBUG && debugLog(`Warning: Multiple old boxes at (${c}, ${r}): ${oldBoxes.size}`);
-            }
-
-            if (oldBoxes.size >= 1) {
-              const newGroupIds = new Set([...newBoxes].map(box => boxToGroup.get(box)));
-              for (const groupId of newGroupIds) {
-                moveGroupRightwardBy1Column(groupId);
-                groups[groupId].forEach(box => box.shiftCount = (box.shiftCount || 0) + 1);
-              }
-            }
-
-            if (newBoxes.size > 1) {
-              const newGroupIds = [...new Set([...newBoxes].map(box => boxToGroup.get(box)))];
-              if (newGroupIds.length > 1) {
-                const mainGroupId = selectMainGroup(newGroupIds);
-                newGroupIds.splice(newGroupIds.indexOf(mainGroupId), 1);
-                for (const groupId of newGroupIds) {
-                  moveGroupRightwardBy1Column(groupId);
-                  groups[groupId].forEach(box => box.shiftCount = (box.shiftCount || 0) + 1);
-                }
-              }
-            }
+          if (boxesOverlapHorizontally(prevNode.boundingBox, currNode.boundingBox)) {
+            const prevRight = prevNode.boundingBox.termX + prevNode.boundingBox.termWidth;
+            const shift = prevRight - currNode.boundingBox.termX + 1; // +1 for a small gap
+            shiftNode(currNode, shift);
           }
         }
+
+        // Update bounding boxes after shifting
+        nodes.forEach(node => {
+          node.boundingBox = computeBoundingBox(node);
+        });
+      }
+
+      // Main deconflicting function using post-order traversal
+      function deconflictGroups(layoutState) {
+        const { rootNode, termWidth } = layoutState;
+
+        function deconflictNode(node) {
+          // Post-order traversal: Process children first
+          if (!node.isTextBox) {
+            node.children.forEach(deconflictNode);
+            // Now deconflict the children at this level
+            deconflictLevel(node.children);
+          }
+
+          // Update the node's bounding box
+          node.boundingBox = computeBoundingBox(node);
+
+          // If the node extends beyond the terminal width, it will be handled by virtual scrolling later
+          if (node.boundingBox.termX + node.boundingBox.termWidth > termWidth) {
+            DEBUG && debugLog(`Node ${node.nodeIndex} extends beyond terminal width (${termWidth})`);
+          }
+        }
+
+        // Start the traversal from the root
+        deconflictNode(rootNode);
+        DEBUG && debugLog('Completed hierarchical deconflicting');
+      }
+
+      // Helper to build a hierarchical tree of nodes
+      function buildNodeTree(visibleBoxes, nodes, layoutToNode) {
+        // Map to store nodes by their nodeIndex
+        const nodeMap = new Map();
+
+        // Step 1: Create a node for each text box (leaf nodes)
+        for (const box of visibleBoxes) {
+          const nodeIndex = layoutToNode.get(box.layoutIndex);
+          if (nodeIndex === undefined) {
+            DEBUG && debugLog(`No nodeIndex for layoutIndex ${box.layoutIndex}`);
+            continue;
+          }
+
+          // Ensure the text box has a minimum width to fit its text
+          if (box.termWidth < box.text.length) {
+            box.termWidth = box.text.length;
+            DEBUG && debugLog(`Adjusted width of text box "${box.text}" to ${box.termWidth} to fit text`);
+          }
+
+          // Create a leaf node for the text box
+          const leafNode = {
+            nodeIndex,
+            isTextBox: true,
+            textBox: box,
+            children: [],
+            boundingBox: {
+              termX: box.termX,
+              termY: box.termY,
+              termWidth: box.termWidth,
+              termHeight: box.termHeight,
+            },
+          };
+          nodeMap.set(nodeIndex, leafNode);
+        }
+
+        // Step 2: Build the tree by walking up the DOM hierarchy
+        const nodeToParent = new Map();
+        nodes.parentIndex.forEach((parentIdx, nodeIdx) => nodeToParent.set(nodeIdx, parentIdx));
+
+        // For each text box node, traverse up to create parent nodes
+        for (const [nodeIndex, node] of nodeMap) {
+          let currentIndex = nodeToParent.get(nodeIndex);
+          let lastChild = node;
+
+          while (currentIndex !== -1) {
+            if (!nodeMap.has(currentIndex)) {
+              // Create a parent node if it doesn't exist
+              const parentNode = {
+                nodeIndex: currentIndex,
+                isTextBox: false,
+                children: [],
+                boundingBox: null, // Will be computed later
+              };
+              nodeMap.set(currentIndex, parentNode);
+            }
+
+            const parentNode = nodeMap.get(currentIndex);
+            if (!parentNode.children.includes(lastChild)) {
+              parentNode.children.push(lastChild);
+            }
+            lastChild = parentNode;
+            currentIndex = nodeToParent.get(currentIndex);
+          }
+        }
+
+        // Step 3: Find the root (highest common ancestor)
+        const allNodeIndices = new Set(nodeMap.keys());
+        let rootIndex = -1;
+        for (const [nodeIndex, node] of nodeMap) {
+          if (!nodeToParent.has(nodeIndex) || !allNodeIndices.has(nodeToParent.get(nodeIndex))) {
+            rootIndex = nodeIndex;
+            break;
+          }
+        }
+
+        if (rootIndex === -1) {
+          DEBUG && debugLog('No root node found; using first node as root');
+          rootIndex = nodeMap.keys().next().value;
+        }
+
+        const rootNode = nodeMap.get(rootIndex);
+        DEBUG && debugLog(`Built node tree with root nodeIndex ${rootIndex}, total nodes: ${nodeMap.size}`);
+        return rootNode;
+      }
+
+      // Modified groupBoxes to return the tree instead of flat groups
+      function groupBoxes(visibleBoxes, nodes, strings, layoutToNode) {
+        const rootNode = buildNodeTree(visibleBoxes, nodes, layoutToNode);
+
+        // For compatibility with existing code, extract all text boxes as a flat list
+        const allTextBoxes = [];
+        function collectTextBoxes(node) {
+          if (node.isTextBox) {
+            allTextBoxes.push(node.textBox);
+          } else {
+            node.children.forEach(collectTextBoxes);
+          }
+        }
+        collectTextBoxes(rootNode);
+
+        // We no longer need flat groups or boxToGroup since deconflicting will handle the hierarchy
+        return { rootNode, visibleBoxes: allTextBoxes };
       }
 
       // Find the nearest block-level ancestor for a given node
@@ -821,73 +957,6 @@
           currentIndex = nodes.parentIndex[currentIndex];
         }
         return null; // No block-level ancestor found
-      }
-
-      // Group text boxes by combining parent-based and proximity-based grouping
-      function groupBoxes(visibleBoxes, nodes, strings, layoutToNode) {
-        let groups = [];
-        const boxToGroup = new Map();
-
-        // Step 1: Group by immediate parent (coarse, page-level structure)
-        const parentGroupsMap = new Map();
-        for (const box of visibleBoxes) {
-          const nodeIndex = layoutToNode.get(box.layoutIndex);
-          if (nodeIndex === undefined) {
-            DEBUG && debugLog(`No nodeIndex for layoutIndex ${box.layoutIndex}`);
-            continue;
-          }
-          const parentIndex = nodes.parentIndex[nodeIndex] !== undefined ? nodes.parentIndex[nodeIndex] : -1;
-          const groupKey = parentIndex !== -1 ? parentIndex : `individual_${visibleBoxes.indexOf(box)}`;
-          if (!parentGroupsMap.has(groupKey)) {
-            parentGroupsMap.set(groupKey, []);
-          }
-          parentGroupsMap.get(groupKey).push(box);
-        }
-
-        // Step 2: Within each parent group, apply proximity-based grouping
-        const parentGroups = Array.from(parentGroupsMap.values());
-        for (const parentGroup of parentGroups) {
-          if (parentGroup.length <= 1) {
-            // If the parent group has only one box, no need for proximity grouping
-            groups.push(parentGroup);
-            continue;
-          }
-
-          // Sort boxes within the parent group by y and x coordinates
-          const sortedBoxes = parentGroup.sort((a, b) => a.boundingBox.y - b.boundingBox.y || a.boundingBox.x - b.boundingBox.x);
-          let currentProximityGroup = [];
-          let lastY = null;
-          let lastX = null;
-
-          // Apply proximity grouping within the parent group
-          for (const box of sortedBoxes) {
-            if (!currentProximityGroup.length) {
-              currentProximityGroup.push(box);
-            } else {
-              const yDiff = Math.abs(box.boundingBox.y - lastY);
-              const xDiff = Math.abs(box.boundingBox.x - lastX);
-              if (yDiff < CONFIG.yThreshold && xDiff < CONFIG.xThreshold) {
-                currentProximityGroup.push(box);
-              } else {
-                groups.push(currentProximityGroup);
-                currentProximityGroup = [box];
-              }
-            }
-            lastY = box.boundingBox.y;
-            lastX = box.boundingBox.x;
-          }
-          if (currentProximityGroup.length) {
-            groups.push(currentProximityGroup);
-          }
-        }
-
-        // Step 3: Assign group IDs to each box
-        groups.forEach((group, groupId) => {
-          group.forEach(box => boxToGroup.set(box, groupId));
-        });
-
-        DEBUG && debugLog(`Grouped ${visibleBoxes.length} boxes into ${groups.length} groups (parent + proximity)`);
-        return { groups, boxToGroup };
       }
 
     // Interactivity helpers
