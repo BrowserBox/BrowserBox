@@ -277,6 +277,30 @@
       }
 
       // key funcs
+          // Helper function to check if one bounding box is fully contained within another
+          function isFullyContained(b1, b2) {
+            // b1 is fully contained in b2
+            const b1InB2 = b1.x >= b2.x && b1.x + b1.width <= b2.x + b2.width &&
+                           b1.y >= b2.y && b1.y + b1.height <= b2.y + b2.height;
+            // b2 is fully contained in b1
+            const b2InB1 = b2.x >= b1.x && b2.x + b2.width <= b1.x + b1.width &&
+                           b2.y >= b1.y && b2.y + b2.height <= b1.y + b1.height;
+            return b1InB2 || b2InB1;
+          }
+
+          // Helper function to get the overall bounding box for a list of text boxes
+          function getOverallBoundingBox(boxes) {
+            if (boxes.length === 0) return null;
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const box of boxes) {
+              const b = box.boundingBox;
+              minX = Math.min(minX, b.x);
+              minY = Math.min(minY, b.y);
+              maxX = Math.max(maxX, b.x + b.width);
+              maxY = Math.max(maxY, b.y + b.height);
+            }
+            return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+          }
         function processNode(nodeIdx, childrenMap, textBoxMap, snapshot, nodes) {
           const tagName = nodes.nodeName[nodeIdx] >= 0 ? snapshot.strings[nodes.nodeName[nodeIdx]] : 'Unknown';
           
@@ -287,6 +311,7 @@
           // Leaf node with text boxes
           if (textBoxMap.has(nodeIdx)) {
             const boxes = textBoxMap.get(nodeIdx);
+            console.log(boxes);
             // Group boxes by row (termY)
             const rows = new Map();
             for (const box of boxes) {
@@ -355,15 +380,19 @@
           for (const [row, rowBoxes] of rows) {
             rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX);
             let lastEndX = -1;
+            let lastBox = null;
             for (const childBox of rowBoxes) {
-              if (childBox.termBox.minX <= lastEndX) {
+              if (childBox.termBox.minX <= lastEndX && !isFullyContained(lastBox,childBox.termBox)) {
                 const shift = lastEndX + 1 - childBox.termBox.minX;
                 shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
                 childBox.termBox.minX += shift;
                 childBox.termBox.maxX += shift;
                 debugLog(`Node ${nodeIdx} shifted child ${childBox.nodeIdx} right by ${shift} to (${childBox.termBox.minX}, ${childBox.termBox.minY})`);
+              } else {
+                debugLog(`Node ${nodeIdx} not moving child ${JSON.stringify({childBox})}`);
               }
-              lastEndX = minX;
+              lastEndX = childBox.termBox.maxX;
+              lastBox = childBox.termBox;
             }
           }
 
@@ -1080,6 +1109,7 @@
 
       // logging 
         function logMessage(direction, message) {
+          if ( ! DEBUG ) return;
           const timestamp = new Date().toISOString();
           const logEntry = JSON.stringify({ timestamp, direction, message }, null, 2) + '\n';
           try {
@@ -1092,6 +1122,7 @@
         }
 
         function debugLog(message) {
+          if ( ! DEBUG ) return;
           try {
             appendFileSync('debug-coords.log', `${new Date().toISOString()} - ${message}\n`);
           } catch (error) {
