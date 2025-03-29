@@ -1,5 +1,11 @@
 #!/usr/bin/env node
+/*
+todo
+is full contained should use guiBox and
+be is mostly contained
 
+we should deconflict some lines (small text can vert overlap)
+*/
 // CyberJaguar - BrowserBox TUI Browser Application
   // Setup
     // imports
@@ -278,16 +284,24 @@
 
       // key funcs
           // Helper function to check if one bounding box is fully contained within another
-          function isFullyContained(b1, b2) {
-            // b1 is fully contained in b2
-            const b1InB2 = b1.x >= b2.x && b1.x + b1.width <= b2.x + b2.width &&
-                           b1.y >= b2.y && b1.y + b1.height <= b2.y + b2.height;
-            // b2 is fully contained in b1
-            const b2InB1 = b2.x >= b1.x && b2.x + b2.width <= b1.x + b1.width &&
-                           b2.y >= b1.y && b2.y + b2.height <= b1.y + b1.height;
-            return b1InB2 || b2InB1;
-          }
+            function isFullyContained(b1, b2) {
+              const termB1 = b1.termBox; // {minX, minY, maxX, maxY}
+              const termB2 = b2.termBox;
 
+              // b1 is fully contained in b2
+              const b1InB2 = termB1.minX >= termB2.minX && 
+                             termB1.maxX <= termB2.maxX &&
+                             termB1.minY >= termB2.minY && 
+                             termB1.maxY <= termB2.maxY;
+              
+              // b2 is fully contained in b1
+              const b2InB1 = termB2.minX >= termB1.minX && 
+                             termB2.maxX <= termB1.maxX &&
+                             termB2.minY >= termB1.minY && 
+                             termB2.maxY <= termB1.maxY;
+              
+              return b1InB2 || b2InB1;
+            }
           // Helper function to get the overall bounding box for a list of text boxes
           function getOverallBoundingBox(boxes) {
             if (boxes.length === 0) return null;
@@ -382,7 +396,7 @@
             let lastEndX = -1;
             let lastBox = null;
             for (const childBox of rowBoxes) {
-              if (childBox.termBox.minX <= lastEndX && !isFullyContained(lastBox,childBox.termBox)) {
+              if (childBox.termBox.minX <= lastEndX && !isFullyContained(lastBox,childBox)) {
                 const shift = lastEndX + 1 - childBox.termBox.minX;
                 shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
                 childBox.termBox.minX += shift;
@@ -392,7 +406,7 @@
                 debugLog(`Node ${nodeIdx} not moving child ${JSON.stringify({childBox})}`);
               }
               lastEndX = childBox.termBox.maxX;
-              lastBox = childBox.termBox;
+              lastBox = childBox;
             }
           }
 
