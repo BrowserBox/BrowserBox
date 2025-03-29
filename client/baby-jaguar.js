@@ -287,31 +287,38 @@
           // Leaf node with text boxes
           if (textBoxMap.has(nodeIdx)) {
             const boxes = textBoxMap.get(nodeIdx);
-            // Sort boxes by initial x position
-            boxes.sort((a, b) => a.termX - b.termX);
-            
-            // Resolve horizontal overlaps among sibling text boxes
-            let lastEndX = -1;
+            // Group boxes by row (termY)
+            const rows = new Map();
             for (const box of boxes) {
-              if (box.termX <= lastEndX) {
-                const shift = lastEndX + 1 - box.termX;
-                box.termX += shift;
-                box.termBox = {
-                  minX: box.termX,
-                  minY: box.termY,
-                  maxX: box.termX + box.termWidth - 1,
-                  maxY: box.termY
-                };
-                debugLog(`Leaf Node ${nodeIdx} (Text: "${box.text}") shifted right by ${shift} to (${box.termX}, ${box.termY})`);
-              } else {
-                box.termBox = {
-                  minX: box.termX,
-                  minY: box.termY,
-                  maxX: box.termX + box.termWidth - 1,
-                  maxY: box.termY
-                };
+              if (!rows.has(box.termY)) rows.set(box.termY, []);
+              rows.get(box.termY).push(box);
+            }
+
+            // Resolve overlaps within each row
+            for (const [row, rowBoxes] of rows) {
+              rowBoxes.sort((a, b) => a.termX - b.termX);
+              let lastEndX = -1;
+              for (const box of rowBoxes) {
+                if (box.termX <= lastEndX) {
+                  const shift = lastEndX + 1 - box.termX;
+                  box.termX += shift;
+                  box.termBox = {
+                    minX: box.termX,
+                    minY: box.termY,
+                    maxX: box.termX + box.termWidth - 1,
+                    maxY: box.termY
+                  };
+                  debugLog(`Leaf Node ${nodeIdx} (Text: "${box.text}") shifted right by ${shift} to (${box.termX}, ${box.termY})`);
+                } else {
+                  box.termBox = {
+                    minX: box.termX,
+                    minY: box.termY,
+                    maxX: box.termX + box.termWidth - 1,
+                    maxY: box.termY
+                  };
+                }
+                lastEndX = box.termBox.maxX;
               }
-              lastEndX = box.termBox.maxX;
             }
             
             const minX = Math.min(...boxes.map(b => b.termBox.minX));
@@ -336,18 +343,28 @@
             return null;
           }
 
-          // Resolve overlaps among immediate children
-          childBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX);
-          let lastEndX = -1;
+          // Group children by row (based on minY)
+          const rows = new Map();
           for (const childBox of childBoxes) {
-            if (childBox.termBox.minX <= lastEndX) {
-              const shift = lastEndX + 1 - childBox.termBox.minX;
-              shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
-              childBox.termBox.minX += shift;
-              childBox.termBox.maxX += shift;
-              debugLog(`Node ${nodeIdx} shifted child ${childBox.nodeIdx} right by ${shift} to (${childBox.termBox.minX}, ${childBox.termBox.minY})`);
+            const row = childBox.termBox.minY;
+            if (!rows.has(row)) rows.set(row, []);
+            rows.get(row).push(childBox);
+          }
+
+          // Resolve overlaps within each row
+          for (const [row, rowBoxes] of rows) {
+            rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX);
+            let lastEndX = -1;
+            for (const childBox of rowBoxes) {
+              if (childBox.termBox.minX <= lastEndX) {
+                const shift = lastEndX + 1 - childBox.termBox.minX;
+                shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
+                childBox.termBox.minX += shift;
+                childBox.termBox.maxX += shift;
+                debugLog(`Node ${nodeIdx} shifted child ${childBox.nodeIdx} right by ${shift} to (${childBox.termBox.minX}, ${childBox.termBox.minY})`);
+              }
+              lastEndX = childBox.termBox.maxX;
             }
-            lastEndX = childBox.termBox.maxX;
           }
 
           // Calculate parent's bounding box based on children's final positions
@@ -359,7 +376,6 @@
           debugLog(`Node ${nodeIdx} (Tag: ${tagName}) final bounds: (${minX}, ${minY}) to (${maxX}, ${maxY})`);
           return { minX, minY, maxX, maxY };
         }
-
         function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
           if (textBoxMap.has(nodeIdx)) {
             const boxes = textBoxMap.get(nodeIdx);
