@@ -109,13 +109,60 @@
         });
 
         // Event handlers for TerminalBrowser
+        // In the main logic’s browser initialization:
         browser.on('tabSelected', async (tab) => {
           const index = browser.getTabs().findIndex(t => t.title === tab.title && t.url === tab.url);
           BrowserState.selectedTabIndex = index;
-          browser.selectedTabIndex = index; // Sync with widget
+          browser.selectedTabIndex = index;
           BrowserState.activeTarget = targets[index];
           browser.setAddress(tab.url);
           await selectTabAndRender();
+        });
+
+        // In the main logic’s (async () => { ... }) block, add this to the browser event handlers:
+        browser.on('newTabRequested', async (tab) => {
+          DEBUG && terminal.cyan(`Creating new remote tab: ${tab.title}\n`);
+          try {
+            const { targetId } = await send('Target.createTarget', { url: tab.url || 'about:blank' });
+            const newTarget = { targetId, title: tab.title, url: tab.url || 'about:blank', type: 'page' };
+            targets.push(newTarget);
+            BrowserState.targets = targets;
+
+            // Add the tab to the TUI
+            browser.addTab({ title: tab.title, url: tab.url || 'about:blank' });
+            browser.focusedTabIndex = browser.getTabs().length - 1; // Focus the new tab
+            browser.selectedTabIndex = browser.focusedTabIndex; // Select it
+            BrowserState.selectedTabIndex = browser.selectedTabIndex;
+            BrowserState.activeTarget = newTarget;
+
+            await selectTabAndRender();
+          } catch (error) {
+            DEBUG && terminal.red(`Failed to create new tab: ${error.message}\n`);
+          }
+        });
+
+        // Update the existing tabAdded handler to avoid duplication (optional):
+        browser.on('tabAdded', (tab) => {
+          DEBUG && terminal.cyan(`Tab added locally: ${tab.title}\n`);
+          // No need to add to targets here; handled in newTabRequested
+        });
+
+        // Update tabClosed to also close the remote target:
+        browser.on('tabClosed', async (index) => {
+          const targetId = targets[index].targetId;
+          targets.splice(index, 1);
+          BrowserState.targets = targets;
+          DEBUG && terminal.cyan(`Closing remote target: ${targetId}\n`);
+          try {
+            await send('Target.closeTarget', { targetId });
+          } catch (error) {
+            DEBUG && terminal.red(`Failed to close target ${targetId}: ${error.message}\n`);
+          }
+          if (BrowserState.selectedTabIndex === index) {
+            BrowserState.selectedTabIndex = Math.min(index, targets.length - 1);
+            BrowserState.activeTarget = targets[BrowserState.selectedTabIndex] || null;
+            await selectTabAndRender();
+          }
         });
 
         browser.on('navigate', async (url) => {
@@ -196,7 +243,10 @@
 
         DEBUG && terminal.cyan('Capturing snapshot...\n');
         const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
-        if (!snapshot?.documents?.length) throw new Error('No documents in snapshot');
+        if (!snapshot?.documents?.length) {
+          // throw new Error('No documents in snapshot');
+          return ;
+        }
         DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
 
         const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
