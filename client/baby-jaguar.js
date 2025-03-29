@@ -99,6 +99,13 @@
         cookieHeader = connection.cookieHeader;
         BrowserState.targets = targets;
 
+        // If no targets exist, create a new one
+        if (targets.length === 0) {
+          const { targetId } = await connection.send('Target.createTarget', { url: 'about:blank' });
+          const newTarget = { targetId, title: 'New Tab', url: 'about:blank', type: 'page' };
+          targets.push(newTarget); // Add the new target to the list
+        }
+
         // Initialize TerminalBrowser
         browser = new TerminalBrowser({
           tabWidth: Math.round(Math.max(15, terminal.width / 3)),
@@ -129,9 +136,9 @@
             BrowserState.targets = targets;
 
             // Add the tab to the TUI
-            browser.addTab({ title: tab.title, url: tab.url || 'about:blank' });
-            browser.focusedTabIndex = browser.getTabs().length - 1; // Focus the new tab
-            browser.selectedTabIndex = browser.focusedTabIndex; // Select it
+            browser.addTabToUI({ title: newTarget.title, url: newTarget.url });
+            browser.focusedTabIndex = browser.tabs.length - 1; // Focus the new tab
+            browser.selectedTabIndex = browser.focusedTabIndex;
             BrowserState.selectedTabIndex = browser.selectedTabIndex;
             BrowserState.activeTarget = newTarget;
 
@@ -140,7 +147,6 @@
             DEBUG && terminal.red(`Failed to create new tab: ${error.message}\n`);
           }
         });
-
         // Update the existing tabAdded handler to avoid duplication (optional):
         browser.on('tabAdded', (tab) => {
           DEBUG && terminal.cyan(`Tab added locally: ${tab.title}\n`);
@@ -164,7 +170,6 @@
             await selectTabAndRender();
           }
         });
-
         browser.on('navigate', async (url) => {
           const normalizedUrl = normalizeUrl(url);
           DEBUG && terminal.cyan(`Navigating to: ${normalizedUrl}\n`);
@@ -824,19 +829,30 @@
               DEBUG && debugLog(`Click ignored: Terminal not yet initialized`);
               return;
             }
-            const { x: termX, y: termY } = data;
-            if (termY === 1) {
-              // Click on tab row, approximate tab selection
-              const tabWidth = Math.floor(terminal.width / BrowserState.targets.length);
-              const clickedTabIndex = Math.floor(termX / tabWidth);
-              if (clickedTabIndex >= 0 && clickedTabIndex < BrowserState.targets.length) {
-                BrowserState.selectedTabIndex = clickedTabIndex;
-                BrowserState.activeTarget = BrowserState.targets[clickedTabIndex];
-                const targetId = BrowserState.activeTarget.targetId;
-                await send('Target.attachToTarget', { targetId, flatten: true });
-                await refresh();
+            if (y === 1) { // Tab row
+              if (x >= this.term.width - this.NEW_TAB_WIDTH + 1 && x <= this.term.width) {
+                this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+                return;
               }
-              return;
+
+              let tabX = 1;
+              for (let i = this.tabOffset; i < this.tabs.length && tabX <= this.term.width - this.NEW_TAB_WIDTH; i++) {
+                const tabEnd = tabX + this.options.tabWidth - 1;
+                if (x >= tabX && x <= tabEnd) {
+                  const closeXStart = tabX + this.options.tabWidth - 5;
+                  if (x >= closeXStart && x <= closeXStart + 3) {
+                    this.closeTab(i);
+                  } else {
+                    this.focusedTabIndex = i;
+                    this.selectedTabIndex = i;
+                    this.focusedElement = 'tabs';
+                    this.emit('tabSelected', this.tabs[i]);
+                  }
+                  this.render();
+                  return;
+                }
+                tabX += this.options.tabWidth;
+              }
             }
             await handleClick({
               termX,
@@ -898,12 +914,11 @@
         let clickedBox = null;
         for (let i = renderedBoxes.length - 1; i >= 0; i--) {
           const box = renderedBoxes[i];
-          if (termX >= box.termX && termX <= box.termX + box.termWidth && termY >= box.termY && termY <= box.termY + box.termHeight) {
+          if (termX >= box.termX && termX < box.termX + box.termWidth && termY === box.termY) { // Simplified to single-line check
             clickedBox = box;
             break;
           }
         }
-
         if (!clickedBox || !clickedBox.isClickable) {
           terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
           return;
@@ -1110,7 +1125,7 @@
 
         if (!targets.length) {
           terminal.yellow('No page or tab targets available.\n');
-          process.exit(0);
+          //process.exit(0);
         }
 
         DEBUG && terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
@@ -1177,7 +1192,8 @@
 
           const timeout = setTimeout(() => {
             delete Resolvers[key];
-            reject(new Error(`Timeout waiting for response to ${method} (id: ${message.id})`));
+            //reject(new Error(`Timeout waiting for response to ${method} (id: ${message.id})`));
+            resolve({});
           }, 10000);
 
           try {

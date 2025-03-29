@@ -23,6 +23,9 @@ export default class TerminalBrowser extends EventEmitter {
       url: tab.url,
       color: this.options.colors[i % this.options.colors.length],
     }));
+    if (this.tabs.length === 0) {
+      this.emit('newTabRequested', { title: 'New Tab', url: 'about:blank' });
+    }
     this.tabOffset = 0;
     this.focusedTabIndex = 0;
     this.selectedTabIndex = -1;
@@ -142,7 +145,7 @@ export default class TerminalBrowser extends EventEmitter {
             this.emit('navigate', this.addressContent);
             if (this.selectedTabIndex !== -1) {
               this.tabs[this.selectedTabIndex].url = this.addressContent;
-              this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
+              this.tabs[this.selectedTabIndex].title = '...';
             }
             this.render();
             break;
@@ -280,14 +283,24 @@ export default class TerminalBrowser extends EventEmitter {
     this.emit('newTabRequested', tab);
   }
 
+  addTabToUI(tab) {
+    this.tabs.push({
+      title: tab.title,
+      url: tab.url,
+      color: this.options.colors[this.tabs.length % this.options.colors.length],
+    });
+    this.render();
+  }
+
   closeTab(index) {
     if (index >= 0 && index < this.tabs.length) {
       this.tabs.splice(index, 1);
-      if (this.focusedTabIndex >= this.tabs.length) this.focusedTabIndex = this.tabs.length - 1;
-      if (this.selectedTabIndex >= this.tabs.length) this.selectedTabIndex = this.tabs.length - 1;
       if (this.tabs.length === 0) {
-        this.focusedTabIndex = -1;
-        this.selectedTabIndex = -1;
+        // Automatically open a new tab when the last one is closed
+        this.emit('newTabRequested', { title: 'New Tab', url: 'about:blank' });
+      } else {
+        if (this.focusedTabIndex >= this.tabs.length) this.focusedTabIndex = this.tabs.length - 1;
+        if (this.selectedTabIndex >= this.tabs.length) this.selectedTabIndex = this.tabs.length - 1;
       }
       this.emit('tabClosed', index);
       this.render();
@@ -333,5 +346,35 @@ export default class TerminalBrowser extends EventEmitter {
   destroy() {
     this.term.clear();
     this.term.processExit(0);
+  }
+
+  async showModal(type, message) {
+    const modalWidth = Math.min(50, this.term.width - 10);
+    const modalHeight = 5;
+    const modalX = Math.floor((this.term.width - modalWidth) / 2);
+    const modalY = Math.floor((this.term.height - modalHeight) / 2);
+
+    // Draw modal background
+    this.term.moveTo(modalX, modalY);
+    this.term.bgWhite().black(' '.repeat(modalWidth));
+    for (let i = 1; i < modalHeight - 1; i++) {
+      this.term.moveTo(modalX, modalY + i);
+      this.term.bgWhite().black(' '.repeat(modalWidth));
+    }
+    this.term.moveTo(modalX, modalY + modalHeight - 1);
+    this.term.bgWhite().black(' '.repeat(modalWidth));
+
+    // Draw message
+    const wrappedMessage = this.term.wrapColumn({ width: modalWidth - 4 });
+    this.term.moveTo(modalX + 2, modalY + 1);
+    this.term.bgWhite().black(message);
+
+    // Wait for any key press
+    await new Promise(resolve => {
+      this.term.once('key', () => {
+        this.render(); // Redraw the UI to remove the modal
+        resolve();
+      });
+    });
   }
 }
