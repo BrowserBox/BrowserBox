@@ -363,7 +363,7 @@
                 childBox.termBox.maxX += shift;
                 debugLog(`Node ${nodeIdx} shifted child ${childBox.nodeIdx} right by ${shift} to (${childBox.termBox.minX}, ${childBox.termBox.minY})`);
               }
-              lastEndX = childBox.termBox.maxX;
+              lastEndX = minX;
             }
           }
 
