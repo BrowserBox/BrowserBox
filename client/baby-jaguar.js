@@ -22,7 +22,7 @@
       const HORIZONTAL_COMPRESSION = 1.0;
       const VERTICAL_COMPRESSION = 1.0;
       const DEBOUNCE_DELAY = 100;
-      const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
+      const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
       const LOG_FILE = 'cdp-log.txt';
       const args = process.argv.slice(2);
 
@@ -246,7 +246,12 @@
         ]);
 
         DEBUG && terminal.cyan('Capturing snapshot...\n');
-        const snapshot = await send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true }, sessionId);
+        const snapshot = await send('DOMSnapshot.captureSnapshot', {
+          computedStyles: [],
+          includeDOMRects: true,
+          includePaintOrder: true,
+          includeBlobs: true
+        }, sessionId);
         if (!snapshot?.documents?.length) {
           return;
         }
@@ -271,177 +276,223 @@
         return children.some(childIdx => hasTextBoxDescendant(childIdx, childrenMap, textBoxMap));
       }
 
-      async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY }) {
-        const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes(snapshot);
-        if (!textLayoutBoxes.length) {
-          DEBUG && terminal.yellow('No text boxes found.\n');
-          return null;
-        }
+      // key funcs
+        async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY }) {
+          const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes(snapshot);
+          if (!textLayoutBoxes.length) {
+            DEBUG && terminal.yellow('No text boxes found.\n');
+            return null;
+          }
 
-        const { columns: termWidth, rows: termHeight } = await getTerminalSize();
-        const baseScaleX = termWidth / viewportWidth;
-        const baseScaleY = (termHeight - 4) / viewportHeight;
-        const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
-        const scaleY = baseScaleY * VERTICAL_COMPRESSION;
+          const { columns: termWidth, rows: termHeight } = await getTerminalSize();
+          const baseScaleX = termWidth / viewportWidth;
+          const baseScaleY = (termHeight - 4) / viewportHeight;
+          const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
+          const scaleY = baseScaleY * VERTICAL_COMPRESSION;
 
-        const visibleBoxes = textLayoutBoxes.filter(box => {
-          const boxX = box.boundingBox.x;
-          const boxY = box.boundingBox.y;
-          const boxRight = boxX + box.boundingBox.width;
-          const boxBottom = boxY + box.boundingBox.height;
-          const viewportLeft = viewportX;
-          const viewportRight = viewportX + viewportWidth;
-          const viewportTop = viewportY;
-          const viewportBottom = viewportY + viewportHeight;
-          return boxX < viewportRight && boxRight > viewportLeft && boxY < viewportBottom && boxBottom > viewportTop;
-        }).map(box => {
-          const adjustedX = box.boundingBox.x - viewportX;
-          const adjustedY = box.boundingBox.y - viewportY;
-          box.termX = Math.ceil(adjustedX * scaleX);
-          box.termY = Math.ceil(adjustedY * scaleY) + 4;
-          box.termWidth = box.text.length;
-          box.termHeight = 1;
-          return box;
-        });
+          const visibleBoxes = textLayoutBoxes.filter(box => {
+            const boxX = box.boundingBox.x;
+            const boxY = box.boundingBox.y;
+            const boxRight = boxX + box.boundingBox.width;
+            const boxBottom = boxY + box.boundingBox.height;
+            const viewportLeft = viewportX;
+            const viewportRight = viewportX + viewportWidth;
+            const viewportTop = viewportY;
+            const viewportBottom = viewportY + viewportHeight;
+            return boxX < viewportRight && boxRight > viewportLeft && boxY < viewportBottom && boxBottom > viewportTop;
+          }).map(box => {
+            const adjustedX = box.boundingBox.x - viewportX;
+            const adjustedY = box.boundingBox.y - viewportY;
+            box.termX = Math.ceil(adjustedX * scaleX);
+            box.termY = Math.ceil(adjustedY * scaleY) + 4;
+            box.termWidth = box.text.length;
+            box.termHeight = 1;
+            return box;
+          });
 
-        const textBoxMap = new Map();
-        const childrenMap = new Map();
-        for (const box of visibleBoxes) {
-          textBoxMap.set(box.nodeIndex, box);
-          let currentIdx = box.nodeIndex;
-          while (currentIdx !== -1) {
-            const parentIdx = nodeToParent.get(currentIdx);
+          // Log initial positions
+          debugLog('Initial Text Box Positions:');
+          for (const box of visibleBoxes) {
+            debugLog(`Node ${box.nodeIndex}, Text: "${box.text}", Initial Box: (${box.termX}, ${box.termY}) to (${box.termX + box.termWidth - 1}, ${box.termY})`);
+          }
+
+          // Build complete tree
+          const childrenMap = new Map();
+          for (let i = 0; i < nodes.parentIndex.length; i++) {
+            const parentIdx = nodes.parentIndex[i];
             if (parentIdx !== -1) {
               if (!childrenMap.has(parentIdx)) childrenMap.set(parentIdx, []);
-              if (!childrenMap.get(parentIdx).includes(currentIdx)) {
-                childrenMap.get(parentIdx).push(currentIdx);
+              childrenMap.get(parentIdx).push(i);
+            }
+          }
+          const textBoxMap = new Map(); // Map nodeIndex to array of text boxes
+          for (const box of visibleBoxes) {
+            if (!textBoxMap.has(box.nodeIndex)) textBoxMap.set(box.nodeIndex, []);
+            textBoxMap.get(box.nodeIndex).push(box);
+          }
+
+          const allNodeIndices = new Set([...textBoxMap.keys(), ...childrenMap.keys()]);
+          const rootNodes = Array.from(allNodeIndices).filter(nodeIdx => {
+            const parentIdx = nodeToParent.get(nodeIdx);
+            return (parentIdx === -1 || !allNodeIndices.has(parentIdx)) && hasTextBoxDescendant(nodeIdx, childrenMap, textBoxMap);
+          });
+
+          // Reconstruct HTML for debug
+          let htmlDebug = '<html>\n';
+          function buildHtml(nodeIdx, depth = 1) {
+            const tagName = nodes.nodeName[nodeIdx] >= 0 ? snapshot.strings[nodes.nodeName[nodeIdx]] : 'Unknown';
+            const indent = '  '.repeat(depth);
+            if (textBoxMap.has(nodeIdx)) {
+              const boxes = textBoxMap.get(nodeIdx);
+              htmlDebug += `${indent}<${tagName}>`;
+              for (const box of boxes) {
+                htmlDebug += `${box.text}\n${indent}  `;
               }
+              htmlDebug = htmlDebug.slice(0, -indent.length - 2); // Remove extra indent
+              htmlDebug += `</${tagName}>\n`;
+            } else {
+              htmlDebug += `${indent}<${tagName}>\n`;
+              const children = childrenMap.get(nodeIdx) || [];
+              for (const childIdx of children) {
+                if (allNodeIndices.has(childIdx)) buildHtml(childIdx, depth + 1);
+              }
+              htmlDebug += `${indent}</${tagName}>\n`;
             }
-            currentIdx = parentIdx;
           }
-        }
+          for (const rootNode of rootNodes) {
+            buildHtml(rootNode);
+          }
+          htmlDebug += '</html>';
+          debugLog('Reconstructed HTML:\n' + htmlDebug);
 
-        const allNodeIndices = new Set([...textBoxMap.keys(), ...childrenMap.keys()]);
-        const rootNodes = Array.from(allNodeIndices).filter(nodeIdx => {
-          const parentIdx = nodeToParent.get(nodeIdx);
-          return (parentIdx === -1 || !allNodeIndices.has(parentIdx)) && hasTextBoxDescendant(nodeIdx, childrenMap, textBoxMap);
-        });
+          debugLog(`Starting hierarchical processing with ${rootNodes.length} root nodes: ${rootNodes.join(', ')}`);
+          for (const rootNode of rootNodes) {
+            processNode(rootNode, childrenMap, textBoxMap, snapshot, nodes);
+          }
 
-        debugLog(`Starting hierarchical processing with ${rootNodes.length} root nodes: ${rootNodes.join(', ')}`);
-        for (const rootNode of rootNodes) {
-          processNode(rootNode, childrenMap, textBoxMap, nodes);
-        }
-        debugLog(`Finished hierarchical processing`);
+          // Log final positions
+          debugLog('Final Text Box Positions:');
+          for (const box of visibleBoxes) {
+            debugLog(`Node ${box.nodeIndex}, Text: "${box.text}", Final Box: (${box.termX}, ${box.termY}) to (${box.termX + box.termWidth - 1}, ${box.termY})`);
+          }
+          debugLog('Finished hierarchical processing');
 
-        return {
-          visibleBoxes,
-          termWidth,
-          termHeight: termHeight - 4,
-          viewportX,
-          viewportY,
-          viewportWidth,
-          viewportHeight,
-          clickableElements,
-          layoutToNode,
-          nodeToParent,
-          nodes,
-        };
-      }
-
-      function processNode(nodeIdx, childrenMap, textBoxMap, nodes) {
-        const tagName = nodes.nodeName[nodeIdx] >= 0 ? snapshot.strings[nodes.nodeName[nodeIdx]] : 'Unknown';
-
-        // Leaf node (text box)
-        if (textBoxMap.has(nodeIdx)) {
-          const box = textBoxMap.get(nodeIdx);
-          box.termWidth = box.text.length;
-          box.termBox = {
-            minX: box.termX,
-            minY: box.termY,
-            maxX: box.termX + box.termWidth - 1,
-            maxY: box.termY
+          return {
+            visibleBoxes,
+            termWidth,
+            termHeight: termHeight - 4,
+            viewportX,
+            viewportY,
+            viewportWidth,
+            viewportHeight,
+            clickableElements,
+            layoutToNode,
+            nodeToParent,
+            nodes,
           };
-          debugLog(`Node ${nodeIdx} (Text: "${box.text}", Tag: ${tagName}) - Leaf, Box: (${box.termBox.minX}, ${box.termBox.minY}) to (${box.termBox.maxX}, ${box.termBox.maxY})`);
-          return box.termBox;
         }
 
-        // Container node
-        const children = childrenMap.get(nodeIdx) || [];
-        if (children.length === 0) {
-          debugLog(`Node ${nodeIdx} (Tag: ${tagName}) - No children, skipped`);
-          return null;
-        }
+        function processNode(nodeIdx, childrenMap, textBoxMap, snapshot, nodes) {
+          const tagName = nodes.nodeName[nodeIdx] >= 0 ? snapshot.strings[nodes.nodeName[nodeIdx]] : 'Unknown';
 
-        const childBoxes = [];
-        let childLog = `Node ${nodeIdx} (Tag: ${tagName}) - Children: `;
-        for (const childIdx of children) {
-          const childBox = processNode(childIdx, childrenMap, textBoxMap, nodes);
-          if (childBox) {
-            childBoxes.push({ nodeIdx: childIdx, termBox: childBox });
-            const isText = textBoxMap.has(childIdx);
-            const childTag = nodes.nodeName[childIdx] >= 0 ? snapshot.strings[nodes.nodeName[childIdx]] : 'Unknown';
-            const childText = isText ? `"${textBoxMap.get(childIdx).text}"` : 'Container';
-            childLog += `${childIdx} (${childTag}, ${isText ? 'Text' : 'Container'}, ${childText}, Box: (${childBox.minX}, ${childBox.minY}) to (${childBox.maxX}, ${childBox.maxY})), `;
-          }
-        }
-        childLog = childLog.slice(0, -2); // Remove trailing comma
-        debugLog(childLog);
-
-        if (childBoxes.length === 0) {
-          debugLog(`Node ${nodeIdx} (Tag: ${tagName}) - No valid children with text boxes, skipped`);
-          return null;
-        }
-
-        // Log parent box before adjustment
-        const preMinX = Math.min(...childBoxes.map(cb => cb.termBox.minX));
-        const preMinY = Math.min(...childBoxes.map(cb => cb.termBox.minY));
-        const preMaxX = Math.max(...childBoxes.map(cb => cb.termBox.maxX));
-        const preMaxY = Math.max(...childBoxes.map(cb => cb.termBox.maxY));
-        debugLog(`Node ${nodeIdx} (Tag: ${tagName}) - Pre-adjustment Box: (${preMinX}, ${preMinY}) to (${preMaxX}, ${preMaxY})`);
-
-        // Single child: Adopt its bounding box
-        if (childBoxes.length === 1) {
-          debugLog(`Node ${nodeIdx} (Tag: ${tagName}) - Single child, adopting box`);
-          return childBoxes[0].termBox;
-        }
-
-        // Multiple children: Push to right per row
-        const rows = new Map();
-        for (const child of childBoxes) {
-          const box = textBoxMap.has(child.nodeIdx) ? textBoxMap.get(child.nodeIdx) : null;
-          const termX = child.termBox.minX;
-          const termY = child.termBox.minY;
-          const termWidth = child.termBox.maxX - child.termBox.minX + 1;
-          const entry = box ? box : { nodeIdx: child.nodeIdx, termX, termY, termWidth, termHeight: 1, termBox: child.termBox };
-          if (!rows.has(termY)) rows.set(termY, []);
-          rows.get(termY).push(entry);
-        }
-
-        for (const [row, items] of rows) {
-          items.sort((a, b) => a.termX - b.termX);
-          let lastEndX = items[0].termX - 1;
-          for (const item of items) {
-            if (item.termX <= lastEndX) {
-              const shift = lastEndX + 1 - item.termX;
-              shiftNode(item.nodeIdx, shift, textBoxMap, childrenMap);
-              item.termX += shift;
-              debugLog(`Node ${item.nodeIdx} (Text/Tag: ${textBoxMap.has(item.nodeIdx) ? `"${textBoxMap.get(item.nodeIdx).text}"` : nodes.nodeName[item.nodeIdx] >= 0 ? snapshot.strings[nodes.nodeName[item.nodeIdx]] : 'Unknown'}) - Shifted right by ${shift} to (${item.termX}, ${item.termY})`);
+          // Leaf node (text boxes)
+          if (textBoxMap.has(nodeIdx)) {
+            const boxes = textBoxMap.get(nodeIdx);
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const box of boxes) {
+              box.termBox = {
+                minX: box.termX,
+                minY: box.termY,
+                maxX: box.termX + box.termWidth - 1,
+                maxY: box.termY
+              };
+              debugLog(`Node ${nodeIdx} (Text: "${box.text}", Tag: ${tagName}) - Leaf, Box: (${box.termBox.minX}, ${box.termBox.minY}) to (${box.termBox.maxX}, ${box.termBox.maxY})`);
+              minX = Math.min(minX, box.termBox.minX);
+              minY = Math.min(minY, box.termBox.minY);
+              maxX = Math.max(maxX, box.termBox.maxX);
+              maxY = Math.max(maxY, box.termBox.maxY);
             }
-            lastEndX = item.termX + item.termWidth - 1;
-            item.termBox.minX = item.termX;
-            item.termBox.maxX = lastEndX;
+            return { minX, minY, maxX, maxY };
           }
-        }
 
-        // Compute and log parent box after adjustment
-        const minX = Math.min(...childBoxes.map(cb => cb.termBox.minX));
-        const minY = Math.min(...childBoxes.map(cb => cb.termBox.minY));
-        const maxX = Math.max(...childBoxes.map(cb => cb.termBox.maxX));
-        const maxY = Math.max(...childBoxes.map(cb => cb.termBox.maxY));
-        const parentBox = { minX, minY, maxX, maxY };
-        debugLog(`Node ${nodeIdx} (Tag: ${tagName}) - Post-adjustment Box: (${minX}, ${minY}) to (${maxX}, ${maxY})`);
-        return parentBox;
-      }
+          // Container node
+          const children = childrenMap.get(nodeIdx) || [];
+          if (children.length === 0) {
+            debugLog(`Node ${nodeIdx} (Tag: ${tagName}) - No children, skipped`);
+            return null;
+          }
+
+          const childBoxes = [];
+          let childLog = `Node ${nodeIdx} (Tag: ${tagName}) - Children: `;
+          for (const childIdx of children) {
+            const childBox = processNode(childIdx, childrenMap, textBoxMap, snapshot, nodes);
+            if (childBox) {
+              childBoxes.push({ nodeIdx: childIdx, termBox: childBox });
+              const isText = textBoxMap.has(childIdx);
+              const childTag = nodes.nodeName[childIdx] >= 0 ? snapshot.strings[nodes.nodeName[childIdx]] : 'Unknown';
+              const childText = isText ? `"${textBoxMap.get(childIdx)[0].text}"` : 'Container';
+              childLog += `${childIdx} (${childTag}, ${isText ? 'Text' : 'Container'}, ${childText}, Box: (${childBox.minX}, ${childBox.minY}) to (${childBox.maxX}, ${childBox.maxY})), `;
+            }
+          }
+          childLog = childLog.slice(0, -2);
+          debugLog(childLog);
+
+          if (childBoxes.length === 0) {
+            debugLog(`Node ${nodeIdx} (Tag: ${tagName}) - No valid children with text boxes, skipped`);
+            return null;
+          }
+
+          // Single child: Adopt its bounding box
+          if (childBoxes.length === 1) {
+            debugLog(`Node ${nodeIdx} (Tag: ${tagName}) - Single child, adopting box`);
+            return childBoxes[0].termBox;
+          }
+
+          // Collect all text boxes in subtree
+          const allTextBoxes = [];
+          function collectTextBoxes(nodeIdx) {
+            if (textBoxMap.has(nodeIdx)) {
+              allTextBoxes.push(...textBoxMap.get(nodeIdx));
+            }
+            const children = childrenMap.get(nodeIdx) || [];
+            for (const childIdx of children) {
+              collectTextBoxes(childIdx);
+            }
+          }
+          collectTextBoxes(nodeIdx);
+
+          // Resolve overlaps per termY
+          const rows = new Map();
+          for (const box of allTextBoxes) {
+            if (!rows.has(box.termY)) rows.set(box.termY, []);
+            rows.get(box.termY).push(box);
+          }
+
+          for (const [row, boxes] of rows) {
+            boxes.sort((a, b) => a.termX - b.termX);
+            let lastEndX = -1;
+            for (const box of boxes) {
+              if (box.termX <= lastEndX) {
+                const shift = lastEndX + 1 - box.termX;
+                box.termX += shift;
+                box.termBox.minX += shift;
+                box.termBox.maxX += shift;
+                debugLog(`Node ${box.nodeIndex} (Text: "${box.text}", Tag: ${tagName}) - Shifted right by ${shift} to (${box.termX}, ${box.termY})`);
+              }
+              lastEndX = box.termX + box.termWidth - 1;
+            }
+          }
+
+          // Compute parent bounding box
+          const minX = Math.min(...allTextBoxes.map(box => box.termX));
+          const minY = Math.min(...allTextBoxes.map(box => box.termY));
+          const maxX = Math.max(...allTextBoxes.map(box => box.termX + box.termWidth - 1));
+          const maxY = Math.max(...allTextBoxes.map(box => box.termY));
+          const parentBox = { minX, minY, maxX, maxY };
+          debugLog(`Node ${nodeIdx} (Tag: ${tagName}) - Pre-adjustment Box: (${Math.min(...childBoxes.map(cb => cb.termBox.minX))}, ${Math.min(...childBoxes.map(cb => cb.termBox.minY))}) to (${Math.max(...childBoxes.map(cb => cb.termBox.maxX))}, ${Math.max(...childBoxes.map(cb => cb.termBox.maxY))})`);
+          debugLog(`Node ${nodeIdx} (Tag: ${tagName}) - Post-adjustment Box: (${minX}, ${minY}) to (${maxX}, ${maxY})`);
+          return parentBox;
+        }
 
       function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
         if (textBoxMap.has(nodeIdx)) {
