@@ -13,7 +13,7 @@
     // one liners
       const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-    // Constants
+    // Constants and state
       const BrowserState = {
         targets: [],
         activeTarget: null,
@@ -34,8 +34,16 @@
         GAP_SIZE: 1,
       };
 
-    // arg processing
+      let socket;
+      let cleanup;
+      let targets;
+      let cookieHeader;
+      let send;
+      let browser;
+      let sessionId;
       let loginLink;
+
+    // arg processing
       if (args.length === 1) {
         loginLink = args[0];
         try {
@@ -65,13 +73,11 @@
       const apiUrl = `${baseUrl}/api/v10/tabs`;
 
   // main logic
-    let socket;
-    let cleanup;
-    let targets;
-    let cookieHeader;
-    let send;
-    let browser;
-    let sessionId;
+    const debouncedRefresh = debounce(() => {
+      if (sessionId) {
+        refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+      }
+    }, DEBOUNCE_DELAY);
 
     const selectTabAndRender = async () => {
       if (cleanup) cleanup();
@@ -98,6 +104,9 @@
         targets = connection.targets;
         cookieHeader = connection.cookieHeader;
         BrowserState.targets = targets;
+
+        await send('Target.setDiscoverTargets', { discover: true });
+        await send('Target.setAutoAttach', { autoAttac: true, waitForDebuggerOnStart: false, flatten: true });
 
         // If no targets exist, create a new one
         if (targets.length === 0) {
@@ -178,15 +187,18 @@
         });
 
         browser.on('back', async () => {
-          send('Page.goBack', {}, sessionId);
-          await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+          const navigated = await goBack(sessionId);
+          if (navigated) {
+            await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+          }
         });
 
         browser.on('forward', async () => {
-          send('Page.goForward', {}, sessionId);
-          await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+          const navigated = await goForward(sessionId);
+          if (navigated) {
+            await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+          }
         });
-
         browser.on('tabAdded', (tab) => {
           // Placeholder for new tab creation
           const newTarget = { title: tab.title, url: tab.url, targetId: `temp-${Date.now()}` };
@@ -216,13 +228,14 @@
 
   // Helpers
     // Data processing helpers
-      const debounce = (func, delay) => {
+      // Define debouncedRefresh at the top level
+      function debounce (func, delay) {
         let timeoutId;
         return (...args) => {
           clearTimeout(timeoutId);
           timeoutId = setTimeout(() => func(...args), delay);
         };
-      };
+      }
 
       function initializeState() {
         return {
@@ -237,6 +250,23 @@
           nodes: null,
           isInitialized: false,
         };
+      }
+
+      function updateTabData(targetId, title, url) {
+        // Assuming BrowserState.targets holds the list of targets
+        const targetIndex = BrowserState.targets.findIndex(t => t.targetId === targetId);
+        if (targetIndex !== -1) {
+          // Update the target's title and URL in state
+          BrowserState.targets[targetIndex].title = title;
+          BrowserState.targets[targetIndex].url = url;
+
+          // Update the corresponding tab in the UI (e.g., TerminalBrowser.tabs)
+          if (targetIndex < browser.tabs.length) {
+            browser.setTab(targetIndex, { title, url });
+          }
+        } else {
+          console.warn(`Target with ID ${targetId} not found`);
+        }
       }
 
       async function fetchSnapshot({ send, sessionId }) {
@@ -818,6 +848,37 @@
 
     // Interactivity helpers
       // Adjusted setupEventHandlers to include address bar key
+      // Get the current navigation history for the tab
+      async function getNavigationHistory(sessionId) {
+        const { currentIndex, entries } = await send('Page.getNavigationHistory', {}, sessionId);
+        return { currentIndex, entries };
+      }
+
+      // Navigate to the previous history entry (back)
+      async function goBack(sessionId) {
+        const { currentIndex, entries } = await getNavigationHistory(sessionId);
+        if (currentIndex > 0) {
+          const previousEntry = entries[currentIndex - 1];
+          await send('Page.navigateToHistoryEntry', { entryId: previousEntry.id }, sessionId);
+          return true; // Navigation occurred
+        } else {
+          console.log('No previous page in history');
+          return false; // No navigation
+        }
+      }
+
+      // Navigate to the next history entry (forward)
+      async function goForward(sessionId) {
+        const { currentIndex, entries } = await getNavigationHistory(sessionId);
+        if (currentIndex < entries.length - 1) {
+          const nextEntry = entries[currentIndex + 1];
+          await send('Page.navigateToHistoryEntry', { entryId: nextEntry.id }, sessionId);
+          return true; // Navigation occurred
+        } else {
+          console.log('No next page in history');
+          return false; // No navigation
+        }
+      }
       function setupEventHandlers({ terminal, send, sessionId, state, refresh, onTabSwitch, addressBar }) {
         const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
 
@@ -1177,6 +1238,16 @@
             delete Resolvers[key];
           } else {
             DEBUG && logMessage('UNHANDLED', message);
+            if (message.method === 'Target.targetInfoChanged') {
+              const { targetInfo } = message.params;
+              const { targetId, title, url } = targetInfo;
+
+              // Update tab data
+              updateTabData(targetId, title, url);
+
+              // Trigger debounced refresh
+              debouncedRefresh();
+            }
           }
         });
 
