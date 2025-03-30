@@ -418,6 +418,7 @@ we should deconflict some lines (small text can vert overlap)
               if (subtreeTexts.length > 0) {
                 debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) subtree text content: [${subtreeTexts.map(t => `"${t}"`).join(', ')}]`);
               }
+              textContent = subtreeTexts.join(' ');
             }
             debugLog(`Processing Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) with ${children.length} immediate children`);
 
