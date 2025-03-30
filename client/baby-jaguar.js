@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 /*
 todo
-is full contained should use guiBox and
-be is mostly contained
-
+we should app a 1 character gap - how ? longest text box in any node should have 1 space added to it.
 we should deconflict some lines (small text can vert overlap)
 */
 // CyberJaguar - BrowserBox TUI Browser Application
@@ -375,7 +373,7 @@ we should deconflict some lines (small text can vert overlap)
 
               if (textBoxMap.has(nodeIdx)) {
                 const boxes = textBoxMap.get(nodeIdx);
-                console.log(boxes);
+                DEBUG && console.log(boxes);
                 const rows = new Map();
                 for (const box of boxes) {
                   if (!rows.has(box.termY)) rows.set(box.termY, []);
