@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*
 todo
-we should ensure longest text in box expands the termbox appropriately.
+we should ensure longest text in box expands the termbox appropriately. (apparently it is, we need to look at log because there's still sometimes overlap at right)
 we should deconflict some lines (small text can vert overlap, with hoz alignment algorithm applied vertically)
 */
 // CyberJaguar - BrowserBox TUI Browser Application
