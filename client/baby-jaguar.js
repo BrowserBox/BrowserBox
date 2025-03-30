@@ -419,7 +419,7 @@ we should deconflict some lines (small text can vert overlap)
                 const maxX = Math.max(...boxes.map(b => b.termBox.maxX));
                 const maxY = Math.max(...boxes.map(b => b.termBox.maxY));
                 debugLog(`Leaf Node ${nodeIdx} TUI bounds: (${minX}, ${minY}) to (${maxX}, ${maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
-                return { minX, minY, maxX, maxY };
+                return { minX, minY, maxX, maxY, guiBox };
               }
 
               // Process immediate children first
