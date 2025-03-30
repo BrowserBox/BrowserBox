@@ -28,7 +28,8 @@ we should deconflict some lines (small text can vert overlap)
       };
       const HORIZONTAL_COMPRESSION = 1.0;
       const VERTICAL_COMPRESSION = 1.0;
-      const DEBOUNCE_DELAY = 100;
+      const GAP = 1;
+      const DEBOUNCE_DELAY = 280;
       const LOG_FILE = 'cdp.log';
       const args = process.argv.slice(2);
 
@@ -504,9 +505,11 @@ we should deconflict some lines (small text can vert overlap)
               rows.get(row).push(childBox);
             }
 
+            let maxXChild = null;
+            let maxXOverall = -Infinity;
             for (const [row, rowBoxes] of rows) {
               rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX);
-              let lastEndX = -1;
+              let lastEndX = -Infinity;
               let lastBox = null;
               for (const childBox of rowBoxes) {
                 if (lastBox && childBox.termBox.minX <= lastEndX) {
@@ -520,9 +523,16 @@ we should deconflict some lines (small text can vert overlap)
                     debugLog(`Node ${childBox.nodeIdx} [${JSON.stringify(childBox)}] ("${childBox.text || 'unknown'}") not shifted despite TUI overlap with ${lastBox.nodeIdx} ("${lastBox.text || 'unknown'}") because GUI overlap exists`);
                   }
                 }
+                if ( childBox.termBox.maxX > maxXOverall ) {
+                  maxXChild = childBox
+                  maxXOverall = maxXChild.termBox.maxX;
+                }
                 lastEndX = childBox.termBox.maxX;
                 lastBox = childBox;
               }
+            }
+            if ( maxXChild && textBoxMap.has(maxXChild.nodeIdx) ) {
+              maxXChild.termBox.maxX += GAP; 
             }
 
             const minX = Math.min(...childBoxes.map(cb => cb.termBox.minX));
