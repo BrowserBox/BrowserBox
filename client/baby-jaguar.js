@@ -28,8 +28,7 @@ we should deconflict some lines (small text can vert overlap)
       };
       const HORIZONTAL_COMPRESSION = 1.0;
       const VERTICAL_COMPRESSION = 1.0;
-      const GAP = 1;
-      const DEBOUNCE_DELAY = 280;
+      const DEBOUNCE_DELAY = 100;
       const LOG_FILE = 'cdp.log';
       const args = process.argv.slice(2);
 
@@ -505,11 +504,9 @@ we should deconflict some lines (small text can vert overlap)
               rows.get(row).push(childBox);
             }
 
-            let maxXChild = null;
-            let maxXOverall = -Infinity;
             for (const [row, rowBoxes] of rows) {
               rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX);
-              let lastEndX = -Infinity;
+              let lastEndX = -1;
               let lastBox = null;
               for (const childBox of rowBoxes) {
                 if (lastBox && childBox.termBox.minX <= lastEndX) {
@@ -523,16 +520,9 @@ we should deconflict some lines (small text can vert overlap)
                     debugLog(`Node ${childBox.nodeIdx} [${JSON.stringify(childBox)}] ("${childBox.text || 'unknown'}") not shifted despite TUI overlap with ${lastBox.nodeIdx} ("${lastBox.text || 'unknown'}") because GUI overlap exists`);
                   }
                 }
-                if ( childBox.termBox.maxX > maxXOverall ) {
-                  maxXChild = childBox
-                  maxXOverall = maxXChild.termBox.maxX;
-                }
                 lastEndX = childBox.termBox.maxX;
                 lastBox = childBox;
               }
-            }
-            if ( maxXChild && textBoxMap.has(maxXChild.nodeIdx) ) {
-              maxXChild.termBox.maxX += GAP; 
             }
 
             const minX = Math.min(...childBoxes.map(cb => cb.termBox.minX));
@@ -602,11 +592,9 @@ we should deconflict some lines (small text can vert overlap)
             }
           }
           const textBoxMap = new Map();
-
           for (const box of visibleBoxes) {
             if (!textBoxMap.has(box.nodeIndex)) textBoxMap.set(box.nodeIndex, []);
             textBoxMap.get(box.nodeIndex).push(box);
-            console.log(box);
           }
 
           // Find root nodes (nodes with text boxes in their subtree and no parent in the visible set)
@@ -621,8 +609,6 @@ we should deconflict some lines (small text can vert overlap)
           for (const rootNode of rootNodes) {
             processNode(rootNode, childrenMap, textBoxMap, snapshot, nodes);
           }
-
-          deconflictYLines(visibleBoxes);
 
           return {
             visibleBoxes,
@@ -639,59 +625,6 @@ we should deconflict some lines (small text can vert overlap)
           };
         }
 
-          /**
-           * Deconflicts Y-lines to prevent collapsing distinct GUI lines.
-           * @param {Array} boxes - Text boxes with termBox properties.
-           */
-/**
- * Deconflicts Y-lines to prevent collapsing distinct GUI lines into the same TUI line.
- * @param {Array} boxes - Array of text box objects with termY and boundingBox properties.
- */
-function deconflictYLines(boxes) {
-  const yThreshold = 10; // Pixel threshold to separate lines in GUI coordinates
-  const termYGroups = new Map();
-
-  // Step 1: Group boxes by their initial TUI Y-coordinate (termY)
-  boxes.forEach(box => {
-    // Skip invalid boxes missing required properties
-    if (!box || !box.termY || !box.boundingBox) {
-      console.log(`Skipping invalid box: ${JSON.stringify(box)}`);
-      return;
-    }
-    const termY = box.termY;
-    termYGroups.set(termY, [...(termYGroups.get(termY) || []), box]);
-  });
-
-  // Step 2 & 3: Process each group to deconflict based on GUI Y-coordinates
-  for (const [termY, group] of termYGroups) {
-    // Skip groups with only one box (no deconfliction needed)
-    if (group.length <= 1) continue;
-
-    // Sort boxes by GUI Y-coordinate (top to bottom)
-    group.sort((a, b) => a.boundingBox.y - b.boundingBox.y);
-
-    // Initialize with the first box’s position
-    let currentLineY = group[0].boundingBox.y; // GUI Y-reference
-    let currentTermY = termY;                  // TUI Y-coordinate
-    group[0].termY = currentTermY;             // Assign initial termY
-
-    // Iterate through remaining boxes
-    for (let i = 1; i < group.length; i++) {
-      const box = group[i];
-      const guiYDifference = box.boundingBox.y - currentLineY;
-
-      // If the GUI Y difference exceeds the threshold, move to a new TUI line
-      if (guiYDifference > yThreshold) {
-        currentTermY++;                // Increment TUI line
-        currentLineY = box.boundingBox.y; // Update GUI Y-reference
-      }
-
-      // Assign the updated TUI Y-coordinate to the box
-      box.termY = currentTermY;
-      console.log(`Updated termY for "${box.text}" to ${currentTermY} (GUI Y diff: ${guiYDifference})`);
-    }
-  }
-}
       function extractTextLayoutBoxes(snapshot) {
         const textLayoutBoxes = [];
         const clickableElements = [];
