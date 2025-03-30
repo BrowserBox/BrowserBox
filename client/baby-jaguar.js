@@ -18,7 +18,7 @@ we should deconflict some lines (small text can vert overlap)
       const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     // DEBUG 
-      const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
+      const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
 
     // Constants and state
       const BrowserState = {
@@ -424,7 +424,7 @@ we should deconflict some lines (small text can vert overlap)
 
             if (textBoxMap.has(nodeIdx)) {
               const boxes = textBoxMap.get(nodeIdx);
-              console.log(boxes);
+              DEBUG && console.log(boxes);
               const rows = new Map();
               for (const box of boxes) {
                 if (!rows.has(box.termY)) rows.set(box.termY, []);
