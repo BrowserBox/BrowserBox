@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /*
 todo
-we should app a 1 character gap - how ? longest text box in any node should have 1 space added to it.
-we should deconflict some lines (small text can vert overlap)
+we should ensure longest text in box expands the termbox appropriately.
+we should deconflict some lines (small text can vert overlap, with hoz alignment algorithm applied vertically)
 */
 // CyberJaguar - BrowserBox TUI Browser Application
   // Setup
@@ -413,6 +413,8 @@ we should deconflict some lines (small text can vert overlap)
             }
 
             const children = childrenMap.get(nodeIdx) || [];
+            let longestText;
+            let longestTextLength = 0;
             // Log subtree text content if DEBUG is true
             if (DEBUG) {
               const subtreeTexts = collectSubtreeText(nodeIdx);
@@ -420,6 +422,12 @@ we should deconflict some lines (small text can vert overlap)
                 debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) subtree text content: [${subtreeTexts.map(t => `"${t}"`).join(', ')}]`);
               }
               textContent = subtreeTexts.join(' ');
+              for( const t of subtreeTexts ) {
+                if ( t.length > longestTextLength ) {
+                  longestText = t;
+                  longestTextLength = t.length;
+                }
+              }
             }
             debugLog(`Processing Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) with ${children.length} immediate children`);
 
@@ -429,6 +437,10 @@ we should deconflict some lines (small text can vert overlap)
               const rows = new Map();
               for (const box of boxes) {
                 if (!rows.has(box.termY)) rows.set(box.termY, []);
+                if ( box.text.length > longestText ) {
+                  longestText = box.text;
+                  longestTextLength = longestText.length;
+                }
                 rows.get(box.termY).push(box);
               }
 
@@ -462,6 +474,13 @@ we should deconflict some lines (small text can vert overlap)
               const minY = Math.min(...boxes.map(b => b.termBox.minY));
               const maxX = Math.max(...boxes.map(b => b.termBox.maxX));
               const maxY = Math.max(...boxes.map(b => b.termBox.maxY));
+
+              if ( longestText ) {
+                const slack = longestText.length - (maxX - minX);
+                if ( slack > 0) {
+                  maxX += slack;
+                }
+              }
               const termBox = { minX, minY, maxX, maxY };
 
               const layoutIdx = snapshot.documents[0].layout.nodeIndex.indexOf(nodeIdx);
@@ -482,7 +501,7 @@ we should deconflict some lines (small text can vert overlap)
               }
 
               debugLog(`Leaf Node ${nodeIdx} TUI bounds: (${minX}, ${minY}) to (${maxX}, ${maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
-              return { termBox, guiBox, text: boxes[0]?.text || textContent };
+              return { termBox, guiBox, text: textContent };
             }
 
             const childBoxes = [];
@@ -539,6 +558,12 @@ we should deconflict some lines (small text can vert overlap)
             const minY = Math.min(...childBoxes.map(cb => cb.termBox.minY));
             const maxX = Math.max(...childBoxes.map(cb => cb.termBox.maxX));
             const maxY = Math.max(...childBoxes.map(cb => cb.termBox.maxY));
+            if ( longestText ) {
+              const slack = longestText.length - (maxX - minX);
+              if ( slack > 0) {
+                maxX += slack;
+              }
+            }
             const termBox = { minX, minY, maxX, maxY };
 
             debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) final TUI bounds: (${minX}, ${minY}) to (${maxX}, ${maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
