@@ -17,6 +17,9 @@ we should deconflict some lines (small text can vert overlap)
     // one liners
       const sleep = ms => new Promise(res => setTimeout(res, ms));
 
+    // DEBUG 
+      const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
+
     // Constants and state
       const BrowserState = {
         targets: [],
@@ -26,7 +29,6 @@ we should deconflict some lines (small text can vert overlap)
       const HORIZONTAL_COMPRESSION = 1.0;
       const VERTICAL_COMPRESSION = 1.0;
       const DEBOUNCE_DELAY = 100;
-      const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
       const LOG_FILE = 'cdp-log.txt';
       const args = process.argv.slice(2);
 
@@ -327,6 +329,31 @@ we should deconflict some lines (small text can vert overlap)
               let guiBox = { x: 0, y: 0, width: 0, height: 0 };
               let textContent = '';
 
+              // Helper function to collect text content of all text nodes in the subtree
+              function collectSubtreeText(nodeIdx) {
+                let texts = [];
+                if (nodes.nodeType[nodeIdx] === 3) { // Text node
+                  const textBoxes = snapshot.documents[0].textBoxes;
+                  const layoutToNode = new Map(snapshot.documents[0].layout.nodeIndex.map((nIdx, lIdx) => [lIdx, nIdx]));
+                  for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
+                    const layoutIdx = textBoxes.layoutIndex[i];
+                    if (layoutIdx !== -1 && layoutToNode.get(layoutIdx) === nodeIdx) {
+                      const textIndex = snapshot.documents[0].layout.text[layoutIdx];
+                      if (textIndex !== -1 && textIndex < snapshot.strings.length) {
+                        const text = snapshot.strings[textIndex].substring(textBoxes.start[i], textBoxes.start[i] + textBoxes.length[i]).trim();
+                        if (text) texts.push(text);
+                      }
+                      break;
+                    }
+                  }
+                }
+                const children = childrenMap.get(nodeIdx) || [];
+                for (const childIdx of children) {
+                  texts.push(...collectSubtreeText(childIdx));
+                }
+                return texts;
+              }
+
               if (isTextNode) {
                 const textBoxes = snapshot.documents[0].textBoxes;
                 const layoutToNode = new Map(snapshot.documents[0].layout.nodeIndex.map((nIdx, lIdx) => [lIdx, nIdx]));
@@ -369,6 +396,13 @@ we should deconflict some lines (small text can vert overlap)
               }
 
               const children = childrenMap.get(nodeIdx) || [];
+              // Log subtree text content if DEBUG is true
+              if (DEBUG) {
+                const subtreeTexts = collectSubtreeText(nodeIdx);
+                if (subtreeTexts.length > 0) {
+                  debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) subtree text content: [${subtreeTexts.map(t => `"${t}"`).join(', ')}]`);
+                }
+              }
               debugLog(`Processing Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) with ${children.length} immediate children`);
 
               if (textBoxMap.has(nodeIdx)) {
@@ -412,7 +446,6 @@ we should deconflict some lines (small text can vert overlap)
                 const maxY = Math.max(...boxes.map(b => b.termBox.maxY));
                 const termBox = { minX, minY, maxX, maxY };
 
-                // Use layout.bounds if available, otherwise fall back to union of text boxes
                 const layoutIdx = snapshot.documents[0].layout.nodeIndex.indexOf(nodeIdx);
                 if (layoutIdx !== -1) {
                   const bounds = snapshot.documents[0].layout.bounds[layoutIdx];
@@ -455,7 +488,7 @@ we should deconflict some lines (small text can vert overlap)
               }
 
               for (const [row, rowBoxes] of rows) {
-                rowBoxes.sort((a, b) => a.termBox.minX - b.termX);
+                rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX); // Fixed the sorting bug
                 let lastEndX = -1;
                 let lastBox = null;
                 for (const childBox of rowBoxes) {
