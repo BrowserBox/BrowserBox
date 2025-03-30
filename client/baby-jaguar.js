@@ -18,7 +18,7 @@ we should deconflict some lines (small text can vert overlap)
       const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     // DEBUG 
-      const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
+      const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
 
     // Constants and state
       const BrowserState = {
@@ -29,7 +29,7 @@ we should deconflict some lines (small text can vert overlap)
       const HORIZONTAL_COMPRESSION = 1.0;
       const VERTICAL_COMPRESSION = 1.0;
       const DEBOUNCE_DELAY = 100;
-      const LOG_FILE = 'cdp-log.txt';
+      const LOG_FILE = 'cdp.log';
       const args = process.argv.slice(2);
 
       let socket;
@@ -323,200 +323,216 @@ we should deconflict some lines (small text can vert overlap)
             }
             return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
           }
-            function processNode(nodeIdx, childrenMap, textBoxMap, snapshot, nodes) {
-              const tagName = nodes.nodeName[nodeIdx] >= 0 ? snapshot.strings[nodes.nodeName[nodeIdx]] : 'Unknown';
-              const isTextNode = nodes.nodeType[nodeIdx] === 3;
-              let guiBox = { x: 0, y: 0, width: 0, height: 0 };
-              let textContent = '';
+          function processNode(nodeIdx, childrenMap, textBoxMap, snapshot, nodes) {
+            const tagName = nodes.nodeName[nodeIdx] >= 0 ? snapshot.strings[nodes.nodeName[nodeIdx]] : 'Unknown';
+            const isTextNode = nodes.nodeType[nodeIdx] === 3;
+            let guiBox = { x: 0, y: 0, width: 0, height: 0 };
+            let textContent = '';
 
-              // Helper function to collect text content of all text nodes in the subtree
-              function collectSubtreeText(nodeIdx) {
-                let texts = [];
-                if (nodes.nodeType[nodeIdx] === 3) { // Text node
-                  const textBoxes = snapshot.documents[0].textBoxes;
-                  const layoutToNode = new Map(snapshot.documents[0].layout.nodeIndex.map((nIdx, lIdx) => [lIdx, nIdx]));
-                  for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
-                    const layoutIdx = textBoxes.layoutIndex[i];
-                    if (layoutIdx !== -1 && layoutToNode.get(layoutIdx) === nodeIdx) {
-                      const textIndex = snapshot.documents[0].layout.text[layoutIdx];
-                      if (textIndex !== -1 && textIndex < snapshot.strings.length) {
-                        const text = snapshot.strings[textIndex].substring(textBoxes.start[i], textBoxes.start[i] + textBoxes.length[i]).trim();
-                        if (text) texts.push(text);
-                      }
-                      break;
-                    }
-                  }
-                }
-                const children = childrenMap.get(nodeIdx) || [];
-                for (const childIdx of children) {
-                  texts.push(...collectSubtreeText(childIdx));
-                }
-                return texts;
-              }
-
-              if (isTextNode) {
+            // Helper function to collect text content of all text nodes in the subtree
+            function collectSubtreeText(nodeIdx) {
+              let texts = [];
+              if (nodes.nodeType[nodeIdx] === 3) { // Text node
                 const textBoxes = snapshot.documents[0].textBoxes;
                 const layoutToNode = new Map(snapshot.documents[0].layout.nodeIndex.map((nIdx, lIdx) => [lIdx, nIdx]));
                 for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
                   const layoutIdx = textBoxes.layoutIndex[i];
                   if (layoutIdx !== -1 && layoutToNode.get(layoutIdx) === nodeIdx) {
-                    const bounds = textBoxes.bounds[i];
+                    const textIndex = snapshot.documents[0].layout.text[layoutIdx];
+                    if (textIndex !== -1 && textIndex < snapshot.strings.length) {
+                      const text = snapshot.strings[textIndex].substring(textBoxes.start[i], textBoxes.start[i] + textBoxes.length[i]).trim();
+                      if (text) texts.push(text);
+                    }
+                    // Don't break; continue to collect all text boxes for this node
+                  }
+                }
+              }
+              const children = childrenMap.get(nodeIdx) || [];
+              for (const childIdx of children) {
+                texts.push(...collectSubtreeText(childIdx));
+              }
+              return texts;
+            }
+
+            if (isTextNode) {
+              const textBoxes = snapshot.documents[0].textBoxes;
+              const layoutToNode = new Map(snapshot.documents[0].layout.nodeIndex.map((nIdx, lIdx) => [lIdx, nIdx]));
+              let textParts = [];
+              for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
+                const layoutIdx = textBoxes.layoutIndex[i];
+                if (layoutIdx !== -1 && layoutToNode.get(layoutIdx) === nodeIdx) {
+                  const bounds = textBoxes.bounds[i];
+                  // Update guiBox to encompass all text boxes for this node
+                  if (textParts.length === 0) {
                     guiBox = {
                       x: bounds[0],
                       y: bounds[1],
                       width: bounds[2],
                       height: bounds[3]
                     };
-                    const textIndex = snapshot.documents[0].layout.text[layoutIdx];
-                    if (textIndex !== -1 && textIndex < snapshot.strings.length) {
-                      textContent = snapshot.strings[textIndex].substring(textBoxes.start[i], textBoxes.start[i] + textBoxes.length[i]).trim();
-                    }
-                    break;
+                  } else {
+                    const minX = Math.min(guiBox.x, bounds[0]);
+                    const minY = Math.min(guiBox.y, bounds[1]);
+                    const maxX = Math.max(guiBox.x + guiBox.width, bounds[0] + bounds[2]);
+                    const maxY = Math.max(guiBox.y + guiBox.height, bounds[1] + bounds[3]);
+                    guiBox = {
+                      x: minX,
+                      y: minY,
+                      width: maxX - minX,
+                      height: maxY - minY
+                    };
+                  }
+                  const textIndex = snapshot.documents[0].layout.text[layoutIdx];
+                  if (textIndex !== -1 && textIndex < snapshot.strings.length) {
+                    const text = snapshot.strings[textIndex].substring(textBoxes.start[i], textBoxes.start[i] + textBoxes.length[i]).trim();
+                    if (text) textParts.push(text);
                   }
                 }
-                if (!textContent) {
-                  debugLog(`Skipping Node ${nodeIdx} (Tag: #text<>) - Empty text content`);
-                  return null;
-                }
-                debugLog(`Node ${nodeIdx} (Tag: #text<${textContent}>) GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
-              } else {
-                const layoutIdx = snapshot.documents[0].layout.nodeIndex.indexOf(nodeIdx);
-                if (layoutIdx !== -1) {
-                  const bounds = snapshot.documents[0].layout.bounds[layoutIdx];
-                  guiBox = {
-                    x: bounds[0],
-                    y: bounds[1],
-                    width: bounds[2],
-                    height: bounds[3]
-                  };
-                  debugLog(`Node ${nodeIdx} (Tag: ${tagName}) GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
-                } else {
-                  debugLog(`Node ${nodeIdx} (Tag: ${tagName}) has no GUI bounds in layout`);
-                }
               }
-
-              const children = childrenMap.get(nodeIdx) || [];
-              // Log subtree text content if DEBUG is true
-              if (DEBUG) {
-                const subtreeTexts = collectSubtreeText(nodeIdx);
-                if (subtreeTexts.length > 0) {
-                  debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) subtree text content: [${subtreeTexts.map(t => `"${t}"`).join(', ')}]`);
-                }
-              }
-              debugLog(`Processing Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) with ${children.length} immediate children`);
-
-              if (textBoxMap.has(nodeIdx)) {
-                const boxes = textBoxMap.get(nodeIdx);
-                DEBUG && console.log(boxes);
-                const rows = new Map();
-                for (const box of boxes) {
-                  if (!rows.has(box.termY)) rows.set(box.termY, []);
-                  rows.get(box.termY).push(box);
-                }
-
-                for (const [row, rowBoxes] of rows) {
-                  rowBoxes.sort((a, b) => a.termX - b.termX);
-                  let lastEndX = -1;
-                  for (const box of rowBoxes) {
-                    if (box.termX <= lastEndX) {
-                      const shift = lastEndX + 1 - box.termX;
-                      box.termX += shift;
-                      box.termBox = {
-                        minX: box.termX,
-                        minY: box.termY,
-                        maxX: box.termX + box.termWidth - 1,
-                        maxY: box.termY
-                      };
-                      debugLog(`Leaf Node ${nodeIdx} (Text: "${box.text}") shifted right by ${shift} to (${box.termX}, ${box.termY})`);
-                    } else {
-                      box.termBox = {
-                        minX: box.termX,
-                        minY: box.termY,
-                        maxX: box.termX + box.termWidth - 1,
-                        maxY: box.termY
-                      };
-                    }
-                    lastEndX = box.termBox.maxX;
-                  }
-                }
-
-                const minX = Math.min(...boxes.map(b => b.termBox.minX));
-                const minY = Math.min(...boxes.map(b => b.termBox.minY));
-                const maxX = Math.max(...boxes.map(b => b.termBox.maxX));
-                const maxY = Math.max(...boxes.map(b => b.termBox.maxY));
-                const termBox = { minX, minY, maxX, maxY };
-
-                const layoutIdx = snapshot.documents[0].layout.nodeIndex.indexOf(nodeIdx);
-                if (layoutIdx !== -1) {
-                  const bounds = snapshot.documents[0].layout.bounds[layoutIdx];
-                  guiBox = {
-                    x: bounds[0],
-                    y: bounds[1],
-                    width: bounds[2],
-                    height: bounds[3]
-                  };
-                } else {
-                  const guiMinX = Math.min(...boxes.map(b => b.boundingBox.x));
-                  const guiMinY = Math.min(...boxes.map(b => b.boundingBox.y));
-                  const guiMaxX = Math.max(...boxes.map(b => b.boundingBox.x + b.boundingBox.width));
-                  const guiMaxY = Math.max(...boxes.map(b => b.boundingBox.y + b.boundingBox.height));
-                  guiBox = { x: guiMinX, y: guiMinY, width: guiMaxX - guiMinX, height: guiMaxY - guiMinY };
-                }
-
-                debugLog(`Leaf Node ${nodeIdx} TUI bounds: (${minX}, ${minY}) to (${maxX}, ${maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
-                return { termBox, guiBox, text: boxes[0]?.text || textContent };
-              }
-
-              const childBoxes = [];
-              for (const childIdx of children) {
-                const childResult = processNode(childIdx, childrenMap, textBoxMap, snapshot, nodes);
-                if (childResult) {
-                  childBoxes.push({ nodeIdx: childIdx, ...childResult });
-                }
-              }
-
-              if (childBoxes.length === 0) {
-                debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) has no children with text boxes | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
+              textContent = textParts.join(' '); // Join all text parts with a space
+              if (!textContent) {
+                debugLog(`Skipping Node ${nodeIdx} (Tag: #text<>) - Empty text content`);
                 return null;
               }
+              debugLog(`Node ${nodeIdx} (Tag: #text<${textContent}>) GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
+            } else {
+              const layoutIdx = snapshot.documents[0].layout.nodeIndex.indexOf(nodeIdx);
+              if (layoutIdx !== -1) {
+                const bounds = snapshot.documents[0].layout.bounds[layoutIdx];
+                guiBox = {
+                  x: bounds[0],
+                  y: bounds[1],
+                  width: bounds[2],
+                  height: bounds[3]
+                };
+                debugLog(`Node ${nodeIdx} (Tag: ${tagName}) GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
+              } else {
+                debugLog(`Node ${nodeIdx} (Tag: ${tagName}) has no GUI bounds in layout`);
+              }
+            }
 
+            const children = childrenMap.get(nodeIdx) || [];
+            // Log subtree text content if DEBUG is true
+            if (DEBUG) {
+              const subtreeTexts = collectSubtreeText(nodeIdx);
+              if (subtreeTexts.length > 0) {
+                debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) subtree text content: [${subtreeTexts.map(t => `"${t}"`).join(', ')}]`);
+              }
+            }
+            debugLog(`Processing Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) with ${children.length} immediate children`);
+
+            if (textBoxMap.has(nodeIdx)) {
+              const boxes = textBoxMap.get(nodeIdx);
+              console.log(boxes);
               const rows = new Map();
-              for (const childBox of childBoxes) {
-                const row = childBox.termBox.minY;
-                if (!rows.has(row)) rows.set(row, []);
-                rows.get(row).push(childBox);
+              for (const box of boxes) {
+                if (!rows.has(box.termY)) rows.set(box.termY, []);
+                rows.get(box.termY).push(box);
               }
 
               for (const [row, rowBoxes] of rows) {
-                rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX); // Fixed the sorting bug
+                rowBoxes.sort((a, b) => a.termX - b.termX);
                 let lastEndX = -1;
-                let lastBox = null;
-                for (const childBox of rowBoxes) {
-                  if (lastBox && childBox.termBox.minX <= lastEndX) {
-                    if (!hasGuiOverlap(lastBox, childBox)) {
-                      const shift = lastEndX + 1 - childBox.termBox.minX;
-                      shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
-                      childBox.termBox.minX += shift;
-                      childBox.termBox.maxX += shift;
-                      debugLog(`Child ${childBox.nodeIdx} ("${childBox.text || 'unknown'}") shifted right by ${shift} to (${childBox.termBox.minX}, ${childBox.termBox.minY}) due to TUI overlap and no GUI overlap with previous child ${lastBox.nodeIdx} ("${lastBox.text || 'unknown'}")`);
-                    } else {
-                      debugLog(`Child ${childBox.nodeIdx} ("${childBox.text || 'unknown'}") not shifted despite TUI overlap with ${lastBox.nodeIdx} ("${lastBox.text || 'unknown'}") because GUI overlap exists`);
-                    }
+                for (const box of rowBoxes) {
+                  if (box.termX <= lastEndX) {
+                    const shift = lastEndX + 1 - box.termX;
+                    box.termX += shift;
+                    box.termBox = {
+                      minX: box.termX,
+                      minY: box.termY,
+                      maxX: box.termX + box.termWidth - 1,
+                      maxY: box.termY
+                    };
+                    debugLog(`Leaf Node ${nodeIdx} (Text: "${box.text}") shifted right by ${shift} to (${box.termX}, ${box.termY})`);
+                  } else {
+                    box.termBox = {
+                      minX: box.termX,
+                      minY: box.termY,
+                      maxX: box.termX + box.termWidth - 1,
+                      maxY: box.termY
+                    };
                   }
-                  lastEndX = childBox.termBox.maxX;
-                  lastBox = childBox;
+                  lastEndX = box.termBox.maxX;
                 }
               }
 
-              const minX = Math.min(...childBoxes.map(cb => cb.termBox.minX));
-              const minY = Math.min(...childBoxes.map(cb => cb.termBox.minY));
-              const maxX = Math.max(...childBoxes.map(cb => cb.termBox.maxX));
-              const maxY = Math.max(...childBoxes.map(cb => cb.termBox.maxY));
+              const minX = Math.min(...boxes.map(b => b.termBox.minX));
+              const minY = Math.min(...boxes.map(b => b.termBox.minY));
+              const maxX = Math.max(...boxes.map(b => b.termBox.maxX));
+              const maxY = Math.max(...boxes.map(b => b.termBox.maxY));
               const termBox = { minX, minY, maxX, maxY };
 
-              debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) final TUI bounds: (${minX}, ${minY}) to (${maxX}, ${maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
-              return { termBox, guiBox, text: textContent };
+              const layoutIdx = snapshot.documents[0].layout.nodeIndex.indexOf(nodeIdx);
+              if (layoutIdx !== -1) {
+                const bounds = snapshot.documents[0].layout.bounds[layoutIdx];
+                guiBox = {
+                  x: bounds[0],
+                  y: bounds[1],
+                  width: bounds[2],
+                  height: bounds[3]
+                };
+              } else {
+                const guiMinX = Math.min(...boxes.map(b => b.boundingBox.x));
+                const guiMinY = Math.min(...boxes.map(b => b.boundingBox.y));
+                const guiMaxX = Math.max(...boxes.map(b => b.boundingBox.x + b.boundingBox.width));
+                const guiMaxY = Math.max(...boxes.map(b => b.boundingBox.y + b.boundingBox.height));
+                guiBox = { x: guiMinX, y: guiMinY, width: guiMaxX - guiMinX, height: guiMaxY - guiMinY };
+              }
+
+              debugLog(`Leaf Node ${nodeIdx} TUI bounds: (${minX}, ${minY}) to (${maxX}, ${maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
+              return { termBox, guiBox, text: boxes[0]?.text || textContent };
             }
+
+            const childBoxes = [];
+            for (const childIdx of children) {
+              const childResult = processNode(childIdx, childrenMap, textBoxMap, snapshot, nodes);
+              if (childResult) {
+                childBoxes.push({ nodeIdx: childIdx, ...childResult });
+              }
+            }
+
+            if (childBoxes.length === 0) {
+              debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) has no children with text boxes | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
+              return null;
+            }
+
+            const rows = new Map();
+            for (const childBox of childBoxes) {
+              const row = childBox.termBox.minY;
+              if (!rows.has(row)) rows.set(row, []);
+              rows.get(row).push(childBox);
+            }
+
+            for (const [row, rowBoxes] of rows) {
+              rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX);
+              let lastEndX = -1;
+              let lastBox = null;
+              for (const childBox of rowBoxes) {
+                if (lastBox && childBox.termBox.minX <= lastEndX) {
+                  if (!hasGuiOverlap(lastBox, childBox)) {
+                    const shift = lastEndX + 1 - childBox.termBox.minX;
+                    shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
+                    childBox.termBox.minX += shift;
+                    childBox.termBox.maxX += shift;
+                    debugLog(`Node ${childBox.nodeIdx} [${JSON.stringify(childBox)}] ("${childBox.text || 'unknown'}") shifted right by ${shift} to (${childBox.termBox.minX}, ${childBox.termBox.minY}) due to TUI overlap and no GUI overlap with previous child ${lastBox.nodeIdx} ("${lastBox.text || 'unknown'}")`);
+                  } else {
+                    debugLog(`Node ${childBox.nodeIdx} [${JSON.stringify(childBox)}] ("${childBox.text || 'unknown'}") not shifted despite TUI overlap with ${lastBox.nodeIdx} ("${lastBox.text || 'unknown'}") because GUI overlap exists`);
+                  }
+                }
+                lastEndX = childBox.termBox.maxX;
+                lastBox = childBox;
+              }
+            }
+
+            const minX = Math.min(...childBoxes.map(cb => cb.termBox.minX));
+            const minY = Math.min(...childBoxes.map(cb => cb.termBox.minY));
+            const maxX = Math.max(...childBoxes.map(cb => cb.termBox.maxX));
+            const maxY = Math.max(...childBoxes.map(cb => cb.termBox.maxY));
+            const termBox = { minX, minY, maxX, maxY };
+
+            debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) final TUI bounds: (${minX}, ${minY}) to (${maxX}, ${maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
+            return { termBox, guiBox, text: textContent };
+          }
         function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
           if (textBoxMap.has(nodeIdx)) {
             const boxes = textBoxMap.get(nodeIdx);
