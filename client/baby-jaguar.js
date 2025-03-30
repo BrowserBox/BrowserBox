@@ -325,12 +325,11 @@ we should deconflict some lines (small text can vert overlap)
           }
             function processNode(nodeIdx, childrenMap, textBoxMap, snapshot, nodes) {
               const tagName = nodes.nodeName[nodeIdx] >= 0 ? snapshot.strings[nodes.nodeName[nodeIdx]] : 'Unknown';
-              const isTextNode = nodes.nodeType[nodeIdx] === 3; // 3 is the CDP nodeType for text nodes
+              const isTextNode = nodes.nodeType[nodeIdx] === 3;
               let guiBox = { x: 0, y: 0, width: 0, height: 0 };
               let textContent = '';
 
               if (isTextNode) {
-                // For text nodes, get bounding box and content from textBoxes
                 const textBoxes = snapshot.documents[0].textBoxes;
                 const layoutToNode = new Map(snapshot.documents[0].layout.nodeIndex.map((nIdx, lIdx) => [lIdx, nIdx]));
                 for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
@@ -350,14 +349,12 @@ we should deconflict some lines (small text can vert overlap)
                     break;
                   }
                 }
-                // Skip empty text nodes
                 if (!textContent) {
                   debugLog(`Skipping Node ${nodeIdx} (Tag: #text<>) - Empty text content`);
                   return null;
                 }
                 debugLog(`Node ${nodeIdx} (Tag: #text<${textContent}>) GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
               } else {
-                // For element nodes, get bounding box from layout.bounds
                 const layoutIdx = snapshot.documents[0].layout.nodeIndex.indexOf(nodeIdx);
                 if (layoutIdx !== -1) {
                   const bounds = snapshot.documents[0].layout.bounds[layoutIdx];
@@ -373,21 +370,18 @@ we should deconflict some lines (small text can vert overlap)
                 }
               }
 
-              // Get immediate children
               const children = childrenMap.get(nodeIdx) || [];
               debugLog(`Processing Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) with ${children.length} immediate children`);
 
-              // Leaf node with text boxes
               if (textBoxMap.has(nodeIdx)) {
                 const boxes = textBoxMap.get(nodeIdx);
-                // Group boxes by row (termY)
+                console.log(boxes);
                 const rows = new Map();
                 for (const box of boxes) {
                   if (!rows.has(box.termY)) rows.set(box.termY, []);
                   rows.get(box.termY).push(box);
                 }
 
-                // Resolve overlaps within each row
                 for (const [row, rowBoxes] of rows) {
                   rowBoxes.sort((a, b) => a.termX - b.termX);
                   let lastEndX = -1;
@@ -413,21 +407,40 @@ we should deconflict some lines (small text can vert overlap)
                     lastEndX = box.termBox.maxX;
                   }
                 }
-                
+
                 const minX = Math.min(...boxes.map(b => b.termBox.minX));
                 const minY = Math.min(...boxes.map(b => b.termBox.minY));
                 const maxX = Math.max(...boxes.map(b => b.termBox.maxX));
                 const maxY = Math.max(...boxes.map(b => b.termBox.maxY));
+                const termBox = { minX, minY, maxX, maxY };
+
+                // Use layout.bounds if available, otherwise fall back to union of text boxes
+                const layoutIdx = snapshot.documents[0].layout.nodeIndex.indexOf(nodeIdx);
+                if (layoutIdx !== -1) {
+                  const bounds = snapshot.documents[0].layout.bounds[layoutIdx];
+                  guiBox = {
+                    x: bounds[0],
+                    y: bounds[1],
+                    width: bounds[2],
+                    height: bounds[3]
+                  };
+                } else {
+                  const guiMinX = Math.min(...boxes.map(b => b.boundingBox.x));
+                  const guiMinY = Math.min(...boxes.map(b => b.boundingBox.y));
+                  const guiMaxX = Math.max(...boxes.map(b => b.boundingBox.x + b.boundingBox.width));
+                  const guiMaxY = Math.max(...boxes.map(b => b.boundingBox.y + b.boundingBox.height));
+                  guiBox = { x: guiMinX, y: guiMinY, width: guiMaxX - guiMinX, height: guiMaxY - guiMinY };
+                }
+
                 debugLog(`Leaf Node ${nodeIdx} TUI bounds: (${minX}, ${minY}) to (${maxX}, ${maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
-                return { minX, minY, maxX, maxY, guiBox };
+                return { termBox, guiBox, text: boxes[0]?.text || textContent };
               }
 
-              // Process immediate children first
               const childBoxes = [];
               for (const childIdx of children) {
-                const childBox = processNode(childIdx, childrenMap, textBoxMap, snapshot, nodes);
-                if (childBox) {
-                  childBoxes.push({ nodeIdx: childIdx, termBox: childBox, guiBox: childBox.guiBix });
+                const childResult = processNode(childIdx, childrenMap, textBoxMap, snapshot, nodes);
+                if (childResult) {
+                  childBoxes.push({ nodeIdx: childIdx, ...childResult });
                 }
               }
 
@@ -436,7 +449,6 @@ we should deconflict some lines (small text can vert overlap)
                 return null;
               }
 
-              // Group children by row (based on minY)
               const rows = new Map();
               for (const childBox of childBoxes) {
                 const row = childBox.termBox.minY;
@@ -444,34 +456,35 @@ we should deconflict some lines (small text can vert overlap)
                 rows.get(row).push(childBox);
               }
 
-              // Resolve overlaps within each row
               for (const [row, rowBoxes] of rows) {
-                rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX);
+                rowBoxes.sort((a, b) => a.termBox.minX - b.termX);
                 let lastEndX = -1;
                 let lastBox = null;
                 for (const childBox of rowBoxes) {
-                  if (childBox.termBox.minX <= lastEndX && !hasGuiOverlap(lastBox, childBox)) {
-                    const shift = lastEndX + 1 - childBox.termBox.minX;
-                    shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
-                    childBox.termBox.minX += shift;
-                    childBox.termBox.maxX += shift;
-                    debugLog(`Node ${nodeIdx} shifted child ${childBox.nodeIdx} right by ${shift} to (${childBox.termBox.minX}, ${childBox.termBox.minY})`);
-                  } else {
-                    debugLog(`Node ${nodeIdx} not moving child ${JSON.stringify({childBox})}`);
+                  if (lastBox && childBox.termBox.minX <= lastEndX) {
+                    if (!hasGuiOverlap(lastBox, childBox)) {
+                      const shift = lastEndX + 1 - childBox.termBox.minX;
+                      shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
+                      childBox.termBox.minX += shift;
+                      childBox.termBox.maxX += shift;
+                      debugLog(`Child ${childBox.nodeIdx} ("${childBox.text || 'unknown'}") shifted right by ${shift} to (${childBox.termBox.minX}, ${childBox.termBox.minY}) due to TUI overlap and no GUI overlap with previous child ${lastBox.nodeIdx} ("${lastBox.text || 'unknown'}")`);
+                    } else {
+                      debugLog(`Child ${childBox.nodeIdx} ("${childBox.text || 'unknown'}") not shifted despite TUI overlap with ${lastBox.nodeIdx} ("${lastBox.text || 'unknown'}") because GUI overlap exists`);
+                    }
                   }
                   lastEndX = childBox.termBox.maxX;
                   lastBox = childBox;
                 }
               }
 
-              // Calculate parent's bounding box based on children's final positions
               const minX = Math.min(...childBoxes.map(cb => cb.termBox.minX));
               const minY = Math.min(...childBoxes.map(cb => cb.termBox.minY));
               const maxX = Math.max(...childBoxes.map(cb => cb.termBox.maxX));
               const maxY = Math.max(...childBoxes.map(cb => cb.termBox.maxY));
-              
+              const termBox = { minX, minY, maxX, maxY };
+
               debugLog(`Node ${nodeIdx} (Tag: ${isTextNode ? `#text<${textContent}>` : tagName}) final TUI bounds: (${minX}, ${minY}) to (${maxX}, ${maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
-              return { minX, minY, maxX, maxY, guiBox };
+              return { termBox, guiBox, text: textContent };
             }
         function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
           if (textBoxMap.has(nodeIdx)) {
