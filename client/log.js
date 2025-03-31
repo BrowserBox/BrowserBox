@@ -4,6 +4,10 @@ export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
 const LOG_FILE = 'cdp.log';
 
       // logging 
+        export function rowsLog(rows) {
+          appendFileSync('rows.txt', JSON.stringify([...rows.entries()], null, 2));
+        }
+
         export function logMessage(direction, message) {
           if ( ! DEBUG ) return;
           const timestamp = new Date().toISOString();

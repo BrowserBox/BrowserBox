@@ -1,10 +1,9 @@
-import { appendFileSync } from 'fs';
 const GAP = 1;
 const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
 // LayoutAlgorithm.js
 // A singleton module that implements the layout processing algorithm.
-import {debugLog,DEBUG} from './log.js';
+import {rowsLog,debugLog,DEBUG} from './log.js';
 
 const LayoutAlgorithm = (() => {
   // --------------------------
@@ -489,7 +488,7 @@ const LayoutAlgorithm = (() => {
     const rows = groupByRow(childBoxes, cb => range(cb.termBox.minY, cb.termBox.maxY));
     let maxXChild = null;
     let maxXOverall = -Infinity;
-    appendFileSync('rows.txt', JSON.stringify([...rows.entries()], null, 2));
+    DEBUG && rowsLog(rows);
 
     for (const rowBoxes of rows.values()) {
       rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX);
