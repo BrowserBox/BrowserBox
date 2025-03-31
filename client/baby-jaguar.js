@@ -697,7 +697,7 @@ we should deconflict some lines (small text can vert overlap)
           try {
             const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
             message = JSON.parse(dataStr);
-            DEBUG && logMessage('RECEIVE', message);
+            DEBUG && logMessage('RECEIVE', message, terminal);
           } catch (error) {
             if (DEBUG) console.warn(error);
             terminal.red(`Invalid message: ${String(data).slice(0, 50)}...\n`);
@@ -733,7 +733,7 @@ we should deconflict some lines (small text can vert overlap)
           }, 10000);
 
           try {
-            DEBUG && logMessage('SEND', message);
+            DEBUG && logMessage('SEND', message, terminal);
             socket.send(JSON.stringify(message));
           } catch (error) {
             clearTimeout(timeout);

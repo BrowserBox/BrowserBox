@@ -1,6 +1,6 @@
 import { appendFileSync } from 'fs';
 // DEBUG 
-export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
+export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
 const LOG_FILE = 'cdp.log';
 
       // logging 
@@ -8,7 +8,7 @@ const LOG_FILE = 'cdp.log';
           appendFileSync('rows.txt', JSON.stringify([...rows.entries()], null, 2));
         }
 
-        export function logMessage(direction, message) {
+        export function logMessage(direction, message, terminal) {
           if ( ! DEBUG ) return;
           const timestamp = new Date().toISOString();
           const logEntry = JSON.stringify({ timestamp, direction, message }, null, 2) + '\n';
