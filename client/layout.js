@@ -495,7 +495,7 @@ const LayoutAlgorithm = (() => {
       let lastEndX = -Infinity;
       let lastBox = null;
       for (const childBox of rowBoxes) {
-        if (lastBox && childBox.termBox.minX <= lastEndX && !(hasGuiOverlap(lastBox, childBox)) /*&& !textBoxMap.has(childBox.nodeIdx) && !textBoxMap.has(lastBox.nodeIdx))*/) {
+        if (lastBox && childBox.termBox.minX <= lastEndX && !hasGuiOverlap(lastBox, childBox)) {
           const shift = lastEndX + 1 - childBox.termBox.minX;
           shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
           childBox.termBox.minX += shift;
