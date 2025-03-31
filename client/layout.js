@@ -495,7 +495,7 @@ const LayoutAlgorithm = (() => {
       let lastEndX = -Infinity;
       let lastBox = null;
       for (const childBox of rowBoxes) {
-        if (lastBox && childBox.termBox.minX <= lastEndX && !hasGuiOverlap(lastBox, childBox)) {
+        if (lastBox && childBox.termBox.minX <= lastEndX && !(hasGuiOverlap(lastBox, childBox)) /*&& !textBoxMap.has(childBox.nodeIdx) && !textBoxMap.has(lastBox.nodeIdx))*/) {
           const shift = lastEndX + 1 - childBox.termBox.minX;
           shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
           childBox.termBox.minX += shift;
@@ -576,14 +576,6 @@ const LayoutAlgorithm = (() => {
     );
     return { termBox, guiBox, text: textContent };
   }
-            function hasGuiOverlap(box1, box2) {
-              const a = box1.guiBox;
-              const b = box2.guiBox;
-              if (!a || !b) return false;
-              const result = a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
-              debugLog(`Checking GUI overlap between (${a.x}, ${a.y}, ${a.width}, ${a.height}) and (${b.x}, ${b.y}, ${b.width}, ${b.height}): ${result}`);
-              return result;
-            }
           // Helper function to get the overall bounding box for a list of text boxes
           function getOverallBoundingBox(boxes) {
             if (boxes.length === 0) return null;
