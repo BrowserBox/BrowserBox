@@ -10,18 +10,16 @@ we should deconflict some lines (small text can vert overlap)
       import { WebSocket } from 'ws';
       import { appendFileSync } from 'fs';
       import { Agent } from 'https';
-      import TK from 'terminal-kit';
       import Layout from './layout.js';
       import TerminalBrowser from './terminal-browser.js';
       import {logMessage,debugLog,DEBUG} from './log.js';
+      import TK from 'terminal-kit';
       const { terminal } = TK;
 
     // one liners
       const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     // Constants and state
-      const HORIZONTAL_COMPRESSION = 1.0;
-      const VERTICAL_COMPRESSION = 1.0;
       const BrowserState = {
         targets: [],
         activeTarget: null,
@@ -274,283 +272,10 @@ we should deconflict some lines (small text can vert overlap)
         };
       }
 
-      function hasTextBoxDescendant(nodeIdx, childrenMap, textBoxMap) {
-        if (textBoxMap.has(nodeIdx)) return true;
-        const children = childrenMap.get(nodeIdx) || [];
-        return children.some(childIdx => hasTextBoxDescendant(childIdx, childrenMap, textBoxMap));
-      }
-
-      // key funcs
-          // Helper function to check if one bounding box is fully contained within another
-            function isFullyContained(b1, b2) {
-              const termB1 = b1.termBox; // {minX, minY, maxX, maxY}
-              const termB2 = b2.termBox;
-
-              // b1 is fully contained in b2
-              const b1InB2 = termB1.minX >= termB2.minX && 
-                             termB1.maxX <= termB2.maxX &&
-                             termB1.minY >= termB2.minY && 
-                             termB1.maxY <= termB2.maxY;
-              
-              // b2 is fully contained in b1
-              const b2InB1 = termB2.minX >= termB1.minX && 
-                             termB2.maxX <= termB1.maxX &&
-                             termB2.minY >= termB1.minY && 
-                             termB2.maxY <= termB1.maxY;
-              
-              return b1InB2 || b2InB1;
-            }
-            function hasGuiOverlap(box1, box2) {
-              const a = box1.guiBox;
-              const b = box2.guiBox;
-              if (!a || !b) return false;
-              const result = a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
-              debugLog(`Checking GUI overlap between (${a.x}, ${a.y}, ${a.width}, ${a.height}) and (${b.x}, ${b.y}, ${b.width}, ${b.height}): ${result}`);
-              return result;
-            }
-          // Helper function to get the overall bounding box for a list of text boxes
-          function getOverallBoundingBox(boxes) {
-            if (boxes.length === 0) return null;
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            for (const box of boxes) {
-              const b = box.boundingBox;
-              minX = Math.min(minX, b.x);
-              minY = Math.min(minY, b.y);
-              maxX = Math.max(maxX, b.x + b.width);
-              maxY = Math.max(maxY, b.y + b.height);
-            }
-            return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-          }
-        function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
-          if (textBoxMap.has(nodeIdx)) {
-            const boxes = textBoxMap.get(nodeIdx);
-            for (const box of boxes) {
-              box.termX += shift;
-              box.termBox.minX += shift;
-              box.termBox.maxX += shift;
-              debugLog(`Shifting text box of node ${nodeIdx} (Text: "${box.text}") by ${shift} to (${box.termX}, ${box.termY})`);
-            }
-          }
-          // Shift all immediate children
-          const children = childrenMap.get(nodeIdx) || [];
-          for (const childIdx of children) {
-            shiftNode(childIdx, shift, textBoxMap, childrenMap);
-          }
-        }
-
-        // Update prepareLayoutState to use the new processing logic
-        async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY }) {
-          const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes(snapshot);
-          if (!textLayoutBoxes.length) {
-            DEBUG && terminal.yellow('No text boxes found.\n');
-            return null;
-          }
-
-          const { columns: termWidth, rows: termHeight } = await getTerminalSize();
-          const baseScaleX = termWidth / viewportWidth;
-          const baseScaleY = (termHeight - 4) / viewportHeight;
-          const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
-          const scaleY = baseScaleY * VERTICAL_COMPRESSION;
-
-          const visibleBoxes = textLayoutBoxes.filter(box => {
-            const boxX = box.boundingBox.x;
-            const boxY = box.boundingBox.y;
-            const boxRight = boxX + box.boundingBox.width;
-            const boxBottom = boxY + box.boundingBox.height;
-            return boxX < viewportX + viewportWidth && boxRight > viewportX &&
-                   boxY < viewportY + viewportHeight && boxBottom > viewportY;
-          }).map(box => {
-            const adjustedX = box.boundingBox.x - viewportX;
-            const adjustedY = box.boundingBox.y - viewportY;
-            box.termX = Math.ceil(adjustedX * scaleX);
-            box.termY = Math.ceil(adjustedY * scaleY) + 4;
-            box.termWidth = box.text.length;
-            box.termHeight = 1;
-            return box;
-          });
-
-          // Build children map and text box map
-          const childrenMap = new Map();
-          for (let i = 0; i < nodes.parentIndex.length; i++) {
-            const parentIdx = nodes.parentIndex[i];
-            if (parentIdx !== -1) {
-              if (!childrenMap.has(parentIdx)) childrenMap.set(parentIdx, []);
-              childrenMap.get(parentIdx).push(i);
-            }
-          }
-          const textBoxMap = new Map();
-
-          for (const box of visibleBoxes) {
-            if (!textBoxMap.has(box.nodeIndex)) textBoxMap.set(box.nodeIndex, []);
-            textBoxMap.get(box.nodeIndex).push(box);
-            DEBUG && console.log(box);
-          }
-
-          // Find root nodes (nodes with text boxes in their subtree and no parent in the visible set)
-          const allNodeIndices = new Set([...textBoxMap.keys(), ...childrenMap.keys()]);
-          const rootNodes = Array.from(allNodeIndices).filter(nodeIdx => {
-            const parentIdx = nodeToParent.get(nodeIdx);
-            return (parentIdx === -1 || !allNodeIndices.has(parentIdx)) && 
-                   hasTextBoxDescendant(nodeIdx, childrenMap, textBoxMap);
-          });
-
-          debugLog(`Processing ${rootNodes.length} root nodes`);
-          for (const rootNode of rootNodes) {
-            Layout.processNode(rootNode, childrenMap, textBoxMap, snapshot, nodes);
-          }
-
-          return {
-            visibleBoxes,
-            termWidth,
-            termHeight: termHeight - 4,
-            viewportX,
-            viewportY,
-            viewportWidth,
-            viewportHeight,
-            clickableElements,
-            layoutToNode,
-            nodeToParent,
-            nodes,
-          };
-        }
-
-          /**
-           * Deconflicts Y-lines to prevent collapsing distinct GUI lines.
-           * @param {Array} boxes - Text boxes with termBox properties.
-           */
-      function extractTextLayoutBoxes(snapshot) {
-        const textLayoutBoxes = [];
-        const clickableElements = [];
-        const strings = snapshot.strings;
-        const document = snapshot.documents[0];
-        const textBoxes = document.textBoxes;
-        const layout = document.layout;
-        const nodes = document.nodes;
-
-        if (!textBoxes || !textBoxes.bounds || !textBoxes.start || !textBoxes.length) {
-          terminal.yellow('No text boxes found in snapshot.\n');
-          return { textLayoutBoxes, clickableElements };
-        }
-
-        DEBUG && terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
-
-        const layoutToNode = new Map();
-        layout.nodeIndex.forEach((nodeIdx, layoutIdx) => layoutToNode.set(layoutIdx, nodeIdx));
-
-        const nodeToParent = new Map();
-        nodes.parentIndex.forEach((parentIdx, nodeIdx) => nodeToParent.set(nodeIdx, parentIdx));
-
-        const clickableIndexes = new Set(nodes.isClickable?.index || []);
-
-        function isNodeClickable(nodeIndex) {
-          let currentIndex = nodeIndex;
-          while (currentIndex !== -1) {
-            if (clickableIndexes.has(currentIndex)) return true;
-            currentIndex = nodeToParent.get(currentIndex);
-          }
-          return false;
-        }
-
-        for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
-          const layoutIndex = textBoxes.layoutIndex[i];
-          const bounds = textBoxes.bounds[i];
-          const start = textBoxes.start[i];
-          const length = textBoxes.length[i];
-
-          if (layoutIndex === -1 || !bounds || start === -1 || length === -1) {
-            DEBUG && terminal.yellow(`Skipping invalid text box ${i} (layoutIndex: ${layoutIndex})\n`);
-            continue;
-          }
-
-          const textIndex = layout.text[layoutIndex];
-          if (textIndex === -1 || textIndex >= strings.length) {
-            DEBUG && terminal.yellow(`Invalid text index ${textIndex} for layoutIndex ${layoutIndex}\n`);
-            continue;
-          }
-
-          const fullText = strings[textIndex];
-          const text = fullText.substring(start, start + length).trim();
-          if (!text) {
-            DEBUG && terminal.yellow(`Empty text for layoutIndex ${layoutIndex}\n`);
-            continue;
-          }
-
-          const boundingBox = {
-            x: bounds[0],
-            y: bounds[1],
-            width: bounds[2],
-            height: bounds[3],
-          };
-
-          const nodeIndex = layoutToNode.get(layoutIndex);
-          const parentIndex = nodeToParent.get(nodeIndex);
-          const backendNodeId = nodes.backendNodeId[nodeIndex];
-          const isClickable = nodeIndex !== undefined && isNodeClickable(nodeIndex);
-          const ancestorType = getAncestorInfo(nodeIndex, nodes, strings);
-
-          if (isClickable) {
-            clickableElements.push({
-              text,
-              boundingBox,
-              clickX: boundingBox.x + boundingBox.width / 2,
-              clickY: boundingBox.y + boundingBox.height / 2,
-            });
-          }
-
-          textLayoutBoxes.push({ text, boundingBox, isClickable, parentIndex, ancestorType, backendNodeId, layoutIndex, nodeIndex });
-          DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${boundingBox.x}, ${boundingBox.y}) | parentIndex: ${parentIndex} | backendNodeId: ${backendNodeId} | isClickable: ${isClickable} | ancestorType: ${ancestorType}\n`);
-        }
-
-        return { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes };
-      }
-
-      function getAncestorInfo(nodeIndex, nodes, strings) {
-        let currentIndex = nodeIndex;
-        while (currentIndex !== -1) {
-          if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {
-            DEBUG && debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}`);
-            return 'normal';
-          }
-
-          const nodeNameIndex = nodes.nodeName[currentIndex];
-          if (typeof nodeNameIndex === 'undefined') {
-            DEBUG && debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}`);
-            return 'normal';
-          }
-          const nodeName = strings[nodeNameIndex];
-          const attributes = nodes.attributes[currentIndex] || [];
-          const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
-
-          if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
-            return 'button';
-          }
-
-          let hasHref = false;
-          let hasOnclick = false;
-          for (let i = 0; i < attributes.length; i += 2) {
-            const keyIndex = attributes[i];
-            const valueIndex = attributes[i + 1];
-            const key = strings[keyIndex];
-            if (key === 'href') hasHref = true;
-            if (key === 'onclick') hasOnclick = true;
-          }
-          if (nodeName === 'A' && (hasHref || hasOnclick)) {
-            return 'hyperlink';
-          }
-
-          if (isClickable) {
-            return 'other_clickable';
-          }
-
-          currentIndex = nodes.parentIndex[currentIndex];
-        }
-        return 'normal';
-      }
-
       async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
-          const { textLayoutBoxes } = extractTextLayoutBoxes(snapshot);
+          const { textLayoutBoxes } = Layout.extractTextLayoutBoxes(snapshot);
           if (textLayoutBoxes.length > 0) {
             return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };
           }
@@ -613,6 +338,14 @@ we should deconflict some lines (small text can vert overlap)
       }
 
     // Layout calculation and Render helpers
+      async function getTerminalSize() {
+        const size = { columns: terminal.width, rows: terminal.height };
+        if (!size.columns || !size.rows) {
+          return { columns: 80, rows: 24 };
+        }
+        return size;
+      }
+
       function renderLayout({ layoutState, renderedBoxes }) {
         if (!layoutState) return;
         renderBoxes({ ...layoutState, renderedBoxes });
@@ -622,7 +355,7 @@ we should deconflict some lines (small text can vert overlap)
         try {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
           state.currentScrollY = viewportY;
-          const layoutState = await prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY });
+          const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize });
 
           terminal.clear();
           terminal.bgDefaultColor();
@@ -888,14 +621,6 @@ we should deconflict some lines (small text can vert overlap)
       }
 
     // helpers
-      async function getTerminalSize() {
-        const size = { columns: terminal.width, rows: terminal.height };
-        if (!size.columns || !size.rows) {
-          return { columns: 80, rows: 24 };
-        }
-        return size;
-      }
-
       async function connectToBrowser() {
         let cookieHeader;
         let cookieValue;
