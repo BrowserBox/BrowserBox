@@ -1,6 +1,7 @@
+import { appendFileSync } from 'fs';
 const GAP = 1;
-      const HORIZONTAL_COMPRESSION = 1.0;
-      const VERTICAL_COMPRESSION = 1.0;
+const HORIZONTAL_COMPRESSION = 1.0;
+const VERTICAL_COMPRESSION = 1.0;
 // LayoutAlgorithm.js
 // A singleton module that implements the layout processing algorithm.
 import {debugLog,DEBUG} from './log.js';
@@ -72,8 +73,8 @@ const LayoutAlgorithm = (() => {
           }
         }
         // Update prepareLayoutState to use the new processing logic
-        async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize }) {
-          const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes(snapshot);
+        async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal }) {
+          const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot, terminal });
           if (!textLayoutBoxes.length) {
             DEBUG && terminal.yellow('No text boxes found.\n');
             return null;
@@ -151,7 +152,7 @@ const LayoutAlgorithm = (() => {
            * Deconflicts Y-lines to prevent collapsing distinct GUI lines.
            * @param {Array} boxes - Text boxes with termBox properties.
            */
-      function extractTextLayoutBoxes(snapshot) {
+      function extractTextLayoutBoxes({ snapshot, terminal }) {
         const textLayoutBoxes = [];
         const clickableElements = [];
         const strings = snapshot.strings;
@@ -307,12 +308,14 @@ const LayoutAlgorithm = (() => {
   }
 
   // Groups an array of items using the value returned from getRow(item) as the key.
-  function groupByRow(items, getRow) {
+  function groupByRow(items, getRows) {
     const rows = new Map();
     for (const item of items) {
-      const row = getRow(item);
-      if (!rows.has(row)) rows.set(row, []);
-      rows.get(row).push(item);
+      const itemRows = getRows(item);
+      for( const row of itemRows ) {
+        if (!rows.has(row)) rows.set(row, []);
+        rows.get(row).push(item);
+      }
     }
     return rows;
   }
@@ -409,7 +412,7 @@ const LayoutAlgorithm = (() => {
   // Processes a leaf node that has associated text boxes.
   function processLeafNode(nodeIdx, textBoxMap, snapshot, textContent, guiBox) {
     const boxes = textBoxMap.get(nodeIdx);
-    const rows = groupByRow(boxes, b => b.termY);
+    const rows = groupByRow(boxes, b => [b.termY]);
     adjustBoxPositions(rows, nodeIdx);
 
     const termBox = computeBoundingTermBox(boxes);
@@ -419,6 +422,14 @@ const LayoutAlgorithm = (() => {
       `Leaf Node ${nodeIdx} TUI bounds: (${termBox.minX}, ${termBox.minY}) to (${termBox.maxX}, ${termBox.maxY}) | GUI bounds: (${finalGuiBox.x}, ${finalGuiBox.y}, ${finalGuiBox.width}, ${finalGuiBox.height})`
     );
     return { termBox, guiBox: finalGuiBox, text: boxes[0]?.text || textContent };
+  }
+
+  function range(a, b) {
+    let r = [];
+    for( let i = a; i <= b; i++ ) {
+      r.push(i);
+    }
+    return r;
   }
 
   // Adjusts text box positions within each row to avoid overlaps.
@@ -475,9 +486,10 @@ const LayoutAlgorithm = (() => {
 
   // Adjusts child nodes to prevent overlaps; adds a gap to the rightmost child if needed.
   function adjustChildNodesOverlap(childBoxes, textBoxMap, childrenMap) {
-    const rows = groupByRow(childBoxes, cb => cb.termBox.minY);
+    const rows = groupByRow(childBoxes, cb => range(cb.termBox.minY, cb.termBox.maxY));
     let maxXChild = null;
     let maxXOverall = -Infinity;
+    appendFileSync('rows.txt', JSON.stringify([...rows.entries()], null, 2));
 
     for (const rowBoxes of rows.values()) {
       rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX);

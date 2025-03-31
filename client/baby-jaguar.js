@@ -275,7 +275,7 @@ we should deconflict some lines (small text can vert overlap)
       async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
-          const { textLayoutBoxes } = Layout.extractTextLayoutBoxes(snapshot);
+          const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot, terminal });
           if (textLayoutBoxes.length > 0) {
             return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };
           }
@@ -355,7 +355,7 @@ we should deconflict some lines (small text can vert overlap)
         try {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
           state.currentScrollY = viewportY;
-          const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize });
+          const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal });
 
           terminal.clear();
           terminal.bgDefaultColor();
