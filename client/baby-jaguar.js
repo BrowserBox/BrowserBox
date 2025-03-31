@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /*
 todo
-we should ensure longest text in box expands the termbox appropriately. (apparently it is, we need to look at log because there's still sometimes overlap at right)
-we should deconflict some lines (small text can vert overlap, with hoz alignment algorithm applied vertically)
+we should app a 1 character gap - how ? longest text box in any node should have 1 space added to it.
+we should deconflict some lines (small text can vert overlap)
 */
 // CyberJaguar - BrowserBox TUI Browser Application
   // Setup
@@ -11,26 +11,23 @@ we should deconflict some lines (small text can vert overlap, with hoz alignment
       import { appendFileSync } from 'fs';
       import { Agent } from 'https';
       import TK from 'terminal-kit';
+      import Layout from './layout.js';
       import TerminalBrowser from './terminal-browser.js';
+      import {logMessage,debugLog,DEBUG} from './log.js';
       const { terminal } = TK;
 
     // one liners
       const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-    // DEBUG 
-      const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
-
     // Constants and state
+      const HORIZONTAL_COMPRESSION = 1.0;
+      const VERTICAL_COMPRESSION = 1.0;
       const BrowserState = {
         targets: [],
         activeTarget: null,
         selectedTabIndex: 0
       };
-      const HORIZONTAL_COMPRESSION = 1.0;
-      const VERTICAL_COMPRESSION = 1.0;
-      const GAP = 1;
       const DEBOUNCE_DELAY = 280;
-      const LOG_FILE = 'cdp.log';
       const args = process.argv.slice(2);
 
       let socket;
@@ -324,244 +321,6 @@ we should deconflict some lines (small text can vert overlap, with hoz alignment
             }
             return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
           }
-          function processNode(nodeIdx, childrenMap, textBoxMap, snapshot, nodes) {
-            const tagName = nodes.nodeName[nodeIdx] >= 0 ? snapshot.strings[nodes.nodeName[nodeIdx]] : 'Unknown';
-            const isTextNode = nodes.nodeType[nodeIdx] === 3;
-            let guiBox = { x: 0, y: 0, width: 0, height: 0 };
-            let textContent = '';
-
-            // Helper function to collect text content of all text nodes in the subtree
-            function collectSubtreeText(nodeIdx) {
-              let texts = [];
-              if (nodes.nodeType[nodeIdx] === 3) { // Text node
-                const textBoxes = snapshot.documents[0].textBoxes;
-                const layoutToNode = new Map(snapshot.documents[0].layout.nodeIndex.map((nIdx, lIdx) => [lIdx, nIdx]));
-                for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
-                  const layoutIdx = textBoxes.layoutIndex[i];
-                  if (layoutIdx !== -1 && layoutToNode.get(layoutIdx) === nodeIdx) {
-                    const textIndex = snapshot.documents[0].layout.text[layoutIdx];
-                    if (textIndex !== -1 && textIndex < snapshot.strings.length) {
-                      const text = snapshot.strings[textIndex].substring(textBoxes.start[i], textBoxes.start[i] + textBoxes.length[i]).trim();
-                      if (text) texts.push(text);
-                    }
-                    // Don't break; continue to collect all text boxes for this node
-                  }
-                }
-              }
-              const children = childrenMap.get(nodeIdx) || [];
-              for (const childIdx of children) {
-                texts.push(...collectSubtreeText(childIdx));
-              }
-              return texts;
-            }
-
-            if (isTextNode) {
-              const textBoxes = snapshot.documents[0].textBoxes;
-              const layoutToNode = new Map(snapshot.documents[0].layout.nodeIndex.map((nIdx, lIdx) => [lIdx, nIdx]));
-              let textParts = [];
-              for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
-                const layoutIdx = textBoxes.layoutIndex[i];
-                if (layoutIdx !== -1 && layoutToNode.get(layoutIdx) === nodeIdx) {
-                  const bounds = textBoxes.bounds[i];
-                  // Update guiBox to encompass all text boxes for this node
-                  if (textParts.length === 0) {
-                    guiBox = {
-                      x: bounds[0],
-                      y: bounds[1],
-                      width: bounds[2],
-                      height: bounds[3]
-                    };
-                  } else {
-                    const minX = Math.min(guiBox.x, bounds[0]);
-                    const minY = Math.min(guiBox.y, bounds[1]);
-                    const maxX = Math.max(guiBox.x + guiBox.width, bounds[0] + bounds[2]);
-                    const maxY = Math.max(guiBox.y + guiBox.height, bounds[1] + bounds[3]);
-                    guiBox = {
-                      x: minX,
-                      y: minY,
-                      width: maxX - minX,
-                      height: maxY - minY
-                    };
-                  }
-                  const textIndex = snapshot.documents[0].layout.text[layoutIdx];
-                  if (textIndex !== -1 && textIndex < snapshot.strings.length) {
-                    const text = snapshot.strings[textIndex].substring(textBoxes.start[i], textBoxes.start[i] + textBoxes.length[i]).trim();
-                    if (text) textParts.push(text);
-                  }
-                }
-              }
-              textContent = textParts.join(' '); // Join all text parts with a space
-              if (!textContent) {
-                debugLog(`Skipping Node ${nodeIdx} (Tag: #text<>) - Empty text content`);
-                return null;
-              }
-              debugLog(`Node ${nodeIdx} (Tag: #text<${textContent}>) GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
-            } else {
-              const layoutIdx = snapshot.documents[0].layout.nodeIndex.indexOf(nodeIdx);
-              if (layoutIdx !== -1) {
-                const bounds = snapshot.documents[0].layout.bounds[layoutIdx];
-                guiBox = { x: bounds[0], y: bounds[1], width: bounds[2], height: bounds[3] };
-              }
-            }
-
-            const children = childrenMap.get(nodeIdx) || [];
-            if (DEBUG) {
-              const subtreeTexts = collectSubtreeText(nodeIdx);
-              textContent = subtreeTexts.join(' ');
-            }
-
-            // Process leaf nodes (nodes with text boxes)
-            if (textBoxMap.has(nodeIdx)) {
-              const boxes = textBoxMap.get(nodeIdx);
-              const rows = new Map(); // Map of termY to boxes on that row
-              for (const box of boxes) {
-                if (!rows.has(box.termY)) rows.set(box.termY, []);
-                rows.get(box.termY).push(box);
-              }
-
-              // Horizontal deconfliction (existing logic)
-              for (const [row, rowBoxes] of rows) {
-                rowBoxes.sort((a, b) => a.termX - b.termX);
-                let lastEndX = -1;
-                for (const box of rowBoxes) {
-                  if (box.termX <= lastEndX) {
-                    const shift = lastEndX + 1 - box.termX;
-                    box.termX += shift;
-                    box.termBox = {
-                      minX: box.termX,
-                      minY: box.termY,
-                      maxX: box.termX + box.termWidth - 1,
-                      maxY: box.termY
-                    };
-                  } else {
-                    box.termBox = {
-                      minX: box.termX,
-                      minY: box.termY,
-                      maxX: box.termX + box.termWidth - 1,
-                      maxY: box.termY
-                    };
-                  }
-                  lastEndX = box.termBox.maxX;
-                }
-              }
-
-              // Vertical deconfliction (new logic)
-              const allBoxes = Array.from(rows.values()).flat();
-              allBoxes.sort((a, b) => a.termY - b.termY || a.termX - b.termX);
-              let lastBox = null;
-              for (let i = 0; i < allBoxes.length; i++) {
-                const box = allBoxes[i];
-                if (lastBox && box.termY === lastBox.termY) {
-                  const guiY1 = lastBox.boundingBox.y;
-                  const guiY2 = box.boundingBox.y;
-                  const guiHeight1 = lastBox.boundingBox.height;
-                  const guiBottom1 = guiY1 + guiHeight1;
-                  const shouldBeBelow = guiY2 >= guiBottom1; // Check if box should be on a new line
-
-                  if (shouldBeBelow && !hasGuiOverlap(lastBox, box)) {
-                    const newTermY = lastBox.termY + 1; // Shift down by one line
-                    shiftNodeVertically(box.nodeIdx, newTermY - box.termY, textBoxMap, childrenMap);
-                    box.termY = newTermY;
-                    box.termBox.minY = newTermY;
-                    box.termBox.maxY = newTermY;
-                    debugLog(`Leaf Node ${nodeIdx} (Text: "${box.text}") shifted down to termY=${newTermY} due to GUI vertical separation (GUI Y: ${guiY2} >= ${guiBottom1})`);
-                  }
-                }
-                lastBox = box;
-              }
-
-              // Compute overall bounds
-              const minX = Math.min(...allBoxes.map(b => b.termBox.minX));
-              let minY = Math.min(...allBoxes.map(b => b.termBox.minY));
-              let maxX = Math.max(...allBoxes.map(b => b.termBox.maxX));
-              let maxY = Math.max(...allBoxes.map(b => b.termBox.maxY));
-
-              const termBox = { minX, minY, maxX, maxY };
-              return { termBox, guiBox, text: textContent };
-            }
-
-            // Process non-leaf nodes
-            const childBoxes = [];
-            for (const childIdx of children) {
-              const childResult = processNode(childIdx, childrenMap, textBoxMap, snapshot, nodes);
-              if (childResult) childBoxes.push({ nodeIdx: childIdx, ...childResult });
-            }
-
-            if (childBoxes.length === 0) return null;
-
-            // Group children by rows and deconflict
-            const rows = new Map();
-            for (const childBox of childBoxes) {
-              const row = childBox.termBox.minY;
-              if (!rows.has(row)) rows.set(row, []);
-              rows.get(row).push(childBox);
-            }
-
-            // Horizontal and vertical deconfliction for children
-            for (const [row, rowBoxes] of rows) {
-              rowBoxes.sort((a, b) => a.termBox.minX - b.termBox.minX);
-              let lastEndX = -Infinity;
-              let lastBox = null;
-
-              for (const childBox of rowBoxes) {
-                // Horizontal deconfliction (existing)
-                if (lastBox && childBox.termBox.minX <= lastEndX) {
-                  if (!hasGuiOverlap(lastBox, childBox)) {
-                    const shift = lastEndX + 1 - childBox.termBox.minX;
-                    shiftNode(childBox.nodeIdx, shift, textBoxMap, childrenMap);
-                    childBox.termBox.minX += shift;
-                    childBox.termBox.maxX += shift;
-                  }
-                }
-                lastEndX = childBox.termBox.maxX;
-                lastBox = childBox;
-
-                // Vertical deconfliction (new)
-                if (lastBox && childBox.termY === lastBox.termY) {
-                  const guiY1 = lastBox.guiBox.y;
-                  const guiY2 = childBox.guiBox.y;
-                  const guiHeight1 = lastBox.guiBox.height;
-                  const guiBottom1 = guiY1 + guiHeight1;
-                  const shouldBeBelow = guiY2 >= guiBottom1;
-
-                  if (shouldBeBelow && !hasGuiOverlap(lastBox, childBox)) {
-                    const newTermY = lastBox.termBox.maxY + 1;
-                    shiftNodeVertically(childBox.nodeIdx, newTermY - childBox.termBox.minY, textBoxMap, childrenMap);
-                    childBox.termBox.minY = newTermY;
-                    childBox.termBox.maxY = newTermY + (childBox.termBox.maxY - childBox.termBox.minY);
-                    debugLog(`Node ${childBox.nodeIdx} shifted down to termY=${newTermY} due to GUI vertical separation`);
-                  }
-                }
-              }
-            }
-
-            // Compute final bounds
-            const minX = Math.min(...childBoxes.map(cb => cb.termBox.minX));
-            let minY = Math.min(...childBoxes.map(cb => cb.termBox.minY));
-            let maxX = Math.max(...childBoxes.map(cb => cb.termBox.maxX));
-            let maxY = Math.max(...childBoxes.map(cb => cb.termBox.maxY));
-
-            const termBox = { minX, minY, maxX, maxY };
-            debugLog(`Node ${nodeIdx} final TUI bounds: (${minX}, ${minY}) to (${maxX}, ${maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`);
-            return { termBox, guiBox, text: textContent };
-          }
-
-        // New helper function to shift nodes vertically
-        function shiftNodeVertically(nodeIdx, shiftY, textBoxMap, childrenMap) {
-          if (textBoxMap.has(nodeIdx)) {
-            const boxes = textBoxMap.get(nodeIdx);
-            for (const box of boxes) {
-              box.termY += shiftY;
-              box.termBox.minY += shiftY;
-              box.termBox.maxY += shiftY;
-              debugLog(`Shifting text box of node ${nodeIdx} (Text: "${box.text}") vertically by ${shiftY} to termY=${box.termY}`);
-            }
-          }
-          const children = childrenMap.get(nodeIdx) || [];
-          for (const childIdx of children) {
-            shiftNodeVertically(childIdx, shiftY, textBoxMap, childrenMap);
-          }
-        }
         function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
           if (textBoxMap.has(nodeIdx)) {
             const boxes = textBoxMap.get(nodeIdx);
@@ -637,7 +396,7 @@ we should deconflict some lines (small text can vert overlap, with hoz alignment
 
           debugLog(`Processing ${rootNodes.length} root nodes`);
           for (const rootNode of rootNodes) {
-            processNode(rootNode, childrenMap, textBoxMap, snapshot, nodes);
+            Layout.processNode(rootNode, childrenMap, textBoxMap, snapshot, nodes);
           }
 
           return {
@@ -1270,25 +1029,3 @@ we should deconflict some lines (small text can vert overlap, with hoz alignment
         return { send, socket, targets, cookieHeader };
       }
 
-      // logging 
-        function logMessage(direction, message) {
-          if ( ! DEBUG ) return;
-          const timestamp = new Date().toISOString();
-          const logEntry = JSON.stringify({ timestamp, direction, message }, null, 2) + '\n';
-          try {
-            appendFileSync(LOG_FILE, logEntry);
-            terminal.magenta(`[${timestamp}] ${direction}: `);
-            terminal(JSON.stringify(message, null, 2) + '\n');
-          } catch (error) {
-            console.error(`Failed to write to log file: ${error.message}`);
-          }
-        }
-
-        function debugLog(message) {
-          if ( ! DEBUG ) return;
-          try {
-            appendFileSync('debug-coords.log', `${new Date().toISOString()} - ${message}\n`);
-          } catch (error) {
-            console.error(`Failed to write to debug log: ${error.message}`);
-          }
-        }
