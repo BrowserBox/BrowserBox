@@ -1,3 +1,4 @@
+- fix 'first few characters of sentence cut off on first line' on some article cards on nypost.com (only example so far) - bug
 - ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
 - vertical deconflict using hoz algoirthm dual
 - add placeholders for clickable images/media (something like [IMAGE] [IMG] [I], [VIDEO], [AUDIO],  depending on space available, and we can also show alt)
