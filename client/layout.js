@@ -110,10 +110,6 @@ const LayoutAlgorithm = (() => {
     for (let i = 0; i < nodes.parentIndex.length; i++) {
       let parentIdx = nodes.parentIndex[i];
       if (parentIdx !== -1) {
-        const isTextNode = nodes.nodeType[parentIdx] === 3;
-        if ( isTextNode ) {
-          parentIdx = nodes.parentIndex[parentIdx];
-        }
         if (!childrenMap.has(parentIdx)) childrenMap.set(parentIdx, []);
         childrenMap.get(parentIdx).push(i);
       }
@@ -122,13 +118,6 @@ const LayoutAlgorithm = (() => {
 
     for (const box of visibleBoxes) {
       let nodeIndex = box.nodeIndex;
-      const isTextNode = nodes.nodeType[nodeIndex] === 3;
-      if ( isTextNode ) {
-        // explode (and ignore) text nodes
-        const parentIdx = nodeToParent.get(nodeIndex);
-        box.nodeIndex = parentIdx;
-        nodeIndex = parentIdx;
-      }
       if (!textBoxMap.has(box.nodeIndex)) textBoxMap.set(box.nodeIndex, []);
       textBoxMap.get(box.nodeIndex).push(box);
       DEBUG && console.log(box);
@@ -545,10 +534,6 @@ const LayoutAlgorithm = (() => {
   function processNode(nodeIdx, childrenMap, textBoxMap, snapshot, nodes) {
     const tagName = getTagName(nodeIdx, nodes, snapshot);
     const isTextNode = nodes.nodeType[nodeIdx] === 3;
-    if ( isTextNode ) {
-      console.log(nodeIdx, 'unexpected text node');
-      process.exit(0);
-    }
     let guiBox = { x: 0, y: 0, width: 0, height: 0 };
     let textContent = '';
 
@@ -560,7 +545,6 @@ const LayoutAlgorithm = (() => {
       if (!textResult) return null;
       textContent = textResult.text;
       guiBox = textResult.guiBox;
-      children.push(...textResult.boxes);
     } else {
       guiBox = getGuiBoxForNonText(nodeIdx, snapshot, tagName);
     }
