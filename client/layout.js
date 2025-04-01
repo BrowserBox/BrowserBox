@@ -586,19 +586,20 @@ const LayoutAlgorithm = (() => {
     );
     return { termBox, guiBox, text: textContent };
   }
-          // Helper function to get the overall bounding box for a list of text boxes
-          function getOverallBoundingBox(boxes) {
-            if (boxes.length === 0) return null;
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            for (const box of boxes) {
-              const b = box.boundingBox;
-              minX = Math.min(minX, b.x);
-              minY = Math.min(minY, b.y);
-              maxX = Math.max(maxX, b.x + b.width);
-              maxY = Math.max(maxY, b.y + b.height);
-            }
-            return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+        // Helper function to get the overall bounding box for a list of text boxes
+        function getOverallBoundingBox(boxes) {
+          if (boxes.length === 0) return null;
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (const box of boxes) {
+            const b = box.boundingBox;
+            minX = Math.min(minX, b.x);
+            minY = Math.min(minY, b.y);
+            maxX = Math.max(maxX, b.x + b.width);
+            maxY = Math.max(maxY, b.y + b.height);
           }
+          return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+        }
+
         function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
           if (textBoxMap.has(nodeIdx)) {
             const boxes = textBoxMap.get(nodeIdx);
