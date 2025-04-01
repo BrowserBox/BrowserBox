@@ -105,8 +105,12 @@ const LayoutAlgorithm = (() => {
           // Build children map and text box map
           const childrenMap = new Map();
           for (let i = 0; i < nodes.parentIndex.length; i++) {
-            const parentIdx = nodes.parentIndex[i];
+            let parentIdx = nodes.parentIndex[i];
             if (parentIdx !== -1) {
+              const isTextNode = nodes.nodeType[parentIdx] === 3;
+              if ( isTextNode ) {
+                parentIdx = nodes.parentIndex[parentIdx];
+              }
               if (!childrenMap.has(parentIdx)) childrenMap.set(parentIdx, []);
               childrenMap.get(parentIdx).push(i);
             }
@@ -114,6 +118,14 @@ const LayoutAlgorithm = (() => {
           const textBoxMap = new Map();
 
           for (const box of visibleBoxes) {
+            let nodeIndex = box.nodeIndex;
+            const isTextNode = nodes.nodeType[nodeIndex] === 3;
+            if ( isTextNode ) {
+              // explode (and ignore) text nodes
+              const parentIdx = nodeToParent.get(nodeIndex);
+              box.nodeIndex = parentIdx;
+              nodeIndex = parentIdx;
+            }
             if (!textBoxMap.has(box.nodeIndex)) textBoxMap.set(box.nodeIndex, []);
             textBoxMap.get(box.nodeIndex).push(box);
             DEBUG && console.log(box);
@@ -357,7 +369,6 @@ const LayoutAlgorithm = (() => {
     iterateTextBoxesForNode(nodeIdx, snapshot, (i, layoutIdx, textIndex, textBoxes) => {
       const bounds = textBoxes.bounds[i];
       const textBox = { x: bounds[0], y: bounds[1], width: bounds[2], height: bounds[3] };
-      boundsList.push(textBox);
       if (textIndex !== -1 && textIndex < snapshot.strings.length) {
         const text = snapshot.strings[textIndex]
           .substring(textBoxes.start[i], textBoxes.start[i] + textBoxes.length[i])
@@ -531,6 +542,10 @@ const LayoutAlgorithm = (() => {
   function processNode(nodeIdx, childrenMap, textBoxMap, snapshot, nodes) {
     const tagName = getTagName(nodeIdx, nodes, snapshot);
     const isTextNode = nodes.nodeType[nodeIdx] === 3;
+    if ( isTextNode ) {
+      console.log(nodeIdx, 'unexpected text node');
+      process.exit(0);
+    }
     let guiBox = { x: 0, y: 0, width: 0, height: 0 };
     let textContent = '';
 
