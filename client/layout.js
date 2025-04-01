@@ -353,14 +353,20 @@ const LayoutAlgorithm = (() => {
   function processTextNode(nodeIdx, snapshot, nodes) {
     const boundsList = [];
     const textParts = [];
+    const boxes = [];
     iterateTextBoxesForNode(nodeIdx, snapshot, (i, layoutIdx, textIndex, textBoxes) => {
       const bounds = textBoxes.bounds[i];
-      boundsList.push({ x: bounds[0], y: bounds[1], width: bounds[2], height: bounds[3] });
+      const textBox = { x: bounds[0], y: bounds[1], width: bounds[2], height: bounds[3] };
+      boundsList.push(textBox);
       if (textIndex !== -1 && textIndex < snapshot.strings.length) {
         const text = snapshot.strings[textIndex]
           .substring(textBoxes.start[i], textBoxes.start[i] + textBoxes.length[i])
           .trim();
         if (text) textParts.push(text);
+        if ( text ) {
+          textBox.text = text;
+          boxes.push(textBox);
+        }
       }
     });
     const textContent = textParts.join(' ');
@@ -372,7 +378,7 @@ const LayoutAlgorithm = (() => {
     debugLog(
       `Node ${nodeIdx} (Tag: #text<${textContent}>) GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`
     );
-    return { text: textContent, guiBox };
+    return { text: textContent, guiBox, boxes };
   }
 
   // Retrieves the GUI bounds for non-text nodes from the layout data.
@@ -528,17 +534,19 @@ const LayoutAlgorithm = (() => {
     let guiBox = { x: 0, y: 0, width: 0, height: 0 };
     let textContent = '';
 
+    const children = childrenMap.get(nodeIdx) || [];
+
     // Process node based on type.
     if (isTextNode) {
       const textResult = processTextNode(nodeIdx, snapshot, nodes);
       if (!textResult) return null;
       textContent = textResult.text;
       guiBox = textResult.guiBox;
+      children.push(...textResult.boxes);
     } else {
       guiBox = getGuiBoxForNonText(nodeIdx, snapshot, tagName);
     }
 
-    const children = childrenMap.get(nodeIdx) || [];
 
     // Collect subtree text for debugging.
     if (DEBUG) {

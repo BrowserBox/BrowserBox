@@ -3,16 +3,16 @@
     5,
     [
       {
-        "nodeIdx": 9,
+        "nodeIdx": 7,
         "termBox": {
-          "minX": 33,
+          "minX": 44,
           "minY": 5,
-          "maxX": 42,
+          "maxX": 53,
           "maxY": 5
         },
         "guiBox": {
           "x": 876.234375,
-          "y": 32,
+          "y": 16,
           "width": 107.578125,
           "height": 37
         },
@@ -22,23 +22,121 @@
   ]
 ][
   [
-    6,
+    5,
     [
       {
-        "nodeIdx": 12,
+        "nodeIdx": 5,
         "termBox": {
-          "minX": 23,
-          "minY": 6,
-          "maxX": 33,
-          "maxY": 6
+          "minX": 1,
+          "minY": 5,
+          "maxX": 67,
+          "maxY": 5
         },
         "guiBox": {
-          "x": 614.0625,
-          "y": 69,
-          "width": 146.640625,
+          "x": 16,
+          "y": 16,
+          "width": 860.234375,
           "height": 37
         },
-        "text": "second link"
+        "text": "This is a sample paragraph that spans multiple lines and contains a"
+      },
+      {
+        "nodeIdx": 6,
+        "termBox": {
+          "minX": 44,
+          "minY": 5,
+          "maxX": 54,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 876.234375,
+          "y": 16,
+          "width": 107.578125,
+          "height": 37
+        },
+        "text": "first link"
+      },
+      {
+        "nodeIdx": 8,
+        "termBox": {
+          "minX": 49,
+          "minY": 5,
+          "maxX": 54,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 983.8125,
+          "y": 16,
+          "width": 79.984375,
+          "height": 37
+        },
+        "text": "in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 4,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 85,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 1110,
+          "height": 37
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 3,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 85,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 2848,
+          "height": 1418
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 1,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 85,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 0,
+          "y": 0,
+          "width": 2880,
+          "height": 1466
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the"
       }
     ]
   ]
@@ -49,6 +147,28 @@
       {
         "nodeIdx": 7,
         "termBox": {
+          "minX": 33,
+          "minY": 5,
+          "maxX": 42,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 876.234375,
+          "y": 16,
+          "width": 107.578125,
+          "height": 37
+        },
+        "text": "first link"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 5,
+        "termBox": {
           "minX": 1,
           "minY": 5,
           "maxX": 67,
@@ -56,14 +176,14 @@
         },
         "guiBox": {
           "x": 16,
-          "y": 32,
+          "y": 16,
           "width": 860.234375,
           "height": 37
         },
         "text": "This is a sample paragraph that spans multiple lines and contains a"
       },
       {
-        "nodeIdx": 8,
+        "nodeIdx": 6,
         "termBox": {
           "minX": 33,
           "minY": 5,
@@ -72,123 +192,27 @@
         },
         "guiBox": {
           "x": 876.234375,
-          "y": 32,
+          "y": 16,
           "width": 107.578125,
           "height": 37
         },
         "text": "first link"
       },
       {
-        "nodeIdx": 10,
+        "nodeIdx": 8,
         "termBox": {
-          "minX": 1,
+          "minX": 37,
           "minY": 5,
-          "maxX": 80,
-          "maxY": 6
+          "maxX": 42,
+          "maxY": 5
         },
         "guiBox": {
-          "x": 16,
-          "y": 32,
-          "width": 1545.6875,
-          "height": 74
-        },
-        "text": "in the middle of the sentence. The paragraph"
-      }
-    ]
-  ],
-  [
-    6,
-    [
-      {
-        "nodeIdx": 10,
-        "termBox": {
-          "minX": 1,
-          "minY": 5,
-          "maxX": 80,
-          "maxY": 6
-        },
-        "guiBox": {
-          "x": 16,
-          "y": 32,
-          "width": 1545.6875,
-          "height": 74
-        },
-        "text": "in the middle of the sentence. The paragraph"
-      },
-      {
-        "nodeIdx": 11,
-        "termBox": {
-          "minX": 23,
-          "minY": 6,
-          "maxX": 34,
-          "maxY": 6
-        },
-        "guiBox": {
-          "x": 614.0625,
-          "y": 69,
-          "width": 146.640625,
+          "x": 983.8125,
+          "y": 16,
+          "width": 79.984375,
           "height": 37
         },
-        "text": "second link"
-      },
-      {
-        "nodeIdx": 13,
-        "termBox": {
-          "minX": 29,
-          "minY": 6,
-          "maxX": 44,
-          "maxY": 6
-        },
-        "guiBox": {
-          "x": 760.703125,
-          "y": 69,
-          "width": 218.609375,
-          "height": 37
-        },
-        "text": "towards the end."
-      }
-    ]
-  ]
-][
-  [
-    5,
-    [
-      {
-        "nodeIdx": 6,
-        "termBox": {
-          "minX": 1,
-          "minY": 5,
-          "maxX": 81,
-          "maxY": 6
-        },
-        "guiBox": {
-          "x": 16,
-          "y": 32,
-          "width": 1554,
-          "height": 74
-        },
-        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence. The paragraph continues with more text and includes another second link towards the end."
-      }
-    ]
-  ],
-  [
-    6,
-    [
-      {
-        "nodeIdx": 6,
-        "termBox": {
-          "minX": 1,
-          "minY": 5,
-          "maxX": 81,
-          "maxY": 6
-        },
-        "guiBox": {
-          "x": 16,
-          "y": 32,
-          "width": 1554,
-          "height": 74
-        },
-        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence. The paragraph continues with more text and includes another second link towards the end."
+        "text": "in the"
       }
     ]
   ]
@@ -201,16 +225,321 @@
         "termBox": {
           "minX": 1,
           "minY": 5,
-          "maxX": 81,
+          "maxX": 85,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 1110,
+          "height": 37
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 3,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 85,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 3808,
+          "height": 2112
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 1,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 85,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 0,
+          "y": 0,
+          "width": 3840,
+          "height": 2160
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 7,
+        "termBox": {
+          "minX": 33,
+          "minY": 5,
+          "maxX": 42,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 876.234375,
+          "y": 16,
+          "width": 107.578125,
+          "height": 37
+        },
+        "text": "first link"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 5,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 67,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 860.234375,
+          "height": 37
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a"
+      },
+      {
+        "nodeIdx": 6,
+        "termBox": {
+          "minX": 33,
+          "minY": 5,
+          "maxX": 43,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 876.234375,
+          "y": 16,
+          "width": 107.578125,
+          "height": 37
+        },
+        "text": "first link"
+      },
+      {
+        "nodeIdx": 8,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 42,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 1047.796875,
+          "height": 74
+        },
+        "text": "in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 4,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 68,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 1110,
+          "height": 74
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence."
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 3,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 68,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 3808,
+          "height": 2112
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence."
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 1,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 68,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 0,
+          "y": 0,
+          "width": 3840,
+          "height": 2160
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence."
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 7,
+        "termBox": {
+          "minX": 44,
+          "minY": 5,
+          "maxX": 53,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 876.234375,
+          "y": 16,
+          "width": 107.578125,
+          "height": 37
+        },
+        "text": "first link"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 5,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 67,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 860.234375,
+          "height": 37
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a"
+      },
+      {
+        "nodeIdx": 6,
+        "termBox": {
+          "minX": 44,
+          "minY": 5,
+          "maxX": 54,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 876.234375,
+          "y": 16,
+          "width": 107.578125,
+          "height": 37
+        },
+        "text": "first link"
+      },
+      {
+        "nodeIdx": 8,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 54,
           "maxY": 6
         },
         "guiBox": {
           "x": 16,
-          "y": 32,
-          "width": 3808,
+          "y": 16,
+          "width": 1047.796875,
           "height": 74
         },
-        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence. The paragraph continues with more text and includes another second link towards the end."
+        "text": "in the"
+      }
+    ]
+  ],
+  [
+    6,
+    [
+      {
+        "nodeIdx": 8,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 54,
+          "maxY": 6
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 1047.796875,
+          "height": 74
+        },
+        "text": "in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 4,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 68,
+          "maxY": 6
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 1110,
+          "height": 74
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence."
       }
     ]
   ],
@@ -222,16 +551,16 @@
         "termBox": {
           "minX": 1,
           "minY": 5,
-          "maxX": 81,
+          "maxX": 68,
           "maxY": 6
         },
         "guiBox": {
           "x": 16,
-          "y": 32,
-          "width": 3808,
+          "y": 16,
+          "width": 1110,
           "height": 74
         },
-        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence. The paragraph continues with more text and includes another second link towards the end."
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence."
       }
     ]
   ]
@@ -240,20 +569,20 @@
     5,
     [
       {
-        "nodeIdx": 2,
+        "nodeIdx": 3,
         "termBox": {
           "minX": 1,
           "minY": 5,
-          "maxX": 81,
+          "maxX": 68,
           "maxY": 6
         },
         "guiBox": {
-          "x": 0,
-          "y": 0,
-          "width": 3840,
-          "height": 138
+          "x": 16,
+          "y": 16,
+          "width": 2848,
+          "height": 1418
         },
-        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence. The paragraph continues with more text and includes another second link towards the end."
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence."
       }
     ]
   ],
@@ -261,20 +590,205 @@
     6,
     [
       {
-        "nodeIdx": 2,
+        "nodeIdx": 3,
         "termBox": {
           "minX": 1,
           "minY": 5,
-          "maxX": 81,
+          "maxX": 68,
+          "maxY": 6
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 2848,
+          "height": 1418
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence."
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 1,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 68,
           "maxY": 6
         },
         "guiBox": {
           "x": 0,
           "y": 0,
-          "width": 3840,
-          "height": 138
+          "width": 2880,
+          "height": 1466
         },
-        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence. The paragraph continues with more text and includes another second link towards the end."
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence."
+      }
+    ]
+  ],
+  [
+    6,
+    [
+      {
+        "nodeIdx": 1,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 68,
+          "maxY": 6
+        },
+        "guiBox": {
+          "x": 0,
+          "y": 0,
+          "width": 2880,
+          "height": 1466
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the middle of the sentence."
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 7,
+        "termBox": {
+          "minX": 44,
+          "minY": 5,
+          "maxX": 53,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 876.234375,
+          "y": 16,
+          "width": 107.578125,
+          "height": 37
+        },
+        "text": "first link"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 5,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 67,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 860.234375,
+          "height": 37
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a"
+      },
+      {
+        "nodeIdx": 6,
+        "termBox": {
+          "minX": 44,
+          "minY": 5,
+          "maxX": 54,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 876.234375,
+          "y": 16,
+          "width": 107.578125,
+          "height": 37
+        },
+        "text": "first link"
+      },
+      {
+        "nodeIdx": 8,
+        "termBox": {
+          "minX": 49,
+          "minY": 5,
+          "maxX": 54,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 983.8125,
+          "y": 16,
+          "width": 79.984375,
+          "height": 37
+        },
+        "text": "in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 4,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 85,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 1110,
+          "height": 37
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 3,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 85,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 16,
+          "y": 16,
+          "width": 2848,
+          "height": 1418
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the"
+      }
+    ]
+  ]
+][
+  [
+    5,
+    [
+      {
+        "nodeIdx": 1,
+        "termBox": {
+          "minX": 1,
+          "minY": 5,
+          "maxX": 85,
+          "maxY": 5
+        },
+        "guiBox": {
+          "x": 0,
+          "y": 0,
+          "width": 2880,
+          "height": 1466
+        },
+        "text": "This is a sample paragraph that spans multiple lines and contains a first link in the"
       }
     ]
   ]
