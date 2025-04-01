@@ -100,7 +100,7 @@ we should deconflict some lines (small text can vert overlap)
         BrowserState.targets = targets;
 
         await send('Target.setDiscoverTargets', { discover: true });
-        await send('Target.setAutoAttach', { autoAttac: true, waitForDebuggerOnStart: false, flatten: true });
+        await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
 
         if (targets.length === 0) {
           const { targetId } = await connection.send('Target.createTarget', { url: 'about:blank' });
