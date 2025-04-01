@@ -89,7 +89,7 @@ fi
 
 
 if ! test -d "${BBX_HOME}/BrowserBox/node_modules" || ! test -f "${BBX_HOME}/BrowserBox/.bbpro_install_dir"; then
-  if [ $# -gt 0 ] && [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]] && [[ "$1" != "docker-"* ]]; then
+  if [ $# -gt 0 ] && [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]] && [[ "$1" != "docker-"* ]] && [[ "$1" != "stop" ]]; then
     banner
     printf "\n${RED}Run ${NC}${BOLD}bbx install${NC}${RED} first.${NC}\n"
     printf "\tYou may need to run bbx uninstall to remove any previous or broken installation.\n"
@@ -130,7 +130,7 @@ save_config() {
   cat > "$CONFIG_FILE" <<EOF
 EMAIL="${EMAIL:-}"
 LICENSE_KEY="${LICENSE_KEY:-}"
-BBX_HOSTNAME="${BBX_HOSTNAME:-}"
+BBX_HOSTNAME="${BBX_HOSTNAME:-$DOMAIN}"
 TOKEN="${TOKEN:-}"
 PORT="${PORT:-}"
 EOF

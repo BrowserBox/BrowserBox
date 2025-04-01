@@ -47,6 +47,7 @@ export class HardenedApplication {
       privateKeyPath = null,
       privateKeyPem = null,
       ignorePatterns = [
+        'package.json',
         '.bang.html.snapshot',
         '~',
         'README.txt',

@@ -1,4 +1,5 @@
 *.traineddata
 *.log
+*.txt
 *log.txt
 cdp-log.txt
