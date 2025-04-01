@@ -1,4 +1,5 @@
 *.traineddata
+*.json
 *.log
 *.txt
 *log.txt

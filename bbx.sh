@@ -1773,3 +1773,4 @@ case "$1" in
     "") usage;;
     *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac
+

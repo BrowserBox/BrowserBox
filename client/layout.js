@@ -1,9 +1,9 @@
+import fs from 'fs';
+import {rowsLog,debugLog,DEBUG} from './log.js';
+
 const GAP = 1;
 const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
-// LayoutAlgorithm.js
-// A singleton module that implements the layout processing algorithm.
-import {rowsLog,debugLog,DEBUG} from './log.js';
 
 const LayoutAlgorithm = (() => {
   // --------------------------
@@ -14,23 +14,18 @@ const LayoutAlgorithm = (() => {
     const children = childrenMap.get(nodeIdx) || [];
     return children.some(childIdx => hasTextBoxDescendant(childIdx, childrenMap, textBoxMap));
   }
-  // key funcs
-  function isFullyContained(b1, b2) {
-    const termB1 = b1.termBox; // {minX, minY, maxX, maxY}
-    const termB2 = b2.termBox;
 
-    // b1 is fully contained in b2
-    const b1InB2 = termB1.minX >= termB2.minX && 
+  function isFullyContained(b1, b2) {
+    const termB1 = b1.termBox;
+    const termB2 = b2.termBox;
+    const b1InB2 = termB1.minX >= termB2.minX &&
                    termB1.maxX <= termB2.maxX &&
-                   termB1.minY >= termB2.minY && 
+                   termB1.minY >= termB2.minY &&
                    termB1.maxY <= termB2.maxY;
-    
-    // b2 is fully contained in b1
-    const b2InB1 = termB2.minX >= termB1.minX && 
+    const b2InB1 = termB2.minX >= termB1.minX &&
                    termB2.maxX <= termB1.maxX &&
-                   termB2.minY >= termB1.minY && 
+                   termB2.minY >= termB1.minY &&
                    termB2.maxY <= termB1.maxY;
-    
     return b1InB2 || b2InB1;
   }
 
@@ -38,12 +33,9 @@ const LayoutAlgorithm = (() => {
     const a = box1.guiBox;
     const b = box2.guiBox;
     if (!a || !b) return false;
-    const result = a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
-    debugLog(`Checking GUI overlap between (${a.x}, ${a.y}, ${a.width}, ${a.height}) and (${b.x}, ${b.y}, ${b.width}, ${b.height}): ${result}`);
-    return result;
+    return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
   }
 
-  // Helper function to get the overall bounding box for a list of text boxes
   function getOverallBoundingBox(boxes) {
     if (boxes.length === 0) return null;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -67,16 +59,199 @@ const LayoutAlgorithm = (() => {
         debugLog(`Shifting text box of node ${nodeIdx} (Text: "${box.text}") by ${shift} to (${box.termX}, ${box.termY})`);
       }
     }
-    // Shift all immediate children
     const children = childrenMap.get(nodeIdx) || [];
     for (const childIdx of children) {
       shiftNode(childIdx, shift, textBoxMap, childrenMap);
     }
   }
 
-  // Update prepareLayoutState to use the new processing logic
+  // New helper to determine if a node is inline
+  function isInlineElement(nodeName) {
+    const inlineTags = new Set(['A', 'SPAN', 'B', 'I', 'EM', 'STRONG', '#TEXT']);
+    return inlineTags.has(nodeName.toUpperCase()) ;
+  }
+
+  // Deep clone an object (simple version for snapshot)
+  function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  // New function to split the snapshot
+
+  function splitSnapshot(originalSnapshot) {
+    const snapshot = deepClone(originalSnapshot);
+    const strings = snapshot.strings;
+    const document = snapshot.documents[0];
+    const nodes = document.nodes;
+    const layout = document.layout;
+    const textBoxes = document.textBoxes;
+
+    splitLog('Starting splitSnapshot with original snapshot length:', strings.length, 'nodes:', nodes.parentIndex.length);
+
+    // Build layout-to-node mapping
+    const layoutToNode = new Map();
+    layout.nodeIndex.forEach((nodeIdx, layoutIdx) => layoutToNode.set(layoutIdx, nodeIdx));
+    splitLog('Built layoutToNode mapping with', layoutToNode.size, 'entries');
+
+    // Build node-to-parent mapping
+    const nodeToParent = new Map();
+    nodes.parentIndex.forEach((parentIdx, nodeIdx) => nodeToParent.set(nodeIdx, parentIdx));
+    splitLog('Built nodeToParent mapping with', nodeToParent.size, 'entries');
+
+    // Group text boxes by layoutIndex
+    const layoutToTextBoxes = new Map();
+    for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
+      const layoutIdx = textBoxes.layoutIndex[i];
+      if (layoutIdx === -1) continue;
+      if (!layoutToTextBoxes.has(layoutIdx)) layoutToTextBoxes.set(layoutIdx, []);
+      layoutToTextBoxes.get(layoutIdx).push(i);
+    }
+    splitLog('Grouped text boxes by layoutIndex:', Array.from(layoutToTextBoxes.entries()).map(([idx, tbs]) => `${idx}: ${tbs.length}`));
+
+    // Track new indices
+    let nextNodeIdx = nodes.parentIndex.length;
+    let nextLayoutIdx = layout.nodeIndex.length;
+
+    // Clone a node's basic properties
+    function cloneNode(nodeIdx, newNodeIdx, newTextValueIdx) {
+      nodes.parentIndex[newNodeIdx] = nodes.parentIndex[nodeIdx];
+      nodes.nodeType[newNodeIdx] = nodes.nodeType[nodeIdx];
+      nodes.nodeName[newNodeIdx] = nodes.nodeName[nodeIdx];
+      nodes.nodeValue[newNodeIdx] = newTextValueIdx;
+      nodes.backendNodeId[newNodeIdx] = nodes.backendNodeId[nodeIdx] + `_clone_${newNodeIdx}`;
+      nodes.attributes[newNodeIdx] = [...(nodes.attributes[nodeIdx] || [])];
+      splitLog(`Cloned node ${nodeIdx} to ${newNodeIdx} with text index ${newTextValueIdx}`);
+    }
+
+    // Process each layoutIndex with text boxes
+    for (const [layoutIdx, tbIndices] of layoutToTextBoxes.entries()) {
+      if (tbIndices.length <= 1) {
+        splitLog(`layoutIdx ${layoutIdx} has ${tbIndices.length} text box(es) - no split needed`);
+        continue;
+      }
+
+      const nodeIdx = layoutToNode.get(layoutIdx);
+      if (nodes.nodeType[nodeIdx] !== 3) {
+        splitLog(`Node ${nodeIdx} at layoutIdx ${layoutIdx} is not a #text node (type ${nodes.nodeType[nodeIdx]}) - skipping`);
+        continue;
+      }
+
+      const originalTextIdx = layout.text[layoutIdx];
+      const originalText = strings[originalTextIdx];
+      splitLog(`Splitting node ${nodeIdx} at layoutIdx ${layoutIdx} with text: "${originalText}" into ${tbIndices.length} parts`);
+
+      // Process each text box
+      for (let i = 0; i < tbIndices.length; i++) {
+        const tbIdx = tbIndices[i];
+        const start = textBoxes.start[tbIdx];
+        const length = textBoxes.length[tbIdx];
+        const textSegment = originalText.substring(start, start + length).trim();
+        splitLog(`Text box ${tbIdx}: start=${start}, length=${length}, segment="${textSegment}"`);
+
+        if (i === 0) {
+          // Update original node with first text box content
+          const newTextIdx = strings.length;
+          strings.push(textSegment);
+          nodes.nodeValue[nodeIdx] = newTextIdx;
+          layout.text[layoutIdx] = newTextIdx; // Update layout.text to match
+          layout.bounds[layoutIdx] = [...textBoxes.bounds[tbIdx]];
+          textBoxes.layoutIndex[tbIdx] = layoutIdx; // Ensure it points to original layout
+          splitLog(`Updated node ${nodeIdx} with new textIdx ${newTextIdx} for "${textSegment}"`);
+        } else {
+          // Create new node and update existing text box
+          const newNodeIdx = nextNodeIdx++;
+          const newLayoutIdx = nextLayoutIdx++;
+
+          // Add new text segment to strings
+          const newTextIdx = strings.length;
+          strings.push(textSegment);
+
+          // Clone node with new text value
+          cloneNode(nodeIdx, newNodeIdx, newTextIdx);
+
+          // Create new layout entry
+          layout.nodeIndex[newLayoutIdx] = newNodeIdx;
+          layout.bounds[newLayoutIdx] = [...textBoxes.bounds[tbIdx]];
+          layout.text[newLayoutIdx] = newTextIdx;
+          layoutToNode.set(newLayoutIdx, newNodeIdx);
+
+          // Update existing text box to point to new layout (no new entry)
+          textBoxes.layoutIndex[tbIdx] = newLayoutIdx;
+          textBoxes.start[tbIdx] = 0; // Start at 0 for new string
+          textBoxes.length[tbIdx] = textSegment.length;
+          splitLog(`Updated text box ${tbIdx} to layoutIdx ${newLayoutIdx} for node ${newNodeIdx} with text "${textSegment}"`);
+
+          // Update parent mapping
+          nodeToParent.set(newNodeIdx, nodes.parentIndex[newNodeIdx]);
+        }
+      }
+    }
+
+    splitLog('Split complete. Final snapshot stats - strings:', strings.length, 'nodes:', nodes.parentIndex.length, 'layout:', layout.nodeIndex.length);
+    return snapshot;
+  }
+
+  function splitLog(...stuff) {
+    DEBUG && fs.appendFileSync('split.log', stuff.join(' ') + '\n');
+  }
+
+    function reconstructToHTML(snapshot) {
+      const strings = snapshot.strings;
+      const document = snapshot.documents[0];
+      const nodes = document.nodes;
+      const nodeToChildren = new Map();
+
+      // Build a map of parent to children
+      for (let i = 0; i < nodes.parentIndex.length; i++) {
+        const parentIdx = nodes.parentIndex[i];
+        if (parentIdx !== -1) {
+          if (!nodeToChildren.has(parentIdx)) nodeToChildren.set(parentIdx, []);
+          nodeToChildren.get(parentIdx).push(i);
+        }
+      }
+
+      function buildHTML(nodeIdx, depth = 0) {
+        const indent = '  '.repeat(depth);
+        const nodeType = nodes.nodeType[nodeIdx];
+        const nodeNameIdx = nodes.nodeName[nodeIdx];
+        const nodeName = nodeNameIdx >= 0 ? strings[nodeNameIdx] : 'Unknown';
+        let html = '';
+
+        if (nodeType === 9) { // Document node
+          html += `${indent}<#document>\n`;
+          const children = nodeToChildren.get(nodeIdx) || [];
+          for (const childIdx of children) {
+            html += buildHTML(childIdx, depth + 1);
+          }
+          html += `${indent}</#document>\n`;
+        } else if (nodeType === 1) { // Element node
+          html += `${indent}<${nodeName}>\n`;
+          const children = nodeToChildren.get(nodeIdx) || [];
+          for (const childIdx of children) {
+            html += buildHTML(childIdx, depth + 1);
+          }
+          html += `${indent}</${nodeName}>\n`;
+        } else if (nodeType === 3) { // Text node
+          const nodeValueIdx = nodes.nodeValue[nodeIdx];
+          const textContent = nodeValueIdx >= 0 ? strings[nodeValueIdx] : '';
+          html += `${indent}#text "${textContent}"\n`;
+        }
+
+        return html;
+      }
+
+      // Start with the root node (typically node 0 is the document)
+      return buildHTML(0);
+    }
+
   async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal }) {
-    const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot, terminal });
+    // Transform the snapshot before processing
+    DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot,null,2));
+    DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot))
+    const splitSnapshotData = splitSnapshot(snapshot);
+    DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData,null,2));
+    DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
+    const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData, terminal });
     if (!textLayoutBoxes.length) {
       DEBUG && terminal.yellow('No text boxes found.\n');
       return null;
@@ -105,7 +280,6 @@ const LayoutAlgorithm = (() => {
       return box;
     });
 
-    // Build children map and text box map
     const childrenMap = new Map();
     for (let i = 0; i < nodes.parentIndex.length; i++) {
       let parentIdx = nodes.parentIndex[i];
@@ -115,25 +289,21 @@ const LayoutAlgorithm = (() => {
       }
     }
     const textBoxMap = new Map();
-
     for (const box of visibleBoxes) {
-      let nodeIndex = box.nodeIndex;
       if (!textBoxMap.has(box.nodeIndex)) textBoxMap.set(box.nodeIndex, []);
       textBoxMap.get(box.nodeIndex).push(box);
-      DEBUG && console.log(box);
     }
 
-    // Find root nodes (nodes with text boxes in their subtree and no parent in the visible set)
     const allNodeIndices = new Set([...textBoxMap.keys(), ...childrenMap.keys()]);
     const rootNodes = Array.from(allNodeIndices).filter(nodeIdx => {
       const parentIdx = nodeToParent.get(nodeIdx);
-      return (parentIdx === -1 || !allNodeIndices.has(parentIdx)) && 
+      return (parentIdx === -1 || !allNodeIndices.has(parentIdx)) &&
              hasTextBoxDescendant(nodeIdx, childrenMap, textBoxMap);
     });
 
     debugLog(`Processing ${rootNodes.length} root nodes`);
     for (const rootNode of rootNodes) {
-      processNode(rootNode, childrenMap, textBoxMap, snapshot, nodes);
+      processNode(rootNode, childrenMap, textBoxMap, splitSnapshotData, nodes);
     }
 
     return {
@@ -586,19 +756,20 @@ const LayoutAlgorithm = (() => {
     );
     return { termBox, guiBox, text: textContent };
   }
-          // Helper function to get the overall bounding box for a list of text boxes
-          function getOverallBoundingBox(boxes) {
-            if (boxes.length === 0) return null;
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            for (const box of boxes) {
-              const b = box.boundingBox;
-              minX = Math.min(minX, b.x);
-              minY = Math.min(minY, b.y);
-              maxX = Math.max(maxX, b.x + b.width);
-              maxY = Math.max(maxY, b.y + b.height);
-            }
-            return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+        // Helper function to get the overall bounding box for a list of text boxes
+        function getOverallBoundingBox(boxes) {
+          if (boxes.length === 0) return null;
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (const box of boxes) {
+            const b = box.boundingBox;
+            minX = Math.min(minX, b.x);
+            minY = Math.min(minY, b.y);
+            maxX = Math.max(maxX, b.x + b.width);
+            maxY = Math.max(maxY, b.y + b.height);
           }
+          return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+        }
+
         function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
           if (textBoxMap.has(nodeIdx)) {
             const boxes = textBoxMap.get(nodeIdx);
