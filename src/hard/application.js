@@ -87,6 +87,7 @@ export async function validityCheck({targets} = {}) {
     log('Application', 'Application integrity check passed.');
   } catch(e) {
     log('Application', 'Application integrity check failed.' + e);
+    integrity = false;
   }
 
   try {
@@ -102,7 +103,6 @@ export async function validityCheck({targets} = {}) {
     console.warn(error);
     log('Application', `Error: ${error.message}`);
     return false;
-    //process.exit(1);
   }
 }
 

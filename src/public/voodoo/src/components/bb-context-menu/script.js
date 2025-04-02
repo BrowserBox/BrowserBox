@@ -220,7 +220,7 @@ class BBContextMenu extends Base {
 
     copy(click) {
       DEBUG.debugCopyPaste && console.log(`Received copy request`);
-      state = this.state._top;
+      let state = this.state._top;
       const contextClick = state.contextMenuEvent;
       let pageX, pageY, clientX, clientY;
       if ( contextClick?.detail?.pageX ) {
@@ -262,7 +262,7 @@ class BBContextMenu extends Base {
     }
 
     copyLink(click) {
-      state = this.state._top;
+      let state = this.state._top;
       const contextClick = state.contextMenuEvent;
       const target = state.viewState.canvasEl;
       let pageX, pageY, clientX, clientY;
@@ -300,7 +300,7 @@ class BBContextMenu extends Base {
     }
 
     paste(click) {
-      state = this.state._top;
+      let state = this.state._top;
       this.close(state);
       state.viewState.modalComponent.openModal({modal:{
         type:'paste', 
@@ -310,7 +310,7 @@ class BBContextMenu extends Base {
     }
 
     download(click) {
-      state = this.state._top;
+      let state = this.state._top;
       this.close(state);
       const timeNow = new Date();
       const stringTime = timeNow.toJSON(); 
@@ -331,7 +331,7 @@ class BBContextMenu extends Base {
     }
 
     reload(click) {
-      state = this.state._top;
+      let state = this.state._top;
       const goButton = state?.viewState?.omniBoxInput?.closest('form.url')?.querySelector('button.go');
       if ( goButton ) {
         goButton.click();
@@ -348,7 +348,7 @@ class BBContextMenu extends Base {
     }
 
     openInNewTab(click) {
-      state = this.state._top;
+      let state = this.state._top;
       const contextClick = state.contextMenuEvent;
       const target = state.viewState.canvasEl;
       DEBUG.debugTabs && console.log({contextClick, target});
@@ -391,7 +391,7 @@ class BBContextMenu extends Base {
     }
 
     newBrowserContextAndTab(click) {
-      state = this.state._top;
+      let state = this.state._top;
       const {H} = state;
       const contextClick = state.contextMenuEvent;
       const target = state.viewState.canvasEl;
@@ -435,7 +435,7 @@ class BBContextMenu extends Base {
     }
 
     clearHistoryAndCacheLeaveCookies(click) {
-      state = this.state._top;
+      let state = this.state._top;
       state.wipeIsInProgress = true;
       globalThis.wipeIsInProgress = true;
       const doIt = confirm("You'll stay signed in to most sites, but your browsing history and caches will be wiped. You cannot undo this action.\nIf you proceed, your application will reload in 5 seconds.\n\nAre you sure you want to clear all history and caches?");
@@ -451,7 +451,7 @@ class BBContextMenu extends Base {
     }
 
     clearBrowsingData(click) {
-      state = this.state._top;
+      let state = this.state._top;
       const doIt = confirm("This will sign you out of most sites, and wipe all history and caches. Really wipe everything?");
       if ( doIt ) {
         const {H} = state;
@@ -473,13 +473,13 @@ class BBContextMenu extends Base {
     }
 
     resizeViewport(click) {
-      state = this.state._top;
+      let state = this.state._top;
       window._voodoo_asyncSizeTab({resetRequested:true})
       this.close(state);
     }
 
     toggleChromeUI(click) {
-      state = this.state._top;
+      let state = this.state._top;
       state.chromeUI ^= true;
       state.hideIMEUI();
       this.close(state);
@@ -487,7 +487,7 @@ class BBContextMenu extends Base {
     }
 
     async fullScreen(click) {
-      state = this.state._top;
+      let state = this.state._top;
       if ( document.fullscreenElement || document.webkitFullscreenElement ) {
         if ( document.webkitCancelFullscreen ) {
           document.webkitCancelFullscreen();
