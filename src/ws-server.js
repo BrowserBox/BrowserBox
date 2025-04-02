@@ -715,7 +715,9 @@
             const {fastestChannel, copeer, zombie, tabs, messageId, viewport} = message;  
             let {screenshotAck} = message;
 
-            latestMessageId = messageId;
+            if ( !! messageId ) {
+              latestMessageId = messageId;
+            }
 
             try {
               if ( fastestChannel ) {
@@ -1002,8 +1004,8 @@
         });
       }
     };
-    setTimeout(checkers, 8051);
-    setInterval(checkers, 50137);
+    //setTimeout(checkers, 8051);
+    //setInterval(checkers, 50137);
 
     server.listen(server_port, async err => {
       if ( err ) {

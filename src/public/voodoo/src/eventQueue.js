@@ -431,6 +431,7 @@
       // normalize URL forces us to have only 1 browser-backend connection per origin
       // we could change this but for now keep it
       const wsUrl = url;
+      const state = this?.publics?.state;
       url = normalizeUrl(url);
       const privates = this;
       let resolve;
@@ -998,7 +999,7 @@
                       }
                       if ( ! globalThis.comingFromTOR ) {
                         state.micAccessNotAlwaysAllowed  = true;
-                        await showExplainer();
+                        await showExplainer(state);
                       } else {
                         console.info(`Desktop Safari no longer requires us to request User Media before enabling WebRTC.`);
                       }
@@ -1312,16 +1313,16 @@
           // get the scale
           if ( DEBUG.scaleImage ) {
             const dpi = window.devicePixelRatio;
-            const lastBounds = state.viewState.bounds;
+            const lastBounds = this.state.viewState.bounds;
             const {
               width:elementWidth, height:elementHeight
             } = canvas.getBoundingClientRect();
             const scaleX = (canvas.width / imageEl.width);
             const scaleY = (canvas.height / imageEl.height);
-            state.viewState.scaleX = scaleX;
-            state.viewState.scaleY = scaleY;
+            this.state.viewState.scaleX = scaleX;
+            this.state.viewState.scaleY = scaleY;
             let scale = Math.min(scaleX,scaleY);
-            state.viewState.scale = scale;
+            this.state.viewState.scale = scale;
             if ( DEBUG.increaseResolutionOfSmallerCanvas && scale < 1.0 ) {
               canvas.width /= scale;
               canvas.height /= scale;
@@ -1337,7 +1338,7 @@
                 ctx.clearRect(0,0,canvas.width,canvas.height);
               }
             }
-            state.viewState.bounds = {
+            this.state.viewState.bounds = {
               x: imageEl.width,
               y: imageEl.height,
             };
@@ -1382,7 +1383,7 @@
     return predicate;
   }
 
-  async function showExplainer() {
+  async function showExplainer(state) {
     state.viewState.modalComponent.openModal({modal:{
       type:'notice',
       message: `We're about to request mic access to improve streaming (because of the iOS bug, below). It's for setup, not recording, and auto-closes after a fast link is built. Tap Allow in Website Settings to avoid future prompts; or, deny if prefered, tho it may affect quality. Ready?`,

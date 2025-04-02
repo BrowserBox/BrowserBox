@@ -1,5 +1,5 @@
 const USW = false; // service worker
-export const VERSION = '10.5.0';
+export const VERSION = '10.5.1';
 export const SERVICE_COUNT = 4; // browser, documents, audio, devtools
 export const FRAME_CONTROL = false;
 
@@ -200,7 +200,7 @@ export const DEBUG = Object.freeze({
   serviceWorker: false,
   neonMode: false,
   resetCache: false,
-  exposeState: true,
+  exposeState: false,
   fullScope: false,
   get err() { return this.fullScope || false },
   get promiserejection() { return this.fullScope || false },

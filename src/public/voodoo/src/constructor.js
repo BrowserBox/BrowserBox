@@ -2587,6 +2587,7 @@
               needsShot = true;
             }
 
+            // activate the target and notify other clients of the activation
             queue.send({
               command: {
                 name: "Target.activateTarget",
