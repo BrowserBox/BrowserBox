@@ -121,9 +121,11 @@ export default class TerminalBrowser extends EventEmitter {
 
   // Render the UI
   render() {
-    this.term.clear();
+    this.term.moveTo(1, 6);
+    this.term.eraseDisplayAbove();
     this.drawTabs();
     this.drawOmnibox();
+    this.term.bgBlack();
     this.term.moveTo(1, this.term.height);
   }
 
