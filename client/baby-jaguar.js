@@ -27,6 +27,7 @@ we should deconflict some lines (small text can vert overlap)
       };
       const DEBOUNCE_DELAY = 280;
       const args = process.argv.slice(2);
+      const mySource = 'jagclient' + Math.random().toString(36);
 
       let socket;
       let cleanup;
@@ -34,7 +35,9 @@ we should deconflict some lines (small text can vert overlap)
       let cookieHeader;
       let send;
       let browser;
+      let messageId = Math.round(Math.round(Math.random()*1000 + 1) * 1e6);
       let sessionId;
+      let browserbox;
       let loginLink;
 
     // arg processing
@@ -96,6 +99,7 @@ we should deconflict some lines (small text can vert overlap)
         send = connection.send;
         socket = connection.socket;
         targets = connection.targets;
+        browserbox = connection.browserbox;
         cookieHeader = connection.cookieHeader;
         BrowserState.targets = targets;
 
@@ -121,7 +125,21 @@ we should deconflict some lines (small text can vert overlap)
           BrowserState.selectedTabIndex = index;
           browser.selectedTabIndex = index;
           BrowserState.activeTarget = targets[index];
+          const {targetId} = BrowserState.activeTarget;
           browser.setAddress(tab.url);
+          browserbox.send(JSON.stringify({messageId: messageId++, zombie:{events: [
+            {command: {
+              name: "Target.activateTarget",
+              params: {targetId},
+            }},
+            {command:{
+              isZombieLordCommand: true,
+              name: "Connection.activateTarget",
+              params: {
+                targetId, source: mySource
+              }
+            }}
+          ]}}));
           await selectTabAndRender();
         });
 
@@ -679,7 +697,6 @@ we should deconflict some lines (small text can vert overlap)
         wsDebuggerUrl = `${wsDebuggerUrl}/${token}`;
         DEBUG && terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
         console.log(wsDebuggerUrl);
-        process.exit(0);
         const socket = new WebSocket(wsDebuggerUrl, {
           headers: { 'x-browserbox-local-auth': cookieValue },
           agent: new Agent({ rejectUnauthorized: false }),
@@ -753,6 +770,24 @@ we should deconflict some lines (small text can vert overlap)
         });
         DEBUG && terminal.green('Connected to WebSocket\n');
 
-        return { send, socket, targets, cookieHeader };
+       
+        let bbResolve;
+        const bbReady = new Promise(res => bbResolve = res);
+        let wsBBUrl = new URL(loginUrl);
+        wsBBUrl.protocol = 'wss:'
+        wsBBUrl.searchParams.set('session_token', wsBBUrl.searchParams.get('token'));
+        wsBBUrl.pathname = '/';
+
+        const browserbox = new WebSocket(wsBBUrl, {
+          headers: { 'x-browserbox-local-auth': token },
+          agent: new Agent({ rejectUnauthorized: false }),
+        });
+
+        browserbox.on('open', bbResolve);
+
+        await bbReady;
+        console.log('Connected to browserbox');
+
+        return { send, socket, targets, cookieHeader, browserbox };
       }
 
