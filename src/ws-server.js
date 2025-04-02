@@ -715,7 +715,9 @@
             const {fastestChannel, copeer, zombie, tabs, messageId, viewport} = message;  
             let {screenshotAck} = message;
 
-            latestMessageId = messageId;
+            if ( !! messageId ) {
+              latestMessageId = messageId;
+            }
 
             try {
               if ( fastestChannel ) {

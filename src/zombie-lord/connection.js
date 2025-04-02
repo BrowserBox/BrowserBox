@@ -790,6 +790,7 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
   on("Target.targetDestroyed", meta => endTarget(meta, 'destroyed'));
 
   ons("Page.screencastFrame", sendFrameToClient);
+  DEBUG.logVisibilityChange && ons("Page.screencastVisibilityChanged", (...data) => console.log(`Screen cast visibility changed`, ...data));
   ons("Target.receivedMessageFromTarget", receiveMessage);
   //ons("LayerTree.layerPainted", receiveMessage);
   ons("Page.frameRequestedNavigation", receiveMessage);
@@ -2612,6 +2613,10 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
           await sleep(50);
           send("Page.screencastFrameAck", {
             sessionId: castInfo.castSessionId || 1
+          }, sessionId);
+          // also say it's active
+          send("Emulation.setFocusEmulationEnabled", {
+            enabled: true
           }, sessionId);
         }
         if ( DEBUG.dontSendActivate ) {

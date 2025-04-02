@@ -71,6 +71,7 @@ export const LOG_FILE = {
 };
 
 export const DEBUG = Object.freeze({
+  logVisibilityChange: false,
   debugDesktopOnly: false,
   debugPdf: false,
   debugOffscreenPages: false,
@@ -89,10 +90,10 @@ export const DEBUG = Object.freeze({
   fileDebug: false,
   debugScreenSize: false,
   showFileErrors: false,
-  debugCast: true,
+  debugCast: false,
   lowEndDefault: false,
   debugSession: false,
-  traceViewportUpdateFuncs: true,
+  traceViewportUpdateFuncs: false,
   debugReload: false,
   debugInfoChanged: false,
   attachDebug: false,
@@ -109,11 +110,11 @@ export const DEBUG = Object.freeze({
   neverShowErrorSources: false,
   debugReloadLoop: false,
   alwaysStartShutdownTimer: true,
-  debugViewports: true,
+  debugViewports: false,
   noteCallStackInLog: true,
   showNoTargets: false,
   debugUserAgent: false,
-  showSkippedCommandsAfterViewportChangeCheck: true,
+  showSkippedCommandsAfterViewportChangeCheck: false,
   showFaviconErrors: false,
   showUARedux: false,
   disable3PC: true,
@@ -145,8 +146,8 @@ export const DEBUG = Object.freeze({
   debugCommandOrder: false,
   debugKeyEvents: false,
   debugBinding: false,
-  events: true,
-  commands: true,
+  events: false,
+  commands: false,
   blockList: new Set([
     //"Emulation.setDeviceMetricsOverride",
   ]),
@@ -154,7 +155,7 @@ export const DEBUG = Object.freeze({
   debugAddr: true,
   debugScaledUpCoViewport: false,
   debugInterception: false,
-  noCastMaxDims: false, // switching this on throws off scaling on small screens (ie local and remote mouse points differ!)
+  noCastMaxDims: false,
   debugAckBlast: false,
   allowAckBlastOnStart: !process.env.TORBB && true,
   dontSendActivate: false,
@@ -170,9 +171,9 @@ export const DEBUG = Object.freeze({
   allowExternalChrome: true,
   debugChromeStart: false,
   showTodos: false,
-  showViewportChanges: true,
-  showResizeEvents: true,
-  logRestartCast: true,
+  showViewportChanges: false,
+  showResizeEvents: false,
+  logRestartCast: false,
   get showErrorSources() {
     return this.logFileCommands || this.commands || false;
   },
@@ -186,8 +187,8 @@ export const DEBUG = Object.freeze({
   debugRestart: true,
   debugUntilTrue: false,
   debugUntilForever: false,
-  debugViewportDimensions: true,
-  debugViewportChanges: true,
+  debugViewportDimensions: false,
+  debugViewportChanges: false,
   debugDevtoolsServer: false,
   /* peer and websocket connections */
   cnx: false,
@@ -232,7 +233,7 @@ export const DEBUG = Object.freeze({
   binaryFrames: true,
   sendImmediate: !process.env.TORBB && true,
   chooseFastest: !process.env.TORBB && true,
-  logCastOutOfOrderFrames: true,
+  logCastOutOfOrderFrames: false,
   noSecurityHeaders: false,
   bundleClientCode: false,
   get isBSD() {
