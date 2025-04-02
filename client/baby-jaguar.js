@@ -678,6 +678,8 @@ we should deconflict some lines (small text can vert overlap)
         wsDebuggerUrl = wsDebuggerUrl.replace('ws://localhost', `wss://${hostname}`);
         wsDebuggerUrl = `${wsDebuggerUrl}/${token}`;
         DEBUG && terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
+        console.log(wsDebuggerUrl);
+        process.exit(0);
         const socket = new WebSocket(wsDebuggerUrl, {
           headers: { 'x-browserbox-local-auth': cookieValue },
           agent: new Agent({ rejectUnauthorized: false }),
