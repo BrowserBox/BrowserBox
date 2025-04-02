@@ -1002,8 +1002,8 @@
         });
       }
     };
-    setTimeout(checkers, 8051);
-    setInterval(checkers, 50137);
+    //setTimeout(checkers, 8051);
+    //setInterval(checkers, 50137);
 
     server.listen(server_port, async err => {
       if ( err ) {
