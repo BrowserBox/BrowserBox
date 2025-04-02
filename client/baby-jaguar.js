@@ -29,6 +29,7 @@ we should deconflict some lines (small text can vert overlap)
       const args = process.argv.slice(2);
       const mySource = 'jagclient' + Math.random().toString(36);
 
+      let state;
       let socket;
       let cleanup;
       let targets;
@@ -293,6 +294,9 @@ we should deconflict some lines (small text can vert overlap)
       async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
+          Object.assign(state, {
+            viewportHeight, viewportWidth, 
+          });
           const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot, terminal });
           if (textLayoutBoxes.length > 0) {
             return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };
@@ -587,9 +591,13 @@ we should deconflict some lines (small text can vert overlap)
 
     // Main render 
       async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
-        const state = initializeState();
+        state = initializeState();
         const refresh = () => refreshTerminal({ send, sessionId, state, addressBar: null });
         const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
+        // Calculate line height in pixels
+          const calculateLineHeight = () => {
+            return Math.round(state.viewportHeight / terminal.height);
+          };
 
         terminal.on('mouse', async (event, data) => {
           if (!state.isListening) return;
@@ -629,8 +637,27 @@ we should deconflict some lines (small text can vert overlap)
             state.isListening = false;
             process.emit('SIGINT');
           } else if (name === '<') {
-            state.isListening = false;
             if (onTabSwitch) await onTabSwitch();
+          } else if (name === 'UP' || name === 'DOWN') {
+            const lineHeight = calculateLineHeight();
+            const deltaY = name === 'UP' ? -lineHeight : lineHeight;
+            
+            // Prevent scrolling above top
+            if (name === 'UP' && state.currentScrollY <= 0) {
+              DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
+              return;
+            }
+
+            // Dispatch scroll event
+            await send('Input.dispatchMouseEvent', { 
+              type: 'mouseWheel', 
+              x: 0, 
+              y: 0, 
+              deltaX: 0, 
+              deltaY 
+            }, sessionId);
+            
+            debouncedRefresh();
           }
         });
 
