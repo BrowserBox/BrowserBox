@@ -1,5 +1,3 @@
-- fix screencast bug
-
 - ensure chrome's are shut down (can we clear bbpro from pm2?)
 
 - solidify instance hw id, analytics
