@@ -5,10 +5,55 @@ const GAP = 1;
 const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
 
+
 const LayoutAlgorithm = (() => {
   // --------------------------
   // Utility Functions
   // --------------------------
+  // New function for vertical grouping
+  function groupBoxesVertically(boxes, guiThreshold) {
+    if (!boxes.length) return boxes;
+
+    // Sort by GUI Y-coordinate (boundingBox.y) to process top-to-bottom
+    boxes.sort((a, b) => a.boundingBox.y - b.boundingBox.y);
+
+    const rows = [];
+    let currentRow = [boxes[0]];
+    let currentGuiY = boxes[0].boundingBox.y;
+
+    for (let i = 1; i < boxes.length; i++) {
+      const box = boxes[i];
+      if (Math.abs(box.boundingBox.y - currentGuiY) <= guiThreshold) {
+        // Same row based on GUI Y proximity
+        currentRow.push(box);
+      } else {
+        // New row
+        rows.push(currentRow);
+        currentRow = [box];
+        currentGuiY = box.boundingBox.y;
+      }
+    }
+    rows.push(currentRow); // Add the last row
+
+    // Assign final termY values to each row for terminal rendering
+    let nextY = 5;
+    for (const row of rows) {
+      for (const box of row) {
+        box.termY = nextY; // Lock the Y-coordinate for this row in terminal space
+        box.termBox = {
+          minX: box.termX,              // Keep initial termX (will be adjusted later)
+          minY: nextY,                  // Start of the row in terminal
+          maxX: box.termX + box.termWidth - 1,
+          maxY: nextY                   // Single-line box in terminal
+        };
+        debugLog(`Assigned box "${box.text}" to row at termY=${nextY} (GUI Y=${box.boundingBox.y})`);
+      }
+      nextY += 1; // Increment Y for the next row (1 terminal line apart)
+    }
+
+    return boxes;
+  }
+
   function hasTextBoxDescendant(nodeIdx, childrenMap, textBoxMap) {
     if (textBoxMap.has(nodeIdx)) return true;
     const children = childrenMap.get(nodeIdx) || [];
@@ -261,6 +306,7 @@ const LayoutAlgorithm = (() => {
     const splitSnapshotData = splitSnapshot(snapshot);
     DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData,null,2));
     DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
+
     const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData, terminal });
     if (!textLayoutBoxes.length) {
       DEBUG && terminal.yellow('No text boxes found.\n');
@@ -289,6 +335,10 @@ const LayoutAlgorithm = (() => {
       box.termHeight = 1;
       return box;
     });
+
+    // Apply vertical grouping here
+    const VERTICAL_THRESHOLD = 15; // Adjust this threshold (in terminal lines)
+    groupBoxesVertically(visibleBoxes, VERTICAL_THRESHOLD);
 
     const childrenMap = new Map();
     for (let i = 0; i < nodes.parentIndex.length; i++) {
@@ -719,7 +769,6 @@ const LayoutAlgorithm = (() => {
 
     const children = childrenMap.get(nodeIdx) || [];
 
-    // Process node based on type.
     if (isTextNode) {
       const textResult = processTextNode(nodeIdx, snapshot, nodes);
       if (!textResult) return null;
@@ -729,8 +778,6 @@ const LayoutAlgorithm = (() => {
       guiBox = getGuiBoxForNonText(nodeIdx, snapshot, tagName);
     }
 
-
-    // Collect subtree text for debugging.
     if (DEBUG) {
       const subtreeTexts = collectSubtreeText(nodeIdx, childrenMap, snapshot, nodes);
       if (subtreeTexts.length > 0) {
@@ -744,12 +791,21 @@ const LayoutAlgorithm = (() => {
       `Processing Node ${nodeIdx} (Tag: ${formatTag(tagName, isTextNode, textContent)}) with ${children.length} immediate children`
     );
 
-    // Handle leaf nodes with text boxes.
     if (textBoxMap.has(nodeIdx)) {
-      return processLeafNode(nodeIdx, textBoxMap, snapshot, textContent, guiBox);
+      const boxes = textBoxMap.get(nodeIdx);
+      // Use pre-assigned termY, only adjust termX
+      const rows = groupByRow(boxes, b => [b.termY]); // Respect existing termY
+      adjustBoxPositions(rows, nodeIdx); // This only changes termX
+
+      const termBox = computeBoundingTermBox(boxes);
+      const finalGuiBox = computeFinalGuiBox(nodeIdx, snapshot, boxes, guiBox);
+
+      debugLog(
+        `Leaf Node ${nodeIdx} TUI bounds: (${termBox.minX}, ${termBox.minY}) to (${termBox.maxX}, ${termBox.maxY}) | GUI bounds: (${finalGuiBox.x}, ${finalGuiBox.y}, ${finalGuiBox.width}, ${finalGuiBox.height})`
+      );
+      return { termBox, guiBox: finalGuiBox, text: boxes[0]?.text || textContent };
     }
 
-    // Process child nodes recursively.
     const childBoxes = processChildNodes(children, childrenMap, textBoxMap, snapshot, nodes);
     if (childBoxes.length === 0) {
       debugLog(
