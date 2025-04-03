@@ -143,46 +143,56 @@ const LayoutAlgorithm = (() => {
       // Process each text box
       for (let i = 0; i < tbIndices.length; i++) {
         const tbIdx = tbIndices[i];
-        const start = textBoxes.start[tbIdx];
-        const length = textBoxes.length[tbIdx];
-        const textSegment = originalText.substring(start, start + length).trim();
-        splitLog(`Text box ${tbIdx}: start=${start}, length=${length}, segment="${textSegment}"`);
+        let start = textBoxes.start[tbIdx];
+        let length = textBoxes.length[tbIdx];
+        
+        // Validate start and length against the original string
+        if (start < 0 || start >= originalText.length) {
+          splitLog(`Warning: Invalid start index ${start} for text box ${tbIdx}, adjusting to 0`);
+          start = 0;
+        }
+        if (start + length > originalText.length) {
+          splitLog(`Warning: Length ${length} exceeds string length at start ${start} for text box ${tbIdx}, adjusting`);
+          length = originalText.length - start;
+        }
+
+        // Compute the initial text segment
+        const initialSegment = originalText.substring(start, start + length);
+        splitLog(`Text box ${tbIdx}: initial segment="${initialSegment}"`);
+
+        // Trim leading spaces and calculate the number of spaces trimmed
+        const trimmedSegment = initialSegment.trimStart();
+        const spacesTrimmed = initialSegment.length - trimmedSegment.length;
+        const adjustedStart = start + spacesTrimmed; // Adjust start based on spaces trimmed
+        const textSegment = trimmedSegment.trimEnd(); // Also trim trailing spaces for the final segment
+        splitLog(`Text box ${tbIdx}: spacesTrimmed=${spacesTrimmed}, adjustedStart=${adjustedStart}, final segment="${textSegment}"`);
 
         if (i === 0) {
           // Update original node with first text box content
           const newTextIdx = strings.length;
           strings.push(textSegment);
           nodes.nodeValue[nodeIdx] = newTextIdx;
-          layout.text[layoutIdx] = newTextIdx; // Update layout.text to match
+          layout.text[layoutIdx] = newTextIdx;
           layout.bounds[layoutIdx] = [...textBoxes.bounds[tbIdx]];
-          textBoxes.layoutIndex[tbIdx] = layoutIdx; // Ensure it points to original layout
+          textBoxes.layoutIndex[tbIdx] = layoutIdx;
+          textBoxes.start[tbIdx] = 0; // Start at 0 for the new string
+          textBoxes.length[tbIdx] = textSegment.length;
           splitLog(`Updated node ${nodeIdx} with new textIdx ${newTextIdx} for "${textSegment}"`);
         } else {
           // Create new node and update existing text box
           const newNodeIdx = nextNodeIdx++;
           const newLayoutIdx = nextLayoutIdx++;
-
-          // Add new text segment to strings
           const newTextIdx = strings.length;
           strings.push(textSegment);
-
-          // Clone node with new text value
           cloneNode(nodeIdx, newNodeIdx, newTextIdx);
-
-          // Create new layout entry
           layout.nodeIndex[newLayoutIdx] = newNodeIdx;
           layout.bounds[newLayoutIdx] = [...textBoxes.bounds[tbIdx]];
           layout.text[newLayoutIdx] = newTextIdx;
           layoutToNode.set(newLayoutIdx, newNodeIdx);
-
-          // Update existing text box to point to new layout (no new entry)
           textBoxes.layoutIndex[tbIdx] = newLayoutIdx;
-          textBoxes.start[tbIdx] = 0; // Start at 0 for new string
+          textBoxes.start[tbIdx] = 0; // Start at 0 for the new string
           textBoxes.length[tbIdx] = textSegment.length;
           splitLog(`Updated text box ${tbIdx} to layoutIdx ${newLayoutIdx} for node ${newNodeIdx} with text "${textSegment}"`);
-
-          // Update parent mapping
-          nodeToParent.set(newNodeIdx, nodes.parentIndex[newNodeIdx]);
         }
       }
     }
