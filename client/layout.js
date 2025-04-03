@@ -5,7 +5,6 @@ const GAP = 1;
 const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
 
-
 const LayoutAlgorithm = (() => {
   // --------------------------
   // Utility Functions
@@ -316,12 +315,13 @@ const LayoutAlgorithm = (() => {
       return buildHTML(0);
     }
 
+
   async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal }) {
     // Transform the snapshot before processing
-    DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot,null,2));
-    DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot))
+    DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot, null, 2));
+    DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot));
     const splitSnapshotData = splitSnapshot(snapshot);
-    DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData,null,2));
+    DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData, null, 2));
     DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
 
     const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData, terminal });
@@ -336,7 +336,8 @@ const LayoutAlgorithm = (() => {
     const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
     const scaleY = baseScaleY * VERTICAL_COMPRESSION;
 
-    const visibleBoxes = textLayoutBoxes.filter(box => {
+    // Initial visible boxes calculation
+    let visibleBoxes = textLayoutBoxes.filter(box => {
       const boxX = box.boundingBox.x;
       const boxY = box.boundingBox.y;
       const boxRight = boxX + box.boundingBox.width;
@@ -353,10 +354,61 @@ const LayoutAlgorithm = (() => {
       return box;
     });
 
-    // Apply vertical grouping here
+    // Apply vertical grouping
     const GUI_VERTICAL_THRESHOLD = 15; // Pixels for grouping rows
-    const GUI_GAP_THRESHOLD = 30; // Pixels for adding an empty line (optional, defaults to 30 if omitted)
+    const GUI_GAP_THRESHOLD = 30; // Pixels for adding an empty line
     groupBoxesVertically(visibleBoxes, GUI_VERTICAL_THRESHOLD, GUI_GAP_THRESHOLD);
+
+    // Filter out occluded boxes using paint order
+    const layout = splitSnapshotData.documents[0].layout;
+    if (layout.paintOrders) {
+      // Map nodeIndex to paintOrder
+      const paintOrderMap = new Map();
+      layout.nodeIndex.forEach((nodeIdx, layoutIdx) => {
+        paintOrderMap.set(nodeIdx, layout.paintOrders[layoutIdx]);
+      });
+
+      // Sort visibleBoxes by paint order, highest first (topmost elements)
+      visibleBoxes.sort((a, b) => {
+        const paintA = paintOrderMap.get(a.nodeIndex) || 0;
+        const paintB = paintOrderMap.get(b.nodeIndex) || 0;
+        return paintB - paintA; // Descending: higher paint order (top) first
+      });
+
+      // Track occupied GUI space and filter
+      const occupiedAreas = []; // { x, y, right, bottom }
+      const filteredBoxes = [];
+
+      for (const box of visibleBoxes) {
+        const bounds = box.boundingBox;
+        const paintOrder = paintOrderMap.get(box.nodeIndex) || 0;
+        const boxArea = { x: bounds.x, y: bounds.y, right: bounds.x + bounds.width, bottom: bounds.y + bounds.height };
+
+        // Check if this box is fully contained by an occupied area (which has a higher paint order)
+        let isOccluded = false;
+        for (const occupied of occupiedAreas) {
+          if (occupied.x <= boxArea.x &&
+              occupied.y <= boxArea.y &&
+              occupied.right >= boxArea.right &&
+              occupied.bottom >= boxArea.bottom) {
+            debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) occluded by prior area`);
+            isOccluded = true;
+            break;
+          }
+        }
+
+        if (!isOccluded) {
+          filteredBoxes.push(box);
+          occupiedAreas.push(boxArea); // Add this box’s bounds to occupied areas
+          debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) added as visible`);
+        }
+      }
+
+      visibleBoxes = filteredBoxes;
+      debugLog(`Filtered down to ${visibleBoxes.length} visible boxes after occlusion check`);
+    } else {
+      debugLog('No paintOrders available in snapshot; skipping occlusion filter');
+    }
 
     const childrenMap = new Map();
     for (let i = 0; i < nodes.parentIndex.length; i++) {
