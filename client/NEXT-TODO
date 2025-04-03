@@ -1,5 +1,3 @@
-DONE ! WORKS ! - test simpler vert algorithm using grouping by row with threshold, and allocation to scaled X coord of next "available row" based on test:
-- vertical deconflict using hoz algoirthm dual if the simple method fails
 - ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
 - add placeholders for clickable images/media (something like [IMAGE] [IMG] [I], [VIDEO], [AUDIO],  depending on space available, and we can also show alt)
 - form controls
