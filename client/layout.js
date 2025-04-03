@@ -11,7 +11,7 @@ const LayoutAlgorithm = (() => {
   // Utility Functions
   // --------------------------
   // New function for vertical grouping
-  function groupBoxesVertically(boxes, guiThreshold) {
+  function groupBoxesVertically(boxes, guiThreshold, gapThreshold = guiThreshold * 2) {
     if (!boxes.length) return boxes;
 
     // Sort by GUI Y-coordinate (boundingBox.y) to process top-to-bottom
@@ -21,6 +21,7 @@ const LayoutAlgorithm = (() => {
     let currentRow = [boxes[0]];
     let currentGuiY = boxes[0].boundingBox.y;
 
+    // Group boxes into rows based on guiThreshold
     for (let i = 1; i < boxes.length; i++) {
       const box = boxes[i];
       if (Math.abs(box.boundingBox.y - currentGuiY) <= guiThreshold) {
@@ -35,9 +36,10 @@ const LayoutAlgorithm = (() => {
     }
     rows.push(currentRow); // Add the last row
 
-    // Assign final termY values to each row for terminal rendering
+    // Assign termY values with gaps for significant GUI spacing
     let nextY = 5;
-    for (const row of rows) {
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
       for (const box of row) {
         box.termY = nextY; // Lock the Y-coordinate for this row in terminal space
         box.termBox = {
@@ -48,7 +50,22 @@ const LayoutAlgorithm = (() => {
         };
         debugLog(`Assigned box "${box.text}" to row at termY=${nextY} (GUI Y=${box.boundingBox.y})`);
       }
-      nextY += 1; // Increment Y for the next row (1 terminal line apart)
+
+      // Check for a gap before the next row
+      if (i < rows.length - 1) {
+        const currentRowMaxY = Math.max(...rows[i].map(box => box.boundingBox.y + box.boundingBox.height));
+        const nextRowMinY = rows[i + 1][0].boundingBox.y;
+        const guiGap = nextRowMinY - currentRowMaxY;
+
+        if (guiGap > gapThreshold) {
+          nextY += 2; // Skip an extra line in the terminal for a significant GUI gap
+          debugLog(`Added empty line: GUI gap of ${guiGap}px between row ${i} (maxY=${currentRowMaxY}) and row ${i+1} (minY=${nextRowMinY}) exceeds gapThreshold=${gapThreshold}`);
+        } else {
+          nextY += 1; // Normal increment for adjacent rows
+        }
+      } else {
+        nextY += 1; // Last row, just increment normally
+      }
     }
 
     return boxes;
@@ -337,8 +354,9 @@ const LayoutAlgorithm = (() => {
     });
 
     // Apply vertical grouping here
-    const VERTICAL_THRESHOLD = 15; // Adjust this threshold (in terminal lines)
-    groupBoxesVertically(visibleBoxes, VERTICAL_THRESHOLD);
+    const GUI_VERTICAL_THRESHOLD = 15; // Pixels for grouping rows
+    const GUI_GAP_THRESHOLD = 30; // Pixels for adding an empty line (optional, defaults to 30 if omitted)
+    groupBoxesVertically(visibleBoxes, GUI_VERTICAL_THRESHOLD, GUI_GAP_THRESHOLD);
 
     const childrenMap = new Map();
     for (let i = 0; i < nodes.parentIndex.length; i++) {
