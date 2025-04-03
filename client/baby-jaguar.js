@@ -381,6 +381,8 @@ we should deconflict some lines (small text can vert overlap)
 
       async function refreshTerminal({ send, sessionId, state, addressBar }) {
         try {
+          // sometimes this line errors out and poll returns nothing. I think we could try a page reload
+          // and try to repro and figure it out
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
           if ( ! snapshot ) return;
           state.currentScrollY = viewportY;
@@ -405,7 +407,7 @@ we should deconflict some lines (small text can vert overlap)
           }
         } catch (error) {
           if (DEBUG) console.warn(error);
-          terminal.red(`Error printing text layout: ${error.message}\n`);
+          DEBUG && terminal.red(`Error printing text layout: ${error.message}\n`);
         }
       }
 
