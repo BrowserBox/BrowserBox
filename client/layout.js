@@ -266,55 +266,268 @@ const LayoutAlgorithm = (() => {
     DEBUG && fs.appendFileSync('split.log', stuff.join(' ') + '\n');
   }
 
-    function reconstructToHTML(snapshot) {
-      const strings = snapshot.strings;
-      const document = snapshot.documents[0];
-      const nodes = document.nodes;
-      const nodeToChildren = new Map();
+  function reconstructToHTML(snapshot) {
+    const strings = snapshot.strings;
+    const document = snapshot.documents[0];
+    const nodes = document.nodes;
+    const nodeToChildren = new Map();
 
-      // Build a map of parent to children
-      for (let i = 0; i < nodes.parentIndex.length; i++) {
-        const parentIdx = nodes.parentIndex[i];
-        if (parentIdx !== -1) {
-          if (!nodeToChildren.has(parentIdx)) nodeToChildren.set(parentIdx, []);
-          nodeToChildren.get(parentIdx).push(i);
-        }
+    // Build a map of parent to children
+    for (let i = 0; i < nodes.parentIndex.length; i++) {
+      const parentIdx = nodes.parentIndex[i];
+      if (parentIdx !== -1) {
+        if (!nodeToChildren.has(parentIdx)) nodeToChildren.set(parentIdx, []);
+        nodeToChildren.get(parentIdx).push(i);
       }
-
-      function buildHTML(nodeIdx, depth = 0) {
-        const indent = '  '.repeat(depth);
-        const nodeType = nodes.nodeType[nodeIdx];
-        const nodeNameIdx = nodes.nodeName[nodeIdx];
-        const nodeName = nodeNameIdx >= 0 ? strings[nodeNameIdx] : 'Unknown';
-        let html = '';
-
-        if (nodeType === 9) { // Document node
-          html += `${indent}<#document>\n`;
-          const children = nodeToChildren.get(nodeIdx) || [];
-          for (const childIdx of children) {
-            html += buildHTML(childIdx, depth + 1);
-          }
-          html += `${indent}</#document>\n`;
-        } else if (nodeType === 1) { // Element node
-          html += `${indent}<${nodeName}>\n`;
-          const children = nodeToChildren.get(nodeIdx) || [];
-          for (const childIdx of children) {
-            html += buildHTML(childIdx, depth + 1);
-          }
-          html += `${indent}</${nodeName}>\n`;
-        } else if (nodeType === 3) { // Text node
-          const nodeValueIdx = nodes.nodeValue[nodeIdx];
-          const textContent = nodeValueIdx >= 0 ? strings[nodeValueIdx] : '';
-          html += `${indent}#text "${textContent}"\n`;
-        }
-
-        return html;
-      }
-
-      // Start with the root node (typically node 0 is the document)
-      return buildHTML(0);
     }
 
+    function buildHTML(nodeIdx, depth = 0) {
+      const indent = '  '.repeat(depth);
+      const nodeType = nodes.nodeType[nodeIdx];
+      const nodeNameIdx = nodes.nodeName[nodeIdx];
+      const nodeName = nodeNameIdx >= 0 ? strings[nodeNameIdx] : 'Unknown';
+      let html = '';
+
+      if (nodeType === 9) { // Document node
+        html += `${indent}<#document>\n`;
+        const children = nodeToChildren.get(nodeIdx) || [];
+        for (const childIdx of children) {
+          html += buildHTML(childIdx, depth + 1);
+        }
+        html += `${indent}</#document>\n`;
+      } else if (nodeType === 1) { // Element node
+        html += `${indent}<${nodeName}>\n`;
+        const children = nodeToChildren.get(nodeIdx) || [];
+        for (const childIdx of children) {
+          html += buildHTML(childIdx, depth + 1);
+        }
+        html += `${indent}</${nodeName}>\n`;
+      } else if (nodeType === 3) { // Text node
+        const nodeValueIdx = nodes.nodeValue[nodeIdx];
+        const textContent = nodeValueIdx >= 0 ? strings[nodeValueIdx] : '';
+        html += `${indent}#text "${textContent}"\n`;
+      }
+
+      return html;
+    }
+
+    // Start with the root node (typically node 0 is the document)
+    return buildHTML(0);
+  }
+
+  // Helper to get computed styles as a key-value object
+  function getComputedStyles(layoutIndex, layout, strings) {
+    if (layoutIndex === -1) return {};
+    const computedStyleKeys = ['display', 'visibility', 'overflow', 'position', 'width', 'height', 'transform'];
+    const styleIndexes = layout.styles[layoutIndex] || [];
+    const styleValues = styleIndexes.map(idx => strings[idx]);
+    const styleMap = {};
+    computedStyleKeys.forEach((key, i) => {
+      if (styleValues[i]) {
+        styleMap[key] = styleValues[i];
+      }
+    });
+    // Log the computed styles to computed-styles.log
+    fs.appendFileSync('computed-styles.log', `layoutIndex ${layoutIndex}: ${JSON.stringify(styleMap)}\n`);
+    return styleMap;
+  }
+
+  // Helper to find the layoutIndex of a node's parent element
+  function getParentElementLayoutIndex(nodeIndex, layout, nodeToParent) {
+    let currentIndex = nodeIndex;
+    while (currentIndex !== -1) {
+      const parentIndex = nodeToParent.get(currentIndex);
+      if (parentIndex === -1) return -1;
+      const parentLayoutIndex = layout.nodeIndex.indexOf(parentIndex);
+      if (parentLayoutIndex !== -1) return parentLayoutIndex; // Found the parent element in layout
+      currentIndex = parentIndex;
+    }
+    return -1;
+  }
+
+  // Helper to check if a node or its ancestors have visibility: hidden, display: none, or zero dimensions
+  function isHiddenByStyles(nodeIndex, layoutIndex, layout, strings, nodeToParent) {
+    let currentIndex = nodeIndex;
+    let currentLayoutIndex = layoutIndex;
+    while (currentIndex !== -1) {
+      const styles = getComputedStyles(currentLayoutIndex, layout, strings);
+      if (styles.visibility === 'hidden' || styles.display === 'none') {
+        debugLog(`Node ${nodeIndex} hidden by styles: ${JSON.stringify(styles)}`);
+        return true;
+      }
+      // Check for zero dimensions
+      const width = styles.width || 'auto';
+      const height = styles.height || 'auto';
+      const isZeroWidth = width === '0' || width === '0px';
+      const isZeroHeight = height === '0' || height === '0px';
+      if (isZeroWidth || isZeroHeight) {
+        debugLog(`Node ${nodeIndex} hidden by zero dimensions: ${JSON.stringify(styles)}`);
+        return true;
+      }
+      currentIndex = nodeToParent.get(currentIndex);
+      currentLayoutIndex = currentIndex !== -1 ? layout.nodeIndex.indexOf(currentIndex) : -1;
+    }
+    return false;
+  }
+
+  // Helper to check if a node is clipped by a parent with width: 0, overflow: hidden
+  function isClippedByParent(nodeIndex, layoutIndex, layout, strings, nodeToParent) {
+    // Start with the parent of the text node
+    let currentIndex = nodeToParent.get(nodeIndex);
+    let currentLayoutIndex = currentIndex !== -1 ? layout.nodeIndex.indexOf(currentIndex) : -1;
+
+    // Check if the parent element (not the text node) has position: absolute
+    const parentStyles = getComputedStyles(currentLayoutIndex, layout, strings);
+    const isAbsolutelyPositioned = parentStyles.position === 'absolute';
+
+    if (isAbsolutelyPositioned) {
+      debugLog(`Parent of node ${nodeIndex} is absolutely positioned, not clipped by parent: ${JSON.stringify(parentStyles)}`);
+      return false;
+    }
+
+    // Check ancestors for clipping
+    let depth = 0;
+    while (currentIndex !== -1 && currentLayoutIndex !== -1) {
+      const styles = getComputedStyles(currentLayoutIndex, layout, strings);
+      const hasOverflowHidden = styles.overflow === 'hidden';
+      const width = styles.width || 'auto';
+      const height = styles.height || 'auto';
+
+      const isZeroWidth = width === '0' || width === '0px';
+      const isZeroHeight = height === '0' || height === '0px';
+
+      if ((isZeroWidth || isZeroHeight) && hasOverflowHidden) {
+        debugLog(`Node ${nodeIndex} clipped by ancestor ${currentIndex} at depth ${depth} with styles: ${JSON.stringify(styles)}`);
+        return true;
+      }
+
+      currentIndex = nodeToParent.get(currentIndex);
+      currentLayoutIndex = currentIndex !== -1 ? layout.nodeIndex.indexOf(currentIndex) : -1;
+      depth++;
+    }
+    return false;
+  }
+
+  // Helper to check if a node is clickable
+  function isNodeClickable(nodeIndex, clickableIndexes, nodeToParent) {
+    let currentIndex = nodeIndex;
+    while (currentIndex !== -1) {
+      if (clickableIndexes.has(currentIndex)) return true;
+      currentIndex = nodeToParent.get(currentIndex);
+    }
+    return false;
+  }
+
+  function extractTextLayoutBoxes({ snapshot, terminal }) {
+    const textLayoutBoxes = [];
+    const clickableElements = [];
+    const strings = snapshot.strings;
+    const document = snapshot.documents[0];
+    const textBoxes = document.textBoxes;
+    const layout = document.layout;
+    const nodes = document.nodes;
+
+    if (!textBoxes || !textBoxes.bounds || !textBoxes.start || !textBoxes.length) {
+      terminal.yellow('No text boxes found in snapshot.\n');
+      return { textLayoutBoxes, clickableElements };
+    }
+
+    DEBUG && terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
+
+    const layoutToNode = new Map();
+    layout.nodeIndex.forEach((nodeIdx, layoutIdx) => layoutToNode.set(layoutIdx, nodeIdx));
+
+    const nodeToParent = new Map();
+    nodes.parentIndex.forEach((parentIdx, nodeIdx) => nodeToParent.set(nodeIdx, parentIdx));
+
+    const clickableIndexes = new Set(nodes.isClickable?.index || []);
+
+    for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
+      const layoutIndex = textBoxes.layoutIndex[i];
+      const bounds = textBoxes.bounds[i];
+      const start = textBoxes.start[i];
+      const length = textBoxes.length[i];
+
+      if (layoutIndex === -1 || !bounds || start === -1 || length === -1) {
+        DEBUG && terminal.yellow(`Skipping invalid text box ${i} (layoutIndex: ${layoutIndex})\n`);
+        continue;
+      }
+
+      const textIndex = layout.text[layoutIndex];
+      if (textIndex === -1 || textIndex >= strings.length) {
+        DEBUG && terminal.yellow(`Invalid text index ${textIndex} for layoutIndex ${layoutIndex}\n`);
+        continue;
+      }
+
+      const fullText = strings[textIndex];
+      const text = fullText.substring(start, start + length).trim();
+      if (!text || text.match(/^\s*$/)) {
+        DEBUG && terminal.yellow(`Empty or whitespace-only text for layoutIndex ${layoutIndex}\n`);
+        continue;
+      }
+
+      const nodeIndex = layoutToNode.get(layoutIndex);
+
+      // Find the parent element's layoutIndex
+      const parentLayoutIndex = getParentElementLayoutIndex(nodeIndex, layout, nodeToParent);
+      if (parentLayoutIndex === -1) {
+        DEBUG && terminal.yellow(`No parent element found for text box ${i} (nodeIndex: ${nodeIndex})\n`);
+        continue;
+      }
+
+      // Get the parent element's styles to check width and height
+      const parentStyles = getComputedStyles(parentLayoutIndex, layout, strings);
+      const parentWidth = parentStyles.width || 'auto';
+      const parentHeight = parentStyles.height || 'auto';
+      const isZeroWidth = parentWidth === '0' || parentWidth === '0px';
+      const isZeroHeight = parentHeight === '0' || parentHeight === '0px';
+
+      // Filter out boxes with zero width or height (using parent element's computed styles)
+      if (isZeroWidth || isZeroHeight) {
+        DEBUG && terminal.yellow(`Skipping text box ${i} with zero dimensions in parent (width: ${parentWidth}, height: ${parentHeight})\n`);
+        continue;
+      }
+
+      // Filter out boxes hidden by visibility: hidden, display: none, or zero dimensions
+      if (isHiddenByStyles(nodeIndex, parentLayoutIndex, layout, strings, nodeToParent)) {
+        DEBUG && terminal.yellow(`Skipping text box ${i} due to visibility: hidden, display: none, or zero dimensions\n`);
+        continue;
+      }
+
+      // Filter out boxes clipped by a parent with width: 0, overflow: hidden
+      if (isClippedByParent(nodeIndex, parentLayoutIndex, layout, strings, nodeToParent)) {
+        DEBUG && terminal.yellow(`Skipping text box ${i} due to parent clipping (width: 0, overflow: hidden)\n`);
+        continue;
+      }
+
+      // Use textBoxes.bounds for the actual text box position
+      const textBoundingBox = {
+        x: bounds[0],
+        y: bounds[1],
+        width: bounds[2],
+        height: bounds[3],
+      };
+
+      const parentIndex = nodeToParent.get(nodeIndex);
+      const backendNodeId = nodes.backendNodeId[nodeIndex];
+      const isClickable = nodeIndex !== undefined && isNodeClickable(nodeIndex, clickableIndexes, nodeToParent);
+      const ancestorType = getAncestorInfo(nodeIndex, nodes, strings);
+
+      if (isClickable) {
+        clickableElements.push({
+          text,
+          boundingBox: textBoundingBox,
+          clickX: textBoundingBox.x + textBoundingBox.width / 2,
+          clickY: textBoundingBox.y + textBoundingBox.height / 2,
+        });
+      }
+
+      textLayoutBoxes.push({ text, boundingBox: textBoundingBox, isClickable, parentIndex, ancestorType, backendNodeId, layoutIndex, nodeIndex });
+      DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${textBoundingBox.x}, ${textBoundingBox.y}) | parentIndex: ${parentIndex} | backendNodeId: ${backendNodeId} | isClickable: ${isClickable} | ancestorType: ${ancestorType}\n`);
+    }
+
+    return { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes };
+  }
 
   async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal }) {
     // Transform the snapshot before processing
@@ -374,15 +587,29 @@ const LayoutAlgorithm = (() => {
         const paintB = paintOrderMap.get(b.nodeIndex) || 0;
         return paintB - paintA; // Descending: higher paint order (top) first
       });
+      debugLog(JSON.stringify(visibleBoxes));
 
       // Track occupied GUI space and filter
       const occupiedAreas = []; // { x, y, right, bottom }
       const filteredBoxes = [];
 
       for (const box of visibleBoxes) {
-        const bounds = box.boundingBox;
+        // Find the parent element's layoutIndex
+        const parentLayoutIndex = getParentElementLayoutIndex(box.nodeIndex, layout, nodeToParent);
+        if (parentLayoutIndex === -1) {
+          debugLog(`No parent element found for box "${box.text}" (node ${box.nodeIndex})`);
+          continue;
+        }
+
+        // Use the parent element's bounds for occlusion checking
+        const parentBounds = layout.bounds[parentLayoutIndex];
         const paintOrder = paintOrderMap.get(box.nodeIndex) || 0;
-        const boxArea = { x: bounds.x, y: bounds.y, right: bounds.x + bounds.width, bottom: bounds.y + bounds.height };
+        const boxArea = {
+          x: parentBounds[0],
+          y: parentBounds[1],
+          right: parentBounds[0] + parentBounds[2],
+          bottom: parentBounds[1] + parentBounds[3],
+        };
 
         // Check if this box is fully contained by an occupied area (which has a higher paint order)
         let isOccluded = false;
@@ -391,7 +618,7 @@ const LayoutAlgorithm = (() => {
               occupied.y <= boxArea.y &&
               occupied.right >= boxArea.right &&
               occupied.bottom >= boxArea.bottom) {
-            debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) occluded by prior area`);
+            debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) occluded by prior area with bounds [${occupied.x}, ${occupied.y}, ${occupied.right}, ${occupied.bottom}]`);
             isOccluded = true;
             break;
           }
@@ -399,13 +626,14 @@ const LayoutAlgorithm = (() => {
 
         if (!isOccluded) {
           filteredBoxes.push(box);
-          occupiedAreas.push(boxArea); // Add this box’s bounds to occupied areas
-          debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) added as visible`);
+          occupiedAreas.push(boxArea); // Add the parent element’s bounds to occupied areas
+          debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) added as visible with parent bounds [${boxArea.x}, ${boxArea.y}, ${boxArea.right}, ${boxArea.bottom}]`);
         }
       }
 
       visibleBoxes = filteredBoxes;
       debugLog(`Filtered down to ${visibleBoxes.length} visible boxes after occlusion check`);
+      debugLog(JSON.stringify(visibleBoxes));
     } else {
       debugLog('No paintOrders available in snapshot; skipping occlusion filter');
     }
@@ -449,195 +677,6 @@ const LayoutAlgorithm = (() => {
       nodeToParent,
       nodes,
     };
-  }
-
-  function extractTextLayoutBoxes({ snapshot, terminal }) {
-    const textLayoutBoxes = [];
-    const clickableElements = [];
-    const strings = snapshot.strings;
-    const document = snapshot.documents[0];
-    const textBoxes = document.textBoxes;
-    const layout = document.layout;
-    const nodes = document.nodes;
-
-    if (!textBoxes || !textBoxes.bounds || !textBoxes.start || !textBoxes.length) {
-      terminal.yellow('No text boxes found in snapshot.\n');
-      return { textLayoutBoxes, clickableElements };
-    }
-
-    DEBUG && terminal.cyan(`Found ${textBoxes.layoutIndex.length} text boxes in snapshot.\n`);
-
-    const layoutToNode = new Map();
-    layout.nodeIndex.forEach((nodeIdx, layoutIdx) => layoutToNode.set(layoutIdx, nodeIdx));
-
-    const nodeToParent = new Map();
-    nodes.parentIndex.forEach((parentIdx, nodeIdx) => nodeToParent.set(nodeIdx, parentIdx));
-
-    const clickableIndexes = new Set(nodes.isClickable?.index || []);
-
-    // Define the order of computed styles to match the order in DOMSnapshot.captureSnapshot
-    const computedStyleKeys = ['display', 'visibility', 'overflow', 'position', 'width', 'height', 'transform'];
-
-    // Helper to get computed styles as a key-value object
-    function getComputedStyles(layoutIndex) {
-      if (layoutIndex === -1) return {};
-      const styleIndexes = layout.styles[layoutIndex] || [];
-      const styleValues = styleIndexes.map(idx => strings[idx]);
-      const styleMap = {};
-      computedStyleKeys.forEach((key, i) => {
-        if (styleValues[i]) {
-          styleMap[key] = styleValues[i];
-        }
-      });
-      // Log the computed styles to computed-styles.log
-      fs.appendFileSync('computed-styles.log', `layoutIndex ${layoutIndex}: ${JSON.stringify(styleMap)}\n`);
-      return styleMap;
-    }
-
-    // Helper to check if a node or its ancestors have visibility: hidden or display: none
-    function isHiddenByStyles(nodeIndex, layoutIndex) {
-      let currentIndex = nodeIndex;
-      let currentLayoutIndex = layoutIndex;
-      while (currentIndex !== -1) {
-        const styles = getComputedStyles(currentLayoutIndex);
-        if (styles.visibility === 'hidden' || styles.display === 'none') {
-          debugLog(`Node ${nodeIndex} hidden by styles: ${JSON.stringify(styles)}`);
-          return true;
-        }
-        currentIndex = nodeToParent.get(currentIndex);
-        currentLayoutIndex = currentIndex !== -1 ? layout.nodeIndex.indexOf(currentIndex) : -1;
-      }
-      return false;
-    }
-
-    // Helper to check if a node is clipped by a parent with width: 0, overflow: hidden
-    function isClippedByParent(nodeIndex, layoutIndex) {
-      let currentIndex = nodeIndex;
-      let currentLayoutIndex = layoutIndex;
-
-      // Check if the node itself has position: absolute
-      const styles = getComputedStyles(currentLayoutIndex);
-      const isAbsolutelyPositioned = styles.position === 'absolute';
-
-      if (isAbsolutelyPositioned) {
-        debugLog(`Node ${nodeIndex} is absolutely positioned, not clipped by parent`);
-        return false;
-      }
-
-      // Check parent’s styles
-      let parentIndex = nodeToParent.get(currentIndex);
-      let parentLayoutIndex = parentIndex !== -1 ? layout.nodeIndex.indexOf(parentIndex) : -1;
-      let depth = 0;
-
-      while (parentIndex !== -1 && parentLayoutIndex !== -1) {
-        const parentStyles = getComputedStyles(parentLayoutIndex);
-        const hasOverflowHidden = parentStyles.overflow === 'hidden';
-        const parentWidth = parentStyles.width || 'auto';
-        const parentHeight = parentStyles.height || 'auto';
-
-        // Check if width or height is 0 (or '0px')
-        const isZeroWidth = parentWidth === '0' || parentWidth === '0px';
-        const isZeroHeight = parentHeight === '0' || parentHeight === '0px';
-
-        if ((isZeroWidth || isZeroHeight) && hasOverflowHidden) {
-          debugLog(`Node ${nodeIndex} clipped by ancestor ${parentIndex} at depth ${depth} with styles: ${JSON.stringify(parentStyles)}`);
-          return true;
-        }
-
-        parentIndex = nodeToParent.get(parentIndex);
-        parentLayoutIndex = parentIndex !== -1 ? layout.nodeIndex.indexOf(parentIndex) : -1;
-        depth++;
-      }
-      return false;
-    }
-
-    function isNodeClickable(nodeIndex) {
-      let currentIndex = nodeIndex;
-      while (currentIndex !== -1) {
-        if (clickableIndexes.has(currentIndex)) return true;
-        currentIndex = nodeToParent.get(currentIndex);
-      }
-      return false;
-    }
-
-    for (let i = 0; i < textBoxes.layoutIndex.length; i++) {
-      const layoutIndex = textBoxes.layoutIndex[i];
-      const bounds = textBoxes.bounds[i];
-      const start = textBoxes.start[i];
-      const length = textBoxes.length[i];
-
-      if (layoutIndex === -1 || !bounds || start === -1 || length === -1) {
-        DEBUG && terminal.yellow(`Skipping invalid text box ${i} (layoutIndex: ${layoutIndex})\n`);
-        continue;
-      }
-
-      const textIndex = layout.text[layoutIndex];
-      if (textIndex === -1 || textIndex >= strings.length) {
-        DEBUG && terminal.yellow(`Invalid text index ${textIndex} for layoutIndex ${layoutIndex}\n`);
-        continue;
-      }
-
-      const fullText = strings[textIndex];
-      const text = fullText.substring(start, start + length).trim();
-      if (!text || text.match(/^\s*$/)) {
-        DEBUG && terminal.yellow(`Empty or whitespace-only text for layoutIndex ${layoutIndex}\n`);
-        continue;
-      }
-
-      // Get the node's styles to check width and height
-      const nodeStyles = getComputedStyles(layoutIndex);
-      const nodeWidth = nodeStyles.width || 'auto';
-      const nodeHeight = nodeStyles.height || 'auto';
-      const isZeroWidth = nodeWidth === '0' || nodeWidth === '0px';
-      const isZeroHeight = nodeHeight === '0' || nodeHeight === '0px';
-
-      // Filter out boxes with zero width or height (using computed styles)
-      if (isZeroWidth || isZeroHeight) {
-        DEBUG && terminal.yellow(`Skipping text box ${i} with zero dimensions (width: ${nodeWidth}, height: ${nodeHeight})\n`);
-        continue;
-      }
-
-      const nodeIndex = layoutToNode.get(layoutIndex);
-
-      // Filter out boxes hidden by visibility: hidden or display: none
-      if (isHiddenByStyles(nodeIndex, layoutIndex)) {
-        DEBUG && terminal.yellow(`Skipping text box ${i} due to visibility: hidden or display: none\n`);
-        continue;
-      }
-
-      // Filter out boxes clipped by a parent with width: 0, overflow: hidden
-      if (isClippedByParent(nodeIndex, layoutIndex)) {
-        DEBUG && terminal.yellow(`Skipping text box ${i} due to parent clipping (width: 0, overflow: hidden)\n`);
-        continue;
-      }
-
-      // Use textBoxes.bounds for the actual text box position
-      const textBoundingBox = {
-        x: bounds[0],
-        y: bounds[1],
-        width: bounds[2],
-        height: bounds[3],
-      };
-
-      const parentIndex = nodeToParent.get(nodeIndex);
-      const backendNodeId = nodes.backendNodeId[nodeIndex];
-      const isClickable = nodeIndex !== undefined && isNodeClickable(nodeIndex);
-      const ancestorType = getAncestorInfo(nodeIndex, nodes, strings);
-
-      if (isClickable) {
-        clickableElements.push({
-          text,
-          boundingBox: textBoundingBox,
-          clickX: textBoundingBox.x + textBoundingBox.width / 2,
-          clickY: textBoundingBox.y + textBoundingBox.height / 2,
-        });
-      }
-
-      textLayoutBoxes.push({ text, boundingBox: textBoundingBox, isClickable, parentIndex, ancestorType, backendNodeId, layoutIndex, nodeIndex });
-      DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${textBoundingBox.x}, ${textBoundingBox.y}) | parentIndex: ${parentIndex} | backendNodeId: ${backendNodeId} | isClickable: ${isClickable} | ancestorType: ${ancestorType}\n`);
-    }
-
-    return { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes };
   }
 
   function getAncestorInfo(nodeIndex, nodes, strings) {
