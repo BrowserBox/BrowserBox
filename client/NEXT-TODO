@@ -1,3 +1,9 @@
+- test on github repo page the markdown has weird layout issues. good to debug on. 
+- some elements are still occluded and "missing". test on ddg srp: "japan" - ie first line is missing. 
+- as usual follow our debug process:
+  - find out why this happens
+  - solve the biggest cause we can
+
 - add placeholders for clickable images/media (something like [IMAGE] [IMG] [I], [VIDEO], [AUDIO],  depending on space available, and we can also show alt)
 - ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
 - improve efficiency of rendering. Only split snapshot on visible boxes.
