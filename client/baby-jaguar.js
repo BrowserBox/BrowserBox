@@ -255,53 +255,61 @@ we should deconflict some lines (small text can vert overlap)
             browser.setTab(targetIndex, { title, url });
           }
         } else {
-          console.warn(`Target with ID ${targetId} not found`);
+          DEBUG && console.warn(`Target with ID ${targetId} not found`);
         }
       }
 
       async function fetchSnapshot({ send, sessionId }) {
-        DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
-        await Promise.all([
-          send('DOM.enable', {}, sessionId),
-          send('DOMSnapshot.enable', {}, sessionId),
-        ]);
+        try {
+          DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
+          // add a map to only do this 1 time per session. Also throw in a Page.reload to trigger it if it locks for good measure
+          await Promise.all([
+            send('DOM.enable', {}, sessionId),
+            send('DOMSnapshot.enable', {}, sessionId),
+          ]);
 
-        DEBUG && terminal.cyan('Capturing snapshot...\n');
-        const snapshot = await send('DOMSnapshot.captureSnapshot', {
-          computedStyles: [],
-          includeDOMRects: true,
-          includePaintOrder: true,
-          includeBlobs: true
-        }, sessionId);
-        if (!snapshot?.documents?.length) {
-          return;
+          DEBUG && terminal.cyan('Capturing snapshot...\n');
+          const snapshot = await send('DOMSnapshot.captureSnapshot', {
+            computedStyles: [],
+            includeDOMRects: true,
+            includePaintOrder: true,
+            includeBlobs: true
+          }, sessionId);
+          if (!snapshot?.documents?.length) {
+            return;
+          }
+          DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
+
+          const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
+          const viewport = layoutMetrics.visualViewport;
+          const document = snapshot.documents[0];
+
+          return {
+            snapshot,
+            viewportWidth: viewport.clientWidth,
+            viewportHeight: viewport.clientHeight,
+            viewportX: document.scrollOffsetX,
+            viewportY: document.scrollOffsetY,
+          };
+        } catch(e) {
+          DEBUG && console.warn(e);
+          return {};
         }
-        DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
-
-        const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
-        const viewport = layoutMetrics.visualViewport;
-        const document = snapshot.documents[0];
-
-        return {
-          snapshot,
-          viewportWidth: viewport.clientWidth,
-          viewportHeight: viewport.clientHeight,
-          viewportX: document.scrollOffsetX,
-          viewportY: document.scrollOffsetY,
-        };
       }
 
       async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
-          Object.assign(state, {
-            viewportHeight, viewportWidth, 
-          });
-          const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot, terminal });
-          if (textLayoutBoxes.length > 0) {
-            return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };
+          if ( snapshot ) {
+            Object.assign(state, {
+              viewportHeight, viewportWidth, 
+            });
+            const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot, terminal });
+            if (textLayoutBoxes.length > 0) {
+              return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };
+            }
+            DEBUG && terminal.yellow(`Attempt ${attempt}: Found 0 text boxes, retrying in ${interval}ms...\n`);
           }
-          DEBUG && terminal.yellow(`Attempt ${attempt}: Found 0 text boxes, retrying in ${interval}ms...\n`);
           await sleep(interval);
         }
         DEBUG && terminal.yellow(`Max attempts reached, proceeding with last snapshot.\n`);
@@ -376,11 +384,13 @@ we should deconflict some lines (small text can vert overlap)
       async function refreshTerminal({ send, sessionId, state, addressBar }) {
         try {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
+          if ( ! snapshot ) return;
           state.currentScrollY = viewportY;
           const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal });
 
           terminal.clear();
           terminal.bgDefaultColor();
+          terminal.defaultColor();
           browser.render();
 
           if (layoutState) {
@@ -501,7 +511,7 @@ we should deconflict some lines (small text can vert overlap)
           }
         }
         if (!clickedBox || !clickedBox.isClickable) {
-          terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
+          DEBUG && terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
           return;
         }
 
