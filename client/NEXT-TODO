@@ -1,5 +1,3 @@
-- stacking contexts, z-index, anything-besides-transparent background occluding. Invisible layers should not be rendered
-( this should hide a lot of weird floating menus that many pages end up with )
 - add placeholders for clickable images/media (something like [IMAGE] [IMG] [I], [VIDEO], [AUDIO],  depending on space available, and we can also show alt)
 - ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
 - improve efficiency of rendering. Only split snapshot on visible boxes.
