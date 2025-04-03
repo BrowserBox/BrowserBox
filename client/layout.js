@@ -4,6 +4,7 @@ import {rowsLog,debugLog,DEBUG} from './log.js';
 const GAP = 1;
 const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
+const USE_TEXT_BOX_FOR_OCCLUSION_TEST = true; // Set to true to use text box bounds for occlusion test
 
 const LayoutAlgorithm = (() => {
   // --------------------------
@@ -530,7 +531,6 @@ const LayoutAlgorithm = (() => {
   }
 
   async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal }) {
-    // Transform the snapshot before processing
     DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot, null, 2));
     DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot));
     const splitSnapshotData = splitSnapshot(snapshot);
@@ -549,7 +549,6 @@ const LayoutAlgorithm = (() => {
     const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
     const scaleY = baseScaleY * VERTICAL_COMPRESSION;
 
-    // Initial visible boxes calculation
     let visibleBoxes = textLayoutBoxes.filter(box => {
       const boxX = box.boundingBox.x;
       const boxY = box.boundingBox.y;
@@ -567,57 +566,66 @@ const LayoutAlgorithm = (() => {
       return box;
     });
 
-    // Apply vertical grouping
-    const GUI_VERTICAL_THRESHOLD = 15; // Pixels for grouping rows
-    const GUI_GAP_THRESHOLD = 30; // Pixels for adding an empty line
+    const GUI_VERTICAL_THRESHOLD = 15;
+    const GUI_GAP_THRESHOLD = 30;
     groupBoxesVertically(visibleBoxes, GUI_VERTICAL_THRESHOLD, GUI_GAP_THRESHOLD);
 
-    // Filter out occluded boxes using paint order
     const layout = splitSnapshotData.documents[0].layout;
     if (layout.paintOrders) {
-      // Map nodeIndex to paintOrder
       const paintOrderMap = new Map();
       layout.nodeIndex.forEach((nodeIdx, layoutIdx) => {
         paintOrderMap.set(nodeIdx, layout.paintOrders[layoutIdx]);
       });
 
-      // Sort visibleBoxes by paint order, highest first (topmost elements)
       visibleBoxes.sort((a, b) => {
         const paintA = paintOrderMap.get(a.nodeIndex) || 0;
         const paintB = paintOrderMap.get(b.nodeIndex) || 0;
-        return paintB - paintA; // Descending: higher paint order (top) first
+        return paintB - paintA;
       });
       debugLog(JSON.stringify(visibleBoxes));
 
-      // Track occupied GUI space and filter
-      const occupiedAreas = []; // { x, y, right, bottom }
+      const occupiedAreas = [];
       const filteredBoxes = [];
 
       for (const box of visibleBoxes) {
-        // Find the parent element's layoutIndex
-        const parentLayoutIndex = getParentElementLayoutIndex(box.nodeIndex, layout, nodeToParent);
-        if (parentLayoutIndex === -1) {
-          debugLog(`No parent element found for box "${box.text}" (node ${box.nodeIndex})`);
-          continue;
+        const paintOrder = paintOrderMap.get(box.nodeIndex) || 0;
+        let boxArea;
+
+        if (USE_TEXT_BOX_FOR_OCCLUSION_TEST) {
+          // Use the text box bounds for occlusion testing
+          const bounds = box.boundingBox;
+          boxArea = {
+            x: bounds.x,
+            y: bounds.y,
+            right: bounds.x + bounds.width,
+            bottom: bounds.y + bounds.height,
+          };
+        } else {
+          // Use the parent element's bounds for occlusion testing
+          const parentLayoutIndex = getParentElementLayoutIndex(box.nodeIndex, layout, nodeToParent);
+          if (parentLayoutIndex === -1) {
+            debugLog(`No parent element found for box "${box.text}" (node ${box.nodeIndex})`);
+            continue;
+          }
+          const parentBounds = layout.bounds[parentLayoutIndex];
+          boxArea = {
+            x: parentBounds[0],
+            y: parentBounds[1],
+            right: parentBounds[0] + parentBounds[2],
+            bottom: parentBounds[1] + parentBounds[3],
+          };
         }
 
-        // Use the parent element's bounds for occlusion checking
-        const parentBounds = layout.bounds[parentLayoutIndex];
-        const paintOrder = paintOrderMap.get(box.nodeIndex) || 0;
-        const boxArea = {
-          x: parentBounds[0],
-          y: parentBounds[1],
-          right: parentBounds[0] + parentBounds[2],
-          bottom: parentBounds[1] + parentBounds[3],
-        };
-
-        // Check if this box is fully contained by an occupied area (which has a higher paint order)
+        // Check if this box overlaps in any way with an occupied area (which has a higher paint order)
         let isOccluded = false;
         for (const occupied of occupiedAreas) {
-          if (occupied.x <= boxArea.x &&
-              occupied.y <= boxArea.y &&
-              occupied.right >= boxArea.right &&
-              occupied.bottom >= boxArea.bottom) {
+          const hasOverlap = !(
+            boxArea.right <= occupied.x ||
+            boxArea.x >= occupied.right ||
+            boxArea.bottom <= occupied.y ||
+            boxArea.y >= occupied.bottom
+          );
+          if (hasOverlap) {
             debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) occluded by prior area with bounds [${occupied.x}, ${occupied.y}, ${occupied.right}, ${occupied.bottom}]`);
             isOccluded = true;
             break;
@@ -626,8 +634,8 @@ const LayoutAlgorithm = (() => {
 
         if (!isOccluded) {
           filteredBoxes.push(box);
-          occupiedAreas.push(boxArea); // Add the parent element’s bounds to occupied areas
-          debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) added as visible with parent bounds [${boxArea.x}, ${boxArea.y}, ${boxArea.right}, ${boxArea.bottom}]`);
+          occupiedAreas.push(boxArea);
+          debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) added as visible with bounds [${boxArea.x}, ${boxArea.y}, ${boxArea.right}, ${boxArea.bottom}]`);
         }
       }
 
