@@ -270,10 +270,9 @@ we should deconflict some lines (small text can vert overlap)
 
           DEBUG && terminal.cyan('Capturing snapshot...\n');
           const snapshot = await send('DOMSnapshot.captureSnapshot', {
-            computedStyles: [],
+            computedStyles: ['visibility', 'display', 'overflow', 'position'],
             includeDOMRects: false,
             includePaintOrder: true,
-            includeBlobs: false
           }, sessionId);
           if (!snapshot?.documents?.length) {
             return;
