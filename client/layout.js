@@ -5,6 +5,7 @@ const GAP = 1;
 const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
 const USE_TEXT_BOX_FOR_OCCLUSION_TEST = true; // Set to true to use text box bounds for occlusion test
+const RECOGNIZE_MULTIROW_MEDIA_BOXES = false;
 
 const LayoutAlgorithm = (() => {
   // --------------------------
@@ -61,13 +62,13 @@ const LayoutAlgorithm = (() => {
         const guiGap = nextRowMinY - currentRowMaxY;
 
         if (guiGap > gapThreshold) {
-          nextY += Math.max(2, Math.ceil(guiGap / 40)); // Scale gap to terminal lines
+          nextY += RECOGNIZE_MULTIROW_MEDIA_BOXES ? Math.max(2, Math.ceil(guiGap / 40)) : 2; // Scale gap to terminal lines
           debugLog(`Added gap: GUI gap of ${guiGap}px`);
         } else {
-          nextY += Math.max(...row.map(box => box.termHeight)); // Use tallest item in row
+          nextY += RECOGNIZE_MULTIROW_MEDIA_BOXES ? Math.max(...row.map(box => box.termHeight)) : 1; // Use tallest item in row
         }
       } else {
-        nextY += Math.max(...row.map(box => box.termHeight));
+        nextY += RECOGNIZE_MULTIROW_MEDIA_BOXES ? Math.max(...row.map(box => box.termHeight)) : 1;
       }
     }
 
@@ -531,6 +532,53 @@ const LayoutAlgorithm = (() => {
 
       textLayoutBoxes.push({ text, boundingBox: textBoundingBox, isClickable, parentIndex, ancestorType, backendNodeId, layoutIndex, nodeIndex });
       DEBUG && terminal.magenta(`Text Box ${i}: "${text}" at (${textBoundingBox.x}, ${textBoundingBox.y}) | parentIndex: ${parentIndex} | backendNodeId: ${backendNodeId} | isClickable: ${isClickable} | ancestorType: ${ancestorType}\n`);
+    }
+
+    // New: Process image nodes
+    for (let layoutIdx = 0; layoutIdx < layout.nodeIndex.length; layoutIdx++) {
+      const nodeIdx = layout.nodeIndex[layoutIdx];
+      const nodeNameIdx = nodes.nodeName[nodeIdx];
+      const nodeName = nodeNameIdx >= 0 ? strings[nodeNameIdx] : '';
+
+      if (nodeName.toUpperCase() === 'IMG') {
+        const bounds = layout.bounds[layoutIdx];
+        if (!bounds || bounds[2] === 0 || bounds[3] === 0) continue; // Skip zero-sized images
+
+        const boundingBox = {
+          x: bounds[0],
+          y: bounds[1],
+          width: bounds[2],
+          height: bounds[3],
+        };
+
+        const parentIndex = nodeToParent.get(nodeIdx);
+        const backendNodeId = nodes.backendNodeId[nodeIdx];
+        const isClickable = isNodeClickable(nodeIdx, clickableIndexes, nodeToParent);
+        const ancestorType = getAncestorInfo(nodeIdx, nodes, strings);
+
+        const mediaBox = {
+          type: 'media', // Differentiate from text
+          text: '[IMG]', // Placeholder text for now
+          boundingBox,
+          isClickable,
+          parentIndex,
+          ancestorType,
+          backendNodeId,
+          layoutIndex: layoutIdx,
+          nodeIndex: nodeIdx,
+        };
+
+        textLayoutBoxes.push(mediaBox);
+        if (isClickable) {
+          clickableElements.push({
+            text: '[IMG]',
+            boundingBox,
+            clickX: boundingBox.x + boundingBox.width / 2,
+            clickY: boundingBox.y + boundingBox.height / 2,
+          });
+        }
+        DEBUG && terminal.magenta(`Image ${layoutIdx}: at (${boundingBox.x}, ${boundingBox.y}) | w=${boundingBox.width}, h=${boundingBox.height} | clickable: ${isClickable}\n`);
+      }
     }
 
     return { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes };
