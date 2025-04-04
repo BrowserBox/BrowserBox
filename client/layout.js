@@ -998,45 +998,35 @@ const LayoutAlgorithm = (() => {
     if (DEBUG) {
       const subtreeTexts = collectSubtreeText(nodeIdx, childrenMap, snapshot, nodes);
       if (subtreeTexts.length > 0) {
-        debugLog(
-          `Node ${nodeIdx} (Tag: ${formatTag(tagName, isTextNode, textContent)}) subtree text content: [${subtreeTexts.map(t => `"${t}"`).join(', ')}]`
-        );
+        debugLog(`Node ${nodeIdx} (Tag: ${formatTag(tagName, isTextNode, textContent)}) subtree text: [${subtreeTexts.join(', ')}]`);
       }
       textContent = subtreeTexts.join(' ');
     }
-    debugLog(
-      `Processing Node ${nodeIdx} (Tag: ${formatTag(tagName, isTextNode, textContent)}) with ${children.length} immediate children`
-    );
 
     if (textBoxMap.has(nodeIdx)) {
       const boxes = textBoxMap.get(nodeIdx);
-      // Use pre-assigned termY, only adjust termX
-      const rows = groupByRow(boxes, b => [b.termY]); // Respect existing termY
-      adjustBoxPositions(rows, nodeIdx); // This only changes termX
+      const rows = groupByRow(boxes, b => [b.termY]);
+      adjustBoxPositions(rows, nodeIdx);
 
       const termBox = computeBoundingTermBox(boxes);
       const finalGuiBox = computeFinalGuiBox(nodeIdx, snapshot, boxes, guiBox);
+      const boxType = boxes[0].type || 'text';
+      const displayText = boxType === 'media' ? boxes[0].text : (boxes[0]?.text || textContent);
 
-      debugLog(
-        `Leaf Node ${nodeIdx} TUI bounds: (${termBox.minX}, ${termBox.minY}) to (${termBox.maxX}, ${termBox.maxY}) | GUI bounds: (${finalGuiBox.x}, ${finalGuiBox.y}, ${finalGuiBox.width}, ${finalGuiBox.height})`
-      );
-      return { termBox, guiBox: finalGuiBox, text: boxes[0]?.text || textContent };
+      debugLog(`Leaf Node ${nodeIdx} (${boxType}) TUI bounds: (${termBox.minX}, ${termBox.minY}) to (${termBox.maxX}, ${termBox.maxY})`);
+      return { termBox, guiBox: finalGuiBox, text: displayText };
     }
 
     const childBoxes = processChildNodes(children, childrenMap, textBoxMap, snapshot, nodes);
     if (childBoxes.length === 0) {
-      debugLog(
-        `Node ${nodeIdx} (Tag: ${formatTag(tagName, isTextNode, textContent)}) has no children with text boxes | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`
-      );
+      debugLog(`Node ${nodeIdx} (Tag: ${formatTag(tagName, isTextNode, textContent)}) has no children with boxes`);
       return null;
     }
 
     adjustChildNodesOverlap(childBoxes, textBoxMap, childrenMap);
     const termBox = computeBoundingTermBox(childBoxes);
 
-    debugLog(
-      `Node ${nodeIdx} (Tag: ${formatTag(tagName, isTextNode, textContent)}) final TUI bounds: (${termBox.minX}, ${termBox.minY}) to (${termBox.maxX}, ${termBox.maxY}) | GUI bounds: (${guiBox.x}, ${guiBox.y}, ${guiBox.width}, ${guiBox.height})`
-    );
+    debugLog(`Node ${nodeIdx} (Tag: ${formatTag(tagName, isTextNode, textContent)}) final TUI bounds: (${termBox.minX}, ${termBox.minY}) to (${termBox.maxX}, ${termBox.maxY})`);
     return { termBox, guiBox, text: textContent };
   }
 
