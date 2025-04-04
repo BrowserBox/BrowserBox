@@ -416,7 +416,7 @@ we should deconflict some lines (small text can vert overlap)
         renderedBoxes.length = 0;
 
         for (const box of visibleBoxes) {
-          const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex } = box;
+          const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type } = box;
           const renderX = Math.max(1, termX + 1);
           const renderY = Math.max(5, termY + 1);
 
@@ -432,7 +432,7 @@ we should deconflict some lines (small text can vert overlap)
             termX: renderX,
             termY: renderY,
             termWidth: displayText.length,
-            termHeight: 1,
+            termHeight: box.type === 'media' ? box.termHeight : 1,
             viewportX,
             viewportY,
             viewportWidth: layoutState.viewportWidth,
@@ -449,24 +449,35 @@ we should deconflict some lines (small text can vert overlap)
               clickable.termX = renderX;
               clickable.termY = renderY;
               clickable.termWidth = displayText.length;
-              clickable.termHeight = 1;
+              clickable.termHeight = renderedBox.termHeight;
             }
           }
 
           terminal.moveTo(renderX, renderY);
           terminal.defaultColor().bgDefaultColor();
-          switch (ancestorType) {
-            case 'hyperlink':
-              terminal.cyan.underline(displayText);
-              break;
-            case 'button':
-              terminal.bgGreen.black(displayText);
-              break;
-            case 'other_clickable':
-              terminal.bold(displayText);
-              break;
-            default:
-              terminal(displayText);
+          if (type === 'media') {
+            terminal.bgYellow.black(displayText); // Distinct style for images
+            // Fill additional lines if multi-line
+            for (let h = 1; h < box.termHeight; h++) {
+              if (renderY + h <= termHeight + 4) {
+                terminal.moveTo(renderX, renderY + h);
+                terminal.bgYellow.black(' '.repeat(displayText.length));
+              }
+            }
+          } else {
+            switch (ancestorType) {
+              case 'hyperlink':
+                terminal.cyan.underline(displayText);
+                break;
+              case 'button':
+                terminal.bgGreen.black(displayText);
+                break;
+              case 'other_clickable':
+                terminal.bold(displayText);
+                break;
+              default:
+                terminal(displayText);
+            }
           }
         }
       }
