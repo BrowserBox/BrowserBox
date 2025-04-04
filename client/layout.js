@@ -14,57 +14,60 @@ const LayoutAlgorithm = (() => {
   function groupBoxesVertically(boxes, guiThreshold, gapThreshold = guiThreshold * 2) {
     if (!boxes.length) return boxes;
 
-    // Sort by GUI Y-coordinate (boundingBox.y) to process top-to-bottom
     boxes.sort((a, b) => a.boundingBox.y - b.boundingBox.y);
 
     const rows = [];
     let currentRow = [boxes[0]];
     let currentGuiY = boxes[0].boundingBox.y;
 
-    // Group boxes into rows based on guiThreshold
     for (let i = 1; i < boxes.length; i++) {
       const box = boxes[i];
       if (Math.abs(box.boundingBox.y - currentGuiY) <= guiThreshold) {
-        // Same row based on GUI Y proximity
         currentRow.push(box);
       } else {
-        // New row
         rows.push(currentRow);
         currentRow = [box];
         currentGuiY = box.boundingBox.y;
       }
     }
-    rows.push(currentRow); // Add the last row
+    rows.push(currentRow);
 
-    // Assign termY values with gaps for significant GUI spacing
     let nextY = 5;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       for (const box of row) {
-        box.termY = nextY; // Lock the Y-coordinate for this row in terminal space
+        box.termY = nextY;
+        if (box.type === 'media') {
+          // Estimate terminal size from GUI dimensions (adjust scaling as needed)
+          box.termWidth = Math.max(5, Math.ceil(box.boundingBox.width / 20)); // Rough pixel-to-char ratio
+          box.termHeight = Math.max(1, Math.ceil(box.boundingBox.height / 40));
+          box.text = `[IMG ${box.termWidth}x${box.termHeight}]`; // Update placeholder
+        } else {
+          box.termWidth = box.text.length;
+          box.termHeight = 1;
+        }
         box.termBox = {
-          minX: box.termX,              // Keep initial termX (will be adjusted later)
-          minY: nextY,                  // Start of the row in terminal
+          minX: box.termX,
+          minY: nextY,
           maxX: box.termX + box.termWidth - 1,
-          maxY: nextY                   // Single-line box in terminal
+          maxY: nextY + box.termHeight - 1,
         };
         debugLog(`Assigned box "${box.text}" to row at termY=${nextY} (GUI Y=${box.boundingBox.y})`);
       }
 
-      // Check for a gap before the next row
       if (i < rows.length - 1) {
         const currentRowMaxY = Math.max(...rows[i].map(box => box.boundingBox.y + box.boundingBox.height));
         const nextRowMinY = rows[i + 1][0].boundingBox.y;
         const guiGap = nextRowMinY - currentRowMaxY;
 
         if (guiGap > gapThreshold) {
-          nextY += 2; // Skip an extra line in the terminal for a significant GUI gap
-          debugLog(`Added empty line: GUI gap of ${guiGap}px between row ${i} (maxY=${currentRowMaxY}) and row ${i+1} (minY=${nextRowMinY}) exceeds gapThreshold=${gapThreshold}`);
+          nextY += Math.max(2, Math.ceil(guiGap / 40)); // Scale gap to terminal lines
+          debugLog(`Added gap: GUI gap of ${guiGap}px`);
         } else {
-          nextY += 1; // Normal increment for adjacent rows
+          nextY += Math.max(...row.map(box => box.termHeight)); // Use tallest item in row
         }
       } else {
-        nextY += 1; // Last row, just increment normally
+        nextY += Math.max(...row.map(box => box.termHeight));
       }
     }
 
