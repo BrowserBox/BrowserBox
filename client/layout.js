@@ -39,10 +39,13 @@ const LayoutAlgorithm = (() => {
       for (const box of row) {
         box.termY = nextY;
         if (box.type === 'media') {
-          // Estimate terminal size from GUI dimensions (adjust scaling as needed)
-          box.termWidth = Math.max(5, Math.ceil(box.boundingBox.width / 20)); // Rough pixel-to-char ratio
-          box.termHeight = Math.max(1, Math.ceil(box.boundingBox.height / 40));
-          box.text = `[IMG ${box.termWidth}x${box.termHeight}]`; // Update placeholder
+          box.termWidth = RECOGNIZE_MULTIROW_MEDIA_BOXES 
+            ? Math.max(5, Math.ceil(box.boundingBox.width / 20)) 
+            : 5; // Fixed width for [IMG]
+          box.termHeight = 1; // Force single row
+          box.text = RECOGNIZE_MULTIROW_MEDIA_BOXES 
+            ? `[IMG ${box.termWidth}x${Math.ceil(box.boundingBox.height / 40)}]` 
+            : '[IMG]';
         } else {
           box.termWidth = box.text.length;
           box.termHeight = 1;
@@ -51,7 +54,7 @@ const LayoutAlgorithm = (() => {
           minX: box.termX,
           minY: nextY,
           maxX: box.termX + box.termWidth - 1,
-          maxY: nextY + box.termHeight - 1,
+          maxY: nextY // Single row, no height extension
         };
         debugLog(`Assigned box "${box.text}" to row at termY=${nextY} (GUI Y=${box.boundingBox.y})`);
       }
@@ -62,13 +65,13 @@ const LayoutAlgorithm = (() => {
         const guiGap = nextRowMinY - currentRowMaxY;
 
         if (guiGap > gapThreshold) {
-          nextY += RECOGNIZE_MULTIROW_MEDIA_BOXES ? Math.max(2, Math.ceil(guiGap / 40)) : 2; // Scale gap to terminal lines
+          nextY += RECOGNIZE_MULTIROW_MEDIA_BOXES ? Math.max(2, Math.ceil(guiGap / 40)) : 2;
           debugLog(`Added gap: GUI gap of ${guiGap}px`);
         } else {
-          nextY += RECOGNIZE_MULTIROW_MEDIA_BOXES ? Math.max(...row.map(box => box.termHeight)) : 1; // Use tallest item in row
+          nextY += 1; // Single-row increment
         }
       } else {
-        nextY += RECOGNIZE_MULTIROW_MEDIA_BOXES ? Math.max(...row.map(box => box.termHeight)) : 1;
+        nextY += 1;
       }
     }
 
@@ -539,10 +542,10 @@ const LayoutAlgorithm = (() => {
       const nodeIdx = layout.nodeIndex[layoutIdx];
       const nodeNameIdx = nodes.nodeName[nodeIdx];
       const nodeName = nodeNameIdx >= 0 ? strings[nodeNameIdx] : '';
-
+      
       if (nodeName.toUpperCase() === 'IMG') {
         const bounds = layout.bounds[layoutIdx];
-        if (!bounds || bounds[2] === 0 || bounds[3] === 0) continue; // Skip zero-sized images
+        if (!bounds || bounds[2] === 0 || bounds[3] === 0) continue;
 
         const boundingBox = {
           x: bounds[0],
@@ -557,8 +560,8 @@ const LayoutAlgorithm = (() => {
         const ancestorType = getAncestorInfo(nodeIdx, nodes, strings);
 
         const mediaBox = {
-          type: 'media', // Differentiate from text
-          text: '[IMG]', // Placeholder text for now
+          type: 'media',
+          text: '[IMG]', // Simplified placeholder
           boundingBox,
           isClickable,
           parentIndex,
@@ -1062,7 +1065,7 @@ const LayoutAlgorithm = (() => {
       const termBox = computeBoundingTermBox(boxes);
       const finalGuiBox = computeFinalGuiBox(nodeIdx, snapshot, boxes, guiBox);
       const boxType = boxes[0].type || 'text';
-      const displayText = boxType === 'media' ? boxes[0].text : (boxes[0]?.text || textContent);
+      const displayText = boxType === 'media' ? '[IMG]' : (boxes[0]?.text || textContent);
 
       debugLog(`Leaf Node ${nodeIdx} (${boxType}) TUI bounds: (${termBox.minX}, ${termBox.minY}) to (${termBox.maxX}, ${termBox.maxY})`);
       return { termBox, guiBox: finalGuiBox, text: displayText };
