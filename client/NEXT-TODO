@@ -10,9 +10,10 @@ Bugs
     - find out why this happens with a targeted simple reproduction
     - solve the biggest cause we can
 
-- ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
-- improve efficiency of rendering. Only split snapshot on visible boxes.
 - form controls
+- ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
+- put media placeholders behind a toggle. So normally it's off, but you can toggle it on to view it (toggle setting will rerender)
+- improve efficiency of rendering. Only split snapshot on visible boxes.
 - ensure layout remains correct beofre proceeding
 - hook modals for js modals (alert, confirm, prompt), http basic auth, and file upload.
 - add ALT text for media placeholders (maybe decide based on space available? Or just make space. Problem is alt text has not text layout boxes so we'd have to create our own, and handle wrapping and truncation etc)
