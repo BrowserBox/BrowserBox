@@ -1,5 +1,5 @@
 - test on github repo page the markdown has weird layout issues. good to debug on. 
-- some elements are still occluded and "missing". test on ddg srp: "japan" - ie first line is missing. 
+DONE - some elements are still occluded and "missing". test on ddg srp: "japan" - ie first line is missing. 
 - as usual follow our debug process:
   - find out why this happens
   - solve the biggest cause we can

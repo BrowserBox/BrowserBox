@@ -319,7 +319,7 @@ const LayoutAlgorithm = (() => {
   // Helper to get computed styles as a key-value object
   function getComputedStyles(layoutIndex, layout, strings) {
     if (layoutIndex === -1) return {};
-    const computedStyleKeys = ['display', 'visibility', 'overflow', 'position', 'width', 'height', 'transform'];
+    const computedStyleKeys = ['display', 'visibility', 'overflow', 'position', 'width', 'height', 'transform', 'opacity'];
     const styleIndexes = layout.styles[layoutIndex] || [];
     const styleValues = styleIndexes.map(idx => strings[idx]);
     const styleMap = {};
@@ -352,15 +352,15 @@ const LayoutAlgorithm = (() => {
     let currentLayoutIndex = layoutIndex;
     while (currentIndex !== -1) {
       const styles = getComputedStyles(currentLayoutIndex, layout, strings);
-      if (styles.visibility === 'hidden' || styles.display === 'none') {
+      if (styles.visibility === 'hidden' || styles.display === 'none' || styles.opacity == '0') {
         debugLog(`Node ${nodeIndex} hidden by styles: ${JSON.stringify(styles)}`);
         return true;
       }
       // Check for zero dimensions
       const width = styles.width || 'auto';
       const height = styles.height || 'auto';
-      const isZeroWidth = width === '0' || width === '0px';
-      const isZeroHeight = height === '0' || height === '0px';
+      const isZeroWidth = width == '0' || width === '0px';
+      const isZeroHeight = height == '0' || height === '0px';
       if (isZeroWidth || isZeroHeight) {
         debugLog(`Node ${nodeIndex} hidden by zero dimensions: ${JSON.stringify(styles)}`);
         return true;
@@ -390,14 +390,15 @@ const LayoutAlgorithm = (() => {
     let depth = 0;
     while (currentIndex !== -1 && currentLayoutIndex !== -1) {
       const styles = getComputedStyles(currentLayoutIndex, layout, strings);
+      const hasZeroOpacity = styles.opacity == '0';
       const hasOverflowHidden = styles.overflow === 'hidden';
       const width = styles.width || 'auto';
       const height = styles.height || 'auto';
 
-      const isZeroWidth = width === '0' || width === '0px';
-      const isZeroHeight = height === '0' || height === '0px';
+      const isZeroWidth = width == '0' || width === '0px';
+      const isZeroHeight = height == '0' || height === '0px';
 
-      if ((isZeroWidth || isZeroHeight) && hasOverflowHidden) {
+      if ((isZeroWidth || isZeroHeight) && hasOverflowHidden || hasZeroOpacity) {
         debugLog(`Node ${nodeIndex} clipped by ancestor ${currentIndex} at depth ${depth} with styles: ${JSON.stringify(styles)}`);
         return true;
       }
