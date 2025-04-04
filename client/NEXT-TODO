@@ -1,9 +1,7 @@
-- test on github repo page the markdown has weird layout issues. good to debug on. 
-DONE - some elements are still occluded and "missing". test on ddg srp: "japan" - ie first line is missing. 
+- test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug
 - as usual follow our debug process:
-  - find out why this happens
+  - find out why this happens with a targeted simple reproduction
   - solve the biggest cause we can
-
 - add placeholders for clickable images/media (something like [IMAGE] [IMG] [I], [VIDEO], [AUDIO],  depending on space available, and we can also show alt)
 - ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
 - improve efficiency of rendering. Only split snapshot on visible boxes.
