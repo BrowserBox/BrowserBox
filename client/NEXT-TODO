@@ -1,11 +1,19 @@
-- test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug
-- as usual follow our debug process:
-  - find out why this happens with a targeted simple reproduction
-  - solve the biggest cause we can
-- add placeholders for clickable images/media (something like [IMAGE] [IMG] [I], [VIDEO], [AUDIO],  depending on space available, and we can also show alt)
+Bugs
+  - youtube (and for example: github, first dir entry line; and nypost, some header line) not displaying some text boxes. Must be occlusion logic issues. 
+  - as usual follow our debug process:
+    - find out why this happens with a targeted simple reproduction
+    - solve the biggest cause we can
+
+Bugs
+  - test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug
+  - as usual follow our debug process:
+    - find out why this happens with a targeted simple reproduction
+    - solve the biggest cause we can
+
 - ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
 - improve efficiency of rendering. Only split snapshot on visible boxes.
 - form controls
 - ensure layout remains correct beofre proceeding
-- within local tui "virtual TUI viewport" (larger than TUI page to account for the stuff we push rightward and downward for layout), implement hoz and vert scrolling to show "pushed for layout" content, that blends to scrolling the remote when reaching the margins of that virtual viewport - also ensure we "size the remote" to a "good size" relative to our local TUI dimensions
 - hook modals for js modals (alert, confirm, prompt), http basic auth, and file upload.
+- add ALT text for media placeholders (maybe decide based on space available? Or just make space. Problem is alt text has not text layout boxes so we'd have to create our own, and handle wrapping and truncation etc)
+- within local tui "virtual TUI viewport" (larger than TUI page to account for the stuff we push rightward and downward for layout), implement hoz and vert scrolling to show "pushed for layout" content, that blends to scrolling the remote when reaching the margins of that virtual viewport - also ensure we "size the remote" to a "good size" relative to our local TUI dimensions
