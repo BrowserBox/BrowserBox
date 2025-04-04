@@ -11,6 +11,7 @@ const LayoutAlgorithm = (() => {
   // --------------------------
   // Utility Functions
   // --------------------------
+
   // New function for vertical grouping
   function groupBoxesVertically(boxes, guiThreshold, gapThreshold = guiThreshold * 2) {
     if (!boxes.length) return boxes;
@@ -39,13 +40,13 @@ const LayoutAlgorithm = (() => {
       for (const box of row) {
         box.termY = nextY;
         if (box.type === 'media') {
-          box.termWidth = RECOGNIZE_MULTIROW_MEDIA_BOXES 
-            ? Math.max(5, Math.ceil(box.boundingBox.width / 20)) 
-            : 5; // Fixed width for [IMG]
-          box.termHeight = 1; // Force single row
-          box.text = RECOGNIZE_MULTIROW_MEDIA_BOXES 
-            ? `[IMG ${box.termWidth}x${Math.ceil(box.boundingBox.height / 40)}]` 
-            : '[IMG]';
+          box.termWidth = RECOGNIZE_MULTIROW_MEDIA_BOXES
+            ? Math.max(5, Math.ceil(box.boundingBox.width / 20))
+            : 5; // Matches length of [IMG], [VID], [AUD]
+          box.termHeight = 1;
+          box.text = RECOGNIZE_MULTIROW_MEDIA_BOXES
+            ? `[${box.text.slice(1, 4)} ${box.termWidth}x${Math.ceil(box.boundingBox.height / 40)}]`
+            : box.text; // Keep [IMG], [VID], or [AUD]
         } else {
           box.termWidth = box.text.length;
           box.termHeight = 1;
@@ -54,7 +55,7 @@ const LayoutAlgorithm = (() => {
           minX: box.termX,
           minY: nextY,
           maxX: box.termX + box.termWidth - 1,
-          maxY: nextY // Single row, no height extension
+          maxY: nextY
         };
         debugLog(`Assigned box "${box.text}" to row at termY=${nextY} (GUI Y=${box.boundingBox.y})`);
       }
@@ -1078,7 +1079,7 @@ const LayoutAlgorithm = (() => {
       const termBox = computeBoundingTermBox(boxes);
       const finalGuiBox = computeFinalGuiBox(nodeIdx, snapshot, boxes, guiBox);
       const boxType = boxes[0].type || 'text';
-      const displayText = boxType === 'media' ? '[IMG]' : (boxes[0]?.text || textContent);
+      const displayText = boxType === 'media' ? boxes[0].text : (boxes[0]?.text || textContent);
 
       debugLog(`Leaf Node ${nodeIdx} (${boxType}) TUI bounds: (${termBox.minX}, ${termBox.minY}) to (${termBox.maxX}, ${termBox.maxY})`);
       return { termBox, guiBox: finalGuiBox, text: displayText };

@@ -20,6 +20,7 @@ we should deconflict some lines (small text can vert overlap)
       const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     // Constants and state
+      const markClicks = false;
       const BrowserState = {
         targets: [],
         activeTarget: null,
@@ -432,7 +433,7 @@ we should deconflict some lines (small text can vert overlap)
             termX: renderX,
             termY: renderY,
             termWidth: displayText.length,
-            termHeight: box.type === 'media' ? box.termHeight : 1,
+            termHeight: 1,
             viewportX,
             viewportY,
             viewportWidth: layoutState.viewportWidth,
@@ -449,20 +450,17 @@ we should deconflict some lines (small text can vert overlap)
               clickable.termX = renderX;
               clickable.termY = renderY;
               clickable.termWidth = displayText.length;
-              clickable.termHeight = renderedBox.termHeight;
+              clickable.termHeight = 1;
             }
           }
 
           terminal.moveTo(renderX, renderY);
           terminal.defaultColor().bgDefaultColor();
           if (type === 'media') {
-            terminal.bgYellow.black(displayText); // Distinct style for images
-            // Fill additional lines if multi-line
-            for (let h = 1; h < box.termHeight; h++) {
-              if (renderY + h <= termHeight + 4) {
-                terminal.moveTo(renderX, renderY + h);
-                terminal.bgYellow.black(' '.repeat(displayText.length));
-              }
+            if (isClickable) {
+              terminal.gray.underline(displayText); // Clickable media
+            } else {
+              terminal.brightBlack(displayText); // Non-clickable media
             }
           } else {
             switch (ancestorType) {
@@ -582,29 +580,31 @@ we should deconflict some lines (small text can vert overlap)
           DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
         }
 
-        const script = `
-          (function() {
-            const rect = this.getBoundingClientRect();
-            const clickX = rect.left + rect.width / 2;
-            const clickY = rect.top + rect.height / 2;
-            const circle = document.createElement('div');
-            circle.style.cssText = "position: absolute; left: " + clickX + "px; top: " + clickY + "px; width: 20px; height: 20px; background: black; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; z-index: 9999;";
-            circle.innerText = "${clickId}";
-            circle.id = "click-trace-${clickId}";
-            document.body.appendChild(circle);
-            return { clickX, clickY };
-          })
-        `;
-        try {
-          const circleResult = await send('Runtime.callFunctionOn', {
-            objectId,
-            functionDeclaration: script,
-            arguments: [],
-            returnByValue: true
-          }, sessionId);
-          DEBUG && debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
-        } catch (error) {
-          DEBUG && debugLog(`Circle injection failed: ${error.message}`);
+        if ( DEBUG && markClicks ) {
+          const script = `
+            (function() {
+              const rect = this.getBoundingClientRect();
+              const clickX = rect.left + rect.width / 2;
+              const clickY = rect.top + rect.height / 2;
+              const circle = document.createElement('div');
+              circle.style.cssText = "position: absolute; left: " + clickX + "px; top: " + clickY + "px; width: 20px; height: 20px; background: black; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; z-index: 9999;";
+              circle.innerText = "${clickId}";
+              circle.id = "click-trace-${clickId}";
+              document.body.appendChild(circle);
+              return { clickX, clickY };
+            })
+          `;
+          try {
+            const circleResult = await send('Runtime.callFunctionOn', {
+              objectId,
+              functionDeclaration: script,
+              arguments: [],
+              returnByValue: true
+            }, sessionId);
+            DEBUG && debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
+          } catch (error) {
+            DEBUG && debugLog(`Circle injection failed: ${error.message}`);
+          }
         }
 
         await refresh();
