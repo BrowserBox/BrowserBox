@@ -3,12 +3,17 @@ Bugs
   - as usual follow our debug process:
     - find out why this happens with a targeted simple reproduction
     - solve the biggest cause we can
+- FIXED! NY Post fixed. Issue was vertical overlap that didn't occlude text in close together lines
+- TO DO: GitHub case, YouTube case
 
 Bugs
   - test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug
   - as usual follow our debug process:
     - find out why this happens with a targeted simple reproduction
     - solve the biggest cause we can
+
+Bugs
+  - If multiple tabs then we are pulling data from all tabs, when we should only focus on active.
 
 - form controls
 - ensure the tabs operate correctly, tab and cursor through all the controls at top, showing element focus clearly. Update style (move from green to blue, ice color i think is good). Ensure that URL is always in omnibox unless we are typing something in, or focused on it. As soon as we unfocus, or whenever url changes, or a tab is selected, and we are not focused in omnibox ensure URL in omnixbox reflects URL of current tab. Only exception is we never show the URL for newtab "about:blank". 

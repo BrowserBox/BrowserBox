@@ -690,14 +690,24 @@ const LayoutAlgorithm = (() => {
         // Check if this box overlaps in any way with an occupied area (which has a higher paint order)
         let isOccluded = false;
         for (const occupied of occupiedAreas) {
-          const hasOverlap = !(
-            boxArea.right <= occupied.x ||
-            boxArea.x >= occupied.right ||
-            boxArea.bottom <= occupied.y ||
-            boxArea.y >= occupied.bottom
-          );
-          if (hasOverlap) {
+          // Calculate overlaps
+          const horizontalOverlap = Math.min(boxArea.right, occupied.right) - 
+                                   Math.max(boxArea.x, occupied.x);
+          const verticalOverlap = Math.min(boxArea.bottom, occupied.bottom) - 
+                                 Math.max(boxArea.y, occupied.y);
+          
+          // Get box height for vertical threshold calculation
+          const boxHeight = boxArea.bottom - boxArea.y;
+          const verticalThreshold = boxHeight * 0.2; // 20% of box height
+          
+          // Check if overlap exceeds allowed thresholds
+          const exceedsHorizontal = horizontalOverlap > 5; // More than 5 pixels
+          const exceedsVertical = verticalOverlap > verticalThreshold; // More than 20%
+          
+          // Box is occluded only if BOTH horizontal AND vertical overlaps exceed thresholds
+          if (exceedsHorizontal && exceedsVertical) {
             debugLog(`Box "${box.text}" (node ${box.nodeIndex}, paintOrder ${paintOrder}) occluded by prior area with bounds [${occupied.x}, ${occupied.y}, ${occupied.right}, ${occupied.bottom}]`);
+            debugLog(`Horizontal overlap: ${horizontalOverlap}px (max 5px), Vertical overlap: ${verticalOverlap}px (max ${verticalThreshold}px)`);
             isOccluded = true;
             break;
           }

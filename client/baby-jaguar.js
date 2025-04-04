@@ -541,7 +541,7 @@ we should deconflict some lines (small text can vert overlap)
         const nodeText = clickedBox.text;
         const clickEvent = { type: 'click' };
         try {
-          appendFileSync('clicks.log', `${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
+          DEBUG && appendFileSync('clicks.log', `${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
         } catch (error) {
           console.error(`Failed to write to clicks log: ${error.message}`);
         }
