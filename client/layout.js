@@ -111,6 +111,7 @@ const LayoutAlgorithm = (() => {
     return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
   }
 
+  // Helper function to get the overall bounding box for a list of text boxes
   function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
     if (textBoxMap.has(nodeIdx)) {
       const boxes = textBoxMap.get(nodeIdx);
@@ -121,6 +122,7 @@ const LayoutAlgorithm = (() => {
         debugLog(`Shifting text box of node ${nodeIdx} (Text: "${box.text}") by ${shift} to (${box.termX}, ${box.termY})`);
       }
     }
+    // Shift all immediate children
     const children = childrenMap.get(nodeIdx) || [];
     for (const childIdx of children) {
       shiftNode(childIdx, shift, textBoxMap, childrenMap);
@@ -1037,37 +1039,6 @@ const LayoutAlgorithm = (() => {
     );
     return { termBox, guiBox, text: textContent };
   }
-        // Helper function to get the overall bounding box for a list of text boxes
-        function getOverallBoundingBox(boxes) {
-          if (boxes.length === 0) return null;
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-          for (const box of boxes) {
-            const b = box.boundingBox;
-            minX = Math.min(minX, b.x);
-            minY = Math.min(minY, b.y);
-            maxX = Math.max(maxX, b.x + b.width);
-            maxY = Math.max(maxY, b.y + b.height);
-          }
-          return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
-        }
-
-        function shiftNode(nodeIdx, shift, textBoxMap, childrenMap) {
-          if (textBoxMap.has(nodeIdx)) {
-            const boxes = textBoxMap.get(nodeIdx);
-            for (const box of boxes) {
-              box.termX += shift;
-              box.termBox.minX += shift;
-              box.termBox.maxX += shift;
-              debugLog(`Shifting text box of node ${nodeIdx} (Text: "${box.text}") by ${shift} to (${box.termX}, ${box.termY})`);
-            }
-          }
-          // Shift all immediate children
-          const children = childrenMap.get(nodeIdx) || [];
-          for (const childIdx of children) {
-            shiftNode(childIdx, shift, textBoxMap, childrenMap);
-          }
-        }
-
 
   // --------------------------
   // Exposed API
