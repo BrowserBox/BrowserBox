@@ -329,7 +329,7 @@ const LayoutAlgorithm = (() => {
       }
     });
     // Log the computed styles to computed-styles.log
-    fs.appendFileSync('computed-styles.log', `layoutIndex ${layoutIndex}: ${JSON.stringify(styleMap)}\n`);
+    DEBUG && fs.appendFileSync('computed-styles.log', `layoutIndex ${layoutIndex}: ${JSON.stringify(styleMap)}\n`);
     return styleMap;
   }
 
