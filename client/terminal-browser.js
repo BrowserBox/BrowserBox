@@ -281,7 +281,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   // API Methods
-// In TerminalBrowser class, replace the addTab method:
+
   addTab(tab) {
     // Emit an event to request a new tab; main logic will handle creation
     this.emit('newTabRequested', tab);

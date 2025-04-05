@@ -553,6 +553,10 @@ const LayoutAlgorithm = (() => {
       const nodeNameIdx = nodes.nodeName[nodeIdx];
       const nodeName = nodeNameIdx >= 0 ? strings[nodeNameIdx] : '';
       const nodeNameUpper = nodeName.toUpperCase();
+      const attributes = nodes.attributes[nodeIdx] || [];
+
+      const bounds = layout.bounds[layoutIdx];
+      if (!bounds || bounds[2] <= INVISIBLE_DIMENSION || bounds[3] <= INVISIBLE_DIMENSION ) continue;
       
       let mediaType, placeholder;
       if (nodeNameUpper === 'IMG') {
@@ -564,12 +568,16 @@ const LayoutAlgorithm = (() => {
       } else if (nodeNameUpper === 'AUDIO') {
         mediaType = 'media';
         placeholder = '[AUD]';
+      } else if (nodeNameUpper === 'INPUT') {
+        const typeIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'type');
+        const inputType = typeIdx !== -1 ? strings[attributes[typeIdx + 1]] : 'text';
+        if (inputType !== 'hidden') { // Skip hidden inputs
+          mediaType = 'input';
+          placeholder = `[INPUT${'_'.repeat(Math.max(3, Math.ceil(bounds[2] / 20)))}]`;
+        }
       } else {
         continue; // Skip non-media elements
       }
-
-      const bounds = layout.bounds[layoutIdx];
-      if (!bounds || bounds[2] === 0 || bounds[3] === 0) continue;
 
       const boundingBox = {
         x: bounds[0],
