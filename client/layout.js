@@ -363,7 +363,7 @@ const LayoutAlgorithm = (() => {
   }
 
   // Helper to check if a node or its ancestors have visibility: hidden, display: none, or zero dimensions
-  function isHiddenByStyles(nodeIndex, layoutIndex, layout, strings, nodeToParent) {
+  function isHiddenByStyles(nodeIndex, layoutIndex, layout, strings, nodeToParent, nodes) {
     let currentIndex = nodeIndex;
     let currentLayoutIndex = layoutIndex;
     while (currentIndex !== -1) {
@@ -377,8 +377,8 @@ const LayoutAlgorithm = (() => {
       const height = styles.height || 'auto';
       const isZeroWidth = width == '0' || width === '0px';
       const isZeroHeight = height == '0' || height === '0px';
-      if (isZeroWidth || isZeroHeight) {
-        debugLog(`Node ${nodeIndex} hidden by zero dimensions: ${JSON.stringify(styles)}`);
+      if ((isZeroWidth || isZeroHeight) && ! nodes.nodeType[currentIndex] == 3) {
+        debugLog(`Non-text node ${nodeIndex} hidden by zero dimensions: ${JSON.stringify(styles)}`);
         return true;
       }
       currentIndex = nodeToParent.get(currentIndex);
@@ -509,7 +509,7 @@ const LayoutAlgorithm = (() => {
       }
 
       // Filter out boxes hidden by visibility: hidden, display: none, or zero dimensions
-      if (isHiddenByStyles(nodeIndex, parentLayoutIndex, layout, strings, nodeToParent)) {
+      if (isHiddenByStyles(nodeIndex, parentLayoutIndex, layout, strings, nodeToParent, nodes)) {
         DEBUG && terminal.yellow(`Skipping text box ${i} due to visibility: hidden, display: none, or zero dimensions\n`);
         continue;
       }
