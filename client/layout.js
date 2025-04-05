@@ -556,6 +556,8 @@ const LayoutAlgorithm = (() => {
       const attributes = nodes.attributes[nodeIdx] || [];
 
       const bounds = layout.bounds[layoutIdx];
+      const ceIndex = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'contenteditable');
+
       if (!bounds || bounds[2] <= INVISIBLE_DIMENSION || bounds[3] <= INVISIBLE_DIMENSION ) continue;
       
       let mediaType, placeholder;
@@ -568,12 +570,22 @@ const LayoutAlgorithm = (() => {
       } else if (nodeNameUpper === 'AUDIO') {
         mediaType = 'media';
         placeholder = '[AUD]';
-      } else if (nodeNameUpper === 'INPUT') {
+      } else if (nodeNameUpper === 'INPUT' ) {
         const typeIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'type');
         const inputType = typeIdx !== -1 ? strings[attributes[typeIdx + 1]] : 'text';
         if (inputType !== 'hidden') { // Skip hidden inputs
           mediaType = 'input';
           placeholder = `[INPUT${'_'.repeat(Math.max(3, Math.ceil(bounds[2] / 20)))}]`;
+        }
+      } else if (nodeNameUpper === 'TEXTAREA' ) {
+        mediaType = 'input';
+        placeholder = `[TEXT${'_'.repeat(Math.max(3, Math.ceil(bounds[2] / 20)))}]`;
+      } else if ( ceIndex !== -1 ) {
+        const contentEditable = strings[attributes[ceIndex + 1]];
+        const isContentEditable = contentEditable === 'true' || contentEditable === '';
+        if ( isContentEditable ) {
+          mediaType = 'input';
+          placeholder = `[EDIT${'_'.repeat(Math.max(3, Math.ceil(bounds[2] / 20)))}]`;
         }
       } else {
         continue; // Skip non-media elements
