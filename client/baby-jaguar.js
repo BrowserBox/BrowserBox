@@ -12,6 +12,7 @@ we should deconflict some lines (small text can vert overlap)
       import { Agent } from 'https';
       import Layout from './layout.js';
       import TerminalBrowser from './terminal-browser.js';
+      import TerminalInputField from './terminal-input-field.js';
       import {logMessage,debugLog,DEBUG} from './log.js';
       import TK from 'terminal-kit';
       const { terminal } = TK;
@@ -413,7 +414,7 @@ we should deconflict some lines (small text can vert overlap)
       }
 
       function renderBoxes(layoutState) {
-        const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
+        const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes, inputElements } = layoutState;
         renderedBoxes.length = 0;
 
         for (const box of visibleBoxes) {
@@ -454,27 +455,60 @@ we should deconflict some lines (small text can vert overlap)
             }
           }
 
-          terminal.moveTo(renderX, renderY);
-          terminal.defaultColor().bgDefaultColor();
-          if (type === 'media') {
-            if (isClickable) {
-              terminal.gray.underline(displayText); // Clickable media
+          if (type === 'input') {
+            let inputEntry = state.inputElements.find(i => i.metadata.nodeIndex === nodeIndex);
+            if (!inputEntry) {
+              const metadata = inputElements.find(i => i.nodeIndex === nodeIndex);
+              if (metadata) {
+                const inputField = new TerminalInputField({
+                  x: renderX,
+                  y: renderY,
+                  width: metadata.termWidth,
+                  defaultContent: metadata.value,
+                  backendNodeId: metadata.backendNodeId,
+                });
+
+                inputField.on('submit', async (value) => {
+                  await setInputValueAndSubmit({ backendNodeId: metadata.backendNodeId, value, send, sessionId });
+                  await refreshTerminal({ send, sessionId, state, addressBar: null });
+                });
+                inputField.on('cancel', () => {
+                  inputField.hide();
+                });
+
+                inputEntry = { metadata, inputField };
+                state.inputElements.push(inputEntry);
+                DEBUG && terminal.magenta(`Created input field for node ${nodeIndex} at (${renderX}, ${renderY})\n`);
+              }
             } else {
-              terminal.brightBlack(displayText); // Non-clickable media
+              if (inputEntry.inputField.getPosition().x !== renderX || inputEntry.inputField.getPosition().y !== renderY) {
+                inputEntry.inputField.rebase(renderX, renderY);
+                DEBUG && terminal.magenta(`Rebased input field for node ${nodeIndex} to (${renderX}, ${renderY})\n`);
+              }
             }
           } else {
-            switch (ancestorType) {
-              case 'hyperlink':
-                terminal.cyan.underline(displayText);
-                break;
-              case 'button':
-                terminal.bgGreen.black(displayText);
-                break;
-              case 'other_clickable':
-                terminal.bold(displayText);
-                break;
-              default:
-                terminal(displayText);
+            terminal.moveTo(renderX, renderY);
+            terminal.defaultColor().bgDefaultColor();
+            if (type === 'media') {
+              if (isClickable) {
+                terminal.gray.underline(displayText);
+              } else {
+                terminal.brightBlack(displayText);
+              }
+            } else {
+              switch (ancestorType) {
+                case 'hyperlink':
+                  terminal.cyan.underline(displayText);
+                  break;
+                case 'button':
+                  terminal.bgGreen.black(displayText);
+                  break;
+                case 'other_clickable':
+                  terminal.bold(displayText);
+                  break;
+                default:
+                  terminal(displayText);
+              }
             }
           }
         }
@@ -615,10 +649,9 @@ we should deconflict some lines (small text can vert overlap)
         state = initializeState();
         const refresh = () => refreshTerminal({ send, sessionId, state, addressBar: null });
         const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
-        // Calculate line height in pixels
-          const calculateLineHeight = () => {
-            return Math.round(state.viewportHeight / terminal.height);
-          };
+        const calculateLineHeight = () => Math.round(state.viewportHeight / terminal.height);
+
+        let focusedInput = null; // Track the currently focused input field
 
         terminal.on('mouse', async (event, data) => {
           if (!state.isListening) return;
@@ -628,6 +661,20 @@ we should deconflict some lines (small text can vert overlap)
               DEBUG && debugLog(`Click ignored: Terminal not yet initialized`);
               return;
             }
+            const input = state.inputElements.find(i => {
+              const pos = i.inputField.getPosition();
+              return data.x >= pos.x && data.x < pos.x + i.metadata.termWidth && data.y === pos.y;
+            });
+            if (input) {
+              if (focusedInput && focusedInput !== input.inputField) focusedInput.blur();
+              focusedInput = input.inputField;
+              focusedInput.focus();
+              browser.focus('tabs'); // Reset TerminalBrowser focus to avoid omnibox interference
+              DEBUG && debugLog(`Focused input field at (${data.x}, ${data.y})`);
+              return;
+            }
+            if (focusedInput) focusedInput.blur();
+            focusedInput = null;
             await handleClick({
               termX: data.x,
               termY: data.y,
@@ -654,36 +701,50 @@ we should deconflict some lines (small text can vert overlap)
 
         terminal.on('key', async (name) => {
           if (!state.isListening) return;
-          if (name === 'CTRL_C') {
-            state.isListening = false;
-            process.emit('SIGINT');
-          } else if (name === '<') {
-            if (onTabSwitch) await onTabSwitch();
-          } else if (name === 'UP' || name === 'DOWN') {
-            const lineHeight = calculateLineHeight();
-            const deltaY = name === 'UP' ? -lineHeight : lineHeight;
-            
-            // Prevent scrolling above top
-            if (name === 'UP' && state.currentScrollY <= 0) {
-              DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
-              return;
-            }
 
-            // Dispatch scroll event
-            await send('Input.dispatchMouseEvent', { 
-              type: 'mouseWheel', 
-              x: 0, 
-              y: 0, 
-              deltaX: 0, 
-              deltaY 
-            }, sessionId);
-            
-            debouncedRefresh();
+          // Handle input field focus first
+          if (focusedInput) {
+            if (focusedInput.handleKey(name)) return;
+          }
+
+          // Browser UI navigation (only in UI area: y <= 3)
+          if (browser.focusedElement !== 'address' && (name === 'TAB' || name === 'SHIFT_TAB')) {
+            const uiElements = ['tabs', 'back', 'forward', 'address', 'go'];
+            const currentIdx = uiElements.indexOf(browser.focusedElement);
+            const nextIdx = name === 'TAB' ? (currentIdx + 1) % uiElements.length : (currentIdx - 1 + uiElements.length) % uiElements.length;
+            browser.focus(uiElements[nextIdx]);
+            return;
+          }
+
+          // Global keys when no input is focused
+          switch (name) {
+            case 'CTRL_C':
+              state.isListening = false;
+              process.emit('SIGINT');
+              break;
+            case '<':
+              if (onTabSwitch) await onTabSwitch();
+              break;
+            case 'UP':
+            case 'DOWN':
+              if (focusedInput) return; // Ignore if input is focused
+              const lineHeight = calculateLineHeight();
+              const deltaY = name === 'UP' ? -lineHeight : lineHeight;
+              if (name === 'UP' && state.currentScrollY <= 0) {
+                DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
+                return;
+              }
+              await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+              debouncedRefresh();
+              break;
           }
         });
 
         await refresh();
-        return () => { state.isListening = false; };
+        return () => {
+          state.isListening = false;
+          state.inputElements.forEach(input => input.inputField.hide());
+        };
       }
 
     // helpers
