@@ -5,7 +5,8 @@ Bugs
     - solve the biggest cause we can
 - FIXED! NY Post fixed. Issue was vertical overlap that didn't occlude text in close together lines
 - FIXED! YouTube (we were hiding text nodes with zero dimensions, even if their parents had non zero dimensions. As it's not possible to "style" text nodes in CSS, we can ignore zero dims on text nodes which may perhaps (I don't know) happen due to shadow dom replacement, etc, and just look at parent element.
-- TO DO: GitHub case
+- FIXED! GitHub fixed. Screen reader type of text with small dimensions in parent tree (1, 1 px or 2, 2 px etc) was being treated as visible and rendered occluding actual layout text.
+
 
 Bugs
   - test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug

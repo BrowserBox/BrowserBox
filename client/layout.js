@@ -12,6 +12,7 @@ const POSITION_SET_1 = new Set([
   'unset',
   'initial'
 ]);
+const INVISIBLE_DIMENSION = 5;
 
 const LayoutAlgorithm = (() => {
   // --------------------------
@@ -373,10 +374,10 @@ const LayoutAlgorithm = (() => {
         return true;
       }
       // Check for zero dimensions
-      const width = styles.width || 'auto';
-      const height = styles.height || 'auto';
-      const isZeroWidth = width == '0' || width === '0px';
-      const isZeroHeight = height == '0' || height === '0px';
+      const width = getDimension(styles.width);
+      const height = getDimension(styles.height)
+      const isZeroWidth = (width == '0' || width === '0px' || width <= INVISIBLE_DIMENSION);
+      const isZeroHeight = (height == '0' || height === '0px' || height <= INVISIBLE_DIMENSION);
       if ((isZeroWidth || isZeroHeight) && ! nodes.nodeType[currentIndex] == 3) {
         debugLog(`Non-text node ${nodeIndex} hidden by zero dimensions: ${JSON.stringify(styles)}`);
         return true;
@@ -395,7 +396,7 @@ const LayoutAlgorithm = (() => {
 
     // Check if the parent element (not the text node) has position: absolute
     const parentStyles = getComputedStyles(currentLayoutIndex, layout, strings);
-    const isHidden = parentStyles.overflow == 'hidden' && (parentStyles.width == '0' || parentStyles.width == '0px' || parentStyles.height == 0 || parentStyles.height == '0px');
+    const isHidden = parentStyles.overflow == 'hidden' && (parentStyles.width == '0' || parentStyles.width == '0px' || parentStyles.height == 0 || parentStyles.height == '0px' || parentStyles.width <= INVISIBLE_DIMENSION || parentStyles.height <= INVISIBLE_DIMENSION);
     const hiddenIgnored = POSITION_SET_1.has(parentStyles.position) && parentStyles.display == 'inline';
 
     if (!(isHidden && ! hiddenIgnored)) {
@@ -409,11 +410,11 @@ const LayoutAlgorithm = (() => {
       const styles = getComputedStyles(currentLayoutIndex, layout, strings);
       const hasZeroOpacity = styles.opacity == '0';
       const hasOverflowHidden = styles.overflow === 'hidden';
-      const width = styles.width || 'auto';
-      const height = styles.height || 'auto';
+      const width = getDimension(styles.width);
+      const height = getDimension(styles.height);
 
-      const isZeroWidth = width == '0' || width === '0px';
-      const isZeroHeight = height == '0' || height === '0px';
+      const isZeroWidth = (width == '0' || width === '0px' || width <= INVISIBLE_DIMENSION);
+      const isZeroHeight = (height == '0' || height === '0px' || height <= INVISIBLE_DIMENSION);
       const hiddenIgnored = POSITION_SET_1.has(styles.position) && styles.display == 'inline';
 
       if (((isZeroWidth || isZeroHeight) && hasOverflowHidden && !hiddenIgnored) || hasZeroOpacity) {
@@ -497,10 +498,10 @@ const LayoutAlgorithm = (() => {
 
       // Get the parent element's styles to check width and height
       const parentStyles = getComputedStyles(parentLayoutIndex, layout, strings);
-      const parentWidth = parentStyles.width || 'auto';
-      const parentHeight = parentStyles.height || 'auto';
-      const isZeroWidth = parentWidth === '0' || parentWidth === '0px';
-      const isZeroHeight = parentHeight === '0' || parentHeight === '0px';
+      const parentWidth = getDimension(parentStyles.width);
+      const parentHeight = getDimension(parentStyles.height);
+      const isZeroWidth = parentWidth === '0' || parentWidth === '0px' || parentWidth <= INVISIBLE_DIMENSION;
+      const isZeroHeight = parentHeight === '0' || parentHeight === '0px' || parentHeight <= INVISIBLE_DIMENSION;
 
       // Filter out boxes with zero width or height (using parent element's computed styles)
       if (isZeroWidth || isZeroHeight) {
@@ -607,6 +608,13 @@ const LayoutAlgorithm = (() => {
     }
 
     return { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes };
+  }
+
+  // helper to get 
+  function getDimension(cssDimension) {
+    const p = parseInt(cssDimension);
+    if ( Number.isNaN(p) ) return 'auto';
+    return Math.floor(p);
   }
 
   async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal }) {
