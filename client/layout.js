@@ -395,7 +395,7 @@ const LayoutAlgorithm = (() => {
 
     // Check if the parent element (not the text node) has position: absolute
     const parentStyles = getComputedStyles(currentLayoutIndex, layout, strings);
-    const isHidden = parentStyles.overflow == 'hidden';
+    const isHidden = parentStyles.overflow == 'hidden' && (parentStyles.width == '0' || parentStyles.width == '0px' || parentStyles.height == 0 || parentStyles.height == '0px');
     const hiddenIgnored = POSITION_SET_1.has(parentStyles.position) && parentStyles.display == 'inline';
 
     if (!(isHidden && ! hiddenIgnored)) {
@@ -414,8 +414,9 @@ const LayoutAlgorithm = (() => {
 
       const isZeroWidth = width == '0' || width === '0px';
       const isZeroHeight = height == '0' || height === '0px';
+      const hiddenIgnored = POSITION_SET_1.has(styles.position) && styles.display == 'inline';
 
-      if ((isZeroWidth || isZeroHeight) && hasOverflowHidden || hasZeroOpacity) {
+      if (((isZeroWidth || isZeroHeight) && hasOverflowHidden && !hiddenIgnored) || hasZeroOpacity) {
         debugLog(`Node ${nodeIndex} clipped by ancestor ${currentIndex} at depth ${depth} with styles: ${JSON.stringify(styles)}`);
         return true;
       }
