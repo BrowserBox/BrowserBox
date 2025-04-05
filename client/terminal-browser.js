@@ -58,8 +58,14 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.bgBlue().white(' '.repeat(this.term.width));
     let x = 1;
     for (let i = this.tabOffset; i < this.tabs.length && x <= this.term.width - this.NEW_TAB_WIDTH; i++) {
-      const truncatedTitle = this.tabs[i].title.slice(0, this.options.tabWidth - 6); // Adjust for "[x]"
-      const tabText = ` ${truncatedTitle} [x] `.padEnd(this.options.tabWidth, ' ');
+      // Truncate title to fit within the tab width, accounting for leading space and [x]
+      const maxTitleLength = this.options.tabWidth - 5; // 1 for leading space, 3 for [x], 1 for space before [x]
+      const truncatedTitle = this.tabs[i].title.slice(0, maxTitleLength);
+      // Construct the tab text: " title" + padding + "[x]"
+      const titlePart = ` ${truncatedTitle}`;
+      const paddingLength = this.options.tabWidth - titlePart.length - 3; // Space needed before [x]
+      const tabText = `${titlePart}${' '.repeat(paddingLength)}[x]`;
+      
       this.term.moveTo(x, 1);
       if (i === this.focusedTabIndex) {
         this.term.bgWhite()[this.tabs[i].color]().bold().underline(tabText);
@@ -125,7 +131,8 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.eraseDisplayAbove();
     this.drawTabs();
     this.drawOmnibox();
-    this.term.bgBlack();
+    this.term.bgDefaultColor();
+    this.term.defaultColor();
     this.term.moveTo(1, this.term.height);
   }
 
@@ -177,13 +184,8 @@ export default class TerminalBrowser extends EventEmitter {
       } else {
         switch (key) {
           case 'CTRL_C':
-          case 'q':
             this.term.clear();
             this.term.processExit(0);
-            break;
-          case 't':
-            this.addTab({ title: `New ${this.tabs.length + 1}`, url: '' });
-            this.render();
             break;
           // Other key cases remain unchanged...
           case 'ENTER':

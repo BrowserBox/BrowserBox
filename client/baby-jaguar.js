@@ -20,6 +20,7 @@ we should deconflict some lines (small text can vert overlap)
       const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     // Constants and state
+      const markClicks = false;
       const BrowserState = {
         targets: [],
         activeTarget: null,
@@ -255,53 +256,59 @@ we should deconflict some lines (small text can vert overlap)
             browser.setTab(targetIndex, { title, url });
           }
         } else {
-          console.warn(`Target with ID ${targetId} not found`);
+          DEBUG && console.warn(`Target with ID ${targetId} not found`);
         }
       }
 
       async function fetchSnapshot({ send, sessionId }) {
-        DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
-        await Promise.all([
-          send('DOM.enable', {}, sessionId),
-          send('DOMSnapshot.enable', {}, sessionId),
-        ]);
+        try {
+          DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
+          // add a map to only do this 1 time per session. Also throw in a Page.reload to trigger it if it locks for good measure
+          await Promise.all([
+            send('DOM.enable', {}, sessionId),
+            send('DOMSnapshot.enable', {}, sessionId),
+          ]);
 
-        DEBUG && terminal.cyan('Capturing snapshot...\n');
-        const snapshot = await send('DOMSnapshot.captureSnapshot', {
-          computedStyles: [],
-          includeDOMRects: true,
-          includePaintOrder: true,
-          includeBlobs: true
-        }, sessionId);
-        if (!snapshot?.documents?.length) {
-          return;
+          DEBUG && terminal.cyan('Capturing snapshot...\n');
+          const snapshot = await send('DOMSnapshot.captureSnapshot', {
+            computedStyles: ['display', 'visibility', 'overflow', 'position', 'width', 'height', 'transform', 'opacity'],
+            includePaintOrder: true,
+          }, sessionId);
+          if (!snapshot?.documents?.length) {
+            return;
+          }
+          DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
+
+          const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
+          const viewport = layoutMetrics.visualViewport;
+          const document = snapshot.documents[0];
+
+          return {
+            snapshot,
+            viewportWidth: viewport.clientWidth,
+            viewportHeight: viewport.clientHeight,
+            viewportX: document.scrollOffsetX,
+            viewportY: document.scrollOffsetY,
+          };
+        } catch(e) {
+          DEBUG && console.warn(e);
+          return {};
         }
-        DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
-
-        const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
-        const viewport = layoutMetrics.visualViewport;
-        const document = snapshot.documents[0];
-
-        return {
-          snapshot,
-          viewportWidth: viewport.clientWidth,
-          viewportHeight: viewport.clientHeight,
-          viewportX: document.scrollOffsetX,
-          viewportY: document.scrollOffsetY,
-        };
       }
 
       async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
-          Object.assign(state, {
-            viewportHeight, viewportWidth, 
-          });
-          const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot, terminal });
-          if (textLayoutBoxes.length > 0) {
-            return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };
+          if ( snapshot ) {
+            Object.assign(state, {
+              viewportHeight, viewportWidth, 
+            });
+            const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot, terminal });
+            if (textLayoutBoxes.length > 0) {
+              return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };
+            }
+            DEBUG && terminal.yellow(`Attempt ${attempt}: Found 0 text boxes, retrying in ${interval}ms...\n`);
           }
-          DEBUG && terminal.yellow(`Attempt ${attempt}: Found 0 text boxes, retrying in ${interval}ms...\n`);
           await sleep(interval);
         }
         DEBUG && terminal.yellow(`Max attempts reached, proceeding with last snapshot.\n`);
@@ -375,12 +382,16 @@ we should deconflict some lines (small text can vert overlap)
 
       async function refreshTerminal({ send, sessionId, state, addressBar }) {
         try {
+          // sometimes this line errors out and poll returns nothing. I think we could try a page reload
+          // and try to repro and figure it out
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
+          if ( ! snapshot ) return;
           state.currentScrollY = viewportY;
           const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal });
 
           terminal.clear();
           terminal.bgDefaultColor();
+          terminal.defaultColor();
           browser.render();
 
           if (layoutState) {
@@ -397,7 +408,7 @@ we should deconflict some lines (small text can vert overlap)
           }
         } catch (error) {
           if (DEBUG) console.warn(error);
-          terminal.red(`Error printing text layout: ${error.message}\n`);
+          DEBUG && terminal.red(`Error printing text layout: ${error.message}\n`);
         }
       }
 
@@ -406,7 +417,7 @@ we should deconflict some lines (small text can vert overlap)
         renderedBoxes.length = 0;
 
         for (const box of visibleBoxes) {
-          const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex } = box;
+          const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type } = box;
           const renderX = Math.max(1, termX + 1);
           const renderY = Math.max(5, termY + 1);
 
@@ -445,18 +456,26 @@ we should deconflict some lines (small text can vert overlap)
 
           terminal.moveTo(renderX, renderY);
           terminal.defaultColor().bgDefaultColor();
-          switch (ancestorType) {
-            case 'hyperlink':
-              terminal.cyan.underline(displayText);
-              break;
-            case 'button':
-              terminal.bgGreen.black(displayText);
-              break;
-            case 'other_clickable':
-              terminal.bold(displayText);
-              break;
-            default:
-              terminal(displayText);
+          if (type === 'media') {
+            if (isClickable) {
+              terminal.gray.underline(displayText); // Clickable media
+            } else {
+              terminal.brightBlack(displayText); // Non-clickable media
+            }
+          } else {
+            switch (ancestorType) {
+              case 'hyperlink':
+                terminal.cyan.underline(displayText);
+                break;
+              case 'button':
+                terminal.bgGreen.black(displayText);
+                break;
+              case 'other_clickable':
+                terminal.bold(displayText);
+                break;
+              default:
+                terminal(displayText);
+            }
           }
         }
       }
@@ -501,7 +520,7 @@ we should deconflict some lines (small text can vert overlap)
           }
         }
         if (!clickedBox || !clickedBox.isClickable) {
-          terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
+          DEBUG && terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
           return;
         }
 
@@ -522,7 +541,7 @@ we should deconflict some lines (small text can vert overlap)
         const nodeText = clickedBox.text;
         const clickEvent = { type: 'click' };
         try {
-          appendFileSync('clicks.log', `${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
+          DEBUG && appendFileSync('clicks.log', `${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
         } catch (error) {
           console.error(`Failed to write to clicks log: ${error.message}`);
         }
@@ -561,29 +580,31 @@ we should deconflict some lines (small text can vert overlap)
           DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
         }
 
-        const script = `
-          (function() {
-            const rect = this.getBoundingClientRect();
-            const clickX = rect.left + rect.width / 2;
-            const clickY = rect.top + rect.height / 2;
-            const circle = document.createElement('div');
-            circle.style.cssText = "position: absolute; left: " + clickX + "px; top: " + clickY + "px; width: 20px; height: 20px; background: black; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; z-index: 9999;";
-            circle.innerText = "${clickId}";
-            circle.id = "click-trace-${clickId}";
-            document.body.appendChild(circle);
-            return { clickX, clickY };
-          })
-        `;
-        try {
-          const circleResult = await send('Runtime.callFunctionOn', {
-            objectId,
-            functionDeclaration: script,
-            arguments: [],
-            returnByValue: true
-          }, sessionId);
-          DEBUG && debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
-        } catch (error) {
-          DEBUG && debugLog(`Circle injection failed: ${error.message}`);
+        if ( DEBUG && markClicks ) {
+          const script = `
+            (function() {
+              const rect = this.getBoundingClientRect();
+              const clickX = rect.left + rect.width / 2;
+              const clickY = rect.top + rect.height / 2;
+              const circle = document.createElement('div');
+              circle.style.cssText = "position: absolute; left: " + clickX + "px; top: " + clickY + "px; width: 20px; height: 20px; background: black; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; z-index: 9999;";
+              circle.innerText = "${clickId}";
+              circle.id = "click-trace-${clickId}";
+              document.body.appendChild(circle);
+              return { clickX, clickY };
+            })
+          `;
+          try {
+            const circleResult = await send('Runtime.callFunctionOn', {
+              objectId,
+              functionDeclaration: script,
+              arguments: [],
+              returnByValue: true
+            }, sessionId);
+            DEBUG && debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
+          } catch (error) {
+            DEBUG && debugLog(`Circle injection failed: ${error.message}`);
+          }
         }
 
         await refresh();
