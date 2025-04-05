@@ -1,4 +1,6 @@
 - form controls
+  - handle input type=button as button
+  - convert input/text/edit placeholders to actual usable, focusable, cursorable/clickable, inputs
 
 Bugs
   - test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug
