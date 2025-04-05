@@ -6,6 +6,12 @@ const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
 const USE_TEXT_BOX_FOR_OCCLUSION_TEST = true; // Set to true to use text box bounds for occlusion test
 const RECOGNIZE_MULTIROW_MEDIA_BOXES = false;
+const POSITION_SET_1 = new Set([
+  'relative',
+  'sticky',
+  'unset',
+  'initial'
+]);
 
 const LayoutAlgorithm = (() => {
   // --------------------------
@@ -389,10 +395,11 @@ const LayoutAlgorithm = (() => {
 
     // Check if the parent element (not the text node) has position: absolute
     const parentStyles = getComputedStyles(currentLayoutIndex, layout, strings);
-    const isAbsolutelyPositioned = parentStyles.position === 'absolute';
+    const isHidden = parentStyles.overflow == 'hidden';
+    const hiddenIgnored = POSITION_SET_1.has(parentStyles.position) && parentStyles.display == 'inline';
 
-    if (isAbsolutelyPositioned) {
-      debugLog(`Parent of node ${nodeIndex} is absolutely positioned, not clipped by parent: ${JSON.stringify(parentStyles)}`);
+    if (!(isHidden && ! hiddenIgnored)) {
+      debugLog(`Parent of node ${nodeIndex} is not hidden by parent: ${JSON.stringify(parentStyles)}`);
       return false;
     }
 
