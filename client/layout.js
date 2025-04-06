@@ -570,10 +570,21 @@ const LayoutAlgorithm = (() => {
       } else if (nodeNameUpper === 'AUDIO') {
         mediaType = 'media';
         placeholder = '[AUD]';
-      } else if (nodeNameUpper === 'INPUT' ) {
+      } else if (nodeNameUpper === 'INPUT') {
         const typeIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'type');
         const inputType = typeIdx !== -1 ? strings[attributes[typeIdx + 1]] : 'text';
-        if (inputType !== 'hidden') { // Skip hidden inputs
+        if (inputType === 'hidden') continue; // Skip hidden inputs
+
+        let placeholder;
+        let mediaType;
+        if (inputType === 'button') {
+          // Handle <input type="button"> like <button>
+          const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
+          const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
+          placeholder = valueText || '[BUTTON]'; // Use value attribute or fallback
+          mediaType = 'button'; // Align with <button> processing
+        } else {
+          // Other input types (e.g., text, checkbox)
           mediaType = 'input';
           placeholder = `[INPUT${'_'.repeat(Math.max(3, Math.ceil(bounds[2] / 20)))}]`;
         }
