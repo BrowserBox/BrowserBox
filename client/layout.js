@@ -583,7 +583,7 @@ const LayoutAlgorithm = (() => {
             const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
             const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
             mediaType = 'input';
-            placeholder = valueText; // Use actual value
+            placeholder = valueText || ''; // Use actual value
           }
         }
       } else if (nodeNameUpper === 'TEXTAREA') {
@@ -593,7 +593,7 @@ const LayoutAlgorithm = (() => {
           if (textIndex !== -1) textContent += strings[textIndex];
         });
         mediaType = 'input';
-        placeholder = textContent;
+        placeholder = textContent || '';
       } else if (ceIndex !== -1) {
         const contentEditable = strings[attributes[ceIndex + 1]];
         if (contentEditable === 'true' || contentEditable === '') {
@@ -602,7 +602,7 @@ const LayoutAlgorithm = (() => {
             if (textIndex !== -1) textContent += strings[textIndex];
           });
           mediaType = 'input';
-          placeholder = textContent;
+          placeholder = textContent || '';
         }
       } else {
         continue; // Skip non-media elements
