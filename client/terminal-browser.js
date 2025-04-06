@@ -133,15 +133,14 @@ export default class TerminalBrowser extends EventEmitter {
         cursorPosition: initialValue.length,
         focused: false,
         onChange,
-        x,              // Store position
+        x,
         y,
-        width,          // Store size
+        width,
       });
     }
     const inputState = this.inputFields.get(backendNodeIdStr);
     logClicks(`Drawing input ${backendNodeIdStr}, value: ${inputState.value}, focused: ${inputState.focused}`);
 
-    // Update position if changed (e.g., during initial render or layout shift)
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
@@ -154,16 +153,35 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.moveTo(x, y);
     if (isFocused) {
       const beforeCursor = value.slice(0, cursorPos);
-      const cursorChar = value[cursorPos] || ' '; // Space if cursor is at end
+      const cursorChar = value[cursorPos] || ' ';
       const afterCursor = value.slice(cursorPos + 1);
-      this.term.bgBrightWhite().black(beforeCursor);
-      this.term.bgBlack().brightWhite().bold(cursorChar); // Highlight cursor
-      this.term.bgBrightWhite().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
+      this.term.bgCyan().black(beforeCursor); // Cyan background for focus
+      this.term.bgBlack().brightWhite().bold(cursorChar); // Cursor highlight
+      this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
     } else {
       this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
     }
 
     return { backendNodeId: backendNodeIdStr, x, y, width: displayWidth };
+  }
+
+  redrawFocusedInput() {
+    if (!this.focusedElement.startsWith('input:')) return;
+
+    const backendNodeId = this.focusedElement.split(':')[1];
+    const inputState = this.inputFields.get(backendNodeId);
+    if (!inputState || !inputState.focused) return;
+
+    const { x, y, width, value, cursorPosition } = inputState;
+    const displayWidth = Math.min(width, this.term.width - x + 1);
+
+    this.term.moveTo(x, y);
+    const beforeCursor = value.slice(0, cursorPosition);
+    const cursorChar = value[cursorPosition] || ' ';
+    const afterCursor = value.slice(cursorPosition + 1);
+    this.term.bgCyan().black(beforeCursor); // Cyan background for focus
+    this.term.bgBlack().brightWhite().bold(cursorChar); // Cursor highlight
+    this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
   }
 
   redrawFocusedInput() {

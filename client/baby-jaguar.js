@@ -420,17 +420,24 @@
 
           if (renderX > termWidth || renderY > termHeight + 4) continue;
 
-          const availableWidth = Math.max(0, termWidth - renderX + 1);
+          // Calculate input width based on boundingBox or default to 20 chars
+          let inputWidth = 20; // Default width (20 characters)
+          if (type === 'input' && boundingBox?.width) {
+            // Convert pixel width to characters (approximate: assume 8px per char)
+            const charWidth = Math.round(boundingBox.width / 8);
+            inputWidth = Math.max(10, Math.min(charWidth, termWidth - renderX + 1)); // Clamp between 10 and available space
+          }
+          const availableWidth = type === 'input' ? inputWidth : Math.max(0, termWidth - renderX + 1);
           let displayText = text.substring(0, availableWidth);
 
           const renderedBox = {
             text,
-            type, 
+            type,
             boundingBox,
             isClickable,
             termX: renderX,
             termY: renderY,
-            termWidth: displayText.length,
+            termWidth: type === 'input' ? inputWidth : displayText.length,
             termHeight: 1,
             viewportX,
             viewportY,
@@ -442,21 +449,21 @@
           };
 
           if (type === 'input') {
-            logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);             
-            const currentBackendNodeId = box.backendNodeId; // Capture in closure
+            logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
+            const currentBackendNodeId = backendNodeId;
             const inputField = browser.drawInputField({
               x: renderX,
               y: renderY,
-              width: availableWidth,
+              width: inputWidth, // Use calculated width
               key: backendNodeId,
               initialValue: text.startsWith('[INPUT') ? '' : text,
               onChange: async (value) => {
                 try {
-                  // Resolve backendNodeId to objectId
                   const resolveResult = await send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId);
+                  if (!resolveResult?.object?.objectId) {
+                    throw new Error('Node no longer exists');
+                  }
                   const objectId = resolveResult.object.objectId;
-
-                  // Set the value using JavaScript
                   const script = `function() {
                     this.value = ${JSON.stringify(value)};
                     this.dispatchEvent(new Event('input', { bubbles: true }));
@@ -468,10 +475,12 @@
                     arguments: [],
                     returnByValue: true,
                   }, sessionId);
-
-                  logClicks(`Successfully updated value for backendNodeId: ${currentBackendNodeId} to "${value}"`);
+                  logClicks(`Updated remote value for backendNodeId: ${currentBackendNodeId} to "${value}"`);
                 } catch (error) {
-                  console.error(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+                  logClicks(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+                  browser.focusedElement = 'tabs';
+                  browser.inputFields.delete(String(currentBackendNodeId));
+                  browser.render();
                 }
               },
             });
@@ -574,6 +583,14 @@
         if (clickedBox.type === 'input') {
           logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
           browser.focusInput(clickedBox.backendNodeId);
+          
+          // Calculate cursor position based on click
+          const inputState = browser.inputFields.get(String(clickedBox.backendNodeId));
+          if (inputState) {
+            const relativeX = termX - clickedBox.termX; // Position within the input
+            inputState.cursorPosition = Math.min(relativeX, inputState.value.length); // Clamp to value length
+            browser.redrawFocusedInput(); // Redraw to show cursor
+          }
           return;
         }
 
