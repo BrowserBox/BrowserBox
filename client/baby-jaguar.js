@@ -423,13 +423,22 @@
 
           if (renderX > termWidth || renderY > termHeight + 4) continue;
 
-          let inputWidth = 20;
-          if (type === 'input' && boundingBox?.width) {
-            const charWidth = Math.round(boundingBox.width / 8);
-            inputWidth = Math.max(10, Math.min(charWidth, termWidth - renderX + 1));
+          // Compute available width in the terminal
+          const displayWidth = Math.max(0, termWidth - renderX + 1);
+          let displayText = text.substring(0, displayWidth); // Truncate text to fit terminal
+          let termWidthForBox;
+
+          if (type === 'input' && boundingBox?.width && layoutState.viewportWidth) {
+            // Scale GUI width to terminal width
+            const scaleFactor = termWidth / layoutState.viewportWidth; // Pixels to characters
+            termWidthForBox = Math.round(boundingBox.width * scaleFactor);
+            // Clamp to ensure it fits within the terminal and isn't too small
+            termWidthForBox = Math.max(10, Math.min(termWidthForBox, displayWidth));
+            logClicks(`Input sizing for backendNodeId: ${backendNodeId}, boundingBox.width: ${boundingBox.width}, viewportWidth: ${layoutState.viewportWidth}, scaleFactor: ${scaleFactor}, termWidth: ${termWidthForBox}`);
+          } else {
+            // For non-inputs or if boundingBox.width is missing, use displayText length
+            termWidthForBox = displayText.length;
           }
-          const availableWidth = type === 'input' ? inputWidth : Math.max(0, termWidth - renderX + 1);
-          let displayText = text.substring(0, availableWidth);
 
           const renderedBox = {
             text,
@@ -438,7 +447,7 @@
             isClickable,
             termX: renderX,
             termY: renderY,
-            termWidth: type === 'input' ? inputWidth : displayText.length,
+            termWidth: termWidthForBox, // Set termWidth based on scaling or displayText
             termHeight: 1,
             viewportX,
             viewportY,
@@ -475,11 +484,11 @@
                   logClicks(`Fetched live value for backendNodeId: ${currentBackendNodeId}: "${liveValue}"`);
                 }
 
-                // Render the input with the fetched value
+                // Use termWidthForBox as the width for drawInputField
                 const inputField = browser.drawInputField({
                   x: renderX,
                   y: renderY,
-                  width: inputWidth,
+                  width: termWidthForBox, // Use scaled termWidth
                   key: currentBackendNodeId,
                   initialValue: liveValue,
                   onChange: async (value) => {
@@ -511,7 +520,7 @@
                   },
                 });
 
-                // Update renderedBox with the actual width
+                // Update renderedBox.termWidth if necessary (should match termWidthForBox)
                 renderedBox.termWidth = inputField.width;
                 renderedBoxes.push(renderedBox);
 
@@ -529,11 +538,10 @@
               .catch(error => {
                 logClicks(`Failed to fetch live value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
 
-                // Render with fallback value on error
                 const inputField = browser.drawInputField({
                   x: renderX,
                   y: renderY,
-                  width: inputWidth,
+                  width: termWidthForBox, // Use scaled termWidth
                   key: currentBackendNodeId,
                   initialValue: fallbackValue,
                   onChange: async (value) => {
@@ -554,7 +562,7 @@
                         arguments: [],
                         returnByValue: true,
                       }, sessionId);
-                      logClicks(`Updated remote value for backendNodeId: ${currentBackendNodeId} to "${value}"`);
+                      logClicks(`Updated remote value for backendNodeId ${currentBackendNodeId} to "${value}"`);
                     } catch (error) {
                       logClicks(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
                       browser.redrawUnfocusedInput(currentBackendNodeId);
