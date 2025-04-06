@@ -1,9 +1,4 @@
 #!/usr/bin/env node
-/*
-todo
-we should app a 1 character gap - how ? longest text box in any node should have 1 space added to it.
-we should deconflict some lines (small text can vert overlap)
-*/
 // CyberJaguar - BrowserBox TUI Browser Application
   // Setup
     // imports
