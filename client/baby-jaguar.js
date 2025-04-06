@@ -456,7 +456,9 @@ we should deconflict some lines (small text can vert overlap)
 
           terminal.moveTo(renderX, renderY);
           terminal.defaultColor().bgDefaultColor();
-          if (type === 'media') {
+          if (type === 'button') {
+            terminal.bgGreen.black(displayText);
+          } else if (type === 'media') {
             if (isClickable) {
               terminal.gray.underline(displayText); // Clickable media
             } else {
