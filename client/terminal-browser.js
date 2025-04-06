@@ -1,6 +1,7 @@
 ﻿import termkit from 'terminal-kit';
 import { EventEmitter } from 'events';
-import {logClicks,DEBUG} from './log.js';
+import {sleep, logClicks,DEBUG} from './log.js';
+import keys from './kbd.js';
 
 const term = termkit.terminal;
 
@@ -8,6 +9,7 @@ export default class TerminalBrowser extends EventEmitter {
   constructor(options = {}, getState) {
     super();
     this.getState = getState;
+    this.term = term;
     this.options = {
       tabWidth: options.tabWidth || 25,
       initialTabs: options.initialTabs || [
@@ -251,7 +253,12 @@ export default class TerminalBrowser extends EventEmitter {
           if (keyCommand) {
             try {
               await this.getState().send(keyCommand.command.name, keyCommand.command.params, this.getState().sessionId);
-              logClicks(`Sent Enter key event for backendNodeId: ${backendNodeId}`);
+              keyCommand.command.params.type = "keyUp";
+              keyCommand.command.params.text = undefined;
+              sleep(50).then(async () => {
+                await this.getState().send(keyCommand.command.name, keyCommand.command.params, this.getState().sessionId);
+                logClicks(`Sent Enter key event for backendNodeId: ${backendNodeId} and session ${this.getState().sessionId}`);
+              });
             } catch (error) {
               logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
             }
@@ -649,3 +656,39 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.processExit(0);
   }
 }
+
+// helpers
+      function keyEvent(key) {
+        // Map TUI key to key definition (e.g., 'ENTER' -> 'Enter')
+        const keyName = key === 'ENTER' ? 'Enter' : key;
+        const def = keys[keyName];
+
+        if (!def) {
+          console.warn(`Unknown key: ${key}`);
+          return null;
+        }
+
+        // Determine event type
+        const type = def.text ? 'keyDown' : 'rawKeyDown'; // For Enter, this will be 'keyDown' due to text: '\r'
+
+        // Construct the CDP command
+        const command = {
+          name: 'Input.dispatchKeyEvent',
+          params: {
+            type,
+            text: def.text, // '\r' for Enter
+            code: def.code, // 'Enter'
+            key: def.key,   // 'Enter'
+            windowsVirtualKeyCode: def.keyCode, // 13
+            modifiers: 0,   // No modifiers for now (e.g., no Shift, Ctrl)
+          },
+          requiresShot: ['Enter'].includes(def.key), // Trigger a screenshot if needed
+        };
+
+        if (def.location) {
+          command.params.location = def.location;
+        }
+
+        return { command };
+      }      
+

@@ -7,13 +7,9 @@
       import { Agent } from 'https';
       import Layout from './layout.js';
       import TerminalBrowser from './terminal-browser.js';
-      import {logClicks, logMessage,debugLog,DEBUG} from './log.js';
-      import keys from './kbd.js';
+      import {sleep, logClicks, logMessage,debugLog,DEBUG} from './log.js';
       import TK from 'terminal-kit';
       const { terminal } = TK;
-
-    // one liners
-      const sleep = ms => new Promise(res => setTimeout(res, ms));
 
     // Constants and state
       const markClicks = false;
@@ -100,6 +96,11 @@
         browserbox = connection.browserbox;
         cookieHeader = connection.cookieHeader;
         BrowserState.targets = targets;
+        const newState = {
+          get sessionId() { return sessionId; },
+
+          get send() { return send; }
+        };
 
         await send('Target.setDiscoverTargets', { discover: true });
         await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
@@ -116,7 +117,7 @@
             title: t.title || new URL(t.url || 'about:blank').hostname,
             url: t.url || 'about:blank',
           })),
-        }, () => state);
+        }, () => newState);
 
         browser.on('tabSelected', async (tab) => {
           const index = browser.getTabs().findIndex(t => t.title === tab.title && t.url === tab.url);
@@ -617,40 +618,6 @@
       }
 
     // Interactivity helpers
-      function keyEvent(key) {
-        // Map TUI key to key definition (e.g., 'ENTER' -> 'Enter')
-        const keyName = key === 'ENTER' ? 'Enter' : key;
-        const def = keys[keyName];
-
-        if (!def) {
-          console.warn(`Unknown key: ${key}`);
-          return null;
-        }
-
-        // Determine event type
-        const type = def.text ? 'keyDown' : 'rawKeyDown'; // For Enter, this will be 'keyDown' due to text: '\r'
-
-        // Construct the CDP command
-        const command = {
-          name: 'Input.dispatchKeyEvent',
-          params: {
-            type,
-            text: def.text, // '\r' for Enter
-            code: def.code, // 'Enter'
-            key: def.key,   // 'Enter'
-            windowsVirtualKeyCode: def.keyCode, // 13
-            modifiers: 0,   // No modifiers for now (e.g., no Shift, Ctrl)
-          },
-          requiresShot: ['Enter'].includes(def.key), // Trigger a screenshot if needed
-        };
-
-        if (def.location) {
-          command.params.location = def.location;
-        }
-
-        return { command };
-      }      
-
       async function getNavigationHistory(sessionId) {
         const { currentIndex, entries } = await send('Page.getNavigationHistory', {}, sessionId);
         return { currentIndex, entries };
@@ -919,7 +886,7 @@
           try {
             const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
             message = JSON.parse(dataStr);
-            DEBUG && logMessage('RECEIVE', message, terminal);
+            logMessage('RECEIVE', message, terminal);
           } catch (error) {
             if (DEBUG) console.warn(error);
             terminal.red(`Invalid message: ${String(data).slice(0, 50)}...\n`);
@@ -955,7 +922,7 @@
           }, 10000);
 
           try {
-            DEBUG && logMessage('SEND', message, terminal);
+            logMessage('SEND', message, terminal);
             socket.send(JSON.stringify(message));
           } catch (error) {
             clearTimeout(timeout);
