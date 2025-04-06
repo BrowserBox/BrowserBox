@@ -124,39 +124,78 @@ export default class TerminalBrowser extends EventEmitter {
 
   drawInputField(options) {
     const { x, y, width, key, initialValue = '', onChange } = options;
-    const backendNodeId = key; // Use backendNodeId as the unique key
+    const backendNodeIdStr = String(key);
 
-    // Initialize or retrieve input field state
-    if (!this.inputFields.has(backendNodeId)) {
-      this.inputFields.set(backendNodeId, {
+    if (!this.inputFields.has(backendNodeIdStr)) {
+      logClicks(`Initializing input state for ${backendNodeIdStr} with value: ${initialValue}`);
+      this.inputFields.set(backendNodeIdStr, {
         value: initialValue,
         cursorPosition: initialValue.length,
         focused: false,
         onChange,
+        x,              // Store position
+        y,
+        width,          // Store size
       });
     }
-    const inputState = this.inputFields.get(backendNodeId);
+    const inputState = this.inputFields.get(backendNodeIdStr);
+    logClicks(`Drawing input ${backendNodeIdStr}, value: ${inputState.value}, focused: ${inputState.focused}`);
 
-    // Calculate display properties
+    // Update position if changed (e.g., during initial render or layout shift)
+    inputState.x = x;
+    inputState.y = y;
+    inputState.width = width;
+
     const displayWidth = Math.min(width, this.term.width - x + 1);
-    const isFocused = this.focusedElement === `input:${backendNodeId}`;
+    const isFocused = this.focusedElement === `input:${backendNodeIdStr}`;
     const value = inputState.value;
     const cursorPos = inputState.cursorPosition;
 
-    // Draw the input field
     this.term.moveTo(x, y);
     if (isFocused) {
       const beforeCursor = value.slice(0, cursorPos);
-      const cursorChar = value[cursorPos] || ' ';
+      const cursorChar = value[cursorPos] || ' '; // Space if cursor is at end
       const afterCursor = value.slice(cursorPos + 1);
       this.term.bgBrightWhite().black(beforeCursor);
-      this.term.bgBlack().brightWhite().bold(cursorChar);
+      this.term.bgBlack().brightWhite().bold(cursorChar); // Highlight cursor
       this.term.bgBrightWhite().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
     } else {
       this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
     }
 
-    return { backendNodeId, x, y, width: displayWidth };
+    return { backendNodeId: backendNodeIdStr, x, y, width: displayWidth };
+  }
+
+  redrawFocusedInput() {
+    if (!this.focusedElement.startsWith('input:')) return;
+
+    const backendNodeId = this.focusedElement.split(':')[1];
+    const inputState = this.inputFields.get(backendNodeId);
+    if (!inputState || !inputState.focused) return;
+
+    const { x, y, width, value, cursorPosition } = inputState;
+    const displayWidth = Math.min(width, this.term.width - x + 1);
+
+    this.term.moveTo(x, y);
+    const beforeCursor = value.slice(0, cursorPosition);
+    const cursorChar = value[cursorPosition] || ' '; // Space if at end
+    const afterCursor = value.slice(cursorPosition + 1);
+    this.term.bgBrightWhite().black(beforeCursor);
+    this.term.bgBlack().brightWhite().bold(cursorChar); // Cursor highlight
+    this.term.bgBrightWhite().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
+  }
+
+  focusInput(backendNodeId) {
+    const backendNodeIdStr = String(backendNodeId);
+    if (this.inputFields.has(backendNodeIdStr)) {
+      this.focusedElement = `input:${backendNodeIdStr}`;
+      const inputState = this.inputFields.get(backendNodeIdStr);
+      inputState.focused = true;
+      logClicks(`Focused input: ${backendNodeIdStr}, value: ${inputState.value}`);
+      this.render(); // Full render for initial focus
+    } else {
+      logClicks(`Cannot focus ${backendNodeIdStr}: no state found`);
+    }
   }
 
   render() {
@@ -189,24 +228,24 @@ export default class TerminalBrowser extends EventEmitter {
         switch (key) {
           case 'LEFT':
             if (inputState.cursorPosition > 0) inputState.cursorPosition--;
-            this.render();
+            this.redrawFocusedInput();
             break;
           case 'RIGHT':
             if (inputState.cursorPosition < inputState.value.length) inputState.cursorPosition++;
-            this.render();
+            this.redrawFocusedInput();
             break;
           case 'BACKSPACE':
             if (inputState.cursorPosition > 0) {
               inputState.value = inputState.value.slice(0, inputState.cursorPosition - 1) + inputState.value.slice(inputState.cursorPosition);
               inputState.cursorPosition--;
               if (inputState.onChange) inputState.onChange(inputState.value);
-              this.render();
+              this.redrawFocusedInput();
             }
             break;
           case 'ENTER':
             this.focusedElement = 'tabs';
             if (inputState.onChange) inputState.onChange(inputState.value);
-            this.render();
+            this.render(); // Full render to update focus
             break;
           case 'TAB':
             this.focusNextInput();
@@ -220,7 +259,7 @@ export default class TerminalBrowser extends EventEmitter {
               inputState.cursorPosition++;
               logClicks(`Updated value: ${inputState.value}`);
               if (inputState.onChange) inputState.onChange(inputState.value);
-              this.render();
+              this.redrawFocusedInput();
             }
             break;
         }
@@ -367,17 +406,21 @@ export default class TerminalBrowser extends EventEmitter {
     this.stopListening = () => { isListening = false; };
   }
 
-  focusNextElement() {
-    const elements = ['tabs', 'back', 'forward', 'address', 'go', ...Array.from(this.inputFields.keys()).map(id => `input:${id}`)];
-    const currentIdx = elements.indexOf(this.focusedElement);
-    this.focusedElement = elements[(currentIdx + 1) % elements.length];
-    if (this.focusedElement === 'tabs') this.focusedTabIndex = Math.min(this.focusedTabIndex, this.tabs.length - 1);
-    if (this.focusedElement === 'address') this.cursorPosition = this.addressContent.length;
+  focusNextInput() {
+    const inputKeys = Array.from(this.inputFields.keys()).map(id => `input:${id}`);
+    if (inputKeys.length === 0) {
+      this.focusedElement = 'tabs';
+      this.render();
+      return;
+    }
+    const currentIdx = inputKeys.indexOf(this.focusedElement);
+    this.focusedElement = inputKeys[(currentIdx + 1) % inputKeys.length] || 'tabs';
     if (this.focusedElement.startsWith('input:')) {
       const id = this.focusedElement.split(':')[1];
       const inputState = this.inputFields.get(id);
       if (inputState) inputState.focused = true;
     }
+    this.render(); // Full render to show new focus
   }
 
   focusPreviousElement() {
@@ -427,22 +470,14 @@ export default class TerminalBrowser extends EventEmitter {
 
   // Existing API methods (addTab, addTabToUI, closeTab, etc.) remain unchanged...
 
-  focusInput(backendNodeId) {
-    if (this.inputFields.has(backendNodeId)) {
-      this.focusedElement = `input:${backendNodeId}`;
-      const inputState = this.inputFields.get(backendNodeId);
-      inputState.focused = true;
-      this.render();
-    }
-  }
-
   getInputValue(backendNodeId) {
-    return this.inputFields.get(backendNodeId)?.value || '';
+    return this.inputFields.get(String(backendNodeId))?.value || '';
   }
 
   setInputValue(backendNodeId, value) {
-    if (this.inputFields.has(backendNodeId)) {
-      const inputState = this.inputFields.get(backendNodeId);
+    const backendNodeIdStr = String(backendNodeId);
+    if (this.inputFields.has(backendNodeIdStr)) {
+      const inputState = this.inputFields.get(backendNodeIdStr);
       inputState.value = value;
       inputState.cursorPosition = value.length;
       if (inputState.onChange) inputState.onChange(value);

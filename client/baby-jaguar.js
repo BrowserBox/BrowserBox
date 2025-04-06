@@ -442,15 +442,37 @@
           };
 
           if (type === 'input') {
+            logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);             
+            const currentBackendNodeId = box.backendNodeId; // Capture in closure
             const inputField = browser.drawInputField({
               x: renderX,
               y: renderY,
               width: availableWidth,
               key: backendNodeId,
-              initialValue: text.startsWith('[INPUT') ? '' : text, // Strip placeholder
-              onChange: (value) => {
-                // Emit event to update DOM value in the remote browser
-                send('DOM.setAttributeValue', { nodeId: nodeIndex, name: 'value', value }, sessionId);
+              initialValue: text.startsWith('[INPUT') ? '' : text,
+              onChange: async (value) => {
+                try {
+                  // Resolve backendNodeId to objectId
+                  const resolveResult = await send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId);
+                  const objectId = resolveResult.object.objectId;
+
+                  // Set the value using JavaScript
+                  const script = `function() {
+                    this.value = ${JSON.stringify(value)};
+                    this.dispatchEvent(new Event('input', { bubbles: true }));
+                    this.dispatchEvent(new Event('change', { bubbles: true }));
+                  }`;
+                  await send('Runtime.callFunctionOn', {
+                    objectId,
+                    functionDeclaration: script,
+                    arguments: [],
+                    returnByValue: true,
+                  }, sessionId);
+
+                  logClicks(`Successfully updated value for backendNodeId: ${currentBackendNodeId} to "${value}"`);
+                } catch (error) {
+                  console.error(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+                }
               },
             });
             renderedBox.termWidth = inputField.width;
@@ -649,7 +671,13 @@
         const refresh = () => refreshTerminal({ send, sessionId, state, addressBar: null });
         const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
 
-        // Add event listeners via TerminalBrowser
+        browser.on('renderContent', () => {
+          if (state.layoutState) {
+            console.log('Rendering content');
+            renderLayout({ layoutState: state.layoutState, renderedBoxes: state.renderedBoxes });
+          }
+        });
+
         browser.on('click', async ({ x, y }) => {
           if (!state.isInitialized) return;
           await handleClick({
@@ -675,13 +703,12 @@
           debouncedRefresh();
         });
 
-        await refresh();
+        await refresh(); // This should trigger the initial render
         return () => {
           state.isListening = false;
           browser.stopListening();
         };
       }
-
     // helpers
       async function connectToBrowser() {
         let cookieHeader;
