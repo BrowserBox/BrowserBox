@@ -186,18 +186,17 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   focusInput(backendNodeId) {
-    const backendNodeIdStr = String(backendNodeId);
+    const backendNodeIdStr = String(backendNodeId); // Ensure string key
     if (this.inputFields.has(backendNodeIdStr)) {
       this.focusedElement = `input:${backendNodeIdStr}`;
       const inputState = this.inputFields.get(backendNodeIdStr);
       inputState.focused = true;
       logClicks(`Focused input: ${backendNodeIdStr}, value: ${inputState.value}`);
-      this.render(); // Full render for initial focus
+      this.render();
     } else {
       logClicks(`Cannot focus ${backendNodeIdStr}: no state found`);
     }
   }
-
   render() {
     this.term.moveTo(1, 6);
     this.term.eraseDisplayAbove();
@@ -406,21 +405,17 @@ export default class TerminalBrowser extends EventEmitter {
     this.stopListening = () => { isListening = false; };
   }
 
-  focusNextInput() {
-    const inputKeys = Array.from(this.inputFields.keys()).map(id => `input:${id}`);
-    if (inputKeys.length === 0) {
-      this.focusedElement = 'tabs';
-      this.render();
-      return;
-    }
-    const currentIdx = inputKeys.indexOf(this.focusedElement);
-    this.focusedElement = inputKeys[(currentIdx + 1) % inputKeys.length] || 'tabs';
+  focusNextElement() {
+    const elements = ['tabs', 'back', 'forward', 'address', 'go', ...Array.from(this.inputFields.keys()).map(id => `input:${id}`)];
+    const currentIdx = elements.indexOf(this.focusedElement);
+    this.focusedElement = elements[(currentIdx + 1) % elements.length];
+    if (this.focusedElement === 'tabs') this.focusedTabIndex = Math.min(this.focusedTabIndex, this.tabs.length - 1);
+    if (this.focusedElement === 'address') this.cursorPosition = this.addressContent.length;
     if (this.focusedElement.startsWith('input:')) {
       const id = this.focusedElement.split(':')[1];
       const inputState = this.inputFields.get(id);
       if (inputState) inputState.focused = true;
     }
-    this.render(); // Full render to show new focus
   }
 
   focusPreviousElement() {
