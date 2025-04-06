@@ -29,6 +29,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.focusedTabIndex = 0;
     this.selectedTabIndex = -1;
     this.focusedElement = 'tabs'; // 'tabs', 'back', 'forward', 'address', 'go', or 'input:<backendNodeId>'
+    this.previousFocusedElement = null; // Track previous focus
     this.addressContent = '';
     this.cursorPosition = 0;
 
@@ -184,37 +185,39 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
   }
 
-  redrawFocusedInput() {
-    if (!this.focusedElement.startsWith('input:')) return;
+  redrawUnfocusedInput(backendNodeId) {
+    const inputState = this.inputFields.get(String(backendNodeId));
+    if (!inputState) return;
 
-    const backendNodeId = this.focusedElement.split(':')[1];
-    const inputState = this.inputFields.get(backendNodeId);
-    if (!inputState || !inputState.focused) return;
-
-    const { x, y, width, value, cursorPosition } = inputState;
+    const { x, y, width, value } = inputState;
     const displayWidth = Math.min(width, this.term.width - x + 1);
 
     this.term.moveTo(x, y);
-    const beforeCursor = value.slice(0, cursorPosition);
-    const cursorChar = value[cursorPosition] || ' '; // Space if at end
-    const afterCursor = value.slice(cursorPosition + 1);
-    this.term.bgBrightWhite().black(beforeCursor);
-    this.term.bgBlack().brightWhite().bold(cursorChar); // Cursor highlight
-    this.term.bgBrightWhite().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
+    this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
   }
 
   focusInput(backendNodeId) {
-    const backendNodeIdStr = String(backendNodeId); // Ensure string key
+    const backendNodeIdStr = String(backendNodeId);
     if (this.inputFields.has(backendNodeIdStr)) {
+      // Redraw previous input as unfocused
+      if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
+        const prevBackendNodeId = this.previousFocusedElement.split(':')[1];
+        if (prevBackendNodeId !== backendNodeIdStr) { // Avoid redrawing if same input
+          this.redrawUnfocusedInput(prevBackendNodeId);
+        }
+      }
+
       this.focusedElement = `input:${backendNodeIdStr}`;
+      this.previousFocusedElement = this.focusedElement; // Update previous focus
       const inputState = this.inputFields.get(backendNodeIdStr);
       inputState.focused = true;
       logClicks(`Focused input: ${backendNodeIdStr}, value: ${inputState.value}`);
-      this.render();
+      this.render(); // Full render for initial focus
     } else {
       logClicks(`Cannot focus ${backendNodeIdStr}: no state found`);
     }
   }
+
   render() {
     this.term.moveTo(1, 6);
     this.term.eraseDisplayAbove();
@@ -260,9 +263,12 @@ export default class TerminalBrowser extends EventEmitter {
             }
             break;
           case 'ENTER':
+            // Redraw current input as unfocused before changing focus
+            this.redrawUnfocusedInput(backendNodeId);
             this.focusedElement = 'tabs';
+            this.previousFocusedElement = this.focusedElement;
             if (inputState.onChange) inputState.onChange(inputState.value);
-            this.render(); // Full render to update focus
+            this.render();
             break;
           case 'TAB':
             this.focusNextInput();
@@ -453,10 +459,27 @@ export default class TerminalBrowser extends EventEmitter {
     const inputKeys = Array.from(this.inputFields.keys()).map(id => `input:${id}`);
     if (inputKeys.length === 0) {
       this.focusedElement = 'tabs';
+      if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
+        const prevBackendNodeId = this.previousFocusedElement.split(':')[1];
+        this.redrawUnfocusedInput(prevBackendNodeId);
+      }
+      this.previousFocusedElement = this.focusedElement;
+      this.render();
       return;
     }
     const currentIdx = inputKeys.indexOf(this.focusedElement);
-    this.focusedElement = inputKeys[(currentIdx + 1) % inputKeys.length] || 'tabs';
+    const newFocusedElement = inputKeys[(currentIdx + 1) % inputKeys.length] || 'tabs';
+
+    // Redraw previous input as unfocused
+    if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
+      const prevBackendNodeId = this.previousFocusedElement.split(':')[1];
+      if (this.previousFocusedElement !== newFocusedElement) {
+        this.redrawUnfocusedInput(prevBackendNodeId);
+      }
+    }
+
+    this.focusedElement = newFocusedElement;
+    this.previousFocusedElement = this.focusedElement;
     if (this.focusedElement.startsWith('input:')) {
       const id = this.focusedElement.split(':')[1];
       const inputState = this.inputFields.get(id);
@@ -469,10 +492,27 @@ export default class TerminalBrowser extends EventEmitter {
     const inputKeys = Array.from(this.inputFields.keys()).map(id => `input:${id}`);
     if (inputKeys.length === 0) {
       this.focusedElement = 'tabs';
+      if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
+        const prevBackendNodeId = this.previousFocusedElement.split(':')[1];
+        this.redrawUnfocusedInput(prevBackendNodeId);
+      }
+      this.previousFocusedElement = this.focusedElement;
+      this.render();
       return;
     }
     const currentIdx = inputKeys.indexOf(this.focusedElement);
-    this.focusedElement = inputKeys[(currentIdx - 1 + inputKeys.length) % inputKeys.length] || 'tabs';
+    const newFocusedElement = inputKeys[(currentIdx - 1 + inputKeys.length) % inputKeys.length] || 'tabs';
+
+    // Redraw previous input as unfocused
+    if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
+      const prevBackendNodeId = this.previousFocusedElement.split(':')[1];
+      if (this.previousFocusedElement !== newFocusedElement) {
+        this.redrawUnfocusedInput(prevBackendNodeId);
+      }
+    }
+
+    this.focusedElement = newFocusedElement;
+    this.previousFocusedElement = this.focusedElement;
     if (this.focusedElement.startsWith('input:')) {
       const id = this.focusedElement.split(':')[1];
       const inputState = this.inputFields.get(id);
@@ -480,8 +520,6 @@ export default class TerminalBrowser extends EventEmitter {
     }
     this.render();
   }
-
-  // Existing API methods (addTab, addTabToUI, closeTab, etc.) remain unchanged...
 
   getInputValue(backendNodeId) {
     return this.inputFields.get(String(backendNodeId))?.value || '';
