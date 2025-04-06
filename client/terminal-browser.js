@@ -1,5 +1,6 @@
 ﻿import termkit from 'terminal-kit';
 import { EventEmitter } from 'events';
+import {logClicks,DEBUG} from './log.js';
 
 const term = termkit.terminal;
 
@@ -173,19 +174,17 @@ export default class TerminalBrowser extends EventEmitter {
     let isListening = true;
 
     this.term.on('key', async (key) => {
+      logClicks(`Key pressed: ${key}, focusedElement: ${this.focusedElement}`);
       if (!isListening) return;
-
-      if (key === 'CTRL_C') {
-        isListening = false;
-        this.term.clear();
-        this.term.processExit(0);
-        return;
-      }
 
       if (this.focusedElement.startsWith('input:')) {
         const backendNodeId = this.focusedElement.split(':')[1];
         const inputState = this.inputFields.get(backendNodeId);
-        if (!inputState) return;
+        if (!inputState) {
+          logClicks(`No input state for ${backendNodeId}`);
+          return;
+        }
+        logClicks(`Input focused, backendNodeId: ${backendNodeId}, current value: ${inputState.value}`);
 
         switch (key) {
           case 'LEFT':
@@ -219,6 +218,7 @@ export default class TerminalBrowser extends EventEmitter {
             if (key.length === 1) {
               inputState.value = inputState.value.slice(0, inputState.cursorPosition) + key + inputState.value.slice(inputState.cursorPosition);
               inputState.cursorPosition++;
+              logClicks(`Updated value: ${inputState.value}`);
               if (inputState.onChange) inputState.onChange(inputState.value);
               this.render();
             }
@@ -226,6 +226,11 @@ export default class TerminalBrowser extends EventEmitter {
         }
       } else {
         switch (key) {
+          case 'CTRL_C':
+            isListening = false;
+            this.term.clear();
+            this.term.processExit(0);
+            break;
           case 'ENTER':
             if (this.focusedElement === 'tabs') {
               this.selectedTabIndex = this.focusedTabIndex;
