@@ -664,8 +664,28 @@
         logClicks(`Clicked box type: ${clickedBox.type}, backendNodeId: ${clickedBox.backendNodeId}`);
         if (clickedBox.type === 'input') {
           logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
+
+          // Focus the remote input element
+          try {
+            const resolveResult = await send('DOM.resolveNode', { backendNodeId: clickedBox.backendNodeId }, sessionId);
+            if (!resolveResult?.object?.objectId) {
+              throw new Error('Node no longer exists');
+            }
+            const objectId = resolveResult.object.objectId;
+            await send('Runtime.callFunctionOn', {
+              objectId,
+              functionDeclaration: 'function() { this.focus(); }',
+              arguments: [],
+              returnByValue: true,
+            }, sessionId);
+            logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId}`);
+          } catch (error) {
+            logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
+          }
+
+          // Focus locally in the TUI
           browser.focusInput(clickedBox.backendNodeId);
-          
+
           // Calculate cursor position based on click
           const inputState = browser.inputFields.get(String(clickedBox.backendNodeId));
           if (inputState) {
@@ -734,7 +754,7 @@
           DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
         }
 
-        if ( DEBUG && markClicks ) {
+        if (DEBUG && markClicks) {
           const script = `
             (function() {
               const rect = this.getBoundingClientRect();
