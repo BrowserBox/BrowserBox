@@ -575,27 +575,34 @@ const LayoutAlgorithm = (() => {
         const inputType = typeIdx !== -1 ? strings[attributes[typeIdx + 1]] : 'text';
         if (inputType !== 'hidden') {
           if (inputType === 'button' || inputType === 'submit') {
-            // Handle <input type="button"> like <button>
             const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
             const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
-            placeholder = valueText || '[BUTTON]'; // Use value attribute or fallback
-            mediaType = 'button'; // Align with <button> processing
+            placeholder = valueText || '[BUTTON]';
+            mediaType = 'button';
           } else {
-            // Other input types (e.g., text, checkbox)
+            const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
+            const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
             mediaType = 'input';
-            placeholder = `[INPUT${'_'.repeat(Math.max(3, Math.ceil(bounds[2] / 20)))}]`;
+            placeholder = valueText; // Use actual value
           }
         }
-        console.log({nodeNameUpper, placeholder, mediaType, inputType, bounds, layoutIdx, nodeIdx});
-      } else if (nodeNameUpper === 'TEXTAREA' ) {
+      } else if (nodeNameUpper === 'TEXTAREA') {
+        // Fetch content from text nodes if available
+        let textContent = '';
+        iterateTextBoxesForNode(nodeIdx, snapshot, (i, layoutIdx, textIndex) => {
+          if (textIndex !== -1) textContent += strings[textIndex];
+        });
         mediaType = 'input';
-        placeholder = `[TEXT${'_'.repeat(Math.max(3, Math.ceil(bounds[2] / 20)))}]`;
-      } else if ( ceIndex !== -1 ) {
+        placeholder = textContent;
+      } else if (ceIndex !== -1) {
         const contentEditable = strings[attributes[ceIndex + 1]];
-        const isContentEditable = contentEditable === 'true' || contentEditable === '';
-        if ( isContentEditable ) {
+        if (contentEditable === 'true' || contentEditable === '') {
+          let textContent = '';
+          iterateTextBoxesForNode(nodeIdx, snapshot, (i, layoutIdx, textIndex) => {
+            if (textIndex !== -1) textContent += strings[textIndex];
+          });
           mediaType = 'input';
-          placeholder = `[EDIT${'_'.repeat(Math.max(3, Math.ceil(bounds[2] / 20)))}]`;
+          placeholder = textContent;
         }
       } else {
         continue; // Skip non-media elements
