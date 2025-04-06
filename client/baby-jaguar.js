@@ -12,6 +12,7 @@
       const { terminal } = TK;
 
     // Constants and state
+      const USE_SYNTHETIC_FOCUS = true;
       const markClicks = false;
       const BrowserState = {
         targets: [],
@@ -663,37 +664,84 @@
 
         logClicks(`Clicked box type: ${clickedBox.type}, backendNodeId: ${clickedBox.backendNodeId}`);
         if (clickedBox.type === 'input') {
-          logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
+          if (USE_SYNTHETIC_FOCUS) {
+            logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
 
-          // Focus the remote input element
-          try {
-            const resolveResult = await send('DOM.resolveNode', { backendNodeId: clickedBox.backendNodeId }, sessionId);
-            if (!resolveResult?.object?.objectId) {
-              throw new Error('Node no longer exists');
+            // Focus the remote input element
+            try {
+              const resolveResult = await send('DOM.resolveNode', { backendNodeId: clickedBox.backendNodeId }, sessionId);
+              if (!resolveResult?.object?.objectId) {
+                throw new Error('Node no longer exists');
+              }
+              const objectId = resolveResult.object.objectId;
+              await send('Runtime.callFunctionOn', {
+                objectId,
+                functionDeclaration: 'function() { this.focus(); }',
+                arguments: [],
+                returnByValue: true,
+              }, sessionId);
+              logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId}`);
+            } catch (error) {
+              logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
             }
-            const objectId = resolveResult.object.objectId;
-            await send('Runtime.callFunctionOn', {
-              objectId,
-              functionDeclaration: 'function() { this.focus(); }',
-              arguments: [],
-              returnByValue: true,
-            }, sessionId);
-            logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId}`);
-          } catch (error) {
-            logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
-          }
 
-          // Focus locally in the TUI
-          browser.focusInput(clickedBox.backendNodeId);
+            // Focus locally in the TUI
+            browser.focusInput(clickedBox.backendNodeId);
 
-          // Calculate cursor position based on click
-          const inputState = browser.inputFields.get(String(clickedBox.backendNodeId));
-          if (inputState) {
-            const relativeX = termX - clickedBox.termX; // Position within the input
-            inputState.cursorPosition = Math.min(relativeX, inputState.value.length); // Clamp to value length
-            browser.redrawFocusedInput(); // Redraw to show cursor
+            // Calculate cursor position based on click
+            const inputState = browser.inputFields.get(String(clickedBox.backendNodeId));
+            if (inputState) {
+              const relativeX = termX - clickedBox.termX; // Position within the input
+              inputState.cursorPosition = Math.min(relativeX, inputState.value.length); // Clamp to value length
+              browser.redrawFocusedInput(); // Redraw to show cursor
+            }
+            return;
+          } else {
+            logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
+
+            // Focus the remote input element with a mouse click
+            try {
+              // Calculate the center of the input element in GUI coordinates
+              const guiX = clickedBox.boundingBox.x + clickedBox.boundingBox.width / 2;
+              const guiY = clickedBox.boundingBox.y + clickedBox.boundingBox.height / 2;
+              const clickX = guiX + clickedBox.viewportX;
+              const clickY = guiY + clickedBox.viewportY;
+
+              // Send mouse down event
+              await send('Input.dispatchMouseEvent', {
+                type: 'mousePressed',
+                x: clickX,
+                y: clickY,
+                button: 'left',
+                clickCount: 1,
+              }, sessionId);
+
+              // Send mouse up event
+              await send('Input.dispatchMouseEvent', {
+                type: 'mouseReleased',
+                x: clickX,
+                y: clickY,
+                button: 'left',
+                clickCount: 1,
+              }, sessionId);
+
+              logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId} at GUI coordinates (${clickX}, ${clickY})`);
+            } catch (error) {
+              logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
+            }
+
+            // Focus locally in the TUI
+            browser.focusInput(clickedBox.backendNodeId);
+
+            // Calculate cursor position based on click
+            const inputState = browser.inputFields.get(String(clickedBox.backendNodeId));
+            if (inputState) {
+              const relativeX = termX - clickedBox.termX;
+              inputState.cursorPosition = Math.min(relativeX, inputState.value.length);
+              browser.redrawFocusedInput();
+            }
+            return;
           }
-          return;
         }
 
         // Click simulation for other elements

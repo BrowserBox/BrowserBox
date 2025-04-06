@@ -123,6 +123,8 @@ export default class TerminalBrowser extends EventEmitter {
     } else {
       this.term.bgGreen().white(' Go ');
     }
+    this.term.bgDefaultColor();
+    this.term.defaultColor();
   }
 
   drawInputField(options) {
@@ -165,6 +167,9 @@ export default class TerminalBrowser extends EventEmitter {
       this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
     }
 
+    this.term.bgDefaultColor();
+    this.term.defaultColor();
+
     return { backendNodeId: backendNodeIdStr, x, y, width: displayWidth };
   }
 
@@ -185,6 +190,8 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.bgCyan().black(beforeCursor); // Cyan background for focus
     this.term.bgBlack().brightWhite().bold(cursorChar); // Cursor highlight
     this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
+    this.term.bgDefaultColor();
+    this.term.defaultColor();
   }
 
   redrawUnfocusedInput(backendNodeId) {
@@ -196,6 +203,8 @@ export default class TerminalBrowser extends EventEmitter {
 
     this.term.moveTo(x, y);
     this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
+    this.term.bgDefaultColor();
+    this.term.defaultColor();
   }
 
   focusInput(backendNodeId) {
