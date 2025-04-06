@@ -1,11 +1,15 @@
 import { appendFileSync } from 'fs';
 // DEBUG 
-export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
+export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
 const LOG_FILE = 'cdp.log';
 
       // logging 
         export function rowsLog(rows) {
           appendFileSync('rows.txt', JSON.stringify([...rows.entries()], null, 2));
+        }
+
+        export function logClicks(...stuff) {
+          appendFileSync('clicks.log', stuff.join(' ') + '\n');
         }
 
         export function logMessage(direction, message, terminal) {

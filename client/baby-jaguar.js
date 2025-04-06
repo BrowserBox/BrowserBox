@@ -7,7 +7,7 @@
       import { Agent } from 'https';
       import Layout from './layout.js';
       import TerminalBrowser from './terminal-browser.js';
-      import {logMessage,debugLog,DEBUG} from './log.js';
+      import {logClicks, logMessage,debugLog,DEBUG} from './log.js';
       import TK from 'terminal-kit';
       const { terminal } = TK;
 
@@ -425,6 +425,7 @@
 
           const renderedBox = {
             text,
+            type, 
             boundingBox,
             isClickable,
             termX: renderX,
@@ -543,10 +544,19 @@
           }
         }
         if (!clickedBox || !clickedBox.isClickable) {
-          DEBUG && terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
+          logClicks(`No clickable element at (${termX}, ${termY})`);
           return;
         }
 
+        logClicks(`Clicked box type: ${clickedBox.type}, backendNodeId: ${clickedBox.backendNodeId}`);
+        if (clickedBox.type === 'input') {
+          logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
+          browser.focusInput(clickedBox.backendNodeId);
+          return;
+        }
+
+        // Click simulation for other elements
+        logClicks("Simulating click on non-input element");
         terminal.moveTo(clickedBox.termX, clickedBox.termY);
         terminal.yellow(clickedBox.text);
         await sleep(300);
@@ -564,7 +574,7 @@
         const nodeText = clickedBox.text;
         const clickEvent = { type: 'click' };
         try {
-          DEBUG && appendFileSync('clicks.log', `${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
+          DEBUG && logClicks(`${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
         } catch (error) {
           console.error(`Failed to write to clicks log: ${error.message}`);
         }
