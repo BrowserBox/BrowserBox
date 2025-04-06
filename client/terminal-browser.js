@@ -11,8 +11,6 @@ export default class TerminalBrowser extends EventEmitter {
       tabWidth: options.tabWidth || 25,
       initialTabs: options.initialTabs || [
         { title: 'Home', url: 'https://home.com' },
-        { title: 'News', url: 'https://news.com' },
-        { title: 'Sports', url: 'https://sports.com' },
       ],
       colors: options.colors || ['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'brightRed', 'brightGreen', 'brightYellow', 'brightBlue', 'brightMagenta', 'brightCyan', 'white', 'brightWhite', 'gray'],
     };
@@ -29,19 +27,22 @@ export default class TerminalBrowser extends EventEmitter {
     this.tabOffset = 0;
     this.focusedTabIndex = 0;
     this.selectedTabIndex = -1;
-    this.focusedElement = 'tabs';
+    this.focusedElement = 'tabs'; // 'tabs', 'back', 'forward', 'address', 'go', or 'input:<backendNodeId>'
     this.addressContent = '';
     this.cursorPosition = 0;
+
+    // Input field management
+    this.inputFields = new Map(); // Key: backendNodeId, Value: { value, cursorPosition, focused }
 
     // Constants
     this.TAB_HEIGHT = 1;
     this.OMNIBOX_HEIGHT = 3;
-    this.MAX_VISIBLE_TABS = Math.floor((this.term.width - 5) / this.options.tabWidth); // Reserve space for [+]
+    this.MAX_VISIBLE_TABS = Math.floor((this.term.width - 5) / this.options.tabWidth);
     this.BACK_WIDTH = 6;
     this.FORWARD_WIDTH = 8;
     this.GO_WIDTH = 6;
     this.ADDRESS_WIDTH = this.term.width - this.BACK_WIDTH - this.FORWARD_WIDTH - this.GO_WIDTH - 4;
-    this.NEW_TAB_WIDTH = 5; // "[+] "
+    this.NEW_TAB_WIDTH = 5;
 
     // Initialize terminal
     this.term.fullscreen(true);
@@ -52,20 +53,17 @@ export default class TerminalBrowser extends EventEmitter {
     this.setupInput();
   }
 
-  // Draw tabs with [x] and [+] button
   drawTabs() {
     this.term.moveTo(1, 1);
     this.term.bgBlue().white(' '.repeat(this.term.width));
     let x = 1;
     for (let i = this.tabOffset; i < this.tabs.length && x <= this.term.width - this.NEW_TAB_WIDTH; i++) {
-      // Truncate title to fit within the tab width, accounting for leading space and [x]
-      const maxTitleLength = this.options.tabWidth - 5; // 1 for leading space, 3 for [x], 1 for space before [x]
+      const maxTitleLength = this.options.tabWidth - 5;
       const truncatedTitle = this.tabs[i].title.slice(0, maxTitleLength);
-      // Construct the tab text: " title" + padding + "[x]"
       const titlePart = ` ${truncatedTitle}`;
-      const paddingLength = this.options.tabWidth - titlePart.length - 3; // Space needed before [x]
+      const paddingLength = this.options.tabWidth - titlePart.length - 3;
       const tabText = `${titlePart}${' '.repeat(paddingLength)}[x]`;
-      
+
       this.term.moveTo(x, 1);
       if (i === this.focusedTabIndex) {
         this.term.bgWhite()[this.tabs[i].color]().bold().underline(tabText);
@@ -77,12 +75,10 @@ export default class TerminalBrowser extends EventEmitter {
       x += tabText.length;
     }
 
-    // Draw [+] button at top right
     this.term.moveTo(this.term.width - this.NEW_TAB_WIDTH + 1, 1);
     this.term.bgBlue().white(' [+] ');
   }
 
-  // Draw omnibox
   drawOmnibox() {
     this.term.moveTo(1, this.TAB_HEIGHT + 1);
     this.term.bgBlack().cyan('─'.repeat(this.term.width));
@@ -125,7 +121,43 @@ export default class TerminalBrowser extends EventEmitter {
     }
   }
 
-  // Render the UI
+  drawInputField(options) {
+    const { x, y, width, key, initialValue = '', onChange } = options;
+    const backendNodeId = key; // Use backendNodeId as the unique key
+
+    // Initialize or retrieve input field state
+    if (!this.inputFields.has(backendNodeId)) {
+      this.inputFields.set(backendNodeId, {
+        value: initialValue,
+        cursorPosition: initialValue.length,
+        focused: false,
+        onChange,
+      });
+    }
+    const inputState = this.inputFields.get(backendNodeId);
+
+    // Calculate display properties
+    const displayWidth = Math.min(width, this.term.width - x + 1);
+    const isFocused = this.focusedElement === `input:${backendNodeId}`;
+    const value = inputState.value;
+    const cursorPos = inputState.cursorPosition;
+
+    // Draw the input field
+    this.term.moveTo(x, y);
+    if (isFocused) {
+      const beforeCursor = value.slice(0, cursorPos);
+      const cursorChar = value[cursorPos] || ' ';
+      const afterCursor = value.slice(cursorPos + 1);
+      this.term.bgBrightWhite().black(beforeCursor);
+      this.term.bgBlack().brightWhite().bold(cursorChar);
+      this.term.bgBrightWhite().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
+    } else {
+      this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
+    }
+
+    return { backendNodeId, x, y, width: displayWidth };
+  }
+
   render() {
     this.term.moveTo(1, 6);
     this.term.eraseDisplayAbove();
@@ -136,75 +168,122 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.moveTo(1, this.term.height);
   }
 
-  // Setup input handling with mouse support
   setupInput() {
     this.term.grabInput({ mouse: 'button' });
+    let isListening = true;
+
     this.term.on('key', async (key) => {
-      if (this.focusedElement === 'address') {
+      if (!isListening) return;
+
+      if (key === 'CTRL_C') {
+        isListening = false;
+        this.term.clear();
+        this.term.processExit(0);
+        return;
+      }
+
+      if (this.focusedElement.startsWith('input:')) {
+        const backendNodeId = this.focusedElement.split(':')[1];
+        const inputState = this.inputFields.get(backendNodeId);
+        if (!inputState) return;
+
         switch (key) {
-          case 'TAB':
-            this.focusedElement = 'go';
-            this.render();
-            break;
-          case 'SHIFT_TAB':
-            this.focusedElement = 'forward';
-            this.render();
-            break;
-          case 'ENTER':
-            this.emit('navigate', this.addressContent);
-            if (this.selectedTabIndex !== -1) {
-              this.tabs[this.selectedTabIndex].url = this.addressContent;
-              this.tabs[this.selectedTabIndex].title = '...';
-            }
-            this.render();
-            break;
           case 'LEFT':
-            if (this.cursorPosition > 0) this.cursorPosition--;
+            if (inputState.cursorPosition > 0) inputState.cursorPosition--;
             this.render();
             break;
           case 'RIGHT':
-            if (this.cursorPosition < this.addressContent.length) this.cursorPosition++;
+            if (inputState.cursorPosition < inputState.value.length) inputState.cursorPosition++;
             this.render();
             break;
           case 'BACKSPACE':
-            if (this.cursorPosition > 0) {
-              this.addressContent = this.addressContent.slice(0, this.cursorPosition - 1) + this.addressContent.slice(this.cursorPosition);
-              this.cursorPosition--;
+            if (inputState.cursorPosition > 0) {
+              inputState.value = inputState.value.slice(0, inputState.cursorPosition - 1) + inputState.value.slice(inputState.cursorPosition);
+              inputState.cursorPosition--;
+              if (inputState.onChange) inputState.onChange(inputState.value);
               this.render();
             }
             break;
+          case 'ENTER':
+            this.focusedElement = 'tabs';
+            if (inputState.onChange) inputState.onChange(inputState.value);
+            this.render();
+            break;
+          case 'TAB':
+            this.focusNextInput();
+            break;
+          case 'SHIFT_TAB':
+            this.focusPreviousInput();
+            break;
           default:
             if (key.length === 1) {
-              this.addressContent = this.addressContent.slice(0, this.cursorPosition) + key + this.addressContent.slice(this.cursorPosition);
-              this.cursorPosition++;
+              inputState.value = inputState.value.slice(0, inputState.cursorPosition) + key + inputState.value.slice(inputState.cursorPosition);
+              inputState.cursorPosition++;
+              if (inputState.onChange) inputState.onChange(inputState.value);
               this.render();
             }
             break;
         }
       } else {
         switch (key) {
-          case 'CTRL_C':
-            this.term.clear();
-            this.term.processExit(0);
-            break;
-          // Other key cases remain unchanged...
           case 'ENTER':
             if (this.focusedElement === 'tabs') {
               this.selectedTabIndex = this.focusedTabIndex;
               this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
-              this.render();
             } else if (this.focusedElement === 'back') {
               this.emit('back');
-              this.render();
             } else if (this.focusedElement === 'forward') {
               this.emit('forward');
-              this.render();
             } else if (this.focusedElement === 'go') {
               this.emit('navigate', this.addressContent);
               if (this.selectedTabIndex !== -1) {
                 this.tabs[this.selectedTabIndex].url = this.addressContent;
                 this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
               }
+            }
+            this.render();
+            break;
+          case 'TAB':
+            this.focusNextElement();
+            this.render();
+            break;
+          case 'SHIFT_TAB':
+            this.focusPreviousElement();
+            this.render();
+            break;
+          case 'LEFT':
+            if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
+              this.focusedTabIndex--;
+              this.render();
+            } else if (this.focusedElement === 'address') {
+              if (this.cursorPosition > 0) this.cursorPosition--;
+              this.render();
+            }
+            break;
+          case 'RIGHT':
+            if (this.focusedElement === 'tabs' && this.focusedTabIndex < this.tabs.length - 1) {
+              this.focusedTabIndex++;
+              this.render();
+            } else if (this.focusedElement === 'address') {
+              if (this.cursorPosition < this.addressContent.length) this.cursorPosition++;
+              this.render();
+            }
+            break;
+          case 'BACKSPACE':
+            if (this.focusedElement === 'address' && this.cursorPosition > 0) {
+              this.addressContent = this.addressContent.slice(0, this.cursorPosition - 1) + this.addressContent.slice(this.cursorPosition);
+              this.cursorPosition--;
+              this.render();
+            }
+            break;
+          case 'UP':
+          case 'DOWN':
+            this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+            break;
+          default:
+            if (key.length === 1 && this.focusedElement === 'address') {
+              this.addressContent = this.addressContent.slice(0, this.cursorPosition) + key + this.addressContent.slice(this.cursorPosition);
+              this.cursorPosition++;
               this.render();
             }
             break;
@@ -212,31 +291,25 @@ export default class TerminalBrowser extends EventEmitter {
       }
     });
 
-    // Mouse handling
     this.term.on('mouse', (name, data) => {
-      if (name === 'MOUSE_LEFT_BUTTON_PRESSED') {
-        const { x, y } = data;
+      if (!isListening) return;
 
+      const { x, y } = data;
+      if (name === 'MOUSE_LEFT_BUTTON_PRESSED') {
         // Tab row (y = 1)
         if (y === 1) {
-          // Check for [+] button
           if (x >= this.term.width - this.NEW_TAB_WIDTH + 1 && x <= this.term.width) {
             this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
-            // Don’t call addTab here; wait for main logic to confirm
             return;
           }
-
-          // Check tabs and [x]
           let tabX = 1;
           for (let i = this.tabOffset; i < this.tabs.length && tabX <= this.term.width - this.NEW_TAB_WIDTH; i++) {
             const tabEnd = tabX + this.options.tabWidth - 1;
             if (x >= tabX && x <= tabEnd) {
-              const closeXStart = tabX + this.options.tabWidth - 5; // "[x]" position
+              const closeXStart = tabX + this.options.tabWidth - 5;
               if (x >= closeXStart && x <= closeXStart + 3) {
-                // Close tab
                 this.closeTab(i);
               } else {
-                // Focus/select tab
                 this.focusedTabIndex = i;
                 this.focusedElement = 'tabs';
                 this.selectedTabIndex = i;
@@ -254,18 +327,15 @@ export default class TerminalBrowser extends EventEmitter {
           if (x >= 2 && x <= this.BACK_WIDTH + 1) {
             this.focusedElement = 'back';
             this.emit('back');
-            this.render();
           } else if (x >= this.BACK_WIDTH + 2 && x <= this.BACK_WIDTH + this.FORWARD_WIDTH + 1) {
             this.focusedElement = 'forward';
             this.emit('forward');
-            this.render();
           } else if (x >= this.BACK_WIDTH + this.FORWARD_WIDTH + 2 && x <= this.BACK_WIDTH + this.FORWARD_WIDTH + this.ADDRESS_WIDTH + 1) {
             this.focusedElement = 'address';
             this.cursorPosition = Math.min(
               Math.max(0, x - (this.BACK_WIDTH + this.FORWARD_WIDTH + 2)),
               this.addressContent.length
             );
-            this.render();
           } else if (x >= this.term.width - this.GO_WIDTH + 1 && x <= this.term.width) {
             this.focusedElement = 'go';
             this.emit('navigate', this.addressContent);
@@ -273,11 +343,106 @@ export default class TerminalBrowser extends EventEmitter {
               this.tabs[this.selectedTabIndex].url = this.addressContent;
               this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
             }
-            this.render();
           }
+          this.render();
+          return;
+        }
+
+        // Content area (y > 4)
+        if (y > 4) {
+          this.emit('click', { x, y });
+        }
+      } else if (name === 'MOUSE_WHEEL_UP' || name === 'MOUSE_WHEEL_DOWN') {
+        if (y > 4) {
+          this.emit('scroll', { direction: name === 'MOUSE_WHEEL_UP' ? -1 : 1 });
         }
       }
     });
+
+    this.stopListening = () => { isListening = false; };
+  }
+
+  focusNextElement() {
+    const elements = ['tabs', 'back', 'forward', 'address', 'go', ...Array.from(this.inputFields.keys()).map(id => `input:${id}`)];
+    const currentIdx = elements.indexOf(this.focusedElement);
+    this.focusedElement = elements[(currentIdx + 1) % elements.length];
+    if (this.focusedElement === 'tabs') this.focusedTabIndex = Math.min(this.focusedTabIndex, this.tabs.length - 1);
+    if (this.focusedElement === 'address') this.cursorPosition = this.addressContent.length;
+    if (this.focusedElement.startsWith('input:')) {
+      const id = this.focusedElement.split(':')[1];
+      const inputState = this.inputFields.get(id);
+      if (inputState) inputState.focused = true;
+    }
+  }
+
+  focusPreviousElement() {
+    const elements = ['tabs', 'back', 'forward', 'address', 'go', ...Array.from(this.inputFields.keys()).map(id => `input:${id}`)];
+    const currentIdx = elements.indexOf(this.focusedElement);
+    this.focusedElement = elements[(currentIdx - 1 + elements.length) % elements.length];
+    if (this.focusedElement === 'tabs') this.focusedTabIndex = Math.min(this.focusedTabIndex, this.tabs.length - 1);
+    if (this.focusedElement === 'address') this.cursorPosition = this.addressContent.length;
+    if (this.focusedElement.startsWith('input:')) {
+      const id = this.focusedElement.split(':')[1];
+      const inputState = this.inputFields.get(id);
+      if (inputState) inputState.focused = true;
+    }
+  }
+
+  focusNextInput() {
+    const inputKeys = Array.from(this.inputFields.keys()).map(id => `input:${id}`);
+    if (inputKeys.length === 0) {
+      this.focusedElement = 'tabs';
+      return;
+    }
+    const currentIdx = inputKeys.indexOf(this.focusedElement);
+    this.focusedElement = inputKeys[(currentIdx + 1) % inputKeys.length] || 'tabs';
+    if (this.focusedElement.startsWith('input:')) {
+      const id = this.focusedElement.split(':')[1];
+      const inputState = this.inputFields.get(id);
+      if (inputState) inputState.focused = true;
+    }
+    this.render();
+  }
+
+  focusPreviousInput() {
+    const inputKeys = Array.from(this.inputFields.keys()).map(id => `input:${id}`);
+    if (inputKeys.length === 0) {
+      this.focusedElement = 'tabs';
+      return;
+    }
+    const currentIdx = inputKeys.indexOf(this.focusedElement);
+    this.focusedElement = inputKeys[(currentIdx - 1 + inputKeys.length) % inputKeys.length] || 'tabs';
+    if (this.focusedElement.startsWith('input:')) {
+      const id = this.focusedElement.split(':')[1];
+      const inputState = this.inputFields.get(id);
+      if (inputState) inputState.focused = true;
+    }
+    this.render();
+  }
+
+  // Existing API methods (addTab, addTabToUI, closeTab, etc.) remain unchanged...
+
+  focusInput(backendNodeId) {
+    if (this.inputFields.has(backendNodeId)) {
+      this.focusedElement = `input:${backendNodeId}`;
+      const inputState = this.inputFields.get(backendNodeId);
+      inputState.focused = true;
+      this.render();
+    }
+  }
+
+  getInputValue(backendNodeId) {
+    return this.inputFields.get(backendNodeId)?.value || '';
+  }
+
+  setInputValue(backendNodeId, value) {
+    if (this.inputFields.has(backendNodeId)) {
+      const inputState = this.inputFields.get(backendNodeId);
+      inputState.value = value;
+      inputState.cursorPosition = value.length;
+      if (inputState.onChange) inputState.onChange(value);
+      this.render();
+    }
   }
 
   // API Methods
@@ -347,11 +512,6 @@ export default class TerminalBrowser extends EventEmitter {
     }
   }
 
-  destroy() {
-    this.term.clear();
-    this.term.processExit(0);
-  }
-
   async showModal(type, message) {
     const modalWidth = Math.min(50, this.term.width - 10);
     const modalHeight = 5;
@@ -380,5 +540,9 @@ export default class TerminalBrowser extends EventEmitter {
         resolve();
       });
     });
+  }
+  destroy() {
+    this.term.clear();
+    this.term.processExit(0);
   }
 }

@@ -400,6 +400,8 @@
             DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
           } else {
             DEBUG && terminal.yellow('No text boxes found after polling.\n');
+            renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
+            state.isInitialized = true;
           }
         } catch (error) {
           if (DEBUG) console.warn(error);
@@ -419,7 +421,7 @@
           if (renderX > termWidth || renderY > termHeight + 4) continue;
 
           const availableWidth = Math.max(0, termWidth - renderX + 1);
-          const displayText = text.substring(0, availableWidth);
+          let displayText = text.substring(0, availableWidth);
 
           const renderedBox = {
             text,
@@ -437,41 +439,65 @@
             layoutIndex,
             nodeIndex,
           };
-          renderedBoxes.push(renderedBox);
 
-          if (isClickable) {
-            const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
-            if (clickable) {
-              clickable.termX = renderX;
-              clickable.termY = renderY;
-              clickable.termWidth = displayText.length;
-              clickable.termHeight = 1;
-            }
-          }
-
-          terminal.moveTo(renderX, renderY);
-          terminal.defaultColor().bgDefaultColor();
-          if (type === 'button') {
-            terminal.bgGreen.black(displayText);
-          } else if (type === 'media') {
+          if (type === 'input') {
+            const inputField = browser.drawInputField({
+              x: renderX,
+              y: renderY,
+              width: availableWidth,
+              key: backendNodeId,
+              initialValue: text.startsWith('[INPUT') ? '' : text, // Strip placeholder
+              onChange: (value) => {
+                // Emit event to update DOM value in the remote browser
+                send('DOM.setAttributeValue', { nodeId: nodeIndex, name: 'value', value }, sessionId);
+              },
+            });
+            renderedBox.termWidth = inputField.width;
+            renderedBoxes.push(renderedBox);
             if (isClickable) {
-              terminal.gray.underline(displayText); // Clickable media
-            } else {
-              terminal.brightBlack(displayText); // Non-clickable media
+              const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
+              if (clickable) {
+                clickable.termX = renderX;
+                clickable.termY = renderY;
+                clickable.termWidth = inputField.width;
+                clickable.termHeight = 1;
+              }
             }
           } else {
-            switch (ancestorType) {
-              case 'hyperlink':
-                terminal.cyan.underline(displayText);
-                break;
-              case 'button':
-                terminal.bgGreen.black(displayText);
-                break;
-              case 'other_clickable':
-                terminal.bold(displayText);
-                break;
-              default:
-                terminal(displayText);
+            terminal.moveTo(renderX, renderY);
+            terminal.defaultColor().bgDefaultColor();
+            if (type === 'button') {
+              terminal.bgGreen.black(displayText);
+            } else if (type === 'media') {
+              if (isClickable) {
+                terminal.gray.underline(displayText);
+              } else {
+                terminal.brightBlack(displayText);
+              }
+            } else {
+              switch (ancestorType) {
+                case 'hyperlink':
+                  terminal.cyan.underline(displayText);
+                  break;
+                case 'button':
+                  terminal.bgGreen.black(displayText);
+                  break;
+                case 'other_clickable':
+                  terminal.bold(displayText);
+                  break;
+                default:
+                  terminal(displayText);
+              }
+            }
+            renderedBoxes.push(renderedBox);
+            if (isClickable) {
+              const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
+              if (clickable) {
+                clickable.termX = renderX;
+                clickable.termY = renderY;
+                clickable.termWidth = displayText.length;
+                clickable.termHeight = 1;
+              }
             }
           }
         }
@@ -612,75 +638,38 @@
         state = initializeState();
         const refresh = () => refreshTerminal({ send, sessionId, state, addressBar: null });
         const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
-        // Calculate line height in pixels
-          const calculateLineHeight = () => {
-            return Math.round(state.viewportHeight / terminal.height);
-          };
 
-        terminal.on('mouse', async (event, data) => {
-          if (!state.isListening) return;
-
-          if (event === 'MOUSE_LEFT_BUTTON_PRESSED' && data.y > 4) {
-            if (!state.isInitialized) {
-              DEBUG && debugLog(`Click ignored: Terminal not yet initialized`);
-              return;
-            }
-            await handleClick({
-              termX: data.x,
-              termY: data.y,
-              renderedBoxes: state.renderedBoxes,
-              clickableElements: state.clickableElements,
-              send,
-              sessionId,
-              clickCounter: state.clickCounter,
-              refresh,
-              layoutToNode: state.layoutToNode,
-              nodeToParent: state.nodeToParent,
-              nodes: state.nodes,
-            });
-          } else if ((event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') && data.y > 4) {
-            const deltaY = event === 'MOUSE_WHEEL_UP' ? -state.scrollDelta : state.scrollDelta;
-            if (event === 'MOUSE_WHEEL_UP' && state.currentScrollY <= 0) {
-              DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
-              return;
-            }
-            await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
-            debouncedRefresh();
-          }
+        // Add event listeners via TerminalBrowser
+        browser.on('click', async ({ x, y }) => {
+          if (!state.isInitialized) return;
+          await handleClick({
+            termX: x,
+            termY: y,
+            renderedBoxes: state.renderedBoxes,
+            clickableElements: state.clickableElements,
+            send,
+            sessionId,
+            clickCounter: state.clickCounter,
+            refresh,
+            layoutToNode: state.layoutToNode,
+            nodeToParent: state.nodeToParent,
+            nodes: state.nodes,
+          });
         });
 
-        terminal.on('key', async (name) => {
-          if (!state.isListening) return;
-          if (name === 'CTRL_C') {
-            state.isListening = false;
-            process.emit('SIGINT');
-          } else if (name === '<') {
-            if (onTabSwitch) await onTabSwitch();
-          } else if (name === 'UP' || name === 'DOWN') {
-            const lineHeight = calculateLineHeight();
-            const deltaY = name === 'UP' ? -lineHeight : lineHeight;
-            
-            // Prevent scrolling above top
-            if (name === 'UP' && state.currentScrollY <= 0) {
-              DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
-              return;
-            }
-
-            // Dispatch scroll event
-            await send('Input.dispatchMouseEvent', { 
-              type: 'mouseWheel', 
-              x: 0, 
-              y: 0, 
-              deltaX: 0, 
-              deltaY 
-            }, sessionId);
-            
-            debouncedRefresh();
-          }
+        browser.on('scroll', async ({ direction }) => {
+          const lineHeight = Math.round(state.viewportHeight / terminal.height);
+          const deltaY = direction * lineHeight;
+          if (direction < 0 && state.currentScrollY <= 0) return;
+          await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+          debouncedRefresh();
         });
 
         await refresh();
-        return () => { state.isListening = false; };
+        return () => {
+          state.isListening = false;
+          browser.stopListening();
+        };
       }
 
     // helpers
