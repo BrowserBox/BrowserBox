@@ -8,6 +8,7 @@
       import Layout from './layout.js';
       import TerminalBrowser from './terminal-browser.js';
       import {logClicks, logMessage,debugLog,DEBUG} from './log.js';
+      import keys from './kbd.js';
       import TK from 'terminal-kit';
       const { terminal } = TK;
 
@@ -115,7 +116,7 @@
             title: t.title || new URL(t.url || 'about:blank').hostname,
             url: t.url || 'about:blank',
           })),
-        });
+        }, () => state);
 
         browser.on('tabSelected', async (tab) => {
           const index = browser.getTabs().findIndex(t => t.title === tab.title && t.url === tab.url);
@@ -616,6 +617,40 @@
       }
 
     // Interactivity helpers
+      function keyEvent(key) {
+        // Map TUI key to key definition (e.g., 'ENTER' -> 'Enter')
+        const keyName = key === 'ENTER' ? 'Enter' : key;
+        const def = keys[keyName];
+
+        if (!def) {
+          console.warn(`Unknown key: ${key}`);
+          return null;
+        }
+
+        // Determine event type
+        const type = def.text ? 'keyDown' : 'rawKeyDown'; // For Enter, this will be 'keyDown' due to text: '\r'
+
+        // Construct the CDP command
+        const command = {
+          name: 'Input.dispatchKeyEvent',
+          params: {
+            type,
+            text: def.text, // '\r' for Enter
+            code: def.code, // 'Enter'
+            key: def.key,   // 'Enter'
+            windowsVirtualKeyCode: def.keyCode, // 13
+            modifiers: 0,   // No modifiers for now (e.g., no Shift, Ctrl)
+          },
+          requiresShot: ['Enter'].includes(def.key), // Trigger a screenshot if needed
+        };
+
+        if (def.location) {
+          command.params.location = def.location;
+        }
+
+        return { command };
+      }      
+
       async function getNavigationHistory(sessionId) {
         const { currentIndex, entries } = await send('Page.getNavigationHistory', {}, sessionId);
         return { currentIndex, entries };

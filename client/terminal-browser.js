@@ -5,15 +5,15 @@ import {logClicks,DEBUG} from './log.js';
 const term = termkit.terminal;
 
 export default class TerminalBrowser extends EventEmitter {
-  constructor(options = {}) {
+  constructor(options = {}, getState) {
     super();
-    this.term = term;
+    this.getState = getState;
     this.options = {
       tabWidth: options.tabWidth || 25,
       initialTabs: options.initialTabs || [
         { title: 'Home', url: 'https://home.com' },
       ],
-      colors: options.colors || ['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'brightRed', 'brightGreen', 'brightYellow', 'brightBlue', 'brightMagenta', 'brightCyan', 'white', 'brightWhite', 'gray'],
+      colors: options.colors || ['brightBlue'],
     };
 
     // State
@@ -131,7 +131,7 @@ export default class TerminalBrowser extends EventEmitter {
       logClicks(`Initializing input state for ${backendNodeIdStr} with value: ${initialValue}`);
       this.inputFields.set(backendNodeIdStr, {
         value: initialValue,
-        cursorPosition: initialValue.length,
+        cursorPosition: initialValue.length, // Set cursor to end of live value
         focused: false,
         onChange,
         x,
@@ -156,8 +156,8 @@ export default class TerminalBrowser extends EventEmitter {
       const beforeCursor = value.slice(0, cursorPos);
       const cursorChar = value[cursorPos] || ' ';
       const afterCursor = value.slice(cursorPos + 1);
-      this.term.bgCyan().black(beforeCursor); // Cyan background for focus
-      this.term.bgBlack().brightWhite().bold(cursorChar); // Cursor highlight
+      this.term.bgCyan().black(beforeCursor);
+      this.term.bgBlack().brightWhite().bold(cursorChar);
       this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
     } else {
       this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
@@ -245,46 +245,58 @@ export default class TerminalBrowser extends EventEmitter {
         }
         logClicks(`Input focused, backendNodeId: ${backendNodeId}, current value: ${inputState.value}`);
 
-        switch (key) {
-          case 'LEFT':
-            if (inputState.cursorPosition > 0) inputState.cursorPosition--;
-            this.redrawFocusedInput();
-            break;
-          case 'RIGHT':
-            if (inputState.cursorPosition < inputState.value.length) inputState.cursorPosition++;
-            this.redrawFocusedInput();
-            break;
-          case 'BACKSPACE':
-            if (inputState.cursorPosition > 0) {
-              inputState.value = inputState.value.slice(0, inputState.cursorPosition - 1) + inputState.value.slice(inputState.cursorPosition);
-              inputState.cursorPosition--;
-              if (inputState.onChange) inputState.onChange(inputState.value);
-              this.redrawFocusedInput();
+        if (key === 'ENTER') {
+          // Send Enter key event to remote browser
+          const keyCommand = keyEvent('ENTER');
+          if (keyCommand) {
+            try {
+              await this.getState().send(keyCommand.command.name, keyCommand.command.params, this.getState().sessionId);
+              logClicks(`Sent Enter key event for backendNodeId: ${backendNodeId}`);
+            } catch (error) {
+              logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
             }
-            break;
-          case 'ENTER':
-            // Redraw current input as unfocused before changing focus
-            this.redrawUnfocusedInput(backendNodeId);
-            this.focusedElement = 'tabs';
-            this.previousFocusedElement = this.focusedElement;
-            if (inputState.onChange) inputState.onChange(inputState.value);
-            this.render();
-            break;
-          case 'TAB':
-            this.focusNextInput();
-            break;
-          case 'SHIFT_TAB':
-            this.focusPreviousInput();
-            break;
-          default:
-            if (key.length === 1) {
-              inputState.value = inputState.value.slice(0, inputState.cursorPosition) + key + inputState.value.slice(inputState.cursorPosition);
-              inputState.cursorPosition++;
-              logClicks(`Updated value: ${inputState.value}`);
-              if (inputState.onChange) inputState.onChange(inputState.value);
+          }
+
+          // Redraw current input as unfocused and shift focus
+          this.redrawUnfocusedInput(backendNodeId);
+          this.focusedElement = 'tabs';
+          this.previousFocusedElement = this.focusedElement;
+          if (inputState.onChange) inputState.onChange(inputState.value);
+          this.render();
+        } else {
+          switch (key) {
+            case 'LEFT':
+              if (inputState.cursorPosition > 0) inputState.cursorPosition--;
               this.redrawFocusedInput();
-            }
-            break;
+              break;
+            case 'RIGHT':
+              if (inputState.cursorPosition < inputState.value.length) inputState.cursorPosition++;
+              this.redrawFocusedInput();
+              break;
+            case 'BACKSPACE':
+              if (inputState.cursorPosition > 0) {
+                inputState.value = inputState.value.slice(0, inputState.cursorPosition - 1) + inputState.value.slice(inputState.cursorPosition);
+                inputState.cursorPosition--;
+                if (inputState.onChange) inputState.onChange(inputState.value);
+                this.redrawFocusedInput();
+              }
+              break;
+            case 'TAB':
+              this.focusNextInput();
+              break;
+            case 'SHIFT_TAB':
+              this.focusPreviousInput();
+              break;
+            default:
+              if (key.length === 1) {
+                inputState.value = inputState.value.slice(0, inputState.cursorPosition) + key + inputState.value.slice(inputState.cursorPosition);
+                inputState.cursorPosition++;
+                logClicks(`Updated value: ${inputState.value}`);
+                if (inputState.onChange) inputState.onChange(inputState.value);
+                this.redrawFocusedInput();
+              }
+              break;
+          }
         }
       } else {
         switch (key) {
@@ -301,7 +313,7 @@ export default class TerminalBrowser extends EventEmitter {
               this.emit('back');
             } else if (this.focusedElement === 'forward') {
               this.emit('forward');
-            } else if (this.focusedElement === 'go') {
+            } else if (this.focusedElement === 'go' || this.focusedElement === 'address') {
               this.emit('navigate', this.addressContent);
               if (this.selectedTabIndex !== -1) {
                 this.tabs[this.selectedTabIndex].url = this.addressContent;
