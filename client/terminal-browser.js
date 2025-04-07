@@ -8,6 +8,7 @@ const term = termkit.terminal;
 export default class TerminalBrowser extends EventEmitter {
   constructor(options = {}, getState) {
     super();
+    this.currentFocusIndex = 0;
     this.getState = getState;
     this.term = term;
     this.options = {
@@ -59,7 +60,8 @@ export default class TerminalBrowser extends EventEmitter {
 
   computeTabbableElements() {
     const tabbable = [];
-    // Browser UI elements (tabs, buttons, etc.) - assuming this part works
+    
+    // Browser UI elements
     this.tabs.forEach((tab, index) => {
       const x = 1 + index * this.options.tabWidth;
       tabbable.push({ type: 'tab', index, x, y: 1 });
@@ -70,29 +72,69 @@ export default class TerminalBrowser extends EventEmitter {
     tabbable.push({ type: 'address', x: this.BACK_WIDTH + this.FORWARD_WIDTH + 2, y: this.TAB_HEIGHT + 2 });
     tabbable.push({ type: 'go', x: this.term.width - this.GO_WIDTH, y: this.TAB_HEIGHT + 2 });
 
-    // Content pane elements
     const state = this.getState();
-    if (state && state.renderedBoxes) {
+    if (state && state.renderedBoxes && state.layoutToNode && state.nodeToParent && state.nodes) {
       debugLog('Rendered Boxes Count:', state.renderedBoxes.length);
+
+      // Group by clickable parent backendNodeId
+      const elementsByParentId = new Map();
       state.renderedBoxes.forEach(box => {
-        if (box.isClickable || box.type === 'input') {
-          debugLog(`Adding to tabbable: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
-          tabbable.push({
+        if (!box.isClickable && box.type !== 'input') return;
+
+        // Find the clickable parent's backendNodeId
+        let parentBackendNodeId = box.backendNodeId;
+        let currentNodeIndex = box.nodeIndex;
+        while (currentNodeIndex !== -1 && currentNodeIndex !== undefined) {
+          if (state.nodes.isClickable && state.nodes.isClickable.index.includes(currentNodeIndex)) {
+            parentBackendNodeId = state.nodes.backendNodeId[currentNodeIndex];
+            break;
+          }
+          currentNodeIndex = state.nodeToParent.get(currentNodeIndex);
+        }
+
+        if (!elementsByParentId.has(parentBackendNodeId)) {
+          elementsByParentId.set(parentBackendNodeId, {
+            backendNodeId: parentBackendNodeId,
             type: box.type === 'input' ? 'input' : 'clickable',
-            backendNodeId: box.backendNodeId,
-            x: box.termX,
-            y: box.termY,
-            width: box.termWidth,
-            height: box.termHeight,
-            text: box.text,
+            boxes: [],
+            text: '',
+            ancestorType: box.ancestorType,
+            minX: box.termX,
+            maxX: box.termX + box.termWidth - 1,
+            minY: box.termY,
+            maxY: box.termY
           });
         }
+
+        const elem = elementsByParentId.get(parentBackendNodeId);
+        elem.boxes.push(box);
+        elem.text += (elem.text ? ' ' : '') + box.text;
+        elem.minX = Math.min(elem.minX, box.termX);
+        elem.maxX = Math.max(elem.maxX, box.termX + box.termWidth - 1);
+        elem.minY = Math.min(elem.minY, box.termY);
+        elem.maxY = Math.max(elem.maxY, box.termY);
+      });
+
+      // Add grouped elements to tabbable
+      elementsByParentId.forEach((elem, id) => {
+        //debugLog(`Adding parent: id=${id}, type=${elem.type}, text="${elem.text}", ancestorType="${elem.ancestorType}"`);
+        tabbable.push({
+          type: elem.type,
+          backendNodeId: elem.backendNodeId,
+          x: elem.minX,
+          y: elem.minY,
+          width: elem.maxX - elem.minX + 1,
+          height: elem.maxY - elem.minY + 1,
+          text: elem.text,
+          ancestorType: elem.ancestorType
+        });
       });
     } else {
-      debugLog('No state or renderedBoxes available');
+      debugLog('Missing state, renderedBoxes, or layout data');
     }
 
     debugLog('Final Tabbable Elements Count:', tabbable.length);
+    debugLog(JSON.stringify(tabbable, null,2));
     tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
     return tabbable;
   }
@@ -545,56 +587,128 @@ export default class TerminalBrowser extends EventEmitter {
     this.stopListening = () => { isListening = false; };
   }
 
+
+  redrawClickable(backendNodeId) {
+    const state = this.getState();
+    const boxes = state.renderedBoxes.filter(b => String(b.backendNodeId) === backendNodeId);
+    debugLog(`Boxes ${JSON.stringify(boxes)}`);
+    if (!boxes.length) return;
+
+    // Calculate bounding box
+    const minX = Math.min(...boxes.map(b => b.termX));
+    const maxX = Math.max(...boxes.map(b => b.termX + b.termWidth - 1));
+    const minY = Math.min(...boxes.map(b => b.termY));
+    const maxY = Math.max(...boxes.map(b => b.termY));
+    const fullText = boxes.map(b => b.text).join(' ');
+    const ancestorType = boxes[0].ancestorType; // Assume all have same ancestorType
+
+    for (let y = minY; y <= maxY; y++) {
+      this.term.moveTo(minX, y);
+      const lineText = y === minY ? fullText.substring(0, maxX - minX + 1) : ' '.repeat(maxX - minX + 1);
+      this.term.bgCyan();
+      if (ancestorType === 'button') {
+        this.term.green(lineText);
+      } else if (ancestorType === 'hyperlink') {
+        this.term.black().underline(lineText);
+      } else if (ancestorType === 'other_clickable') {
+        this.term.defaultColor().bold(lineText);
+      } else {
+        this.term.defaultColor(lineText);
+      }
+    }
+    debugLog(`Redraw ${backendNodeId} with fullText ${fullText} and ancestorType ${ancestorType} ${JSON.stringify({minX,minY,maxX,maxY})}`);
+    this.term.bgDefaultColor().defaultColor();
+  }
+
+  // Update redrawUnfocusedElement for clickables
+  redrawUnfocusedElement(backendNodeId) {
+    const state = this.getState();
+    const box = state.renderedBoxes.find(b => String(b.backendNodeId) === backendNodeId);
+    if (!box) return;
+
+    if (box.type === 'input') {
+      const inputState = this.inputFields.get(String(backendNodeId));
+      if (!inputState) return;
+      const { x, y, width, value } = inputState;
+      const displayWidth = Math.min(width, this.term.width - x + 1);
+      this.term.moveTo(x, y);
+      this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
+    } else {
+      const boxes = state.renderedBoxes.filter(b => String(b.backendNodeId) === backendNodeId);
+      const minX = Math.min(...boxes.map(b => b.termX));
+      const maxX = Math.max(...boxes.map(b => b.termX + b.termWidth - 1));
+      const minY = Math.min(...boxes.map(b => b.termY));
+      const maxY = Math.max(...boxes.map(b => b.termY));
+      const fullText = boxes.map(b => b.text).join(' ');
+      const ancestorType = boxes[0].ancestorType;
+
+      for (let y = minY; y <= maxY; y++) {
+        this.term.moveTo(minX, y);
+        const lineText = y === minY ? fullText.substring(0, maxX - minX + 1) : ' '.repeat(maxX - minX + 1);
+        this.term.defaultColor().bgDefaultColor();
+        if (ancestorType === 'button') {
+          this.term.bgGreen().black(lineText);
+        } else if (ancestorType === 'hyperlink') {
+          this.term.cyan().underline(lineText);
+        } else if (ancestorType === 'other_clickable') {
+          this.term.bold(lineText);
+        } else {
+          this.term(lineText);
+        }
+      }
+    }
+    this.term.bgDefaultColor().defaultColor();
+  }
+
+  // Update setFocus
+  setFocus(element) {
+    debugLog(`Setting focus from ${this.focusedElement} to ${element.type}:${element.backendNodeId || element.index || element.type}`);
+    this.previousFocusedElement = this.focusedElement;
+
+    // Unfocus previous element
+    if (this.previousFocusedElement?.startsWith('input:')) {
+      const prevId = this.previousFocusedElement.split(':')[1];
+      this.redrawUnfocusedElement(prevId);
+    } else if (this.previousFocusedElement?.startsWith('clickable:')) {
+      const prevId = this.previousFocusedElement.split(':')[1];
+      this.redrawUnfocusedElement(prevId);
+    }
+
+    if (element.type === 'tab') {
+      this.focusedElement = 'tabs';
+      this.focusedTabIndex = element.index;
+      this.drawTabs(); // Redraw tabs for UI focus
+    } else if (element.type === 'input') {
+      this.focusInput(element.backendNodeId); // This already handles redraw
+    } else if (element.type === 'clickable') {
+      this.focusedElement = `clickable:${element.backendNodeId}`;
+      this.redrawClickable(element.backendNodeId); // Redraw only this element
+    } else {
+      this.focusedElement = element.type;
+      if (element.type === 'address') this.cursorPosition = this.addressContent.length;
+      this.drawOmnibox(); // Redraw omnibox for UI focus
+    }
+  }
+
+  // Update focusNextElement and focusPreviousElement to avoid full render
   focusNextElement() {
     const tabbable = this.computeTabbableElements();
     if (!tabbable.length) return;
 
-    const currentIdx = this.findCurrentFocusIndex(tabbable);
+    const currentIdx = this.currentFocusIndex;
     const nextIdx = (currentIdx + 1) % tabbable.length;
+    this.currentFocusIndex = nextIdx;
     this.setFocus(tabbable[nextIdx]);
-    this.render();
   }
 
   focusPreviousElement() {
     const tabbable = this.computeTabbableElements();
     if (!tabbable.length) return;
 
-    const currentIdx = this.findCurrentFocusIndex(tabbable);
+    const currentIdx = this.currentFocusIndex;
     const prevIdx = (currentIdx - 1 + tabbable.length) % tabbable.length;
+    this.currentFocusIndex = prevIdx;
     this.setFocus(tabbable[prevIdx]);
-    this.render();
-  }
-
-  findCurrentFocusIndex(tabbable) {
-    if (!this.focusedElement) return -1;
-    if (this.focusedElement === 'tabs') {
-      return tabbable.findIndex(el => el.type === 'tab' && el.index === this.focusedTabIndex);
-    }
-    if (this.focusedElement.startsWith('input:')) {
-      const id = this.focusedElement.split(':')[1];
-      return tabbable.findIndex(el => el.type === 'input' && String(el.backendNodeId) === id);
-    }
-    return tabbable.findIndex(el => el.type === this.focusedElement);
-  }
-
-  setFocus(element) {
-    this.previousFocusedElement = this.focusedElement;
-
-    if (element.type === 'tab') {
-      this.focusedElement = 'tabs';
-      this.focusedTabIndex = element.index;
-    } else if (element.type === 'input') {
-      this.focusInput(element.backendNodeId);
-    } else {
-      this.focusedElement = element.type;
-      if (element.type === 'address') this.cursorPosition = this.addressContent.length;
-    }
-
-    // Unfocus previous input if necessary
-    if (this.previousFocusedElement?.startsWith('input:') && this.focusedElement !== this.previousFocusedElement) {
-      const prevId = this.previousFocusedElement.split(':')[1];
-      this.redrawUnfocusedInput(prevId);
-    }
   }
 
   focusNextInput() {

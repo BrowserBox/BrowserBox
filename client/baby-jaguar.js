@@ -24,6 +24,7 @@
       const mySource = 'jagclient' + Math.random().toString(36);
 
       let state;
+      let newState;
       let socket;
       let cleanup;
       let targets;
@@ -97,7 +98,7 @@
         browserbox = connection.browserbox;
         cookieHeader = connection.cookieHeader;
         BrowserState.targets = targets;
-        const newState = {
+        newState = {
           get sessionId() { return sessionId; },
 
           get send() { return send; }
@@ -404,6 +405,9 @@
             state.nodeToParent = layoutState.nodeToParent;
             state.nodes = layoutState.nodes;
 
+            newState.layoutToNode = layoutState.layoutToNode;
+            newState.nodeToParent = layoutState.nodeToParent;
+            newState.nodes = layoutState.nodes;
             renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
             state.isInitialized = true;
             DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
@@ -654,6 +658,8 @@
             }
           }
         }
+
+        newState.renderedBoxes = renderedBoxes;
       }
 
     // Interactivity helpers
