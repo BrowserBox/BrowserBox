@@ -494,7 +494,7 @@
               .then(valueResult => {
                 let liveValue = fallbackValue;
                 if (valueResult?.result?.value !== undefined) {
-                  liveValue = String(valueResult.result.value);
+                  liveValue = ''+valueResult.result.value;
                   logClicks(`Fetched live value for backendNodeId: ${currentBackendNodeId}: "${liveValue}"`);
                 }
 
@@ -528,7 +528,7 @@
                       logClicks(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
                       browser.redrawUnfocusedInput(currentBackendNodeId);
                       browser.focusedElement = 'tabs';
-                      browser.inputFields.delete(String(currentBackendNodeId));
+                      browser.inputFields.delete('' + currentBackendNodeId);
                       browser.render();
                     }
                   },
@@ -581,7 +581,7 @@
                       logClicks(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
                       browser.redrawUnfocusedInput(currentBackendNodeId);
                       browser.focusedElement = 'tabs';
-                      browser.inputFields.delete(String(currentBackendNodeId));
+                      browser.inputFields.delete('' + currentBackendNodeId);
                       browser.render();
                     }
                   },
@@ -734,7 +734,7 @@
             browser.focusInput(clickedBox.backendNodeId);
 
             // Calculate cursor position based on click
-            const inputState = browser.inputFields.get(String(clickedBox.backendNodeId));
+            const inputState = browser.inputFields.get('' + clickedBox.backendNodeId);
             if (inputState) {
               const relativeX = termX - clickedBox.termX; // Position within the input
               inputState.cursorPosition = Math.min(relativeX, inputState.value.length); // Clamp to value length
@@ -779,7 +779,7 @@
             browser.focusInput(clickedBox.backendNodeId);
 
             // Calculate cursor position based on click
-            const inputState = browser.inputFields.get(String(clickedBox.backendNodeId));
+            const inputState = browser.inputFields.get('' + clickedBox.backendNodeId);
             if (inputState) {
               const relativeX = termX - clickedBox.termX;
               inputState.cursorPosition = Math.min(relativeX, inputState.value.length);
@@ -1003,7 +1003,7 @@
             logMessage('RECEIVE', message, terminal);
           } catch (error) {
             if (DEBUG) console.warn(error);
-            terminal.red(`Invalid message: ${String(data).slice(0, 50)}...\n`);
+            terminal.red(`Invalid message: ${('' + data).slice(0, 50)}...\n`);
             return;
           }
           const key = `${message.sessionId || 'root'}:${message.id}`;

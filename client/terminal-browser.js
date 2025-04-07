@@ -217,7 +217,7 @@ export default class TerminalBrowser extends EventEmitter {
 
   drawInputField(options) {
     const { x, y, width, key, initialValue = '', onChange } = options;
-    const backendNodeIdStr = String(key);
+    const backendNodeIdStr = '' + key;
 
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
@@ -280,7 +280,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   redrawUnfocusedInput(backendNodeId) {
-    const inputState = this.inputFields.get(String(backendNodeId));
+    const inputState = this.inputFields.get('' + backendNodeId);
     if (!inputState) return;
 
     const { x, y, width, value } = inputState;
@@ -293,7 +293,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   focusInput(backendNodeId) {
-    const backendNodeIdStr = String(backendNodeId);
+    const backendNodeIdStr = '' + backendNodeId;
     if (this.inputFields.has(backendNodeIdStr)) {
       // Redraw previous input as unfocused
       if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
@@ -420,7 +420,7 @@ export default class TerminalBrowser extends EventEmitter {
       else if (this.focusedElement.startsWith('clickable:')) {
         const backendNodeId = this.focusedElement.split(':')[1];
         const state = this.getState();
-        const box = state.renderedBoxes.find(b => String(b.backendNodeId) === backendNodeId);
+        const box = state.renderedBoxes.find(b => ''+b.backendNodeId === backendNodeId);
 
         if (key === 'ENTER') {
           if (box) {
@@ -599,7 +599,7 @@ export default class TerminalBrowser extends EventEmitter {
     const childNodeIndices = new Set();
     let parentNodeIndex = -1;
     state.nodes.backendNodeId.forEach((id, nodeIdx) => {
-      if (String(id) === backendNodeId) {
+      if (id == backendNodeId) {
         parentNodeIndex = nodeIdx; // Capture the parent's node index
         childNodeIndices.add(nodeIdx);
         const collectChildren = (idx) => {
@@ -657,7 +657,7 @@ export default class TerminalBrowser extends EventEmitter {
     const childNodeIndices = new Set();
     let parentNodeIndex = -1;
     state.nodes.backendNodeId.forEach((id, nodeIdx) => {
-      if (String(id) === backendNodeId) {
+      if (id == backendNodeId) {
         parentNodeIndex = nodeIdx;
         childNodeIndices.add(nodeIdx);
         const collectChildren = (idx) => {
@@ -677,7 +677,7 @@ export default class TerminalBrowser extends EventEmitter {
     if (!boxes.length) return;
 
     if (boxes[0].type === 'input') {
-      const inputState = this.inputFields.get(String(backendNodeId));
+      const inputState = this.inputFields.get('' + backendNodeId);
       if (!inputState) return;
       const { x, y, width, value } = inputState;
       const displayWidth = Math.min(width, this.term.width - x + 1);
@@ -822,11 +822,11 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   getInputValue(backendNodeId) {
-    return this.inputFields.get(String(backendNodeId))?.value || '';
+    return this.inputFields.get('' + backendNodeId)?.value || '';
   }
 
   setInputValue(backendNodeId, value) {
-    const backendNodeIdStr = String(backendNodeId);
+    const backendNodeIdStr = '' + backendNodeId;
     if (this.inputFields.has(backendNodeIdStr)) {
       const inputState = this.inputFields.get(backendNodeIdStr);
       inputState.value = value;

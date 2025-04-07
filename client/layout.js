@@ -821,49 +821,6 @@ const LayoutAlgorithm = (() => {
     };
   }
 
-  export function getAncestorInfo(nodeIndex, nodes, strings) {
-    let currentIndex = nodeIndex;
-    while (currentIndex !== -1) {
-      if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {
-        DEBUG && debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}`);
-        return 'normal';
-      }
-
-      const nodeNameIndex = nodes.nodeName[currentIndex];
-      if (typeof nodeNameIndex === 'undefined') {
-        DEBUG && debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}`);
-        return 'normal';
-      }
-      const nodeName = strings[nodeNameIndex];
-      const attributes = nodes.attributes[currentIndex] || [];
-      const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
-
-      if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
-        return 'button';
-      }
-
-      let hasHref = false;
-      let hasOnclick = false;
-      for (let i = 0; i < attributes.length; i += 2) {
-        const keyIndex = attributes[i];
-        const valueIndex = attributes[i + 1];
-        const key = strings[keyIndex];
-        if (key === 'href') hasHref = true;
-        if (key === 'onclick') hasOnclick = true;
-      }
-      if (nodeName === 'A' && (hasHref || hasOnclick)) {
-        return 'hyperlink';
-      }
-
-      if (isClickable) {
-        return 'other_clickable';
-      }
-
-      currentIndex = nodes.parentIndex[currentIndex];
-    }
-    return 'normal';
-  }
-
   function unionBoxes(box1, box2) {
     if (!box1) return box2;
     if (!box2) return box1;
@@ -1173,4 +1130,48 @@ const LayoutAlgorithm = (() => {
 })();
 
 export default LayoutAlgorithm;
+
+export function getAncestorInfo(nodeIndex, nodes, strings) {
+  let currentIndex = nodeIndex;
+  while (currentIndex !== -1) {
+    if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {
+      DEBUG && debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}`);
+      return 'normal';
+    }
+
+    const nodeNameIndex = nodes.nodeName[currentIndex];
+    if (typeof nodeNameIndex === 'undefined') {
+      DEBUG && debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}`);
+      return 'normal';
+    }
+    const nodeName = strings[nodeNameIndex];
+    const attributes = nodes.attributes[currentIndex] || [];
+    const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
+
+    if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
+      return 'button';
+    }
+
+    let hasHref = false;
+    let hasOnclick = false;
+    for (let i = 0; i < attributes.length; i += 2) {
+      const keyIndex = attributes[i];
+      const valueIndex = attributes[i + 1];
+      const key = strings[keyIndex];
+      if (key === 'href') hasHref = true;
+      if (key === 'onclick') hasOnclick = true;
+    }
+    if (nodeName === 'A' && (hasHref || hasOnclick)) {
+      return 'hyperlink';
+    }
+
+    if (isClickable) {
+      return 'other_clickable';
+    }
+
+    currentIndex = nodes.parentIndex[currentIndex];
+  }
+  return 'normal';
+}
+
 
