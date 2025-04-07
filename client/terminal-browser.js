@@ -309,7 +309,7 @@ export default class TerminalBrowser extends EventEmitter {
       const inputState = this.inputFields.get(backendNodeIdStr);
       inputState.focused = true;
       logClicks(`Focused input: ${backendNodeIdStr}, value: ${inputState.value}`);
-      this.render(); // Full render for initial focus
+      this.redrawFocusedInput();
     } else {
       logClicks(`Cannot focus ${backendNodeIdStr}: no state found`);
     }
