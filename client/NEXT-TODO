@@ -1,38 +1,63 @@
-- form controls
-  - handle input type=button as button
-  - convert input/text/edit placeholders to actual usable, focusable, cursorable/clickable, inputs
-  - move all input handling into terminal-browser so ALL key and mouse stuff should be inside there
-    then: 
-      - layout is purely layout
-      - terminal browser is ui / process orchestration and input handling
-      - baby jag is business logic and actual render to screen by triggering render of term brow and performing render of text
-     we could even move rendering currently in baby jag into a render.js module tho it's not so huge
-     current sep is good
+Features
+  - select, checkbox inputs
+  - js modals
+  - file upload
+  - http basic auth
+  - file download (to ~/Downloads)
+  - enhance cursoring / scrolling - horizontal scroll into window, same for virt, before hit margin and trigger actual page scroll
+  - special KEYS when not in focused inputs:
+    - ] next tab, [ previous tab
+    - jkhl cursoring around tabbable 
+    - / searching for elements on current page (highlight matches, n/N next/prev focus)
+    - ? brings up commands help modal
+    - d/u down and up (moves down the page a chunk - key based scroll)
+    - bv - breakout visual (get login link for opening in browser, useful for solving captcha etc - two code key, gives you a special timed login link that gives you 1 minute of time, and you can only get two such every 5 minutes, and 3 such per 20 minutes, it disconnects you from visual and prevents any other visual connection once consumed)
+  - CTRL_M / RIGHT MOUSE - context menu (open in new tab, open in incognito tab, clear history, nuke all history and site data, copy, paste, history - open chrome://history)
+  - CTRL_A in inputs select all text with predictable results.
+  - SHIFT cursor in inputs selects text. 
+  - CTRL_Q also quits. 
 
 Bugs
-  - test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug
-  - as usual follow our debug process:
-    - find out why this happens with a targeted simple reproduction
-    - solve the biggest cause we can
+  Minor Polishing Bugs
+  - fix some elements are not tabbable (ie, search result pages, ddg, google, etc)
+  - convert textedit / contenteditable placeholders to actual usable, focusable, tabbable/cursorable/clickable, inputs
 
-Bugs
-  - ddg srp: larry page - wikipedia info box. "Wikipedia" source link at end of paragraph is occluded down to "ia" - why?
+  Bugs
+    - test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug
+    - as usual follow our debug process:
+      - find out why this happens with a targeted simple reproduction
+      - solve the biggest cause we can
 
-Bugs
-  - If multiple tabs then we are pulling data from all tabs, when we should only focus on active.
+  Bugs
+    - ddg srp: larry page - wikipedia info box. "Wikipedia" source link at end of paragraph is occluded down to "ia" - why?
 
-- ensure the tabs operate correctly, tab and cursor through all the controls at top, showing element focus clearly. Update style (move from green to blue, ice color i think is good). Ensure that URL is always in omnibox unless we are typing something in, or focused on it. As soon as we unfocus, or whenever url changes, or a tab is selected, and we are not focused in omnibox ensure URL in omnixbox reflects URL of current tab. Only exception is we never show the URL for newtab "about:blank". 
-- ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
-- put media placeholders behind a toggle. So normally it's off, but you can toggle it on to view it (toggle setting will rerender)
-- improve efficiency of rendering. Only split snapshot on visible boxes.
-- ensure layout remains correct beofre proceeding
-- hook modals for js modals (alert, confirm, prompt), http basic auth, and file upload.
-- add ALT text for media placeholders (maybe decide based on space available? Or just make space. Problem is alt text has not text layout boxes so we'd have to create our own, and handle wrapping and truncation etc)
-- scrollin : within local tui "virtual TUI viewport" (larger than TUI page to account for the stuff we push rightward and downward for layout), implement hoz and vert scrolling to show "pushed for layout" content, that blends to scrolling the remote when reaching the margins of that virtual viewport - also ensure we "size the remote" to a "good size" relative to our local TUI dimensions
-- capture loading events from browserbox and display a 2x2 or 3x2 cursor "square" at screen right (like Netscape loading logo), showing loading (maybe just cursor rotating inside it clockwise. 1.5 - 2 Hz  
+  Bugs
+    - If multiple tabs then we are pulling data from all tabs, when we should only focus on active.
+
+Next
+  - As soon as we unfocus, or whenever url changes, or a tab is selected, and we are not focused in omnibox ensure URL in omnixbox reflects URL of current tab. Only exception is we never show the URL for newtab "about:blank". 
+  - ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
+  - put media placeholders behind a toggle. So normally it's off, but you can toggle it on to view it (toggle setting will rerender)
+  - improve efficiency of rendering. Only split snapshot on visible boxes.
+  - ensure layout remains correct beofre proceeding to following:
+  - hook modals for js modals (alert, confirm, prompt), http basic auth, and file upload.
+  - add ALT text for media placeholders (maybe decide based on space available? Or just make space. Problem is alt text has not text layout boxes so we'd have to create our own, and handle wrapping and truncation etc)
+  - scrollin : within local tui "virtual TUI viewport" (larger than TUI page to account for the stuff we push rightward and downward for layout), implement hoz and vert scrolling to show "pushed for layout" content, that blends to scrolling the remote when reaching the margins of that virtual viewport - also ensure we "size the remote" to a "good size" relative to our local TUI dimensions
+  - capture loading events from browserbox and display a 2x2 or 3x2 cursor "square" at screen right (like Netscape loading logo), showing loading (maybe just cursor rotating inside it clockwise. 1.5 - 2 Hz  
 
 
 To be omitted from initial public release
 
 - rendering of OOPIF (as that involves fetching target info from separate target and stitching together)
 - web side client for this text layout of the web
+
+
+Cutting Room (ideas that may not increase revenue and may perturb the simplicity of design)
+  - CTRL_S - save page html (current as is from snapshot, or root outerHTML like from call func on)
+  - LEFT MOUSE - on any normal clickable element (navigates/clicks it) (already have this).
+  - SHIFT LEFT MOUSE - on any element shows some details about it (summary, alt for image, title for those that have it, etc)
+  - CTRL_H - highlight mode, highlight a different region (different to focus). Commands when highlighted: d (delete), c (cutout - delete rest), s (append text to clips file), y (copy / yank / yoink - to clipboard). hjkl cursor around. io zoom in/out (of layers/z-index/stack), x (explode, show a details panel with node attributes, including alt/title)
+  - loading spinner in top / bottom right (floating and "fade out")
+  - "status line" in bottom left (show, then disappear after a second)
+  - (+dn plugin) r - rip/record - start recording so page and all content you access from now will be accessible in your local archive even when offline (not available on thin client as there's no browser there)
+  - CTRL_F - find in page and highlight. CTRL_G find next and scroll to it. SHIFT CTRL_G find previous and scroll to it. 
