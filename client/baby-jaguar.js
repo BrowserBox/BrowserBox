@@ -12,6 +12,7 @@
       const { terminal } = TK;
 
     // Constants and state
+      const clickCounter = { value: 0 };
       const USE_SYNTHETIC_FOCUS = true;
       const markClicks = false;
       const BrowserState = {
@@ -238,7 +239,6 @@
           scrollDelta: 50,
           renderedBoxes: [],
           currentScrollY: 0,
-          clickCounter: { value: 0 },
           layoutToNode: null,
           nodeToParent: null,
           nodes: null,
@@ -384,7 +384,7 @@
         renderBoxes({ ...layoutState, renderedBoxes });
       }
 
-      async function refreshTerminal({ send, sessionId, state, addressBar }) {
+      export async function refreshTerminal({ send, sessionId, state, addressBar }) {
         try {
           // sometimes this line errors out and poll returns nothing. I think we could try a page reload
           // and try to repro and figure it out
@@ -408,6 +408,8 @@
             newState.layoutToNode = layoutState.layoutToNode;
             newState.nodeToParent = layoutState.nodeToParent;
             newState.nodes = layoutState.nodes;
+            newState.strings = snapshot.strings;
+
             renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
             state.isInitialized = true;
             DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
@@ -692,7 +694,7 @@
         }
       }
 
-      async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, clickCounter, refresh, layoutToNode, nodeToParent, nodes }) {
+      export async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, refresh, layoutToNode, nodeToParent, nodes }) {
         let clickedBox = null;
         for (let i = renderedBoxes.length - 1; i >= 0; i--) {
           const box = renderedBoxes[i];
@@ -899,7 +901,6 @@
             clickableElements: state.clickableElements,
             send,
             sessionId,
-            clickCounter: state.clickCounter,
             refresh,
             layoutToNode: state.layoutToNode,
             nodeToParent: state.nodeToParent,

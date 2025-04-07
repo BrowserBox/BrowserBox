@@ -2,6 +2,7 @@
 import { EventEmitter } from 'events';
 import {sleep, debugLog, logClicks,DEBUG} from './log.js';
 import {getAncestorInfo} from './layout.js';
+import {refreshTerminal,handleClick} from './baby-jaguar.js';
 import keys from './kbd.js';
 
 const term = termkit.terminal;
