@@ -42,12 +42,6 @@ No target data from chrome. Normally means the VM is paused or Chrome is not ope
     at async file:///Users/XXXXXXXx/test/dist/BrowserBox/src/ws-server.js:1041:62
     at async handler (file:///Users/XXXXXXXx/test/dist/BrowserBox/src/ws-server.js:1438:13)
 
-
-
-- first tab on tor seems to not start screen cast.
-  - possibly related, if we set mic to always allow and reload page a few times, tab might 'lock up'. 
-  - i've noticed predicate failed after 4 seconds, connection.forceMeta -- related to this? a race or delay thing?
-
 - disk partition extension func at start of install failing on RHEL
 
 - some deps are not found on rhel (not majro problem)
