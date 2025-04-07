@@ -262,7 +262,7 @@ We enforce licensing and protections for our business. Usage data ensures compli
 
 **Do you have perpetual licenses, i.e, without a subscription and frozen to a version?**
 
-Yes, but the ACV is $50,000 and above. Contact us: sales@dosaygo.com
+Yes, but the ACV is $150K+. Inquiries can be directed to: sales@dosaygo.com
 
 **Why choose BrowserBox over alternatives?**
 

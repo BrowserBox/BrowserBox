@@ -1,3 +1,4 @@
+- UNBLOCK drive. Mitigations to unblock sites like WSJ/Bloomberg. 
 
 - fix pointer alignment when using page zoom (pinch/spread)
 

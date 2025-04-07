@@ -1,9 +1,4 @@
 #!/usr/bin/env node
-/*
-todo
-we should app a 1 character gap - how ? longest text box in any node should have 1 space added to it.
-we should deconflict some lines (small text can vert overlap)
-*/
 // CyberJaguar - BrowserBox TUI Browser Application
   // Setup
     // imports
@@ -12,15 +7,13 @@ we should deconflict some lines (small text can vert overlap)
       import { Agent } from 'https';
       import Layout from './layout.js';
       import TerminalBrowser from './terminal-browser.js';
-      import TerminalInputField from './terminal-input-field.js';
-      import {logMessage,debugLog,DEBUG} from './log.js';
+      import {sleep, logClicks, logMessage,debugLog,DEBUG} from './log.js';
       import TK from 'terminal-kit';
       const { terminal } = TK;
 
-    // one liners
-      const sleep = ms => new Promise(res => setTimeout(res, ms));
-
     // Constants and state
+      const clickCounter = { value: 0 };
+      const USE_SYNTHETIC_FOCUS = true;
       const markClicks = false;
       const BrowserState = {
         targets: [],
@@ -32,6 +25,7 @@ we should deconflict some lines (small text can vert overlap)
       const mySource = 'jagclient' + Math.random().toString(36);
 
       let state;
+      let newState;
       let socket;
       let cleanup;
       let targets;
@@ -105,6 +99,11 @@ we should deconflict some lines (small text can vert overlap)
         browserbox = connection.browserbox;
         cookieHeader = connection.cookieHeader;
         BrowserState.targets = targets;
+        newState = {
+          get sessionId() { return sessionId; },
+
+          get send() { return send; }
+        };
 
         await send('Target.setDiscoverTargets', { discover: true });
         await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
@@ -121,7 +120,7 @@ we should deconflict some lines (small text can vert overlap)
             title: t.title || new URL(t.url || 'about:blank').hostname,
             url: t.url || 'about:blank',
           })),
-        });
+        }, () => newState);
 
         browser.on('tabSelected', async (tab) => {
           const index = browser.getTabs().findIndex(t => t.title === tab.title && t.url === tab.url);
@@ -240,7 +239,6 @@ we should deconflict some lines (small text can vert overlap)
           scrollDelta: 50,
           renderedBoxes: [],
           currentScrollY: 0,
-          clickCounter: { value: 0 },
           layoutToNode: null,
           nodeToParent: null,
           nodes: null,
@@ -317,6 +315,11 @@ we should deconflict some lines (small text can vert overlap)
       }
 
     // Browser UI
+      function statusLine(...stuff) {
+        // log this somewhere on screen
+        // for now do nothing! :)
+      }
+
       function normalizeUrl(input) {
         const trimmedInput = input.trim();
         const urlPattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/i;
@@ -381,7 +384,7 @@ we should deconflict some lines (small text can vert overlap)
         renderBoxes({ ...layoutState, renderedBoxes });
       }
 
-      async function refreshTerminal({ send, sessionId, state, addressBar }) {
+      export async function refreshTerminal({ send, sessionId, state, addressBar }) {
         try {
           // sometimes this line errors out and poll returns nothing. I think we could try a page reload
           // and try to repro and figure it out
@@ -396,16 +399,25 @@ we should deconflict some lines (small text can vert overlap)
           browser.render();
 
           if (layoutState) {
+            layoutState.browser = browser;
             state.clickableElements = layoutState.clickableElements;
             state.layoutToNode = layoutState.layoutToNode;
             state.nodeToParent = layoutState.nodeToParent;
             state.nodes = layoutState.nodes;
+
+            newState.layoutToNode = layoutState.layoutToNode;
+            newState.nodeToParent = layoutState.nodeToParent;
+            newState.nodes = layoutState.nodes;
+            newState.strings = snapshot.strings;
 
             renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
             state.isInitialized = true;
             DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
           } else {
             DEBUG && terminal.yellow('No text boxes found after polling.\n');
+            statusLine('No text boxes found');
+            renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
+            state.isInitialized = true;
           }
         } catch (error) {
           if (DEBUG) console.warn(error);
@@ -414,26 +426,42 @@ we should deconflict some lines (small text can vert overlap)
       }
 
       function renderBoxes(layoutState) {
-        const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes, inputElements } = layoutState;
+        const { browser, visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
         renderedBoxes.length = 0;
 
         for (const box of visibleBoxes) {
+          DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, ancestorType="${box.ancestorType}", backendNodeId=${box.backendNodeId}`);
           const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type } = box;
           const renderX = Math.max(1, termX + 1);
           const renderY = Math.max(5, termY + 1);
 
           if (renderX > termWidth || renderY > termHeight + 4) continue;
 
-          const availableWidth = Math.max(0, termWidth - renderX + 1);
-          const displayText = text.substring(0, availableWidth);
+          // Compute available width in the terminal
+          const displayWidth = Math.max(0, termWidth - renderX + 1);
+          let displayText = text.substring(0, displayWidth); // Truncate text to fit terminal
+          let termWidthForBox;
+
+          if (type === 'input' && boundingBox?.width && layoutState.viewportWidth) {
+            // Scale GUI width to terminal width
+            const scaleFactor = termWidth / layoutState.viewportWidth; // Pixels to characters
+            termWidthForBox = Math.round(boundingBox.width * scaleFactor);
+            // Clamp to ensure it fits within the terminal and isn't too small
+            termWidthForBox = Math.max(10, Math.min(termWidthForBox, displayWidth));
+            logClicks(`Input sizing for backendNodeId: ${backendNodeId}, boundingBox.width: ${boundingBox.width}, viewportWidth: ${layoutState.viewportWidth}, scaleFactor: ${scaleFactor}, termWidth: ${termWidthForBox}`);
+          } else {
+            // For non-inputs or if boundingBox.width is missing, use displayText length
+            termWidthForBox = displayText.length;
+          }
 
           const renderedBox = {
             text,
+            type,
             boundingBox,
             isClickable,
             termX: renderX,
             termY: renderY,
-            termWidth: displayText.length,
+            termWidth: termWidthForBox, // Set termWidth based on scaling or displayText
             termHeight: 1,
             viewportX,
             viewportY,
@@ -443,75 +471,197 @@ we should deconflict some lines (small text can vert overlap)
             layoutIndex,
             nodeIndex,
           };
-          renderedBoxes.push(renderedBox);
 
-          if (isClickable) {
-            const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
-            if (clickable) {
-              clickable.termX = renderX;
-              clickable.termY = renderY;
-              clickable.termWidth = displayText.length;
-              clickable.termHeight = 1;
-            }
-          }
+          const isFocused = browser.focusedElement === (type === 'input' ? `input:${backendNodeId}` : `clickable:${backendNodeId}`);
 
           if (type === 'input') {
-            let inputEntry = state.inputElements.find(i => i.metadata.nodeIndex === nodeIndex);
-            if (!inputEntry) {
-              const metadata = inputElements.find(i => i.nodeIndex === nodeIndex);
-              if (metadata) {
-                const inputField = new TerminalInputField({
+            logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
+            const currentBackendNodeId = backendNodeId;
+            const fallbackValue = text.startsWith('[INPUT') ? '' : text;
+
+            // Fire off async call to fetch live value, but don't await
+            send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId)
+              .then(resolveResult => {
+                if (!resolveResult?.object?.objectId) {
+                  throw new Error('Node no longer exists');
+                }
+                const objectId = resolveResult.object.objectId;
+                return send('Runtime.callFunctionOn', {
+                  objectId,
+                  functionDeclaration: 'function() { return this.value; }',
+                  arguments: [],
+                  returnByValue: true,
+                }, sessionId);
+              })
+              .then(valueResult => {
+                let liveValue = fallbackValue;
+                if (valueResult?.result?.value !== undefined) {
+                  liveValue = ''+valueResult.result.value;
+                  logClicks(`Fetched live value for backendNodeId: ${currentBackendNodeId}: "${liveValue}"`);
+                }
+
+                // Use termWidthForBox as the width for drawInputField
+                const inputField = browser.drawInputField({
                   x: renderX,
                   y: renderY,
-                  width: metadata.termWidth,
-                  defaultContent: metadata.value,
-                  backendNodeId: metadata.backendNodeId,
+                  width: termWidthForBox, // Use scaled termWidth
+                  key: currentBackendNodeId,
+                  initialValue: liveValue,
+                  onChange: async (value) => {
+                    try {
+                      const resolveResult = await send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId);
+                      if (!resolveResult?.object?.objectId) {
+                        throw new Error('Node no longer exists');
+                      }
+                      const objectId = resolveResult.object.objectId;
+                      const script = `function() {
+                        this.value = ${JSON.stringify(value)};
+                        this.dispatchEvent(new Event('input', { bubbles: true }));
+                        this.dispatchEvent(new Event('change', { bubbles: true }));
+                      }`;
+                      await send('Runtime.callFunctionOn', {
+                        objectId,
+                        functionDeclaration: script,
+                        arguments: [],
+                        returnByValue: true,
+                      }, sessionId);
+                      logClicks(`Updated remote value for backendNodeId: ${currentBackendNodeId} to "${value}"`);
+                    } catch (error) {
+                      logClicks(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+                      browser.redrawUnfocusedInput(currentBackendNodeId);
+                      browser.focusedElement = 'tabs';
+                      browser.inputFields.delete('' + currentBackendNodeId);
+                      browser.render();
+                    }
+                  },
                 });
 
-                inputField.on('submit', async (value) => {
-                  await setInputValueAndSubmit({ backendNodeId: metadata.backendNodeId, value, send, sessionId });
-                  await refreshTerminal({ send, sessionId, state, addressBar: null });
-                });
-                inputField.on('cancel', () => {
-                  inputField.hide();
+                // Update renderedBox.termWidth if necessary (should match termWidthForBox)
+                renderedBox.termWidth = inputField.width;
+                renderedBoxes.push(renderedBox);
+
+                // Update clickable elements if necessary
+                if (isClickable) {
+                  const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
+                  if (clickable) {
+                    clickable.termX = renderX;
+                    clickable.termY = renderY;
+                    clickable.termWidth = inputField.width;
+                    clickable.termHeight = 1;
+                  }
+                }
+              })
+              .catch(error => {
+                logClicks(`Failed to fetch live value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+
+                const inputField = browser.drawInputField({
+                  x: renderX,
+                  y: renderY,
+                  width: termWidthForBox, // Use scaled termWidth
+                  key: currentBackendNodeId,
+                  initialValue: fallbackValue,
+                  onChange: async (value) => {
+                    try {
+                      const resolveResult = await send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId);
+                      if (!resolveResult?.object?.objectId) {
+                        throw new Error('Node no longer exists');
+                      }
+                      const objectId = resolveResult.object.objectId;
+                      const script = `function() {
+                        this.value = ${JSON.stringify(value)};
+                        this.dispatchEvent(new Event('input', { bubbles: true }));
+                        this.dispatchEvent(new Event('change', { bubbles: true }));
+                      }`;
+                      await send('Runtime.callFunctionOn', {
+                        objectId,
+                        functionDeclaration: script,
+                        arguments: [],
+                        returnByValue: true,
+                      }, sessionId);
+                      logClicks(`Updated remote value for backendNodeId ${currentBackendNodeId} to "${value}"`);
+                    } catch (error) {
+                      logClicks(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+                      browser.redrawUnfocusedInput(currentBackendNodeId);
+                      browser.focusedElement = 'tabs';
+                      browser.inputFields.delete('' + currentBackendNodeId);
+                      browser.render();
+                    }
+                  },
                 });
 
-                inputEntry = { metadata, inputField };
-                state.inputElements.push(inputEntry);
-                DEBUG && terminal.magenta(`Created input field for node ${nodeIndex} at (${renderX}, ${renderY})\n`);
-              }
-            } else {
-              if (inputEntry.inputField.getPosition().x !== renderX || inputEntry.inputField.getPosition().y !== renderY) {
-                inputEntry.inputField.rebase(renderX, renderY);
-                DEBUG && terminal.magenta(`Rebased input field for node ${nodeIndex} to (${renderX}, ${renderY})\n`);
-              }
-            }
+                renderedBox.termWidth = inputField.width;
+                renderedBoxes.push(renderedBox);
+
+                if (isClickable) {
+                  const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
+                  if (clickable) {
+                    clickable.termX = renderX;
+                    clickable.termY = renderY;
+                    clickable.termWidth = inputField.width;
+                    clickable.termHeight = 1;
+                  }
+                }
+              });
           } else {
             terminal.moveTo(renderX, renderY);
-            terminal.defaultColor().bgDefaultColor();
-            if (type === 'media') {
-              if (isClickable) {
+            if (isFocused && isClickable) {
+              terminal.bgCyan();
+              if (type === 'button' || ancestorType === 'button') {
+                // Originally bgGreen.black, so use green (original background) as foreground
+                terminal.green(displayText);
+              } else if (type === 'media' && isClickable) {
+                // Originally gray.underline, gray isn't cyan or blue, so keep gray
                 terminal.gray.underline(displayText);
+              } else if (ancestorType === 'hyperlink') {
+                // Originally cyan.underline, cyan is cyan, so use black
+                terminal.black.underline(displayText);
+              } else if (ancestorType === 'other_clickable') {
+                // Originally bold with default color, use default
+                terminal.defaultColor.bold(displayText);
               } else {
-                terminal.brightBlack(displayText);
+                // Default case, originally default color, use default
+                terminal.defaultColor(displayText);
               }
             } else {
-              switch (ancestorType) {
-                case 'hyperlink':
-                  terminal.cyan.underline(displayText);
-                  break;
-                case 'button':
-                  terminal.bgGreen.black(displayText);
-                  break;
-                case 'other_clickable':
-                  terminal.bold(displayText);
-                  break;
-                default:
-                  terminal(displayText);
+              terminal.defaultColor().bgDefaultColor();
+              if (type === 'button') {
+                terminal.bgGreen.black(displayText);
+              } else if (type === 'media') {
+                if (isClickable) {
+                  terminal.gray.underline(displayText);
+                } else {
+                  terminal.brightBlack(displayText);
+                }
+              } else {
+                switch (ancestorType) {
+                  case 'hyperlink':
+                    terminal.cyan.underline(displayText);
+                    break;
+                  case 'button':
+                    terminal.bgGreen.black(displayText);
+                    break;
+                  case 'other_clickable':
+                    terminal.bold(displayText);
+                    break;
+                  default:
+                    terminal(displayText);
+                }
+              }
+            }
+            renderedBoxes.push(renderedBox);
+            if (isClickable) {
+              const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
+              if (clickable) {
+                clickable.termX = renderX;
+                clickable.termY = renderY;
+                clickable.termWidth = displayText.length;
+                clickable.termHeight = 1;
               }
             }
           }
         }
+
+        newState.renderedBoxes = renderedBoxes;
       }
 
     // Interactivity helpers
@@ -527,7 +677,7 @@ we should deconflict some lines (small text can vert overlap)
           await send('Page.navigateToHistoryEntry', { entryId: previousEntry.id }, sessionId);
           return true;
         } else {
-          console.log('No previous page in history');
+          statusLine('No previous page in history');
           return false;
         }
       }
@@ -539,12 +689,12 @@ we should deconflict some lines (small text can vert overlap)
           await send('Page.navigateToHistoryEntry', { entryId: nextEntry.id }, sessionId);
           return true;
         } else {
-          console.log('No next page in history');
+          statusLine('No next page in history');
           return false;
         }
       }
 
-      async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, clickCounter, refresh, layoutToNode, nodeToParent, nodes }) {
+      export async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, refresh, layoutToNode, nodeToParent, nodes }) {
         let clickedBox = null;
         for (let i = renderedBoxes.length - 1; i >= 0; i--) {
           const box = renderedBoxes[i];
@@ -554,10 +704,95 @@ we should deconflict some lines (small text can vert overlap)
           }
         }
         if (!clickedBox || !clickedBox.isClickable) {
-          DEBUG && terminal.yellow(`No clickable element found at TUI coordinates (${termX}, ${termY}).\n`);
+          statusLine(`No clickable element at (${termX}, ${termY})`);
+          logClicks(`No clickable element at (${termX}, ${termY})`);
           return;
         }
 
+        logClicks(`Clicked box type: ${clickedBox.type}, backendNodeId: ${clickedBox.backendNodeId}`);
+        if (clickedBox.type === 'input') {
+          if (USE_SYNTHETIC_FOCUS) {
+            logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
+
+            // Focus the remote input element
+            try {
+              const resolveResult = await send('DOM.resolveNode', { backendNodeId: clickedBox.backendNodeId }, sessionId);
+              if (!resolveResult?.object?.objectId) {
+                throw new Error('Node no longer exists');
+              }
+              const objectId = resolveResult.object.objectId;
+              await send('Runtime.callFunctionOn', {
+                objectId,
+                functionDeclaration: 'function() { this.focus(); }',
+                arguments: [],
+                returnByValue: true,
+              }, sessionId);
+              logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId}`);
+            } catch (error) {
+              logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
+            }
+
+            // Focus locally in the TUI
+            browser.focusInput(clickedBox.backendNodeId);
+
+            // Calculate cursor position based on click
+            const inputState = browser.inputFields.get('' + clickedBox.backendNodeId);
+            if (inputState) {
+              const relativeX = termX - clickedBox.termX; // Position within the input
+              inputState.cursorPosition = Math.min(relativeX, inputState.value.length); // Clamp to value length
+              browser.redrawFocusedInput(); // Redraw to show cursor
+            }
+            return;
+          } else {
+            logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
+
+            // Focus the remote input element with a mouse click
+            try {
+              // Calculate the center of the input element in GUI coordinates
+              const guiX = clickedBox.boundingBox.x + clickedBox.boundingBox.width / 2;
+              const guiY = clickedBox.boundingBox.y + clickedBox.boundingBox.height / 2;
+              const clickX = guiX + clickedBox.viewportX;
+              const clickY = guiY + clickedBox.viewportY;
+
+              // Send mouse down event
+              await send('Input.dispatchMouseEvent', {
+                type: 'mousePressed',
+                x: clickX,
+                y: clickY,
+                button: 'left',
+                clickCount: 1,
+              }, sessionId);
+
+              // Send mouse up event
+              await send('Input.dispatchMouseEvent', {
+                type: 'mouseReleased',
+                x: clickX,
+                y: clickY,
+                button: 'left',
+                clickCount: 1,
+              }, sessionId);
+
+              logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId} at GUI coordinates (${clickX}, ${clickY})`);
+            } catch (error) {
+              logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
+            }
+
+            // Focus locally in the TUI
+            browser.focusInput(clickedBox.backendNodeId);
+
+            // Calculate cursor position based on click
+            const inputState = browser.inputFields.get('' + clickedBox.backendNodeId);
+            if (inputState) {
+              const relativeX = termX - clickedBox.termX;
+              inputState.cursorPosition = Math.min(relativeX, inputState.value.length);
+              browser.redrawFocusedInput();
+            }
+            return;
+          }
+        }
+
+        // Click simulation for other elements
+        logClicks("Simulating click on non-input element");
         terminal.moveTo(clickedBox.termX, clickedBox.termY);
         terminal.yellow(clickedBox.text);
         await sleep(300);
@@ -575,7 +810,7 @@ we should deconflict some lines (small text can vert overlap)
         const nodeText = clickedBox.text;
         const clickEvent = { type: 'click' };
         try {
-          DEBUG && appendFileSync('clicks.log', `${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
+          DEBUG && logClicks(`${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
         } catch (error) {
           console.error(`Failed to write to clicks log: ${error.message}`);
         }
@@ -614,7 +849,7 @@ we should deconflict some lines (small text can vert overlap)
           DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
         }
 
-        if ( DEBUG && markClicks ) {
+        if (DEBUG && markClicks) {
           const script = `
             (function() {
               const rect = this.getBoundingClientRect();
@@ -649,104 +884,44 @@ we should deconflict some lines (small text can vert overlap)
         state = initializeState();
         const refresh = () => refreshTerminal({ send, sessionId, state, addressBar: null });
         const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
-        const calculateLineHeight = () => Math.round(state.viewportHeight / terminal.height);
 
-        let focusedInput = null; // Track the currently focused input field
-
-        terminal.on('mouse', async (event, data) => {
-          if (!state.isListening) return;
-
-          if (event === 'MOUSE_LEFT_BUTTON_PRESSED' && data.y > 4) {
-            if (!state.isInitialized) {
-              DEBUG && debugLog(`Click ignored: Terminal not yet initialized`);
-              return;
-            }
-            const input = state.inputElements.find(i => {
-              const pos = i.inputField.getPosition();
-              return data.x >= pos.x && data.x < pos.x + i.metadata.termWidth && data.y === pos.y;
-            });
-            if (input) {
-              if (focusedInput && focusedInput !== input.inputField) focusedInput.blur();
-              focusedInput = input.inputField;
-              focusedInput.focus();
-              browser.focus('tabs'); // Reset TerminalBrowser focus to avoid omnibox interference
-              DEBUG && debugLog(`Focused input field at (${data.x}, ${data.y})`);
-              return;
-            }
-            if (focusedInput) focusedInput.blur();
-            focusedInput = null;
-            await handleClick({
-              termX: data.x,
-              termY: data.y,
-              renderedBoxes: state.renderedBoxes,
-              clickableElements: state.clickableElements,
-              send,
-              sessionId,
-              clickCounter: state.clickCounter,
-              refresh,
-              layoutToNode: state.layoutToNode,
-              nodeToParent: state.nodeToParent,
-              nodes: state.nodes,
-            });
-          } else if ((event === 'MOUSE_WHEEL_UP' || event === 'MOUSE_WHEEL_DOWN') && data.y > 4) {
-            const deltaY = event === 'MOUSE_WHEEL_UP' ? -state.scrollDelta : state.scrollDelta;
-            if (event === 'MOUSE_WHEEL_UP' && state.currentScrollY <= 0) {
-              DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
-              return;
-            }
-            await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
-            debouncedRefresh();
+        browser.on('renderContent', () => {
+          if (state.layoutState) {
+            console.log('Rendering content');
+            renderLayout({ layoutState: state.layoutState, renderedBoxes: state.renderedBoxes });
           }
         });
 
-        terminal.on('key', async (name) => {
-          if (!state.isListening) return;
-
-          // Handle input field focus first
-          if (focusedInput) {
-            if (focusedInput.handleKey(name)) return;
-          }
-
-          // Browser UI navigation (only in UI area: y <= 3)
-          if (browser.focusedElement !== 'address' && (name === 'TAB' || name === 'SHIFT_TAB')) {
-            const uiElements = ['tabs', 'back', 'forward', 'address', 'go'];
-            const currentIdx = uiElements.indexOf(browser.focusedElement);
-            const nextIdx = name === 'TAB' ? (currentIdx + 1) % uiElements.length : (currentIdx - 1 + uiElements.length) % uiElements.length;
-            browser.focus(uiElements[nextIdx]);
-            return;
-          }
-
-          // Global keys when no input is focused
-          switch (name) {
-            case 'CTRL_C':
-              state.isListening = false;
-              process.emit('SIGINT');
-              break;
-            case '<':
-              if (onTabSwitch) await onTabSwitch();
-              break;
-            case 'UP':
-            case 'DOWN':
-              if (focusedInput) return; // Ignore if input is focused
-              const lineHeight = calculateLineHeight();
-              const deltaY = name === 'UP' ? -lineHeight : lineHeight;
-              if (name === 'UP' && state.currentScrollY <= 0) {
-                DEBUG && debugLog(`Ignoring upward scroll: already at top (scrollOffsetY=${state.currentScrollY})`);
-                return;
-              }
-              await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
-              debouncedRefresh();
-              break;
-          }
+        browser.on('click', async ({ x, y }) => {
+          if (!state.isInitialized) return;
+          await handleClick({
+            termX: x,
+            termY: y,
+            renderedBoxes: state.renderedBoxes,
+            clickableElements: state.clickableElements,
+            send,
+            sessionId,
+            refresh,
+            layoutToNode: state.layoutToNode,
+            nodeToParent: state.nodeToParent,
+            nodes: state.nodes,
+          });
         });
 
-        await refresh();
+        browser.on('scroll', async ({ direction }) => {
+          const lineHeight = Math.round(state.viewportHeight / terminal.height);
+          const deltaY = direction * lineHeight;
+          if (direction < 0 && state.currentScrollY <= 0) return;
+          await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+          debouncedRefresh();
+        });
+
+        await refresh(); // This should trigger the initial render
         return () => {
           state.isListening = false;
-          state.inputElements.forEach(input => input.inputField.hide());
+          browser.stopListening();
         };
       }
-
     // helpers
       async function connectToBrowser() {
         let cookieHeader;
@@ -785,7 +960,8 @@ we should deconflict some lines (small text can vert overlap)
         }
 
         if (!targets.length) {
-          terminal.yellow('No page or tab targets available.\n');
+          DEBUG && terminal.yellow('No page or tab targets available.\n');
+          statusLine('No page or tab targets available.');
         }
 
         DEBUG && terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
@@ -825,10 +1001,10 @@ we should deconflict some lines (small text can vert overlap)
           try {
             const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
             message = JSON.parse(dataStr);
-            DEBUG && logMessage('RECEIVE', message, terminal);
+            logMessage('RECEIVE', message, terminal);
           } catch (error) {
             if (DEBUG) console.warn(error);
-            terminal.red(`Invalid message: ${String(data).slice(0, 50)}...\n`);
+            terminal.red(`Invalid message: ${('' + data).slice(0, 50)}...\n`);
             return;
           }
           const key = `${message.sessionId || 'root'}:${message.id}`;
@@ -861,7 +1037,7 @@ we should deconflict some lines (small text can vert overlap)
           }, 10000);
 
           try {
-            DEBUG && logMessage('SEND', message, terminal);
+            logMessage('SEND', message, terminal);
             socket.send(JSON.stringify(message));
           } catch (error) {
             clearTimeout(timeout);

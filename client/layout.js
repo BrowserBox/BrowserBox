@@ -553,6 +553,12 @@ const LayoutAlgorithm = (() => {
       const nodeNameIdx = nodes.nodeName[nodeIdx];
       const nodeName = nodeNameIdx >= 0 ? strings[nodeNameIdx] : '';
       const nodeNameUpper = nodeName.toUpperCase();
+      const attributes = nodes.attributes[nodeIdx] || [];
+
+      const bounds = layout.bounds[layoutIdx];
+      const ceIndex = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'contenteditable');
+
+      if (!bounds || bounds[2] <= INVISIBLE_DIMENSION || bounds[3] <= INVISIBLE_DIMENSION ) continue;
       
       let mediaType, placeholder;
       if (nodeNameUpper === 'IMG') {
@@ -564,12 +570,43 @@ const LayoutAlgorithm = (() => {
       } else if (nodeNameUpper === 'AUDIO') {
         mediaType = 'media';
         placeholder = '[AUD]';
+      } else if (nodeNameUpper === 'INPUT') {
+        const typeIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'type');
+        const inputType = typeIdx !== -1 ? strings[attributes[typeIdx + 1]] : 'text';
+        if (inputType !== 'hidden') {
+          if (inputType === 'button' || inputType === 'submit') {
+            const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
+            const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
+            placeholder = valueText || '[BUTTON]';
+            mediaType = 'button';
+          } else {
+            const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
+            const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
+            mediaType = 'input';
+            placeholder = valueText || ''; // Use actual value
+          }
+        }
+      } else if (nodeNameUpper === 'TEXTAREA') {
+        // Fetch content from text nodes if available
+        let textContent = '';
+        iterateTextBoxesForNode(nodeIdx, snapshot, (i, layoutIdx, textIndex) => {
+          if (textIndex !== -1) textContent += strings[textIndex];
+        });
+        mediaType = 'input';
+        placeholder = textContent || '';
+      } else if (ceIndex !== -1) {
+        const contentEditable = strings[attributes[ceIndex + 1]];
+        if (contentEditable === 'true' || contentEditable === '') {
+          let textContent = '';
+          iterateTextBoxesForNode(nodeIdx, snapshot, (i, layoutIdx, textIndex) => {
+            if (textIndex !== -1) textContent += strings[textIndex];
+          });
+          mediaType = 'input';
+          placeholder = textContent || '';
+        }
       } else {
         continue; // Skip non-media elements
       }
-
-      const bounds = layout.bounds[layoutIdx];
-      if (!bounds || bounds[2] === 0 || bounds[3] === 0) continue;
 
       const boundingBox = {
         x: bounds[0],
@@ -782,49 +819,6 @@ const LayoutAlgorithm = (() => {
       nodeToParent,
       nodes,
     };
-  }
-
-  function getAncestorInfo(nodeIndex, nodes, strings) {
-    let currentIndex = nodeIndex;
-    while (currentIndex !== -1) {
-      if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {
-        DEBUG && debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}`);
-        return 'normal';
-      }
-
-      const nodeNameIndex = nodes.nodeName[currentIndex];
-      if (typeof nodeNameIndex === 'undefined') {
-        DEBUG && debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}`);
-        return 'normal';
-      }
-      const nodeName = strings[nodeNameIndex];
-      const attributes = nodes.attributes[currentIndex] || [];
-      const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
-
-      if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
-        return 'button';
-      }
-
-      let hasHref = false;
-      let hasOnclick = false;
-      for (let i = 0; i < attributes.length; i += 2) {
-        const keyIndex = attributes[i];
-        const valueIndex = attributes[i + 1];
-        const key = strings[keyIndex];
-        if (key === 'href') hasHref = true;
-        if (key === 'onclick') hasOnclick = true;
-      }
-      if (nodeName === 'A' && (hasHref || hasOnclick)) {
-        return 'hyperlink';
-      }
-
-      if (isClickable) {
-        return 'other_clickable';
-      }
-
-      currentIndex = nodes.parentIndex[currentIndex];
-    }
-    return 'normal';
   }
 
   function unionBoxes(box1, box2) {
@@ -1136,4 +1130,48 @@ const LayoutAlgorithm = (() => {
 })();
 
 export default LayoutAlgorithm;
+
+export function getAncestorInfo(nodeIndex, nodes, strings) {
+  let currentIndex = nodeIndex;
+  while (currentIndex !== -1) {
+    if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {
+      DEBUG && debugLog(`Invalid nodeIndex in getAncestorInfo: ${nodeIndex}, currentIndex: ${currentIndex}`);
+      return 'normal';
+    }
+
+    const nodeNameIndex = nodes.nodeName[currentIndex];
+    if (typeof nodeNameIndex === 'undefined') {
+      DEBUG && debugLog(`Undefined nodeName for currentIndex: ${currentIndex}, nodeIndex: ${nodeIndex}`);
+      return 'normal';
+    }
+    const nodeName = strings[nodeNameIndex];
+    const attributes = nodes.attributes[currentIndex] || [];
+    const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
+
+    if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
+      return 'button';
+    }
+
+    let hasHref = false;
+    let hasOnclick = false;
+    for (let i = 0; i < attributes.length; i += 2) {
+      const keyIndex = attributes[i];
+      const valueIndex = attributes[i + 1];
+      const key = strings[keyIndex];
+      if (key === 'href') hasHref = true;
+      if (key === 'onclick') hasOnclick = true;
+    }
+    if (nodeName === 'A' && (hasHref || hasOnclick)) {
+      return 'hyperlink';
+    }
+
+    if (isClickable) {
+      return 'other_clickable';
+    }
+
+    currentIndex = nodes.parentIndex[currentIndex];
+  }
+  return 'normal';
+}
+
 
