@@ -132,10 +132,9 @@ export default class TerminalBrowser extends EventEmitter {
     const backendNodeIdStr = String(key);
 
     if (!this.inputFields.has(backendNodeIdStr)) {
-      logClicks(`Initializing input state for ${backendNodeIdStr} with value: ${initialValue}`);
       this.inputFields.set(backendNodeIdStr, {
         value: initialValue,
-        cursorPosition: initialValue.length, // Set cursor to end of live value
+        cursorPosition: initialValue.length,
         focused: false,
         onChange,
         x,
@@ -144,8 +143,6 @@ export default class TerminalBrowser extends EventEmitter {
       });
     }
     const inputState = this.inputFields.get(backendNodeIdStr);
-    logClicks(`Drawing input ${backendNodeIdStr}, value: ${inputState.value}, focused: ${inputState.focused}`);
-
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
@@ -160,9 +157,9 @@ export default class TerminalBrowser extends EventEmitter {
       const beforeCursor = value.slice(0, cursorPos);
       const cursorChar = value[cursorPos] || ' ';
       const afterCursor = value.slice(cursorPos + 1);
-      this.term.bgCyan().black(beforeCursor);
+      this.term.bgCyan().white(beforeCursor); // Cyan bg, original white bg becomes fg
       this.term.bgBlack().brightWhite().bold(cursorChar);
-      this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
+      this.term.bgCyan().white(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
     } else {
       this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
     }
