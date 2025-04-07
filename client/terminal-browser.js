@@ -57,6 +57,51 @@ export default class TerminalBrowser extends EventEmitter {
     this.setupInput();
   }
 
+  computeTabbableElements() {
+    const tabbable = [];
+
+    // Browser UI elements
+    // Tabs (each tab is individually tabbable)
+    this.tabs.forEach((tab, index) => {
+      const x = 1 + index * this.options.tabWidth;
+      tabbable.push({ type: 'tab', index, x, y: 1 });
+    });
+    // New Tab button
+    tabbable.push({ type: 'newTab', x: this.term.width - this.NEW_TAB_WIDTH + 1, y: 1 });
+    // Back button
+    tabbable.push({ type: 'back', x: 2, y: this.TAB_HEIGHT + 2 });
+    // Forward button
+    tabbable.push({ type: 'forward', x: this.BACK_WIDTH + 2, y: this.TAB_HEIGHT + 2 });
+    // Omnibox (address)
+    tabbable.push({ type: 'address', x: this.BACK_WIDTH + this.FORWARD_WIDTH + 2, y: this.TAB_HEIGHT + 2 });
+    // Go button
+    tabbable.push({ type: 'go', x: this.term.width - this.GO_WIDTH, y: this.TAB_HEIGHT + 2 });
+
+    // Content pane elements (inputs, buttons, links)
+    // Get clickable elements from renderedBoxes via state
+    const state = this.getState();
+    if (state && state.renderedBoxes) {
+      state.renderedBoxes.forEach(box => {
+        if (box.isClickable || box.type === 'input') {
+          tabbable.push({
+            type: box.type === 'input' ? 'input' : 'clickable',
+            backendNodeId: box.backendNodeId,
+            x: box.termX,
+            y: box.termY,
+            width: box.termWidth,
+            height: box.termHeight,
+            text: box.text,
+          });
+        }
+      });
+    }
+
+    // Sort by y (rows) then x (columns)
+    tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
+
+    return tabbable;
+  }
+
   drawTabs() {
     this.term.moveTo(1, 1);
     this.term.bgBlue().white(' '.repeat(this.term.width));
@@ -69,8 +114,9 @@ export default class TerminalBrowser extends EventEmitter {
       const tabText = `${titlePart}${' '.repeat(paddingLength)}[x]`;
 
       this.term.moveTo(x, 1);
-      if (i === this.focusedTabIndex) {
-        this.term.bgWhite()[this.tabs[i].color]().bold().underline(tabText);
+      const isFocused = this.focusedElement === 'tabs' && i === this.focusedTabIndex;
+      if (isFocused) {
+        this.term.bgCyan().black().bold().underline(tabText); // Cyan bg, black fg (since original is blue)
       } else if (i === this.selectedTabIndex) {
         this.term.bgBlue()[this.tabs[i].color]().underline(tabText);
       } else {
@@ -80,7 +126,11 @@ export default class TerminalBrowser extends EventEmitter {
     }
 
     this.term.moveTo(this.term.width - this.NEW_TAB_WIDTH + 1, 1);
-    this.term.bgBlue().white(' [+] ');
+    if (this.focusedElement === 'newTab') {
+      this.term.bgCyan().black(' [+] '); // Cyan bg, black fg (original white)
+    } else {
+      this.term.bgBlue().white(' [+] ');
+    }
   }
 
   drawOmnibox() {
