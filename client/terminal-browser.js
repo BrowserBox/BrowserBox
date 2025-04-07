@@ -1,6 +1,6 @@
 ﻿import termkit from 'terminal-kit';
 import { EventEmitter } from 'events';
-import {sleep, logClicks,DEBUG} from './log.js';
+import {sleep, debugLog, logClicks,DEBUG} from './log.js';
 import keys from './kbd.js';
 
 const term = termkit.terminal;
@@ -59,30 +59,24 @@ export default class TerminalBrowser extends EventEmitter {
 
   computeTabbableElements() {
     const tabbable = [];
-
-    // Browser UI elements
-    // Tabs (each tab is individually tabbable)
+    // Browser UI elements (tabs, buttons, etc.) - assuming this part works
     this.tabs.forEach((tab, index) => {
       const x = 1 + index * this.options.tabWidth;
       tabbable.push({ type: 'tab', index, x, y: 1 });
     });
-    // New Tab button
     tabbable.push({ type: 'newTab', x: this.term.width - this.NEW_TAB_WIDTH + 1, y: 1 });
-    // Back button
     tabbable.push({ type: 'back', x: 2, y: this.TAB_HEIGHT + 2 });
-    // Forward button
     tabbable.push({ type: 'forward', x: this.BACK_WIDTH + 2, y: this.TAB_HEIGHT + 2 });
-    // Omnibox (address)
     tabbable.push({ type: 'address', x: this.BACK_WIDTH + this.FORWARD_WIDTH + 2, y: this.TAB_HEIGHT + 2 });
-    // Go button
     tabbable.push({ type: 'go', x: this.term.width - this.GO_WIDTH, y: this.TAB_HEIGHT + 2 });
 
-    // Content pane elements (inputs, buttons, links)
-    // Get clickable elements from renderedBoxes via state
+    // Content pane elements
     const state = this.getState();
     if (state && state.renderedBoxes) {
+      debugLog('Rendered Boxes Count:', state.renderedBoxes.length);
       state.renderedBoxes.forEach(box => {
         if (box.isClickable || box.type === 'input') {
+          debugLog(`Adding to tabbable: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
           tabbable.push({
             type: box.type === 'input' ? 'input' : 'clickable',
             backendNodeId: box.backendNodeId,
@@ -94,11 +88,12 @@ export default class TerminalBrowser extends EventEmitter {
           });
         }
       });
+    } else {
+      debugLog('No state or renderedBoxes available');
     }
 
-    // Sort by y (rows) then x (columns)
+    debugLog('Final Tabbable Elements Count:', tabbable.length);
     tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
-
     return tabbable;
   }
 

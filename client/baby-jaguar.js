@@ -424,6 +424,7 @@
         renderedBoxes.length = 0;
 
         for (const box of visibleBoxes) {
+          DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, ancestorType="${box.ancestorType}", backendNodeId=${box.backendNodeId}`);
           const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type } = box;
           const renderX = Math.max(1, termX + 1);
           const renderY = Math.max(5, termY + 1);

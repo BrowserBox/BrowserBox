@@ -28,8 +28,9 @@ const LOG_FILE = 'cdp.log';
           }
         }
 
-        export function debugLog(message) {
+        export function debugLog(...message) {
           if ( ! DEBUG ) return;
+          message = message.join(' ');
           try {
             appendFileSync('debug-coords.log', `${new Date().toISOString()} - ${message}\n`);
           } catch (error) {
