@@ -391,7 +391,6 @@
           if ( ! snapshot ) return;
           state.currentScrollY = viewportY;
           const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal });
-          layoutState.browser = browser;
 
           terminal.clear();
           terminal.bgDefaultColor();
@@ -399,6 +398,7 @@
           browser.render();
 
           if (layoutState) {
+            layoutState.browser = browser;
             state.clickableElements = layoutState.clickableElements;
             state.layoutToNode = layoutState.layoutToNode;
             state.nodeToParent = layoutState.nodeToParent;
