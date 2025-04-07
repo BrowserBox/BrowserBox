@@ -386,6 +386,7 @@
           if ( ! snapshot ) return;
           state.currentScrollY = viewportY;
           const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal });
+          layoutState.browser = browser;
 
           terminal.clear();
           terminal.bgDefaultColor();
@@ -418,6 +419,7 @@
 
         for (const box of visibleBoxes) {
           const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type } = box;
+          const {browser} = layoutIndex;
           const renderX = Math.max(1, termX + 1);
           const renderY = Math.max(5, termY + 1);
 
@@ -457,6 +459,8 @@
             layoutIndex,
             nodeIndex,
           };
+
+          const isFocused = browser.focusedElement === (type === 'input' ? `input:${backendNodeId}` : `clickable:${backendNodeId}`);
 
           if (type === 'input') {
             logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
