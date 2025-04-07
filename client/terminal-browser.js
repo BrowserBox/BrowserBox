@@ -405,6 +405,10 @@ export default class TerminalBrowser extends EventEmitter {
               this.focusPreviousElement(); // Updated to use new tabbing logic
               this.render();
               break;
+            case 'UP':
+            case 'DOWN':
+              this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+              break;
             default:
               if (key.length === 1) {
                 inputState.value = inputState.value.slice(0, inputState.cursorPosition) + key + inputState.value.slice(inputState.cursorPosition);
@@ -447,6 +451,13 @@ export default class TerminalBrowser extends EventEmitter {
           this.focusNextElement();
         } else if (key === 'SHIFT_TAB') {
           this.focusPreviousElement();
+        } else {
+          switch(key) {
+            case 'UP':
+            case 'DOWN':
+              this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+              break;
+          }
         }
       }
       // Handle UI elements
@@ -602,7 +613,7 @@ export default class TerminalBrowser extends EventEmitter {
     let parentNodeIndex = -1;
     state.nodes.backendNodeId.forEach((id, nodeIdx) => {
       if (id == backendNodeId) {
-        parentNodeIndex = nodeIdx; // Capture the parent's node index
+        parentNodeIndex = nodeIdx;
         childNodeIndices.add(nodeIdx);
         const collectChildren = (idx) => {
           const children = Array.from(state.renderedBoxes)
@@ -628,27 +639,34 @@ export default class TerminalBrowser extends EventEmitter {
     const maxX = Math.max(...boxes.map(b => b.termX + b.termWidth - 1));
     const minY = Math.min(...boxes.map(b => b.termY));
     const maxY = Math.max(...boxes.map(b => b.termY));
-    const fullText = boxes.map(b => b.text).join(' ');
-
-    // Get the ancestor's type from the parent node
     const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, state.nodes, state.strings || []) : boxes[0].ancestorType;
     debugLog(`AncestorType for ${backendNodeId}: ${ancestorType}`);
 
+    // Sort boxes by termY to render in order
+    boxes.sort((a, b) => a.termY - b.termY);
+
+    // Render each line at its termY, fill gaps with spaces
     for (let y = minY; y <= maxY; y++) {
       this.term.moveTo(minX, y);
-      const lineText = y === minY ? fullText.substring(0, maxX - minX + 1) : ' '.repeat(maxX - minX + 1);
-      this.term.bgCyan(); // Focus style
+      const boxAtY = boxes.find(b => b.termY === y);
+      let lineText = '';
+      if (boxAtY) {
+        lineText = boxAtY.text;
+      } 
+      lineText = lineText.slice(0, this.term.width - minX + 1);
+
+      this.term.bgCyan();
       if (ancestorType === 'button') {
-        this.term.green(lineText); // Original bgGreen.black
+        this.term.green(lineText);
       } else if (ancestorType === 'hyperlink') {
-        this.term.black().underline(lineText); // Original cyan.underline
+        this.term.black().underline(lineText);
       } else if (ancestorType === 'other_clickable') {
-        this.term.defaultColor().bold(lineText); // Original bold
+        this.term.defaultColor().bold(lineText);
       } else {
-        this.term.defaultColor(lineText); // Fallback
+        this.term.defaultColor(lineText);
       }
     }
-    debugLog(`Redraw ${backendNodeId} with fullText "${fullText}" and ancestorType ${ancestorType} ${JSON.stringify({minX,minY,maxX,maxY})}`);
+    debugLog(`Redraw ${backendNodeId} with ancestorType ${ancestorType} ${JSON.stringify({minX,minY,maxX,maxY})}`);
     this.term.bgDefaultColor().defaultColor();
   }
 
@@ -690,12 +708,20 @@ export default class TerminalBrowser extends EventEmitter {
       const maxX = Math.max(...boxes.map(b => b.termX + b.termWidth - 1));
       const minY = Math.min(...boxes.map(b => b.termY));
       const maxY = Math.max(...boxes.map(b => b.termY));
-      const fullText = boxes.map(b => b.text).join(' ');
       const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, state.nodes, state.strings || []) : boxes[0].ancestorType;
+
+      boxes.sort((a, b) => a.termY - b.termY);
 
       for (let y = minY; y <= maxY; y++) {
         this.term.moveTo(minX, y);
-        const lineText = y === minY ? fullText.substring(0, maxX - minX + 1) : ' '.repeat(maxX - minX + 1);
+        const boxAtY = boxes.find(b => b.termY === y);
+        let lineText = '';
+        if (boxAtY) {
+          lineText = boxAtY.text;
+        }
+
+        lineText = lineText.slice(0, this.term.width - minX + 1);
+
         this.term.defaultColor().bgDefaultColor();
         if (ancestorType === 'button') this.term.bgGreen().black(lineText);
         else if (ancestorType === 'hyperlink') this.term.cyan().underline(lineText);
