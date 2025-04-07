@@ -247,6 +247,23 @@ export default class TerminalBrowser extends EventEmitter {
       logClicks(`Key pressed: ${key}, focusedElement: ${this.focusedElement}`);
       if (!isListening) return;
 
+      // Global keybindings
+      if (key === 'CTRL_C') {
+        isListening = false;
+        this.term.clear();
+        this.term.processExit(0);
+        return;
+      }
+      if (key === 'CTRL_T') {
+        this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+        return;
+      }
+      if (key === 'CTRL_W') {
+        if (this.selectedTabIndex >= 0) this.closeTab(this.selectedTabIndex);
+        return;
+      }
+
+      // Handle input focus
       if (this.focusedElement.startsWith('input:')) {
         const backendNodeId = this.focusedElement.split(':')[1];
         const inputState = this.inputFields.get(backendNodeId);
@@ -257,7 +274,6 @@ export default class TerminalBrowser extends EventEmitter {
         logClicks(`Input focused, backendNodeId: ${backendNodeId}, current value: ${inputState.value}`);
 
         if (key === 'ENTER') {
-          // Send Enter key event to remote browser
           const keyCommand = keyEvent('ENTER');
           if (keyCommand) {
             try {
@@ -272,8 +288,6 @@ export default class TerminalBrowser extends EventEmitter {
               logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
             }
           }
-
-          // Redraw current input as unfocused and shift focus
           this.redrawUnfocusedInput(backendNodeId);
           this.focusedElement = 'tabs';
           this.previousFocusedElement = this.focusedElement;
@@ -298,10 +312,12 @@ export default class TerminalBrowser extends EventEmitter {
               }
               break;
             case 'TAB':
-              this.focusNextInput();
+              this.focusNextElement(); // Updated to use new tabbing logic
+              this.render();
               break;
             case 'SHIFT_TAB':
-              this.focusPreviousInput();
+              this.focusPreviousElement(); // Updated to use new tabbing logic
+              this.render();
               break;
             default:
               if (key.length === 1) {
@@ -314,17 +330,47 @@ export default class TerminalBrowser extends EventEmitter {
               break;
           }
         }
-      } else {
+      }
+      // Handle clickable elements
+      else if (this.focusedElement.startsWith('clickable:')) {
+        const backendNodeId = this.focusedElement.split(':')[1];
+        const state = this.getState();
+        const box = state.renderedBoxes.find(b => String(b.backendNodeId) === backendNodeId);
+
+        if (key === 'ENTER') {
+          if (box) {
+            await handleClick({
+              termX: box.termX,
+              termY: box.termY,
+              renderedBoxes: state.renderedBoxes,
+              clickableElements: state.clickableElements,
+              send: state.send,
+              sessionId: state.sessionId,
+              clickCounter: state.clickCounter,
+              refresh: () => refreshTerminal({ send: state.send, sessionId: state.sessionId, state }),
+              layoutToNode: state.layoutToNode,
+              nodeToParent: state.nodeToParent,
+              nodes: state.nodes,
+            });
+            this.render();
+          }
+        } else if (key === 'TAB') {
+          this.focusNextElement();
+          this.render();
+        } else if (key === 'SHIFT_TAB') {
+          this.focusPreviousElement();
+          this.render();
+        }
+      }
+      // Handle UI elements
+      else {
         switch (key) {
-          case 'CTRL_C':
-            isListening = false;
-            this.term.clear();
-            this.term.processExit(0);
-            break;
           case 'ENTER':
             if (this.focusedElement === 'tabs') {
               this.selectedTabIndex = this.focusedTabIndex;
               this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
+            } else if (this.focusedElement === 'newTab') { // Added newTab handling
+              this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
             } else if (this.focusedElement === 'back') {
               this.emit('back');
             } else if (this.focusedElement === 'forward') {
