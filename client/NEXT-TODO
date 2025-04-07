@@ -37,6 +37,9 @@ Bugs
   Bugs
     - If multiple tabs then we are pulling data from all tabs, when we should only focus on active.
 
+  Display Bug
+    - GitHub code view, like a code file, doesn't work. Looks weird. RAW works beautifully tho. 
+
 Next
   - As soon as we unfocus, or whenever url changes, or a tab is selected, and we are not focused in omnibox ensure URL in omnixbox reflects URL of current tab. Only exception is we never show the URL for newtab "about:blank". 
   - ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
