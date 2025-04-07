@@ -414,12 +414,11 @@
       }
 
       function renderBoxes(layoutState) {
-        const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
+        const { browser, visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
         renderedBoxes.length = 0;
 
         for (const box of visibleBoxes) {
           const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type } = box;
-          const {browser} = layoutIndex;
           const renderX = Math.max(1, termX + 1);
           const renderY = Math.max(5, termY + 1);
 
@@ -592,28 +591,48 @@
               });
           } else {
             terminal.moveTo(renderX, renderY);
-            terminal.defaultColor().bgDefaultColor();
-            if (type === 'button') {
-              terminal.bgGreen.black(displayText);
-            } else if (type === 'media') {
-              if (isClickable) {
+            if (isFocused && isClickable) {
+              terminal.bgCyan();
+              if (type === 'button' || ancestorType === 'button') {
+                // Originally bgGreen.black, so use green (original background) as foreground
+                terminal.green(displayText);
+              } else if (type === 'media' && isClickable) {
+                // Originally gray.underline, gray isn't cyan or blue, so keep gray
                 terminal.gray.underline(displayText);
+              } else if (ancestorType === 'hyperlink') {
+                // Originally cyan.underline, cyan is cyan, so use black
+                terminal.black.underline(displayText);
+              } else if (ancestorType === 'other_clickable') {
+                // Originally bold with default color, use default
+                terminal.defaultColor.bold(displayText);
               } else {
-                terminal.brightBlack(displayText);
+                // Default case, originally default color, use default
+                terminal.defaultColor(displayText);
               }
             } else {
-              switch (ancestorType) {
-                case 'hyperlink':
-                  terminal.cyan.underline(displayText);
-                  break;
-                case 'button':
-                  terminal.bgGreen.black(displayText);
-                  break;
-                case 'other_clickable':
-                  terminal.bold(displayText);
-                  break;
-                default:
-                  terminal(displayText);
+              terminal.defaultColor().bgDefaultColor();
+              if (type === 'button') {
+                terminal.bgGreen.black(displayText);
+              } else if (type === 'media') {
+                if (isClickable) {
+                  terminal.gray.underline(displayText);
+                } else {
+                  terminal.brightBlack(displayText);
+                }
+              } else {
+                switch (ancestorType) {
+                  case 'hyperlink':
+                    terminal.cyan.underline(displayText);
+                    break;
+                  case 'button':
+                    terminal.bgGreen.black(displayText);
+                    break;
+                  case 'other_clickable':
+                    terminal.bold(displayText);
+                    break;
+                  default:
+                    terminal(displayText);
+                }
               }
             }
             renderedBoxes.push(renderedBox);
