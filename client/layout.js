@@ -821,7 +821,7 @@ const LayoutAlgorithm = (() => {
     };
   }
 
-  function getAncestorInfo(nodeIndex, nodes, strings) {
+  export function getAncestorInfo(nodeIndex, nodes, strings) {
     let currentIndex = nodeIndex;
     while (currentIndex !== -1) {
       if (typeof currentIndex !== 'number' || currentIndex < 0 || currentIndex >= nodes.nodeName.length) {

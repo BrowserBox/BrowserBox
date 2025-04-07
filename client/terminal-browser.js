@@ -1,6 +1,7 @@
 ﻿import termkit from 'terminal-kit';
 import { EventEmitter } from 'events';
 import {sleep, debugLog, logClicks,DEBUG} from './log.js';
+import {getAncestorInfo} from './layout.js';
 import keys from './kbd.js';
 
 const term = termkit.terminal;
@@ -587,46 +588,95 @@ export default class TerminalBrowser extends EventEmitter {
     this.stopListening = () => { isListening = false; };
   }
 
-
   redrawClickable(backendNodeId) {
     const state = this.getState();
-    const boxes = state.renderedBoxes.filter(b => String(b.backendNodeId) === backendNodeId);
-    debugLog(`Boxes ${JSON.stringify(boxes)}`);
-    if (!boxes.length) return;
+    if (!state || !state.renderedBoxes || !state.nodeToParent || !state.nodes) {
+      debugLog(`Missing state data for redrawClickable ${backendNodeId}`);
+      return;
+    }
 
-    // Calculate bounding box
+    // Find all child node indices under this parent backendNodeId
+    const childNodeIndices = new Set();
+    let parentNodeIndex = -1;
+    state.nodes.backendNodeId.forEach((id, nodeIdx) => {
+      if (String(id) === backendNodeId) {
+        parentNodeIndex = nodeIdx; // Capture the parent's node index
+        childNodeIndices.add(nodeIdx);
+        const collectChildren = (idx) => {
+          const children = Array.from(state.renderedBoxes)
+            .filter(b => state.nodeToParent.get(b.nodeIndex) === idx)
+            .map(b => b.nodeIndex);
+          children.forEach(childIdx => {
+            childNodeIndices.add(childIdx);
+            collectChildren(childIdx);
+          });
+        };
+        collectChildren(nodeIdx);
+      }
+    });
+
+    const boxes = state.renderedBoxes.filter(b => childNodeIndices.has(b.nodeIndex));
+    debugLog(`Boxes for parent ${backendNodeId}:`, boxes);
+    if (!boxes.length) {
+      debugLog(`No boxes found for parent ${backendNodeId} with node indices:`, Array.from(childNodeIndices));
+      return;
+    }
+
     const minX = Math.min(...boxes.map(b => b.termX));
     const maxX = Math.max(...boxes.map(b => b.termX + b.termWidth - 1));
     const minY = Math.min(...boxes.map(b => b.termY));
     const maxY = Math.max(...boxes.map(b => b.termY));
     const fullText = boxes.map(b => b.text).join(' ');
-    const ancestorType = boxes[0].ancestorType; // Assume all have same ancestorType
+
+    // Get the ancestor's type from the parent node
+    const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, state.nodes, state.strings || []) : boxes[0].ancestorType;
+    debugLog(`AncestorType for ${backendNodeId}: ${ancestorType}`);
 
     for (let y = minY; y <= maxY; y++) {
       this.term.moveTo(minX, y);
       const lineText = y === minY ? fullText.substring(0, maxX - minX + 1) : ' '.repeat(maxX - minX + 1);
-      this.term.bgCyan();
+      this.term.bgCyan(); // Focus style
       if (ancestorType === 'button') {
-        this.term.green(lineText);
+        this.term.green(lineText); // Original bgGreen.black
       } else if (ancestorType === 'hyperlink') {
-        this.term.black().underline(lineText);
+        this.term.black().underline(lineText); // Original cyan.underline
       } else if (ancestorType === 'other_clickable') {
-        this.term.defaultColor().bold(lineText);
+        this.term.defaultColor().bold(lineText); // Original bold
       } else {
-        this.term.defaultColor(lineText);
+        this.term.defaultColor(lineText); // Fallback
       }
     }
-    debugLog(`Redraw ${backendNodeId} with fullText ${fullText} and ancestorType ${ancestorType} ${JSON.stringify({minX,minY,maxX,maxY})}`);
+    debugLog(`Redraw ${backendNodeId} with fullText "${fullText}" and ancestorType ${ancestorType} ${JSON.stringify({minX,minY,maxX,maxY})}`);
     this.term.bgDefaultColor().defaultColor();
   }
 
-  // Update redrawUnfocusedElement for clickables
   redrawUnfocusedElement(backendNodeId) {
     const state = this.getState();
-    const box = state.renderedBoxes.find(b => String(b.backendNodeId) === backendNodeId);
-    if (!box) return;
+    if (!state || !state.renderedBoxes || !state.nodeToParent || !state.nodes) return;
 
-    if (box.type === 'input') {
+    const childNodeIndices = new Set();
+    let parentNodeIndex = -1;
+    state.nodes.backendNodeId.forEach((id, nodeIdx) => {
+      if (String(id) === backendNodeId) {
+        parentNodeIndex = nodeIdx;
+        childNodeIndices.add(nodeIdx);
+        const collectChildren = (idx) => {
+          const children = Array.from(state.renderedBoxes)
+            .filter(b => state.nodeToParent.get(b.nodeIndex) === idx)
+            .map(b => b.nodeIndex);
+          children.forEach(childIdx => {
+            childNodeIndices.add(childIdx);
+            collectChildren(childIdx);
+          });
+        };
+        collectChildren(nodeIdx);
+      }
+    });
+
+    const boxes = state.renderedBoxes.filter(b => childNodeIndices.has(b.nodeIndex));
+    if (!boxes.length) return;
+
+    if (boxes[0].type === 'input') {
       const inputState = this.inputFields.get(String(backendNodeId));
       if (!inputState) return;
       const { x, y, width, value } = inputState;
@@ -634,27 +684,21 @@ export default class TerminalBrowser extends EventEmitter {
       this.term.moveTo(x, y);
       this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
     } else {
-      const boxes = state.renderedBoxes.filter(b => String(b.backendNodeId) === backendNodeId);
       const minX = Math.min(...boxes.map(b => b.termX));
       const maxX = Math.max(...boxes.map(b => b.termX + b.termWidth - 1));
       const minY = Math.min(...boxes.map(b => b.termY));
       const maxY = Math.max(...boxes.map(b => b.termY));
       const fullText = boxes.map(b => b.text).join(' ');
-      const ancestorType = boxes[0].ancestorType;
+      const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, state.nodes, state.strings || []) : boxes[0].ancestorType;
 
       for (let y = minY; y <= maxY; y++) {
         this.term.moveTo(minX, y);
         const lineText = y === minY ? fullText.substring(0, maxX - minX + 1) : ' '.repeat(maxX - minX + 1);
         this.term.defaultColor().bgDefaultColor();
-        if (ancestorType === 'button') {
-          this.term.bgGreen().black(lineText);
-        } else if (ancestorType === 'hyperlink') {
-          this.term.cyan().underline(lineText);
-        } else if (ancestorType === 'other_clickable') {
-          this.term.bold(lineText);
-        } else {
-          this.term(lineText);
-        }
+        if (ancestorType === 'button') this.term.bgGreen().black(lineText);
+        else if (ancestorType === 'hyperlink') this.term.cyan().underline(lineText);
+        else if (ancestorType === 'other_clickable') this.term.bold(lineText);
+        else this.term(lineText);
       }
     }
     this.term.bgDefaultColor().defaultColor();
