@@ -421,13 +421,14 @@ export default class TerminalBrowser extends EventEmitter {
       else if (this.focusedElement.startsWith('clickable:')) {
         const backendNodeId = this.focusedElement.split(':')[1];
         const state = this.getState();
-        const box = state.renderedBoxes.find(b => ''+b.backendNodeId === backendNodeId);
+        const tabbable = this.computeTabbableElements();
+        const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
 
         if (key === 'ENTER') {
-          if (box) {
+          if (focusedElement) {
             await handleClick({
-              termX: box.termX,
-              termY: box.termY,
+              termX: focusedElement.x, // Use the grouped element's coordinates
+              termY: focusedElement.y,
               renderedBoxes: state.renderedBoxes,
               clickableElements: state.clickableElements,
               send: state.send,
@@ -438,14 +439,14 @@ export default class TerminalBrowser extends EventEmitter {
               nodeToParent: state.nodeToParent,
               nodes: state.nodes,
             });
-            this.render();
+            this.render(); // Redraw UI after navigation
+          } else {
+            logClicks(`No tabbable element found for clickable:${backendNodeId}`);
           }
         } else if (key === 'TAB') {
           this.focusNextElement();
-          this.render();
         } else if (key === 'SHIFT_TAB') {
           this.focusPreviousElement();
-          this.render();
         }
       }
       // Handle UI elements
