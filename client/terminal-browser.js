@@ -143,14 +143,14 @@ export default class TerminalBrowser extends EventEmitter {
 
     this.term.moveTo(2, this.TAB_HEIGHT + 2);
     if (this.focusedElement === 'back') {
-      this.term.bgBrightBlack().black().bold(' Back ');
+      this.term.bgCyan().gray().bold(' Back '); // Original bgGray.white, so gray becomes fg
     } else {
       this.term.bgGray().white(' Back ');
     }
 
     this.term.moveTo(this.BACK_WIDTH + 2, this.TAB_HEIGHT + 2);
     if (this.focusedElement === 'forward') {
-      this.term.bgBrightBlack().black().bold(' Forward ');
+      this.term.bgCyan().gray().bold(' Forward '); // Original bgGray.white, so gray becomes fg
     } else {
       this.term.bgGray().white(' Forward ');
     }
@@ -160,16 +160,16 @@ export default class TerminalBrowser extends EventEmitter {
       const beforeCursor = this.addressContent.slice(0, this.cursorPosition);
       const cursorChar = this.addressContent[this.cursorPosition] || ' ';
       const afterCursor = this.addressContent.slice(this.cursorPosition + 1);
-      this.term.bgBrightWhite().black(beforeCursor);
+      this.term.bgCyan().white(beforeCursor); // Original bgWhite.black, so white becomes fg
       this.term.bgBlack().brightWhite().bold(cursorChar);
-      this.term.bgBrightWhite().black(afterCursor.padEnd(this.ADDRESS_WIDTH - beforeCursor.length - 1, ' '));
+      this.term.bgCyan().white(afterCursor.padEnd(this.ADDRESS_WIDTH - beforeCursor.length - 1, ' '));
     } else {
       this.term.bgWhite().black(this.addressContent.slice(0, this.ADDRESS_WIDTH).padEnd(this.ADDRESS_WIDTH, ' '));
     }
 
     this.term.moveTo(this.term.width - this.GO_WIDTH, this.TAB_HEIGHT + 2);
     if (this.focusedElement === 'go') {
-      this.term.bgBrightGreen().black().bold(' Go ');
+      this.term.bgCyan().green().bold(' Go '); // Original bgGreen.white, so green becomes fg
     } else {
       this.term.bgGreen().white(' Go ');
     }
@@ -551,28 +551,54 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   focusNextElement() {
-    const elements = ['tabs', 'back', 'forward', 'address', 'go', ...Array.from(this.inputFields.keys()).map(id => `input:${id}`)];
-    const currentIdx = elements.indexOf(this.focusedElement);
-    this.focusedElement = elements[(currentIdx + 1) % elements.length];
-    if (this.focusedElement === 'tabs') this.focusedTabIndex = Math.min(this.focusedTabIndex, this.tabs.length - 1);
-    if (this.focusedElement === 'address') this.cursorPosition = this.addressContent.length;
-    if (this.focusedElement.startsWith('input:')) {
-      const id = this.focusedElement.split(':')[1];
-      const inputState = this.inputFields.get(id);
-      if (inputState) inputState.focused = true;
-    }
+    const tabbable = this.computeTabbableElements();
+    if (!tabbable.length) return;
+
+    const currentIdx = this.findCurrentFocusIndex(tabbable);
+    const nextIdx = (currentIdx + 1) % tabbable.length;
+    this.setFocus(tabbable[nextIdx]);
+    this.render();
   }
 
   focusPreviousElement() {
-    const elements = ['tabs', 'back', 'forward', 'address', 'go', ...Array.from(this.inputFields.keys()).map(id => `input:${id}`)];
-    const currentIdx = elements.indexOf(this.focusedElement);
-    this.focusedElement = elements[(currentIdx - 1 + elements.length) % elements.length];
-    if (this.focusedElement === 'tabs') this.focusedTabIndex = Math.min(this.focusedTabIndex, this.tabs.length - 1);
-    if (this.focusedElement === 'address') this.cursorPosition = this.addressContent.length;
+    const tabbable = this.computeTabbableElements();
+    if (!tabbable.length) return;
+
+    const currentIdx = this.findCurrentFocusIndex(tabbable);
+    const prevIdx = (currentIdx - 1 + tabbable.length) % tabbable.length;
+    this.setFocus(tabbable[prevIdx]);
+    this.render();
+  }
+
+  findCurrentFocusIndex(tabbable) {
+    if (!this.focusedElement) return -1;
+    if (this.focusedElement === 'tabs') {
+      return tabbable.findIndex(el => el.type === 'tab' && el.index === this.focusedTabIndex);
+    }
     if (this.focusedElement.startsWith('input:')) {
       const id = this.focusedElement.split(':')[1];
-      const inputState = this.inputFields.get(id);
-      if (inputState) inputState.focused = true;
+      return tabbable.findIndex(el => el.type === 'input' && String(el.backendNodeId) === id);
+    }
+    return tabbable.findIndex(el => el.type === this.focusedElement);
+  }
+
+  setFocus(element) {
+    this.previousFocusedElement = this.focusedElement;
+
+    if (element.type === 'tab') {
+      this.focusedElement = 'tabs';
+      this.focusedTabIndex = element.index;
+    } else if (element.type === 'input') {
+      this.focusInput(element.backendNodeId);
+    } else {
+      this.focusedElement = element.type;
+      if (element.type === 'address') this.cursorPosition = this.addressContent.length;
+    }
+
+    // Unfocus previous input if necessary
+    if (this.previousFocusedElement?.startsWith('input:') && this.focusedElement !== this.previousFocusedElement) {
+      const prevId = this.previousFocusedElement.split(':')[1];
+      this.redrawUnfocusedInput(prevId);
     }
   }
 

@@ -1,0 +1,46 @@
+
+drawOmnibox() {
+  this.term.moveTo(1, this.TAB_HEIGHT + 1);
+  this.term.bgBlack().cyan('‚îÄ'.repeat(this.term.width));
+  this.term.moveTo(1, this.TAB_HEIGHT + 2);
+  this.term.bgBlack().white(' '.repeat(this.term.width));
+  this.term.moveTo(1, this.TAB_HEIGHT + 3);
+  this.term.bgBlack().cyan('‚îÄ'.repeat(this.term.width));
+
+  this.term.moveTo(2, this.TAB_HEIGHT + 2);
+  if (this.focusedElement === 'back') {
+    this.term.bgBrightBlack().black().bold(' Back ');
+  } else {
+    this.term.bgGray().white(' Back ');
+  }
+
+  this.term.moveTo(this.BACK_WIDTH + 2, this.TAB_HEIGHT + 2);
+  if (this.focusedElement === 'forward') {
+    this.term.bgBrightBlack().black().bold(' Forward ');
+  } else {
+    this.term.bgGray().white(' Forward ');
+  }
+
+  this.term.moveTo(this.BACK_WIDTH + this.FORWARD_WIDTH + 2, this.TAB_HEIGHT + 2);
+  if (this.focusedElement === 'address') {
+    const beforeCursor = this.addressContent.slice(0, this.cursorPosition);
+    const cursorChar = this.addressContent[this.cursorPosition] || ' ';
+    const afterCursor = this.addressContent.slice(this.cursorPosition + 1);
+    this.term.bgBrightWhite().black(beforeCursor);
+    this.term.bgBlack().brightWhite().bold(cursorChar);
+    this.term.bgBrightWhite().black(afterCursor.padEnd(this.ADDRESS_WIDTH - beforeCursor.length - 1, ' '));
+  } else {
+    this.term.bgWhite().black(this.addressContent.slice(0, this.ADDRESS_WIDTH).padEnd(this.ADDRESS_WIDTH, ' '));
+  }
+
+  this.term.moveTo(this.term.width - this.GO_WIDTH, this.TAB_HEIGHT + 2);
+  if (this.focusedElement === 'go') {
+    this.term.bgBrightGreen().black().bold(' Go ');
+  } else {
+    this.term.bgGreen().white(' Go ');
+  }
+  this.term.bgDefaultColor();
+  this.term.defaultColor();
+}
+
+

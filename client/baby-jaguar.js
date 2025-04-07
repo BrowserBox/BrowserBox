@@ -314,6 +314,11 @@
       }
 
     // Browser UI
+      function statusLine(...stuff) {
+        // log this somewhere on screen
+        // for now do nothing! :)
+      }
+
       function normalizeUrl(input) {
         const trimmedInput = input.trim();
         const urlPattern = /^(https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/i;
@@ -404,6 +409,7 @@
             DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
           } else {
             DEBUG && terminal.yellow('No text boxes found after polling.\n');
+            statusLine('No text boxes found');
             renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
             state.isInitialized = true;
           }
@@ -662,7 +668,7 @@
           await send('Page.navigateToHistoryEntry', { entryId: previousEntry.id }, sessionId);
           return true;
         } else {
-          console.log('No previous page in history');
+          statusLine('No previous page in history');
           return false;
         }
       }
@@ -674,7 +680,7 @@
           await send('Page.navigateToHistoryEntry', { entryId: nextEntry.id }, sessionId);
           return true;
         } else {
-          console.log('No next page in history');
+          statusLine('No next page in history');
           return false;
         }
       }
@@ -689,6 +695,7 @@
           }
         }
         if (!clickedBox || !clickedBox.isClickable) {
+          statusLine(`No clickable element at (${termX}, ${termY})`);
           logClicks(`No clickable element at (${termX}, ${termY})`);
           return;
         }
@@ -945,7 +952,8 @@
         }
 
         if (!targets.length) {
-          terminal.yellow('No page or tab targets available.\n');
+          DEBUG && terminal.yellow('No page or tab targets available.\n');
+          statusLine('No page or tab targets available.');
         }
 
         DEBUG && terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
