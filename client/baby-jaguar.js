@@ -473,18 +473,15 @@
           };
 
           const isFocused = browser.focusedElement === (type === 'input' ? `input:${backendNodeId}` : `clickable:${backendNodeId}`);
-
           if (type === 'input') {
             logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
             const currentBackendNodeId = backendNodeId;
             const fallbackValue = text.startsWith('[INPUT') ? '' : text;
+            const onChange = createInputChangeHandler({ send, sessionId, browser, backendNodeId: currentBackendNodeId });
 
-            // Fire off async call to fetch live value, but don't await
             send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId)
               .then(resolveResult => {
-                if (!resolveResult?.object?.objectId) {
-                  throw new Error('Node no longer exists');
-                }
+                if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
                 const objectId = resolveResult.object.objectId;
                 return send('Runtime.callFunctionOn', {
                   objectId,
@@ -496,51 +493,20 @@
               .then(valueResult => {
                 let liveValue = fallbackValue;
                 if (valueResult?.result?.value !== undefined) {
-                  liveValue = ''+valueResult.result.value;
+                  liveValue = '' + valueResult.result.value;
                   logClicks(`Fetched live value for backendNodeId: ${currentBackendNodeId}: "${liveValue}"`);
                 }
-
-                // Use termWidthForBox as the width for drawInputField
-                const inputField = browser.drawInputField({
-                  x: renderX,
-                  y: renderY,
-                  width: termWidthForBox, // Use scaled termWidth
-                  key: currentBackendNodeId,
+                const inputField = drawInputFieldForNode({
+                  browser,
+                  renderX,
+                  renderY,
+                  termWidthForBox,
+                  backendNodeId: currentBackendNodeId,
                   initialValue: liveValue,
-                  onChange: async (value) => {
-                    try {
-                      const resolveResult = await send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId);
-                      if (!resolveResult?.object?.objectId) {
-                        throw new Error('Node no longer exists');
-                      }
-                      const objectId = resolveResult.object.objectId;
-                      const script = `function() {
-                        this.value = ${JSON.stringify(value)};
-                        this.dispatchEvent(new Event('input', { bubbles: true }));
-                        this.dispatchEvent(new Event('change', { bubbles: true }));
-                      }`;
-                      await send('Runtime.callFunctionOn', {
-                        objectId,
-                        functionDeclaration: script,
-                        arguments: [],
-                        returnByValue: true,
-                      }, sessionId);
-                      logClicks(`Updated remote value for backendNodeId: ${currentBackendNodeId} to "${value}"`);
-                    } catch (error) {
-                      logClicks(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
-                      browser.redrawUnfocusedInput(currentBackendNodeId);
-                      browser.focusedElement = 'tabs';
-                      browser.inputFields.delete('' + currentBackendNodeId);
-                      browser.render();
-                    }
-                  },
+                  onChange,
                 });
-
-                // Update renderedBox.termWidth if necessary (should match termWidthForBox)
                 renderedBox.termWidth = inputField.width;
                 renderedBoxes.push(renderedBox);
-
-                // Update clickable elements if necessary
                 if (isClickable) {
                   const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
                   if (clickable) {
@@ -553,45 +519,17 @@
               })
               .catch(error => {
                 logClicks(`Failed to fetch live value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
-
-                const inputField = browser.drawInputField({
-                  x: renderX,
-                  y: renderY,
-                  width: termWidthForBox, // Use scaled termWidth
-                  key: currentBackendNodeId,
+                const inputField = drawInputFieldForNode({
+                  browser,
+                  renderX,
+                  renderY,
+                  termWidthForBox,
+                  backendNodeId: currentBackendNodeId,
                   initialValue: fallbackValue,
-                  onChange: async (value) => {
-                    try {
-                      const resolveResult = await send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId);
-                      if (!resolveResult?.object?.objectId) {
-                        throw new Error('Node no longer exists');
-                      }
-                      const objectId = resolveResult.object.objectId;
-                      const script = `function() {
-                        this.value = ${JSON.stringify(value)};
-                        this.dispatchEvent(new Event('input', { bubbles: true }));
-                        this.dispatchEvent(new Event('change', { bubbles: true }));
-                      }`;
-                      await send('Runtime.callFunctionOn', {
-                        objectId,
-                        functionDeclaration: script,
-                        arguments: [],
-                        returnByValue: true,
-                      }, sessionId);
-                      logClicks(`Updated remote value for backendNodeId ${currentBackendNodeId} to "${value}"`);
-                    } catch (error) {
-                      logClicks(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
-                      browser.redrawUnfocusedInput(currentBackendNodeId);
-                      browser.focusedElement = 'tabs';
-                      browser.inputFields.delete('' + currentBackendNodeId);
-                      browser.render();
-                    }
-                  },
+                  onChange,
                 });
-
                 renderedBox.termWidth = inputField.width;
                 renderedBoxes.push(renderedBox);
-
                 if (isClickable) {
                   const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
                   if (clickable) {
@@ -665,6 +603,34 @@
       }
 
     // Interactivity helpers
+      function createInputChangeHandler({ send, sessionId, browser, backendNodeId }) {
+        return async function onInputChange(value) {
+          try {
+            const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
+            if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+            const objectId = resolveResult.object.objectId;
+            const script = `function() {
+              this.value = ${JSON.stringify(value)};
+              this.dispatchEvent(new Event('input', { bubbles: true }));
+              this.dispatchEvent(new Event('change', { bubbles: true }));
+            }`;
+            await send('Runtime.callFunctionOn', {
+              objectId,
+              functionDeclaration: script,
+              arguments: [],
+              returnByValue: true,
+            }, sessionId);
+            logClicks(`Updated remote value for backendNodeId: ${backendNodeId} to "${value}"`);
+          } catch (error) {
+            logClicks(`Failed to set input value for backendNodeId ${backendNodeId}: ${error.message}`);
+            browser.redrawUnfocusedInput(backendNodeId);
+            browser.focusedElement = 'tabs';
+            browser.inputFields.delete('' + backendNodeId);
+            browser.render();
+          }
+        };
+      }
+
       async function getNavigationHistory(sessionId) {
         const { currentIndex, entries } = await send('Page.getNavigationHistory', {}, sessionId);
         return { currentIndex, entries };
