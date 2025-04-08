@@ -44,7 +44,6 @@ export default class TerminalBrowser extends EventEmitter {
     // Constants
     this.TAB_HEIGHT = 1;
     this.OMNIBOX_HEIGHT = 3;
-    this.MAX_VISIBLE_TABS = Math.floor((this.term.width - 5) / this.options.tabWidth);
     this.BACK_WIDTH = 6;
     this.FORWARD_WIDTH = 8;
     this.GO_WIDTH = 6;
@@ -58,6 +57,81 @@ export default class TerminalBrowser extends EventEmitter {
     // Start rendering and input handling
     this.render();
     this.setupInput();
+  }
+
+  focusNearestInRow(direction) {
+    const tabbable = this.computeTabbableElements();
+    if (!tabbable.length) return;
+
+    // Find current element
+    let current;
+    if (this.focusedElement === 'tabs') {
+      current = tabbable.find(el => el.type === 'tab' && el.index === this.focusedTabIndex) || tabbable[0];
+    } else if (this.focusedElement === 'newTab') {
+      current = tabbable.find(el => el.type === 'newTab');
+    } else if (this.focusedElement.startsWith('input:')) {
+      const id = this.focusedElement.split(':')[1];
+      current = tabbable.find(el => el.type === 'input' && el.backendNodeId == id);
+    } else if (this.focusedElement.startsWith('clickable:')) {
+      const id = this.focusedElement.split(':')[1];
+      current = tabbable.find(el => el.type === 'clickable' && el.backendNodeId == id);
+    } else {
+      current = tabbable.find(el => el.type === this.focusedElement) || tabbable[0];
+    }
+    if (!current) return;
+
+    const currentY = current.y;
+    const currentCenterX = current.x + (current.width || this.options.tabWidth) / 2;
+
+    // Special transitions
+    if (direction === 'down' && currentY === 1) {
+      // From tabs/newTab (y=1) to omnibox (y=3)
+      const omniboxElements = tabbable.filter(el => el.y === this.TAB_HEIGHT + 2);
+      if (omniboxElements.length) {
+        const nearest = omniboxElements.reduce((best, el) => {
+          const elCenterX = el.x + (el.width || this.BACK_WIDTH) / 2;
+          const bestCenterX = best.x + (best.width || this.BACK_WIDTH) / 2;
+          return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
+        }, omniboxElements[0]);
+        this.setFocus(nearest);
+        return;
+      }
+    } else if (direction === 'up' && currentY === this.TAB_HEIGHT + 2) {
+      // From omnibox (y=3) to tabs/newTab (y=1)
+      const tabElements = tabbable.filter(el => el.y === 1);
+      if (tabElements.length) {
+        const nearest = tabElements.reduce((best, el) => {
+          const elCenterX = el.x + (el.width || this.options.tabWidth) / 2;
+          const bestCenterX = best.x + (best.width || this.options.tabWidth) / 2;
+          return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
+        }, tabElements[0]);
+        this.setFocus(nearest);
+        return;
+      }
+    }
+
+    // General row navigation
+    const targetY = direction === 'down' ? currentY + 1 : currentY - 1;
+    let candidates = tabbable.filter(el => el.y === targetY);
+
+    // If no elements in the immediate next/previous row, find the closest row
+    if (!candidates.length) {
+      candidates = tabbable.filter(el => direction === 'down' ? el.y > currentY : el.y < currentY);
+      if (!candidates.length) return;
+      const nextRowY = direction === 'down'
+        ? Math.min(...candidates.map(el => el.y))
+        : Math.max(...candidates.map(el => el.y));
+      candidates = tabbable.filter(el => el.y === nextRowY);
+    }
+
+    // Find the element closest to currentCenterX
+    const nearest = candidates.reduce((best, el) => {
+      const elCenterX = el.x + (el.width || this.options.tabWidth) / 2;
+      const bestCenterX = best.x + (best.width || this.options.tabWidth) / 2;
+      return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
+    }, candidates[0]);
+
+    this.setFocus(nearest);
   }
 
   computeTabbableElements() {
@@ -78,7 +152,8 @@ export default class TerminalBrowser extends EventEmitter {
     if (state && state.renderedBoxes && state.layoutToNode && state.nodeToParent && state.nodes) {
       debugLog('Rendered Boxes Count:', state.renderedBoxes.length);
 
-      // Group by clickable parent backendNodeId
+      // Group clickable elements by their nearest clickable ancestor to simplify tabbing
+      // ie group by clickable parent backendNodeId
       const elementsByParentId = new Map();
       state.renderedBoxes.forEach(box => {
         if (!box.isClickable && box.type !== 'input') return;
@@ -420,112 +495,121 @@ export default class TerminalBrowser extends EventEmitter {
               break;
           }
         }
-      }
-      // Handle clickable elements
-      else if (this.focusedElement.startsWith('clickable:')) {
-        const backendNodeId = this.focusedElement.split(':')[1];
-        const state = this.getState();
-        const tabbable = this.computeTabbableElements();
-        const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
+      } else {
+        if (key === 'j') {
+          this.focusNearestInRow('down');
+          return;
+        }
+        if (key === 'k') {
+          this.focusNearestInRow('up');
+          return;
+        }
+        // Handle clickable elements
+        if (this.focusedElement.startsWith('clickable:')) {
+          const backendNodeId = this.focusedElement.split(':')[1];
+          const state = this.getState();
+          const tabbable = this.computeTabbableElements();
+          const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
 
-        if (key === 'ENTER') {
-          if (focusedElement) {
-            await handleClick({
-              termX: focusedElement.x, // Use the grouped element's coordinates
-              termY: focusedElement.y,
-              renderedBoxes: state.renderedBoxes,
-              clickableElements: state.clickableElements,
-              send: state.send,
-              sessionId: state.sessionId,
-              clickCounter: state.clickCounter,
-              refresh: () => refreshTerminal({ send: state.send, sessionId: state.sessionId, state }),
-              layoutToNode: state.layoutToNode,
-              nodeToParent: state.nodeToParent,
-              nodes: state.nodes,
-            });
-            this.render(); // Redraw UI after navigation
+          if (key === 'ENTER') {
+            if (focusedElement) {
+              await handleClick({
+                termX: focusedElement.x, // Use the grouped element's coordinates
+                termY: focusedElement.y,
+                renderedBoxes: state.renderedBoxes,
+                clickableElements: state.clickableElements,
+                send: state.send,
+                sessionId: state.sessionId,
+                clickCounter: state.clickCounter,
+                refresh: () => refreshTerminal({ send: state.send, sessionId: state.sessionId, state }),
+                layoutToNode: state.layoutToNode,
+                nodeToParent: state.nodeToParent,
+                nodes: state.nodes,
+              });
+              this.render(); // Redraw UI after navigation
+            } else {
+              logClicks(`No tabbable element found for clickable:${backendNodeId}`);
+            }
+          } else if (key === 'TAB' || key == 'l') {
+            this.focusNextElement();
+          } else if (key === 'SHIFT_TAB' || key == 'h') {
+            this.focusPreviousElement();
           } else {
-            logClicks(`No tabbable element found for clickable:${backendNodeId}`);
+            switch(key) {
+              case 'UP':
+              case 'DOWN':
+                this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+                break;
+            }
           }
-        } else if (key === 'TAB') {
-          this.focusNextElement();
-        } else if (key === 'SHIFT_TAB') {
-          this.focusPreviousElement();
-        } else {
-          switch(key) {
+        }
+        // Handle UI elements
+        else {
+          switch (key) {
+            case 'ENTER':
+              if (this.focusedElement === 'tabs') {
+                this.selectedTabIndex = this.focusedTabIndex;
+                this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
+              } else if (this.focusedElement === 'newTab') { // Added newTab handling
+                this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+              } else if (this.focusedElement === 'back') {
+                this.emit('back');
+              } else if (this.focusedElement === 'forward') {
+                this.emit('forward');
+              } else if (this.focusedElement === 'go' || this.focusedElement === 'address') {
+                this.emit('navigate', this.addressContent);
+                if (this.selectedTabIndex !== -1) {
+                  this.tabs[this.selectedTabIndex].url = this.addressContent;
+                  this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
+                }
+              }
+              this.render();
+              break;
+            case 'TAB':
+              this.focusNextElement();
+              this.render();
+              break;
+            case 'SHIFT_TAB':
+              this.focusPreviousElement();
+              this.render();
+              break;
+            case 'LEFT':
+              if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
+                this.focusedTabIndex--;
+                this.render();
+              } else if (this.focusedElement === 'address') {
+                if (this.cursorPosition > 0) this.cursorPosition--;
+                this.render();
+              }
+              break;
+            case 'RIGHT':
+              if (this.focusedElement === 'tabs' && this.focusedTabIndex < this.tabs.length - 1) {
+                this.focusedTabIndex++;
+                this.render();
+              } else if (this.focusedElement === 'address') {
+                if (this.cursorPosition < this.addressContent.length) this.cursorPosition++;
+                this.render();
+              }
+              break;
+            case 'BACKSPACE':
+              if (this.focusedElement === 'address' && this.cursorPosition > 0) {
+                this.addressContent = this.addressContent.slice(0, this.cursorPosition - 1) + this.addressContent.slice(this.cursorPosition);
+                this.cursorPosition--;
+                this.render();
+              }
+              break;
             case 'UP':
             case 'DOWN':
               this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
               break;
-          }
-        }
-      }
-      // Handle UI elements
-      else {
-        switch (key) {
-          case 'ENTER':
-            if (this.focusedElement === 'tabs') {
-              this.selectedTabIndex = this.focusedTabIndex;
-              this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
-            } else if (this.focusedElement === 'newTab') { // Added newTab handling
-              this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
-            } else if (this.focusedElement === 'back') {
-              this.emit('back');
-            } else if (this.focusedElement === 'forward') {
-              this.emit('forward');
-            } else if (this.focusedElement === 'go' || this.focusedElement === 'address') {
-              this.emit('navigate', this.addressContent);
-              if (this.selectedTabIndex !== -1) {
-                this.tabs[this.selectedTabIndex].url = this.addressContent;
-                this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
+            default:
+              if (key.length === 1 && this.focusedElement === 'address') {
+                this.addressContent = this.addressContent.slice(0, this.cursorPosition) + key + this.addressContent.slice(this.cursorPosition);
+                this.cursorPosition++;
+                this.render();
               }
-            }
-            this.render();
-            break;
-          case 'TAB':
-            this.focusNextElement();
-            this.render();
-            break;
-          case 'SHIFT_TAB':
-            this.focusPreviousElement();
-            this.render();
-            break;
-          case 'LEFT':
-            if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
-              this.focusedTabIndex--;
-              this.render();
-            } else if (this.focusedElement === 'address') {
-              if (this.cursorPosition > 0) this.cursorPosition--;
-              this.render();
-            }
-            break;
-          case 'RIGHT':
-            if (this.focusedElement === 'tabs' && this.focusedTabIndex < this.tabs.length - 1) {
-              this.focusedTabIndex++;
-              this.render();
-            } else if (this.focusedElement === 'address') {
-              if (this.cursorPosition < this.addressContent.length) this.cursorPosition++;
-              this.render();
-            }
-            break;
-          case 'BACKSPACE':
-            if (this.focusedElement === 'address' && this.cursorPosition > 0) {
-              this.addressContent = this.addressContent.slice(0, this.cursorPosition - 1) + this.addressContent.slice(this.cursorPosition);
-              this.cursorPosition--;
-              this.render();
-            }
-            break;
-          case 'UP':
-          case 'DOWN':
-            this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-            break;
-          default:
-            if (key.length === 1 && this.focusedElement === 'address') {
-              this.addressContent = this.addressContent.slice(0, this.cursorPosition) + key + this.addressContent.slice(this.cursorPosition);
-              this.cursorPosition++;
-              this.render();
-            }
-            break;
+              break;
+          }
         }
       }
     });
@@ -603,9 +687,70 @@ export default class TerminalBrowser extends EventEmitter {
 
   redrawClickable(backendNodeId) {
     const state = this.getState();
+    const renderData = this.getRenderData(backendNodeId, state);
+    if (!renderData) return;
+
+    const { boxes, minX, maxY, ancestorType } = renderData;
+    debugLog(`Boxes for parent ${backendNodeId}:`, boxes);
+    debugLog(`AncestorType for ${backendNodeId}: ${ancestorType}`);
+
+    // Render each line at its termY
+    for (let y = renderData.minY; y <= maxY; y++) {
+      this.term.moveTo(minX, y);
+      const boxAtY = boxes.find(b => b.termY === y);
+      let lineText = boxAtY ? boxAtY.text : '';
+      lineText = lineText.slice(0, this.term.width - minX + 1);
+
+      this.term.bgCyan();
+      if (ancestorType === 'button') {
+        this.term.green(lineText);
+      } else if (ancestorType === 'hyperlink') {
+        this.term.black().underline(lineText);
+      } else if (ancestorType === 'other_clickable') {
+        this.term.defaultColor().bold(lineText);
+      } else {
+        this.term.defaultColor(lineText);
+      }
+    }
+    debugLog(`Redraw ${backendNodeId} with ancestorType ${ancestorType} ${JSON.stringify({ minX, minY: renderData.minY, maxX: renderData.maxX, maxY })}`);
+    this.term.bgDefaultColor().defaultColor();
+  }
+
+  redrawUnfocusedElement(backendNodeId) {
+    const state = this.getState();
+    const renderData = this.getRenderData(backendNodeId, state);
+    if (!renderData) return;
+
+    const { boxes, minX, maxY, ancestorType } = renderData;
+
+    if (boxes[0].type === 'input') {
+      const inputState = this.inputFields.get('' + backendNodeId);
+      if (!inputState) return;
+      const { x, y, width, value } = inputState;
+      const displayWidth = Math.min(width, this.term.width - x + 1);
+      this.term.moveTo(x, y);
+      this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
+    } else {
+      for (let y = renderData.minY; y <= maxY; y++) {
+        this.term.moveTo(minX, y);
+        const boxAtY = boxes.find(b => b.termY === y);
+        let lineText = boxAtY ? boxAtY.text : '';
+        lineText = lineText.slice(0, this.term.width - minX + 1);
+
+        this.term.defaultColor().bgDefaultColor();
+        if (ancestorType === 'button') this.term.bgGreen().black(lineText);
+        else if (ancestorType === 'hyperlink') this.term.cyan().underline(lineText);
+        else if (ancestorType === 'other_clickable') this.term.bold(lineText);
+        else this.term(lineText);
+      }
+    }
+    this.term.bgDefaultColor().defaultColor();
+  }
+
+  getRenderData(backendNodeId, state) {
     if (!state || !state.renderedBoxes || !state.nodeToParent || !state.nodes) {
-      debugLog(`Missing state data for redrawClickable ${backendNodeId}`);
-      return;
+      debugLog(`Missing state data for backendNodeId ${backendNodeId}`);
+      return null;
     }
 
     // Find all child node indices under this parent backendNodeId
@@ -629,10 +774,9 @@ export default class TerminalBrowser extends EventEmitter {
     });
 
     const boxes = state.renderedBoxes.filter(b => childNodeIndices.has(b.nodeIndex));
-    debugLog(`Boxes for parent ${backendNodeId}:`, boxes);
     if (!boxes.length) {
       debugLog(`No boxes found for parent ${backendNodeId} with node indices:`, Array.from(childNodeIndices));
-      return;
+      return null;
     }
 
     const minX = Math.min(...boxes.map(b => b.termX));
@@ -640,96 +784,11 @@ export default class TerminalBrowser extends EventEmitter {
     const minY = Math.min(...boxes.map(b => b.termY));
     const maxY = Math.max(...boxes.map(b => b.termY));
     const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, state.nodes, state.strings || []) : boxes[0].ancestorType;
-    debugLog(`AncestorType for ${backendNodeId}: ${ancestorType}`);
 
-    // Sort boxes by termY to render in order
+    // Sort boxes by termY for rendering
     boxes.sort((a, b) => a.termY - b.termY);
 
-    // Render each line at its termY, fill gaps with spaces
-    for (let y = minY; y <= maxY; y++) {
-      this.term.moveTo(minX, y);
-      const boxAtY = boxes.find(b => b.termY === y);
-      let lineText = '';
-      if (boxAtY) {
-        lineText = boxAtY.text;
-      } 
-      lineText = lineText.slice(0, this.term.width - minX + 1);
-
-      this.term.bgCyan();
-      if (ancestorType === 'button') {
-        this.term.green(lineText);
-      } else if (ancestorType === 'hyperlink') {
-        this.term.black().underline(lineText);
-      } else if (ancestorType === 'other_clickable') {
-        this.term.defaultColor().bold(lineText);
-      } else {
-        this.term.defaultColor(lineText);
-      }
-    }
-    debugLog(`Redraw ${backendNodeId} with ancestorType ${ancestorType} ${JSON.stringify({minX,minY,maxX,maxY})}`);
-    this.term.bgDefaultColor().defaultColor();
-  }
-
-  redrawUnfocusedElement(backendNodeId) {
-    const state = this.getState();
-    if (!state || !state.renderedBoxes || !state.nodeToParent || !state.nodes) return;
-
-    const childNodeIndices = new Set();
-    let parentNodeIndex = -1;
-    state.nodes.backendNodeId.forEach((id, nodeIdx) => {
-      if (id == backendNodeId) {
-        parentNodeIndex = nodeIdx;
-        childNodeIndices.add(nodeIdx);
-        const collectChildren = (idx) => {
-          const children = Array.from(state.renderedBoxes)
-            .filter(b => state.nodeToParent.get(b.nodeIndex) === idx)
-            .map(b => b.nodeIndex);
-          children.forEach(childIdx => {
-            childNodeIndices.add(childIdx);
-            collectChildren(childIdx);
-          });
-        };
-        collectChildren(nodeIdx);
-      }
-    });
-
-    const boxes = state.renderedBoxes.filter(b => childNodeIndices.has(b.nodeIndex));
-    if (!boxes.length) return;
-
-    if (boxes[0].type === 'input') {
-      const inputState = this.inputFields.get('' + backendNodeId);
-      if (!inputState) return;
-      const { x, y, width, value } = inputState;
-      const displayWidth = Math.min(width, this.term.width - x + 1);
-      this.term.moveTo(x, y);
-      this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
-    } else {
-      const minX = Math.min(...boxes.map(b => b.termX));
-      const maxX = Math.max(...boxes.map(b => b.termX + b.termWidth - 1));
-      const minY = Math.min(...boxes.map(b => b.termY));
-      const maxY = Math.max(...boxes.map(b => b.termY));
-      const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, state.nodes, state.strings || []) : boxes[0].ancestorType;
-
-      boxes.sort((a, b) => a.termY - b.termY);
-
-      for (let y = minY; y <= maxY; y++) {
-        this.term.moveTo(minX, y);
-        const boxAtY = boxes.find(b => b.termY === y);
-        let lineText = '';
-        if (boxAtY) {
-          lineText = boxAtY.text;
-        }
-
-        lineText = lineText.slice(0, this.term.width - minX + 1);
-
-        this.term.defaultColor().bgDefaultColor();
-        if (ancestorType === 'button') this.term.bgGreen().black(lineText);
-        else if (ancestorType === 'hyperlink') this.term.cyan().underline(lineText);
-        else if (ancestorType === 'other_clickable') this.term.bold(lineText);
-        else this.term(lineText);
-      }
-    }
-    this.term.bgDefaultColor().defaultColor();
+    return { boxes, minX, maxX, minY, maxY, ancestorType };
   }
 
   // Update setFocus
@@ -783,87 +842,6 @@ export default class TerminalBrowser extends EventEmitter {
     this.setFocus(tabbable[prevIdx]);
   }
 
-  focusNextInput() {
-    const inputKeys = Array.from(this.inputFields.keys()).map(id => `input:${id}`);
-    if (inputKeys.length === 0) {
-      this.focusedElement = 'tabs';
-      if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
-        const prevBackendNodeId = this.previousFocusedElement.split(':')[1];
-        this.redrawUnfocusedInput(prevBackendNodeId);
-      }
-      this.previousFocusedElement = this.focusedElement;
-      this.render();
-      return;
-    }
-    const currentIdx = inputKeys.indexOf(this.focusedElement);
-    const newFocusedElement = inputKeys[(currentIdx + 1) % inputKeys.length] || 'tabs';
-
-    // Redraw previous input as unfocused
-    if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
-      const prevBackendNodeId = this.previousFocusedElement.split(':')[1];
-      if (this.previousFocusedElement !== newFocusedElement) {
-        this.redrawUnfocusedInput(prevBackendNodeId);
-      }
-    }
-
-    this.focusedElement = newFocusedElement;
-    this.previousFocusedElement = this.focusedElement;
-    if (this.focusedElement.startsWith('input:')) {
-      const id = this.focusedElement.split(':')[1];
-      const inputState = this.inputFields.get(id);
-      if (inputState) inputState.focused = true;
-    }
-    this.render();
-  }
-
-  focusPreviousInput() {
-    const inputKeys = Array.from(this.inputFields.keys()).map(id => `input:${id}`);
-    if (inputKeys.length === 0) {
-      this.focusedElement = 'tabs';
-      if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
-        const prevBackendNodeId = this.previousFocusedElement.split(':')[1];
-        this.redrawUnfocusedInput(prevBackendNodeId);
-      }
-      this.previousFocusedElement = this.focusedElement;
-      this.render();
-      return;
-    }
-    const currentIdx = inputKeys.indexOf(this.focusedElement);
-    const newFocusedElement = inputKeys[(currentIdx - 1 + inputKeys.length) % inputKeys.length] || 'tabs';
-
-    // Redraw previous input as unfocused
-    if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
-      const prevBackendNodeId = this.previousFocusedElement.split(':')[1];
-      if (this.previousFocusedElement !== newFocusedElement) {
-        this.redrawUnfocusedInput(prevBackendNodeId);
-      }
-    }
-
-    this.focusedElement = newFocusedElement;
-    this.previousFocusedElement = this.focusedElement;
-    if (this.focusedElement.startsWith('input:')) {
-      const id = this.focusedElement.split(':')[1];
-      const inputState = this.inputFields.get(id);
-      if (inputState) inputState.focused = true;
-    }
-    this.render();
-  }
-
-  getInputValue(backendNodeId) {
-    return this.inputFields.get('' + backendNodeId)?.value || '';
-  }
-
-  setInputValue(backendNodeId, value) {
-    const backendNodeIdStr = '' + backendNodeId;
-    if (this.inputFields.has(backendNodeIdStr)) {
-      const inputState = this.inputFields.get(backendNodeIdStr);
-      inputState.value = value;
-      inputState.cursorPosition = value.length;
-      if (inputState.onChange) inputState.onChange(value);
-      this.render();
-    }
-  }
-
   // API Methods
 
   addTab(tab) {
@@ -882,13 +860,12 @@ export default class TerminalBrowser extends EventEmitter {
 
   closeTab(index) {
     if (index >= 0 && index < this.tabs.length) {
+      if (this.focusedTabIndex >= index) this.focusedTabIndex = Math.max(0, this.focusedTabIndex - 1);
+      if (this.selectedTabIndex >= index) this.selectedTabIndex = Math.max(0, this.selectedTabIndex - 1);
       this.tabs.splice(index, 1);
       if (this.tabs.length === 0) {
         // Automatically open a new tab when the last one is closed
         this.emit('newTabRequested', { title: 'New Tab', url: 'about:blank' });
-      } else {
-        if (this.focusedTabIndex >= this.tabs.length) this.focusedTabIndex = this.tabs.length - 1;
-        if (this.selectedTabIndex >= this.tabs.length) this.selectedTabIndex = this.tabs.length - 1;
       }
       this.emit('tabClosed', index);
       this.render();
