@@ -253,9 +253,7 @@ export async function dinoGame(onExit) {
           currentJumpDuration = jumpDuration;
           jumpStartY = groundY;
           soundProcess.send('jump');
-        }
-      } else if (key === 'SHIFT_SPACE') {
-        if (isJumping && !hasSuperJumped) {
+        } else if (isJumping && !hasSuperJumped) {
           isJumping = true;
           jumpFrame = 0;
           currentJumpHeight = superJumpHeight;
