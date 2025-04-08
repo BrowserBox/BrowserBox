@@ -647,29 +647,24 @@
         const { currentIndex, entries } = await send('Page.getNavigationHistory', {}, sessionId);
         return { currentIndex, entries };
       }
+      
+      async function navigateHistory(sessionId, direction) {
+        const { currentIndex, entries } = await getNavigationHistory(sessionId);
+        const newIndex = currentIndex + direction;
+        if (newIndex >= 0 && newIndex < entries.length) {
+          await send('Page.navigateToHistoryEntry', { entryId: entries[newIndex].id }, sessionId);
+          return true;
+        }
+        statusLine(`No ${direction < 0 ? 'previous' : 'next'} page in history`);
+        return false;
+      }
 
       async function goBack(sessionId) {
-        const { currentIndex, entries } = await getNavigationHistory(sessionId);
-        if (currentIndex > 0) {
-          const previousEntry = entries[currentIndex - 1];
-          await send('Page.navigateToHistoryEntry', { entryId: previousEntry.id }, sessionId);
-          return true;
-        } else {
-          statusLine('No previous page in history');
-          return false;
-        }
+        return navigateHistory(sessionId, -1);
       }
 
       async function goForward(sessionId) {
-        const { currentIndex, entries } = await getNavigationHistory(sessionId);
-        if (currentIndex < entries.length - 1) {
-          const nextEntry = entries[currentIndex + 1];
-          await send('Page.navigateToHistoryEntry', { entryId: nextEntry.id }, sessionId);
-          return true;
-        } else {
-          statusLine('No next page in history');
-          return false;
-        }
+        return navigateHistory(sessionId, 1);
       }
 
       export async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, refresh, layoutToNode, nodeToParent, nodes }) {
@@ -833,7 +828,6 @@
           browser.redrawFocusedInput();
         }
       }
-
 
     // Main render 
       async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {

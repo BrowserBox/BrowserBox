@@ -1,3 +1,25 @@
+Bugs
+  Minor Polishing Bugs
+  - some inputs persist over page navigation, new document creation. we need to clear them when DOM is cleared, document navigated. 
+  - fix some seeming off by 1 / gap errors. eg lobste.rs login page
+  - fix some elements are not tabbable (ie, search result pages, ddg, google, etc)
+  - convert textedit / contenteditable placeholders to actual usable, focusable, tabbable/cursorable/clickable, inputs
+
+  Bugs
+    - test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug
+    - as usual follow our debug process:
+      - find out why this happens with a targeted simple reproduction
+      - solve the biggest cause we can
+
+  Bugs
+    - ddg srp: larry page - wikipedia info box. "Wikipedia" source link at end of paragraph is occluded down to "ia" - why?
+
+  Bugs
+    - If multiple tabs then we are pulling data from all tabs, when we should only focus on active.
+
+  Display Bug
+    - GitHub code view, like a code file, doesn't work. Looks weird. RAW works beautifully tho. 
+
 Marketing (excerpt, full plan elsewhere)
   - pair with a font, recommend a certain terminal font that works well with displaying web contents
 
@@ -19,27 +41,6 @@ Features
   - CTRL_A in inputs select all text with predictable results.
   - SHIFT cursor in inputs selects text. 
   - CTRL_Q also quits. 
-
-Bugs
-  Minor Polishing Bugs
-  - fix some seeming off by 1 / gap errors. eg lobste.rs login page
-  - fix some elements are not tabbable (ie, search result pages, ddg, google, etc)
-  - convert textedit / contenteditable placeholders to actual usable, focusable, tabbable/cursorable/clickable, inputs
-
-  Bugs
-    - test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug
-    - as usual follow our debug process:
-      - find out why this happens with a targeted simple reproduction
-      - solve the biggest cause we can
-
-  Bugs
-    - ddg srp: larry page - wikipedia info box. "Wikipedia" source link at end of paragraph is occluded down to "ia" - why?
-
-  Bugs
-    - If multiple tabs then we are pulling data from all tabs, when we should only focus on active.
-
-  Display Bug
-    - GitHub code view, like a code file, doesn't work. Looks weird. RAW works beautifully tho. 
 
 Next
   - As soon as we unfocus, or whenever url changes, or a tab is selected, and we are not focused in omnibox ensure URL in omnixbox reflects URL of current tab. Only exception is we never show the URL for newtab "about:blank". 
