@@ -1,4 +1,5 @@
 import fs from 'fs';
+import {terminal} from './baby-jaguar.js';
 import {rowsLog,debugLog,DEBUG} from './log.js';
 
 const GAP = 1;
@@ -439,7 +440,7 @@ const LayoutAlgorithm = (() => {
     return false;
   }
 
-  function extractTextLayoutBoxes({ snapshot, terminal }) {
+  function extractTextLayoutBoxes({ snapshot }) {
     const textLayoutBoxes = [];
     const clickableElements = [];
     const strings = snapshot.strings;
@@ -654,14 +655,14 @@ const LayoutAlgorithm = (() => {
     return Math.floor(p);
   }
 
-  async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal }) {
+  async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize }) {
     DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot, null, 2));
     DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot));
     const splitSnapshotData = splitSnapshot(snapshot);
     DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData, null, 2));
     DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
 
-    const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData, terminal });
+    const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData });
     if (!textLayoutBoxes.length) {
       DEBUG && terminal.yellow('No text boxes found.\n');
       return null;

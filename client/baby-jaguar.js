@@ -17,7 +17,7 @@
       // 3rd-party 
       import { WebSocket } from 'ws';
       import TK from 'terminal-kit';
-      const { terminal } = TK;
+      export const { terminal } = TK;
 
       // internal
       import Layout from './layout.js';
