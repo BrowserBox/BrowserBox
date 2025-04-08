@@ -1,6 +1,7 @@
 Next
   - Refactor setupInput into something more sensible
   - Compose better dittys
+  - select, radio and checkbox inputs (and test page)
 
 Bugs
   Minor Polishing Bugs
