@@ -85,7 +85,6 @@ export default class TerminalBrowser extends EventEmitter {
 
     // Special transitions
     if (direction === 'down' && currentY === 1) {
-      // From tabs/newTab (y=1) to omnibox (y=3)
       const omniboxElements = tabbable.filter(el => el.y === this.TAB_HEIGHT + 2);
       if (omniboxElements.length) {
         const nearest = omniboxElements.reduce((best, el) => {
@@ -93,11 +92,11 @@ export default class TerminalBrowser extends EventEmitter {
           const bestCenterX = best.x + (best.width || this.BACK_WIDTH) / 2;
           return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
         }, omniboxElements[0]);
+        this.currentFocusIndex = tabbable.findIndex(el => el === nearest); // Sync index
         this.setFocus(nearest);
         return;
       }
     } else if (direction === 'up' && currentY === this.TAB_HEIGHT + 2) {
-      // From omnibox (y=3) to tabs/newTab (y=1)
       const tabElements = tabbable.filter(el => el.y === 1);
       if (tabElements.length) {
         const nearest = tabElements.reduce((best, el) => {
@@ -105,6 +104,7 @@ export default class TerminalBrowser extends EventEmitter {
           const bestCenterX = best.x + (best.width || this.options.tabWidth) / 2;
           return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
         }, tabElements[0]);
+        this.currentFocusIndex = tabbable.findIndex(el => el === nearest); // Sync index
         this.setFocus(nearest);
         return;
       }
@@ -114,7 +114,6 @@ export default class TerminalBrowser extends EventEmitter {
     const targetY = direction === 'down' ? currentY + 1 : currentY - 1;
     let candidates = tabbable.filter(el => el.y === targetY);
 
-    // If no elements in the immediate next/previous row, find the closest row
     if (!candidates.length) {
       candidates = tabbable.filter(el => direction === 'down' ? el.y > currentY : el.y < currentY);
       if (!candidates.length) return;
@@ -124,13 +123,13 @@ export default class TerminalBrowser extends EventEmitter {
       candidates = tabbable.filter(el => el.y === nextRowY);
     }
 
-    // Find the element closest to currentCenterX
     const nearest = candidates.reduce((best, el) => {
       const elCenterX = el.x + (el.width || this.options.tabWidth) / 2;
       const bestCenterX = best.x + (best.width || this.options.tabWidth) / 2;
       return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
     }, candidates[0]);
 
+    this.currentFocusIndex = tabbable.findIndex(el => el === nearest); // Sync index
     this.setFocus(nearest);
   }
 
@@ -474,11 +473,9 @@ export default class TerminalBrowser extends EventEmitter {
               break;
             case 'TAB':
               this.focusNextElement(); // Updated to use new tabbing logic
-              this.render();
               break;
             case 'SHIFT_TAB':
               this.focusPreviousElement(); // Updated to use new tabbing logic
-              this.render();
               break;
             case 'UP':
             case 'DOWN':
@@ -502,6 +499,14 @@ export default class TerminalBrowser extends EventEmitter {
         }
         if (key === 'k') {
           this.focusNearestInRow('up');
+          return;
+        }
+        if (key == 'l') {
+          this.focusNextElement();
+          return;
+        }
+        if (key == 'h') {
+          this.focusPreviousElement();
           return;
         }
         // Handle clickable elements
@@ -567,11 +572,9 @@ export default class TerminalBrowser extends EventEmitter {
               break;
             case 'TAB':
               this.focusNextElement();
-              this.render();
               break;
             case 'SHIFT_TAB':
               this.focusPreviousElement();
-              this.render();
               break;
             case 'LEFT':
               if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
@@ -819,6 +822,7 @@ export default class TerminalBrowser extends EventEmitter {
       if (element.type === 'address') this.cursorPosition = this.addressContent.length;
       this.drawOmnibox(); // Redraw omnibox for UI focus
     }
+    this.term.bgDefaultColor().defaultColor();
   }
 
   // Update focusNextElement and focusPreviousElement to avoid full render
@@ -830,6 +834,7 @@ export default class TerminalBrowser extends EventEmitter {
     const nextIdx = (currentIdx + 1) % tabbable.length;
     this.currentFocusIndex = nextIdx;
     this.setFocus(tabbable[nextIdx]);
+    this.render();
   }
 
   focusPreviousElement() {
@@ -840,6 +845,7 @@ export default class TerminalBrowser extends EventEmitter {
     const prevIdx = (currentIdx - 1 + tabbable.length) % tabbable.length;
     this.currentFocusIndex = prevIdx;
     this.setFocus(tabbable[prevIdx]);
+    this.render();
   }
 
   // API Methods

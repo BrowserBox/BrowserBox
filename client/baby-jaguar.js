@@ -564,6 +564,7 @@
         }
 
         newState.renderedBoxes = renderedBoxes;
+        terminal.defaultColor().bgDefaultColor();
       }
 
       function drawInputFieldForNode({ browser, renderX, renderY, termWidthForBox, backendNodeId, initialValue, onChange }) {
