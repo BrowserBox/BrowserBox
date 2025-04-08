@@ -207,6 +207,8 @@
         await sleep(3000);
         await selectTabAndRender();
 
+        process.title = 'KRNL-RENDER';
+
         process.on('SIGINT', () => {
           if (cleanup) cleanup();
           browser.destroy();

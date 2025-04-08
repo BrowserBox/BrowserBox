@@ -26,6 +26,11 @@
     stdio: 'inherit',
     env: process.env,
   });
+  try {
+    process.title = 'KRNL';
+  } catch(e) {
+    console.info(`Issue setting title`, e);
+  }
 
   child.on('error', (error) => {
     console.error(`Error: Failed to start main script - ${error.message}`);

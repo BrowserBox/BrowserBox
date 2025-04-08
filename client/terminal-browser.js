@@ -1,4 +1,5 @@
 ﻿import termkit from 'terminal-kit';
+import beepbeep from 'beepbeep';
 import { EventEmitter } from 'events';
 import {sleep, debugLog, logClicks,DEBUG} from './log.js';
 import {getAncestorInfo} from './layout.js';
@@ -58,7 +59,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.splashScreen();
 
     // Start rendering and input handling
-    this.render();
+    //this.render();
     this.setupInput();
   }
 
@@ -128,6 +129,26 @@ export default class TerminalBrowser extends EventEmitter {
         this.term.colorRgb(r, g, b)(char);
       }
     }
+
+    // Define a ditzy little tune (frequency, duration in ms)
+    const tune = [
+      { freq: 600, duration: 150 },  // Low note
+      { freq: 800, duration: 150 },  // Rising
+      { freq: 1000, duration: 150 }, // Higher
+      { freq: 800, duration: 100 },  // Drop
+      { freq: 1200, duration: 200 }, // High note
+      { freq: 600, duration: 150 },  // Back down
+      { freq: 800, duration: 100 }   // Quick finish
+    ];
+
+    // Play the tune
+    let totalDuration = 0;
+    tune.forEach((note, index) => {
+      setTimeout(() => {
+        beepbeep(1, note.freq, note.duration);
+      }, totalDuration);
+      totalDuration += note.duration;
+    });
 
     // Reset terminal colors
     this.term.bgDefaultColor().defaultColor();
@@ -497,6 +518,14 @@ export default class TerminalBrowser extends EventEmitter {
         return;
       }
 
+                if (key === 'j') {
+                  this.focusNearestInRow('down');
+                  return;
+                }
+                if (key === 'k') {
+                  this.focusNearestInRow('up');
+                  return;
+                }
       // Handle input focus
       if (this.focusedElement.startsWith('input:')) {
         const backendNodeId = this.focusedElement.split(':')[1];
@@ -670,14 +699,6 @@ export default class TerminalBrowser extends EventEmitter {
                 this.render();
               }
               if (this.focusedElement !== 'address' ) {
-                if (key === 'j') {
-                  this.focusNearestInRow('down');
-                  return;
-                }
-                if (key === 'k') {
-                  this.focusNearestInRow('up');
-                  return;
-                }
                 if (key == 'l') {
                   this.focusNextElement();
                   return;
