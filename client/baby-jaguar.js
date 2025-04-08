@@ -1,15 +1,28 @@
 #!/usr/bin/env node
-// CyberJaguar - BrowserBox TUI Browser Application
+// Kernel Browser - a terminal client for the modern world wide web
+  // Project Information
+    // Initiated by: DOSAYGO Corporation and @o0101
+    // Incept date: February 2025
+    // Assisted by: @grok and ChatGPT
+    // Copyright (C) DOSAYGO and @o0101 2025
+    // License: Commercial / paid license - contact sales@dosaygo.com 
+    // Project Codenames during development: Jaguar, BabyJaguar, CyberJaguar - BrowserBox TUI Browser Application
+
   // Setup
     // imports
-      import { WebSocket } from 'ws';
+      // built in
       import { appendFileSync } from 'fs';
       import { Agent } from 'https';
-      import Layout from './layout.js';
-      import TerminalBrowser from './terminal-browser.js';
-      import {sleep, logClicks, logMessage,debugLog,DEBUG} from './log.js';
+
+      // 3rd-party 
+      import { WebSocket } from 'ws';
       import TK from 'terminal-kit';
       const { terminal } = TK;
+
+      // internal
+      import Layout from './layout.js';
+      import TerminalBrowser from './terminal-browser.js';
+      import { sleep, logClicks, logMessage, debugLog, DEBUG } from './log.js';
 
     // Constants and state
       const clickCounter = { value: 0 };
@@ -21,8 +34,9 @@
         selectedTabIndex: 0
       };
       const DEBOUNCE_DELAY = 280;
+      const WAIT_FOR_COMMAND_RESPONSE = 10 * 1000;
       const args = process.argv.slice(2);
-      const mySource = 'jagclient' + Math.random().toString(36);
+      const mySource = 'krnlclient' + Math.random().toString(36);
 
       let state;
       let newState;
@@ -36,6 +50,13 @@
       let sessionId;
       let browserbox;
       let loginLink;
+
+    // arrows
+      const debouncedRefresh = debounce(() => {
+        if (sessionId) {
+          refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+        }
+      }, DEBOUNCE_DELAY);
 
     // arg processing
       if (args.length === 1) {
@@ -66,30 +87,10 @@
       const loginUrl = `${baseUrl}/login?token=${token}`;
       const apiUrl = `${baseUrl}/api/v10/tabs`;
 
+  startKernel();
+
   // main logic
-    const debouncedRefresh = debounce(() => {
-      if (sessionId) {
-        refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
-      }
-    }, DEBOUNCE_DELAY);
-
-    const selectTabAndRender = async () => {
-      if (cleanup) cleanup();
-
-      const selectedTarget = targets[BrowserState.selectedTabIndex];
-      const targetId = selectedTarget.targetId;
-      BrowserState.activeTarget = selectedTarget;
-
-      DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
-      const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
-      sessionId = newSessionId;
-      DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
-
-      const stop = await printTextLayoutToTerminal({ send, sessionId, onTabSwitch: selectTabAndRender });
-      cleanup = stop;
-    };
-
-    (async () => {
+    async function startKernel() {
       try {
         terminal.cyan('Starting browser connection...\n');
         const connection = await connectToBrowser();
@@ -220,7 +221,7 @@
         browser?.destroy();
         process.exit(1);
       }
-    })();
+    }
 
   // Helpers
     // Data processing helpers
@@ -615,6 +616,22 @@
       }      
 
     // Interactivity helpers
+      async function selectTabAndRender() {
+        if (cleanup) cleanup();
+
+        const selectedTarget = targets[BrowserState.selectedTabIndex];
+        const targetId = selectedTarget.targetId;
+        BrowserState.activeTarget = selectedTarget;
+
+        DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
+        const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+        sessionId = newSessionId;
+        DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
+
+        const stop = await printTextLayoutToTerminal({ send, sessionId, onTabSwitch: selectTabAndRender });
+        cleanup = stop;
+      }
+
       function createInputChangeHandler({ send, sessionId, browser, backendNodeId }) {
         return async function onInputChange(value) {
           try {
@@ -873,13 +890,14 @@
         };
       }
 
-    // helpers
+    // Connectivity helpers
       async function connectToBrowser() {
         const { cookieHeader, cookieValue } = await authenticate(loginUrl);
         const targets = await fetchTargets(apiUrl, cookieHeader);
         const { send, socket, browserbox } = await setupWebSockets(proxyBaseUrl, hostname, token, cookieValue);
         return { send, socket, targets, cookieHeader, browserbox };
       }
+
       async function authenticate(loginUrl) {
         terminal.cyan('Authenticating to set session cookie...\n');
         try {
@@ -900,6 +918,7 @@
           process.exit(1);
         }
       }
+
       async function fetchTargets(apiUrl, cookieHeader) {
         DEBUG && terminal.cyan('Fetching available tabs...\n');
         try {
@@ -919,6 +938,7 @@
           process.exit(1);
         }
       }
+
       async function setupWebSockets(proxyBaseUrl, hostname, token, cookieValue) {
         DEBUG && terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
         let wsDebuggerUrl;
@@ -969,6 +989,7 @@
 
         return { send, socket, browserbox };
       }
+
       function createSend({ socket, terminal, debouncedRefresh }) {
         const Resolvers = {};
         let id = 0;
@@ -999,7 +1020,7 @@
           const timeout = setTimeout(() => {
             delete Resolvers[key];
             resolve({});
-          }, 10000);
+          }, WAIT_FOR_COMMAND_RESPONSE);
 
           try {
             logMessage('SEND', message, terminal);
@@ -1014,6 +1035,7 @@
           return promise.finally(() => clearTimeout(timeout));
         }
       }
+
       function createMessageHandler({ Resolvers, terminal, debouncedRefresh }) {
         return async function handleIncomingMessage(data) {
           let message;

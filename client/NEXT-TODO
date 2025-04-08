@@ -4,6 +4,7 @@ Bugs
   - fix some seeming off by 1 / gap errors. eg lobste.rs login page
   - fix some elements are not tabbable (ie, search result pages, ddg, google, etc)
   - convert textedit / contenteditable placeholders to actual usable, focusable, tabbable/cursorable/clickable, inputs
+  - ddg srp autocomplete, it renders, but only if we trigger re-render with scroll, but then we can't click on the autocomplete options, even tho they register as clickable, or the clicks have no effect on remote
 
   Bugs
     - test13 - Clipped Child Text is not displayed on GUI but is not TUI - minor occlusion edge case bug
