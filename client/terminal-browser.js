@@ -54,9 +54,83 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.fullscreen(true);
     this.term.windowTitle('Terminal Browser');
 
+    // Show splash screen
+    this.splashScreen();
+
     // Start rendering and input handling
     this.render();
     this.setupInput();
+  }
+
+  splashScreen() {
+    // Clear the terminal
+    this.term.clear();
+
+    // The ASCII logo
+    const logo = [
+      '     ██   ██                                  ██    ',
+      '    ░██  ██                                  ░██    ',
+      '    ░██ ██    █████  ██████ ███████   █████  ░██    ',
+      '    ░████    ██░░░██░░██░░█░░██░░░██ ██░░░██ ░██    ',
+      '    ░██░██  ░███████ ░██ ░  ░██  ░██░███████ ░██    ',
+      '    ░██░░██ ░██░░░░  ░██    ░██  ░██░██░░░░  ░██    ',
+      '    ░██ ░░██░░██████░███    ███  ░██░░██████ ███    ',
+      '    ░░   ░░  ░░░░░░ ░░░    ░░░   ░░  ░░░░░░ ░░░     '
+    ];
+
+    // Define rainbow colors (same as the image)
+    const rainbowColors = [
+      { r: 255, g: 0, b: 0 },    // Red
+      { r: 255, g: 165, b: 0 },  // Orange
+      { r: 255, g: 255, b: 0 },  // Yellow
+      { r: 0, g: 255, b: 0 },    // Green
+      { r: 0, g: 0, b: 255 },    // Blue
+      { r: 128, g: 0, b: 128 }   // Purple
+    ];
+
+    // Dimensions of the logo
+    const logoHeight = logo.length; // 8 lines
+    const logoWidth = logo[0].length; // 41 characters
+
+    // Center the logo on the screen
+    const startY = Math.floor((this.term.height - logoHeight) / 2);
+    const startX = Math.floor((this.term.width - logoWidth) / 2);
+
+    // Calculate the diagonal distance for the gradient (top-left to bottom-right)
+    const diagonalLength = Math.sqrt(logoWidth * logoWidth + logoHeight * logoHeight);
+    const colorStep = diagonalLength / (rainbowColors.length - 1);
+
+    // Render the logo with a diagonal gradient
+    for (let y = 0; y < logoHeight; y++) {
+      const line = logo[y];
+      for (let x = 0; x < logoWidth; x++) {
+        const char = line[x];
+
+        // Skip spaces to preserve the background
+        if (char === ' ') {
+          continue;
+        }
+
+        // Calculate the diagonal position (distance from top-left)
+        const diagonalPos = Math.sqrt(x * x + y * y);
+        const segment = Math.min(Math.floor(diagonalPos / colorStep), rainbowColors.length - 2);
+        const startColor = rainbowColors[segment];
+        const endColor = rainbowColors[segment + 1];
+        const t = (diagonalPos % colorStep) / colorStep; // Interpolation factor
+
+        // Interpolate between colors
+        const r = Math.round(startColor.r + t * (endColor.r - startColor.r));
+        const g = Math.round(startColor.g + t * (endColor.g - startColor.g));
+        const b = Math.round(startColor.b + t * (endColor.b - startColor.b));
+
+        // Draw the character with the interpolated color
+        this.term.moveTo(startX + x, startY + y + 1);
+        this.term.colorRgb(r, g, b)(char);
+      }
+    }
+
+    // Reset terminal colors
+    this.term.bgDefaultColor().defaultColor();
   }
 
   focusNearestInRow(direction) {
@@ -493,22 +567,6 @@ export default class TerminalBrowser extends EventEmitter {
           }
         }
       } else {
-        if (key === 'j') {
-          this.focusNearestInRow('down');
-          return;
-        }
-        if (key === 'k') {
-          this.focusNearestInRow('up');
-          return;
-        }
-        if (key == 'l') {
-          this.focusNextElement();
-          return;
-        }
-        if (key == 'h') {
-          this.focusPreviousElement();
-          return;
-        }
         // Handle clickable elements
         if (this.focusedElement.startsWith('clickable:')) {
           const backendNodeId = this.focusedElement.split(':')[1];
@@ -610,6 +668,24 @@ export default class TerminalBrowser extends EventEmitter {
                 this.addressContent = this.addressContent.slice(0, this.cursorPosition) + key + this.addressContent.slice(this.cursorPosition);
                 this.cursorPosition++;
                 this.render();
+              }
+              if (this.focusedElement !== 'address' ) {
+                if (key === 'j') {
+                  this.focusNearestInRow('down');
+                  return;
+                }
+                if (key === 'k') {
+                  this.focusNearestInRow('up');
+                  return;
+                }
+                if (key == 'l') {
+                  this.focusNextElement();
+                  return;
+                }
+                if (key == 'h') {
+                  this.focusPreviousElement();
+                  return;
+                }
               }
               break;
           }

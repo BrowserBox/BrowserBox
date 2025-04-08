@@ -204,6 +204,7 @@
           }
         });
 
+        await sleep(3000);
         await selectTabAndRender();
 
         process.on('SIGINT', () => {
@@ -839,11 +840,16 @@
         });
 
         browser.on('scroll', async ({ direction }) => {
-          const lineHeight = Math.round(state.viewportHeight / terminal.height);
-          const deltaY = direction * lineHeight;
-          if (direction < 0 && state.currentScrollY <= 0) return;
-          await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
-          debouncedRefresh();
+          try { 
+            const lineHeight = Math.round(state.viewportHeight / terminal.height);
+            const deltaY = direction * lineHeight;
+            if (direction < 0 && state.currentScrollY <= 0) return;
+            await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+            debouncedRefresh();
+          } catch(e) {
+            console.error(e);
+            process.exit(1);
+          }
         });
 
         await refresh(); // This should trigger the initial render

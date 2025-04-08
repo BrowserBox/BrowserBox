@@ -33,7 +33,6 @@ Features
   - enhance cursoring / scrolling - horizontal scroll into window, same for virt, before hit margin and trigger actual page scroll
   - special KEYS when not in focused inputs:
     - ] next tab, [ previous tab
-    - jkhl cursoring around tabbable 
     - / searching for elements on current page (highlight matches, n/N next/prev focus)
     - ? brings up commands help modal
     - d/u down and up (moves down the page a chunk - key based scroll)
