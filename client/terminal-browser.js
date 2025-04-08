@@ -1,10 +1,13 @@
 ﻿import termkit from 'terminal-kit';
-import beepbeep from 'beepbeep';
 import { EventEmitter } from 'events';
 import {sleep, debugLog, logClicks,DEBUG} from './log.js';
 import {getAncestorInfo} from './layout.js';
 import {refreshTerminal,handleClick} from './baby-jaguar.js';
 import keys from './kbd.js';
+
+// Dynamically import CommonJS modules
+const { default: tone } = await import('tonegenerator');
+const { default: Speaker } = await import('speaker');
 
 const term = termkit.terminal;
 
@@ -51,19 +54,89 @@ export default class TerminalBrowser extends EventEmitter {
     this.ADDRESS_WIDTH = this.term.width - this.BACK_WIDTH - this.FORWARD_WIDTH - this.GO_WIDTH - 4;
     this.NEW_TAB_WIDTH = 5;
 
+    this.ditzyTune().then(async () => {
+      await sleep(5000);
+      process.exit(0);
+    });
+
     // Initialize terminal
-    this.term.fullscreen(true);
-    this.term.windowTitle('Terminal Browser');
+    //this.term.fullscreen(true);
+    //this.term.windowTitle('Terminal Browser');
 
     // Show splash screen
-    this.splashScreen();
+    //this.splashScreen();
 
     // Start rendering and input handling
     //this.render();
-    this.setupInput();
+    //this.setupInput();
   }
 
-  splashScreen() {
+  async ditzyTune() {
+    const sampleRate = 44100;
+
+    // Create a Speaker instance
+    const speaker = new Speaker({
+      channels: 1,          // Mono sound
+      bitDepth: 16,        // 16-bit depth (PCM)
+      sampleRate: sampleRate, // Sample rate (must match tonegenerator)
+      signed: true,        // Ensure signed samples
+      float: false         // No floating-point samples
+    });
+
+    // Define the ditzy little tune
+    const tune = [
+      { freq: 600, duration: 150 },
+      { freq: 800, duration: 150 },
+      { freq: 1000, duration: 150 },
+      { freq: 800, duration: 100 },
+      { freq: 1200, duration: 200 },
+      { freq: 600, duration: 150 },
+      { freq: 800, duration: 100 }
+    ];
+
+    // Generate PCM data for all notes and play them sequentially
+    let totalDuration = 0;
+    for (const [index, note] of tune.entries()) {
+      setTimeout(() => {
+        console.log(`Playing note ${index + 1}: freq=${note.freq}, duration=${note.duration}`);
+        const tonedata = tone({
+          freq: note.freq,
+          lengthInSecs: note.duration / 1000, // Convert ms to seconds
+          volume: tone.MAX_16,
+          rate: sampleRate,
+          shape: 'triangle',
+          Int16Array: true
+        });
+
+        // Convert tonedata to a Buffer
+        const buffer = Buffer.from(tonedata);
+        speaker.write(buffer);
+
+        // Add a small silence after each note to reduce underflow
+        const silenceDuration = 10; // 10 ms of silence
+        const silenceSamples = Math.floor((silenceDuration / 1000) * sampleRate);
+        const silenceBuffer = Buffer.alloc(silenceSamples * 2, 0); // 2 bytes per sample
+        speaker.write(silenceBuffer);
+      }, totalDuration);
+
+      totalDuration += note.duration + 10; // Add silence duration to the total
+    }
+
+    // End the speaker stream after the last note
+    setTimeout(() => {
+      // Add a final silence to ensure the last note plays fully
+      const finalSilenceDuration = 100; // 100 ms of silence
+      const finalSilenceSamples = Math.floor((finalSilenceDuration / 1000) * sampleRate);
+      const finalSilenceBuffer = Buffer.alloc(finalSilenceSamples * 2, 0);
+      speaker.write(finalSilenceBuffer);
+
+      setTimeout(() => {
+        speaker.end();
+        console.log('Tune finished playing');
+      }, finalSilenceDuration);
+    }, totalDuration);
+  }
+  async splashScreen() {
     // Clear the terminal
     this.term.clear();
 
@@ -79,25 +152,25 @@ export default class TerminalBrowser extends EventEmitter {
       '    ░░   ░░  ░░░░░░ ░░░    ░░░   ░░  ░░░░░░ ░░░     '
     ];
 
-    // Define rainbow colors (same as the image)
+    // Define rainbow colors
     const rainbowColors = [
-      { r: 255, g: 0, b: 0 },    // Red
-      { r: 255, g: 165, b: 0 },  // Orange
-      { r: 255, g: 255, b: 0 },  // Yellow
-      { r: 0, g: 255, b: 0 },    // Green
-      { r: 0, g: 0, b: 255 },    // Blue
-      { r: 128, g: 0, b: 128 }   // Purple
+      { r: 255, g: 0, b: 0 },
+      { r: 255, g: 165, b: 0 },
+      { r: 255, g: 255, b: 0 },
+      { r: 0, g: 255, b: 0 },
+      { r: 0, g: 0, b: 255 },
+      { r: 128, g: 0, b: 128 }
     ];
 
     // Dimensions of the logo
-    const logoHeight = logo.length; // 8 lines
-    const logoWidth = logo[0].length; // 41 characters
+    const logoHeight = logo.length;
+    const logoWidth = logo[0].length;
 
-    // Center the logo on the screen
+    // Center the logo
     const startY = Math.floor((this.term.height - logoHeight) / 2);
     const startX = Math.floor((this.term.width - logoWidth) / 2);
 
-    // Calculate the diagonal distance for the gradient (top-left to bottom-right)
+    // Calculate the diagonal gradient
     const diagonalLength = Math.sqrt(logoWidth * logoWidth + logoHeight * logoHeight);
     const colorStep = diagonalLength / (rainbowColors.length - 1);
 
@@ -106,49 +179,23 @@ export default class TerminalBrowser extends EventEmitter {
       const line = logo[y];
       for (let x = 0; x < logoWidth; x++) {
         const char = line[x];
+        if (char === ' ') continue;
 
-        // Skip spaces to preserve the background
-        if (char === ' ') {
-          continue;
-        }
-
-        // Calculate the diagonal position (distance from top-left)
         const diagonalPos = Math.sqrt(x * x + y * y);
         const segment = Math.min(Math.floor(diagonalPos / colorStep), rainbowColors.length - 2);
         const startColor = rainbowColors[segment];
         const endColor = rainbowColors[segment + 1];
-        const t = (diagonalPos % colorStep) / colorStep; // Interpolation factor
+        const t = (diagonalPos % colorStep) / colorStep;
 
-        // Interpolate between colors
         const r = Math.round(startColor.r + t * (endColor.r - startColor.r));
         const g = Math.round(startColor.g + t * (endColor.g - startColor.g));
         const b = Math.round(startColor.b + t * (endColor.b - startColor.b));
 
-        // Draw the character with the interpolated color
         this.term.moveTo(startX + x, startY + y + 1);
         this.term.colorRgb(r, g, b)(char);
       }
     }
 
-    // Define a ditzy little tune (frequency, duration in ms)
-    const tune = [
-      { freq: 600, duration: 150 },  // Low note
-      { freq: 800, duration: 150 },  // Rising
-      { freq: 1000, duration: 150 }, // Higher
-      { freq: 800, duration: 100 },  // Drop
-      { freq: 1200, duration: 200 }, // High note
-      { freq: 600, duration: 150 },  // Back down
-      { freq: 800, duration: 100 }   // Quick finish
-    ];
-
-    // Play the tune
-    let totalDuration = 0;
-    tune.forEach((note, index) => {
-      setTimeout(() => {
-        beepbeep(1, note.freq, note.duration);
-      }, totalDuration);
-      totalDuration += note.duration;
-    });
 
     // Reset terminal colors
     this.term.bgDefaultColor().defaultColor();

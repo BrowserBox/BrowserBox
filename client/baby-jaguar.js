@@ -92,7 +92,7 @@
   // main logic
     async function startKernel() {
       try {
-        terminal.cyan('Starting browser connection...\n');
+        //terminal.cyan('Starting browser connection...\n');
         const connection = await connectToBrowser();
         send = connection.send;
         socket = connection.socket;
@@ -122,6 +122,9 @@
             url: t.url || 'about:blank',
           })),
         }, () => newState);
+
+        await sleep(3000);
+        process.exit(0);
 
         browser.on('tabSelected', async (tab) => {
           const index = browser.getTabs().findIndex(t => t.title === tab.title && t.url === tab.url);
