@@ -109,9 +109,11 @@
     "simple-peer": "latest",
     "socks-proxy-agent": "latest",
     "spdy": "latest",
+    "speaker": "^0.5.5",
     "sshpk": "^1.18.0",
     "terminal-kit": "^3.1.2",
     "tesseract.js": "^6.0.0",
+    "tonegenerator": "^0.3.3",
     "ws": "latest",
     "yargs": "^17.7.2"
   },
