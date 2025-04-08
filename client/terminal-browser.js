@@ -511,14 +511,6 @@ export default class TerminalBrowser extends EventEmitter {
         return;
       }
 
-                if (key === 'j') {
-                  this.focusNearestInRow('down');
-                  return;
-                }
-                if (key === 'k') {
-                  this.focusNearestInRow('up');
-                  return;
-                }
       // Handle input focus
       if (this.focusedElement.startsWith('input:')) {
         const backendNodeId = this.focusedElement.split(':')[1];
@@ -589,6 +581,24 @@ export default class TerminalBrowser extends EventEmitter {
           }
         }
       } else {
+        if ( this.foucsedElement !== 'address' ) {
+          if (key === 'j') {
+            this.focusNearestInRow('down');
+            return;
+          }
+          if (key === 'k') {
+            this.focusNearestInRow('up');
+            return;
+          }
+          if (key == 'l') {
+            this.focusNextElement();
+            return;
+          }
+          if (key == 'h') {
+            this.focusPreviousElement();
+            return;
+          }
+        }
         // Handle clickable elements
         if (this.focusedElement.startsWith('clickable:')) {
           const backendNodeId = this.focusedElement.split(':')[1];
