@@ -54,7 +54,7 @@
     // arrows
       const debouncedRefresh = debounce(() => {
         if (sessionId) {
-          refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+          refreshTerminal({ send, sessionId, state: initializeState() });
         }
       }, DEBOUNCE_DELAY);
 
@@ -187,20 +187,20 @@
           const normalizedUrl = normalizeUrl(url);
           DEBUG && terminal.cyan(`Navigating to: ${normalizedUrl}\n`);
           send('Page.navigate', { url: normalizedUrl }, sessionId);
-          await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+          await refreshTerminal({ send, sessionId, state: initializeState() });
         });
 
         browser.on('back', async () => {
           const navigated = await goBack(sessionId);
           if (navigated) {
-            await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+            await refreshTerminal({ send, sessionId, state: initializeState() });
           }
         });
 
         browser.on('forward', async () => {
           const navigated = await goForward(sessionId);
           if (navigated) {
-            await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+            await refreshTerminal({ send, sessionId, state: initializeState() });
           }
         });
 
@@ -303,7 +303,7 @@
             Object.assign(state, {
               viewportHeight, viewportWidth, 
             });
-            const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot, terminal });
+            const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot });
             if (textLayoutBoxes.length > 0) {
               return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };
             }
@@ -334,43 +334,6 @@
         return `https://duckduckgo.com/?q=${query}`;
       }
 
-      function createAddressBar({ term, send, sessionId, state, refresh }) {
-        let currentUrl = BrowserState.activeTarget.url;
-        let addressBarActive = false;
-
-        const drawAddressBar = () => {
-          term.moveTo(1, 1).eraseLine();
-          term.bgBlue.white(` URL: ${currentUrl} (Press 'a' to edit) `);
-        };
-
-        const activateAddressBar = () => {
-          if (addressBarActive) return;
-          addressBarActive = true;
-          term.moveTo(6, 1).eraseLineAfter();
-          term.inputField(
-            { default: currentUrl, cancelable: true },
-            async (error, input) => {
-              addressBarActive = false;
-              if (!error && input) {
-                const normalizedUrl = normalizeUrl(input);
-                currentUrl = normalizedUrl;
-                DEBUG && term.cyan(`\nNavigating to: ${currentUrl}\n`);
-                try {
-                  await send('Page.navigate', { url: currentUrl }, sessionId);
-                  await refresh();
-                } catch (err) {
-                  term.red(`Navigation failed: ${err.message}\n`);
-                }
-              } else {
-                refresh();
-              }
-            }
-          );
-        };
-
-        return { drawAddressBar, activateAddressBar, isActive: () => addressBarActive, getUrl: () => currentUrl };
-      }
-
     // Layout calculation and Render helpers
       async function getTerminalSize() {
         const size = { columns: terminal.width, rows: terminal.height };
@@ -385,14 +348,14 @@
         renderBoxes({ ...layoutState, renderedBoxes });
       }
 
-      export async function refreshTerminal({ send, sessionId, state, addressBar }) {
+      export async function refreshTerminal({ send, sessionId, state }) {
         try {
           // sometimes this line errors out and poll returns nothing. I think we could try a page reload
           // and try to repro and figure it out
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
           if ( ! snapshot ) return;
           state.currentScrollY = viewportY;
-          const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal });
+          const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, });
 
           terminal.clear();
           terminal.bgDefaultColor();
@@ -849,8 +812,7 @@
     // Main render 
       async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
         state = initializeState();
-        const refresh = () => refreshTerminal({ send, sessionId, state, addressBar: null });
-        const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
+        const refresh = () => refreshTerminal({ send, sessionId, state });
 
         browser.on('renderContent', () => {
           if (state.layoutState) {
@@ -963,7 +925,7 @@
           agent: new Agent({ rejectUnauthorized: false }),
         });
 
-        const send = createSend({ socket, terminal, debouncedRefresh });
+        const send = createSend({ socket });
 
         await new Promise((resolve, reject) => {
           socket.on('open', resolve);
@@ -990,11 +952,11 @@
         return { send, socket, browserbox };
       }
 
-      function createSend({ socket, terminal, debouncedRefresh }) {
+      function createSend({ socket }) {
         const Resolvers = {};
         let id = 0;
 
-        const incomingMessageHandler = createMessageHandler({ Resolvers, terminal, debouncedRefresh });
+        const incomingMessageHandler = createMessageHandler({ Resolvers });
 
         socket.on('message', incomingMessageHandler);
         socket.on('close', () => {
@@ -1036,7 +998,7 @@
         }
       }
 
-      function createMessageHandler({ Resolvers, terminal, debouncedRefresh }) {
+      function createMessageHandler({ Resolvers }) {
         return async function handleIncomingMessage(data) {
           let message;
           try {
