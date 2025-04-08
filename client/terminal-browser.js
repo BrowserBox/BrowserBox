@@ -496,6 +496,40 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.moveTo(1, this.term.height);
   }
 
+  async handleDinoCommand(key, isListening) {
+    if (!isListening) return false;
+
+    // Only check for "dino" when no input or address bar is focused
+    if (!this.focusedElement.startsWith('input:') && this.focusedElement !== 'address') {
+      if (key.length === 1) {
+        this.keyBuffer += key.toLowerCase();
+        if (this.keyBuffer.length > 4) {
+          this.keyBuffer = this.keyBuffer.slice(-4); // Keep only the last 4 characters
+        }
+        if (this.keyBuffer === 'dino') {
+          this.keyBuffer = ''; // Reset buffer
+          // Disable browser input handling
+          this.term.off('key');
+          this.term.off('mouse');
+          // Run the Dino game
+          await dinoGame(() => {
+            // Callback to restore browser input handling
+            this.setupInput();
+            this.render(); // Redraw browser UI
+          });
+          return true; // Indicate that we handled the key
+        }
+      } else {
+        // Reset buffer on non-character keys (like arrow keys, ENTER, etc.)
+        this.keyBuffer = '';
+      }
+    } else {
+      // Reset buffer if we're in an input field or address bar
+      this.keyBuffer = '';
+    }
+    return false; // Indicate that we didn't handle the key
+  }
+
   setupInput() {
     this.term.grabInput({ mouse: 'button' });
     let isListening = true;
@@ -503,6 +537,12 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.on('key', async (key) => {
       logClicks(`Key pressed: ${key}, focusedElement: ${this.focusedElement}`);
       if (!isListening) return;
+
+      // Check for "dino" command
+      if (await this.handleDinoCommand(key, isListening)) {
+        isListening = false; // Pause browser input while game runs
+        return;
+      }
 
       // Global keybindings
       if (key === 'CTRL_C') {

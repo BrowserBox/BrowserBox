@@ -47,7 +47,7 @@ async function saveHighScore(highScore) {
   }
 }
 
-export async function dinoGame() {
+export async function dinoGame(onExit) {
   // Initialize terminal
   term.fullscreen(true);
   term.windowTitle('Dino Game');
@@ -62,20 +62,20 @@ export async function dinoGame() {
   soundProcess.unref();
 
   // Game state
-  const groundY = term.height - 5; // Fixed ground level
+  const groundY = term.height - 5;
   let dinoY = groundY;
-  const jumpHeight = 15; // Normal jump height
-  const superJumpHeight = jumpHeight * 2; // Double height for super jump
+  const jumpHeight = 15;
+  const superJumpHeight = jumpHeight * 2;
   let isJumping = false;
   let isFalling = false;
   let jumpFrame = 0;
   let jumpStartY = groundY;
   let currentJumpHeight = jumpHeight;
-  let currentJumpDuration = 24; // Current duration (normal or super)
-  const jumpDuration = 24; // Normal jump frames
-  const superJumpDuration = 32; // Longer for super jump (sqrt(2) * normal approx.)
+  let currentJumpDuration = 24;
+  const jumpDuration = 24;
+  const superJumpDuration = 32;
   const fallSpeed = 1;
-  let hasSuperJumped = false; // Tracks if super jump has been used this cycle
+  let hasSuperJumped = false;
   let cacti = [];
   let score = 0;
   let highScore = await loadHighScore();
@@ -84,21 +84,21 @@ export async function dinoGame() {
   const baseFrameRate = 30;
   let speed = 1;
 
-  // Ground texture (unchanged)
+  // Ground texture
   let groundTexture = Array(term.width).fill('').map(() => {
     const rand = Math.random();
     return rand < 0.2 ? '.' : rand < 0.4 ? ',' : rand < 0.6 ? '-' : '_';
   });
   let groundOffset = 0;
 
-  // Parallax clouds (unchanged)
+  // Parallax clouds
   const clouds = [
     { x: 20, y: 3, speed: 0.2, symbol: '☁', color: 'gray' },
     { x: 40, y: 5, speed: 0.5, symbol: '☁', color: 'white' },
     { x: 60, y: 7, speed: 0.8, symbol: '☁', color: 'brightWhite' }
   ];
 
-  // Dino sprite (unchanged)
+  // Dino sprite
   const dino = [
     '  ▓▓  ',
     '  ▓▓  ',
@@ -108,7 +108,7 @@ export async function dinoGame() {
     ' ░ ░  '
   ];
 
-  // Cactus sprite base (unchanged)
+  // Cactus sprite base
   const cactusBase = [
     '  █  ',
     '  █  ',
@@ -130,8 +130,8 @@ export async function dinoGame() {
     // Update Dino position
     if (isJumping) {
       let progress = jumpFrame / currentJumpDuration;
-      let height = 4 * currentJumpHeight * progress * (1 - progress); // Parabolic arc
-      dinoY = Math.max(1, jumpStartY - height); // Clamp to top of screen
+      let height = 4 * currentJumpHeight * progress * (1 - progress);
+      dinoY = Math.max(1, jumpStartY - height);
       jumpFrame++;
       if (jumpFrame >= currentJumpDuration) {
         isJumping = false;
@@ -141,7 +141,7 @@ export async function dinoGame() {
           dinoY = groundY;
           currentJumpHeight = jumpHeight;
           currentJumpDuration = jumpDuration;
-          hasSuperJumped = false; // Reset super jump on landing
+          hasSuperJumped = false;
         }
       }
     } else if (isFalling) {
@@ -151,27 +151,27 @@ export async function dinoGame() {
         isFalling = false;
         currentJumpHeight = jumpHeight;
         currentJumpDuration = jumpDuration;
-        hasSuperJumped = false; // Reset super jump on landing
+        hasSuperJumped = false;
       }
     }
 
-    // Update clouds (unchanged)
+    // Update clouds
     clouds.forEach(cloud => {
       cloud.x -= cloud.speed * speed;
       if (cloud.x < -5) cloud.x = term.width + 5;
     });
 
-    // Spawn cacti (unchanged)
+    // Spawn cacti
     if (frameCount % (Math.floor(Math.random() * 40) + 20) === 0) {
       const height = Math.floor(Math.random() * 5) + 3;
       const cactusSprite = cactusBase.slice(-height);
       cacti.push({ x: term.width - 1, sprite: cactusSprite });
     }
 
-    // Update cacti (unchanged)
+    // Update cacti
     cacti = cacti.map(c => ({ x: c.x - 1.5 * speed, sprite: c.sprite })).filter(c => c.x >= -5);
 
-    // Collision detection (unchanged)
+    // Collision detection
     const dinoX = 11;
     const dinoHeight = dino.length;
     const dinoBottom = dinoY;
@@ -195,7 +195,7 @@ export async function dinoGame() {
     score += speed * 0.1;
     highScore = Math.max(highScore, Math.floor(score));
 
-    // Drawing (unchanged)
+    // Drawing
     clouds.forEach(cloud => {
       term.moveTo(Math.round(cloud.x), cloud.y);
       colorMap[cloud.color](cloud.symbol);
@@ -226,39 +226,45 @@ export async function dinoGame() {
   const gameLoop = setInterval(gameFrame, 1000 / baseFrameRate);
 
   // Handle input
-  term.on('key', (key) => {
-    if (gameOver) {
-      if (key === 'r' || key === 'R') {
-        term.clear();
-        dinoGame();
-      } else if (key === 'q' || key === 'Q' || key === 'CTRL_C') {
-        soundProcess.kill();
-        term.clear();
-        term.processExit(0);
+  return new Promise(resolve => {
+    term.on('key', (key) => {
+      if (gameOver) {
+        if (key === 'r' || key === 'R') {
+          // Restart the game
+          term.clear();
+          resolve(dinoGame(onExit)); // Recursively restart
+        } else if (key === 'q' || key === 'Q' || key === 'CTRL_C') {
+          // Quit and return to browser
+          soundProcess.kill();
+          clearInterval(gameLoop);
+          term.clear();
+          term.off('key'); // Remove game-specific key handler
+          if (onExit) onExit();
+          resolve();
+        }
+        return;
       }
-      return;
-    }
 
-    if (key === ' ') { // Normal jump
-      if (!isJumping && !isFalling) {
-        isJumping = true;
-        jumpFrame = 0;
-        currentJumpHeight = jumpHeight;
-        currentJumpDuration = jumpDuration;
-        jumpStartY = groundY;
-        soundProcess.send('jump');
+      if (key === ' ') {
+        if (!isJumping && !isFalling) {
+          isJumping = true;
+          jumpFrame = 0;
+          currentJumpHeight = jumpHeight;
+          currentJumpDuration = jumpDuration;
+          jumpStartY = groundY;
+          soundProcess.send('jump');
+        }
+      } else if (key === 'SHIFT_SPACE') {
+        if (isJumping && !hasSuperJumped) {
+          isJumping = true;
+          jumpFrame = 0;
+          currentJumpHeight = superJumpHeight;
+          currentJumpDuration = superJumpDuration;
+          jumpStartY = dinoY;
+          hasSuperJumped = true;
+          soundProcess.send('jump');
+        }
       }
-    } else if (key === 'TAB') { // Super jump
-      if (isJumping && !hasSuperJumped) {
-        isJumping = true;
-        jumpFrame = 0;
-        currentJumpHeight = superJumpHeight;
-        currentJumpDuration = superJumpDuration; // Longer arc for super jump
-        jumpStartY = dinoY; // Start from current height
-        hasSuperJumped = true; // Mark super jump as used
-        soundProcess.send('jump');
-      }
-    }
+    });
   });
 }
-
