@@ -602,6 +602,18 @@
         newState.renderedBoxes = renderedBoxes;
       }
 
+      function drawInputFieldForNode({ browser, renderX, renderY, termWidthForBox, backendNodeId, initialValue, onChange }) {
+        const inputField = browser.drawInputField({
+          x: renderX,
+          y: renderY,
+          width: termWidthForBox,
+          key: backendNodeId,
+          initialValue,
+          onChange,
+        });
+        return inputField;
+      }      
+
     // Interactivity helpers
       function createInputChangeHandler({ send, sessionId, browser, backendNodeId }) {
         return async function onInputChange(value) {

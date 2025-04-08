@@ -22,6 +22,7 @@ Features
 
 Bugs
   Minor Polishing Bugs
+  - fix some seeming off by 1 / gap errors. eg lobste.rs login page
   - fix some elements are not tabbable (ie, search result pages, ddg, google, etc)
   - convert textedit / contenteditable placeholders to actual usable, focusable, tabbable/cursorable/clickable, inputs
 
