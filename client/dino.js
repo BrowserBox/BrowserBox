@@ -3,9 +3,22 @@ import { spawn } from 'child_process';
 
 const term = termkit.terminal;
 
+// Map color names to terminal-kit color methods
+const colorMap = {
+  blue: term.blue,
+  magenta: term.magenta,
+  green: term.green,
+  darkGreen: term.green, // terminal-kit doesn't have a direct darkGreen, so we'll use green
+  yellow: term.yellow,
+  gray: term.gray,
+  white: term.white,
+  brightWhite: term.brightWhite,
+  red: term.red
+};
+
 async function dinoGame() {
   // Initialize terminal
-  term.fullscreen(true);
+  //term.fullscreen(true);
   term.windowTitle('Dino Game');
   term.clear();
 
@@ -20,16 +33,16 @@ async function dinoGame() {
   // Game state
   const groundY = term.height - 5; // Ground near the bottom
   let dinoY = groundY; // Dino's vertical position (ground level)
-  const jumpHeight = 12; // Higher jump (was 8)
+  const jumpHeight = 15; // Higher jump
   let isJumping = false;
   let jumpFrame = 0;
-  const jumpDuration = 20; // Frames to complete a jump (up and down)
+  const jumpDuration = 24; // Longer jump duration
   let cacti = []; // Array of cactus positions
   let score = 0;
   let highScore = 0;
   let gameOver = false;
   let frameCount = 0;
-  const frameRate = 20; // Frames per second (50ms per frame)
+  const frameRate = 30; // 30 FPS
 
   // Ground texture (randomly generated)
   let groundTexture = Array(term.width).fill('').map(() => {
@@ -65,11 +78,9 @@ async function dinoGame() {
   ];
 
   // Game loop
-  const gameLoop = setInterval(() => {
-    if (gameOver) return;
-
+  const gameFrame = () => {
     // Clear the screen
-    term.clear();
+    if ( !gameOver ) term.clear();
 
     // Update ground texture (scroll left)
     groundOffset = (groundOffset + 1) % term.width;
@@ -99,17 +110,17 @@ async function dinoGame() {
     });
 
     // Spawn cacti with random height and spacing
-    if (frameCount % (Math.floor(Math.random() * 40) + 30) === 0) { // Random spacing (30-70 frames)
+    if (frameCount % (Math.floor(Math.random() * 40) + 20) === 0) { // Random spacing (20-60 frames)
       const height = Math.floor(Math.random() * 5) + 3; // Random height (3-7 rows)
       const cactusSprite = cactusBase.slice(-height); // Take the bottom N rows
       cacti.push({ x: term.width - 1, sprite: cactusSprite });
     }
 
-    // Update cactus positions
-    cacti = cacti.map(c => ({ x: c.x - 1, sprite: c.sprite })).filter(c => c.x >= -5);
+    // Update cactus positions (faster movement)
+    cacti = cacti.map(c => ({ x: c.x - 1.5, sprite: c.sprite })).filter(c => c.x >= -5);
 
     // Check for collisions
-    const dinoX = 10; // Dino's fixed X position
+    const dinoX = 11; // Dino's fixed X position
     const dinoHeight = dino.length;
     const dinoBottom = dinoY;
     const dinoTop = dinoY - dinoHeight + 1;
@@ -119,6 +130,8 @@ async function dinoGame() {
           gameOver = true;
           clearInterval(gameLoop);
           soundProcess.send('gameOver'); // Trigger game over sound
+          gameFrame();
+          // Don't clear the screen, just overlay "Game Over"
           term.moveTo(Math.floor(term.width / 2) - 5, Math.floor(term.height / 2));
           term.red('Game Over');
           term.moveTo(1, term.height - 1);
@@ -130,7 +143,7 @@ async function dinoGame() {
 
     // Increment score
     cacti.forEach(c => {
-      if (c.x === dinoX - 1) { // Cactus just passed the Dino
+      if (c.x <= dinoX - 1 && c.x > dinoX - 2) { // Cactus just passed the Dino
         score++;
         highScore = Math.max(highScore, score);
       }
@@ -139,24 +152,27 @@ async function dinoGame() {
     // Draw clouds (parallax layers)
     clouds.forEach(cloud => {
       term.moveTo(Math.round(cloud.x), cloud.y);
-      term[cloud.color](cloud.symbol);
+      colorMap[cloud.color](cloud.symbol);
     });
 
     // Draw the ground with texture
     term.moveTo(1, groundY + 1);
     term.gray(shiftedTexture.join(''));
 
-    // Draw the Dino
+    // Draw the Dino with blue and purple colors
     dino.forEach((line, index) => {
       term.moveTo(dinoX, Math.round(dinoY) - dino.length + 1 + index);
-      term.green(line);
+      const color = index % 2 === 0 ? colorMap.blue : colorMap.magenta; // Alternate blue and purple
+      color(line);
     });
 
-    // Draw cacti
+    // Draw cacti with green, dark green, and yellow colors
     cacti.forEach(c => {
       c.sprite.forEach((line, index) => {
-        term.moveTo(c.x, groundY - c.sprite.length + 1 + index);
-        term.red(line);
+        term.moveTo(Math.round(c.x), groundY - c.sprite.length + 1 + index);
+        const colorName = index % 3 === 0 ? 'green' : index % 3 === 1 ? 'darkGreen' : 'yellow'; // Cycle through colors
+        const color = colorMap[colorName];
+        color(line);
       });
     });
 
@@ -165,7 +181,8 @@ async function dinoGame() {
     term.white(`HI ${highScore.toString().padStart(5, '0')} ${score.toString().padStart(5, '0')}`);
 
     frameCount++;
-  }, 1000 / frameRate);
+  };
+  const gameLoop = setInterval(gameFrame, 1000 / frameRate);
 
   // Handle input
   term.on('key', (key) => {
@@ -197,6 +214,6 @@ async function dinoGame() {
 term.grabInput({ mouse: 'button' });
 dinoGame().catch(err => {
   console.error('Error in Dino game:', err);
-  term.clear();
+  //term.clear();
   term.processExit(1);
 });
