@@ -1,5 +1,8 @@
 import termkit from 'terminal-kit';
 import { spawn } from 'child_process';
+import { promises as fs } from 'fs';
+import path from 'path';
+import os from 'os';
 
 const term = termkit.terminal;
 
@@ -16,9 +19,37 @@ const colorMap = {
   red: term.red
 };
 
+// High score file path
+const highScoreDir = path.join(os.homedir(), '.config', 'dosaygo', 'kernel');
+const highScoreFile = path.join(highScoreDir, 'dino.score');
+
+// Load high score from file
+async function loadHighScore() {
+  try {
+    await fs.mkdir(highScoreDir, { recursive: true }); // Create directory if it doesn't exist
+    const data = await fs.readFile(highScoreFile, 'utf8');
+    const json = JSON.parse(data);
+    return json.highScore || 0;
+  } catch (err) {
+    if (err.code === 'ENOENT') return 0; // File doesn't exist, start with 0
+    console.error('Error loading high score:', err);
+    return 0;
+  }
+}
+
+// Save high score to file
+async function saveHighScore(highScore) {
+  try {
+    await fs.mkdir(highScoreDir, { recursive: true }); // Create directory if it doesn't exist
+    await fs.writeFile(highScoreFile, JSON.stringify({ highScore }), 'utf8');
+  } catch (err) {
+    console.error('Error saving high score:', err);
+  }
+}
+
 async function dinoGame() {
   // Initialize terminal
-  //term.fullscreen(true);
+  term.fullscreen(true);
   term.windowTitle('Dino Game');
   term.clear();
 
@@ -39,10 +70,11 @@ async function dinoGame() {
   const jumpDuration = 24; // Longer jump duration
   let cacti = []; // Array of cactus positions
   let score = 0;
-  let highScore = 0;
+  let highScore = await loadHighScore(); // Load high score from file
   let gameOver = false;
   let frameCount = 0;
-  const frameRate = 30; // 30 FPS
+  const baseFrameRate = 30; // Base frame rate (30 FPS)
+  let speed = 1; // Speed multiplier (increases over time)
 
   // Ground texture (randomly generated)
   let groundTexture = Array(term.width).fill('').map(() => {
@@ -79,12 +111,16 @@ async function dinoGame() {
 
   // Game loop
   const gameFrame = () => {
-    // Clear the screen
-    if ( !gameOver ) term.clear();
+    // Clear the screen (unless game over)
+    if ( gameOver ) return;
+    term.clear();
 
-    // Update ground texture (scroll left)
-    groundOffset = (groundOffset + 1) % term.width;
-    const shiftedTexture = [...groundTexture.slice(groundOffset), ...groundTexture.slice(0, groundOffset)];
+    // Update speed (increases over time)
+    speed = 1 + frameCount * 0.001; // Increase speed by 0.001 per frame
+
+    // Update ground texture (scroll left, faster with speed)
+    groundOffset = (groundOffset + speed) % term.width;
+    const shiftedTexture = [...groundTexture.slice(Math.round(groundOffset)), ...groundTexture.slice(0, Math.round(groundOffset))];
 
     // Update Dino position (jumping logic)
     if (isJumping) {
@@ -103,9 +139,9 @@ async function dinoGame() {
       }
     }
 
-    // Update clouds (parallax effect)
+    // Update clouds (parallax effect, scaled by speed)
     clouds.forEach(cloud => {
-      cloud.x -= cloud.speed;
+      cloud.x -= cloud.speed * speed;
       if (cloud.x < -5) cloud.x = term.width + 5; // Reset when off-screen
     });
 
@@ -116,8 +152,8 @@ async function dinoGame() {
       cacti.push({ x: term.width - 1, sprite: cactusSprite });
     }
 
-    // Update cactus positions (faster movement)
-    cacti = cacti.map(c => ({ x: c.x - 1.5, sprite: c.sprite })).filter(c => c.x >= -5);
+    // Update cactus positions (faster movement with speed)
+    cacti = cacti.map(c => ({ x: c.x - 1.5 * speed, sprite: c.sprite })).filter(c => c.x >= -5);
 
     // Check for collisions
     const dinoX = 11; // Dino's fixed X position
@@ -127,11 +163,12 @@ async function dinoGame() {
     for (const cactus of cacti) {
       if (cactus.x >= dinoX && cactus.x <= dinoX + 4) { // Dino's width is roughly 4 characters
         if (dinoBottom >= groundY - cactus.sprite.length + 1) { // Dino is too low to clear the cactus
-          gameOver = true;
           clearInterval(gameLoop);
+          saveHighScore(highScore); // Save high score
           soundProcess.send('gameOver'); // Trigger game over sound
-          gameFrame();
-          // Don't clear the screen, just overlay "Game Over"
+          gameFrame(); // Draw the final frame
+          gameOver = true;
+          // Overlay "Game Over"
           term.moveTo(Math.floor(term.width / 2) - 5, Math.floor(term.height / 2));
           term.red('Game Over');
           term.moveTo(1, term.height - 1);
@@ -141,13 +178,9 @@ async function dinoGame() {
       }
     }
 
-    // Increment score
-    cacti.forEach(c => {
-      if (c.x <= dinoX - 1 && c.x > dinoX - 2) { // Cactus just passed the Dino
-        score++;
-        highScore = Math.max(highScore, score);
-      }
-    });
+    // Increment score (based on distance run, scaled by speed)
+    score += speed * 0.1; // Increment score by speed * 0.1 per frame
+    highScore = Math.max(highScore, Math.floor(score));
 
     // Draw clouds (parallax layers)
     clouds.forEach(cloud => {
@@ -178,11 +211,11 @@ async function dinoGame() {
 
     // Draw score (top-right, like Chrome Dino)
     term.moveTo(term.width - 20, 1);
-    term.white(`HI ${highScore.toString().padStart(5, '0')} ${score.toString().padStart(5, '0')}`);
+    term.white(`HI ${highScore.toString().padStart(5, '0')} ${Math.floor(score).toString().padStart(5, '0')}`);
 
     frameCount++;
   };
-  const gameLoop = setInterval(gameFrame, 1000 / frameRate);
+  const gameLoop = setInterval(gameFrame, 1000 / baseFrameRate);
 
   // Handle input
   term.on('key', (key) => {
@@ -214,6 +247,6 @@ async function dinoGame() {
 term.grabInput({ mouse: 'button' });
 dinoGame().catch(err => {
   console.error('Error in Dino game:', err);
-  //term.clear();
+  term.clear();
   term.processExit(1);
 });
