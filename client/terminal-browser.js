@@ -145,6 +145,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     // Reset terminal colors
     this.term.bgDefaultColor().defaultColor();
+    this.term.styleReset();
   }
 
   focusNearestInRow(direction) {
@@ -376,6 +377,7 @@ export default class TerminalBrowser extends EventEmitter {
     }
     this.term.bgDefaultColor();
     this.term.defaultColor();
+    this.term.styleReset();
   }
 
   drawInputField(options) {
@@ -417,6 +419,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     this.term.bgDefaultColor();
     this.term.defaultColor();
+    this.term.styleReset();
 
     return { backendNodeId: backendNodeIdStr, x, y, width: displayWidth };
   }
@@ -440,6 +443,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
     this.term.bgDefaultColor();
     this.term.defaultColor();
+    this.term.styleReset();
   }
 
   redrawUnfocusedInput(backendNodeId) {
@@ -453,6 +457,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
     this.term.bgDefaultColor();
     this.term.defaultColor();
+    this.term.styleReset();
   }
 
   focusInput(backendNodeId) {
@@ -484,6 +489,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.drawOmnibox();
     this.term.bgDefaultColor();
     this.term.defaultColor();
+    this.term.styleReset();
     this.term.moveTo(1, this.term.height);
   }
 
@@ -581,24 +587,6 @@ export default class TerminalBrowser extends EventEmitter {
           }
         }
       } else {
-        if ( this.foucsedElement !== 'address' ) {
-          if (key === 'j') {
-            this.focusNearestInRow('down');
-            return;
-          }
-          if (key === 'k') {
-            this.focusNearestInRow('up');
-            return;
-          }
-          if (key == 'l') {
-            this.focusNextElement();
-            return;
-          }
-          if (key == 'h') {
-            this.focusPreviousElement();
-            return;
-          }
-        }
         // Handle clickable elements
         if (this.focusedElement.startsWith('clickable:')) {
           const backendNodeId = this.focusedElement.split(':')[1];
@@ -635,83 +623,126 @@ export default class TerminalBrowser extends EventEmitter {
               case 'DOWN':
                 this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
                 break;
+              case 'j':
+                this.focusNearestInRow('down');
+                break;
+              case 'k':
+                this.focusNearestInRow('up');
+                break;
             }
           }
         }
         // Handle UI elements
         else {
-          switch (key) {
-            case 'ENTER':
-              if (this.focusedElement === 'tabs') {
-                this.selectedTabIndex = this.focusedTabIndex;
-                this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
-              } else if (this.focusedElement === 'newTab') { // Added newTab handling
-                this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
-              } else if (this.focusedElement === 'back') {
-                this.emit('back');
-              } else if (this.focusedElement === 'forward') {
-                this.emit('forward');
-              } else if (this.focusedElement === 'go' || this.focusedElement === 'address') {
+          if (this.focusedElement === 'address') {
+            switch (key) {
+              case 'ENTER':
                 this.emit('navigate', this.addressContent);
                 if (this.selectedTabIndex !== -1) {
                   this.tabs[this.selectedTabIndex].url = this.addressContent;
                   this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
                 }
-              }
-              this.render();
-              break;
-            case 'TAB':
-              this.focusNextElement();
-              break;
-            case 'SHIFT_TAB':
-              this.focusPreviousElement();
-              break;
-            case 'LEFT':
-              if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
-                this.focusedTabIndex--;
                 this.render();
-              } else if (this.focusedElement === 'address') {
+                break;
+              case 'TAB':
+                this.focusNextElement();
+                break;
+              case 'SHIFT_TAB':
+                this.focusPreviousElement();
+                break;
+              case 'LEFT':
                 if (this.cursorPosition > 0) this.cursorPosition--;
                 this.render();
-              }
-              break;
-            case 'RIGHT':
-              if (this.focusedElement === 'tabs' && this.focusedTabIndex < this.tabs.length - 1) {
-                this.focusedTabIndex++;
-                this.render();
-              } else if (this.focusedElement === 'address') {
+                break;
+              case 'RIGHT':
                 if (this.cursorPosition < this.addressContent.length) this.cursorPosition++;
                 this.render();
-              }
-              break;
-            case 'BACKSPACE':
-              if (this.focusedElement === 'address' && this.cursorPosition > 0) {
-                this.addressContent = this.addressContent.slice(0, this.cursorPosition - 1) + this.addressContent.slice(this.cursorPosition);
-                this.cursorPosition--;
-                this.render();
-              }
-              break;
-            case 'UP':
-            case 'DOWN':
-              this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-              break;
-            default:
-              if (key.length === 1 && this.focusedElement === 'address') {
-                this.addressContent = this.addressContent.slice(0, this.cursorPosition) + key + this.addressContent.slice(this.cursorPosition);
-                this.cursorPosition++;
-                this.render();
-              }
-              if (this.focusedElement !== 'address' ) {
-                if (key == 'l') {
-                  this.focusNextElement();
-                  return;
+                break;
+              case 'BACKSPACE':
+                if (this.cursorPosition > 0) {
+                  this.addressContent = this.addressContent.slice(0, this.cursorPosition - 1) + this.addressContent.slice(this.cursorPosition);
+                  this.cursorPosition--;
+                  this.render();
                 }
-                if (key == 'h') {
+                break;
+              case 'UP':
+              case 'DOWN':
+                this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+                break;
+              default:
+                if (key.length === 1) {
+                  this.addressContent = this.addressContent.slice(0, this.cursorPosition) + key + this.addressContent.slice(this.cursorPosition);
+                  this.cursorPosition++;
+                  this.render();
+                }
+                break;
+            }
+          } else {
+            switch (key) {
+              case 'j':
+                this.focusNearestInRow('down');
+                break;
+              case 'k':
+                this.focusNearestInRow('up');
+                break;
+              case 'h':
+                if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
+                  this.focusedTabIndex--;
+                  this.render();
+                } else {
                   this.focusPreviousElement();
-                  return;
                 }
-              }
-              break;
+                break;
+              case 'l':
+                if (this.focusedElement === 'tabs' && this.focusedTabIndex < this.tabs.length - 1) {
+                  this.focusedTabIndex++;
+                  this.render();
+                } else {
+                  this.focusNextElement();
+                }
+                break;
+              case 'ENTER':
+                if (this.focusedElement === 'tabs') {
+                  this.selectedTabIndex = this.focusedTabIndex;
+                  this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
+                } else if (this.focusedElement === 'newTab') {
+                  this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+                } else if (this.focusedElement === 'back') {
+                  this.emit('back');
+                } else if (this.focusedElement === 'forward') {
+                  this.emit('forward');
+                } else if (this.focusedElement === 'go') {
+                  this.emit('navigate', this.addressContent);
+                  if (this.selectedTabIndex !== -1) {
+                    this.tabs[this.selectedTabIndex].url = this.addressContent;
+                    this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
+                  }
+                }
+                this.render();
+                break;
+              case 'TAB':
+                this.focusNextElement();
+                break;
+              case 'SHIFT_TAB':
+                this.focusPreviousElement();
+                break;
+              case 'LEFT':
+                if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
+                  this.focusedTabIndex--;
+                  this.render();
+                }
+                break;
+              case 'RIGHT':
+                if (this.focusedElement === 'tabs' && this.focusedTabIndex < this.tabs.length - 1) {
+                  this.focusedTabIndex++;
+                  this.render();
+                }
+                break;
+              case 'UP':
+              case 'DOWN':
+                this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+                break;
+            }
           }
         }
       }
@@ -817,6 +848,7 @@ export default class TerminalBrowser extends EventEmitter {
     }
     debugLog(`Redraw ${backendNodeId} with ancestorType ${ancestorType} ${JSON.stringify({ minX, minY: renderData.minY, maxX: renderData.maxX, maxY })}`);
     this.term.bgDefaultColor().defaultColor();
+    this.term.styleReset();
   }
 
   redrawUnfocusedElement(backendNodeId) {
@@ -841,6 +873,7 @@ export default class TerminalBrowser extends EventEmitter {
         lineText = lineText.slice(0, this.term.width - minX + 1);
 
         this.term.defaultColor().bgDefaultColor();
+        this.term.styleReset();
         if (ancestorType === 'button') this.term.bgGreen().black(lineText);
         else if (ancestorType === 'hyperlink') this.term.cyan().underline(lineText);
         else if (ancestorType === 'other_clickable') this.term.bold(lineText);
@@ -848,6 +881,7 @@ export default class TerminalBrowser extends EventEmitter {
       }
     }
     this.term.bgDefaultColor().defaultColor();
+    this.term.styleReset();
   }
 
   getRenderData(backendNodeId, state) {
@@ -923,6 +957,8 @@ export default class TerminalBrowser extends EventEmitter {
       this.drawOmnibox(); // Redraw omnibox for UI focus
     }
     this.term.bgDefaultColor().defaultColor();
+    this.term.styleReset();
+    this.render();
   }
 
   // Update focusNextElement and focusPreviousElement to avoid full render

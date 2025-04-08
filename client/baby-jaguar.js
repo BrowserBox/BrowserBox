@@ -363,6 +363,7 @@
           terminal.clear();
           terminal.bgDefaultColor();
           terminal.defaultColor();
+          terminal.styleReset();
           browser.render();
 
           if (layoutState) {
@@ -568,6 +569,7 @@
 
         newState.renderedBoxes = renderedBoxes;
         terminal.defaultColor().bgDefaultColor();
+        terminal.styleReset();
       }
 
       function drawInputFieldForNode({ browser, renderX, renderY, termWidthForBox, backendNodeId, initialValue, onChange }) {

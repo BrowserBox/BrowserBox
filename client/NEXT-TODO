@@ -1,5 +1,6 @@
 Bugs
   Minor Polishing Bugs
+  - inputs and omnibox should scroll rightward when we type beyond their right margin (up to any maxlength)
   - some inputs persist over page navigation, new document creation. we need to clear them when DOM is cleared, document navigated. 
   - fix some seeming off by 1 / gap errors. eg lobste.rs login page
   - fix some elements are not tabbable (ie, search result pages, ddg, google, etc)
