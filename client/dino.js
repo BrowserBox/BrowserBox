@@ -47,7 +47,7 @@ async function saveHighScore(highScore) {
   }
 }
 
-async function dinoGame() {
+export async function dinoGame() {
   // Initialize terminal
   term.fullscreen(true);
   term.windowTitle('Dino Game');
@@ -262,10 +262,3 @@ async function dinoGame() {
   });
 }
 
-// Run the game
-term.grabInput({ mouse: 'button' });
-dinoGame().catch(err => {
-  console.error('Error in Dino game:', err);
-  term.clear();
-  term.processExit(1);
-});

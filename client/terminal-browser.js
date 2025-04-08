@@ -4,6 +4,7 @@ import {sleep, debugLog, logClicks,DEBUG} from './log.js';
 import {getAncestorInfo} from './layout.js';
 import {refreshTerminal,handleClick} from './baby-jaguar.js';
 import keys from './kbd.js';
+import { dinoGame } from './dino.js';
 
 // Dynamically import CommonJS modules
 const { default: tone } = await import('tonegenerator');
@@ -53,6 +54,8 @@ export default class TerminalBrowser extends EventEmitter {
     this.GO_WIDTH = 6;
     this.ADDRESS_WIDTH = this.term.width - this.BACK_WIDTH - this.FORWARD_WIDTH - this.GO_WIDTH - 4;
     this.NEW_TAB_WIDTH = 5;
+
+    this.keyBuffer = ''; // Tracks recent keystrokes
 
     this.ditzyTune();
 
