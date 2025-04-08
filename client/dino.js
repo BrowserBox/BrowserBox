@@ -56,41 +56,49 @@ async function dinoGame() {
   // Spawn boop.js for sound effects
   const soundProcess = spawn('node', ['boop.js'], {
     detached: true,
-    stdio: ['ignore', 'ignore', 'ignore', 'ipc'], // Ignore stdio, use IPC channel
+    stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
     windowsHide: true
   });
   soundProcess.unref();
 
   // Game state
-  const groundY = term.height - 5; // Ground near the bottom
-  let dinoY = groundY; // Dino's vertical position (ground level)
-  const jumpHeight = 15; // Higher jump
+  const groundY = term.height - 5; // Fixed ground level
+  let dinoY = groundY;
+  const jumpHeight = 15; // Normal jump height
+  const superJumpHeight = jumpHeight * 2; // Double height for super jump
   let isJumping = false;
+  let isFalling = false;
   let jumpFrame = 0;
-  const jumpDuration = 24; // Longer jump duration
-  let cacti = []; // Array of cactus positions
+  let jumpStartY = groundY;
+  let currentJumpHeight = jumpHeight;
+  let currentJumpDuration = 24; // Current duration (normal or super)
+  const jumpDuration = 24; // Normal jump frames
+  const superJumpDuration = 32; // Longer for super jump (sqrt(2) * normal approx.)
+  const fallSpeed = 1;
+  let hasSuperJumped = false; // Tracks if super jump has been used this cycle
+  let cacti = [];
   let score = 0;
-  let highScore = await loadHighScore(); // Load high score from file
+  let highScore = await loadHighScore();
   let gameOver = false;
   let frameCount = 0;
-  const baseFrameRate = 30; // Base frame rate (30 FPS)
-  let speed = 1; // Speed multiplier (increases over time)
+  const baseFrameRate = 30;
+  let speed = 1;
 
-  // Ground texture (randomly generated)
+  // Ground texture (unchanged)
   let groundTexture = Array(term.width).fill('').map(() => {
     const rand = Math.random();
     return rand < 0.2 ? '.' : rand < 0.4 ? ',' : rand < 0.6 ? '-' : '_';
   });
   let groundOffset = 0;
 
-  // Parallax clouds (3 layers at different speeds)
+  // Parallax clouds (unchanged)
   const clouds = [
-    { x: 20, y: 3, speed: 0.2, symbol: '☁', color: 'gray' }, // Slowest, farthest
-    { x: 40, y: 5, speed: 0.5, symbol: '☁', color: 'white' }, // Medium
-    { x: 60, y: 7, speed: 0.8, symbol: '☁', color: 'brightWhite' } // Fastest, closest
+    { x: 20, y: 3, speed: 0.2, symbol: '☁', color: 'gray' },
+    { x: 40, y: 5, speed: 0.5, symbol: '☁', color: 'white' },
+    { x: 60, y: 7, speed: 0.8, symbol: '☁', color: 'brightWhite' }
   ];
 
-  // Dino sprite using block characters (ANSI pixels)
+  // Dino sprite (unchanged)
   const dino = [
     '  ▓▓  ',
     '  ▓▓  ',
@@ -100,7 +108,7 @@ async function dinoGame() {
     ' ░ ░  '
   ];
 
-  // Cactus sprite base (will vary in height)
+  // Cactus sprite base (unchanged)
   const cactusBase = [
     '  █  ',
     '  █  ',
@@ -111,64 +119,70 @@ async function dinoGame() {
 
   // Game loop
   const gameFrame = () => {
-    // Clear the screen (unless game over)
-    if ( gameOver ) return;
+    if (gameOver) return;
     term.clear();
 
-    // Update speed (increases over time)
-    speed = 1 + frameCount * 0.001; // Increase speed by 0.001 per frame
+    speed = 1 + frameCount * 0.001;
 
-    // Update ground texture (scroll left, faster with speed)
     groundOffset = (groundOffset + speed) % term.width;
     const shiftedTexture = [...groundTexture.slice(Math.round(groundOffset)), ...groundTexture.slice(0, Math.round(groundOffset))];
 
-    // Update Dino position (jumping logic)
+    // Update Dino position
     if (isJumping) {
+      let progress = jumpFrame / currentJumpDuration;
+      let height = 4 * currentJumpHeight * progress * (1 - progress); // Parabolic arc
+      dinoY = Math.max(1, jumpStartY - height); // Clamp to top of screen
       jumpFrame++;
-      if (jumpFrame <= jumpDuration / 2) {
-        // Going up
-        dinoY = groundY - (jumpHeight * (jumpFrame / (jumpDuration / 2)));
-      } else {
-        // Going down
-        dinoY = groundY - (jumpHeight * (1 - (jumpFrame - jumpDuration / 2) / (jumpDuration / 2)));
-      }
-      if (jumpFrame >= jumpDuration) {
+      if (jumpFrame >= currentJumpDuration) {
         isJumping = false;
-        jumpFrame = 0;
+        if (dinoY > groundY) {
+          isFalling = true;
+        } else {
+          dinoY = groundY;
+          currentJumpHeight = jumpHeight;
+          currentJumpDuration = jumpDuration;
+          hasSuperJumped = false; // Reset super jump on landing
+        }
+      }
+    } else if (isFalling) {
+      dinoY += fallSpeed * speed;
+      if (dinoY >= groundY) {
         dinoY = groundY;
+        isFalling = false;
+        currentJumpHeight = jumpHeight;
+        currentJumpDuration = jumpDuration;
+        hasSuperJumped = false; // Reset super jump on landing
       }
     }
 
-    // Update clouds (parallax effect, scaled by speed)
+    // Update clouds (unchanged)
     clouds.forEach(cloud => {
       cloud.x -= cloud.speed * speed;
-      if (cloud.x < -5) cloud.x = term.width + 5; // Reset when off-screen
+      if (cloud.x < -5) cloud.x = term.width + 5;
     });
 
-    // Spawn cacti with random height and spacing
-    if (frameCount % (Math.floor(Math.random() * 40) + 20) === 0) { // Random spacing (20-60 frames)
-      const height = Math.floor(Math.random() * 5) + 3; // Random height (3-7 rows)
-      const cactusSprite = cactusBase.slice(-height); // Take the bottom N rows
+    // Spawn cacti (unchanged)
+    if (frameCount % (Math.floor(Math.random() * 40) + 20) === 0) {
+      const height = Math.floor(Math.random() * 5) + 3;
+      const cactusSprite = cactusBase.slice(-height);
       cacti.push({ x: term.width - 1, sprite: cactusSprite });
     }
 
-    // Update cactus positions (faster movement with speed)
+    // Update cacti (unchanged)
     cacti = cacti.map(c => ({ x: c.x - 1.5 * speed, sprite: c.sprite })).filter(c => c.x >= -5);
 
-    // Check for collisions
-    const dinoX = 11; // Dino's fixed X position
+    // Collision detection (unchanged)
+    const dinoX = 11;
     const dinoHeight = dino.length;
     const dinoBottom = dinoY;
-    const dinoTop = dinoY - dinoHeight + 1;
     for (const cactus of cacti) {
-      if (cactus.x >= dinoX && cactus.x <= dinoX + 4) { // Dino's width is roughly 4 characters
-        if (dinoBottom >= groundY - cactus.sprite.length + 1) { // Dino is too low to clear the cactus
+      if (cactus.x >= dinoX && cactus.x <= dinoX + 4) {
+        if (dinoBottom >= groundY - cactus.sprite.length + 1) {
           clearInterval(gameLoop);
-          saveHighScore(highScore); // Save high score
-          soundProcess.send('gameOver'); // Trigger game over sound
-          gameFrame(); // Draw the final frame
+          saveHighScore(highScore);
+          soundProcess.send('gameOver');
+          gameFrame();
           gameOver = true;
-          // Overlay "Game Over"
           term.moveTo(Math.floor(term.width / 2) - 5, Math.floor(term.height / 2));
           term.red('Game Over');
           term.moveTo(1, term.height - 1);
@@ -178,38 +192,32 @@ async function dinoGame() {
       }
     }
 
-    // Increment score (based on distance run, scaled by speed)
-    score += speed * 0.1; // Increment score by speed * 0.1 per frame
+    score += speed * 0.1;
     highScore = Math.max(highScore, Math.floor(score));
 
-    // Draw clouds (parallax layers)
+    // Drawing (unchanged)
     clouds.forEach(cloud => {
       term.moveTo(Math.round(cloud.x), cloud.y);
       colorMap[cloud.color](cloud.symbol);
     });
 
-    // Draw the ground with texture
     term.moveTo(1, groundY + 1);
     term.gray(shiftedTexture.join(''));
 
-    // Draw the Dino with blue and purple colors
     dino.forEach((line, index) => {
       term.moveTo(dinoX, Math.round(dinoY) - dino.length + 1 + index);
-      const color = index % 2 === 0 ? colorMap.blue : colorMap.magenta; // Alternate blue and purple
+      const color = index % 2 === 0 ? colorMap.blue : colorMap.magenta;
       color(line);
     });
 
-    // Draw cacti with green, dark green, and yellow colors
     cacti.forEach(c => {
       c.sprite.forEach((line, index) => {
         term.moveTo(Math.round(c.x), groundY - c.sprite.length + 1 + index);
-        const colorName = index % 3 === 0 ? 'green' : index % 3 === 1 ? 'darkGreen' : 'yellow'; // Cycle through colors
-        const color = colorMap[colorName];
-        color(line);
+        const colorName = index % 3 === 0 ? 'green' : index % 3 === 1 ? 'darkGreen' : 'yellow';
+        colorMap[colorName](line);
       });
     });
 
-    // Draw score (top-right, like Chrome Dino)
     term.moveTo(term.width - 20, 1);
     term.white(`HI ${highScore.toString().padStart(5, '0')} ${Math.floor(score).toString().padStart(5, '0')}`);
 
@@ -221,23 +229,34 @@ async function dinoGame() {
   term.on('key', (key) => {
     if (gameOver) {
       if (key === 'r' || key === 'R') {
-        // Restart the game
         term.clear();
         dinoGame();
       } else if (key === 'q' || key === 'Q' || key === 'CTRL_C') {
-        // Quit
-        soundProcess.kill(); // Clean up the sound process
+        soundProcess.kill();
         term.clear();
         term.processExit(0);
       }
       return;
     }
 
-    if (key === ' ') { // Correct key name for space bar in terminal-kit
-      if (!isJumping) {
+    if (key === ' ') { // Normal jump
+      if (!isJumping && !isFalling) {
         isJumping = true;
         jumpFrame = 0;
-        soundProcess.send('jump'); // Trigger jump sound
+        currentJumpHeight = jumpHeight;
+        currentJumpDuration = jumpDuration;
+        jumpStartY = groundY;
+        soundProcess.send('jump');
+      }
+    } else if (key === 'TAB') { // Super jump
+      if (isJumping && !hasSuperJumped) {
+        isJumping = true;
+        jumpFrame = 0;
+        currentJumpHeight = superJumpHeight;
+        currentJumpDuration = superJumpDuration; // Longer arc for super jump
+        jumpStartY = dinoY; // Start from current height
+        hasSuperJumped = true; // Mark super jump as used
+        soundProcess.send('jump');
       }
     }
   });
