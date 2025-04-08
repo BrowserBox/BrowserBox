@@ -4,10 +4,12 @@ import { execSync, spawn } from 'child_process';
 import { join } from 'path';
 import { existsSync } from 'fs';
 
+
 // Try to set NODE_EXTRA_CA_CERTS with mkcert CA root
 try {
   const caRoot = execSync('mkcert -CAROOT', { stdio: 'pipe' }).toString().trim();
-  const certPath = join(caRoot, 'rootCA.pem');
+  const CERT_FILE = 'rootCA.pem';
+  const certPath = join(caRoot, CERT_FILE);
   if (existsSync(certPath)) {
     process.env.NODE_EXTRA_CA_CERTS = certPath;
     console.log(`Set NODE_EXTRA_CA_CERTS to ${certPath}`);
@@ -22,11 +24,11 @@ try {
 const mainScript = join(process.cwd(), 'baby-jaguar.js');
 const child = spawn('node', [mainScript, ...process.argv.slice(2)], {
   stdio: 'inherit',
-  env: { ...process.env },
+  env: process.env,
 });
 
 child.on('error', (error) => {
-  console.error(`Failed to start main script: ${error.message}`);
+  console.error(`Error: Failed to start main script - ${error.message}`);
   process.exit(1);
 });
 

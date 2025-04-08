@@ -922,12 +922,15 @@
           browser.stopListening();
         };
       }
+
     // helpers
       async function connectToBrowser() {
-        let cookieHeader;
-        let cookieValue;
-        let targets;
-
+        const { cookieHeader, cookieValue } = await authenticate(loginUrl);
+        const targets = await fetchTargets(apiUrl, cookieHeader);
+        const { send, socket, browserbox } = await setupWebSockets(proxyBaseUrl, hostname, token, cookieValue);
+        return { send, socket, targets, cookieHeader, browserbox };
+      }
+      async function authenticate(loginUrl) {
         terminal.cyan('Authenticating to set session cookie...\n');
         try {
           const response = await fetch(loginUrl, { method: 'GET', headers: { 'Accept': 'text/html' }, redirect: 'manual' });
@@ -936,34 +939,37 @@
           if (!setCookie) throw new Error('No Set-Cookie header in /login response');
           const cookieMatch = setCookie.match(/browserbox-[^=]+=(.+?)(?:;|$)/);
           if (!cookieMatch) throw new Error('Could not parse browserbox cookie');
-          cookieValue = cookieMatch[1];
+          const cookieValue = cookieMatch[1];
           const cookieName = setCookie.split('=')[0];
-          cookieHeader = `${cookieName}=${cookieValue}`;
-          if (DEBUG) console.log(`Captured cookie: ${cookieHeader}`);
+          const cookieHeader = `${cookieName}=${cookieValue}`;
+          DEBUG && console.log(`Captured cookie: ${cookieHeader}`);
+          return { cookieHeader, cookieValue };
         } catch (error) {
           if (DEBUG) console.warn(error);
           terminal.red(`Error during login: ${error.message}\n`);
           process.exit(1);
         }
-
+      }
+      async function fetchTargets(apiUrl, cookieHeader) {
         DEBUG && terminal.cyan('Fetching available tabs...\n');
         try {
           const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json', 'Cookie': cookieHeader } });
           if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
           const data = await response.json();
-          targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
+          const targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
           BrowserState.targets = targets;
+          if (!targets.length) {
+            DEBUG && terminal.yellow('No page or tab targets available.\n');
+            statusLine('No page or tab targets available.');
+          }
+          return targets;
         } catch (error) {
           if (DEBUG) console.warn(error);
           terminal.red(`Error fetching tabs: ${error.message}\n`);
           process.exit(1);
         }
-
-        if (!targets.length) {
-          DEBUG && terminal.yellow('No page or tab targets available.\n');
-          statusLine('No page or tab targets available.');
-        }
-
+      }
+      async function setupWebSockets(proxyBaseUrl, hostname, token, cookieValue) {
         DEBUG && terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
         let wsDebuggerUrl;
         try {
@@ -987,39 +993,48 @@
           agent: new Agent({ rejectUnauthorized: false }),
         });
 
+        const send = createSend({ socket, terminal, debouncedRefresh });
+
+        await new Promise((resolve, reject) => {
+          socket.on('open', resolve);
+          socket.on('error', reject);
+        });
+        DEBUG && terminal.green('Connected to WebSocket\n');
+
+        let bbResolve;
+        const bbReady = new Promise(res => bbResolve = res);
+        let wsBBUrl = new URL(loginUrl);
+        wsBBUrl.protocol = 'wss:';
+        wsBBUrl.searchParams.set('session_token', wsBBUrl.searchParams.get('token'));
+        wsBBUrl.pathname = '/';
+
+        const browserbox = new WebSocket(wsBBUrl, {
+          headers: { 'x-browserbox-local-auth': token },
+          agent: new Agent({ rejectUnauthorized: false }),
+        });
+
+        browserbox.on('open', bbResolve);
+        await bbReady;
+        console.log('Connected to browserbox');
+
+        return { send, socket, browserbox };
+      }
+      function createSend({ socket, terminal, debouncedRefresh }) {
         const Resolvers = {};
         let id = 0;
 
-        socket.on('close', () => terminal.yellow('WebSocket disconnected\n'));
+        const incomingMessageHandler = createMessageHandler({ Resolvers, terminal, debouncedRefresh });
+
+        socket.on('message', incomingMessageHandler);
+        socket.on('close', () => {
+          statusLine('WebSocket disconnected\n');
+        })
         socket.on('error', (err) => {
           if (DEBUG) console.warn(err);
-          terminal.red(`WebSocket error: ${err.message}\n`);
+          statusLine(`WebSocket error: ${err.message}\n`);
         });
 
-        socket.on('message', async (data) => {
-          let message;
-          try {
-            const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
-            message = JSON.parse(dataStr);
-            logMessage('RECEIVE', message, terminal);
-          } catch (error) {
-            if (DEBUG) console.warn(error);
-            terminal.red(`Invalid message: ${('' + data).slice(0, 50)}...\n`);
-            return;
-          }
-          const key = `${message.sessionId || 'root'}:${message.id}`;
-          if (message.id && Resolvers[key]) {
-            Resolvers[key](message.result || message.error);
-            delete Resolvers[key];
-          } else {
-            if (message.method === 'Target.targetInfoChanged') {
-              const { targetInfo } = message.params;
-              const { targetId, title, url } = targetInfo;
-              updateTabData(targetId, title, url);
-              debouncedRefresh();
-            }
-          }
-        });
+        return send;
 
         async function send(method, params = {}, sessionId) {
           const message = { method, params, sessionId, id: ++id };
@@ -1048,31 +1063,28 @@
           }
           return promise.finally(() => clearTimeout(timeout));
         }
-
-        await new Promise((resolve, reject) => {
-          socket.on('open', resolve);
-          socket.on('error', reject);
-        });
-        DEBUG && terminal.green('Connected to WebSocket\n');
-
-       
-        let bbResolve;
-        const bbReady = new Promise(res => bbResolve = res);
-        let wsBBUrl = new URL(loginUrl);
-        wsBBUrl.protocol = 'wss:'
-        wsBBUrl.searchParams.set('session_token', wsBBUrl.searchParams.get('token'));
-        wsBBUrl.pathname = '/';
-
-        const browserbox = new WebSocket(wsBBUrl, {
-          headers: { 'x-browserbox-local-auth': token },
-          agent: new Agent({ rejectUnauthorized: false }),
-        });
-
-        browserbox.on('open', bbResolve);
-
-        await bbReady;
-        console.log('Connected to browserbox');
-
-        return { send, socket, targets, cookieHeader, browserbox };
       }
-
+      function createMessageHandler({ Resolvers, terminal, debouncedRefresh }) {
+        return async function handleIncomingMessage(data) {
+          let message;
+          try {
+            const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
+            message = JSON.parse(dataStr);
+            logMessage('RECEIVE', message, terminal);
+          } catch (error) {
+            if (DEBUG) console.warn(error);
+            terminal.red(`Invalid message: ${('' + data).slice(0, 50)}...\n`);
+            return;
+          }
+          const key = `${message.sessionId || 'root'}:${message.id}`;
+          if (message.id && Resolvers[key]) {
+            Resolvers[key](message.result || message.error);
+            delete Resolvers[key];
+          } else if (message.method === 'Target.targetInfoChanged') {
+            const { targetInfo } = message.params;
+            const { targetId, title, url } = targetInfo;
+            updateTabData(targetId, title, url);
+            debouncedRefresh();
+          }
+        };
+      }
