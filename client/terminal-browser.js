@@ -54,88 +54,34 @@ export default class TerminalBrowser extends EventEmitter {
     this.ADDRESS_WIDTH = this.term.width - this.BACK_WIDTH - this.FORWARD_WIDTH - this.GO_WIDTH - 4;
     this.NEW_TAB_WIDTH = 5;
 
-    this.ditzyTune().then(async () => {
-      await sleep(5000);
-      process.exit(0);
-    });
+    this.ditzyTune();
 
     // Initialize terminal
-    //this.term.fullscreen(true);
-    //this.term.windowTitle('Terminal Browser');
+    this.term.fullscreen(true);
+    this.term.windowTitle('Terminal Browser');
 
     // Show splash screen
-    //this.splashScreen();
+    this.splashScreen();
 
     // Start rendering and input handling
-    //this.render();
-    //this.setupInput();
+    this.render();
+    this.setupInput();
   }
 
   async ditzyTune() {
-    const sampleRate = 44100;
+    const { spawn } = await import('child_process');
 
-    // Create a Speaker instance
-    const speaker = new Speaker({
-      channels: 1,          // Mono sound
-      bitDepth: 16,        // 16-bit depth (PCM)
-      sampleRate: sampleRate, // Sample rate (must match tonegenerator)
-      signed: true,        // Ensure signed samples
-      float: false         // No floating-point samples
+    // Spawn ditzrunner.js to play the tune
+    const runnerProcess = spawn('node', ['ditzrunner.js'], {
+      detached: true, // Run as a detached process
+      stdio: 'ignore', // Ignore stdout/stderr
+      windowsHide: true // Hide the window (no effect on macOS, but included for cross-platform)
     });
 
-    // Define the ditzy little tune
-    const tune = [
-      { freq: 600, duration: 150 },
-      { freq: 800, duration: 150 },
-      { freq: 1000, duration: 150 },
-      { freq: 800, duration: 100 },
-      { freq: 1200, duration: 200 },
-      { freq: 600, duration: 150 },
-      { freq: 800, duration: 100 }
-    ];
-
-    // Generate PCM data for all notes and play them sequentially
-    let totalDuration = 0;
-    for (const [index, note] of tune.entries()) {
-      setTimeout(() => {
-        console.log(`Playing note ${index + 1}: freq=${note.freq}, duration=${note.duration}`);
-        const tonedata = tone({
-          freq: note.freq,
-          lengthInSecs: note.duration / 1000, // Convert ms to seconds
-          volume: tone.MAX_16,
-          rate: sampleRate,
-          shape: 'triangle',
-          Int16Array: true
-        });
-
-        // Convert tonedata to a Buffer
-        const buffer = Buffer.from(tonedata);
-        speaker.write(buffer);
-
-        // Add a small silence after each note to reduce underflow
-        const silenceDuration = 10; // 10 ms of silence
-        const silenceSamples = Math.floor((silenceDuration / 1000) * sampleRate);
-        const silenceBuffer = Buffer.alloc(silenceSamples * 2, 0); // 2 bytes per sample
-        speaker.write(silenceBuffer);
-      }, totalDuration);
-
-      totalDuration += note.duration + 10; // Add silence duration to the total
-    }
-
-    // End the speaker stream after the last note
-    setTimeout(() => {
-      // Add a final silence to ensure the last note plays fully
-      const finalSilenceDuration = 100; // 100 ms of silence
-      const finalSilenceSamples = Math.floor((finalSilenceDuration / 1000) * sampleRate);
-      const finalSilenceBuffer = Buffer.alloc(finalSilenceSamples * 2, 0);
-      speaker.write(finalSilenceBuffer);
-
-      setTimeout(() => {
-        speaker.end();
-        console.log('Tune finished playing');
-      }, finalSilenceDuration);
-    }, totalDuration);
+    // Detach the process so it runs independently
+    runnerProcess.unref();
   }
+
   async splashScreen() {
     // Clear the terminal
     this.term.clear();
