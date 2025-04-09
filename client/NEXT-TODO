@@ -1,10 +1,12 @@
 Next
+  - Freeze up bug with scrolling. Need to isolate. 
   - Refactor setupInput into something more sensible
   - Compose better dittys
   - select, radio and checkbox inputs (and test page)
 
 Bugs
   Minor Polishing Bugs
+  - fix scroll up breaks randomly
   - focus off now removes button background style! oops.
   - inputs and omnibox should scroll rightward when we type beyond their right margin (up to any maxlength)
   - some inputs persist over page navigation, new document creation. we need to clear them when DOM is cleared, document navigated. 

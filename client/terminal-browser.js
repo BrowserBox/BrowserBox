@@ -427,6 +427,134 @@ export default class TerminalBrowser extends EventEmitter {
     return { backendNodeId: backendNodeIdStr, x, y, width: displayWidth };
   }
 
+  drawSelect(options) {
+    const { x, y, width, key, options: selectOptions = [], onChange } = options;
+    const backendNodeIdStr = '' + key;
+
+    // Initialize state if not present
+    if (!this.inputFields.has(backendNodeIdStr)) {
+      this.inputFields.set(backendNodeIdStr, {
+        type: 'select',
+        value: selectOptions.length > 0 ? selectOptions[0].value : '', // Default to first option
+        selectedIndex: 0, // Track the selected option index
+        options: selectOptions, // Array of { value, label }
+        cursorPosition: 0, // For consistency, though not used for select
+        focused: false,
+        onChange,
+        x,
+        y,
+        width,
+      });
+    }
+
+    const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.x = x;
+    inputState.y = y;
+    inputState.width = width;
+
+    const displayWidth = Math.min(width, this.term.width - x + 1);
+    const isFocused = this.focusedElement === `input:${backendNodeIdStr}`;
+    const selectedOption = inputState.options[inputState.selectedIndex] || { label: '' };
+
+    this.term.moveTo(x, y);
+    if (isFocused) {
+      this.term.bgCyan().white(`[${selectedOption.label}]`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+    } else {
+      this.term.bgWhite().black(`[${selectedOption.label}]`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+    }
+
+    this.term.bgDefaultColor();
+    this.term.defaultColor();
+    this.term.styleReset();
+
+    return { backendNodeId: backendNodeIdStr, x, y, width: displayWidth };
+  }
+
+  drawRadio(options) {
+    const { x, y, width, key, name, value, checked = false, onChange } = options;
+    const backendNodeIdStr = '' + key;
+
+    // Initialize state if not present
+    if (!this.inputFields.has(backendNodeIdStr)) {
+      this.inputFields.set(backendNodeIdStr, {
+        type: 'radio',
+        name, // To group radios together
+        value,
+        checked,
+        focused: false,
+        onChange,
+        x,
+        y,
+        width,
+      });
+    }
+
+    const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.x = x;
+    inputState.y = y;
+    inputState.width = width;
+    inputState.checked = checked; // Update checked state
+
+    const displayWidth = Math.min(width, this.term.width - x + 1);
+    const isFocused = this.focusedElement === `input:${backendNodeIdStr}`;
+    const label = value || '';
+
+    this.term.moveTo(x, y);
+    if (isFocused) {
+      this.term.bgCyan().white(`${inputState.checked ? '(•)' : '( )'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+    } else {
+      this.term.bgWhite().black(`${inputState.checked ? '(•)' : '( )'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+    }
+
+    this.term.bgDefaultColor();
+    this.term.defaultColor();
+    this.term.styleReset();
+
+    return { backendNodeId: backendNodeIdStr, x, y, width: displayWidth };
+  }
+
+  drawCheckbox(options) {
+    const { x, y, width, key, value, checked = false, onChange } = options;
+    const backendNodeIdStr = '' + key;
+
+    // Initialize state if not present
+    if (!this.inputFields.has(backendNodeIdStr)) {
+      this.inputFields.set(backendNodeIdStr, {
+        type: 'checkbox',
+        value,
+        checked,
+        focused: false,
+        onChange,
+        x,
+        y,
+        width,
+      });
+    }
+
+    const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.x = x;
+    inputState.y = y;
+    inputState.width = width;
+    inputState.checked = checked; // Update checked state
+
+    const displayWidth = Math.min(width, this.term.width - x + 1);
+    const isFocused = this.focusedElement === `input:${backendNodeIdStr}`;
+    const label = value || '';
+
+    this.term.moveTo(x, y);
+    if (isFocused) {
+      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+    } else {
+      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+    }
+
+    this.term.bgDefaultColor();
+    this.term.defaultColor();
+    this.term.styleReset();
+
+    return { backendNodeId: backendNodeIdStr, x, y, width: displayWidth };
+  }
+
   redrawFocusedInput() {
     if (!this.focusedElement.startsWith('input:')) return;
 
@@ -538,328 +666,368 @@ export default class TerminalBrowser extends EventEmitter {
       logClicks(`Key pressed: ${key}, focusedElement: ${this.focusedElement}`);
       if (!isListening) return;
 
-      // Check for "dino" command
+      // Handle Dino command
       if (await this.handleDinoCommand(key, isListening)) {
         isListening = false; // Pause browser input while game runs
         return;
       }
 
-      // Global keybindings
-      if (key === 'CTRL_C') {
+      // Handle global keybindings
+      if (this.handleGlobalKeybindings(key, isListening)) {
         isListening = false;
-        this.term.clear();
-        this.term.processExit(0);
-        return;
-      }
-      if (key === 'CTRL_T') {
-        this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
-        return;
-      }
-      if (key === 'CTRL_W') {
-        if (this.selectedTabIndex >= 0) this.closeTab(this.selectedTabIndex);
         return;
       }
 
-      // Handle input focus
+      // Handle specific element types
       if (this.focusedElement.startsWith('input:')) {
-        const backendNodeId = this.focusedElement.split(':')[1];
-        const inputState = this.inputFields.get(backendNodeId);
-        if (!inputState) {
-          logClicks(`No input state for ${backendNodeId}`);
-          return;
-        }
-        logClicks(`Input focused, backendNodeId: ${backendNodeId}, current value: ${inputState.value}`);
-
-        if (key === 'ENTER') {
-          const keyCommand = keyEvent('ENTER');
-          if (keyCommand) {
-            try {
-              await this.getState().send(keyCommand.command.name, keyCommand.command.params, this.getState().sessionId);
-              keyCommand.command.params.type = "keyUp";
-              keyCommand.command.params.text = undefined;
-              sleep(50).then(async () => {
-                await this.getState().send(keyCommand.command.name, keyCommand.command.params, this.getState().sessionId);
-                logClicks(`Sent Enter key event for backendNodeId: ${backendNodeId} and session ${this.getState().sessionId}`);
-              });
-            } catch (error) {
-              logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
-            }
-          }
-          this.redrawUnfocusedInput(backendNodeId);
-          this.focusedElement = 'tabs';
-          this.previousFocusedElement = this.focusedElement;
-          if (inputState.onChange) inputState.onChange(inputState.value);
-          this.render();
-        } else {
-          switch (key) {
-            case 'LEFT':
-              if (inputState.cursorPosition > 0) inputState.cursorPosition--;
-              this.redrawFocusedInput();
-              break;
-            case 'RIGHT':
-              if (inputState.cursorPosition < inputState.value.length) inputState.cursorPosition++;
-              this.redrawFocusedInput();
-              break;
-            case 'BACKSPACE':
-              if (inputState.cursorPosition > 0) {
-                inputState.value = inputState.value.slice(0, inputState.cursorPosition - 1) + inputState.value.slice(inputState.cursorPosition);
-                inputState.cursorPosition--;
-                if (inputState.onChange) inputState.onChange(inputState.value);
-                this.redrawFocusedInput();
-              }
-              break;
-            case 'TAB':
-              this.focusNextElement(); // Updated to use new tabbing logic
-              break;
-            case 'SHIFT_TAB':
-              this.focusPreviousElement(); // Updated to use new tabbing logic
-              break;
-            case 'UP':
-            case 'DOWN':
-              this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-              break;
-            default:
-              if (key.length === 1) {
-                inputState.value = inputState.value.slice(0, inputState.cursorPosition) + key + inputState.value.slice(inputState.cursorPosition);
-                inputState.cursorPosition++;
-                logClicks(`Updated value: ${inputState.value}`);
-                if (inputState.onChange) inputState.onChange(inputState.value);
-                this.redrawFocusedInput();
-              }
-              break;
-          }
-        }
+        this.handleInputKey(key);
+      } else if (this.focusedElement.startsWith('clickable:')) {
+        this.handleClickableKey(key);
+      } else if (this.focusedElement === 'address') {
+        this.handleAddressKey(key);
       } else {
-        // Handle clickable elements
-        if (this.focusedElement.startsWith('clickable:')) {
-          const backendNodeId = this.focusedElement.split(':')[1];
-          const state = this.getState();
-          const tabbable = this.computeTabbableElements();
-          const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
-
-          if (key === 'ENTER') {
-            if (focusedElement) {
-              await handleClick({
-                termX: focusedElement.x, // Use the grouped element's coordinates
-                termY: focusedElement.y,
-                renderedBoxes: state.renderedBoxes,
-                clickableElements: state.clickableElements,
-                send: state.send,
-                sessionId: state.sessionId,
-                clickCounter: state.clickCounter,
-                refresh: () => refreshTerminal({ send: state.send, sessionId: state.sessionId, state }),
-                layoutToNode: state.layoutToNode,
-                nodeToParent: state.nodeToParent,
-                nodes: state.nodes,
-              });
-              this.render(); // Redraw UI after navigation
-            } else {
-              logClicks(`No tabbable element found for clickable:${backendNodeId}`);
-            }
-          } else if (key === 'TAB' || key == 'l') {
-            this.focusNextElement();
-          } else if (key === 'SHIFT_TAB' || key == 'h') {
-            this.focusPreviousElement();
-          } else {
-            switch(key) {
-              case 'UP':
-              case 'DOWN':
-                this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-                break;
-              case 'j':
-                this.focusNearestInRow('down');
-                break;
-              case 'k':
-                this.focusNearestInRow('up');
-                break;
-            }
-          }
-        }
-        // Handle UI elements
-        else {
-          if (this.focusedElement === 'address') {
-            switch (key) {
-              case 'ENTER':
-                this.emit('navigate', this.addressContent);
-                if (this.selectedTabIndex !== -1) {
-                  this.tabs[this.selectedTabIndex].url = this.addressContent;
-                  this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
-                }
-                this.render();
-                break;
-              case 'TAB':
-                this.focusNextElement();
-                break;
-              case 'SHIFT_TAB':
-                this.focusPreviousElement();
-                break;
-              case 'LEFT':
-                if (this.cursorPosition > 0) this.cursorPosition--;
-                this.render();
-                break;
-              case 'RIGHT':
-                if (this.cursorPosition < this.addressContent.length) this.cursorPosition++;
-                this.render();
-                break;
-              case 'BACKSPACE':
-                if (this.cursorPosition > 0) {
-                  this.addressContent = this.addressContent.slice(0, this.cursorPosition - 1) + this.addressContent.slice(this.cursorPosition);
-                  this.cursorPosition--;
-                  this.render();
-                }
-                break;
-              case 'UP':
-              case 'DOWN':
-                this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-                break;
-              default:
-                if (key.length === 1) {
-                  this.addressContent = this.addressContent.slice(0, this.cursorPosition) + key + this.addressContent.slice(this.cursorPosition);
-                  this.cursorPosition++;
-                  this.render();
-                }
-                break;
-            }
-          } else {
-            switch (key) {
-              case 'j':
-                this.focusNearestInRow('down');
-                break;
-              case 'k':
-                this.focusNearestInRow('up');
-                break;
-              case 'h':
-                if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
-                  this.focusedTabIndex--;
-                  this.render();
-                } else {
-                  this.focusPreviousElement();
-                }
-                break;
-              case 'l':
-                if (this.focusedElement === 'tabs' && this.focusedTabIndex < this.tabs.length - 1) {
-                  this.focusedTabIndex++;
-                  this.render();
-                } else {
-                  this.focusNextElement();
-                }
-                break;
-              case 'ENTER':
-                if (this.focusedElement === 'tabs') {
-                  this.selectedTabIndex = this.focusedTabIndex;
-                  this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
-                } else if (this.focusedElement === 'newTab') {
-                  this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
-                } else if (this.focusedElement === 'back') {
-                  this.emit('back');
-                } else if (this.focusedElement === 'forward') {
-                  this.emit('forward');
-                } else if (this.focusedElement === 'go') {
-                  this.emit('navigate', this.addressContent);
-                  if (this.selectedTabIndex !== -1) {
-                    this.tabs[this.selectedTabIndex].url = this.addressContent;
-                    this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
-                  }
-                }
-                this.render();
-                break;
-              case 'TAB':
-                this.focusNextElement();
-                break;
-              case 'SHIFT_TAB':
-                this.focusPreviousElement();
-                break;
-              case 'LEFT':
-                if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
-                  this.focusedTabIndex--;
-                  this.render();
-                }
-                break;
-              case 'RIGHT':
-                if (this.focusedElement === 'tabs' && this.focusedTabIndex < this.tabs.length - 1) {
-                  this.focusedTabIndex++;
-                  this.render();
-                }
-                break;
-              case 'UP':
-              case 'DOWN':
-                this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-                break;
-            }
-          }
-        }
+        this.handleUIKey(key);
       }
     });
 
     this.term.on('mouse', (name, data) => {
       if (!isListening) return;
+      this.handleMouseEvent(name, data);
+    });
 
-      const { x, y } = data;
-      if (name === 'MOUSE_LEFT_BUTTON_PRESSED') {
-        // Tab row (y = 1)
-        if (y === 1) {
-          if (x >= this.term.width - this.NEW_TAB_WIDTH + 1 && x <= this.term.width) {
-            this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
-            return;
+    this.stopListening = () => { isListening = false; };
+  }
+
+  // Extracted method for global keybindings
+  handleGlobalKeybindings(key, isListening) {
+    if (key === 'CTRL_C') {
+      this.term.clear();
+      this.term.processExit(0);
+      return true; // Stop listening
+    }
+    if (key === 'CTRL_T') {
+      this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+      return false;
+    }
+    if (key === 'CTRL_W') {
+      if (this.selectedTabIndex >= 0) this.closeTab(this.selectedTabIndex);
+      return false;
+    }
+    return false; // Continue listening
+  }
+
+  // Extracted method for input field key handling
+  async handleInputKey(key) {
+    const backendNodeId = this.focusedElement.split(':')[1];
+    const inputState = this.inputFields.get(backendNodeId);
+    if (!inputState) {
+      logClicks(`No input state for ${backendNodeId}`);
+      return;
+    }
+    logClicks(`Input focused, backendNodeId: ${backendNodeId}, current value: ${inputState.value}`);
+
+    if (key === 'ENTER') {
+      await this.handleInputEnter(backendNodeId, inputState);
+      this.redrawUnfocusedInput(backendNodeId);
+      this.focusedElement = 'tabs';
+      this.previousFocusedElement = this.focusedElement;
+      if (inputState.onChange) inputState.onChange(inputState.value);
+      this.render();
+    } else {
+      switch (key) {
+        case 'LEFT':
+          if (inputState.cursorPosition > 0) inputState.cursorPosition--;
+          this.redrawFocusedInput();
+          break;
+        case 'RIGHT':
+          if (inputState.cursorPosition < inputState.value.length) inputState.cursorPosition++;
+          this.redrawFocusedInput();
+          break;
+        case 'BACKSPACE':
+          if (inputState.cursorPosition > 0) {
+            inputState.value = inputState.value.slice(0, inputState.cursorPosition - 1) + inputState.value.slice(inputState.cursorPosition);
+            inputState.cursorPosition--;
+            if (inputState.onChange) inputState.onChange(inputState.value);
+            this.redrawFocusedInput();
           }
-          let tabX = 1;
-          for (let i = this.tabOffset; i < this.tabs.length && tabX <= this.term.width - this.NEW_TAB_WIDTH; i++) {
-            const tabEnd = tabX + this.options.tabWidth - 1;
-            if (x >= tabX && x <= tabEnd) {
-              const closeXStart = tabX + this.options.tabWidth - 5;
-              if (x >= closeXStart && x <= closeXStart + 3) {
-                this.closeTab(i);
-              } else {
-                this.focusedTabIndex = i;
-                this.focusedElement = 'tabs';
-                this.selectedTabIndex = i;
-                this.emit('tabSelected', this.tabs[i]);
-              }
-              this.render();
-              return;
-            }
-            tabX += this.options.tabWidth;
+          break;
+        case 'TAB':
+          this.focusNextElement();
+          break;
+        case 'SHIFT_TAB':
+          this.focusPreviousElement();
+          break;
+        case 'UP':
+        case 'DOWN':
+          this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+          break;
+        default:
+          if (key.length === 1) {
+            inputState.value = inputState.value.slice(0, inputState.cursorPosition) + key + inputState.value.slice(inputState.cursorPosition);
+            inputState.cursorPosition++;
+            logClicks(`Updated value: ${inputState.value}`);
+            if (inputState.onChange) inputState.onChange(inputState.value);
+            this.redrawFocusedInput();
           }
+          break;
+      }
+    }
+  }
+
+  // Extracted method for handling ENTER in input fields
+  async handleInputEnter(backendNodeId, inputState) {
+    const keyCommand = keyEvent('ENTER');
+    if (keyCommand) {
+      try {
+        await this.getState().send(keyCommand.command.name, keyCommand.command.params, this.getState().sessionId);
+        keyCommand.command.params.type = "keyUp";
+        keyCommand.command.params.text = undefined;
+        await sleep(50);
+        await this.getState().send(keyCommand.command.name, keyCommand.command.params, this.getState().sessionId);
+        logClicks(`Sent Enter key event for backendNodeId: ${backendNodeId} and session ${this.getState().sessionId}`);
+      } catch (error) {
+        logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
+      }
+    }
+  }
+
+  // Extracted method for clickable elements
+  async handleClickableKey(key) {
+    const backendNodeId = this.focusedElement.split(':')[1];
+    const state = this.getState();
+    const tabbable = this.computeTabbableElements();
+    const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
+
+    if (key === 'ENTER') {
+      if (focusedElement) {
+        await handleClick({
+          termX: focusedElement.x,
+          termY: focusedElement.y,
+          renderedBoxes: state.renderedBoxes,
+          clickableElements: state.clickableElements,
+          send: state.send,
+          sessionId: state.sessionId,
+          clickCounter: state.clickCounter,
+          refresh: () => refreshTerminal({ send: state.send, sessionId: state.sessionId, state }),
+          layoutToNode: state.layoutToNode,
+          nodeToParent: state.nodeToParent,
+          nodes: state.nodes,
+        });
+        this.render();
+      } else {
+        logClicks(`No tabbable element found for clickable:${backendNodeId}`);
+      }
+    } else if (key === 'TAB' || key === 'l') {
+      this.focusNextElement();
+    } else if (key === 'SHIFT_TAB' || key === 'h') {
+      this.focusPreviousElement();
+    } else {
+      switch (key) {
+        case 'UP':
+        case 'DOWN':
+          this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+          break;
+        case 'j':
+          this.focusNearestInRow('down');
+          break;
+        case 'k':
+          this.focusNearestInRow('up');
+          break;
+      }
+    }
+  }
+
+  // Extracted method for address bar key handling
+  handleAddressKey(key) {
+    switch (key) {
+      case 'ENTER':
+        this.emit('navigate', this.addressContent);
+        if (this.selectedTabIndex !== -1) {
+          this.tabs[this.selectedTabIndex].url = this.addressContent;
+          this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
         }
+        this.render();
+        break;
+      case 'TAB':
+        this.focusNextElement();
+        break;
+      case 'SHIFT_TAB':
+        this.focusPreviousElement();
+        break;
+      case 'LEFT':
+        if (this.cursorPosition > 0) this.cursorPosition--;
+        this.render();
+        break;
+      case 'RIGHT':
+        if (this.cursorPosition < this.addressContent.length) this.cursorPosition++;
+        this.render();
+        break;
+      case 'BACKSPACE':
+        if (this.cursorPosition > 0) {
+          this.addressContent = this.addressContent.slice(0, this.cursorPosition - 1) + this.addressContent.slice(this.cursorPosition);
+          this.cursorPosition--;
+          this.render();
+        }
+        break;
+      case 'UP':
+      case 'DOWN':
+        this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+        break;
+      default:
+        if (key.length === 1) {
+          this.addressContent = this.addressContent.slice(0, this.cursorPosition) + key + this.addressContent.slice(this.cursorPosition);
+          this.cursorPosition++;
+          this.render();
+        }
+        break;
+    }
+  }
 
-        // Omnibox row (y = 3)
-        if (y === this.TAB_HEIGHT + 2) {
-          if (x >= 2 && x <= this.BACK_WIDTH + 1) {
-            this.focusedElement = 'back';
-            this.emit('back');
-          } else if (x >= this.BACK_WIDTH + 2 && x <= this.BACK_WIDTH + this.FORWARD_WIDTH + 1) {
-            this.focusedElement = 'forward';
-            this.emit('forward');
-          } else if (x >= this.BACK_WIDTH + this.FORWARD_WIDTH + 2 && x <= this.BACK_WIDTH + this.FORWARD_WIDTH + this.ADDRESS_WIDTH + 1) {
-            this.focusedElement = 'address';
-            this.cursorPosition = Math.min(
-              Math.max(0, x - (this.BACK_WIDTH + this.FORWARD_WIDTH + 2)),
-              this.addressContent.length
-            );
-          } else if (x >= this.term.width - this.GO_WIDTH + 1 && x <= this.term.width) {
-            this.focusedElement = 'go';
-            this.emit('navigate', this.addressContent);
-            if (this.selectedTabIndex !== -1) {
-              this.tabs[this.selectedTabIndex].url = this.addressContent;
-              this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
-            }
+  // Extracted method for UI key handling (tabs, back, forward, go, etc.)
+  handleUIKey(key) {
+    switch (key) {
+      case 'j':
+        this.focusNearestInRow('down');
+        break;
+      case 'k':
+        this.focusNearestInRow('up');
+        break;
+      case 'h':
+        if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
+          this.focusedTabIndex--;
+          this.render();
+        } else {
+          this.focusPreviousElement();
+        }
+        break;
+      case 'l':
+        if (this.focusedElement === 'tabs' && this.focusedTabIndex < this.tabs.length - 1) {
+          this.focusedTabIndex++;
+          this.render();
+        } else {
+          this.focusNextElement();
+        }
+        break;
+      case 'ENTER':
+        this.handleUIEnter();
+        this.render();
+        break;
+      case 'TAB':
+        this.focusNextElement();
+        break;
+      case 'SHIFT_TAB':
+        this.focusPreviousElement();
+        break;
+      case 'LEFT':
+        if (this.focusedElement === 'tabs' && this.focusedTabIndex > 0) {
+          this.focusedTabIndex--;
+          this.render();
+        }
+        break;
+      case 'RIGHT':
+        if (this.focusedElement === 'tabs' && this.focusedTabIndex < this.tabs.length - 1) {
+          this.focusedTabIndex++;
+          this.render();
+        }
+        break;
+      case 'UP':
+      case 'DOWN':
+        this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+        break;
+    }
+  }
+
+  // Extracted method for handling ENTER in UI elements
+  handleUIEnter() {
+    if (this.focusedElement === 'tabs') {
+      this.selectedTabIndex = this.focusedTabIndex;
+      this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
+    } else if (this.focusedElement === 'newTab') {
+      this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+    } else if (this.focusedElement === 'back') {
+      this.emit('back');
+    } else if (this.focusedElement === 'forward') {
+      this.emit('forward');
+    } else if (this.focusedElement === 'go') {
+      this.emit('navigate', this.addressContent);
+      if (this.selectedTabIndex !== -1) {
+        this.tabs[this.selectedTabIndex].url = this.addressContent;
+        this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
+      }
+    }
+  }
+
+  // Extracted method for mouse events
+  handleMouseEvent(name, data) {
+    const { x, y } = data;
+    if (name === 'MOUSE_LEFT_BUTTON_PRESSED') {
+      this.handleMouseClick(x, y);
+    } else if (name === 'MOUSE_WHEEL_UP' || name === 'MOUSE_WHEEL_DOWN') {
+      if (y > 4) {
+        this.emit('scroll', { direction: name === 'MOUSE_WHEEL_UP' ? -1 : 1 });
+      }
+    }
+  }
+
+  // Extracted method for mouse click handling
+  handleMouseClick(x, y) {
+    // Tab row (y = 1)
+    if (y === 1) {
+      if (x >= this.term.width - this.NEW_TAB_WIDTH + 1 && x <= this.term.width) {
+        this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+        this.render();
+        return;
+      }
+      let tabX = 1;
+      for (let i = this.tabOffset; i < this.tabs.length && tabX <= this.term.width - this.NEW_TAB_WIDTH; i++) {
+        const tabEnd = tabX + this.options.tabWidth - 1;
+        if (x >= tabX && x <= tabEnd) {
+          const closeXStart = tabX + this.options.tabWidth - 5;
+          if (x >= closeXStart && x <= closeXStart + 3) {
+            this.closeTab(i);
+          } else {
+            this.focusedTabIndex = i;
+            this.focusedElement = 'tabs';
+            this.selectedTabIndex = i;
+            this.emit('tabSelected', this.tabs[i]);
           }
           this.render();
           return;
         }
+        tabX += this.options.tabWidth;
+      }
+    }
 
-        // Content area (y > 4)
-        if (y > 4) {
-          this.emit('click', { x, y });
-        }
-      } else if (name === 'MOUSE_WHEEL_UP' || name === 'MOUSE_WHEEL_DOWN') {
-        if (y > 4) {
-          this.emit('scroll', { direction: name === 'MOUSE_WHEEL_UP' ? -1 : 1 });
+    // Omnibox row (y = 3)
+    if (y === this.TAB_HEIGHT + 2) {
+      if (x >= 2 && x <= this.BACK_WIDTH + 1) {
+        this.focusedElement = 'back';
+        this.emit('back');
+      } else if (x >= this.BACK_WIDTH + 2 && x <= this.BACK_WIDTH + this.FORWARD_WIDTH + 1) {
+        this.focusedElement = 'forward';
+        this.emit('forward');
+      } else if (x >= this.BACK_WIDTH + this.FORWARD_WIDTH + 2 && x <= this.BACK_WIDTH + this.FORWARD_WIDTH + this.ADDRESS_WIDTH + 1) {
+        this.focusedElement = 'address';
+        this.cursorPosition = Math.min(
+          Math.max(0, x - (this.BACK_WIDTH + this.FORWARD_WIDTH + 2)),
+          this.addressContent.length
+        );
+      } else if (x >= this.term.width - this.GO_WIDTH + 1 && x <= this.term.width) {
+        this.focusedElement = 'go';
+        this.emit('navigate', this.addressContent);
+        if (this.selectedTabIndex !== -1) {
+          this.tabs[this.selectedTabIndex].url = this.addressContent;
+          this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
         }
       }
-    });
+      this.render();
+      return;
+    }
 
-    this.stopListening = () => { isListening = false; };
+    // Content area (y > 4)
+    if (y > 4) {
+      this.emit('click', { x, y });
+    }
   }
 
   redrawClickable(backendNodeId) {
