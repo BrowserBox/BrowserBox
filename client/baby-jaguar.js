@@ -847,7 +847,7 @@
           try { 
             const lineHeight = Math.round(state.viewportHeight / terminal.height);
             const deltaY = direction * lineHeight;
-            if (direction < 0 && state.currentScrollY <= 0) return;
+            //if (direction < 0 && state.currentScrollY <= 0) return;
             await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
             debouncedRefresh();
           } catch(e) {
