@@ -660,7 +660,6 @@ export default class TerminalBrowser extends EventEmitter {
 
     this.term.on('key', async (key) => {
       logClicks(`Key pressed: ${key}, focusedElement: ${this.focusedElement}`);
-      if (!isListening) return;
 
       // Handle Dino command
       if (await this.handleDinoCommand(key, isListening)) {
@@ -687,7 +686,6 @@ export default class TerminalBrowser extends EventEmitter {
     });
 
     this.term.on('mouse', (name, data) => {
-      if (!isListening) return;
       this.handleMouseEvent(name, data);
     });
 
