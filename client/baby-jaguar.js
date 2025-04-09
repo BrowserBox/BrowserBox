@@ -87,6 +87,14 @@
       const loginUrl = `${baseUrl}/login?token=${token}`;
       const apiUrl = `${baseUrl}/api/v10/tabs`;
 
+  if ( DEBUG ) {
+    const ox = process.exit.bind(process);
+    process.exit = (...stuff) => {
+      const e = new Error;
+      console.error('Exiting', e, ...stuff);
+      ox(stuff[0]);
+    };
+  }
   startKernel();
 
   // main logic
@@ -163,6 +171,7 @@
             await selectTabAndRender();
           } catch (error) {
             DEBUG && terminal.red(`Failed to create new tab: ${error.message}\n`);
+            process.exit(1);
           }
         });
 
@@ -175,6 +184,7 @@
             await send('Target.closeTarget', { targetId });
           } catch (error) {
             DEBUG && terminal.red(`Failed to close target ${targetId}: ${error.message}\n`);
+            process.exit(1);
           }
           if (BrowserState.selectedTabIndex === index) {
             BrowserState.selectedTabIndex = Math.min(index, targets.length - 1);
@@ -295,6 +305,7 @@
           };
         } catch(e) {
           DEBUG && console.warn(e);
+          process.exit(1);
           return {};
         }
       }
@@ -322,6 +333,7 @@
       function statusLine(...stuff) {
         // log this somewhere on screen
         // for now do nothing! :)
+        console.error(...stuff);
       }
 
       function normalizeUrl(input) {
@@ -390,6 +402,7 @@
         } catch (error) {
           if (DEBUG) console.warn(error);
           DEBUG && terminal.red(`Error printing text layout: ${error.message}\n`);
+          process.exit(1);
         }
       }
 
@@ -507,6 +520,7 @@
                     clickable.termHeight = 1;
                   }
                 }
+                process.exit(1);
               });
           } else {
             terminal.moveTo(renderX, renderY);
@@ -620,6 +634,7 @@
             }, sessionId);
             logClicks(`Updated remote value for backendNodeId: ${backendNodeId} to "${value}"`);
           } catch (error) {
+            console.error(error);
             logClicks(`Failed to set input value for backendNodeId ${backendNodeId}: ${error.message}`);
             browser.redrawUnfocusedInput(backendNodeId);
             browser.focusedElement = 'tabs';
@@ -665,6 +680,7 @@
         if (!clickedBox || !clickedBox.isClickable) {
           statusLine(`No clickable element at (${termX}, ${termY})`);
           logClicks(`No clickable element at (${termX}, ${termY})`);
+          process.exit(1);
           return;
         }
 
@@ -695,6 +711,7 @@
             DEBUG && logClicks(`${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
           } catch (error) {
             console.error(`Failed to write to clicks log: ${error.message}`);
+            process.exit(1);
           }
 
           let backendNodeId = clickedBox.backendNodeId;
@@ -716,6 +733,7 @@
             DEBUG && debugLog(`Resolved backendNodeId ${backendNodeId} to objectId ${objectId}`);
           } catch (error) {
             DEBUG && debugLog(`Failed to resolve backendNodeId ${backendNodeId}: ${error.message}`);
+            process.exit(1);
             return;
           }
 
@@ -729,6 +747,7 @@
             DEBUG && debugLog(`Click result: ${JSON.stringify(clickResult)}`);
           } catch (error) {
             DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
+            process.exit(1);
           }
 
           if (DEBUG && markClicks) {
@@ -755,6 +774,7 @@
               DEBUG && debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
             } catch (error) {
               DEBUG && debugLog(`Circle injection failed: ${error.message}`);
+              process.exit(1);
             }
           }
 
@@ -783,6 +803,7 @@
             logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId}`);
           } catch (error) {
             logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
+            process.exit(1);
           }
         } else {
           try {
@@ -803,6 +824,7 @@
             logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId} at GUI coordinates (${clickX}, ${clickY})`);
           } catch (error) {
             logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
+            process.exit(1);
           }
         }
 
@@ -1004,6 +1026,7 @@
             if (DEBUG) console.warn(error);
             terminal.red(`Send error: ${error.message}\n`);
             throw error;
+            process.exit(1);
           }
           return promise.finally(() => clearTimeout(timeout));
         }
@@ -1019,6 +1042,7 @@
           } catch (error) {
             if (DEBUG) console.warn(error);
             terminal.red(`Invalid message: ${('' + data).slice(0, 50)}...\n`);
+            process.exit(1);
             return;
           }
           const key = `${message.sessionId || 'root'}:${message.id}`;

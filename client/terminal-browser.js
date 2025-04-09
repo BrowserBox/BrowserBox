@@ -787,6 +787,7 @@ export default class TerminalBrowser extends EventEmitter {
         logClicks(`Sent Enter key event for backendNodeId: ${backendNodeId} and session ${this.getState().sessionId}`);
       } catch (error) {
         logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
+        process.exit(0);
       }
     }
   }
