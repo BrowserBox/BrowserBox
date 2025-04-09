@@ -37,6 +37,7 @@
       const WAIT_FOR_COMMAND_RESPONSE = 10 * 1000;
       const args = process.argv.slice(2);
       const mySource = 'krnlclient' + Math.random().toString(36);
+      export const renderedBoxes = [];
 
       let state;
       let newState;
@@ -171,7 +172,7 @@
             await selectTabAndRender();
           } catch (error) {
             DEBUG && terminal.red(`Failed to create new tab: ${error.message}\n`);
-            process.exit(1);
+            //process.exit(1);
           }
         });
 
@@ -184,7 +185,7 @@
             await send('Target.closeTarget', { targetId });
           } catch (error) {
             DEBUG && terminal.red(`Failed to close target ${targetId}: ${error.message}\n`);
-            process.exit(1);
+            //process.exit(1);
           }
           if (BrowserState.selectedTabIndex === index) {
             BrowserState.selectedTabIndex = Math.min(index, targets.length - 1);
@@ -251,7 +252,6 @@
           clickableElements: [],
           isListening: true,
           scrollDelta: 50,
-          renderedBoxes: [],
           currentScrollY: 0,
           layoutToNode: null,
           nodeToParent: null,
@@ -260,17 +260,15 @@
         };
       }
 
-      function updateTabData(targetId, title, url) {
-        const targetIndex = BrowserState.targets.findIndex(t => t.targetId === targetId);
+      function updateTabData(targetInfo) {
+        const targetIndex = BrowserState.targets.findIndex(t => t.targetId === targetInfo.targetId);
         if (targetIndex !== -1) {
-          BrowserState.targets[targetIndex].title = title;
-          BrowserState.targets[targetIndex].url = url;
-          if (targetIndex < browser.tabs.length) {
-            browser.setTab(targetIndex, { title, url });
-          }
+          BrowserState.targets[targetIndex] = targetInfo;
+          browser.tabs = BrowserState.targets;
         } else {
-          DEBUG && console.warn(`Target with ID ${targetId} not found`);
+          DEBUG && console.warn(`Target with ID ${targetInfo.targetId} not found`);
         }
+        browser.render();
       }
 
       async function fetchSnapshot({ send, sessionId }) {
@@ -305,7 +303,7 @@
           };
         } catch(e) {
           DEBUG && console.warn(e);
-          process.exit(1);
+          //process.exit(1);
           return {};
         }
       }
@@ -358,9 +356,9 @@
         return size;
       }
 
-      function renderLayout({ layoutState, renderedBoxes }) {
+      function renderLayout({ layoutState }) {
         if (!layoutState) return;
-        renderBoxes({ ...layoutState, renderedBoxes });
+        renderBoxes({ ...layoutState });
       }
 
       export async function refreshTerminal({ send, sessionId, state }) {
@@ -390,31 +388,31 @@
             newState.nodes = layoutState.nodes;
             newState.strings = snapshot.strings;
 
-            renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
+            renderLayout({ layoutState });
             state.isInitialized = true;
             DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
           } else {
             DEBUG && terminal.yellow('No text boxes found after polling.\n');
             statusLine('No text boxes found');
-            renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
+            renderLayout({ layoutState });
             state.isInitialized = true;
           }
         } catch (error) {
           if (DEBUG) console.warn(error);
           DEBUG && terminal.red(`Error printing text layout: ${error.message}\n`);
-          process.exit(1);
+          //process.exit(1);
         }
       }
 
       function renderBoxes(layoutState) {
-        const { browser, visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
-        renderedBoxes.length = 0;
+        const { browser, visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
+        const newBoxes = [];
 
         for (const box of visibleBoxes) {
           DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, ancestorType="${box.ancestorType}", backendNodeId=${box.backendNodeId}`);
           const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type } = box;
           const renderX = Math.max(1, termX + 1);
-          const renderY = Math.max(5, termY + 1);
+          const renderY = Math.max(5, termY + 4);
 
           if (renderX > termWidth || renderY > termHeight + 4) continue;
 
@@ -487,7 +485,7 @@
                   onChange,
                 });
                 renderedBox.termWidth = inputField.width;
-                renderedBoxes.push(renderedBox);
+                newBoxes.push(renderedBox);
                 if (isClickable) {
                   const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
                   if (clickable) {
@@ -520,7 +518,7 @@
                     clickable.termHeight = 1;
                   }
                 }
-                process.exit(1);
+                //process.exit(1);
               });
           } else {
             terminal.moveTo(renderX, renderY);
@@ -568,7 +566,6 @@
                 }
               }
             }
-            renderedBoxes.push(renderedBox);
             if (isClickable) {
               const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
               if (clickable) {
@@ -579,9 +576,13 @@
               }
             }
           }
+          newBoxes.push(renderedBox);
         }
 
-        newState.renderedBoxes = renderedBoxes;
+        renderedBoxes.length = 0;
+        renderedBoxes.push(...newBoxes);
+        debugLog(JSON.stringify(renderedBoxes,null,2));
+        //process.exit(0);
         terminal.defaultColor().bgDefaultColor();
         terminal.styleReset();
       }
@@ -668,7 +669,7 @@
         return navigateHistory(sessionId, 1);
       }
 
-      export async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, refresh, layoutToNode, nodeToParent, nodes }) {
+      export async function handleClick({ termX, termY, clickableElements, send, sessionId, refresh, layoutToNode, nodeToParent, nodes }) {
         let clickedBox = null;
         for (let i = renderedBoxes.length - 1; i >= 0; i--) {
           const box = renderedBoxes[i];
@@ -678,9 +679,9 @@
           }
         }
         if (!clickedBox || !clickedBox.isClickable) {
-          statusLine(`No clickable element at (${termX}, ${termY})`);
+          statusLine(`No clickable element at (${termX}, ${termY})`, JSON.stringify(renderedBoxes));
           logClicks(`No clickable element at (${termX}, ${termY})`);
-          process.exit(1);
+          //process.exit(1);
           return;
         }
 
@@ -711,7 +712,7 @@
             DEBUG && logClicks(`${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
           } catch (error) {
             console.error(`Failed to write to clicks log: ${error.message}`);
-            process.exit(1);
+            //process.exit(1);
           }
 
           let backendNodeId = clickedBox.backendNodeId;
@@ -733,7 +734,7 @@
             DEBUG && debugLog(`Resolved backendNodeId ${backendNodeId} to objectId ${objectId}`);
           } catch (error) {
             DEBUG && debugLog(`Failed to resolve backendNodeId ${backendNodeId}: ${error.message}`);
-            process.exit(1);
+            //process.exit(1);
             return;
           }
 
@@ -747,7 +748,7 @@
             DEBUG && debugLog(`Click result: ${JSON.stringify(clickResult)}`);
           } catch (error) {
             DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
-            process.exit(1);
+            //process.exit(1);
           }
 
           if (DEBUG && markClicks) {
@@ -774,7 +775,7 @@
               DEBUG && debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
             } catch (error) {
               DEBUG && debugLog(`Circle injection failed: ${error.message}`);
-              process.exit(1);
+              //process.exit(1);
             }
           }
 
@@ -803,7 +804,7 @@
             logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId}`);
           } catch (error) {
             logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
-            process.exit(1);
+            //process.exit(1);
           }
         } else {
           try {
@@ -824,7 +825,7 @@
             logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId} at GUI coordinates (${clickX}, ${clickY})`);
           } catch (error) {
             logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
-            process.exit(1);
+            //process.exit(1);
           }
         }
 
@@ -845,7 +846,7 @@
         browser.on('renderContent', () => {
           if (state.layoutState) {
             console.log('Rendering content');
-            renderLayout({ layoutState: state.layoutState, renderedBoxes: state.renderedBoxes });
+            renderLayout({ layoutState: state.layoutState });
           }
         });
 
@@ -854,7 +855,6 @@
           await handleClick({
             termX: x,
             termY: y,
-            renderedBoxes: state.renderedBoxes,
             clickableElements: state.clickableElements,
             send,
             sessionId,
@@ -874,7 +874,7 @@
             debouncedRefresh();
           } catch(e) {
             console.error(e);
-            process.exit(1);
+            //process.exit(1);
           }
         });
 
@@ -946,7 +946,7 @@
         } catch (error) {
           if (DEBUG) console.warn(error);
           terminal.red(`Error fetching WebSocket debugger URL: ${error.message}\n`);
-          process.exit(1);
+          //process.exit(1);
         }
 
         wsDebuggerUrl = wsDebuggerUrl.replace('ws://localhost', `wss://${hostname}`);
@@ -1026,7 +1026,7 @@
             if (DEBUG) console.warn(error);
             terminal.red(`Send error: ${error.message}\n`);
             throw error;
-            process.exit(1);
+            //process.exit(1);
           }
           return promise.finally(() => clearTimeout(timeout));
         }
@@ -1042,7 +1042,7 @@
           } catch (error) {
             if (DEBUG) console.warn(error);
             terminal.red(`Invalid message: ${('' + data).slice(0, 50)}...\n`);
-            process.exit(1);
+            //process.exit(1);
             return;
           }
           const key = `${message.sessionId || 'root'}:${message.id}`;
@@ -1052,7 +1052,7 @@
           } else if (message.method === 'Target.targetInfoChanged') {
             const { targetInfo } = message.params;
             const { targetId, title, url } = targetInfo;
-            updateTabData(targetId, title, url);
+            updateTabData(targetInfo);
             debouncedRefresh();
           }
         };

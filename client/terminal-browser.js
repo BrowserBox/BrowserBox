@@ -2,7 +2,7 @@
 import { EventEmitter } from 'events';
 import {sleep, debugLog, logClicks,DEBUG} from './log.js';
 import {getAncestorInfo} from './layout.js';
-import {refreshTerminal,handleClick} from './baby-jaguar.js';
+import {renderedBoxes,refreshTerminal,handleClick} from './baby-jaguar.js';
 import keys from './kbd.js';
 import { dinoGame } from './dino.js';
 
@@ -28,9 +28,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     // State
     this.tabs = this.options.initialTabs.map((tab, i) => ({
-      title: tab.title,
-      url: tab.url,
-      color: this.options.colors[i % this.options.colors.length],
+      ...tab,
     }));
     if (this.tabs.length === 0) {
       this.emit('newTabRequested', { title: 'New Tab', url: 'about:blank' });
@@ -240,13 +238,13 @@ export default class TerminalBrowser extends EventEmitter {
     tabbable.push({ type: 'go', x: this.term.width - this.GO_WIDTH, y: this.TAB_HEIGHT + 2 });
 
     const state = this.getState();
-    if (state && state.renderedBoxes && state.layoutToNode && state.nodeToParent && state.nodes) {
-      debugLog('Rendered Boxes Count:', state.renderedBoxes.length);
+    if (state && renderedBoxes && state.layoutToNode && state.nodeToParent && state.nodes) {
+      debugLog('Rendered Boxes Count:', renderedBoxes.length);
 
       // Group clickable elements by their nearest clickable ancestor to simplify tabbing
       // ie group by clickable parent backendNodeId
       const elementsByParentId = new Map();
-      state.renderedBoxes.forEach(box => {
+      renderedBoxes.forEach(box => {
         if (!box.isClickable && box.type !== 'input') return;
 
         // Find the clickable parent's backendNodeId
@@ -320,12 +318,10 @@ export default class TerminalBrowser extends EventEmitter {
 
       this.term.moveTo(x, 1);
       const isFocused = this.focusedElement === 'tabs' && i === this.focusedTabIndex;
-      if (isFocused) {
+      if (isFocused || i == this.selectedTabIndex) {
         this.term.bgCyan().black().bold().underline(tabText); // Cyan bg, black fg (since original is blue)
-      } else if (i === this.selectedTabIndex) {
-        this.term.bgBlue()[this.tabs[i].color]().underline(tabText);
       } else {
-        this.term.bgBlue()[this.tabs[i].color](tabText);
+        this.term.bgBlue().defaultColor(tabText);
       }
       x += tabText.length;
     }
@@ -787,7 +783,7 @@ export default class TerminalBrowser extends EventEmitter {
         logClicks(`Sent Enter key event for backendNodeId: ${backendNodeId} and session ${this.getState().sessionId}`);
       } catch (error) {
         logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
-        process.exit(0);
+        //process.exit(0);
       }
     }
   }
@@ -804,7 +800,6 @@ export default class TerminalBrowser extends EventEmitter {
         await handleClick({
           termX: focusedElement.x,
           termY: focusedElement.y,
-          renderedBoxes: state.renderedBoxes,
           clickableElements: state.clickableElements,
           send: state.send,
           sessionId: state.sessionId,
@@ -1097,7 +1092,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   getRenderData(backendNodeId, state) {
-    if (!state || !state.renderedBoxes || !state.nodeToParent || !state.nodes) {
+    if (!state || !renderedBoxes || !state.nodeToParent || !state.nodes) {
       debugLog(`Missing state data for backendNodeId ${backendNodeId}`);
       return null;
     }
@@ -1110,7 +1105,7 @@ export default class TerminalBrowser extends EventEmitter {
         parentNodeIndex = nodeIdx;
         childNodeIndices.add(nodeIdx);
         const collectChildren = (idx) => {
-          const children = Array.from(state.renderedBoxes)
+          const children = Array.from(renderedBoxes)
             .filter(b => state.nodeToParent.get(b.nodeIndex) === idx)
             .map(b => b.nodeIndex);
           children.forEach(childIdx => {
@@ -1122,7 +1117,7 @@ export default class TerminalBrowser extends EventEmitter {
       }
     });
 
-    const boxes = state.renderedBoxes.filter(b => childNodeIndices.has(b.nodeIndex));
+    const boxes = renderedBoxes.filter(b => childNodeIndices.has(b.nodeIndex));
     if (!boxes.length) {
       debugLog(`No boxes found for parent ${backendNodeId} with node indices:`, Array.from(childNodeIndices));
       return null;
@@ -1231,11 +1226,8 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   setTab(index, tab) {
-    this.tabs[index] = {
-      title: tab.title,
-      url: tab.url,
-      color: this.tabs[index].color,
-    };
+    this.tabs[index] = tab;
+    this.setAddress(tab.url);
     this.render();
   }
 
