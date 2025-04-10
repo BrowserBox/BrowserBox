@@ -135,14 +135,14 @@ function New-Ticket {
         Write-Error "Error issuing ticket. No response from server."
         throw "SERVER Error"
     }
-    Write-Verbose "Full ticket response: $($response | ConvertTo-Json -Depth 10 -Compress)"
+    # Write-Verbose "Full ticket response: $($response | ConvertTo-Json -Depth 10 -Compress)"
     $ticket = $response.ticket
     if (-not $ticket) {
         Write-Error "Error issuing ticket. 'ticket' property missing in response: $($response | ConvertTo-Json -Depth 10 -Compress)"
         throw "TICKET Error"
     }
     Write-Host "Ticket issued successfully" -ForegroundColor Green
-    Write-Verbose "Issued ticket JSON: $($ticket | ConvertTo-Json -Depth 10 -Compress)"
+    # Write-Verbose "Issued ticket JSON: $($ticket | ConvertTo-Json -Depth 10 -Compress)"
     return $ticket  # Return the full response object
 }
 
