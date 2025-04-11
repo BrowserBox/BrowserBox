@@ -238,8 +238,8 @@ export default class TerminalBrowser extends EventEmitter {
     tabbable.push({ type: 'address', x: this.BACK_WIDTH + this.FORWARD_WIDTH + 2, y: this.TAB_HEIGHT + 2 });
     tabbable.push({ type: 'go', x: this.term.width - this.GO_WIDTH, y: this.TAB_HEIGHT + 2 });
 
-    const state = this.getState();
-    if (state && renderedBoxes && state.layoutToNode && state.nodeToParent && state.nodes) {
+    const publicState = this.getState();
+    if (publicState && renderedBoxes && publicState.layoutToNode && publicState.nodeToParent && publicState.nodes) {
       debugLog('Rendered Boxes Count:', renderedBoxes.length);
 
       // Group clickable elements by their nearest clickable ancestor to simplify tabbing
@@ -252,11 +252,11 @@ export default class TerminalBrowser extends EventEmitter {
         let parentBackendNodeId = box.backendNodeId;
         let currentNodeIndex = box.nodeIndex;
         while (currentNodeIndex !== -1 && currentNodeIndex !== undefined) {
-          if (state.nodes.isClickable && state.nodes.isClickable.index.includes(currentNodeIndex)) {
-            parentBackendNodeId = state.nodes.backendNodeId[currentNodeIndex];
+          if (publicState.nodes.isClickable && publicState.nodes.isClickable.index.includes(currentNodeIndex)) {
+            parentBackendNodeId = publicState.nodes.backendNodeId[currentNodeIndex];
             break;
           }
-          currentNodeIndex = state.nodeToParent.get(currentNodeIndex);
+          currentNodeIndex = publicState.nodeToParent.get(currentNodeIndex);
         }
 
         if (!elementsByParentId.has(parentBackendNodeId)) {
@@ -799,14 +799,14 @@ export default class TerminalBrowser extends EventEmitter {
         await handleClick({
           termX: focusedElement.x,
           termY: focusedElement.y,
-          clickableElements: state.clickableElements,
-          send: state.send,
-          sessionId: state.sessionId,
+          clickableElements: publicState.clickableElements,
+          send: publicState.send,
+          sessionId: publicState.sessionId,
           clickCounter: state.clickCounter,
           refresh: () => refreshTerminal({ send: publicState.send, sessionId: publicState.sessionId }),
-          layoutToNode: state.layoutToNode,
-          nodeToParent: state.nodeToParent,
-          nodes: state.nodes,
+          layoutToNode: publicState.layoutToNode,
+          nodeToParent: publicState.nodeToParent,
+          nodes: publicState.nodes,
         });
         this.render();
       } else {
@@ -1055,8 +1055,8 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   redrawUnfocusedElement(backendNodeId) {
-    const state = this.getState();
-    const renderData = this.getRenderData(backendNodeId, state);
+    const publicState = this.getState();
+    const renderData = this.getRenderData(backendNodeId, publicState);
     if (!renderData) return;
 
     const { boxes, minX, maxY, ancestorType } = renderData;
@@ -1087,8 +1087,8 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.styleReset();
   }
 
-  getRenderData(backendNodeId, state) {
-    if (!state || !renderedBoxes || !state.nodeToParent || !state.nodes) {
+  getRenderData(backendNodeId, publicState) {
+    if (!publicState || !renderedBoxes || !publicState.nodeToParent || !publicState.nodes) {
       debugLog(`Missing state data for backendNodeId ${backendNodeId}`);
       return null;
     }
@@ -1096,13 +1096,13 @@ export default class TerminalBrowser extends EventEmitter {
     // Find all child node indices under this parent backendNodeId
     const childNodeIndices = new Set();
     let parentNodeIndex = -1;
-    state.nodes.backendNodeId.forEach((id, nodeIdx) => {
+    publicState.nodes.backendNodeId.forEach((id, nodeIdx) => {
       if (id == backendNodeId) {
         parentNodeIndex = nodeIdx;
         childNodeIndices.add(nodeIdx);
         const collectChildren = (idx) => {
           const children = Array.from(renderedBoxes)
-            .filter(b => state.nodeToParent.get(b.nodeIndex) === idx)
+            .filter(b => publicState.nodeToParent.get(b.nodeIndex) === idx)
             .map(b => b.nodeIndex);
           children.forEach(childIdx => {
             childNodeIndices.add(childIdx);
@@ -1123,7 +1123,7 @@ export default class TerminalBrowser extends EventEmitter {
     const maxX = Math.max(...boxes.map(b => b.termX + b.termWidth - 1));
     const minY = Math.min(...boxes.map(b => b.termY));
     const maxY = Math.max(...boxes.map(b => b.termY));
-    const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, state.nodes, state.strings || []) : boxes[0].ancestorType;
+    const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, publicState.nodes, publicState.strings || []) : boxes[0].ancestorType;
 
     // Sort boxes by termY for rendering
     boxes.sort((a, b) => a.termY - b.termY);
