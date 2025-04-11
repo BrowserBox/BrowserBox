@@ -237,7 +237,7 @@
       return {
         get sessionId() { return sessionId; },
 
-        get send() { return connectionsend; },
+        get send() { return connection.send; },
 
         clickableElements: [],
         isListening: true,
