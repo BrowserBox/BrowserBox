@@ -1,7 +1,7 @@
 Next
-  - Some inputs (ie, Wikipedia search from a article page) are not updating their value on typing. Why?
-  - Tidy state handling (unify?, no passing?). State handling is illogical and produces races. Outdated state from other pages is closed in the interactive state of yet other pages. Need to simplify and logificify state handling heh :)
+  - dirty screen of other tabs shown when clicking  on link , during navigation, before new page loads
   - when tabbing to input element, sometimes it is not ".focus()" d so it won't get enter - seemingly
+    - even if clicking element and it is typign and seemingly has focus, still not getting enter after state change.
   - Fix some elements are not highlighted on focus. Possible causes:
     1. the element has bounds overlapping offscreen.
     2. something else (ie domain on HN post lines). They WILL be tabbed to, but not shown. 
@@ -39,6 +39,8 @@ Marketing (excerpt, full plan elsewhere)
   - pair with a font, recommend a certain terminal font that works well with displaying web contents
 
 Features
+  - text / ce inputs 
+    - Some inputs (ie, Wikipedia search from a article page) are not updating their value on typing. Why? Probably a textarea like goog search.
   - select, checkbox inputs
   - js modals
   - file upload
