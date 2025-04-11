@@ -2,7 +2,7 @@
 import { EventEmitter } from 'events';
 import {sleep, debugLog, logClicks,DEBUG} from './log.js';
 import {getAncestorInfo} from './layout.js';
-import {renderedBoxes,refreshTerminal,handleClick} from './baby-jaguar.js';
+import {getClickedBox,focusInput,renderedBoxes,refreshTerminal,handleClick} from './baby-jaguar.js';
 import keys from './kbd.js';
 import { dinoGame } from './dino.js';
 
@@ -802,7 +802,7 @@ export default class TerminalBrowser extends EventEmitter {
           clickableElements: publicState.clickableElements,
           send: publicState.send,
           sessionId: publicState.sessionId,
-          clickCounter: state.clickCounter,
+          clickCounter: publicState.clickCounter,
           refresh: () => refreshTerminal({ send: publicState.send, sessionId: publicState.sessionId }),
           layoutToNode: publicState.layoutToNode,
           nodeToParent: publicState.nodeToParent,
@@ -1077,7 +1077,9 @@ export default class TerminalBrowser extends EventEmitter {
 
         this.term.defaultColor().bgDefaultColor();
         this.term.styleReset();
-        if (ancestorType === 'button') this.term.bgGreen().black(lineText);
+        if (ancestorType === 'button') {
+          this.term.bgGreen().black(lineText);
+        }
         else if (ancestorType === 'hyperlink') this.term.cyan().underline(lineText);
         else if (ancestorType === 'other_clickable') this.term.bold(lineText);
         else this.term(lineText);
@@ -1150,7 +1152,14 @@ export default class TerminalBrowser extends EventEmitter {
       this.focusedTabIndex = element.index;
       this.drawTabs(); // Redraw tabs for UI focus
     } else if (element.type === 'input') {
-      this.focusInput(element.backendNodeId); // This already handles redraw
+      // perhaps doing this through an emit to have unidirectional flow is cleaner
+      const publicState = this.getState();
+      const midX = element.x + Math.floor(element.width/2);
+      const midY = element.y + Math.floor(element.height/2);
+      const clickedBox = getClickedBox({ termX: midX, termY : midY });
+      const { send, sessionId } = publicState;
+      focusInput({ clickedBox, browser: this, send, sessionId, termX: element.x + element.width });
+      //this.focusInput(element.backendNodeId); // This already handles redraw but is called by above
     } else if (element.type === 'clickable') {
       this.focusedElement = `clickable:${element.backendNodeId}`;
       this.redrawClickable(element.backendNodeId); // Redraw only this element

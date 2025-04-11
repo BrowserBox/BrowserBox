@@ -239,6 +239,7 @@
 
         get send() { return connection.send; },
 
+        clickCounter,
         clickableElements: [],
         isListening: true,
         scrollDelta: 50,
@@ -667,7 +668,7 @@
         return navigateHistory(sessionId, 1);
       }
 
-      export async function handleClick({ termX, termY, clickableElements, send, sessionId, refresh, layoutToNode, nodeToParent, nodes }) {
+      export function getClickedBox({ termX, termY }) {
         let clickedBox = null;
         for (let i = renderedBoxes.length - 1; i >= 0; i--) {
           const box = renderedBoxes[i];
@@ -682,8 +683,12 @@
           //process.exit(1);
           return;
         }
-
         logClicks(`Clicked box type: ${clickedBox.type}, backendNodeId: ${clickedBox.backendNodeId}`);
+        return clickedBox;
+      }
+
+      export async function handleClick({ termX, termY, clickableElements, send, sessionId, refresh, layoutToNode, nodeToParent, nodes }) {
+        const clickedBox = getClickedBox({ termX, termY });
         if (clickedBox.type === 'input') {
           await focusInput({ clickedBox, browser, send, sessionId, termX });
           return;
@@ -781,7 +786,7 @@
         }
       }
 
-      async function focusInput({ clickedBox, browser, send, sessionId, termX }) {
+      export async function focusInput({ clickedBox, browser, send, sessionId, termX }) {
         logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
         const guiX = clickedBox.boundingBox.x + clickedBox.boundingBox.width / 2;
         const guiY = clickedBox.boundingBox.y + clickedBox.boundingBox.height / 2;
@@ -842,7 +847,7 @@
 
         browser.on('renderContent', () => {
           if (state.layoutState) {
-            console.log('Rendering content');
+            DEBUG && console.log('Rendering content');
             renderLayout({ layoutState: state.layoutState });
           }
         });
@@ -949,7 +954,7 @@
         wsDebuggerUrl = wsDebuggerUrl.replace('ws://localhost', `wss://${hostname}`);
         wsDebuggerUrl = `${wsDebuggerUrl}/${token}`;
         DEBUG && terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
-        console.log(wsDebuggerUrl);
+        DEBUG && console.log(wsDebuggerUrl);
         const socket = new WebSocket(wsDebuggerUrl, {
           headers: { 'x-browserbox-local-auth': cookieValue },
           agent: new Agent({ rejectUnauthorized: false }),
@@ -977,7 +982,7 @@
 
         browserbox.on('open', bbResolve);
         await bbReady;
-        console.log('Connected to browserbox');
+        DEBUG && console.log('Connected to browserbox');
 
         return { send, socket, browserbox };
       }

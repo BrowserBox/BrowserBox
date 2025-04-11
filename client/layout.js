@@ -13,6 +13,12 @@ const POSITION_SET_1 = new Set([
   'unset',
   'initial'
 ]);
+const BUTTON_INPUT_TYPES = new Set([
+  'submit',
+  'reset',
+  'button',
+  'file',
+]);
 const INVISIBLE_DIMENSION = 5;
 
 const LayoutAlgorithm = (() => {
@@ -1149,9 +1155,10 @@ export function getAncestorInfo(nodeIndex, nodes, strings) {
     const attributes = nodes.attributes[currentIndex] || [];
     const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
 
-    if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
+    if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && BUTTON_INPUT_TYPES.has(strings[attributes[i + 1]])))) {
       return 'button';
     }
+    debugLog(JSON.stringify({nodeName, attrs: attributes.map(idx => strings[idx]), isClickable},null,2));
 
     let hasHref = false;
     let hasOnclick = false;
