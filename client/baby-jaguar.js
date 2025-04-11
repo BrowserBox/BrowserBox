@@ -39,8 +39,8 @@
       const mySource = 'krnlclient' + Math.random().toString(36);
       export const renderedBoxes = [];
 
-      let state = initializeState();
-      let publicState;
+      const state = initializeState();
+      let connection;
       let socket;
       let cleanup;
       let targets;
@@ -102,20 +102,13 @@
     async function startKernel() {
       try {
         terminal.cyan('Starting browser connection...\n');
-        const connection = await connectToBrowser();
+        connection = await connectToBrowser();
         send = connection.send;
         socket = connection.socket;
         targets = connection.targets;
         browserbox = connection.browserbox;
         cookieHeader = connection.cookieHeader;
         BrowserState.targets = targets;
-        publicState = {
-          get sessionId() { return sessionId; },
-
-          get send() { return send; },
-
-          get OGstate() { return state; },
-        };
 
         await send('Target.setDiscoverTargets', { discover: true });
         await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
@@ -134,7 +127,7 @@
               url: t.url || 'about:blank',
             })),
           }, 
-          () => publicState
+          () => state
         );
 
         browser.on('tabSelected', async (tab) => {
@@ -240,6 +233,23 @@
         process.exit(1);
       }
     }
+    function initializeState() {
+      return {
+        get sessionId() { return sessionId; },
+
+        get send() { return connectionsend; },
+
+        clickableElements: [],
+        isListening: true,
+        scrollDelta: 50,
+        currentScrollY: 0,
+        layoutToNode: null,
+        nodeToParent: null,
+        nodes: null,
+        isInitialized: false,
+        strings: []
+      };
+    }
 
   // Helpers
     // Data processing helpers
@@ -248,19 +258,6 @@
         return (...args) => {
           clearTimeout(timeoutId);
           timeoutId = setTimeout(() => func(...args), delay);
-        };
-      }
-
-      function initializeState() {
-        return {
-          clickableElements: [],
-          isListening: true,
-          scrollDelta: 50,
-          currentScrollY: 0,
-          layoutToNode: null,
-          nodeToParent: null,
-          nodes: null,
-          isInitialized: false,
         };
       }
 
@@ -387,11 +384,6 @@
             state.nodeToParent = layoutState.nodeToParent;
             state.nodes = layoutState.nodes;
             state.strings = snapshot.strings;
-
-            publicState.layoutToNode = layoutState.layoutToNode;
-            publicState.nodeToParent = layoutState.nodeToParent;
-            publicState.nodes = layoutState.nodes;
-            publicState.strings = snapshot.strings;
 
             renderLayout({ layoutState });
             state.isInitialized = true;
