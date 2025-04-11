@@ -189,19 +189,20 @@
         });
 
         browser.on('tabClosed', async (index) => {
-          const targetId = targets[index].targetId;
-          targets.splice(index, 1);
-          BrowserState.targets = targets;
-          DEBUG && terminal.cyan(`Closing remote target: ${targetId}\n`);
           try {
+            const targetId = targets[index].targetId;
+            targets.splice(index, 1);
+            BrowserState.targets = targets;
+            DEBUG && terminal.cyan(`Closing remote target: ${targetId}\n`);
             await send('Target.closeTarget', { targetId });
+            BrowserState.selectedTabIndex = Math.min(index, targets.length - 1);
+            BrowserState.activeTarget = targets[BrowserState.selectedTabIndex] || null;
+            await selectTabAndRender();
           } catch (error) {
+            debugLog(JSON.stringify({targets, index}, null,2));
             DEBUG && terminal.red(`Failed to close target ${targetId}: ${error.message}\n`);
-            //process.exit(1);
+            DEBUG && process.exit(1);
           }
-          BrowserState.selectedTabIndex = Math.min(index, targets.length - 1);
-          BrowserState.activeTarget = targets[BrowserState.selectedTabIndex] || null;
-          await selectTabAndRender();
         });
 
         browser.on('navigate', async (url) => {

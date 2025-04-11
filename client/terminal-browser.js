@@ -804,7 +804,7 @@ export default class TerminalBrowser extends EventEmitter {
           send: state.send,
           sessionId: state.sessionId,
           clickCounter: state.clickCounter,
-          refresh: () => refreshTerminal({ send: newState.send, sessionId: newState.sessionId, state: this.getState({freshen:true}).OGstate }),
+          refresh: () => refreshTerminal({ send: newState.send, sessionId: newState.sessionId, state: this.getState().OGstate }),
           layoutToNode: state.layoutToNode,
           nodeToParent: state.nodeToParent,
           nodes: state.nodes,
