@@ -790,8 +790,7 @@ export default class TerminalBrowser extends EventEmitter {
   // Extracted method for clickable elements
   async handleClickableKey(key) {
     const backendNodeId = this.focusedElement.split(':')[1];
-    const state = this.getState().OGstate;
-    const newState = this.getState();
+    const publicState = this.getState();
     const tabbable = this.computeTabbableElements();
     const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
 
@@ -804,7 +803,7 @@ export default class TerminalBrowser extends EventEmitter {
           send: state.send,
           sessionId: state.sessionId,
           clickCounter: state.clickCounter,
-          refresh: () => refreshTerminal({ send: newState.send, sessionId: newState.sessionId, state: this.getState().OGstate }),
+          refresh: () => refreshTerminal({ send: publicState.send, sessionId: publicState.sessionId }),
           layoutToNode: state.layoutToNode,
           nodeToParent: state.nodeToParent,
           nodes: state.nodes,
@@ -1024,8 +1023,8 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   redrawClickable(backendNodeId) {
-    const state = this.getState();
-    const renderData = this.getRenderData(backendNodeId, state);
+    const publicState = this.getState();
+    const renderData = this.getRenderData(backendNodeId, publicState);
     if (!renderData) return;
 
     const { boxes, minX, maxY, ancestorType } = renderData;

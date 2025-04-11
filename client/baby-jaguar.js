@@ -39,8 +39,8 @@
       const mySource = 'krnlclient' + Math.random().toString(36);
       export const renderedBoxes = [];
 
-      let state;
-      let newState;
+      let state = initializeState();
+      let publicState;
       let socket;
       let cleanup;
       let targets;
@@ -55,7 +55,7 @@
     // arrows
       const debouncedRefresh = debounce(() => {
         if (sessionId) {
-          refreshTerminal({ send, sessionId, state: initializeState() });
+          refreshTerminal({ send, sessionId });
         }
       }, DEBOUNCE_DELAY);
 
@@ -109,7 +109,7 @@
         browserbox = connection.browserbox;
         cookieHeader = connection.cookieHeader;
         BrowserState.targets = targets;
-        newState = {
+        publicState = {
           get sessionId() { return sessionId; },
 
           get send() { return send; },
@@ -134,14 +134,7 @@
               url: t.url || 'about:blank',
             })),
           }, 
-          ({freshen = false} = {}) => {
-            if ( freshen ) {
-              // we might better call this in a handler, on like page navigate etc
-              state = initializeState();
-              refreshNewState(); 
-            }
-            return newState;
-          }
+          () => publicState
         );
 
         browser.on('tabSelected', async (tab) => {
@@ -209,20 +202,20 @@
           const normalizedUrl = normalizeUrl(url);
           DEBUG && terminal.cyan(`Navigating to: ${normalizedUrl}\n`);
           send('Page.navigate', { url: normalizedUrl }, sessionId);
-          await refreshTerminal({ send, sessionId, state: initializeState() });
+          await refreshTerminal({ send, sessionId });
         });
 
         browser.on('back', async () => {
           const navigated = await goBack(sessionId);
           if (navigated) {
-            await refreshTerminal({ send, sessionId, state: initializeState() });
+            await refreshTerminal({ send, sessionId });
           }
         });
 
         browser.on('forward', async () => {
           const navigated = await goForward(sessionId);
           if (navigated) {
-            await refreshTerminal({ send, sessionId, state: initializeState() });
+            await refreshTerminal({ send, sessionId });
           }
         });
 
@@ -249,10 +242,6 @@
     }
 
   // Helpers
-    function refreshNewState() {
-
-    }
-
     // Data processing helpers
       function debounce(func, delay) {
         let timeoutId;
@@ -376,7 +365,7 @@
         renderBoxes({ ...layoutState });
       }
 
-      export async function refreshTerminal({ send, sessionId, state }) {
+      export async function refreshTerminal({ send, sessionId }) {
         try {
           // sometimes this line errors out and poll returns nothing. I think we could try a page reload
           // and try to repro and figure it out
@@ -397,11 +386,12 @@
             state.layoutToNode = layoutState.layoutToNode;
             state.nodeToParent = layoutState.nodeToParent;
             state.nodes = layoutState.nodes;
+            state.strings = snapshot.strings;
 
-            newState.layoutToNode = layoutState.layoutToNode;
-            newState.nodeToParent = layoutState.nodeToParent;
-            newState.nodes = layoutState.nodes;
-            newState.strings = snapshot.strings;
+            publicState.layoutToNode = layoutState.layoutToNode;
+            publicState.nodeToParent = layoutState.nodeToParent;
+            publicState.nodes = layoutState.nodes;
+            publicState.strings = snapshot.strings;
 
             renderLayout({ layoutState });
             state.isInitialized = true;
@@ -856,8 +846,7 @@
 
     // Main render 
       async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
-        state = initializeState();
-        const refresh = () => refreshTerminal({ send, sessionId, state });
+        const refresh = () => refreshTerminal({ send, sessionId });
 
         browser.on('renderContent', () => {
           if (state.layoutState) {

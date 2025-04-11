@@ -1,4 +1,5 @@
 Next
+  - Some inputs (ie, Wikipedia search from a article page) are not updating their value on typing. Why?
   - Tidy state handling (unify?, no passing?). State handling is illogical and produces races. Outdated state from other pages is closed in the interactive state of yet other pages. Need to simplify and logificify state handling heh :)
   - when tabbing to input element, sometimes it is not ".focus()" d so it won't get enter - seemingly
   - Fix some elements are not highlighted on focus. Possible causes:
