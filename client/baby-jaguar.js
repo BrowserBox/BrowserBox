@@ -331,7 +331,7 @@
       function statusLine(...stuff) {
         // log this somewhere on screen
         // for now do nothing! :)
-        console.error(...stuff);
+        DEBUG && console.error(...stuff);
       }
 
       function normalizeUrl(input) {
