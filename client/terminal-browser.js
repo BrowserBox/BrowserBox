@@ -1213,6 +1213,7 @@ export default class TerminalBrowser extends EventEmitter {
         // Automatically open a new tab when the last one is closed
         this.emit('newTabRequested', { title: 'New Tab', url: 'about:blank' });
       }
+      debugLog(JSON.stringify({tb:this},null,2));
       this.emit('tabClosed', index);
       this.render();
     }

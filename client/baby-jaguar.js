@@ -199,11 +199,9 @@
             DEBUG && terminal.red(`Failed to close target ${targetId}: ${error.message}\n`);
             //process.exit(1);
           }
-          if (BrowserState.selectedTabIndex === index) {
-            BrowserState.selectedTabIndex = Math.min(index, targets.length - 1);
-            BrowserState.activeTarget = targets[BrowserState.selectedTabIndex] || null;
-            await selectTabAndRender();
-          }
+          BrowserState.selectedTabIndex = Math.min(index, targets.length - 1);
+          BrowserState.activeTarget = targets[BrowserState.selectedTabIndex] || null;
+          await selectTabAndRender();
         });
 
         browser.on('navigate', async (url) => {
@@ -620,6 +618,7 @@
         if (cleanup) cleanup();
 
         const selectedTarget = targets[BrowserState.selectedTabIndex];
+        debugLog(JSON.stringify({BrowserState},null,2));
         const targetId = selectedTarget.targetId;
         BrowserState.activeTarget = selectedTarget;
 
@@ -711,7 +710,7 @@
           terminal.moveTo(clickedBox.termX, clickedBox.termY);
           terminal.yellow(clickedBox.text);
           await sleep(300);
-          await refresh();
+          //await refresh();
 
           const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
           const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight;

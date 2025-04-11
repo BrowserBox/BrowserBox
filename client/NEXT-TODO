@@ -1,4 +1,5 @@
 Next
+  - when tabbing to input element, sometimes it is not ".focus()" d so it won't get enter - seemingly
   - Fix some elements are not highlighted on focus. Possible causes:
     1. the element has bounds overlapping offscreen.
     2. something else (ie domain on HN post lines). They WILL be tabbed to, but not shown. 
