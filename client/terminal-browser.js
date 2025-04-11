@@ -17,6 +17,7 @@ export default class TerminalBrowser extends EventEmitter {
     super();
     this.currentFocusIndex = 0;
     this.getState = getState;
+    this.getFreshState = () => getState({fresh:true});
     this.term = term;
     this.options = {
       tabWidth: options.tabWidth || 25,
@@ -802,7 +803,7 @@ export default class TerminalBrowser extends EventEmitter {
           send: state.send,
           sessionId: state.sessionId,
           clickCounter: state.clickCounter,
-          refresh: () => refreshTerminal({ send: state.send, sessionId: state.sessionId, state }),
+          refresh: () => refreshTerminal({ send: state.send, sessionId: state.sessionId, state: this.getState().OGstate }),
           layoutToNode: state.layoutToNode,
           nodeToParent: state.nodeToParent,
           nodes: state.nodes,
@@ -838,7 +839,6 @@ export default class TerminalBrowser extends EventEmitter {
         this.emit('navigate', this.addressContent);
         if (this.selectedTabIndex !== -1) {
           this.tabs[this.selectedTabIndex].url = this.addressContent;
-          this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
         }
         this.render();
         break;
@@ -946,7 +946,6 @@ export default class TerminalBrowser extends EventEmitter {
       this.emit('navigate', this.addressContent);
       if (this.selectedTabIndex !== -1) {
         this.tabs[this.selectedTabIndex].url = this.addressContent;
-        this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
       }
     }
   }
@@ -1011,7 +1010,6 @@ export default class TerminalBrowser extends EventEmitter {
         this.emit('navigate', this.addressContent);
         if (this.selectedTabIndex !== -1) {
           this.tabs[this.selectedTabIndex].url = this.addressContent;
-          this.tabs[this.selectedTabIndex].title = new URL(this.addressContent).hostname;
         }
       }
       this.render();

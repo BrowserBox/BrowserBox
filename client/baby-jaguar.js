@@ -113,6 +113,8 @@
           get sessionId() { return sessionId; },
 
           get send() { return send; }
+
+          get OGstate() { return state; }
         };
 
         await send('Target.setDiscoverTargets', { discover: true });
@@ -124,13 +126,23 @@
           targets.push(newTarget);
         }
 
-        browser = new TerminalBrowser({
-          tabWidth: Math.round(Math.max(15, terminal.width / 3)),
-          initialTabs: targets.map(t => ({
-            title: t.title || new URL(t.url || 'about:blank').hostname,
-            url: t.url || 'about:blank',
-          })),
-        }, () => newState);
+        browser = new TerminalBrowser(
+          {
+            tabWidth: Math.round(Math.max(15, terminal.width / 3)),
+            initialTabs: targets.map(t => ({
+              title: t.title || new URL(t.url || 'about:blank').hostname,
+              url: t.url || 'about:blank',
+            })),
+          }, 
+          ({freshen = false} = {}) => {
+            if ( freshen ) {
+              // we might better call this in a handler, on like page navigate etc
+              state = initializeState();
+              refreshNewState(); 
+            }
+            return newState;
+          }
+        );
 
         browser.on('tabSelected', async (tab) => {
           const index = browser.getTabs().findIndex(t => t.title === tab.title && t.url === tab.url);
@@ -1054,6 +1066,8 @@
             const { targetId, title, url } = targetInfo;
             updateTabData(targetInfo);
             debouncedRefresh();
+          } else if (message.method === 'Page.navigated') {
+
           }
         };
       }
