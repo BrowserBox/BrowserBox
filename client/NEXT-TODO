@@ -3,9 +3,9 @@ Next
     1. the element has bounds overlapping offscreen.
     2. something else (ie domain on HN post lines). They WILL be tabbed to, but not shown. 
     3. DDG / Goog SRP. Will be tabbed to, but not shown. Maybe related to 2.
-  - Freeze up bug with scrolling. Need to isolate. 
   - Compose better dittys
   - select, radio and checkbox inputs (and test page)
+  - Tidy state handling (unify?, no passing?)
 
 Bugs
   Minor Polishing Bugs

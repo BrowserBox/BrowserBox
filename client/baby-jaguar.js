@@ -112,9 +112,9 @@
         newState = {
           get sessionId() { return sessionId; },
 
-          get send() { return send; }
+          get send() { return send; },
 
-          get OGstate() { return state; }
+          get OGstate() { return state; },
         };
 
         await send('Target.setDiscoverTargets', { discover: true });
@@ -250,6 +250,10 @@
     }
 
   // Helpers
+    function refreshNewState() {
+
+    }
+
     // Data processing helpers
       function debounce(func, delay) {
         let timeoutId;
