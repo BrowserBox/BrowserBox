@@ -1381,7 +1381,7 @@
             });
 
           queue.addMetaListener('created', meta => {
-            const url = new URL(meta.created.url);
+            const url = meta.created.url ? new URL(meta.created.url) : '';
             if ( AttachmentTypes.has(meta.created.type) && ! HIDDEN_DOMAINS.has(url.hostname) ) {
               meta.created.hello = 'oncreated';
               const activate = () => {
