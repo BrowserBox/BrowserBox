@@ -212,6 +212,38 @@
           }
         });
 
+        browser.on('renderContent', () => {
+          if (state.layoutState) {
+            DEBUG && console.log('Rendering content');
+            renderLayout({ layoutState: state.layoutState });
+          }
+        });
+
+        browser.on('click', async ({ x, y }) => {
+          if (!state.isInitialized) return;
+          await handleClick({
+            termX: x,
+            termY: y,
+            clickableElements: state.clickableElements,
+            layoutToNode: state.layoutToNode,
+            nodeToParent: state.nodeToParent,
+            nodes: state.nodes,
+          });
+        });
+
+        browser.on('scroll', async ({ direction }) => {
+          try { 
+            const lineHeight = Math.round(state.viewportHeight / terminal.height);
+            const deltaY = direction * lineHeight;
+            //if (direction < 0 && state.currentScrollY <= 0) return;
+            await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+            debouncedRefresh();
+          } catch(e) {
+            console.error(e);
+            //process.exit(1);
+          }
+        });
+
         await sleep(3000);
         await selectTabAndRender();
 
@@ -611,7 +643,7 @@
         sessionId = newSessionId;
         DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
 
-        const stop = await printTextLayoutToTerminal({ send, sessionId, onTabSwitch: selectTabAndRender });
+        const stop = await printTextLayoutToTerminal({ onTabSwitch: selectTabAndRender });
         cleanup = stop;
       }
 
@@ -687,7 +719,7 @@
         return clickedBox;
       }
 
-      export async function handleClick({ termX, termY, clickableElements, send, sessionId, refresh, layoutToNode, nodeToParent, nodes }) {
+      export async function handleClick({ termX, termY, clickableElements, layoutToNode, nodeToParent, nodes }) {
         const clickedBox = getClickedBox({ termX, termY });
         if (clickedBox.type === 'input') {
           await focusInput({ clickedBox, browser, send, sessionId, termX });
@@ -698,7 +730,6 @@
           terminal.moveTo(clickedBox.termX, clickedBox.termY);
           terminal.yellow(clickedBox.text);
           await sleep(300);
-          //await refresh();
 
           const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
           const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight;
@@ -782,7 +813,7 @@
             }
           }
 
-          await refresh();
+          await refreshTerminal({send, sessionId});
         }
       }
 
@@ -842,45 +873,8 @@
       }
 
     // Main render 
-      async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
-        const refresh = () => refreshTerminal({ send, sessionId });
-
-        browser.on('renderContent', () => {
-          if (state.layoutState) {
-            DEBUG && console.log('Rendering content');
-            renderLayout({ layoutState: state.layoutState });
-          }
-        });
-
-        browser.on('click', async ({ x, y }) => {
-          if (!state.isInitialized) return;
-          await handleClick({
-            termX: x,
-            termY: y,
-            clickableElements: state.clickableElements,
-            send,
-            sessionId,
-            refresh,
-            layoutToNode: state.layoutToNode,
-            nodeToParent: state.nodeToParent,
-            nodes: state.nodes,
-          });
-        });
-
-        browser.on('scroll', async ({ direction }) => {
-          try { 
-            const lineHeight = Math.round(state.viewportHeight / terminal.height);
-            const deltaY = direction * lineHeight;
-            //if (direction < 0 && state.currentScrollY <= 0) return;
-            await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
-            debouncedRefresh();
-          } catch(e) {
-            console.error(e);
-            //process.exit(1);
-          }
-        });
-
-        await refresh(); // This should trigger the initial render
+      async function printTextLayoutToTerminal({ onTabSwitch }) {
+        await refreshTerminal({send, sessionId}); // This should trigger the initial render
         return () => {
           state.isListening = false;
           browser.stopListening();
