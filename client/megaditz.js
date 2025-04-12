@@ -1,18 +1,34 @@
 import { default as tone } from 'tonegenerator';
-import { default as Speaker } from 'speaker';
 
 // Play the ditzy tune
 async function ditzyTune() {
   const sampleRate = 44100;
+  let speaker = null;
 
-  // Create a Speaker instance
-  const speaker = new Speaker({
-    channels: 1,          // Mono sound
-    bitDepth: 16,        // 16-bit depth (PCM)
-    sampleRate: sampleRate, // Sample rate (must match tonegenerator)
-    signed: true,        // Ensure signed samples
-    float: false         // No floating-point samples
-  });
+  if (process.platform !== 'win32') {
+    try {
+      const { default: Speaker } = await import('speaker');
+      speaker = new Speaker({
+        channels: 1, // Mono sound
+        bitDepth: 16, // 16-bit depth (PCM)
+        sampleRate: sampleRate,
+        signed: true,
+        float: false
+      });
+      console.log('🎵 Speaker initialized successfully!');
+    } catch (err) {
+      console.warn('⚠️ Failed to initialize speaker:', err.message);
+      speaker = null;
+    }
+  } else {
+    console.log('ℹ️ Running on Windows, skipping audio playback.');
+    return; // Exit early on Windows
+  }
+
+  if (!speaker) {
+    console.log('ℹ️ Audio playback skipped due to unavailable speaker.');
+    return;
+  }
 
   // Define the ditzy little tune
   const tune = [
@@ -46,7 +62,7 @@ async function ditzyTune() {
       // Add a small silence after each note to reduce underflow
       const silenceDuration = 10; // 10 ms of silence
       const silenceSamples = Math.floor((silenceDuration / 1000) * sampleRate);
-      const silenceBuffer = Buffer.alloc(silenceSamples * 2, 0); // 2 bytes per sample
+      const silenceBuffer = Buffer.alloc(silenceSamples * 2, 0);
       speaker.write(silenceBuffer);
     }, totalDuration);
 
