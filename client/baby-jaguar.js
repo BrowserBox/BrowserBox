@@ -130,7 +130,7 @@
         );
 
         browser.on('tabSelected', async (tab) => {
-          const index = browser.getTabs().findIndex(t => t.title === tab.title && t.url === tab.url);
+          const index = browser.getTabs().findIndex(t => t.targetId === tab.targetId);
           BrowserState.selectedTabIndex = index;
           browser.selectedTabIndex = index;
           BrowserState.activeTarget = targets[index];

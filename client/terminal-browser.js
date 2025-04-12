@@ -701,7 +701,7 @@ export default class TerminalBrowser extends EventEmitter {
       return true; // Stop listening
     }
     if (key === 'CTRL_T') {
-      this.emit('newTabRequested', { title: `New x ${this.tabs.length + 1}`, url: 'about:blank' });
+      this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
       return false;
     }
     if (key === 'CTRL_W') {
@@ -934,7 +934,7 @@ export default class TerminalBrowser extends EventEmitter {
       this.selectedTabIndex = this.focusedTabIndex;
       this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
     } else if (this.focusedElement === 'newTab') {
-      this.emit('newTabRequested', { title: `New y ${this.tabs.length + 1}`, url: 'about:blank' });
+      this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
     } else if (this.focusedElement === 'back') {
       this.emit('back');
     } else if (this.focusedElement === 'forward') {
@@ -964,7 +964,7 @@ export default class TerminalBrowser extends EventEmitter {
     // Tab row (y = 1)
     if (y === 1) {
       if (x >= this.term.width - this.NEW_TAB_WIDTH + 1 && x <= this.term.width) {
-        this.emit('newTabRequested', { title: `New z ${this.tabs.length + 1}`, url: 'about:blank' });
+        this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
         return;
       }
       let tabX = 1;
