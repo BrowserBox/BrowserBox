@@ -85,6 +85,7 @@
   },
   "homepage": "https://github.com/BrowserBox/BrowserBox",
   "dependencies": {
+    "@browserbox/speaker": "^1.0.1",
     "@dosyago/rainsum": "latest",
     "@noble/ed25519": "^2.2.3",
     "@roamhq/wrtc": "^0.7.3",
@@ -95,7 +96,7 @@
     "cookie-parser": "latest",
     "cors": "latest",
     "entities": "latest",
-    "esbuild": "latest",
+    "esbuild": "0.25.2",
     "esm": "latest",
     "exit-on-epipe": "latest",
     "express": "latest",
