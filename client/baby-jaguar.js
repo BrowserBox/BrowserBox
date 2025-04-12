@@ -44,13 +44,13 @@
       let socket;
       let cleanup;
       let targets;
-      let cookieHeader;
       let send;
       let browser;
       let messageId = Math.round(Math.round(Math.random()*1000 + 1) * 1e6);
       let sessionId;
       let browserbox;
       let loginLink;
+      let cookieHeader, cookieValue;
 
     // arrows
       const debouncedRefresh = debounce(() => {
@@ -107,7 +107,6 @@
         socket = connection.socket;
         targets = connection.targets;
         browserbox = connection.browserbox;
-        cookieHeader = connection.cookieHeader;
         BrowserState.targets = targets;
 
         await send('Target.setDiscoverTargets', { discover: true });
@@ -121,7 +120,7 @@
 
         browser = new TerminalBrowser(
           {
-            tabWidth: Math.round(Math.max(15, terminal.width / 3)),
+            tabWidth: Math.max(15, Math.ceil(terminal.width / 4)),
             initialTabs: targets.map(t => ({
               title: t.title || new URL(t.url || 'about:blank').hostname,
               url: t.url || 'about:blank',
@@ -157,16 +156,7 @@
           DEBUG && terminal.cyan(`Creating new remote tab: ${tab.title}\n`);
           try {
             const { targetId } = await send('Target.createTarget', { url: tab.url || 'about:blank' });
-            const newTarget = { targetId, title: tab.title, url: tab.url || 'about:blank', type: 'page' };
-            targets.push(newTarget);
-            BrowserState.targets = targets;
-
-            browser.addTabToUI({ title: newTarget.title, url: newTarget.url });
-            browser.focusedTabIndex = browser.tabs.length - 1;
-            browser.selectedTabIndex = browser.focusedTabIndex;
-            BrowserState.selectedTabIndex = browser.selectedTabIndex;
-            BrowserState.activeTarget = newTarget;
-
+            targets = await fetchTargets();
             await selectTabAndRender();
           } catch (error) {
             DEBUG && terminal.red(`Failed to create new tab: ${error.message}\n`);
@@ -177,10 +167,11 @@
         browser.on('tabClosed', async (index) => {
           try {
             const targetId = targets[index].targetId;
-            targets.splice(index, 1);
-            BrowserState.targets = targets;
-            DEBUG && terminal.cyan(`Closing remote target: ${targetId}\n`);
             await send('Target.closeTarget', { targetId });
+            targets = await fetchTargets();
+            BrowserState.targets = targets;
+            browser.tabs = targets;
+            DEBUG && terminal.cyan(`Closing remote target: ${targetId}\n`);
             BrowserState.selectedTabIndex = Math.min(index, targets.length - 1);
             BrowserState.activeTarget = targets[BrowserState.selectedTabIndex] || null;
             await selectTabAndRender();
@@ -721,6 +712,7 @@
 
       export async function handleClick({ termX, termY, clickableElements, layoutToNode, nodeToParent, nodes }) {
         const clickedBox = getClickedBox({ termX, termY });
+        if ( ! clickedBox ) return;
         if (clickedBox.type === 'input') {
           await focusInput({ clickedBox, browser, send, sessionId, termX });
           return;
@@ -883,10 +875,10 @@
 
     // Connectivity helpers
       async function connectToBrowser() {
-        const { cookieHeader, cookieValue } = await authenticate(loginUrl);
-        const targets = await fetchTargets(apiUrl, cookieHeader);
+        ({ cookieHeader, cookieValue } = await authenticate(loginUrl));
+        targets = await fetchTargets();
         const { send, socket, browserbox } = await setupWebSockets(proxyBaseUrl, hostname, token, cookieValue);
-        return { send, socket, targets, cookieHeader, browserbox };
+        return { send, socket, targets, cookieHeader, cookieValue, browserbox };
       }
 
       async function authenticate(loginUrl) {
@@ -910,7 +902,7 @@
         }
       }
 
-      async function fetchTargets(apiUrl, cookieHeader) {
+      export async function fetchTargets() {
         DEBUG && terminal.cyan('Fetching available tabs...\n');
         try {
           const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json', 'Cookie': cookieHeader } });

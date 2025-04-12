@@ -20,7 +20,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.getFreshState = () => getState({fresh:true});
     this.term = term;
     this.options = {
-      tabWidth: options.tabWidth || 25,
+      tabWidth: options.tabWidth || Math.max(Math.ceil(this.term.width/4), 15),
       initialTabs: options.initialTabs || [
         { title: 'Home', url: 'https://home.com' },
       ],
@@ -701,7 +701,7 @@ export default class TerminalBrowser extends EventEmitter {
       return true; // Stop listening
     }
     if (key === 'CTRL_T') {
-      this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+      this.emit('newTabRequested', { title: `New x ${this.tabs.length + 1}`, url: 'about:blank' });
       return false;
     }
     if (key === 'CTRL_W') {
@@ -934,7 +934,7 @@ export default class TerminalBrowser extends EventEmitter {
       this.selectedTabIndex = this.focusedTabIndex;
       this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
     } else if (this.focusedElement === 'newTab') {
-      this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+      this.emit('newTabRequested', { title: `New y ${this.tabs.length + 1}`, url: 'about:blank' });
     } else if (this.focusedElement === 'back') {
       this.emit('back');
     } else if (this.focusedElement === 'forward') {
@@ -964,8 +964,7 @@ export default class TerminalBrowser extends EventEmitter {
     // Tab row (y = 1)
     if (y === 1) {
       if (x >= this.term.width - this.NEW_TAB_WIDTH + 1 && x <= this.term.width) {
-        this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
-        this.render();
+        this.emit('newTabRequested', { title: `New z ${this.tabs.length + 1}`, url: 'about:blank' });
         return;
       }
       let tabX = 1;
@@ -1210,18 +1209,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   closeTab(index) {
-    if (index >= 0 && index < this.tabs.length) {
-      if (this.focusedTabIndex >= index) this.focusedTabIndex = Math.max(0, this.focusedTabIndex - 1);
-      if (this.selectedTabIndex >= index) this.selectedTabIndex = Math.max(0, this.selectedTabIndex - 1);
-      this.tabs.splice(index, 1);
-      if (this.tabs.length === 0) {
-        // Automatically open a new tab when the last one is closed
-        this.emit('newTabRequested', { title: 'New Tab', url: 'about:blank' });
-      }
-      debugLog(JSON.stringify({tb:this},null,2));
-      this.emit('tabClosed', index);
-      this.render();
-    }
+    this.emit('tabClosed', index);
   }
 
   getTab(index) {

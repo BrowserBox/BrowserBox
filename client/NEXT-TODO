@@ -1,5 +1,4 @@
 Next
-  - closing tabs doesn't work properly. 
   - Fix some elements are not highlighted on focus. Possible causes:
     1. the element has bounds overlapping offscreen.
     2. something else (ie domain on HN post lines). They WILL be tabbed to, but not shown. 
@@ -29,7 +28,7 @@ Bugs
     - GitHub code view, like a code file, doesn't work. Looks weird. RAW works beautifully tho. 
 
 Marketing (excerpt, full plan elsewhere)
-  - pair with a font, recommend a certain terminal font that works well with displaying web contents
+  - suggest pair with a font, recommend a certain terminal font that works well with displaying web contents
 
 Features
   - text / ce inputs 
@@ -69,6 +68,9 @@ To be omitted from initial public release
 - rendering of OOPIF (as that involves fetching target info from separate target and stitching together)
 - web side client for this text layout of the web
 
+BrowserBox side
+- frames are not syncing to normal bb if text is connected.
+- targets are also not syncing.
 
 Cutting Room (ideas that may not increase revenue and may perturb the simplicity of design)
   - CTRL_S - save page html (current as is from snapshot, or root outerHTML like from call func on)
