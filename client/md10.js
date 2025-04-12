@@ -1,5 +1,5 @@
 import { default as tone } from 'tonegenerator';
-import { default as Speaker } from 'speaker';
+import { default as Speaker } from '@browserbox/speaker';
 
 // List of three theme tunes with musical structure
 const themes = [

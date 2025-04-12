@@ -1,5 +1,5 @@
 import { default as tone } from 'tonegenerator';
-import { default as Speaker } from 'speaker';
+import { default as Speaker } from '@browserbox/speaker';
 
 // Mario-inspired theme tune with silences
 const marioTheme = {

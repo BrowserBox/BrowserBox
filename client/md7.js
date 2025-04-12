@@ -1,5 +1,5 @@
 import { default as tone } from 'tonegenerator';
-import { default as Speaker } from 'speaker';
+import { default as Speaker } from '@browserbox/speaker';
 
 // List of six ditty musical structures, adjusted for musicality
 const ditties = [
