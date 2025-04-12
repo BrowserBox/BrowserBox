@@ -1,18 +1,7 @@
-import { default as tone } from 'tonegenerator';
-import { default as Speaker } from 'speaker';
+﻿import { default as tone } from 'tonegenerator';
 
-// Create a Speaker instance
-const sampleRate = 44100;
-const speaker = new Speaker({
-  channels: 1,          // Mono sound
-  bitDepth: 16,        // 16-bit depth (PCM)
-  sampleRate: sampleRate,
-  signed: true,
-  float: false
-});
-
-// Function to play a sound
-function playSound(freq, duration) {
+// Function to play a sound (only called if speaker is available)
+async function playSound(freq, duration, speaker, sampleRate) {
   const tonedata = tone({
     freq: freq,
     lengthInSecs: duration / 1000, // Convert ms to seconds
@@ -32,19 +21,48 @@ function playSound(freq, duration) {
   speaker.write(silenceBuffer);
 }
 
+// Initialize speaker only on non-Windows platforms
+let speaker = null;
+const sampleRate = 44100;
+
+if (process.platform !== 'win32') {
+  try {
+    const { default: Speaker } = await import('speaker');
+    speaker = new Speaker({
+      channels: 1, // Mono sound
+      bitDepth: 16, // 16-bit depth (PCM)
+      sampleRate: sampleRate,
+      signed: true,
+      float: false
+    });
+    console.log('🎵 Speaker initialized successfully!');
+  } catch (err) {
+    console.warn('⚠️ Failed to initialize speaker:', err.message);
+    speaker = null; // Ensure speaker remains null if import fails
+  }
+} else {
+  console.log('ℹ️ Running on Windows, skipping audio playback.');
+}
+
 // Listen for IPC messages
 process.on('message', (message) => {
-  if (message === 'jump') {
-    // Play a "boop" sound for jumping
-    playSound(800, 100); // 800 Hz, 100 ms
-  } else if (message === 'gameOver') {
-    // Play a "game over" sound (lower pitch, longer duration)
-    playSound(400, 300); // 400 Hz, 300 ms
+  if (speaker) {
+    if (message === 'jump') {
+      // Play a "boop" sound for jumping
+      playSound(800, 100, speaker, sampleRate);
+    } else if (message === 'gameOver') {
+      // Play a "game over" sound (lower pitch, longer duration)
+      playSound(400, 300, speaker, sampleRate);
+    }
+  } else {
+    console.log(`ℹ️ Received ${message}, but audio is disabled on this platform.`);
   }
 });
 
 // Keep the process alive
 process.on('SIGINT', () => {
-  speaker.end();
+  if (speaker) {
+    speaker.end();
+  }
   process.exit(0);
 });
