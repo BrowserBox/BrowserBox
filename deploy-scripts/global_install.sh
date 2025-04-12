@@ -450,6 +450,8 @@ if [[ -n "$INSTALL_DIR" ]]; then
   cd $INSTALL_DIR
 fi
 
+./client/install-client-deps.sh
+
 echo "Ensuring nvm installed..."
 #install_nvm
 install_node
