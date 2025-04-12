@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Cross-platform script to install dependencies for Node.js audio packages (ALSA and node-gyp)
-# Detects OS and package manager, installs ALSA libraries (Linux) and build tools
+# Cross-platform script to install dependencies for Node.js audio packages
+# Installs ALSA (Linux), build tools, and conditionally installs 'speaker' (skips on Windows)
 
 echo "🚀 Let's get those Node.js audio dependencies installed!"
 
@@ -63,15 +63,37 @@ install_dependencies() {
             brew install python3
         fi
 
-        echo "ℹ️ For audio on macOS, packages like 'speaker' may use CoreAudio instead."
+        echo "ℹ️ For audio on macOS, packages like 'speaker' use CoreAudio."
         echo "Ensure you have Xcode Command Line Tools installed:"
         xcode-select --install || true
 
+    elif [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "win32"* || "$OSTYPE" == "cygwin"* ]]; then
+        echo "🪟 Looks like you're on Windows!"
+        echo "Not installing anything..."
+        exit 0
     else
         echo "❌ Unsupported OS detected: $OSTYPE"
-        echo "This script supports Linux (Ubuntu, Fedora, Arch, openSUSE) and macOS."
+        echo "This script supports Linux (Ubuntu, Fedora, Arch, openSUSE), macOS, and Windows."
         echo "Please install Python3 and build tools manually for your system."
-        exit 1
+        exit 0
+    fi
+}
+
+# Function to conditionally install speaker
+install_speaker() {
+    echo "🎵 Checking if we should install 'speaker'..."
+
+    if [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "win32"* || "$OSTYPE" == "cygwin"* ]]; then
+        echo "ℹ️ On Windows, we'll skip installing 'speaker'."
+    else
+        echo "📦 Installing 'speaker' for audio support..."
+        source ~/.nvm/nvm.sh
+        npm install speaker
+        if [ $? -eq 0 ]; then
+            echo "🎉 'speaker' installed successfully!"
+        else
+            echo "⚠️ Failed to install 'speaker'. You may need to check your setup or try manually."
+        fi
     fi
 }
 
@@ -87,16 +109,18 @@ verify_installation() {
         fi
     fi
 
-    if command_exists python3; then
-        echo "🐍 Python3 is installed: $(python3 --version)"
+    if command_exists python3 || command_exists python; then
+        echo "🐍 Python is installed: $(python3 --version || python --version)"
     else
-        echo "⚠️ Python3 not found. Please install it manually."
+        echo "⚠️ Python not found. Please install it manually."
     fi
 
-    if command_exists make && command_exists gcc; then
-        echo "🛠️ Build tools (make, gcc) are ready!"
-    else
-        echo "⚠️ Build tools missing. Please install 'build-essential' or equivalent."
+    if [[ "$OSTYPE" != "msys"* && "$OSTYPE" != "win32"* && "$OSTYPE" != "cygwin"* ]]; then
+        if command_exists make && command_exists gcc; then
+            echo "🛠️ Build tools (make, gcc) are ready!"
+        else
+            echo "⚠️ Build tools missing. Please install 'build-essential' or equivalent."
+        fi
     fi
 }
 
@@ -111,9 +135,10 @@ fi
 
 # Run installation
 install_dependencies
+install_speaker
 
 # Verify results
 verify_installation
 
-echo "🎊 All done! You're ready to run 'npm install' again."
-echo "If you hit any issues, just let me know—we'll sort it out together!"
+echo "🎊 All done! You're ready to run your project."
+echo "If you need anything else, we're in this together!"
