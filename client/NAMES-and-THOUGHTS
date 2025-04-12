@@ -1,3 +1,5 @@
+krnl
+
 - there's something powerful about reducing everything to the same style
 
 as if you've power over it. no longer chattering and noisy, no longer in the colors of your trauma or voices from the past, critics or insults, but all in the same style. everything the same. in a way like the experience of life. easier to handle, than every web page imposing its weird and unique aesthetic on your experience and communications
@@ -11,3 +13,15 @@ as if you've power over it. no longer chattering and noisy, no longer in the col
 
 - somehow bromine rings in my mind. those orange phosphors of my youth, alien terminals, flashing cursors. cathode rays
 - maybe a theme? Bromine mode hahaha
+
+- a terminal client for the web
+- a browser for constrained environments
+  - constrained resources? kernel
+  - constrained bandwidth? kernel
+  - constrained attention? kernel
+  - constrained content? kernel
+  - security constraints? kernel
+
+Kernel Browser - a text-only terminal client for the modern web
+
+

@@ -1,15 +1,28 @@
 #!/usr/bin/env node
-// CyberJaguar - BrowserBox TUI Browser Application
+// Kernel Browser - a terminal client for the modern world wide web
+  // Project Information
+    // Initiated by: DOSAYGO Corporation and @o0101
+    // Incept date: February 2025
+    // Assisted by: @grok and ChatGPT
+    // Copyright (C) DOSAYGO and @o0101 2025
+    // License: Commercial / paid license - contact sales@dosaygo.com 
+    // Project Codenames during development: Jaguar, BabyJaguar, CyberJaguar - BrowserBox TUI Browser Application
+
   // Setup
     // imports
-      import { WebSocket } from 'ws';
+      // built in
       import { appendFileSync } from 'fs';
       import { Agent } from 'https';
+
+      // 3rd-party 
+      import { WebSocket } from 'ws';
+      import TK from 'terminal-kit';
+      export const { terminal } = TK;
+
+      // internal
       import Layout from './layout.js';
       import TerminalBrowser from './terminal-browser.js';
-      import {sleep, logClicks, logMessage,debugLog,DEBUG} from './log.js';
-      import TK from 'terminal-kit';
-      const { terminal } = TK;
+      import { sleep, logClicks, logMessage, debugLog, DEBUG } from './log.js';
 
     // Constants and state
       const clickCounter = { value: 0 };
@@ -21,21 +34,30 @@
         selectedTabIndex: 0
       };
       const DEBOUNCE_DELAY = 280;
+      const WAIT_FOR_COMMAND_RESPONSE = 10 * 1000;
       const args = process.argv.slice(2);
-      const mySource = 'jagclient' + Math.random().toString(36);
+      const mySource = 'krnlclient' + Math.random().toString(36);
+      export const renderedBoxes = [];
 
-      let state;
-      let newState;
+      const state = initializeState();
+      let connection;
       let socket;
       let cleanup;
       let targets;
-      let cookieHeader;
       let send;
       let browser;
       let messageId = Math.round(Math.round(Math.random()*1000 + 1) * 1e6);
       let sessionId;
       let browserbox;
       let loginLink;
+      let cookieHeader, cookieValue;
+
+    // arrows
+      const debouncedRefresh = debounce(() => {
+        if (sessionId) {
+          refreshTerminal({ send, sessionId });
+        }
+      }, DEBOUNCE_DELAY);
 
     // arg processing
       if (args.length === 1) {
@@ -66,44 +88,26 @@
       const loginUrl = `${baseUrl}/login?token=${token}`;
       const apiUrl = `${baseUrl}/api/v10/tabs`;
 
-  // main logic
-    const debouncedRefresh = debounce(() => {
-      if (sessionId) {
-        refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
-      }
-    }, DEBOUNCE_DELAY);
-
-    const selectTabAndRender = async () => {
-      if (cleanup) cleanup();
-
-      const selectedTarget = targets[BrowserState.selectedTabIndex];
-      const targetId = selectedTarget.targetId;
-      BrowserState.activeTarget = selectedTarget;
-
-      DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
-      const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
-      sessionId = newSessionId;
-      DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
-
-      const stop = await printTextLayoutToTerminal({ send, sessionId, onTabSwitch: selectTabAndRender });
-      cleanup = stop;
+  if ( DEBUG ) {
+    const ox = process.exit.bind(process);
+    process.exit = (...stuff) => {
+      const e = new Error;
+      console.error('Exiting', e, ...stuff);
+      ox(stuff[0]);
     };
+  }
+  startKernel();
 
-    (async () => {
+  // main logic
+    async function startKernel() {
       try {
         terminal.cyan('Starting browser connection...\n');
-        const connection = await connectToBrowser();
+        connection = await connectToBrowser();
         send = connection.send;
         socket = connection.socket;
         targets = connection.targets;
         browserbox = connection.browserbox;
-        cookieHeader = connection.cookieHeader;
         BrowserState.targets = targets;
-        newState = {
-          get sessionId() { return sessionId; },
-
-          get send() { return send; }
-        };
 
         await send('Target.setDiscoverTargets', { discover: true });
         await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
@@ -114,16 +118,19 @@
           targets.push(newTarget);
         }
 
-        browser = new TerminalBrowser({
-          tabWidth: Math.round(Math.max(15, terminal.width / 3)),
-          initialTabs: targets.map(t => ({
-            title: t.title || new URL(t.url || 'about:blank').hostname,
-            url: t.url || 'about:blank',
-          })),
-        }, () => newState);
+        browser = new TerminalBrowser(
+          {
+            tabWidth: Math.max(15, Math.ceil(terminal.width / 4)),
+            initialTabs: targets.map(t => ({
+              title: t.title || new URL(t.url || 'about:blank').hostname,
+              url: t.url || 'about:blank',
+            })),
+          }, 
+          () => state
+        );
 
         browser.on('tabSelected', async (tab) => {
-          const index = browser.getTabs().findIndex(t => t.title === tab.title && t.url === tab.url);
+          const index = browser.getTabs().findIndex(t => t.targetId === tab.targetId);
           BrowserState.selectedTabIndex = index;
           browser.selectedTabIndex = index;
           BrowserState.activeTarget = targets[index];
@@ -149,36 +156,29 @@
           DEBUG && terminal.cyan(`Creating new remote tab: ${tab.title}\n`);
           try {
             const { targetId } = await send('Target.createTarget', { url: tab.url || 'about:blank' });
-            const newTarget = { targetId, title: tab.title, url: tab.url || 'about:blank', type: 'page' };
-            targets.push(newTarget);
-            BrowserState.targets = targets;
-
-            browser.addTabToUI({ title: newTarget.title, url: newTarget.url });
-            browser.focusedTabIndex = browser.tabs.length - 1;
-            browser.selectedTabIndex = browser.focusedTabIndex;
-            BrowserState.selectedTabIndex = browser.selectedTabIndex;
-            BrowserState.activeTarget = newTarget;
-
+            targets = await fetchTargets();
             await selectTabAndRender();
           } catch (error) {
             DEBUG && terminal.red(`Failed to create new tab: ${error.message}\n`);
+            //process.exit(1);
           }
         });
 
         browser.on('tabClosed', async (index) => {
-          const targetId = targets[index].targetId;
-          targets.splice(index, 1);
-          BrowserState.targets = targets;
-          DEBUG && terminal.cyan(`Closing remote target: ${targetId}\n`);
           try {
+            const targetId = targets[index].targetId;
             await send('Target.closeTarget', { targetId });
-          } catch (error) {
-            DEBUG && terminal.red(`Failed to close target ${targetId}: ${error.message}\n`);
-          }
-          if (BrowserState.selectedTabIndex === index) {
+            targets = await fetchTargets();
+            BrowserState.targets = targets;
+            browser.tabs = targets;
+            DEBUG && terminal.cyan(`Closing remote target: ${targetId}\n`);
             BrowserState.selectedTabIndex = Math.min(index, targets.length - 1);
             BrowserState.activeTarget = targets[BrowserState.selectedTabIndex] || null;
             await selectTabAndRender();
+          } catch (error) {
+            debugLog(JSON.stringify({targets, index}, null,2));
+            DEBUG && terminal.red(`Failed to close target ${targetId}: ${error.message}\n`);
+            DEBUG && process.exit(1);
           }
         });
 
@@ -186,24 +186,59 @@
           const normalizedUrl = normalizeUrl(url);
           DEBUG && terminal.cyan(`Navigating to: ${normalizedUrl}\n`);
           send('Page.navigate', { url: normalizedUrl }, sessionId);
-          await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+          await refreshTerminal({ send, sessionId });
         });
 
         browser.on('back', async () => {
           const navigated = await goBack(sessionId);
           if (navigated) {
-            await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+            await refreshTerminal({ send, sessionId });
           }
         });
 
         browser.on('forward', async () => {
           const navigated = await goForward(sessionId);
           if (navigated) {
-            await refreshTerminal({ send, sessionId, state: initializeState(), addressBar: null });
+            await refreshTerminal({ send, sessionId });
           }
         });
 
+        browser.on('renderContent', () => {
+          if (state.layoutState) {
+            DEBUG && console.log('Rendering content');
+            renderLayout({ layoutState: state.layoutState });
+          }
+        });
+
+        browser.on('click', async ({ x, y }) => {
+          if (!state.isInitialized) return;
+          await handleClick({
+            termX: x,
+            termY: y,
+            clickableElements: state.clickableElements,
+            layoutToNode: state.layoutToNode,
+            nodeToParent: state.nodeToParent,
+            nodes: state.nodes,
+          });
+        });
+
+        browser.on('scroll', async ({ direction }) => {
+          try { 
+            const lineHeight = Math.round(state.viewportHeight / terminal.height);
+            const deltaY = direction * lineHeight;
+            //if (direction < 0 && state.currentScrollY <= 0) return;
+            await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+            debouncedRefresh();
+          } catch(e) {
+            console.error(e);
+            //process.exit(1);
+          }
+        });
+
+        await sleep(3000);
         await selectTabAndRender();
+
+        process.title = 'KRNL-RENDER';
 
         process.on('SIGINT', () => {
           if (cleanup) cleanup();
@@ -220,7 +255,25 @@
         browser?.destroy();
         process.exit(1);
       }
-    })();
+    }
+    function initializeState() {
+      return {
+        get sessionId() { return sessionId; },
+
+        get send() { return connection.send; },
+
+        clickCounter,
+        clickableElements: [],
+        isListening: true,
+        scrollDelta: 50,
+        currentScrollY: 0,
+        layoutToNode: null,
+        nodeToParent: null,
+        nodes: null,
+        isInitialized: false,
+        strings: []
+      };
+    }
 
   // Helpers
     // Data processing helpers
@@ -232,31 +285,15 @@
         };
       }
 
-      function initializeState() {
-        return {
-          clickableElements: [],
-          isListening: true,
-          scrollDelta: 50,
-          renderedBoxes: [],
-          currentScrollY: 0,
-          layoutToNode: null,
-          nodeToParent: null,
-          nodes: null,
-          isInitialized: false,
-        };
-      }
-
-      function updateTabData(targetId, title, url) {
-        const targetIndex = BrowserState.targets.findIndex(t => t.targetId === targetId);
+      function updateTabData(targetInfo) {
+        const targetIndex = BrowserState.targets.findIndex(t => t.targetId === targetInfo.targetId);
         if (targetIndex !== -1) {
-          BrowserState.targets[targetIndex].title = title;
-          BrowserState.targets[targetIndex].url = url;
-          if (targetIndex < browser.tabs.length) {
-            browser.setTab(targetIndex, { title, url });
-          }
+          BrowserState.targets[targetIndex] = targetInfo;
+          browser.tabs = BrowserState.targets;
         } else {
-          DEBUG && console.warn(`Target with ID ${targetId} not found`);
+          DEBUG && console.warn(`Target with ID ${targetInfo.targetId} not found`);
         }
+        browser.render();
       }
 
       async function fetchSnapshot({ send, sessionId }) {
@@ -291,6 +328,7 @@
           };
         } catch(e) {
           DEBUG && console.warn(e);
+          //process.exit(1);
           return {};
         }
       }
@@ -302,7 +340,7 @@
             Object.assign(state, {
               viewportHeight, viewportWidth, 
             });
-            const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot, terminal });
+            const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot });
             if (textLayoutBoxes.length > 0) {
               return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };
             }
@@ -318,6 +356,7 @@
       function statusLine(...stuff) {
         // log this somewhere on screen
         // for now do nothing! :)
+        DEBUG && console.error(...stuff);
       }
 
       function normalizeUrl(input) {
@@ -333,43 +372,6 @@
         return `https://duckduckgo.com/?q=${query}`;
       }
 
-      function createAddressBar({ term, send, sessionId, state, refresh }) {
-        let currentUrl = BrowserState.activeTarget.url;
-        let addressBarActive = false;
-
-        const drawAddressBar = () => {
-          term.moveTo(1, 1).eraseLine();
-          term.bgBlue.white(` URL: ${currentUrl} (Press 'a' to edit) `);
-        };
-
-        const activateAddressBar = () => {
-          if (addressBarActive) return;
-          addressBarActive = true;
-          term.moveTo(6, 1).eraseLineAfter();
-          term.inputField(
-            { default: currentUrl, cancelable: true },
-            async (error, input) => {
-              addressBarActive = false;
-              if (!error && input) {
-                const normalizedUrl = normalizeUrl(input);
-                currentUrl = normalizedUrl;
-                DEBUG && term.cyan(`\nNavigating to: ${currentUrl}\n`);
-                try {
-                  await send('Page.navigate', { url: currentUrl }, sessionId);
-                  await refresh();
-                } catch (err) {
-                  term.red(`Navigation failed: ${err.message}\n`);
-                }
-              } else {
-                refresh();
-              }
-            }
-          );
-        };
-
-        return { drawAddressBar, activateAddressBar, isActive: () => addressBarActive, getUrl: () => currentUrl };
-      }
-
     // Layout calculation and Render helpers
       async function getTerminalSize() {
         const size = { columns: terminal.width, rows: terminal.height };
@@ -379,23 +381,24 @@
         return size;
       }
 
-      function renderLayout({ layoutState, renderedBoxes }) {
+      function renderLayout({ layoutState }) {
         if (!layoutState) return;
-        renderBoxes({ ...layoutState, renderedBoxes });
+        renderBoxes({ ...layoutState });
       }
 
-      export async function refreshTerminal({ send, sessionId, state, addressBar }) {
+      export async function refreshTerminal({ send, sessionId }) {
         try {
           // sometimes this line errors out and poll returns nothing. I think we could try a page reload
           // and try to repro and figure it out
           const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
           if ( ! snapshot ) return;
           state.currentScrollY = viewportY;
-          const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal });
+          const layoutState = await Layout.prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, });
 
           terminal.clear();
           terminal.bgDefaultColor();
           terminal.defaultColor();
+          terminal.styleReset();
           browser.render();
 
           if (layoutState) {
@@ -404,36 +407,33 @@
             state.layoutToNode = layoutState.layoutToNode;
             state.nodeToParent = layoutState.nodeToParent;
             state.nodes = layoutState.nodes;
+            state.strings = snapshot.strings;
 
-            newState.layoutToNode = layoutState.layoutToNode;
-            newState.nodeToParent = layoutState.nodeToParent;
-            newState.nodes = layoutState.nodes;
-            newState.strings = snapshot.strings;
-
-            renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
+            renderLayout({ layoutState });
             state.isInitialized = true;
             DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
           } else {
             DEBUG && terminal.yellow('No text boxes found after polling.\n');
             statusLine('No text boxes found');
-            renderLayout({ layoutState, renderedBoxes: state.renderedBoxes });
+            renderLayout({ layoutState });
             state.isInitialized = true;
           }
         } catch (error) {
           if (DEBUG) console.warn(error);
           DEBUG && terminal.red(`Error printing text layout: ${error.message}\n`);
+          //process.exit(1);
         }
       }
 
       function renderBoxes(layoutState) {
-        const { browser, visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements, renderedBoxes } = layoutState;
-        renderedBoxes.length = 0;
+        const { browser, visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
+        const newBoxes = [];
 
         for (const box of visibleBoxes) {
           DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, ancestorType="${box.ancestorType}", backendNodeId=${box.backendNodeId}`);
           const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type } = box;
           const renderX = Math.max(1, termX + 1);
-          const renderY = Math.max(5, termY + 1);
+          const renderY = Math.max(5, termY + 4);
 
           if (renderX > termWidth || renderY > termHeight + 4) continue;
 
@@ -473,18 +473,15 @@
           };
 
           const isFocused = browser.focusedElement === (type === 'input' ? `input:${backendNodeId}` : `clickable:${backendNodeId}`);
-
           if (type === 'input') {
             logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
             const currentBackendNodeId = backendNodeId;
             const fallbackValue = text.startsWith('[INPUT') ? '' : text;
+            const onChange = createInputChangeHandler({ send, sessionId, browser, backendNodeId: currentBackendNodeId });
 
-            // Fire off async call to fetch live value, but don't await
             send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId)
               .then(resolveResult => {
-                if (!resolveResult?.object?.objectId) {
-                  throw new Error('Node no longer exists');
-                }
+                if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
                 const objectId = resolveResult.object.objectId;
                 return send('Runtime.callFunctionOn', {
                   objectId,
@@ -496,51 +493,20 @@
               .then(valueResult => {
                 let liveValue = fallbackValue;
                 if (valueResult?.result?.value !== undefined) {
-                  liveValue = ''+valueResult.result.value;
+                  liveValue = '' + valueResult.result.value;
                   logClicks(`Fetched live value for backendNodeId: ${currentBackendNodeId}: "${liveValue}"`);
                 }
-
-                // Use termWidthForBox as the width for drawInputField
-                const inputField = browser.drawInputField({
-                  x: renderX,
-                  y: renderY,
-                  width: termWidthForBox, // Use scaled termWidth
-                  key: currentBackendNodeId,
+                const inputField = drawInputFieldForNode({
+                  browser,
+                  renderX,
+                  renderY,
+                  termWidthForBox,
+                  backendNodeId: currentBackendNodeId,
                   initialValue: liveValue,
-                  onChange: async (value) => {
-                    try {
-                      const resolveResult = await send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId);
-                      if (!resolveResult?.object?.objectId) {
-                        throw new Error('Node no longer exists');
-                      }
-                      const objectId = resolveResult.object.objectId;
-                      const script = `function() {
-                        this.value = ${JSON.stringify(value)};
-                        this.dispatchEvent(new Event('input', { bubbles: true }));
-                        this.dispatchEvent(new Event('change', { bubbles: true }));
-                      }`;
-                      await send('Runtime.callFunctionOn', {
-                        objectId,
-                        functionDeclaration: script,
-                        arguments: [],
-                        returnByValue: true,
-                      }, sessionId);
-                      logClicks(`Updated remote value for backendNodeId: ${currentBackendNodeId} to "${value}"`);
-                    } catch (error) {
-                      logClicks(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
-                      browser.redrawUnfocusedInput(currentBackendNodeId);
-                      browser.focusedElement = 'tabs';
-                      browser.inputFields.delete('' + currentBackendNodeId);
-                      browser.render();
-                    }
-                  },
+                  onChange,
                 });
-
-                // Update renderedBox.termWidth if necessary (should match termWidthForBox)
                 renderedBox.termWidth = inputField.width;
-                renderedBoxes.push(renderedBox);
-
-                // Update clickable elements if necessary
+                newBoxes.push(renderedBox);
                 if (isClickable) {
                   const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
                   if (clickable) {
@@ -553,45 +519,17 @@
               })
               .catch(error => {
                 logClicks(`Failed to fetch live value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
-
-                const inputField = browser.drawInputField({
-                  x: renderX,
-                  y: renderY,
-                  width: termWidthForBox, // Use scaled termWidth
-                  key: currentBackendNodeId,
+                const inputField = drawInputFieldForNode({
+                  browser,
+                  renderX,
+                  renderY,
+                  termWidthForBox,
+                  backendNodeId: currentBackendNodeId,
                   initialValue: fallbackValue,
-                  onChange: async (value) => {
-                    try {
-                      const resolveResult = await send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId);
-                      if (!resolveResult?.object?.objectId) {
-                        throw new Error('Node no longer exists');
-                      }
-                      const objectId = resolveResult.object.objectId;
-                      const script = `function() {
-                        this.value = ${JSON.stringify(value)};
-                        this.dispatchEvent(new Event('input', { bubbles: true }));
-                        this.dispatchEvent(new Event('change', { bubbles: true }));
-                      }`;
-                      await send('Runtime.callFunctionOn', {
-                        objectId,
-                        functionDeclaration: script,
-                        arguments: [],
-                        returnByValue: true,
-                      }, sessionId);
-                      logClicks(`Updated remote value for backendNodeId ${currentBackendNodeId} to "${value}"`);
-                    } catch (error) {
-                      logClicks(`Failed to set input value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
-                      browser.redrawUnfocusedInput(currentBackendNodeId);
-                      browser.focusedElement = 'tabs';
-                      browser.inputFields.delete('' + currentBackendNodeId);
-                      browser.render();
-                    }
-                  },
+                  onChange,
                 });
-
                 renderedBox.termWidth = inputField.width;
                 renderedBoxes.push(renderedBox);
-
                 if (isClickable) {
                   const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
                   if (clickable) {
@@ -601,6 +539,7 @@
                     clickable.termHeight = 1;
                   }
                 }
+                //process.exit(1);
               });
           } else {
             terminal.moveTo(renderX, renderY);
@@ -648,7 +587,6 @@
                 }
               }
             }
-            renderedBoxes.push(renderedBox);
             if (isClickable) {
               const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
               if (clickable) {
@@ -659,42 +597,101 @@
               }
             }
           }
+          newBoxes.push(renderedBox);
         }
 
-        newState.renderedBoxes = renderedBoxes;
+        renderedBoxes.length = 0;
+        renderedBoxes.push(...newBoxes);
+        debugLog(JSON.stringify(renderedBoxes,null,2));
+        //process.exit(0);
+        terminal.defaultColor().bgDefaultColor();
+        terminal.styleReset();
       }
 
+      function drawInputFieldForNode({ browser, renderX, renderY, termWidthForBox, backendNodeId, initialValue, onChange }) {
+        const inputField = browser.drawInputField({
+          x: renderX,
+          y: renderY,
+          width: termWidthForBox,
+          key: backendNodeId,
+          initialValue,
+          onChange,
+        });
+        return inputField;
+      }      
+
     // Interactivity helpers
+      async function selectTabAndRender() {
+        if (cleanup) cleanup();
+
+        const selectedTarget = targets[BrowserState.selectedTabIndex];
+        debugLog(JSON.stringify({BrowserState},null,2));
+        const targetId = selectedTarget.targetId;
+        BrowserState.activeTarget = selectedTarget;
+
+        DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
+        const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+        sessionId = newSessionId;
+        DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
+
+        const stop = await printTextLayoutToTerminal({ onTabSwitch: selectTabAndRender });
+        cleanup = stop;
+      }
+
+      function createInputChangeHandler({ send, sessionId, browser, backendNodeId }) {
+        return async function onInputChange(value) {
+          try {
+            const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
+            if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+            const objectId = resolveResult.object.objectId;
+            const script = `function() {
+              this.value = ${JSON.stringify(value)};
+              this.dispatchEvent(new Event('input', { bubbles: true }));
+              this.dispatchEvent(new Event('change', { bubbles: true }));
+            }`;
+            await send('Runtime.callFunctionOn', {
+              objectId,
+              functionDeclaration: script,
+              arguments: [],
+              returnByValue: true,
+            }, sessionId);
+            logClicks(`Updated remote value for backendNodeId: ${backendNodeId} to "${value}"`);
+          } catch (error) {
+            console.error(error);
+            logClicks(`Failed to set input value for backendNodeId ${backendNodeId}: ${error.message}`);
+            browser.redrawUnfocusedInput(backendNodeId);
+            browser.focusedElement = 'tabs';
+            browser.inputFields.delete('' + backendNodeId);
+            browser.render();
+          }
+        };
+      }
+
       async function getNavigationHistory(sessionId) {
         const { currentIndex, entries } = await send('Page.getNavigationHistory', {}, sessionId);
         return { currentIndex, entries };
       }
+      
+      async function navigateHistory(sessionId, direction) {
+        const { currentIndex, entries } = await getNavigationHistory(sessionId);
+        const newIndex = currentIndex + direction;
+        if (newIndex >= 0 && newIndex < entries.length) {
+          await send('Page.navigateToHistoryEntry', { entryId: entries[newIndex].id }, sessionId);
+          return true;
+        }
+        statusLine(`No ${direction < 0 ? 'previous' : 'next'} page in history`);
+        return false;
+      }
 
       async function goBack(sessionId) {
-        const { currentIndex, entries } = await getNavigationHistory(sessionId);
-        if (currentIndex > 0) {
-          const previousEntry = entries[currentIndex - 1];
-          await send('Page.navigateToHistoryEntry', { entryId: previousEntry.id }, sessionId);
-          return true;
-        } else {
-          statusLine('No previous page in history');
-          return false;
-        }
+        return navigateHistory(sessionId, -1);
       }
 
       async function goForward(sessionId) {
-        const { currentIndex, entries } = await getNavigationHistory(sessionId);
-        if (currentIndex < entries.length - 1) {
-          const nextEntry = entries[currentIndex + 1];
-          await send('Page.navigateToHistoryEntry', { entryId: nextEntry.id }, sessionId);
-          return true;
-        } else {
-          statusLine('No next page in history');
-          return false;
-        }
+        return navigateHistory(sessionId, 1);
       }
 
-      export async function handleClick({ termX, termY, renderedBoxes, clickableElements, send, sessionId, refresh, layoutToNode, nodeToParent, nodes }) {
+      export function getClickedBox({ termX, termY }) {
         let clickedBox = null;
         for (let i = renderedBoxes.length - 1; i >= 0; i--) {
           const box = renderedBoxes[i];
@@ -704,230 +701,187 @@
           }
         }
         if (!clickedBox || !clickedBox.isClickable) {
-          statusLine(`No clickable element at (${termX}, ${termY})`);
+          statusLine(`No clickable element at (${termX}, ${termY})`, JSON.stringify(renderedBoxes));
           logClicks(`No clickable element at (${termX}, ${termY})`);
+          //process.exit(1);
           return;
         }
-
         logClicks(`Clicked box type: ${clickedBox.type}, backendNodeId: ${clickedBox.backendNodeId}`);
+        return clickedBox;
+      }
+
+      export async function handleClick({ termX, termY, clickableElements, layoutToNode, nodeToParent, nodes }) {
+        const clickedBox = getClickedBox({ termX, termY });
+        if ( ! clickedBox ) return;
         if (clickedBox.type === 'input') {
-          if (USE_SYNTHETIC_FOCUS) {
-            logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
-
-            // Focus the remote input element
-            try {
-              const resolveResult = await send('DOM.resolveNode', { backendNodeId: clickedBox.backendNodeId }, sessionId);
-              if (!resolveResult?.object?.objectId) {
-                throw new Error('Node no longer exists');
-              }
-              const objectId = resolveResult.object.objectId;
-              await send('Runtime.callFunctionOn', {
-                objectId,
-                functionDeclaration: 'function() { this.focus(); }',
-                arguments: [],
-                returnByValue: true,
-              }, sessionId);
-              logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId}`);
-            } catch (error) {
-              logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
-            }
-
-            // Focus locally in the TUI
-            browser.focusInput(clickedBox.backendNodeId);
-
-            // Calculate cursor position based on click
-            const inputState = browser.inputFields.get('' + clickedBox.backendNodeId);
-            if (inputState) {
-              const relativeX = termX - clickedBox.termX; // Position within the input
-              inputState.cursorPosition = Math.min(relativeX, inputState.value.length); // Clamp to value length
-              browser.redrawFocusedInput(); // Redraw to show cursor
-            }
-            return;
-          } else {
-            logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
-
-            // Focus the remote input element with a mouse click
-            try {
-              // Calculate the center of the input element in GUI coordinates
-              const guiX = clickedBox.boundingBox.x + clickedBox.boundingBox.width / 2;
-              const guiY = clickedBox.boundingBox.y + clickedBox.boundingBox.height / 2;
-              const clickX = guiX + clickedBox.viewportX;
-              const clickY = guiY + clickedBox.viewportY;
-
-              // Send mouse down event
-              await send('Input.dispatchMouseEvent', {
-                type: 'mousePressed',
-                x: clickX,
-                y: clickY,
-                button: 'left',
-                clickCount: 1,
-              }, sessionId);
-
-              // Send mouse up event
-              await send('Input.dispatchMouseEvent', {
-                type: 'mouseReleased',
-                x: clickX,
-                y: clickY,
-                button: 'left',
-                clickCount: 1,
-              }, sessionId);
-
-              logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId} at GUI coordinates (${clickX}, ${clickY})`);
-            } catch (error) {
-              logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
-            }
-
-            // Focus locally in the TUI
-            browser.focusInput(clickedBox.backendNodeId);
-
-            // Calculate cursor position based on click
-            const inputState = browser.inputFields.get('' + clickedBox.backendNodeId);
-            if (inputState) {
-              const relativeX = termX - clickedBox.termX;
-              inputState.cursorPosition = Math.min(relativeX, inputState.value.length);
-              browser.redrawFocusedInput();
-            }
-            return;
-          }
-        }
-
-        // Click simulation for other elements
-        logClicks("Simulating click on non-input element");
-        terminal.moveTo(clickedBox.termX, clickedBox.termY);
-        terminal.yellow(clickedBox.text);
-        await sleep(300);
-        await refresh();
-
-        const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
-        const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight;
-        const guiX = clickedBox.boundingBox.x + relativeX * clickedBox.boundingBox.width;
-        const guiY = clickedBox.boundingBox.y + relativeY * clickedBox.boundingBox.height;
-        const clickX = guiX + clickedBox.viewportX;
-        const clickY = guiY + clickedBox.viewportY;
-
-        const clickId = clickCounter.value++;
-        const nodeTag = clickedBox.ancestorType || 'unknown';
-        const nodeText = clickedBox.text;
-        const clickEvent = { type: 'click' };
-        try {
-          DEBUG && logClicks(`${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
-        } catch (error) {
-          console.error(`Failed to write to clicks log: ${error.message}`);
-        }
-
-        let backendNodeId = clickedBox.backendNodeId;
-        let currentNodeIndex = layoutToNode.get(clickedBox.layoutIndex);
-        let clickableNodeIndex = currentNodeIndex;
-        while (currentNodeIndex !== -1) {
-          if (nodes.isClickable && nodes.isClickable.index.includes(currentNodeIndex)) {
-            clickableNodeIndex = currentNodeIndex;
-            break;
-          }
-          currentNodeIndex = nodeToParent.get(currentNodeIndex);
-        }
-        backendNodeId = nodes.backendNodeId[clickableNodeIndex];
-
-        let objectId;
-        try {
-          const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
-          objectId = resolveResult.object.objectId;
-          DEBUG && debugLog(`Resolved backendNodeId ${backendNodeId} to objectId ${objectId}`);
-        } catch (error) {
-          DEBUG && debugLog(`Failed to resolve backendNodeId ${backendNodeId}: ${error.message}`);
+          await focusInput({ clickedBox, browser, send, sessionId, termX });
           return;
-        }
+        } else {
+          // Click simulation for other elements
+          logClicks("Simulating click on non-input element");
+          terminal.moveTo(clickedBox.termX, clickedBox.termY);
+          terminal.yellow(clickedBox.text);
+          await sleep(300);
 
-        try {
-          const clickResult = await send('Runtime.callFunctionOn', {
-            objectId,
-            functionDeclaration: 'function() { this.click(); }',
-            arguments: [],
-            returnByValue: true
-          }, sessionId);
-          DEBUG && debugLog(`Click result: ${JSON.stringify(clickResult)}`);
-        } catch (error) {
-          DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
-        }
+          const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
+          const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight;
+          const guiX = clickedBox.boundingBox.x + relativeX * clickedBox.boundingBox.width;
+          const guiY = clickedBox.boundingBox.y + relativeY * clickedBox.boundingBox.height;
+          const clickX = guiX + clickedBox.viewportX;
+          const clickY = guiY + clickedBox.viewportY;
 
-        if (DEBUG && markClicks) {
-          const script = `
-            (function() {
-              const rect = this.getBoundingClientRect();
-              const clickX = rect.left + rect.width / 2;
-              const clickY = rect.top + rect.height / 2;
-              const circle = document.createElement('div');
-              circle.style.cssText = "position: absolute; left: " + clickX + "px; top: " + clickY + "px; width: 20px; height: 20px; background: black; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; z-index: 9999;";
-              circle.innerText = "${clickId}";
-              circle.id = "click-trace-${clickId}";
-              document.body.appendChild(circle);
-              return { clickX, clickY };
-            })
-          `;
+          const clickId = clickCounter.value++;
+          const nodeTag = clickedBox.ancestorType || 'unknown';
+          const nodeText = clickedBox.text;
+          const clickEvent = { type: 'click' };
           try {
-            const circleResult = await send('Runtime.callFunctionOn', {
+            DEBUG && logClicks(`${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
+          } catch (error) {
+            console.error(`Failed to write to clicks log: ${error.message}`);
+            //process.exit(1);
+          }
+
+          let backendNodeId = clickedBox.backendNodeId;
+          let currentNodeIndex = layoutToNode.get(clickedBox.layoutIndex);
+          let clickableNodeIndex = currentNodeIndex;
+          while (currentNodeIndex !== -1) {
+            if (nodes.isClickable && nodes.isClickable.index.includes(currentNodeIndex)) {
+              clickableNodeIndex = currentNodeIndex;
+              break;
+            }
+            currentNodeIndex = nodeToParent.get(currentNodeIndex);
+          }
+          backendNodeId = nodes.backendNodeId[clickableNodeIndex];
+
+          let objectId;
+          try {
+            const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
+            objectId = resolveResult.object.objectId;
+            DEBUG && debugLog(`Resolved backendNodeId ${backendNodeId} to objectId ${objectId}`);
+          } catch (error) {
+            DEBUG && debugLog(`Failed to resolve backendNodeId ${backendNodeId}: ${error.message}`);
+            //process.exit(1);
+            return;
+          }
+
+          try {
+            const clickResult = await send('Runtime.callFunctionOn', {
               objectId,
-              functionDeclaration: script,
+              functionDeclaration: 'function() { this.click(); }',
               arguments: [],
               returnByValue: true
             }, sessionId);
-            DEBUG && debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
+            DEBUG && debugLog(`Click result: ${JSON.stringify(clickResult)}`);
           } catch (error) {
-            DEBUG && debugLog(`Circle injection failed: ${error.message}`);
+            DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
+            //process.exit(1);
+          }
+
+          if (DEBUG && markClicks) {
+            const script = `
+              (function() {
+                const rect = this.getBoundingClientRect();
+                const clickX = rect.left + rect.width / 2;
+                const clickY = rect.top + rect.height / 2;
+                const circle = document.createElement('div');
+                circle.style.cssText = "position: absolute; left: " + clickX + "px; top: " + clickY + "px; width: 20px; height: 20px; background: black; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; z-index: 9999;";
+                circle.innerText = "${clickId}";
+                circle.id = "click-trace-${clickId}";
+                document.body.appendChild(circle);
+                return { clickX, clickY };
+              })
+            `;
+            try {
+              const circleResult = await send('Runtime.callFunctionOn', {
+                objectId,
+                functionDeclaration: script,
+                arguments: [],
+                returnByValue: true
+              }, sessionId);
+              DEBUG && debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
+            } catch (error) {
+              DEBUG && debugLog(`Circle injection failed: ${error.message}`);
+              //process.exit(1);
+            }
+          }
+
+          await refreshTerminal({send, sessionId});
+        }
+      }
+
+      export async function focusInput({ clickedBox, browser, send, sessionId, termX }) {
+        logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
+        const guiX = clickedBox.boundingBox.x + clickedBox.boundingBox.width / 2;
+        const guiY = clickedBox.boundingBox.y + clickedBox.boundingBox.height / 2;
+        const clickX = guiX + clickedBox.viewportX;
+        const clickY = guiY + clickedBox.viewportY;
+
+        if (USE_SYNTHETIC_FOCUS) {
+          try {
+            const resolveResult = await send('DOM.resolveNode', { backendNodeId: clickedBox.backendNodeId }, sessionId);
+            if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+            const objectId = resolveResult.object.objectId;
+            await send('Runtime.callFunctionOn', {
+              objectId,
+              functionDeclaration: 'function() { this.focus(); }',
+              arguments: [],
+              returnByValue: true,
+            }, sessionId);
+            logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId}`);
+          } catch (error) {
+            logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
+            //process.exit(1);
+          }
+        } else {
+          try {
+            await send('Input.dispatchMouseEvent', {
+              type: 'mousePressed',
+              x: clickX,
+              y: clickY,
+              button: 'left',
+              clickCount: 1,
+            }, sessionId);
+            await send('Input.dispatchMouseEvent', {
+              type: 'mouseReleased',
+              x: clickX,
+              y: clickY,
+              button: 'left',
+              clickCount: 1,
+            }, sessionId);
+            logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId} at GUI coordinates (${clickX}, ${clickY})`);
+          } catch (error) {
+            logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
+            //process.exit(1);
           }
         }
 
-        await refresh();
+        browser.focusInput(clickedBox.backendNodeId);
+        const inputState = browser.inputFields.get('' + clickedBox.backendNodeId);
+        if (inputState) {
+          const relativeX = termX - clickedBox.termX;
+          inputState.cursorPosition = Math.min(relativeX, inputState.value.length);
+          browser.redrawFocusedInput();
+        }
       }
 
     // Main render 
-      async function printTextLayoutToTerminal({ send, sessionId, onTabSwitch }) {
-        state = initializeState();
-        const refresh = () => refreshTerminal({ send, sessionId, state, addressBar: null });
-        const debouncedRefresh = debounce(refresh, DEBOUNCE_DELAY);
-
-        browser.on('renderContent', () => {
-          if (state.layoutState) {
-            console.log('Rendering content');
-            renderLayout({ layoutState: state.layoutState, renderedBoxes: state.renderedBoxes });
-          }
-        });
-
-        browser.on('click', async ({ x, y }) => {
-          if (!state.isInitialized) return;
-          await handleClick({
-            termX: x,
-            termY: y,
-            renderedBoxes: state.renderedBoxes,
-            clickableElements: state.clickableElements,
-            send,
-            sessionId,
-            refresh,
-            layoutToNode: state.layoutToNode,
-            nodeToParent: state.nodeToParent,
-            nodes: state.nodes,
-          });
-        });
-
-        browser.on('scroll', async ({ direction }) => {
-          const lineHeight = Math.round(state.viewportHeight / terminal.height);
-          const deltaY = direction * lineHeight;
-          if (direction < 0 && state.currentScrollY <= 0) return;
-          await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
-          debouncedRefresh();
-        });
-
-        await refresh(); // This should trigger the initial render
+      async function printTextLayoutToTerminal({ onTabSwitch }) {
+        await refreshTerminal({send, sessionId}); // This should trigger the initial render
         return () => {
           state.isListening = false;
           browser.stopListening();
         };
       }
-    // helpers
-      async function connectToBrowser() {
-        let cookieHeader;
-        let cookieValue;
-        let targets;
 
+    // Connectivity helpers
+      async function connectToBrowser() {
+        ({ cookieHeader, cookieValue } = await authenticate(loginUrl));
+        targets = await fetchTargets();
+        const { send, socket, browserbox } = await setupWebSockets(proxyBaseUrl, hostname, token, cookieValue);
+        return { send, socket, targets, cookieHeader, cookieValue, browserbox };
+      }
+
+      async function authenticate(loginUrl) {
         terminal.cyan('Authenticating to set session cookie...\n');
         try {
           const response = await fetch(loginUrl, { method: 'GET', headers: { 'Accept': 'text/html' }, redirect: 'manual' });
@@ -936,34 +890,39 @@
           if (!setCookie) throw new Error('No Set-Cookie header in /login response');
           const cookieMatch = setCookie.match(/browserbox-[^=]+=(.+?)(?:;|$)/);
           if (!cookieMatch) throw new Error('Could not parse browserbox cookie');
-          cookieValue = cookieMatch[1];
+          const cookieValue = cookieMatch[1];
           const cookieName = setCookie.split('=')[0];
-          cookieHeader = `${cookieName}=${cookieValue}`;
-          if (DEBUG) console.log(`Captured cookie: ${cookieHeader}`);
+          const cookieHeader = `${cookieName}=${cookieValue}`;
+          DEBUG && console.log(`Captured cookie: ${cookieHeader}`);
+          return { cookieHeader, cookieValue };
         } catch (error) {
           if (DEBUG) console.warn(error);
           terminal.red(`Error during login: ${error.message}\n`);
           process.exit(1);
         }
+      }
 
+      export async function fetchTargets() {
         DEBUG && terminal.cyan('Fetching available tabs...\n');
         try {
           const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json', 'Cookie': cookieHeader } });
           if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
           const data = await response.json();
-          targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
+          const targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
           BrowserState.targets = targets;
+          if (!targets.length) {
+            DEBUG && terminal.yellow('No page or tab targets available.\n');
+            statusLine('No page or tab targets available.');
+          }
+          return targets;
         } catch (error) {
           if (DEBUG) console.warn(error);
           terminal.red(`Error fetching tabs: ${error.message}\n`);
           process.exit(1);
         }
+      }
 
-        if (!targets.length) {
-          DEBUG && terminal.yellow('No page or tab targets available.\n');
-          statusLine('No page or tab targets available.');
-        }
-
+      async function setupWebSockets(proxyBaseUrl, hostname, token, cookieValue) {
         DEBUG && terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
         let wsDebuggerUrl;
         try {
@@ -975,51 +934,61 @@
         } catch (error) {
           if (DEBUG) console.warn(error);
           terminal.red(`Error fetching WebSocket debugger URL: ${error.message}\n`);
-          process.exit(1);
+          //process.exit(1);
         }
 
         wsDebuggerUrl = wsDebuggerUrl.replace('ws://localhost', `wss://${hostname}`);
         wsDebuggerUrl = `${wsDebuggerUrl}/${token}`;
         DEBUG && terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
-        console.log(wsDebuggerUrl);
+        DEBUG && console.log(wsDebuggerUrl);
         const socket = new WebSocket(wsDebuggerUrl, {
           headers: { 'x-browserbox-local-auth': cookieValue },
           agent: new Agent({ rejectUnauthorized: false }),
         });
 
+        const send = createSend({ socket });
+
+        await new Promise((resolve, reject) => {
+          socket.on('open', resolve);
+          socket.on('error', reject);
+        });
+        DEBUG && terminal.green('Connected to WebSocket\n');
+
+        let bbResolve;
+        const bbReady = new Promise(res => bbResolve = res);
+        let wsBBUrl = new URL(loginUrl);
+        wsBBUrl.protocol = 'wss:';
+        wsBBUrl.searchParams.set('session_token', wsBBUrl.searchParams.get('token'));
+        wsBBUrl.pathname = '/';
+
+        const browserbox = new WebSocket(wsBBUrl, {
+          headers: { 'x-browserbox-local-auth': token },
+          agent: new Agent({ rejectUnauthorized: false }),
+        });
+
+        browserbox.on('open', bbResolve);
+        await bbReady;
+        DEBUG && console.log('Connected to browserbox');
+
+        return { send, socket, browserbox };
+      }
+
+      function createSend({ socket }) {
         const Resolvers = {};
         let id = 0;
 
-        socket.on('close', () => terminal.yellow('WebSocket disconnected\n'));
+        const incomingMessageHandler = createMessageHandler({ Resolvers });
+
+        socket.on('message', incomingMessageHandler);
+        socket.on('close', () => {
+          statusLine('WebSocket disconnected\n');
+        })
         socket.on('error', (err) => {
           if (DEBUG) console.warn(err);
-          terminal.red(`WebSocket error: ${err.message}\n`);
+          statusLine(`WebSocket error: ${err.message}\n`);
         });
 
-        socket.on('message', async (data) => {
-          let message;
-          try {
-            const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
-            message = JSON.parse(dataStr);
-            logMessage('RECEIVE', message, terminal);
-          } catch (error) {
-            if (DEBUG) console.warn(error);
-            terminal.red(`Invalid message: ${('' + data).slice(0, 50)}...\n`);
-            return;
-          }
-          const key = `${message.sessionId || 'root'}:${message.id}`;
-          if (message.id && Resolvers[key]) {
-            Resolvers[key](message.result || message.error);
-            delete Resolvers[key];
-          } else {
-            if (message.method === 'Target.targetInfoChanged') {
-              const { targetInfo } = message.params;
-              const { targetId, title, url } = targetInfo;
-              updateTabData(targetId, title, url);
-              debouncedRefresh();
-            }
-          }
-        });
+        return send;
 
         async function send(method, params = {}, sessionId) {
           const message = { method, params, sessionId, id: ++id };
@@ -1034,7 +1003,7 @@
           const timeout = setTimeout(() => {
             delete Resolvers[key];
             resolve({});
-          }, 10000);
+          }, WAIT_FOR_COMMAND_RESPONSE);
 
           try {
             logMessage('SEND', message, terminal);
@@ -1045,34 +1014,36 @@
             if (DEBUG) console.warn(error);
             terminal.red(`Send error: ${error.message}\n`);
             throw error;
+            //process.exit(1);
           }
           return promise.finally(() => clearTimeout(timeout));
         }
-
-        await new Promise((resolve, reject) => {
-          socket.on('open', resolve);
-          socket.on('error', reject);
-        });
-        DEBUG && terminal.green('Connected to WebSocket\n');
-
-       
-        let bbResolve;
-        const bbReady = new Promise(res => bbResolve = res);
-        let wsBBUrl = new URL(loginUrl);
-        wsBBUrl.protocol = 'wss:'
-        wsBBUrl.searchParams.set('session_token', wsBBUrl.searchParams.get('token'));
-        wsBBUrl.pathname = '/';
-
-        const browserbox = new WebSocket(wsBBUrl, {
-          headers: { 'x-browserbox-local-auth': token },
-          agent: new Agent({ rejectUnauthorized: false }),
-        });
-
-        browserbox.on('open', bbResolve);
-
-        await bbReady;
-        console.log('Connected to browserbox');
-
-        return { send, socket, targets, cookieHeader, browserbox };
       }
 
+      function createMessageHandler({ Resolvers }) {
+        return async function handleIncomingMessage(data) {
+          let message;
+          try {
+            const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
+            message = JSON.parse(dataStr);
+            logMessage('RECEIVE', message, terminal);
+          } catch (error) {
+            if (DEBUG) console.warn(error);
+            terminal.red(`Invalid message: ${('' + data).slice(0, 50)}...\n`);
+            //process.exit(1);
+            return;
+          }
+          const key = `${message.sessionId || 'root'}:${message.id}`;
+          if (message.id && Resolvers[key]) {
+            Resolvers[key](message.result || message.error);
+            delete Resolvers[key];
+          } else if (message.method === 'Target.targetInfoChanged') {
+            const { targetInfo } = message.params;
+            const { targetId, title, url } = targetInfo;
+            updateTabData(targetInfo);
+            debouncedRefresh();
+          } else if (message.method === 'Page.navigated') {
+
+          }
+        };
+      }

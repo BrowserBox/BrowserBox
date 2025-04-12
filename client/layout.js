@@ -1,4 +1,5 @@
 import fs from 'fs';
+import {terminal} from './baby-jaguar.js';
 import {rowsLog,debugLog,DEBUG} from './log.js';
 
 const GAP = 1;
@@ -11,6 +12,12 @@ const POSITION_SET_1 = new Set([
   'sticky',
   'unset',
   'initial'
+]);
+const BUTTON_INPUT_TYPES = new Set([
+  'submit',
+  'reset',
+  'button',
+  'file',
 ]);
 const INVISIBLE_DIMENSION = 5;
 
@@ -439,7 +446,7 @@ const LayoutAlgorithm = (() => {
     return false;
   }
 
-  function extractTextLayoutBoxes({ snapshot, terminal }) {
+  function extractTextLayoutBoxes({ snapshot }) {
     const textLayoutBoxes = [];
     const clickableElements = [];
     const strings = snapshot.strings;
@@ -654,14 +661,14 @@ const LayoutAlgorithm = (() => {
     return Math.floor(p);
   }
 
-  async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize, terminal }) {
+  async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize }) {
     DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot, null, 2));
     DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot));
     const splitSnapshotData = splitSnapshot(snapshot);
     DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData, null, 2));
     DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
 
-    const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData, terminal });
+    const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData });
     if (!textLayoutBoxes.length) {
       DEBUG && terminal.yellow('No text boxes found.\n');
       return null;
@@ -1148,9 +1155,10 @@ export function getAncestorInfo(nodeIndex, nodes, strings) {
     const attributes = nodes.attributes[currentIndex] || [];
     const isClickable = nodes.isClickable && nodes.isClickable.index.includes(currentIndex);
 
-    if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && strings[attributes[i + 1]] === 'button'))) {
+    if (nodeName === 'BUTTON' || (nodeName === 'INPUT' && attributes.some((idx, i) => i % 2 === 0 && strings[idx] === 'type' && BUTTON_INPUT_TYPES.has(strings[attributes[i + 1]])))) {
       return 'button';
     }
+    debugLog(JSON.stringify({nodeName, attrs: attributes.map(idx => strings[idx]), isClickable},null,2));
 
     let hasHref = false;
     let hasOnclick = false;
