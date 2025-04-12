@@ -8,7 +8,7 @@ import { dinoGame } from './dino.js';
 
 // Dynamically import CommonJS modules
 const { default: tone } = await import('tonegenerator');
-const { default: Speaker } = await import('speaker');
+const { default: Speaker } = await import('@browserbox/speaker');
 
 const term = termkit.terminal;
 
