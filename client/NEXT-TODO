@@ -1,8 +1,4 @@
 Next
-  Probably related:
-      - scrolling one tab also scrolls the other.
-      - event emitter leak on terminal browser 
-    - probably add scroll listeners per each tab added causing multi scroll and listener leak?
   - closing tabs doesn't work properly. 
   - Fix some elements are not highlighted on focus. Possible causes:
     1. the element has bounds overlapping offscreen.
