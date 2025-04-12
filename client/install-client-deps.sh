@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Cross-platform script to install dependencies for Node.js audio packages
-# Installs ALSA (Linux), build tools, and conditionally installs 'speaker' (skips on Windows)
+# Installs ALSA (Linux), build tools, and conditionally installs '@browserbox/speaker' (skips on Windows)
 
 echo "🚀 Let's get those Node.js audio dependencies installed!"
 
@@ -63,7 +63,7 @@ install_dependencies() {
             brew install python3
         fi
 
-        echo "ℹ️ For audio on macOS, packages like 'speaker' use CoreAudio."
+        echo "ℹ️ For audio on macOS, packages like '@browserbox/speaker' use CoreAudio."
         echo "Ensure you have Xcode Command Line Tools installed:"
         xcode-select --install || true
 
@@ -79,20 +79,20 @@ install_dependencies() {
     fi
 }
 
-# Function to conditionally install speaker
+# Function to conditionally install @browserbox/speaker
 install_speaker() {
-    echo "🎵 Checking if we should install 'speaker'..."
+    echo "🎵 Checking if we should install '@browserbox/speaker'..."
 
     if [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "win32"* || "$OSTYPE" == "cygwin"* ]]; then
-        echo "ℹ️ On Windows, we'll skip installing 'speaker'."
+        echo "ℹ️ On Windows, we'll skip installing '@browserbox/speaker'."
     else
-        echo "📦 Installing 'speaker' for audio support..."
+        echo "📦 Installing '@browserbox/speaker' for audio support..."
         source ~/.nvm/nvm.sh
-        npm install speaker
+        npm install @browserbox/speaker
         if [ $? -eq 0 ]; then
-            echo "🎉 'speaker' installed successfully!"
+            echo "🎉 '@browserbox/speaker' installed successfully!"
         else
-            echo "⚠️ Failed to install 'speaker'. You may need to check your setup or try manually."
+            echo "⚠️ Failed to install '@browserbox/speaker'. You may need to check your setup or try manually."
         fi
     fi
 }
