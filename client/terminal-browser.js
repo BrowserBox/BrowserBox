@@ -226,7 +226,7 @@ export default class TerminalBrowser extends EventEmitter {
 
   computeTabbableElements() {
     const tabbable = [];
-    
+
     // Browser UI elements
     this.tabs.forEach((tab, index) => {
       const x = 1 + index * this.options.tabWidth;
@@ -239,69 +239,99 @@ export default class TerminalBrowser extends EventEmitter {
     tabbable.push({ type: 'go', x: this.term.width - this.GO_WIDTH, y: this.TAB_HEIGHT + 2 });
 
     const publicState = this.getState();
-    if (publicState && renderedBoxes && publicState.layoutToNode && publicState.nodeToParent && publicState.nodes) {
-      debugLog('Rendered Boxes Count:', renderedBoxes.length);
-
-      // Group clickable elements by their nearest clickable ancestor to simplify tabbing
-      // ie group by clickable parent backendNodeId
-      const elementsByParentId = new Map();
-      renderedBoxes.forEach(box => {
-        if (!box.isClickable && box.type !== 'input') return;
-
-        // Find the clickable parent's backendNodeId
-        let parentBackendNodeId = box.backendNodeId;
-        let currentNodeIndex = box.nodeIndex;
-        while (currentNodeIndex !== -1 && currentNodeIndex !== undefined) {
-          if (publicState.nodes.isClickable && publicState.nodes.isClickable.index.includes(currentNodeIndex)) {
-            parentBackendNodeId = publicState.nodes.backendNodeId[currentNodeIndex];
-            break;
-          }
-          currentNodeIndex = publicState.nodeToParent.get(currentNodeIndex);
-        }
-
-        if (!elementsByParentId.has(parentBackendNodeId)) {
-          elementsByParentId.set(parentBackendNodeId, {
-            backendNodeId: parentBackendNodeId,
-            type: box.type === 'input' ? 'input' : 'clickable',
-            boxes: [],
-            text: '',
-            ancestorType: box.ancestorType,
-            minX: box.termX,
-            maxX: box.termX + box.termWidth - 1,
-            minY: box.termY,
-            maxY: box.termY
-          });
-        }
-
-        const elem = elementsByParentId.get(parentBackendNodeId);
-        elem.boxes.push(box);
-        elem.text += (elem.text ? ' ' : '') + box.text;
-        elem.minX = Math.min(elem.minX, box.termX);
-        elem.maxX = Math.max(elem.maxX, box.termX + box.termWidth - 1);
-        elem.minY = Math.min(elem.minY, box.termY);
-        elem.maxY = Math.max(elem.maxY, box.termY);
-      });
-
-      // Add grouped elements to tabbable
-      elementsByParentId.forEach((elem, id) => {
-        //debugLog(`Adding parent: id=${id}, type=${elem.type}, text="${elem.text}", ancestorType="${elem.ancestorType}"`);
-        tabbable.push({
-          type: elem.type,
-          backendNodeId: elem.backendNodeId,
-          x: elem.minX,
-          y: elem.minY,
-          width: elem.maxX - elem.minX + 1,
-          height: elem.maxY - elem.minY + 1,
-          text: elem.text,
-          ancestorType: elem.ancestorType
-        });
-      });
-    } else {
+    if (!publicState || !renderedBoxes || !publicState.layoutToNode || !publicState.nodeToParent || !publicState.nodes) {
       debugLog('Missing state, renderedBoxes, or layout data');
+      return tabbable;
     }
 
+    debugLog('Rendered Boxes Count:', renderedBoxes.length);
+
+    // Helper to check if a node has clickable descendants
+    const hasClickableDescendants = (nodeIdx) => {
+      const descendants = [];
+      const collectDescendants = (idx) => {
+        publicState.nodeToParent.forEach((parentIdx, childIdx) => {
+          if (parentIdx === idx) {
+            descendants.push(childIdx);
+            collectDescendants(childIdx);
+          }
+        });
+      };
+      collectDescendants(nodeIdx);
+      return descendants.some(idx => publicState.nodes.isClickable?.index.includes(idx));
+    };
+
+    // Group clickable elements by their nearest clickable ancestor
+    const elementsByParentId = new Map();
+    renderedBoxes.forEach(box => {
+      if (!box.isClickable && box.type !== 'input') return;
+
+      // Find the clickable parent's backendNodeId
+      let parentBackendNodeId = box.backendNodeId;
+      let parentNodeIndex = box.nodeIndex;
+      let nearestClickableNodeIndex = -1;
+      let currentNodeIndex = box.nodeIndex;
+
+      while (currentNodeIndex !== -1 && currentNodeIndex !== undefined) {
+        if (publicState.nodes.isClickable && publicState.nodes.isClickable.index.includes(currentNodeIndex)) {
+          nearestClickableNodeIndex = currentNodeIndex;
+          parentBackendNodeId = publicState.nodes.backendNodeId[currentNodeIndex];
+          parentNodeIndex = currentNodeIndex;
+          break;
+        }
+        currentNodeIndex = publicState.nodeToParent.get(currentNodeIndex);
+      }
+
+      // Skip if the nearest clickable ancestor is #document or has clickable descendants
+      const nodeNameIdx = publicState.nodes.nodeName[parentNodeIndex];
+      const nodeName = nodeNameIdx >= 0 ? publicState.strings[nodeNameIdx] : '';
+      if (nodeName === '#document' || publicState.nodes.nodeType[parentNodeIndex] === 9) {
+        return; // Skip #document
+      }
+      if (hasClickableDescendants(parentNodeIndex)) {
+        return; // Skip nodes with clickable descendants
+      }
+
+      if (!elementsByParentId.has(parentBackendNodeId)) {
+        elementsByParentId.set(parentBackendNodeId, {
+          backendNodeId: parentBackendNodeId,
+          type: box.type === 'input' ? 'input' : 'clickable',
+          boxes: [],
+          text: '',
+          ancestorType: box.ancestorType,
+          minX: box.termX,
+          maxX: box.termX + box.termWidth - 1,
+          minY: box.termY,
+          maxY: box.termY
+        });
+      }
+
+      const elem = elementsByParentId.get(parentBackendNodeId);
+      elem.boxes.push(box);
+      elem.text += (elem.text ? ' ' : '') + box.text;
+      elem.minX = Math.min(elem.minX, box.termX);
+      elem.maxX = Math.max(elem.maxX, box.termX + box.termWidth - 1);
+      elem.minY = Math.min(elem.minY, box.termY);
+      elem.maxY = Math.max(elem.maxY, box.termY);
+    });
+
+    // Add grouped elements to tabbable
+    elementsByParentId.forEach((elem, id) => {
+      tabbable.push({
+        type: elem.type,
+        backendNodeId: elem.backendNodeId,
+        x: elem.minX,
+        y: elem.minY,
+        width: elem.maxX - elem.minX + 1,
+        height: elem.maxY - elem.minY + 1,
+        text: elem.text,
+        ancestorType: elem.ancestorType,
+        boxes: elem.boxes // Store the boxes for use in getRenderData
+      });
+    });
+
     debugLog('Final Tabbable Elements Count:', tabbable.length);
-    debugLog(JSON.stringify(tabbable, null,2));
+    debugLog(JSON.stringify(tabbable, null, 2));
     tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
     return tabbable;
   }
