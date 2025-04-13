@@ -88,7 +88,7 @@ export async function dinoGame(onExit, {noCap = true} = {}) {
   const baseFrameRate = 30;
   let speed = 1;
   let dinoFrameIndex = 0; // For sprite animation
-  const animationSpeed = 5; // Switch frames every 5 ticks
+  const animationSpeed = 3; // Switch frames every 5 ticks
 
   // Ground texture
   let groundTexture = Array(term.width).fill('').map(() => {
