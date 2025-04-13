@@ -17,14 +17,20 @@ export default class TerminalBrowser extends EventEmitter {
     super();
     const ogEmit = this.emit.bind(this);
     this.emit = (...stuff) => {
-      if ( stuff[0] == 'scroll' ) {
-        this.tabbableCached = false;
-      }
+      switch(stuff[0]) {
+        case 'scroll':
+          this.tabbableCached = false;
+          break;
+        case 'tabSelected':
+          this.tabbableCached = false;
+          break;
+        default:
+          break;
+      } 
       return ogEmit(...stuff);
     };
     this.currentFocusIndex = 0;
     this.getState = getState;
-    this.getFreshState = () => getState({fresh:true});
     this.term = term;
     this.options = {
       tabWidth: options.tabWidth || Math.max(Math.ceil(this.term.width/4), 15),
@@ -866,6 +872,12 @@ export default class TerminalBrowser extends EventEmitter {
         case 'k':
           this.focusNearestInRow('up');
           break;
+        case '[':
+          this.focusPreviousTab();
+          break;
+        case ']':
+          this.focusNextTab();
+          break;
       }
     }
   }
@@ -966,7 +978,29 @@ export default class TerminalBrowser extends EventEmitter {
       case 'DOWN':
         this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
         break;
+      case '[':
+        this.focusPreviousTab();
+        break;
+      case ']':
+        this.focusNextTab();
+        break;
     }
+  }
+
+  focusNextTab() {
+    const nextTabIndex = (this.focusedTabIndex + 1) % this.targets.length;
+    this.focusedTabIndex = nextTabIndex;
+    this.selectedTabIndex = nextTabIndex;
+    const focusedTab = this.tabs[nextTabIndex];
+    this.emit('tabSelected', focusedTab);
+  }
+
+  focusPreviousTab() {
+    const previousTabIndex = ((this.focusedTabIndex - 1) + this.targets.length) % this.targets.length;
+    this.focusedTabIndex = previousTabIndex;
+    this.selectedTabIndex = previousTabIndex;
+    const focusedTab = this.tabs[previousTabIndex];
+    this.emit('tabSelected', focusedTab);
   }
 
   // Extracted method for handling ENTER in UI elements
