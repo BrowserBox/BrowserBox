@@ -108,7 +108,7 @@ export async function dinoGame(onExit, {noCap = true} = {}) {
   const dinoFrames = [
     // Frame 1: Forward leg stride
     [
-      '  ■▓  ', // Head with eye
+      '  ○▓  ', // Head with eye
       '  ▓*  ', // Scale detail
       '██▓▓█ ', // Sleek body
       '  ▓   ',
@@ -117,7 +117,7 @@ export async function dinoGame(onExit, {noCap = true} = {}) {
     ],
     // Frame 2: Backward leg stride
     [
-      '  ■▓  ',
+      '  ○▓  ',
       '  ▓*  ',
       '██▓▓█ ',
       '  ▓   ',
@@ -126,7 +126,7 @@ export async function dinoGame(onExit, {noCap = true} = {}) {
     ],
     // Frame 3: Mid-stride
     [
-      '  ■▓  ',
+      '  ○▓  ',
       '  ▓*  ',
       '██▓▓█ ',
       '  ▓   ',
@@ -304,4 +304,4 @@ export async function dinoGame(onExit, {noCap = true} = {}) {
   });
 }
 
-dinoGame(() => process.exit(0), {noCap: false});
+//dinoGame(() => process.exit(0), {noCap: false});
