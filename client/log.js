@@ -1,6 +1,6 @@
 import { appendFileSync } from 'fs';
 // DEBUG 
-export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
+export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
 const EXTRA_LOG = false;
 const LOG_FILE = 'cdp.log';
 

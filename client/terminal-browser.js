@@ -1024,7 +1024,7 @@ export default class TerminalBrowser extends EventEmitter {
     if (!renderData) return;
 
     const { boxes, minX, maxY, ancestorType } = renderData;
-    debugLog(`Boxes for parent ${backendNodeId}:`, boxes);
+    debugLog(`Boxes for parent ${backendNodeId}: ${JSON.stringify(boxes)}`);
     debugLog(`AncestorType for ${backendNodeId}: ${ancestorType}`);
 
     // Render each line at its termY
@@ -1056,6 +1056,8 @@ export default class TerminalBrowser extends EventEmitter {
     if (!renderData) return;
 
     const { boxes, minX, maxY, ancestorType } = renderData;
+
+    if ( !boxes.length ) return;
 
     if (boxes[0].type === 'input') {
       const inputState = this.inputFields.get('' + backendNodeId);
@@ -1112,16 +1114,18 @@ export default class TerminalBrowser extends EventEmitter {
     });
 
     const boxes = renderedBoxes.filter(b => childNodeIndices.has(b.nodeIndex));
+    const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, publicState.nodes, publicState.strings || []) : boxes[0].ancestorType;
     if (!boxes.length) {
-      debugLog(`No boxes found for parent ${backendNodeId} with node indices:`, Array.from(childNodeIndices));
-      return null;
+      debugLog(`No boxes found for parent ${backendNodeId} with node indices: ${JSON.stringify(Array.from(childNodeIndices))}`);
+      return {boxes, ancestorType};
+    } else {
+      debugLog(`Boxes for parent ${backendNodeId} with child node indices ${JSON.stringify(Array.from(childNodeIndices))}: ${JSON.stringify(boxes)}`);
     }
 
     const minX = Math.min(...boxes.map(b => b.termX));
     const maxX = Math.max(...boxes.map(b => b.termX + b.termWidth - 1));
     const minY = Math.min(...boxes.map(b => b.termY));
     const maxY = Math.max(...boxes.map(b => b.termY));
-    const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, publicState.nodes, publicState.strings || []) : boxes[0].ancestorType;
 
     // Sort boxes by termY for rendering
     boxes.sort((a, b) => a.termY - b.termY);

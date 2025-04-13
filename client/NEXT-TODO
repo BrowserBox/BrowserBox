@@ -3,6 +3,7 @@ Next
     1. the element has bounds overlapping offscreen.
     2. something else (ie domain on HN post lines). They WILL be tabbed to, but not shown. 
     3. DDG / Goog SRP. Will be tabbed to, but not shown. Maybe related to 2.
+  - Between page loads need to clear some state (getting node no longer exists, input elements from previous renders likely still being rendered)
   - select, radio and checkbox inputs (and test page)
 
 Bugs
@@ -53,7 +54,6 @@ Next
   - As soon as we unfocus, or whenever url changes, or a tab is selected, and we are not focused in omnibox ensure URL in omnixbox reflects URL of current tab. Only exception is we never show the URL for newtab "about:blank". 
   - ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
   - put media placeholders behind a toggle. So normally it's off, but you can toggle it on to view it (toggle setting will rerender)
-  - improve efficiency of rendering. Only split snapshot on visible boxes.
   - ensure layout remains correct beofre proceeding to following:
   - hook modals for js modals (alert, confirm, prompt), http basic auth, and file upload.
   - add ALT text for media placeholders (maybe decide based on space available? Or just make space. Problem is alt text has not text layout boxes so we'd have to create our own, and handle wrapping and truncation etc)
@@ -61,6 +61,9 @@ Next
   - capture loading events from browserbox and display a 2x2 or 3x2 cursor "square" at screen right (like Netscape loading logo), showing loading (maybe just cursor rotating inside it clockwise. 1.5 - 2 Hz  
   - Nice to get to: rendering of autocomplete (and other live dom changes): shows but only if we trigger re-render with scroll, but then we can't click on the autocomplete options, even tho they register as clickable, or the clicks have no effect on remote
 
+For release
+  - improve efficiency of rendering. Only split snapshot on visible boxes.
+  - as much as possible limit our data processing to only visible nodes and parts of tree we need to look at relevant to those
 
 To be omitted from initial public release
 
