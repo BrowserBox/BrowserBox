@@ -38,12 +38,13 @@ export default class TerminalBrowser extends EventEmitter {
     this.tabs = this.options.initialTabs.map((tab, i) => ({
       ...tab,
     }));
+    this.targets = this.tabs;
     if (this.tabs.length === 0) {
       this.emit('newTabRequested', { title: 'New Tab', url: 'about:blank' });
     }
     this.tabOffset = 0;
     this.focusedTabIndex = 0;
-    this.selectedTabIndex = -1;
+    this.selectedTabIndex = 0;
     this.focusedElement = 'tabs'; // 'tabs', 'back', 'forward', 'address', 'go', or 'input:<backendNodeId>'
     this.previousFocusedElement = null; // Track previous focus
     this.addressContent = '';

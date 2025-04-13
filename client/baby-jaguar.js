@@ -234,7 +234,9 @@
           process.exit(0);
         });
       } catch (error) {
+        debugLog(JSON.stringify({error, stack:error.stack},null,2));
         if (cleanup) cleanup();
+        console.error(error);
         if (DEBUG) console.warn(error);
         terminal.red(`Main error: ${error.message}\n`);
         browser?.destroy();
@@ -609,6 +611,7 @@
       async function selectTabAndRender() {
         if (cleanup) cleanup();
 
+        debugLog(JSON.stringify({browser,targets},null,2));
         const selectedTarget = targets[browser.selectedTabIndex];
         const targetId = selectedTarget.targetId;
         browser.activeTarget = selectedTarget;
