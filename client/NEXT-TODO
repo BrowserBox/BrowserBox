@@ -1,7 +1,6 @@
 Next
   - Fix some elements are not highlighted on focus. Possible causes:
     1. the element has bounds overlapping offscreen.
-    3. DDG / Goog SRP. Will be tabbed to, but not shown. Maybe related to 2.
   - Between page loads need to clear some state (getting node no longer exists, input elements from previous renders likely still being rendered)
   - select, radio and checkbox inputs (and test page)
 
