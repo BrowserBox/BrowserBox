@@ -1093,33 +1093,33 @@ export default class TerminalBrowser extends EventEmitter {
       return null;
     }
 
-    // Find all child node indices under this parent backendNodeId
-    const childNodeIndices = new Set();
+    // Find all descendant node indices under this backendNodeId
+    const descendantNodeIndices = new Set();
     let parentNodeIndex = -1;
     publicState.nodes.backendNodeId.forEach((id, nodeIdx) => {
       if (id == backendNodeId) {
         parentNodeIndex = nodeIdx;
-        childNodeIndices.add(nodeIdx);
-        const collectChildren = (idx) => {
-          const children = Array.from(renderedBoxes)
-            .filter(b => publicState.nodeToParent.get(b.nodeIndex) === idx)
-            .map(b => b.nodeIndex);
-          children.forEach(childIdx => {
-            childNodeIndices.add(childIdx);
-            collectChildren(childIdx);
+        descendantNodeIndices.add(nodeIdx);
+        const collectDescendants = (idx) => {
+          // Collect all nodes whose parent is idx
+          publicState.nodeToParent.forEach((parentIdx, childIdx) => {
+            if (parentIdx === idx) {
+              descendantNodeIndices.add(childIdx);
+              collectDescendants(childIdx); // Recurse to get grandchildren, etc.
+            }
           });
         };
-        collectChildren(nodeIdx);
+        collectDescendants(nodeIdx);
       }
     });
 
-    const boxes = renderedBoxes.filter(b => childNodeIndices.has(b.nodeIndex));
-    const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, publicState.nodes, publicState.strings || []) : boxes[0].ancestorType;
+    const boxes = renderedBoxes.filter(b => descendantNodeIndices.has(b.nodeIndex));
+    const ancestorType = parentNodeIndex !== -1 ? getAncestorInfo(parentNodeIndex, publicState.nodes, publicState.strings || []) : (boxes[0]?.ancestorType || 'normal');
     if (!boxes.length) {
-      debugLog(`No boxes found for parent ${backendNodeId} with node indices: ${JSON.stringify(Array.from(childNodeIndices))}`);
-      return {boxes, ancestorType};
+      debugLog(`No boxes found for parent ${backendNodeId} with node indices: ${JSON.stringify(Array.from(descendantNodeIndices))}`);
+      return { boxes, ancestorType };
     } else {
-      debugLog(`Boxes for parent ${backendNodeId} with child node indices ${JSON.stringify(Array.from(childNodeIndices))}: ${JSON.stringify(boxes)}`);
+      debugLog(`Boxes for parent ${backendNodeId} with descendant node indices ${JSON.stringify(Array.from(descendantNodeIndices))}: ${JSON.stringify(boxes)}`);
     }
 
     const minX = Math.min(...boxes.map(b => b.termX));
