@@ -1,6 +1,6 @@
 import { appendFileSync } from 'fs';
 // DEBUG 
-export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
+export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
 const EXTRA_LOG = false;
 const LOG_FILE = 'cdp.log';
 
@@ -29,7 +29,7 @@ const LOG_FILE = 'cdp.log';
         }
 
         export function debugLog(...message) {
-          //if ( ! DEBUG ) return;
+          if ( ! DEBUG ) return;
           message = message.join(' ');
           try {
             appendFileSync('debug-coords.log', `${new Date().toISOString()} - ${message}\n`);
