@@ -28,11 +28,6 @@
       const clickCounter = { value: 0 };
       const USE_SYNTHETIC_FOCUS = true;
       const markClicks = false;
-      const BrowserState = {
-        targets: [],
-        activeTarget: null,
-        selectedTabIndex: 0
-      };
       const DEBOUNCE_DELAY = 280;
       const WAIT_FOR_COMMAND_RESPONSE = 10 * 1000;
       const args = process.argv.slice(2);
@@ -107,34 +102,25 @@
         socket = connection.socket;
         targets = connection.targets;
         browserbox = connection.browserbox;
-        BrowserState.targets = targets;
+        browser = new TerminalBrowser(
+          {
+            tabWidth: Math.max(15, Math.ceil(terminal.width / 4)),
+            initialTabs: targets,
+          }, 
+          () => state
+        );
 
         await send('Target.setDiscoverTargets', { discover: true });
         await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
 
         if (targets.length === 0) {
-          const { targetId } = await connection.send('Target.createTarget', { url: 'about:blank' });
-          const newTarget = { targetId, title: 'New Tab', url: 'about:blank', type: 'page' };
-          targets.push(newTarget);
+          await connection.send('Target.createTarget', { url: 'about:blank' });
         }
-
-        browser = new TerminalBrowser(
-          {
-            tabWidth: Math.max(15, Math.ceil(terminal.width / 4)),
-            initialTabs: targets.map(t => ({
-              title: t.title || new URL(t.url || 'about:blank').hostname,
-              url: t.url || 'about:blank',
-            })),
-          }, 
-          () => state
-        );
 
         browser.on('tabSelected', async (tab) => {
           const index = browser.getTabs().findIndex(t => t.targetId === tab.targetId);
-          BrowserState.selectedTabIndex = index;
-          browser.selectedTabIndex = index;
-          BrowserState.activeTarget = targets[index];
-          const {targetId} = BrowserState.activeTarget;
+          browser.activeTarget = targets[index];
+          const {targetId} = browser.activeTarget;
           browser.setAddress(tab.url);
           browserbox.send(JSON.stringify({messageId: messageId++, zombie:{events: [
             {command: {
@@ -169,11 +155,10 @@
             const targetId = targets[index].targetId;
             await send('Target.closeTarget', { targetId });
             targets = await fetchTargets();
-            BrowserState.targets = targets;
+            browser.targets = targets;
             browser.tabs = targets;
             DEBUG && terminal.cyan(`Closing remote target: ${targetId}\n`);
-            BrowserState.selectedTabIndex = Math.min(index, targets.length - 1);
-            BrowserState.activeTarget = targets[BrowserState.selectedTabIndex] || null;
+            browser.activeTarget = targets[browser.selectedTabIndex] || null;
             await selectTabAndRender();
           } catch (error) {
             debugLog(JSON.stringify({targets, index}, null,2));
@@ -286,10 +271,10 @@
       }
 
       function updateTabData(targetInfo) {
-        const targetIndex = BrowserState.targets.findIndex(t => t.targetId === targetInfo.targetId);
+        const targetIndex = browser.targets.findIndex(t => t.targetId === targetInfo.targetId);
         if (targetIndex !== -1) {
-          BrowserState.targets[targetIndex] = targetInfo;
-          browser.tabs = BrowserState.targets;
+          browser.targets[targetIndex] = targetInfo;
+          browser.tabs = browser.targets;
         } else {
           DEBUG && console.warn(`Target with ID ${targetInfo.targetId} not found`);
         }
@@ -624,10 +609,9 @@
       async function selectTabAndRender() {
         if (cleanup) cleanup();
 
-        const selectedTarget = targets[BrowserState.selectedTabIndex];
-        debugLog(JSON.stringify({BrowserState},null,2));
+        const selectedTarget = targets[browser.selectedTabIndex];
         const targetId = selectedTarget.targetId;
-        BrowserState.activeTarget = selectedTarget;
+        browser.activeTarget = selectedTarget;
 
         DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
         const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
@@ -909,7 +893,9 @@
           if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
           const data = await response.json();
           const targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
-          BrowserState.targets = targets;
+          if ( browser ) {
+            browser.targets = targets;
+          }
           if (!targets.length) {
             DEBUG && terminal.yellow('No page or tab targets available.\n');
             statusLine('No page or tab targets available.');

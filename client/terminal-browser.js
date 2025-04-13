@@ -2,7 +2,7 @@
 import { EventEmitter } from 'events';
 import {sleep, debugLog, logClicks,DEBUG} from './log.js';
 import {getAncestorInfo} from './layout.js';
-import {getClickedBox,focusInput,renderedBoxes,refreshTerminal,handleClick} from './baby-jaguar.js';
+import {getClickedBox,focusInput,renderedBoxes,handleClick} from './baby-jaguar.js';
 import keys from './kbd.js';
 import { dinoGame } from './dino.js';
 
@@ -15,6 +15,13 @@ const term = termkit.terminal;
 export default class TerminalBrowser extends EventEmitter {
   constructor(options = {}, getState) {
     super();
+    const ogEmit = this.emit.bind(this);
+    this.emit = (...stuff) => {
+      if ( stuff[0] == 'scroll' ) {
+        this.tabbableCached = false;
+      }
+      return ogEmit(...stuff);
+    };
     this.currentFocusIndex = 0;
     this.getState = getState;
     this.getFreshState = () => getState({fresh:true});
@@ -225,6 +232,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   computeTabbableElements() {
+    if ( this.tabbableCached ) return this.tabbableCache;
     const tabbable = [];
 
     // Browser UI elements
@@ -333,6 +341,8 @@ export default class TerminalBrowser extends EventEmitter {
     debugLog('Final Tabbable Elements Count:', tabbable.length);
     debugLog(JSON.stringify(tabbable, null, 2));
     tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
+    this.tabbableCached = true;
+    this.tabbableCache = tabbable;
     return tabbable;
   }
 
@@ -1010,7 +1020,6 @@ export default class TerminalBrowser extends EventEmitter {
             this.selectedTabIndex = i;
             this.emit('tabSelected', this.tabs[i]);
           }
-          this.render();
           return;
         }
         tabX += this.options.tabWidth;
