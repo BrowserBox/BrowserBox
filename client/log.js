@@ -8,6 +8,10 @@ const LOG_FILE = 'cdp.log';
       export const sleep = ms => new Promise(res => setTimeout(res, ms));
 
       // logging 
+        export function focusLog(...stuff) {
+          appendFileSync('focus.log', JSON.stringify(stuff, null, 2));
+        }
+
         export function rowsLog(rows) {
           DEBUG && appendFileSync('rows.txt', JSON.stringify([...rows.entries()], null, 2));
         }
