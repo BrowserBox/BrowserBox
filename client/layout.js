@@ -1116,7 +1116,6 @@ export function getAncestorInfo(nodeIndex, nodes, strings) {
     let hasOnclick = false;
     for (let i = 0; i < attributes.length; i += 2) {
       const keyIndex = attributes[i];
-      const valueIndex = attributes[i + 1];
       const key = strings[keyIndex];
       if (key === 'href') hasHref = true;
       if (key === 'onclick') hasOnclick = true;

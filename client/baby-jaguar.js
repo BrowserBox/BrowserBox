@@ -142,7 +142,7 @@
         browser.on('newTabRequested', async (tab) => {
           DEBUG && terminal.cyan(`Creating new remote tab: ${tab.title}\n`);
           try {
-            const { targetId } = await send('Target.createTarget', { url: tab.url || 'about:blank' });
+            await send('Target.createTarget', { url: tab.url || 'about:blank' });
             targets = await fetchTargets();
             await selectTabAndRender();
           } catch (error) {
@@ -152,8 +152,9 @@
         });
 
         browser.on('tabClosed', async (index) => {
+          let targetId;
           try {
-            const targetId = targets[index].targetId;
+            targetId = targets[index].targetId;
             await send('Target.closeTarget', { targetId });
             targets = await fetchTargets();
             browser.targets = targets;
@@ -704,7 +705,7 @@
         return clickedBox;
       }
 
-      export async function handleClick({ termX, termY, clickableElements, layoutToNode, nodeToParent, nodes }) {
+      export async function handleClick({ termX, termY, layoutToNode, nodeToParent, nodes }) {
         const clickedBox = getClickedBox({ termX, termY });
         if ( ! clickedBox ) return;
         if (clickedBox.type === 'input') {
@@ -859,7 +860,7 @@
       }
 
     // Main render 
-      async function printTextLayoutToTerminal({ onTabSwitch }) {
+      async function printTextLayoutToTerminal() {
         await refreshTerminal({send, sessionId}); // This should trigger the initial render
         return () => {
           state.isListening = false;
@@ -989,11 +990,8 @@
         async function send(method, params = {}, sessionId) {
           const message = { method, params, sessionId, id: ++id };
           const key = `${sessionId || 'root'}:${message.id}`;
-          let resolve, reject;
-          const promise = new Promise((res, rej) => {
-            resolve = res;
-            reject = rej;
-          });
+          let resolve;
+          const promise = new Promise(res => resolve = res);
           Resolvers[key] = resolve;
 
           const timeout = setTimeout(() => {
@@ -1010,7 +1008,6 @@
             if (DEBUG) console.warn(error);
             terminal.red(`Send error: ${error.message}\n`);
             throw error;
-            //process.exit(1);
           }
           return promise.finally(() => clearTimeout(timeout));
         }
@@ -1035,11 +1032,8 @@
             delete Resolvers[key];
           } else if (message.method === 'Target.targetInfoChanged') {
             const { targetInfo } = message.params;
-            const { targetId, title, url } = targetInfo;
             updateTabData(targetInfo);
             debouncedRefresh();
-          } else if (message.method === 'Page.navigated') {
-
           }
         };
       }

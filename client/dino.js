@@ -200,7 +200,6 @@ export async function dinoGame(onExit, {noCap = true} = {}) {
 
     // Collision detection
     const dinoX = 11;
-    const dinoHeight = dinoFrames[0].length;
     const dinoBottom = dinoY;
     for (const cactus of cacti) {
       if (cactus.x >= dinoX && cactus.x <= dinoX + 4) {
