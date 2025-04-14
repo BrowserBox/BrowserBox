@@ -19,7 +19,10 @@ export default class TerminalBrowser extends EventEmitter {
           this.tabbableCached = false;
           break;
         case 'tabSelected':
-          if (!this.focusState.has(sessions.get(stuff[1]?.targetId))) {
+          const targetId = stuff[1]?.targetId;
+          const sessionIdForTarget = sessions.get(targetId);
+          debugLog(`tabSelected event: targetId=${targetId}, sessionIdForTarget=${sessionIdForTarget}`);
+          if (!this.focusState.has(sessionIdForTarget)) {
             this.tabbableCached = false;
           }
           break;
@@ -100,6 +103,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.render();
     this.setupInput();
   }
+
   saveFocusState() {
     const { sessionId } = this.getState();
     const {
@@ -108,9 +112,8 @@ export default class TerminalBrowser extends EventEmitter {
       focusedElement,
       previousFocusedElement,
       cursorPosition,
-      currentFocusIndex // Add this to preserve the focus index
+      currentFocusIndex
     } = this;
-    // Do not save tabbableCache directly; it will be recomputed on restore
     const focusState = {
       tabbableCached: false, // Force recompute on restore
       selectedTabId,
@@ -120,14 +123,16 @@ export default class TerminalBrowser extends EventEmitter {
       currentFocusIndex
     };
     focusLog('save', sessionId, focusState, (new Error).stack);
+    debugLog(`Saving focus state for sessionId: ${sessionId}, focusedElement: ${focusedElement}`);
     this.focusState.set(sessionId, focusState);
   }
 
   restoreFocusState() {
     const { sessionId } = this.getState();
     const focusState = this.focusState.get(sessionId);
+    debugLog(`Restoring focus state for sessionId: ${sessionId}, found state: ${JSON.stringify(focusState)}`);
     if (!focusState) {
-      // If no state exists, reset to a default state
+      debugLog(`No focus state found for sessionId: ${sessionId}, resetting to default`);
       this.tabbableCached = false;
       this.currentFocusIndex = 0;
       this.focusedElement = `tabs:${this.selectedTabId || this.targets[0]?.targetId || ''}`;
@@ -136,10 +141,29 @@ export default class TerminalBrowser extends EventEmitter {
       return;
     }
     focusLog('restore', sessionId, focusState, (new Error).stack);
-    // Restore state but ensure tabbableCache is recomputed
-    this.tabbableCached = false; // Force recompute
+
+    // Validate the focusedElement
+    let restoredFocusedElement = focusState.focusedElement;
+    if (restoredFocusedElement.startsWith('input:') || restoredFocusedElement.startsWith('clickable:')) {
+      const tabbable = this.computeTabbableElements();
+      const elementExists = tabbable.some(el => {
+        if (restoredFocusedElement.startsWith('input:')) {
+          return el.type === 'input' && `input:${el.backendNodeId}` === restoredFocusedElement;
+        } else if (restoredFocusedElement.startsWith('clickable:')) {
+          return el.type === 'clickable' && `clickable:${el.backendNodeId}` === restoredFocusedElement;
+        }
+        return false;
+      });
+      if (!elementExists) {
+        debugLog(`Restored focusedElement ${restoredFocusedElement} no longer exists, resetting to tab bar`);
+        restoredFocusedElement = `tabs:${this.selectedTabId}`;
+        focusState.currentFocusIndex = 0; // Reset index since element is gone
+      }
+    }
+
+    this.tabbableCached = false;
     this.selectedTabId = focusState.selectedTabId;
-    this.focusedElement = focusState.focusedElement;
+    this.focusedElement = restoredFocusedElement;
     this.previousFocusedElement = focusState.previousFocusedElement;
     this.cursorPosition = focusState.cursorPosition;
     this.currentFocusIndex = focusState.currentFocusIndex || 0;
@@ -1045,6 +1069,9 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   focusNextTab() {
+    // Save the current tab's focus state before switching
+    this.saveFocusState();
+
     let currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
     if (currentTabIndex === -1) {
       currentTabIndex = 0; // Default to first tab if none selected
@@ -1053,10 +1080,16 @@ export default class TerminalBrowser extends EventEmitter {
     this.selectedTabId = this.targets[nextTabIndex].targetId;
     const selectedTab = this.targets[nextTabIndex];
     this.emit('tabSelected', selectedTab);
+
+    // Restore the focus state for the new tab
+    this.restoreFocusState();
     this.render();
   }
 
   focusPreviousTab() {
+    // Save the current tab's focus state before switching
+    this.saveFocusState();
+
     let currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
     if (currentTabIndex === -1) {
       currentTabIndex = 0; // Default to first tab if none selected
@@ -1065,9 +1098,11 @@ export default class TerminalBrowser extends EventEmitter {
     this.selectedTabId = this.targets[previousTabIndex].targetId;
     const selectedTab = this.targets[previousTabIndex];
     this.emit('tabSelected', selectedTab);
+
+    // Restore the focus state for the new tab
+    this.restoreFocusState();
     this.render();
   }
-
   // Extracted method for handling ENTER in UI elements
   handleUIEnter() {
     if (this.focusedElement.startsWith('tabs:')) {
