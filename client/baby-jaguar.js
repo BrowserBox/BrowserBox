@@ -392,6 +392,7 @@
 
           if (layoutState) {
             layoutState.browser = browser;
+            state.layoutState = layoutState;
             state.clickableElements = layoutState.clickableElements;
             state.layoutToNode = layoutState.layoutToNode;
             state.nodeToParent = layoutState.nodeToParent;
