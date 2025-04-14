@@ -35,7 +35,7 @@
       export const renderedBoxes = [];
 
       const state = initializeState();
-      const sessions = new Map();
+      export const sessions = new Map();
       let connection;
       let socket;
       let cleanup;

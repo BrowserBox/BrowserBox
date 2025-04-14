@@ -2,7 +2,7 @@
 import { EventEmitter } from 'events';
 import {sleep, focusLog, debugLog, logClicks} from './log.js';
 import {getAncestorInfo} from './layout.js';
-import {getClickedBox,focusInput,renderedBoxes,handleClick} from './baby-jaguar.js';
+import {sessions,getClickedBox,focusInput,renderedBoxes,handleClick} from './baby-jaguar.js';
 import KEYS from './kbd.js';
 import { dinoGame } from './dino.js';
 
@@ -19,7 +19,9 @@ export default class TerminalBrowser extends EventEmitter {
           this.tabbableCached = false;
           break;
         case 'tabSelected':
-          this.tabbableCached = false;
+          if ( ! this.focusState.has(sessions.get(stuff[1]?.targetId)) ) {
+            this.tabbableCached = false;
+          }
           break;
         default:
           break;
@@ -38,11 +40,11 @@ export default class TerminalBrowser extends EventEmitter {
     };
 
     // State
-    this.tabs = this.options.initialTabs.map(tab => ({
+    this.targets = this.options.initialTabs.map(tab => ({
       ...tab,
     }));
-    this.targets = this.tabs;
-    if (this.tabs.length === 0) {
+    this.targets = this.targets;
+    if (this.targets.length === 0) {
       this.emit('newTabRequested', { title: 'New Tab', url: 'about:blank' });
     }
     this.tabOffset = 0;
@@ -81,14 +83,19 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   saveFocusState() {
+    return;
     const {sessionId} = this.getState();
     const {
+      tabbableCached,
+      tabbableCache,
       selectedTabId,
       focusedElement,
       previousFocusedElement,
       cursorPosition,
     } = this;
     const focusState = {
+      tabbableCached,
+      tabbableCache,
       selectedTabId,
       focusedElement,
       previousFocusedElement,
@@ -99,6 +106,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   restoreFocusState() {
+    return;
     const {sessionId} = this.getState();
     const focusState = this.focusState.get(sessionId);
     focusLog('restore', sessionId, focusState, (new Error).stack);
@@ -264,7 +272,7 @@ export default class TerminalBrowser extends EventEmitter {
     const tabbable = [];
 
     // Browser UI elements
-    this.tabs.forEach((tab, index) => {
+    this.targets.forEach((tab, index) => {
       const x = 1 + index * this.options.tabWidth;
       tabbable.push({ type: 'tab', index, x, y: 1, targetId: tab.targetId });
     });
@@ -376,16 +384,16 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.moveTo(1, 1);
     this.term.bgBlue().white(' '.repeat(this.term.width));
     let x = 1;
-    for (let i = this.tabOffset; i < this.tabs.length && x <= this.term.width - this.NEW_TAB_WIDTH; i++) {
+    for (let i = this.tabOffset; i < this.targets.length && x <= this.term.width - this.NEW_TAB_WIDTH; i++) {
       const maxTitleLength = this.options.tabWidth - 5;
-      const truncatedTitle = this.tabs[i].title.slice(0, maxTitleLength);
+      const truncatedTitle = this.targets[i].title.slice(0, maxTitleLength);
       const titlePart = ` ${truncatedTitle}`;
       const paddingLength = this.options.tabWidth - titlePart.length - 3;
       const tabText = `${titlePart}${' '.repeat(paddingLength)}[x]`;
 
       this.term.moveTo(x, 1);
-      const isFocused = this.focusedElement == `tabs:${this.tabs[i].targetId}`
-      const isSelected = this.selectedTabId == this.tabs[i].targetId;
+      const isFocused = this.focusedElement == `tabs:${this.targets[i].targetId}`
+      const isSelected = this.selectedTabId == this.targets[i].targetId;
       if (isFocused) {
         this.term.bgCyan().black().bold().underline(tabText); // Cyan bg, black fg (since original is blue)
       } else if (isSelected) {
@@ -770,7 +778,7 @@ export default class TerminalBrowser extends EventEmitter {
       return true; // Stop listening
     }
     if (key === 'CTRL_T') {
-      this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+      this.emit('newTabRequested', { title: `New ${this.targets.length + 1}`, url: 'about:blank' });
       return false;
     }
     if (key === 'CTRL_W') {
@@ -912,7 +920,7 @@ export default class TerminalBrowser extends EventEmitter {
       case 'ENTER':
         this.emit('navigate', this.addressContent);
         if (this.selectedTabId !== null) {
-          this.tabs.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
+          this.targets.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
         }
         this.render();
         break;
@@ -972,8 +980,8 @@ export default class TerminalBrowser extends EventEmitter {
         break;
       case 'h':
       case 'LEFT': {
-        const focusedTabIndex = this.tabs.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
-        if (this.focusedElement.startsWith('tabs:') && focusedTabIndex >= 1) {
+        const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
+        if (this.focusedElement.startsWith('tabs:') && focusedTabIndex >= 0) {
           this.focusPreviousTab();
         } else { 
           this.focusPreviousElement();
@@ -981,8 +989,8 @@ export default class TerminalBrowser extends EventEmitter {
       }; break;
       case 'l':
       case 'RIGHT': {
-        const focusedTabIndex = this.tabs.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
-        if (this.focusedElement.startsWith('tabs:') && focusedTabIndex < this.tabs.length - 1 && focusedTabIndex >= 0) {
+        const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
+        if (this.focusedElement.startsWith('tabs:') && focusedTabIndex != -1) {
           this.focusNextTab();
         } else { 
           this.focusNextElement();
@@ -1003,21 +1011,21 @@ export default class TerminalBrowser extends EventEmitter {
 
   focusNextTab() {
     this.saveFocusState();
-    const focusedTabIndex = this.tabs.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
+    const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
     const nextTabIndex = (focusedTabIndex + 1) % this.targets.length;
-    this.selectedTabId = this.tabs[nextTabIndex].targetId;
+    this.selectedTabId = this.targets[nextTabIndex].targetId;
     this.focusedElement = `tabs:${this.selectedTabId}`;
-    const focusedTab = this.tabs[nextTabIndex];
+    const focusedTab = this.targets[nextTabIndex];
     this.emit('tabSelected', focusedTab);
   }
 
   focusPreviousTab() {
     this.saveFocusState();
-    const focusedTabIndex = this.tabs.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
+    const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
     const previousTabIndex = ((focusedTabIndex - 1) + this.targets.length) % this.targets.length;
-    this.selectedTabId = this.tabs[previousTabIndex].targetId;
+    this.selectedTabId = this.targets[previousTabIndex].targetId;
     this.focusedElement = `tabs:${this.selectedTabId}`;
-    const focusedTab = this.tabs[previousTabIndex];
+    const focusedTab = this.targets[previousTabIndex];
     this.emit('tabSelected', focusedTab);
   }
 
@@ -1026,9 +1034,9 @@ export default class TerminalBrowser extends EventEmitter {
     if (this.focusedElement.startsWith('tabs:')) {
       this.saveFocusState();
       this.selectedTabId = this.focusedElement.split(':')[1];
-      this.emit('tabSelected', this.tabs.find(t => t.targetId == this.selectedTabId));
+      this.emit('tabSelected', this.targets.find(t => t.targetId == this.selectedTabId));
     } else if (this.focusedElement === 'newTab') {
-      this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+      this.emit('newTabRequested', { title: `New ${this.targets.length + 1}`, url: 'about:blank' });
     } else if (this.focusedElement === 'back') {
       this.emit('back');
     } else if (this.focusedElement === 'forward') {
@@ -1036,7 +1044,7 @@ export default class TerminalBrowser extends EventEmitter {
     } else if (this.focusedElement === 'go') {
       this.emit('navigate', this.addressContent);
       if (this.selectedTabId !== null) {
-        this.tabs.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
+        this.targets.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
       }
     }
   }
@@ -1058,11 +1066,11 @@ export default class TerminalBrowser extends EventEmitter {
     // Tab row (y = 1)
     if (y === 1) {
       if (x >= this.term.width - this.NEW_TAB_WIDTH + 1 && x <= this.term.width) {
-        this.emit('newTabRequested', { title: `New ${this.tabs.length + 1}`, url: 'about:blank' });
+        this.emit('newTabRequested', { title: `New ${this.targets.length + 1}`, url: 'about:blank' });
         return;
       }
       let tabX = 1;
-      for (let i = this.tabOffset; i < this.tabs.length && tabX <= this.term.width - this.NEW_TAB_WIDTH; i++) {
+      for (let i = this.tabOffset; i < this.targets.length && tabX <= this.term.width - this.NEW_TAB_WIDTH; i++) {
         const tabEnd = tabX + this.options.tabWidth - 1;
         if (x >= tabX && x <= tabEnd) {
           const closeXStart = tabX + this.options.tabWidth - 5;
@@ -1070,9 +1078,9 @@ export default class TerminalBrowser extends EventEmitter {
             this.closeTab(i);
           } else {
             this.saveFocusState();
-            this.selectedTabId = this.tabs[i].targetId;
+            this.selectedTabId = this.targets[i].targetId;
             this.focusedElement = `tabs:${this.selectedTabId}`;
-            this.emit('tabSelected', this.tabs[i]);
+            this.emit('tabSelected', this.targets[i]);
           }
           return;
         }
@@ -1098,7 +1106,7 @@ export default class TerminalBrowser extends EventEmitter {
         this.focusedElement = 'go';
         this.emit('navigate', this.addressContent);
         if (this.selectedTabId !== null) {
-          this.tabs.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
+          this.targets.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
         }
       }
       this.render();
@@ -1296,10 +1304,10 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   addTabToUI(tab) {
-    this.tabs.push({
+    this.targets.push({
       title: tab.title,
       url: tab.url,
-      color: this.options.colors[this.tabs.length % this.options.colors.length],
+      color: this.options.colors[this.targets.length % this.options.colors.length],
     });
     this.render();
   }
@@ -1309,17 +1317,17 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   getTab(index) {
-    return this.tabs[index];
+    return this.targets[index];
   }
 
   setTab(index, tab) {
-    this.tabs[index] = tab;
+    this.targets[index] = tab;
     this.setAddress(tab.url);
     this.render();
   }
 
   getTabs() {
-    return [...this.tabs];
+    return [...this.targets];
   }
 
   setAddress(url) {
