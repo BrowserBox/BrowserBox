@@ -1030,6 +1030,7 @@
             delete Resolvers[key];
           } else if (message.method === 'Target.targetInfoChanged') {
             const { targetInfo } = message.params;
+            browser.emit('targetInfoChanged', targetInfo);
             updateTabData(targetInfo);
             debouncedRefresh();
           }
