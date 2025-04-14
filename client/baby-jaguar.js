@@ -35,6 +35,7 @@
       export const renderedBoxes = [];
 
       const state = initializeState();
+      const sessions = new Map();
       let connection;
       let socket;
       let cleanup;
@@ -617,8 +618,14 @@
         browser.activeTarget = selectedTarget;
 
         DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
-        const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
-        sessionId = newSessionId;
+        if ( ! sessions.has(targetId) ) {
+          const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+          sessionId = newSessionId;
+          sessions.set(targetId, sessionId);
+        } else {
+          sessionId = sessions.get(targetId);
+        }
+        browser.restoreFocusState();
         DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
 
         const stop = await printTextLayoutToTerminal({ onTabSwitch: selectTabAndRender });

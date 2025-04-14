@@ -16,6 +16,7 @@ export default class TerminalBrowser extends EventEmitter {
   constructor(options = {}, getState) {
     super();
     const ogEmit = this.emit.bind(this);
+    this.focusState = new Map();
     this.emit = (...stuff) => {
       switch(stuff[0]) {
         case 'scroll':
@@ -82,6 +83,30 @@ export default class TerminalBrowser extends EventEmitter {
     // Start rendering and input handling
     this.render();
     this.setupInput();
+  }
+
+  saveFocusState() {
+    const {sessionId} = this.getState();
+    const {
+      focusedTabIndex,
+      selectedTabIndex,
+      focusedElement,
+      previousFocusedElement,
+      addressContent,
+      cursorPosition,
+    } = this;
+    this.focusState.set(sessionId, {
+      focusedTabIndex,
+      selectedTabIndex,
+      focusedElement,
+      previousFocusedElement,
+      cursorPosition,
+    });
+  }
+
+  restoreFocusState() {
+    const {sessionId} = this.getState();
+    Object.assign(this, this.focusState.get(sessionId) || {});
   }
 
   async ditzyTune() {
@@ -990,6 +1015,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   focusNextTab() {
+    this.saveFocusState();
     const nextTabIndex = (this.focusedTabIndex + 1) % this.targets.length;
     this.focusedTabIndex = nextTabIndex;
     this.selectedTabIndex = nextTabIndex;
@@ -998,6 +1024,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   focusPreviousTab() {
+    this.saveFocusState();
     const previousTabIndex = ((this.focusedTabIndex - 1) + this.targets.length) % this.targets.length;
     this.focusedTabIndex = previousTabIndex;
     this.selectedTabIndex = previousTabIndex;
@@ -1008,6 +1035,7 @@ export default class TerminalBrowser extends EventEmitter {
   // Extracted method for handling ENTER in UI elements
   handleUIEnter() {
     if (this.focusedElement === 'tabs') {
+      this.saveFocusState();
       this.selectedTabIndex = this.focusedTabIndex;
       this.emit('tabSelected', this.tabs[this.selectedTabIndex]);
     } else if (this.focusedElement === 'newTab') {
@@ -1052,6 +1080,7 @@ export default class TerminalBrowser extends EventEmitter {
           if (x >= closeXStart && x <= closeXStart + 3) {
             this.closeTab(i);
           } else {
+            this.saveFocusState();
             this.focusedTabIndex = i;
             this.focusedElement = 'tabs';
             this.selectedTabIndex = i;
