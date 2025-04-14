@@ -83,34 +83,48 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   saveFocusState() {
-    return;
-    const {sessionId} = this.getState();
+    const { sessionId } = this.getState();
     const {
       tabbableCached,
-      tabbableCache,
       selectedTabId,
       focusedElement,
       previousFocusedElement,
       cursorPosition,
+      currentFocusIndex // Add this to preserve the focus index
     } = this;
+    // Do not save tabbableCache directly; it will be recomputed on restore
     const focusState = {
-      tabbableCached,
-      tabbableCache,
+      tabbableCached: false, // Force recompute on restore
       selectedTabId,
       focusedElement,
       previousFocusedElement,
       cursorPosition,
+      currentFocusIndex
     };
     focusLog('save', sessionId, focusState, (new Error).stack);
     this.focusState.set(sessionId, focusState);
   }
 
   restoreFocusState() {
-    return;
-    const {sessionId} = this.getState();
+    const { sessionId } = this.getState();
     const focusState = this.focusState.get(sessionId);
+    if (!focusState) {
+      // If no state exists, reset to a default state
+      this.tabbableCached = false;
+      this.currentFocusIndex = 0;
+      this.focusedElement = `tabs:${this.selectedTabId || this.targets[0]?.targetId || ''}`;
+      this.previousFocusedElement = null;
+      this.cursorPosition = 0;
+      return;
+    }
     focusLog('restore', sessionId, focusState, (new Error).stack);
-    Object.assign(this, focusState || {});
+    // Restore state but ensure tabbableCache is recomputed
+    this.tabbableCached = false; // Force recompute
+    this.selectedTabId = focusState.selectedTabId;
+    this.focusedElement = focusState.focusedElement;
+    this.previousFocusedElement = focusState.previousFocusedElement;
+    this.cursorPosition = focusState.cursorPosition;
+    this.currentFocusIndex = focusState.currentFocusIndex || 0;
   }
 
   async ditzyTune() {
