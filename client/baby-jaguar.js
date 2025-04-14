@@ -391,7 +391,6 @@
           browser.render();
 
           if (layoutState) {
-            layoutState.browser = browser;
             state.layoutState = layoutState;
             state.clickableElements = layoutState.clickableElements;
             state.layoutToNode = layoutState.layoutToNode;
@@ -416,7 +415,7 @@
       }
 
       function renderBoxes(layoutState) {
-        const { browser, visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
+        const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
         const newBoxes = [];
 
         for (const box of visibleBoxes) {
@@ -467,7 +466,7 @@
             logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
             const currentBackendNodeId = backendNodeId;
             const fallbackValue = text.startsWith('[INPUT') ? '' : text;
-            const onChange = createInputChangeHandler({ send, sessionId, browser, backendNodeId: currentBackendNodeId });
+            const onChange = createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId });
 
             send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId)
               .then(resolveResult => {
@@ -487,7 +486,6 @@
                   logClicks(`Fetched live value for backendNodeId: ${currentBackendNodeId}: "${liveValue}"`);
                 }
                 const inputField = drawInputFieldForNode({
-                  browser,
                   renderX,
                   renderY,
                   termWidthForBox,
@@ -510,7 +508,6 @@
               .catch(error => {
                 logClicks(`Failed to fetch live value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
                 const inputField = drawInputFieldForNode({
-                  browser,
                   renderX,
                   renderY,
                   termWidthForBox,
@@ -598,7 +595,7 @@
         terminal.styleReset();
       }
 
-      function drawInputFieldForNode({ browser, renderX, renderY, termWidthForBox, backendNodeId, initialValue, onChange }) {
+      function drawInputFieldForNode({ renderX, renderY, termWidthForBox, backendNodeId, initialValue, onChange }) {
         const inputField = browser.drawInputField({
           x: renderX,
           y: renderY,
@@ -634,7 +631,7 @@
         cleanup = stop;
       }
 
-      function createInputChangeHandler({ send, sessionId, browser, backendNodeId }) {
+      function createInputChangeHandler({ send, sessionId, backendNodeId }) {
         return async function onInputChange(value) {
           try {
             const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
@@ -710,7 +707,7 @@
         const clickedBox = getClickedBox({ termX, termY });
         if ( ! clickedBox ) return;
         if (clickedBox.type === 'input') {
-          await focusInput({ clickedBox, browser, send, sessionId, termX });
+          await focusInput({ clickedBox, send, sessionId, termX });
           return;
         } else {
           // Click simulation for other elements
@@ -805,7 +802,7 @@
         }
       }
 
-      export async function focusInput({ clickedBox, browser, send, sessionId, termX }) {
+      export async function focusInput({ clickedBox, send, sessionId, termX }) {
         logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
         const guiX = clickedBox.boundingBox.x + clickedBox.boundingBox.width / 2;
         const guiY = clickedBox.boundingBox.y + clickedBox.boundingBox.height / 2;
