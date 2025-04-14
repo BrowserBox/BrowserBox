@@ -11,6 +11,7 @@
   // Setup
     // imports
       // built in
+      import util from 'util';
       import { appendFileSync } from 'fs';
       import { Agent } from 'https';
 
@@ -611,7 +612,7 @@
       async function selectTabAndRender() {
         if (cleanup) cleanup();
 
-        debugLog(JSON.stringify({browser,targets},null,2));
+        DEBUG && debugLog(util.inspect({browser,targets}));
         const selectedTarget = targets.find(t => t.targetId == browser.selectedTabId) || targets[0];
         const targetId = selectedTarget.targetId;
         browser.activeTarget = selectedTarget;
