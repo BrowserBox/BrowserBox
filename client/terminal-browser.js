@@ -25,7 +25,7 @@ export default class TerminalBrowser extends EventEmitter {
           if (!this.focusManager.focusState.has(sessionIdForTarget)) {
             this.focusManager.tabbableCached = false;
           }
-          this.inputManager.saveFocusState();
+          this.focusManager.saveFocusState();
           break;
         case 'navigate':
         case 'targetInfoChanged':
