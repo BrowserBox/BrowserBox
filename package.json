@@ -115,14 +115,19 @@
     "yargs": "latest"
   },
   "devDependencies": {
+    "@eslint/js": "^9.24.0",
     "@mapbox/node-pre-gyp": "latest",
     "@types/body-parser": "latest",
     "@types/cookie-parser": "latest",
     "@types/current-git-branch": "latest",
     "@types/esm": "latest",
     "@types/multer": "latest",
+    "@types/node": "^22.14.1",
+    "@types/terminal-kit": "^2.5.7",
     "@types/ws": "latest",
     "@vertx/core": "latest",
+    "eslint": "^9.24.0",
+    "globals": "^16.0.0",
     "whatwg-fetch": "^3.6.20"
   }
 }
