@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import {sleep, debugLog, logClicks,DEBUG} from './log.js';
 import {getAncestorInfo} from './layout.js';
 import {getClickedBox,focusInput,renderedBoxes,handleClick} from './baby-jaguar.js';
-import keys from './kbd.js';
+import KEYS from './kbd.js';
 import { dinoGame } from './dino.js';
 
 // Dynamically import CommonJS modules
@@ -769,7 +769,7 @@ export default class TerminalBrowser extends EventEmitter {
     logClicks(`Input focused, backendNodeId: ${backendNodeId}, current value: ${inputState.value}`);
 
     if (key === 'ENTER') {
-      await this.handleInputEnter(backendNodeId, inputState);
+      await this.handleInputCommit(backendNodeId, inputState);
       this.redrawUnfocusedInput(backendNodeId);
       this.focusedElement = 'tabs';
       this.previousFocusedElement = this.focusedElement;
@@ -817,19 +817,21 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   // Extracted method for handling ENTER in input fields
-  async handleInputEnter(backendNodeId, inputState) {
-    const keyCommand = keyEvent('ENTER');
-    if (keyCommand) {
+  async handleInputCommit(backendNodeId, inputState, {useEnter = true} = {}) {
+    let keys;
+    if ( useEnter ) {
+      keys = keyEvent('Enter', 'Space', 'Backspace');
+    } else {
+      keys = keyEvent('Space', 'Backspace');
+    }
+    const {send,sessionId} = this.getState();
+    for ( const {command:{name,params}} of keys ) {
       try {
-        await this.getState().send(keyCommand.command.name, keyCommand.command.params, this.getState().sessionId);
-        keyCommand.command.params.type = "keyUp";
-        keyCommand.command.params.text = undefined;
+        await send(name, params, sessionId);
         await sleep(50);
-        await this.getState().send(keyCommand.command.name, keyCommand.command.params, this.getState().sessionId);
-        logClicks(`Sent Enter key event for backendNodeId: ${backendNodeId} and session ${this.getState().sessionId}`);
-      } catch (error) {
+        logClicks(`Sent key (${params.key},${params.type}) event for backendNodeId: ${backendNodeId} and session ${sessionId}`);
+      } catch(error) {
         logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
-        //process.exit(0);
       }
     }
   }
@@ -1359,37 +1361,49 @@ export default class TerminalBrowser extends EventEmitter {
 }
 
 // helpers
-      function keyEvent(key) {
-        // Map TUI key to key definition (e.g., 'ENTER' -> 'Enter')
-        const keyName = key === 'ENTER' ? 'Enter' : key;
-        const def = keys[keyName];
+      function keyEvent(...keys) {
+        // Map TUI key to key definition 
+        return keys.flatMap(key => {
+          const keyName = key;
+          const def = KEYS[keyName];
 
-        if (!def) {
-          console.warn(`Unknown key: ${key}`);
-          return null;
-        }
+          if (!def) {
+            console.warn(`Unknown key: ${key}`);
+            return null;
+          }
 
-        // Determine event type
-        const type = def.text ? 'keyDown' : 'rawKeyDown'; // For Enter, this will be 'keyDown' due to text: '\r'
+          // Determine event type
+          const type = def.text ? 'keyDown' : 'rawKeyDown'; // For Enter, this will be 'keyDown' due to text: '\r'
 
-        // Construct the CDP command
-        const command = {
-          name: 'Input.dispatchKeyEvent',
-          params: {
-            type,
-            text: def.text, // '\r' for Enter
-            code: def.code, // 'Enter'
-            key: def.key,   // 'Enter'
-            windowsVirtualKeyCode: def.keyCode, // 13
-            modifiers: 0,   // No modifiers for now (e.g., no Shift, Ctrl)
-          },
-          requiresShot: ['Enter'].includes(def.key), // Trigger a screenshot if needed
-        };
+          // Construct the CDP command
+          const down = { command : {
+            name: 'Input.dispatchKeyEvent',
+            params: {
+              type,
+              text: def.text, // '\r' for Enter
+              code: def.code, // 'Enter'
+              key: def.key,   // 'Enter'
+              windowsVirtualKeyCode: def.keyCode, // 13
+              modifiers: 0,   // No modifiers for now (e.g., no Shift, Ctrl)
+            },
+          }};
+          const up = { command : {
+            name: 'Input.dispatchKeyEvent',
+            params: {
+              type: 'keyUp',
+              code: def.code, // 'Enter'
+              key: def.key,   // 'Enter'
+              windowsVirtualKeyCode: def.keyCode, // 13
+              modifiers: 0,   // No modifiers for now (e.g., no Shift, Ctrl)
+            },
+            requiresShot: ['Enter'].includes(def.key), // Trigger a screenshot if needed
+          }};
 
-        if (def.location) {
-          command.params.location = def.location;
-        }
+          if (def.location) {
+            command.params.location = def.location;
+          }
 
-        return { command };
+          return [down, up];
+        });
       }      
 

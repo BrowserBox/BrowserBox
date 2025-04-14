@@ -1,5 +1,7 @@
 Next
   - cache as much as possible especially for tabbing
+  - add space/backspace/enter combo to inputs when enter pressed. (some inputs require an actual key event)
+    - could also do on input blurred but this may be not as clean to detect in our current setup
   - improve efficiency of rendering. Only split snapshot on visible boxes.
   - as much as possible limit our data processing to only visible nodes and parts of tree we need to look at relevant to those
   - Fix some elements are not highlighted on focus. Possible causes:
