@@ -42,20 +42,20 @@ export default class TerminalBrowser extends EventEmitter {
     // State
     this.targets = this.options.initialTabs.map(tab => ({
       ...tab,
+      targetId: tab.targetId || Math.random().toString(36).substring(2), // Ensure each tab has a targetId
     }));
-    this.targets = this.targets;
     if (this.targets.length === 0) {
       this.emit('newTabRequested', { title: 'New Tab', url: 'about:blank' });
     }
     this.tabOffset = 0;
-    this.selectedTabId = null;
-    this.focusedElement = 'address'; // 'tabs', 'back', 'forward', 'address', 'go', or 'input:<backendNodeId>'
-    this.previousFocusedElement = null; // Track previous focus
-    this.addressContent = '';
-    this.cursorPosition = 0;
+    this.selectedTabId = this.targets[0]?.targetId || null; // Set initial selected tab
+    this.focusedElement = `tabs:${this.selectedTabId}`; // Start with the first tab focused
+    this.previousFocusedElement = null;
+    this.addressContent = this.targets[0]?.url || '';
+    this.cursorPosition = this.addressContent.length;
 
     // Input field management
-    this.inputFields = new Map(); // Key: backendNodeId, Value: { value, cursorPosition, focused }
+    this.inputFields = new Map();
 
     // Constants
     this.TAB_HEIGHT = 1;
@@ -66,7 +66,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.ADDRESS_WIDTH = this.term.width - this.BACK_WIDTH - this.FORWARD_WIDTH - this.GO_WIDTH - 4;
     this.NEW_TAB_WIDTH = 5;
 
-    this.keyBuffer = ''; // Tracks recent keystrokes
+    this.keyBuffer = '';
 
     this.ditzyTune();
 
@@ -420,7 +420,7 @@ export default class TerminalBrowser extends EventEmitter {
         // Selected but not focused: Bright green background, white text
         this.term.bgBrightGreen().white().bold().underline(tabText);
       } else if (isFocused) {
-        // Focused but not selected: Cyan background, black text
+        // Focused but not selected: Cyan background, black text to match other UI elements
         this.term.bgCyan().black().bold().underline(tabText);
       } else {
         // Neither focused nor selected: Blue background, default text
@@ -1027,24 +1027,29 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   focusNextTab() {
-    // Use selectedTabId to find the current tab index
-    const currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
+    let currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
+    if (currentTabIndex === -1) {
+      currentTabIndex = 0; // Default to first tab if none selected
+    }
     const nextTabIndex = (currentTabIndex + 1) % this.targets.length;
     this.selectedTabId = this.targets[nextTabIndex].targetId;
     const selectedTab = this.targets[nextTabIndex];
     this.emit('tabSelected', selectedTab);
-    this.render(); // Ensure the UI updates to reflect the new selection
+    this.render();
   }
 
   focusPreviousTab() {
-    // Use selectedTabId to find the current tab index
-    const currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
+    let currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
+    if (currentTabIndex === -1) {
+      currentTabIndex = 0; // Default to first tab if none selected
+    }
     const previousTabIndex = (currentTabIndex - 1 + this.targets.length) % this.targets.length;
     this.selectedTabId = this.targets[previousTabIndex].targetId;
     const selectedTab = this.targets[previousTabIndex];
     this.emit('tabSelected', selectedTab);
-    this.render(); // Ensure the UI updates to reflect the new selection
+    this.render();
   }
+
   // Extracted method for handling ENTER in UI elements
   handleUIEnter() {
     if (this.focusedElement.startsWith('tabs:')) {
@@ -1250,7 +1255,6 @@ export default class TerminalBrowser extends EventEmitter {
     return { boxes, minX, maxX, minY, maxY, ancestorType };
   }
 
-  // Update setFocus
   setFocus(element) {
     debugLog(`Setting focus from ${this.focusedElement} to ${element.type}:${element.backendNodeId || element.index || element.type}`);
     this.previousFocusedElement = this.focusedElement;
@@ -1265,29 +1269,28 @@ export default class TerminalBrowser extends EventEmitter {
     }
 
     if (element.type === 'tab') {
-      this.focusedElement = `tabs:${this.selectedTabId}`;
-      this.drawTabs(); // Redraw tabs for UI focus
+      // Set the focused element to the specific tab, not the selected tab
+      this.focusedElement = `tabs:${element.targetId}`;
+      this.drawTabs(); // Redraw tabs to reflect the new focus
     } else if (element.type === 'input') {
-      // perhaps doing this through an emit to have unidirectional flow is cleaner
       const publicState = this.getState();
       const midX = element.x + Math.floor(element.width/2);
       const midY = element.y + Math.floor(element.height/2);
       const clickedBox = getClickedBox({ termX: midX, termY : midY });
       const { send, sessionId } = publicState;
       focusInput({ clickedBox, browser: this, send, sessionId, termX: element.x + element.width });
-      //this.focusInput(element.backendNodeId); // This already handles redraw but is called by above
     } else if (element.type === 'clickable') {
       this.focusedElement = `clickable:${element.backendNodeId}`;
-      this.redrawClickable(element.backendNodeId); // Redraw only this element
+      this.redrawClickable(element.backendNodeId);
     } else {
       this.focusedElement = element.type;
       if (element.type === 'address') this.cursorPosition = this.addressContent.length;
-      this.drawOmnibox(); // Redraw omnibox for UI focus
+      this.drawOmnibox();
     }
     this.term.bgDefaultColor().defaultColor();
     this.term.styleReset();
     this.render();
-  }
+  }  
 
   // Update focusNextElement and focusPreviousElement to avoid full render
   focusNextElement() {
