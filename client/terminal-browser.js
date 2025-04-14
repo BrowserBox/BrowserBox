@@ -1,14 +1,10 @@
 ﻿import termkit from 'terminal-kit';
 import { EventEmitter } from 'events';
-import {sleep, focusLog, debugLog, logClicks,DEBUG} from './log.js';
+import {sleep, focusLog, debugLog, logClicks} from './log.js';
 import {getAncestorInfo} from './layout.js';
 import {getClickedBox,focusInput,renderedBoxes,handleClick} from './baby-jaguar.js';
 import KEYS from './kbd.js';
 import { dinoGame } from './dino.js';
-
-// Dynamically import CommonJS modules
-const { default: tone } = await import('tonegenerator');
-const { default: Speaker } = await import('@browserbox/speaker');
 
 const term = termkit.terminal;
 
@@ -42,7 +38,7 @@ export default class TerminalBrowser extends EventEmitter {
     };
 
     // State
-    this.tabs = this.options.initialTabs.map((tab, i) => ({
+    this.tabs = this.options.initialTabs.map(tab => ({
       ...tab,
     }));
     this.targets = this.tabs;
@@ -309,12 +305,10 @@ export default class TerminalBrowser extends EventEmitter {
       // Find the clickable parent's backendNodeId
       let parentBackendNodeId = box.backendNodeId;
       let parentNodeIndex = box.nodeIndex;
-      let nearestClickableNodeIndex = -1;
       let currentNodeIndex = box.nodeIndex;
 
       while (currentNodeIndex !== -1 && currentNodeIndex !== undefined) {
         if (publicState.nodes.isClickable && publicState.nodes.isClickable.index.includes(currentNodeIndex)) {
-          nearestClickableNodeIndex = currentNodeIndex;
           parentBackendNodeId = publicState.nodes.backendNodeId[currentNodeIndex];
           parentNodeIndex = currentNodeIndex;
           break;
@@ -356,7 +350,7 @@ export default class TerminalBrowser extends EventEmitter {
     });
 
     // Add grouped elements to tabbable
-    elementsByParentId.forEach((elem, id) => {
+    elementsByParentId.forEach(elem => {
       tabbable.push({
         type: elem.type,
         backendNodeId: elem.backendNodeId,
@@ -769,7 +763,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   // Extracted method for global keybindings
-  handleGlobalKeybindings(key, isListening) {
+  handleGlobalKeybindings(key) {
     if (key === 'CTRL_C') {
       this.term.clear();
       this.term.processExit(0);
@@ -1042,7 +1036,7 @@ export default class TerminalBrowser extends EventEmitter {
     } else if (this.focusedElement === 'go') {
       this.emit('navigate', this.addressContent);
       if (this.selectedTabId !== null) {
-        this.tabs.find(t.targetId == this.selectedTabId).url = this.addressContent;
+        this.tabs.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
       }
     }
   }
@@ -1104,7 +1098,7 @@ export default class TerminalBrowser extends EventEmitter {
         this.focusedElement = 'go';
         this.emit('navigate', this.addressContent);
         if (this.selectedTabId !== null) {
-          this.tabs.find(t.targetId == this.selectedTabId).url = this.addressContent;
+          this.tabs.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
         }
       }
       this.render();
@@ -1363,7 +1357,6 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.bgWhite().black(' '.repeat(modalWidth));
 
     // Draw message
-    const wrappedMessage = this.term.wrapColumn({ width: modalWidth - 4 });
     this.term.moveTo(modalX + 2, modalY + 1);
     this.term.bgWhite().black(message);
 
