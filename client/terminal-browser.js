@@ -410,13 +410,20 @@ export default class TerminalBrowser extends EventEmitter {
       const tabText = `${titlePart}${' '.repeat(paddingLength)}[x]`;
 
       this.term.moveTo(x, 1);
-      const isFocused = this.focusedElement == `tabs:${this.targets[i].targetId}`
-      const isSelected = this.selectedTabId == this.targets[i].targetId;
-      if (isFocused) {
-        this.term.bgCyan().black().bold().underline(tabText); // Cyan bg, black fg (since original is blue)
+      const isFocused = this.focusedElement === `tabs:${this.targets[i].targetId}`;
+      const isSelected = this.selectedTabId === this.targets[i].targetId;
+
+      if (isSelected && isFocused) {
+        // Selected and focused: Bright green background, black text
+        this.term.bgBrightGreen().black().bold().underline(tabText);
       } else if (isSelected) {
-        this.term.bgCyan().white().bold().underline(tabText); // Cyan bg, white fg (since original is blue)
+        // Selected but not focused: Bright green background, white text
+        this.term.bgBrightGreen().white().bold().underline(tabText);
+      } else if (isFocused) {
+        // Focused but not selected: Cyan background, black text
+        this.term.bgCyan().black().bold().underline(tabText);
       } else {
+        // Neither focused nor selected: Blue background, default text
         this.term.bgBlue().defaultColor(tabText);
       }
       x += tabText.length;
@@ -424,7 +431,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     this.term.moveTo(this.term.width - this.NEW_TAB_WIDTH + 1, 1);
     if (this.focusedElement === 'newTab') {
-      this.term.bgCyan().black(' [+] '); // Cyan bg, black fg (original white)
+      this.term.bgCyan().black(' [+] ');
     } else {
       this.term.bgBlue().white(' [+] ');
     }
@@ -997,71 +1004,47 @@ export default class TerminalBrowser extends EventEmitter {
         this.focusPreviousElement();
         break;
       case 'h':
-      case 'LEFT': {
-        const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
-        if (this.focusedElement.startsWith('tabs:') && focusedTabIndex >= 0) {
-          this.focusPreviousTab();
-        } else { 
-          this.focusPreviousElement();
-        }
-      }; break;
+      case 'LEFT':
+        // Only move focus, not selection
+        this.focusPreviousElement();
+        break;
       case 'l':
-      case 'RIGHT': {
-        const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
-        if (this.focusedElement.startsWith('tabs:') && focusedTabIndex != -1) {
-          this.focusNextTab();
-        } else { 
-          this.focusNextElement();
-        }
-      }; break;
+      case 'RIGHT':
+        // Only move focus, not selection
+        this.focusNextElement();
+        break;
       case 'UP':
       case 'DOWN':
         this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
         break;
       case '[':
-        this.focusPreviousTab();
+        this.focusPreviousTab(); // Changes selection
         break;
       case ']':
-        this.focusNextTab();
+        this.focusNextTab(); // Changes selection
         break;
     }
   }
 
-
   focusNextTab() {
-    const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
-    const nextTabIndex = (focusedTabIndex + 1) % this.targets.length;
-    this.saveFocusState(); // Save current state before switching
+    // Use selectedTabId to find the current tab index
+    const currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
+    const nextTabIndex = (currentTabIndex + 1) % this.targets.length;
     this.selectedTabId = this.targets[nextTabIndex].targetId;
-    this.focusedElement = `tabs:${this.selectedTabId}`;
-    const focusedTab = this.targets[nextTabIndex];
-    this.emit('tabSelected', focusedTab);
-    this.restoreFocusState(); // Restore state for the new tab
-    this.render();
+    const selectedTab = this.targets[nextTabIndex];
+    this.emit('tabSelected', selectedTab);
+    this.render(); // Ensure the UI updates to reflect the new selection
   }
 
   focusPreviousTab() {
-    const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
-    const previousTabIndex = ((focusedTabIndex - 1) + this.targets.length) % this.targets.length;
-    this.saveFocusState(); // Save current state before switching
+    // Use selectedTabId to find the current tab index
+    const currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
+    const previousTabIndex = (currentTabIndex - 1 + this.targets.length) % this.targets.length;
     this.selectedTabId = this.targets[previousTabIndex].targetId;
-    this.focusedElement = `tabs:${this.selectedTabId}`;
-    const focusedTab = this.targets[previousTabIndex];
-    this.emit('tabSelected', focusedTab);
-    this.restoreFocusState(); // Restore state for the new tab
-    this.render();
+    const selectedTab = this.targets[previousTabIndex];
+    this.emit('tabSelected', selectedTab);
+    this.render(); // Ensure the UI updates to reflect the new selection
   }
-
-  focusPreviousTab() {
-    this.saveFocusState();
-    const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
-    const previousTabIndex = ((focusedTabIndex - 1) + this.targets.length) % this.targets.length;
-    this.selectedTabId = this.targets[previousTabIndex].targetId;
-    this.focusedElement = `tabs:${this.selectedTabId}`;
-    const focusedTab = this.targets[previousTabIndex];
-    this.emit('tabSelected', focusedTab);
-  }
-
   // Extracted method for handling ENTER in UI elements
   handleUIEnter() {
     if (this.focusedElement.startsWith('tabs:')) {
