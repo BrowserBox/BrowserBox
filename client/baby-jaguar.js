@@ -613,7 +613,7 @@
         if (cleanup) cleanup();
 
         debugLog(JSON.stringify({browser,targets},null,2));
-        const selectedTarget = targets[browser.selectedTabIndex];
+        const selectedTarget = targets.find(t => t.targetId == browser.selectedTabId) || targets[0];
         const targetId = selectedTarget.targetId;
         browser.activeTarget = selectedTarget;
 
