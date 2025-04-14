@@ -1,63 +1,45 @@
 ﻿import termkit from 'terminal-kit';
 import { EventEmitter } from 'events';
-import {sleep, focusLog, debugLog, logClicks} from './log.js';
-import {getAncestorInfo} from './layout.js';
-import {sessions,getClickedBox,focusInput,renderedBoxes,handleClick} from './baby-jaguar.js';
-import KEYS from './kbd.js';
-import { dinoGame } from './dino.js';
+import { sleep, debugLog } from './log.js';
+import { getAncestorInfo } from './layout.js';
+import { sessions, getClickedBox, focusInput, renderedBoxes } from './baby-jaguar.js';
+import { FocusManager } from './focus-manager.js';
+import { InputManager } from './input-manager.js';
 
 const term = termkit.terminal;
 
 export default class TerminalBrowser extends EventEmitter {
   constructor(options = {}, getState) {
     super();
+    this.focusManager = new FocusManager(getState);
     const ogEmit = this.emit.bind(this);
-    this.focusState = new Map();
     this.emit = (...stuff) => {
-      switch(stuff[0]) {
+      switch (stuff[0]) {
         case 'scroll':
-          this.tabbableCached = false;
+          this.focusManager.tabbableCached = false;
           break;
         case 'tabSelected':
           const targetId = stuff[1]?.targetId;
           const sessionIdForTarget = sessions.get(targetId);
           debugLog(`tabSelected event: targetId=${targetId}, sessionIdForTarget=${sessionIdForTarget}`);
-          if (!this.focusState.has(sessionIdForTarget)) {
-            this.tabbableCached = false;
+          if (!this.focusManager.focusState.has(sessionIdForTarget)) {
+            this.focusManager.tabbableCached = false;
           }
+          this.inputManager.saveFocusState();
           break;
         case 'navigate':
         case 'targetInfoChanged':
-          this.tabbableCached = false;
-          this.inputFields.clear();
-          this.focusedElement = `tabs:${this.selectedTabId}`;
-          this.currentFocusIndex = 0;
-          this.previousFocusedElement = null;
-          // Update address bar if this is a navigate event
-          if (stuff[0] === 'navigate') {
-            const newUrl = stuff[1]; // The URL from the navigate event
-            this.addressContent = newUrl;
-            this.cursorPosition = newUrl.length;
-            const selectedTab = this.targets.find(t => t.targetId === this.selectedTabId);
-            if (selectedTab) {
-              selectedTab.url = newUrl;
-            }
-          }
-          this.render();
           break;
         default:
           break;
-      } 
+      }
       return ogEmit(...stuff);
     };
-    this.currentFocusIndex = 0;
     this.getState = getState;
     this.term = term;
     this.options = {
-      tabWidth: options.tabWidth || Math.max(Math.ceil(this.term.width/4), 15),
-      initialTabs: options.initialTabs || [
-        { title: 'Home', url: 'https://home.com' },
-      ],
+      tabWidth: options.tabWidth || Math.max(Math.ceil(this.term.width / 4), 15),
+      initialTabs: options.initialTabs || [{ title: 'Home', url: 'https://home.com' }],
       colors: options.colors || ['brightBlue'],
     };
 
@@ -71,8 +53,7 @@ export default class TerminalBrowser extends EventEmitter {
     }
     this.tabOffset = 0;
     this.selectedTabId = this.targets[0]?.targetId || null;
-    this.focusedElement = `tabs:${this.selectedTabId}`;
-    this.previousFocusedElement = null;
+    this.focusManager.setFocusedElement(`tabs:${this.selectedTabId}`);
     this.addressContent = this.targets[0]?.url || '';
     this.cursorPosition = this.addressContent.length;
 
@@ -88,7 +69,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.ADDRESS_WIDTH = this.term.width - this.BACK_WIDTH - this.FORWARD_WIDTH - this.GO_WIDTH - 4;
     this.NEW_TAB_WIDTH = 5;
 
-    this.keyBuffer = '';
+    this.inputManager = new InputManager(this.term, this);
 
     this.ditzyTune();
 
@@ -101,93 +82,21 @@ export default class TerminalBrowser extends EventEmitter {
 
     // Start rendering and input handling
     this.render();
-    this.setupInput();
-  }
-
-  saveFocusState() {
-    const { sessionId } = this.getState();
-    const {
-      tabbableCached,
-      selectedTabId,
-      focusedElement,
-      previousFocusedElement,
-      cursorPosition,
-      currentFocusIndex
-    } = this;
-    const focusState = {
-      tabbableCached: false, // Force recompute on restore
-      selectedTabId,
-      focusedElement,
-      previousFocusedElement,
-      cursorPosition,
-      currentFocusIndex
-    };
-    focusLog('save', sessionId, focusState, (new Error).stack);
-    debugLog(`Saving focus state for sessionId: ${sessionId}, focusedElement: ${focusedElement}`);
-    this.focusState.set(sessionId, focusState);
-  }
-
-  restoreFocusState() {
-    const { sessionId } = this.getState();
-    const focusState = this.focusState.get(sessionId);
-    debugLog(`Restoring focus state for sessionId: ${sessionId}, found state: ${JSON.stringify(focusState)}`);
-    if (!focusState) {
-      debugLog(`No focus state found for sessionId: ${sessionId}, resetting to default`);
-      this.tabbableCached = false;
-      this.currentFocusIndex = 0;
-      this.focusedElement = `tabs:${this.selectedTabId || this.targets[0]?.targetId || ''}`;
-      this.previousFocusedElement = null;
-      this.cursorPosition = 0;
-      return;
-    }
-    focusLog('restore', sessionId, focusState, (new Error).stack);
-
-    // Validate the focusedElement
-    let restoredFocusedElement = focusState.focusedElement;
-    if (restoredFocusedElement.startsWith('input:') || restoredFocusedElement.startsWith('clickable:')) {
-      const tabbable = this.computeTabbableElements();
-      const elementExists = tabbable.some(el => {
-        if (restoredFocusedElement.startsWith('input:')) {
-          return el.type === 'input' && `input:${el.backendNodeId}` === restoredFocusedElement;
-        } else if (restoredFocusedElement.startsWith('clickable:')) {
-          return el.type === 'clickable' && `clickable:${el.backendNodeId}` === restoredFocusedElement;
-        }
-        return false;
-      });
-      if (!elementExists) {
-        debugLog(`Restored focusedElement ${restoredFocusedElement} no longer exists, resetting to tab bar`);
-        restoredFocusedElement = `tabs:${this.selectedTabId}`;
-        focusState.currentFocusIndex = 0; // Reset index since element is gone
-      }
-    }
-
-    this.tabbableCached = false;
-    this.selectedTabId = focusState.selectedTabId;
-    this.focusedElement = restoredFocusedElement;
-    this.previousFocusedElement = focusState.previousFocusedElement;
-    this.cursorPosition = focusState.cursorPosition;
-    this.currentFocusIndex = focusState.currentFocusIndex || 0;
+    this.inputManager.setupInput();
   }
 
   async ditzyTune() {
     const { spawn } = await import('child_process');
-
-    // Spawn ditzrunner.js to play the tune
     const runnerProcess = spawn('node', ['ditzrunner.js'], {
-      detached: true, // Run as a detached process
-      stdio: 'ignore', // Ignore stdout/stderr
-      windowsHide: true // Hide the window (no effect on macOS, but included for cross-platform)
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
     });
-
-    // Detach the process so it runs independently
     runnerProcess.unref();
   }
 
   async splashScreen() {
-    // Clear the terminal
     this.term.clear();
-
-    // The ASCII logo
     const logo = [
       '     ██   ██                                  ██    ',
       '    ░██  ██                                  ░██    ',
@@ -196,32 +105,25 @@ export default class TerminalBrowser extends EventEmitter {
       '    ░██░██  ░███████ ░██ ░  ░██  ░██░███████ ░██    ',
       '    ░██░░██ ░██░░░░  ░██    ░██  ░██░██░░░░  ░██    ',
       '    ░██ ░░██░░██████░███    ███  ░██░░██████ ███    ',
-      '    ░░   ░░  ░░░░░░ ░░░    ░░░   ░░  ░░░░░░ ░░░     '
+      '    ░░   ░░  ░░░░░░ ░░░    ░░░   ░░  ░░░░░░ ░░░     ',
     ];
 
-    // Define rainbow colors
     const rainbowColors = [
       { r: 255, g: 0, b: 0 },
       { r: 255, g: 165, b: 0 },
       { r: 255, g: 255, b: 0 },
       { r: 0, g: 255, b: 0 },
       { r: 0, g: 0, b: 255 },
-      { r: 128, g: 0, b: 128 }
+      { r: 128, g: 0, b: 128 },
     ];
 
-    // Dimensions of the logo
     const logoHeight = logo.length;
     const logoWidth = logo[0].length;
-
-    // Center the logo
     const startY = Math.floor((this.term.height - logoHeight) / 2);
     const startX = Math.floor((this.term.width - logoWidth) / 2);
-
-    // Calculate the diagonal gradient
     const diagonalLength = Math.sqrt(logoWidth * logoWidth + logoHeight * logoHeight);
     const colorStep = diagonalLength / (rainbowColors.length - 1);
 
-    // Render the logo with a diagonal gradient
     for (let y = 0; y < logoHeight; y++) {
       const line = logo[y];
       for (let x = 0; x < logoWidth; x++) {
@@ -243,91 +145,13 @@ export default class TerminalBrowser extends EventEmitter {
       }
     }
 
-
-    // Reset terminal colors
     this.term.bgDefaultColor().defaultColor();
     this.term.styleReset();
   }
 
-  focusNearestInRow(direction) {
-    const tabbable = this.computeTabbableElements();
-    if (!tabbable.length) return;
-
-    // Find current element
-    let current;
-    if (this.focusedElement.startsWith('tabs:')) {
-      current = tabbable.find(el => el.type === 'tab' && `tabs:${el.targetId}` == this.focusedElement) || tabbable[0];
-    } else if (this.focusedElement === 'newTab') {
-      current = tabbable.find(el => el.type === 'newTab');
-    } else if (this.focusedElement.startsWith('input:')) {
-      const id = this.focusedElement.split(':')[1];
-      current = tabbable.find(el => el.type === 'input' && el.backendNodeId == id);
-    } else if (this.focusedElement.startsWith('clickable:')) {
-      const id = this.focusedElement.split(':')[1];
-      current = tabbable.find(el => el.type === 'clickable' && el.backendNodeId == id);
-    } else {
-      current = tabbable.find(el => el.type === this.focusedElement) || tabbable[0];
-    }
-    if (!current) return;
-
-    const currentY = current.y;
-    const currentCenterX = current.x + (current.width || this.options.tabWidth) / 2;
-
-    // Special transitions
-    if (direction === 'down' && currentY === 1) {
-      const omniboxElements = tabbable.filter(el => el.y === this.TAB_HEIGHT + 2);
-      if (omniboxElements.length) {
-        const nearest = omniboxElements.reduce((best, el) => {
-          const elCenterX = el.x + (el.width || this.BACK_WIDTH) / 2;
-          const bestCenterX = best.x + (best.width || this.BACK_WIDTH) / 2;
-          return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
-        }, omniboxElements[0]);
-        this.currentFocusIndex = tabbable.findIndex(el => el === nearest); // Sync index
-        this.setFocus(nearest);
-        return;
-      }
-    } else if (direction === 'up' && currentY === this.TAB_HEIGHT + 2) {
-      const tabElements = tabbable.filter(el => el.y === 1);
-      if (tabElements.length) {
-        const nearest = tabElements.reduce((best, el) => {
-          const elCenterX = el.x + (el.width || this.options.tabWidth) / 2;
-          const bestCenterX = best.x + (best.width || this.options.tabWidth) / 2;
-          return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
-        }, tabElements[0]);
-        this.currentFocusIndex = tabbable.findIndex(el => el === nearest); // Sync index
-        this.setFocus(nearest);
-        return;
-      }
-    }
-
-    // General row navigation
-    const targetY = direction === 'down' ? currentY + 1 : currentY - 1;
-    let candidates = tabbable.filter(el => el.y === targetY);
-
-    if (!candidates.length) {
-      candidates = tabbable.filter(el => direction === 'down' ? el.y > currentY : el.y < currentY);
-      if (!candidates.length) return;
-      const nextRowY = direction === 'down'
-        ? Math.min(...candidates.map(el => el.y))
-        : Math.max(...candidates.map(el => el.y));
-      candidates = tabbable.filter(el => el.y === nextRowY);
-    }
-
-    const nearest = candidates.reduce((best, el) => {
-      const elCenterX = el.x + (el.width || this.options.tabWidth) / 2;
-      const bestCenterX = best.x + (best.width || this.options.tabWidth) / 2;
-      return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
-    }, candidates[0]);
-
-    this.currentFocusIndex = tabbable.findIndex(el => el === nearest); // Sync index
-    this.setFocus(nearest);
-  }
-
   computeTabbableElements() {
-    if (this.tabbableCached) return this.tabbableCache;
     const tabbable = [];
 
-    // Browser UI elements
     this.targets.forEach((tab, index) => {
       const x = 1 + index * this.options.tabWidth;
       tabbable.push({ type: 'tab', index, x, y: 1, targetId: tab.targetId });
@@ -346,7 +170,6 @@ export default class TerminalBrowser extends EventEmitter {
 
     debugLog('Rendered Boxes Count:', renderedBoxes.length);
 
-    // Helper to check if a node has clickable descendants
     const hasClickableDescendants = (nodeIdx) => {
       const descendants = [];
       const collectDescendants = (idx) => {
@@ -361,13 +184,10 @@ export default class TerminalBrowser extends EventEmitter {
       return descendants.some(idx => publicState.nodes.isClickable?.index.includes(idx));
     };
 
-    // Group clickable elements by their nearest clickable ancestor
     const elementsByParentId = new Map();
     renderedBoxes.forEach(box => {
-      // Include both inputs and clickable elements, including buttons
       if (!box.isClickable && box.type !== 'input' && box.ancestorType !== 'button') return;
 
-      // Find the clickable parent's backendNodeId
       let parentBackendNodeId = box.backendNodeId;
       let parentNodeIndex = box.nodeIndex;
       let currentNodeIndex = box.nodeIndex;
@@ -381,17 +201,15 @@ export default class TerminalBrowser extends EventEmitter {
         currentNodeIndex = publicState.nodeToParent.get(currentNodeIndex);
       }
 
-      // Skip if the nearest clickable ancestor is #document
       const nodeNameIdx = publicState.nodes.nodeName[parentNodeIndex];
       const nodeName = nodeNameIdx >= 0 ? publicState.strings[nodeNameIdx] : '';
       if (nodeName === '#document' || publicState.nodes.nodeType[parentNodeIndex] === 9) {
-        return; // Skip #document
+        return;
       }
 
-      // Include buttons even if they have clickable descendants
       const isButton = box.ancestorType === 'button';
       if (!isButton && hasClickableDescendants(parentNodeIndex)) {
-        return; // Skip non-buttons with clickable descendants
+        return;
       }
 
       if (!elementsByParentId.has(parentBackendNodeId)) {
@@ -404,7 +222,7 @@ export default class TerminalBrowser extends EventEmitter {
           minX: box.termX,
           maxX: box.termX + box.termWidth - 1,
           minY: box.termY,
-          maxY: box.termY
+          maxY: box.termY,
         });
       }
 
@@ -417,7 +235,6 @@ export default class TerminalBrowser extends EventEmitter {
       elem.maxY = Math.max(elem.maxY, box.termY);
     });
 
-    // Add grouped elements to tabbable
     elementsByParentId.forEach(elem => {
       tabbable.push({
         type: elem.type,
@@ -428,15 +245,13 @@ export default class TerminalBrowser extends EventEmitter {
         height: elem.maxY - elem.minY + 1,
         text: elem.text,
         ancestorType: elem.ancestorType,
-        boxes: elem.boxes
+        boxes: elem.boxes,
       });
     });
 
     debugLog('Final Tabbable Elements Count:', tabbable.length);
     debugLog(JSON.stringify(tabbable, null, 2));
     tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
-    this.tabbableCached = true;
-    this.tabbableCache = tabbable;
     return tabbable;
   }
 
@@ -452,27 +267,23 @@ export default class TerminalBrowser extends EventEmitter {
       const tabText = `${titlePart}${' '.repeat(paddingLength)}[x]`;
 
       this.term.moveTo(x, 1);
-      const isFocused = this.focusedElement === `tabs:${this.targets[i].targetId}`;
+      const isFocused = this.focusManager.getFocusedElement() === `tabs:${this.targets[i].targetId}`;
       const isSelected = this.selectedTabId === this.targets[i].targetId;
 
       if (isSelected && isFocused) {
-        // Selected and focused: Bright green background, black text
         this.term.bgBrightGreen().black().bold().underline(tabText);
       } else if (isSelected) {
-        // Selected but not focused: Bright green background, white text
         this.term.bgBrightGreen().white().bold().underline(tabText);
       } else if (isFocused) {
-        // Focused but not selected: Cyan background, black text to match other UI elements
         this.term.bgCyan().black().bold().underline(tabText);
       } else {
-        // Neither focused nor selected: Blue background, default text
         this.term.bgBlue().defaultColor(tabText);
       }
       x += tabText.length;
     }
 
     this.term.moveTo(this.term.width - this.NEW_TAB_WIDTH + 1, 1);
-    if (this.focusedElement === 'newTab') {
+    if (this.focusManager.getFocusedElement() === 'newTab') {
       this.term.bgCyan().black(' [+] ');
     } else {
       this.term.bgBlue().white(' [+] ');
@@ -488,25 +299,25 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.bgBlack().cyan('─'.repeat(this.term.width));
 
     this.term.moveTo(2, this.TAB_HEIGHT + 2);
-    if (this.focusedElement === 'back') {
-      this.term.bgCyan().gray().bold(' Back '); // Original bgGray.white, so gray becomes fg
+    if (this.focusManager.getFocusedElement() === 'back') {
+      this.term.bgCyan().gray().bold(' Back ');
     } else {
       this.term.bgGray().white(' Back ');
     }
 
     this.term.moveTo(this.BACK_WIDTH + 2, this.TAB_HEIGHT + 2);
-    if (this.focusedElement === 'forward') {
-      this.term.bgCyan().gray().bold(' Forward '); // Original bgGray.white, so gray becomes fg
+    if (this.focusManager.getFocusedElement() === 'forward') {
+      this.term.bgCyan().gray().bold(' Forward ');
     } else {
       this.term.bgGray().white(' Forward ');
     }
 
     this.term.moveTo(this.BACK_WIDTH + this.FORWARD_WIDTH + 2, this.TAB_HEIGHT + 2);
-    if (this.focusedElement === 'address') {
+    if (this.focusManager.getFocusedElement() === 'address') {
       const beforeCursor = this.addressContent.slice(0, this.cursorPosition);
       const cursorChar = this.addressContent[this.cursorPosition] || ' ';
       const afterCursor = this.addressContent.slice(this.cursorPosition + 1);
-      this.term.bgCyan().white(beforeCursor); // Original bgWhite.black, so white becomes fg
+      this.term.bgCyan().white(beforeCursor);
       this.term.bgBlack().brightWhite().bold(cursorChar);
       this.term.bgCyan().white(afterCursor.padEnd(this.ADDRESS_WIDTH - beforeCursor.length - 1, ' '));
     } else {
@@ -514,8 +325,8 @@ export default class TerminalBrowser extends EventEmitter {
     }
 
     this.term.moveTo(this.term.width - this.GO_WIDTH, this.TAB_HEIGHT + 2);
-    if (this.focusedElement === 'go') {
-      this.term.bgCyan().green().bold(' Go '); // Original bgGreen.white, so green becomes fg
+    if (this.focusManager.getFocusedElement() === 'go') {
+      this.term.bgCyan().green().bold(' Go ');
     } else {
       this.term.bgGreen().white(' Go ');
     }
@@ -545,7 +356,7 @@ export default class TerminalBrowser extends EventEmitter {
     inputState.width = width;
 
     const displayWidth = Math.min(width, this.term.width - x + 1);
-    const isFocused = this.focusedElement === `input:${backendNodeIdStr}`;
+    const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
     const value = inputState.value;
     const cursorPos = inputState.cursorPosition;
 
@@ -553,8 +364,8 @@ export default class TerminalBrowser extends EventEmitter {
     if (isFocused) {
       const beforeCursor = value.slice(0, cursorPos);
       const cursorChar = value[cursorPos] || ' ';
-      const afterCursor = value.slice(cursorPos + 1);
-      this.term.bgCyan().white(beforeCursor); // Cyan bg, original white bg becomes fg
+      const afterCursor = value.slice(this.cursorPosition + 1);
+      this.term.bgCyan().white(beforeCursor);
       this.term.bgBlack().brightWhite().bold(cursorChar);
       this.term.bgCyan().white(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
     } else {
@@ -572,14 +383,13 @@ export default class TerminalBrowser extends EventEmitter {
     const { x, y, width, key, options: selectOptions = [], onChange } = options;
     const backendNodeIdStr = '' + key;
 
-    // Initialize state if not present
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
         type: 'select',
-        value: selectOptions.length > 0 ? selectOptions[0].value : '', // Default to first option
-        selectedIndex: 0, // Track the selected option index
-        options: selectOptions, // Array of { value, label }
-        cursorPosition: 0, // For consistency, though not used for select
+        value: selectOptions.length > 0 ? selectOptions[0].value : '',
+        selectedIndex: 0,
+        options: selectOptions,
+        cursorPosition: 0,
         focused: false,
         onChange,
         x,
@@ -594,7 +404,7 @@ export default class TerminalBrowser extends EventEmitter {
     inputState.width = width;
 
     const displayWidth = Math.min(width, this.term.width - x + 1);
-    const isFocused = this.focusedElement === `input:${backendNodeIdStr}`;
+    const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
     const selectedOption = inputState.options[inputState.selectedIndex] || { label: '' };
 
     this.term.moveTo(x, y);
@@ -615,11 +425,10 @@ export default class TerminalBrowser extends EventEmitter {
     const { x, y, width, key, name, value, checked = false, onChange } = options;
     const backendNodeIdStr = '' + key;
 
-    // Initialize state if not present
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
         type: 'radio',
-        name, // To group radios together
+        name,
         value,
         checked,
         focused: false,
@@ -634,10 +443,10 @@ export default class TerminalBrowser extends EventEmitter {
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
-    inputState.checked = checked; // Update checked state
+    inputState.checked = checked;
 
     const displayWidth = Math.min(width, this.term.width - x + 1);
-    const isFocused = this.focusedElement === `input:${backendNodeIdStr}`;
+    const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
     const label = value || '';
 
     this.term.moveTo(x, y);
@@ -658,7 +467,6 @@ export default class TerminalBrowser extends EventEmitter {
     const { x, y, width, key, value, checked = false, onChange } = options;
     const backendNodeIdStr = '' + key;
 
-    // Initialize state if not present
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
         type: 'checkbox',
@@ -676,10 +484,10 @@ export default class TerminalBrowser extends EventEmitter {
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
-    inputState.checked = checked; // Update checked state
+    inputState.checked = checked;
 
     const displayWidth = Math.min(width, this.term.width - x + 1);
-    const isFocused = this.focusedElement === `input:${backendNodeIdStr}`;
+    const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
     const label = value || '';
 
     this.term.moveTo(x, y);
@@ -697,9 +505,9 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   redrawFocusedInput() {
-    if (!this.focusedElement.startsWith('input:')) return;
+    if (!this.focusManager.getFocusedElement()?.startsWith('input:')) return;
 
-    const backendNodeId = this.focusedElement.split(':')[1];
+    const backendNodeId = this.focusManager.getFocusedElement().split(':')[1];
     const inputState = this.inputFields.get(backendNodeId);
     if (!inputState || !inputState.focused) return;
 
@@ -710,8 +518,8 @@ export default class TerminalBrowser extends EventEmitter {
     const beforeCursor = value.slice(0, cursorPosition);
     const cursorChar = value[cursorPosition] || ' ';
     const afterCursor = value.slice(cursorPosition + 1);
-    this.term.bgCyan().black(beforeCursor); // Cyan background for focus
-    this.term.bgBlack().brightWhite().bold(cursorChar); // Cursor highlight
+    this.term.bgCyan().black(beforeCursor);
+    this.term.bgBlack().brightWhite().bold(cursorChar);
     this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
     this.term.bgDefaultColor();
     this.term.defaultColor();
@@ -735,22 +543,18 @@ export default class TerminalBrowser extends EventEmitter {
   focusInput(backendNodeId) {
     const backendNodeIdStr = '' + backendNodeId;
     if (this.inputFields.has(backendNodeIdStr)) {
-      // Redraw previous input as unfocused
-      if (this.previousFocusedElement && this.previousFocusedElement.startsWith('input:')) {
-        const prevBackendNodeId = this.previousFocusedElement.split(':')[1];
-        if (prevBackendNodeId !== backendNodeIdStr) { // Avoid redrawing if same input
+      if (this.focusManager.getPreviousFocusedElement()?.startsWith('input:')) {
+        const prevBackendNodeId = this.focusManager.getPreviousFocusedElement().split(':')[1];
+        if (prevBackendNodeId !== backendNodeIdStr) {
           this.redrawUnfocusedInput(prevBackendNodeId);
         }
       }
 
-      this.focusedElement = `input:${backendNodeIdStr}`;
-      this.previousFocusedElement = this.focusedElement; // Update previous focus
+      this.focusManager.setFocusedElement(`input:${backendNodeIdStr}`);
+      this.focusManager.setPreviousFocusedElement(this.focusManager.getFocusedElement());
       const inputState = this.inputFields.get(backendNodeIdStr);
       inputState.focused = true;
-      logClicks(`Focused input: ${backendNodeIdStr}, value: ${inputState.value}`);
       this.redrawFocusedInput();
-    } else {
-      logClicks(`Cannot focus ${backendNodeIdStr}: no state found`);
     }
   }
 
@@ -765,432 +569,84 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.moveTo(1, this.term.height);
   }
 
-  async handleDinoCommand(key, isListening) {
-    if (!isListening) return false;
-
-    // Only check for "dino" when no input or address bar is focused
-    if (!this.focusedElement.startsWith('input:') && this.focusedElement !== 'address') {
-      if (key.length === 1) {
-        this.keyBuffer += key.toLowerCase();
-        if (this.keyBuffer.length > 4) {
-          this.keyBuffer = this.keyBuffer.slice(-4); // Keep only the last 4 characters
-        }
-        if (this.keyBuffer === 'dino') {
-          this.keyBuffer = ''; // Reset buffer
-          // Disable browser input handling
-          this.term.off('key');
-          this.term.off('mouse');
-          // Run the Dino game
-          await dinoGame(() => {
-            // Callback to restore browser input handling
-            this.setupInput();
-            this.render(); // Redraw browser UI
-          });
-          return true; // Indicate that we handled the key
-        }
-      } else {
-        // Reset buffer on non-character keys (like arrow keys, ENTER, etc.)
-        this.keyBuffer = '';
-      }
-    } else {
-      // Reset buffer if we're in an input field or address bar
-      this.keyBuffer = '';
-    }
-    return false; // Indicate that we didn't handle the key
-  }
-
-  setupInput() {
-    this.term.grabInput({ mouse: 'button' });
-    let isListening = true;
-
-    this.term.on('key', async (key) => {
-      logClicks(`Key pressed: ${key}, focusedElement: ${this.focusedElement}`);
-
-      // Handle Dino command
-      if (await this.handleDinoCommand(key, isListening)) {
-        isListening = false; // Pause browser input while game runs
-        return;
-      }
-
-      // Handle global keybindings
-      if (this.handleGlobalKeybindings(key, isListening)) {
-        isListening = false;
-        return;
-      }
-
-      // Handle specific element types
-      if (this.focusedElement.startsWith('input:')) {
-        this.handleInputKey(key);
-      } else if (this.focusedElement.startsWith('clickable:')) {
-        this.handleClickableKey(key);
-      } else if (this.focusedElement === 'address') {
-        this.handleAddressKey(key);
-      } else {
-        this.handleUIKey(key);
-      }
-    });
-
-    this.term.on('mouse', (name, data) => {
-      this.handleMouseEvent(name, data);
-    });
-
-    this.stopListening = () => { isListening = false; };
-  }
-
-  // Extracted method for global keybindings
-  handleGlobalKeybindings(key) {
-    if (key === 'CTRL_C') {
-      this.term.clear();
-      this.term.processExit(0);
-      return true; // Stop listening
-    }
-    if (key === 'CTRL_T') {
-      this.emit('newTabRequested', { title: `New ${this.targets.length + 1}`, url: 'about:blank' });
-      return false;
-    }
-    if (key === 'CTRL_W') {
-      if (this.selectedTabId) this.closeTab(this.selectedTabId);
-      return false;
-    }
-    return false; // Continue listening
-  }
-
-  // Extracted method for input field key handling
-  async handleInputKey(key) {
-    const backendNodeId = this.focusedElement.split(':')[1];
-    const inputState = this.inputFields.get(backendNodeId);
-    if (!inputState) {
-      logClicks(`No input state for ${backendNodeId}`);
-      return;
-    }
-    logClicks(`Input focused, backendNodeId: ${backendNodeId}, current value: ${inputState.value}`);
-
-    if (key === 'ENTER') {
-      await this.handleInputCommit(backendNodeId, inputState);
-      this.redrawUnfocusedInput(backendNodeId);
-      this.focusedElement = `tabs:${this.selectedTabId}`;
-      this.previousFocusedElement = this.focusedElement;
-      if (inputState.onChange) inputState.onChange(inputState.value);
-      this.render();
-    } else {
-      switch (key) {
-        case 'LEFT':
-          if (inputState.cursorPosition > 0) inputState.cursorPosition--;
-          this.redrawFocusedInput();
-          break;
-        case 'RIGHT':
-          if (inputState.cursorPosition < inputState.value.length) inputState.cursorPosition++;
-          this.redrawFocusedInput();
-          break;
-        case 'BACKSPACE':
-          if (inputState.cursorPosition > 0) {
-            inputState.value = inputState.value.slice(0, inputState.cursorPosition - 1) + inputState.value.slice(inputState.cursorPosition);
-            inputState.cursorPosition--;
-            if (inputState.onChange) inputState.onChange(inputState.value);
-            this.redrawFocusedInput();
-          }
-          break;
-        case 'TAB':
-          this.focusNextElement();
-          break;
-        case 'SHIFT_TAB':
-          this.focusPreviousElement();
-          break;
-        case 'UP':
-        case 'DOWN':
-          this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-          break;
-        default:
-          if (key.length === 1) {
-            inputState.value = inputState.value.slice(0, inputState.cursorPosition) + key + inputState.value.slice(inputState.cursorPosition);
-            inputState.cursorPosition++;
-            logClicks(`Updated value: ${inputState.value}`);
-            if (inputState.onChange) inputState.onChange(inputState.value);
-            this.redrawFocusedInput();
-          }
-          break;
-      }
-    }
-  }
-
-  // Extracted method for handling ENTER in input fields
-  async handleInputCommit(backendNodeId, inputState, {useEnter = true} = {}) {
-    let keys;
-    if ( useEnter ) {
-      keys = KEYS.keyEvent('Enter', 'Space', 'Backspace');
-    } else {
-      keys = KEYS.keyEvent('Space', 'Backspace');
-    }
-    const {send,sessionId} = this.getState();
-    for ( const {command:{name,params}} of keys ) {
-      try {
-        await send(name, params, sessionId);
-        await sleep(50);
-        logClicks(`Sent key (${params.key},${params.type}) event for backendNodeId: ${backendNodeId} and session ${sessionId}`);
-      } catch(error) {
-        logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
-      }
-    }
-  }
-
-  // Extracted method for clickable elements
-  async handleClickableKey(key) {
-    const backendNodeId = this.focusedElement.split(':')[1];
-    const publicState = this.getState();
-    const tabbable = this.computeTabbableElements();
-    const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
-
-    if (key === 'ENTER') {
-      if (focusedElement) {
-        await handleClick({
-          termX: focusedElement.x,
-          termY: focusedElement.y,
-          clickableElements: publicState.clickableElements,
-          clickCounter: publicState.clickCounter,
-          layoutToNode: publicState.layoutToNode,
-          nodeToParent: publicState.nodeToParent,
-          nodes: publicState.nodes,
-        });
-        this.render();
-      } else {
-        logClicks(`No tabbable element found for clickable:${backendNodeId}`);
-      }
-    } else if (key === 'TAB' || key === 'l') {
-      this.focusNextElement();
-    } else if (key === 'SHIFT_TAB' || key === 'h') {
-      this.focusPreviousElement();
-    } else {
-      switch (key) {
-        case 'UP':
-        case 'DOWN':
-          this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-          break;
-        case 'j':
-          this.focusNearestInRow('down');
-          break;
-        case 'k':
-          this.focusNearestInRow('up');
-          break;
-        case '[':
-          this.focusPreviousTab();
-          break;
-        case ']':
-          this.focusNextTab();
-          break;
-      }
-    }
-  }
-
-  // Extracted method for address bar key handling
-  handleAddressKey(key) {
-    switch (key) {
-      case 'ENTER':
-        this.emit('navigate', this.addressContent);
-        if (this.selectedTabId !== null) {
-          this.targets.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
-        }
-        this.render();
-        break;
-      case 'TAB':
-        this.focusNextElement();
-        break;
-      case 'SHIFT_TAB':
-        this.focusPreviousElement();
-        break;
-      case 'LEFT':
-        if (this.cursorPosition > 0) this.cursorPosition--;
-        this.render();
-        break;
-      case 'RIGHT':
-        if (this.cursorPosition < this.addressContent.length) this.cursorPosition++;
-        this.render();
-        break;
-      case 'BACKSPACE':
-        if (this.cursorPosition > 0) {
-          this.addressContent = this.addressContent.slice(0, this.cursorPosition - 1) + this.addressContent.slice(this.cursorPosition);
-          this.cursorPosition--;
-          this.render();
-        }
-        break;
-      case 'UP':
-      case 'DOWN':
-        this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-        break;
-      default:
-        if (key.length === 1) {
-          this.addressContent = this.addressContent.slice(0, this.cursorPosition) + key + this.addressContent.slice(this.cursorPosition);
-          this.cursorPosition++;
-          this.render();
-        }
-        break;
-    }
-  }
-
-  // Extracted method for UI key handling (tabs, back, forward, go, etc.)
-  handleUIKey(key) {
-    switch (key) {
-      case 'j':
-        this.focusNearestInRow('down');
-        break;
-      case 'k':
-        this.focusNearestInRow('up');
-        break;
-      case 'ENTER':
-        this.handleUIEnter();
-        this.render();
-        break;
-      case 'TAB':
-        this.focusNextElement();
-        break;
-      case 'SHIFT_TAB':
-        this.focusPreviousElement();
-        break;
-      case 'h':
-      case 'LEFT':
-        // Only move focus, not selection
-        this.focusPreviousElement();
-        break;
-      case 'l':
-      case 'RIGHT':
-        // Only move focus, not selection
-        this.focusNextElement();
-        break;
-      case 'UP':
-      case 'DOWN':
-        this.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-        break;
-      case '[':
-        this.focusPreviousTab(); // Changes selection
-        break;
-      case ']':
-        this.focusNextTab(); // Changes selection
-        break;
-    }
-  }
-
   focusNextTab() {
-    // Save the current tab's focus state before switching
-    this.saveFocusState();
-
     let currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
     if (currentTabIndex === -1) {
-      currentTabIndex = 0; // Default to first tab if none selected
+      currentTabIndex = 0;
     }
     const nextTabIndex = (currentTabIndex + 1) % this.targets.length;
     this.selectedTabId = this.targets[nextTabIndex].targetId;
     const selectedTab = this.targets[nextTabIndex];
     this.emit('tabSelected', selectedTab);
 
-    // Restore the focus state for the new tab
-    this.restoreFocusState();
+    if (!this.focusManager.isBrowserUIElement(this.focusManager.getFocusedElement())) {
+      const focusRestored = this.focusManager.restoreFocusState(
+        () => this.computeTabbableElements(),
+        element => this.setFocus(element)
+      );
+      if (!focusRestored) {
+        this.focusManager.setFocusedElement(`tabs:${this.selectedTabId}`);
+      }
+    }
+
     this.render();
   }
 
   focusPreviousTab() {
-    // Save the current tab's focus state before switching
-    this.saveFocusState();
-
     let currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
     if (currentTabIndex === -1) {
-      currentTabIndex = 0; // Default to first tab if none selected
+      currentTabIndex = 0;
     }
     const previousTabIndex = (currentTabIndex - 1 + this.targets.length) % this.targets.length;
     this.selectedTabId = this.targets[previousTabIndex].targetId;
     const selectedTab = this.targets[previousTabIndex];
     this.emit('tabSelected', selectedTab);
 
-    // Restore the focus state for the new tab
-    this.restoreFocusState();
+    if (!this.focusManager.isBrowserUIElement(this.focusManager.getFocusedElement())) {
+      const focusRestored = this.focusManager.restoreFocusState(
+        () => this.computeTabbableElements(),
+        element => this.setFocus(element)
+      );
+      if (!focusRestored) {
+        this.focusManager.setFocusedElement(`tabs:${this.selectedTabId}`);
+      }
+    }
+
     this.render();
   }
-  // Extracted method for handling ENTER in UI elements
-  handleUIEnter() {
-    if (this.focusedElement.startsWith('tabs:')) {
-      this.saveFocusState();
-      this.selectedTabId = this.focusedElement.split(':')[1];
-      this.emit('tabSelected', this.targets.find(t => t.targetId == this.selectedTabId));
-    } else if (this.focusedElement === 'newTab') {
-      this.emit('newTabRequested', { title: `New ${this.targets.length + 1}`, url: 'about:blank' });
-    } else if (this.focusedElement === 'back') {
-      this.emit('back');
-    } else if (this.focusedElement === 'forward') {
-      this.emit('forward');
-    } else if (this.focusedElement === 'go') {
-      this.emit('navigate', this.addressContent);
-      if (this.selectedTabId !== null) {
-        this.targets.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
-      }
-    }
-  }
 
-  // Extracted method for mouse events
-  handleMouseEvent(name, data) {
-    const { x, y } = data;
-    if (name === 'MOUSE_LEFT_BUTTON_PRESSED') {
-      this.handleMouseClick(x, y);
-    } else if (name === 'MOUSE_WHEEL_UP' || name === 'MOUSE_WHEEL_DOWN') {
-      if (y > 4) {
-        this.emit('scroll', { direction: name === 'MOUSE_WHEEL_UP' ? -1 : 1 });
-      }
-    }
-  }
+  setFocus(element) {
+    debugLog(`Setting focus to ${element.type}:${element.backendNodeId || element.index || element.type}`);
+    this.focusManager.setPreviousFocusedElement(this.focusManager.getFocusedElement());
 
-  // Extracted method for mouse click handling
-  handleMouseClick(x, y) {
-    // Tab row (y = 1)
-    if (y === 1) {
-      if (x >= this.term.width - this.NEW_TAB_WIDTH + 1 && x <= this.term.width) {
-        this.emit('newTabRequested', { title: `New ${this.targets.length + 1}`, url: 'about:blank' });
-        return;
-      }
-      let tabX = 1;
-      for (let i = this.tabOffset; i < this.targets.length && tabX <= this.term.width - this.NEW_TAB_WIDTH; i++) {
-        const tabEnd = tabX + this.options.tabWidth - 1;
-        if (x >= tabX && x <= tabEnd) {
-          const closeXStart = tabX + this.options.tabWidth - 5;
-          if (x >= closeXStart && x <= closeXStart + 3) {
-            this.closeTab(i);
-          } else {
-            this.saveFocusState();
-            this.selectedTabId = this.targets[i].targetId;
-            this.focusedElement = `tabs:${this.selectedTabId}`;
-            this.emit('tabSelected', this.targets[i]);
-          }
-          return;
-        }
-        tabX += this.options.tabWidth;
-      }
+    if (this.focusManager.getPreviousFocusedElement()?.startsWith('input:')) {
+      const prevId = this.focusManager.getPreviousFocusedElement().split(':')[1];
+      this.redrawUnfocusedInput(prevId);
+    } else if (this.focusManager.getPreviousFocusedElement()?.startsWith('clickable:')) {
+      const prevId = this.focusManager.getPreviousFocusedElement().split(':')[1];
+      this.redrawUnfocusedElement(prevId);
     }
 
-    // Omnibox row (y = 3)
-    if (y === this.TAB_HEIGHT + 2) {
-      if (x >= 2 && x <= this.BACK_WIDTH + 1) {
-        this.focusedElement = 'back';
-        this.emit('back');
-      } else if (x >= this.BACK_WIDTH + 2 && x <= this.BACK_WIDTH + this.FORWARD_WIDTH + 1) {
-        this.focusedElement = 'forward';
-        this.emit('forward');
-      } else if (x >= this.BACK_WIDTH + this.FORWARD_WIDTH + 2 && x <= this.BACK_WIDTH + this.FORWARD_WIDTH + this.ADDRESS_WIDTH + 1) {
-        this.focusedElement = 'address';
-        this.cursorPosition = Math.min(
-          Math.max(0, x - (this.BACK_WIDTH + this.FORWARD_WIDTH + 2)),
-          this.addressContent.length
-        );
-      } else if (x >= this.term.width - this.GO_WIDTH + 1 && x <= this.term.width) {
-        this.focusedElement = 'go';
-        this.emit('navigate', this.addressContent);
-        if (this.selectedTabId !== null) {
-          this.targets.find(t => t.targetId == this.selectedTabId).url = this.addressContent;
-        }
-      }
-      this.render();
-      return;
+    if (element.type === 'tab') {
+      this.focusManager.setFocusedElement(`tabs:${element.targetId}`);
+      this.drawTabs();
+    } else if (element.type === 'input') {
+      const publicState = this.getState();
+      const midX = element.x + Math.floor(element.width / 2);
+      const midY = element.y + Math.floor(element.height / 2);
+      const clickedBox = getClickedBox({ termX: midX, termY: midY });
+      const { send, sessionId } = publicState;
+      focusInput({ clickedBox, browser: this, send, sessionId, termX: element.x + element.width });
+    } else if (element.type === 'clickable') {
+      this.focusManager.setFocusedElement(`clickable:${element.backendNodeId}`);
+      this.redrawClickable(element.backendNodeId);
+    } else {
+      this.focusManager.setFocusedElement(element.type);
+      if (element.type === 'address') this.cursorPosition = this.addressContent.length;
+      this.drawOmnibox();
     }
-
-    // Content area (y > 4)
-    if (y > 4) {
-      this.emit('click', { x, y });
-    }
+    this.term.bgDefaultColor().defaultColor();
+    this.term.styleReset();
   }
 
   redrawClickable(backendNodeId) {
@@ -1202,7 +658,6 @@ export default class TerminalBrowser extends EventEmitter {
     debugLog(`Boxes for parent ${backendNodeId}: ${JSON.stringify(boxes)}`);
     debugLog(`AncestorType for ${backendNodeId}: ${ancestorType}`);
 
-    // Render each line at its termY
     for (let y = renderData.minY; y <= maxY; y++) {
       this.term.moveTo(minX, y);
       const boxAtY = boxes.find(b => b.termY === y);
@@ -1232,7 +687,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     const { boxes, minX, maxY, ancestorType } = renderData;
 
-    if ( !boxes.length ) return;
+    if (!boxes.length) return;
 
     if (boxes[0].type === 'input') {
       const inputState = this.inputFields.get('' + backendNodeId);
@@ -1252,10 +707,13 @@ export default class TerminalBrowser extends EventEmitter {
         this.term.styleReset();
         if (ancestorType === 'button') {
           this.term.bgGreen().black(lineText);
+        } else if (ancestorType === 'hyperlink') {
+          this.term.cyan().underline(lineText);
+        } else if (ancestorType === 'other_clickable') {
+          this.term.bold(lineText);
+        } else {
+          this.term(lineText);
         }
-        else if (ancestorType === 'hyperlink') this.term.cyan().underline(lineText);
-        else if (ancestorType === 'other_clickable') this.term.bold(lineText);
-        else this.term(lineText);
       }
     }
     this.term.bgDefaultColor().defaultColor();
@@ -1268,7 +726,6 @@ export default class TerminalBrowser extends EventEmitter {
       return null;
     }
 
-    // Find all descendant node indices under this backendNodeId
     const descendantNodeIndices = new Set();
     let parentNodeIndex = -1;
     publicState.nodes.backendNodeId.forEach((id, nodeIdx) => {
@@ -1276,11 +733,10 @@ export default class TerminalBrowser extends EventEmitter {
         parentNodeIndex = nodeIdx;
         descendantNodeIndices.add(nodeIdx);
         const collectDescendants = (idx) => {
-          // Collect all nodes whose parent is idx
           publicState.nodeToParent.forEach((parentIdx, childIdx) => {
             if (parentIdx === idx) {
               descendantNodeIndices.add(childIdx);
-              collectDescendants(childIdx); // Recurse to get grandchildren, etc.
+              collectDescendants(childIdx);
             }
           });
         };
@@ -1302,76 +758,12 @@ export default class TerminalBrowser extends EventEmitter {
     const minY = Math.min(...boxes.map(b => b.termY));
     const maxY = Math.max(...boxes.map(b => b.termY));
 
-    // Sort boxes by termY for rendering
     boxes.sort((a, b) => a.termY - b.termY);
 
     return { boxes, minX, maxX, minY, maxY, ancestorType };
   }
 
-  setFocus(element) {
-    debugLog(`Setting focus from ${this.focusedElement} to ${element.type}:${element.backendNodeId || element.index || element.type}`);
-    this.previousFocusedElement = this.focusedElement;
-
-    // Unfocus previous element
-    if (this.previousFocusedElement?.startsWith('input:')) {
-      const prevId = this.previousFocusedElement.split(':')[1];
-      this.redrawUnfocusedElement(prevId);
-    } else if (this.previousFocusedElement?.startsWith('clickable:')) {
-      const prevId = this.previousFocusedElement.split(':')[1];
-      this.redrawUnfocusedElement(prevId);
-    }
-
-    if (element.type === 'tab') {
-      // Set the focused element to the specific tab, not the selected tab
-      this.focusedElement = `tabs:${element.targetId}`;
-      this.drawTabs(); // Redraw tabs to reflect the new focus
-    } else if (element.type === 'input') {
-      const publicState = this.getState();
-      const midX = element.x + Math.floor(element.width/2);
-      const midY = element.y + Math.floor(element.height/2);
-      const clickedBox = getClickedBox({ termX: midX, termY : midY });
-      const { send, sessionId } = publicState;
-      focusInput({ clickedBox, browser: this, send, sessionId, termX: element.x + element.width });
-    } else if (element.type === 'clickable') {
-      this.focusedElement = `clickable:${element.backendNodeId}`;
-      this.redrawClickable(element.backendNodeId);
-    } else {
-      this.focusedElement = element.type;
-      if (element.type === 'address') this.cursorPosition = this.addressContent.length;
-      this.drawOmnibox();
-    }
-    this.term.bgDefaultColor().defaultColor();
-    this.term.styleReset();
-    this.render();
-  }  
-
-  // Update focusNextElement and focusPreviousElement to avoid full render
-  focusNextElement() {
-    const tabbable = this.computeTabbableElements();
-    if (!tabbable.length) return;
-
-    const currentIdx = this.currentFocusIndex;
-    const nextIdx = (currentIdx + 1) % tabbable.length;
-    this.currentFocusIndex = nextIdx;
-    this.setFocus(tabbable[nextIdx]);
-    this.render();
-  }
-
-  focusPreviousElement() {
-    const tabbable = this.computeTabbableElements();
-    if (!tabbable.length) return;
-
-    const currentIdx = this.currentFocusIndex;
-    const prevIdx = (currentIdx - 1 + tabbable.length) % tabbable.length;
-    this.currentFocusIndex = prevIdx;
-    this.setFocus(tabbable[prevIdx]);
-    this.render();
-  }
-
-  // API Methods
-
   addTab(tab) {
-    // Emit an event to request a new tab; main logic will handle creation
     this.emit('newTabRequested', tab);
   }
 
@@ -1414,7 +806,7 @@ export default class TerminalBrowser extends EventEmitter {
 
   focus(element) {
     if (element.startsWith('tabs:') || element === 'back' || element === 'forward' || element === 'address' || element === 'go') {
-      this.focusedElement = element;
+      this.focusManager.setFocusedElement(element);
       if (element === 'address') this.cursorPosition = this.addressContent.length;
       this.render();
     }
@@ -1426,7 +818,6 @@ export default class TerminalBrowser extends EventEmitter {
     const modalX = Math.floor((this.term.width - modalWidth) / 2);
     const modalY = Math.floor((this.term.height - modalHeight) / 2);
 
-    // Draw modal background
     this.term.moveTo(modalX, modalY);
     this.term.bgWhite().black(' '.repeat(modalWidth));
     for (let i = 1; i < modalHeight - 1; i++) {
@@ -1436,22 +827,24 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.moveTo(modalX, modalY + modalHeight - 1);
     this.term.bgWhite().black(' '.repeat(modalWidth));
 
-    // Draw message
     this.term.moveTo(modalX + 2, modalY + 1);
     this.term.bgWhite().black(message);
 
-    // Wait for any key press
     await new Promise(resolve => {
       this.term.once('key', () => {
-        this.render(); // Redraw the UI to remove the modal
+        this.render();
         resolve();
       });
     });
   }
+
   destroy() {
     this.term.clear();
     this.term.processExit(0);
   }
+
+  // Expose sleep for InputManager
+  sleep(ms) {
+    return sleep(ms);
+  }
 }
-
-
