@@ -99,38 +99,11 @@ const LayoutAlgorithm = (() => {
     return children.some(childIdx => hasTextBoxDescendant(childIdx, childrenMap, textBoxMap));
   }
 
-  function isFullyContained(b1, b2) {
-    const termB1 = b1.termBox;
-    const termB2 = b2.termBox;
-    const b1InB2 = termB1.minX >= termB2.minX &&
-                   termB1.maxX <= termB2.maxX &&
-                   termB1.minY >= termB2.minY &&
-                   termB1.maxY <= termB2.maxY;
-    const b2InB1 = termB2.minX >= termB1.minX &&
-                   termB2.maxX <= termB1.maxX &&
-                   termB2.minY >= termB1.minY &&
-                   termB2.maxY <= termB1.maxY;
-    return b1InB2 || b2InB1;
-  }
-
   function hasGuiOverlap(box1, box2) {
     const a = box1.guiBox;
     const b = box2.guiBox;
     if (!a || !b) return false;
     return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
-  }
-
-  function getOverallBoundingBox(boxes) {
-    if (boxes.length === 0) return null;
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const box of boxes) {
-      const b = box.boundingBox;
-      minX = Math.min(minX, b.x);
-      minY = Math.min(minY, b.y);
-      maxX = Math.max(maxX, b.x + b.width);
-      maxY = Math.max(maxY, b.y + b.height);
-    }
-    return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
   }
 
   // Helper function to get the overall bounding box for a list of text boxes
@@ -149,12 +122,6 @@ const LayoutAlgorithm = (() => {
     for (const childIdx of children) {
       shiftNode(childIdx, shift, textBoxMap, childrenMap);
     }
-  }
-
-  // New helper to determine if a node is inline
-  function isInlineElement(nodeName) {
-    const inlineTags = new Set(['A', 'SPAN', 'B', 'I', 'EM', 'STRONG', '#TEXT']);
-    return inlineTags.has(nodeName.toUpperCase()) ;
   }
 
   // Deep clone an object (simple version for snapshot)
@@ -896,7 +863,7 @@ const LayoutAlgorithm = (() => {
   // --------------------------
 
   // Processes a text node by extracting its text content and computing its GUI bounds.
-  function processTextNode(nodeIdx, snapshot, nodes) {
+  function processTextNode(nodeIdx, snapshot) {
     const boundsList = [];
     const textParts = [];
     const boxes = [];
@@ -957,21 +924,6 @@ const LayoutAlgorithm = (() => {
       texts = texts.concat(collectSubtreeText(childIdx, childrenMap, snapshot, nodes));
     }
     return texts;
-  }
-
-  // Processes a leaf node that has associated text boxes.
-  function processLeafNode(nodeIdx, textBoxMap, snapshot, textContent, guiBox) {
-    const boxes = textBoxMap.get(nodeIdx);
-    const rows = groupByRow(boxes, b => [b.termY]);
-    adjustBoxPositions(rows, nodeIdx);
-
-    const termBox = computeBoundingTermBox(boxes);
-    const finalGuiBox = computeFinalGuiBox(nodeIdx, snapshot, boxes, guiBox);
-
-    debugLog(
-      `Leaf Node ${nodeIdx} TUI bounds: (${termBox.minX}, ${termBox.minY}) to (${termBox.maxX}, ${termBox.maxY}) | GUI bounds: (${finalGuiBox.x}, ${finalGuiBox.y}, ${finalGuiBox.width}, ${finalGuiBox.height})`
-    );
-    return { termBox, guiBox: finalGuiBox, text: boxes[0]?.text || textContent };
   }
 
   function range(a, b) {

@@ -1,4 +1,4 @@
-/* eslint-disable no-useless-escape */
+ 
 
 const KEYS = {
   keyEvent(...keys) {
@@ -40,7 +40,8 @@ const KEYS = {
       }};
 
       if (def.location) {
-        command.params.location = def.location;
+        down.command.params.location = def.location;
+        up.command.params.location = def.location;
       }
 
       return [down, up];
@@ -430,6 +431,6 @@ const KEYS = {
   },
   VolumeUp: {keyCode: 183, key: 'VolumeUp', code: 'VolumeUp', location: 4},
 };
-/* eslint-enable no-useless-escape*/
+ 
 
 export default KEYS;
