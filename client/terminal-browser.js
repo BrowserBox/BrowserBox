@@ -19,9 +19,28 @@ export default class TerminalBrowser extends EventEmitter {
           this.tabbableCached = false;
           break;
         case 'tabSelected':
-          if ( ! this.focusState.has(sessions.get(stuff[1]?.targetId)) ) {
+          if (!this.focusState.has(sessions.get(stuff[1]?.targetId))) {
             this.tabbableCached = false;
           }
+          break;
+        case 'navigate':
+        case 'targetInfoChanged':
+          this.tabbableCached = false;
+          this.inputFields.clear();
+          this.focusedElement = `tabs:${this.selectedTabId}`;
+          this.currentFocusIndex = 0;
+          this.previousFocusedElement = null;
+          // Update address bar if this is a navigate event
+          if (stuff[0] === 'navigate') {
+            const newUrl = stuff[1]; // The URL from the navigate event
+            this.addressContent = newUrl;
+            this.cursorPosition = newUrl.length;
+            const selectedTab = this.targets.find(t => t.targetId === this.selectedTabId);
+            if (selectedTab) {
+              selectedTab.url = newUrl;
+            }
+          }
+          this.render();
           break;
         default:
           break;
@@ -42,14 +61,14 @@ export default class TerminalBrowser extends EventEmitter {
     // State
     this.targets = this.options.initialTabs.map(tab => ({
       ...tab,
-      targetId: tab.targetId || Math.random().toString(36).substring(2), // Ensure each tab has a targetId
+      targetId: tab.targetId || Math.random().toString(36).substring(2),
     }));
     if (this.targets.length === 0) {
       this.emit('newTabRequested', { title: 'New Tab', url: 'about:blank' });
     }
     this.tabOffset = 0;
-    this.selectedTabId = this.targets[0]?.targetId || null; // Set initial selected tab
-    this.focusedElement = `tabs:${this.selectedTabId}`; // Start with the first tab focused
+    this.selectedTabId = this.targets[0]?.targetId || null;
+    this.focusedElement = `tabs:${this.selectedTabId}`;
     this.previousFocusedElement = null;
     this.addressContent = this.targets[0]?.url || '';
     this.cursorPosition = this.addressContent.length;
@@ -81,7 +100,6 @@ export default class TerminalBrowser extends EventEmitter {
     this.render();
     this.setupInput();
   }
-
   saveFocusState() {
     const { sessionId } = this.getState();
     const {
