@@ -282,7 +282,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   computeTabbableElements() {
-    if ( this.tabbableCached ) return this.tabbableCache;
+    if (this.tabbableCached) return this.tabbableCache;
     const tabbable = [];
 
     // Browser UI elements
@@ -322,7 +322,8 @@ export default class TerminalBrowser extends EventEmitter {
     // Group clickable elements by their nearest clickable ancestor
     const elementsByParentId = new Map();
     renderedBoxes.forEach(box => {
-      if (!box.isClickable && box.type !== 'input') return;
+      // Include both inputs and clickable elements, including buttons
+      if (!box.isClickable && box.type !== 'input' && box.ancestorType !== 'button') return;
 
       // Find the clickable parent's backendNodeId
       let parentBackendNodeId = box.backendNodeId;
@@ -338,14 +339,17 @@ export default class TerminalBrowser extends EventEmitter {
         currentNodeIndex = publicState.nodeToParent.get(currentNodeIndex);
       }
 
-      // Skip if the nearest clickable ancestor is #document or has clickable descendants
+      // Skip if the nearest clickable ancestor is #document
       const nodeNameIdx = publicState.nodes.nodeName[parentNodeIndex];
       const nodeName = nodeNameIdx >= 0 ? publicState.strings[nodeNameIdx] : '';
       if (nodeName === '#document' || publicState.nodes.nodeType[parentNodeIndex] === 9) {
         return; // Skip #document
       }
-      if (hasClickableDescendants(parentNodeIndex)) {
-        return; // Skip nodes with clickable descendants
+
+      // Include buttons even if they have clickable descendants
+      const isButton = box.ancestorType === 'button';
+      if (!isButton && hasClickableDescendants(parentNodeIndex)) {
+        return; // Skip non-buttons with clickable descendants
       }
 
       if (!elementsByParentId.has(parentBackendNodeId)) {
@@ -382,7 +386,7 @@ export default class TerminalBrowser extends EventEmitter {
         height: elem.maxY - elem.minY + 1,
         text: elem.text,
         ancestorType: elem.ancestorType,
-        boxes: elem.boxes // Store the boxes for use in getRenderData
+        boxes: elem.boxes
       });
     });
 
@@ -1023,14 +1027,29 @@ export default class TerminalBrowser extends EventEmitter {
     }
   }
 
+
   focusNextTab() {
-    this.saveFocusState();
     const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
     const nextTabIndex = (focusedTabIndex + 1) % this.targets.length;
+    this.saveFocusState(); // Save current state before switching
     this.selectedTabId = this.targets[nextTabIndex].targetId;
     this.focusedElement = `tabs:${this.selectedTabId}`;
     const focusedTab = this.targets[nextTabIndex];
     this.emit('tabSelected', focusedTab);
+    this.restoreFocusState(); // Restore state for the new tab
+    this.render();
+  }
+
+  focusPreviousTab() {
+    const focusedTabIndex = this.targets.findIndex(t => `tabs:${t.targetId}` == this.focusedElement);
+    const previousTabIndex = ((focusedTabIndex - 1) + this.targets.length) % this.targets.length;
+    this.saveFocusState(); // Save current state before switching
+    this.selectedTabId = this.targets[previousTabIndex].targetId;
+    this.focusedElement = `tabs:${this.selectedTabId}`;
+    const focusedTab = this.targets[previousTabIndex];
+    this.emit('tabSelected', focusedTab);
+    this.restoreFocusState(); // Restore state for the new tab
+    this.render();
   }
 
   focusPreviousTab() {
