@@ -120,7 +120,7 @@
       }
 
       browser.on('tabSelected', async (tab) => {
-        const index = browser.getTabs().findIndex(t => t.targetId === tab.targetId);
+        const index = tab ? browser.getTabs().findIndex(t => t.targetId === tab.targetId) : 0;
         browser.activeTarget = targets[index];
         const { targetId } = browser.activeTarget;
         browser.setAddress(tab.url);
@@ -718,7 +718,7 @@
     return clickedBox;
   }
 
-  export async function handleClick({ termX, termY, clickableElements, layoutToNode, nodeToParent, nodes }) {
+  export async function handleClick({ termX, termY, layoutToNode, nodeToParent, nodes }) {
     const clickedBox = getClickedBox({ termX, termY });
     if (!clickedBox) return;
     if (clickedBox.type === 'input') {

@@ -29,6 +29,23 @@ export default class TerminalBrowser extends EventEmitter {
           break;
         case 'navigate':
         case 'targetInfoChanged':
+          // Reintegrated block, updated for refactor
+          this.focusManager.tabbableCached = false; // Force recompute tabbable elements
+          this.inputFields.clear(); // Clear input fields
+          this.focusManager.setFocusedElement(`tabs:${this.selectedTabId}`); // Reset focus to selected tab
+          this.focusManager.currentFocusIndex = 0; // Reset focus index
+          this.focusManager.setPreviousFocusedElement(null); // Clear previous focus
+          // Update address bar if this is a navigate event
+          if (stuff[0] === 'navigate') {
+            const newUrl = stuff[1]; // The URL from the navigate event
+            this.addressContent = newUrl;
+            this.cursorPosition = newUrl.length;
+            const selectedTab = this.targets.find(t => t.targetId === this.selectedTabId);
+            if (selectedTab) {
+              selectedTab.url = newUrl;
+            }
+          }
+          this.render();
           break;
         default:
           break;

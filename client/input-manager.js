@@ -1,4 +1,4 @@
-import { logClicks, debugLog } from './log.js';
+import { logClicks } from './log.js';
 import { dinoGame } from './dino.js';
 import KEYS from './kbd.js';
 import { handleClick } from './baby-jaguar.js';
