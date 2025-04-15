@@ -1,7 +1,7 @@
 import { logClicks } from './log.js';
 import { dinoGame } from './dino.js';
 import KEYS from './kbd.js';
-import { handleClick } from './baby-jaguar.js';
+import { getBrowserState, getTabState, handleClick } from './baby-jaguar.js';
 
 export class InputManager {
   constructor(term, browser) {
@@ -9,6 +9,90 @@ export class InputManager {
     this.browser = browser;
     this.keyBuffer = '';
     this.isListening = true;
+  }
+
+  async handleInputCommit(backendNodeId, inputState, { useEnter = true } = {}) {
+    const sessionId = getBrowserState().currentSessionId;
+    const tabState = getTabState(sessionId);
+    let keys;
+    if (useEnter) {
+      keys = KEYS.keyEvent('Enter', 'Space', 'Backspace');
+    } else {
+      keys = KEYS.keyEvent('Space', 'Backspace');
+    }
+    for (const { command: { name, params } } of keys) {
+      try {
+        await tabState.send(name, params, sessionId);
+        await this.browser.sleep(50);
+        logClicks(`Sent key (${params.key},${params.type}) event for backendNodeId: ${backendNodeId} and session ${sessionId}`);
+      } catch (error) {
+        logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
+      }
+    }
+  }
+
+  async handleClickableKey(key) {
+    const backendNodeId = this.browser.focusManager.getFocusedElement().split(':')[1];
+    const sessionId = getBrowserState().currentSessionId;
+    const tabState = getTabState(sessionId);
+    const tabbable = this.browser.focusManager.computeTabbableElements();
+    const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
+
+    if (key === 'ENTER') {
+      if (focusedElement) {
+        await handleClick({
+          termX: focusedElement.x,
+          termY: focusedElement.y,
+          clickableElements: tabState.clickableElements,
+          clickCounter: tabState.clickCounter,
+          layoutToNode: tabState.layoutToNode,
+          nodeToParent: tabState.nodeToParent,
+          nodes: tabState.nodes,
+        });
+        this.browser.render();
+      } else {
+        logClicks(`No tabbable element found for clickable:${backendNodeId}`);
+      }
+    } else if (key === 'TAB' || key === 'l') {
+      this.browser.focusManager.focusNextElement(
+        element => this.browser.setFocus(element)
+      );
+      this.browser.render();
+    } else if (key === 'SHIFT_TAB' || key === 'h') {
+      this.browser.focusManager.focusPreviousElement(
+        element => this.browser.setFocus(element)
+      );
+      this.browser.render();
+    } else {
+      switch (key) {
+        case 'UP':
+        case 'DOWN':
+          this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+          break;
+        case 'j':
+          this.browser.focusManager.focusNearestInRow(
+            'down',
+            element => this.browser.setFocus(element),
+            this.browser.options
+          );
+          this.browser.render();
+          break;
+        case 'k':
+          this.browser.focusManager.focusNearestInRow(
+            'up',
+            element => this.browser.setFocus(element),
+            this.browser.options
+          );
+          this.browser.render();
+          break;
+        case '[':
+          this.browser.selectPreviousTab();
+          break;
+        case ']':
+          this.browser.selectNextTab();
+          break;
+      }
+    }
   }
 
   setupInput() {
@@ -152,90 +236,6 @@ export class InputManager {
             if (inputState.onChange) inputState.onChange(inputState.value);
             this.browser.redrawFocusedInput();
           }
-          break;
-      }
-    }
-  }
-
-  async handleInputCommit(backendNodeId, inputState, { useEnter = true } = {}) {
-    let keys;
-    if (useEnter) {
-      keys = KEYS.keyEvent('Enter', 'Space', 'Backspace');
-    } else {
-      keys = KEYS.keyEvent('Space', 'Backspace');
-    }
-    const { send, sessionId } = this.browser.getTabState(sessionId);
-    for (const { command: { name, params } } of keys) {
-      try {
-        await send(name, params, sessionId);
-        await this.browser.sleep(50);
-        logClicks(`Sent key (${params.key},${params.type}) event for backendNodeId: ${backendNodeId} and session ${sessionId}`);
-      } catch (error) {
-        logClicks(`Failed to send Enter key event for backendNodeId ${backendNodeId}: ${error.message}`);
-      }
-    }
-  }
-
-  async handleClickableKey(key) {
-    const backendNodeId = this.browser.focusManager.getFocusedElement().split(':')[1];
-    const publicState = this.browser.getTabState(sessionId);
-    const tabbable = this.browser.focusManager.computeTabbableElements();
-    const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
-
-    if (key === 'ENTER') {
-      if (focusedElement) {
-        await handleClick({
-          termX: focusedElement.x,
-          termY: focusedElement.y,
-          clickableElements: publicState.clickableElements,
-          clickCounter: publicState.clickCounter,
-          layoutToNode: publicState.layoutToNode,
-          nodeToParent: publicState.nodeToParent,
-          nodes: publicState.nodes,
-        });
-        this.browser.render();
-      } else {
-        logClicks(`No tabbable element found for clickable:${backendNodeId}`);
-      }
-    } else if (key === 'TAB' || key === 'l') {
-      this.browser.focusManager.focusNextElement(
-        element => this.browser.setFocus(element)
-      );
-      this.browser.render();
-    } else if (key === 'SHIFT_TAB' || key === 'h') {
-      this.browser.focusManager.focusPreviousElement(
-        element => this.browser.setFocus(element)
-      );
-      this.browser.render();
-    } else {
-      switch (key) {
-        case 'UP':
-        case 'DOWN':
-          this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-          break;
-        case 'j':
-          this.browser.focusManager.focusNearestInRow(
-            'down',
-            element => this.browser.setFocus(element),
-            this.browser.options
-          );
-          this.browser.render();
-          break;
-        case 'k':
-          this.browser.focusManager.focusNearestInRow(
-            'up',
-            element => this.browser.setFocus(element),
-            this.browser.options
-          );
-          this.browser.render();
-          break;
-        case '[':
-          this.browser.focusManager.sessionId = publicState.sessionId;
-          this.browser.selectPreviousTab();
-          break;
-        case ']':
-          this.browser.focusManager.sessionId = publicState.sessionId;
-          this.browser.selectNextTab();
           break;
       }
     }

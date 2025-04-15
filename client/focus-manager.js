@@ -1,38 +1,39 @@
 // focus-manager.js
 import { debugLog, focusLog } from './log.js';
 
+// focus-manager.js
 export class FocusManager {
-  constructor(getState) {
-    this.getState = getState;
+  constructor(getTabState, getBrowserState) {
+    this.getTabState = getTabState;
+    this.getBrowserState = getBrowserState;
     this.focusState = new Map();
     this.focusedElement = null;
     this.previousFocusedElement = null;
     this.currentFocusIndex = 0;
     this.tabbableCached = false;
     this.tabbableCache = [];
-    this.sessionId = null; // Track current session
   }
 
   saveFocusState() {
-    const state = this.getTabState(sessionId);
-    this.sessionId = state.sessionId;
+    const sessionId = this.getBrowserState().currentSessionId;
+    const tabState = this.getTabState(sessionId);
     const { focusedElement, previousFocusedElement } = this;
 
     if (!focusedElement || !this.isPageContentElement(focusedElement)) {
-      debugLog(`Clearing focus state for sessionId: ${this.sessionId}, focusedElement: ${focusedElement}`);
-      focusLog('clear_state', this.sessionId, { focusedElement, previousFocusedElement }, (new Error).stack);
-      this.focusState.delete(this.sessionId);
+      debugLog(`Clearing focus state for sessionId: ${sessionId}, focusedElement: ${focusedElement}`);
+      focusLog('clear_state', sessionId, { focusedElement, previousFocusedElement }, (new Error).stack);
+      this.focusState.delete(sessionId);
       return;
     }
 
     const focusState = { focusedElement, previousFocusedElement };
-    debugLog(`Saving focus state for sessionId: ${this.sessionId}, focusedElement: ${focusedElement}`);
-    focusLog('save_state', this.sessionId, focusState, (new Error).stack);
-    this.focusState.set(this.sessionId, focusState);
+    debugLog(`Saving focus state for sessionId: ${sessionId}, focusedElement: ${focusedElement}`);
+    focusLog('save_state', sessionId, focusState, (new Error).stack);
+    this.focusState.set(sessionId, focusState);
   }
 
   restoreFocusState(setFocus) {
-    const { sessionId } = this.getTabState(sessionId);
+    const sessionId = this.getBrowserState().currentSessionId;
     const focusState = this.focusState.get(sessionId);
     debugLog(`Restoring focus state for sessionId: ${sessionId}, found state: ${focusState ? JSON.stringify(focusState) : 'none'}`);
     focusLog('restore_attempt', sessionId, { state: focusState }, (new Error).stack);
@@ -107,40 +108,26 @@ export class FocusManager {
     return true;
   }
 
-  isPageContentElement(element) {
-    return element && (element.startsWith('input:') || element.startsWith('clickable:'));
-  }
-
-  isBrowserUIElement(element) {
-    return (
-      element &&
-      (element.startsWith('tabs:') ||
-        element === 'newTab' ||
-        element === 'back' ||
-        element === 'forward' ||
-        element === 'address' ||
-        element === 'go')
-    );
-  }
-
   computeTabbableElements() {
     if (this.tabbableCached) return this.tabbableCache;
-    const { publicState, renderedBoxes, targets, termWidth, NEW_TAB_WIDTH, TAB_HEIGHT, BACK_WIDTH, FORWARD_WIDTH, GO_WIDTH } = this.getTabState(sessionId);
+    const sessionId = this.getBrowserState().currentSessionId;
+    const tabState = this.getTabState(sessionId);
+    const renderedBoxes = renderedBoxesBySession.get(sessionId) || [];
     const tabbable = [];
 
-    targets.forEach((tab, index) => {
-      const x = 1 + index * this.getTabState(sessionId).tabWidth;
+    tabState.targets.forEach((tab, index) => {
+      const x = 1 + index * tabState.tabWidth;
       tabbable.push({ type: 'tab', index, x, y: 1, targetId: tab.targetId });
     });
-    tabbable.push({ type: 'newTab', x: termWidth - NEW_TAB_WIDTH + 1, y: 1 });
-    tabbable.push({ type: 'back', x: 2, y: TAB_HEIGHT + 2 });
-    tabbable.push({ type: 'forward', x: BACK_WIDTH + 2, y: TAB_HEIGHT + 2 });
-    tabbable.push({ type: 'address', x: BACK_WIDTH + FORWARD_WIDTH + 2, y: TAB_HEIGHT + 2 });
-    tabbable.push({ type: 'go', x: termWidth - GO_WIDTH, y: TAB_HEIGHT + 2 });
+    tabbable.push({ type: 'newTab', x: tabState.termWidth - tabState.NEW_TAB_WIDTH + 1, y: 1 });
+    tabbable.push({ type: 'back', x: 2, y: tabState.TAB_HEIGHT + 2 });
+    tabbable.push({ type: 'forward', x: tabState.BACK_WIDTH + 2, y: tabState.TAB_HEIGHT + 2 });
+    tabbable.push({ type: 'address', x: tabState.BACK_WIDTH + tabState.FORWARD_WIDTH + 2, y: tabState.TAB_HEIGHT + 2 });
+    tabbable.push({ type: 'go', x: tabState.termWidth - tabState.GO_WIDTH, y: tabState.TAB_HEIGHT + 2 });
 
-    if (!publicState || !renderedBoxes || !publicState.layoutToNode || !publicState.nodeToParent || !publicState.nodes) {
-      debugLog('Missing state, renderedBoxes, or layout data');
-      focusLog('compute_tabbable_failed', null, { reason: 'missing_state' }, (new Error).stack);
+    if (!tabState || !tabState.nodes || !tabState.layoutToNode || !tabState.nodeToParent) {
+      debugLog('Missing state or layout data');
+      focusLog('compute_tabbable_failed', sessionId, { reason: 'missing_state' }, (new Error).stack);
       return tabbable;
     }
 
@@ -267,6 +254,23 @@ export class FocusManager {
     this.tabbableCache = tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
     this.tabbableCached = true;
     return this.tabbableCache;
+  }
+
+
+  isPageContentElement(element) {
+    return element && (element.startsWith('input:') || element.startsWith('clickable:'));
+  }
+
+  isBrowserUIElement(element) {
+    return (
+      element &&
+      (element.startsWith('tabs:') ||
+        element === 'newTab' ||
+        element === 'back' ||
+        element === 'forward' ||
+        element === 'address' ||
+        element === 'go')
+    );
   }
 
   focusNextElement(setFocus) {
