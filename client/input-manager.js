@@ -236,10 +236,10 @@ export class InputManager {
           this.browser.render();
           break;
         case '[':
-          this.browser.focusPreviousTab();
+          this.browser.selectPreviousTab();
           break;
         case ']':
-          this.browser.focusNextTab();
+          this.browser.selectNextTab();
           break;
       }
     }
@@ -356,10 +356,10 @@ export class InputManager {
         this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
         break;
       case '[':
-        this.browser.focusPreviousTab();
+        this.browser.selectPreviousTab();
         break;
       case ']':
-        this.browser.focusNextTab();
+        this.browser.selectNextTab();
         break;
     }
   }

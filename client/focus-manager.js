@@ -3,7 +3,7 @@ import { debugLog, focusLog } from './log.js';
 export class FocusManager {
   constructor(getState) {
     this.getState = getState;
-    this.focusState = new Map(); // Map<sessionId, focusState>
+    this.focusState = new Map();
     this.focusedElement = null;
     this.previousFocusedElement = null;
     this.currentFocusIndex = 0;
@@ -11,68 +11,52 @@ export class FocusManager {
     this.tabbableCache = [];
   }
 
-  // Save focus state for the current tab, but only for page content elements
   saveFocusState() {
     const { sessionId } = this.getState();
-    const { focusedElement, previousFocusedElement, currentFocusIndex } = this;
+    const { focusedElement, previousFocusedElement } = this;
 
-    // Always save the focus state, but we'll only restore page content elements
+    if (!focusedElement || !this.isPageContentElement(focusedElement)) {
+      debugLog(`Clearing focus state for sessionId: ${sessionId}, focusedElement: ${focusedElement} (not a page content element)`);
+      focusLog('clear_state', sessionId, { focusedElement, previousFocusedElement }, (new Error).stack);
+      this.focusState.delete(sessionId);
+      return;
+    }
+
     const focusState = {
       focusedElement,
       previousFocusedElement,
-      currentFocusIndex,
     };
-    focusLog('save', sessionId, focusState, (new Error).stack);
     debugLog(`Saving focus state for sessionId: ${sessionId}, focusedElement: ${focusedElement}`);
+    focusLog('save_state', sessionId, focusState, (new Error).stack);
     this.focusState.set(sessionId, focusState);
   }
 
-  // Restore focus state for the current tab
   restoreFocusState(computeTabbableElements, setFocus) {
     const { sessionId } = this.getState();
     const focusState = this.focusState.get(sessionId);
-    debugLog(`Restoring focus state for sessionId: ${sessionId}, found state: ${JSON.stringify(focusState)}`);
+    debugLog(`Restoring focus state for sessionId: ${sessionId}, found state: ${focusState ? JSON.stringify(focusState) : 'none'}`);
+    focusLog('restore_attempt', sessionId, { state: focusState }, (new Error).stack);
 
-    if (!focusState) {
-      debugLog(`No focus state found for sessionId: ${sessionId}, resetting to default`);
+    if (!focusState || !focusState.focusedElement) {
+      debugLog(`No valid focus state found for sessionId: ${sessionId}, resetting to default`);
+      focusLog('restore_failed', sessionId, { reason: 'no_state' }, (new Error).stack);
       this.tabbableCached = false;
+      this.focusedElement = null;
       this.currentFocusIndex = 0;
-      return false; // Indicate no state was restored
+      return false;
     }
 
-    focusLog('restore', sessionId, focusState, (new Error).stack);
-
-    // Only restore if the saved focus is a page content element
-    let restoredFocusedElement = focusState.focusedElement;
+    const restoredFocusedElement = focusState.focusedElement;
     if (!this.isPageContentElement(restoredFocusedElement)) {
-      debugLog(`Saved focusedElement ${restoredFocusedElement} is not a page content element, skipping restoration`);
-      return false;
-    }
-
-    // Validate the focusedElement
-    const tabbable = computeTabbableElements();
-    const elementExists = tabbable.some(el => {
-      if (restoredFocusedElement.startsWith('input:')) {
-        return el.type === 'input' && `input:${el.backendNodeId}` === restoredFocusedElement;
-      } else if (restoredFocusedElement.startsWith('clickable:')) {
-        return el.type === 'clickable' && `clickable:${el.backendNodeId}` === restoredFocusedElement;
-      }
-      return false;
-    });
-
-    if (!elementExists) {
-      debugLog(`Restored focusedElement ${restoredFocusedElement} no longer exists, skipping restoration`);
+      debugLog(`Invalid focus state element ${restoredFocusedElement}, resetting`);
+      focusLog('restore_failed', sessionId, { reason: 'invalid_element', element: restoredFocusedElement }, (new Error).stack);
       this.tabbableCached = false;
+      this.focusedElement = null;
       this.currentFocusIndex = 0;
       return false;
     }
 
-    this.tabbableCached = false;
-    this.focusedElement = restoredFocusedElement;
-    this.previousFocusedElement = focusState.previousFocusedElement;
-    this.currentFocusIndex = focusState.currentFocusIndex || 0;
-
-    // Set focus to the restored element
+    const tabbable = computeTabbableElements();
     const elementToFocus = tabbable.find(el => {
       if (restoredFocusedElement.startsWith('input:')) {
         return el.type === 'input' && `input:${el.backendNodeId}` === restoredFocusedElement;
@@ -82,19 +66,35 @@ export class FocusManager {
       return false;
     });
 
-    if (elementToFocus) {
-      setFocus(elementToFocus);
+    if (!elementToFocus) {
+      debugLog(`Element ${restoredFocusedElement} no longer exists, resetting. Tabbable count: ${tabbable.length}`);
+      focusLog('restore_failed', sessionId, {
+        reason: 'element_missing',
+        element: restoredFocusedElement,
+        tabbableSummary: tabbable.map(el => `${el.type}:${el.backendNodeId || el.targetId || el.type}`)
+      }, (new Error).stack);
+      this.tabbableCached = false;
+      this.focusedElement = null;
+      this.currentFocusIndex = 0;
+      return false;
     }
 
-    return true; // Indicate state was restored
+    this.tabbableCached = false;
+    this.focusedElement = restoredFocusedElement;
+    this.previousFocusedElement = focusState.previousFocusedElement;
+    this.currentFocusIndex = 0;
+
+    debugLog(`Restoring focus to ${restoredFocusedElement}`);
+    focusLog('restore_success', sessionId, { element: restoredFocusedElement }, (new Error).stack);
+    setFocus(elementToFocus);
+
+    return true;
   }
 
-  // Check if an element is a page content element (input or clickable)
   isPageContentElement(element) {
     return element && (element.startsWith('input:') || element.startsWith('clickable:'));
   }
 
-  // Check if the current focus is on a browser UI element
   isBrowserUIElement(element) {
     return (
       element &&
@@ -111,32 +111,57 @@ export class FocusManager {
     if (this.tabbableCached) return this.tabbableCache;
     this.tabbableCache = computeTabbableElements();
     this.tabbableCached = true;
+    focusLog('compute_tabbable', null, {
+      count: this.tabbableCache.length,
+      elements: this.tabbableCache.map(el => `${el.type}:${el.backendNodeId || el.targetId || el.type}`)
+    }, (new Error).stack);
     return this.tabbableCache;
   }
 
   focusNextElement(computeTabbableElements, setFocus) {
     const tabbable = this.computeTabbableElements(computeTabbableElements);
-    if (!tabbable.length) return;
+    if (!tabbable.length) {
+      focusLog('focus_next_failed', null, { reason: 'no_tabbable_elements' }, (new Error).stack);
+      return;
+    }
 
     const currentIdx = this.currentFocusIndex;
-    const nextIdx = (currentIdx + 1) % tabbable.length;
+    const nextIdx = (currentIdx + 1) % this.tabbable.length;
     this.currentFocusIndex = nextIdx;
-    setFocus(tabbable[nextIdx]);
+    const elementToFocus = tabbable[nextIdx];
+    focusLog('focus_next', null, {
+      from: this.focusedElement,
+      to: elementToFocus ? `${elementToFocus.type}:${elementToFocus.backendNodeId || elementToFocus.targetId || elementToFocus.type}` : null,
+      index: nextIdx
+    }, (new Error).stack);
+    setFocus(elementToFocus);
   }
 
   focusPreviousElement(computeTabbableElements, setFocus) {
     const tabbable = this.computeTabbableElements(computeTabbableElements);
-    if (!tabbable.length) return;
+    if (!tabbable.length) {
+      focusLog('focus_previous_failed', null, { reason: 'no_tabbable_elements' }, (new Error).stack);
+      return;
+    }
 
     const currentIdx = this.currentFocusIndex;
     const prevIdx = (currentIdx - 1 + tabbable.length) % tabbable.length;
     this.currentFocusIndex = prevIdx;
-    setFocus(tabbable[prevIdx]);
+    const elementToFocus = tabbable[prevIdx];
+    focusLog('focus_previous', null, {
+      from: this.focusedElement,
+      to: elementToFocus ? `${elementToFocus.type}:${elementToFocus.backendNodeId || elementToFocus.targetId || elementToFocus.type}` : null,
+      index: prevIdx
+    }, (new Error).stack);
+    setFocus(elementToFocus);
   }
 
   focusNearestInRow(direction, computeTabbableElements, setFocus, options) {
     const tabbable = this.computeTabbableElements(computeTabbableElements);
-    if (!tabbable.length) return;
+    if (!tabbable.length) {
+      focusLog('focus_nearest_failed', null, { reason: 'no_tabbable_elements', direction }, (new Error).stack);
+      return;
+    }
 
     let current;
     if (this.focusedElement.startsWith('tabs:')) {
@@ -152,7 +177,10 @@ export class FocusManager {
     } else {
       current = tabbable.find(el => el.type === this.focusedElement) || tabbable[0];
     }
-    if (!current) return;
+    if (!current) {
+      focusLog('focus_nearest_failed', null, { reason: 'no_current_element', direction, focusedElement: this.focusedElement }, (new Error).stack);
+      return;
+    }
 
     const currentY = current.y;
     const currentCenterX = current.x + (current.width || options.tabWidth) / 2;
@@ -166,6 +194,12 @@ export class FocusManager {
           return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
         }, omniboxElements[0]);
         this.currentFocusIndex = tabbable.findIndex(el => el === nearest);
+        focusLog('focus_nearest', null, {
+          direction,
+          from: this.focusedElement,
+          to: `${nearest.type}:${nearest.backendNodeId || nearest.targetId || nearest.type}`,
+          index: this.currentFocusIndex
+        }, (new Error).stack);
         setFocus(nearest);
         return;
       }
@@ -178,6 +212,12 @@ export class FocusManager {
           return Math.abs(elCenterX - currentCenterX) < Math.abs(bestCenterX - currentCenterX) ? el : best;
         }, tabElements[0]);
         this.currentFocusIndex = tabbable.findIndex(el => el === nearest);
+        focusLog('focus_nearest', null, {
+          direction,
+          from: this.focusedElement,
+          to: `${nearest.type}:${nearest.backendNodeId || nearest.targetId || nearest.type}`,
+          index: this.currentFocusIndex
+        }, (new Error).stack);
         setFocus(nearest);
         return;
       }
@@ -187,9 +227,14 @@ export class FocusManager {
     let candidates = tabbable.filter(el => el.y === targetY);
 
     if (!candidates.length) {
-      candidates = tabbable.filter(el => (direction === 'down' ? el.y > currentY : el.y < currentY));
-      if (!candidates.length) return;
-      const nextRowY = direction === 'down' ? Math.min(...candidates.map(el => el.y)) : Math.max(...candidates.map(el => el.y));
+      candidates = tabbable.filter(el => direction === 'down' ? el.y > currentY : el.y < currentY);
+      if (!candidates.length) {
+        focusLog('focus_nearest_failed', null, { reason: 'no_candidates', direction, currentY }, (new Error).stack);
+        return;
+      }
+      const nextRowY = direction === 'down'
+        ? Math.min(...candidates.map(el => el.y))
+        : Math.max(...candidates.map(el => el.y));
       candidates = tabbable.filter(el => el.y === nextRowY);
     }
 
@@ -200,6 +245,12 @@ export class FocusManager {
     }, candidates[0]);
 
     this.currentFocusIndex = tabbable.findIndex(el => el === nearest);
+    focusLog('focus_nearest', null, {
+      direction,
+      from: this.focusedElement,
+      to: `${nearest.type}:${nearest.backendNodeId || nearest.targetId || nearest.type}`,
+      index: this.currentFocusIndex
+    }, (new Error).stack);
     setFocus(nearest);
   }
 
@@ -212,10 +263,12 @@ export class FocusManager {
   }
 
   setFocusedElement(element) {
+    focusLog('set_focus', null, { from: this.focusedElement, to: element }, (new Error).stack);
     this.focusedElement = element;
   }
 
   setPreviousFocusedElement(element) {
+    focusLog('set_previous_focus', null, { from: this.previousFocusedElement, to: element }, (new Error).stack);
     this.previousFocusedElement = element;
   }
 }
