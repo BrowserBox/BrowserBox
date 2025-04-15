@@ -131,7 +131,7 @@
           const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
           sessions.set(targetId, newSessionId);
           initializeState(newSessionId);
-          console.log(`Initialized state for target ${targetId}, session ${newSessionId}`);
+          debugLog(`Initialized state for target ${targetId}, session ${newSessionId}`);
         }
       }
 
@@ -583,7 +583,7 @@
         const fallbackValue = text.startsWith('[INPUT') ? '' : text;
         const onChange = createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId });
 
-        send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(resolveResult => {
+        send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
           if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
           const objectId = resolveResult.object.objectId;
           const valueResult = await send(
