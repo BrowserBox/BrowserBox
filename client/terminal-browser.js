@@ -48,6 +48,12 @@ export default class TerminalBrowser extends EventEmitter {
             if (selectedTab) {
               selectedTab.url = newUrl;
             }
+          } else {
+            const targetInfo = stuff[1];
+            const selectedTab = this.targets.find(t => t.targetId === targetInfo.targetId);
+            if ( selectedTab ) {
+              Object.assign(selectedTab, targetInfo); 
+            }
           }
           this.render();
         }; break;

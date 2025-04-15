@@ -9,7 +9,7 @@ const LOG_FILE = 'cdp.log';
 
       // logging 
         export function focusLog(...stuff) {
-          DEBUG && appendFileSync('focus.log', JSON.stringify(stuff, null, 2));
+          appendFileSync('focus.log', JSON.stringify(stuff, null, 2));
         }
 
         export function rowsLog(rows) {

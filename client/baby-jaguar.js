@@ -55,6 +55,7 @@
 
   // arrows
   const debouncedRefresh = debounce(() => {
+    const {send, currentSessionId: sessionId} = browserState;
     if (sessionId) {
       refreshTerminal({ send, sessionId });
     }
@@ -103,12 +104,6 @@
   async function startKernel() {
     try {
       terminal.cyan('Starting browser connection...\n');
-      const connection = await connectToBrowser();
-      browserState.send = connection.send;
-      browserState.targets = connection.targets;
-      send = connection.send;
-      targets = connection.targets;
-      browserbox = connection.browserbox;
       browser = new TerminalBrowser(
         {
           tabWidth: Math.max(15, Math.ceil(terminal.width / 4)),
@@ -117,6 +112,21 @@
         getTabState,
         getBrowserState
       );
+      const handler = message => {
+        switch(message.method) {
+          case 'Target.targetInfoChanged': {
+            const { targetInfo } = message.params;
+            browser.emit('targetInfoChanged', targetInfo);
+            debouncedRefresh();
+          }; break;
+        }
+      };
+      const connection = await connectToBrowser(handler);
+      browserState.send = connection.send;
+      browserState.targets = connection.targets;
+      send = connection.send;
+      targets = connection.targets;
+      browserbox = connection.browserbox;
       await send('Target.setDiscoverTargets', { discover: true });
       await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
 
@@ -776,12 +786,8 @@
         );
         logClicks(`Updated remote value for backendNodeId: ${backendNodeId} to "${value}"`);
       } catch (error) {
-        console.error(error);
+        DEBUG && console.warn(error);
         logClicks(`Failed to set input value for backendNodeId ${backendNodeId}: ${error.message}`);
-        browser.redrawUnfocusedInput(backendNodeId);
-        browser.focusManager.setFocusedElement('tabs');
-        browser.inputFields.delete('' + backendNodeId);
-        browser.render();
       }
     };
   }
@@ -1021,8 +1027,8 @@
   }
 
   // Connectivity helpers
-  async function connectToBrowser() {
-    const connectionManager = new ConnectionManager(loginUrl, proxyBaseUrl, apiUrl);
+  async function connectToBrowser(handler) {
+    const connectionManager = new ConnectionManager(loginUrl, proxyBaseUrl, apiUrl, handler);
     const { cookieHeader, cookieValue } = await connectionManager.authenticate();
     const targets = await connectionManager.fetchTargets();
     const { send, socket, browserbox } = await connectionManager.setupWebSockets(hostname, token);
