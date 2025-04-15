@@ -791,7 +791,7 @@
   export function getClickedBox({ termX, termY }) {
     let clickedBox = null;
     const sessionBoxes = renderedBoxesBySession.get(browserState.currentSessionId) || [];
-    console.log(`getClickedBox: termX=${termX}, termY=${termY}, sessionBoxes.length=${sessionBoxes.length}`);
+    logClicks(`getClickedBox: termX=${termX}, termY=${termY}, sessionBoxes.length=${sessionBoxes.length}`);
     for (let i = sessionBoxes.length - 1; i >= 0; i--) {
       const box = sessionBoxes[i];
       const inX = termX >= box.termX && termX < box.termX + box.termWidth;
@@ -802,10 +802,8 @@
       }
     }
     if (!clickedBox) {
-      console.log(`No clickable box at (${termX}, ${termY})`);
       logClicks(`No clickable box at (${termX}, ${termY})`);
     } else {
-      console.log(`Found clickable box: type=${clickedBox.type}, backendNodeId=${clickedBox.backendNodeId}`);
       logClicks(`Found clickable box: type=${clickedBox.type}, backendNodeId=${clickedBox.backendNodeId}`);
     }
     return clickedBox;
