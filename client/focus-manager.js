@@ -14,7 +14,7 @@ export class FocusManager {
   }
 
   saveFocusState() {
-    const state = this.getState();
+    const state = this.getTabState(sessionId);
     this.sessionId = state.sessionId;
     const { focusedElement, previousFocusedElement } = this;
 
@@ -32,7 +32,7 @@ export class FocusManager {
   }
 
   restoreFocusState(setFocus) {
-    const { sessionId } = this.getState();
+    const { sessionId } = this.getTabState(sessionId);
     const focusState = this.focusState.get(sessionId);
     debugLog(`Restoring focus state for sessionId: ${sessionId}, found state: ${focusState ? JSON.stringify(focusState) : 'none'}`);
     focusLog('restore_attempt', sessionId, { state: focusState }, (new Error).stack);
@@ -125,11 +125,11 @@ export class FocusManager {
 
   computeTabbableElements() {
     if (this.tabbableCached) return this.tabbableCache;
-    const { publicState, renderedBoxes, targets, termWidth, NEW_TAB_WIDTH, TAB_HEIGHT, BACK_WIDTH, FORWARD_WIDTH, GO_WIDTH } = this.getState();
+    const { publicState, renderedBoxes, targets, termWidth, NEW_TAB_WIDTH, TAB_HEIGHT, BACK_WIDTH, FORWARD_WIDTH, GO_WIDTH } = this.getTabState(sessionId);
     const tabbable = [];
 
     targets.forEach((tab, index) => {
-      const x = 1 + index * this.getState().tabWidth;
+      const x = 1 + index * this.getTabState(sessionId).tabWidth;
       tabbable.push({ type: 'tab', index, x, y: 1, targetId: tab.targetId });
     });
     tabbable.push({ type: 'newTab', x: termWidth - NEW_TAB_WIDTH + 1, y: 1 });

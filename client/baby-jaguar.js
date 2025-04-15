@@ -38,6 +38,11 @@
   const stateBySession = new Map(); // Map<sessionId, state>
   export const sessions = new Map();
   export const renderedBoxesBySession = new Map(); // Map<sessionId, renderedBoxes>
+  // In baby-jaguar.js
+  export const browserState = {
+    currentSessionId: null, // Tracks the currently active tab’s sessionId
+    // Add other global properties here as needed, e.g., targets, connection
+  };
 
   let state;
   let connection;
@@ -258,6 +263,11 @@
     }
   }
 
+  // Getter for the global uber-state
+  export function getBrowserState() {
+    return browserState;
+  }
+
   function initializeState(sessionId) {
     const state = {
       get sessionId() {
@@ -282,28 +292,22 @@
   }
 
   // Update getState to use sessionId
-  function getState(sessionId) {
+  export function getTabState(sessionId) {
     if (!sessionId) {
-      debugLog('No sessionId provided, returning empty state');
+      console.warn('No sessionId provided, returning empty tab state');
       return {
-        sessionId: null,
-        send: connection?.send || (() => Promise.reject("Send not available before connection")),
-        clickCounter,
         clickableElements: [],
-        isListening: true,
-        scrollDelta: 50,
-        currentScrollY: 0,
         layoutToNode: null,
         nodeToParent: null,
         nodes: null,
-        isInitialized: false,
         strings: [],
+        // Add other defaults as needed
       };
     }
-    state = stateBySession.get(sessionId);
+    let state = stateBySession.get(sessionId);
     if (!state) {
-      state = initializeState(sessionId);
-      debugLog(`Initialized new state for sessionId: ${sessionId}`);
+      state = initializeState(sessionId); // Assume this sets up a default state
+      stateBySession.set(sessionId, state);
     }
     return state;
   }
@@ -353,8 +357,10 @@
     }
   }
 
-  // Update selectTabAndRender to initialize state
-  async function selectTabAndRender() {
+  // In baby-jaguar.js
+  async function selectTabAndRender(targetId) {
+    const sessionId = sessions.get(targetId); // Map of targetId to sessionId
+    browserState.currentSessionId = sessionId; // Update global state
     if (cleanup) cleanup();
 
     DEBUG && debugLog(util.inspect({ browser, targets }));

@@ -164,7 +164,7 @@ export class InputManager {
     } else {
       keys = KEYS.keyEvent('Space', 'Backspace');
     }
-    const { send, sessionId } = this.browser.getState();
+    const { send, sessionId } = this.browser.getTabState(sessionId);
     for (const { command: { name, params } } of keys) {
       try {
         await send(name, params, sessionId);
@@ -178,7 +178,7 @@ export class InputManager {
 
   async handleClickableKey(key) {
     const backendNodeId = this.browser.focusManager.getFocusedElement().split(':')[1];
-    const publicState = this.browser.getState();
+    const publicState = this.browser.getTabState(sessionId);
     const tabbable = this.browser.focusManager.computeTabbableElements();
     const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
 

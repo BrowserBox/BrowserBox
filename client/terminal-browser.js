@@ -193,7 +193,7 @@ export default class TerminalBrowser extends EventEmitter {
     tabbable.push({ type: 'address', x: this.BACK_WIDTH + this.FORWARD_WIDTH + 2, y: this.TAB_HEIGHT + 2 });
     tabbable.push({ type: 'go', x: this.term.width - this.GO_WIDTH, y: this.TAB_HEIGHT + 2 });
 
-    const publicState = this.getState();
+    const publicState = this.getTabState(sessionId);
     if (!publicState || !renderedBoxes || !publicState.layoutToNode || !publicState.nodeToParent || !publicState.nodes) {
       debugLog('Missing state, renderedBoxes, or layout data');
       focusLog('compute_tabbable_failed', null, { reason: 'missing_state' }, (new Error).stack);
@@ -712,7 +712,7 @@ export default class TerminalBrowser extends EventEmitter {
       this.focusManager.setFocusedElement(`tabs:${element.targetId}`);
       this.drawTabs();
     } else if (element.type === 'input') {
-      const publicState = this.getState();
+      const publicState = this.getTabState(sessionId);
       const midX = element.x + Math.floor(element.width / 2);
       const midY = element.y + Math.floor(element.height / 2);
       const clickedBox = getClickedBox({ termX: midX, termY: midY });
@@ -731,7 +731,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   redrawClickable(backendNodeId) {
-    const publicState = this.getState();
+    const publicState = this.getTabState(sessionId);
     const renderData = this.getRenderData(backendNodeId, publicState);
     if (!renderData) return;
 
@@ -762,7 +762,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   redrawUnfocusedElement(backendNodeId) {
-    const publicState = this.getState();
+    const publicState = this.getTabState(sessionId);
     const renderData = this.getRenderData(backendNodeId, publicState);
     if (!renderData) return;
 
