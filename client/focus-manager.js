@@ -15,6 +15,7 @@ export class FocusManager {
     this.currentFocusIndex = 0;
     this.tabbableCached = false;
     this.tabbableCache = [];
+    this.restoredSessions = new Set(); // Track restored sessions
   }
 
   saveFocusState() {
@@ -25,6 +26,7 @@ export class FocusManager {
       debugLog(`No focused element, clearing focus state for sessionId: ${sessionId}`);
       focusLog('clear_state', sessionId, { focusedElement, previousFocusedElement }, (new Error).stack);
       this.focusState.delete(sessionId);
+      this.restoredSessions.delete(sessionId); // Clear restoration flag
       return;
     }
 
@@ -48,6 +50,7 @@ export class FocusManager {
     if (!focusState || !focusState.focusedElement) {
       debugLog(`No valid focus state found for sessionId: ${sessionId}`);
       focusLog('restore_failed', sessionId, { reason: 'no_state' }, (new Error).stack);
+      this.restoredSessions.delete(sessionId);
       return false;
     }
 
@@ -65,6 +68,7 @@ export class FocusManager {
         element: restoredFocusedElement
       }, (new Error).stack);
       this.focusState.delete(sessionId);
+      this.restoredSessions.delete(sessionId);
       return false;
     }
 
@@ -79,6 +83,7 @@ export class FocusManager {
     debugLog(`Restoring focus to ${restoredFocusedElement}`);
     focusLog('restore_success', sessionId, { element: restoredFocusedElement }, (new Error).stack);
     setFocus(elementToFocus);
+    this.restoredSessions.add(sessionId); // Mark as restored
     return true;
   }
 
@@ -249,10 +254,13 @@ export class FocusManager {
 
   focusNextElement(setFocus) {
     const sessionId = this.getBrowserState().currentSessionId;
-    const restored = this.restoreFocusState(setFocus);
-    if (restored) {
-      debugLog(`Focus restored, skipping cycle for sessionId: ${sessionId}`);
-      return;
+    // Only attempt restore if not yet restored for this session
+    if (!this.restoredSessions.has(sessionId)) {
+      const restored = this.restoreFocusState(setFocus);
+      if (restored) {
+        debugLog(`Focus restored, skipping cycle for sessionId: ${sessionId}`);
+        return;
+      }
     }
 
     const tabbable = this.computeTabbableElements();
@@ -276,10 +284,13 @@ export class FocusManager {
 
   focusPreviousElement(setFocus) {
     const sessionId = this.getBrowserState().currentSessionId;
-    const restored = this.restoreFocusState(setFocus);
-    if (restored) {
-      debugLog(`Focus restored, skipping cycle for sessionId: ${sessionId}`);
-      return;
+    // Only attempt restore if not yet restored for this session
+    if (!this.restoredSessions.has(sessionId)) {
+      const restored = this.restoreFocusState(setFocus);
+      if (restored) {
+        debugLog(`Focus restored, skipping cycle for sessionId: ${sessionId}`);
+        return;
+      }
     }
 
     const tabbable = this.computeTabbableElements();
