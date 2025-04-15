@@ -23,6 +23,7 @@
   // internal
   import Layout from './layout.js';
   import TerminalBrowser from './terminal-browser.js';
+  import { ConnectionManager } from './connection-manager.js';
   import { sleep, logClicks, logMessage, debugLog, DEBUG } from './log.js';
 
   // Constants and state
@@ -108,20 +109,19 @@
   async function startKernel() {
     try {
       terminal.cyan('Starting browser connection...\n');
-      connection = await connectToBrowser();
-      browserState.send = connection.send; // Update global state
+      const connection = await connectToBrowser();
+      browserState.send = connection.send;
       browserState.targets = connection.targets;
       send = connection.send;
       targets = connection.targets;
       socket = connection.socket;
-      targets = connection.targets;
       browserbox = connection.browserbox;
       browser = new TerminalBrowser(
         {
           tabWidth: Math.max(15, Math.ceil(terminal.width / 4)),
           initialTabs: targets,
         },
-        getTabState, // Pass getTabState
+        getTabState,
         getBrowserState
       );
       await send('Target.setDiscoverTargets', { discover: true });
@@ -130,7 +130,6 @@
       if (targets.length === 0) {
         await send('Target.createTarget', { url: 'about:blank' });
       }
-
       browser.on('tabSelected', async (tab) => {
         const index = tab ? browser.getTabs().findIndex(t => t.targetId === tab.targetId) : 0;
         browser.activeTarget = targets[index];
@@ -248,18 +247,16 @@
       await selectTabAndRender();
 
       process.title = 'KRNL-RENDER';
-
       process.on('SIGINT', () => {
-        if (cleanup) cleanup();
+        if (connection.connectionManager) connection.connectionManager.cleanup();
         browser.destroy();
-        if (socket) socket.close();
         terminal.clear();
         terminal.green('Exiting...\n');
         process.exit(0);
       });
     } catch (error) {
       debugLog(JSON.stringify({ error, stack: error.stack }, null, 2));
-      if (cleanup) cleanup();
+      if (connection.connectionManager) connection.connectionManager.cleanup();
       console.error(error);
       if (DEBUG) console.warn(error);
       terminal.red(`Main error: ${error.message}\n`);
@@ -970,10 +967,11 @@
 
   // Connectivity helpers
   async function connectToBrowser() {
-    ({ cookieHeader, cookieValue } = await authenticate(loginUrl));
-    targets = await fetchTargets();
-    const { send, socket, browserbox } = await setupWebSockets(proxyBaseUrl, hostname, token, cookieValue);
-    return { send, socket, targets, cookieHeader, cookieValue, browserbox };
+    const connectionManager = new ConnectionManager(loginUrl, proxyBaseUrl, apiUrl);
+    const { cookieHeader, cookieValue } = await connectionManager.authenticate();
+    const targets = await connectionManager.fetchTargets();
+    const { send, socket, browserbox } = await connectionManager.setupWebSockets(hostname, token);
+    return { send, socket, targets, cookieHeader, cookieValue, browserbox, connectionManager };
   }
 
   async function authenticate(loginUrl) {
