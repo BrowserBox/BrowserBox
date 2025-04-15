@@ -500,9 +500,11 @@
   function renderBoxes(layoutState) {
     const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
     const newBoxes = [];
+    const sessionId = browserState.currentSessionId; // Use current sessionId
+    logClicks(`renderBoxes: clickableElements.length=${clickableElements.length}`);
 
     for (const box of visibleBoxes) {
-      DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, ancestorType="${box.ancestorType}", backendNodeId=${box.backendNodeId}`);
+      DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
       const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type } = box;
       const renderX = Math.max(1, termX + 1);
       const renderY = Math.max(5, termY + 4);
@@ -547,7 +549,7 @@
         text: text.slice(0, 50),
         termX,
         termY
-      }, (new Error).stack);
+      });
 
       const isFocused = browser.focusManager.getFocusedElement() === (type === 'input' ? `input:${backendNodeId}` : `clickable:${backendNodeId}`);
       if (type === 'input') {
@@ -556,69 +558,88 @@
         const fallbackValue = text.startsWith('[INPUT') ? '' : text;
         const onChange = createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId });
 
-        send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId)
-          .then(resolveResult => {
-            if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
-            const objectId = resolveResult.object.objectId;
-            return send(
-              'Runtime.callFunctionOn',
-              {
-                objectId,
-                functionDeclaration: 'function() { return this.value; }',
-                arguments: [],
-                returnByValue: true,
-              },
-              sessionId
-            );
-          })
-          .then(valueResult => {
-            let liveValue = fallbackValue;
-            if (valueResult?.result?.value !== undefined) {
-              liveValue = '' + valueResult.result.value;
-              logClicks(`Fetched live value for backendNodeId: ${currentBackendNodeId}: "${liveValue}"`);
-            }
-            const inputField = drawInputFieldForNode({
-              renderX,
-              renderY,
-              termWidthForBox,
-              backendNodeId: currentBackendNodeId,
-              initialValue: liveValue,
-              onChange,
-            });
-            renderedBox.termWidth = inputField.width;
-            newBoxes.push(renderedBox);
-            if (isClickable) {
-              const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
-              if (clickable) {
-                clickable.termX = renderX;
-                clickable.termY = renderY;
-                clickable.termWidth = inputField.width;
-                clickable.termHeight = 1;
-              }
-            }
-          })
-          .catch(error => {
-            logClicks(`Failed to fetch live value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
-            const inputField = drawInputFieldForNode({
-              renderX,
-              renderY,
-              termWidthForBox,
-              backendNodeId: currentBackendNodeId,
-              initialValue: fallbackValue,
-              onChange,
-            });
-            renderedBox.termWidth = inputField.width;
-            newBoxes.push(renderedBox);
-            if (isClickable) {
-              const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
-              if (clickable) {
-                clickable.termX = renderX;
-                clickable.termY = renderY;
-                clickable.termWidth = inputField.width;
-                clickable.termHeight = 1;
-              }
-            }
+        try {
+          const resolveResult = await send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId);
+          if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+          const objectId = resolveResult.object.objectId;
+          const valueResult = await send(
+            'Runtime.callFunctionOn',
+            {
+              objectId,
+              functionDeclaration: 'function() { return this.value; }',
+              arguments: [],
+              returnByValue: true,
+            },
+            sessionId
+          );
+          let liveValue = fallbackValue;
+          if (valueResult?.result?.value !== undefined) {
+            liveValue = '' + valueResult.result.value;
+            logClicks(`Fetched live value for backendNodeId: ${currentBackendNodeId}: "${liveValue}"`);
+          }
+          const inputField = drawInputFieldForNode({
+            renderX,
+            renderY,
+            termWidthForBox,
+            backendNodeId: currentBackendNodeId,
+            initialValue: liveValue,
+            onChange,
           });
+          renderedBox.termWidth = inputField.width;
+          if (isClickable) {
+            const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+            if (clickable) {
+              clickable.termX = renderX;
+              clickable.termY = renderY;
+              clickable.termWidth = inputField.width;
+              clickable.termHeight = 1;
+              logClicks(`Updated clickable input: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
+            } else {
+              logClicks(`No clickable found for input: backendNodeId=${currentBackendNodeId}`);
+              clickableElements.push({
+                text,
+                boundingBox,
+                backendNodeId: currentBackendNodeId,
+                termX: renderX,
+                termY: renderY,
+                termWidth: inputField.width,
+                termHeight: 1,
+              });
+            }
+          }
+        } catch (error) {
+          logClicks(`Failed to fetch live value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+          const inputField = drawInputFieldForNode({
+            renderX,
+            renderY,
+            termWidthForBox,
+            backendNodeId: currentBackendNodeId,
+            initialValue: fallbackValue,
+            onChange,
+          });
+          renderedBox.termWidth = inputField.width;
+          if (isClickable) {
+            const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+            if (clickable) {
+              clickable.termX = renderX;
+              clickable.termY = renderY;
+              clickable.termWidth = inputField.width;
+              clickable.termHeight = 1;
+              logClicks(`Updated clickable input (error path): backendNodeId=${currentBackendNodeId}`);
+            } else {
+              logClicks(`No clickable found for input (error path): backendNodeId=${currentBackendNodeId}`);
+              clickableElements.push({
+                text,
+                boundingBox,
+                backendNodeId: currentBackendNodeId,
+                termX: renderX,
+                termY: renderY,
+                termWidth: inputField.width,
+                termHeight: 1,
+              });
+            }
+          }
+        }
       } else {
         terminal.moveTo(renderX, renderY);
         if (isFocused && isClickable) {
@@ -661,12 +682,24 @@
           }
         }
         if (isClickable) {
-          const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
+          const clickable = clickableElements.find(el => el.backendNodeId === backendNodeId);
           if (clickable) {
             clickable.termX = renderX;
             clickable.termY = renderY;
             clickable.termWidth = displayText.length;
             clickable.termHeight = 1;
+            logClicks(`Updated clickable: backendNodeId=${backendNodeId}, termX=${renderX}, termY=${renderY}`);
+          } else {
+            logClicks(`No clickable found for: backendNodeId=${backendNodeId}`);
+            clickableElements.push({
+              text,
+              boundingBox,
+              backendNodeId,
+              termX: renderX,
+              termY: renderY,
+              termWidth: displayText.length,
+              termHeight: 1,
+            });
           }
         }
       }
@@ -677,13 +710,11 @@
     boxes.length = 0;
     boxes.push(...newBoxes);
     renderedBoxesBySession.set(sessionId, boxes);
-    debugLog(JSON.stringify(newBoxes, null, 2));
+    logClicks(`renderBoxes: Stored ${newBoxes.length} boxes, clickableElements.length=${clickableElements.length}`);
     debugLog('render_boxes_complete', null, {
       boxCount: newBoxes.length,
       backendNodeIds: newBoxes.map(b => b.backendNodeId).filter(id => id !== undefined)
-    }, (new Error).stack);
-    terminal.defaultColor().bgDefaultColor();
-    terminal.styleReset();
+    });
   }
 
   function drawInputFieldForNode({ renderX, renderY, termWidthForBox, backendNodeId, initialValue, onChange }) {
@@ -757,25 +788,34 @@
 
   export function getClickedBox({ termX, termY }) {
     let clickedBox = null;
-    for (let i = renderedBoxes.length - 1; i >= 0; i--) {
-      const box = renderedBoxes[i];
-      if (termX >= box.termX && termX < box.termX + box.termWidth && termY === box.termY) {
+    const sessionBoxes = renderedBoxesBySession.get(browserState.currentSessionId) || [];
+    console.log(`getClickedBox: termX=${termX}, termY=${termY}, sessionBoxes.length=${sessionBoxes.length}`);
+    for (let i = sessionBoxes.length - 1; i >= 0; i--) {
+      const box = sessionBoxes[i];
+      const inX = termX >= box.termX && termX < box.termX + box.termWidth;
+      const inY = Math.abs(termY - box.termY) <= 1; // Allow 1-line leeway
+      if (inX && inY && box.isClickable) {
         clickedBox = box;
         break;
       }
     }
-    if (!clickedBox || !clickedBox.isClickable) {
-      statusLine(`No clickable element at (${termX}, ${termY})`, JSON.stringify(renderedBoxes));
-      logClicks(`No clickable element at (${termX}, ${termY})`);
-      return;
+    if (!clickedBox) {
+      console.log(`No clickable box at (${termX}, ${termY})`);
+      logClicks(`No clickable box at (${termX}, ${termY})`);
+    } else {
+      console.log(`Found clickable box: type=${clickedBox.type}, backendNodeId=${clickedBox.backendNodeId}`);
+      logClicks(`Found clickable box: type=${clickedBox.type}, backendNodeId=${clickedBox.backendNodeId}`);
     }
-    logClicks(`Clicked box type: ${clickedBox.type}, backendNodeId: ${clickedBox.backendNodeId}`);
     return clickedBox;
   }
 
   export async function handleClick({ termX, termY, layoutToNode, nodeToParent, nodes }) {
     const clickedBox = getClickedBox({ termX, termY });
-    if (!clickedBox) return;
+    if (!clickedBox) {
+      logClicks(`handleClick: No clickedBox found at (${termX}, ${termY})`);
+      return;
+    }
+    logClicks(`handleClick: Processing type=${clickedBox.type}, backendNodeId=${clickedBox.backendNodeId}`);
     if (clickedBox.type === 'input') {
       await focusInput({ clickedBox, browser, send, sessionId, termX });
       return;
@@ -876,7 +916,11 @@
   }
 
   export async function focusInput({ clickedBox, browser, send, sessionId, termX }) {
-    logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
+    if (!clickedBox) {
+      logClicks(`focusInput: clickedBox is undefined`);
+      return;
+    }
+    logClicks(`Focusing input field: backendNodeId=${clickedBox.backendNodeId}`);
     const guiX = clickedBox.boundingBox.x + clickedBox.boundingBox.width / 2;
     const guiY = clickedBox.boundingBox.y + clickedBox.boundingBox.height / 2;
     const clickX = guiX + clickedBox.viewportX;
@@ -897,9 +941,10 @@
           },
           sessionId
         );
-        logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId}`);
+        logClicks(`Synthetic focus succeeded for backendNodeId: ${clickedBox.backendNodeId}`);
       } catch (error) {
-        logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
+        logClicks(`Synthetic focus failed for backendNodeId: ${clickedBox.backendNodeId}: ${error.message}`);
+        return;
       }
     } else {
       try {
@@ -925,18 +970,23 @@
           },
           sessionId
         );
-        logClicks(`Focused remote input with backendNodeId: ${clickedBox.backendNodeId} at GUI coordinates (${clickX}, ${clickY})`);
+        logClicks(`Mouse focus succeeded for backendNodeId: ${clickedBox.backendNodeId} at (${clickX}, ${clickY})`);
       } catch (error) {
-        logClicks(`Failed to focus remote input with backendNodeId ${clickedBox.backendNodeId}: ${error.message}`);
+        logClicks(`Mouse focus failed for backendNodeId: ${clickedBox.backendNodeId}: ${error.message}`);
+        return;
       }
     }
 
     browser.focusInput(clickedBox.backendNodeId);
+    browser.focusManager.setFocusedElement(`input:${clickedBox.backendNodeId}`); // Ensure FocusManager tracks
     const inputState = browser.inputFields.get('' + clickedBox.backendNodeId);
     if (inputState) {
       const relativeX = termX - clickedBox.termX;
       inputState.cursorPosition = Math.min(relativeX, inputState.value.length);
       browser.redrawFocusedInput();
+      logClicks(`Input focused, cursor at ${inputState.cursorPosition}`);
+    } else {
+      logClicks(`No input state found for backendNodeId: ${clickedBox.backendNodeId}`);
     }
   }
 
