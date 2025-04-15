@@ -50,6 +50,7 @@ Features
   - CTRL_Q also quits. 
 
 For release
+  - add licensing checks to krnl as well!
   - capture loading events from browserbox and display a 2x2 or 3x2 cursor "square" at screen right (like Netscape loading logo), showing loading (maybe just cursor rotating inside it clockwise. 1.5 - 2 Hz  
   - improve efficiency of rendering. Only split snapshot on visible boxes.
   - as much as possible limit our data processing to only visible nodes and parts of tree we need to look at relevant to those
