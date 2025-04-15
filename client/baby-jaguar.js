@@ -43,7 +43,6 @@
     send: null,
   };
 
-  let state;
   let connection;
   let cleanup;
   let targets;
