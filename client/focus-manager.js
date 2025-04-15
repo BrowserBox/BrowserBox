@@ -10,26 +10,25 @@ export class FocusManager {
     this.currentFocusIndex = 0;
     this.tabbableCached = false;
     this.tabbableCache = [];
+    this.sessionId = null; // Track current session
   }
 
   saveFocusState() {
-    const { sessionId } = this.getState();
+    const state = this.getState();
+    this.sessionId = state.sessionId;
     const { focusedElement, previousFocusedElement } = this;
 
     if (!focusedElement || !this.isPageContentElement(focusedElement)) {
-      debugLog(`Clearing focus state for sessionId: ${sessionId}, focusedElement: ${focusedElement} (not a page content element)`);
-      focusLog('clear_state', sessionId, { focusedElement, previousFocusedElement }, (new Error).stack);
-      this.focusState.delete(sessionId);
+      debugLog(`Clearing focus state for sessionId: ${this.sessionId}, focusedElement: ${focusedElement}`);
+      focusLog('clear_state', this.sessionId, { focusedElement, previousFocusedElement }, (new Error).stack);
+      this.focusState.delete(this.sessionId);
       return;
     }
 
-    const focusState = {
-      focusedElement,
-      previousFocusedElement,
-    };
-    debugLog(`Saving focus state for sessionId: ${sessionId}, focusedElement: ${focusedElement}`);
-    focusLog('save_state', sessionId, focusState, (new Error).stack);
-    this.focusState.set(sessionId, focusState);
+    const focusState = { focusedElement, previousFocusedElement };
+    debugLog(`Saving focus state for sessionId: ${this.sessionId}, focusedElement: ${focusedElement}`);
+    focusLog('save_state', this.sessionId, focusState, (new Error).stack);
+    this.focusState.set(this.sessionId, focusState);
   }
 
   restoreFocusState(setFocus) {

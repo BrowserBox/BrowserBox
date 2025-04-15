@@ -12,9 +12,9 @@ export default class TerminalBrowser extends EventEmitter {
   constructor(options = {}, getState) {
     super();
     this.focusManager = new FocusManager(() => ({
-      ...getState(),
-      publicState: getState(),
-      renderedBoxes,
+      ...getState(this.focusManager.sessionId || sessionId),
+      publicState: getState(this.focusManager.sessionId || sessionId),
+      renderedBoxes: renderedBoxesBySession.get(this.focusManager.sessionId || sessionId) || [],
       targets: this.targets,
       termWidth: this.term.width,
       NEW_TAB_WIDTH: this.NEW_TAB_WIDTH,

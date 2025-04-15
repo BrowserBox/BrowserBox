@@ -230,9 +230,11 @@ export class InputManager {
           this.browser.render();
           break;
         case '[':
+          this.browser.focusManager.sessionId = publicState.sessionId;
           this.browser.selectPreviousTab();
           break;
         case ']':
+          this.browser.focusManager.sessionId = publicState.sessionId;
           this.browser.selectNextTab();
           break;
       }
