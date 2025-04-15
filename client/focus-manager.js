@@ -198,7 +198,8 @@ export class FocusManager {
         nodeIndex: box.nodeIndex,
         parentNodeIndex,
         nodePath,
-        isClickable: publicState.nodes.isClickable?.index.includes(parentNodeIndex)
+        isClickable: publicState.nodes.isClickable?.index.includes(parentNodeIndex),
+        boxText: box.text?.slice(0, 50)
       }, (new Error).stack);
 
       const nodeNameIdx = publicState.nodes.nodeName[parentNodeIndex];
