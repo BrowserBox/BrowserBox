@@ -964,7 +964,6 @@
   async function printTextLayoutToTerminal() {
     await refreshTerminal({ send, sessionId });
     return () => {
-      state.isListening = false;
       browser.inputManager.stopListening();
     };
   }

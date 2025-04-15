@@ -114,12 +114,13 @@ export class FocusManager {
 
   computeTabbableElements() {
     if (this.tabbableCached) return this.tabbableCache;
-    const sessionId = this.getBrowserState().currentSessionId;
+    const browserState = this.getBrowserState();
+    const sessionId = browserState.currentSessionId;
     const tabState = this.getTabState(sessionId);
     const renderedBoxes = renderedBoxesBySession.get(sessionId) || [];
     const tabbable = [];
 
-    tabState.targets.forEach((tab, index) => {
+    browserState.targets.forEach((tab, index) => {
       const x = 1 + index * tabState.tabWidth;
       tabbable.push({ type: 'tab', index, x, y: 1, targetId: tab.targetId });
     });
