@@ -3,7 +3,7 @@ import { WebSocket } from 'ws';
 import { Agent } from 'https';
 import TK from 'terminal-kit';
 const { terminal } = TK;
-import { debugLog, DEBUG, logMessage } from './log.js';
+import { DEBUG, logMessage } from './log.js';
 
 export class ConnectionManager {
   constructor(loginUrl, proxyBaseUrl, apiUrl) {

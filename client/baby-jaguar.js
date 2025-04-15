@@ -13,10 +13,8 @@
   // built in
   import util from 'util';
   import { appendFileSync } from 'fs';
-  import { Agent } from 'https';
 
   // 3rd-party
-  import { WebSocket } from 'ws';
   import TK from 'terminal-kit';
   export const { terminal } = TK;
 
@@ -24,14 +22,13 @@
   import Layout from './layout.js';
   import TerminalBrowser from './terminal-browser.js';
   import { ConnectionManager } from './connection-manager.js';
-  import { sleep, logClicks, logMessage, debugLog, DEBUG } from './log.js';
+  import { sleep, logClicks, debugLog, DEBUG } from './log.js';
 
   // Constants and state
   const clickCounter = { value: 0 };
   const USE_SYNTHETIC_FOCUS = true;
   const markClicks = false;
   const DEBOUNCE_DELAY = 280;
-  const WAIT_FOR_COMMAND_RESPONSE = 10 * 1000;
   const args = process.argv.slice(2);
   const mySource = 'krnlclient' + Math.random().toString(36);
   export const renderedBoxes = [];
@@ -48,7 +45,6 @@
 
   let state;
   let connection;
-  let socket;
   let cleanup;
   let targets;
   let send;
@@ -57,7 +53,6 @@
   let sessionId;
   let browserbox;
   let loginLink;
-  let cookieHeader, cookieValue;
 
   // arrows
   const debouncedRefresh = debounce(() => {
@@ -114,7 +109,6 @@
       browserState.targets = connection.targets;
       send = connection.send;
       targets = connection.targets;
-      socket = connection.socket;
       browserbox = connection.browserbox;
       browser = new TerminalBrowser(
         {
@@ -167,7 +161,7 @@
         DEBUG && terminal.cyan(`Creating new remote tab: ${tab.title}\n`);
         try {
           await send('Target.createTarget', { url: tab.url || 'about:blank' });
-          targets = await fetchTargets();
+          targets = await connection.connectionManager.fetchTargets();
           await selectTabAndRender();
         } catch (error) {
           DEBUG && terminal.red(`Failed to create new tab: ${error.message}\n`);
@@ -179,7 +173,7 @@
         try {
           targetId = targets[index].targetId;
           await send('Target.closeTarget', { targetId });
-          targets = await fetchTargets();
+          targets = await connection.connectionManager.fetchTargets();
           browser.targets = targets;
           browser.tabs = targets;
           DEBUG && terminal.cyan(`Closing remote target: ${targetId}\n`);
@@ -400,17 +394,6 @@
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => func(...args), delay);
     };
-  }
-
-  function updateTabData(targetInfo) {
-    const targetIndex = browser.targets.findIndex(t => t.targetId === targetInfo.targetId);
-    if (targetIndex !== -1) {
-      browser.targets[targetIndex] = targetInfo;
-      browser.tabs = browser.targets;
-    } else {
-      DEBUG && console.warn(`Target with ID ${targetInfo.targetId} not found`);
-    }
-    browser.render();
   }
 
   async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
@@ -974,166 +957,3 @@
     return { send, socket, targets, cookieHeader, cookieValue, browserbox, connectionManager };
   }
 
-  async function authenticate(loginUrl) {
-    terminal.cyan('Authenticating to set session cookie...\n');
-    try {
-      const response = await fetch(loginUrl, { method: 'GET', headers: { Accept: 'text/html' }, redirect: 'manual' });
-      if (response.status !== 302) throw new Error(`Expected 302 redirect, got HTTP ${response.status}: ${await response.text()}`);
-      const setCookie = response.headers.get('set-cookie');
-      if (!setCookie) throw new Error('No Set-Cookie header in /login response');
-      const cookieMatch = setCookie.match(/browserbox-[^=]+=(.+?)(?:;|$)/);
-      if (!cookieMatch) throw new Error('Could not parse browserbox cookie');
-      const cookieValue = cookieMatch[1];
-      const cookieName = setCookie.split('=')[0];
-      const cookieHeader = `${cookieName}=${cookieValue}`;
-      DEBUG && console.log(`Captured cookie: ${cookieHeader}`);
-      return { cookieHeader, cookieValue };
-    } catch (error) {
-      if (DEBUG) console.warn(error);
-      terminal.red(`Error during login: ${error.message}\n`);
-      process.exit(1);
-    }
-  }
-
-  export async function fetchTargets() {
-    DEBUG && terminal.cyan('Fetching available tabs...\n');
-    try {
-      const response = await fetch(apiUrl, { method: 'GET', headers: { Accept: 'application/json', Cookie: cookieHeader } });
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-      const data = await response.json();
-      const targets = (data.tabs || []).filter(t => t.type === 'page' || t.type === 'tab');
-      if (browser) {
-        browser.targets = targets;
-      }
-      if (!targets.length) {
-        DEBUG && terminal.yellow('No page or tab targets available.\n');
-        statusLine('No page or tab targets available.');
-      }
-      return targets;
-    } catch (error) {
-      if (DEBUG) console.warn(error);
-      terminal.red(`Error fetching tabs: ${error.message}\n`);
-      process.exit(1);
-    }
-  }
-
-  async function setupWebSockets(proxyBaseUrl, hostname, token, cookieValue) {
-    DEBUG && terminal.cyan(`Fetching WebSocket debugger URL from ${proxyBaseUrl}/json/version...\n`);
-    let wsDebuggerUrl;
-    try {
-      const response = await fetch(`${proxyBaseUrl}/json/version`, {
-        method: 'GET',
-        headers: { Accept: 'application/json', 'x-browserbox-local-auth': cookieValue },
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-      const data = await response.json();
-      wsDebuggerUrl = data.webSocketDebuggerUrl;
-      if (!wsDebuggerUrl) throw new Error('No webSocketDebuggerUrl in response');
-    } catch (error) {
-      if (DEBUG) console.warn(error);
-      terminal.red(`Error fetching WebSocket debugger URL: ${error.message}\n`);
-    }
-
-    wsDebuggerUrl = wsDebuggerUrl.replace('ws://localhost', `wss://${hostname}`);
-    wsDebuggerUrl = `${wsDebuggerUrl}/${token}`;
-    DEBUG && terminal.cyan(`Connecting to WebSocket at ${wsDebuggerUrl}...\n`);
-    DEBUG && console.log(wsDebuggerUrl);
-    const socket = new WebSocket(wsDebuggerUrl, {
-      headers: { 'x-browserbox-local-auth': cookieValue },
-      agent: new Agent({ rejectUnauthorized: false }),
-    });
-
-    const send = createSend({ socket });
-
-    await new Promise((resolve, reject) => {
-      socket.on('open', resolve);
-      socket.on('error', reject);
-    });
-    DEBUG && terminal.green('Connected to WebSocket\n');
-
-    let bbResolve;
-    const bbReady = new Promise(res => (bbResolve = res));
-    let wsBBUrl = new URL(loginUrl);
-    wsBBUrl.protocol = 'wss:';
-    wsBBUrl.searchParams.set('session_token', wsBBUrl.searchParams.get('token'));
-    wsBBUrl.pathname = '/';
-
-    const browserbox = new WebSocket(wsBBUrl, {
-      headers: { 'x-browserbox-local-auth': token },
-      agent: new Agent({ rejectUnauthorized: false }),
-    });
-
-    browserbox.on('open', bbResolve);
-    await bbReady;
-    DEBUG && console.log('Connected to browserbox');
-
-    return { send, socket, browserbox };
-  }
-
-  function createSend({ socket }) {
-    const Resolvers = {};
-    let id = 0;
-
-    const incomingMessageHandler = createMessageHandler({ Resolvers });
-
-    socket.on('message', incomingMessageHandler);
-    socket.on('close', () => {
-      statusLine('WebSocket disconnected\n');
-    });
-    socket.on('error', err => {
-      if (DEBUG) console.warn(err);
-      statusLine(`WebSocket error: ${err.message}\n`);
-    });
-
-    return send;
-
-    async function send(method, params = {}, sessionId) {
-      const message = { method, params, sessionId, id: ++id };
-      const key = `${sessionId || 'root'}:${message.id}`;
-      let resolve;
-      const promise = new Promise(res => (resolve = res));
-      Resolvers[key] = resolve;
-
-      const timeout = setTimeout(() => {
-        delete Resolvers[key];
-        resolve({});
-      }, WAIT_FOR_COMMAND_RESPONSE);
-
-      try {
-        logMessage('SEND', message, terminal);
-        socket.send(JSON.stringify(message));
-      } catch (error) {
-        clearTimeout(timeout);
-        delete Resolvers[key];
-        if (DEBUG) console.warn(error);
-        terminal.red(`Send error: ${error.message}\n`);
-        throw error;
-      }
-      return promise.finally(() => clearTimeout(timeout));
-    }
-  }
-
-  function createMessageHandler({ Resolvers }) {
-    return async function handleIncomingMessage(data) {
-      let message;
-      try {
-        const dataStr = Buffer.isBuffer(data) ? data.toString('utf8') : data;
-        message = JSON.parse(dataStr);
-        logMessage('RECEIVE', message, terminal);
-      } catch (error) {
-        if (DEBUG) console.warn(error);
-        terminal.red(`Invalid message: ${('' + data).slice(0, 50)}...\n`);
-        return;
-      }
-      const key = `${message.sessionId || 'root'}:${message.id}`;
-      if (message.id && Resolvers[key]) {
-        Resolvers[key](message.result || message.error);
-        delete Resolvers[key];
-      } else if (message.method === 'Target.targetInfoChanged') {
-        const { targetInfo } = message.params;
-        browser.emit('targetInfoChanged', targetInfo);
-        updateTabData(targetInfo);
-        debouncedRefresh();
-      }
-    };
-  }
