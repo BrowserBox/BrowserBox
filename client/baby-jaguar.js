@@ -208,6 +208,7 @@
       });
 
       browser.on('renderContent', () => {
+        const state = getTabState(getBrowserState().currentSessionId);
         if (state.layoutState) {
           DEBUG && console.log('Rendering content');
           renderLayout({ layoutState: state.layoutState });
@@ -215,6 +216,7 @@
       });
 
       browser.on('click', async ({ x, y }) => {
+        const state = getTabState(getBrowserState().currentSessionId);
         if (!state.isInitialized) return;
         await handleClick({
           termX: x,
@@ -227,6 +229,7 @@
       });
 
       browser.on('scroll', async ({ direction }) => {
+        const state = getTabState(getBrowserState().currentSessionId);
         try {
           const lineHeight = Math.round(state.viewportHeight / terminal.height);
           const deltaY = direction * lineHeight;
@@ -876,7 +879,12 @@
   }
 
   export async function focusInput({ clickedBox, browser, send, sessionId, termX }) {
-    logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
+    if ( clickedBox ) {
+      logClicks(`Focusing input field: ${clickedBox.backendNodeId}`);
+    } else {
+      logClicks(`Clicked box is undefined`);
+      return;
+    }
     const guiX = clickedBox.boundingBox.x + clickedBox.boundingBox.width / 2;
     const guiY = clickedBox.boundingBox.y + clickedBox.boundingBox.height / 2;
     const clickX = guiX + clickedBox.viewportX;
