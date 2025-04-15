@@ -179,10 +179,22 @@ export default class TerminalBrowser extends EventEmitter {
     const publicState = this.getState();
     if (!publicState || !renderedBoxes || !publicState.layoutToNode || !publicState.nodeToParent || !publicState.nodes) {
       debugLog('Missing state, renderedBoxes, or layout data');
+      focusLog('compute_tabbable_failed', null, { reason: 'missing_state' }, (new Error).stack);
       return tabbable;
     }
 
     debugLog('Rendered Boxes Count:', renderedBoxes.length);
+    focusLog('compute_tabbable_boxes', null, {
+      boxCount: renderedBoxes.length,
+      boxes: renderedBoxes.map(b => ({
+        backendNodeId: b.backendNodeId,
+        nodeIndex: b.nodeIndex,
+        text: b.text || '',
+        isClickable: b.isClickable,
+        type: b.type,
+        ancestorType: b.ancestorType
+      }))
+    }, (new Error).stack);
 
     const hasClickableDescendants = (nodeIdx) => {
       const descendants = [];
@@ -199,12 +211,14 @@ export default class TerminalBrowser extends EventEmitter {
     };
 
     const elementsByParentId = new Map();
+    const seenBackendNodeIds = new Set();
     renderedBoxes.forEach(box => {
       if (!box.isClickable && box.type !== 'input' && box.ancestorType !== 'button') return;
 
       let parentBackendNodeId = box.backendNodeId;
       let parentNodeIndex = box.nodeIndex;
       let currentNodeIndex = box.nodeIndex;
+      const nodePath = [currentNodeIndex];
 
       while (currentNodeIndex !== -1 && currentNodeIndex !== undefined) {
         if (publicState.nodes.isClickable && publicState.nodes.isClickable.index.includes(currentNodeIndex)) {
@@ -213,7 +227,17 @@ export default class TerminalBrowser extends EventEmitter {
           break;
         }
         currentNodeIndex = publicState.nodeToParent.get(currentNodeIndex);
+        nodePath.push(currentNodeIndex);
       }
+
+      focusLog('compute_tabbable_node', null, {
+        boxBackendNodeId: box.backendNodeId,
+        parentBackendNodeId,
+        nodeIndex: box.nodeIndex,
+        parentNodeIndex,
+        nodePath,
+        isClickable: publicState.nodes.isClickable?.index.includes(parentNodeIndex)
+      }, (new Error).stack);
 
       const nodeNameIdx = publicState.nodes.nodeName[parentNodeIndex];
       const nodeName = nodeNameIdx >= 0 ? publicState.strings[nodeNameIdx] : '';
@@ -225,6 +249,12 @@ export default class TerminalBrowser extends EventEmitter {
       if (!isButton && hasClickableDescendants(parentNodeIndex)) {
         return;
       }
+
+      if (seenBackendNodeIds.has(parentBackendNodeId)) {
+        debugLog(`Duplicate backendNodeId detected: ${parentBackendNodeId}`);
+        focusLog('compute_tabbable_duplicate', null, { backendNodeId: parentBackendNodeId }, (new Error).stack);
+      }
+      seenBackendNodeIds.add(parentBackendNodeId);
 
       if (!elementsByParentId.has(parentBackendNodeId)) {
         elementsByParentId.set(parentBackendNodeId, {
@@ -264,7 +294,14 @@ export default class TerminalBrowser extends EventEmitter {
     });
 
     debugLog('Final Tabbable Elements Count:', tabbable.length);
-    debugLog(JSON.stringify(tabbable, null, 2));
+    focusLog('compute_tabbable_elements', null, {
+      count: tabbable.length,
+      elements: tabbable.map(el => ({
+        type: el.type,
+        id: el.backendNodeId || el.targetId || el.type,
+        text: el.text || ''
+      }))
+    }, (new Error).stack);
     tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
     return tabbable;
   }
