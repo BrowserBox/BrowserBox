@@ -300,45 +300,6 @@
     browser.render();
   }
 
-  async function fetchSnapshot({ send, sessionId }) {
-    try {
-      DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
-      await Promise.all([
-        send('DOM.enable', {}, sessionId),
-        send('DOMSnapshot.enable', {}, sessionId),
-      ]);
-
-      DEBUG && terminal.cyan('Capturing snapshot...\n');
-      const snapshot = await send(
-        'DOMSnapshot.captureSnapshot',
-        {
-          computedStyles: ['display', 'visibility', 'overflow', 'position', 'width', 'height', 'transform', 'opacity'],
-          includePaintOrder: true,
-        },
-        sessionId
-      );
-      if (!snapshot?.documents?.length) {
-        return;
-      }
-      DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
-
-      const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
-      const viewport = layoutMetrics.visualViewport;
-      const document = snapshot.documents[0];
-
-      return {
-        snapshot,
-        viewportWidth: viewport.clientWidth,
-        viewportHeight: viewport.clientHeight,
-        viewportX: document.scrollOffsetX,
-        viewportY: document.scrollOffsetY,
-      };
-    } catch (e) {
-      DEBUG && console.warn(e);
-      return {};
-    }
-  }
-
   async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
@@ -434,6 +395,56 @@
     }
   }
 
+  async function fetchSnapshot({ send, sessionId }) {
+    try {
+      DEBUG && terminal.cyan('Enabling DOM and snapshot domains...\n');
+      await Promise.all([
+        send('DOM.enable', {}, sessionId),
+        send('DOMSnapshot.enable', {}, sessionId),
+      ]);
+
+      DEBUG && terminal.cyan('Capturing snapshot...\n');
+      const snapshot = await send(
+        'DOMSnapshot.captureSnapshot',
+        {
+          computedStyles: ['display', 'visibility', 'overflow', 'position', 'width', 'height', 'transform', 'opacity'],
+          includePaintOrder: true,
+        },
+        sessionId
+      );
+      if (!snapshot?.documents?.length) {
+        focusLog('snapshot_failed', sessionId, { reason: 'no_documents' }, (new Error).stack);
+        return;
+      }
+      DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
+
+      const layoutMetrics = await send('Page.getLayoutMetrics', {}, sessionId);
+      const viewport = layoutMetrics.visualViewport;
+      const document = snapshot.documents[0];
+
+      // Log backendNodeIds for clickable nodes
+      const clickableNodeIds = document.nodes.isClickable?.index
+        .map(idx => document.nodes.backendNodeId[idx])
+        .filter(id => id !== undefined);
+      focusLog('snapshot_nodes', sessionId, {
+        clickableNodeIds,
+        totalNodes: document.nodes.backendNodeId.length
+      }, (new Error).stack);
+
+      return {
+        snapshot,
+        viewportWidth: viewport.clientWidth,
+        viewportHeight: viewport.clientHeight,
+        viewportX: document.scrollOffsetX,
+        viewportY: document.scrollOffsetY,
+      };
+    } catch (e) {
+      DEBUG && console.warn(e);
+      focusLog('snapshot_failed', sessionId, { reason: e.message }, (new Error).stack);
+      return {};
+    }
+  }
+
   function renderBoxes(layoutState) {
     const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
     const newBoxes = [];
@@ -476,6 +487,15 @@
         layoutIndex,
         nodeIndex,
       };
+
+      focusLog('render_box', null, {
+        backendNodeId,
+        type,
+        isClickable,
+        text: text.slice(0, 50),
+        termX,
+        termY
+      }, (new Error).stack);
 
       const isFocused = browser.focusManager.getFocusedElement() === (type === 'input' ? `input:${backendNodeId}` : `clickable:${backendNodeId}`);
       if (type === 'input') {
@@ -536,7 +556,7 @@
               onChange,
             });
             renderedBox.termWidth = inputField.width;
-            renderedBoxes.push(renderedBox);
+            newBoxes.push(renderedBox);
             if (isClickable) {
               const clickable = clickableElements.find(el => el.text === text && el.boundingBox.x === boundingBox.x && el.boundingBox.y === boundingBox.y);
               if (clickable) {
@@ -604,6 +624,10 @@
     renderedBoxes.length = 0;
     renderedBoxes.push(...newBoxes);
     debugLog(JSON.stringify(renderedBoxes, null, 2));
+    focusLog('render_boxes_complete', null, {
+      boxCount: newBoxes.length,
+      backendNodeIds: newBoxes.map(b => b.backendNodeId).filter(id => id !== undefined)
+    }, (new Error).stack);
     terminal.defaultColor().bgDefaultColor();
     terminal.styleReset();
   }
