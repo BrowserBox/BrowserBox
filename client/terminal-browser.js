@@ -2,7 +2,7 @@
 import { EventEmitter } from 'events';
 import { focusLog, sleep, debugLog } from './log.js';
 import { getAncestorInfo } from './layout.js';
-import { sessions, getClickedBox, focusInput, renderedBoxes } from './baby-jaguar.js';
+import { sessions, getClickedBox, focusInput, renderedBoxes, renderedBoxesBySession } from './baby-jaguar.js';
 import { FocusManager } from './focus-manager.js';
 import { InputManager } from './input-manager.js';
 
@@ -11,19 +11,23 @@ const term = termkit.terminal;
 export default class TerminalBrowser extends EventEmitter {
   constructor(options = {}, getState) {
     super();
-    this.focusManager = new FocusManager(() => ({
-      ...getState(this.focusManager.sessionId || sessionId),
-      publicState: getState(this.focusManager.sessionId || sessionId),
-      renderedBoxes: renderedBoxesBySession.get(this.focusManager.sessionId || sessionId) || [],
-      targets: this.targets,
-      termWidth: this.term.width,
-      NEW_TAB_WIDTH: this.NEW_TAB_WIDTH,
-      TAB_HEIGHT: this.TAB_HEIGHT,
-      BACK_WIDTH: this.BACK_WIDTH,
-      FORWARD_WIDTH: this.FORWARD_WIDTH,
-      GO_WIDTH: this.GO_WIDTH,
-      tabWidth: this.options.tabWidth
-    }));
+    // Initialize FocusManager with a sessionId-aware getState
+    this.focusManager = new FocusManager(() => {
+      const sessionId = this.focusManager.sessionId || this.selectedTabId ? sessions.get(this.selectedTabId) : null;
+      return {
+        ...getState(sessionId),
+        publicState: getState(sessionId),
+        renderedBoxes: renderedBoxesBySession.get(sessionId) || [],
+        targets: this.targets,
+        termWidth: this.term.width,
+        NEW_TAB_WIDTH: this.NEW_TAB_WIDTH,
+        TAB_HEIGHT: this.TAB_HEIGHT,
+        BACK_WIDTH: this.BACK_WIDTH,
+        FORWARD_WIDTH: this.FORWARD_WIDTH,
+        GO_WIDTH: this.GO_WIDTH,
+        tabWidth: this.options.tabWidth
+      };
+    });
     const ogEmit = this.emit.bind(this);
     this.emit = (...stuff) => {
       switch (stuff[0]) {
@@ -34,6 +38,9 @@ export default class TerminalBrowser extends EventEmitter {
           const targetId = stuff[1]?.targetId;
           const sessionIdForTarget = sessions.get(targetId);
           debugLog(`tabSelected event: targetId=${targetId}, sessionIdForTarget=${sessionIdForTarget}`);
+          if (sessionIdForTarget) {
+            this.focusManager.sessionId = sessionIdForTarget; // Update sessionId
+          }
           if (!this.focusManager.focusState.has(sessionIdForTarget)) {
             this.focusManager.tabbableCached = false;
           }
@@ -109,7 +116,6 @@ export default class TerminalBrowser extends EventEmitter {
     this.render();
     this.inputManager.setupInput();
   }
-
   async ditzyTune() {
     const { spawn } = await import('child_process');
     const runnerProcess = spawn('node', ['ditzrunner.js'], {

@@ -35,11 +35,11 @@
   const mySource = 'krnlclient' + Math.random().toString(36);
   export const renderedBoxes = [];
 
-  const state = initializeState();
   const stateBySession = new Map(); // Map<sessionId, state>
   export const sessions = new Map();
   export const renderedBoxesBySession = new Map(); // Map<sessionId, renderedBoxes>
 
+  let state;
   let connection;
   let socket;
   let cleanup;
@@ -112,9 +112,8 @@
           tabWidth: Math.max(15, Math.ceil(terminal.width / 4)),
           initialTabs: targets,
         },
-        () => state
+        (sessionId) => getState(sessionId) // Pass sessionId to getState
       );
-
       await send('Target.setDiscoverTargets', { discover: true });
       await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
 
@@ -284,7 +283,29 @@
 
   // Update getState to use sessionId
   function getState(sessionId) {
-    return stateBySession.get(sessionId) || initializeState(sessionId);
+    if (!sessionId) {
+      debugLog('No sessionId provided, returning empty state');
+      return {
+        sessionId: null,
+        send: connection?.send || (() => Promise.reject("Send not available before connection")),
+        clickCounter,
+        clickableElements: [],
+        isListening: true,
+        scrollDelta: 50,
+        currentScrollY: 0,
+        layoutToNode: null,
+        nodeToParent: null,
+        nodes: null,
+        isInitialized: false,
+        strings: [],
+      };
+    }
+    state = stateBySession.get(sessionId);
+    if (!state) {
+      state = initializeState(sessionId);
+      debugLog(`Initialized new state for sessionId: ${sessionId}`);
+    }
+    return state;
   }
 
   // Update refreshTerminal
@@ -378,6 +399,7 @@
   }
 
   async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
+    getState(sessionId);
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
       if (snapshot) {
