@@ -23,7 +23,7 @@
   // internal
   import Layout from './layout.js';
   import TerminalBrowser from './terminal-browser.js';
-  import { sleep, logClicks, logMessage, debugLog, DEBUG } from './log.js';
+  import { sleep, logClicks, focusLog, logMessage, debugLog, DEBUG } from './log.js';
 
   // Constants and state
   const clickCounter = { value: 0 };
@@ -36,7 +36,10 @@
   export const renderedBoxes = [];
 
   const state = initializeState();
+  const stateBySession = new Map(); // Map<sessionId, state>
   export const sessions = new Map();
+  export const renderedBoxesBySession = new Map(); // Map<sessionId, renderedBoxes>
+
   let connection;
   let socket;
   let cleanup;
@@ -256,16 +259,14 @@
     }
   }
 
-  function initializeState() {
-    return {
+  function initializeState(sessionId) {
+    const state = {
       get sessionId() {
         return sessionId;
       },
-
       get send() {
         return connection.send;
       },
-
       clickCounter,
       clickableElements: [],
       isListening: true,
@@ -277,6 +278,82 @@
       isInitialized: false,
       strings: [],
     };
+    stateBySession.set(sessionId, state);
+    return state;
+  }
+
+  // Update getState to use sessionId
+  function getState(sessionId) {
+    return stateBySession.get(sessionId) || initializeState(sessionId);
+  }
+
+  // Update refreshTerminal
+  export async function refreshTerminal({ send, sessionId }) {
+    try {
+      const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
+      if (!snapshot) return;
+      const state = getState(sessionId);
+      state.currentScrollY = viewportY;
+      const layoutState = await Layout.prepareLayoutState({
+        snapshot,
+        viewportWidth,
+        viewportHeight,
+        viewportX,
+        viewportY,
+        getTerminalSize,
+      });
+
+      terminal.clear();
+      terminal.bgDefaultColor();
+      terminal.defaultColor();
+      terminal.styleReset();
+      browser.render();
+
+      if (layoutState) {
+        state.layoutState = layoutState;
+        state.clickableElements = layoutState.clickableElements;
+        state.layoutToNode = layoutState.layoutToNode;
+        state.nodeToParent = layoutState.nodeToParent;
+        state.nodes = layoutState.nodes;
+        state.strings = snapshot.strings;
+
+        renderLayout({ layoutState, sessionId }); // Pass sessionId
+        state.isInitialized = true;
+        DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
+      } else {
+        DEBUG && terminal.yellow('No text boxes found after polling.\n');
+        statusLine('No text boxes found');
+        renderLayout({ layoutState, sessionId });
+        state.isInitialized = true;
+      }
+    } catch (error) {
+      if (DEBUG) console.warn(error);
+      DEBUG && terminal.red(`Error printing text layout: ${error.message}\n`);
+    }
+  }
+
+  // Update selectTabAndRender to initialize state
+  async function selectTabAndRender() {
+    if (cleanup) cleanup();
+
+    DEBUG && debugLog(util.inspect({ browser, targets }));
+    const selectedTarget = targets.find(t => t.targetId == browser.selectedTabId) || targets[0];
+    const targetId = selectedTarget.targetId;
+    browser.activeTarget = selectedTarget;
+
+    DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
+    if (!sessions.has(targetId)) {
+      const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+      sessionId = newSessionId;
+      sessions.set(targetId, sessionId);
+      initializeState(sessionId); // Initialize state for new session
+    } else {
+      sessionId = sessions.get(targetId);
+    }
+    DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
+
+    const stop = await printTextLayoutToTerminal({ onTabSwitch: selectTabAndRender });
+    cleanup = stop;
   }
 
   // Helpers
@@ -350,49 +427,6 @@
   function renderLayout({ layoutState }) {
     if (!layoutState) return;
     renderBoxes({ ...layoutState });
-  }
-
-  export async function refreshTerminal({ send, sessionId }) {
-    try {
-      const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
-      if (!snapshot) return;
-      state.currentScrollY = viewportY;
-      const layoutState = await Layout.prepareLayoutState({
-        snapshot,
-        viewportWidth,
-        viewportHeight,
-        viewportX,
-        viewportY,
-        getTerminalSize,
-      });
-
-      terminal.clear();
-      terminal.bgDefaultColor();
-      terminal.defaultColor();
-      terminal.styleReset();
-      browser.render();
-
-      if (layoutState) {
-        state.layoutState = layoutState;
-        state.clickableElements = layoutState.clickableElements;
-        state.layoutToNode = layoutState.layoutToNode;
-        state.nodeToParent = layoutState.nodeToParent;
-        state.nodes = layoutState.nodes;
-        state.strings = snapshot.strings;
-
-        renderLayout({ layoutState });
-        state.isInitialized = true;
-        DEBUG && terminal.cyan(`Found ${layoutState.visibleBoxes.length} visible text boxes.\n`);
-      } else {
-        DEBUG && terminal.yellow('No text boxes found after polling.\n');
-        statusLine('No text boxes found');
-        renderLayout({ layoutState });
-        state.isInitialized = true;
-      }
-    } catch (error) {
-      if (DEBUG) console.warn(error);
-      DEBUG && terminal.red(`Error printing text layout: ${error.message}\n`);
-    }
   }
 
   async function fetchSnapshot({ send, sessionId }) {
@@ -621,9 +655,11 @@
       newBoxes.push(renderedBox);
     }
 
-    renderedBoxes.length = 0;
-    renderedBoxes.push(...newBoxes);
-    debugLog(JSON.stringify(renderedBoxes, null, 2));
+    const boxes = renderedBoxesBySession.get(sessionId) || [];
+    boxes.length = 0;
+    boxes.push(...newBoxes);
+    renderedBoxesBySession.set(sessionId, boxes);
+    debugLog(JSON.stringify(newBoxes, null, 2));
     focusLog('render_boxes_complete', null, {
       boxCount: newBoxes.length,
       backendNodeIds: newBoxes.map(b => b.backendNodeId).filter(id => id !== undefined)
@@ -642,29 +678,6 @@
       onChange,
     });
     return inputField;
-  }
-
-  // Interactivity helpers
-  async function selectTabAndRender() {
-    if (cleanup) cleanup();
-
-    DEBUG && debugLog(util.inspect({ browser, targets }));
-    const selectedTarget = targets.find(t => t.targetId == browser.selectedTabId) || targets[0];
-    const targetId = selectedTarget.targetId;
-    browser.activeTarget = selectedTarget;
-
-    DEBUG && terminal.cyan(`Attaching to target ${targetId}...\n`);
-    if (!sessions.has(targetId)) {
-      const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
-      sessionId = newSessionId;
-      sessions.set(targetId, sessionId);
-    } else {
-      sessionId = sessions.get(targetId);
-    }
-    DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
-
-    const stop = await printTextLayoutToTerminal({ onTabSwitch: selectTabAndRender });
-    cleanup = stop;
   }
 
   function createInputChangeHandler({ send, sessionId, backendNodeId }) {
