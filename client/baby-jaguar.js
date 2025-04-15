@@ -522,7 +522,7 @@
     }
   }
 
-  async function renderBoxes(layoutState) {
+  function renderBoxes(layoutState) {
     const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
     const newBoxes = [];
     const sessionId = browserState.currentSessionId; // Use current sessionId
@@ -583,8 +583,7 @@
         const fallbackValue = text.startsWith('[INPUT') ? '' : text;
         const onChange = createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId });
 
-        try {
-          const resolveResult = await send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId);
+        send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(resolveResult => {
           if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
           const objectId = resolveResult.object.objectId;
           const valueResult = await send(
@@ -632,7 +631,7 @@
               });
             }
           }
-        } catch (error) {
+        }).catch(error => {
           logClicks(`Failed to fetch live value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
           const inputField = drawInputFieldForNode({
             renderX,
@@ -664,7 +663,7 @@
               });
             }
           }
-        }
+        });
       } else {
         terminal.moveTo(renderX, renderY);
         if (isFocused && isClickable) {
