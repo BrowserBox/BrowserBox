@@ -23,7 +23,7 @@
   // internal
   import Layout from './layout.js';
   import TerminalBrowser from './terminal-browser.js';
-  import { sleep, logClicks, focusLog, logMessage, debugLog, DEBUG } from './log.js';
+  import { sleep, logClicks, logMessage, debugLog, DEBUG } from './log.js';
 
   // Constants and state
   const clickCounter = { value: 0 };
@@ -485,7 +485,7 @@
         sessionId
       );
       if (!snapshot?.documents?.length) {
-        focusLog('snapshot_failed', sessionId, { reason: 'no_documents' }, (new Error).stack);
+        debugLog('snapshot_failed', sessionId, { reason: 'no_documents' }, (new Error).stack);
         return;
       }
       DEBUG && appendFileSync('snapshot.log', JSON.stringify({ snapshot }, null, 2));
@@ -498,7 +498,7 @@
       const clickableNodeIds = document.nodes.isClickable?.index
         .map(idx => document.nodes.backendNodeId[idx])
         .filter(id => id !== undefined);
-      focusLog('snapshot_nodes', sessionId, {
+      debugLog('snapshot_nodes', sessionId, {
         clickableNodeIds,
         totalNodes: document.nodes.backendNodeId.length
       }, (new Error).stack);
@@ -512,7 +512,7 @@
       };
     } catch (e) {
       DEBUG && console.warn(e);
-      focusLog('snapshot_failed', sessionId, { reason: e.message }, (new Error).stack);
+      debugLog('snapshot_failed', sessionId, { reason: e.message }, (new Error).stack);
       return {};
     }
   }
@@ -560,7 +560,7 @@
         nodeIndex,
       };
 
-      focusLog('render_box', null, {
+      debugLog('render_box', null, {
         backendNodeId,
         type,
         isClickable,
@@ -698,7 +698,7 @@
     boxes.push(...newBoxes);
     renderedBoxesBySession.set(sessionId, boxes);
     debugLog(JSON.stringify(newBoxes, null, 2));
-    focusLog('render_boxes_complete', null, {
+    debugLog('render_boxes_complete', null, {
       boxCount: newBoxes.length,
       backendNodeIds: newBoxes.map(b => b.backendNodeId).filter(id => id !== undefined)
     }, (new Error).stack);

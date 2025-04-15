@@ -1,6 +1,6 @@
 ﻿import termkit from 'terminal-kit';
 import { EventEmitter } from 'events';
-import { focusLog, sleep, debugLog } from './log.js';
+import { sleep, debugLog } from './log.js';
 import { getAncestorInfo } from './layout.js';
 import { getBrowserState, getTabState, sessions, getClickedBox, focusInput, renderedBoxesBySession } from './baby-jaguar.js';
 import { FocusManager } from './focus-manager.js';
@@ -542,8 +542,8 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   setFocus(element) {
-    focusLog(`Setting focus to ${element.type}:${element.backendNodeId || element.index || element.type}`);
-    focusLog('set_focus_terminal', null, { element: `${element.type}:${element.backendNodeId || element.index || element.type}` }, (new Error).stack);
+    debugLog(`Setting focus to ${element.type}:${element.backendNodeId || element.index || element.type}`);
+    debugLog('set_focus_terminal', null, { element: `${element.type}:${element.backendNodeId || element.index || element.type}` }, (new Error).stack);
     this.focusManager.setPreviousFocusedElement(this.focusManager.getFocusedElement());
 
     if (this.focusManager.getPreviousFocusedElement()?.startsWith('input:')) {
