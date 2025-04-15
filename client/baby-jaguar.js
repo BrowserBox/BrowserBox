@@ -104,14 +104,6 @@
   async function startKernel() {
     try {
       terminal.cyan('Starting browser connection...\n');
-      browser = new TerminalBrowser(
-        {
-          tabWidth: Math.max(15, Math.ceil(terminal.width / 4)),
-          initialTabs: targets,
-        },
-        getTabState,
-        getBrowserState
-      );
       const handler = message => {
         switch(message.method) {
           case 'Target.targetInfoChanged': {
@@ -127,6 +119,14 @@
       send = connection.send;
       targets = connection.targets;
       browserbox = connection.browserbox;
+      browser = new TerminalBrowser(
+        {
+          tabWidth: Math.max(15, Math.ceil(terminal.width / 4)),
+          initialTabs: targets,
+        },
+        getTabState,
+        getBrowserState
+      );
       await send('Target.setDiscoverTargets', { discover: true });
       await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
 

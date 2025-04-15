@@ -17,7 +17,7 @@ const LOG_FILE = 'cdp.log';
         }
 
         export function logClicks(...stuff) {
-          appendFileSync('clicks.log', stuff.join(' ') + '\n');
+          DEBUG && appendFileSync('clicks.log', stuff.join(' ') + '\n');
         }
 
         export function logMessage(direction, message, terminal) {

@@ -3,10 +3,10 @@ import { WebSocket } from 'ws';
 import { Agent } from 'https';
 import TK from 'terminal-kit';
 const { terminal } = TK;
-import { DEBUG, logMessage } from './log.js';
+import { DEBUG, focusLog, logMessage } from './log.js';
 
 export class ConnectionManager {
-  constructor(loginUrl, proxyBaseUrl, apiUrl) {
+  constructor(loginUrl, proxyBaseUrl, apiUrl, handler) {
     this.loginUrl = loginUrl;
     this.proxyBaseUrl = proxyBaseUrl;
     this.apiUrl = apiUrl;
@@ -17,6 +17,7 @@ export class ConnectionManager {
     this.sendFn = null;
     this.Resolvers = {};
     this.messageId = 0;
+    this.handler = handler;
   }
 
   async authenticate() {
@@ -182,7 +183,13 @@ export class ConnectionManager {
         delete this.Resolvers[key];
       }
       // Let caller handle specific CDP events
-      return message;
+      if ( typeof this.handler == "function" ) {
+        try {
+          return this.handler(message);
+        } catch(e) {
+          focusLog(`Issue in CDP message handler`, e.message, e.stack, e+'');
+        }
+      }
     };
   }
 
