@@ -1,3 +1,4 @@
+// focus-manager.js
 import { debugLog, focusLog } from './log.js';
 
 export class FocusManager {
@@ -31,7 +32,7 @@ export class FocusManager {
     this.focusState.set(sessionId, focusState);
   }
 
-  restoreFocusState(computeTabbableElements, setFocus) {
+  restoreFocusState(setFocus) {
     const { sessionId } = this.getState();
     const focusState = this.focusState.get(sessionId);
     debugLog(`Restoring focus state for sessionId: ${sessionId}, found state: ${focusState ? JSON.stringify(focusState) : 'none'}`);
@@ -56,8 +57,8 @@ export class FocusManager {
       return false;
     }
 
-    const tabbable = computeTabbableElements();
-    const elementToFocus = tabbable.find(el => {
+    const tabbable = this.computeTabbableElements();
+    let elementToFocus = tabbable.find(el => {
       if (restoredFocusedElement.startsWith('input:')) {
         return el.type === 'input' && `input:${el.backendNodeId}` === restoredFocusedElement;
       } else if (restoredFocusedElement.startsWith('clickable:')) {
@@ -67,25 +68,41 @@ export class FocusManager {
     });
 
     if (!elementToFocus) {
-      debugLog(`Element ${restoredFocusedElement} no longer exists, resetting. Tabbable count: ${tabbable.length}`);
-      focusLog('restore_failed', sessionId, {
-        reason: 'element_missing',
+      debugLog(`Element ${restoredFocusedElement} no longer exists, attempting fallback. Tabbable count: ${tabbable.length}`);
+      focusLog('restore_fallback', sessionId, {
         element: restoredFocusedElement,
         tabbableSummary: tabbable.map(el => `${el.type}:${el.backendNodeId || el.targetId || el.type}`)
       }, (new Error).stack);
-      this.tabbableCached = false;
-      this.focusedElement = null;
-      this.currentFocusIndex = 0;
-      return false;
+
+      const typePrefix = restoredFocusedElement.split(':')[0];
+      const candidates = tabbable.filter(el => el.type === typePrefix);
+      if (candidates.length > 0) {
+        elementToFocus = candidates[0];
+        debugLog(`Fallback to ${typePrefix}:${elementToFocus.backendNodeId}`);
+        focusLog('restore_fallback_success', sessionId, {
+          element: `${typePrefix}:${elementToFocus.backendNodeId}`
+        }, (new Error).stack);
+      } else {
+        debugLog(`No ${typePrefix} elements found, resetting`);
+        focusLog('restore_failed', sessionId, {
+          reason: 'no_fallback',
+          element: restoredFocusedElement,
+          tabbableSummary: tabbable.map(el => `${el.type}:${el.backendNodeId || el.targetId || el.type}`)
+        }, (new Error).stack);
+        this.tabbableCached = false;
+        this.focusedElement = null;
+        this.currentFocusIndex = 0;
+        return false;
+      }
     }
 
     this.tabbableCached = false;
-    this.focusedElement = restoredFocusedElement;
+    this.focusedElement = elementToFocus ? `${elementToFocus.type}:${elementToFocus.backendNodeId}` : restoredFocusedElement;
     this.previousFocusedElement = focusState.previousFocusedElement;
     this.currentFocusIndex = 0;
 
-    debugLog(`Restoring focus to ${restoredFocusedElement}`);
-    focusLog('restore_success', sessionId, { element: restoredFocusedElement }, (new Error).stack);
+    debugLog(`Restoring focus to ${this.focusedElement}`);
+    focusLog('restore_success', sessionId, { element: this.focusedElement }, (new Error).stack);
     setFocus(elementToFocus);
 
     return true;
@@ -107,19 +124,153 @@ export class FocusManager {
     );
   }
 
-  computeTabbableElements(computeTabbableElements) {
+  computeTabbableElements() {
     if (this.tabbableCached) return this.tabbableCache;
-    this.tabbableCache = computeTabbableElements();
-    this.tabbableCached = true;
-    focusLog('compute_tabbable', null, {
-      count: this.tabbableCache.length,
-      elements: this.tabbableCache.map(el => `${el.type}:${el.backendNodeId || el.targetId || el.type}`)
+    const { publicState, renderedBoxes, targets, termWidth, NEW_TAB_WIDTH, TAB_HEIGHT, BACK_WIDTH, FORWARD_WIDTH, GO_WIDTH } = this.getState();
+    const tabbable = [];
+
+    targets.forEach((tab, index) => {
+      const x = 1 + index * this.getState().tabWidth;
+      tabbable.push({ type: 'tab', index, x, y: 1, targetId: tab.targetId });
+    });
+    tabbable.push({ type: 'newTab', x: termWidth - NEW_TAB_WIDTH + 1, y: 1 });
+    tabbable.push({ type: 'back', x: 2, y: TAB_HEIGHT + 2 });
+    tabbable.push({ type: 'forward', x: BACK_WIDTH + 2, y: TAB_HEIGHT + 2 });
+    tabbable.push({ type: 'address', x: BACK_WIDTH + FORWARD_WIDTH + 2, y: TAB_HEIGHT + 2 });
+    tabbable.push({ type: 'go', x: termWidth - GO_WIDTH, y: TAB_HEIGHT + 2 });
+
+    if (!publicState || !renderedBoxes || !publicState.layoutToNode || !publicState.nodeToParent || !publicState.nodes) {
+      debugLog('Missing state, renderedBoxes, or layout data');
+      focusLog('compute_tabbable_failed', null, { reason: 'missing_state' }, (new Error).stack);
+      return tabbable;
+    }
+
+    debugLog('Rendered Boxes Count:', renderedBoxes.length);
+    focusLog('compute_tabbable_boxes', null, {
+      boxCount: renderedBoxes.length,
+      boxes: renderedBoxes.map(b => ({
+        backendNodeId: b.backendNodeId,
+        nodeIndex: b.nodeIndex,
+        text: b.text || '',
+        isClickable: b.isClickable,
+        type: b.type,
+        ancestorType: b.ancestorType
+      }))
     }, (new Error).stack);
+
+    const hasClickableDescendants = (nodeIdx) => {
+      const descendants = [];
+      const collectDescendants = (idx) => {
+        publicState.nodeToParent.forEach((parentIdx, childIdx) => {
+          if (parentIdx === idx) {
+            descendants.push(childIdx);
+            collectDescendants(childIdx);
+          }
+        });
+      };
+      collectDescendants(nodeIdx);
+      return descendants.some(idx => publicState.nodes.isClickable?.index.includes(idx));
+    };
+
+    const elementsByParentId = new Map();
+    const seenBackendNodeIds = new Set();
+    renderedBoxes.forEach(box => {
+      if (!box.isClickable && box.type !== 'input' && box.ancestorType !== 'button') return;
+
+      let parentBackendNodeId = box.backendNodeId;
+      let parentNodeIndex = box.nodeIndex;
+      let currentNodeIndex = box.nodeIndex;
+      const nodePath = [currentNodeIndex];
+
+      while (currentNodeIndex !== -1 && currentNodeIndex !== undefined) {
+        if (publicState.nodes.isClickable && publicState.nodes.isClickable.index.includes(currentNodeIndex)) {
+          parentBackendNodeId = publicState.nodes.backendNodeId[currentNodeIndex];
+          parentNodeIndex = currentNodeIndex;
+          break;
+        }
+        currentNodeIndex = publicState.nodeToParent.get(currentNodeIndex);
+        nodePath.push(currentNodeIndex);
+      }
+
+      focusLog('compute_tabbable_node', null, {
+        boxBackendNodeId: box.backendNodeId,
+        parentBackendNodeId,
+        nodeIndex: box.nodeIndex,
+        parentNodeIndex,
+        nodePath,
+        isClickable: publicState.nodes.isClickable?.index.includes(parentNodeIndex)
+      }, (new Error).stack);
+
+      const nodeNameIdx = publicState.nodes.nodeName[parentNodeIndex];
+      const nodeName = nodeNameIdx >= 0 ? publicState.strings[nodeNameIdx] : '';
+      if (nodeName === '#document' || publicState.nodes.nodeType[parentNodeIndex] === 9) {
+        return;
+      }
+
+      const isButton = box.ancestorType === 'button';
+      if (!isButton && hasClickableDescendants(parentNodeIndex)) {
+        return;
+      }
+
+      if (seenBackendNodeIds.has(parentBackendNodeId)) {
+        debugLog(`Duplicate backendNodeId detected: ${parentBackendNodeId}`);
+        focusLog('compute_tabbable_duplicate', null, { backendNodeId: parentBackendNodeId }, (new Error).stack);
+      }
+      seenBackendNodeIds.add(parentBackendNodeId);
+
+      if (!elementsByParentId.has(parentBackendNodeId)) {
+        elementsByParentId.set(parentBackendNodeId, {
+          backendNodeId: parentBackendNodeId,
+          type: box.type === 'input' ? 'input' : 'clickable',
+          boxes: [],
+          text: '',
+          ancestorType: box.ancestorType,
+          minX: box.termX,
+          maxX: box.termX + box.termWidth - 1,
+          minY: box.termY,
+          maxY: box.termY,
+        });
+      }
+
+      const elem = elementsByParentId.get(parentBackendNodeId);
+      elem.boxes.push(box);
+      elem.text += (elem.text ? ' ' : '') + box.text;
+      elem.minX = Math.min(elem.minX, box.termX);
+      elem.maxX = Math.max(elem.maxX, box.termX + box.termWidth - 1);
+      elem.minY = Math.min(elem.minY, box.termY);
+      elem.maxY = Math.max(elem.maxY, box.termY);
+    });
+
+    elementsByParentId.forEach(elem => {
+      tabbable.push({
+        type: elem.type,
+        backendNodeId: elem.backendNodeId,
+        x: elem.minX,
+        y: elem.minY,
+        width: elem.maxX - elem.minX + 1,
+        height: elem.maxY - elem.minY + 1,
+        text: elem.text,
+        ancestorType: elem.ancestorType,
+        boxes: elem.boxes,
+      });
+    });
+
+    debugLog('Final Tabbable Elements Count:', tabbable.length);
+    focusLog('compute_tabbable_elements', null, {
+      count: tabbable.length,
+      elements: tabbable.map(el => ({
+        type: el.type,
+        id: el.backendNodeId || el.targetId || el.type,
+        text: el.text || ''
+      }))
+    }, (new Error).stack);
+    this.tabbableCache = tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
+    this.tabbableCached = true;
     return this.tabbableCache;
   }
 
-  focusNextElement(computeTabbableElements, setFocus) {
-    const tabbable = this.computeTabbableElements(computeTabbableElements);
+  focusNextElement(setFocus) {
+    const tabbable = this.computeTabbableElements();
     if (!tabbable.length) {
       focusLog('focus_next_failed', null, { reason: 'no_tabbable_elements' }, (new Error).stack);
       return;
@@ -137,8 +288,8 @@ export class FocusManager {
     setFocus(elementToFocus);
   }
 
-  focusPreviousElement(computeTabbableElements, setFocus) {
-    const tabbable = this.computeTabbableElements(computeTabbableElements);
+  focusPreviousElement(setFocus) {
+    const tabbable = this.computeTabbableElements();
     if (!tabbable.length) {
       focusLog('focus_previous_failed', null, { reason: 'no_tabbable_elements' }, (new Error).stack);
       return;
@@ -156,8 +307,8 @@ export class FocusManager {
     setFocus(elementToFocus);
   }
 
-  focusNearestInRow(direction, computeTabbableElements, setFocus, options) {
-    const tabbable = this.computeTabbableElements(computeTabbableElements);
+  focusNearestInRow(direction, setFocus, options) {
+    const tabbable = this.computeTabbableElements();
     if (!tabbable.length) {
       focusLog('focus_nearest_failed', null, { reason: 'no_tabbable_elements', direction }, (new Error).stack);
       return;

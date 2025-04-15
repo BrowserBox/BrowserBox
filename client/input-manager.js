@@ -6,8 +6,8 @@ import { handleClick } from './baby-jaguar.js';
 export class InputManager {
   constructor(term, browser) {
     this.term = term;
-    this.browser = browser; // Reference to TerminalBrowser instance
-    this.keyBuffer = ''; // Tracks recent keystrokes for "dino" command
+    this.browser = browser;
+    this.keyBuffer = '';
     this.isListening = true;
   }
 
@@ -130,14 +130,12 @@ export class InputManager {
           break;
         case 'TAB':
           this.browser.focusManager.focusNextElement(
-            () => this.browser.computeTabbableElements(),
             element => this.browser.setFocus(element)
           );
           this.browser.render();
           break;
         case 'SHIFT_TAB':
           this.browser.focusManager.focusPreviousElement(
-            () => this.browser.computeTabbableElements(),
             element => this.browser.setFocus(element)
           );
           this.browser.render();
@@ -181,7 +179,7 @@ export class InputManager {
   async handleClickableKey(key) {
     const backendNodeId = this.browser.focusManager.getFocusedElement().split(':')[1];
     const publicState = this.browser.getState();
-    const tabbable = this.browser.focusManager.computeTabbableElements(() => this.browser.computeTabbableElements());
+    const tabbable = this.browser.focusManager.computeTabbableElements();
     const focusedElement = tabbable.find(el => el.type === 'clickable' && ('' + el.backendNodeId) === backendNodeId);
 
     if (key === 'ENTER') {
@@ -201,13 +199,11 @@ export class InputManager {
       }
     } else if (key === 'TAB' || key === 'l') {
       this.browser.focusManager.focusNextElement(
-        () => this.browser.computeTabbableElements(),
         element => this.browser.setFocus(element)
       );
       this.browser.render();
     } else if (key === 'SHIFT_TAB' || key === 'h') {
       this.browser.focusManager.focusPreviousElement(
-        () => this.browser.computeTabbableElements(),
         element => this.browser.setFocus(element)
       );
       this.browser.render();
@@ -220,7 +216,6 @@ export class InputManager {
         case 'j':
           this.browser.focusManager.focusNearestInRow(
             'down',
-            () => this.browser.computeTabbableElements(),
             element => this.browser.setFocus(element),
             this.browser.options
           );
@@ -229,7 +224,6 @@ export class InputManager {
         case 'k':
           this.browser.focusManager.focusNearestInRow(
             'up',
-            () => this.browser.computeTabbableElements(),
             element => this.browser.setFocus(element),
             this.browser.options
           );
@@ -256,14 +250,12 @@ export class InputManager {
         break;
       case 'TAB':
         this.browser.focusManager.focusNextElement(
-          () => this.browser.computeTabbableElements(),
           element => this.browser.setFocus(element)
         );
         this.browser.render();
         break;
       case 'SHIFT_TAB':
         this.browser.focusManager.focusPreviousElement(
-          () => this.browser.computeTabbableElements(),
           element => this.browser.setFocus(element)
         );
         this.browser.render();
@@ -302,7 +294,6 @@ export class InputManager {
       case 'j':
         this.browser.focusManager.focusNearestInRow(
           'down',
-          () => this.browser.computeTabbableElements(),
           element => this.browser.setFocus(element),
           this.browser.options
         );
@@ -311,7 +302,6 @@ export class InputManager {
       case 'k':
         this.browser.focusManager.focusNearestInRow(
           'up',
-          () => this.browser.computeTabbableElements(),
           element => this.browser.setFocus(element),
           this.browser.options
         );
@@ -323,14 +313,12 @@ export class InputManager {
         break;
       case 'TAB':
         this.browser.focusManager.focusNextElement(
-          () => this.browser.computeTabbableElements(),
           element => this.browser.setFocus(element)
         );
         this.browser.render();
         break;
       case 'SHIFT_TAB':
         this.browser.focusManager.focusPreviousElement(
-          () => this.browser.computeTabbableElements(),
           element => this.browser.setFocus(element)
         );
         this.browser.render();
@@ -338,7 +326,6 @@ export class InputManager {
       case 'h':
       case 'LEFT':
         this.browser.focusManager.focusPreviousElement(
-          () => this.browser.computeTabbableElements(),
           element => this.browser.setFocus(element)
         );
         this.browser.render();
@@ -346,7 +333,6 @@ export class InputManager {
       case 'l':
       case 'RIGHT':
         this.browser.focusManager.focusNextElement(
-          () => this.browser.computeTabbableElements(),
           element => this.browser.setFocus(element)
         );
         this.browser.render();

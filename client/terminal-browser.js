@@ -11,24 +11,35 @@ const term = termkit.terminal;
 export default class TerminalBrowser extends EventEmitter {
   constructor(options = {}, getState) {
     super();
-    this.focusManager = new FocusManager(getState);
-// Replace the existing emit override in TerminalBrowser constructor
+    this.focusManager = new FocusManager(() => ({
+      ...getState(),
+      publicState: getState(),
+      renderedBoxes,
+      targets: this.targets,
+      termWidth: this.term.width,
+      NEW_TAB_WIDTH: this.NEW_TAB_WIDTH,
+      TAB_HEIGHT: this.TAB_HEIGHT,
+      BACK_WIDTH: this.BACK_WIDTH,
+      FORWARD_WIDTH: this.FORWARD_WIDTH,
+      GO_WIDTH: this.GO_WIDTH,
+      tabWidth: this.options.tabWidth
+    }));
     const ogEmit = this.emit.bind(this);
     this.emit = (...stuff) => {
       switch (stuff[0]) {
         case 'scroll':
           this.focusManager.tabbableCached = false;
           break;
-        case 'tabSelected':
+        case 'tabSelected': {
           const targetId = stuff[1]?.targetId;
           const sessionIdForTarget = sessions.get(targetId);
           debugLog(`tabSelected event: targetId=${targetId}, sessionIdForTarget=${sessionIdForTarget}`);
           if (!this.focusManager.focusState.has(sessionIdForTarget)) {
             this.focusManager.tabbableCached = false;
           }
-          break;
+        }; break;
         case 'navigate':
-        case 'targetInfoChanged':
+        case 'targetInfoChanged': {
           this.focusManager.tabbableCached = false;
           this.inputFields.clear();
           this.focusManager.setFocusedElement(`tabs:${this.selectedTabId}`);
@@ -43,7 +54,7 @@ export default class TerminalBrowser extends EventEmitter {
             }
           }
           this.render();
-          break;
+        }; break;
         default:
           break;
       }
@@ -620,28 +631,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.moveTo(1, this.term.height);
   }
 
-  // Replace focusNextTab
-  focusNextTab() {
-    const currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
-    if (currentTabIndex === -1) return;
-    const nextTabIndex = (currentTabIndex + 1) % this.targets.length;
-    const nextTabId = this.targets[nextTabIndex].targetId;
-    this.focusManager.setFocusedElement(`tabs:${nextTabId}`);
-    focusLog('Moving tab focus to ', {nextTabId,nextTabIndex});
-    this.render();
-  }
-
-  // Replace focusPreviousTab
-  focusPreviousTab() {
-    const currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
-    if (currentTabIndex === -1) return;
-    const previousTabIndex = (currentTabIndex - 1 + this.targets.length) % this.targets.length;
-    const previousTabId = this.targets[previousTabIndex].targetId;
-    this.focusManager.setFocusedElement(`tabs:${previousTabId}`);
-    focusLog('Moving tab focus to ', {nextTabId,nextTabIndex});
-    this.render();
-  }
-
+  // Update selectNextTab and selectPreviousTab to use new FocusManager methods
   selectNextTab() {
     const currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
     if (currentTabIndex === -1) return;
@@ -650,10 +640,9 @@ export default class TerminalBrowser extends EventEmitter {
     this.selectedTabId = this.targets[nextTabIndex].targetId;
     const selectedTab = this.targets[nextTabIndex];
     this.emit('tabSelected', selectedTab);
-    focusLog('Moving selected tab to', selectedTab);
-    this.focusManager.currentFocusIndex = 0; // Reset index
+    this.focusManager.currentFocusIndex = 0;
+    this.focusManager.tabbableCached = false;
     const focusRestored = this.focusManager.restoreFocusState(
-      () => this.computeTabbableElements(),
       element => this.setFocus(element)
     );
     if (!focusRestored) {
@@ -670,15 +659,33 @@ export default class TerminalBrowser extends EventEmitter {
     this.selectedTabId = this.targets[previousTabIndex].targetId;
     const selectedTab = this.targets[previousTabIndex];
     this.emit('tabSelected', selectedTab);
-    focusLog('Moving selected tab to', selectedTab);
-    this.focusManager.currentFocusIndex = 0; // Reset index
+    this.focusManager.currentFocusIndex = 0;
+    this.focusManager.tabbableCached = false;
     const focusRestored = this.focusManager.restoreFocusState(
-      () => this.computeTabbableElements(),
       element => this.setFocus(element)
     );
     if (!focusRestored) {
       this.focusManager.setFocusedElement(`tabs:${this.selectedTabId}`);
     }
+    this.render();
+  }
+
+  // Update focusNextTab and focusPreviousTab to use new FocusManager methods
+  focusNextTab() {
+    const currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
+    if (currentTabIndex === -1) return;
+    const nextTabIndex = (currentTabIndex + 1) % this.targets.length;
+    const nextTabId = this.targets[nextTabIndex].targetId;
+    this.focusManager.setFocusedElement(`tabs:${nextTabId}`);
+    this.render();
+  }
+
+  focusPreviousTab() {
+    const currentTabIndex = this.targets.findIndex(t => t.targetId === this.selectedTabId);
+    if (currentTabIndex === -1) return;
+    const previousTabIndex = (currentTabIndex - 1 + this.targets.length) % this.targets.length;
+    const previousTabId = this.targets[previousTabIndex].targetId;
+    this.focusManager.setFocusedElement(`tabs:${previousTabId}`);
     this.render();
   }
 
