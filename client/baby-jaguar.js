@@ -122,7 +122,19 @@
 
       if (targets.length === 0) {
         await send('Target.createTarget', { url: 'about:blank' });
+        targets = await connection.connectionManager.fetchTargets();
       }
+
+      for (const target of targets) {
+        const targetId = target.targetId;
+        if (!sessions.has(targetId)) {
+          const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+          sessions.set(targetId, newSessionId);
+          initializeState(newSessionId);
+          console.log(`Initialized state for target ${targetId}, session ${newSessionId}`);
+        }
+      }
+
       browser.on('tabSelected', async (tab) => {
         const index = tab ? browser.getTabs().findIndex(t => t.targetId === tab.targetId) : 0;
         browser.activeTarget = targets[index];
@@ -363,7 +375,7 @@
     }
   }
 
-  async function selectTabAndRender() { // Remove targetId param if unused
+  async function selectTabAndRender() {
     if (cleanup) cleanup();
 
     DEBUG && debugLog(util.inspect({ browser, targets }));
@@ -380,10 +392,21 @@
     } else {
       sessionId = sessions.get(targetId);
     }
-    browserState.currentSessionId = sessionId; // Update global state
+    browserState.currentSessionId = sessionId;
     DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
 
-    await refreshTerminal({ send, sessionId }); // Ensure state is ready
+    await refreshTerminal({ send, sessionId });
+    const state = getTabState(sessionId);
+    if (state.isInitialized) {
+      try {
+        browser.focusManager.restoreFocus(targetId);
+        logClicks(`Restored focus for target ${targetId}`);
+      } catch (error) {
+        logClicks(`Failed to restore focus for target ${targetId}: ${error.message}`);
+      }
+    } else {
+      logClicks(`Skipping focus restoration for target ${targetId}: state not initialized`);
+    }
     const stop = await printTextLayoutToTerminal();
     cleanup = stop;
   }
@@ -499,7 +522,7 @@
     }
   }
 
-  function renderBoxes(layoutState) {
+  async function renderBoxes(layoutState) {
     const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
     const newBoxes = [];
     const sessionId = browserState.currentSessionId; // Use current sessionId
