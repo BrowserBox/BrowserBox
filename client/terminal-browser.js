@@ -2,32 +2,21 @@
 import { EventEmitter } from 'events';
 import { focusLog, sleep, debugLog } from './log.js';
 import { getAncestorInfo } from './layout.js';
-import { sessions, getClickedBox, focusInput, renderedBoxes, renderedBoxesBySession } from './baby-jaguar.js';
+import { getBrowserState, getTabState, sessions, getClickedBox, focusInput, renderedBoxesBySession } from './baby-jaguar.js';
 import { FocusManager } from './focus-manager.js';
 import { InputManager } from './input-manager.js';
 
 const term = termkit.terminal;
 
 export default class TerminalBrowser extends EventEmitter {
-  constructor(options = {}, getState) {
+  constructor(options = {}) {
     super();
-    // Initialize FocusManager with a sessionId-aware getState
-    this.focusManager = new FocusManager(() => {
-      const sessionId = this.focusManager.sessionId || this.selectedTabId ? sessions.get(this.selectedTabId) : null;
-      return {
-        ...getState(sessionId),
-        publicState: getState(sessionId),
-        renderedBoxes: renderedBoxesBySession.get(sessionId) || [],
-        targets: this.targets,
-        termWidth: this.term.width,
-        NEW_TAB_WIDTH: this.NEW_TAB_WIDTH,
-        TAB_HEIGHT: this.TAB_HEIGHT,
-        BACK_WIDTH: this.BACK_WIDTH,
-        FORWARD_WIDTH: this.FORWARD_WIDTH,
-        GO_WIDTH: this.GO_WIDTH,
-        tabWidth: this.options.tabWidth
-      };
-    });
+    this.getTabState = getTabState;
+    this.getBrowserState = getBrowserState;
+    this.getCurrentTabState = () => {
+      return this.getTabState(this.getBrowserState().currentSessionId);
+    };
+    this.focusManager = new FocusManager(getTabState, getBrowserState);
     const ogEmit = this.emit.bind(this);
     this.emit = (...stuff) => {
       switch (stuff[0]) {
@@ -67,7 +56,6 @@ export default class TerminalBrowser extends EventEmitter {
       }
       return ogEmit(...stuff);
     };
-    this.getState = getState;
     this.term = term;
     this.options = {
       tabWidth: options.tabWidth || Math.max(Math.ceil(this.term.width / 4), 15),
@@ -116,6 +104,7 @@ export default class TerminalBrowser extends EventEmitter {
     this.render();
     this.inputManager.setupInput();
   }
+
   async ditzyTune() {
     const { spawn } = await import('child_process');
     const runnerProcess = spawn('node', ['ditzrunner.js'], {
@@ -178,149 +167,6 @@ export default class TerminalBrowser extends EventEmitter {
 
     this.term.bgDefaultColor().defaultColor();
     this.term.styleReset();
-  }
-
-  computeTabbableElements() {
-    const tabbable = [];
-
-    this.targets.forEach((tab, index) => {
-      const x = 1 + index * this.options.tabWidth;
-      tabbable.push({ type: 'tab', index, x, y: 1, targetId: tab.targetId });
-    });
-    tabbable.push({ type: 'newTab', x: this.term.width - this.NEW_TAB_WIDTH + 1, y: 1 });
-    tabbable.push({ type: 'back', x: 2, y: this.TAB_HEIGHT + 2 });
-    tabbable.push({ type: 'forward', x: this.BACK_WIDTH + 2, y: this.TAB_HEIGHT + 2 });
-    tabbable.push({ type: 'address', x: this.BACK_WIDTH + this.FORWARD_WIDTH + 2, y: this.TAB_HEIGHT + 2 });
-    tabbable.push({ type: 'go', x: this.term.width - this.GO_WIDTH, y: this.TAB_HEIGHT + 2 });
-
-    const publicState = this.getTabState(sessionId);
-    if (!publicState || !renderedBoxes || !publicState.layoutToNode || !publicState.nodeToParent || !publicState.nodes) {
-      debugLog('Missing state, renderedBoxes, or layout data');
-      focusLog('compute_tabbable_failed', null, { reason: 'missing_state' }, (new Error).stack);
-      return tabbable;
-    }
-
-    debugLog('Rendered Boxes Count:', renderedBoxes.length);
-    focusLog('compute_tabbable_boxes', null, {
-      boxCount: renderedBoxes.length,
-      boxes: renderedBoxes.map(b => ({
-        backendNodeId: b.backendNodeId,
-        nodeIndex: b.nodeIndex,
-        text: b.text || '',
-        isClickable: b.isClickable,
-        type: b.type,
-        ancestorType: b.ancestorType
-      }))
-    }, (new Error).stack);
-
-    const hasClickableDescendants = (nodeIdx) => {
-      const descendants = [];
-      const collectDescendants = (idx) => {
-        publicState.nodeToParent.forEach((parentIdx, childIdx) => {
-          if (parentIdx === idx) {
-            descendants.push(childIdx);
-            collectDescendants(childIdx);
-          }
-        });
-      };
-      collectDescendants(nodeIdx);
-      return descendants.some(idx => publicState.nodes.isClickable?.index.includes(idx));
-    };
-
-    const elementsByParentId = new Map();
-    const seenBackendNodeIds = new Set();
-    renderedBoxes.forEach(box => {
-      if (!box.isClickable && box.type !== 'input' && box.ancestorType !== 'button') return;
-
-      let parentBackendNodeId = box.backendNodeId;
-      let parentNodeIndex = box.nodeIndex;
-      let currentNodeIndex = box.nodeIndex;
-      const nodePath = [currentNodeIndex];
-
-      while (currentNodeIndex !== -1 && currentNodeIndex !== undefined) {
-        if (publicState.nodes.isClickable && publicState.nodes.isClickable.index.includes(currentNodeIndex)) {
-          parentBackendNodeId = publicState.nodes.backendNodeId[currentNodeIndex];
-          parentNodeIndex = currentNodeIndex;
-          break;
-        }
-        currentNodeIndex = publicState.nodeToParent.get(currentNodeIndex);
-        nodePath.push(currentNodeIndex);
-      }
-
-      focusLog('compute_tabbable_node', null, {
-        boxBackendNodeId: box.backendNodeId,
-        parentBackendNodeId,
-        nodeIndex: box.nodeIndex,
-        parentNodeIndex,
-        nodePath,
-        isClickable: publicState.nodes.isClickable?.index.includes(parentNodeIndex)
-      }, (new Error).stack);
-
-      const nodeNameIdx = publicState.nodes.nodeName[parentNodeIndex];
-      const nodeName = nodeNameIdx >= 0 ? publicState.strings[nodeNameIdx] : '';
-      if (nodeName === '#document' || publicState.nodes.nodeType[parentNodeIndex] === 9) {
-        return;
-      }
-
-      const isButton = box.ancestorType === 'button';
-      if (!isButton && hasClickableDescendants(parentNodeIndex)) {
-        return;
-      }
-
-      if (seenBackendNodeIds.has(parentBackendNodeId)) {
-        debugLog(`Duplicate backendNodeId detected: ${parentBackendNodeId}`);
-        focusLog('compute_tabbable_duplicate', null, { backendNodeId: parentBackendNodeId }, (new Error).stack);
-      }
-      seenBackendNodeIds.add(parentBackendNodeId);
-
-      if (!elementsByParentId.has(parentBackendNodeId)) {
-        elementsByParentId.set(parentBackendNodeId, {
-          backendNodeId: parentBackendNodeId,
-          type: box.type === 'input' ? 'input' : 'clickable',
-          boxes: [],
-          text: '',
-          ancestorType: box.ancestorType,
-          minX: box.termX,
-          maxX: box.termX + box.termWidth - 1,
-          minY: box.termY,
-          maxY: box.termY,
-        });
-      }
-
-      const elem = elementsByParentId.get(parentBackendNodeId);
-      elem.boxes.push(box);
-      elem.text += (elem.text ? ' ' : '') + box.text;
-      elem.minX = Math.min(elem.minX, box.termX);
-      elem.maxX = Math.max(elem.maxX, box.termX + box.termWidth - 1);
-      elem.minY = Math.min(elem.minY, box.termY);
-      elem.maxY = Math.max(elem.maxY, box.termY);
-    });
-
-    elementsByParentId.forEach(elem => {
-      tabbable.push({
-        type: elem.type,
-        backendNodeId: elem.backendNodeId,
-        x: elem.minX,
-        y: elem.minY,
-        width: elem.maxX - elem.minX + 1,
-        height: elem.maxY - elem.minY + 1,
-        text: elem.text,
-        ancestorType: elem.ancestorType,
-        boxes: elem.boxes,
-      });
-    });
-
-    debugLog('Final Tabbable Elements Count:', tabbable.length);
-    focusLog('compute_tabbable_elements', null, {
-      count: tabbable.length,
-      elements: tabbable.map(el => ({
-        type: el.type,
-        id: el.backendNodeId || el.targetId || el.type,
-        text: el.text || ''
-      }))
-    }, (new Error).stack);
-    tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
-    return tabbable;
   }
 
   drawTabs() {
@@ -712,7 +558,7 @@ export default class TerminalBrowser extends EventEmitter {
       this.focusManager.setFocusedElement(`tabs:${element.targetId}`);
       this.drawTabs();
     } else if (element.type === 'input') {
-      const publicState = this.getTabState(sessionId);
+      const publicState = this.getCurrentTabState();
       const midX = element.x + Math.floor(element.width / 2);
       const midY = element.y + Math.floor(element.height / 2);
       const clickedBox = getClickedBox({ termX: midX, termY: midY });
@@ -731,7 +577,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   redrawClickable(backendNodeId) {
-    const publicState = this.getTabState(sessionId);
+    const publicState = this.getCurrentTabState();
     const renderData = this.getRenderData(backendNodeId, publicState);
     if (!renderData) return;
 
@@ -762,7 +608,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   redrawUnfocusedElement(backendNodeId) {
-    const publicState = this.getTabState(sessionId);
+    const publicState = this.getCurrentTabState();
     const renderData = this.getRenderData(backendNodeId, publicState);
     if (!renderData) return;
 
@@ -802,6 +648,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   getRenderData(backendNodeId, publicState) {
+    const renderedBoxes = renderedBoxesBySession.get(publicState.sessionId);
     if (!publicState || !renderedBoxes || !publicState.nodeToParent || !publicState.nodes) {
       debugLog(`Missing state data for backendNodeId ${backendNodeId}`);
       return null;

@@ -38,10 +38,11 @@
   const stateBySession = new Map(); // Map<sessionId, state>
   export const sessions = new Map();
   export const renderedBoxesBySession = new Map(); // Map<sessionId, renderedBoxes>
-  // In baby-jaguar.js
+  // Update browserState
   export const browserState = {
-    currentSessionId: null, // Tracks the currently active tab’s sessionId
-    // Add other global properties here as needed, e.g., targets, connection
+    currentSessionId: null,
+    targets: null,
+    send: null,
   };
 
   let state;
@@ -108,7 +109,10 @@
     try {
       terminal.cyan('Starting browser connection...\n');
       connection = await connectToBrowser();
+      browserState.send = connection.send; // Update global state
+      browserState.targets = connection.targets;
       send = connection.send;
+      targets = connection.targets;
       socket = connection.socket;
       targets = connection.targets;
       browserbox = connection.browserbox;
@@ -117,13 +121,14 @@
           tabWidth: Math.max(15, Math.ceil(terminal.width / 4)),
           initialTabs: targets,
         },
-        (sessionId) => getState(sessionId) // Pass sessionId to getState
+        getTabState, // Pass getTabState
+        getBrowserState
       );
       await send('Target.setDiscoverTargets', { discover: true });
       await send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: false, flatten: true });
 
       if (targets.length === 0) {
-        await connection.send('Target.createTarget', { url: 'about:blank' });
+        await send('Target.createTarget', { url: 'about:blank' });
       }
 
       browser.on('tabSelected', async (tab) => {
@@ -263,9 +268,36 @@
     }
   }
 
-  // Getter for the global uber-state
   export function getBrowserState() {
     return browserState;
+  }
+
+  export function getTabState(sessionId) {
+    if (!sessionId) {
+      console.warn('No sessionId provided, returning empty tab state');
+      return {
+        sessionId: null,
+        send: browserState.send || (() => Promise.resolve({})),
+        clickCounter,
+        clickableElements: [],
+        isListening: true,
+        scrollDelta: 50,
+        currentScrollY: 0,
+        layoutToNode: null,
+        nodeToParent: null,
+        nodes: null,
+        isInitialized: false,
+        strings: [],
+        viewportHeight: 0,
+        viewportWidth: 0,
+      };
+    }
+    let state = stateBySession.get(sessionId);
+    if (!state) {
+      state = initializeState(sessionId);
+      stateBySession.set(sessionId, state);
+    }
+    return state;
   }
 
   function initializeState(sessionId) {
@@ -274,7 +306,7 @@
         return sessionId;
       },
       get send() {
-        return connection.send;
+        return browserState.send;
       },
       clickCounter,
       clickableElements: [],
@@ -286,29 +318,10 @@
       nodes: null,
       isInitialized: false,
       strings: [],
+      viewportHeight: 0,
+      viewportWidth: 0,
     };
     stateBySession.set(sessionId, state);
-    return state;
-  }
-
-  // Update getState to use sessionId
-  export function getTabState(sessionId) {
-    if (!sessionId) {
-      console.warn('No sessionId provided, returning empty tab state');
-      return {
-        clickableElements: [],
-        layoutToNode: null,
-        nodeToParent: null,
-        nodes: null,
-        strings: [],
-        // Add other defaults as needed
-      };
-    }
-    let state = stateBySession.get(sessionId);
-    if (!state) {
-      state = initializeState(sessionId); // Assume this sets up a default state
-      stateBySession.set(sessionId, state);
-    }
     return state;
   }
 
@@ -317,7 +330,7 @@
     try {
       const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await pollForSnapshot({ send, sessionId });
       if (!snapshot) return;
-      const state = getState(sessionId);
+      const state = getTabState(sessionId); // Use getTabState
       state.currentScrollY = viewportY;
       const layoutState = await Layout.prepareLayoutState({
         snapshot,
@@ -357,10 +370,7 @@
     }
   }
 
-  // In baby-jaguar.js
-  async function selectTabAndRender(targetId) {
-    const sessionId = sessions.get(targetId); // Map of targetId to sessionId
-    browserState.currentSessionId = sessionId; // Update global state
+  async function selectTabAndRender() { // Remove targetId param if unused
     if (cleanup) cleanup();
 
     DEBUG && debugLog(util.inspect({ browser, targets }));
@@ -373,13 +383,15 @@
       const { sessionId: newSessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
       sessionId = newSessionId;
       sessions.set(targetId, sessionId);
-      initializeState(sessionId); // Initialize state for new session
+      initializeState(sessionId);
     } else {
       sessionId = sessions.get(targetId);
     }
+    browserState.currentSessionId = sessionId; // Update global state
     DEBUG && terminal.green(`Attached with session ${sessionId}\n`);
 
-    const stop = await printTextLayoutToTerminal({ onTabSwitch: selectTabAndRender });
+    await refreshTerminal({ send, sessionId }); // Ensure state is ready
+    const stop = await printTextLayoutToTerminal();
     cleanup = stop;
   }
 
@@ -405,14 +417,12 @@
   }
 
   async function pollForSnapshot({ send, sessionId, maxAttempts = 4, interval = 1000 }) {
-    getState(sessionId);
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       const { snapshot, viewportWidth, viewportHeight, viewportX, viewportY } = await fetchSnapshot({ send, sessionId });
       if (snapshot) {
-        Object.assign(state, {
-          viewportHeight,
-          viewportWidth,
-        });
+        const state = getTabState(sessionId); // Use getTabState
+        state.viewportHeight = viewportHeight;
+        state.viewportWidth = viewportWidth;
         const { textLayoutBoxes } = Layout.extractTextLayoutBoxes({ snapshot });
         if (textLayoutBoxes.length > 0) {
           return { snapshot, viewportWidth, viewportHeight, viewportX, viewportY };

@@ -1,11 +1,15 @@
 // focus-manager.js
 import { debugLog, focusLog } from './log.js';
+import { renderedBoxesBySession } from './baby-jaguar.js';
 
 // focus-manager.js
 export class FocusManager {
   constructor(getTabState, getBrowserState) {
     this.getTabState = getTabState;
     this.getBrowserState = getBrowserState;
+    this.getCurrentTabState = () => {
+      return this.getTabState(this.getBrowserState().currentSessionId);
+    };
     this.focusState = new Map();
     this.focusedElement = null;
     this.previousFocusedElement = null;
@@ -16,7 +20,7 @@ export class FocusManager {
 
   saveFocusState() {
     const sessionId = this.getBrowserState().currentSessionId;
-    const tabState = this.getTabState(sessionId);
+    //const tabState = this.getTabState(sessionId);
     const { focusedElement, previousFocusedElement } = this;
 
     if (!focusedElement || !this.isPageContentElement(focusedElement)) {
@@ -147,7 +151,7 @@ export class FocusManager {
     const hasClickableDescendants = (nodeIdx) => {
       const descendants = [];
       const collectDescendants = (idx) => {
-        publicState.nodeToParent.forEach((parentIdx, childIdx) => {
+        tabState.nodeToParent.forEach((parentIdx, childIdx) => {
           if (parentIdx === idx) {
             descendants.push(childIdx);
             collectDescendants(childIdx);
@@ -155,7 +159,7 @@ export class FocusManager {
         });
       };
       collectDescendants(nodeIdx);
-      return descendants.some(idx => publicState.nodes.isClickable?.index.includes(idx));
+      return descendants.some(idx => tabState.nodes.isClickable?.index.includes(idx));
     };
 
     const elementsByParentId = new Map();
@@ -169,12 +173,12 @@ export class FocusManager {
       const nodePath = [currentNodeIndex];
 
       while (currentNodeIndex !== -1 && currentNodeIndex !== undefined) {
-        if (publicState.nodes.isClickable && publicState.nodes.isClickable.index.includes(currentNodeIndex)) {
-          parentBackendNodeId = publicState.nodes.backendNodeId[currentNodeIndex];
+        if (tabState.nodes.isClickable && tabState.nodes.isClickable.index.includes(currentNodeIndex)) {
+          parentBackendNodeId = tabState.nodes.backendNodeId[currentNodeIndex];
           parentNodeIndex = currentNodeIndex;
           break;
         }
-        currentNodeIndex = publicState.nodeToParent.get(currentNodeIndex);
+        currentNodeIndex = tabState.nodeToParent.get(currentNodeIndex);
         nodePath.push(currentNodeIndex);
       }
 
@@ -184,13 +188,13 @@ export class FocusManager {
         nodeIndex: box.nodeIndex,
         parentNodeIndex,
         nodePath,
-        isClickable: publicState.nodes.isClickable?.index.includes(parentNodeIndex),
+        isClickable: tabState.nodes.isClickable?.index.includes(parentNodeIndex),
         boxText: box.text?.slice(0, 50)
       }, (new Error).stack);
 
-      const nodeNameIdx = publicState.nodes.nodeName[parentNodeIndex];
-      const nodeName = nodeNameIdx >= 0 ? publicState.strings[nodeNameIdx] : '';
-      if (nodeName === '#document' || publicState.nodes.nodeType[parentNodeIndex] === 9) {
+      const nodeNameIdx = tabState.nodes.nodeName[parentNodeIndex];
+      const nodeName = nodeNameIdx >= 0 ? tabState.strings[nodeNameIdx] : '';
+      if (nodeName === '#document' || tabState.nodes.nodeType[parentNodeIndex] === 9) {
         return;
       }
 
@@ -255,7 +259,6 @@ export class FocusManager {
     this.tabbableCached = true;
     return this.tabbableCache;
   }
-
 
   isPageContentElement(element) {
     return element && (element.startsWith('input:') || element.startsWith('clickable:'));
