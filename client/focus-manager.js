@@ -126,7 +126,7 @@ export class FocusManager {
     }
 
     const currentIdx = this.currentFocusIndex;
-    const nextIdx = (currentIdx + 1) % this.tabbable.length;
+    const nextIdx = (currentIdx + 1) % tabbable.length;
     this.currentFocusIndex = nextIdx;
     const elementToFocus = tabbable[nextIdx];
     focusLog('focus_next', null, {
