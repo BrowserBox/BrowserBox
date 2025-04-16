@@ -27,7 +27,7 @@ const sampleRate = 44100;
 
 if (process.platform !== 'win32') {
   try {
-    const { default: Speaker } = await import('speaker');
+    const { default: Speaker } = await import('@browserbox/speaker');
     speaker = new Speaker({
       channels: 1, // Mono sound
       bitDepth: 16, // 16-bit depth (PCM)
@@ -37,7 +37,7 @@ if (process.platform !== 'win32') {
     });
     console.log('🎵 Speaker initialized successfully!');
   } catch (err) {
-    console.warn('⚠️ Failed to initialize speaker:', err.message);
+    console.warn('⚠️ Failed to initialize @browserbox/speaker:', err.message);
     speaker = null; // Ensure speaker remains null if import fails
   }
 } else {

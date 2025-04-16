@@ -47,6 +47,7 @@
     licenseValid = false;
   }
   if ( ! licenseValid ) {
+    console.log(`Queueing stop srv`, {licenseValid});
     try {
       setTimeout(stop,
         process.env.STATUS_MODE && 

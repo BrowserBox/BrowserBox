@@ -7,7 +7,7 @@ async function ditzyTune() {
 
   if (process.platform !== 'win32') {
     try {
-      const { default: Speaker } = await import('@browserbox/speaker');
+      const { default: Speaker } = await import('./node-speaker/index.js');
       speaker = new Speaker({
         channels: 1, // Mono sound
         bitDepth: 16, // 16-bit depth (PCM)

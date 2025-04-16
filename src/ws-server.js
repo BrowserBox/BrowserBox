@@ -34,7 +34,6 @@
   } from './common.js';
   import {releaseLicense, timedSend, eventSendLoop} from './server.js';
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
-  import {stop} from '../branch-bbx-stop.js';
   import {validityCheck} from './hard/application.js'
 
   const { exec, execSync } = child_process;

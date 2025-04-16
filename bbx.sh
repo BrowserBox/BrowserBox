@@ -603,8 +603,7 @@ run() {
   fi
   printf "${GREEN}Certification complete.${NC}\n"
 
-  bbpro || { printf "${RED}Failed to start${NC}\n"; exit 1; }
-  sleep 2
+  bbpro &>/dev/null || { printf "${RED}Failed to start${NC}\n"; exit 1; }
   source "$BB_CONFIG_DIR/test.env" && PORT="${APP_PORT:-$port}" && TOKEN="${LOGIN_TOKEN:-$TOKEN}" || { printf "${YELLOW}Warning: test.env not found${NC}\n"; }
   local login_link=$(cat "$BB_CONFIG_DIR/login.link" 2>/dev/null || echo "https://$hostname:$port/login?token=$TOKEN")
   draw_box "Login Link: $login_link"
@@ -1264,7 +1263,7 @@ certify() {
 stop() {
     load_config
     printf "${YELLOW}Stopping BrowserBox (current user)...${NC}\n"
-    stop_bbpro || { printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"; exit 1; }
+    stop_bbpro &>/dev/null || { printf "${RED}Failed to stop. Check if BrowserBox is running.${NC}\n"; exit 1; }
     printf "${GREEN}BrowserBox stopped.${NC}\n"
 }
 

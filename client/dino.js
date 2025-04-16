@@ -47,11 +47,15 @@ async function saveHighScore(highScore) {
   }
 }
 
-export async function dinoGame(onExit) {
+export async function dinoGame(onExit, {noCap = true} = {}) {
   // Initialize terminal
   term.fullscreen(true);
   term.windowTitle('Dino Game');
   term.clear();
+
+  if (!noCap) {
+    term.grabInput({ mouse: 'button' });
+  }
 
   // Spawn boop.js for sound effects
   const soundProcess = spawn('node', ['boop.js'], {
@@ -83,6 +87,8 @@ export async function dinoGame(onExit) {
   let frameCount = 0;
   const baseFrameRate = 30;
   let speed = 1;
+  let dinoFrameIndex = 0; // For sprite animation
+  const animationSpeed = 3; // Switch frames every 5 ticks
 
   // Ground texture
   let groundTexture = Array(term.width).fill('').map(() => {
@@ -98,14 +104,35 @@ export async function dinoGame(onExit) {
     { x: 60, y: 7, speed: 0.8, symbol: '☁', color: 'brightWhite' }
   ];
 
-  // Dino sprite
-  const dino = [
-    '  ▓▓  ',
-    '  ▓▓  ',
-    '██▓▓██',
-    '  ▓▓  ',
-    '  ▓▓  ',
-    ' ░ ░  '
+  // Dino sprite with animation frames
+  const dinoFrames = [
+    // Frame 1: Forward leg stride
+    [
+      '  ○▓  ', // Head with eye
+      '  ▓*  ', // Scale detail
+      '██▓▓█ ', // Sleek body
+      '  ▓   ',
+      ' ▒    ', // Back leg forward
+      '   ░  '  // Front leg extended
+    ],
+    // Frame 2: Backward leg stride
+    [
+      '  ○▓  ',
+      '  ▓*  ',
+      '██▓▓█ ',
+      '  ▓   ',
+      '   ▒  ', // Back leg back
+      ' ░    '  // Front leg retracted
+    ],
+    // Frame 3: Mid-stride
+    [
+      '  ○▓  ',
+      '  ▓*  ',
+      '██▓▓█ ',
+      '  ▓   ',
+      ' ▒ ▒  ', // Legs even
+      '      '  // Clean ground
+    ]
   ];
 
   // Cactus sprite base
@@ -173,7 +200,6 @@ export async function dinoGame(onExit) {
 
     // Collision detection
     const dinoX = 11;
-    const dinoHeight = dino.length;
     const dinoBottom = dinoY;
     for (const cactus of cacti) {
       if (cactus.x >= dinoX && cactus.x <= dinoX + 4) {
@@ -204,8 +230,9 @@ export async function dinoGame(onExit) {
     term.moveTo(1, groundY + 1);
     term.gray(shiftedTexture.join(''));
 
-    dino.forEach((line, index) => {
-      term.moveTo(dinoX, Math.round(dinoY) - dino.length + 1 + index);
+    const currentDino = dinoFrames[dinoFrameIndex];
+    currentDino.forEach((line, index) => {
+      term.moveTo(dinoX, Math.round(dinoY) - currentDino.length + 1 + index);
       const color = index % 2 === 0 ? colorMap.blue : colorMap.magenta;
       color(line);
     });
@@ -221,6 +248,15 @@ export async function dinoGame(onExit) {
     term.moveTo(term.width - 20, 1);
     term.white(`HI ${highScore.toString().padStart(5, '0')} ${Math.floor(score).toString().padStart(5, '0')}`);
 
+    // Update animation frame
+    if (!isJumping && !isFalling) {
+      if (frameCount % animationSpeed === 0) {
+        dinoFrameIndex = (dinoFrameIndex + 1) % dinoFrames.length;
+      }
+    } else {
+      dinoFrameIndex = 2; // Mid-stride for jumping
+    }
+
     frameCount++;
   };
   const gameLoop = setInterval(gameFrame, 1000 / baseFrameRate);
@@ -232,7 +268,7 @@ export async function dinoGame(onExit) {
         if (key === 'r' || key === 'R') {
           // Restart the game
           term.clear();
-          resolve(dinoGame(onExit)); // Recursively restart
+          resolve(dinoGame(onExit));
         } else if (key === 'q' || key === 'Q' || key === 'CTRL_C') {
           // Quit and return to browser
           soundProcess.kill();
@@ -266,3 +302,5 @@ export async function dinoGame(onExit) {
     });
   });
 }
+
+//dinoGame(() => process.exit(0), {noCap: false});

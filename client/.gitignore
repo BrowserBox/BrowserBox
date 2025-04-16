@@ -1,5 +1,6 @@
+node-speaker
+test.mp3
 *.traineddata
-*.json
 *.log
 *.txt
 *log.txt

@@ -16,7 +16,7 @@
     } else {
       console.warn('mkcert CA root found but rootCA.pem missing. Self-signed certs may fail.');
     }
-  } catch (error) {
+  } catch {
     console.warn('mkcert not found or failed. If using self-signed certs, set NODE_EXTRA_CA_CERTS manually.');
   }
 

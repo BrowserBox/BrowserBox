@@ -2,6 +2,7 @@
 
 import os from 'os';
 import { spawn } from 'child_process';
+import {release} from './src/hard/application.js';
 
 console.log('Stopping BrowserBox...');
 
@@ -27,7 +28,6 @@ function runStop(platform) {
     const child = spawn(shell, args, { stdio: 'ignore', detached: true, windowsHide: true });
     child.unref();
     child.on('error', () => {console.warn('Error stopping'); resolve(process.exit(1));});
-    child.on('close', (code) => {resolve(process.exit(0))});
   });
 }
 
@@ -39,27 +39,17 @@ export async function stop() {
   console.log(`Detected OS: ${platform}`);
 
   try {
+    await release();
+  } catch(e) {
+    console.log(error);
+  }
+  try {
     // Run the installation interactively
     await runStop(platform);
-    console.log('\nBrowserBox CLI (`bbx`) installed successfully!');
-
-    // Provide platform-specific next steps
-    if (platform === 'win32') {
-      console.log('### Next Steps for Windows:');
-      console.log('1. Purchase a license at https://dosaygo.com');
-      console.log('2. Receive your API key via email after purchase (Note: `bbx activate` is not available on Windows)');
-      console.log('3. Run with: bbx setup && bbx run');
-    } else {
-      console.log('### Next Steps for Linux/macOS:');
-      console.log('1. Purchase a license at https://dosaygo.com');
-      console.log('2. Activate with: bbx activate [seats]');
-      console.log('3. Run with: bbx setup && bbx run');
-    }
   } catch (error) {
     process.exit(1);
   }
 }
 
 //stop();
-
 

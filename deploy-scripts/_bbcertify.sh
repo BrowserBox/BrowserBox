@@ -17,7 +17,7 @@ VACANT_SEAT_ENDPOINT="${API_BASE}/vacant-seat"
 ISSUE_TICKET_ENDPOINT="${API_BASE}/tickets"
 REGISTER_CERT_ENDPOINT="${API_BASE}/register-certificates"
 VALIDATE_TICKET_ENDPOINT="${API_SERVER}/tickets/validate"
-TICKET_VALIDITY_PERIOD=$((10 * 60 * 60))  # 10 hours in seconds
+TICKET_VALIDITY_PERIOD=$((24 * 60 * 60))  # 24 hours in seconds
 
 # Usage information
 usage() {

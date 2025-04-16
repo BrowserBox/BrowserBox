@@ -1,6 +1,52 @@
-/* eslint-disable no-useless-escape */
+ 
 
-const keys = {
+const KEYS = {
+  keyEvent(...keys) {
+    // Map TUI key to key definition 
+    return keys.flatMap(key => {
+      const keyName = key;
+      const def = this[keyName];
+
+      if (!def) {
+        console.warn(`Unknown key: ${key}`);
+        return null;
+      }
+
+      // Determine event type
+      const type = def.text ? 'keyDown' : 'rawKeyDown'; // For Enter, this will be 'keyDown' due to text: '\r'
+
+      // Construct the CDP command
+      const down = { command : {
+        name: 'Input.dispatchKeyEvent',
+        params: {
+          type,
+          text: def.text, // '\r' for Enter
+          code: def.code, // 'Enter'
+          key: def.key,   // 'Enter'
+          windowsVirtualKeyCode: def.keyCode, // 13
+          modifiers: 0,   // No modifiers for now (e.g., no Shift, Ctrl)
+        },
+      }};
+      const up = { command : {
+        name: 'Input.dispatchKeyEvent',
+        params: {
+          type: 'keyUp',
+          code: def.code, // 'Enter'
+          key: def.key,   // 'Enter'
+          windowsVirtualKeyCode: def.keyCode, // 13
+          modifiers: 0,   // No modifiers for now (e.g., no Shift, Ctrl)
+        },
+        requiresShot: ['Enter'].includes(def.key), // Trigger a screenshot if needed
+      }};
+
+      if (def.location) {
+        down.command.params.location = def.location;
+        up.command.params.location = def.location;
+      }
+
+      return [down, up];
+    });
+  },
   '0': {keyCode: 48, key: '0', code: 'Digit0'},
   '1': {keyCode: 49, key: '1', code: 'Digit1'},
   '2': {keyCode: 50, key: '2', code: 'Digit2'},
@@ -385,6 +431,6 @@ const keys = {
   },
   VolumeUp: {keyCode: 183, key: 'VolumeUp', code: 'VolumeUp', location: 4},
 };
-/* eslint-enable no-useless-escape*/
+ 
 
-export default keys;
+export default KEYS;
