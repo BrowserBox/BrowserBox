@@ -113,7 +113,7 @@
           }; break;
         }
       };
-      const connection = await connectToBrowser(handler);
+      connection = await connectToBrowser(handler);
       browserState.send = connection.send;
       browserState.targets = connection.targets;
       send = connection.send;
@@ -274,7 +274,7 @@
       });
     } catch (error) {
       debugLog(JSON.stringify({ error, stack: error.stack }, null, 2));
-      if (connection.connectionManager) connection.connectionManager.cleanup();
+      if (connection?.connectionManager) connection.connectionManager.cleanup();
       console.error(error);
       if (DEBUG) console.warn(error);
       terminal.red(`Main error: ${error.message}\n`);
