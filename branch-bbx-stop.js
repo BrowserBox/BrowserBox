@@ -27,7 +27,6 @@ function runStop(platform) {
     const child = spawn(shell, args, { stdio: 'ignore', detached: true, windowsHide: true });
     child.unref();
     child.on('error', () => {console.warn('Error stopping'); resolve(process.exit(1));});
-    child.on('close', (code) => {resolve(process.exit(0))});
   });
 }
 
@@ -61,5 +60,4 @@ export async function stop() {
 }
 
 //stop();
-
 
