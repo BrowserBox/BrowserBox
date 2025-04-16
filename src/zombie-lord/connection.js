@@ -343,6 +343,7 @@ setTimeout(async () => {
     licenseValid = false;
   }
   if ( ! licenseValid ) {
+    console.log(`Queueing stop cnx`, {licenseValid});
     try {
       setTimeout(stop,
         process.env.STATUS_MODE && 
