@@ -49,12 +49,12 @@ jobs:
             exit 1
           fi
 
-      - name: Prepare test script (Unix)
+      - name: Prepare test script (Unix/macOS)
         if: matrix.os != 'windows-latest'
         shell: bash
         run: chmod +x tests/test-bbx.sh
 
-      - name: Execute BBX Test Saga (Unix)
+      - name: Execute BBX Test Saga (Unix/macOS)
         if: matrix.os != 'windows-latest'
         shell: bash
         env:
@@ -164,7 +164,7 @@ jobs:
             Write-Host "No Node processes remain -- cleanup successful."
           }
 
-      - name: Cleanup (Unix)
+      - name: Cleanup (Unix/macOS)
         if: always() && matrix.os != 'windows-latest'
         shell: bash
         run: |
