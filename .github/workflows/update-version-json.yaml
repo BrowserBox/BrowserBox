@@ -18,13 +18,20 @@ jobs:
         with:
           ref: ${{ github.ref }}
 
-      - name: Set up GPG
+      - name: Set up SSH for signing
         run: |
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
-          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
-          git config --global user.signingkey $(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ssh_key
+          chmod 600 ssh_key
+          mkdir -p ~/.ssh
+          ssh-keygen -y -P "" -f ssh_key > ~/.ssh/bbx_signing_key.pub
+          git config --global user.signingkey ~/.ssh/bbx_signing_key.pub
+          git config --global gpg.format ssh
+          git config --global gpg.ssh.program ssh-keygen
           git config --global commit.gpgsign true
-          git config --global gpg.program gpg
+          echo "SSH_AUTH_SOCK=/tmp/ssh-agent.sock" >> $GITHUB_ENV
+          ssh-agent -a /tmp/ssh-agent.sock > /tmp/ssh-agent.env
+          source /tmp/ssh-agent.env
+          ssh-add ssh_key
 
       - name: Configure Git
         run: |
@@ -35,7 +42,7 @@ jobs:
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           echo "{\"tag\": \"$TAG_NAME\"}" > version.json
-          # Remove 'v' prefix for package.json version 
+          # Remove 'v' prefix for package.json version (e.g., v10.5.1 -> 10.5.1)
           VERSION=${TAG_NAME#v}
           jq ".version = \"$VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
 
@@ -45,7 +52,7 @@ jobs:
           BRANCH_NAME="update-version-json-$TAG_NAME"
           git checkout -b "$BRANCH_NAME"
           git add version.json package.json
-          git commit --gpg-sign -m "Update version.json and package.json for $TAG_NAME"
+          git commit -m "Update version.json and package.json for $TAG_NAME"
           git push origin "$BRANCH_NAME"
 
       - name: Create Pull Request
@@ -62,7 +69,8 @@ jobs:
           commit-message: Update version.json and package.json for ${{ github.ref_name }}
           delete-branch: true
 
-      - name: Clean up GPG
+      - name: Clean up SSH
         if: always()
         run: |
-          rm -rf ~/.gnupg
+          rm -f ssh_key
+          rm -rf ~/.ssh
