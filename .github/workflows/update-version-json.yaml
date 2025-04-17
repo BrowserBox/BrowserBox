@@ -1,0 +1,68 @@
+name: Update version.json and package.json on Tag Creation
+
+on:
+  create:
+    ref_type: tag
+    ref: v*
+
+jobs:
+  update-version-json:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up GPG
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          git config --global user.signingkey $(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2)
+          git config --global commit.gpgsign true
+          git config --global gpg.program gpg
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "DOSAYGO Engineering"
+          git config --global user.email "development.team@dosaygo.com"
+
+      - name: Update version.json and package.json
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "{\"tag\": \"$TAG_NAME\"}" > version.json
+          # Remove 'v' prefix for package.json version 
+          VERSION=${TAG_NAME#v}
+          jq ".version = \"$VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
+
+      - name: Create branch and commit
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          BRANCH_NAME="update-version-json-$TAG_NAME"
+          git checkout -b "$BRANCH_NAME"
+          git add version.json package.json
+          git commit --gpg-sign -m "Update version.json and package.json for $TAG_NAME"
+          git push origin "$BRANCH_NAME"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: update-version-json-${{ github.ref_name }}
+          base: main
+          title: Update version.json and package.json for ${{ github.ref_name }}
+          body: |
+            This PR updates `version.json` and `package.json` with the tag `${{ github.ref_name }}` for the latest release.
+            Please review and merge to include it in the main branch.
+          reviewers: o0101
+          commit-message: Update version.json and package.json for ${{ github.ref_name }}
+          delete-branch: true
+
+      - name: Clean up GPG
+        if: always()
+        run: |
+          rm -rf ~/.gnupg
