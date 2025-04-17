@@ -50,6 +50,39 @@ CONFIG_FILE="$BB_CONFIG_DIR/config"
 DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
 [ ! -f "$DOCKER_CONTAINERS_FILE" ] && echo "{}" > "$DOCKER_CONTAINERS_FILE"
 
+# Version file paths
+VERSION_FILE="$BBX_SHARE/BrowserBox/version.json"
+BBX_NEW_DIR="$BBX_HOME/new"
+BBX_NEW_VERSION_FILE="$BBX_NEW_DIR/BrowserBox/version.json"
+LOG_FILE="$BBX_CONFIG_DIR/update.log"
+PREPARING_FILE="$BBX_SHARE/preparing"
+PREPARED_FILE="$BBX_SHARE/prepared"
+
+# Helper: Get version info from version.json
+get_version_info() {
+  local file="$1"
+  if [ -f "$file" ]; then
+    # Assuming version.json has { "tag": "..." }
+    jq -r '.tag' "$file" 2>/dev/null || echo "unknown"
+  else
+    echo "unknown"
+  fi
+}
+
+# Helper: Get latest tag from repo
+get_latest_repo_version() {
+  # Use git ls-remote with 5-second timeout
+  local result
+  result=$(timeout 5s git ls-remote --tags "$REPO_URL" 2>/dev/null | grep -v "{}" | sort -V | tail -n1)
+  if [ $? -ne 0 ] || [ -z "$result" ]; then
+    printf "${YELLOW}Checking for updates timed out${NC}\n"
+    echo "unknown"
+    return 1
+  fi
+  local latest_tag=$(echo "$result" | awk '{print $2}' | sed 's#refs/tags/##')
+  [ -n "$latest_tag" ] && echo "$latest_tag" || echo "unknown"
+}
+
 # ASCII Banner
 banner() {
     printf "${banner_color}${BOLD}"
@@ -1278,59 +1311,142 @@ logs() {
     fi
 }
 
+# Modified update function
 update() {
-    load_config
-    printf "${YELLOW}Updating BrowserBox...${NC}\n"
-    
-    # Check and reset hostname if unresolvable
-    if ! is_local_hostname "$BBX_HOSTNAME" && ! timeout 8s dig +short "$BBX_HOSTNAME" A >/dev/null 2>&1; then
-        printf "${YELLOW}Current hostname $BBX_HOSTNAME not resolvable, resetting to default...${NC}\n"
-        BBX_HOSTNAME=$(get_system_hostname)
+  load_config
+  printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
+
+  # Check if BBX_HOME, BBX_HOME/BrowserBox, or BBX_SHARE/BrowserBox exists
+  if [ ! -d "$BBX_HOME" ] || [ ! -d "$BBX_HOME/BrowserBox" ] || [ ! -d "$BBX_SHARE/BrowserBox" ]; then
+    printf "${YELLOW}No BrowserBox installation found. Running interactive install...${NC}\n"
+    install
+    return $?
+  fi
+
+  # Get current and repo versions
+  local current_tag=$(get_version_info "$VERSION_FILE")
+  local repo_tag=$(get_latest_repo_version)
+
+  printf "${BLUE}Current: $current_tag${NC}\n"
+  printf "${BLUE}Latest: $repo_tag${NC}\n"
+
+  # Check if update is needed
+  if [ "$current_tag" = "$repo_tag" ]; then
+    printf "${GREEN}Already on the latest version ($repo_tag).${NC}\n"
+    # Clean up BBX_NEW_DIR if it exists
+    [ -d "$BBX_NEW_DIR" ] && $SUDO rm -rf "$BBX_NEW_DIR" && printf "${YELLOW}Cleaned up $BBX_NEW_DIR${NC}\n"
+    return 0
+  fi
+
+  # Check lock files
+  if is_lock_file_recent "$PREPARING_FILE"; then
+    printf "${YELLOW}Another update is being prepared. Skipping...${NC}\n"
+    return 0
+  fi
+
+  # Check if BBX_NEW_DIR has a prepared version
+  if [ -f "$PREPARED_FILE" ] && [ -f "$BBX_NEW_DIR/prepared" ]; then
+    local prepared_location=$($SUDO sed -n '2p' "$PREPARED_FILE")
+    if [ "$prepared_location" = "$BBX_NEW_DIR" ]; then
+      local new_tag=$(get_version_info "$BBX_NEW_VERSION_FILE")
+      if [ "$new_tag" = "$repo_tag" ]; then
+        printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
+        # Require sudo for installation
+        if ! $SUDO -n true 2>/dev/null; then
+          printf "${YELLOW}Sudo required to install update. Run 'bbx update' with sudo privileges.${NC}\n"
+          return 1
+        fi
+        # Remove existing BBX_HOME/BrowserBox
+        $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n"; return 1; }
+        # Move prepared version
+        $SUDO mv "$BBX_NEW_DIR" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n"; return 1; }
+        # Run copy_install.sh
+        cd "$BBX_HOME/BrowserBox" && $SUDO ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n"; return 1; }
+        # Clean up lock files
+        $SUDO rm -f "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARED_FILE${NC}\n"
+        printf "${GREEN}Update to $repo_tag complete.${NC}\n"
+        return 0
+      else
+        printf "${YELLOW}Prepared version ($new_tag) does not match latest ($repo_tag). Cleaning up and retrying...${NC}\n"
+        $SUDO rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to clean up $BBX_NEW_DIR or $PREPARED_FILE${NC}\n"
+      fi
     fi
-    
-    # Ensure BBX_HOME exists
-    mkdir -p "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to create $BBX_HOME/BrowserBox${NC}\n"; exit 1; }
-    
-    # Fetch the latest ZIP from GitHub
-    printf "${YELLOW}Fetching BrowserBox repository (${branch} branch)...${NC}\n"
-    curl -sL "$REPO_URL/archive/refs/heads/${branch}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; exit 1; }
-    
-    # Clean temp directory, extract ZIP, and merge with rsync
-    printf "${YELLOW}Extracting and updating BrowserBox files...${NC}\n"
-    rm -rf "$BBX_HOME/BrowserBox-zip"  # Ensure temp dir is fresh
-    unzip -q -o "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; exit 1; }
-    rsync -a --delete "$BBX_HOME/BrowserBox-zip/BrowserBox-${branch}/" "$BBX_HOME/BrowserBox/" || { printf "${RED}Failed to merge updated files${NC}\n"; exit 1; }
-    rm -rf "$BBX_HOME/BrowserBox-zip" "$BBX_HOME/BrowserBox.zip"
-    
-    # Make global_install.sh executable
-    chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; exit 1; }
-    
-    # Run unattended global install with existing hostname and email
-    printf "${YELLOW}Running BrowserBox installer non-interactively...${NC}\n"
-    cd "$BBX_HOME/BrowserBox" && (yes | ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") || { printf "${RED}Installation failed${NC}\n"; exit 1; }
-    
-    # Update npm and pm2
-    printf "${YELLOW}Updating npm and pm2...${NC}\n"
-    ensure_nvm
-    npm i -g npm@latest
-    npm i -g pm2@latest
-    timeout 5s pm2 update
-    
-    # Install bbx command globally
-    printf "${YELLOW}Installing bbx command globally...${NC}\n"
-    if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
-      COMMAND_DIR="/usr/local/bin"
-    elif $SUDO test -w /usr/bin; then
-      COMMAND_DIR="/usr/bin"
+  fi
+
+  # Skip background update for install or update commands
+  if [ "$1" = "install" ] || [ "$1" = "update" ]; then
+    printf "${YELLOW}Running install/update command, proceeding with full update...${NC}\n"
+  else
+    # Require sudo for update
+    if ! $SUDO -n true 2>/dev/null; then
+      printf "${YELLOW}Sudo required for update. Run 'bbx update' with sudo privileges.${NC}\n"
+      return 1
+    fi
+    printf "${YELLOW}Starting background update to $repo_tag...${NC}\n"
+    # Create preparing lock file
+    $SUDO bash -c "echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\n$BBX_NEW_DIR\" > \"$PREPARING_FILE\"" || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n"; return 1; }
+    # Run update in background
+    if [ -n "$BBX_DEBUG" ]; then
+      bash -c "BBX_HOME='$BBX_HOME' BBX_CONFIG_DIR='$BBX_CONFIG_DIR' BBX_SHARE='$BBX_SHARE' REPO_URL='$REPO_URL' BBX_HOSTNAME='$BBX_HOSTNAME' EMAIL='$EMAIL' repo_tag='$repo_tag' bash -x \"$0\" update_background > \"$LOG_FILE\" 2>&1 &"
     else
-      COMMAND_DIR="$HOME/.local/bin"
-      mkdir -p "$COMMAND_DIR"
+      bash -c "BBX_HOME='$BBX_HOME' BBX_CONFIG_DIR='$BBX_CONFIG_DIR' BBX_SHARE='$BBX_SHARE' REPO_URL='$REPO_URL' BBX_HOSTNAME='$BBX_HOSTNAME' EMAIL='$EMAIL' repo_tag='$repo_tag' bash \"$0\" update_background >> \"$LOG_FILE\" 2>&1 &"
     fi
-    BBX_BIN="${COMMAND_DIR}/bbx"
-    $SUDO curl -sL "$REPO_URL/raw/${branch}/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; exit 1; }
-    $SUDO chmod +x "$BBX_BIN"
-    
-    printf "${GREEN}Update complete.${NC}\n"
+    printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
+    return 0
+  fi
+
+  # Perform full update (for install/update commands or manual run)
+  printf "${YELLOW}Performing full update to $repo_tag...${NC}\n"
+  # Require sudo for installation
+  if ! $SUDO -n true 2>/dev/null; then
+    printf "${YELLOW}Sudo required to install update. Run 'bbx update' with sudo privileges.${NC}\n"
+    return 1
+  fi
+  curl -sL "$REPO_URL/archive/refs/tags/$repo_tag.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; return 1; }
+  rm -rf "$BBX_HOME/BrowserBox-zip"
+  unzip -q -o "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; return 1; }
+  $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n"; return 1; }
+  $SUDO mv "$BBX_HOME/BrowserBox-zip/BrowserBox-$repo_tag" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move extracted files${NC}\n"; return 1; }
+  rm -rf "$BBX_HOME/BrowserBox-zip" "$BBX_HOME/BrowserBox.zip"
+  chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; return 1; }
+  cd "$BBX_HOME/BrowserBox" && (yes | $SUDO ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") >> "$LOG_FILE" 2>&1 || { printf "${RED}Installation failed${NC}\n"; return 1; }
+  cd "$BBX_HOME/BrowserBox" && $SUDO ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n"; return 1; }
+  ensure_nvm
+  npm i -g npm@latest
+  npm i -g pm2@latest
+  timeout 5s pm2 update
+  if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
+    COMMAND_DIR="/usr/local/bin"
+  elif $SUDO test -w /usr/bin; then
+    COMMAND_DIR="/usr/bin"
+  else
+    COMMAND_DIR="$HOME/.local/bin"
+    mkdir -p "$COMMAND_DIR"
+  fi
+  BBX_BIN="${COMMAND_DIR}/bbx"
+  $SUDO curl -sL "$REPO_URL/raw/$repo_tag/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; return 1; }
+  $SUDO chmod +x "$BBX_BIN"
+  printf "${GREEN}Update to $repo_tag complete.${NC}\n"
+}
+
+# Background update function
+update_background() {
+  printf "${YELLOW}Starting background update to $repo_tag...${NC}\n" >> "$LOG_FILE"
+  # Clean up any existing BBX_NEW_DIR
+  $SUDO rm -rf "$BBX_NEW_DIR" || { printf "${RED}Failed to clean $BBX_NEW_DIR${NC}\n" >> "$LOG_FILE"; exit 1; }
+  mkdir -p "$BBX_NEW_DIR/BrowserBox" || { printf "${RED}Failed to create $BBX_NEW_DIR/BrowserBox${NC}\n" >> "$LOG_FILE"; exit 1; }
+  curl -sL "$REPO_URL/archive/refs/tags/$repo_tag.zip" -o "$BBX_NEW_DIR/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n" >> "$LOG_FILE"; exit 1; }
+  unzip -q -o "$BBX_NEW_DIR/BrowserBox.zip" -d "$BBX_NEW_DIR/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n" >> "$LOG_FILE"; exit 1; }
+  $SUDO mv "$BBX_NEW_DIR/BrowserBox-zip/BrowserBox-$repo_tag" "$BBX_NEW_DIR/BrowserBox" || { printf "${RED}Failed to move extracted files${NC}\n" >> "$LOG_FILE"; exit 1; }
+  rm -rf "$BBX_NEW_DIR/BrowserBox-zip" "$BBX_NEW_DIR/BrowserBox.zip"
+  chmod +x "$BBX_NEW_DIR/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n" >> "$LOG_FILE"; exit 1; }
+  cd "$BBX_NEW_DIR/BrowserBox" && (yes | BBX_NO_COPY=1 $SUDO ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run global_install.sh${NC}\n" >> "$LOG_FILE"; exit 1; }
+  # Mark as prepared
+  $SUDO bash -c "echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" > \"$BBX_NEW_DIR/prepared\"" || { printf "${RED}Failed to create $BBX_NEW_DIR/prepared${NC}\n" >> "$LOG_FILE"; exit 1; }
+  $SUDO bash -c "echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\n$BBX_NEW_DIR\" > \"$PREPARED_FILE\"" || { printf "${RED}Failed to create $PREPARED_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
+  # Remove preparing lock file
+  $SUDO rm -f "$PREPARING_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARING_FILE${NC}\n" >> "$LOG_FILE"
+  printf "${GREEN}Background update prepared in $BBX_NEW_DIR${NC}\n" >> "$LOG_FILE"
 }
 
 license() {

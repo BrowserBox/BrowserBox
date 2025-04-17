@@ -17,7 +17,7 @@ if [[ -z "$1" ]]; then
   echo "Supply a hostname as first argument" >&2
   exit 1
 fi
-  
+BBX_NO_COPY=""
 
 unset npm_config_prefix
 
@@ -484,11 +484,13 @@ fi
 
 echo "Fully installed!"
 
-./deploy-scripts/copy_install.sh "$INSTALL_DIR"
+if [[ -z "$BBX_NO_COPY" ]]; then
+  ./deploy-scripts/copy_install.sh "$INSTALL_DIR"
+fi
 
-echo -n "Setting up deploy system ..."
+#echo -n "Setting up deploy system ..."
 
-cd $INSTALL_DIR/src/services/pool/deploy/
-./scripts/setup.sh
+#cd $INSTALL_DIR/src/services/pool/deploy/
+#./scripts/setup.sh
 
 echo "Install complete!"
