@@ -12,11 +12,21 @@ jobs:
       contents: write
       pull-requests: write
 
+    # Only run if the ref is a tag and matches v*
+    if: github.event.ref_type == 'tag' && startsWith(github.event.ref, 'v')
+
     steps:
+      - name: Debug Event Context
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.event.ref }}"
+          echo "Ref Type: ${{ github.event.ref_type }}"
+          echo "Full Ref: ${{ github.ref }}"
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ github.event.ref }}
 
       - name: Set up SSH for signing
         run: |
@@ -52,7 +62,11 @@ jobs:
 
       - name: Update version.json and package.json
         run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
+          TAG_NAME=${{ github.event.ref }}
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Tag '$TAG_NAME' does not match expected format (e.g., v10.5.1)"
+            exit 1
+          fi
           echo "{\"tag\": \"$TAG_NAME\"}" > version.json
           # Remove 'v' prefix for package.json version (e.g., v10.5.1 -> 10.5.1)
           VERSION=${TAG_NAME#v}
@@ -64,7 +78,7 @@ jobs:
 
       - name: Create branch and commit
         run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
+          TAG_NAME=${{ github.event.ref }}
           BRANCH_NAME="update-version-json-$TAG_NAME"
           git checkout -b "$BRANCH_NAME"
           git add --force version.json package.json
@@ -79,14 +93,14 @@ jobs:
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: update-version-json-${{ github.ref_name }}
+          branch: update-version-json-${{ github.event.ref }}
           base: main
-          title: Update version.json and package.json for ${{ github.ref_name }}
+          title: Update version.json and package.json for ${{ github.event.ref }}
           body: |
-            This PR updates `version.json` and `package.json` with the tag `${{ github.ref_name }}` for the latest release.
+            This PR updates `version.json` and `package.json` with the tag `${{ github.event.ref }}` for the latest release.
             Please review and merge to include it in the main branch.
           reviewers: o0101
-          commit-message: Update version.json and package.json for ${{ github.ref_name }}
+          commit-message: Update version.json and package.json for ${{ github.event.ref }}
           committer-name: DOSAYGO Engineering
           committer-email: development.team@dosaygo.com
           delete-branch: true
