@@ -17,7 +17,6 @@ jobs:
 
     steps:
       - name: Debug Event Context
-        shell: bash
         run: |
           echo "Event: ${{ github.event_name }}"
           echo "Ref: ${{ github.event.ref }}"
@@ -29,11 +28,54 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main # Start from main to ensure we're branching from the target
-          fetch-depth: 0 # Fetch all history for diff against main
+          ref: main # Start from main
+          fetch-depth: 0 # Fetch all history for diff
+
+      - name: Debug main branch state
+        run: |
+          git fetch origin main:main
+          echo "Main branch HEAD commit:"
+          git log -1 origin/main
+          if [ -f package.json ]; then
+            echo "Main package.json:"
+            git show origin/main:package.json
+          else
+            echo "package.json not found in main"
+          fi
+          if [ -f version.json ]; then
+            echo "Main version.json:"
+            git show origin/main:version.json
+          else
+            echo "version.json not found in main"
+          fi
+
+      - name: Check if update is needed
+        id: check-update
+        run: |
+          TAG_NAME=${{ github.event.ref }}
+          VERSION=${TAG_NAME#v}
+          # Check package.json version in main
+          MAIN_VERSION=$(git show origin/main:package.json | jq -r '.version')
+          echo "Main package.json version: $MAIN_VERSION"
+          # Check version.json tag in main (if it exists)
+          if git show origin/main:version.json > /dev/null 2>&1; then
+            MAIN_TAG=$(git show origin/main:version.json | jq -r '.tag')
+            echo "Main version.json tag: $MAIN_TAG"
+          else
+            MAIN_TAG="none"
+            echo "version.json not found in main"
+          fi
+          # Determine if update is needed
+          if [ "$MAIN_VERSION" = "$VERSION" ] && [ "$MAIN_TAG" = "$TAG_NAME" ]; then
+            echo "No update needed: main already has version $VERSION and tag $TAG_NAME"
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          else
+            echo "Update needed: main has version $MAIN_VERSION and tag $MAIN_TAG, updating to $VERSION and $TAG_NAME"
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create and checkout branch
-        shell: bash
+        if: steps.check-update.outputs.needs_update == 'true'
         run: |
           TAG_NAME=${{ github.event.ref }}
           BRANCH_NAME="update-version-json-$TAG_NAME"
@@ -41,7 +83,7 @@ jobs:
           echo "Created and switched to branch: $BRANCH_NAME"
 
       - name: Set up SSH for signing
-        shell: bash
+        if: steps.check-update.outputs.needs_update == 'true'
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/ssh_key
           chmod 600 ~/ssh_key
@@ -57,79 +99,44 @@ jobs:
           ssh-add ~/ssh_key
 
       - name: Configure Git
-        shell: bash
+        if: steps.check-update.outputs.needs_update == 'true'
         run: |
           git config --global user.name "DOSAYGO Engineering"
-          git config --global user.email "development.team@dosyago.com"
-
-      - name: Debug file state
-        shell: bash
-        run: |
-          echo "Repository contents:"
-          ls -la
-          if [ -f package.json ]; then
-            echo "Current package.json:"
-            cat package.json
-          else
-            echo "package.json not found"
-            exit 1
-          fi
-          if [ -f version.json ]; then
-            echo "Current version.json:"
-            cat version.json
-          else
-            echo "version.json not found"
-          fi
+          git config --global user.email "development.team@dosaygo.com"
 
       - name: Update version.json and package.json
-        shell: bash
+        if: steps.check-update.outputs.needs_update == 'true'
         run: |
           TAG_NAME=${{ github.event.ref }}
           if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Tag '$TAG_NAME' does not match expected format (e.g., v11.0.5)"
+            echo "Error: Tag '$TAG_NAME' does not match expected format (e.g., v11.0.8)"
             exit 1
           fi
           echo "{\"tag\": \"$TAG_NAME\"}" > version.json
-          # Remove 'v' prefix for package.json version (e.g., v11.0.5 -> 11.0.5)
+          # Remove 'v' prefix for package.json version
           VERSION=${TAG_NAME#v}
           jq ".version = \"$VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
           echo "Updated version.json:"
           cat version.json
           echo "Updated package.json:"
           cat package.json
-          git fetch origin main:main
           echo "Diff against main:"
           git diff origin/main -- package.json version.json
-          if git diff --quiet origin/main -- package.json version.json; then
-            echo "No changes detected in package.json or version.json compared to main."
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-          else
-            echo "Changes detected in package.json or version.json."
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          fi
-          TAG_NAME=${{ github.event.ref }}
-          BRANCH_NAME="update-version-json-$TAG_NAME"
-          git add --force version.json package.json
-          echo "Git status:"
-          git status
-          echo "Git diff:"
-          git diff --cached
-          git commit -m "Update version.json and package.json for $TAG_NAME"
-          git push origin "$BRANCH_NAME"
-          echo "Verifying branch exists on remote:"
-          git ls-remote --heads origin "$BRANCH_NAME"
 
-      - name: Debug branch state
-        shell: bash
+      - name: Debug branch state before PR
+        if: steps.check-update.outputs.needs_update == 'true'
         run: |
           echo "Current branch:"
           git rev-parse --abbrev-ref HEAD
+          echo "Branch HEAD commit:"
+          git log -1
+          echo "Git status:"
+          git status
           echo "Remote branches:"
           git ls-remote --heads origin
-          echo "Checking for branch update-version-json-${{ github.event.ref }}:"
-          git ls-remote --heads origin "update-version-json-${{ github.event.ref }}"
 
       - name: Create Pull Request
+        if: steps.check-update.outputs.needs_update == 'true'
         id: create-pr
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
@@ -143,11 +150,13 @@ jobs:
           labels: automated, version-update
           reviewers: o0101
           commit-message: Update version.json and package.json for ${{ github.event.ref }}
-          committer: DOSAYGO Engineering <development.team@dosyago.com>
-          delete-branch: false # Prevent deletion if PR is skipped
+          committer: DOSAYGO Engineering <development.team@dosaygo.com>
+          delete-branch: false
+          add-paths: |
+            package.json
+            version.json
 
       - name: Debug Pull Request Creation
-        shell: bash
         run: |
           echo "Create PR Action Output:"
           echo "PR Number: ${{ steps.create-pr.outputs.pull-request-number }}"
@@ -155,20 +164,22 @@ jobs:
           echo "PR Operation: ${{ steps.create-pr.outputs.pull-request-operation }}"
           echo "PR Branch: ${{ steps.create-pr.outputs.pull-request-branch }}"
           echo "PR Head SHA: ${{ steps.create-pr.outputs.pull-request-head-sha }}"
-          if [ "${{ steps.check-changes.outputs.has_changes }}" == "false" ]; then
-            echo "Skipped PR creation because no changes were detected."
+          if [ "${{ steps.check-update.outputs.needs_update }}" == "false" ]; then
+            echo "Skipped PR creation because no update was needed."
           elif [ -z "${{ steps.create-pr.outputs.pull-request-number }}" ]; then
             echo "No PR was created. Checking for errors..."
             git log -1
             git status
             git diff origin/main -- package.json version.json
+            echo "Main branch HEAD commit:"
+            git log -1 origin/main
             exit 1
           else
             echo "PR created successfully!"
           fi
 
       - name: Clean up SSH
-        shell: bash
+        if: always()
         run: |
           rm -f ~/ssh_key
           rm -rf ~/.ssh
