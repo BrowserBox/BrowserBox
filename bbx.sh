@@ -374,7 +374,7 @@ ensure_deps() {
                 if [[ "$pkg_name" == "util-linux" ]]; then
                   continue
                 fi
-                brew install "$pkg_name"
+                timeout 50s brew install "$pkg_name"
             else
                 printf "${RED}Cannot install $pkg_name. Unsupported OS. Please install it manually.${NC}\n"
                 exit 1
