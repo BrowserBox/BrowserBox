@@ -54,7 +54,7 @@ DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
 VERSION_FILE="$BBX_SHARE/BrowserBox/version.json"
 BBX_NEW_DIR="$BBX_HOME/new"
 BBX_NEW_VERSION_FILE="$BBX_NEW_DIR/BrowserBox/version.json"
-LOG_FILE="$BB_CONFIG_DIR/update.log"
+LOG_FILE="$BBX_CONFIG_DIR/update.log"
 PREPARING_FILE="$BBX_SHARE/preparing"
 PREPARED_FILE="$BBX_SHARE/prepared"
 
@@ -1404,7 +1404,7 @@ update() {
     if [ -n "$BBX_DEBUG" ]; then
       BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background > "$LOG_FILE" 2>&1 &
     else
-      BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
+      BBX_HOME="$BBX_HOME" BBX_CONFIG_DIR="$BBX_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
     fi
     printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
     return 0
