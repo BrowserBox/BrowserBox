@@ -71,15 +71,14 @@ get_version_info() {
 
 # Helper: Get latest tag from repo
 get_latest_repo_version() {
-  # Use git ls-remote with 5-second timeout
   local result
-  result=$(timeout 5s git ls-remote --tags "$REPO_URL" 2>/dev/null | grep -v "{}" | sort -V | tail -n1)
+  result=$(timeout 5s git ls-remote --tags "$REPO_URL" 2>/dev/null | grep -o 'refs/tags/v[0-9]*\.[0-9]*\.[0-9]*$' | sort -V | tail -n1)
   if [ $? -ne 0 ] || [ -z "$result" ]; then
     printf "${YELLOW}Checking for updates timed out${NC}\n"
     echo "unknown"
     return 1
   fi
-  local latest_tag=$(echo "$result" | awk '{print $2}' | sed 's#refs/tags/##')
+  local latest_tag=$(echo "$result" | sed 's#refs/tags/##')
   [ -n "$latest_tag" ] && echo "$latest_tag" || echo "unknown"
 }
 
@@ -1311,9 +1310,25 @@ logs() {
     fi
 }
 
+is_lock_file_recent() {
+  local lock_file="$1"
+  if [ -f "$lock_file" ]; then
+    # Check if lock file is less than 1 hour old (3600 seconds)
+    local current_time=$(date +%s)
+    local file_time=$(stat -f %m "$lock_file" 2>/dev/null || stat -c %Y "$lock_file" 2>/dev/null)
+    local time_diff=$((current_time - file_time))
+    if [ "$time_diff" -lt 3600 ]; then
+      return 0  # Lock file is recent
+    fi
+  fi
+  return 1  # Lock file is not recent or doesn't exist
+}
+
 # Modified update function
 update() {
   load_config
+  mkdir -p "$BBX_CONFIG_DIR"
+  chmod 700 "$BBX_CONFIG_DIR"
   printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
 
   # Check if BBX_HOME, BBX_HOME/BrowserBox, or BBX_SHARE/BrowserBox exists
@@ -1387,9 +1402,9 @@ update() {
     $SUDO bash -c "echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\n$BBX_NEW_DIR\" > \"$PREPARING_FILE\"" || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n"; return 1; }
     # Run update in background
     if [ -n "$BBX_DEBUG" ]; then
-      bash -c "BBX_HOME='$BBX_HOME' BBX_CONFIG_DIR='$BBX_CONFIG_DIR' BBX_SHARE='$BBX_SHARE' REPO_URL='$REPO_URL' BBX_HOSTNAME='$BBX_HOSTNAME' EMAIL='$EMAIL' repo_tag='$repo_tag' bash -x \"$0\" update_background > \"$LOG_FILE\" 2>&1 &"
+      bash -c "BBX_HOME='$BBX_HOME' BBX_CONFIG_DIR='$BBX_CONFIG_DIR' BBX_SHARE='$BBX_SHARE' REPO_URL='$REPO_URL' BBX_HOSTNAME='$BBX_HOSTNAME' EMAIL='$EMAIL' repo_tag='$repo_tag' LOG_FILE='$LOG_FILE' bash -x \"$0\" update_background > \"$LOG_FILE\" 2>&1 &"
     else
-      bash -c "BBX_HOME='$BBX_HOME' BBX_CONFIG_DIR='$BBX_CONFIG_DIR' BBX_SHARE='$BBX_SHARE' REPO_URL='$REPO_URL' BBX_HOSTNAME='$BBX_HOSTNAME' EMAIL='$EMAIL' repo_tag='$repo_tag' bash \"$0\" update_background >> \"$LOG_FILE\" 2>&1 &"
+      bash -c "BBX_HOME='$BBX_HOME' BBX_CONFIG_DIR='$BBX_CONFIG_DIR' BBX_SHARE='$BBX_SHARE' REPO_URL='$REPO_URL' BBX_HOSTNAME='$BBX_HOSTNAME' EMAIL='$EMAIL' repo_tag='$repo_tag' LOG_FILE='$LOG_FILE' bash \"$0\" update_background >> \"$LOG_FILE\" 2>&1 &"
     fi
     printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
     return 0
