@@ -102,7 +102,7 @@ jobs:
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
           git config --global user.name "DOSAYGO Engineering"
-          git config --global user.email "development.team@dosaygo.com"
+          git config --global user.email "development.team@dosyago.com"
 
       - name: Update version.json and package.json
         if: steps.check-update.outputs.needs_update == 'true'
@@ -159,10 +159,9 @@ jobs:
           body: |
             This PR updates `version.json` and `package.json` with the tag `${{ github.event.ref }}` for the latest release.
             Please review and merge to include it in the main branch.
-          labels: automated, version-update
           reviewers: o0101
           commit-message: Update version.json and package.json for ${{ github.event.ref }}
-          committer: DOSAYGO Engineering <development.team@dosaygo.com>
+          committer: DOSAYGO Engineering <development.team@dosyago.com>
           delete-branch: false
           add-paths: |
             package.json
