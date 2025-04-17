@@ -28,14 +28,6 @@ PINK='\033[1;95m'    # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
 BOLD='\033[1m'
 
-# Version
-BBX_VERSION="10.5.0"
-branch="main" # change to main for dist
-if [[ "$branch" != "main" ]]; then
-  export BBX_BRANCH="$branch"
-fi
-banner_color=$CYAN
-
 # Default paths
 BBX_HOME="${HOME}/.bbx"
 COMMAND_DIR=""
@@ -58,16 +50,6 @@ LOG_FILE="$BB_CONFIG_DIR/update.log"
 PREPARING_FILE="$BBX_SHARE/preparing"
 PREPARED_FILE="$BBX_SHARE/prepared"
 
-# Helper: Get version info from version.json
-get_version_info() {
-  local file="$1"
-  if [ -f "$file" ]; then
-    # Assuming version.json has { "tag": "..." }
-    jq -r '.tag' "$file" 2>/dev/null || echo "unknown"
-  else
-    echo "unknown"
-  fi
-}
 
 # Helper: Get latest tag from repo
 get_latest_repo_version() {
@@ -80,6 +62,25 @@ get_latest_repo_version() {
   fi
   local latest_tag=$(echo "$result" | sed 's#refs/tags/##')
   [ -n "$latest_tag" ] && echo "$latest_tag" || echo "unknown"
+}
+
+# Version
+BBX_VERSION="$(get_latest_repo_version)"
+branch="main" # change to main for dist
+if [[ "$branch" != "main" ]]; then
+  export BBX_BRANCH="$branch"
+fi
+banner_color=$CYAN
+
+# Helper: Get version info from version.json
+get_version_info() {
+  local file="$1"
+  if [ -f "$file" ]; then
+    # Assuming version.json has { "tag": "..." }
+    jq -r '.tag' "$file" 2>/dev/null || echo "unknown"
+  else
+    echo "unknown"
+  fi
 }
 
 # ASCII Banner
