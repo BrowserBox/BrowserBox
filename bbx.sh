@@ -1380,6 +1380,7 @@ check_and_prepare_update() {
   # No prepared update, start background preparation
   printf "${YELLOW}Starting background update to $repo_tag...${NC}\n"
   # Create preparing lock file
+  $SUDO mkdir -p "$BBX_SHARE"
   printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
   # Run update in background
   if [ -n "$BBX_DEBUG" ]; then
