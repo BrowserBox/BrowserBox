@@ -1329,8 +1329,8 @@ check_and_prepare_update() {
   [ "$1" = "uninstall" ] && return 0
 
   load_config
-  mkdir -p "$BBX_CONFIG_DIR"
-  chmod 700 "$BBX_CONFIG_DIR"
+  mkdir -p "$BB_CONFIG_DIR"
+  chmod 700 "$BB_CONFIG_DIR"
   printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
 
   # Get current and repo versions
@@ -1380,12 +1380,12 @@ check_and_prepare_update() {
   # No prepared update, start background preparation
   printf "${YELLOW}Starting background update to $repo_tag...${NC}\n"
   # Create preparing lock file
-  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)\n$BBX_NEW_DIR" > "$PREPARING_FILE" || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n"; return 1; }
+  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARING_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
   # Run update in background
   if [ -n "$BBX_DEBUG" ]; then
-    BBX_HOME="$BBX_HOME" BBX_CONFIG_DIR="$BBX_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background > "$LOG_FILE" 2>&1 &
+    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background > "$LOG_FILE" 2>&1 &
   else
-    BBX_HOME="$BBX_HOME" BBX_CONFIG_DIR="$BBX_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
+    BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
   fi
   printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
   return 0
@@ -1394,8 +1394,8 @@ check_and_prepare_update() {
 # Modified update function
 update() {
   load_config
-  mkdir -p "$BBX_CONFIG_DIR"
-  chmod 700 "$BBX_CONFIG_DIR"
+  mkdir -p "$BB_CONFIG_DIR"
+  chmod 700 "$BB_CONFIG_DIR"
   printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
 
   # Check if BBX_HOME, BBX_HOME/BrowserBox, or BBX_SHARE/BrowserBox exists
@@ -1425,9 +1425,9 @@ update_background() {
   rm -rf "$BBX_NEW_DIR/BrowserBox-zip" "$BBX_NEW_DIR/BrowserBox.zip"
   chmod +x "$BBX_NEW_DIR/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n" >> "$LOG_FILE"; exit 1; }
   cd "$BBX_NEW_DIR/BrowserBox" && (yes | BBX_NO_COPY=1 ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run global_install.sh${NC}\n" >> "$LOG_FILE"; exit 1; }
-  # Mark as prepared
-  $SUDO bash -c "echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" > \"$BBX_NEW_DIR/prepared\"" || { printf "${RED}Failed to create $BBX_NEW_DIR/prepared${NC}\n" >> "$LOG_FILE"; exit 1; }
-  $SUDO bash -c "echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\n$BBX_NEW_DIR\" > \"$PREPARED_FILE\"" || { printf "${RED}Failed to create $PREPARED_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
+    # Mark as prepared
+  printf "%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" | $SUDO tee "$PREPARED_FILE" >/dev/null || { printf "${RED}Failed to create $BBX_NEW_DIR/prepared${NC}\n" >> "$LOG_FILE"; exit 1; }
+  printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARED_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARED_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
   # Remove preparing lock file
   $SUDO rm -f "$PREPARING_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARING_FILE${NC}\n" >> "$LOG_FILE"
   printf "${GREEN}Background update prepared in $BBX_NEW_DIR${NC}\n" >> "$LOG_FILE"
