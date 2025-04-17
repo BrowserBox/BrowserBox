@@ -33,7 +33,7 @@ jobs:
 
       - name: Debug main branch state
         run: |
-          git fetch origin main:main
+          git pull
           echo "Main branch HEAD commit:"
           git log -1 origin/main
           if [ -f package.json ]; then
