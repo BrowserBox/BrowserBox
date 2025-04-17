@@ -28,14 +28,6 @@ PINK='\033[1;95m'    # Bright magenta, closest to pink in ANSI
 NC='\033[0m'
 BOLD='\033[1m'
 
-# Version
-BBX_VERSION="10.5.0"
-branch="main" # change to main for dist
-if [[ "$branch" != "main" ]]; then
-  export BBX_BRANCH="$branch"
-fi
-banner_color=$CYAN
-
 # Default paths
 BBX_HOME="${HOME}/.bbx"
 COMMAND_DIR=""
@@ -58,16 +50,6 @@ LOG_FILE="$BB_CONFIG_DIR/update.log"
 PREPARING_FILE="$BBX_SHARE/preparing"
 PREPARED_FILE="$BBX_SHARE/prepared"
 
-# Helper: Get version info from version.json
-get_version_info() {
-  local file="$1"
-  if [ -f "$file" ]; then
-    # Assuming version.json has { "tag": "..." }
-    jq -r '.tag' "$file" 2>/dev/null || echo "unknown"
-  else
-    echo "unknown"
-  fi
-}
 
 # Helper: Get latest tag from repo
 get_latest_repo_version() {
@@ -80,6 +62,25 @@ get_latest_repo_version() {
   fi
   local latest_tag=$(echo "$result" | sed 's#refs/tags/##')
   [ -n "$latest_tag" ] && echo "$latest_tag" || echo "unknown"
+}
+
+# Version
+BBX_VERSION="$(get_latest_repo_version)"
+branch="main" # change to main for dist
+if [[ "$branch" != "main" ]]; then
+  export BBX_BRANCH="$branch"
+fi
+banner_color=$CYAN
+
+# Helper: Get version info from version.json
+get_version_info() {
+  local file="$1"
+  if [ -f "$file" ]; then
+    # Assuming version.json has { "tag": "..." }
+    jq -r '.tag' "$file" 2>/dev/null || echo "unknown"
+  else
+    echo "unknown"
+  fi
 }
 
 # ASCII Banner
@@ -121,7 +122,7 @@ fi
 
 
 if ! test -d "${BBX_HOME}/BrowserBox/node_modules" || ! test -f "${BBX_HOME}/BrowserBox/.bbpro_install_dir"; then
-  if [ $# -gt 0 ] && [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]] && [[ "$1" != "docker-"* ]] && [[ "$1" != "stop" ]]; then
+  if [[ "$1" != "install" ]] && [[ "$1" != "uninstall" ]] && [[ "$1" != "docker-"* ]] && [[ "$1" != "stop" ]] && [[ "$1" != "update-background" ]]; then
     banner
     printf "\n${RED}Run ${NC}${BOLD}bbx install${NC}${RED} first.${NC}\n"
     printf "\tYou may need to run bbx uninstall to remove any previous or broken installation.\n"
@@ -374,7 +375,7 @@ ensure_deps() {
                 if [[ "$pkg_name" == "util-linux" ]]; then
                   continue
                 fi
-                brew install "$pkg_name"
+                timeout 50s brew install "$pkg_name"
             else
                 printf "${RED}Cannot install $pkg_name. Unsupported OS. Please install it manually.${NC}\n"
                 exit 1

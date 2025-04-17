@@ -55,12 +55,12 @@ install_dependencies() {
         echo "ℹ️ ALSA is Linux-specific, so we'll install Node.js build tools only."
 
         if command_exists brew; then
-            echo "📦 Using Homebrew"
-            brew install python3
+            echo "📦 Using Homebrew (and will abandon and move on without it after 50 seconds)..."
+            timeout 50s brew install python3
         else
-            echo "⚠️ Homebrew not found. Installing it..."
+            echo "⚠️ Homebrew not found. Installing it (will abandon and move on after 50 seconds)..."
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            brew install python3
+            timeout 50s brew install python3
         fi
 
         echo "ℹ️ For audio on macOS, packages like '@browserbox/speaker' use CoreAudio."
