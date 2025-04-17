@@ -1402,9 +1402,9 @@ update() {
     $SUDO bash -c "echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\n$BBX_NEW_DIR\" > \"$PREPARING_FILE\"" || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n"; return 1; }
     # Run update in background
     if [ -n "$BBX_DEBUG" ]; then
-      bash -c "BBX_HOME='$BBX_HOME' BBX_CONFIG_DIR='$BBX_CONFIG_DIR' BBX_SHARE='$BBX_SHARE' REPO_URL='$REPO_URL' BBX_HOSTNAME='$BBX_HOSTNAME' EMAIL='$EMAIL' repo_tag='$repo_tag' LOG_FILE='$LOG_FILE' bash -x \"$0\" update_background > \"$LOG_FILE\" 2>&1 &"
+      BBX_HOME="$BBX_HOME" BBX_CONFIG_DIR="$BBX_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background > "$LOG_FILE" 2>&1 &
     else
-      bash -c "BBX_HOME='$BBX_HOME' BBX_CONFIG_DIR='$BBX_CONFIG_DIR' BBX_SHARE='$BBX_SHARE' REPO_URL='$REPO_URL' BBX_HOSTNAME='$BBX_HOSTNAME' EMAIL='$EMAIL' repo_tag='$repo_tag' LOG_FILE='$LOG_FILE' bash \"$0\" update_background >> \"$LOG_FILE\" 2>&1 &"
+      BBX_HOME="$BBX_HOME" BBX_CONFIG_DIR="$BBX_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
     fi
     printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
     return 0
@@ -1892,6 +1892,7 @@ case "$1" in
     stop-user) shift 1; stop_user "$@";;
     logs) shift 1; logs "$@";;
     update) shift 1; update "$@";;
+    update-background) shift 1; update_background "$@";;
     activate) shift 1; activate "$@";;
     status) shift 1; status "$@";;
     run-as) shift 1; run_as "$@";;
