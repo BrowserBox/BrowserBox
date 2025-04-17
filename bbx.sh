@@ -1324,19 +1324,14 @@ is_lock_file_recent() {
   return 1  # Lock file is not recent or doesn't exist
 }
 
-# Modified update function
-update() {
-  load_config
-  mkdir -p "$BB_CONFIG_DIR"
-  chmod 700 "$BB_CONFIG_DIR"
-  printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
+check_and_prepare_update() {
+  # Skip for uninstall to avoid unnecessary checks
+  [ "$1" = "uninstall" ] && return 0
 
-  # Check if BBX_HOME, BBX_HOME/BrowserBox, or BBX_SHARE/BrowserBox exists
-  if [ ! -d "$BBX_HOME" ] || [ ! -d "$BBX_HOME/BrowserBox" ] || [ ! -d "$BBX_SHARE/BrowserBox" ]; then
-    printf "${YELLOW}No BrowserBox installation found. Running interactive install...${NC}\n"
-    install
-    return $?
-  fi
+  load_config
+  mkdir -p "$BBX_CONFIG_DIR"
+  chmod 700 "$BBX_CONFIG_DIR"
+  printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
 
   # Get current and repo versions
   local current_tag=$(get_version_info "$VERSION_FILE")
@@ -1349,7 +1344,7 @@ update() {
   if [ "$current_tag" = "$repo_tag" ]; then
     printf "${GREEN}Already on the latest version ($repo_tag).${NC}\n"
     # Clean up BBX_NEW_DIR if it exists
-    [ -d "$BBX_NEW_DIR" ] && $SUDO rm -rf "$BBX_NEW_DIR" && printf "${YELLOW}Cleaned up $BBX_NEW_DIR${NC}\n"
+    [ -d "$BBX_NEW_DIR" ] && rm -rf "$BBX_NEW_DIR" && printf "${YELLOW}Cleaned up $BBX_NEW_DIR${NC}\n"
     return 0
   fi
 
@@ -1361,87 +1356,57 @@ update() {
 
   # Check if BBX_NEW_DIR has a prepared version
   if [ -f "$PREPARED_FILE" ] && [ -f "$BBX_NEW_DIR/prepared" ]; then
-    local prepared_location=$($SUDO sed -n '2p' "$PREPARED_FILE")
+    local prepared_location=$(sed -n '2p' "$PREPARED_FILE")
     if [ "$prepared_location" = "$BBX_NEW_DIR" ]; then
       local new_tag=$(get_version_info "$BBX_NEW_VERSION_FILE")
       if [ "$new_tag" = "$repo_tag" ]; then
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
-        # Require sudo for installation
-        if ! $SUDO -n true 2>/dev/null; then
-          printf "${YELLOW}Sudo required to install update. Run 'bbx update' with sudo privileges.${NC}\n"
-          return 1
-        fi
-        # Remove existing BBX_HOME/BrowserBox
-        $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n"; return 1; }
         # Move prepared version
-        $SUDO mv "$BBX_NEW_DIR" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n"; return 1; }
+        rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n"; return 1; }
+        mv "$BBX_NEW_DIR" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n"; return 1; }
         # Run copy_install.sh
-        cd "$BBX_HOME/BrowserBox" && $SUDO ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n"; return 1; }
+        cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n"; return 1; }
         # Clean up lock files
-        $SUDO rm -f "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARED_FILE${NC}\n"
+        rm -f "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARED_FILE${NC}\n"
         printf "${GREEN}Update to $repo_tag complete.${NC}\n"
         return 0
       else
         printf "${YELLOW}Prepared version ($new_tag) does not match latest ($repo_tag). Cleaning up and retrying...${NC}\n"
-        $SUDO rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to clean up $BBX_NEW_DIR or $PREPARED_FILE${NC}\n"
+        rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to clean up $BBX_NEW_DIR or $PREPARED_FILE${NC}\n"
       fi
     fi
   fi
 
-  # Skip background update for install or update commands
-  if [ "$1" = "install" ] || [ "$1" = "update" ]; then
-    printf "${YELLOW}Running install/update command, proceeding with full update...${NC}\n"
+  # No prepared update, start background preparation
+  printf "${YELLOW}Starting background update to $repo_tag...${NC}\n"
+  # Create preparing lock file
+  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)\n$BBX_NEW_DIR" > "$PREPARING_FILE" || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n"; return 1; }
+  # Run update in background
+  if [ -n "$BBX_DEBUG" ]; then
+    BBX_HOME="$BBX_HOME" BBX_CONFIG_DIR="$BBX_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background > "$LOG_FILE" 2>&1 &
   else
-    # Require sudo for update
-    if ! $SUDO -n true 2>/dev/null; then
-      printf "${YELLOW}Sudo required for update. Run 'bbx update' with sudo privileges.${NC}\n"
-      return 1
-    fi
-    printf "${YELLOW}Starting background update to $repo_tag...${NC}\n"
-    # Create preparing lock file
-    $SUDO bash -c "echo \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\n$BBX_NEW_DIR\" > \"$PREPARING_FILE\"" || { printf "${RED}Failed to create $PREPARING_FILE${NC}\n"; return 1; }
-    # Run update in background
-    if [ -n "$BBX_DEBUG" ]; then
-      BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background > "$LOG_FILE" 2>&1 &
-    else
-      BBX_HOME="$BBX_HOME" BB_CONFIG_DIR="$BB_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
-    fi
-    printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
-    return 0
+    BBX_HOME="$BBX_HOME" BBX_CONFIG_DIR="$BBX_CONFIG_DIR" BBX_SHARE="$BBX_SHARE" REPO_URL="$REPO_URL" BBX_HOSTNAME="$BBX_HOSTNAME" EMAIL="$EMAIL" repo_tag="$repo_tag" LOG_FILE="$LOG_FILE" bbx update-background >> "$LOG_FILE" 2>&1 &
+  fi
+  printf "${GREEN}Background update started. Check $LOG_FILE for progress.${NC}\n"
+  return 0
+}
+
+# Modified update function
+update() {
+  load_config
+  mkdir -p "$BBX_CONFIG_DIR"
+  chmod 700 "$BBX_CONFIG_DIR"
+  printf "${YELLOW}Checking for BrowserBox updates...${NC}\n"
+
+  # Check if BBX_HOME, BBX_HOME/BrowserBox, or BBX_SHARE/BrowserBox exists
+  if [ ! -d "$BBX_HOME" ] || [ ! -d "$BBX_HOME/BrowserBox" ] || [ ! -d "$BBX_SHARE/BrowserBox" ]; then
+    printf "${YELLOW}No BrowserBox installation found. Running interactive install...${NC}\n"
+    install
+    return $?
   fi
 
-  # Perform full update (for install/update commands or manual run)
-  printf "${YELLOW}Performing full update to $repo_tag...${NC}\n"
-  # Require sudo for installation
-  if ! $SUDO -n true 2>/dev/null; then
-    printf "${YELLOW}Sudo required to install update. Run 'bbx update' with sudo privileges.${NC}\n"
-    return 1
-  fi
-  curl -sSL "${REPO_URL}/archive/refs/tags/${repo_tag}.zip" -o "$BBX_HOME/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n"; return 1; }
-  rm -rf "$BBX_HOME/BrowserBox-zip"
-  unzip -q -o "$BBX_HOME/BrowserBox.zip" -d "$BBX_HOME/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n"; return 1; }
-  rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n"; return 1; }
-  mv "$BBX_HOME/BrowserBox-zip/BrowserBox-$repo_tag" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move extracted files${NC}\n"; return 1; }
-  rm -rf "$BBX_HOME/BrowserBox-zip" "$BBX_HOME/BrowserBox.zip"
-  chmod +x "$BBX_HOME/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n"; return 1; }
-  cd "$BBX_HOME/BrowserBox" && (yes | $SUDO ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") >> "$LOG_FILE" 2>&1 || { printf "${RED}Installation failed${NC}\n"; return 1; }
-  cd "$BBX_HOME/BrowserBox" && $SUDO ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n"; return 1; }
-  ensure_nvm
-  npm i -g npm@latest
-  npm i -g pm2@latest
-  timeout 5s pm2 update
-  if [[ ":$PATH:" == *":/usr/local/bin:"* ]] && $SUDO test -w /usr/local/bin; then
-    COMMAND_DIR="/usr/local/bin"
-  elif $SUDO test -w /usr/bin; then
-    COMMAND_DIR="/usr/bin"
-  else
-    COMMAND_DIR="$HOME/.local/bin"
-    mkdir -p "$COMMAND_DIR"
-  fi
-  BBX_BIN="${COMMAND_DIR}/bbx"
-  $SUDO curl -sL "$REPO_URL/raw/$repo_tag/bbx.sh" -o "$BBX_BIN" || { printf "${RED}Failed to install bbx${NC}\n"; $SUDO rm -f "$BBX_BIN"; return 1; }
-  $SUDO chmod +x "$BBX_BIN"
-  printf "${GREEN}Update to $repo_tag complete.${NC}\n"
+  # Run the standard update check
+  check_and_prepare_update "update"
 }
 
 # Background update function
@@ -1886,6 +1851,8 @@ activate() {
 }
 
 [ "$1" != "uninstall" ] && check_agreement
+# Call check_and_prepare_update with the first argument
+check_and_prepare_update "$1"
 case "$1" in
     install) shift 1; install "$@";;
     uninstall) shift 1; uninstall "$@";;
@@ -1908,4 +1875,3 @@ case "$1" in
     "") usage;;
     *) printf "${RED}Unknown command: $1${NC}\n"; usage; exit 1;;
 esac
-
