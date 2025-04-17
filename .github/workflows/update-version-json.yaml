@@ -20,10 +20,10 @@ jobs:
 
       - name: Set up SSH for signing
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ssh_key
-          chmod 600 ssh_key
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/ssh_key
+          chmod 600 ~/ssh_key
           mkdir -p ~/.ssh
-          ssh-keygen -y -P "" -f ssh_key > ~/.ssh/bbx_signing_key.pub
+          ssh-keygen -y -P "" -f ~/ssh_key > ~/.ssh/bbx_signing_key.pub
           git config --global user.signingkey ~/.ssh/bbx_signing_key.pub
           git config --global gpg.format ssh
           git config --global gpg.ssh.program ssh-keygen
@@ -31,12 +31,24 @@ jobs:
           echo "SSH_AUTH_SOCK=/tmp/ssh-agent.sock" >> $GITHUB_ENV
           ssh-agent -a /tmp/ssh-agent.sock > /tmp/ssh-agent.env
           source /tmp/ssh-agent.env
-          ssh-add ssh_key
+          ssh-add ~/ssh_key
 
       - name: Configure Git
         run: |
           git config --global user.name "DOSAYGO Engineering"
           git config --global user.email "development.team@dosaygo.com"
+
+      - name: Debug file state
+        run: |
+          echo "Repository contents:"
+          ls -la
+          if [ -f package.json ]; then
+            echo "Current package.json:"
+            cat package.json
+          else
+            echo "package.json not found"
+            exit 1
+          fi
 
       - name: Update version.json and package.json
         run: |
@@ -45,13 +57,21 @@ jobs:
           # Remove 'v' prefix for package.json version (e.g., v10.5.1 -> 10.5.1)
           VERSION=${TAG_NAME#v}
           jq ".version = \"$VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
+          echo "Updated version.json:"
+          cat version.json
+          echo "Updated package.json:"
+          cat package.json
 
       - name: Create branch and commit
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           BRANCH_NAME="update-version-json-$TAG_NAME"
           git checkout -b "$BRANCH_NAME"
-          git add version.json package.json
+          git add --force version.json package.json
+          echo "Git status:"
+          git status
+          echo "Git diff:"
+          git diff --cached
           git commit -m "Update version.json and package.json for $TAG_NAME"
           git push origin "$BRANCH_NAME"
 
@@ -67,10 +87,12 @@ jobs:
             Please review and merge to include it in the main branch.
           reviewers: o0101
           commit-message: Update version.json and package.json for ${{ github.ref_name }}
+          committer-name: DOSAYGO Engineering
+          committer-email: development.team@dosaygo.com
           delete-branch: true
 
       - name: Clean up SSH
         if: always()
         run: |
-          rm -f ssh_key
+          rm -f ~/ssh_key
           rm -rf ~/.ssh
