@@ -8,6 +8,9 @@
 
 [![BrowserBox](https://img.shields.io/badge/BrowserBox-Secure%20RBI-blue)](https://dosaygo.com)
 
+>[!NOTE]
+> Ensure you run `bbx update` to get the latest version (v11) to have the latest fixes and updates.
+
 Secure your web with BrowserBox—cutting-edge remote browser isolation (RBI) technology. Protect your organization from threats and empower your team with seamless, secure browsing. BrowserBox requires a **license key** for all usage—unlock advanced security and productivity today!
 
 ## Who It’s For
@@ -50,6 +53,10 @@ BrowserBox runs seamlessly on a wide range of platforms—deploy it wherever you
   <li><a href="https://browse.cloudtabs.net/M/jl" class="cta-button">Get a Non-Commercial License</a></li>
   <li><a href="https://tally.so/r/wkv4aM" class="cta-button secondary-cta">Try Free for 14-Days</a></li>
 </ul>
+
+## DOSAYGO
+
+We make cool tech, including BrowserBox, CloudTabs (BrowserBox SaaS) and DiskerNet (offline archive of web content). DOSAYGO is also known (due to a typo at incorporation!) as DOSYAGO. dosyago.com and dosaygo.com are both ours, fear not. Eventually we will transition everything to the correct dosaygo.com. 
 
 ---
 
