@@ -17,6 +17,7 @@ jobs:
 
     steps:
       - name: Debug Event Context
+        shell: bash
         run: |
           echo "Event: ${{ github.event_name }}"
           echo "Ref: ${{ github.event.ref }}"
@@ -32,6 +33,7 @@ jobs:
           fetch-depth: 0 # Fetch all history for diff against main
 
       - name: Create and checkout branch
+        shell: bash
         run: |
           TAG_NAME=${{ github.event.ref }}
           BRANCH_NAME="update-version-json-$TAG_NAME"
@@ -39,6 +41,7 @@ jobs:
           echo "Created and switched to branch: $BRANCH_NAME"
 
       - name: Set up SSH for signing
+        shell: bash
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/ssh_key
           chmod 600 ~/ssh_key
@@ -54,11 +57,13 @@ jobs:
           ssh-add ~/ssh_key
 
       - name: Configure Git
+        shell: bash
         run: |
           git config --global user.name "DOSAYGO Engineering"
           git config --global user.email "development.team@dosyago.com"
 
       - name: Debug file state
+        shell: bash
         run: |
           echo "Repository contents:"
           ls -la
@@ -77,6 +82,7 @@ jobs:
           fi
 
       - name: Update version.json and package.json
+        shell: bash
         run: |
           TAG_NAME=${{ github.event.ref }}
           if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -91,10 +97,6 @@ jobs:
           cat version.json
           echo "Updated package.json:"
           cat package.json
-
-      - name: Check for changes
-        id: check-changes
-        run: |
           git fetch origin main:main
           echo "Diff against main:"
           git diff origin/main -- package.json version.json
@@ -105,10 +107,6 @@ jobs:
             echo "Changes detected in package.json or version.json."
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
-
-      - name: Commit changes
-        if: steps.check-changes.outputs.has_changes == 'true'
-        run: |
           TAG_NAME=${{ github.event.ref }}
           BRANCH_NAME="update-version-json-$TAG_NAME"
           git add --force version.json package.json
