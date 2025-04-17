@@ -22,11 +22,21 @@ jobs:
           echo "Ref: ${{ github.event.ref }}"
           echo "Ref Type: ${{ github.event.ref_type }}"
           echo "Full Ref: ${{ github.ref }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "SHA: ${{ github.sha }}"
 
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.ref }}
+          ref: main # Start from main to ensure we're branching from the target
+          fetch-depth: 0 # Fetch all history for diff against main
+
+      - name: Create and checkout branch
+        run: |
+          TAG_NAME=${{ github.event.ref }}
+          BRANCH_NAME="update-version-json-$TAG_NAME"
+          git checkout -b "$BRANCH_NAME"
+          echo "Created and switched to branch: $BRANCH_NAME"
 
       - name: Set up SSH for signing
         run: |
@@ -46,7 +56,7 @@ jobs:
       - name: Configure Git
         run: |
           git config --global user.name "DOSAYGO Engineering"
-          git config --global user.email "development.team@dosaygo.com"
+          git config --global user.email "development.team@dosyago.com"
 
       - name: Debug file state
         run: |
@@ -59,16 +69,22 @@ jobs:
             echo "package.json not found"
             exit 1
           fi
+          if [ -f version.json ]; then
+            echo "Current version.json:"
+            cat version.json
+          else
+            echo "version.json not found"
+          fi
 
       - name: Update version.json and package.json
         run: |
           TAG_NAME=${{ github.event.ref }}
           if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Tag '$TAG_NAME' does not match expected format (e.g., v10.5.1)"
+            echo "Error: Tag '$TAG_NAME' does not match expected format (e.g., v11.0.5)"
             exit 1
           fi
           echo "{\"tag\": \"$TAG_NAME\"}" > version.json
-          # Remove 'v' prefix for package.json version (e.g., v10.5.1 -> 10.5.1)
+          # Remove 'v' prefix for package.json version (e.g., v11.0.5 -> 11.0.5)
           VERSION=${TAG_NAME#v}
           jq ".version = \"$VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
           echo "Updated version.json:"
@@ -76,11 +92,25 @@ jobs:
           echo "Updated package.json:"
           cat package.json
 
-      - name: Create branch and commit
+      - name: Check for changes
+        id: check-changes
+        run: |
+          git fetch origin main:main
+          echo "Diff against main:"
+          git diff origin/main -- package.json version.json
+          if git diff --quiet origin/main -- package.json version.json; then
+            echo "No changes detected in package.json or version.json compared to main."
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changes detected in package.json or version.json."
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit changes
+        if: steps.check-changes.outputs.has_changes == 'true'
         run: |
           TAG_NAME=${{ github.event.ref }}
           BRANCH_NAME="update-version-json-$TAG_NAME"
-          git checkout -b "$BRANCH_NAME"
           git add --force version.json package.json
           echo "Git status:"
           git status
@@ -88,8 +118,22 @@ jobs:
           git diff --cached
           git commit -m "Update version.json and package.json for $TAG_NAME"
           git push origin "$BRANCH_NAME"
+          echo "Verifying branch exists on remote:"
+          git ls-remote --heads origin "$BRANCH_NAME"
+
+      - name: Debug branch state
+        if: steps.check-changes.outputs.has_changes == 'true'
+        run: |
+          echo "Current branch:"
+          git rev-parse --abbrev-ref HEAD
+          echo "Remote branches:"
+          git ls-remote --heads origin
+          echo "Checking for branch update-version-json-${{ github.event.ref }}:"
+          git ls-remote --heads origin "update-version-json-${{ github.event.ref }}"
 
       - name: Create Pull Request
+        if: steps.check-changes.outputs.has_changes == 'true'
+        id: create-pr
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -99,11 +143,31 @@ jobs:
           body: |
             This PR updates `version.json` and `package.json` with the tag `${{ github.event.ref }}` for the latest release.
             Please review and merge to include it in the main branch.
+          labels: automated, version-update
           reviewers: o0101
           commit-message: Update version.json and package.json for ${{ github.event.ref }}
-          committer-name: DOSAYGO Engineering
-          committer-email: development.team@dosaygo.com
-          delete-branch: true
+          committer: DOSAYGO Engineering <development.team@dosyago.com>
+          delete-branch: false # Prevent deletion if PR is skipped
+
+      - name: Debug Pull Request Creation
+        run: |
+          echo "Create PR Action Output:"
+          echo "PR Number: ${{ steps.create-pr.outputs.pull-request-number }}"
+          echo "PR URL: ${{ steps.create-pr.outputs.pull-request-url }}"
+          echo "PR Operation: ${{ steps.create-pr.outputs.pull-request-operation }}"
+          echo "PR Branch: ${{ steps.create-pr.outputs.pull-request-branch }}"
+          echo "PR Head SHA: ${{ steps.create-pr.outputs.pull-request-head-sha }}"
+          if [ "${{ steps.check-changes.outputs.has_changes }}" == "false" ]; then
+            echo "Skipped PR creation because no changes were detected."
+          elif [ -z "${{ steps.create-pr.outputs.pull-request-number }}" ]; then
+            echo "No PR was created. Checking for errors..."
+            git log -1
+            git status
+            git diff origin/main -- package.json version.json
+            exit 1
+          else
+            echo "PR created successfully!"
+          fi
 
       - name: Clean up SSH
         if: always()
