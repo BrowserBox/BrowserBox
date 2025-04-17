@@ -120,7 +120,7 @@ jobs:
           git ls-remote --heads origin "$BRANCH_NAME"
 
       - name: Debug branch state
-        if: steps.check-changes.outputs.has_changes == 'true'
+        shell: bash
         run: |
           echo "Current branch:"
           git rev-parse --abbrev-ref HEAD
@@ -130,7 +130,6 @@ jobs:
           git ls-remote --heads origin "update-version-json-${{ github.event.ref }}"
 
       - name: Create Pull Request
-        if: steps.check-changes.outputs.has_changes == 'true'
         id: create-pr
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
@@ -148,6 +147,7 @@ jobs:
           delete-branch: false # Prevent deletion if PR is skipped
 
       - name: Debug Pull Request Creation
+        shell: bash
         run: |
           echo "Create PR Action Output:"
           echo "PR Number: ${{ steps.create-pr.outputs.pull-request-number }}"
@@ -168,7 +168,7 @@ jobs:
           fi
 
       - name: Clean up SSH
-        if: always()
+        shell: bash
         run: |
           rm -f ~/ssh_key
           rm -rf ~/.ssh
