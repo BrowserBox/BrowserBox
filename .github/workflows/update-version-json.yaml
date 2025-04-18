@@ -74,6 +74,7 @@ jobs:
             echo "Update needed: main has version $MAIN_VERSION and tag $MAIN_TAG, updating to $VERSION and $TAG_NAME"
             echo "needs_update=true" >> $GITHUB_OUTPUT
           fi
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
 
       - name: Create and checkout branch
         if: steps.check-update.outputs.needs_update == 'true'
@@ -139,6 +140,8 @@ jobs:
           git add version.json package.json
           git commit -m "Update version"
           git tag "$TAG_NAME"
+          git push origin "$BRANCH_NAME"
+          echo "Pushed branch: $BRANCH_NAME"
           echo "$(date)" > .version.mark
 
       - name: Debug branch state before PR
@@ -161,19 +164,20 @@ jobs:
         uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: update-version-json-${{ github.event.ref }}
+          branch: update-version-json-${{ steps.check-update.outputs.tag_name }}
           base: main
-          title: Update version.json and package.json for ${{ github.event.ref }}
+          title: Update version.json and package.json for ${{ steps.check-update.outputs.tag_name }}
           body: |
-            This PR updates `version.json` and `package.json` with the tag `${{ github.event.ref }}` for the latest release.
+            This PR updates `version.json` and `package.json` with the tag `${{ steps.check-update.outputs.tag_name  }}` for the latest release.
             Please review and merge to include it in the main branch.
           reviewers: o0101
-          commit-message: Update version.json and package.json for ${{ github.event.ref }}
+          commit-message: Update version.json and package.json for ${{ steps.check-update.outputs.tag_name }}
           committer: DOSAYGO Engineering <development.team@dosyago.com>
           delete-branch: false
           add-paths: |
             package.json
             version.json
+            .version.mark
 
       - name: Debug Pull Request Creation
         run: |
