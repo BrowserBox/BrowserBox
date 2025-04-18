@@ -823,7 +823,7 @@
     for (let i = sessionBoxes.length - 1; i >= 0; i--) {
       const box = sessionBoxes[i];
       const inX = termX >= box.termX && termX < box.termX + box.termWidth;
-      const inY = Math.abs(termY - box.termY) <= 1; // Allow 1-line leeway
+      const inY = termY == box.termY;
       if (inX && inY && box.isClickable) {
         clickedBox = box;
         break;
@@ -942,6 +942,124 @@
       await refreshTerminal({ send, sessionId });
     }
   }
+
+
+
+async function handleClick({ termX, termY, clickableElements, send, sessionId, refresh, layoutToNode, nodeToParent, nodes }) {
+  let clickedBox = null;
+  for (let i = renderedBoxes.length - 1; i >= 0; i--) {
+    const box = renderedBoxes[i];
+    if (termX >= box.termX && termX < box.termX + box.termWidth && termY === box.termY) {
+      clickedBox = box;
+      break;
+    }
+  }
+  if (!clickedBox || !clickedBox.isClickable) {
+    statusLine(`No clickable element at (${termX}, ${termY})`, JSON.stringify(renderedBoxes));
+    logClicks(`No clickable element at (${termX}, ${termY})`);
+    //process.exit(1);
+    return;
+  }
+
+  logClicks(`Clicked box type: ${clickedBox.type}, backendNodeId: ${clickedBox.backendNodeId}`);
+  if (clickedBox.type === 'input') {
+    await focusInput({ clickedBox, browser, send, sessionId, termX });
+    return;
+  } else {
+    // Click simulation for other elements
+    logClicks("Simulating click on non-input element");
+    terminal.moveTo(clickedBox.termX, clickedBox.termY);
+    terminal.yellow(clickedBox.text);
+    await sleep(300);
+    await refresh();
+
+    const relativeX = (termX - clickedBox.termX) / clickedBox.termWidth;
+    const relativeY = (termY - clickedBox.termY) / clickedBox.termHeight;
+    const guiX = clickedBox.boundingBox.x + relativeX * clickedBox.boundingBox.width;
+    const guiY = clickedBox.boundingBox.y + relativeY * clickedBox.boundingBox.height;
+    const clickX = guiX + clickedBox.viewportX;
+    const clickY = guiY + clickedBox.viewportY;
+
+    const clickId = clickCounter.value++;
+    const nodeTag = clickedBox.ancestorType || 'unknown';
+    const nodeText = clickedBox.text;
+    const clickEvent = { type: 'click' };
+    try {
+      DEBUG && logClicks(`${new Date().toISOString()} - Click ${clickId}: T coords (${termX}, ${termY}), Node (tag: ${nodeTag}, text: "${nodeText}"), G coords (${clickX}, ${clickY}), Event: ${JSON.stringify(clickEvent)}\n`);
+    } catch (error) {
+      console.error(`Failed to write to clicks log: ${error.message}`);
+      //process.exit(1);
+    }
+
+    let backendNodeId = clickedBox.backendNodeId;
+    let currentNodeIndex = layoutToNode.get(clickedBox.layoutIndex);
+    let clickableNodeIndex = currentNodeIndex;
+    while (currentNodeIndex !== -1) {
+      if (nodes.isClickable && nodes.isClickable.index.includes(currentNodeIndex)) {
+        clickableNodeIndex = currentNodeIndex;
+        break;
+      }
+      currentNodeIndex = nodeToParent.get(currentNodeIndex);
+    }
+    backendNodeId = nodes.backendNodeId[clickableNodeIndex];
+
+    let objectId;
+    try {
+      const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
+      objectId = resolveResult.object.objectId;
+      DEBUG && debugLog(`Resolved backendNodeId ${backendNodeId} to objectId ${objectId}`);
+    } catch (error) {
+      DEBUG && debugLog(`Failed to resolve backendNodeId ${backendNodeId}: ${error.message}`);
+      //process.exit(1);
+      return;
+    }
+
+    try {
+      const clickResult = await send('Runtime.callFunctionOn', {
+        objectId,
+        functionDeclaration: 'function() { this.click(); }',
+        arguments: [],
+        returnByValue: true
+      }, sessionId);
+      DEBUG && debugLog(`Click result: ${JSON.stringify(clickResult)}`);
+    } catch (error) {
+      DEBUG && debugLog(`Failed to execute click on objectId ${objectId}: ${error.message}`);
+      //process.exit(1);
+    }
+
+    if (DEBUG && markClicks) {
+      const script = `
+        (function() {
+          const rect = this.getBoundingClientRect();
+          const clickX = rect.left + rect.width / 2;
+          const clickY = rect.top + rect.height / 2;
+          const circle = document.createElement('div');
+          circle.style.cssText = "position: absolute; left: " + clickX + "px; top: " + clickY + "px; width: 20px; height: 20px; background: black; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; z-index: 9999;";
+          circle.innerText = "${clickId}";
+          circle.id = "click-trace-${clickId}";
+          document.body.appendChild(circle);
+          return { clickX, clickY };
+        })
+      `;
+      try {
+        const circleResult = await send('Runtime.callFunctionOn', {
+          objectId,
+          functionDeclaration: script,
+          arguments: [],
+          returnByValue: true
+        }, sessionId);
+        DEBUG && debugLog(`Circle injection result: ${JSON.stringify(circleResult)}`);
+      } catch (error) {
+        DEBUG && debugLog(`Circle injection failed: ${error.message}`);
+        //process.exit(1);
+      }
+    }
+
+    await refresh();
+  }
+}
+
+
 
   export async function focusInput({ clickedBox, browser, send, sessionId, termX }) {
     if (!clickedBox) {
