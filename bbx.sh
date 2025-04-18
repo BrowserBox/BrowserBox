@@ -45,7 +45,6 @@ DOCKER_CONTAINERS_FILE="$BB_CONFIG_DIR/docker_containers.json"
 # Version file paths
 VERSION_FILE="$BBX_SHARE/BrowserBox/version.json"
 BBX_NEW_DIR="$BBX_HOME/new"
-BBX_NEW_VERSION_FILE="$BBX_NEW_DIR/BrowserBox/version.json"
 LOG_FILE="$BB_CONFIG_DIR/update.log"
 PREPARING_FILE="$BBX_SHARE/preparing"
 PREPARED_FILE="$BBX_SHARE/prepared"
@@ -1359,7 +1358,7 @@ check_and_prepare_update() {
   if [ -f "$PREPARED_FILE" ]; then
     local prepared_location=$(sed -n '2p' "$PREPARED_FILE")
     if [ "$prepared_location" = "$BBX_NEW_DIR" ]; then
-      local new_tag=$(get_version_info "$BBX_NEW_VERSION_FILE")
+      local new_tag=$(get_version_info "$VERSION_FILE")
       if [ "$new_tag" = "$repo_tag" ]; then
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
         # Move prepared version
