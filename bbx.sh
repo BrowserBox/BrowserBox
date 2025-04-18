@@ -1356,7 +1356,7 @@ check_and_prepare_update() {
   fi
 
   # Check if BBX_NEW_DIR has a prepared version
-  if [ -f "$PREPARED_FILE" ] && [ -f "$BBX_NEW_DIR/prepared" ]; then
+  if [ -f "$PREPARED_FILE" ]; then
     local prepared_location=$(sed -n '2p' "$PREPARED_FILE")
     if [ "$prepared_location" = "$BBX_NEW_DIR" ]; then
       local new_tag=$(get_version_info "$BBX_NEW_VERSION_FILE")
@@ -1428,7 +1428,6 @@ update_background() {
   chmod +x "$BBX_NEW_DIR/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n" >> "$LOG_FILE"; exit 1; }
   cd "$BBX_NEW_DIR/BrowserBox" && (yes | BBX_NO_COPY=1 ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run global_install.sh${NC}\n" >> "$LOG_FILE"; exit 1; }
     # Mark as prepared
-  printf "%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" | $SUDO tee "$PREPARED_FILE" >/dev/null || { printf "${RED}Failed to create $BBX_NEW_DIR/prepared${NC}\n" >> "$LOG_FILE"; exit 1; }
   printf "%s\n%s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$BBX_NEW_DIR" | $SUDO tee "$PREPARED_FILE" >/dev/null || { printf "${RED}Failed to create $PREPARED_FILE${NC}\n" >> "$LOG_FILE"; exit 1; }
   # Remove preparing lock file
   $SUDO rm -f "$PREPARING_FILE" || printf "${YELLOW}Warning: Failed to remove $PREPARING_FILE${NC}\n" >> "$LOG_FILE"
