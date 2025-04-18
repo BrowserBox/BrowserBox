@@ -1,9 +1,8 @@
-name: Update version.json and package.json on RC Tag Creation
+name: Update version.json and package.json on Tag Creation
 
 on:
   create:
     ref_type: tag
-    # Trigger only on tags like vX.Y.Z-rc (e.g., v11.0.19-rc)
     ref: v[0-9]+.[0-9]+.[0-9]+-rc
 
 jobs:
@@ -13,7 +12,9 @@ jobs:
       contents: write
       pull-requests: write
 
-    # Double-check the ref is a tag and matches the expected pattern
+    # Only run if the ref is a tag and matches v*
+    if: github.event.ref_type == 'tag' && startsWith(github.event.ref, 'v') && endsWith(github.event.ref, '-rc')
+
     steps:
       - name: Debug Event Context
         run: |
@@ -27,8 +28,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
-          fetch-depth: 0
+          ref: main # Start from main
+          fetch-depth: 0 # Fetch all history for diff
 
       - name: Debug main branch state
         run: |
@@ -52,9 +53,7 @@ jobs:
         id: check-update
         run: |
           TAG_NAME=${{ github.event.ref }}
-          # Extract version without -rc (e.g., v11.0.19-rc -> v11.0.19)
-          VERSION_TAG=${TAG_NAME%-rc}
-          VERSION=${VERSION_TAG#v}
+          VERSION=${TAG_NAME#v}
           # Check package.json version in main
           MAIN_VERSION=$(git show origin/main:package.json | jq -r '.version')
           echo "Main package.json version: $MAIN_VERSION"
@@ -67,21 +66,19 @@ jobs:
             echo "version.json not found in main"
           fi
           # Determine if update is needed
-          if [ "$MAIN_VERSION" = "$VERSION" ] && [ "$MAIN_TAG" = "$VERSION_TAG" ]; then
-            echo "No update needed: main already has version $VERSION and tag $VERSION_TAG"
+          if [ "$MAIN_VERSION" = "$VERSION" ] && [ "$MAIN_TAG" = "$TAG_NAME" ]; then
+            echo "No update needed: main already has version $VERSION and tag $TAG_NAME"
             echo "needs_update=false" >> $GITHUB_OUTPUT
           else
-            echo "Update needed: main has version $MAIN_VERSION and tag $MAIN_TAG, updating to $VERSION and $VERSION_TAG"
+            echo "Update needed: main has version $MAIN_VERSION and tag $MAIN_TAG, updating to $VERSION and $TAG_NAME"
             echo "needs_update=true" >> $GITHUB_OUTPUT
           fi
-          echo "version_tag=$VERSION_TAG" >> $GITHUB_OUTPUT
 
       - name: Create and checkout branch
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
           TAG_NAME=${{ github.event.ref }}
-          VERSION_TAG=${{ steps.check-update.outputs.version_tag }}
-          BRANCH_NAME="update-version-json-$VERSION_TAG"
+          BRANCH_NAME="update-version-json-$TAG_NAME"
           git checkout -b "$BRANCH_NAME"
           echo "Created and switched to branch: $BRANCH_NAME"
 
@@ -110,13 +107,14 @@ jobs:
       - name: Update version.json and package.json
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
-          VERSION_TAG=${{ steps.check-update.outputs.version_tag }}
-          VERSION=${VERSION_TAG#v}
-          if [[ ! "$VERSION_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Version tag '$VERSION_TAG' does not match expected format (e.g., v11.0.19)"
+          TAG_NAME=${{ github.event.ref }}
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Tag '$TAG_NAME' does not match expected format (e.g., v11.0.10)"
             exit 1
           fi
-          echo "{\"tag\": \"$VERSION_TAG\"}" > version.json
+          echo "{\"tag\": \"$TAG_NAME\"}" > version.json
+          # Remove 'v' prefix for package.json version
+          VERSION=${TAG_NAME#v}
           jq ".version = \"$VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
           echo "Updated version.json:"
           cat version.json
@@ -125,19 +123,13 @@ jobs:
           echo "Diff against main:"
           git diff origin/main -- package.json version.json
 
-      - name: Commit changes
-        if: steps.check-update.outputs.needs_update == 'true'
-        run: |
-          VERSION_TAG=${{ steps.check-update.outputs.version_tag }}
-          git add version.json package.json
-          git commit -m "Update version.json and package.json to $VERSION_TAG"
-          echo "Committed changes for $VERSION_TAG"
-
       - name: Push branch to remote
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
-          VERSION_TAG=${{ steps.check-update.outputs.version_tag }}
-          BRANCH_NAME="update-version-json-$VERSION_TAG"
+          TAG_NAME=${{ github.event.ref }}
+          BRANCH_NAME="update-version-json-$TAG_NAME"
+          # Create an empty commit to ensure the branch exists
+          git commit --allow-empty -m "Initialize branch for $TAG_NAME"
           git push origin "$BRANCH_NAME"
           echo "Pushed branch: $BRANCH_NAME"
 
@@ -158,17 +150,17 @@ jobs:
       - name: Create Pull Request
         if: steps.check-update.outputs.needs_update == 'true'
         id: create-pr
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: update-version-json-${{ steps.check-update.outputs.version_tag }}
+          branch: update-version-json-${{ github.event.ref }}
           base: main
-          title: Update version.json and package.json for ${{ steps.check-update.outputs.version_tag }}
+          title: Update version.json and package.json for ${{ github.event.ref }}
           body: |
-            This PR updates `version.json` and `package.json` with the tag `${{ steps.check-update.outputs.version_tag }}` for the latest release.
+            This PR updates `version.json` and `package.json` with the tag `${{ github.event.ref }}` for the latest release.
             Please review and merge to include it in the main branch.
           reviewers: o0101
-          commit-message: Update version.json and package.json for ${{ steps.check-update.outputs.version_tag }}
+          commit-message: Update version.json and package.json for ${{ github.event.ref }}
           committer: DOSAYGO Engineering <development.team@dosyago.com>
           delete-branch: false
           add-paths: |
@@ -196,14 +188,6 @@ jobs:
           else
             echo "PR created successfully!"
           fi
-
-      - name: Create final version tag
-        if: steps.check-update.outputs.needs_update == 'true'
-        run: |
-          VERSION_TAG=${{ steps.check-update.outputs.version_tag }}
-          git tag "$VERSION_TAG"
-          git push origin "$VERSION_TAG"
-          echo "Created and pushed tag: $VERSION_TAG"
 
       - name: Clean up SSH
         if: always()
