@@ -823,7 +823,7 @@
     for (let i = sessionBoxes.length - 1; i >= 0; i--) {
       const box = sessionBoxes[i];
       const inX = termX >= box.termX && termX < box.termX + box.termWidth;
-      const inY = Math.abs(termY - box.termY) <= 1; // Allow 1-line leeway
+      const inY = termY == box.termY;
       if (inX && inY && box.isClickable) {
         clickedBox = box;
         break;
@@ -942,6 +942,10 @@
       await refreshTerminal({ send, sessionId });
     }
   }
+
+
+
+
 
   export async function focusInput({ clickedBox, browser, send, sessionId, termX }) {
     if (!clickedBox) {
