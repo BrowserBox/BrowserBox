@@ -136,6 +136,10 @@ jobs:
           git commit --allow-empty -m "Initialize branch for $TAG_NAME"
           git push origin "$BRANCH_NAME"
           echo "Pushed branch: $BRANCH_NAME"
+          git add version.json package.json
+          git commit -m "Update version"
+          git tag "$TAG_NAME"
+          echo "$(date)" > .version.mark
 
       - name: Debug branch state before PR
         if: steps.check-update.outputs.needs_update == 'true'
