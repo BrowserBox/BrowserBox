@@ -1,9 +1,6 @@
 name: bbx Saga Test Suite
 
 on:
-  pull_request:
-    types: [synchronize, opened, reopened]
-    branches: [main]
   push:
     branches:
       - main
