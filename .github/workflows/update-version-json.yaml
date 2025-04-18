@@ -4,7 +4,7 @@ on:
   create:
     ref_type: tag
     # Trigger only on tags like vX.Y.Z-rc (e.g., v11.0.19-rc)
-    ref: v[0-9]+\.[0-9]+\.[0-9]+-rc
+    ref: v[0-9]+.[0-9]+.[0-9]+-rc
 
 jobs:
   update-version-json:
@@ -14,8 +14,6 @@ jobs:
       pull-requests: write
 
     # Double-check the ref is a tag and matches the expected pattern
-    if: github.event.ref_type == 'tag' && github.event.ref =~ /^v[0-9]+\.[0-9]+\.[0-9]+-rc$/
-
     steps:
       - name: Debug Event Context
         run: |
