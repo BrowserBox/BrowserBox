@@ -62,10 +62,86 @@ sort_git_tags() {
     echo "$input" | awk '{print $2}' | sed 's|^refs/tags/||' | sort -V
 }
 
-# Helper: Get latest tag from repo
+get_latest_tag() {
+    # Read input from stdin or file
+    local input
+    if [ -n "$1" ]; then
+        input=$(cat "$1")
+    else
+        input=$(cat)
+    fi
+
+    # Debug to stderr
+    [[ -n "$BBX_DEBUG" ]] && echo "Input tags:" >&2
+    [[ -n "$BBX_DEBUG" ]] && eecho "$input" >&2
+
+    # Get all tags and non-rc tags
+    ALL_TAGS=$(echo "$input" | sort_git_tags)
+    NON_RC_TAGS=$(echo "$input" | grep -v "\-rc" | sort_git_tags)
+
+    # Check if lists are empty
+    if [ -z "$ALL_TAGS" ]; then
+        [[ -n "$BBX_DEBUG" ]] && eecho "Error: No tags found" >&2
+        return 1
+    fi
+
+    # Debug lists to stderr
+    [[ -n "$BBX_DEBUG" ]] && echo "All tags (sorted):" >&2
+    [[ -n "$BBX_DEBUG" ]] && echo "$ALL_TAGS" >&2
+    [[ -n "$BBX_DEBUG" ]] && echo "Non-rc tags (sorted):" >&2
+    [[ -n "$BBX_DEBUG" ]] && echo "$NON_RC_TAGS" >&2
+
+    # Get tails
+    ALL_TAIL=$(echo "$ALL_TAGS" | tail -n 1)
+    NON_RC_TAIL=$(echo "$NON_RC_TAGS" | tail -n 1)
+
+    # Debug tails to stderr
+    [[ -n "$BBX_DEBUG" ]] && echo "All tags tail: $ALL_TAIL" >&2
+    [[ -n "$BBX_DEBUG" ]] && echo "Non-rc tags tail: $NON_RC_TAIL" >&2
+
+    # Compare tails
+    if [ "$ALL_TAIL" = "$NON_RC_TAIL" ]; then
+        # Case 1: Tails match
+        [[ -n "$BBX_DEBUG" ]] && echo "Tails match, outputting: $ALL_TAIL" >&2
+        echo "$ALL_TAIL"
+        return 0
+    fi
+
+    # Case 2: Tails differ
+    if [[ "$ALL_TAIL" =~ -rc$ ]]; then
+        # Strip -rc
+        STRIPPED_TAIL=${ALL_TAIL%-rc}
+        [[ -n "$BBX_DEBUG" ]] && echo "All tail is -rc, stripped: $STRIPPED_TAIL" >&2
+
+        if [ "$STRIPPED_TAIL" = "$NON_RC_TAIL" ]; then
+            # Stripped tail matches non-rc tail
+            [[ -n "$BBX_DEBUG" ]] && echo "Stripped tail matches non-rc tail, outputting: $NON_RC_TAIL" >&2
+            echo "$NON_RC_TAIL"
+        else
+            # Compare stripped tail vs non-rc tail
+            [[ -n "$BBX_DEBUG" ]] && echo "Comparing $STRIPPED_TAIL vs $NON_RC_TAIL" >&2
+            HIGHER_VERSION=$(echo -e "$STRIPPED_TAIL\n$NON_RC_TAIL" | sort -V | tail -n 1)
+            if [ "$HIGHER_VERSION" = "$STRIPPED_TAIL" ]; then
+                # Stripped tail is more recent
+                [[ -n "$BBX_DEBUG" ]] && echo "Stripped tail is more recent, outputting: $ALL_TAIL" >&2
+                echo "$ALL_TAIL"
+            else
+                # Non-rc tail is more recent or equal
+                [[ -n "$BBX_DEBUG" ]] && echo "Non-rc tail is more recent or equal, outputting: $NON_RC_TAIL" >&2
+                echo "$NON_RC_TAIL"
+            fi
+        fi
+    else
+        # ALL_TAIL is not -rc
+        [[ -n "$BBX_DEBUG" ]] && echo "All tail is not -rc, outputting: $NON_RC_TAIL" >&2
+        echo "$NON_RC_TAIL"
+    fi
+}
+
+## Helper: Get latest tag from repo
 get_latest_repo_version() {
   local result
-  result=$(timeout 5s git ls-remote --tags "$REPO_URL" 2>/dev/null | sort_git_tags | tail -n1)
+  result=$(timeout 5s git ls-remote --tags "$REPO_URL" 2>/dev/null | get_latest_tag)
   if [ $? -ne 0 ] || [ -z "$result" ]; then
     printf "${YELLOW}Checking for updates timed out${NC}\n"
     echo "unknown"
