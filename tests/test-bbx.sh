@@ -17,11 +17,13 @@ fi
 export LICENSE_KEY="${LICENSE_KEY}"
 
 # Safely handle bbcertify output
-cert_file=$(bbcertify)
-if [ $? -eq 0 ] && [ -n "$cert_file" ] && [ -f "$cert_file" ]; then
-  rm "$cert_file"
-else
-  echo "Warning: bbcertify failed or no file to remove" >&2
+if command -v bbcertify; then
+  cert_file=$(bbcertify)
+  if [ $? -eq 0 ] && [ -n "$cert_file" ] && [ -f "$cert_file" ]; then
+    rm "$cert_file"
+  else
+    echo "Warning: bbcertify failed or no file to remove" >&2
+  fi
 fi
 
 # ANSI colors
