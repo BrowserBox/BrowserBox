@@ -158,7 +158,7 @@ jobs:
       - name: Create Pull Request
         if: steps.check-update.outputs.needs_update == 'true'
         id: create-pr
-        uses: peter-evans/create-pull-request@271a8 -A
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: update-version-json-${{ steps.check-update.outputs.version_tag }}
