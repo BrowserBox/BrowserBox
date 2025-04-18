@@ -53,6 +53,7 @@ jobs:
         id: check-update
         run: |
           TAG_NAME=${{ github.event.ref }}
+          TAG_NAME=${TAG_NAME%-rc}
           VERSION=${TAG_NAME#v}
           # Check package.json version in main
           MAIN_VERSION=$(git show origin/main:package.json | jq -r '.version')
@@ -78,6 +79,7 @@ jobs:
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
           TAG_NAME=${{ github.event.ref }}
+          TAG_NAME=${TAG_NAME%-rc}
           BRANCH_NAME="update-version-json-$TAG_NAME"
           git checkout -b "$BRANCH_NAME"
           echo "Created and switched to branch: $BRANCH_NAME"
@@ -108,10 +110,11 @@ jobs:
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
           TAG_NAME=${{ github.event.ref }}
-          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc$ ]]; then
             echo "Error: Tag '$TAG_NAME' does not match expected format (e.g., v11.0.10)"
             exit 1
           fi
+          TAG_NAME=${TAG_NAME%-rc}
           echo "{\"tag\": \"$TAG_NAME\"}" > version.json
           # Remove 'v' prefix for package.json version
           VERSION=${TAG_NAME#v}
@@ -127,6 +130,7 @@ jobs:
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
           TAG_NAME=${{ github.event.ref }}
+          TAG_NAME=${TAG_NAME%-rc}
           BRANCH_NAME="update-version-json-$TAG_NAME"
           # Create an empty commit to ensure the branch exists
           git commit --allow-empty -m "Initialize branch for $TAG_NAME"
