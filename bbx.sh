@@ -1327,7 +1327,7 @@ is_lock_file_recent() {
 
 check_and_prepare_update() {
   # Skip for uninstall to avoid unnecessary checks
-  [ "$1" = "uninstall" ] && return 0
+  ([ "$1" = "uninstall" ] || [ "$1" = "update" ] || [ "$1" = "install" ] || [ "$1" = "update-background" ]) && return 0
 
   load_config
   mkdir -p "$BB_CONFIG_DIR"
