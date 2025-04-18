@@ -49,17 +49,29 @@ LOG_FILE="$BB_CONFIG_DIR/update.log"
 PREPARING_FILE="$BBX_SHARE/preparing"
 PREPARED_FILE="$BBX_SHARE/prepared"
 
+sort_git_tags() {
+    # Read input from stdin or file
+    local input
+    if [ -n "$1" ]; then
+        input=$(cat "$1")
+    else
+        input=$(cat)
+    fi
+
+    # Extract tags (second column, remove refs/tags/), sort by version
+    echo "$input" | awk '{print $2}' | sed 's|^refs/tags/||' | sort -V
+}
 
 # Helper: Get latest tag from repo
 get_latest_repo_version() {
   local result
-  result=$(timeout 5s git ls-remote --tags "$REPO_URL" 2>/dev/null | grep -o 'refs/tags/v[0-9]*\.[0-9]*\.[0-9]*$' | sort -V | tail -n1)
+  result=$(timeout 5s git ls-remote --tags "$REPO_URL" 2>/dev/null | sort_git_tags | tail -n1)
   if [ $? -ne 0 ] || [ -z "$result" ]; then
     printf "${YELLOW}Checking for updates timed out${NC}\n"
     echo "unknown"
     return 1
   fi
-  local latest_tag=$(echo "$result" | sed 's#refs/tags/##')
+  local latest_tag=$(echo "$result")
   [ -n "$latest_tag" ] && echo "$latest_tag" || echo "unknown"
 }
 
