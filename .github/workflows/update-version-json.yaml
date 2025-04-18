@@ -71,11 +71,27 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           echo "Created branch: $BRANCH_NAME"
 
+      - name: Set up SSH for signing
+        if: steps.check-update.outputs.needs_update == 'true'
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/ssh_key
+          chmod 600 ~/ssh_key
+          mkdir -p ~/.ssh
+          ssh-keygen -y -P "" -f ~/ssh_key > ~/.ssh/bbx_signing_key.pub
+          git config --global user.signingkey ~/.ssh/bbx_signing_key.pub
+          git config --global gpg.format ssh
+          git config --global gpg.ssh.program ssh-keygen
+          git config --global commit.gpgsign true
+          echo "SSH_AUTH_SOCK=/tmp/ssh-agent.sock" >> $GITHUB_ENV
+          ssh-agent -a /tmp/ssh-agent.sock > /tmp/ssh-agent.env
+          source /tmp/ssh-agent.env
+          ssh-add ~/ssh_key
+
       - name: Configure Git
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
-          git config user.name "DOSAYGO Engineering"
-          git config user.email "development.team@dosyago.com"
+          git config --global user.name "DOSAYGO Engineering"
+          git config --global user.email "development.team@dosyago.com"
 
       - name: Update version.json and package.json
         if: steps.check-update.outputs.needs_update == 'true'
@@ -124,6 +140,8 @@ jobs:
           git ls-remote --heads origin
           echo "Tags:"
           git ls-remote --tags origin
+          echo "Commit signature:"
+          git log -1 --show-signature
 
       - name: Create Pull Request
         if: steps.check-update.outputs.needs_update == 'true'
@@ -145,3 +163,9 @@ jobs:
             echo "Response: $RESPONSE"
             exit 1
           fi
+
+      - name: Clean up SSH
+        if: always()
+        run: |
+          rm -f ~/ssh_key
+          rm -rf ~/.ssh
