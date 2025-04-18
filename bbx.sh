@@ -1345,7 +1345,7 @@ check_and_prepare_update() {
   if [ "$current_tag" = "$repo_tag" ]; then
     printf "${GREEN}Already on the latest version ($repo_tag).${NC}\n"
     # Clean up BBX_NEW_DIR if it exists
-    [ -d "$BBX_NEW_DIR" ] && rm -rf "$BBX_NEW_DIR" && printf "${YELLOW}Cleaned up $BBX_NEW_DIR${NC}\n"
+    [ -d "$BBX_NEW_DIR" ] && $SUDO rm -rf "$BBX_NEW_DIR" && printf "${YELLOW}Cleaned up $BBX_NEW_DIR${NC}\n"
     return 0
   fi
 
@@ -1363,7 +1363,7 @@ check_and_prepare_update() {
       if [ "$new_tag" = "$repo_tag" ]; then
         printf "${YELLOW}Latest version prepared in $BBX_NEW_DIR. Installing...${NC}\n"
         # Move prepared version
-        rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n"; return 1; }
+        $SUDO rm -rf "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to remove $BBX_HOME/BrowserBox${NC}\n"; return 1; }
         mv "$BBX_NEW_DIR" "$BBX_HOME/BrowserBox" || { printf "${RED}Failed to move $BBX_NEW_DIR to $BBX_HOME/BrowserBox${NC}\n"; return 1; }
         # Run copy_install.sh
         cd "$BBX_HOME/BrowserBox" && ./deploy-scripts/copy_install.sh >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run copy_install.sh${NC}\n"; return 1; }
@@ -1373,7 +1373,7 @@ check_and_prepare_update() {
         return 0
       else
         printf "${YELLOW}Prepared version ($new_tag) does not match latest ($repo_tag). Cleaning up and retrying...${NC}\n"
-        rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to clean up $BBX_NEW_DIR or $PREPARED_FILE${NC}\n"
+        $SUDO rm -rf "$BBX_NEW_DIR" "$PREPARED_FILE" || printf "${YELLOW}Warning: Failed to clean up $BBX_NEW_DIR or $PREPARED_FILE${NC}\n"
       fi
     fi
   fi
@@ -1424,7 +1424,7 @@ update_background() {
   curl -sSL "$DLURL" -o "$BBX_NEW_DIR/BrowserBox.zip" || { printf "${RED}Failed to download BrowserBox repo${NC}\n" >> "$LOG_FILE"; exit 1; }
   unzip -q -o "$BBX_NEW_DIR/BrowserBox.zip" -d "$BBX_NEW_DIR/BrowserBox-zip" || { printf "${RED}Failed to extract BrowserBox repo${NC}\n" >> "$LOG_FILE"; exit 1; }
   mv "$BBX_NEW_DIR/BrowserBox-zip/BrowserBox-$tagdoo" "$BBX_NEW_DIR/BrowserBox" || { printf "${RED}Failed to move extracted files${NC}\n" >> "$LOG_FILE"; exit 1; }
-  rm -rf "$BBX_NEW_DIR/BrowserBox-zip" "$BBX_NEW_DIR/BrowserBox.zip"
+  $SUDO rm -rf "$BBX_NEW_DIR/BrowserBox-zip" "$BBX_NEW_DIR/BrowserBox.zip"
   chmod +x "$BBX_NEW_DIR/BrowserBox/deploy-scripts/global_install.sh" || { printf "${RED}Failed to make global_install.sh executable${NC}\n" >> "$LOG_FILE"; exit 1; }
   cd "$BBX_NEW_DIR/BrowserBox" && (yes | BBX_NO_COPY=1 ./deploy-scripts/global_install.sh "$BBX_HOSTNAME" "$EMAIL") >> "$LOG_FILE" 2>&1 || { printf "${RED}Failed to run global_install.sh${NC}\n" >> "$LOG_FILE"; exit 1; }
     # Mark as prepared
