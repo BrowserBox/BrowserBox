@@ -15,11 +15,10 @@
 name: BrowserBox Basic Install Test
 
 on:
-  pull_request:
-    types: [synchronize, opened, reopened]
   push:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.repository }}-basic-install
