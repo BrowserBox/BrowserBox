@@ -12,7 +12,6 @@ jobs:
       contents: write
       pull-requests: write
 
-    # Only run if the ref is a tag and matches v*
     if: github.event.ref_type == 'tag' && startsWith(github.event.ref, 'v') && endsWith(github.event.ref, '-rc')
 
     steps:
@@ -21,33 +20,24 @@ jobs:
           echo "Event: ${{ github.event_name }}"
           echo "Ref: ${{ github.event.ref }}"
           echo "Ref Type: ${{ github.event.ref_type }}"
-          echo "Full Ref: ${{ github.ref }}"
           echo "Repository: ${{ github.repository }}"
           echo "SHA: ${{ github.sha }}"
 
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main # Start from main
-          fetch-depth: 0 # Fetch all history for diff
+          ref: main
+          fetch-depth: 0
 
       - name: Debug main branch state
         run: |
           git pull
           echo "Main branch HEAD commit:"
           git log -1 origin/main
-          if [ -f package.json ]; then
-            echo "Main package.json:"
-            git show origin/main:package.json
-          else
-            echo "package.json not found in main"
-          fi
-          if [ -f version.json ]; then
-            echo "Main version.json:"
-            git show origin/main:version.json
-          else
-            echo "version.json not found in main"
-          fi
+          echo "Main package.json:"
+          cat package.json || echo "package.json not found"
+          echo "Main version.json:"
+          cat version.json || echo "version.json not found"
 
       - name: Check if update is needed
         id: check-update
@@ -55,96 +45,73 @@ jobs:
           TAG_NAME=${{ github.event.ref }}
           TAG_NAME=${TAG_NAME%-rc}
           VERSION=${TAG_NAME#v}
-          # Check package.json version in main
-          MAIN_VERSION=$(git show origin/main:package.json | jq -r '.version')
+          MAIN_VERSION=$(jq -r '.version' package.json)
           echo "Main package.json version: $MAIN_VERSION"
-          # Check version.json tag in main (if it exists)
-          if git show origin/main:version.json > /dev/null 2>&1; then
-            MAIN_TAG=$(git show origin/main:version.json | jq -r '.tag')
+          if [ -f version.json ]; then
+            MAIN_TAG=$(jq -r '.tag' version.json)
             echo "Main version.json tag: $MAIN_TAG"
           else
             MAIN_TAG="none"
-            echo "version.json not found in main"
+            echo "version.json not found"
           fi
-          # Determine if update is needed
           if [ "$MAIN_VERSION" = "$VERSION" ] && [ "$MAIN_TAG" = "$TAG_NAME" ]; then
-            echo "No update needed: main already has version $VERSION and tag $TAG_NAME"
+            echo "No update needed"
             echo "needs_update=false" >> $GITHUB_OUTPUT
           else
-            echo "Update needed: main has version $MAIN_VERSION and tag $MAIN_TAG, updating to $VERSION and $TAG_NAME"
+            echo "Update needed: main has version $MAIN_VERSION and tag $MAIN_TAG"
             echo "needs_update=true" >> $GITHUB_OUTPUT
           fi
           echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Create and checkout branch
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
-          TAG_NAME=${{ github.event.ref }}
-          TAG_NAME=${TAG_NAME%-rc}
-          BRANCH_NAME="update-version-json-$TAG_NAME"
+          BRANCH_NAME="update-version-json-${{ steps.check-update.outputs.tag_name }}"
           git checkout -b "$BRANCH_NAME"
-          echo "Created and switched to branch: $BRANCH_NAME"
-
-      - name: Set up SSH for signing
-        if: steps.check-update.outputs.needs_update == 'true'
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/ssh_key
-          chmod 600 ~/ssh_key
-          mkdir -p ~/.ssh
-          ssh-keygen -y -P "" -f ~/ssh_key > ~/.ssh/bbx_signing_key.pub
-          git config --global user.signingkey ~/.ssh/bbx_signing_key.pub
-          git config --global gpg.format ssh
-          git config --global gpg.ssh.program ssh-keygen
-          git config --global commit.gpgsign true
-          echo "SSH_AUTH_SOCK=/tmp/ssh-agent.sock" >> $GITHUB_ENV
-          ssh-agent -a /tmp/ssh-agent.sock > /tmp/ssh-agent.env
-          source /tmp/ssh-agent.env
-          ssh-add ~/ssh_key
+          echo "Created branch: $BRANCH_NAME"
 
       - name: Configure Git
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
-          git config --global user.name "DOSAYGO Engineering"
-          git config --global user.email "development.team@dosyago.com"
+          git config user.name "DOSAYGO Engineering"
+          git config user.email "development.team@dosyago.com"
 
       - name: Update version.json and package.json
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
-          TAG_NAME=${{ github.event.ref }}
-          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-rc$ ]]; then
-            echo "Error: Tag '$TAG_NAME' does not match expected format (e.g., v11.0.10)"
-            exit 1
-          fi
-          TAG_NAME=${TAG_NAME%-rc}
+          TAG_NAME=${{ steps.check-update.outputs.tag_name }}
+          VERSION=${{ steps.check-update.outputs.version }}
           echo "{\"tag\": \"$TAG_NAME\"}" > version.json
-          # Remove 'v' prefix for package.json version
-          VERSION=${TAG_NAME#v}
           jq ".version = \"$VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
           echo "Updated version.json:"
           cat version.json
           echo "Updated package.json:"
           cat package.json
-          echo "Diff against main:"
           git diff origin/main -- package.json version.json
 
-      - name: Push branch to remote
+      - name: Commit and push branch
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
-          TAG_NAME=${{ github.event.ref }}
-          TAG_NAME=${TAG_NAME%-rc}
-          BRANCH_NAME="update-version-json-$TAG_NAME"
-          # Create an empty commit to ensure the branch exists
-          git commit --allow-empty -m "Initialize branch for $TAG_NAME"
-          git push origin "$BRANCH_NAME"
-          echo "Pushed branch: $BRANCH_NAME"
+          BRANCH_NAME="update-version-json-${{ steps.check-update.outputs.tag_name }}"
           git add version.json package.json
-          git commit -m "Update version"
-          git tag "$TAG_NAME"
+          git commit -m "Update version.json and package.json for ${{ steps.check-update.outputs.tag_name }}"
           git push origin "$BRANCH_NAME"
           echo "Pushed branch: $BRANCH_NAME"
-          echo "$(date)" > .version.mark
 
-      - name: Debug branch state before PR
+      - name: Push tag
+        if: steps.check-update.outputs.needs_update == 'true'
+        run: |
+          TAG_NAME=${{ steps.check-update.outputs.tag_name }}
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME" || {
+            echo "Error: Failed to push tag $TAG_NAME. Check if GITHUB_TOKEN has sufficient permissions."
+            echo "Consider using a PAT with 'repo' scope stored in secrets as PAT_TOKEN."
+            exit 1
+          }
+          echo "Pushed tag: $TAG_NAME"
+
+      - name: Debug branch state
         if: steps.check-update.outputs.needs_update == 'true'
         run: |
           echo "Current branch:"
@@ -155,54 +122,26 @@ jobs:
           git status
           echo "Remote branches:"
           git ls-remote --heads origin
-          echo "Diff against main:"
-          git diff origin/main -- package.json version.json
+          echo "Tags:"
+          git ls-remote --tags origin
 
       - name: Create Pull Request
         if: steps.check-update.outputs.needs_update == 'true'
-        id: create-pr
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: update-version-json-${{ steps.check-update.outputs.tag_name }}
-          base: main
-          title: Update version.json and package.json for ${{ steps.check-update.outputs.tag_name }}
-          body: |
-            This PR updates `version.json` and `package.json` with the tag `${{ steps.check-update.outputs.tag_name  }}` for the latest release.
-            Please review and merge to include it in the main branch.
-          reviewers: o0101
-          commit-message: Update version.json and package.json for ${{ steps.check-update.outputs.tag_name }}
-          committer: DOSAYGO Engineering <development.team@dosyago.com>
-          delete-branch: false
-          add-paths: |
-            package.json
-            version.json
-            .version.mark
-
-      - name: Debug Pull Request Creation
         run: |
-          echo "Create PR Action Output:"
-          echo "PR Number: ${{ steps.create-pr.outputs.pull-request-number }}"
-          echo "PR URL: ${{ steps.create-pr.outputs.pull-request-url }}"
-          echo "PR Operation: ${{ steps.create-pr.outputs.pull-request-operation }}"
-          echo "PR Branch: ${{ steps.create-pr.outputs.pull-request-branch }}"
-          echo "PR Head SHA: ${{ steps.create-pr.outputs.pull-request-head-sha }}"
-          if [ "${{ steps.check-update.outputs.needs_update }}" == "false" ]; then
-            echo "Skipped PR creation because no update was needed."
-          elif [ -z "${{ steps.create-pr.outputs.pull-request-number }}" ]; then
-            echo "No PR was created. Checking for errors..."
-            git log -1
-            git status
-            git diff origin/main -- package.json version.json
-            echo "Main branch HEAD commit:"
-            git log -1 origin/main
-            exit 1
+          BRANCH_NAME="update-version-json-${{ steps.check-update.outputs.tag_name }}"
+          PR_TITLE="Update version.json and package.json for ${{ steps.check-update.outputs.tag_name }}"
+          PR_BODY="This PR updates version.json and package.json with tag ${{ steps.check-update.outputs.tag_name }} for the latest release."
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/pulls \
+            -d "{\"head\":\"$BRANCH_NAME\",\"base\":\"main\",\"title\":\"$PR_TITLE\",\"body\":\"$PR_BODY\",\"maintainer_can_modify\":true}")
+          PR_NUMBER=$(echo "$RESPONSE" | jq -r '.number')
+          PR_URL=$(echo "$RESPONSE" | jq -r '.html_url')
+          if [ "$PR_NUMBER" != "null" ]; then
+            echo "Created PR #$PR_NUMBER: $PR_URL"
           else
-            echo "PR created successfully!"
+            echo "Error: Failed to create PR"
+            echo "Response: $RESPONSE"
+            exit 1
           fi
-
-      - name: Clean up SSH
-        if: always()
-        run: |
-          rm -f ~/ssh_key
-          rm -rf ~/.ssh
