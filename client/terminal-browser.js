@@ -794,7 +794,7 @@ export default class TerminalBrowser extends EventEmitter {
           params: {
             sessionId,
             accept: modalType == 'prompt' ? response !== null : response == "ok",
-            ...(modalType == 'prompt' ? { promptText: response } : {}),
+            ...(modalType == 'prompt' ? { promptText: response || '' } : {}),
           }
         }
       },
