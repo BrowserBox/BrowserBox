@@ -150,31 +150,24 @@
         browser.activeTarget = targets[index];
         const { targetId } = browser.activeTarget;
         browser.setAddress(tab.url);
-        browserbox.send(
-          JSON.stringify({
-            messageId: messageId++,
-            zombie: {
-              events: [
-                {
-                  command: {
-                    name: 'Target.activateTarget',
-                    params: { targetId },
-                  },
-                },
-                {
-                  command: {
-                    isZombieLordCommand: true,
-                    name: 'Connection.activateTarget',
-                    params: {
-                      targetId,
-                      source: mySource,
-                    },
-                  },
-                },
-              ],
+        browserbox.send(browserboxMessage(
+          {
+            command: {
+              name: 'Target.activateTarget',
+              params: { targetId },
             },
-          })
-        );
+          },
+          {
+            command: {
+              isZombieLordCommand: true,
+              name: 'Connection.activateTarget',
+              params: {
+                targetId,
+                source: mySource,
+              },
+            },
+          }
+        ));
         await selectTabAndRender();
       });
 
@@ -260,6 +253,13 @@
           console.error(e);
         }
       });
+      
+      browser.on('tell-browserbox', stuff => {
+        if ( ! Array.isArray(stuff) ) {
+          stuff = [stuff];
+        }
+        browserbox.send(browserboxMessage(...stuff));
+      });
 
       browserbox.on('message', data => {
         let message;
@@ -310,6 +310,15 @@
         terminal.green('Exiting...\n');
         process.exit(0);
       });
+
+      function browserboxMessage(...data) {
+        return JSON.stringify({
+          messageId: messageId++,
+          zombie: {
+            events: data
+          },
+        });
+      }
     } catch (error) {
       debugLog(JSON.stringify({ error, stack: error.stack }, null, 2));
       if (connection?.connectionManager) connection.connectionManager.cleanup();

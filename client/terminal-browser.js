@@ -786,10 +786,16 @@ export default class TerminalBrowser extends EventEmitter {
     return lines;
   }
 
-  // Stub for sending modal responses (to be implemented later)
   sendModalResponse(sessionId, modalType, response) {
-    debugLog(`Sending modal response: sessionId=${sessionId}, type=${modalType}, response=${response}`);
-    // TODO: Implement sending response back to BrowserBox
+    const message = {
+      synthetic: true,
+      modalType,
+      type: 'respond-to-modal',
+      response: response || 'close', // Default to 'close' if response is null/undefined
+      sessionId,
+      [modalType === 'prompt' ? 'promptText' : 'data']: modalType === 'prompt' ? (response || '') : ''
+    };
+    this.emit('tell-browserbox', message);
   }
 
   redrawFocusedInput() {
