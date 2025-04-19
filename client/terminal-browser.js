@@ -483,6 +483,7 @@ export default class TerminalBrowser extends EventEmitter {
           resolve();
         }
       };
+      this.activeModalHandler = keyHandler;
       this.term.on('key', keyHandler);
     });
 
@@ -555,6 +556,7 @@ export default class TerminalBrowser extends EventEmitter {
           resolve();
         }
       };
+      this.activeModalHandler = keyHandler;
       this.term.on('key', keyHandler);
     });
 
@@ -659,6 +661,7 @@ export default class TerminalBrowser extends EventEmitter {
           drawPrompt();
         }
       };
+      this.activeModalHandler = keyHandler;
       this.term.on('key', keyHandler);
     });
 
@@ -671,6 +674,10 @@ export default class TerminalBrowser extends EventEmitter {
       this.#activeModal = null;
       this.isModalActive = false;
       this.render();
+    }
+    if ( this.activeModalHandler ) {
+      this.term.off('key', this.activeModalHandler );
+      this.activeModalHandler = null;
     }
   }
 
