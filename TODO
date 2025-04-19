@@ -1,4 +1,4 @@
-- nuke debug outputs for all commands (bbx run bbx stop etc), finesse output make it nice
+- don't accept connection.closeModal if the handleJavaScriptDialog failed (ie still a modal)
 
 - UNBLOCK drive. Mitigations to unblock sites like WSJ/Bloomberg. 
 

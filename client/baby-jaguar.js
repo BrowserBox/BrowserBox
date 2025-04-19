@@ -22,7 +22,7 @@
   import Layout from './layout.js';
   import TerminalBrowser from './terminal-browser.js';
   import { ConnectionManager } from './connection-manager.js';
-  import { sleep, logClicks, debugLog, DEBUG } from './log.js';
+  import { sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
 
   // Constants and state
   const clickCounter = { value: 0 };
@@ -88,7 +88,7 @@
   const proxyPort = port + 1;
   const proxyBaseUrl = `${urlObj.protocol}//${urlObj.hostname}:${proxyPort}`;
   const loginUrl = `${baseUrl}/login?token=${token}`;
-  const apiUrl = `${baseUrl}/api/v10/tabs`;
+  const apiUrl = `${baseUrl}/api/v11/tabs`;
 
   if (DEBUG) {
     const ox = process.exit.bind(process);
@@ -150,31 +150,24 @@
         browser.activeTarget = targets[index];
         const { targetId } = browser.activeTarget;
         browser.setAddress(tab.url);
-        browserbox.send(
-          JSON.stringify({
-            messageId: messageId++,
-            zombie: {
-              events: [
-                {
-                  command: {
-                    name: 'Target.activateTarget',
-                    params: { targetId },
-                  },
-                },
-                {
-                  command: {
-                    isZombieLordCommand: true,
-                    name: 'Connection.activateTarget',
-                    params: {
-                      targetId,
-                      source: mySource,
-                    },
-                  },
-                },
-              ],
+        browserbox.send(browserboxMessage(
+          {
+            command: {
+              name: 'Target.activateTarget',
+              params: { targetId },
             },
-          })
-        );
+          },
+          {
+            command: {
+              isZombieLordCommand: true,
+              name: 'Connection.activateTarget',
+              params: {
+                targetId,
+                source: mySource,
+              },
+            },
+          }
+        ));
         await selectTabAndRender();
       });
 
@@ -260,6 +253,51 @@
           console.error(e);
         }
       });
+      
+      browser.on('tell-browserbox', stuff => {
+        if ( ! Array.isArray(stuff) ) {
+          stuff = [stuff];
+        }
+        browserbox.send(browserboxMessage(...stuff));
+      });
+
+      browserbox.on('message', data => {
+        let message;
+        try {
+          message = JSON.parse(data.toString('utf8'));
+        } catch(e) {
+          console.warn(e);
+        }
+        if (!message) return;
+
+        if (message.meta && browser ) {
+          logBBMessage(message);
+          for( const meta of message.meta ) {
+            try {
+              if (meta.modal && browser) {
+                const { sessionId, message: modalMessage, type, defaultPrompt } = meta.modal;
+                switch (type) {
+                  case 'alert':
+                    browser.showAlert(sessionId, modalMessage);
+                    break;
+                  case 'confirm':
+                    browser.showConfirm(sessionId, modalMessage);
+                    break;
+                  case 'prompt':
+                    browser.showPrompt(sessionId, modalMessage, defaultPrompt);
+                    break;
+                }
+              } else if (meta.closeModal && browser) {
+                const { sessionId, modalType } = meta.closeModal;
+                browser.closeModal(sessionId, modalType);
+              }
+            } catch (error) {
+              if (DEBUG) console.warn(error, meta);
+              terminal.red(`BrowserBox message error: ${error.message} at ${error.stack} on meta: ${JSON.stringify(meta)}\n`);
+            }
+          }
+        }
+      });
 
       await sleep(3000);
       await selectTabAndRender();
@@ -272,6 +310,19 @@
         terminal.green('Exiting...\n');
         process.exit(0);
       });
+
+      function browserboxMessage(...data) {
+        logBBMessage(data);
+        for( const val of data ) {
+          if ( ! val.command ) throw new Error(`Must be a command`);
+        }
+        return JSON.stringify({
+          messageId: messageId++,
+          zombie: {
+            events: data
+          },
+        });
+      }
     } catch (error) {
       debugLog(JSON.stringify({ error, stack: error.stack }, null, 2));
       if (connection?.connectionManager) connection.connectionManager.cleanup();

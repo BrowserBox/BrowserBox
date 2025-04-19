@@ -9,6 +9,8 @@ import { InputManager } from './input-manager.js';
 const term = termkit.terminal;
 
 export default class TerminalBrowser extends EventEmitter {
+  #activeModal = null;
+
   constructor(options = {}) {
     super();
     this.getTabState = getTabState;
@@ -94,6 +96,9 @@ export default class TerminalBrowser extends EventEmitter {
     this.GO_WIDTH = 6;
     this.ADDRESS_WIDTH = this.term.width - this.BACK_WIDTH - this.FORWARD_WIDTH - this.GO_WIDTH - 4;
     this.NEW_TAB_WIDTH = 5;
+
+    // modals
+    this.isModalActive = false;
 
     this.inputManager = new InputManager(this.term, this);
 
@@ -422,6 +427,397 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.styleReset();
 
     return { backendNodeId: backendNodeIdStr, x, y, width: displayWidth };
+  }
+
+  async showAlert(sessionId, message) {
+    if (this.#activeModal) return;
+
+    const modalWidth = Math.min(50, Math.floor(this.term.width * 0.8));
+    const modalHeight = 7;
+    const modalX = Math.floor((this.term.width - modalWidth) / 2);
+    const modalY = Math.floor((this.term.height - modalHeight) / 2);
+    const buttonWidth = 8;
+    const buttonX = modalX + Math.floor((modalWidth - buttonWidth) / 2);
+    const buttonY = modalY + modalHeight - 2;
+
+    this.isModalActive = true;
+    this.#activeModal = {
+      type: 'alert',
+      sessionId,
+      x: modalX,
+      y: modalY,
+      width: modalWidth,
+      height: modalHeight,
+      okButton: { x: buttonX, y: buttonY, width: buttonWidth, height: 1 }
+    };
+
+    // Draw modal
+    this.term.saveCursor();
+    this.term.moveTo(modalX, modalY);
+    this.term.bgWhite().black('┌' + '─'.repeat(modalWidth - 2) + '┐');
+    for (let i = 1; i < modalHeight - 1; i++) {
+      this.term.moveTo(modalX, modalY + i);
+      this.term.bgWhite().black('│' + ' '.repeat(modalWidth - 2) + '│');
+    }
+    this.term.moveTo(modalX, modalY + modalHeight - 1);
+    this.term.bgWhite().black('└' + '─'.repeat(modalWidth - 2) + '┘');
+
+    // Draw message
+    const messageLines = this.#wrapText(message, modalWidth - 4);
+    messageLines.forEach((line, i) => {
+      this.term.moveTo(modalX + 2, modalY + 1 + i);
+      this.term.bgWhite().black(line.padEnd(modalWidth - 4));
+    });
+
+    // Draw OK button
+    this.term.moveTo(buttonX, buttonY);
+    this.term.bgCyan().black('  [ OK ]  ');
+
+    // Handle input
+    await new Promise(resolve => {
+      const keyHandler = key => {
+        if (key === 'ENTER' && this.#activeModal?.type === 'alert') {
+          this.term.removeListener('key', keyHandler);
+          this.sendModalResponse(sessionId, 'alert', 'ok');
+          this.closeModal(sessionId, 'alert');
+          resolve();
+        }
+      };
+      this.activeModalHandler = keyHandler;
+      this.term.on('key', keyHandler);
+    });
+
+    this.term.restoreCursor();
+    this.term.bgDefaultColor().defaultColor().styleReset();
+  }
+
+  async showConfirm(sessionId, message) {
+    if (this.#activeModal) return;
+
+    const modalWidth = Math.min(50, Math.floor(this.term.width * 0.8));
+    const modalHeight = 7;
+    const modalX = Math.floor((this.term.width - modalWidth) / 2);
+    const modalY = Math.floor((this.term.height - modalHeight) / 2);
+    const buttonWidth = 10;
+    const yesButtonX = modalX + Math.floor(modalWidth / 3) - 2;
+    const noButtonX = modalX + Math.floor((2 * modalWidth) / 3) - buttonWidth + 2;
+    const buttonY = modalY + modalHeight - 2;
+
+    this.isModalActive = true;
+    this.#activeModal = {
+      type: 'confirm',
+      sessionId,
+      x: modalX,
+      y: modalY,
+      width: modalWidth,
+      height: modalHeight,
+      yesButton: { x: yesButtonX, y: buttonY, width: buttonWidth, height: 1 },
+      noButton: { x: noButtonX, y: buttonY, width: buttonWidth, height: 1 }
+    };
+
+    // Draw modal
+    this.term.saveCursor();
+    this.term.moveTo(modalX, modalY);
+    this.term.bgWhite().black('┌' + '─'.repeat(modalWidth - 2) + '┐');
+    for (let i = 1; i < modalHeight - 1; i++) {
+      this.term.moveTo(modalX, modalY + i);
+      this.term.bgWhite().black('│' + ' '.repeat(modalWidth - 2) + '│');
+    }
+    this.term.moveTo(modalX, modalY + modalHeight - 1);
+    this.term.bgWhite().black('└' + '─'.repeat(modalWidth - 2) + '┘');
+
+    // Draw message
+    const messageLines = this.#wrapText(message, modalWidth - 4);
+    messageLines.forEach((line, i) => {
+      this.term.moveTo(modalX + 2, modalY + 1 + i);
+      this.term.bgWhite().black(line.padEnd(modalWidth - 4));
+    });
+
+    // Draw Yes/No buttons
+    this.term.moveTo(yesButtonX, buttonY);
+    this.term.bgCyan().black(' [ Yes ] ');
+    this.term.moveTo(noButtonX, buttonY);
+    this.term.bgCyan().black(' [ No ]  ');
+
+    // Handle input
+    await new Promise(resolve => {
+      const keyHandler = key => {
+        if (!this.#activeModal?.type === 'confirm') return;
+        let response = null;
+        if (key === 'y' || key === 'Y') {
+          response = 'ok';
+        } else if (key === 'n' || key === 'N' || key === 'ESCAPE') {
+          response = 'cancel';
+        }
+        if (response) {
+          this.term.removeListener('key', keyHandler);
+          this.sendModalResponse(sessionId, 'confirm', response);
+          this.closeModal(sessionId, 'confirm');
+          resolve();
+        }
+      };
+      this.activeModalHandler = keyHandler;
+      this.term.on('key', keyHandler);
+    });
+
+    this.term.restoreCursor();
+    this.term.bgDefaultColor().defaultColor().styleReset();
+  }
+
+  async showPrompt(sessionId, message, defaultPrompt = '') {
+    if (this.#activeModal) return;
+
+    const modalWidth = Math.min(50, Math.floor(this.term.width * 0.8));
+    const modalHeight = 9;
+    const modalX = Math.floor((this.term.width - modalWidth) / 2);
+    const modalY = Math.floor((this.term.height - modalHeight) / 2);
+    const inputWidth = modalWidth - 4;
+    const inputX = modalX + 2;
+    const inputY = modalY + modalHeight - 4;
+    const buttonWidth = 10;
+    const okButtonX = modalX + Math.floor(modalWidth / 3) - 2;
+    const cancelButtonX = modalX + Math.floor((2 * modalWidth) / 3) - buttonWidth + 2;
+    const buttonY = modalY + modalHeight - 2;
+
+    this.isModalActive = true;
+    this.#activeModal = {
+      type: 'prompt',
+      sessionId,
+      x: modalX,
+      y: modalY,
+      width: modalWidth,
+      height: modalHeight,
+      inputField: { x: inputX, y: inputY, width: inputWidth, height: 1 },
+      okButton: { x: okButtonX, y: buttonY, width: buttonWidth, height: 1 },
+      cancelButton: { x: cancelButtonX, y: buttonY, width: buttonWidth, height: 1 },
+      inputValue: defaultPrompt,
+      cursorPosition: defaultPrompt.length
+    };
+
+    const drawPrompt = () => {
+      this.term.saveCursor();
+      this.term.moveTo(modalX, modalY);
+      this.term.bgWhite().black('┌' + '─'.repeat(modalWidth - 2) + '┐');
+      for (let i = 1; i < modalHeight - 1; i++) {
+        this.term.moveTo(modalX, modalY + i);
+        this.term.bgWhite().black('│' + ' '.repeat(modalWidth - 2) + '│');
+      }
+      this.term.moveTo(modalX, modalY + modalHeight - 1);
+      this.term.bgWhite().black('└' + '─'.repeat(modalWidth - 2) + '┘');
+
+      // Draw message
+      const messageLines = this.#wrapText(message, modalWidth - 4);
+      messageLines.forEach((line, i) => {
+        this.term.moveTo(modalX + 2, modalY + 1 + i);
+        this.term.bgWhite().black(line.padEnd(modalWidth - 4));
+      });
+
+      // Draw input field
+      this.term.moveTo(inputX, inputY);
+      const displayValue = this.#activeModal.inputValue.slice(0, inputWidth);
+      const beforeCursor = displayValue.slice(0, this.#activeModal.cursorPosition);
+      const cursorChar = displayValue[this.#activeModal.cursorPosition] || ' ';
+      const afterCursor = displayValue.slice(this.#activeModal.cursorPosition + 1);
+      this.term.bgCyan().black(beforeCursor);
+      this.term.bgBlack().brightWhite().bold(cursorChar);
+      this.term.bgCyan().black(afterCursor.padEnd(inputWidth - beforeCursor.length - 1, ' '));
+
+      // Draw OK/Cancel buttons
+      this.term.moveTo(okButtonX, buttonY);
+      this.term.bgCyan().black(' [ OK ]  ');
+      this.term.moveTo(cancelButtonX, buttonY);
+      this.term.bgCyan().black(' [ Cancel ] ');
+      this.term.restoreCursor();
+    };
+
+    drawPrompt();
+
+    await new Promise(resolve => {
+      const keyHandler = key => {
+        if (!this.#activeModal?.type === 'prompt') return;
+        if (key === 'ENTER') {
+          this.term.removeListener('key', keyHandler);
+          this.sendModalResponse(sessionId, 'prompt', this.#activeModal.inputValue);
+          this.closeModal(sessionId, 'prompt');
+          resolve();
+        } else if (key === 'ESCAPE') {
+          this.term.removeListener('key', keyHandler);
+          this.sendModalResponse(sessionId, 'prompt', null);
+          this.closeModal(sessionId, 'prompt');
+          resolve();
+        } else if (key.length === 1) {
+          this.#activeModal.inputValue = this.#activeModal.inputValue.slice(0, this.#activeModal.cursorPosition) + key + this.#activeModal.inputValue.slice(this.#activeModal.cursorPosition);
+          this.#activeModal.cursorPosition++;
+          drawPrompt();
+        } else if (key === 'BACKSPACE' && this.#activeModal.cursorPosition > 0) {
+          this.#activeModal.inputValue = this.#activeModal.inputValue.slice(0, this.#activeModal.cursorPosition - 1) + this.#activeModal.inputValue.slice(this.#activeModal.cursorPosition);
+          this.#activeModal.cursorPosition--;
+          drawPrompt();
+        } else if (key === 'LEFT' && this.#activeModal.cursorPosition > 0) {
+          this.#activeModal.cursorPosition--;
+          drawPrompt();
+        } else if (key === 'RIGHT' && this.#activeModal.cursorPosition < this.#activeModal.inputValue.length) {
+          this.#activeModal.cursorPosition++;
+          drawPrompt();
+        }
+      };
+      this.activeModalHandler = keyHandler;
+      this.term.on('key', keyHandler);
+    });
+
+    this.term.restoreCursor();
+    this.term.bgDefaultColor().defaultColor().styleReset();
+  }
+
+  closeModal(sessionId, modalType) {
+    if (this.#activeModal?.sessionId === sessionId && this.#activeModal?.type === modalType) {
+      this.#activeModal = null;
+      this.isModalActive = false;
+      this.render();
+    }
+    if ( this.activeModalHandler ) {
+      this.term.off('key', this.activeModalHandler );
+      this.activeModalHandler = null;
+    }
+  }
+
+  modalClick(x, y) {
+    if (!this.#activeModal) return false;
+
+    const modal = this.#activeModal;
+    // Check if click is within modal boundaries
+    if (x >= modal.x && x < modal.x + modal.width && y >= modal.y && y < modal.y + modal.height) {
+      if (modal.type === 'alert') {
+        if (y === modal.okButton.y && x >= modal.okButton.x && x < modal.okButton.x + modal.okButton.width) {
+          this.sendModalResponse(modal.sessionId, 'alert', 'ok');
+          this.closeModal(modal.sessionId, 'alert');
+          return true;
+        }
+      } else if (modal.type === 'confirm') {
+        if (y === modal.yesButton.y && x >= modal.yesButton.x && x < modal.yesButton.x + modal.yesButton.width) {
+          this.sendModalResponse(modal.sessionId, 'confirm', 'ok');
+          this.closeModal(modal.sessionId, 'confirm');
+          return true;
+        } else if (y === modal.noButton.y && x >= modal.noButton.x && x < modal.noButton.x + modal.noButton.width) {
+          this.sendModalResponse(modal.sessionId, 'confirm', 'cancel');
+          this.closeModal(modal.sessionId, 'confirm');
+          return true;
+        }
+      } else if (modal.type === 'prompt') {
+        if (y === modal.inputField.y && x >= modal.inputField.x && x < modal.inputField.x + modal.inputField.width) {
+          // Move cursor to clicked position
+          const charIndex = Math.min(x - modal.inputField.x, modal.inputValue.length);
+          modal.cursorPosition = charIndex;
+          this.redrawModal(); // Redraw to show updated cursor
+          return true;
+        } else if (y === modal.okButton.y && x >= modal.okButton.x && x < modal.okButton.x + modal.okButton.width) {
+          this.sendModalResponse(modal.sessionId, 'prompt', modal.inputValue);
+          this.closeModal(modal.sessionId, 'prompt');
+          return true;
+        } else if (y === modal.cancelButton.y && x >= modal.cancelButton.x && x < modal.cancelButton.x + modal.cancelButton.width) {
+          this.sendModalResponse(modal.sessionId, 'prompt', null);
+          this.closeModal(modal.sessionId, 'prompt');
+          return true;
+        }
+      }
+      return true; // Click within modal, but not on a component (still handled)
+    }
+    return false; // Click outside modal, ignored
+  }
+
+  redrawModal() {
+    if (!this.#activeModal) return;
+
+    const modal = this.#activeModal;
+    this.term.saveCursor();
+
+    if (modal.type === 'prompt') {
+      const { x, y, width, height, inputField, okButton, cancelButton, inputValue, cursorPosition } = modal;
+      const modalWidth = width;
+      const modalHeight = height;
+      const modalX = x;
+      const modalY = y;
+      const inputWidth = inputField.width;
+      const inputX = inputField.x;
+      const inputY = inputField.y;
+
+      // Draw modal
+      this.term.moveTo(modalX, modalY);
+      this.term.bgWhite().black('┌' + '─'.repeat(modalWidth - 2) + '┐');
+      for (let i = 1; i < modalHeight - 1; i++) {
+        this.term.moveTo(modalX, modalY + i);
+        this.term.bgWhite().black('│' + ' '.repeat(modalWidth - 2) + '│');
+      }
+      this.term.moveTo(modalX, modalY + modalHeight - 1);
+      this.term.bgWhite().black('└' + '─'.repeat(modalWidth - 2) + '┘');
+
+      // Draw message (simplified, adjust to match showPrompt)
+      this.term.moveTo(modalX + 2, modalY + 1);
+      this.term.bgWhite().black('Prompt message'.padEnd(modalWidth - 4));
+
+      // Draw input field
+      this.term.moveTo(inputX, inputY);
+      const displayValue = inputValue.slice(0, inputWidth);
+      const beforeCursor = displayValue.slice(0, cursorPosition);
+      const cursorChar = displayValue[cursorPosition] || ' ';
+      const afterCursor = displayValue.slice(cursorPosition + 1);
+      this.term.bgCyan().black(beforeCursor);
+      this.term.bgBlack().brightWhite().bold(cursorChar);
+      this.term.bgCyan().black(afterCursor.padEnd(inputWidth - beforeCursor.length - 1, ' '));
+
+      // Draw OK/Cancel buttons
+      this.term.moveTo(okButton.x, okButton.y);
+      this.term.bgCyan().black(' [ OK ]  ');
+      this.term.moveTo(cancelButton.x, cancelButton.y);
+      this.term.bgCyan().black(' [ Cancel ] ');
+    }
+    // Add cases for 'alert' and 'confirm' if needed
+    this.term.restoreCursor();
+    this.term.bgDefaultColor().defaultColor().styleReset();
+  }
+
+  // Helper to wrap text for modal display
+  #wrapText(text, maxWidth) {
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+    for (const word of words) {
+      if (currentLine.length + word.length + 1 <= maxWidth) {
+        currentLine += (currentLine ? ' ' : '') + word;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+    return lines;
+  }
+
+  sendModalResponse(sessionId, modalType, response) {
+    const commands = [
+      {
+        command: {
+          name: "Page.handleJavaScriptDialog",
+          params: {
+            sessionId,
+            accept: modalType == 'prompt' ? response !== null : response == "ok",
+            ...(modalType == 'prompt' ? { promptText: response || '' } : {}),
+          }
+        }
+      },
+      {
+        command: {
+          isZombieLordCommand: true,
+          name: "Connection.closeModal",
+          params: {
+            modalType, 
+            sessionId
+          }
+        }
+      }
+    ];
+
+    this.emit('tell-browserbox', commands);
   }
 
   redrawFocusedInput() {
