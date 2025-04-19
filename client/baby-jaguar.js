@@ -269,13 +269,13 @@
           console.warn(e);
         }
         if (!message) return;
-        logBBMessage(data.toString('utf8'));
 
         if (message.meta && browser ) {
+          logBBMessage(message);
           for( const meta of message.meta ) {
             try {
-              if (message.modal && browser) {
-                const { sessionId, message: modalMessage, type, defaultPrompt } = message.modal;
+              if (meta.modal && browser) {
+                const { sessionId, message: modalMessage, type, defaultPrompt } = meta.modal;
                 switch (type) {
                   case 'alert':
                     browser.showAlert(sessionId, modalMessage);
@@ -284,17 +284,16 @@
                     browser.showConfirm(sessionId, modalMessage);
                     break;
                   case 'prompt':
-                    defaultPrompt = 'Enter a value';
                     browser.showPrompt(sessionId, modalMessage, defaultPrompt);
                     break;
                 }
-              } else if (message.closeModal && browser) {
-                const { sessionId, modalType } = message.closeModal;
+              } else if (meta.closeModal && browser) {
+                const { sessionId, modalType } = meta.closeModal;
                 browser.closeModal(sessionId, modalType);
               }
             } catch (error) {
-              if (DEBUG) console.warn(error);
-              terminal.red(`BrowserBox message error: ${error.message}\n`);
+              if (DEBUG) console.warn(error, meta);
+              terminal.red(`BrowserBox message error: ${error.message} at ${error.stack} on meta: ${JSON.stringify(meta)}\n`);
             }
           }
         }
