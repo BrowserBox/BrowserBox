@@ -792,7 +792,7 @@ export default class TerminalBrowser extends EventEmitter {
         name: "Page.handleJavaScriptDialog",
         params: {
           sessionId,
-          accept: response == "ok"
+          accept: response == "ok",
           ...(modalType == 'prompt' ? { promptText: response } : {}),
         }
       },
