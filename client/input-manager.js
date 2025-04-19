@@ -373,6 +373,15 @@ export class InputManager {
 
   handleMouseEvent(name, data) {
     const { x, y } = data;
+    if (this.browser.isModalActive) {
+      if (name === 'MOUSE_LEFT_BUTTON_PRESSED') {
+        this.browser.modalClick(x, y);
+        // Click was handled or ignored by modal
+        return; 
+      }
+      // scroll or other mouse event outside modal, ignored
+      return; 
+    }
     if (name === 'MOUSE_LEFT_BUTTON_PRESSED') {
       this.handleMouseClick(x, y);
     } else if (name === 'MOUSE_WHEEL_UP' || name === 'MOUSE_WHEEL_DOWN') {
