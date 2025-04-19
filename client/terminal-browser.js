@@ -97,6 +97,9 @@ export default class TerminalBrowser extends EventEmitter {
     this.ADDRESS_WIDTH = this.term.width - this.BACK_WIDTH - this.FORWARD_WIDTH - this.GO_WIDTH - 4;
     this.NEW_TAB_WIDTH = 5;
 
+    // modals
+    this.isModalActive = false;
+
     this.inputManager = new InputManager(this.term, this);
 
     this.ditzyTune();
@@ -427,7 +430,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   async showAlert(sessionId, message) {
-    if (this.#activeModal) return; // Ignore if another modal is active
+    if (this.#activeModal) return;
 
     const modalWidth = Math.min(50, Math.floor(this.term.width * 0.8));
     const modalHeight = 7;
@@ -437,7 +440,16 @@ export default class TerminalBrowser extends EventEmitter {
     const buttonX = modalX + Math.floor((modalWidth - buttonWidth) / 2);
     const buttonY = modalY + modalHeight - 2;
 
-    this.#activeModal = { type: 'alert', sessionId };
+    this.isModalActive = true;
+    this.#activeModal = {
+      type: 'alert',
+      sessionId,
+      x: modalX,
+      y: modalY,
+      width: modalWidth,
+      height: modalHeight,
+      okButton: { x: buttonX, y: buttonY, width: buttonWidth, height: 1 }
+    };
 
     // Draw modal
     this.term.saveCursor();
@@ -466,10 +478,8 @@ export default class TerminalBrowser extends EventEmitter {
       const keyHandler = key => {
         if (key === 'ENTER' && this.#activeModal?.type === 'alert') {
           this.term.removeListener('key', keyHandler);
-          // TODO: Send response back to BrowserBox (e.g., { response: 'ok' })
-          // this.sendModalResponse(sessionId, 'alert', 'ok');
-          this.#activeModal = null;
-          this.render();
+          this.sendModalResponse(sessionId, 'alert', 'ok');
+          this.closeModal(sessionId, 'alert');
           resolve();
         }
       };
@@ -492,7 +502,17 @@ export default class TerminalBrowser extends EventEmitter {
     const noButtonX = modalX + Math.floor((2 * modalWidth) / 3) - buttonWidth + 2;
     const buttonY = modalY + modalHeight - 2;
 
-    this.#activeModal = { type: 'confirm', sessionId };
+    this.isModalActive = true;
+    this.#activeModal = {
+      type: 'confirm',
+      sessionId,
+      x: modalX,
+      y: modalY,
+      width: modalWidth,
+      height: modalHeight,
+      yesButton: { x: yesButtonX, y: buttonY, width: buttonWidth, height: 1 },
+      noButton: { x: noButtonX, y: buttonY, width: buttonWidth, height: 1 }
+    };
 
     // Draw modal
     this.term.saveCursor();
@@ -530,10 +550,8 @@ export default class TerminalBrowser extends EventEmitter {
         }
         if (response) {
           this.term.removeListener('key', keyHandler);
-          // TODO: Send response back to BrowserBox (e.g., { response })
-          // this.sendModalResponse(sessionId, 'confirm', response);
-          this.#activeModal = null;
-          this.render();
+          this.sendModalResponse(sessionId, 'confirm', response);
+          this.closeModal(sessionId, 'confirm');
           resolve();
         }
       };
@@ -559,11 +577,21 @@ export default class TerminalBrowser extends EventEmitter {
     const cancelButtonX = modalX + Math.floor((2 * modalWidth) / 3) - buttonWidth + 2;
     const buttonY = modalY + modalHeight - 2;
 
-    this.#activeModal = { type: 'prompt', sessionId };
-    let inputValue = defaultPrompt;
-    let cursorPosition = inputValue.length;
+    this.isModalActive = true;
+    this.#activeModal = {
+      type: 'prompt',
+      sessionId,
+      x: modalX,
+      y: modalY,
+      width: modalWidth,
+      height: modalHeight,
+      inputField: { x: inputX, y: inputY, width: inputWidth, height: 1 },
+      okButton: { x: okButtonX, y: buttonY, width: buttonWidth, height: 1 },
+      cancelButton: { x: cancelButtonX, y: buttonY, width: buttonWidth, height: 1 },
+      inputValue: defaultPrompt,
+      cursorPosition: defaultPrompt.length
+    };
 
-    // Draw modal
     const drawPrompt = () => {
       this.term.saveCursor();
       this.term.moveTo(modalX, modalY);
@@ -584,10 +612,10 @@ export default class TerminalBrowser extends EventEmitter {
 
       // Draw input field
       this.term.moveTo(inputX, inputY);
-      const displayValue = inputValue.slice(0, inputWidth);
-      const beforeCursor = displayValue.slice(0, cursorPosition);
-      const cursorChar = displayValue[cursorPosition] || ' ';
-      const afterCursor = displayValue.slice(cursorPosition + 1);
+      const displayValue = this.#activeModal.inputValue.slice(0, inputWidth);
+      const beforeCursor = displayValue.slice(0, this.#activeModal.cursorPosition);
+      const cursorChar = displayValue[this.#activeModal.cursorPosition] || ' ';
+      const afterCursor = displayValue.slice(this.#activeModal.cursorPosition + 1);
       this.term.bgCyan().black(beforeCursor);
       this.term.bgBlack().brightWhite().bold(cursorChar);
       this.term.bgCyan().black(afterCursor.padEnd(inputWidth - beforeCursor.length - 1, ' '));
@@ -602,37 +630,32 @@ export default class TerminalBrowser extends EventEmitter {
 
     drawPrompt();
 
-    // Handle input
     await new Promise(resolve => {
       const keyHandler = key => {
         if (!this.#activeModal?.type === 'prompt') return;
         if (key === 'ENTER') {
           this.term.removeListener('key', keyHandler);
-          // TODO: Send response back to BrowserBox (e.g., { response: inputValue })
-          // this.sendModalResponse(sessionId, 'prompt', inputValue);
-          this.#activeModal = null;
-          this.render();
+          this.sendModalResponse(sessionId, 'prompt', this.#activeModal.inputValue);
+          this.closeModal(sessionId, 'prompt');
           resolve();
         } else if (key === 'ESCAPE') {
           this.term.removeListener('key', keyHandler);
-          // TODO: Send cancel response back to BrowserBox
-          // this.sendModalResponse(sessionId, 'prompt', null);
-          this.#activeModal = null;
-          this.render();
+          this.sendModalResponse(sessionId, 'prompt', null);
+          this.closeModal(sessionId, 'prompt');
           resolve();
         } else if (key.length === 1) {
-          inputValue = inputValue.slice(0, cursorPosition) + key + inputValue.slice(cursorPosition);
-          cursorPosition++;
+          this.#activeModal.inputValue = this.#activeModal.inputValue.slice(0, this.#activeModal.cursorPosition) + key + this.#activeModal.inputValue.slice(this.#activeModal.cursorPosition);
+          this.#activeModal.cursorPosition++;
           drawPrompt();
-        } else if (key === 'BACKSPACE' && cursorPosition > 0) {
-          inputValue = inputValue.slice(0, cursorPosition - 1) + inputValue.slice(cursorPosition);
-          cursorPosition--;
+        } else if (key === 'BACKSPACE' && this.#activeModal.cursorPosition > 0) {
+          this.#activeModal.inputValue = this.#activeModal.inputValue.slice(0, this.#activeModal.cursorPosition - 1) + this.#activeModal.inputValue.slice(this.#activeModal.cursorPosition);
+          this.#activeModal.cursorPosition--;
           drawPrompt();
-        } else if (key === 'LEFT' && cursorPosition > 0) {
-          cursorPosition--;
+        } else if (key === 'LEFT' && this.#activeModal.cursorPosition > 0) {
+          this.#activeModal.cursorPosition--;
           drawPrompt();
-        } else if (key === 'RIGHT' && cursorPosition < inputValue.length) {
-          cursorPosition++;
+        } else if (key === 'RIGHT' && this.#activeModal.cursorPosition < this.#activeModal.inputValue.length) {
+          this.#activeModal.cursorPosition++;
           drawPrompt();
         }
       };
@@ -646,8 +669,104 @@ export default class TerminalBrowser extends EventEmitter {
   closeModal(sessionId, modalType) {
     if (this.#activeModal?.sessionId === sessionId && this.#activeModal?.type === modalType) {
       this.#activeModal = null;
+      this.isModalActive = false;
       this.render();
     }
+  }
+
+  modalClick(x, y) {
+    if (!this.#activeModal) return false;
+
+    const modal = this.#activeModal;
+    // Check if click is within modal boundaries
+    if (x >= modal.x && x < modal.x + modal.width && y >= modal.y && y < modal.y + modal.height) {
+      if (modal.type === 'alert') {
+        if (y === modal.okButton.y && x >= modal.okButton.x && x < modal.okButton.x + modal.okButton.width) {
+          this.sendModalResponse(modal.sessionId, 'alert', 'ok');
+          this.closeModal(modal.sessionId, 'alert');
+          return true;
+        }
+      } else if (modal.type === 'confirm') {
+        if (y === modal.yesButton.y && x >= modal.yesButton.x && x < modal.yesButton.x + modal.yesButton.width) {
+          this.sendModalResponse(modal.sessionId, 'confirm', 'ok');
+          this.closeModal(modal.sessionId, 'confirm');
+          return true;
+        } else if (y === modal.noButton.y && x >= modal.noButton.x && x < modal.noButton.x + modal.noButton.width) {
+          this.sendModalResponse(modal.sessionId, 'confirm', 'cancel');
+          this.closeModal(modal.sessionId, 'confirm');
+          return true;
+        }
+      } else if (modal.type === 'prompt') {
+        if (y === modal.inputField.y && x >= modal.inputField.x && x < modal.inputField.x + modal.inputField.width) {
+          // Move cursor to clicked position
+          const charIndex = Math.min(x - modal.inputField.x, modal.inputValue.length);
+          modal.cursorPosition = charIndex;
+          this.redrawModal(); // Redraw to show updated cursor
+          return true;
+        } else if (y === modal.okButton.y && x >= modal.okButton.x && x < modal.okButton.x + modal.okButton.width) {
+          this.sendModalResponse(modal.sessionId, 'prompt', modal.inputValue);
+          this.closeModal(modal.sessionId, 'prompt');
+          return true;
+        } else if (y === modal.cancelButton.y && x >= modal.cancelButton.x && x < modal.cancelButton.x + modal.cancelButton.width) {
+          this.sendModalResponse(modal.sessionId, 'prompt', null);
+          this.closeModal(modal.sessionId, 'prompt');
+          return true;
+        }
+      }
+      return true; // Click within modal, but not on a component (still handled)
+    }
+    return false; // Click outside modal, ignored
+  }
+
+  redrawModal() {
+    if (!this.#activeModal) return;
+
+    const modal = this.#activeModal;
+    this.term.saveCursor();
+
+    if (modal.type === 'prompt') {
+      const { x, y, width, height, inputField, okButton, cancelButton, inputValue, cursorPosition } = modal;
+      const modalWidth = width;
+      const modalHeight = height;
+      const modalX = x;
+      const modalY = y;
+      const inputWidth = inputField.width;
+      const inputX = inputField.x;
+      const inputY = inputField.y;
+
+      // Draw modal
+      this.term.moveTo(modalX, modalY);
+      this.term.bgWhite().black('┌' + '─'.repeat(modalWidth - 2) + '┐');
+      for (let i = 1; i < modalHeight - 1; i++) {
+        this.term.moveTo(modalX, modalY + i);
+        this.term.bgWhite().black('│' + ' '.repeat(modalWidth - 2) + '│');
+      }
+      this.term.moveTo(modalX, modalY + modalHeight - 1);
+      this.term.bgWhite().black('└' + '─'.repeat(modalWidth - 2) + '┘');
+
+      // Draw message (simplified, adjust to match showPrompt)
+      this.term.moveTo(modalX + 2, modalY + 1);
+      this.term.bgWhite().black('Prompt message'.padEnd(modalWidth - 4));
+
+      // Draw input field
+      this.term.moveTo(inputX, inputY);
+      const displayValue = inputValue.slice(0, inputWidth);
+      const beforeCursor = displayValue.slice(0, cursorPosition);
+      const cursorChar = displayValue[cursorPosition] || ' ';
+      const afterCursor = displayValue.slice(cursorPosition + 1);
+      this.term.bgCyan().black(beforeCursor);
+      this.term.bgBlack().brightWhite().bold(cursorChar);
+      this.term.bgCyan().black(afterCursor.padEnd(inputWidth - beforeCursor.length - 1, ' '));
+
+      // Draw OK/Cancel buttons
+      this.term.moveTo(okButton.x, okButton.y);
+      this.term.bgCyan().black(' [ OK ]  ');
+      this.term.moveTo(cancelButton.x, cancelButton.y);
+      this.term.bgCyan().black(' [ Cancel ] ');
+    }
+    // Add cases for 'alert' and 'confirm' if needed
+    this.term.restoreCursor();
+    this.term.bgDefaultColor().defaultColor().styleReset();
   }
 
   // Helper to wrap text for modal display
@@ -672,6 +791,7 @@ export default class TerminalBrowser extends EventEmitter {
     debugLog(`Sending modal response: sessionId=${sessionId}, type=${modalType}, response=${response}`);
     // TODO: Implement sending response back to BrowserBox
   }
+
   redrawFocusedInput() {
     if (!this.focusManager.getFocusedElement()?.startsWith('input:')) return;
 
