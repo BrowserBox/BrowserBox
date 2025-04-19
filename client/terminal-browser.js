@@ -789,19 +789,23 @@ export default class TerminalBrowser extends EventEmitter {
   sendModalResponse(sessionId, modalType, response) {
     const commands = [
       {
-        name: "Page.handleJavaScriptDialog",
-        params: {
-          sessionId,
-          accept: response == "ok",
-          ...(modalType == 'prompt' ? { promptText: response } : {}),
+        command: {
+          name: "Page.handleJavaScriptDialog",
+          params: {
+            sessionId,
+            accept: modalType == 'prompt' ? response !== null : response == "ok",
+            ...(modalType == 'prompt' ? { promptText: response } : {}),
+          }
         }
       },
       {
-        isZombieLordCommand: true,
-        name: "Connection.closeModal",
-        params: {
-          modalType, 
-          sessionId
+        command: {
+          isZombieLordCommand: true,
+          name: "Connection.closeModal",
+          params: {
+            modalType, 
+            sessionId
+          }
         }
       }
     ];

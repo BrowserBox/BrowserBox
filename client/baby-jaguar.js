@@ -312,6 +312,7 @@
       });
 
       function browserboxMessage(...data) {
+        logBBMessage(data);
         for( const val of data ) {
           if ( ! val.command ) throw new Error(`Must be a command`);
         }
