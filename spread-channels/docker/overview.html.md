@@ -6,7 +6,7 @@
 
 <h1>BrowserBox on Docker</h1>
 <p><strong>THE ULTIMATE BROWSING POWERHOUSE—SECURE, SCALABLE, UNSTOPPABLE!</strong><br>
-BrowserBox v10 by DOSAYGO delivers remote browser isolation (RBI) built for infra, cyber, and product teams. Deploy it anywhere—Linux, macOS, your stack. <strong>LICENSE REQUIRED!</strong> Unlicensed instances shut down after 2 minutes. Unlock now at <a href="https://browse.cloudtabs.net/l">BrowserBox Activation</a>—bulk deals available!</p>
+BrowserBox v11 by DOSAYGO delivers remote browser isolation (RBI) built for infra, cyber, and product teams. Deploy it anywhere—Linux, macOS, your stack. <strong>LICENSE REQUIRED!</strong> Unlicensed instances shut down after 2 minutes. Unlock now at <a href="https://browse.cloudtabs.net/l">BrowserBox Activation</a>—bulk deals available!</p>
 
 <h2>🚀 Deploy in One Command</h2>
 <p><strong>Step 1: Get Your License</strong> – <a href="https://browse.cloudtabs.net/l">Activate BrowserBox</a><br>
@@ -20,7 +20,7 @@ BrowserBox v10 by DOSAYGO delivers remote browser isolation (RBI) built for infr
 <p><strong>Output:</strong> Pulls the latest <code>dosaygo/browserbox</code> or <code>ghcr.io/browserbox/browserbox</code>, generates a secure login link inside the container, and returns the container ID—ready in seconds!</p>
 
 <h2>Secure Your Web with BrowserBox</h2>
-<p>BrowserBox v10 requires a <strong>license key</strong> to operate. <a href="https://browse.cloudtabs.net/l">Purchase a commercial license</a> or <a href="https://tally.so/r/nPvb1x">join the non-commercial waitlist</a> for a cutting-edge RBI solution.</p>
+<p>BrowserBox v11 requires a <strong>license key</strong> to operate. <a href="https://browse.cloudtabs.net/l">Purchase a commercial license</a> or <a href="https://tally.so/r/nPvb1x">join the non-commercial waitlist</a> for a cutting-edge RBI solution.</p>
 <blockquote>
   <p><strong>NOTE:</strong> Unlicensed instances display a warning and terminate after 2 minutes.</p>
 </blockquote>
@@ -30,7 +30,7 @@ BrowserBox v10 by DOSAYGO delivers remote browser isolation (RBI) built for infr
 <ul>
   <li><strong>Advanced Security:</strong> Block malware, ransomware, and zero-day threats</li>
   <li><strong>Seamless Integration:</strong> Embed secure browsing into apps or protect local tabs</li>
-  <li><strong>Exclusive Features:</strong> Zero Latency Mode, customizable security, and mobile-ready design (new in v10 with enhanced Chrome compatibility)</li>
+  <li><strong>Exclusive Features:</strong> Zero Latency Mode, customizable security, and mobile-ready design (new in v11 with enhanced Chrome compatibility)</li>
 </ul>
 
 <h2>Easy Deployment</h2>

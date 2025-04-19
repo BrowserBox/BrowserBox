@@ -20,7 +20,7 @@ if [ "$EUID" -ne 0 ] && ! $SUDO true 2>/dev/null; then
 fi
 
 # License Agreement & Key
-echo "BrowserBox v10 Terms: https://dosaygo.com/terms.txt | License: https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md | Privacy: https://dosaygo.com/privacy.txt"
+echo "BrowserBox v11 Terms: https://dosaygo.com/terms.txt | License: https://github.com/BrowserBox/BrowserBox/blob/main/LICENSE.md | Privacy: https://dosaygo.com/privacy.txt"
 [ "${AGREE:-no}" = "yes" ] || read -p " Agree? (yes/no): " AGREE
 [ "$AGREE" = "yes" ] || { echo "ERROR: Must agree to terms!" >&2; exit 1; }
 [ -n "$LICENSE_KEY" ] || read -p "Enter License Key (sales@dosaygo.com): " LICENSE_KEY

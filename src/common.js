@@ -10,7 +10,7 @@ import {FRAME_CONTROL} from './public/voodoo/src/common.js';
 import {APP_ROOT as app_root} from './root.js';
 export * from './args.js';
 
-export const version = 'v10';
+export const version = 'v11';
 export const scratchState = {
   cameFromTOR: false,
   slowConnection: false,
