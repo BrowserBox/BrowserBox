@@ -787,15 +787,26 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   sendModalResponse(sessionId, modalType, response) {
-    const message = {
-      synthetic: true,
-      modalType,
-      type: 'respond-to-modal',
-      response: response || 'close', // Default to 'close' if response is null/undefined
-      sessionId,
-      [modalType === 'prompt' ? 'promptText' : 'data']: modalType === 'prompt' ? (response || '') : ''
-    };
-    this.emit('tell-browserbox', message);
+    const commands = [
+      {
+        name: "Page.handleJavaScriptDialog",
+        params: {
+          sessionId,
+          accept: response == "ok"
+          ...(modalType == 'prompt' ? { promptText: response } : {}),
+        }
+      },
+      {
+        isZombieLordCommand: true,
+        name: "Connection.closeModal",
+        params: {
+          modalType, 
+          sessionId
+        }
+      }
+    ];
+
+    this.emit('tell-browserbox', commands);
   }
 
   redrawFocusedInput() {

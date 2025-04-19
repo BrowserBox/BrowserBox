@@ -312,6 +312,9 @@
       });
 
       function browserboxMessage(...data) {
+        for( const val of data ) {
+          if ( ! val.command ) throw new Error(`Must be a command`);
+        }
         return JSON.stringify({
           messageId: messageId++,
           zombie: {
