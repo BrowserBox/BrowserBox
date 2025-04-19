@@ -22,7 +22,7 @@
   import Layout from './layout.js';
   import TerminalBrowser from './terminal-browser.js';
   import { ConnectionManager } from './connection-manager.js';
-  import { sleep, logClicks, debugLog, DEBUG } from './log.js';
+  import { sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
 
   // Constants and state
   const clickCounter = { value: 0 };
@@ -258,6 +258,43 @@
           debouncedRefresh();
         } catch (e) {
           console.error(e);
+        }
+      });
+
+      browserbox.on('message', data => {
+        try {
+          logBBMessage(message);
+          const message = data.toString('utf8').split('\n').map(line => {
+            if (line.includes('|')) {
+              const [, , content] = line.split('|').map(s => s.trim());
+              return content.startsWith('meta') ? JSON.parse(content.slice(5)) : null;
+            }
+            return null;
+          }).filter(Boolean)[0];
+
+          if (!message) return;
+
+          if (message.modal && browser) {
+            const { sessionId, message: modalMessage, type, defaultPrompt } = message.modal;
+            switch (type) {
+              case 'alert':
+                browser.showAlert(sessionId, modalMessage);
+                break;
+              case 'confirm':
+                browser.showConfirm(sessionId, modalMessage);
+                break;
+              case 'prompt':
+                defaultPrompt = 'Enter a value';
+                browser.showPrompt(sessionId, modalMessage, defaultPrompt);
+                break;
+            }
+          } else if (message.closeModal && browser) {
+            const { sessionId, modalType } = message.closeModal;
+            browser.closeModal(sessionId, modalType);
+          }
+        } catch (error) {
+          if (DEBUG) console.warn(error);
+          terminal.red(`BrowserBox message error: ${error.message}\n`);
         }
       });
 

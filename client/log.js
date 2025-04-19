@@ -16,11 +16,16 @@ const LOG_FILE = 'cdp.log';
           DEBUG && appendFileSync('rows.txt', JSON.stringify([...rows.entries()], null, 2));
         }
 
+        export function logBBMessage(msg) {
+          appendFileSync('bbmesg.log', JSON.stringify(msg) + '\n');
+        }
+
         export function logClicks(...stuff) {
-          appendFileSync('clicks.log', stuff.join(' ') + '\n');
+          DEBUG && appendFileSync('clicks.log', stuff.join(' ') + '\n');
         }
 
         export function logMessage(direction, message, terminal) {
+          if ( ! DEBUG ) return;
           const timestamp = new Date().toISOString();
           const logEntry = JSON.stringify({ timestamp, direction, message }, null, 2) + '\n';
           try {
