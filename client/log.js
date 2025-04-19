@@ -1,6 +1,6 @@
 import { appendFileSync } from 'fs';
 // DEBUG 
-export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || true;
+export const DEBUG = process.env.JAGUAR_DEBUG === 'true' || false;
 const EXTRA_LOG = false;
 const LOG_FILE = 'cdp.log';
 
@@ -9,7 +9,7 @@ const LOG_FILE = 'cdp.log';
 
       // logging 
         export function focusLog(...stuff) {
-          appendFileSync('focus.log', JSON.stringify(stuff, null, 2));
+          DEBUG && appendFileSync('focus.log', JSON.stringify(stuff, null, 2));
         }
 
         export function rowsLog(rows) {
@@ -17,7 +17,7 @@ const LOG_FILE = 'cdp.log';
         }
 
         export function logBBMessage(msg) {
-          appendFileSync('bbmesg.log', JSON.stringify(msg) + '\n');
+          DEBUG && appendFileSync('bbmesg.log', JSON.stringify(msg) + '\n');
         }
 
         export function logClicks(...stuff) {
