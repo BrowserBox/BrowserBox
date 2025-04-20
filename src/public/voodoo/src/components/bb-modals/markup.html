@@ -205,7 +205,6 @@
             autocomplete=current-password
             name=password placeholder=password maxlength=140>
         <p>
-          <button type=reset value=cancel click=${click => _host.respondWithCancel(click, state)}>Cancel</button>
           <button type=submit value=ok click=${click => _host.respondWithAuth(click, state)}>Submit</button>
         </p>
       </fieldset>

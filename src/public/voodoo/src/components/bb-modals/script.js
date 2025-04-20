@@ -319,6 +319,12 @@ class BBModal extends Base {
   }
 
   respondWithCancel(click) {
+    // this bugs out, maybe we need to fix something in logic
+    // but fro my view it doesn't really make sense to 'cancel an auth'
+    // since the request is already intercepted and halted 
+    // auth response is required to continue it
+    // it's an extra step in the protocol
+    // canceling puts the whole browser into an undefined state
     const {state} = this;
     click.preventDefault();
     click.stopPropagation();
