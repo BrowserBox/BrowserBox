@@ -687,7 +687,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     this.isModalActive = true;
     this.#activeModal = {
-      type: 'authRequired',
+      type: 'auth',
       sessionId,
       requestId,
       x: modalX,
@@ -763,10 +763,10 @@ export default class TerminalBrowser extends EventEmitter {
 
     await new Promise(resolve => {
       const keyHandler = key => {
-        if (!this.#activeModal?.type === 'authRequired') return;
+        if (!this.#activeModal?.type === 'auth') return;
         if (key === 'ENTER') {
           this.term.removeListener('key', keyHandler);
-          this.sendModalResponse(sessionId, 'authRequired', {
+          this.sendModalResponse(sessionId, 'auth', {
             authResponse: {
               username: this.#activeModal.username,
               password: this.#activeModal.password,
@@ -774,12 +774,12 @@ export default class TerminalBrowser extends EventEmitter {
             },
             requestId
           });
-          this.closeModal(sessionId, 'authRequired');
+          this.closeModal(sessionId, 'auth');
           resolve();
         } else if (key === 'ESCAPE') {
           this.term.removeListener('key', keyHandler);
-          this.sendModalResponse(sessionId, 'authRequired', null);
-          this.closeModal(sessionId, 'authRequired');
+          this.sendModalResponse(sessionId, 'auth', null);
+          this.closeModal(sessionId, 'auth');
           resolve();
         } else if (key === 'TAB') {
           this.#activeModal.activeField = this.#activeModal.activeField === 'username' ? 'password' : 'username';
@@ -861,7 +861,7 @@ export default class TerminalBrowser extends EventEmitter {
           this.closeModal(modal.sessionId, 'prompt');
           return true;
         }
-      } else if (modal.type === 'authRequired') {
+      } else if (modal.type === 'auth') {
         if (y === modal.usernameField.y && x >= modal.usernameField.x && x < modal.usernameField.x + modal.usernameField.width) {
           // Move cursor to clicked position
           const charIndex = Math.min(x - modal.usernameField.x, modal.username.length);
@@ -875,7 +875,7 @@ export default class TerminalBrowser extends EventEmitter {
           this.redrawModal(); // Redraw to show updated cursor
           return true;
         } else if (y === modal.okButton.y && x >= modal.okButton.x && x < modal.okButton.x + modal.okButton.width) {
-          this.sendModalResponse(modal.sessionId, 'authRequired', {
+          this.sendModalResponse(modal.sessionId, 'auth', {
             authResponse: {
               username: modal.username,
               password: modal.password,
@@ -883,7 +883,7 @@ export default class TerminalBrowser extends EventEmitter {
             },
             requestId: modal.requestId
           });
-          //this.closeModal(modal.sessionId, 'authRequired');
+          this.closeModal(modal.sessionId, 'auth');
           return true;
         }
       }
@@ -990,17 +990,29 @@ export default class TerminalBrowser extends EventEmitter {
           }
         );
         break;
-      case 'authRequired': {
+      case 'auth': {
         const {requestId, authResponse} = response;
-        commands.push({
-          command: {
-            name: "Fetch.continueWithAuth",
-            params: {
-              requestId,
-              authChallengeResponse: authResponse
+        commands.push(
+          {
+            command: {
+              name: "Fetch.continueWithAuth",
+              params: {
+                requestId,
+                authChallengeResponse: authResponse
+              }
+            }
+          },
+          {
+            command: {
+              isZombieLordCommand: true,
+              name: "Connection.closeModal",
+              params: {
+                modalType: 'auth', 
+                sessionId
+              }
             }
           }
-        });
+        );
       }; break;
     }
     this.emit('tell-browserbox', commands);

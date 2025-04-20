@@ -266,7 +266,7 @@
         try {
           message = JSON.parse(data.toString('utf8'));
         } catch(e) {
-          console.warn(e);
+          DEBUG && console.warn(e);
         }
         if (!message) return;
 
