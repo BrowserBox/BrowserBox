@@ -687,7 +687,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     this.isModalActive = true;
     this.#activeModal = {
-      type: 'httpAuth',
+      type: 'authRequired',
       sessionId,
       requestId,
       x: modalX,
@@ -763,20 +763,23 @@ export default class TerminalBrowser extends EventEmitter {
 
     await new Promise(resolve => {
       const keyHandler = key => {
-        if (!this.#activeModal?.type === 'httpAuth') return;
+        if (!this.#activeModal?.type === 'authRequired') return;
         if (key === 'ENTER') {
           this.term.removeListener('key', keyHandler);
-          this.sendModalResponse(sessionId, 'httpAuth', {
-            username: this.#activeModal.username,
-            password: this.#activeModal.password,
+          this.sendModalResponse(sessionId, 'authRequired', {
+            authResponse: {
+              username: this.#activeModal.username,
+              password: this.#activeModal.password,
+              response: 'ProvideCredentials'
+            },
             requestId
           });
-          this.closeModal(sessionId, 'httpAuth');
+          this.closeModal(sessionId, 'authRequired');
           resolve();
         } else if (key === 'ESCAPE') {
           this.term.removeListener('key', keyHandler);
-          this.sendModalResponse(sessionId, 'httpAuth', null);
-          this.closeModal(sessionId, 'httpAuth');
+          this.sendModalResponse(sessionId, 'authRequired', null);
+          this.closeModal(sessionId, 'authRequired');
           resolve();
         } else if (key === 'TAB') {
           this.#activeModal.activeField = this.#activeModal.activeField === 'username' ? 'password' : 'username';
@@ -856,6 +859,31 @@ export default class TerminalBrowser extends EventEmitter {
         } else if (y === modal.cancelButton.y && x >= modal.cancelButton.x && x < modal.cancelButton.x + modal.cancelButton.width) {
           this.sendModalResponse(modal.sessionId, 'prompt', null);
           this.closeModal(modal.sessionId, 'prompt');
+          return true;
+        }
+      } else if (modal.type === 'authRequired') {
+        if (y === modal.usernameField.y && x >= modal.usernameField.x && x < modal.usernameField.x + modal.usernameField.width) {
+          // Move cursor to clicked position
+          const charIndex = Math.min(x - modal.usernameField.x, modal.username.length);
+          modal.cursorPosition = charIndex;
+          this.redrawModal(); // Redraw to show updated cursor
+          return true;
+        } else if (y === modal.passwordField.y && x >= modal.passwordField.x && x < modal.passwordField.x + modal.passwordField.width) {
+          // Move cursor to clicked position
+          const charIndex = Math.min(x - modal.passwordField.x, modal.password.length);
+          modal.cursorPosition = charIndex;
+          this.redrawModal(); // Redraw to show updated cursor
+          return true;
+        } else if (y === modal.okButton.y && x >= modal.okButton.x && x < modal.okButton.x + modal.okButton.width) {
+          this.sendModalResponse(modal.sessionId, 'authRequired', {
+            authResponse: {
+              username: modal.username,
+              password: modal.password,
+              response: 'ProvideCredentials'
+            },
+            requestId: modal.requestId
+          });
+          //this.closeModal(modal.sessionId, 'authRequired');
           return true;
         }
       }
@@ -962,8 +990,18 @@ export default class TerminalBrowser extends EventEmitter {
           }
         );
         break;
-      case 'authRequired':
-        break;
+      case 'authRequired': {
+        const {requestId, authResponse} = response;
+        commands.push({
+          command: {
+            name: "Fetch.continueWithAuth",
+            params: {
+              requestId,
+              authChallengeResponse: authResponse
+            }
+          }
+        });
+      }; break;
     }
     this.emit('tell-browserbox', commands);
   }
