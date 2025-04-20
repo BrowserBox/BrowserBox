@@ -669,6 +669,145 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.bgDefaultColor().defaultColor().styleReset();
   }
 
+  async showHTTPAuth(sessionId, scheme, realm, requestId) {
+    if (this.#activeModal) return;
+
+    const modalWidth = Math.min(50, Math.floor(this.term.width * 0.8));
+    const modalHeight = 11; // Extra height for two input fields
+    const modalX = Math.floor((this.term.width - modalWidth) / 2);
+    const modalY = Math.floor((this.term.height - modalHeight) / 2);
+    const inputWidth = modalWidth - 4;
+    const inputX = modalX + 2;
+    const usernameY = modalY + modalHeight - 6;
+    const passwordY = modalY + modalHeight - 4;
+    const buttonWidth = 10;
+    const okButtonX = modalX + Math.floor(modalWidth / 3) - 2;
+    const cancelButtonX = modalX + Math.floor((2 * modalWidth) / 3) - buttonWidth + 2;
+    const buttonY = modalY + modalHeight - 2;
+
+    this.isModalActive = true;
+    this.#activeModal = {
+      type: 'httpAuth',
+      sessionId,
+      requestId,
+      x: modalX,
+      y: modalY,
+      width: modalWidth,
+      height: modalHeight,
+      usernameField: { x: inputX, y: usernameY, width: inputWidth, height: 1 },
+      passwordField: { x: inputX, y: passwordY, width: inputWidth, height: 1 },
+      okButton: { x: okButtonX, y: buttonY, width: buttonWidth, height: 1 },
+      cancelButton: { x: cancelButtonX, y: buttonY, width: buttonWidth, height: 1 },
+      username: '',
+      password: '',
+      cursorPosition: 0,
+      activeField: 'username' // Track which field is active
+    };
+
+    const message = `${scheme.charAt(0).toUpperCase() + scheme.slice(1)} Authentication Required for ${realm}`;
+
+    const drawAuthModal = () => {
+      this.term.saveCursor();
+      this.term.moveTo(modalX, modalY);
+      this.term.bgWhite().black('┌' + '─'.repeat(modalWidth - 2) + '┐');
+      for (let i = 1; i < modalHeight - 1; i++) {
+        this.term.moveTo(modalX, modalY + i);
+        this.term.bgWhite().black('│' + ' '.repeat(modalWidth - 2) + '│');
+      }
+      this.term.moveTo(modalX, modalY + modalHeight - 1);
+      this.term.bgWhite().black('└' + '─'.repeat(modalWidth - 2) + '┘');
+
+      // Draw message
+      const messageLines = this.#wrapText(message, modalWidth - 4);
+      messageLines.forEach((line, i) => {
+        this.term.moveTo(modalX + 2, modalY + 1 + i);
+        this.term.bgWhite().black(line.padEnd(modalWidth - 4));
+      });
+
+      // Draw username label and field
+      this.term.moveTo(inputX, usernameY - 1);
+      this.term.bgWhite().black('Username:'.padEnd(inputWidth));
+      this.term.moveTo(inputX, usernameY);
+      const usernameValue = this.#activeModal.username.slice(0, inputWidth);
+      const usernameCursor = this.#activeModal.activeField === 'username' ? this.#activeModal.cursorPosition : usernameValue.length;
+      const usernameBefore = usernameValue.slice(0, usernameCursor);
+      const usernameCursorChar = usernameValue[usernameCursor] || ' ';
+      const usernameAfter = usernameValue.slice(usernameCursor + 1);
+      this.term.bgCyan().black(usernameBefore);
+      this.term.bgBlack().brightWhite().bold(usernameCursorChar);
+      this.term.bgCyan().black(usernameAfter.padEnd(inputWidth - usernameBefore.length - 1, ' '));
+
+      // Draw password label and field (mask password with *)
+      this.term.moveTo(inputX, passwordY - 1);
+      this.term.bgWhite().black('Password:'.padEnd(inputWidth));
+      this.term.moveTo(inputX, passwordY);
+      const passwordValue = this.#activeModal.password.slice(0, inputWidth);
+      const passwordDisplay = '*'.repeat(passwordValue.length);
+      const passwordCursor = this.#activeModal.activeField === 'password' ? this.#activeModal.cursorPosition : passwordValue.length;
+      const passwordBefore = passwordDisplay.slice(0, passwordCursor);
+      const passwordCursorChar = passwordDisplay[passwordCursor] || ' ';
+      const passwordAfter = passwordDisplay.slice(passwordCursor + 1);
+      this.term.bgCyan().black(passwordBefore);
+      this.term.bgBlack().brightWhite().bold(passwordCursorChar);
+      this.term.bgCyan().black(passwordAfter.padEnd(inputWidth - passwordBefore.length - 1, ' '));
+
+      // Draw OK/Cancel buttons
+      this.term.moveTo(okButtonX, buttonY);
+      this.term.bgCyan().black(' [ OK ]  ');
+      this.term.moveTo(cancelButtonX, buttonY);
+      this.term.bgCyan().black(' [ Cancel ] ');
+      this.term.restoreCursor();
+    };
+
+    drawAuthModal();
+
+    await new Promise(resolve => {
+      const keyHandler = key => {
+        if (!this.#activeModal?.type === 'httpAuth') return;
+        if (key === 'ENTER') {
+          this.term.removeListener('key', keyHandler);
+          this.sendModalResponse(sessionId, 'httpAuth', {
+            username: this.#activeModal.username,
+            password: this.#activeModal.password,
+            requestId
+          });
+          this.closeModal(sessionId, 'httpAuth');
+          resolve();
+        } else if (key === 'ESCAPE') {
+          this.term.removeListener('key', keyHandler);
+          this.sendModalResponse(sessionId, 'httpAuth', null);
+          this.closeModal(sessionId, 'httpAuth');
+          resolve();
+        } else if (key === 'TAB') {
+          this.#activeModal.activeField = this.#activeModal.activeField === 'username' ? 'password' : 'username';
+          this.#activeModal.cursorPosition = this.#activeModal[this.#activeModal.activeField].length;
+          drawAuthModal();
+        } else if (key.length === 1) {
+          const field = this.#activeModal.activeField;
+          this.#activeModal[field] = this.#activeModal[field].slice(0, this.#activeModal.cursorPosition) + key + this.#activeModal[field].slice(this.#activeModal.cursorPosition);
+          this.#activeModal.cursorPosition++;
+          drawAuthModal();
+        } else if (key === 'BACKSPACE' && this.#activeModal.cursorPosition > 0) {
+          const field = this.#activeModal.activeField;
+          this.#activeModal[field] = this.#activeModal[field].slice(0, this.#activeModal.cursorPosition - 1) + this.#activeModal[field].slice(this.#activeModal.cursorPosition);
+          this.#activeModal.cursorPosition--;
+          drawAuthModal();
+        } else if (key === 'LEFT' && this.#activeModal.cursorPosition > 0) {
+          this.#activeModal.cursorPosition--;
+          drawAuthModal();
+        } else if (key === 'RIGHT' && this.#activeModal.cursorPosition < this.#activeModal[this.#activeModal.activeField].length) {
+          this.#activeModal.cursorPosition++;
+          drawAuthModal();
+        }
+      };
+      this.activeModalHandler = keyHandler;
+      this.term.on('key', keyHandler);
+    });
+
+    this.term.restoreCursor();
+    this.term.bgDefaultColor().defaultColor().styleReset();
+  }
+
   closeModal(sessionId, modalType) {
     if (this.#activeModal?.sessionId === sessionId && this.#activeModal?.type === modalType) {
       this.#activeModal = null;
@@ -794,29 +933,38 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   sendModalResponse(sessionId, modalType, response) {
-    const commands = [
-      {
-        command: {
-          name: "Page.handleJavaScriptDialog",
-          params: {
-            sessionId,
-            accept: modalType == 'prompt' ? response !== null : response == "ok",
-            ...(modalType == 'prompt' ? { promptText: response || '' } : {}),
+    const commands = [];
+    switch(modalType) {
+      case 'alert':
+      case 'confirm':
+      case 'prompt':
+      case 'beforeunload':
+        commands.push(
+          {
+            command: {
+              name: "Page.handleJavaScriptDialog",
+              params: {
+                sessionId,
+                accept: modalType == 'prompt' ? response !== null : response == "ok",
+                ...(modalType == 'prompt' ? { promptText: response || '' } : {}),
+              }
+            }
+          },
+          {
+            command: {
+              isZombieLordCommand: true,
+              name: "Connection.closeModal",
+              params: {
+                modalType, 
+                sessionId
+              }
+            }
           }
-        }
-      },
-      {
-        command: {
-          isZombieLordCommand: true,
-          name: "Connection.closeModal",
-          params: {
-            modalType, 
-            sessionId
-          }
-        }
-      }
-    ];
-
+        );
+        break;
+      case 'authRequired':
+        break;
+    }
     this.emit('tell-browserbox', commands);
   }
 

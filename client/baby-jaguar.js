@@ -261,7 +261,7 @@
         browserbox.send(browserboxMessage(...stuff));
       });
 
-      browserbox.on('message', data => {
+      const handleBBMessage = data => {
         let message;
         try {
           message = JSON.parse(data.toString('utf8'));
@@ -290,6 +290,11 @@
                     browser.showPrompt(sessionId, modalMessage, defaultPrompt);
                     break;
                 }
+              } else if (meta.authRequired && browser) {
+                const { authChallenge: { scheme, realm }, requestId } = meta.authRequired;
+                // Assume sessionId is available in message or derivable; adjust as needed
+                const sessionId = 'default-session';
+                browser.showHTTPAuth(sessionId, scheme, realm, requestId);
               } else if (meta.closeModal && browser) {
                 const { sessionId, modalType } = meta.closeModal;
                 browser.closeModal(sessionId, modalType);
@@ -300,7 +305,9 @@
             }
           }
         }
-      });
+      };
+
+      browserbox.on('message', handleBBMessage);
 
       await sleep(3000);
       await selectTabAndRender();
