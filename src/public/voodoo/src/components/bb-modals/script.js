@@ -325,6 +325,8 @@ class BBModal extends Base {
     // auth response is required to continue it
     // it's an extra step in the protocol
     // canceling puts the whole browser into an undefined state
+    // testing replacing response: CancelAuth with response: Default
+    // which might be better
     const {state} = this;
     click.preventDefault();
     click.stopPropagation();
@@ -332,7 +334,7 @@ class BBModal extends Base {
     const data = new FormData(form);
     const requestId = data.get('requestid').slice(0,140);
     const authResponse = {
-      response: "CancelAuth"
+      response: "Default"
     };
     state.H({
       synthetic: true,
