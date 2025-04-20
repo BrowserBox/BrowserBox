@@ -778,7 +778,13 @@ export default class TerminalBrowser extends EventEmitter {
           resolve();
         } else if (key === 'ESCAPE') {
           this.term.removeListener('key', keyHandler);
-          this.sendModalResponse(sessionId, 'auth', null);
+          this.sendModalResponse(sessionId, 'auth', {
+            authResponse: {
+              username: '',
+              password: '',
+              response: 'ProvideCredentials'
+            },
+            requestId
           this.closeModal(sessionId, 'auth');
           resolve();
         } else if (key === 'TAB') {
