@@ -275,11 +275,14 @@
           for( const meta of message.meta ) {
             try {
               if (meta.modal && browser) {
-                const { sessionId, message: modalMessage, type, defaultPrompt } = meta.modal;
+                const { sessionId, type, defaultPrompt } = meta.modal;
+                let { message: modalMessage } = meta.modal;
                 switch (type) {
                   case 'alert':
                     browser.showAlert(sessionId, modalMessage);
                     break;
+                  case 'beforeunload':
+                    modalMessage = 'Are you sure you wish to leave this page?';
                   case 'confirm':
                     browser.showConfirm(sessionId, modalMessage);
                     break;
