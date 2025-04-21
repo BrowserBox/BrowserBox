@@ -728,6 +728,78 @@
               logClicks(`Failed to fetch live checkbox props for backendNodeId ${currentBackendNodeId}: ${error.message}`);
             });
           }; break;
+          case "select": {
+            logClicks(`Drawing select field for backendNodeId: ${backendNodeId}`);
+            const currentBackendNodeId = backendNodeId;
+            const onChange = InputManager.createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId });
+
+            send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
+              if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+              const objectId = resolveResult.object.objectId;
+              const propsResult = await send(
+                'Runtime.callFunctionOn',
+                {
+                  objectId,
+                  functionDeclaration: `function() {
+                    const options = Array.from(this.options).map(opt => ({
+                      value: opt.value,
+                      label: opt.text,
+                      selected: opt.selected
+                    }));
+                    return { options, value: this.value };
+                  }`,
+                  arguments: [],
+                  returnByValue: true,
+                },
+                sessionId
+              );
+              let selectOptions = [];
+              let selectedValue = '';
+              if (propsResult?.result?.value) {
+                selectOptions = propsResult.result.value.options || [];
+                selectedValue = propsResult.result.value.value || '';
+                logClicks(`Fetched live select props for backendNodeId: ${currentBackendNodeId}: options=${JSON.stringify(selectOptions)}, value="${selectedValue}"`);
+              }
+
+              const selectField = drawSelectForNode({
+                renderX,
+                renderY,
+                termWidthForBox,
+                backendNodeId: currentBackendNodeId,
+                options: selectOptions,
+                initialValue: selectedValue,
+                onChange,
+              });
+
+              renderedBox.termWidth = selectField.width;
+              renderedBox.termHeight = 1;
+
+              if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
+                const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+                if (clickable) {
+                  clickable.termX = renderX;
+                  clickable.termY = renderY;
+                  clickable.termWidth = selectField.width;
+                  clickable.termHeight = 1;
+                  logClicks(`Updated clickable select: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
+                } else {
+                  newLog(`No clickable found for select: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                  logClicks(`No clickable found for select: backendNodeId=${currentBackendNodeId}`);
+                  clickableElements.push({
+                    text: selectedValue,
+                    boundingBox,
+                    backendNodeId: currentBackendNodeId,
+                    termX: renderX,
+                    termY: renderY,
+                    termWidth: selectField.width,
+                    termHeight: 1,
+                  });
+                }
+              }
+            }).catch(error => {
+              logClicks(`Failed to fetch live select props for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+            });
+          }; break;
           default: {
             logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
             const currentBackendNodeId = backendNodeId;
@@ -907,7 +979,7 @@
     return inputField;
   }
 
-  function drawCheckboxForNode({ renderX, renderY, termWidthForBox, backendNodeId, value, checked, name, attributes, onChange }) {
+  function drawCheckboxForNode({ renderX, renderY, termWidthForBox, backendNodeId, value, checked, name, onChange }) {
     const checkbox = browser.drawCheckbox({
       x: renderX,
       y: renderY,
@@ -916,10 +988,22 @@
       value, 
       checked,
       name, 
-      attributes,
       onChange,
     });
     return checkbox;
+  }
+
+  function drawSelectForNode({ renderX, renderY, termWidthForBox, backendNodeId, options, initialValue, onChange }) {
+    const selectField = browser.drawSelect({
+      x: renderX,
+      y: renderY,
+      width: termWidthForBox,
+      key: backendNodeId,
+      options,
+      initialValue,
+      onChange,
+    });
+    return selectField;
   }
 
   async function getNavigationHistory(sessionId) {

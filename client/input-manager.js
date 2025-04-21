@@ -258,6 +258,55 @@ export class InputManager {
         default:
           break;
       }
+    } else if (inputState.type === 'select') {
+      switch (key) {
+        case 'UP':
+        case 'LEFT':
+          if (inputState.selectedIndex > 0) {
+            inputState.selectedIndex--;
+            inputState.value = inputState.options[inputState.selectedIndex].value;
+            if (inputState.onChange) {
+              await inputState.onChange(inputState.value);
+            }
+            this.browser.redrawFocusedInput();
+            logClicks(`Select option changed: backendNodeId=${backendNodeId}, value=${inputState.value}, index=${inputState.selectedIndex}`);
+          }
+          break;
+        case 'DOWN':
+        case 'RIGHT':
+          if (inputState.selectedIndex < inputState.options.length - 1) {
+            inputState.selectedIndex++;
+            inputState.value = inputState.options[inputState.selectedIndex].value;
+            if (inputState.onChange) {
+              await inputState.onChange(inputState.value);
+            }
+            this.browser.redrawFocusedInput();
+            logClicks(`Select option changed: backendNodeId=${backendNodeId}, value=${inputState.value}, index=${inputState.selectedIndex}`);
+          }
+          break;
+        case 'ENTER':
+          await this.handleInputCommit(backendNodeId, inputState);
+          this.browser.redrawUnfocusedInput(backendNodeId);
+          this.browser.focusManager.setFocusedElement(`tabs:${this.browser.selectedTabId}`);
+          this.browser.focusManager.setPreviousFocusedElement(this.browser.focusManager.getFocusedElement());
+          if (inputState.onChange) inputState.onChange(inputState.value);
+          this.browser.render();
+          break;
+        case 'TAB':
+          this.browser.focusManager.focusNextElement(
+            element => this.browser.setFocus(element)
+          );
+          this.browser.render();
+          break;
+        case 'SHIFT_TAB':
+          this.browser.focusManager.focusPreviousElement(
+            element => this.browser.setFocus(element)
+          );
+          this.browser.render();
+          break;
+        default:
+          break;
+      }
     } else {
       if (key === 'ENTER') {
         await this.handleInputCommit(backendNodeId, inputState);

@@ -1052,6 +1052,16 @@ export default class TerminalBrowser extends EventEmitter {
       this.term.bgDefaultColor();
       this.term.defaultColor();
       this.term.styleReset();
+    } else if (inputState.type === 'select') {
+      const { x, y, width, selectedIndex, options } = inputState;
+      const displayWidth = Math.min(width, this.term.width - x + 1);
+      const selectedOption = options[selectedIndex] || { label: '' };
+
+      this.term.moveTo(x, y);
+      this.term.bgCyan().white(`[${selectedOption.label}]`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
     } else {
       const { x, y, width, value, cursorPosition } = inputState;
       const displayWidth = Math.min(width, this.term.width - x + 1);
@@ -1082,6 +1092,16 @@ export default class TerminalBrowser extends EventEmitter {
 
       this.term.moveTo(inputState.x, inputState.y);
       this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    } else if (inputState.type === 'select') {
+      const { x, y, width, selectedIndex, options } = inputState;
+      const displayWidth = Math.min(width, this.term.width - x + 1);
+      const selectedOption = options[selectedIndex] || { label: '' };
+
+      this.term.moveTo(x, y);
+      this.term.bgWhite().black(`[${selectedOption.label}]`.slice(0, displayWidth).padEnd(displayWidth, ' '));
       this.term.bgDefaultColor();
       this.term.defaultColor();
       this.term.styleReset();
