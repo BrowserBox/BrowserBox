@@ -389,7 +389,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   drawCheckbox(options) {
-    const { x, y, width, key, value, checked = false, onChange, attributes = [], name = '' } = options;
+    const { x, y, width, key, value, checked = false, onChange, name = '' } = options;
     const backendNodeIdStr = '' + key;
 
     if (!this.inputFields.has(backendNodeIdStr)) {

@@ -22,6 +22,7 @@
   import Layout from './layout.js';
   import TerminalBrowser from './terminal-browser.js';
   import { ConnectionManager } from './connection-manager.js';
+  import { InputManager } from './input-manager.js';
   import { newLog, sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
 
   // Constants and state
@@ -660,51 +661,78 @@
           case "checkbox": {
             logClicks(`Drawing checkbox for backendNodeId: ${backendNodeId}`);
             const currentBackendNodeId = backendNodeId;
-            const onChange = createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId, isCheckbox: true });
-
-            const checkboxField = drawCheckboxForNode({
-              renderX,
-              renderY,
-              termWidthForBox,
-              backendNodeId: currentBackendNodeId,
-              value,
-              checked,
-              name,
-              attributes,
-              onChange
-            });
-
-            renderedBox.termWidth = checkboxField.width;
-            renderedBox.termHeight = 1;
-
-            if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
-              const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
-              if (clickable) {
-                clickable.termX = renderX;
-                clickable.termY = renderY;
-                clickable.termWidth = checkboxField.width;
-                clickable.termHeight = 1;
-                logClicks(`Updated clickable checkbox: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
-              } else {
-                newLog(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`, renderedBox);
-                logClicks(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`);
-                clickableElements.push({
-                  text: value,
-                  boundingBox,
-                  backendNodeId: currentBackendNodeId,
-                  termX: renderX,
-                  termY: renderY,
-                  termWidth: checkboxField.width,
-                  termHeight: 1,
-                });
+            let value = '';
+            let checked = false;
+            let name = '';
+            send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
+              if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+              const objectId = resolveResult.object.objectId;
+              const propsResult = await send(
+                'Runtime.callFunctionOn',
+                {
+                  objectId,
+                  functionDeclaration: 'function() { return { checked: this.checked, value: this.value, name: this.name }; }',
+                  arguments: [],
+                  returnByValue: true,
+                },
+                sessionId
+              );
+              if (propsResult?.result?.value) {
+                checked = propsResult.result.value.checked;
+                value = propsResult.result.value.value || '';
+                name = propsResult.result.value.name || '';
+                logClicks(`Fetched live checkbox props for backendNodeId: ${currentBackendNodeId}: checked=${checked}, value="${value}", name="${name}"`);
               }
-            }
+              const checkboxWidth = 3; // Fixed width for [ ]
+              debugLog(`Checkbox props: backendNodeId=${currentBackendNodeId}, value=${value}, checked=${checked}, name=${name}, termWidthForBox=${checkboxWidth}`);
+
+              const onChange = InputManager.createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId, isCheckbox: true });
+
+              const checkboxField = drawCheckboxForNode({
+                renderX,
+                renderY,
+                termWidthForBox: checkboxWidth,
+                backendNodeId: currentBackendNodeId,
+                value,
+                checked,
+                name,
+                onChange
+              });
+
+              renderedBox.termWidth = checkboxField.width;
+              renderedBox.termHeight = 1;
+
+              if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
+                const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+                if (clickable) {
+                  clickable.termX = renderX;
+                  clickable.termY = renderY;
+                  clickable.termWidth = checkboxField.width;
+                  clickable.termHeight = 1;
+                  logClicks(`Updated clickable checkbox: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
+                } else {
+                  newLog(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                  logClicks(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`);
+                  clickableElements.push({
+                    text: value,
+                    boundingBox,
+                    backendNodeId: currentBackendNodeId,
+                    termX: renderX,
+                    termY: renderY,
+                    termWidth: checkboxField.width,
+                    termHeight: 1,
+                  });
+                }
+              }
+            }).catch(error => {
+              logClicks(`Failed to fetch live checkbox props for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+            });
           }; break;
           default: {
             logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
             const currentBackendNodeId = backendNodeId;
             const fallbackValue = text.startsWith('[INPUT') ? '' : text;
-            const onChange = createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId });
+            const onChange = InputManager.createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId });
 
             send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
               if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
@@ -892,40 +920,6 @@
       onChange,
     });
     return checkbox;
-  }
-
-  function createInputChangeHandler({ send, sessionId, backendNodeId }) {
-    return async function onInputChange(value) {
-      try {
-        const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
-        if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
-        const objectId = resolveResult.object.objectId;
-        const script = `function() {
-          if ( this.isContentEditable && !(this.tagName == 'INPUT' || this.tagName == 'TEXTAREA' || this.tagName == 'SELECT') ) {
-            this.innerText = ${JSON.stringify(value)};
-          } else {
-            this.value = ${JSON.stringify(value)};
-          }
-          this.dispatchEvent(new Event('input', { bubbles: true }));
-          this.dispatchEvent(new Event('change', { bubbles: true }));
-          return this.isContentEditable
-        }`;
-        await send(
-          'Runtime.callFunctionOn',
-          {
-            objectId,
-            functionDeclaration: script,
-            arguments: [],
-            returnByValue: true,
-          },
-          sessionId
-        );
-        logClicks(`Updated remote value for backendNodeId: ${backendNodeId} to "${value}"`);
-      } catch (error) {
-        DEBUG && console.warn(error);
-        logClicks(`Failed to set input value for backendNodeId ${backendNodeId}: ${error.message}`);
-      }
-    };
   }
 
   async function getNavigationHistory(sessionId) {

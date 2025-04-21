@@ -1,4 +1,4 @@
-import { logClicks } from './log.js';
+import { DEBUG, debugLog, logClicks } from './log.js';
 import { dinoGame } from './dino.js';
 import KEYS from './kbd.js';
 import { getBrowserState, getTabState, handleClick } from './baby-jaguar.js';
@@ -9,6 +9,47 @@ export class InputManager {
     this.browser = browser;
     this.keyBuffer = '';
     this.isListening = true;
+  }
+
+  static createInputChangeHandler({ send, sessionId, backendNodeId, isCheckbox = false }) {
+    return async function onInputChange(value) {
+      try {
+        const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
+        if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+        const objectId = resolveResult.object.objectId;
+        let script = `function() {
+          if ( this.isContentEditable && !(this.tagName == 'INPUT' || this.tagName == 'TEXTAREA' || this.tagName == 'SELECT') ) {
+            this.innerText = ${JSON.stringify(value)};
+          } else {
+            this.value = ${JSON.stringify(value)};
+          }
+          this.dispatchEvent(new Event('input', { bubbles: true }));
+          this.dispatchEvent(new Event('change', { bubbles: true }));
+          return this.isContentEditable
+        }`;
+        if ( isCheckbox ) {
+          script = `function() {
+            this.checked = ${JSON.stringify(!!value)};
+            this.dispatchEvent(new Event('change', { bubbles: true }));
+            return this.checked;
+          }`;
+        }
+        await send(
+          'Runtime.callFunctionOn',
+          {
+            objectId,
+            functionDeclaration: script,
+            arguments: [],
+            returnByValue: true,
+          },
+          sessionId
+        );
+        logClicks(`Updated remote value for backendNodeId: ${backendNodeId} to "${value}"`);
+      } catch (error) {
+        DEBUG && console.warn(error);
+        logClicks(`Failed to set input value for backendNodeId ${backendNodeId}: ${error.message}`);
+      }
+    };
   }
 
   async handleInputCommit(backendNodeId, inputState, { useEnter = true } = {}) {
@@ -187,56 +228,88 @@ export class InputManager {
     }
     logClicks(`Input focused, backendNodeId: ${backendNodeId}, current value: ${inputState.value}`);
 
-    if (key === 'ENTER') {
-      await this.handleInputCommit(backendNodeId, inputState);
-      this.browser.redrawUnfocusedInput(backendNodeId);
-      this.browser.focusManager.setFocusedElement(`tabs:${this.browser.selectedTabId}`);
-      this.browser.focusManager.setPreviousFocusedElement(this.browser.focusManager.getFocusedElement());
-      if (inputState.onChange) inputState.onChange(inputState.value);
-      this.browser.render();
-    } else {
+    if (inputState.type === 'checkbox') {
       switch (key) {
-        case 'LEFT':
-          if (inputState.cursorPosition > 0) inputState.cursorPosition--;
+        case ' ':
+        case 'ENTER':
+          inputState.checked = !inputState.checked;
+          debugLog(`Toggled checkbox: backendNodeId=${backendNodeId}, checked=${inputState.checked}`);
+          if (inputState.onChange) {
+            await inputState.onChange(inputState.checked);
+          }
           this.browser.redrawFocusedInput();
           break;
         case 'RIGHT':
-          if (inputState.cursorPosition < inputState.value.length) inputState.cursorPosition++;
-          this.browser.redrawFocusedInput();
-          break;
-        case 'BACKSPACE':
-          if (inputState.cursorPosition > 0) {
-            inputState.value = inputState.value.slice(0, inputState.cursorPosition - 1) + inputState.value.slice(inputState.cursorPosition);
-            inputState.cursorPosition--;
-            if (inputState.onChange) inputState.onChange(inputState.value);
-            this.browser.redrawFocusedInput();
-          }
-          break;
+        case 'DOWN':
         case 'TAB':
           this.browser.focusManager.focusNextElement(
             element => this.browser.setFocus(element)
           );
           this.browser.render();
           break;
+        case 'LEFT':
+        case 'UP':
         case 'SHIFT_TAB':
           this.browser.focusManager.focusPreviousElement(
             element => this.browser.setFocus(element)
           );
           this.browser.render();
           break;
-        case 'UP':
-        case 'DOWN':
-          this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
-          break;
         default:
-          if (key.length === 1) {
-            inputState.value = inputState.value.slice(0, inputState.cursorPosition) + key + inputState.value.slice(inputState.cursorPosition);
-            inputState.cursorPosition++;
-            logClicks(`Updated value: ${inputState.value}`);
-            if (inputState.onChange) inputState.onChange(inputState.value);
-            this.browser.redrawFocusedInput();
-          }
           break;
+      }
+    } else {
+      if (key === 'ENTER') {
+        await this.handleInputCommit(backendNodeId, inputState);
+        this.browser.redrawUnfocusedInput(backendNodeId);
+        this.browser.focusManager.setFocusedElement(`tabs:${this.browser.selectedTabId}`);
+        this.browser.focusManager.setPreviousFocusedElement(this.browser.focusManager.getFocusedElement());
+        if (inputState.onChange) inputState.onChange(inputState.value);
+        this.browser.render();
+      } else {
+        switch (key) {
+          case 'LEFT':
+            if (inputState.cursorPosition > 0) inputState.cursorPosition--;
+            this.browser.redrawFocusedInput();
+            break;
+          case 'RIGHT':
+            if (inputState.cursorPosition < inputState.value.length) inputState.cursorPosition++;
+            this.browser.redrawFocusedInput();
+            break;
+          case 'BACKSPACE':
+            if (inputState.cursorPosition > 0) {
+              inputState.value = inputState.value.slice(0, inputState.cursorPosition - 1) + inputState.value.slice(inputState.cursorPosition);
+              inputState.cursorPosition--;
+              if (inputState.onChange) inputState.onChange(inputState.value);
+              this.browser.redrawFocusedInput();
+            }
+            break;
+          case 'TAB':
+            this.browser.focusManager.focusNextElement(
+              element => this.browser.setFocus(element)
+            );
+            this.browser.render();
+            break;
+          case 'SHIFT_TAB':
+            this.browser.focusManager.focusPreviousElement(
+              element => this.browser.setFocus(element)
+            );
+            this.browser.render();
+            break;
+          case 'UP':
+          case 'DOWN':
+            this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+            break;
+          default:
+            if (key.length === 1) {
+              inputState.value = inputState.value.slice(0, inputState.cursorPosition) + key + inputState.value.slice(inputState.cursorPosition);
+              inputState.cursorPosition++;
+              logClicks(`Updated value: ${inputState.value}`);
+              if (inputState.onChange) inputState.onChange(inputState.value);
+              this.browser.redrawFocusedInput();
+            }
+            break;
+        }
       }
     }
   }
