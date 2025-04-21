@@ -1,5 +1,5 @@
 // focus-manager.js
-import { debugLog, focusLog } from './log.js';
+import { debugLog, focusLog, newLog } from './log.js';
 import { renderedBoxesBySession } from './baby-jaguar.js';
 
 export class FocusManager {
@@ -279,6 +279,7 @@ export class FocusManager {
       to: elementId,
       index: this.currentFocusIndex
     }, (new Error).stack);
+    newLog(elementToFocus);
     setFocus(elementToFocus);
   }
 

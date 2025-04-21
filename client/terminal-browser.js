@@ -1168,7 +1168,7 @@ export default class TerminalBrowser extends EventEmitter {
       const publicState = this.getCurrentTabState();
       const midX = element.x + Math.floor(element.width / 2);
       const midY = element.y + Math.floor(element.height / 2);
-      const clickedBox = getClickedBox({ termX: midX, termY: midY });
+      const clickedBox = getClickedBox({ termX: midX, termY: midY, ignoreIsClickable: true });
       const { send, sessionId } = publicState;
       focusInput({ clickedBox, browser: this, send, sessionId, termX: element.x + element.width });
     } else if (element.type === 'clickable') {

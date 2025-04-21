@@ -877,7 +877,7 @@
     return navigateHistory(sessionId, 1);
   }
 
-  export function getClickedBox({ termX, termY }) {
+  export function getClickedBox({ termX, termY, ignoreIsClickable = false }) {
     let clickedBox = null;
     const sessionBoxes = renderedBoxesBySession.get(browserState.currentSessionId) || [];
     logClicks(`getClickedBox: termX=${termX}, termY=${termY}, sessionBoxes.length=${sessionBoxes.length}`);
@@ -885,7 +885,7 @@
       const box = sessionBoxes[i];
       const inX = termX >= box.termX && termX < box.termX + box.termWidth;
       const inY = termY == box.termY;
-      if (inX && inY && box.isClickable) {
+      if (inX && inY && (ignoreIsClickable || box.isClickable)) {
         clickedBox = box;
         break;
       }

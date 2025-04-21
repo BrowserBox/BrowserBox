@@ -8,8 +8,12 @@ const LOG_FILE = 'cdp.log';
       export const sleep = ms => new Promise(res => setTimeout(res, ms));
 
       // logging 
+        export function newLog(...stuff) {
+          appendFileSync('new.log', JSON.stringify(stuff, null, 2));
+        }
+
         export function focusLog(...stuff) {
-          appendFileSync('focus.log', JSON.stringify(stuff, null, 2));
+          DEBUG && appendFileSync('focus.log', JSON.stringify(stuff, null, 2));
         }
 
         export function rowsLog(rows) {
@@ -21,7 +25,7 @@ const LOG_FILE = 'cdp.log';
         }
 
         export function logClicks(...stuff) {
-          appendFileSync('clicks.log', stuff.join(' ') + '\n');
+          DEBUG && appendFileSync('clicks.log', stuff.join(' ') + '\n');
         }
 
         export function logMessage(direction, message, terminal) {
@@ -38,7 +42,7 @@ const LOG_FILE = 'cdp.log';
         }
 
         export function debugLog(...message) {
-          //if ( ! DEBUG ) return;
+          if ( ! DEBUG ) return;
           message = message.join(' ');
           try {
             appendFileSync('debug-coords.log', `${new Date().toISOString()} - ${message}\n`);
