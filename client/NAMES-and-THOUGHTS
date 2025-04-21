@@ -24,4 +24,15 @@ as if you've power over it. no longer chattering and noisy, no longer in the col
 
 Kernel Browser - a text-only terminal client for the modern web
 
+---
 
+Medium is the message.
+
+
+---
+
+I think the real superpower of this is it can open the internet up to thousands of devices that don't have graphical displays or modern displays. the ultimate text render client in ansi will be simple enough we can stream it over the network to any client. You can write clients in this for any language.
+
+A focus of this kernel project should be the publishing of an API document that allows creation of these thin clients, plus a conversion of the NodeJS client to a thin client in C, or C++ or Rust or something.
+
+Call it "wire" or "ultrathin" or "ultrafine"
