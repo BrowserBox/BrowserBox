@@ -1,5 +1,5 @@
 // focus-manager.js
-import { debugLog, focusLog, newLog } from './log.js';
+import { debugLog, focusLog, newLog, DEBUG } from './log.js';
 import { renderedBoxesBySession } from './baby-jaguar.js';
 
 export class FocusManager {
@@ -90,6 +90,7 @@ export class FocusManager {
   computeTabbableElements() {
     if (this.tabbableCached) return this.tabbableCache;
     const browserState = this.getBrowserState();
+    const hasClickableDescendants = this.#hasClickableDescendants.bind(this);
     const sessionId = browserState.currentSessionId;
     const tabState = this.getTabState(sessionId);
     const renderedBoxes = renderedBoxesBySession.get(sessionId) || [];
@@ -123,68 +124,6 @@ export class FocusManager {
         ancestorType: b.ancestorType
       }))
     }, (new Error).stack);
-
-    const hasClickableDescendants = (nodeIdx) => {
-      const descendants = [];
-      const collectDescendants = (idx) => {
-        tabState.nodeToParent.forEach((parentIdx, childIdx) => {
-          if (parentIdx === idx) {
-            descendants.push(childIdx);
-            collectDescendants(childIdx);
-          }
-        });
-      };
-      collectDescendants(nodeIdx);
-
-      const clickableDescendants = descendants.filter(idx => tabState.nodes.isClickable?.index.includes(idx));
-      const trulyHas = clickableDescendants.length > 0;
-
-      if (trulyHas) {
-        const sessionId = getBrowserState().currentSessionId;
-        const renderedBoxes = renderedBoxesBySession.get(sessionId) || [];
-        
-        const descendantDetails = clickableDescendants.map(idx => {
-          const nodeNameIdx = tabState.nodes.nodeName[idx];
-          const nodeName = nodeNameIdx >= 0 ? tabState.strings[nodeNameIdx] : '';
-          const backendNodeId = tabState.nodes.backendNodeId[idx] || 'unknown';
-          
-          // Get innerText from renderedBoxes or nodes.children
-          const box = renderedBoxes.find(b => b.backendNodeId === backendNodeId);
-          let innerText = box?.text || '';
-          if (!innerText && tabState.nodes.children?.[idx]) {
-            innerText = tabState.nodes.children[idx].map(childIdx => {
-              const childTextIdx = tabState.nodes.nodeValue?.[childIdx];
-              return childTextIdx >= 0 ? tabState.strings[childTextIdx] : '';
-            }).join(' ').trim();
-          }
-
-          // Get attributes
-          const attributes = tabState.nodes.attributes?.[idx]?.reduce((acc, attrIdx, i, arr) => {
-            if (i % 2 === 0 && attrIdx >= 0 && arr[i + 1] >= 0) {
-              acc[tabState.strings[attrIdx]] = tabState.strings[arr[i + 1]];
-            }
-            return acc;
-          }, {}) || {};
-
-          return {
-            nodeIdx: idx,
-            backendNodeId,
-            nodeName,
-            innerText,
-            attributes,
-            isClickable: tabState.nodes.isClickable?.index.includes(idx),
-            termX: box?.termX || null,
-            termY: box?.termY || null,
-            termWidth: box?.termWidth || null,
-            termHeight: box?.termHeight || null
-          };
-        });
-
-        newLog(`Node ${nodeIdx} has clickable descendants`, JSON.stringify(descendantDetails, null, 2));
-      }
-
-      return trulyHas;
-    }
 
     const elementsByParentId = new Map();
     const seenBackendNodeIds = new Set();
@@ -223,12 +162,12 @@ export class FocusManager {
       }
 
       {
-        if (box.type === 'input') {
+        if (DEBUG && box.type === 'input') {
           if (seenBackendNodeIds.has(parentBackendNodeId)) {
             newLog(`Skipping input due to duplicate backendNodeId: ${parentBackendNodeId}`);
           } else {
             const isButton = box.ancestorType === 'button';
-            if (!isButton && hasClickableDescendants(parentNodeIndex)) {
+            if (!isButton && hasClickableDescendants(parentNodeIndex, tabState)) {
               newLog(`Skipping input due to clickable descendants: backendNodeId=${parentBackendNodeId}, parentNodeIndex=${parentNodeIndex}`);
             } else {
               newLog(`Adding input to elementsByParentId: backendNodeId=${parentBackendNodeId}`);
@@ -238,7 +177,7 @@ export class FocusManager {
       }
 
       const isButton = box.ancestorType === 'button';
-      if (!isButton && hasClickableDescendants(parentNodeIndex)) {
+      if (!isButton && hasClickableDescendants(parentNodeIndex, tabState)) {
         return;
       }
 
@@ -297,6 +236,74 @@ export class FocusManager {
     this.tabbableCache = tabbable.sort((a, b) => a.y - b.y || a.x - b.x);
     this.tabbableCached = true;
     return this.tabbableCache;
+  }
+
+  #hasClickableDescendants(nodeIdx, tabState) {
+    const descendants = [];
+    const collectDescendants = (idx) => {
+      tabState.nodeToParent.forEach((parentIdx, childIdx) => {
+        if (parentIdx === idx) {
+          descendants.push(childIdx);
+          collectDescendants(childIdx);
+        }
+      });
+    };
+    collectDescendants(nodeIdx);
+
+    // Filter out #text nodes (nodeType: 3)
+    const clickableDescendants = descendants.filter(idx => {
+      const isClickable = tabState.nodes.isClickable?.index.includes(idx);
+      const nodeType = tabState.nodes.nodeType[idx];
+      return isClickable && nodeType !== 3;
+    });
+    const trulyHas = clickableDescendants.length > 0;
+
+    if (DEBUG && trulyHas) {
+      const sessionId = this.getBrowserState().currentSessionId;
+      const renderedBoxes = renderedBoxesBySession.get(sessionId) || [];
+
+      const descendantDetails = clickableDescendants.map(idx => {
+        const nodeNameIdx = tabState.nodes.nodeName[idx];
+        const nodeName = nodeNameIdx >= 0 ? tabState.strings[nodeNameIdx] : '';
+        const backendNodeId = tabState.nodes.backendNodeId[idx] || 'unknown';
+
+        // Get innerText from renderedBoxes or nodes.children
+        const box = renderedBoxes.find(b => b.backendNodeId === backendNodeId);
+        let innerText = box?.text || '';
+        if (!innerText && tabState.nodes.children?.[idx]) {
+          innerText = tabState.nodes.children[idx].map(childIdx => {
+            const childTextIdx = tabState.nodes.nodeValue?.[childIdx];
+            return childTextIdx >= 0 ? tabState.strings[childTextIdx] : '';
+          }).join(' ').trim();
+        }
+
+        // Get attributes
+        const attributes = tabState.nodes.attributes?.[idx]?.reduce((acc, attrIdx, i, arr) => {
+          if (i % 2 === 0 && attrIdx >= 0 && arr[i + 1] >= 0) {
+            acc[tabState.strings[attrIdx]] = tabState.strings[arr[i + 1]];
+          }
+          return acc;
+        }, {}) || {};
+
+        return {
+          nodeIdx: idx,
+          backendNodeId,
+          nodeName,
+          innerText,
+          attributes,
+          isClickable: tabState.nodes.isClickable?.index.includes(idx),
+          nodeType: tabState.nodes.nodeType[idx],
+          termX: box?.termX || null,
+          termY: box?.termY || null,
+          termWidth: box?.termWidth || null,
+          termHeight: box?.termHeight || null
+        };
+      });
+
+      newLog(`Node ${nodeIdx} has clickable descendants`, JSON.stringify(descendantDetails, null, 2));
+    }
+
+    return trulyHas;
   }
 
   isPageContentElement(element) {
