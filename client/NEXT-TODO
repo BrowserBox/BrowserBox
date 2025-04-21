@@ -1,3 +1,7 @@
+- select, radio and checkbox inputs (and test page)
+- text / ce inputs 
+  - Some inputs (ie, Wikipedia search from a article page) are not updating their value on typing. Why? Probably a textarea like goog search.
+
 Next
   - allow copy (for visual breakout)
   - reset terminal on exit (so normal)
@@ -5,8 +9,6 @@ Next
   - Fix some elements are not highlighted on focus. Possible causes:
     1. the element has bounds overlapping offscreen.
   - Between page loads need to clear some state (getting node no longer exists, input elements from previous renders likely still being rendered)
-  - select, radio and checkbox inputs (and test page)
-
   - ensure gaps are "correct" (where they should be, not weird random space after inline, etc)
   - ensure layout remains correct beofre proceeding to following:
   - hook modals for file upload.
@@ -30,12 +32,7 @@ Marketing (excerpt, full plan elsewhere)
   - suggest pair with a font, recommend a certain terminal font that works well with displaying web contents
 
 Features
-  - text / ce inputs 
-    - Some inputs (ie, Wikipedia search from a article page) are not updating their value on typing. Why? Probably a textarea like goog search.
-  - select, checkbox inputs
-  - js modals
   - file upload
-  - http basic auth
   - file download (to ~/Downloads)
   - enhance cursoring / scrolling - horizontal scroll into window, same for virt, before hit margin and trigger actual page scroll
   - special KEYS when not in focused inputs:

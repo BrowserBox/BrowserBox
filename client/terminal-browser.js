@@ -785,6 +785,7 @@ export default class TerminalBrowser extends EventEmitter {
               response: 'ProvideCredentials'
             },
             requestId
+          });
           this.closeModal(sessionId, 'auth');
           resolve();
         } else if (key === 'TAB') {
