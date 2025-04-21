@@ -607,7 +607,7 @@
 
     for (const box of visibleBoxes) {
       DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
-      const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type, subType, attributes } = box;
+      const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type, subType } = box;
       const renderX = Math.max(1, termX + 1);
       const renderY = Math.max(5, termY + 4);
 
@@ -660,9 +660,6 @@
           case "checkbox": {
             logClicks(`Drawing checkbox for backendNodeId: ${backendNodeId}`);
             const currentBackendNodeId = backendNodeId;
-            const value = attributes.find((val, i) => i % 2 === 0 && val === 'value') ? attributes[attributes.findIndex(val => val === 'value') + 1] : '';
-            const checked = attributes.includes('checked') || box.checked || false;
-            const name = renderedBox.name;
             const onChange = createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId, isCheckbox: true });
 
             const checkboxField = drawCheckboxForNode({

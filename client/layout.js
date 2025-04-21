@@ -613,13 +613,6 @@ const LayoutAlgorithm = (() => {
         nodeIndex: nodeIdx,
       };
 
-      switch(subType) {
-        case "checkbox": {
-          mediaBox.attributes = attributes;
-        }; break;
-        default: break;
-      }
-
       textLayoutBoxes.push(mediaBox);
       if (isClickable) {
         clickableElements.push({

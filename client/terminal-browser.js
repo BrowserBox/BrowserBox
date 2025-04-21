@@ -389,7 +389,7 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   drawCheckbox(options) {
-    const { x, y, width, key, value, checked = false, onChange } = options;
+    const { x, y, width, key, value, checked = false, onChange, attributes = [], name = '' } = options;
     const backendNodeIdStr = '' + key;
 
     if (!this.inputFields.has(backendNodeIdStr)) {
@@ -402,6 +402,7 @@ export default class TerminalBrowser extends EventEmitter {
         x,
         y,
         width,
+        name
       });
     }
 
@@ -409,17 +410,25 @@ export default class TerminalBrowser extends EventEmitter {
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
-    inputState.checked = checked;
+    inputState.name = name;
+    // Only update checked if explicitly provided
+    if (checked !== undefined) {
+      inputState.checked = checked;
+    }
 
-    const displayWidth = Math.min(width, this.term.width - x + 1);
-    const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
+    const checkboxWidth = 3; // Fixed width for [ ]
     const label = value || '';
+    const totalWidth = checkboxWidth + (label ? label.length + 1 : 0);
+    const displayWidth = Math.min(totalWidth, this.term.width - x + 1);
+    const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
+
+    debugLog(`Drawing checkbox: backendNodeId=${backendNodeIdStr}, isFocused=${isFocused}, checked=${inputState.checked}, value=${value}, name=${name}, x=${x}, y=${y}, width=${width}, displayWidth=${displayWidth}`);
 
     this.term.moveTo(x, y);
     if (isFocused) {
-      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'}${label ? ' ' + label : ''}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
     } else {
-      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}${label ? ' ' + label : ''}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
     }
 
     this.term.bgDefaultColor();
