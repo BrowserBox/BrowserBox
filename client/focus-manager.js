@@ -174,6 +174,21 @@ export class FocusManager {
         return;
       }
 
+      {
+        if (box.type === 'input') {
+          if (seenBackendNodeIds.has(parentBackendNodeId)) {
+            newLog(`Skipping input due to duplicate backendNodeId: ${parentBackendNodeId}`);
+          } else {
+            const isButton = box.ancestorType === 'button';
+            if (!isButton && hasClickableDescendants(parentNodeIndex)) {
+              newLog(`Skipping input due to clickable descendants: backendNodeId=${parentBackendNodeId}, parentNodeIndex=${parentNodeIndex}`);
+            } else {
+              newLog(`Adding input to elementsByParentId: backendNodeId=${parentBackendNodeId}`);
+            }
+          }
+        }
+      }
+
       const isButton = box.ancestorType === 'button';
       if (!isButton && hasClickableDescendants(parentNodeIndex)) {
         return;
