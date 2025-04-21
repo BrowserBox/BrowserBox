@@ -48,12 +48,10 @@ Features
 For release
   - add licensing checks to krnl as well!
   - capture loading events from browserbox and display a 2x2 or 3x2 cursor "square" at screen right (like Netscape loading logo), showing loading (maybe just cursor rotating inside it clockwise. 1.5 - 2 Hz  
-  - improve efficiency of rendering. Only split snapshot on visible boxes.
-  - as much as possible limit our data processing to only visible nodes and parts of tree we need to look at relevant to those
-
-BrowserBox side
-  - frames are not syncing to normal bb if text is connected.
-  - targets are also not syncing.
+  - improve efficiency of rendering. 
+    - Only split snapshot on visible boxes.
+    - as much as possible limit our data processing to only visible nodes and parts of tree we need to look at relevant to those
+    - pre compute as much as possible. e.g. the hasClicableDescendants change with the #text box check dramatically increased cost and bigly slowed rendering perf. So fix that. And there's probably more to fix, too.  
 
 -- Later -- i.e., to be omitted from initial public release
   - put media placeholders behind a toggle. So normally it's off, but you can toggle it on to view it (toggle setting will rerender)
