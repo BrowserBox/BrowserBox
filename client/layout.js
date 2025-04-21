@@ -534,7 +534,7 @@ const LayoutAlgorithm = (() => {
 
       if (!bounds || bounds[2] <= INVISIBLE_DIMENSION || bounds[3] <= INVISIBLE_DIMENSION ) continue;
       
-      let mediaType, placeholder;
+      let mediaType, subType, placeholder;
       if (nodeNameUpper === 'IMG') {
         mediaType = 'media';
         placeholder = '[IMG]';
@@ -553,6 +553,12 @@ const LayoutAlgorithm = (() => {
             const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
             placeholder = valueText || '[BUTTON]';
             mediaType = 'button';
+          } else if (inputType == 'checkbox') {
+            const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
+            const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
+            placeholder = valueText || ''; // Use actual value
+            subType = inputType;
+            mediaType = 'input';
           } else {
             const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
             const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
@@ -596,6 +602,7 @@ const LayoutAlgorithm = (() => {
 
       const mediaBox = {
         type: mediaType,
+        subType,
         text: placeholder,
         boundingBox,
         isClickable,
