@@ -65,6 +65,9 @@ const LayoutAlgorithm = (() => {
         } else if (box.subType == 'checkbox' ) {
           box.termWidth = CHECKBOX_LAYOUT_WIDTH;
           box.termHeight = 1;
+        } else if (box.subType === 'select') {
+          box.termWidth = 20; // Default width, adjusted in baby-jaguar.js
+          box.termHeight = 1;
         } else {
           box.termWidth = box.text.length;
           box.termHeight = 1;
@@ -578,6 +581,11 @@ const LayoutAlgorithm = (() => {
         });
         mediaType = 'input';
         placeholder = textContent || '';
+      } else if (nodeNameUpper === 'SELECT') {
+        debugLog(`Detected SELECT node: backendNodeId=${nodes.backendNodeId[nodeIdx]}, layoutIdx=${layoutIdx}`);
+        mediaType = 'input';
+        subType = 'select';
+        placeholder = '[SELECT]';
       } else if (ceIndex !== -1) {
         const contentEditable = strings[attributes[ceIndex + 1]];
         if (contentEditable === 'true' || contentEditable === '') {

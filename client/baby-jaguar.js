@@ -761,10 +761,16 @@
                 logClicks(`Fetched live select props for backendNodeId: ${currentBackendNodeId}: options=${JSON.stringify(selectOptions)}, value="${selectedValue}"`);
               }
 
+              // Calculate termWidth based on longest option label, capped at 42
+              const longestLabelLength = selectOptions.length > 0
+                ? Math.max(...selectOptions.map(opt => opt.label.length))
+                : 20; // Fallback to default if no options
+              const selectWidth = Math.min(42, Math.max(10, longestLabelLength + 2)); // +2 for [ ]
+
               const selectField = drawSelectForNode({
                 renderX,
                 renderY,
-                termWidthForBox,
+                termWidthForBox: selectWidth,
                 backendNodeId: currentBackendNodeId,
                 options: selectOptions,
                 initialValue: selectedValue,
@@ -798,6 +804,19 @@
               }
             }).catch(error => {
               logClicks(`Failed to fetch live select props for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+              // Fallback rendering
+              const selectWidth = 20; // Default width
+              const selectField = drawSelectForNode({
+                renderX,
+                renderY,
+                termWidthForBox: selectWidth,
+                backendNodeId: currentBackendNodeId,
+                options: [],
+                initialValue: '',
+                onChange,
+              });
+              renderedBox.termWidth = selectField.width;
+              renderedBox.termHeight = 1;
             });
           }; break;
           default: {
