@@ -287,7 +287,9 @@
                     break;
                   case 'beforeunload':
                     modalMessage = 'Are you sure you wish to leave this page?';
+                  /* eslint-disable no-fallthrough */
                   case 'confirm':
+                  /* eslint-enable no-fallthrough */
                     browser.showConfirm(sessionId, modalMessage);
                     break;
                   case 'prompt':

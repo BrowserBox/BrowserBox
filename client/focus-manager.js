@@ -135,8 +135,56 @@ export class FocusManager {
         });
       };
       collectDescendants(nodeIdx);
-      return descendants.some(idx => tabState.nodes.isClickable?.index.includes(idx));
-    };
+
+      const clickableDescendants = descendants.filter(idx => tabState.nodes.isClickable?.index.includes(idx));
+      const trulyHas = clickableDescendants.length > 0;
+
+      if (trulyHas) {
+        const sessionId = getBrowserState().currentSessionId;
+        const renderedBoxes = renderedBoxesBySession.get(sessionId) || [];
+        
+        const descendantDetails = clickableDescendants.map(idx => {
+          const nodeNameIdx = tabState.nodes.nodeName[idx];
+          const nodeName = nodeNameIdx >= 0 ? tabState.strings[nodeNameIdx] : '';
+          const backendNodeId = tabState.nodes.backendNodeId[idx] || 'unknown';
+          
+          // Get innerText from renderedBoxes or nodes.children
+          const box = renderedBoxes.find(b => b.backendNodeId === backendNodeId);
+          let innerText = box?.text || '';
+          if (!innerText && tabState.nodes.children?.[idx]) {
+            innerText = tabState.nodes.children[idx].map(childIdx => {
+              const childTextIdx = tabState.nodes.nodeValue?.[childIdx];
+              return childTextIdx >= 0 ? tabState.strings[childTextIdx] : '';
+            }).join(' ').trim();
+          }
+
+          // Get attributes
+          const attributes = tabState.nodes.attributes?.[idx]?.reduce((acc, attrIdx, i, arr) => {
+            if (i % 2 === 0 && attrIdx >= 0 && arr[i + 1] >= 0) {
+              acc[tabState.strings[attrIdx]] = tabState.strings[arr[i + 1]];
+            }
+            return acc;
+          }, {}) || {};
+
+          return {
+            nodeIdx: idx,
+            backendNodeId,
+            nodeName,
+            innerText,
+            attributes,
+            isClickable: tabState.nodes.isClickable?.index.includes(idx),
+            termX: box?.termX || null,
+            termY: box?.termY || null,
+            termWidth: box?.termWidth || null,
+            termHeight: box?.termHeight || null
+          };
+        });
+
+        newLog(`Node ${nodeIdx} has clickable descendants`, JSON.stringify(descendantDetails, null, 2));
+      }
+
+      return trulyHas;
+    }
 
     const elementsByParentId = new Map();
     const seenBackendNodeIds = new Set();
