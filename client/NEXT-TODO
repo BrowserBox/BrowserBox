@@ -1,6 +1,4 @@
 - select, radio and checkbox inputs (and test page)
-- text / ce inputs 
-  - Some inputs (ie, Wikipedia search from a article page) are not updating their value on typing. Why? Probably a textarea like goog search.
 
 Next
   - allow copy (for visual breakout)

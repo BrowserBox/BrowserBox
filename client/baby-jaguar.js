@@ -838,7 +838,11 @@
         if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
         const objectId = resolveResult.object.objectId;
         const script = `function() {
-          this.value = ${JSON.stringify(value)};
+          if ( this.contenteditable && !(this.tagName == 'INPUT' || this.tagName == 'TEXTAREA' || this.tagName != 'SELECT') ) {
+            this.innerText = ${JSON.stringify(value)};
+          } else {
+            this.value = ${JSON.stringify(value)};
+          }
           this.dispatchEvent(new Event('input', { bubbles: true }));
           this.dispatchEvent(new Event('change', { bubbles: true }));
         }`;
