@@ -1041,33 +1041,63 @@ export default class TerminalBrowser extends EventEmitter {
     const inputState = this.inputFields.get(backendNodeId);
     if (!inputState || !inputState.focused) return;
 
-    const { x, y, width, value, cursorPosition } = inputState;
-    const displayWidth = Math.min(width, this.term.width - x + 1);
+    debugLog(`redrawFocusedInput: backendNodeId=${backendNodeId}, type=${inputState.type}, checked=${inputState.checked}, value=${inputState.value}, width=${inputState.width}`);
 
-    this.term.moveTo(x, y);
-    const beforeCursor = value.slice(0, cursorPosition);
-    const cursorChar = value[cursorPosition] || ' ';
-    const afterCursor = value.slice(cursorPosition + 1);
-    this.term.bgCyan().black(beforeCursor);
-    this.term.bgBlack().brightWhite().bold(cursorChar);
-    this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
-    this.term.bgDefaultColor();
-    this.term.defaultColor();
-    this.term.styleReset();
+    if (inputState.type === 'checkbox') {
+      const checkboxWidth = 3; // Fixed width for [ ]
+      const label = inputState.value || '';
+      const totalWidth = checkboxWidth + (label ? label.length + 1 : 0);
+      const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
+
+      this.term.moveTo(inputState.x, inputState.y);
+      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'}${label ? ' ' + label : ''}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    } else {
+      const { x, y, width, value, cursorPosition } = inputState;
+      const displayWidth = Math.min(width, this.term.width - x + 1);
+
+      this.term.moveTo(x, y);
+      const beforeCursor = value.slice(0, cursorPosition);
+      const cursorChar = value[cursorPosition] || ' ';
+      const afterCursor = value.slice(cursorPosition + 1);
+      this.term.bgCyan().black(beforeCursor);
+      this.term.bgBlack().brightWhite().bold(cursorChar);
+      this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    }
   }
 
   redrawUnfocusedInput(backendNodeId) {
     const inputState = this.inputFields.get('' + backendNodeId);
     if (!inputState) return;
 
-    const { x, y, width, value } = inputState;
-    const displayWidth = Math.min(width, this.term.width - x + 1);
+    debugLog(`redrawUnfocusedInput: backendNodeId=${backendNodeId}, type=${inputState.type}, checked=${inputState.checked}, value=${inputState.value}, width=${inputState.width}`);
 
-    this.term.moveTo(x, y);
-    this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
-    this.term.bgDefaultColor();
-    this.term.defaultColor();
-    this.term.styleReset();
+    if (inputState.type === 'checkbox') {
+      const checkboxWidth = 3; // Fixed width for [ ]
+      const label = inputState.value || '';
+      const totalWidth = checkboxWidth + (label ? label.length + 1 : 0);
+      const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
+
+      this.term.moveTo(inputState.x, inputState.y);
+      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}${label ? ' ' + label : ''}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    } else {
+      const { x, y, width, value } = inputState;
+      const displayWidth = Math.min(width, this.term.width - x + 1);
+
+      this.term.moveTo(x, y);
+      this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    }
   }
 
   focusInput(backendNodeId) {
