@@ -279,7 +279,7 @@ export class FocusManager {
       to: elementId,
       index: this.currentFocusIndex
     }, (new Error).stack);
-    newLog(elementToFocus);
+    //newLog(elementToFocus);
     setFocus(elementToFocus);
   }
 

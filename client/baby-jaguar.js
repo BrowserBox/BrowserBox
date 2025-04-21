@@ -22,11 +22,15 @@
   import Layout from './layout.js';
   import TerminalBrowser from './terminal-browser.js';
   import { ConnectionManager } from './connection-manager.js';
-  import { sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
+  import { newLog, sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
 
   // Constants and state
   const clickCounter = { value: 0 };
   const USE_SYNTHETIC_FOCUS = true;
+  const GLOBAL_IGNORE_CLICKABLE_FOR_INPUT = true;
+  const IGNORE_CLICKABLE_FOR_TYPES = new Set([
+    'input'
+  ]);
   const markClicks = false;
   const DEBOUNCE_DELAY = 280;
   const args = process.argv.slice(2);
@@ -681,7 +685,7 @@
             onChange,
           });
           renderedBox.termWidth = inputField.width;
-          if (isClickable) {
+          if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
             const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
             if (clickable) {
               clickable.termX = renderX;
@@ -690,6 +694,7 @@
               clickable.termHeight = 1;
               logClicks(`Updated clickable input: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
             } else {
+              newLog(`No clickable found for input: backendNodeId=${currentBackendNodeId}`, renderedBox);
               logClicks(`No clickable found for input: backendNodeId=${currentBackendNodeId}`);
               clickableElements.push({
                 text,
@@ -885,7 +890,7 @@
       const box = sessionBoxes[i];
       const inX = termX >= box.termX && termX < box.termX + box.termWidth;
       const inY = termY == box.termY;
-      if (inX && inY && (ignoreIsClickable || box.isClickable)) {
+      if (inX && inY && ((ignoreIsClickable && IGNORE_CLICKABLE_FOR_TYPES.has(box.type)) || box.isClickable)) {
         clickedBox = box;
         break;
       }
@@ -899,7 +904,7 @@
   }
 
   export async function handleClick({ termX, termY, layoutToNode, nodeToParent, nodes }) {
-    const clickedBox = getClickedBox({ termX, termY });
+    const clickedBox = getClickedBox({ termX, termY, ignoreIsClickable: true });
     if (!clickedBox) {
       logClicks(`handleClick: No clickedBox found at (${termX}, ${termY})`);
       return;
