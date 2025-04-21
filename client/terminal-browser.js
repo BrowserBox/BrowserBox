@@ -417,8 +417,7 @@ export default class TerminalBrowser extends EventEmitter {
     }
 
     const checkboxWidth = 3; // Fixed width for [ ]
-    const label = value || '';
-    const totalWidth = checkboxWidth + (label ? label.length + 1 : 0);
+    const totalWidth = checkboxWidth;
     const displayWidth = Math.min(totalWidth, this.term.width - x + 1);
     const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
 
@@ -426,9 +425,9 @@ export default class TerminalBrowser extends EventEmitter {
 
     this.term.moveTo(x, y);
     if (isFocused) {
-      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'}${label ? ' ' + label : ''}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
     } else {
-      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}${label ? ' ' + label : ''}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
     }
 
     this.term.bgDefaultColor();
@@ -1045,12 +1044,11 @@ export default class TerminalBrowser extends EventEmitter {
 
     if (inputState.type === 'checkbox') {
       const checkboxWidth = 3; // Fixed width for [ ]
-      const label = inputState.value || '';
-      const totalWidth = checkboxWidth + (label ? label.length + 1 : 0);
+      const totalWidth = checkboxWidth;
       const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
 
       this.term.moveTo(inputState.x, inputState.y);
-      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'}${label ? ' ' + label : ''}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
       this.term.bgDefaultColor();
       this.term.defaultColor();
       this.term.styleReset();
@@ -1079,12 +1077,11 @@ export default class TerminalBrowser extends EventEmitter {
 
     if (inputState.type === 'checkbox') {
       const checkboxWidth = 3; // Fixed width for [ ]
-      const label = inputState.value || '';
-      const totalWidth = checkboxWidth + (label ? label.length + 1 : 0);
+      const totalWidth = checkboxWidth;
       const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
 
       this.term.moveTo(inputState.x, inputState.y);
-      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}${label ? ' ' + label : ''}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
       this.term.bgDefaultColor();
       this.term.defaultColor();
       this.term.styleReset();

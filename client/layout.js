@@ -5,6 +5,7 @@ import {rowsLog,debugLog,DEBUG} from './log.js';
 const GAP = 1;
 const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
+const CHECKBOX_LAYOUT_WIDTH = 4;
 const USE_TEXT_BOX_FOR_OCCLUSION_TEST = true; // Set to true to use text box bounds for occlusion test
 const RECOGNIZE_MULTIROW_MEDIA_BOXES = false;
 const POSITION_SET_1 = new Set([
@@ -61,6 +62,9 @@ const LayoutAlgorithm = (() => {
           box.text = RECOGNIZE_MULTIROW_MEDIA_BOXES
             ? `[${box.text.slice(1, 4)} ${box.termWidth}x${Math.ceil(box.boundingBox.height / 40)}]`
             : box.text; // Keep [IMG], [VID], or [AUD]
+        } else if (box.subType == 'checkbox' ) {
+          box.termWidth = CHECKBOX_LAYOUT_WIDTH;
+          box.termHeight = 1;
         } else {
           box.termWidth = box.text.length;
           box.termHeight = 1;

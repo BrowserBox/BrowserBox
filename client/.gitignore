@@ -1,3 +1,4 @@
+*.mp4
 node-speaker
 test.mp3
 *.traineddata
