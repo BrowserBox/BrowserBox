@@ -1,4 +1,8 @@
-- bug with page copy link and related (open in) - sometimes doesn't work. 
+- when form input is focused (input radio/checkbox) we shouldn't send space scroll.
+
+- license revalidate when expire. 
+
+- bug with page copy link and related (open in) - sometimes doesn't work. If basic auth has been 'canceled' system gets in invalid state.
 
 - don't accept connection.closeModal if the handleJavaScriptDialog failed (ie still a modal)
 
