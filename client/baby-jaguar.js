@@ -607,7 +607,7 @@
 
     for (const box of visibleBoxes) {
       DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
-      const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type, subType } = box;
+      const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type, subType, attributes } = box;
       const renderX = Math.max(1, termX + 1);
       const renderY = Math.max(5, termY + 4);
 
@@ -658,7 +658,50 @@
       if (type === 'input') {
         switch(subType) {
           case "checkbox": {
+            logClicks(`Drawing checkbox for backendNodeId: ${backendNodeId}`);
+            const currentBackendNodeId = backendNodeId;
+            const value = attributes.find((val, i) => i % 2 === 0 && val === 'value') ? attributes[attributes.findIndex(val => val === 'value') + 1] : '';
+            const checked = attributes.includes('checked') || box.checked || false;
+            const name = renderedBox.name;
+            const onChange = createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId, isCheckbox: true });
 
+            const checkboxField = drawCheckboxForNode({
+              renderX,
+              renderY,
+              termWidthForBox,
+              backendNodeId: currentBackendNodeId,
+              value,
+              checked,
+              name,
+              attributes,
+              onChange
+            });
+
+            renderedBox.termWidth = checkboxField.width;
+            renderedBox.termHeight = 1;
+
+            if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
+              const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+              if (clickable) {
+                clickable.termX = renderX;
+                clickable.termY = renderY;
+                clickable.termWidth = checkboxField.width;
+                clickable.termHeight = 1;
+                logClicks(`Updated clickable checkbox: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
+              } else {
+                newLog(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                logClicks(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`);
+                clickableElements.push({
+                  text: value,
+                  boundingBox,
+                  backendNodeId: currentBackendNodeId,
+                  termX: renderX,
+                  termY: renderY,
+                  termWidth: checkboxField.width,
+                  termHeight: 1,
+                });
+              }
+            }
           }; break;
           default: {
             logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
@@ -837,6 +880,21 @@
       onChange,
     });
     return inputField;
+  }
+
+  function drawCheckboxForNode({ renderX, renderY, termWidthForBox, backendNodeId, value, checked, name, attributes, onChange }) {
+    const checkbox = browser.drawCheckbox({
+      x: renderX,
+      y: renderY,
+      width: termWidthForBox,
+      key: backendNodeId,
+      value, 
+      checked,
+      name, 
+      attributes,
+      onChange,
+    });
+    return checkbox;
   }
 
   function createInputChangeHandler({ send, sessionId, backendNodeId }) {
