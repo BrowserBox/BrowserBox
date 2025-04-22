@@ -258,6 +258,36 @@ export class InputManager {
         default:
           break;
       }
+    } else if (inputState.type === 'radio') {
+      switch (key) {
+        case ' ':
+        case 'ENTER':
+          inputState.checked = !inputState.checked;
+          debugLog(`Toggled radio: backendNodeId=${backendNodeId}, checked=${inputState.checked}`);
+          if (inputState.onChange) {
+            await inputState.onChange(inputState.checked);
+          }
+          this.browser.redrawFocusedInput();
+          break;
+        case 'RIGHT':
+        case 'DOWN':
+        case 'TAB':
+          this.browser.focusManager.focusNextElement(
+            element => this.browser.setFocus(element)
+          );
+          this.browser.render();
+          break;
+        case 'LEFT':
+        case 'UP':
+        case 'SHIFT_TAB':
+          this.browser.focusManager.focusPreviousElement(
+            element => this.browser.setFocus(element)
+          );
+          this.browser.render();
+          break;
+        default:
+          break;
+      }
     } else if (inputState.type === 'select') {
       switch (key) {
         case 'UP':

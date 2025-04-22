@@ -65,6 +65,9 @@ const LayoutAlgorithm = (() => {
         } else if (box.subType == 'checkbox' ) {
           box.termWidth = CHECKBOX_LAYOUT_WIDTH;
           box.termHeight = 1;
+        } else if (box.subType === 'radio' ) {
+          box.termWidth = CHECKBOX_LAYOUT_WIDTH;
+          box.termHeight = 1;
         } else if (box.subType === 'select') {
           box.termWidth = 20; // Default width, adjusted in baby-jaguar.js
           box.termHeight = 1;
@@ -561,6 +564,12 @@ const LayoutAlgorithm = (() => {
             placeholder = valueText || '[BUTTON]';
             mediaType = 'button';
           } else if (inputType == 'checkbox') {
+            const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
+            const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
+            placeholder = valueText || ''; // Use actual value
+            subType = inputType;
+            mediaType = 'input';
+          } else if (inputType == 'radio') {
             const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
             const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
             placeholder = valueText || ''; // Use actual value

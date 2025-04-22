@@ -1052,6 +1052,16 @@ export default class TerminalBrowser extends EventEmitter {
       this.term.bgDefaultColor();
       this.term.defaultColor();
       this.term.styleReset();
+    } else if (inputState.type === 'radio') {
+      const checkboxWidth = 3; // Fixed width for [ ]
+      const totalWidth = checkboxWidth;
+      const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
+
+      this.term.moveTo(inputState.x, inputState.y);
+      this.term.bgCyan().white(`${inputState.checked ? '(o)' : '( )'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
     } else if (inputState.type === 'select') {
       const { x, y, width, selectedIndex, options } = inputState;
       const displayWidth = Math.min(width, this.term.width - x + 1);
@@ -1092,6 +1102,16 @@ export default class TerminalBrowser extends EventEmitter {
 
       this.term.moveTo(inputState.x, inputState.y);
       this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    } else if (inputState.type === 'radio') {
+      const checkboxWidth = 3; // Fixed width for [ ]
+      const totalWidth = checkboxWidth;
+      const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
+
+      this.term.moveTo(inputState.x, inputState.y);
+      this.term.bgWhite().black(`${inputState.checked ? '(o)' : '( )'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
       this.term.bgDefaultColor();
       this.term.defaultColor();
       this.term.styleReset();
