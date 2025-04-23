@@ -55,7 +55,7 @@ async function runApp() {
   }
 }
 export async function applicationCheck() {
-  console.log({dn: __dirname(), fn: __filename()});
+  console.log('Application Check', {dn: __dirname(), fn: __filename(), stack: (new Error).stack});
 
   try {
     // Verify application integrity
@@ -77,8 +77,9 @@ export async function applicationCheck() {
     //process.exit(1);
   }
 }
+
 export async function validityCheck({targets} = {}) {
-  console.log({dn: __dirname(), fn: __filename()});
+  console.log('Validity Check', {dn: __dirname(), fn: __filename(), stack: (new Error).stack});
 
   let integrity = false;
   try {
