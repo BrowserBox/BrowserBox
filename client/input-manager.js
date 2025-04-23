@@ -11,7 +11,7 @@ export class InputManager {
     this.isListening = true;
   }
 
-  static createInputChangeHandler({ send, sessionId, backendNodeId, isCheckbox = false, isRadio = false, syncedRedraw }) {
+  static createInputChangeHandler({ send, sessionId, backendNodeId, isCheckbox = false, isRadio = false }) {
     return async function onInputChange(value) {
       try {
         const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
@@ -44,13 +44,6 @@ export class InputManager {
           },
           sessionId
         );
-        if ( syncedRedraw ) {
-          try {
-            syncedRedraw();
-          } catch(e) {
-            console.warn(`Error on syncedRedraw`, e);
-          }
-        }
         logClicks(`Updated remote value for backendNodeId: ${backendNodeId} to "${value}"`);
       } catch (error) {
         DEBUG && console.warn(error);
@@ -239,7 +232,7 @@ export class InputManager {
       switch (key) {
         case ' ':
         case 'ENTER':
-          inputState.checked = !inputState.checked;
+          inputState.checked ^= true;
           debugLog(`Toggled checkbox: backendNodeId=${backendNodeId}, checked=${inputState.checked}`);
           if (inputState.onChange) {
             await inputState.onChange(inputState.checked);
@@ -269,12 +262,12 @@ export class InputManager {
       switch (key) {
         case ' ':
         case 'ENTER':
-          inputState.checked = !inputState.checked;
+          inputState.checked |= true;
           debugLog(`Toggled radio: backendNodeId=${backendNodeId}, checked=${inputState.checked}`);
           if (inputState.onChange) {
             await inputState.onChange(inputState.checked);
           }
-          this.browser.redrawFocusedInput();
+          this.browser.redrawRadioGroup(inputState.name, backendNodeId);
           break;
         case 'RIGHT':
         case 'DOWN':
@@ -321,11 +314,9 @@ export class InputManager {
             logClicks(`Select option changed: backendNodeId=${backendNodeId}, value=${inputState.value}, index=${inputState.selectedIndex}`);
           }
           break;
+        case ' ':
         case 'ENTER':
           await this.handleInputCommit(backendNodeId, inputState);
-          this.browser.redrawUnfocusedInput(backendNodeId);
-          this.browser.focusManager.setFocusedElement(`tabs:${this.browser.selectedTabId}`);
-          this.browser.focusManager.setPreviousFocusedElement(this.browser.focusManager.getFocusedElement());
           if (inputState.onChange) inputState.onChange(inputState.value);
           this.browser.render();
           break;

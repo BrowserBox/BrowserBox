@@ -711,7 +711,7 @@
                   clickable.termHeight = 1;
                   logClicks(`Updated clickable checkbox: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
                 } else {
-                  newLog(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                  debugLog(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`, renderedBox);
                   logClicks(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`);
                   clickableElements.push({
                     text: value,
@@ -729,78 +729,74 @@
             });
           }; break;
           case "radio": {
-            const syncedRedraw = () => {
-              logClicks(`Drawing radio for backendNodeId: ${backendNodeId}`);
-              const currentBackendNodeId = backendNodeId;
-              let value = '';
-              let checked = false;
-              let name = '';
-              return send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
-                if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
-                const objectId = resolveResult.object.objectId;
-                const propsResult = await send(
-                  'Runtime.callFunctionOn',
-                  {
-                    objectId,
-                    functionDeclaration: 'function() { return { checked: this.checked, value: this.value, name: this.name }; }',
-                    arguments: [],
-                    returnByValue: true,
-                  },
-                  sessionId
-                );
-                if (propsResult?.result?.value) {
-                  checked = propsResult.result.value.checked;
-                  value = propsResult.result.value.value || '';
-                  name = propsResult.result.value.name || '';
-                  logClicks(`Fetched live radio props for backendNodeId: ${currentBackendNodeId}: checked=${checked}, value="${value}", name="${name}"`);
-                }
-                const radioWidth = 3; // Fixed width for [ ]
-                debugLog(`Checkbox props: backendNodeId=${currentBackendNodeId}, value=${value}, checked=${checked}, name=${name}, termWidthForBox=${radioWidth}`);
+            logClicks(`Drawing radio for backendNodeId: ${backendNodeId}`);
+            const currentBackendNodeId = backendNodeId;
+            let value = '';
+            let checked = false;
+            let name = '';
+            send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
+              if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+              const objectId = resolveResult.object.objectId;
+              const propsResult = await send(
+                'Runtime.callFunctionOn',
+                {
+                  objectId,
+                  functionDeclaration: 'function() { return { checked: this.checked, value: this.value, name: this.name }; }',
+                  arguments: [],
+                  returnByValue: true,
+                },
+                sessionId
+              );
+              if (propsResult?.result?.value) {
+                checked = propsResult.result.value.checked;
+                value = propsResult.result.value.value || '';
+                name = propsResult.result.value.name || '';
+                logClicks(`Fetched live radio props for backendNodeId: ${currentBackendNodeId}: checked=${checked}, value="${value}", name="${name}"`);
+              }
+              const radioWidth = 3; // Fixed width for [ ]
+              debugLog(`Checkbox props: backendNodeId=${currentBackendNodeId}, value=${value}, checked=${checked}, name=${name}, termWidthForBox=${radioWidth}`);
 
-                const onChange = InputManager.createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId, isRadio: true , syncedRedraw });
+              const onChange = InputManager.createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId, isRadio: true  });
 
-                const radioField = drawRadioForNode({
-                  renderX,
-                  renderY,
-                  termWidthForBox: radioWidth,
-                  backendNodeId: currentBackendNodeId,
-                  value,
-                  checked,
-                  name,
-                  onChange
-                });
-
-                renderedBox.termWidth = radioField.width;
-                renderedBox.termHeight = 1;
-
-                if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
-                  const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
-                  if (clickable) {
-                    clickable.termX = renderX;
-                    clickable.termY = renderY;
-                    clickable.termWidth = radioField.width;
-                    clickable.termHeight = 1;
-                    logClicks(`Updated clickable radio: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
-                  } else {
-                    newLog(`No clickable found for radio: backendNodeId=${currentBackendNodeId}`, renderedBox);
-                    logClicks(`No clickable found for radio: backendNodeId=${currentBackendNodeId}`);
-                    clickableElements.push({
-                      text: value,
-                      boundingBox,
-                      backendNodeId: currentBackendNodeId,
-                      termX: renderX,
-                      termY: renderY,
-                      termWidth: radioField.width,
-                      termHeight: 1,
-                    });
-                  }
-                }
-                return checked;
-              }).catch(error => {
-                logClicks(`Failed to fetch live radio props for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+              const radioField = drawRadioForNode({
+                renderX,
+                renderY,
+                termWidthForBox: radioWidth,
+                backendNodeId: currentBackendNodeId,
+                value,
+                checked,
+                name,
+                onChange
               });
-            };
-            syncedRedraw();
+
+              renderedBox.termWidth = radioField.width;
+              renderedBox.termHeight = 1;
+
+              if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
+                const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+                if (clickable) {
+                  clickable.termX = renderX;
+                  clickable.termY = renderY;
+                  clickable.termWidth = radioField.width;
+                  clickable.termHeight = 1;
+                  logClicks(`Updated clickable radio: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
+                } else {
+                  debugLog(`No clickable found for radio: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                  logClicks(`No clickable found for radio: backendNodeId=${currentBackendNodeId}`);
+                  clickableElements.push({
+                    text: value,
+                    boundingBox,
+                    backendNodeId: currentBackendNodeId,
+                    termX: renderX,
+                    termY: renderY,
+                    termWidth: radioField.width,
+                    termHeight: 1,
+                  });
+                }
+              }
+            }).catch(error => {
+              logClicks(`Failed to fetch live radio props for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+            });
           }; break;
           case "select": {
             logClicks(`Drawing select field for backendNodeId: ${backendNodeId}`);
@@ -863,7 +859,7 @@
                   clickable.termHeight = 1;
                   logClicks(`Updated clickable select: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
                 } else {
-                  newLog(`No clickable found for select: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                  debugLog(`No clickable found for select: backendNodeId=${currentBackendNodeId}`, renderedBox);
                   logClicks(`No clickable found for select: backendNodeId=${currentBackendNodeId}`);
                   clickableElements.push({
                     text: selectedValue,
@@ -935,7 +931,7 @@
                   clickable.termHeight = 1;
                   logClicks(`Updated clickable input: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
                 } else {
-                  newLog(`No clickable found for input: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                  debugLog(`No clickable found for input: backendNodeId=${currentBackendNodeId}`, renderedBox);
                   logClicks(`No clickable found for input: backendNodeId=${currentBackendNodeId}`);
                   clickableElements.push({
                     text,
@@ -1086,7 +1082,7 @@
     return checkbox;
   }
 
-  function drawRadioForNode({ renderX, renderY, termWidthForBox, backendNodeId, value, checked, name, onChange, syncedRedraw }) {
+  function drawRadioForNode({ renderX, renderY, termWidthForBox, backendNodeId, value, checked, name, onChange }) {
     const radio = browser.drawRadio({
       x: renderX,
       y: renderY,
@@ -1094,7 +1090,6 @@
       key: backendNodeId,
       value, 
       checked,
-      syncedRedraw,
       name, 
       onChange,
     });

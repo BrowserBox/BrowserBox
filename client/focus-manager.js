@@ -164,13 +164,13 @@ export class FocusManager {
       {
         if (DEBUG && box.type === 'input') {
           if (seenBackendNodeIds.has(parentBackendNodeId)) {
-            newLog(`Skipping input due to duplicate backendNodeId: ${parentBackendNodeId}`);
+            DEBUG && newLog(`Skipping input due to duplicate backendNodeId: ${parentBackendNodeId}`);
           } else {
             const isButton = box.ancestorType === 'button';
             if (!isButton && hasClickableDescendants(parentNodeIndex, tabState)) {
-              newLog(`Skipping input due to clickable descendants: backendNodeId=${parentBackendNodeId}, parentNodeIndex=${parentNodeIndex}`);
+              DEBUG && newLog(`Skipping input due to clickable descendants: backendNodeId=${parentBackendNodeId}, parentNodeIndex=${parentNodeIndex}`);
             } else {
-              newLog(`Adding input to elementsByParentId: backendNodeId=${parentBackendNodeId}`);
+              DEBUG && newLog(`Adding input to elementsByParentId: backendNodeId=${parentBackendNodeId}`);
             }
           }
         }
@@ -300,7 +300,7 @@ export class FocusManager {
         };
       });
 
-      newLog(`Node ${nodeIdx} has clickable descendants`, JSON.stringify(descendantDetails, null, 2));
+      DEBUG && newLog(`Node ${nodeIdx} has clickable descendants`, JSON.stringify(descendantDetails, null, 2));
     }
 
     return trulyHas;
@@ -349,7 +349,7 @@ export class FocusManager {
       to: elementId,
       index: this.currentFocusIndex
     }, (new Error).stack);
-    //newLog(elementToFocus);
+    //DEBUG && newLog(elementToFocus);
     setFocus(elementToFocus);
   }
 

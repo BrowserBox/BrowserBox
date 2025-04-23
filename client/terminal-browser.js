@@ -1,6 +1,6 @@
 ﻿import termkit from 'terminal-kit';
 import { EventEmitter } from 'events';
-import { sleep, debugLog } from './log.js';
+import { sleep, debugLog, newLog } from './log.js';
 import { getAncestorInfo } from './layout.js';
 import { getBrowserState, getTabState, sessions, getClickedBox, focusInput, renderedBoxesBySession } from './baby-jaguar.js';
 import { FocusManager } from './focus-manager.js';
@@ -266,6 +266,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
+        key,
         value: initialValue,
         cursorPosition: initialValue.length,
         focused: false,
@@ -276,12 +277,14 @@ export default class TerminalBrowser extends EventEmitter {
       });
     }
     const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.key = key;
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
 
     const displayWidth = Math.min(width, this.term.width - x + 1);
     const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
+    newLog({isFocused, backendNodeIdStr, stack: (new Error).stack}, this.focusManager.getFocusedElement());
     const value = inputState.value;
     const cursorPos = inputState.cursorPosition;
 
@@ -310,6 +313,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
+        key,
         type: 'select',
         value: selectOptions.length > 0 ? selectOptions[0].value : '',
         selectedIndex: 0,
@@ -324,12 +328,14 @@ export default class TerminalBrowser extends EventEmitter {
     }
 
     const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.key = key;
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
 
     const displayWidth = Math.min(width, this.term.width - x + 1);
     const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
+    newLog({isFocused, backendNodeIdStr, stack: (new Error).stack}, this.focusManager.getFocusedElement());
     const selectedOption = inputState.options[inputState.selectedIndex] || { label: '' };
 
     this.term.moveTo(x, y);
@@ -353,6 +359,7 @@ export default class TerminalBrowser extends EventEmitter {
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
         type: 'radio',
+        key,
         name,
         value,
         checked,
@@ -365,6 +372,7 @@ export default class TerminalBrowser extends EventEmitter {
     }
 
     const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.key = key;
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
@@ -372,6 +380,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     const displayWidth = Math.min(width, this.term.width - x + 1);
     const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
+    newLog({isFocused, backendNodeIdStr, stack: (new Error).stack}, this.focusManager.getFocusedElement());
     const label = value || '';
 
     this.term.moveTo(x, y);
@@ -394,6 +403,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
+        key,
         type: 'checkbox',
         value,
         checked,
@@ -407,6 +417,7 @@ export default class TerminalBrowser extends EventEmitter {
     }
 
     const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.key = key;
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
@@ -420,6 +431,7 @@ export default class TerminalBrowser extends EventEmitter {
     const totalWidth = checkboxWidth;
     const displayWidth = Math.min(totalWidth, this.term.width - x + 1);
     const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
+    newLog({isFocused, backendNodeIdStr, stack: (new Error).stack}, this.focusManager.getFocusedElement());
 
     debugLog(`Drawing checkbox: backendNodeId=${backendNodeIdStr}, isFocused=${isFocused}, checked=${inputState.checked}, value=${value}, name=${name}, x=${x}, y=${y}, width=${width}, displayWidth=${displayWidth}`);
 
@@ -1033,10 +1045,18 @@ export default class TerminalBrowser extends EventEmitter {
     this.emit('tell-browserbox', commands);
   }
 
-  getSameNameRadios(backendNodeId, radioName) {
+  getSameNameRadios(radioName, backendNodeId) {
     return Array.from(this.inputFields.entries()).filter(
       ([id, state]) => state.type === 'radio' && state.name === radioName && id !== backendNodeId
     );
+  }
+
+  redrawRadioGroup(name, backendNodeId) {
+    const sameNameRadios = this.getSameNameRadios(name) 
+    Promise.all(sameNameRadios.map(([id,state]) => {
+      state.checked = id == backendNodeId;
+      return state.onChange(state.checked);
+    })).then(() => sameNameRadios.forEach(([,state]) => this.drawRadio(state)));
   }
 
   redrawFocusedInput() {
@@ -1051,7 +1071,7 @@ export default class TerminalBrowser extends EventEmitter {
     if (inputState.type === 'radio') {
       const radioName = inputState.name;
       // Get all radio inputs with the same name, excluding current
-      const sameNameRadios = this.getSameNameRadios(backendNodeId, radioName);
+      const sameNameRadios = this.getSameNameRadios(radioName, backendNodeId);
 
       // Redraw all other radios first (unfocused)
       for (const [id, state] of sameNameRadios) {
@@ -1124,7 +1144,7 @@ export default class TerminalBrowser extends EventEmitter {
     if (inputState.type === 'radio') {
       const radioName = inputState.name;
       // Get all radio inputs with the same name, excluding current
-      const sameNameRadios = this.getSameNameRadios(backendNodeId, radioName);
+      const sameNameRadios = this.getSameNameRadios(radioName, backendNodeId);
 
       // Redraw all other radios first
       for (const [id, state] of sameNameRadios) {
@@ -1288,10 +1308,10 @@ export default class TerminalBrowser extends EventEmitter {
       this.drawTabs();
     } else if (element.type === 'input') {
       const publicState = this.getCurrentTabState();
+      const { send, sessionId } = publicState;
       const midX = element.x + Math.floor(element.width / 2);
       const midY = element.y + Math.floor(element.height / 2);
       const clickedBox = getClickedBox({ termX: midX, termY: midY, ignoreIsClickable: true });
-      const { send, sessionId } = publicState;
       focusInput({ clickedBox, browser: this, send, sessionId, termX: element.x + element.width });
     } else if (element.type === 'clickable') {
       this.focusManager.setFocusedElement(`clickable:${element.backendNodeId}`);
