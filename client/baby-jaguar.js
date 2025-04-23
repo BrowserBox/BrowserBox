@@ -125,8 +125,8 @@
     for (const box of visibleBoxes) {
       DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
       const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type, subType } = box;
-      const renderX = Math.max(1, termX + 1) - vScroll.X;
-      const renderY = Math.max(5, termY + 4) - vScroll.Y;
+      const renderX = termX - vScroll.X;
+      const renderY = termY - vScroll.Y;
 
       if (renderX > termWidth || renderY > (termHeight + 4)) continue;
 
