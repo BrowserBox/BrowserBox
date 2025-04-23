@@ -1,3 +1,5 @@
+- detect already in use and fetch new (auto release locked/state on valid start)
+
 - windows ps1 bbx v11 (auto updates) etc
 
 - marketing: license key -> product key  (yes please! :))
