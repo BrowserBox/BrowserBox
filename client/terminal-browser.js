@@ -1074,7 +1074,7 @@ export default class TerminalBrowser extends EventEmitter {
         width: inputState.width,
         key: backendNodeId,
         name: inputState.name,
-        value: state.value, // Fixed typo from '.Transaction' to '.value'
+        value: inputState.value, 
         checked: inputState.checked,
         onChange: inputState.onChange,
       });

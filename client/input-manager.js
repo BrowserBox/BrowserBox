@@ -11,7 +11,7 @@ export class InputManager {
     this.isListening = true;
   }
 
-  static createInputChangeHandler({ send, sessionId, backendNodeId, isCheckbox = false }) {
+  static createInputChangeHandler({ send, sessionId, backendNodeId, isCheckbox = false, isRadio = false, syncedRedraw }) {
     return async function onInputChange(value) {
       try {
         const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
@@ -27,13 +27,13 @@ export class InputManager {
           this.dispatchEvent(new Event('change', { bubbles: true }));
           return this.isContentEditable
         }`;
-        if ( isCheckbox ) {
+        if ( isCheckbox || isRadio ) {
           script = `function() {
             this.checked = ${JSON.stringify(!!value)};
             this.dispatchEvent(new Event('change', { bubbles: true }));
             return this.checked;
           }`;
-        }
+        } 
         await send(
           'Runtime.callFunctionOn',
           {
@@ -44,6 +44,13 @@ export class InputManager {
           },
           sessionId
         );
+        if ( syncedRedraw ) {
+          try {
+            syncedRedraw();
+          } catch(e) {
+            console.warn(`Error on syncedRedraw`, e);
+          }
+        }
         logClicks(`Updated remote value for backendNodeId: ${backendNodeId} to "${value}"`);
       } catch (error) {
         DEBUG && console.warn(error);
