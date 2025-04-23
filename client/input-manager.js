@@ -108,7 +108,11 @@ export class InputManager {
       switch (key) {
         case 'UP':
         case 'DOWN':
-          this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+          this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1, axis: 'vertical' });
+          break;
+        case 'LEFT':
+        case 'RIGHT':
+          this.browser.emit('scroll', { direction: key === 'LEFT' ? -1 : 1, axis: 'horizontal' });
           break;
         case 'j':
           this.browser.focusManager.focusNearestInRow(
@@ -240,7 +244,6 @@ export class InputManager {
           this.browser.redrawFocusedInput();
           break;
         case 'RIGHT':
-        case 'DOWN':
         case 'TAB':
           this.browser.focusManager.focusNextElement(
             element => this.browser.setFocus(element)
@@ -248,12 +251,15 @@ export class InputManager {
           this.browser.render();
           break;
         case 'LEFT':
-        case 'UP':
         case 'SHIFT_TAB':
           this.browser.focusManager.focusPreviousElement(
             element => this.browser.setFocus(element)
           );
           this.browser.render();
+          break;
+        case 'UP':
+        case 'DOWN':
+          this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1, axis: 'vertical' });
           break;
         default:
           break;
@@ -270,7 +276,6 @@ export class InputManager {
           this.browser.redrawRadioGroup(inputState.name, backendNodeId);
           break;
         case 'RIGHT':
-        case 'DOWN':
         case 'TAB':
           this.browser.focusManager.focusNextElement(
             element => this.browser.setFocus(element)
@@ -278,7 +283,6 @@ export class InputManager {
           this.browser.render();
           break;
         case 'LEFT':
-        case 'UP':
         case 'SHIFT_TAB':
           this.browser.focusManager.focusPreviousElement(
             element => this.browser.setFocus(element)
@@ -426,7 +430,7 @@ export class InputManager {
         break;
       case 'UP':
       case 'DOWN':
-        this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+        this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1, axis: 'vertical' });
         break;
       default:
         if (key.length === 1) {
@@ -473,22 +477,24 @@ export class InputManager {
         this.browser.render();
         break;
       case 'h':
-      case 'LEFT':
         this.browser.focusManager.focusPreviousElement(
           element => this.browser.setFocus(element)
         );
         this.browser.render();
         break;
       case 'l':
-      case 'RIGHT':
         this.browser.focusManager.focusNextElement(
           element => this.browser.setFocus(element)
         );
         this.browser.render();
         break;
+      case 'LEFT':
+      case 'RIGHT':
+        this.browser.emit('scroll', { direction: key === 'LEFT' ? -1 : 1, axis: 'horizontal' });
+        break;
       case 'UP':
       case 'DOWN':
-        this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1 });
+        this.browser.emit('scroll', { direction: key === 'UP' ? -1 : 1, axis: 'vertical' });
         break;
       case '[':
         this.browser.selectPreviousTab();
@@ -523,17 +529,15 @@ export class InputManager {
     if (this.browser.isModalActive) {
       if (name === 'MOUSE_LEFT_BUTTON_PRESSED') {
         this.browser.modalClick(x, y);
-        // Click was handled or ignored by modal
-        return; 
+        return;
       }
-      // scroll or other mouse event outside modal, ignored
-      return; 
+      return;
     }
     if (name === 'MOUSE_LEFT_BUTTON_PRESSED') {
       this.handleMouseClick(x, y);
     } else if (name === 'MOUSE_WHEEL_UP' || name === 'MOUSE_WHEEL_DOWN') {
       if (y > 4) {
-        this.browser.emit('scroll', { direction: name === 'MOUSE_WHEEL_UP' ? -1 : 1 });
+        this.browser.emit('scroll', { direction: name === 'MOUSE_WHEEL_UP' ? -1 : 1, axis: 'vertical' });
       }
     }
   }
@@ -591,3 +595,4 @@ export class InputManager {
     }
   }
 }
+
