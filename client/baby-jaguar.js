@@ -126,9 +126,9 @@
       DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
       const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type, subType } = box;
       const renderX = termX - vScroll.X;
-      const renderY = termY - vScroll.Y;
+      const renderY = termY + 1 - vScroll.Y;
 
-      if (renderX > termWidth || renderY > (termHeight + 4)) continue;
+      if (renderX > termWidth || renderY > termHeight + 4) continue;
 
       const displayWidth = Math.max(0, termWidth - renderX + 1);
       let displayText = text.substring(0, displayWidth);

@@ -671,7 +671,7 @@ const LayoutAlgorithm = (() => {
 
     const { columns: termWidth, rows: termHeight } = await getTerminalSize();
     const baseScaleX = termWidth / viewportWidth;
-    const baseScaleY = (termHeight - 4) / viewportHeight;
+    const baseScaleY = (termHeight) / viewportHeight;
     const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
     const scaleY = baseScaleY * VERTICAL_COMPRESSION;
 
@@ -686,7 +686,7 @@ const LayoutAlgorithm = (() => {
       const adjustedX = box.boundingBox.x - viewportX;
       const adjustedY = box.boundingBox.y - viewportY;
       box.termX = Math.ceil(adjustedX * scaleX);
-      box.termY = Math.ceil(adjustedY * scaleY) + 4;
+      box.termY = Math.ceil(adjustedY * scaleY);
       box.termWidth = box.text.length;
       box.termHeight = 1;
       return box;
