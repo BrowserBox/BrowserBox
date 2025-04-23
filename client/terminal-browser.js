@@ -376,9 +376,9 @@ export default class TerminalBrowser extends EventEmitter {
 
     this.term.moveTo(x, y);
     if (isFocused) {
-      this.term.bgCyan().white(`${inputState.checked ? '(•)' : '( )'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgCyan().white(`${inputState.checked ? '(o)' : '( )'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
     } else {
-      this.term.bgWhite().black(`${inputState.checked ? '(•)' : '( )'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgWhite().black(`${inputState.checked ? '(o)' : '( )'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
     }
 
     this.term.bgDefaultColor();
@@ -1033,6 +1033,12 @@ export default class TerminalBrowser extends EventEmitter {
     this.emit('tell-browserbox', commands);
   }
 
+  getSameNameRadios(backendNodeId, radioName) {
+    return Array.from(this.inputFields.entries()).filter(
+      ([id, state]) => state.type === 'radio' && state.name === radioName && id !== backendNodeId
+    );
+  }
+
   redrawFocusedInput() {
     if (!this.focusManager.getFocusedElement()?.startsWith('input:')) return;
 
@@ -1042,23 +1048,43 @@ export default class TerminalBrowser extends EventEmitter {
 
     debugLog(`redrawFocusedInput: backendNodeId=${backendNodeId}, type=${inputState.type}, checked=${inputState.checked}, value=${inputState.value}, width=${inputState.width}`);
 
-    if (inputState.type === 'checkbox') {
+    if (inputState.type === 'radio') {
+      const radioName = inputState.name;
+      // Get all radio inputs with the same name, excluding current
+      const sameNameRadios = this.getSameNameRadios(backendNodeId, radioName);
+
+      // Redraw all other radios first (unfocused)
+      for (const [id, state] of sameNameRadios) {
+        this.drawRadio({
+          x: state.x,
+          y: state.y,
+          width: state.width,
+          key: id,
+          name: state.name,
+          value: state.value,
+          checked: state.checked,
+          onChange: state.onChange,
+        });
+      }
+
+      // Redraw the focused radio last
+      this.drawRadio({
+        x: inputState.x,
+        y: inputState.y,
+        width: inputState.width,
+        key: backendNodeId,
+        name: inputState.name,
+        value: state.value, // Fixed typo from '.Transaction' to '.value'
+        checked: inputState.checked,
+        onChange: inputState.onChange,
+      });
+    } else if (inputState.type === 'checkbox') {
       const checkboxWidth = 3; // Fixed width for [ ]
       const totalWidth = checkboxWidth;
       const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
 
       this.term.moveTo(inputState.x, inputState.y);
       this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
-      this.term.bgDefaultColor();
-      this.term.defaultColor();
-      this.term.styleReset();
-    } else if (inputState.type === 'radio') {
-      const checkboxWidth = 3; // Fixed width for [ ]
-      const totalWidth = checkboxWidth;
-      const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
-
-      this.term.moveTo(inputState.x, inputState.y);
-      this.term.bgCyan().white(`${inputState.checked ? '(o)' : '( )'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
       this.term.bgDefaultColor();
       this.term.defaultColor();
       this.term.styleReset();
@@ -1095,23 +1121,43 @@ export default class TerminalBrowser extends EventEmitter {
 
     debugLog(`redrawUnfocusedInput: backendNodeId=${backendNodeId}, type=${inputState.type}, checked=${inputState.checked}, value=${inputState.value}, width=${inputState.width}`);
 
-    if (inputState.type === 'checkbox') {
+    if (inputState.type === 'radio') {
+      const radioName = inputState.name;
+      // Get all radio inputs with the same name, excluding current
+      const sameNameRadios = this.getSameNameRadios(backendNodeId, radioName);
+
+      // Redraw all other radios first
+      for (const [id, state] of sameNameRadios) {
+        this.drawRadio({
+          x: state.x,
+          y: state.y,
+          width: state.width,
+          key: id,
+          name: state.name,
+          value: state.value,
+          checked: state.checked,
+          onChange: state.onChange,
+        });
+      }
+
+      // Redraw the current radio
+      this.drawRadio({
+        x: inputState.x,
+        y: inputState.y,
+        width: inputState.width,
+        key: backendNodeId,
+        name: inputState.name,
+        value: inputState.value,
+        checked: inputState.checked,
+        onChange: inputState.onChange,
+      });
+    } else if (inputState.type === 'checkbox') {
       const checkboxWidth = 3; // Fixed width for [ ]
       const totalWidth = checkboxWidth;
       const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
 
       this.term.moveTo(inputState.x, inputState.y);
       this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
-      this.term.bgDefaultColor();
-      this.term.defaultColor();
-      this.term.styleReset();
-    } else if (inputState.type === 'radio') {
-      const checkboxWidth = 3; // Fixed width for [ ]
-      const totalWidth = checkboxWidth;
-      const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
-
-      this.term.moveTo(inputState.x, inputState.y);
-      this.term.bgWhite().black(`${inputState.checked ? '(o)' : '( )'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
       this.term.bgDefaultColor();
       this.term.defaultColor();
       this.term.styleReset();
