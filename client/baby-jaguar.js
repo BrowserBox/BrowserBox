@@ -716,12 +716,28 @@
         });
       });
 
-      browser.on('scroll', async ({ direction }) => {
+      browser.on('scroll', async ({ direction, axis }) => {
         const state = getTabState(getBrowserState().currentSessionId);
         try {
-          const lineHeight = Math.round(state.viewportHeight / terminal.height);
-          const deltaY = direction * lineHeight;
-          await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+          if ( axis == 'vertical' ) {
+            if ( vScroll.atMarginBottom && direction > 0 || vScroll.atMarginTop && direction < 0 ) {
+              const lineHeight = Math.round(state.viewportHeight / terminal.height);
+              const deltaY = direction * lineHeight;
+              vScroll.Y = 0;
+              await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+            } else {
+              vScroll.Y += direction;
+            }
+          } else if ( axis == 'horizontal' ) {
+            if ( vScroll.atMarginRight && direction > 0 || vScroll.atMarginLeft && direction < 0 ) {
+              const columnWidth = Math.round(state.viewportWidth / terminal.height);
+              const deltaX = direction * columnWidth;
+              vScroll.X = 0;
+              await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX, deltaY: 0 }, sessionId);
+            } else {
+              vScroll.X += direction;
+            }
+          }
           debouncedRefresh();
         } catch (e) {
           console.error(e);
