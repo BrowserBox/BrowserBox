@@ -338,9 +338,6 @@ export class InputManager {
     } else {
       if (key === 'ENTER') {
         await this.handleInputCommit(backendNodeId, inputState);
-        this.browser.redrawUnfocusedInput(backendNodeId);
-        this.browser.focusManager.setFocusedElement(`tabs:${this.browser.selectedTabId}`);
-        this.browser.focusManager.setPreviousFocusedElement(this.browser.focusManager.getFocusedElement());
         if (inputState.onChange) inputState.onChange(inputState.value);
         this.browser.render();
       } else {
