@@ -3,6 +3,8 @@
   <img src="https://raw.githubusercontent.com/BrowserBox/BrowserBox/main/docs/icon.svg" alt="BrowserBox Logo 2025" width="111" height="111">
 </p>
 
+**NEWS: COMING SOON - WireGuard&reg; support**
+
 # [BrowserBox](https://dosaygo.com)
 *by [DOSAYGO](https://dosaygo.com)*
 
