@@ -1,6 +1,5 @@
-import {CONFIG, iden, deviceIsMobile, throttle, DEBUG, elogit} from './common.js';
+import {CONFIG, DEBUG} from './common.js';
 import {cloneKeyEvent} from './constructor.js';
-import {s as R, c as X} from '../node_modules/bang.html/src/vv/vanillaview.js';
 import * as Subviews from './subviews/index.js';
 import {CTX_MENU_THRESHOLD} from './subviews/contextMenu.js';
 import {getBitmapCoordinates} from './transformEvent.js';
@@ -21,8 +20,7 @@ export const audio_login_url = CONFIG.isOnion ?
 
 // MIGRATE
 export function component(state) {
-  const {H,/*sizeBrowserToBounds,*/ asyncSizeBrowserToBounds, emulateNavigator, bondTasks, /*installFrameListener,*/ canvasBondTasks} = state;
-  const audio_url = `${location.protocol}//${location.hostname}:${audio_port}/`;
+  const {H, bondTasks} = state;
   //const FocusBorrowerSel = '[name="address"], #selectinput, .control';
 
   // FIXME: causing no keys to work
@@ -89,10 +87,6 @@ export function component(state) {
 
   return;
 
-  function isBundle() {
-    return location.pathname == "/bundle.html";
-  }
-
   function focusKeyinput(type, inputmode, value = '') {
     const {viewState} = state;
     viewState.keyinput.type = type || viewState.keyinput.type || 'text';
@@ -114,7 +108,7 @@ export function component(state) {
     viewState.shouldHaveFocus = null;
   }
 
-  function focusTextarea(inputmode = 'text', value = '') {
+  function focusTextarea(inputmode = 'text') {
     const {viewState} = state;
     if ( USE_INPUT_MODE ) { 
       viewState.textarea.inputmode = inputmode;
