@@ -262,15 +262,26 @@ function translator(e, handled = {type:'case'}) {
     }
     case "auth-response": {
       const {requestId, sessionId, authResponse} = e;
-      return {
-        command: {
-          name: "Fetch.continueWithAuth",
-          params: {
-            requestId,
-            authChallengeResponse: authResponse
+      return [
+        {
+          command: {
+            name: "Fetch.continueWithAuth",
+            params: {
+              requestId,
+              authChallengeResponse: authResponse
+            }
+          }
+        }, {
+          command: {
+            isZombieLordCommand: true,
+            name: "Connection.closeModal",
+            params: {
+              modalType: "auth",
+              sessionId
+            }
           }
         }
-      };
+      ];
     }
     case "resample-imagery": {
       const {down, up, averageBw} = e;

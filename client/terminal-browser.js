@@ -1,6 +1,6 @@
 ﻿import termkit from 'terminal-kit';
 import { EventEmitter } from 'events';
-import { sleep, debugLog } from './log.js';
+import { sleep, debugLog, newLog } from './log.js';
 import { getAncestorInfo } from './layout.js';
 import { getBrowserState, getTabState, sessions, getClickedBox, focusInput, renderedBoxesBySession } from './baby-jaguar.js';
 import { FocusManager } from './focus-manager.js';
@@ -266,6 +266,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
+        key,
         value: initialValue,
         cursorPosition: initialValue.length,
         focused: false,
@@ -276,12 +277,14 @@ export default class TerminalBrowser extends EventEmitter {
       });
     }
     const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.key = key;
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
 
     const displayWidth = Math.min(width, this.term.width - x + 1);
     const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
+    newLog({isFocused, backendNodeIdStr, stack: (new Error).stack}, this.focusManager.getFocusedElement());
     const value = inputState.value;
     const cursorPos = inputState.cursorPosition;
 
@@ -310,6 +313,7 @@ export default class TerminalBrowser extends EventEmitter {
 
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
+        key,
         type: 'select',
         value: selectOptions.length > 0 ? selectOptions[0].value : '',
         selectedIndex: 0,
@@ -324,12 +328,14 @@ export default class TerminalBrowser extends EventEmitter {
     }
 
     const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.key = key;
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
 
     const displayWidth = Math.min(width, this.term.width - x + 1);
     const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
+    newLog({isFocused, backendNodeIdStr, stack: (new Error).stack}, this.focusManager.getFocusedElement());
     const selectedOption = inputState.options[inputState.selectedIndex] || { label: '' };
 
     this.term.moveTo(x, y);
@@ -353,6 +359,7 @@ export default class TerminalBrowser extends EventEmitter {
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
         type: 'radio',
+        key,
         name,
         value,
         checked,
@@ -365,6 +372,7 @@ export default class TerminalBrowser extends EventEmitter {
     }
 
     const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.key = key;
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
@@ -372,13 +380,14 @@ export default class TerminalBrowser extends EventEmitter {
 
     const displayWidth = Math.min(width, this.term.width - x + 1);
     const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
+    newLog({isFocused, backendNodeIdStr, stack: (new Error).stack}, this.focusManager.getFocusedElement());
     const label = value || '';
 
     this.term.moveTo(x, y);
     if (isFocused) {
-      this.term.bgCyan().white(`${inputState.checked ? '(•)' : '( )'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgCyan().white(`${inputState.checked ? '(o)' : '( )'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
     } else {
-      this.term.bgWhite().black(`${inputState.checked ? '(•)' : '( )'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgWhite().black(`${inputState.checked ? '(o)' : '( )'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
     }
 
     this.term.bgDefaultColor();
@@ -389,11 +398,12 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   drawCheckbox(options) {
-    const { x, y, width, key, value, checked = false, onChange } = options;
+    const { x, y, width, key, value, checked = false, onChange, name = '' } = options;
     const backendNodeIdStr = '' + key;
 
     if (!this.inputFields.has(backendNodeIdStr)) {
       this.inputFields.set(backendNodeIdStr, {
+        key,
         type: 'checkbox',
         value,
         checked,
@@ -402,24 +412,34 @@ export default class TerminalBrowser extends EventEmitter {
         x,
         y,
         width,
+        name
       });
     }
 
     const inputState = this.inputFields.get(backendNodeIdStr);
+    inputState.key = key;
     inputState.x = x;
     inputState.y = y;
     inputState.width = width;
-    inputState.checked = checked;
+    inputState.name = name;
+    // Only update checked if explicitly provided
+    if (checked !== undefined) {
+      inputState.checked = checked;
+    }
 
-    const displayWidth = Math.min(width, this.term.width - x + 1);
+    const checkboxWidth = 3; // Fixed width for [ ]
+    const totalWidth = checkboxWidth;
+    const displayWidth = Math.min(totalWidth, this.term.width - x + 1);
     const isFocused = this.focusManager.getFocusedElement() === `input:${backendNodeIdStr}`;
-    const label = value || '';
+    newLog({isFocused, backendNodeIdStr, stack: (new Error).stack}, this.focusManager.getFocusedElement());
+
+    debugLog(`Drawing checkbox: backendNodeId=${backendNodeIdStr}, isFocused=${isFocused}, checked=${inputState.checked}, value=${value}, name=${name}, x=${x}, y=${y}, width=${width}, displayWidth=${displayWidth}`);
 
     this.term.moveTo(x, y);
     if (isFocused) {
-      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
     } else {
-      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'} ${label}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
     }
 
     this.term.bgDefaultColor();
@@ -669,6 +689,155 @@ export default class TerminalBrowser extends EventEmitter {
     this.term.bgDefaultColor().defaultColor().styleReset();
   }
 
+  async showHTTPAuth(sessionId, scheme, realm, requestId) {
+    if (this.#activeModal) return;
+
+    const modalWidth = Math.min(50, Math.floor(this.term.width * 0.8));
+    const modalHeight = 11; // Extra height for two input fields
+    const modalX = Math.floor((this.term.width - modalWidth) / 2);
+    const modalY = Math.floor((this.term.height - modalHeight) / 2);
+    const inputWidth = modalWidth - 4;
+    const inputX = modalX + 2;
+    const usernameY = modalY + modalHeight - 6;
+    const passwordY = modalY + modalHeight - 4;
+    const buttonWidth = 10;
+    const okButtonX = modalX + Math.floor(modalWidth / 3) - 2;
+    const cancelButtonX = modalX + Math.floor((2 * modalWidth) / 3) - buttonWidth + 2;
+    const buttonY = modalY + modalHeight - 2;
+
+    this.isModalActive = true;
+    this.#activeModal = {
+      type: 'auth',
+      sessionId,
+      requestId,
+      x: modalX,
+      y: modalY,
+      width: modalWidth,
+      height: modalHeight,
+      usernameField: { x: inputX, y: usernameY, width: inputWidth, height: 1 },
+      passwordField: { x: inputX, y: passwordY, width: inputWidth, height: 1 },
+      okButton: { x: okButtonX, y: buttonY, width: buttonWidth, height: 1 },
+      cancelButton: { x: cancelButtonX, y: buttonY, width: buttonWidth, height: 1 },
+      username: '',
+      password: '',
+      cursorPosition: 0,
+      activeField: 'username' // Track which field is active
+    };
+
+    const message = `${scheme.charAt(0).toUpperCase() + scheme.slice(1)} Authentication Required for ${realm}`;
+
+    const drawAuthModal = () => {
+      this.term.saveCursor();
+      this.term.moveTo(modalX, modalY);
+      this.term.bgWhite().black('┌' + '─'.repeat(modalWidth - 2) + '┐');
+      for (let i = 1; i < modalHeight - 1; i++) {
+        this.term.moveTo(modalX, modalY + i);
+        this.term.bgWhite().black('│' + ' '.repeat(modalWidth - 2) + '│');
+      }
+      this.term.moveTo(modalX, modalY + modalHeight - 1);
+      this.term.bgWhite().black('└' + '─'.repeat(modalWidth - 2) + '┘');
+
+      // Draw message
+      const messageLines = this.#wrapText(message, modalWidth - 4);
+      messageLines.forEach((line, i) => {
+        this.term.moveTo(modalX + 2, modalY + 1 + i);
+        this.term.bgWhite().black(line.padEnd(modalWidth - 4));
+      });
+
+      // Draw username label and field
+      this.term.moveTo(inputX, usernameY - 1);
+      this.term.bgWhite().black('Username:'.padEnd(inputWidth));
+      this.term.moveTo(inputX, usernameY);
+      const usernameValue = this.#activeModal.username.slice(0, inputWidth);
+      const usernameCursor = this.#activeModal.activeField === 'username' ? this.#activeModal.cursorPosition : usernameValue.length;
+      const usernameBefore = usernameValue.slice(0, usernameCursor);
+      const usernameCursorChar = usernameValue[usernameCursor] || ' ';
+      const usernameAfter = usernameValue.slice(usernameCursor + 1);
+      this.term.bgCyan().black(usernameBefore);
+      this.term.bgBlack().brightWhite().bold(usernameCursorChar);
+      this.term.bgCyan().black(usernameAfter.padEnd(inputWidth - usernameBefore.length - 1, ' '));
+
+      // Draw password label and field (mask password with *)
+      this.term.moveTo(inputX, passwordY - 1);
+      this.term.bgWhite().black('Password:'.padEnd(inputWidth));
+      this.term.moveTo(inputX, passwordY);
+      const passwordValue = this.#activeModal.password.slice(0, inputWidth);
+      const passwordDisplay = '*'.repeat(passwordValue.length);
+      const passwordCursor = this.#activeModal.activeField === 'password' ? this.#activeModal.cursorPosition : passwordValue.length;
+      const passwordBefore = passwordDisplay.slice(0, passwordCursor);
+      const passwordCursorChar = passwordDisplay[passwordCursor] || ' ';
+      const passwordAfter = passwordDisplay.slice(passwordCursor + 1);
+      this.term.bgCyan().black(passwordBefore);
+      this.term.bgBlack().brightWhite().bold(passwordCursorChar);
+      this.term.bgCyan().black(passwordAfter.padEnd(inputWidth - passwordBefore.length - 1, ' '));
+
+      // Draw OK/Cancel buttons
+      this.term.moveTo(okButtonX, buttonY);
+      this.term.bgCyan().black(' [ OK ]  ');
+      this.term.moveTo(cancelButtonX, buttonY);
+      this.term.bgCyan().black(' [ Cancel ] ');
+      this.term.restoreCursor();
+    };
+
+    drawAuthModal();
+
+    await new Promise(resolve => {
+      const keyHandler = key => {
+        if (!this.#activeModal?.type === 'auth') return;
+        if (key === 'ENTER') {
+          this.term.removeListener('key', keyHandler);
+          this.sendModalResponse(sessionId, 'auth', {
+            authResponse: {
+              username: this.#activeModal.username,
+              password: this.#activeModal.password,
+              response: 'ProvideCredentials'
+            },
+            requestId
+          });
+          this.closeModal(sessionId, 'auth');
+          resolve();
+        } else if (key === 'ESCAPE') {
+          this.term.removeListener('key', keyHandler);
+          this.sendModalResponse(sessionId, 'auth', {
+            authResponse: {
+              username: '',
+              password: '',
+              response: 'ProvideCredentials'
+            },
+            requestId
+          });
+          this.closeModal(sessionId, 'auth');
+          resolve();
+        } else if (key === 'TAB') {
+          this.#activeModal.activeField = this.#activeModal.activeField === 'username' ? 'password' : 'username';
+          this.#activeModal.cursorPosition = this.#activeModal[this.#activeModal.activeField].length;
+          drawAuthModal();
+        } else if (key.length === 1) {
+          const field = this.#activeModal.activeField;
+          this.#activeModal[field] = this.#activeModal[field].slice(0, this.#activeModal.cursorPosition) + key + this.#activeModal[field].slice(this.#activeModal.cursorPosition);
+          this.#activeModal.cursorPosition++;
+          drawAuthModal();
+        } else if (key === 'BACKSPACE' && this.#activeModal.cursorPosition > 0) {
+          const field = this.#activeModal.activeField;
+          this.#activeModal[field] = this.#activeModal[field].slice(0, this.#activeModal.cursorPosition - 1) + this.#activeModal[field].slice(this.#activeModal.cursorPosition);
+          this.#activeModal.cursorPosition--;
+          drawAuthModal();
+        } else if (key === 'LEFT' && this.#activeModal.cursorPosition > 0) {
+          this.#activeModal.cursorPosition--;
+          drawAuthModal();
+        } else if (key === 'RIGHT' && this.#activeModal.cursorPosition < this.#activeModal[this.#activeModal.activeField].length) {
+          this.#activeModal.cursorPosition++;
+          drawAuthModal();
+        }
+      };
+      this.activeModalHandler = keyHandler;
+      this.term.on('key', keyHandler);
+    });
+
+    this.term.restoreCursor();
+    this.term.bgDefaultColor().defaultColor().styleReset();
+  }
+
   closeModal(sessionId, modalType) {
     if (this.#activeModal?.sessionId === sessionId && this.#activeModal?.type === modalType) {
       this.#activeModal = null;
@@ -717,6 +886,31 @@ export default class TerminalBrowser extends EventEmitter {
         } else if (y === modal.cancelButton.y && x >= modal.cancelButton.x && x < modal.cancelButton.x + modal.cancelButton.width) {
           this.sendModalResponse(modal.sessionId, 'prompt', null);
           this.closeModal(modal.sessionId, 'prompt');
+          return true;
+        }
+      } else if (modal.type === 'auth') {
+        if (y === modal.usernameField.y && x >= modal.usernameField.x && x < modal.usernameField.x + modal.usernameField.width) {
+          // Move cursor to clicked position
+          const charIndex = Math.min(x - modal.usernameField.x, modal.username.length);
+          modal.cursorPosition = charIndex;
+          this.redrawModal(); // Redraw to show updated cursor
+          return true;
+        } else if (y === modal.passwordField.y && x >= modal.passwordField.x && x < modal.passwordField.x + modal.passwordField.width) {
+          // Move cursor to clicked position
+          const charIndex = Math.min(x - modal.passwordField.x, modal.password.length);
+          modal.cursorPosition = charIndex;
+          this.redrawModal(); // Redraw to show updated cursor
+          return true;
+        } else if (y === modal.okButton.y && x >= modal.okButton.x && x < modal.okButton.x + modal.okButton.width) {
+          this.sendModalResponse(modal.sessionId, 'auth', {
+            authResponse: {
+              username: modal.username,
+              password: modal.password,
+              response: 'ProvideCredentials'
+            },
+            requestId: modal.requestId
+          });
+          this.closeModal(modal.sessionId, 'auth');
           return true;
         }
       }
@@ -794,30 +988,75 @@ export default class TerminalBrowser extends EventEmitter {
   }
 
   sendModalResponse(sessionId, modalType, response) {
-    const commands = [
-      {
-        command: {
-          name: "Page.handleJavaScriptDialog",
-          params: {
-            sessionId,
-            accept: modalType == 'prompt' ? response !== null : response == "ok",
-            ...(modalType == 'prompt' ? { promptText: response || '' } : {}),
+    const commands = [];
+    switch(modalType) {
+      case 'alert':
+      case 'confirm':
+      case 'prompt':
+      case 'beforeunload':
+        commands.push(
+          {
+            command: {
+              name: "Page.handleJavaScriptDialog",
+              params: {
+                sessionId,
+                accept: modalType == 'prompt' ? response !== null : response == "ok",
+                ...(modalType == 'prompt' ? { promptText: response || '' } : {}),
+              }
+            }
+          },
+          {
+            command: {
+              isZombieLordCommand: true,
+              name: "Connection.closeModal",
+              params: {
+                modalType, 
+                sessionId
+              }
+            }
           }
-        }
-      },
-      {
-        command: {
-          isZombieLordCommand: true,
-          name: "Connection.closeModal",
-          params: {
-            modalType, 
-            sessionId
+        );
+        break;
+      case 'auth': {
+        const {requestId, authResponse} = response;
+        commands.push(
+          {
+            command: {
+              name: "Fetch.continueWithAuth",
+              params: {
+                requestId,
+                authChallengeResponse: authResponse
+              }
+            }
+          },
+          {
+            command: {
+              isZombieLordCommand: true,
+              name: "Connection.closeModal",
+              params: {
+                modalType: 'auth', 
+                sessionId
+              }
+            }
           }
-        }
-      }
-    ];
-
+        );
+      }; break;
+    }
     this.emit('tell-browserbox', commands);
+  }
+
+  getSameNameRadios(radioName, backendNodeId) {
+    return Array.from(this.inputFields.entries()).filter(
+      ([id, state]) => state.type === 'radio' && state.name === radioName && id !== backendNodeId
+    );
+  }
+
+  redrawRadioGroup(name, backendNodeId) {
+    const sameNameRadios = this.getSameNameRadios(name) 
+    Promise.all(sameNameRadios.map(([id,state]) => {
+      state.checked = id == backendNodeId;
+      return state.onChange(state.checked);
+    })).then(() => sameNameRadios.forEach(([,state]) => this.drawRadio(state)));
   }
 
   redrawFocusedInput() {
@@ -827,33 +1066,141 @@ export default class TerminalBrowser extends EventEmitter {
     const inputState = this.inputFields.get(backendNodeId);
     if (!inputState || !inputState.focused) return;
 
-    const { x, y, width, value, cursorPosition } = inputState;
-    const displayWidth = Math.min(width, this.term.width - x + 1);
+    debugLog(`redrawFocusedInput: backendNodeId=${backendNodeId}, type=${inputState.type}, checked=${inputState.checked}, value=${inputState.value}, width=${inputState.width}`);
 
-    this.term.moveTo(x, y);
-    const beforeCursor = value.slice(0, cursorPosition);
-    const cursorChar = value[cursorPosition] || ' ';
-    const afterCursor = value.slice(cursorPosition + 1);
-    this.term.bgCyan().black(beforeCursor);
-    this.term.bgBlack().brightWhite().bold(cursorChar);
-    this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
-    this.term.bgDefaultColor();
-    this.term.defaultColor();
-    this.term.styleReset();
+    if (inputState.type === 'radio') {
+      const radioName = inputState.name;
+      // Get all radio inputs with the same name, excluding current
+      const sameNameRadios = this.getSameNameRadios(radioName, backendNodeId);
+
+      // Redraw all other radios first (unfocused)
+      for (const [id, state] of sameNameRadios) {
+        this.drawRadio({
+          x: state.x,
+          y: state.y,
+          width: state.width,
+          key: id,
+          name: state.name,
+          value: state.value,
+          checked: state.checked,
+          onChange: state.onChange,
+        });
+      }
+
+      // Redraw the focused radio last
+      this.drawRadio({
+        x: inputState.x,
+        y: inputState.y,
+        width: inputState.width,
+        key: backendNodeId,
+        name: inputState.name,
+        value: inputState.value, 
+        checked: inputState.checked,
+        onChange: inputState.onChange,
+      });
+    } else if (inputState.type === 'checkbox') {
+      const checkboxWidth = 3; // Fixed width for [ ]
+      const totalWidth = checkboxWidth;
+      const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
+
+      this.term.moveTo(inputState.x, inputState.y);
+      this.term.bgCyan().white(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    } else if (inputState.type === 'select') {
+      const { x, y, width, selectedIndex, options } = inputState;
+      const displayWidth = Math.min(width, this.term.width - x + 1);
+      const selectedOption = options[selectedIndex] || { label: '' };
+
+      this.term.moveTo(x, y);
+      this.term.bgCyan().white(`[${selectedOption.label}]`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    } else {
+      const { x, y, width, value, cursorPosition } = inputState;
+      const displayWidth = Math.min(width, this.term.width - x + 1);
+
+      this.term.moveTo(x, y);
+      const beforeCursor = value.slice(0, cursorPosition);
+      const cursorChar = value[cursorPosition] || ' ';
+      const afterCursor = value.slice(cursorPosition + 1);
+      this.term.bgCyan().black(beforeCursor);
+      this.term.bgBlack().brightWhite().bold(cursorChar);
+      this.term.bgCyan().black(afterCursor.padEnd(displayWidth - beforeCursor.length - 1, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    }
   }
 
   redrawUnfocusedInput(backendNodeId) {
     const inputState = this.inputFields.get('' + backendNodeId);
     if (!inputState) return;
 
-    const { x, y, width, value } = inputState;
-    const displayWidth = Math.min(width, this.term.width - x + 1);
+    debugLog(`redrawUnfocusedInput: backendNodeId=${backendNodeId}, type=${inputState.type}, checked=${inputState.checked}, value=${inputState.value}, width=${inputState.width}`);
 
-    this.term.moveTo(x, y);
-    this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
-    this.term.bgDefaultColor();
-    this.term.defaultColor();
-    this.term.styleReset();
+    if (inputState.type === 'radio') {
+      const radioName = inputState.name;
+      // Get all radio inputs with the same name, excluding current
+      const sameNameRadios = this.getSameNameRadios(radioName, backendNodeId);
+
+      // Redraw all other radios first
+      for (const [id, state] of sameNameRadios) {
+        this.drawRadio({
+          x: state.x,
+          y: state.y,
+          width: state.width,
+          key: id,
+          name: state.name,
+          value: state.value,
+          checked: state.checked,
+          onChange: state.onChange,
+        });
+      }
+
+      // Redraw the current radio
+      this.drawRadio({
+        x: inputState.x,
+        y: inputState.y,
+        width: inputState.width,
+        key: backendNodeId,
+        name: inputState.name,
+        value: inputState.value,
+        checked: inputState.checked,
+        onChange: inputState.onChange,
+      });
+    } else if (inputState.type === 'checkbox') {
+      const checkboxWidth = 3; // Fixed width for [ ]
+      const totalWidth = checkboxWidth;
+      const displayWidth = Math.min(totalWidth, this.term.width - inputState.x + 1);
+
+      this.term.moveTo(inputState.x, inputState.y);
+      this.term.bgWhite().black(`${inputState.checked ? '[x]' : '[ ]'}`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    } else if (inputState.type === 'select') {
+      const { x, y, width, selectedIndex, options } = inputState;
+      const displayWidth = Math.min(width, this.term.width - x + 1);
+      const selectedOption = options[selectedIndex] || { label: '' };
+
+      this.term.moveTo(x, y);
+      this.term.bgWhite().black(`[${selectedOption.label}]`.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    } else {
+      const { x, y, width, value } = inputState;
+      const displayWidth = Math.min(width, this.term.width - x + 1);
+
+      this.term.moveTo(x, y);
+      this.term.bgWhite().black(value.slice(0, displayWidth).padEnd(displayWidth, ' '));
+      this.term.bgDefaultColor();
+      this.term.defaultColor();
+      this.term.styleReset();
+    }
   }
 
   focusInput(backendNodeId) {
@@ -961,10 +1308,10 @@ export default class TerminalBrowser extends EventEmitter {
       this.drawTabs();
     } else if (element.type === 'input') {
       const publicState = this.getCurrentTabState();
+      const { send, sessionId } = publicState;
       const midX = element.x + Math.floor(element.width / 2);
       const midY = element.y + Math.floor(element.height / 2);
-      const clickedBox = getClickedBox({ termX: midX, termY: midY });
-      const { send, sessionId } = publicState;
+      const clickedBox = getClickedBox({ termX: midX, termY: midY, ignoreIsClickable: true });
       focusInput({ clickedBox, browser: this, send, sessionId, termX: element.x + element.width });
     } else if (element.type === 'clickable') {
       this.focusManager.setFocusedElement(`clickable:${element.backendNodeId}`);

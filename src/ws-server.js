@@ -39,6 +39,7 @@
   const { exec, execSync } = child_process;
 
   let WRTC;
+  let xCheckers;
   try { 
     await import('@roamhq/wrtc').then(module => WRTC = module.default);
   } catch(e) {
@@ -537,6 +538,7 @@
       try {
         if ( shuttingDown ) return;
         shuttingDown = true;
+        clearInterval(xCheckers);
         let markOtherTasksComplete;
         let markLicenseReleased;
         let licenseReleased = new Promise(res => markLicenseReleased = res);
@@ -1004,7 +1006,7 @@
       }
     };
     setTimeout(checkers, 8051);
-    setInterval(checkers, 50137);
+    xCheckers = setInterval(checkers, 50137);
 
     server.listen(server_port, async err => {
       if ( err ) {

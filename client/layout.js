@@ -5,6 +5,7 @@ import {rowsLog,debugLog,DEBUG} from './log.js';
 const GAP = 1;
 const HORIZONTAL_COMPRESSION = 1.0;
 const VERTICAL_COMPRESSION = 1.0;
+const CHECKBOX_LAYOUT_WIDTH = 4;
 const USE_TEXT_BOX_FOR_OCCLUSION_TEST = true; // Set to true to use text box bounds for occlusion test
 const RECOGNIZE_MULTIROW_MEDIA_BOXES = false;
 const POSITION_SET_1 = new Set([
@@ -61,6 +62,15 @@ const LayoutAlgorithm = (() => {
           box.text = RECOGNIZE_MULTIROW_MEDIA_BOXES
             ? `[${box.text.slice(1, 4)} ${box.termWidth}x${Math.ceil(box.boundingBox.height / 40)}]`
             : box.text; // Keep [IMG], [VID], or [AUD]
+        } else if (box.subType == 'checkbox' ) {
+          box.termWidth = CHECKBOX_LAYOUT_WIDTH;
+          box.termHeight = 1;
+        } else if (box.subType === 'radio' ) {
+          box.termWidth = CHECKBOX_LAYOUT_WIDTH;
+          box.termHeight = 1;
+        } else if (box.subType === 'select') {
+          box.termWidth = 20; // Default width, adjusted in baby-jaguar.js
+          box.termHeight = 1;
         } else {
           box.termWidth = box.text.length;
           box.termHeight = 1;
@@ -534,7 +544,7 @@ const LayoutAlgorithm = (() => {
 
       if (!bounds || bounds[2] <= INVISIBLE_DIMENSION || bounds[3] <= INVISIBLE_DIMENSION ) continue;
       
-      let mediaType, placeholder;
+      let mediaType, subType, placeholder;
       if (nodeNameUpper === 'IMG') {
         mediaType = 'media';
         placeholder = '[IMG]';
@@ -553,6 +563,18 @@ const LayoutAlgorithm = (() => {
             const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
             placeholder = valueText || '[BUTTON]';
             mediaType = 'button';
+          } else if (inputType == 'checkbox') {
+            const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
+            const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
+            placeholder = valueText || ''; // Use actual value
+            subType = inputType;
+            mediaType = 'input';
+          } else if (inputType == 'radio') {
+            const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
+            const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
+            placeholder = valueText || ''; // Use actual value
+            subType = inputType;
+            mediaType = 'input';
           } else {
             const valueIdx = attributes.findIndex((idx, i) => i % 2 === 0 && strings[idx] === 'value');
             const valueText = valueIdx !== -1 ? strings[attributes[valueIdx + 1]] : '';
@@ -568,6 +590,11 @@ const LayoutAlgorithm = (() => {
         });
         mediaType = 'input';
         placeholder = textContent || '';
+      } else if (nodeNameUpper === 'SELECT') {
+        debugLog(`Detected SELECT node: backendNodeId=${nodes.backendNodeId[nodeIdx]}, layoutIdx=${layoutIdx}`);
+        mediaType = 'input';
+        subType = 'select';
+        placeholder = '[SELECT]';
       } else if (ceIndex !== -1) {
         const contentEditable = strings[attributes[ceIndex + 1]];
         if (contentEditable === 'true' || contentEditable === '') {
@@ -596,6 +623,7 @@ const LayoutAlgorithm = (() => {
 
       const mediaBox = {
         type: mediaType,
+        subType,
         text: placeholder,
         boundingBox,
         isClickable,
@@ -643,7 +671,7 @@ const LayoutAlgorithm = (() => {
 
     const { columns: termWidth, rows: termHeight } = await getTerminalSize();
     const baseScaleX = termWidth / viewportWidth;
-    const baseScaleY = (termHeight - 4) / viewportHeight;
+    const baseScaleY = (termHeight) / viewportHeight;
     const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
     const scaleY = baseScaleY * VERTICAL_COMPRESSION;
 
@@ -658,7 +686,7 @@ const LayoutAlgorithm = (() => {
       const adjustedX = box.boundingBox.x - viewportX;
       const adjustedY = box.boundingBox.y - viewportY;
       box.termX = Math.ceil(adjustedX * scaleX);
-      box.termY = Math.ceil(adjustedY * scaleY) + 4;
+      box.termY = Math.ceil(adjustedY * scaleY);
       box.termWidth = box.text.length;
       box.termHeight = 1;
       return box;

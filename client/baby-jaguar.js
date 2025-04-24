@@ -22,11 +22,26 @@
   import Layout from './layout.js';
   import TerminalBrowser from './terminal-browser.js';
   import { ConnectionManager } from './connection-manager.js';
-  import { sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
+  import { InputManager } from './input-manager.js';
+  import { newLog, sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
+
+  // global scroll state
+  const vScroll = {
+    X: 0,
+    Y: 0,
+    atMarginTop: false,
+    atMarginBottom: false,
+    atMarginLeft: false,
+    atMarginRight: false,
+  };
 
   // Constants and state
   const clickCounter = { value: 0 };
   const USE_SYNTHETIC_FOCUS = true;
+  const GLOBAL_IGNORE_CLICKABLE_FOR_INPUT = true;
+  const IGNORE_CLICKABLE_FOR_TYPES = new Set([
+    'input'
+  ]);
   const markClicks = false;
   const DEBOUNCE_DELAY = 280;
   const args = process.argv.slice(2);
@@ -99,6 +114,484 @@
     };
   }
   startKernel();
+
+  // main render
+  function renderBoxes(layoutState) {
+    const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
+    const newBoxes = [];
+    const sessionId = browserState.currentSessionId; // Use current sessionId
+    vScroll.atMarginRight = true;
+    vScroll.atMarginBottom = true;
+    vScroll.atMarginLeft = true;
+    vScroll.atMarginTop = true;
+    logClicks(`renderBoxes: clickableElements.length=${clickableElements.length}`);
+
+    for (const box of visibleBoxes) {
+      DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
+      const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type, subType } = box;
+      const renderX = termX - vScroll.X;
+      const renderY = termY + 1 - vScroll.Y;
+
+      if (renderX > termWidth) {
+        vScroll.atMarginRight = false;
+      }
+      if (renderY > termHeight + 4) {
+        vScroll.atMarginBottom = false;
+      }
+      if (renderX > termWidth || renderY > termHeight + 4) continue;
+
+      const boxWidth = text.length;
+      const actualDisplayWidth = Math.min(termWidth, renderX + boxWidth) - Math.max(0, renderX);
+      const clipStart = Math.max(0, 0 - renderX);
+      const displayWidth = actualDisplayWidth;
+      let displayText = text.substring(clipStart, clipStart + actualDisplayWidth);
+      let termWidthForBox;
+
+      if (type === 'input' && boundingBox?.width && layoutState.viewportWidth) {
+        const scaleFactor = termWidth / layoutState.viewportWidth;
+        termWidthForBox = Math.round(boundingBox.width * scaleFactor);
+        termWidthForBox = Math.max(10, Math.min(termWidthForBox, displayWidth));
+        logClicks(`Input sizing for backendNodeId: ${backendNodeId}, boundingBox.width: ${boundingBox.width}, viewportWidth: ${layoutState.viewportWidth}, scaleFactor: ${scaleFactor}, termWidth: ${termWidthForBox}`);
+      } else {
+        termWidthForBox = displayText.length;
+      }
+
+      const renderedBox = {
+        text,
+        type,
+        subType,
+        boundingBox,
+        isClickable,
+        termX: renderX,
+        termY: renderY,
+        termWidth: termWidthForBox,
+        termHeight: 1,
+        viewportX,
+        viewportY,
+        viewportWidth: layoutState.viewportWidth,
+        viewportHeight: layoutState.viewportHeight,
+        backendNodeId,
+        layoutIndex,
+        nodeIndex,
+      };
+
+      if ( renderX < 0 ) {
+        vScroll.atMarginLeft = false;
+      }
+      if ( renderY < 0 ) {
+        vScrol.atMarginTop = false;
+      } 
+      if ( (renderX + renderedBox.termWidth - 1) < 0 || (renderY + renderedBox.termHeight - 1) < 5 ) continue;
+
+      debugLog('render_box', null, {
+        backendNodeId,
+        type,
+        isClickable,
+        text: text.slice(0, 50),
+        termX,
+        termY
+      });
+
+      const isFocused = browser.focusManager.getFocusedElement() === (type === 'input' ? `input:${backendNodeId}` : `clickable:${backendNodeId}`);
+      if (type === 'input') {
+        switch(subType) {
+          case "checkbox": {
+            logClicks(`Drawing checkbox for backendNodeId: ${backendNodeId}`);
+            const currentBackendNodeId = backendNodeId;
+            let value = '';
+            let checked = false;
+            let name = '';
+            send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
+              if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+              const objectId = resolveResult.object.objectId;
+              const propsResult = await send(
+                'Runtime.callFunctionOn',
+                {
+                  objectId,
+                  functionDeclaration: 'function() { return { checked: this.checked, value: this.value, name: this.name }; }',
+                  arguments: [],
+                  returnByValue: true,
+                },
+                sessionId
+              );
+              if (propsResult?.result?.value) {
+                checked = propsResult.result.value.checked;
+                value = propsResult.result.value.value || '';
+                name = propsResult.result.value.name || '';
+                logClicks(`Fetched live checkbox props for backendNodeId: ${currentBackendNodeId}: checked=${checked}, value="${value}", name="${name}"`);
+              }
+              const checkboxWidth = 3; // Fixed width for [ ]
+              debugLog(`Checkbox props: backendNodeId=${currentBackendNodeId}, value=${value}, checked=${checked}, name=${name}, termWidthForBox=${checkboxWidth}`);
+
+              const onChange = InputManager.createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId, isCheckbox: true });
+
+              const checkboxField = drawCheckboxForNode({
+                renderX,
+                renderY,
+                termWidthForBox: checkboxWidth,
+                backendNodeId: currentBackendNodeId,
+                value,
+                checked,
+                name,
+                onChange
+              });
+
+              renderedBox.termWidth = checkboxField.width;
+              renderedBox.termHeight = 1;
+
+              if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
+                const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+                if (clickable) {
+                  clickable.termX = renderX;
+                  clickable.termY = renderY;
+                  clickable.termWidth = checkboxField.width;
+                  clickable.termHeight = 1;
+                  logClicks(`Updated clickable checkbox: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
+                } else {
+                  debugLog(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                  logClicks(`No clickable found for checkbox: backendNodeId=${currentBackendNodeId}`);
+                  clickableElements.push({
+                    text: value,
+                    boundingBox,
+                    backendNodeId: currentBackendNodeId,
+                    termX: renderX,
+                    termY: renderY,
+                    termWidth: checkboxField.width,
+                    termHeight: 1,
+                  });
+                }
+              }
+            }).catch(error => {
+              logClicks(`Failed to fetch live checkbox props for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+            });
+          }; break;
+          case "radio": {
+            logClicks(`Drawing radio for backendNodeId: ${backendNodeId}`);
+            const currentBackendNodeId = backendNodeId;
+            let value = '';
+            let checked = false;
+            let name = '';
+            send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
+              if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+              const objectId = resolveResult.object.objectId;
+              const propsResult = await send(
+                'Runtime.callFunctionOn',
+                {
+                  objectId,
+                  functionDeclaration: 'function() { return { checked: this.checked, value: this.value, name: this.name }; }',
+                  arguments: [],
+                  returnByValue: true,
+                },
+                sessionId
+              );
+              if (propsResult?.result?.value) {
+                checked = propsResult.result.value.checked;
+                value = propsResult.result.value.value || '';
+                name = propsResult.result.value.name || '';
+                logClicks(`Fetched live radio props for backendNodeId: ${currentBackendNodeId}: checked=${checked}, value="${value}", name="${name}"`);
+              }
+              const radioWidth = 3; // Fixed width for [ ]
+              debugLog(`Checkbox props: backendNodeId=${currentBackendNodeId}, value=${value}, checked=${checked}, name=${name}, termWidthForBox=${radioWidth}`);
+
+              const onChange = InputManager.createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId, isRadio: true  });
+
+              const radioField = drawRadioForNode({
+                renderX,
+                renderY,
+                termWidthForBox: radioWidth,
+                backendNodeId: currentBackendNodeId,
+                value,
+                checked,
+                name,
+                onChange
+              });
+
+              renderedBox.termWidth = radioField.width;
+              renderedBox.termHeight = 1;
+
+              if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
+                const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+                if (clickable) {
+                  clickable.termX = renderX;
+                  clickable.termY = renderY;
+                  clickable.termWidth = radioField.width;
+                  clickable.termHeight = 1;
+                  logClicks(`Updated clickable radio: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
+                } else {
+                  debugLog(`No clickable found for radio: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                  logClicks(`No clickable found for radio: backendNodeId=${currentBackendNodeId}`);
+                  clickableElements.push({
+                    text: value,
+                    boundingBox,
+                    backendNodeId: currentBackendNodeId,
+                    termX: renderX,
+                    termY: renderY,
+                    termWidth: radioField.width,
+                    termHeight: 1,
+                  });
+                }
+              }
+            }).catch(error => {
+              logClicks(`Failed to fetch live radio props for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+            });
+          }; break;
+          case "select": {
+            logClicks(`Drawing select field for backendNodeId: ${backendNodeId}`);
+            const currentBackendNodeId = backendNodeId;
+            const onChange = InputManager.createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId });
+
+            send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
+              if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+              const objectId = resolveResult.object.objectId;
+              const propsResult = await send(
+                'Runtime.callFunctionOn',
+                {
+                  objectId,
+                  functionDeclaration: `function() {
+                    const options = Array.from(this.options).map(opt => ({
+                      value: opt.value,
+                      label: opt.text,
+                      selected: opt.selected
+                    }));
+                    return { options, value: this.value };
+                  }`,
+                  arguments: [],
+                  returnByValue: true,
+                },
+                sessionId
+              );
+              let selectOptions = [];
+              let selectedValue = '';
+              if (propsResult?.result?.value) {
+                selectOptions = propsResult.result.value.options || [];
+                selectedValue = propsResult.result.value.value || '';
+                logClicks(`Fetched live select props for backendNodeId: ${currentBackendNodeId}: options=${JSON.stringify(selectOptions)}, value="${selectedValue}"`);
+              }
+
+              // Calculate termWidth based on longest option label, capped at 42
+              const longestLabelLength = selectOptions.length > 0
+                ? Math.max(...selectOptions.map(opt => opt.label.length))
+                : 20; // Fallback to default if no options
+              const selectWidth = Math.min(42, Math.max(10, longestLabelLength + 2)); // +2 for [ ]
+
+              const selectField = drawSelectForNode({
+                renderX,
+                renderY,
+                termWidthForBox: selectWidth,
+                backendNodeId: currentBackendNodeId,
+                options: selectOptions,
+                initialValue: selectedValue,
+                onChange,
+              });
+
+              renderedBox.termWidth = selectField.width;
+              renderedBox.termHeight = 1;
+
+              if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
+                const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+                if (clickable) {
+                  clickable.termX = renderX;
+                  clickable.termY = renderY;
+                  clickable.termWidth = selectField.width;
+                  clickable.termHeight = 1;
+                  logClicks(`Updated clickable select: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
+                } else {
+                  debugLog(`No clickable found for select: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                  logClicks(`No clickable found for select: backendNodeId=${currentBackendNodeId}`);
+                  clickableElements.push({
+                    text: selectedValue,
+                    boundingBox,
+                    backendNodeId: currentBackendNodeId,
+                    termX: renderX,
+                    termY: renderY,
+                    termWidth: selectField.width,
+                    termHeight: 1,
+                  });
+                }
+              }
+            }).catch(error => {
+              logClicks(`Failed to fetch live select props for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+              // Fallback rendering
+              const selectWidth = 20; // Default width
+              const selectField = drawSelectForNode({
+                renderX,
+                renderY,
+                termWidthForBox: selectWidth,
+                backendNodeId: currentBackendNodeId,
+                options: [],
+                initialValue: '',
+                onChange,
+              });
+              renderedBox.termWidth = selectField.width;
+              renderedBox.termHeight = 1;
+            });
+          }; break;
+          default: {
+            logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
+            const currentBackendNodeId = backendNodeId;
+            const fallbackValue = text.startsWith('[INPUT') ? '' : text;
+            const onChange = InputManager.createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId });
+
+            send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
+              if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
+              const objectId = resolveResult.object.objectId;
+              const valueResult = await send(
+                'Runtime.callFunctionOn',
+                {
+                  objectId,
+                  functionDeclaration: 'function() { return this.value; }',
+                  arguments: [],
+                  returnByValue: true,
+                },
+                sessionId
+              );
+              let liveValue = fallbackValue;
+              if (valueResult?.result?.value !== undefined) {
+                liveValue = '' + valueResult.result.value;
+                logClicks(`Fetched live value for backendNodeId: ${currentBackendNodeId}: "${liveValue}"`);
+              }
+              const inputField = drawInputFieldForNode({
+                renderX,
+                renderY,
+                termWidthForBox,
+                backendNodeId: currentBackendNodeId,
+                initialValue: liveValue,
+                onChange,
+              });
+              renderedBox.termWidth = inputField.width;
+              if (GLOBAL_IGNORE_CLICKABLE_FOR_INPUT || isClickable) {
+                const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+                if (clickable) {
+                  clickable.termX = renderX;
+                  clickable.termY = renderY;
+                  clickable.termWidth = inputField.width;
+                  clickable.termHeight = 1;
+                  logClicks(`Updated clickable input: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
+                } else {
+                  debugLog(`No clickable found for input: backendNodeId=${currentBackendNodeId}`, renderedBox);
+                  logClicks(`No clickable found for input: backendNodeId=${currentBackendNodeId}`);
+                  clickableElements.push({
+                    text,
+                    boundingBox,
+                    backendNodeId: currentBackendNodeId,
+                    termX: renderX,
+                    termY: renderY,
+                    termWidth: inputField.width,
+                    termHeight: 1,
+                  });
+                }
+              }
+            }).catch(error => {
+              logClicks(`Failed to fetch live value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
+              const inputField = drawInputFieldForNode({
+                renderX,
+                renderY,
+                termWidthForBox,
+                backendNodeId: currentBackendNodeId,
+                initialValue: fallbackValue,
+                onChange,
+              });
+              renderedBox.termWidth = inputField.width;
+              if (isClickable) {
+                const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
+                if (clickable) {
+                  clickable.termX = renderX;
+                  clickable.termY = renderY;
+                  clickable.termWidth = inputField.width;
+                  clickable.termHeight = 1;
+                  logClicks(`Updated clickable input (error path): backendNodeId=${currentBackendNodeId}`);
+                } else {
+                  logClicks(`No clickable found for input (error path): backendNodeId=${currentBackendNodeId}`);
+                  clickableElements.push({
+                    text,
+                    boundingBox,
+                    backendNodeId: currentBackendNodeId,
+                    termX: renderX,
+                    termY: renderY,
+                    termWidth: inputField.width,
+                    termHeight: 1,
+                  });
+                }
+              }
+            });
+          }; break;
+        }
+      } else {
+        terminal.moveTo(renderX, renderY);
+        if (isFocused && isClickable) {
+          terminal.bgCyan();
+          if (type === 'button' || ancestorType === 'button') {
+            terminal.green(displayText);
+          } else if (type === 'media' && isClickable) {
+            terminal.gray.underline(displayText);
+          } else if (ancestorType === 'hyperlink') {
+            terminal.black.underline(displayText);
+          } else if (ancestorType === 'other_clickable') {
+            terminal.defaultColor.bold(displayText);
+          } else {
+            terminal.defaultColor(displayText);
+          }
+        } else {
+          terminal.defaultColor().bgDefaultColor();
+          if (type === 'button') {
+            terminal.bgGreen.black(displayText);
+          } else if (type === 'media') {
+            if (isClickable) {
+              terminal.gray.underline(displayText);
+            } else {
+              terminal.brightBlack(displayText);
+            }
+          } else {
+            switch (ancestorType) {
+              case 'hyperlink':
+                terminal.cyan.underline(displayText);
+                break;
+              case 'button':
+                terminal.bgGreen.black(displayText);
+                break;
+              case 'other_clickable':
+                terminal.bold(displayText);
+                break;
+              default:
+                terminal(displayText);
+            }
+          }
+        }
+        if (isClickable) {
+          const clickable = clickableElements.find(el => el.backendNodeId === backendNodeId);
+          if (clickable) {
+            clickable.termX = renderX;
+            clickable.termY = renderY;
+            clickable.termWidth = displayText.length;
+            clickable.termHeight = 1;
+            logClicks(`Updated clickable: backendNodeId=${backendNodeId}, termX=${renderX}, termY=${renderY}`);
+          } else {
+            logClicks(`No clickable found for: backendNodeId=${backendNodeId}`);
+            clickableElements.push({
+              text,
+              boundingBox,
+              backendNodeId,
+              termX: renderX,
+              termY: renderY,
+              termWidth: displayText.length,
+              termHeight: 1,
+            });
+          }
+        }
+      }
+      newBoxes.push(renderedBox);
+    }
+
+    const boxes = renderedBoxesBySession.get(sessionId) || [];
+    boxes.length = 0;
+    boxes.push(...newBoxes);
+    renderedBoxesBySession.set(sessionId, boxes);
+    logClicks(`renderBoxes: Stored ${newBoxes.length} boxes, clickableElements.length=${clickableElements.length}`);
+    debugLog('render_boxes_complete', null, {
+      boxCount: newBoxes.length,
+      backendNodeIds: newBoxes.map(b => b.backendNodeId).filter(id => id !== undefined)
+    });
+  }
 
   // main logic
   async function startKernel() {
@@ -242,12 +735,26 @@
         });
       });
 
-      browser.on('scroll', async ({ direction }) => {
+      browser.on('scroll', async ({ direction, axis }) => {
         const state = getTabState(getBrowserState().currentSessionId);
         try {
-          const lineHeight = Math.round(state.viewportHeight / terminal.height);
-          const deltaY = direction * lineHeight;
-          await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+          if ( axis == 'vertical' ) {
+            if ( vScroll.atMarginBottom && direction > 0 || vScroll.atMarginTop && direction < 0 ) {
+              const lineHeight = Math.round(state.viewportHeight / terminal.height);
+              const deltaY = direction * lineHeight;
+              await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
+            } else {
+              vScroll.Y += direction;
+            }
+          } else if ( axis == 'horizontal' ) {
+            if ( vScroll.atMarginRight && direction > 0 || vScroll.atMarginLeft && direction < 0 ) {
+              const columnWidth = Math.round(state.viewportWidth / terminal.height);
+              const deltaX = direction * columnWidth;
+              await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX, deltaY: 0 }, sessionId);
+            } else {
+              vScroll.X += direction;
+            }
+          }
           debouncedRefresh();
         } catch (e) {
           console.error(e);
@@ -261,12 +768,12 @@
         browserbox.send(browserboxMessage(...stuff));
       });
 
-      browserbox.on('message', data => {
+      const handleBBMessage = data => {
         let message;
         try {
           message = JSON.parse(data.toString('utf8'));
         } catch(e) {
-          console.warn(e);
+          DEBUG && console.warn(e);
         }
         if (!message) return;
 
@@ -275,18 +782,28 @@
           for( const meta of message.meta ) {
             try {
               if (meta.modal && browser) {
-                const { sessionId, message: modalMessage, type, defaultPrompt } = meta.modal;
+                const { sessionId, type, defaultPrompt } = meta.modal;
+                let { message: modalMessage } = meta.modal;
                 switch (type) {
                   case 'alert':
                     browser.showAlert(sessionId, modalMessage);
                     break;
+                  case 'beforeunload':
+                    modalMessage = 'Are you sure you wish to leave this page?';
+                  /* eslint-disable no-fallthrough */
                   case 'confirm':
+                  /* eslint-enable no-fallthrough */
                     browser.showConfirm(sessionId, modalMessage);
                     break;
                   case 'prompt':
                     browser.showPrompt(sessionId, modalMessage, defaultPrompt);
                     break;
                 }
+              } else if (meta.authRequired && browser) {
+                const { authChallenge: { scheme, realm }, requestId } = meta.authRequired;
+                // Assume sessionId is available in message or derivable; adjust as needed
+                const sessionId = 'default-session';
+                browser.showHTTPAuth(sessionId, scheme, realm, requestId);
               } else if (meta.closeModal && browser) {
                 const { sessionId, modalType } = meta.closeModal;
                 browser.closeModal(sessionId, modalType);
@@ -297,7 +814,9 @@
             }
           }
         }
-      });
+      };
+
+      browserbox.on('message', handleBBMessage);
 
       await sleep(3000);
       await selectTabAndRender();
@@ -583,225 +1102,6 @@
     }
   }
 
-  function renderBoxes(layoutState) {
-    const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
-    const newBoxes = [];
-    const sessionId = browserState.currentSessionId; // Use current sessionId
-    logClicks(`renderBoxes: clickableElements.length=${clickableElements.length}`);
-
-    for (const box of visibleBoxes) {
-      DEBUG && debugLog(`Processing box: text="${box.text}", type="${box.type}", isClickable=${box.isClickable}, backendNodeId=${box.backendNodeId}`);
-      const { text, boundingBox, isClickable, termX, termY, ancestorType, backendNodeId, layoutIndex, nodeIndex, type } = box;
-      const renderX = Math.max(1, termX + 1);
-      const renderY = Math.max(5, termY + 4);
-
-      if (renderX > termWidth || renderY > termHeight + 4) continue;
-
-      const displayWidth = Math.max(0, termWidth - renderX + 1);
-      let displayText = text.substring(0, displayWidth);
-      let termWidthForBox;
-
-      if (type === 'input' && boundingBox?.width && layoutState.viewportWidth) {
-        const scaleFactor = termWidth / layoutState.viewportWidth;
-        termWidthForBox = Math.round(boundingBox.width * scaleFactor);
-        termWidthForBox = Math.max(10, Math.min(termWidthForBox, displayWidth));
-        logClicks(`Input sizing for backendNodeId: ${backendNodeId}, boundingBox.width: ${boundingBox.width}, viewportWidth: ${layoutState.viewportWidth}, scaleFactor: ${scaleFactor}, termWidth: ${termWidthForBox}`);
-      } else {
-        termWidthForBox = displayText.length;
-      }
-
-      const renderedBox = {
-        text,
-        type,
-        boundingBox,
-        isClickable,
-        termX: renderX,
-        termY: renderY,
-        termWidth: termWidthForBox,
-        termHeight: 1,
-        viewportX,
-        viewportY,
-        viewportWidth: layoutState.viewportWidth,
-        viewportHeight: layoutState.viewportHeight,
-        backendNodeId,
-        layoutIndex,
-        nodeIndex,
-      };
-
-      debugLog('render_box', null, {
-        backendNodeId,
-        type,
-        isClickable,
-        text: text.slice(0, 50),
-        termX,
-        termY
-      });
-
-      const isFocused = browser.focusManager.getFocusedElement() === (type === 'input' ? `input:${backendNodeId}` : `clickable:${backendNodeId}`);
-      if (type === 'input') {
-        logClicks(`Drawing input field for backendNodeId: ${backendNodeId}`);
-        const currentBackendNodeId = backendNodeId;
-        const fallbackValue = text.startsWith('[INPUT') ? '' : text;
-        const onChange = createInputChangeHandler({ send, sessionId, backendNodeId: currentBackendNodeId });
-
-        send('DOM.resolveNode', { backendNodeId: currentBackendNodeId }, sessionId).then(async resolveResult => {
-          if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
-          const objectId = resolveResult.object.objectId;
-          const valueResult = await send(
-            'Runtime.callFunctionOn',
-            {
-              objectId,
-              functionDeclaration: 'function() { return this.value; }',
-              arguments: [],
-              returnByValue: true,
-            },
-            sessionId
-          );
-          let liveValue = fallbackValue;
-          if (valueResult?.result?.value !== undefined) {
-            liveValue = '' + valueResult.result.value;
-            logClicks(`Fetched live value for backendNodeId: ${currentBackendNodeId}: "${liveValue}"`);
-          }
-          const inputField = drawInputFieldForNode({
-            renderX,
-            renderY,
-            termWidthForBox,
-            backendNodeId: currentBackendNodeId,
-            initialValue: liveValue,
-            onChange,
-          });
-          renderedBox.termWidth = inputField.width;
-          if (isClickable) {
-            const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
-            if (clickable) {
-              clickable.termX = renderX;
-              clickable.termY = renderY;
-              clickable.termWidth = inputField.width;
-              clickable.termHeight = 1;
-              logClicks(`Updated clickable input: backendNodeId=${currentBackendNodeId}, termX=${renderX}, termY=${renderY}`);
-            } else {
-              logClicks(`No clickable found for input: backendNodeId=${currentBackendNodeId}`);
-              clickableElements.push({
-                text,
-                boundingBox,
-                backendNodeId: currentBackendNodeId,
-                termX: renderX,
-                termY: renderY,
-                termWidth: inputField.width,
-                termHeight: 1,
-              });
-            }
-          }
-        }).catch(error => {
-          logClicks(`Failed to fetch live value for backendNodeId ${currentBackendNodeId}: ${error.message}`);
-          const inputField = drawInputFieldForNode({
-            renderX,
-            renderY,
-            termWidthForBox,
-            backendNodeId: currentBackendNodeId,
-            initialValue: fallbackValue,
-            onChange,
-          });
-          renderedBox.termWidth = inputField.width;
-          if (isClickable) {
-            const clickable = clickableElements.find(el => el.backendNodeId === currentBackendNodeId);
-            if (clickable) {
-              clickable.termX = renderX;
-              clickable.termY = renderY;
-              clickable.termWidth = inputField.width;
-              clickable.termHeight = 1;
-              logClicks(`Updated clickable input (error path): backendNodeId=${currentBackendNodeId}`);
-            } else {
-              logClicks(`No clickable found for input (error path): backendNodeId=${currentBackendNodeId}`);
-              clickableElements.push({
-                text,
-                boundingBox,
-                backendNodeId: currentBackendNodeId,
-                termX: renderX,
-                termY: renderY,
-                termWidth: inputField.width,
-                termHeight: 1,
-              });
-            }
-          }
-        });
-      } else {
-        terminal.moveTo(renderX, renderY);
-        if (isFocused && isClickable) {
-          terminal.bgCyan();
-          if (type === 'button' || ancestorType === 'button') {
-            terminal.green(displayText);
-          } else if (type === 'media' && isClickable) {
-            terminal.gray.underline(displayText);
-          } else if (ancestorType === 'hyperlink') {
-            terminal.black.underline(displayText);
-          } else if (ancestorType === 'other_clickable') {
-            terminal.defaultColor.bold(displayText);
-          } else {
-            terminal.defaultColor(displayText);
-          }
-        } else {
-          terminal.defaultColor().bgDefaultColor();
-          if (type === 'button') {
-            terminal.bgGreen.black(displayText);
-          } else if (type === 'media') {
-            if (isClickable) {
-              terminal.gray.underline(displayText);
-            } else {
-              terminal.brightBlack(displayText);
-            }
-          } else {
-            switch (ancestorType) {
-              case 'hyperlink':
-                terminal.cyan.underline(displayText);
-                break;
-              case 'button':
-                terminal.bgGreen.black(displayText);
-                break;
-              case 'other_clickable':
-                terminal.bold(displayText);
-                break;
-              default:
-                terminal(displayText);
-            }
-          }
-        }
-        if (isClickable) {
-          const clickable = clickableElements.find(el => el.backendNodeId === backendNodeId);
-          if (clickable) {
-            clickable.termX = renderX;
-            clickable.termY = renderY;
-            clickable.termWidth = displayText.length;
-            clickable.termHeight = 1;
-            logClicks(`Updated clickable: backendNodeId=${backendNodeId}, termX=${renderX}, termY=${renderY}`);
-          } else {
-            logClicks(`No clickable found for: backendNodeId=${backendNodeId}`);
-            clickableElements.push({
-              text,
-              boundingBox,
-              backendNodeId,
-              termX: renderX,
-              termY: renderY,
-              termWidth: displayText.length,
-              termHeight: 1,
-            });
-          }
-        }
-      }
-      newBoxes.push(renderedBox);
-    }
-
-    const boxes = renderedBoxesBySession.get(sessionId) || [];
-    boxes.length = 0;
-    boxes.push(...newBoxes);
-    renderedBoxesBySession.set(sessionId, boxes);
-    logClicks(`renderBoxes: Stored ${newBoxes.length} boxes, clickableElements.length=${clickableElements.length}`);
-    debugLog('render_boxes_complete', null, {
-      boxCount: newBoxes.length,
-      backendNodeIds: newBoxes.map(b => b.backendNodeId).filter(id => id !== undefined)
-    });
-  }
-
   function drawInputFieldForNode({ renderX, renderY, termWidthForBox, backendNodeId, initialValue, onChange }) {
     const inputField = browser.drawInputField({
       x: renderX,
@@ -814,33 +1114,45 @@
     return inputField;
   }
 
-  function createInputChangeHandler({ send, sessionId, backendNodeId }) {
-    return async function onInputChange(value) {
-      try {
-        const resolveResult = await send('DOM.resolveNode', { backendNodeId }, sessionId);
-        if (!resolveResult?.object?.objectId) throw new Error('Node no longer exists');
-        const objectId = resolveResult.object.objectId;
-        const script = `function() {
-          this.value = ${JSON.stringify(value)};
-          this.dispatchEvent(new Event('input', { bubbles: true }));
-          this.dispatchEvent(new Event('change', { bubbles: true }));
-        }`;
-        await send(
-          'Runtime.callFunctionOn',
-          {
-            objectId,
-            functionDeclaration: script,
-            arguments: [],
-            returnByValue: true,
-          },
-          sessionId
-        );
-        logClicks(`Updated remote value for backendNodeId: ${backendNodeId} to "${value}"`);
-      } catch (error) {
-        DEBUG && console.warn(error);
-        logClicks(`Failed to set input value for backendNodeId ${backendNodeId}: ${error.message}`);
-      }
-    };
+  function drawCheckboxForNode({ renderX, renderY, termWidthForBox, backendNodeId, value, checked, name, onChange }) {
+    const checkbox = browser.drawCheckbox({
+      x: renderX,
+      y: renderY,
+      width: termWidthForBox,
+      key: backendNodeId,
+      value, 
+      checked,
+      name, 
+      onChange,
+    });
+    return checkbox;
+  }
+
+  function drawRadioForNode({ renderX, renderY, termWidthForBox, backendNodeId, value, checked, name, onChange }) {
+    const radio = browser.drawRadio({
+      x: renderX,
+      y: renderY,
+      width: termWidthForBox,
+      key: backendNodeId,
+      value, 
+      checked,
+      name, 
+      onChange,
+    });
+    return radio;
+  }
+
+  function drawSelectForNode({ renderX, renderY, termWidthForBox, backendNodeId, options, initialValue, onChange }) {
+    const selectField = browser.drawSelect({
+      x: renderX,
+      y: renderY,
+      width: termWidthForBox,
+      key: backendNodeId,
+      options,
+      initialValue,
+      onChange,
+    });
+    return selectField;
   }
 
   async function getNavigationHistory(sessionId) {
@@ -867,7 +1179,7 @@
     return navigateHistory(sessionId, 1);
   }
 
-  export function getClickedBox({ termX, termY }) {
+  export function getClickedBox({ termX, termY, ignoreIsClickable = false }) {
     let clickedBox = null;
     const sessionBoxes = renderedBoxesBySession.get(browserState.currentSessionId) || [];
     logClicks(`getClickedBox: termX=${termX}, termY=${termY}, sessionBoxes.length=${sessionBoxes.length}`);
@@ -875,7 +1187,7 @@
       const box = sessionBoxes[i];
       const inX = termX >= box.termX && termX < box.termX + box.termWidth;
       const inY = termY == box.termY;
-      if (inX && inY && box.isClickable) {
+      if (inX && inY && ((ignoreIsClickable && IGNORE_CLICKABLE_FOR_TYPES.has(box.type)) || box.isClickable)) {
         clickedBox = box;
         break;
       }
@@ -889,7 +1201,7 @@
   }
 
   export async function handleClick({ termX, termY, layoutToNode, nodeToParent, nodes }) {
-    const clickedBox = getClickedBox({ termX, termY });
+    const clickedBox = getClickedBox({ termX, termY, ignoreIsClickable: true });
     if (!clickedBox) {
       logClicks(`handleClick: No clickedBox found at (${termX}, ${termY})`);
       return;
