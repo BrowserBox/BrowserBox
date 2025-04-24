@@ -10,7 +10,6 @@
   const CHAI_STATE_PATH = path.resolve(BBPRO_CONF, 'chai')
   const FILES = path.join(CHAI_STATE_PATH, 'pdfs');
   const HASH_FILE = path.join(FILES, 'hashes.json');
-  const LINK_FILE = path.join(FILES, 'links.json');
   const VIEW_PAGE = /^file.*$/;
 
   buildHashes();
@@ -23,11 +22,11 @@
     try {
       fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'privkey.pem'));
       fs.readFileSync(path.resolve(os.homedir(), 'sslcerts', 'fullchain.pem'));
-    } catch(e) {
+    } catch {
       try {
         fs.readFileSync(path.resolve('/usr', 'local', 'share', 'dosyago', 'sslcerts', 'privkey.pem'));
         fs.readFileSync(path.resolve('/usr', 'local', 'share', 'dosyago', 'sslcerts', 'fullchain.pem'));
-      } catch(e) {
+      } catch {
         GO_SECURE = false;
       }
     }
@@ -36,7 +35,7 @@
     try { 
       const commonStuff = await import('../../../../common.js');
       ({APP_ROOT} = commonStuff);
-    } catch(e) {
+    } catch {
       const commonStuff = await import('../../src/common.js');
       ({APP_ROOT} = commonStuff);
     }

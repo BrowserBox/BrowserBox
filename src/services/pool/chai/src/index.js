@@ -1,14 +1,12 @@
 // code
   import crypto from 'crypto';
   import fs from 'fs';
-  import { exec, execSync, spawn } from 'child_process';
+  import { execSync, spawn } from 'child_process';
   import https from 'https';
   import http from 'http';
-  import url from 'url';
   import Path from 'path';
   import os from 'os';
   import {rainbowHash} from '@dosyago/rainsum';
-  import {APP_ROOT} from '../../../../common.js';
 
   import exploreDirectories from 'serve-index';
   import compression from 'compression';
@@ -31,7 +29,6 @@
     const {CONFIG} = await import('../../../../common.js');
     const SECRET = process.env.DOCS_KEY;
     const FORMAT = 'jpeg';
-    const MAX_FILE_DL_TIME = 147*1000; // time to allow a download before rejecting ~ 2.5 mins
     const WAIT_NEW_FILES_BEFORE_DISK_SYNC = 3;
     const CHAI_STATE_PATH = process.env.CHAI_PATH || Path.resolve(os.homedir(), '.config', 'dosyago', 'bbpro', 'chai')
     const PIDFILE = Path.join(CHAI_STATE_PATH, 'chai-pid.txt');
@@ -66,7 +63,6 @@
       ]
     );
     const SSL_OPTS = {};
-    const Sessions = {};
     let jobid = 1;
     let newFiles = 0;
     let syncing = false;
@@ -97,7 +93,6 @@
       }
     });
 
-    const sleep = ms => new Promise(res => setTimeout(res, ms));
     // adapted from code at source: https://stackoverflow.com/a/22907134/10283964
     const DEBUG = {
       showHash: false,
@@ -603,7 +598,7 @@
       // Validate the URL
       try {
         url = new URL(urlString);
-      } catch (error) {
+      } catch {
         throw new Error(`Invalid URL: ${urlString}`);
       }
 
@@ -612,18 +607,6 @@
       const sanitizedURL = url.toString();
       
       return sanitizedURL;
-    }
-
-    function sanitizeHtml(htmlString) {
-      const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
-
-      return htmlString.replace(/[&<>"']/g, (char) => map[char]);
     }
 
     function miniCorsEmbed(req, res, next) {
