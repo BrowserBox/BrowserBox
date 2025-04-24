@@ -42,3 +42,13 @@ Call it "wire" or "ultrathin" or "ultrafine"
 OK but something important truly is marketing. Marketing: "E-ink for the web". It would be possible to build an e-ink client for this, which would make it possible to have a real web browser on e-ink displays. Licensing opportunity!
 
 Of course, you'd need to adjust layouting to account for actual fonts, not just monospace ones - eventually anyway.
+
+--
+
+Potential inspirings
+
+- Simple social sharing protocol over TCP - https://www.robinsloan.com/lab/specifying-spring-83/
+  - Maybe connecting via dialup.sh is not the only way
+  - A "follow" thing like this could be cool
+
+- BBS resurrected after years - https://cq94.medium.com/get-your-minitels-back-the-computel-videotex-bbs-is-back-1d8c42f1ea17
