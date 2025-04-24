@@ -9,7 +9,7 @@ export function checkAndAppendHTTPS(input, isTor = false) {
   try {
     url = new URL(firstPart);
     return url;
-  } catch(e) {
+  } catch {
     console.info(`Not a url (at least not yet) - let's see if it starts with something that looks like one.`);
   } 
   const domainParts = firstPart.split('.').filter(part => part.length);
