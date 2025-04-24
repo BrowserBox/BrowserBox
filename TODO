@@ -1,3 +1,5 @@
+- lint the browserbox codebase
+
 - add wireguard: bbx wgrun --no-proxy  (just a tunnel to BB that then goes to the public net). --no-tunnel (just a proxy from BB to the public net, no tunnel)
 
 - still unclean shutdown. search process.exit
