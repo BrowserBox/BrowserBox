@@ -5,7 +5,6 @@ import {version,uberFetch,untilTrue,CONFIG,COMMON,DEBUG, AttachmentTypes, HIDDEN
 import DEFAULT_FAVICON from '../subviews/faviconDataURL.js';
 
 const STATE_SYMBOL = Symbol(`[[State]]`);
-const MODAL_MESSAGE = `RBI is paused, probably because a modal dialog is open. It's alright, this happens sometimes. Before you leave a page, remember to close any modal dialogs. You can also try again to close the last one that was open.`;
 let modaler;
 let active;
 

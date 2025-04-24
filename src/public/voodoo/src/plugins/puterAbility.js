@@ -9,7 +9,7 @@ const FileState = {
 export default async function untilPuterAbility() {
   let resolve;
   const pr = new Promise(res => resolve = res);
-  globalThis.addEventListener('message', async ({data, origin, source}) => {
+  globalThis.addEventListener('message', async ({data, origin}) => {
     const uri = new URL(origin);
     if ( !uri.hostname.endsWith('puter.site') ) return;
 
@@ -52,7 +52,7 @@ export default async function untilPuterAbility() {
       });
 
       try {
-        const resp = await uberFetch(action, request).then(r => r.json());
+        const resp = await globalThis.uberFetch(action, request).then(r => r.json());
         if ( resp.error ) {
           alert(resp.error);
         } else {

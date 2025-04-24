@@ -45,7 +45,7 @@ async function handleEvent(event) {
     meta.push(
       {
         treeUpdate: {
-          open: await uberFetch(`https://${location.hostname}:8001/demo-landing`).then(resp => resp.text()),
+          open: await globalThis.uberFetch(`https://${location.hostname}:8001/demo-landing`).then(resp => resp.text()),
           targetId: tab && tab.targetId,
           ...opts
         }
@@ -63,7 +63,7 @@ async function handleEvent(event) {
       }
       const meta2 = {
         treeUpdate: {
-          open: await uberFetch(`https://${location.hostname}:8001/demo-landing`).then(resp => resp.text()),
+          open: await globalThis.uberFetch(`https://${location.hostname}:8001/demo-landing`).then(resp => resp.text()),
           targetId: tab.targetId,
           ...opts
         }
@@ -79,7 +79,9 @@ async function handleEvent(event) {
       let jres;
       try {
         jres = JSON.parse(event.result);
-      } catch(e) {}
+      } catch {
+        console.warn(`Issue JSON parsing.`, event.result);
+      }
       if (!!jres && !!jres.browserUrl) {
         const {browserUrl} = jres;
         const meta1 = {
