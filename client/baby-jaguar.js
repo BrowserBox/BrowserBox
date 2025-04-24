@@ -120,6 +120,10 @@
     const { visibleBoxes, termWidth, termHeight, viewportX, viewportY, clickableElements } = layoutState;
     const newBoxes = [];
     const sessionId = browserState.currentSessionId; // Use current sessionId
+    vScroll.atMarginRight = true;
+    vScroll.atMarginBottom = true;
+    vScroll.atMarginLeft = true;
+    vScroll.atMarginTop = true;
     logClicks(`renderBoxes: clickableElements.length=${clickableElements.length}`);
 
     for (const box of visibleBoxes) {
@@ -128,6 +132,12 @@
       const renderX = termX - vScroll.X;
       const renderY = termY + 1 - vScroll.Y;
 
+      if (renderX > termWidth) {
+        vScroll.atMarginRight = false;
+      }
+      if (renderY > termHeight + 4) {
+        vScroll.atMarginBottom = false;
+      }
       if (renderX > termWidth || renderY > termHeight + 4) continue;
 
       const displayWidth = Math.max(0, termWidth - renderX + 1);
@@ -162,7 +172,13 @@
         nodeIndex,
       };
 
-      if ( (renderX + renderedBox.termWidth - 1) < 0 || (renderY + renderedBox.termHeight - 1) < 0 ) continue;
+      if ( renderX < 0 ) {
+        vScroll.atMarginLeft = false;
+      }
+      if ( renderY < 0 ) {
+        vScrol.atMarginTop = false;
+      } 
+      if ( (renderX + renderedBox.termWidth - 1) < 0 || (renderY + renderedBox.termHeight - 1) < 5 ) continue;
 
       debugLog('render_box', null, {
         backendNodeId,
@@ -723,7 +739,6 @@
             if ( vScroll.atMarginBottom && direction > 0 || vScroll.atMarginTop && direction < 0 ) {
               const lineHeight = Math.round(state.viewportHeight / terminal.height);
               const deltaY = direction * lineHeight;
-              vScroll.Y = 0;
               await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX: 0, deltaY }, sessionId);
             } else {
               vScroll.Y += direction;
@@ -732,7 +747,6 @@
             if ( vScroll.atMarginRight && direction > 0 || vScroll.atMarginLeft && direction < 0 ) {
               const columnWidth = Math.round(state.viewportWidth / terminal.height);
               const deltaX = direction * columnWidth;
-              vScroll.X = 0;
               await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 0, y: 0, deltaX, deltaY: 0 }, sessionId);
             } else {
               vScroll.X += direction;
