@@ -140,8 +140,11 @@
       }
       if (renderX > termWidth || renderY > termHeight + 4) continue;
 
-      const displayWidth = Math.max(0, termWidth - renderX + 1);
-      let displayText = text.substring(0, displayWidth);
+      const boxWidth = text.length;
+      const actualDisplayWidth = Math.min(termWidth, renderX + boxWidth) - Math.max(0, renderX);
+      const clipStart = Math.max(0, 0 - renderX);
+      const displayWidth = actualDisplayWidth;
+      let displayText = text.substring(clipStart, clipStart + actualDisplayWidth);
       let termWidthForBox;
 
       if (type === 'input' && boundingBox?.width && layoutState.viewportWidth) {

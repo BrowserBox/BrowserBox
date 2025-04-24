@@ -1,7 +1,7 @@
 GOAL: Get to a browser that we can use
 
+- handle clipping off to the left
 - also remote ignore scroll if the page is already at a scroll end position. but we still need to set the vScroll if we are at end, because there could be stuff above, so the ignored scroll still needs to trigger that. 
-- 
 
 Next
   - reset terminal on exit (so normal)
