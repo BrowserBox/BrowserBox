@@ -10,7 +10,6 @@ export * from './pluginsMenuButton.js';
 export * from './pluginsMenu.js';
 export * from './sidebarMenuButton.js';
 export * from './sidebarMenu.js';
-//export * from './viewportResetButton.js';
 // MIGRATE (openModal)
 export * from './other.js';
 //export * from './contextMenu.js';

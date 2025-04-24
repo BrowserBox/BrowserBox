@@ -14,7 +14,7 @@ export default function transformEvent(e, {scale}, bounds) {
     forceFrame: e.forceFrame
   };
   const {source} = e;
-  if ( !! source ) {
+  if ( source ) {
     transformedEvent.source = source;
   }
   let event, synthetic, originalEvent;
@@ -35,9 +35,6 @@ export default function transformEvent(e, {scale}, bounds) {
       }
       case "favicon": {
         throw new TypeError(`Client can not request favicons from back-end`);
-        const {targetId} = synthetic;
-        Object.assign(transformedEvent, {targetId});
-        break;
       }
       case "auth-response": {
         const {authResponse, requestId} = synthetic;
@@ -157,9 +154,6 @@ export default function transformEvent(e, {scale}, bounds) {
       }
       case "getFavicon": {
         throw new TypeError(`Client can not request favicons from back-end`);
-        const {targetId} = synthetic;
-        Object.assign(transformedEvent, {targetId});
-        break;
       }
       case "getElementInfo": {
         transformedEvent.data = e.data;
@@ -285,7 +279,6 @@ export function getBitmapCoordinates(event, scale = 1, bounds) {
   if ( bitmap ) {
     const {
       left:parentX, top:parentY, 
-      width:bitMapWidth, height: bitMapHeight,
     } = bitmap.getBoundingClientRect();
 
     const localViewport = {
@@ -306,7 +299,7 @@ export function getBitmapCoordinates(event, scale = 1, bounds) {
     };
 
     if ( DEBUG.val > DEBUG.high ) {
-      const info = {coordinates, parentX, parentY, clientX, clientY, scaleX, scaleY, dpi };
+      const info = {coordinates, parentX, parentY, clientX, clientY };
 
       logit(info);
     }
