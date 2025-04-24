@@ -58,7 +58,7 @@ export function go(e, state) {
   let addressValue = address.value;
   try {
     addressValue = checkAndAppendHTTPS(addressValue, state?.isTor);
-  } catch(e) {
+  } catch {
     console.info(`Error checking for a domain`);
   }
   try {
@@ -68,7 +68,7 @@ export function go(e, state) {
       return;
     }
     url = url + '';
-  } catch(e) {
+  } catch {
     search = searchProvider({query:address.value}); 
   }
   state.H({

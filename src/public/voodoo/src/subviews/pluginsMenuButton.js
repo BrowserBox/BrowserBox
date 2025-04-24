@@ -11,7 +11,7 @@ export function PluginsMenuButton(state) {
         () => {
           pluginsMenuOpen ^= true;
           state.pluginsMenuActive = pluginsMenuOpen;
-          setState('bbpro', state);
+          globalThis.setState('bbpro', state);
         }
       ]}>
         <button title="Menu" accesskey=p>&#9776;</button>

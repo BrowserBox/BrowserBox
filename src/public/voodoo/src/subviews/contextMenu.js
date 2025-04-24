@@ -1,5 +1,4 @@
-import {untilTrue, CONFIG, DEBUG, BLANK, deviceIsMobile} from '../common.js';
-import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js';
+import {untilTrue, CONFIG, DEBUG, deviceIsMobile} from '../common.js';
 
 export const makeContextMenuBondTasks = state => [
   el => {

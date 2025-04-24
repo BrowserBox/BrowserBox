@@ -1,7 +1,6 @@
 import keys from '../../../kbd.js';
 import {controlChars,getKeyId} from '../transformEvent.js';
-import {DEBUG, CHAR, logitKeyInputEvent} from '../common.js';
-import {c as X, s as R} from '../../node_modules/bang.html/src/vv/vanillaview.js';
+import {DEBUG, logitKeyInputEvent} from '../common.js';
 //import {PluginsMenuButton} from './pluginsMenuButton.js';
 //import {SidebarMenuButton} from './sidebarMenuButton.js';
 

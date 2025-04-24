@@ -1,5 +1,5 @@
 import {DEBUG, CHAR} from '../common.js';
-import {s as R, c as X} from '../../node_modules/bang.html/src/vv/vanillaview.js';
+import {s as R} from '../../node_modules/bang.html/src/vv/vanillaview.js';
   
 const CLOSE = CHAR.menucloser;
 const OPEN = CHAR.menuopener;
@@ -16,7 +16,7 @@ export function SidebarMenuButton(state) {
         () => {
           sidebarMenuOpen ^= true;
           state.sidebarMenuActive = sidebarMenuOpen;
-          setState('bbpro', state);
+          globalThis.setState('bbpro', state);
         }
       ]}>
         <button title="${titleVal}" 
