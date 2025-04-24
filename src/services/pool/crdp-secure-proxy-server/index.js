@@ -1,5 +1,4 @@
 import fs from 'fs';
-import os from 'os';
 import path from 'path';
 import http from 'http';
 import https from 'https';
@@ -9,14 +8,12 @@ import cookieParser from 'cookie-parser';
 import WebSocket from 'ws';
 //import {WebSocketServer} from 'ws';
 import compression from 'compression';
-import exitOnExpipe from 'exit-on-epipe';
 import rateLimit from 'express-rate-limit';
 
 import {
   DEBUG,
   app_port,
   chrome_port,
-  version,
   COOKIENAME,
   CONFIG,
   untilTrueOrTimeout,
@@ -26,7 +23,6 @@ DEBUG.debugDevtoolsServer && console.log(process.argv);
 const PORT = app_port + 1;
 const COOKIE = process.argv[3];
 const TOKEN = process.argv[4];
-const sleep = ms => new Promise(res => setTimeout(res, ms));
 
 const NO_AUTH = false; // true is insecure as anyone can connect
 const CHROME_PORT = chrome_port;
@@ -321,11 +317,11 @@ wss.on('connection', (ws, req) => {
           } 
           crdpSocket.send(msg);
         });
-        ws.on('close', (code, reason) => {
+        ws.on('close', () => {
           SOCKETS.delete(ws);
           crdpSocket.close(1001, 'client disconnected');
         });
-        crdpSocket.on('close', (code, reason) => {
+        crdpSocket.on('close', () => {
           SOCKETS.delete(ws);
           ws.close(1011, 'browser disconnected');
         });
