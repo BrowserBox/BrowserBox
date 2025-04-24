@@ -29,6 +29,7 @@
     CONFIG,
     ALLOWED_3RD_PARTY_EMBEDDERS,
     BASE_PATH,
+    sleep,
     EXTENSIONS_PATH,
     throttle,
   } from './common.js';
@@ -39,6 +40,7 @@
   const { exec, execSync } = child_process;
 
   let WRTC;
+  let cacheExpired = true;
   let xCheckers;
   try { 
     await import('@roamhq/wrtc').then(module => WRTC = module.default);

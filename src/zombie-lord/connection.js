@@ -9,8 +9,9 @@ import {unescape} from 'querystring';
 
 import {WebSocket} from 'ws';
 import {SocksProxyAgent} from 'socks-proxy-agent';
-import {stop} from '../../branch-bbx-stop.js';
+import { rainstormHash } from '@dosyago/rainsum';
 
+import {stop} from '../../branch-bbx-stop.js';
 import {
   WrongOnes,
   AttachmentTypes,
@@ -149,7 +150,7 @@ const pageContextInjectionsScroll = `(function () {
   }
 
   // this function should not be needed as we always restart the application after installing/removing an extension
-  function propagateExtensions() {
+  function propagateExtensions(send) {
     saveInstalledExtensions();
     const scriptToUpdateInPage = extensionsInstalled();
     if ( lastExtensionsUpdateScript != scriptToUpdateInPage ) {
@@ -1945,7 +1946,6 @@ export default async function Connect({port}, {adBlock:adBlock = DEBUG.adBlock, 
                 showInfo: true,
                 showAccessibilityInfo: false,
                 borderColor: { r:0, g:255, b:22 },
-                paddingColor: { r:0, g:255, b:22 },
                 paddingColor: { r:0, g:255, b:22 },
                 eventTargetColor: { r:0, g:255, b:22 },
               }
@@ -3761,7 +3761,7 @@ function extractExtSWContentPath(manifest, url) {
     const parts = pathname.split('/');
     pathname = parts.join(path.sep);
     const result = execSync(`find "${path.resolve(EXTENSIONS_PATH, id)}" | grep "${url.pathname}"`).trim();
-    const firstLine = result.split(/\n/g).map(line = line.trim()).filter(line => line.length)[0];
+    const firstLine = result.split(/\n/g).map(line => line.trim()).filter(line => line.length)[0];
     return path.resolve(firstLine);
   } catch(e) {
     console.warn(`Error during extract extension sw content path`, e);

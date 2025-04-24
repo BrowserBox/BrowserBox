@@ -1,6 +1,7 @@
 {
   // shim key elements of the chrome extension API 
   const FAKEWIN = {id:1,tabs:[{id:1}], left:0, top:0, width:0, height:0};
+  const chrome = globalThis.chrome;
   try {
     let messageId = 0;
     let WinId = 1;
@@ -90,6 +91,8 @@
 
       async function createWindow(opts, cb) {
         // this works for open and close but is wrong sized
+
+        let __currentViewport = globalThis.__currentViewport;
 
         Object.assign(opts, {
           ...__currentViewport
