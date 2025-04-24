@@ -1,0 +1,13 @@
+# Here are some inspirations for future directions
+
+And a bit more context: BrowserBox was originally designed as a delivery layer for clientless web scraping robot authoring. With BrowserBox you can create web scraping agents on your iPhone, from a normal web browser, from anywhere.
+
+However the cybersecurity use case became apparent, and BrowserBox for RBI was factored out as a product layer, that quickly took over all other development. 
+
+The realization of the original goal of BrowserBox as a delivery layer for authoring web scrapers will occur. 
+
+Now are are in the age of AI, so likely AI will be a useful part of the shape of that product.
+
+Here's some inspirations (not solely limited to this automation use case), regarding BrowserBox and how it can be used right now, or could be used in future!
+
+- https://github.com/lmnr-ai/index - Open-Source Browser Agent for autonomously performing complex tasks on the web
