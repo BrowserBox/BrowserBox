@@ -1,12 +1,12 @@
 GOAL: Get to a browser that we can use
 
-- scrollin : within local tui "virtual TUI viewport" (larger than TUI page to account for the stuff we push rightward and downward for layout), implement hoz and vert scrolling to show "pushed for layout" content, that blends to scrolling the remote when reaching the margins of that virtual viewport - also ensure we "size the remote" to a "good size" relative to our local TUI dimensions
-  - set atMargin by checking clipped boxes. (when there are none, we are at margin).
-  - also ignore scroll if the page is already at a scroll end position.
+- also remote ignore scroll if the page is already at a scroll end position. but we still need to set the vScroll if we are at end, because there could be stuff above, so the ignored scroll still needs to trigger that. 
+- 
 
 Next
   - reset terminal on exit (so normal)
   - allow copy (for visual breakout)
+  - also ensure we "size the remote" to a "good size" relative to our local TUI dimensions
   - Nice to get to: rendering of autocomplete (and other live dom changes): shows but only if we trigger re-render with scroll, but then we can't click on the autocomplete options, even tho they register as clickable, or the clicks have no effect on remote
   - ensure layout remains correct beofre proceeding to following:
   - hook modals for file upload.
