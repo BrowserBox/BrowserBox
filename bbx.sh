@@ -1294,6 +1294,7 @@ uninstall() {
     fi
     if [ -d "$BB_CONFIG_DIR" ]; then
         printf "${YELLOW}Removing config directory: $BB_CONFIG_DIR...${NC}\n"
+        printf "${RED}[WARNING!] This will clear all your BrowserBox website data, settings, cookies and history. Are you sure you want to delete this directory?${NC}\n"
         read -r -p "Confirm removal of $BB_CONFIG_DIR? (yes/no): " CONFIRM_CONFIG
         if [ "$CONFIRM_CONFIG" = "yes" ]; then
             rm -rf "$BB_CONFIG_DIR" && printf "${GREEN}Removed $BB_CONFIG_DIR${NC}\n" || printf "${RED}Failed to remove $BB_CONFIG_DIR${NC}\n"
