@@ -20,6 +20,7 @@ const BUTTON_INPUT_TYPES = new Set([
   'button',
   'file',
 ]);
+const CACHE = new Map();
 const INVISIBLE_DIMENSION = 5;
 
 const LayoutAlgorithm = (() => {
@@ -657,19 +658,38 @@ const LayoutAlgorithm = (() => {
   }
 
   async function prepareLayoutState({ snapshot, viewportWidth, viewportHeight, viewportX, viewportY, getTerminalSize }) {
-    DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot, null, 2));
-    DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot));
-    const splitSnapshotData = splitSnapshot(snapshot);
-    DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData, null, 2));
-    DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
+    const { columns: termWidth, rows: termHeight } = await getTerminalSize();
+    const s = JSON.stringify({snapshot});
+    const v = JSON.stringify({viewportWidth,viewportHeight,termWidth,termHeight,viewportX,viewportY});
+    let scrollChangeOnly = false;
+    if ( CACHE.get('lastSnapshot') == s ) {
+      if ( CACHE.get('lastViewport') == v ) {
+        return CACHE.get('lastLayoutState');
+      } else {
+        scrollChangeOnly = true;
+        CACHE.set('lastViewport', v);
+      }
+    } else {
+      CACHE.set('lastSnapshot', s);
+    }
+    let textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes;
+    if ( ! scrollChangeOnly ) {
+      DEBUG && fs.writeFileSync('snapshot.log', JSON.stringify(snapshot, null, 2));
+      DEBUG && fs.appendFileSync('snapshot.log', reconstructToHTML(snapshot));
+      const splitSnapshotData = splitSnapshot(snapshot);
+      DEBUG && fs.writeFileSync('split-snapshot.log', JSON.stringify(splitSnapshotData, null, 2));
+      DEBUG && fs.appendFileSync('split-snapshot.log', reconstructToHTML(splitSnapshotData));
 
-    const { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData });
-    if (!textLayoutBoxes.length) {
-      DEBUG && terminal.yellow('No text boxes found.\n');
-      return null;
+      ({ textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = extractTextLayoutBoxes({ snapshot: splitSnapshotData }));
+      if (!textLayoutBoxes.length) {
+        DEBUG && terminal.yellow('No text boxes found.\n');
+        return null;
+      }
+      CACHE.set('lastSplit', { textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes });
+    } else {
+      ({ textLayoutBoxes, clickableElements, layoutToNode, nodeToParent, nodes } = CACHE.get('lastSplit');
     }
 
-    const { columns: termWidth, rows: termHeight } = await getTerminalSize();
     const baseScaleX = termWidth / viewportWidth;
     const baseScaleY = (termHeight) / viewportHeight;
     const scaleX = baseScaleX * HORIZONTAL_COMPRESSION;
@@ -808,7 +828,7 @@ const LayoutAlgorithm = (() => {
       processNode(rootNode, childrenMap, textBoxMap, splitSnapshotData, nodes);
     }
 
-    return {
+    const layoutState = {
       visibleBoxes,
       termWidth,
       termHeight: termHeight - 4,
@@ -821,6 +841,8 @@ const LayoutAlgorithm = (() => {
       nodeToParent,
       nodes,
     };
+    CACHE.set('lastLayoutState', layoutState);
+    return layoutState;
   }
 
   function unionBoxes(box1, box2) {
