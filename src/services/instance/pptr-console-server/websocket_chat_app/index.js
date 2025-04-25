@@ -19,7 +19,7 @@
 
   // internal imports
     import {newName} from './public/src/xhelp.js';
-    import {COOKIENAME, APP_ROOT, DEBUG as APP_DEBUG} from '../../common.js';
+    import {COOKIENAME, DEBUG as APP_DEBUG} from '../../common.js';
     import {
       CONFIG,
     } from '../../../../common.js';

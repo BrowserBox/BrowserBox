@@ -179,7 +179,7 @@
         vScroll.atMarginLeft = false;
       }
       if ( renderY < 0 ) {
-        vScrol.atMarginTop = false;
+        vScroll.atMarginTop = false;
       } 
       if ( (renderX + renderedBox.termWidth - 1) < 0 || (renderY + renderedBox.termHeight - 1) < 5 ) continue;
 
