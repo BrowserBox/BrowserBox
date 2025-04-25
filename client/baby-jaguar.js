@@ -23,7 +23,7 @@
   import TerminalBrowser from './terminal-browser.js';
   import { ConnectionManager } from './connection-manager.js';
   import { InputManager } from './input-manager.js';
-  import { newLog, sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
+  import { sleep, logBBMessage, logClicks, debugLog, DEBUG } from './log.js';
 
   // global scroll state
   const vScroll = {
