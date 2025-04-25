@@ -670,6 +670,13 @@
             },
           }
         ));
+        // we can save vScroll state per tab later
+        vScroll.X = 0;
+        vScroll.Y = 0;
+        vScroll.atMarginRight = true;
+        vScroll.atMarginBottom = true;
+        vScroll.atMarginLeft = true;
+        vScroll.atMarginTop = true;
         await selectTabAndRender();
       });
 
