@@ -37,6 +37,7 @@
   import {releaseLicense, timedSend, eventSendLoop} from './server.js';
   import {MIN_TIME_BETWEEN_SHOTS, WEBP_QUAL} from './zombie-lord/screenShots.js';
   import {validityCheck} from './hard/application.js'
+  import {stop} from '../branch-bbx-stop.js';
 
   const { exec, execSync } = child_process;
 
@@ -1588,7 +1589,7 @@
 
   function executeShutdownOfBBPRO() {
     console.warn(`Stopping BrowserBox`);
-    return child_process.exec(`stop_bbpro`);
+    return stop();
   }
 
   function populateExtensions() {

@@ -22,7 +22,7 @@
 
   // Spawn the main script with inherited stdio and passed args
   const mainScript = join(process.cwd(), 'baby-jaguar.js');
-  const child = spawn('node', [mainScript, ...process.argv.slice(2)], {
+  const child = spawn('node', [...(process.env.BBX_INSPECT ? ['--inspect'] : []), mainScript, ...process.argv.slice(2)], {
     stdio: 'inherit',
     env: process.env,
   });
